@@ -47,7 +47,13 @@ export const ptBR = {
     stopButton: 'Sair (stop)',
     flagButton: (flagLabel: string) => `Bandeira: ${flagLabel}`,
     unreadableAddressData: 'O parâmetro ?data= do endereço não é um JSON válido.',
-    lastAnswer: (actionName: string, statusCode: number, statusMessage: string | undefined) =>
-      `${actionName}: ${statusCode}${statusMessage ? ` — ${statusMessage}` : ''}`,
+    lastAnswer: (actionName: string, statusCode: number, statusMessage: string | undefined) => {
+      const statusText = `${actionName}: ${statusCode}`;
+      const hasStatusMessage = statusMessage !== undefined && statusMessage !== '';
+      if (!hasStatusMessage) {
+        return statusText;
+      }
+      return `${statusText} — ${statusMessage}`;
+    },
   },
 } as const;
