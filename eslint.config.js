@@ -9,7 +9,8 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   {
-    ignores: ['**/dist/', '**/coverage/', '**/test-results/', '**/playwright-report/'],
+    // Generated output and the gitignored agent scratch folder are never linted.
+    ignores: ['**/dist/', '**/coverage/', '**/test-results/', '**/playwright-report/', '.scratch/'],
   },
 
   eslint.configs.recommended,
