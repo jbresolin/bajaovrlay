@@ -43,8 +43,15 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   });
 
   httpServer.on('upgrade', (request, socket, head) => {
-    const requestPath = new URL(request.url ?? '/', 'http://localhost').pathname;
+    const requestPath = readUpgradeRequestPath(request.url);
     if (requestPath !== webSocketPath) {
+      // Node removes its own socket error handler before emitting 'upgrade'; without
+      // this one, a peer resetting the connection here would be an uncaught error.
+      // (handleUpgrade below adds its own, so /ws needs none.)
+      socket.on('error', (socketError) => {
+        logger.warn({ err: socketError }, 'refused upgrade socket error');
+        socket.destroy();
+      });
       socket.end('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n');
       return;
     }
@@ -104,4 +111,17 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       return new Promise((resolve) => webSocketServer.close(() => resolve()));
     },
   };
+}
+
+/**
+ * The path an upgrade request asked for, or undefined when its target is not a URL.
+ * Node accepts absolute-form targets such as `http://[`, and `new URL` throws on those;
+ * inside the 'upgrade' listener that throw would crash the server that owns the state.
+ */
+function readUpgradeRequestPath(requestTarget: string | undefined): string | undefined {
+  try {
+    return new URL(requestTarget ?? '/', 'http://localhost').pathname;
+  } catch {
+    return undefined;
+  }
 }

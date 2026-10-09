@@ -1,5 +1,7 @@
 // Test support: a real WebSocket client for the server's /ws endpoint. Tests wait for
 // messages and closes by awaiting events, never by sleeping.
+import { createConnection } from 'node:net';
+
 import { type ServerMessage, ServerMessageSchema } from '@bajaovrlay/shared';
 import { onTestFinished } from 'vitest';
 import { WebSocket } from 'ws';
@@ -21,6 +23,8 @@ export type WebSocketTestClient = {
   sendJson: (value: unknown) => void;
   /** Sends raw text, for messages that are not JSON at all. */
   sendText: (text: string) => void;
+  /** Sends bytes as a binary frame, which the protocol does not use. */
+  sendBinary: (bytes: Uint8Array) => void;
   /** Resolves when the server has closed (or dropped) this client's socket. */
   waitUntilClosed: () => Promise<void>;
   /** Whether the socket is still open. */
@@ -91,6 +95,7 @@ export async function connectWebSocketTestClient(
     readReceivedMessages: () => [...receivedMessages],
     sendJson: (value) => socket.send(JSON.stringify(value)),
     sendText: (text) => socket.send(text),
+    sendBinary: (bytes) => socket.send(bytes, { binary: true }),
     waitUntilClosed: () => closed,
     isOpen: () => socket.readyState === WebSocket.OPEN,
   };
@@ -106,5 +111,36 @@ export function tryWebSocketOnPath(port: number, path: string): Promise<'refused
   return new Promise((resolve) => {
     socket.once('open', () => resolve('opened'));
     socket.once('error', () => resolve('refused'));
+  });
+}
+
+/**
+ * Sends a WebSocket upgrade request over a bare TCP socket, with any request target, and
+ * resolves with whatever the server answered once it closes the connection. This is
+ * how a test sends a target no WebSocket library would build, such as `http://[`.
+ */
+export function sendRawUpgradeRequest(port: number, requestTarget: string): Promise<string> {
+  const socket = createConnection({ host: '127.0.0.1', port });
+  onTestFinished(() => socket.destroy());
+  const upgradeRequest = [
+    `GET ${requestTarget} HTTP/1.1`,
+    `Host: 127.0.0.1:${port}`,
+    'Upgrade: websocket',
+    'Connection: Upgrade',
+    'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==',
+    'Sec-WebSocket-Version: 13',
+    '',
+    '',
+  ].join('\r\n');
+
+  return new Promise((resolve) => {
+    let answer = '';
+    socket.on('data', (chunk) => {
+      answer += chunk.toString('utf8');
+    });
+    // A reset is also an answer: the test only cares that the server lives on.
+    socket.on('error', () => resolve(answer));
+    socket.on('close', () => resolve(answer));
+    socket.write(upgradeRequest);
   });
 }

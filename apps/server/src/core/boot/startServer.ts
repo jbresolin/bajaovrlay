@@ -24,7 +24,7 @@ export type StartServerOptions = {
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /** Defaults to 15 s; tests use a few milliseconds. */
-  heartbeatIntervalMs?: number | undefined;
+  heartbeatIntervalInMilliseconds?: number | undefined;
 };
 
 /** A booted server: the port it listens on, its store, and how to stop it. */
@@ -82,7 +82,7 @@ async function startServingFromDatabase(
     stateStore,
     logger: options.logger,
     heartbeatIntervalInMilliseconds:
-      options.heartbeatIntervalMs ?? defaultHeartbeatIntervalInMilliseconds,
+      options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
   });
 
   async function closeEverything(): Promise<void> {
