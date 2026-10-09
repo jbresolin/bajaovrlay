@@ -14,6 +14,8 @@
  *     it (the DOM is never rebuilt).
  *   - The clock text keeps its width when the digits change (tabular numerals), so it
  *     does not jitter on air.
+ *   - A theme set on the page's :root (as the renderer's theme will be) reaches inside
+ *     the graphic, and the built-in colours apply until it does.
  *
  * What these tests deliberately do not cover:
  *   - Pixel-exact looks; raceClockScreenshots.e2e.ts compares screenshots.
@@ -170,5 +172,40 @@ test.describe('the race clock in the preview page', () => {
       clockWidths.withZeros,
       1,
     );
+  });
+
+  test('takes its colours from a theme set on the page root', async ({ page }) => {
+    // Arrange: the preview on air under green flag, with no theme set yet.
+    await openPreviewOnAir(page, createGreenFlagEnduroData(false));
+    const readFlagAndBrandColours = () =>
+      page.evaluate(() => {
+        const shadowRoot = document.querySelector('baja-race-clock')?.shadowRoot;
+        const flagLayer = shadowRoot?.querySelector(
+          '[data-testid="race-clock-current-flag-layer"]',
+        );
+        const sessionRow = shadowRoot?.querySelector('.session-row');
+        return {
+          flagBackground: flagLayer ? getComputedStyle(flagLayer).backgroundColor : 'no flag',
+          brandStripe: sessionRow ? getComputedStyle(sessionRow).borderLeftColor : 'no row',
+        };
+      });
+    const coloursBeforeTheme = await readFlagAndBrandColours();
+
+    // Act: the renderer's theme sets a blue brand and a darker green flag on :root.
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--baja-brand', '#0057b8');
+      document.documentElement.style.setProperty('--baja-flag-green-background', '#006b2d');
+    });
+    const coloursAfterTheme = await readFlagAndBrandColours();
+
+    // Assert: the defaults showed first, then the theme's colours replaced them.
+    expect(coloursBeforeTheme, 'with no theme the built-in colours must show').toEqual({
+      flagBackground: 'rgb(21, 163, 74)',
+      brandStripe: 'rgb(242, 107, 29)',
+    });
+    expect(coloursAfterTheme, 'a theme on :root must reach inside the graphic').toEqual({
+      flagBackground: 'rgb(0, 107, 45)',
+      brandStripe: 'rgb(0, 87, 184)',
+    });
   });
 });
