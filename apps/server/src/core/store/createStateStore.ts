@@ -74,8 +74,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
           ts: now,
           actor,
           command: readCommandNameAsSent(commandInput),
-          // undefined has no JSON form; null keeps the "nothing was sent" meaning.
-          payload: commandInput ?? null,
+          payload: describePayloadAsReceived(commandInput),
           result: { status: 'failed', error },
         },
       });
@@ -186,6 +185,18 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       return () => listeners.delete(listener);
     },
   };
+}
+
+/**
+ * What the event log stores as the payload of an invalid command: what was sent, or a
+ * marker when nothing was. event_log.payload is NOT NULL and Drizzle writes a JS null as
+ * SQL NULL, so storing null or undefined would make the save throw and lose the row.
+ */
+function describePayloadAsReceived(commandInput: unknown): unknown {
+  if (commandInput === null || commandInput === undefined) {
+    return { commandWasMissing: true };
+  }
+  return commandInput;
 }
 
 /** The `type` of whatever was sent, for the event log; `unknown` when it had none. */

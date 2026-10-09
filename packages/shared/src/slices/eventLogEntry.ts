@@ -21,7 +21,10 @@ export const EventLogEntrySchema = z.object({
   actor: z.string().min(1),
   /** The command's `type`, or `unknown` when what was sent had none. */
   command: z.string().min(1),
-  /** The command as validated, or exactly as received when it was invalid. */
+  /**
+   * The command as validated, or exactly as received when it was invalid; when nothing
+   * was sent at all, `{ "commandWasMissing": true }`.
+   */
   payload: z.unknown(),
   result: EventLogResultSchema,
 });

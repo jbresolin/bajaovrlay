@@ -11,6 +11,8 @@
  * What these tests prove:
  *   - An invalid command is refused with the field named in a pt-BR message, written to
  *     the event log as failed, and leaves the slices alone.
+ *   - A null or absent command is refused the same way and still reaches the event
+ *     log, in memory and on disk.
  *   - A successful command is in the event log with its actor and timestamp, in memory
  *     and in the database.
  *   - A command refused by its reducer or by the authorisation hook is written to the
@@ -114,6 +116,52 @@ describe('applyCommand with an invalid command', () => {
       instancesBefore,
     );
   });
+});
+
+const missingCommandScenarios = [
+  // A WS message `{"type":"command","command":null}` passes the envelope check, so the
+  // store must cope with null itself.
+  { name: 'a null command', commandInput: null },
+  // A WS message with no `command` field at all, or a direct caller passing nothing.
+  { name: 'no command at all', commandInput: undefined },
+];
+
+describe('applyCommand when no command was sent', () => {
+  it.each(missingCommandScenarios)(
+    'refuses $name and still writes it to the event log as failed',
+    ({ commandInput }) => {
+      // Arrange: a store with nothing in its event log yet.
+      const { store, database } = createStoreWithRaceClockRegistered();
+
+      // Act: apply the missing command as the operator.
+      const outcome = store.applyCommand(commandInput, operatorActor);
+
+      // Assert: an INVALID_COMMAND refusal, and a failed row in memory and on disk.
+      const expectedError = {
+        code: 'INVALID_COMMAND',
+        message: 'Comando inválido: envie um objeto com o campo "type".',
+      };
+      expect(outcome, 'a missing command must be refused as invalid').toEqual({
+        ok: false,
+        error: expectedError,
+      });
+      const expectedEntry = {
+        id: 1,
+        ts: '2026-10-09T14:32:05.000Z',
+        actor: 'operador:conexao-7',
+        command: 'unknown',
+        payload: { commandWasMissing: true },
+        result: { status: 'failed', error: expectedError },
+      };
+      expect(store.readAllSlices().eventLog, 'the slice must hold the failed entry').toEqual([
+        expectedEntry,
+      ]);
+      expect(
+        readNewestEventLogRows(database, 10),
+        'the database must hold the failed entry too, not lose it to a NOT NULL error',
+      ).toEqual([expectedEntry]);
+    },
+  );
 });
 
 describe('applyCommand with a valid command', () => {
