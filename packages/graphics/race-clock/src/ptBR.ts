@@ -26,6 +26,7 @@ export const ptBR = {
 
   actionProblems: {
     notLoadedYet: 'O relógio ainda não foi carregado (load).',
+    alreadyLoaded: 'O relógio já foi carregado (load); crie outro para novos dados.',
     notOnAirYet: 'O relógio não está no ar: chame playAction antes de atualizar.',
     alreadyDisposed: 'O relógio já foi descartado (dispose).',
     invalidPlayStep: 'Passo inválido para playAction: o relógio tem só o passo 0.',

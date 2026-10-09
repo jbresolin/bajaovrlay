@@ -53,7 +53,7 @@ import {
 /** Must match "stepCount" in race-clock.ograf.json: play shows the clock, stop hides it. */
 const raceClockStepCount = 1;
 
-type Lifecycle = 'unloaded' | 'offAir' | 'onAir' | 'disposed';
+type Lifecycle = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
 
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 
@@ -72,7 +72,8 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   private parts: RaceClockParts | undefined = undefined;
   private readonly runningTimelines = new Set<RaceClockTimeline>();
   private runningPanelTimeline: RaceClockTimeline | undefined = undefined;
-  private runningFlagWipe: { timeline: RaceClockTimeline; flagState: FlagState } | undefined = undefined;
+  private runningFlagWipe: { timeline: RaceClockTimeline; flagState: FlagState } | undefined =
+    undefined;
   private readonly clockTicker: ClockTicker = createClockTicker({
     onFrame: () => this.redrawClockTime(),
     requestFrame: (callback) => requestAnimationFrame(callback),
@@ -83,20 +84,34 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     return renderRaceClockTemplate();
   }
 
-  /** OGraf load: checks the data, waits for the first render and the font, draws off air. */
+  /**
+   * OGraf load: checks the data, waits for the first render and the font, draws off air.
+   * A graphic is loaded once; a second load answers 409 rather than half resetting one
+   * that may be on air. Bad data leaves it unloaded, so load can be tried again.
+   */
   async load(params: OGrafLoadParams): Promise<OGrafReturnPayload> {
     if (this.lifecycle === 'disposed') {
       return refuse(409, ptBR.actionProblems.alreadyDisposed);
+    }
+    if (this.lifecycle !== 'unloaded') {
+      return refuse(409, ptBR.actionProblems.alreadyLoaded);
     }
     const dataCheck = parseCompleteRaceClockData(params.data);
     if (!dataCheck.isValid) {
       return refuse(400, dataCheck.problem);
     }
+    this.lifecycle = 'loading';
 
     // What could go wrong: a renderer calling load on an element not yet in the page
     // waits here until it is added, because Lit renders only connected elements.
     await this.updateComplete;
     await loadDisplayFontOnce();
+
+    // A dispose that came while load was waiting must win; going on would bring a
+    // disposed graphic back to life.
+    if (this.readLifecycleNow() === 'disposed') {
+      return refuse(409, ptBR.actionProblems.alreadyDisposed);
+    }
 
     const parts = findRaceClockParts(this.renderRoot);
     this.parts = parts;
@@ -141,6 +156,11 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
 
     if (this.readLifecycleNow() === 'disposed') {
       return refuse(409, ptBR.actionProblems.alreadyDisposed);
+    }
+    // A stop during the play-in took the clock off again: report the step actually on
+    // air (none), so a renderer tracking steps from this answer stays in step.
+    if (this.readLifecycleNow() !== 'onAir') {
+      return { statusCode: 200, currentStep: this.currentStep };
     }
     return { statusCode: 200, currentStep: target.step };
   }
@@ -224,7 +244,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   }
 
   private refuseUnlessLoaded(): OGrafReturnPayload | undefined {
-    if (this.lifecycle === 'unloaded') {
+    if (this.lifecycle === 'unloaded' || this.lifecycle === 'loading') {
       return refuse(409, ptBR.actionProblems.notLoadedYet);
     }
     if (this.lifecycle === 'disposed') {
@@ -280,7 +300,10 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   }
 
   /** Runs an in or out animation; one still running is finished at once first. */
-  private async runPanelTimeline(timeline: RaceClockTimeline, skipAnimation: boolean): Promise<void> {
+  private async runPanelTimeline(
+    timeline: RaceClockTimeline,
+    skipAnimation: boolean,
+  ): Promise<void> {
     if (this.runningPanelTimeline !== undefined) {
       finishTimelineAtOnce(this.runningPanelTimeline);
     }
