@@ -23,7 +23,8 @@ export type RaceClockAnimatedElements = {
   incomingFlagLayer: HTMLElement;
 };
 
-type Timeline = ReturnType<typeof gsap.timeline>;
+/** A paused GSAP timeline built by this module, played with `playTimelineToTheEnd`. */
+export type RaceClockTimeline = ReturnType<typeof gsap.timeline>;
 
 const panelSlideDistancePx = -48;
 
@@ -33,7 +34,7 @@ const flagLayerHiddenClip = 'inset(0% 100% 0% 0%)';
 const flagLayerRevealedClip = 'inset(0% 0% 0% 0%)';
 
 /** Builds the paused play-in timeline: panel slides in and fades up, then the band opens. */
-export function buildPlayInTimeline(elements: RaceClockAnimatedElements): Timeline {
+export function buildPlayInTimeline(elements: RaceClockAnimatedElements): RaceClockTimeline {
   const timeline = gsap.timeline({ paused: true });
   timeline.fromTo(
     elements.panel,
@@ -49,7 +50,7 @@ export function buildPlayInTimeline(elements: RaceClockAnimatedElements): Timeli
 }
 
 /** Builds the paused stop-out timeline: the panel slides back out and fades away. */
-export function buildStopOutTimeline(elements: RaceClockAnimatedElements): Timeline {
+export function buildStopOutTimeline(elements: RaceClockAnimatedElements): RaceClockTimeline {
   const timeline = gsap.timeline({ paused: true });
   timeline.to(elements.panel, {
     opacity: 0,
@@ -61,7 +62,7 @@ export function buildStopOutTimeline(elements: RaceClockAnimatedElements): Timel
 }
 
 /** Builds the paused flag-change timeline: the incoming flag layer wipes in from the left. */
-export function buildFlagChangeTimeline(elements: RaceClockAnimatedElements): Timeline {
+export function buildFlagChangeTimeline(elements: RaceClockAnimatedElements): RaceClockTimeline {
   const timeline = gsap.timeline({ paused: true });
   timeline.fromTo(
     elements.incomingFlagLayer,
@@ -91,7 +92,7 @@ export function placePanelOffAir(elements: RaceClockAnimatedElements): void {
  * `finishTimelineAtOnce` also resolves the promise, so nobody is left waiting.
  */
 export function playTimelineToTheEnd(
-  timeline: Timeline,
+  timeline: RaceClockTimeline,
   options: { skipAnimation: boolean },
 ): Promise<void> {
   return new Promise((resolve) => {
@@ -108,7 +109,7 @@ export function playTimelineToTheEnd(
  * Jumps a timeline to its end (firing its onComplete, so a pending
  * `playTimelineToTheEnd` resolves) and removes it from GSAP for good.
  */
-export function finishTimelineAtOnce(timeline: Timeline): void {
+export function finishTimelineAtOnce(timeline: RaceClockTimeline): void {
   timeline.progress(1);
   timeline.kill();
 }

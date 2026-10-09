@@ -31,6 +31,7 @@ import {
   finishTimelineAtOnce,
   placePanelOffAir,
   playTimelineToTheEnd,
+  type RaceClockTimeline,
 } from './raceClockAnimations.js';
 import {
   type FlagState,
@@ -53,7 +54,6 @@ import {
 const raceClockStepCount = 1;
 
 type Lifecycle = 'unloaded' | 'offAir' | 'onAir' | 'disposed';
-type Timeline = Parameters<typeof finishTimelineAtOnce>[0];
 
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 
@@ -70,9 +70,9 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   private currentStep: number | undefined = undefined;
   private data: RaceClockData | undefined = undefined;
   private parts: RaceClockParts | undefined = undefined;
-  private readonly runningTimelines = new Set<Timeline>();
-  private runningPanelTimeline: Timeline | undefined = undefined;
-  private runningFlagWipe: { timeline: Timeline; flagState: FlagState } | undefined = undefined;
+  private readonly runningTimelines = new Set<RaceClockTimeline>();
+  private runningPanelTimeline: RaceClockTimeline | undefined = undefined;
+  private runningFlagWipe: { timeline: RaceClockTimeline; flagState: FlagState } | undefined = undefined;
   private readonly clockTicker: ClockTicker = createClockTicker({
     onFrame: () => this.redrawClockTime(),
     requestFrame: (callback) => requestAnimationFrame(callback),
@@ -280,7 +280,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   }
 
   /** Runs an in or out animation; one still running is finished at once first. */
-  private async runPanelTimeline(timeline: Timeline, skipAnimation: boolean): Promise<void> {
+  private async runPanelTimeline(timeline: RaceClockTimeline, skipAnimation: boolean): Promise<void> {
     if (this.runningPanelTimeline !== undefined) {
       finishTimelineAtOnce(this.runningPanelTimeline);
     }
@@ -292,7 +292,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   }
 
   /** Plays a timeline to its end, keeping track of it so dispose can end it early. */
-  private async runTimeline(timeline: Timeline, skipAnimation: boolean): Promise<void> {
+  private async runTimeline(timeline: RaceClockTimeline, skipAnimation: boolean): Promise<void> {
     this.runningTimelines.add(timeline);
     await playTimelineToTheEnd(timeline, { skipAnimation });
     this.runningTimelines.delete(timeline);
