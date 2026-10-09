@@ -109,14 +109,11 @@ test.describe('the race clock driven like a renderer', () => {
   test('answers a 4xx status, not an error, to updateAction before playAction', async ({
     page,
   }) => {
-    // Arrange: the built graphic, loaded from its manifest and given its data.
+    // Arrange: the built graphic, loaded from its manifest and given its data, but
+    // never played.
     await loadGraphicFromItsManifestLikeARenderer(page);
-
-    // Act: load it, then send an update before it was ever played.
-    const updateAnswer = await page.evaluate(async () => {
-      type ActionAnswer = { statusCode: number; statusMessage?: string };
-      type OGrafAction = (params: object) => Promise<ActionAnswer>;
-      type OGrafGraphic = HTMLElement & { load: OGrafAction; updateAction: OGrafAction };
+    await page.evaluate(async () => {
+      type OGrafGraphic = HTMLElement & { load: (params: object) => Promise<unknown> };
       const graphic = document.querySelector('baja-race-clock') as OGrafGraphic;
       await graphic.load({
         data: {
@@ -130,6 +127,13 @@ test.describe('the race clock driven like a renderer', () => {
         renderType: 'realtime',
         renderCharacteristics: {},
       });
+    });
+
+    // Act: send an update before the graphic was ever played.
+    const updateAnswer = await page.evaluate(async () => {
+      type ActionAnswer = { statusCode: number; statusMessage?: string };
+      type OGrafGraphic = HTMLElement & { updateAction: (params: object) => Promise<ActionAnswer> };
+      const graphic = document.querySelector('baja-race-clock') as OGrafGraphic;
       return graphic.updateAction({ data: { state: 'yellow' } });
     });
 
