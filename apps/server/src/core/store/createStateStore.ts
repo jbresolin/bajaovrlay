@@ -48,10 +48,7 @@ const sliceNamesChangedByCommands = ['layers', 'graphics', 'instances'] as const
 
 /**
  * Creates the store, loading its slices from the database (or seeding an empty one).
- * applyCommand is the single code path for every change, always in this order:
- * validate → authorise → apply the pure reducer → save the changed slices and the
- * event-log row (one transaction) → update memory → tell listeners what changed.
- * A command that fails any step is still written to the event log, as failed.
+ * Its applyCommand is the single code path for every change; see the steps inside.
  */
 export function createStateStore(options: StateStoreOptions): StateStore {
   const isCommandAllowed = options.isCommandAllowed ?? allowEveryCommand;
@@ -60,6 +57,9 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const listeners = new Set<SliceChangeListener>();
   let currentSlices = loadInitialSlices(options);
 
+  // Always in this order: validate → authorise → apply the pure reducer → save the
+  // changed slices and the event-log row (one transaction) → update memory → tell
+  // listeners what changed. A command that fails any step is still logged, as failed.
   function applyCommand(commandInput: unknown, actor: string): CommandOutcome {
     const now = readCurrentTime().toISOString();
 

@@ -3,7 +3,8 @@
 The server's building blocks, one folder per concept. Feature modules build on these.
 
 - `http/` — `createServerApp` (start here), the `/health` route, request ids and
-  request logging, JSON error answers, serving the built pages.
+  request logging, JSON error answers, serving the built pages, and built graphic
+  packages at `/graphics/<package>/` (`graphicPackages.ts`, which refuses traversal).
 - `logger/` — the structured JSON logger (pino). Never use `console` on the server.
 - `env/` — reads and validates environment variables; a bad value stops the boot.
 - `messages/` — the pt-BR catalog for every message a person reads.

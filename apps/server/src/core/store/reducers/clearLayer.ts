@@ -6,9 +6,6 @@ import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js'
 /**
  * clearLayer: removes every instance on the layer, on both outputs. Clearing an empty
  * layer is fine; clearing a layer that does not exist is refused.
- *
- * Instances are removed at once rather than marked `stopping`: nothing in M0 would ever
- * move them on from `stopping`, because the renderer does not acknowledge yet.
  */
 export function reduceClearLayer(
   slices: SlicesChangedByCommands,
@@ -19,6 +16,8 @@ export function reduceClearLayer(
     return { status: 'refused', error: refuseUnknownLayer(command.layerId) };
   }
 
+  // Instances are removed at once rather than marked `stopping`: nothing in M0 would
+  // ever move them on from `stopping`, because the renderer does not acknowledge yet.
   const instancesOnOtherLayers = slices.instances.filter(
     (instance) => instance.layerId !== command.layerId,
   );

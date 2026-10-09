@@ -10,10 +10,9 @@ import { buildErrorCommandResult, buildOkCommandResult } from './serverMessageBu
 const MessageWithRequestIdSchema = z.object({ requestId: z.string().min(1).max(200) });
 
 /**
- * Handles one message a client sent and returns the `commandResult` to send back. A
- * message that is not JSON or not in the protocol gets an INVALID_MESSAGE error and a
- * warning in the log; it never throws, so a bad message can never close the socket.
- * `messageText` is undefined for a binary frame, which the protocol does not use.
+ * Handles one client message and returns the `commandResult` to send back; anything
+ * outside the protocol gets INVALID_MESSAGE and a warning. Never throws, so a bad
+ * message can never close the socket.
  */
 export function answerClientMessage(options: {
   messageText: string | undefined;
@@ -22,6 +21,7 @@ export function answerClientMessage(options: {
   logger: ServerLogger;
 }): CommandResultMessage {
   const { messageText, stateStore, actor, logger } = options;
+  // `messageText` is undefined for a binary frame, which the protocol does not use.
   if (messageText === undefined) {
     logger.warn('websocket message refused: binary frame');
     return buildErrorCommandResult(null, describeInvalidMessage());

@@ -20,10 +20,9 @@ export type LoadInitialSlicesOptions = {
 };
 
 /**
- * Returns the slices the store starts with. A database with slice rows is loaded as it
- * is (instances included, so a restart restores what was on air). An empty one (the
- * first boot) is seeded with the fixed layers and the race clock, and the seed is saved.
- * The event-log slice is always the newest entries of the event_log table.
+ * Returns the slices the store starts with: loaded from the database (instances too, so
+ * a restart restores what was on air), or seeded and saved when it is empty. The
+ * event-log slice is always the newest entries of the event_log table.
  */
 export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const storedRows = readAllSliceRows(options.database);

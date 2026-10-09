@@ -25,8 +25,7 @@ export type ServerLogLevel = (typeof serverLogLevels)[number];
 
 /**
  * Creates the structured JSON logger: one JSON object per line on stdout, with an ISO
- * timestamp and the level as a word (`"level":"info"`) so logs read well without tools.
- * The text goes under `message`, the same key the renderer's log lines use.
+ * timestamp, the level as a word and the text under `message` (as the renderer logs).
  * `destination` replaces stdout; only tests use it, to read the lines back.
  */
 export function createLogger(options: {
