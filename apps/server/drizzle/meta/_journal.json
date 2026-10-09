@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1791516600619,
+      "tag": "0000_create_slices_and_event_log",
+      "breakpoints": true
+    }
+  ]
+}
