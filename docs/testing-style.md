@@ -97,8 +97,8 @@ repository.
  * What these tests deliberately do not cover:
  *   - The real network socket: the app is called in memory through `app.request()`,
  *     which runs the same routes and middleware without opening a port.
- *   - Serving the built control page and renderer. That only happens when their
- *     `dist` folders exist, and is checked by hand with `pnpm build` then `pnpm start`.
+ *   - Serving the built control page and renderer, which builtPageFolders.test.ts
+ *     covers; here the app runs with no `dist` folders at all.
  */
 import { HealthResponseSchema } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
