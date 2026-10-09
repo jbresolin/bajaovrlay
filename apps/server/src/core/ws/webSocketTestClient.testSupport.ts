@@ -121,7 +121,9 @@ export function tryWebSocketOnPath(port: number, path: string): Promise<'refused
  */
 export function sendRawUpgradeRequest(port: number, requestTarget: string): Promise<string> {
   const socket = createConnection({ host: '127.0.0.1', port });
-  onTestFinished(() => socket.destroy());
+  onTestFinished(() => {
+    socket.destroy();
+  });
   const upgradeRequest = [
     `GET ${requestTarget} HTTP/1.1`,
     `Host: 127.0.0.1:${port}`,
