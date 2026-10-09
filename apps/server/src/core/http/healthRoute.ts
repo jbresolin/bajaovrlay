@@ -10,9 +10,9 @@ import type { ServerAppEnvironment } from './httpContextVariables.js';
 export function createHealthRoute(version: string): Hono<ServerAppEnvironment> {
   const healthRoute = new Hono<ServerAppEnvironment>();
 
-  healthRoute.get('/health', (c) => {
+  healthRoute.get('/health', (context) => {
     const healthResponse: HealthResponse = HealthResponseSchema.parse({ ok: true, version });
-    return c.json(healthResponse);
+    return context.json(healthResponse);
   });
 
   return healthRoute;

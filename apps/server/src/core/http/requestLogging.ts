@@ -8,16 +8,21 @@ import type { ServerAppEnvironment } from './httpContextVariables.js';
  * one "request handled" line when the answer is ready. Must run after Hono's requestId.
  */
 export function logEachRequest(logger: ServerLogger): MiddlewareHandler<ServerAppEnvironment> {
-  return async (c, next) => {
-    const startedAtMs = performance.now();
-    const requestLogger = logger.child({ request_id: c.get('requestId') });
-    c.set('requestLogger', requestLogger);
+  return async (context, next) => {
+    const startedAtMilliseconds = performance.now();
+    const requestLogger = logger.child({ request_id: context.get('requestId') });
+    context.set('requestLogger', requestLogger);
 
     await next();
 
-    const durationMs = Math.round(performance.now() - startedAtMs);
+    const durationInMilliseconds = Math.round(performance.now() - startedAtMilliseconds);
     requestLogger.info(
-      { method: c.req.method, path: c.req.path, status: c.res.status, duration_ms: durationMs },
+      {
+        method: context.req.method,
+        path: context.req.path,
+        status: context.res.status,
+        duration_ms: durationInMilliseconds,
+      },
       'request handled',
     );
   };

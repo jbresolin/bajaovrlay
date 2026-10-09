@@ -24,7 +24,7 @@ export function findBuiltPageFolder(folderUrl: URL): string | undefined {
  * slash redirects, because the page's relative asset paths only work under `/render/`.
  */
 export function serveRendererPage(app: Hono<ServerAppEnvironment>, rendererFolder: string): void {
-  app.get('/render', (c) => c.redirect('/render/', 301));
+  app.get('/render', (context) => context.redirect('/render/', 301));
   app.use(
     '/render/*',
     serveStatic({
