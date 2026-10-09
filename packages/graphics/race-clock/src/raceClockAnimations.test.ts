@@ -11,11 +11,14 @@
  *     (checked against these numbers in raceClockManifest.test.ts) tells the truth.
  *   - With skipAnimation, a timeline jumps straight to its end and the promise
  *     resolves at once, as the OGraf spec asks.
+ *   - A timeline that reached its end, by skipAnimation or by playing, is killed, so
+ *     GSAP holds no finished timelines during a whole day on air inside OBS.
  *
  * What these tests deliberately do not cover:
  *   - What the animations look like; the Playwright screenshots show the end states,
  *     and e2e/raceClockOnAir.e2e.ts checks the flag wipe is gradual in a real browser.
  */
+import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -89,5 +92,36 @@ describe('playTimelineToTheEnd', () => {
 
     // Assert: the timeline is already at its end.
     expect(timeline.progress(), 'skipAnimation must jump straight to the end').toBe(1);
+  });
+
+  it('kills a timeline it jumped to the end with skipAnimation, so GSAP keeps nothing', async () => {
+    // Arrange: a play-in timeline on the panel.
+    const animatedElements = createAnimatedElementsInAnEmptyPage();
+    const timeline = buildPlayInTimeline(animatedElements);
+
+    // Act: play it with skipAnimation.
+    await playTimelineToTheEnd(timeline, { skipAnimation: true });
+
+    // Assert: no tween on the panel is left behind in GSAP.
+    expect(
+      gsap.getTweensOf(animatedElements.panel),
+      'a finished timeline must be killed, or a day on air in OBS piles them up',
+    ).toEqual([]);
+  });
+
+  it('kills a timeline it played to the end in real time, so GSAP keeps nothing', async () => {
+    // Arrange: a stop-out timeline on the panel (400 ms of real animation).
+    const animatedElements = createAnimatedElementsInAnEmptyPage();
+    const timeline = buildStopOutTimeline(animatedElements);
+
+    // Act: play it through and wait until it has finished.
+    await playTimelineToTheEnd(timeline, { skipAnimation: false });
+
+    // Assert: the panel ended invisible and no tween on it is left behind in GSAP.
+    expect(animatedElements.panel.style.opacity, 'the out animation must have ended').toBe('0');
+    expect(
+      gsap.getTweensOf(animatedElements.panel),
+      'a finished timeline must be killed, or a day on air in OBS piles them up',
+    ).toEqual([]);
   });
 });

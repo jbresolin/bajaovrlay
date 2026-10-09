@@ -87,8 +87,8 @@ export function placePanelOffAir(elements: RaceClockAnimatedElements): void {
 }
 
 /**
- * Plays a paused timeline and resolves when it reaches its end. With skipAnimation it
- * jumps straight to the end, as OGraf asks. Ending it early with
+ * Plays a paused timeline, kills it once it reaches its end, then resolves. With
+ * skipAnimation it jumps straight to the end, as OGraf asks. Ending it early with
  * `finishTimelineAtOnce` also resolves the promise, so nobody is left waiting.
  */
 export function playTimelineToTheEnd(
@@ -96,7 +96,13 @@ export function playTimelineToTheEnd(
   options: { skipAnimation: boolean },
 ): Promise<void> {
   return new Promise((resolve) => {
-    timeline.eventCallback('onComplete', () => resolve());
+    timeline.eventCallback('onComplete', () => {
+      // GSAP drops a timeline that played to its end on its own, but one jumped there
+      // with progress(1) stays registered. The page runs all day in OBS, so kill every
+      // finished timeline explicitly; kill keeps the end state on screen.
+      timeline.kill();
+      resolve();
+    });
     if (options.skipAnimation) {
       timeline.progress(1);
     } else {
