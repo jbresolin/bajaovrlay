@@ -7,6 +7,8 @@ const ServerEnvironmentSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   HOST: z.string().min(1).default('127.0.0.1'),
   LOG_LEVEL: z.enum(serverLogLevels).default('info'),
+  // Relative paths are read from the repository root (see resolveDatabasePath.ts).
+  DATABASE_PATH: z.string().min(1).default('apps/server/data/bajaovrlay.sqlite'),
 });
 
 /** The server's settings after validation, with defaults filled in. */
