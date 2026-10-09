@@ -13,7 +13,10 @@ export type CommandOutcomeToSave = {
  * returns the new row's id. If any write fails, none is kept, so the saved slices and
  * the event log can never disagree, even after a crash half way through.
  */
-export function saveCommandOutcome(database: ServerDatabase, outcome: CommandOutcomeToSave): number {
+export function saveCommandOutcome(
+  database: ServerDatabase,
+  outcome: CommandOutcomeToSave,
+): number {
   const saveBothTogether = database.$client.transaction(() => {
     writeSliceRows(database, outcome.changedSliceRows);
     const insertedRow = database

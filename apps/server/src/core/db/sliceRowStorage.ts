@@ -5,7 +5,11 @@ import { type SliceRow, sliceRows } from './tables.js';
 
 /** Reads every row of the slices table, in the order they were first written. */
 export function readAllSliceRows(database: ServerDatabase): SliceRow[] {
-  return database.select().from(sliceRows).orderBy(sql`rowid`).all();
+  return database
+    .select()
+    .from(sliceRows)
+    .orderBy(sql`rowid`)
+    .all();
 }
 
 /**
