@@ -1,9 +1,12 @@
 import { Hono } from 'hono';
 import { requestId } from 'hono/request-id';
 
+import { createApiV1Routes } from '../../api/v1/createApiV1Routes.js';
 import type { ServerLogger } from '../logger/createLogger.js';
+import type { StateStore } from '../store/createStateStore.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
 import { answerRouteNotFound, answerUnexpectedError } from './errorAnswers.js';
+import { serveGraphicPackages } from './graphicPackages.js';
 import { createHealthRoute } from './healthRoute.js';
 import type { ServerAppEnvironment } from './httpContextVariables.js';
 import { logEachRequest } from './requestLogging.js';
@@ -17,6 +20,10 @@ export type ServerAppOptions = {
   controlPageFolder?: string | undefined;
   /** Absolute path of apps/renderer/dist; leave out when the renderer is not built. */
   rendererPageFolder?: string | undefined;
+  /** The store behind /api/v1; leave out in tests that do not touch state. */
+  stateStore?: StateStore | undefined;
+  /** Absolute path of packages/graphics, served at /graphics/<package>/ from each dist. */
+  graphicPackagesFolder?: string | undefined;
 };
 
 /**
@@ -32,6 +39,16 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
   app.use(logEachRequest(options.logger));
 
   app.route('/', createHealthRoute(options.version));
+
+  if (options.stateStore !== undefined) {
+    app.route(
+      '/api/v1',
+      createApiV1Routes({ stateStore: options.stateStore, version: options.version }),
+    );
+  }
+  if (options.graphicPackagesFolder !== undefined) {
+    serveGraphicPackages(app, options.graphicPackagesFolder);
+  }
 
   if (options.rendererPageFolder !== undefined) {
     serveRendererPage(app, options.rendererPageFolder);
