@@ -153,9 +153,10 @@ describe('mergePartialUpdateIntoRaceClockData', () => {
   });
 
   it('refuses a bad update and leaves the current data untouched', () => {
-    // Arrange: an update whose flag state is misspelled.
+    // Arrange: an update with two good fields (clock held at 1:10:10) and a misspelled
+    // flag state, so a merge that applied fields one by one would leave a half-update.
     const currentData = createGreenFlagEnduroData();
-    const misspelledUpdate = { state: 'amarela' };
+    const misspelledUpdate = { running: false, referenceTimeMs: 4_210_000, state: 'amarela' };
 
     // Act: try to merge it.
     const result = mergePartialUpdateIntoRaceClockData(currentData, misspelledUpdate);
@@ -165,7 +166,7 @@ describe('mergePartialUpdateIntoRaceClockData', () => {
       isValid: false,
       problem: 'Valor inválido no campo "state".',
     });
-    expect(currentData, 'a refused update must not change the current data').toEqual(
+    expect(currentData, 'a refused update must not apply even its good fields').toEqual(
       createGreenFlagEnduroData(),
     );
   });
