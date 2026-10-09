@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>BajaOvrLay renderer</title>
+    <style>
+      /*
+       * Everything outside the graphics must be transparent so OBS shows the video
+       * underneath. The stage is fixed at the 1920x1080 stream canvas size; set the
+       * OBS browser source to 1920x1080 too, or the graphics will be cropped or scaled.
+       */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        overflow: hidden;
+      }
+
+      #stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        background: transparent;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage" data-testid="renderer-stage"></div>
+    <script type="module" src="/src/renderer.ts"></script>
+  </body>
+</html>

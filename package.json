@@ -1,0 +1,33 @@
+{
+  "name": "bajaovrlay",
+  "private": true,
+  "description": "Stream graphics for Baja SAE Brasil live streams.",
+  "type": "module",
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --recursive --parallel --if-present run dev",
+    "build": "pnpm --recursive --if-present run build",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "tsc --project tsconfig.json && pnpm --recursive --if-present run typecheck",
+    "test": "vitest run",
+    "test:e2e": "pnpm --recursive --if-present run test:e2e",
+    "start": "pnpm --filter @bajaovrlay/server run start"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "catalog:",
+    "@types/node": "^22.20.5",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

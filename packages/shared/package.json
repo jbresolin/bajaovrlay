@@ -1,0 +1,22 @@
+{
+  "name": "@bajaovrlay/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Zod schemas and types shared by the server, the control page and the renderer.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@bajaovrlay/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

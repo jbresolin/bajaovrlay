@@ -1,0 +1,74 @@
+# Merge gate: a pull request cannot merge unless every step below passes.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch or PR makes the older run pointless; cancel it.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, typecheck, test, build, Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      # Reads the pnpm version from "packageManager" in package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node from .nvmrc
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies exactly as locked
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (ESLint and Prettier)
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit and component tests (Vitest)
+        run: pnpm test
+
+      - name: Build every package
+        run: pnpm build
+
+      # From the root: every package takes @playwright/test from the pnpm catalog, so this
+      # one browser matches every package's Playwright version.
+      - name: Install the Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Runs every package's `test:e2e` script, so a new package with Playwright tests
+      # joins this step without any change to this file.
+      - name: Browser tests (Playwright)
+        run: pnpm test:e2e
+
+      # Screenshots, traces and the HTML report from a failed run, for debugging and for
+      # taking screenshot baselines rendered on CI's Linux.
+      - name: Upload Playwright results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results
+          path: |
+            apps/**/test-results/
+            apps/**/playwright-report/
+            packages/**/test-results/
+            packages/**/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14

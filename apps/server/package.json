@@ -1,0 +1,27 @@
+{
+  "name": "@bajaovrlay/server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The BajaOvrLay server: owns all state, serves the control page and the renderer.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --conditions=@bajaovrlay/source --env-file-if-exists=../../.env src/main.ts",
+    "build": "tsc --project tsconfig.build.json",
+    "start": "node --env-file-if-exists=../../.env dist/main.js",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bajaovrlay/shared": "workspace:*",
+    "@hono/node-server": "^2.1.3",
+    "hono": "^4.13.13",
+    "pino": "^10.4.0",
+    "ws": "^8.22.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.2",
+    "tsx": "^4.23.15",
+    "vite": "^8.3.3"
+  }
+}
