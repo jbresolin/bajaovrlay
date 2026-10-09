@@ -110,6 +110,8 @@ green. CI blocks merge on lint, typecheck or any test failure.
 - Do not merge your own PR unless the brief for that task explicitly says so.
 - The PR description lists: what was built, the commands João can run to see it
   working, decisions taken, and anything left out and why.
+- Every PR that records a decision also appends it to docs/decisions.md: one line,
+  newest at the bottom, with the date, the PR number and the decision in one sentence.
 
 ## When unsure
 
