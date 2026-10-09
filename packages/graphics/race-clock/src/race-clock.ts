@@ -1,17 +1,15 @@
 /**
  * The race clock OGraf graphic: session name, running race time, leader laps and a flag
- * band. This file only wires the pieces together; the rules live in named modules:
- * raceClockModel (data), clockExtrapolation and clockFormatting (the time shown),
- * playSteps (the OGraf step rule), clockTicker (the frame loop) and raceClockAnimations.
+ * band. This file owns the OGraf lifecycle (load, play, update, stop, dispose) and only
+ * wires the pieces together; the rules live in named modules: raceClockModel (data),
+ * raceClockView (the DOM, changed in place, never rebuilt), playSteps (the OGraf step
+ * rule), clockTicker (the frame loop) and raceClockAnimations.
  *
- * The DOM is drawn once by Lit; after that only text and data-flag-state attributes are
- * changed in place, never rebuilt. The renderer, not this module, picks the tag name and
- * calls customElements.define, as OGraf v1 expects of a graphic's default export.
+ * The renderer, not this module, picks the tag name and calls customElements.define, as
+ * OGraf v1 expects of a graphic's default export.
  */
-import { html, LitElement } from 'lit';
+import { LitElement } from 'lit';
 
-import { computeClockTimeMsAtWallClock } from './clockExtrapolation.js';
-import { formatClockTimeAsHoursMinutesSeconds } from './clockFormatting.js';
 import { type ClockTicker, createClockTicker } from './clockTicker.js';
 import { loadDisplayFontOnce } from './displayFont.js';
 import type {
@@ -31,10 +29,8 @@ import {
   buildPlayInTimeline,
   buildStopOutTimeline,
   finishTimelineAtOnce,
-  hideIncomingFlagLayer,
   placePanelOffAir,
   playTimelineToTheEnd,
-  type RaceClockAnimatedElements,
 } from './raceClockAnimations.js';
 import {
   type FlagState,
@@ -43,6 +39,15 @@ import {
   type RaceClockData,
 } from './raceClockModel.js';
 import { raceClockStyles } from './raceClockStyles.js';
+import {
+  findRaceClockParts,
+  prepareIncomingFlagLayer,
+  type RaceClockParts,
+  renderRaceClockTemplate,
+  showFlagStateAtOnce,
+  writeClockTimeAt,
+  writeSessionCaptionAndLaps,
+} from './raceClockView.js';
 
 /** Must match "stepCount" in race-clock.ograf.json: play shows the clock, stop hides it. */
 const raceClockStepCount = 1;
@@ -50,29 +55,11 @@ const raceClockStepCount = 1;
 type Lifecycle = 'unloaded' | 'offAir' | 'onAir' | 'disposed';
 type Timeline = Parameters<typeof finishTimelineAtOnce>[0];
 
-/** The elements whose text or flag state changes after the first render. */
-type RaceClockParts = RaceClockAnimatedElements & {
-  sessionName: HTMLElement;
-  clockTime: HTMLElement;
-  clockCaption: HTMLElement;
-  laps: HTMLElement;
-  currentFlagLayer: HTMLElement;
-  currentFlagLabel: HTMLElement;
-  incomingFlagLabel: HTMLElement;
-};
-
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 
 /** Builds a 4xx answer with a pt-BR message; OGraf actions answer errors, never throw. */
 function refuse(statusCode: number, statusMessage: string): OGrafReturnPayload {
   return { statusCode, statusMessage };
-}
-
-/** Changes an element's text only when it differs, so unchanged frames touch nothing. */
-function writeTextIfChanged(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
 }
 
 /** The race clock graphic; the default export a renderer registers as a custom element. */
@@ -93,28 +80,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   });
 
   override render() {
-    return html`
-      <section class="race-clock-panel" data-testid="race-clock-panel">
-        <div class="session-row">
-          <span class="session-name" data-testid="race-clock-session-name"></span>
-        </div>
-        <div class="clock-row">
-          <span class="clock-time" data-testid="race-clock-time"></span>
-          <div class="clock-details">
-            <span class="clock-caption" data-testid="race-clock-caption"></span>
-            <span class="laps" data-testid="race-clock-laps"></span>
-          </div>
-        </div>
-        <div class="flag-band" data-testid="race-clock-flag-band">
-          <div class="flag-layer" data-testid="race-clock-current-flag-layer">
-            <span class="flag-label" data-testid="race-clock-flag-label"></span>
-          </div>
-          <div class="flag-layer incoming-flag-layer" data-testid="race-clock-incoming-flag-layer">
-            <span class="flag-label" data-testid="race-clock-incoming-flag-label"></span>
-          </div>
-        </div>
-      </section>
-    `;
+    return renderRaceClockTemplate();
   }
 
   /** OGraf load: checks the data, waits for the first render and the font, draws off air. */
@@ -132,12 +98,13 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     await this.updateComplete;
     await loadDisplayFontOnce();
 
+    const parts = findRaceClockParts(this.renderRoot);
+    this.parts = parts;
     this.data = dataCheck.data;
-    this.parts = this.findPartsInShadowRoot();
-    this.writeTextParts();
-    this.redrawClockTime();
-    this.showFlagStateAtOnce(dataCheck.data.state);
-    placePanelOffAir(this.parts);
+    writeSessionCaptionAndLaps(parts, dataCheck.data);
+    writeClockTimeAt(parts, dataCheck.data, Date.now());
+    showFlagStateAtOnce(parts, dataCheck.data.state);
+    placePanelOffAir(parts);
     this.lifecycle = 'offAir';
     return okAnswer;
   }
@@ -218,7 +185,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
 
     const previousFlagState = this.data.state;
     this.data = dataCheck.data;
-    this.writeTextParts();
+    writeSessionCaptionAndLaps(this.requireParts(), dataCheck.data);
     this.redrawClockTime();
     if (dataCheck.data.state !== previousFlagState) {
       await this.wipeInFlagState(dataCheck.data.state, params.skipAnimation ?? false);
@@ -273,55 +240,12 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     return this.parts;
   }
 
-  private findPartsInShadowRoot(): RaceClockParts {
-    const findPart = (testId: string): HTMLElement => {
-      const part = this.renderRoot.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
-      if (part === null) {
-        throw new Error(`race clock part "${testId}" is missing from render(); this is a bug`);
-      }
-      return part;
-    };
-    return {
-      panel: findPart('race-clock-panel'),
-      sessionName: findPart('race-clock-session-name'),
-      clockTime: findPart('race-clock-time'),
-      clockCaption: findPart('race-clock-caption'),
-      laps: findPart('race-clock-laps'),
-      flagBand: findPart('race-clock-flag-band'),
-      currentFlagLayer: findPart('race-clock-current-flag-layer'),
-      currentFlagLabel: findPart('race-clock-flag-label'),
-      incomingFlagLayer: findPart('race-clock-incoming-flag-layer'),
-      incomingFlagLabel: findPart('race-clock-incoming-flag-label'),
-    };
-  }
-
-  /** Writes every text except the clock time and the flag, which have their own paths. */
-  private writeTextParts(): void {
-    if (this.data === undefined || this.parts === undefined) {
-      return;
-    }
-    writeTextIfChanged(this.parts.sessionName, this.data.sessionName);
-    writeTextIfChanged(this.parts.clockCaption, ptBR.clockModeCaptions[this.data.clockMode]);
-    const laps = this.data.lapsCompletedByLeader;
-    this.parts.laps.hidden = laps === undefined;
-    writeTextIfChanged(this.parts.laps, laps === undefined ? '' : ptBR.lapsCompletedByLeader(laps));
-  }
-
-  /** Called on every frame while on air: works out the time now and writes it if it changed. */
+  /** Called on every frame while on air: writes the clock time if it changed. */
   private redrawClockTime(): void {
     if (this.data === undefined || this.parts === undefined) {
       return;
     }
-    const clockTimeMs = computeClockTimeMsAtWallClock(this.data, Date.now());
-    writeTextIfChanged(this.parts.clockTime, formatClockTimeAsHoursMinutesSeconds(clockTimeMs));
-  }
-
-  /** Shows a flag state on the current layer straight away and hides the incoming one. */
-  private showFlagStateAtOnce(flagState: FlagState): void {
-    const parts = this.requireParts();
-    parts.currentFlagLayer.dataset.flagState = flagState;
-    writeTextIfChanged(parts.currentFlagLabel, ptBR.flagLabels[flagState]);
-    hideIncomingFlagLayer(parts);
+    writeClockTimeAt(this.parts, this.data, Date.now());
   }
 
   /**
@@ -332,17 +256,16 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     const parts = this.requireParts();
     this.finishRunningFlagWipe();
 
-    parts.incomingFlagLayer.dataset.flagState = flagState;
-    writeTextIfChanged(parts.incomingFlagLabel, ptBR.flagLabels[flagState]);
+    prepareIncomingFlagLayer(parts, flagState);
     const wipeTimeline = buildFlagChangeTimeline(parts);
     this.runningFlagWipe = { timeline: wipeTimeline, flagState };
     await this.runTimeline(wipeTimeline, skipAnimation);
 
     // Only the latest wipe may settle the flag; an older one was settled when cut short.
     const isStillTheLatestWipe = this.runningFlagWipe?.timeline === wipeTimeline;
-    if (isStillTheLatestWipe && this.lifecycle !== 'disposed') {
+    if (isStillTheLatestWipe && this.readLifecycleNow() !== 'disposed') {
       this.runningFlagWipe = undefined;
-      this.showFlagStateAtOnce(flagState);
+      showFlagStateAtOnce(parts, flagState);
     }
   }
 
@@ -353,7 +276,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     }
     this.runningFlagWipe = undefined;
     finishTimelineAtOnce(runningWipe.timeline);
-    this.showFlagStateAtOnce(runningWipe.flagState);
+    showFlagStateAtOnce(this.requireParts(), runningWipe.flagState);
   }
 
   /** Runs an in or out animation; one still running is finished at once first. */
