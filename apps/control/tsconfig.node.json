@@ -5,6 +5,8 @@
     // Vite bundles them before running them, hence bundler-style import resolution.
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
   "include": ["vite.config.ts", "vitest.config.ts"]

@@ -1,6 +1,6 @@
 import { defineConfig, mergeConfig } from 'vitest/config';
 
-import viteConfig from './vite.config';
+import viteConfig from './vite.config.ts';
 
 // Tests reuse the app's Vite config (React plugin, `@/` alias, shared-source
 // condition) so components are compiled exactly as in the browser.
