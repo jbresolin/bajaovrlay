@@ -9,6 +9,10 @@ playwright-report/
 # Local data and secrets
 *.sqlite
 *.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+# Default home of the server database (DATABASE_PATH in .env.example)
+apps/server/data/
 .env
 .env.*
 !.env.example
