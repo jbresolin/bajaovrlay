@@ -6,5 +6,9 @@ import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js'
  * screen must be clean.
  */
 export function reduceClearAll(slices: SlicesChangedByCommands): ReducerOutcome {
+  // Nothing on air: hand back the same array, so nothing is saved or broadcast.
+  if (slices.instances.length === 0) {
+    return { status: 'applied', slices };
+  }
   return { status: 'applied', slices: { ...slices, instances: [] } };
 }

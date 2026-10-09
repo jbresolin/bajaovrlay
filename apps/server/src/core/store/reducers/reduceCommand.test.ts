@@ -14,7 +14,9 @@
  *   - clearLayer empties one layer on both outputs, program and preview; clearAll
  *     empties every layer, persistent ones such as the clock included.
  *   - clearLayer is refused for a layer that does not exist.
- *   - A reducer never changes the slices it was given.
+ *   - A reducer never changes the slices it was given, and a command that changes
+ *     nothing (clearing an empty layer, clearAll with nothing on air) hands back the
+ *     very same instances array, so the store saves and broadcasts nothing.
  *
  * What these tests deliberately do not cover:
  *   - Checking the command's shape, authorising it, saving or broadcasting the result;
@@ -119,6 +121,8 @@ const appliedCommandScenarios: Array<{
   instancesBefore: Instance[];
   command: Command;
   expectedInstancesAfter: Instance[];
+  /** True when nothing changes, so the reducer must hand back the very same array. */
+  isInstancesSliceUnchanged?: boolean;
 }> = [
   // The basic take: nothing on the clock layer, the race clock goes on.
   {
@@ -226,6 +230,7 @@ const appliedCommandScenarios: Array<{
     instancesBefore: [buildRaceClockOnAir()],
     command: { type: 'clearLayer', layerId: 'fullscreen' },
     expectedInstancesAfter: [buildRaceClockOnAir()],
+    isInstancesSliceUnchanged: true,
   },
   // The panic button: everything off air, whatever the layer. The clock layer is
   // persistent, and clearAll clears it anyway: persistent has no effect until M1.
@@ -235,12 +240,20 @@ const appliedCommandScenarios: Array<{
     command: { type: 'clearAll' },
     expectedInstancesAfter: [],
   },
+  // The panic button pressed with nothing on air: nothing to save or broadcast.
+  {
+    name: 'clearAll with nothing on air changes nothing',
+    instancesBefore: [],
+    command: { type: 'clearAll' },
+    expectedInstancesAfter: [],
+    isInstancesSliceUnchanged: true,
+  },
 ];
 
 describe('reduceCommand, when the command can be applied', () => {
   it.each(appliedCommandScenarios)(
     '$name',
-    ({ instancesBefore, command, expectedInstancesAfter }) => {
+    ({ instancesBefore, command, expectedInstancesAfter, isInstancesSliceUnchanged = false }) => {
       // Arrange: race day slices with the instances this scenario starts from.
       const slicesBefore = buildRaceDaySlicesWithInstances(instancesBefore);
 
@@ -253,6 +266,11 @@ describe('reduceCommand, when the command can be applied', () => {
       expect(slicesAfter?.instances, 'the instances must be exactly as expected').toEqual(
         expectedInstancesAfter,
       );
+      // The store saves and broadcasts a slice only when it is a different array.
+      expect(
+        slicesAfter?.instances === slicesBefore.instances,
+        'an unchanged instances slice must be the very same array; a changed one a new one',
+      ).toBe(isInstancesSliceUnchanged);
       expect(slicesAfter?.layers, 'a command must never change the layers').toBe(
         slicesBefore.layers,
       );
