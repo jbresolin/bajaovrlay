@@ -30,6 +30,7 @@ import { describe, expect, it } from 'vitest';
 
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
 import type { ServerDatabase } from '../db/openDatabase.js';
+import { readAllSliceRows } from '../db/sliceRowStorage.js';
 import { openTemporaryDatabase } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
 import type { IsCommandAllowed } from './authorizeCommand.js';
@@ -305,17 +306,28 @@ describe('subscribers of the store', () => {
 describe('applyCommand when saving to the database fails', () => {
   it('throws and leaves memory exactly as it was, matching the database', () => {
     // Arrange: a store whose event_log table has vanished, as a damaged file might.
+    // The copy is a deep one: readAllSlices hands out the live object, so comparing
+    // against it would also pass if memory were changed in place before the throw.
     const { store, database } = createStoreWithRaceClockRegistered();
-    const slicesBefore = store.readAllSlices();
+    const copyOfSlicesBefore = structuredClone(store.readAllSlices());
     database.$client.exec('DROP TABLE event_log');
 
     // Act: try to take the race clock.
     const applyTheTake = () => store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
 
-    // Assert: the error surfaces and memory still holds the slices from before.
+    // Assert: the error surfaces, memory still holds the slices from before, and the
+    // instances row in the database is still the seeded empty list, like memory.
     expect(applyTheTake, 'a failed save must not be hidden').toThrow();
     expect(store.readAllSlices(), 'memory must not run ahead of the database').toEqual(
-      slicesBefore,
+      copyOfSlicesBefore,
     );
+    const instancesRowInDatabase = readAllSliceRows(database).find(
+      (row) => row.name === 'instances',
+    );
+    expect(
+      instancesRowInDatabase?.json,
+      'the rolled-back transaction must leave the saved instances empty, as in memory',
+    ).toEqual([]);
+    expect(store.readAllSlices().instances, 'memory must hold the same empty list').toEqual([]);
   });
 });
