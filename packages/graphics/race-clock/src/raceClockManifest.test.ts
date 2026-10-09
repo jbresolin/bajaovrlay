@@ -167,10 +167,42 @@ const dataAgreementScenarios = [
     data: { ...createGreenFlagEnduroData(), lapsCompletedByLeader: undefined },
     isValid: true,
   },
-  // Each of the six flag states is a valid value in both.
+  // One row per flag state the graphic draws, so a value dropped or misspelled in the
+  // manifest's enum (or in Zod) fails here.
+  // Before the start: the state a session is created in.
+  {
+    name: 'both accept the pre-start state',
+    data: { ...createGreenFlagEnduroData(), state: 'pre' },
+    isValid: true,
+  },
+  // Racing: the most common state; listed again here so all six sit together.
+  {
+    name: 'both accept the green flag',
+    data: { ...createGreenFlagEnduroData(), state: 'green' },
+    isValid: true,
+  },
+  // Caution: thrown on track incidents.
+  {
+    name: 'both accept the yellow flag',
+    data: { ...createGreenFlagEnduroData(), state: 'yellow' },
+    isValid: true,
+  },
+  // Session stopped: the clock is usually held.
+  {
+    name: 'both accept the red flag',
+    data: { ...createGreenFlagEnduroData(), state: 'red' },
+    isValid: true,
+  },
+  // The leader has crossed the line.
   {
     name: 'both accept the checkered flag',
     data: { ...createGreenFlagEnduroData(), state: 'checkered' },
+    isValid: true,
+  },
+  // After the session: results are final.
+  {
+    name: 'both accept the finished state',
+    data: { ...createGreenFlagEnduroData(), state: 'finished' },
     isValid: true,
   },
   // A state outside the six must fail both, or the form would offer a value the graphic refuses.
