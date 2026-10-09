@@ -261,7 +261,7 @@ importers:
         specifier: 1.62.0
         version: 1.62.0
       vite:
-        specifier: 8.3.3
+        specifier: ^8.3.3
         version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
 
   apps/server:
