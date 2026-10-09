@@ -211,7 +211,7 @@ describe('dispose', () => {
     const clockTextBeforeDispose = readShownText(raceClock, 'race-clock-time');
 
     // Act: dispose it, then let ten seconds and several frames pass.
-    const answer = await raceClock.dispose({});
+    const answer = await raceClock.dispose();
     framesAndTime.letWallClockTimePass(10_000);
     framesAndTime.runPendingFrames();
     framesAndTime.runPendingFrames();
@@ -234,7 +234,7 @@ describe('dispose', () => {
     const panel = raceClock.shadowRoot?.querySelector('[data-testid="race-clock-panel"]');
 
     // Act: dispose in the middle of the animation.
-    await raceClock.dispose({});
+    await raceClock.dispose();
     const playAnswer = await pendingPlay;
     framesAndTime.giveBackRealFramesAndTime();
 

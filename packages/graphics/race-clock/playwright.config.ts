@@ -25,7 +25,8 @@ export default defineConfig({
   ],
   webServer: {
     // Build first so the tests never run against a stale dist/ left from an older build.
-    command: 'pnpm exec vite build && pnpm exec vite preview --host 127.0.0.1 --base /graphics/race-clock/',
+    command:
+      'pnpm exec vite build && pnpm exec vite preview --host 127.0.0.1 --base /graphics/race-clock/',
     url: `${builtGraphicAddress}race-clock.ograf.json`,
     reuseExistingServer: !isRunningInCI,
   },

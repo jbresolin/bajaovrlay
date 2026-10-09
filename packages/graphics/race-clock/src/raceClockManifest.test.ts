@@ -22,7 +22,6 @@
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 
-import raceClockManifest from '../race-clock.ograf.json';
 import gddBasicTypesSchema from '../ograf-schema/gdd/basic-types.json';
 import gddTypesSchema from '../ograf-schema/gdd/gdd-types.json';
 import gddObjectSchema from '../ograf-schema/gdd/object.json';
@@ -30,6 +29,7 @@ import ografManifestSchema from '../ograf-schema/graphics/schema.json';
 import ografActionSchema from '../ograf-schema/lib/action.json';
 import ografBooleanConstraintSchema from '../ograf-schema/lib/constraints/boolean.json';
 import ografNumberConstraintSchema from '../ograf-schema/lib/constraints/number.json';
+import raceClockManifest from '../race-clock.ograf.json';
 import { playInDurationMs, stopOutDurationMs } from './raceClockAnimations.js';
 import { parseCompleteRaceClockData, type RaceClockData } from './raceClockModel.js';
 
@@ -38,10 +38,13 @@ import { parseCompleteRaceClockData, type RaceClockData } from './raceClockModel
  * every OGraf schema registered under its published $id so no $ref goes to the network.
  */
 function createOGrafSchemaValidator() {
-  // `example` is an annotation OGraf uses in lib/action.json; it is not a 2020-12
-  // keyword, so strict mode needs to be told it is harmless.
+  // These are OGraf annotations, not 2020-12 keywords: `example` (lib/action.json) and
+  // the GDD form hints a data schema may carry (gdd/object.json). Strict mode refuses
+  // unknown keywords, so it is told they are annotations that validate nothing.
   const validator = new Ajv2020({ allErrors: true });
-  validator.addKeyword('example');
+  for (const ografAnnotation of ['example', 'gddType', 'gddOptions', 'hidden', 'order']) {
+    validator.addKeyword(ografAnnotation);
+  }
   validator.addSchema([
     gddBasicTypesSchema,
     gddTypesSchema,

@@ -52,7 +52,14 @@ test.describe('the race clock driven like a renderer', () => {
     // and note each answer in the order the calls resolved.
     const answersInOrder = await page.evaluate(async () => {
       type ActionAnswer = { statusCode: number; currentStep?: number };
-      type OGrafGraphic = HTMLElement & Record<string, (params: object) => Promise<ActionAnswer>>;
+      type OGrafAction = (params: object) => Promise<ActionAnswer>;
+      type OGrafGraphic = HTMLElement & {
+        load: OGrafAction;
+        playAction: OGrafAction;
+        updateAction: OGrafAction;
+        stopAction: OGrafAction;
+        dispose: OGrafAction;
+      };
       const graphic = document.querySelector('baja-race-clock') as OGrafGraphic;
       const panel = graphic.shadowRoot?.querySelector('[data-testid="race-clock-panel"]');
       const answers: { action: string; statusCode: number; currentStep?: number }[] = [];
@@ -108,7 +115,8 @@ test.describe('the race clock driven like a renderer', () => {
     // Act: load it, then send an update before it was ever played.
     const updateAnswer = await page.evaluate(async () => {
       type ActionAnswer = { statusCode: number; statusMessage?: string };
-      type OGrafGraphic = HTMLElement & Record<string, (params: object) => Promise<ActionAnswer>>;
+      type OGrafAction = (params: object) => Promise<ActionAnswer>;
+      type OGrafGraphic = HTMLElement & { load: OGrafAction; updateAction: OGrafAction };
       const graphic = document.querySelector('baja-race-clock') as OGrafGraphic;
       await graphic.load({
         data: {
