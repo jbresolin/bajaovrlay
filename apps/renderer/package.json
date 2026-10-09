@@ -1,0 +1,19 @@
+{
+  "name": "@bajaovrlay/renderer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The renderer page OBS loads as a browser source (framework-free).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.node.json --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.0",
+    "vite": "^8.3.3"
+  }
+}

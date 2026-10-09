@@ -1,0 +1,11 @@
+pnpm-lock.yaml
+dist/
+coverage/
+test-results/
+playwright-report/
+
+# Documents written by João by hand; their line breaks are deliberate.
+CLAUDE.md
+overnight-prompt.md
+docs/README.md
+docs/briefs/

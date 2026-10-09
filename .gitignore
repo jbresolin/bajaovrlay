@@ -1,0 +1,20 @@
+node_modules/
+dist/
+coverage/
+
+# Playwright output (CI uploads these as artifacts when a run fails)
+test-results/
+playwright-report/
+
+# Local data and secrets
+*.sqlite
+*.sqlite-journal
+.env
+.env.*
+!.env.example
+
+# Agent scratch space (PR bodies, notes)
+.scratch/
+
+*.log
+.DS_Store

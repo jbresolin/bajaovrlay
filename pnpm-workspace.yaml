@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+  # Each OGraf graphic is its own package; BAJAOVRLAY-10 adds the first one here.
+  - packages/graphics/*
+allowBuilds:
+  esbuild: true

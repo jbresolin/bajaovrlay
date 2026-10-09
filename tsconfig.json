@@ -1,0 +1,10 @@
+{
+  // Typechecks the config files at the repository root. Each package has its own
+  // tsconfig.json, checked by that package's `typecheck` script.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["vitest.config.ts"]
+}
