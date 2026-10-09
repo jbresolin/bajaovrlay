@@ -2,78 +2,89 @@ import { type Slices, SlicesSchema } from '@bajaovrlay/shared';
 
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
 import type { ServerDatabase } from '../db/openDatabase.js';
-import { readAllSliceRows, writeSeedSliceRows } from '../db/sliceRowStorage.js';
+import { readAllSliceRows, writeBootSliceRows } from '../db/sliceRowStorage.js';
 import type { SliceRow } from '../db/tables.js';
 import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { eventLogSliceSize } from '../events/eventLogSlice.js';
 import type { ServerLogger } from '../logger/createLogger.js';
-import { readRaceClockGraphic } from './readRaceClockGraphic.js';
+import { discoverBuiltGraphics } from './discoverBuiltGraphics.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 import { seededLayers } from './seedLayers.js';
 
-/** What loadInitialSlices needs: the open database and where the race clock manifest is. */
+/** What loadInitialSlices needs: the open database, the graphics folder and a clock. */
 export type LoadInitialSlicesOptions = {
   database: ServerDatabase;
   logger: ServerLogger;
-  /** Absolute path of packages/graphics/race-clock/dist/race-clock.ograf.json. */
-  raceClockManifestPath: string;
+  /** Absolute path of packages/graphics; each built package there becomes a graphic. */
+  graphicPackagesFolder: string;
+  /** The clock that stamps the rows written at boot. */
+  readCurrentTime: () => Date;
 };
 
+/** The layers and instances the operator built up; graphics come from the filesystem. */
+type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'>;
+
 /**
- * Returns the slices the store starts with: loaded from the database (instances too, so
- * a restart restores what was on air), or seeded and saved when it is empty. The
- * event-log slice is always the newest entries of the event_log table.
+ * Returns the slices the store starts with. Layers and instances are loaded from the
+ * database (so a restart restores what was on air), or seeded when it is empty. The
+ * graphics slice is rebuilt from the built packages on every boot and saved, because it
+ * describes what is on disk, not what the operator did. The event-log slice is the
+ * newest entries of the event_log table.
  */
 export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const storedRows = readAllSliceRows(options.database);
   const isFirstBoot = storedRows.length === 0;
+  const operatorSlices = isFirstBoot
+    ? buildSeedOperatorSlices()
+    : readStoredOperatorSlices(storedRows, options.logger);
+  const graphics = discoverBuiltGraphics(options.graphicPackagesFolder, options.logger);
 
-  let slicesChangedByCommands: SlicesChangedByCommands;
+  // The graphics row is rewritten on every boot; layers and instances only when seeded.
+  const updatedAt = options.readCurrentTime().toISOString();
+  const graphicsRow: SliceRow = { name: 'graphics', json: graphics, updatedAt };
+  const seedRows: SliceRow[] = [
+    { name: 'layers', json: operatorSlices.layers, updatedAt },
+    graphicsRow,
+    { name: 'instances', json: operatorSlices.instances, updatedAt },
+  ];
+  writeBootSliceRows(options.database, isFirstBoot ? seedRows : [graphicsRow]);
   if (isFirstBoot) {
-    slicesChangedByCommands = buildSeedSlices(options);
-    writeSeedSliceRows(options.database, convertSlicesToRows(slicesChangedByCommands));
-    options.logger.info(
-      { graphics: slicesChangedByCommands.graphics.map((graphic) => graphic.id) },
-      'empty database seeded with the fixed layers',
-    );
-  } else {
-    slicesChangedByCommands = readStoredSlices(storedRows);
+    options.logger.info('empty database seeded with the fixed layers');
   }
+  options.logger.info(
+    { graphics: graphics.map((graphic) => graphic.id) },
+    'graphics registered from the built packages',
+  );
 
   const eventLog = readNewestEventLogRows(options.database, eventLogSliceSize).map(
     convertEventLogRowToEntry,
   );
-  return { ...slicesChangedByCommands, eventLog };
+  return { layers: operatorSlices.layers, graphics, instances: operatorSlices.instances, eventLog };
 }
 
-/** Builds the first-boot slices: the fixed layers, the race clock if built, nothing on air. */
-function buildSeedSlices(options: LoadInitialSlicesOptions): SlicesChangedByCommands {
-  const raceClockGraphic = readRaceClockGraphic(options.raceClockManifestPath, options.logger);
-  const graphics = raceClockGraphic === undefined ? [] : [raceClockGraphic];
-  return { layers: seededLayers, graphics, instances: [] };
+/** The first-boot layers and instances: the fixed layers, nothing on air. */
+function buildSeedOperatorSlices(): OperatorSlices {
+  return { layers: seededLayers, instances: [] };
 }
 
 /**
- * Turns stored rows back into slices, checking each against the shared schema. A row
- * that fails the check throws, which stops the boot: running on state we cannot read
- * could put the wrong thing on air. A slice with no row starts empty.
+ * Turns stored rows back into layers and instances, checking each against the shared
+ * schema. A row that fails the check throws, which stops the boot: running on state we
+ * cannot read could put the wrong thing on air. A missing instances row starts empty.
  */
-function readStoredSlices(storedRows: SliceRow[]): SlicesChangedByCommands {
-  const storedValueOf = (sliceName: string): unknown =>
-    storedRows.find((row) => row.name === sliceName)?.json ?? [];
+function readStoredOperatorSlices(storedRows: SliceRow[], logger: ServerLogger): OperatorSlices {
+  const layersRow = storedRows.find((row) => row.name === 'layers');
+  if (layersRow === undefined) {
+    // Booting on with no layers would refuse every take, and re-seeding would hide that
+    // the database was damaged. Stop and say so instead.
+    const message =
+      'the slices table has rows but no layers row; the database is damaged, so the boot stops';
+    logger.error({ stored_slices: storedRows.map((row) => row.name) }, message);
+    throw new Error(message);
+  }
+  const instancesRow = storedRows.find((row) => row.name === 'instances');
   return {
-    layers: SlicesSchema.shape.layers.parse(storedValueOf('layers')),
-    graphics: SlicesSchema.shape.graphics.parse(storedValueOf('graphics')),
-    instances: SlicesSchema.shape.instances.parse(storedValueOf('instances')),
+    layers: SlicesSchema.shape.layers.parse(layersRow.json),
+    instances: SlicesSchema.shape.instances.parse(instancesRow?.json ?? []),
   };
-}
-
-/** Turns the seed slices into rows for the slices table, all stamped with the same time. */
-function convertSlicesToRows(slices: SlicesChangedByCommands): SliceRow[] {
-  const updatedAt = new Date().toISOString();
-  return [
-    { name: 'layers', json: slices.layers, updatedAt },
-    { name: 'graphics', json: slices.graphics, updatedAt },
-    { name: 'instances', json: slices.instances, updatedAt },
-  ];
 }

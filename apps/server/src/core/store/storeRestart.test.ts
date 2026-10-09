@@ -25,8 +25,8 @@ import {
   openDatabaseForTests,
 } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
+import { createGraphicsFolderWithBuiltRaceClock } from './builtGraphicsFolder.testSupport.js';
 import { createStateStore } from './createStateStore.js';
-import { writeTemporaryRaceClockManifest } from './raceClockManifest.testSupport.js';
 
 const takeRaceClockOnProgram = {
   type: 'takeGraphic',
@@ -36,11 +36,11 @@ const takeRaceClockOnProgram = {
 };
 
 /** Opens a store on the given database, the way the server does at boot. */
-function openStoreOnDatabase(database: ServerDatabase, raceClockManifestPath: string) {
+function openStoreOnDatabase(database: ServerDatabase, graphicPackagesFolder: string) {
   return createStateStore({
     database,
     logger: createLogger({ level: 'silent' }),
-    raceClockManifestPath,
+    graphicPackagesFolder,
   });
 }
 
@@ -54,9 +54,9 @@ describe('a store opened on the file of a previous store', () => {
   it('has exactly the slices the previous store had, including what was on air', () => {
     // Arrange: a store that took the race clock on program and on preview.
     const databasePath = createTemporaryDatabasePath();
-    const raceClockManifestPath = writeTemporaryRaceClockManifest();
+    const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const firstDatabase = openDatabaseForTests(databasePath);
-    const storeBeforeRestart = openStoreOnDatabase(firstDatabase, raceClockManifestPath);
+    const storeBeforeRestart = openStoreOnDatabase(firstDatabase, graphicPackagesFolder);
     storeBeforeRestart.applyCommand(takeRaceClockOnProgram, 'operador:conexao-7');
     storeBeforeRestart.applyCommand(
       { ...takeRaceClockOnProgram, target: 'preview' },
@@ -66,7 +66,7 @@ describe('a store opened on the file of a previous store', () => {
 
     // Act: restart, opening a new store on the same file.
     const secondDatabase = reopenDatabase(firstDatabase, databasePath);
-    const storeAfterRestart = openStoreOnDatabase(secondDatabase, raceClockManifestPath);
+    const storeAfterRestart = openStoreOnDatabase(secondDatabase, graphicPackagesFolder);
 
     // Assert: every slice is identical, and both instances are still there.
     expect(storeAfterRestart.readAllSlices(), 'a restart must lose nothing').toEqual(
@@ -78,9 +78,9 @@ describe('a store opened on the file of a previous store', () => {
   it('has the event log in the order the commands were applied', () => {
     // Arrange: a store that ran a take, a refused clear and a clearAll, in that order.
     const databasePath = createTemporaryDatabasePath();
-    const raceClockManifestPath = writeTemporaryRaceClockManifest();
+    const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const firstDatabase = openDatabaseForTests(databasePath);
-    const storeBeforeRestart = openStoreOnDatabase(firstDatabase, raceClockManifestPath);
+    const storeBeforeRestart = openStoreOnDatabase(firstDatabase, graphicPackagesFolder);
     storeBeforeRestart.applyCommand(takeRaceClockOnProgram, 'operador:conexao-7');
     storeBeforeRestart.applyCommand(
       { type: 'clearLayer', layerId: 'placar' },
@@ -92,7 +92,7 @@ describe('a store opened on the file of a previous store', () => {
     const secondDatabase = reopenDatabase(firstDatabase, databasePath);
     const eventLogAfterRestart = openStoreOnDatabase(
       secondDatabase,
-      raceClockManifestPath,
+      graphicPackagesFolder,
     ).readAllSlices().eventLog;
 
     // Assert: three entries, oldest first, with increasing ids and the right outcomes.
@@ -106,30 +106,36 @@ describe('a store opened on the file of a previous store', () => {
     ]);
   });
 
-  it('keeps every entry in the database but only the newest 200 in the slice', () => {
-    // Arrange: a store that ran 201 commands, one more than the slice keeps.
-    const databasePath = createTemporaryDatabasePath();
-    const raceClockManifestPath = writeTemporaryRaceClockManifest();
-    const firstDatabase = openDatabaseForTests(databasePath);
-    const storeBeforeRestart = openStoreOnDatabase(firstDatabase, raceClockManifestPath);
-    for (let commandNumber = 1; commandNumber <= 201; commandNumber += 1) {
-      storeBeforeRestart.applyCommand({ type: 'clearAll' }, 'operador:conexao-7');
-    }
-    const sliceBeforeRestart = storeBeforeRestart.readAllSlices().eventLog;
+  // 201 real SQLite transactions take about 4.5 s on a WSL disk, too close to Vitest's
+  // 5 s default once other suites run beside it, so this test gets its own limit.
+  it(
+    'keeps every entry in the database but only the newest 200 in the slice',
+    { timeout: 30_000 },
+    () => {
+      // Arrange: a store that ran 201 commands, one more than the slice keeps.
+      const databasePath = createTemporaryDatabasePath();
+      const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
+      const firstDatabase = openDatabaseForTests(databasePath);
+      const storeBeforeRestart = openStoreOnDatabase(firstDatabase, graphicPackagesFolder);
+      for (let commandNumber = 1; commandNumber <= 201; commandNumber += 1) {
+        storeBeforeRestart.applyCommand({ type: 'clearAll' }, 'operador:conexao-7');
+      }
+      const sliceBeforeRestart = storeBeforeRestart.readAllSlices().eventLog;
 
-    // Act: restart and read the slice and the table back.
-    const secondDatabase = reopenDatabase(firstDatabase, databasePath);
-    const sliceAfterRestart = openStoreOnDatabase(
-      secondDatabase,
-      raceClockManifestPath,
-    ).readAllSlices().eventLog;
+      // Act: restart and read the slice and the table back.
+      const secondDatabase = reopenDatabase(firstDatabase, databasePath);
+      const sliceAfterRestart = openStoreOnDatabase(
+        secondDatabase,
+        graphicPackagesFolder,
+      ).readAllSlices().eventLog;
 
-    // Assert: the table has all 201; the slice has ids 2 to 201, before and after.
-    expect(countEventLogRows(secondDatabase), 'the database must keep every entry').toBe(201);
-    expect(sliceBeforeRestart.length, 'the slice in memory keeps only 200').toBe(200);
-    expect(sliceBeforeRestart[0]?.id, 'the oldest entry must have left the slice').toBe(2);
-    expect(sliceAfterRestart, 'after a restart the slice holds the same newest 200').toEqual(
-      sliceBeforeRestart,
-    );
-  });
+      // Assert: the table has all 201; the slice has ids 2 to 201, before and after.
+      expect(countEventLogRows(secondDatabase), 'the database must keep every entry').toBe(201);
+      expect(sliceBeforeRestart.length, 'the slice in memory keeps only 200').toBe(200);
+      expect(sliceBeforeRestart[0]?.id, 'the oldest entry must have left the slice').toBe(2);
+      expect(sliceAfterRestart, 'after a restart the slice holds the same newest 200').toEqual(
+        sliceBeforeRestart,
+      );
+    },
+  );
 });

@@ -35,7 +35,7 @@ import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
-import { writeTemporaryRaceClockManifest } from '../store/raceClockManifest.testSupport.js';
+import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
 import {
   connectWebSocketTestClient,
   sendRawUpgradeRequest,
@@ -63,7 +63,7 @@ async function startServerOnARandomPort(
     port: 0,
     databasePath: createTemporaryDatabasePath(),
     migrationsFolder: committedMigrationsFolder,
-    raceClockManifestPath: writeTemporaryRaceClockManifest(),
+    graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     heartbeatIntervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
   });
   onTestFinished(() => runningServer.close());

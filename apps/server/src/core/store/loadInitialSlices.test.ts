@@ -2,66 +2,106 @@
  * Loading or seeding the slices at boot (apps/server)
  *
  * What this module is for:
- *   At boot the store needs its slices. If the database already has them, they are
- *   loaded as they are. If it is empty (the very first boot), it is seeded: the five
- *   fixed layers (bug, ticker, clock, lower-third, fullscreen, bottom to top) and the
- *   race-clock graphic, read from its built OGraf manifest. The race clock is built by
- *   another package (BAJAOVRLAY-10), so a missing manifest is a warning, not a crash.
+ *   At boot the store needs its slices. Layers and instances are the operator's: they
+ *   are loaded from the database as they are, or, on the very first boot (an empty
+ *   database), seeded with the five fixed layers (bug, ticker, clock, lower-third,
+ *   fullscreen, bottom to top) and nothing on air. Graphics are not the operator's: they
+ *   describe what is built under packages/graphics, so they are rebuilt from the built
+ *   OGraf manifests on every boot and saved. A package that is not built, or whose
+ *   manifest is broken, is logged and left out; it never stops the boot.
  *
- * What these tests prove (with a real SQLite file in a temporary folder):
+ * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
+ * in temporary folders):
  *   - An empty database is seeded with the five layers in ascending z-order, each with
- *     its pt-BR name, `out-then-in` swaps, and only the logo and clock persistent;
- *     the seed is saved, not only held in memory.
- *   - A present manifest registers the race clock with it; a missing one logs a
- *     warning and boot carries on without it; a broken one logs an error and carries on.
- *   - A database that already has slices is never seeded again.
- *   - A stored slice that fails its schema stops the boot instead of running on it.
+ *     its pt-BR name, `out-then-in` swaps, and only the logo and clock persistent; the
+ *     seed is saved, stamped with the store's clock rather than the machine's.
+ *   - A built race clock is registered with its manifest, under its folder name; an
+ *     unbuilt one logs a warning, a broken one logs an error, and the boot carries on.
+ *   - A package nobody has placed yet defaults to the fullscreen layer.
+ *   - A second boot registers a race clock built since the first, and saves it, while
+ *     the stored layers and instances come back untouched.
+ *   - A stored slice that fails its schema, or a damaged database with no layers row,
+ *     stops the boot instead of running on it.
  *
  * What these tests deliberately do not cover:
  *   - Loading back slices changed by commands; storeRestart.test.ts covers it.
  */
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { describe, expect, it, onTestFinished } from 'vitest';
+import type { Instance } from '@bajaovrlay/shared';
+import { describe, expect, it } from 'vitest';
 
+import type { ServerDatabase } from '../db/openDatabase.js';
 import { readAllSliceRows, writeSliceRows } from '../db/sliceRowStorage.js';
 import {
   createTemporaryDatabasePath,
   openDatabaseForTests,
   openTemporaryDatabase,
 } from '../db/temporaryDatabase.testSupport.js';
-import { createLogger } from '../logger/createLogger.js';
+import { createLogger, type ServerLogger } from '../logger/createLogger.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
-import { loadInitialSlices } from './loadInitialSlices.js';
 import {
-  missingRaceClockManifestPath,
+  buildRaceClockInto,
+  createGraphicsFolderWithBrokenRaceClockManifest,
+  createGraphicsFolderWithBuiltRaceClock,
+  createGraphicsFolderWithUnbuiltRaceClock,
   raceClockManifestForTests,
-  writeTemporaryRaceClockManifest,
-} from './raceClockManifest.testSupport.js';
+} from './builtGraphicsFolder.testSupport.js';
+import { loadInitialSlices } from './loadInitialSlices.js';
 
 const silentLogger = createLogger({ level: 'silent' });
 
-/** Writes a manifest file that is not JSON at all, as a half-finished build might leave. */
-function writeBrokenRaceClockManifest(): string {
-  const temporaryFolder = mkdtempSync(join(tmpdir(), 'bajaovrlay-manifesto-quebrado-'));
-  onTestFinished(() => rmSync(temporaryFolder, { recursive: true, force: true }));
-  const manifestPath = join(temporaryFolder, 'race-clock.ograf.json');
-  writeFileSync(manifestPath, '{ "id": "baja-race-clock", ');
-  return manifestPath;
+/** 9 October 2026, 08:00:00 UTC: the boot time every test's clock reports. */
+const bootTime = new Date('2026-10-09T08:00:00.000Z');
+
+/** The graphic the server registers for the stand-in race-clock build. */
+const raceClockGraphic = {
+  id: 'race-clock',
+  manifest: raceClockManifestForTests,
+  defaultLayerId: 'clock',
+  category: 'clock',
+  thumbnailUrl: null,
+  defaultFields: {},
+};
+
+/** Boots the slices the way the store does, on a fixed clock. */
+function loadSlicesAtBoot(options: {
+  database: ServerDatabase;
+  graphicPackagesFolder: string;
+  logger?: ServerLogger;
+}) {
+  return loadInitialSlices({
+    database: options.database,
+    graphicPackagesFolder: options.graphicPackagesFolder,
+    logger: options.logger ?? silentLogger,
+    readCurrentTime: () => bootTime,
+  });
+}
+
+/** Builds the race clock on air on program, as a take before a restart left it. */
+function createRaceClockOnProgramInstance(): Instance {
+  return {
+    id: '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f',
+    layerId: 'clock',
+    graphicId: 'race-clock',
+    target: 'program',
+    resolvedData: { sessionName: 'Enduro de Resistência', state: 'green' },
+    currentStep: 0,
+    status: 'loading',
+    takenAt: '2026-10-09T07:45:00.000Z',
+  };
 }
 
 describe('loadInitialSlices on an empty database', () => {
-  it('seeds the five layers in ascending z-order and saves them', () => {
+  it('seeds the five layers in ascending z-order and saves them, stamped with the store clock', () => {
     // Arrange: a brand-new database file.
     const { database } = openTemporaryDatabase();
 
     // Act: load the slices, as the first boot does.
-    const slices = loadInitialSlices({
+    const slices = loadSlicesAtBoot({
       database,
-      logger: silentLogger,
-      raceClockManifestPath: writeTemporaryRaceClockManifest(),
+      graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     });
 
     // Assert: the five layers, bottom to top, and the seed is in the slices table.
@@ -98,70 +138,95 @@ describe('loadInitialSlices on an empty database', () => {
     );
     expect(new Set(zIndexes).size, 'no two layers may share a z-index').toBe(5);
     expect(
-      readAllSliceRows(database).map((row) => row.name),
-      'the seed must be saved so the next boot loads it instead of seeding again',
-    ).toEqual(['layers', 'graphics', 'instances']);
+      readAllSliceRows(database).map((row) => [row.name, row.updatedAt]),
+      'the seed must be saved, stamped with the store clock, so the next boot loads it',
+    ).toEqual([
+      ['layers', '2026-10-09T08:00:00.000Z'],
+      ['graphics', '2026-10-09T08:00:00.000Z'],
+      ['instances', '2026-10-09T08:00:00.000Z'],
+    ]);
     expect(slices.instances, 'nothing is on air on the first boot').toEqual([]);
   });
 
-  it('registers the race clock from its built manifest when it is present', () => {
-    // Arrange: a brand-new database and a built race-clock manifest.
+  it('registers the race clock from its built manifest, under its folder name', () => {
+    // Arrange: a brand-new database and a graphics folder with the race clock built.
     const { database } = openTemporaryDatabase();
 
     // Act: load the slices.
-    const slices = loadInitialSlices({
+    const slices = loadSlicesAtBoot({
       database,
-      logger: silentLogger,
-      raceClockManifestPath: writeTemporaryRaceClockManifest(),
+      graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     });
 
     // Assert: one graphic, the race clock, carrying the manifest as written.
     expect(slices.graphics, 'the race clock must be registered with its manifest').toEqual([
+      raceClockGraphic,
+    ]);
+  });
+
+  it('registers a package nobody has placed yet on the fullscreen layer', () => {
+    // Arrange: a brand-new database and a built package the server has no placement
+    // for, as when someone copies race-clock into a new graphic.
+    const { database } = openTemporaryDatabase();
+    const graphicPackagesFolder = createGraphicsFolderWithUnbuiltRaceClock();
+    const scoreboardDistFolder = join(graphicPackagesFolder, 'scoreboard', 'dist');
+    mkdirSync(scoreboardDistFolder, { recursive: true });
+    writeFileSync(
+      join(scoreboardDistFolder, 'scoreboard.ograf.json'),
+      JSON.stringify({ id: 'baja-scoreboard', name: 'Placar', main: 'scoreboard.js' }),
+    );
+
+    // Act: load the slices.
+    const slices = loadSlicesAtBoot({ database, graphicPackagesFolder });
+
+    // Assert: it is registered on the top layer, where it cannot replace anything else.
+    expect(slices.graphics, 'an unplaced package must default to the fullscreen layer').toEqual([
       {
-        id: 'race-clock',
-        manifest: raceClockManifestForTests,
-        defaultLayerId: 'clock',
-        category: 'clock',
+        id: 'scoreboard',
+        manifest: { id: 'baja-scoreboard', name: 'Placar', main: 'scoreboard.js' },
+        defaultLayerId: 'fullscreen',
+        category: 'other',
         thumbnailUrl: null,
         defaultFields: {},
       },
     ]);
   });
 
-  it('boots without the race clock and logs a warning when its manifest is missing', () => {
-    // Arrange: a brand-new database, no race-clock build, and a logger we can read.
+  it('boots without the race clock and logs a warning when it is not built', () => {
+    // Arrange: a brand-new database, the race clock's source but no build, and a logger
+    // we can read.
     const { database } = openTemporaryDatabase();
     const { logger, readRecordedLines } = createRecordingLogger();
 
     // Act: load the slices.
-    const slices = loadInitialSlices({
+    const slices = loadSlicesAtBoot({
       database,
+      graphicPackagesFolder: createGraphicsFolderWithUnbuiltRaceClock(),
       logger,
-      raceClockManifestPath: missingRaceClockManifestPath,
     });
 
-    // Assert: no graphics, the layers are still seeded, and a warning names the path.
-    expect(slices.graphics, 'no graphic can be registered without a manifest').toEqual([]);
+    // Assert: no graphics, the layers are still seeded, and a warning names the package.
+    expect(slices.graphics, 'no graphic can be registered without a build').toEqual([]);
     expect(slices.layers.length, 'the layers are seeded anyway').toBe(5);
-    expect(readRecordedLines(), 'a warning must say the manifest was not found').toContainEqual(
+    expect(readRecordedLines(), 'a warning must say the package is not built').toContainEqual(
       expect.objectContaining({
         level: 'warn',
-        message: 'race-clock manifest not found; booting without the race clock graphic',
-        manifest_path: missingRaceClockManifestPath,
+        message: 'graphic package is not built; skipping it',
+        graphic_package: 'race-clock',
       }),
     );
   });
 
   it('boots without the race clock and logs an error when its manifest is broken', () => {
-    // Arrange: a brand-new database and a manifest that is cut off half way.
+    // Arrange: a brand-new database and a race-clock manifest cut off half way.
     const { database } = openTemporaryDatabase();
     const { logger, readRecordedLines } = createRecordingLogger();
 
     // Act: load the slices.
-    const slices = loadInitialSlices({
+    const slices = loadSlicesAtBoot({
       database,
+      graphicPackagesFolder: createGraphicsFolderWithBrokenRaceClockManifest(),
       logger,
-      raceClockManifestPath: writeBrokenRaceClockManifest(),
     });
 
     // Assert: no graphics and an error line; a broken build must not stop the show.
@@ -169,48 +234,74 @@ describe('loadInitialSlices on an empty database', () => {
     expect(readRecordedLines(), 'an error must say the manifest is unreadable').toContainEqual(
       expect.objectContaining({
         level: 'error',
-        message: 'race-clock manifest is unreadable; booting without the race clock graphic',
+        message: 'graphic manifest is unreadable; skipping it',
       }),
     );
   });
 });
 
 describe('loadInitialSlices on a database that already has slices', () => {
-  it('loads them as they are and never seeds again', () => {
-    // Arrange: a first boot without the race clock build, then a restart with it.
+  it('registers the race clock on a second boot once its manifest is present', () => {
+    // Arrange: a first boot before the race clock was built, then `pnpm build`.
     const databasePath = createTemporaryDatabasePath();
+    const graphicPackagesFolder = createGraphicsFolderWithUnbuiltRaceClock();
     const firstDatabase = openDatabaseForTests(databasePath);
-    loadInitialSlices({
-      database: firstDatabase,
-      logger: silentLogger,
-      raceClockManifestPath: missingRaceClockManifestPath,
-    });
+    loadSlicesAtBoot({ database: firstDatabase, graphicPackagesFolder });
     firstDatabase.$client.close();
+    buildRaceClockInto(graphicPackagesFolder);
     const secondDatabase = openDatabaseForTests(databasePath);
 
-    // Act: load the slices on the second boot, with the manifest now present.
-    const slicesOnSecondBoot = loadInitialSlices({
+    // Act: load the slices on the second boot.
+    const slicesOnSecondBoot = loadSlicesAtBoot({
       database: secondDatabase,
-      logger: silentLogger,
-      raceClockManifestPath: writeTemporaryRaceClockManifest(),
+      graphicPackagesFolder,
     });
 
-    // Assert: still no graphics, because a database with slices is never re-seeded.
-    expect(slicesOnSecondBoot.graphics, 'a non-empty database must not be seeded again').toEqual(
-      [],
+    // Assert: the race clock is registered and saved, and the layers loaded back.
+    expect(slicesOnSecondBoot.graphics, 'the race clock built since must be registered').toEqual([
+      raceClockGraphic,
+    ]);
+    const storedGraphicsRow = readAllSliceRows(secondDatabase).find(
+      (row) => row.name === 'graphics',
     );
+    expect(storedGraphicsRow?.json, 'the refreshed graphics must be saved').toEqual([
+      raceClockGraphic,
+    ]);
     expect(slicesOnSecondBoot.layers.length, 'the saved layers must load back').toBe(5);
+  });
+
+  it('keeps the stored instances when it refreshes the graphics', () => {
+    // Arrange: a database from an earlier boot with the race clock on program.
+    const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
+    const { database } = openTemporaryDatabase();
+    loadSlicesAtBoot({ database, graphicPackagesFolder });
+    writeSliceRows(database, [
+      {
+        name: 'instances',
+        json: [createRaceClockOnProgramInstance()],
+        updatedAt: '2026-10-09T07:45:00.000Z',
+      },
+    ]);
+
+    // Act: boot again, which refreshes the graphics.
+    const slicesAfterRefresh = loadSlicesAtBoot({ database, graphicPackagesFolder });
+
+    // Assert: the race clock is still on program, both in memory and in the table.
+    expect(slicesAfterRefresh.instances, 'what was on air must survive the refresh').toEqual([
+      createRaceClockOnProgramInstance(),
+    ]);
+    const storedInstancesRow = readAllSliceRows(database).find((row) => row.name === 'instances');
+    expect(storedInstancesRow?.updatedAt, 'the refresh must not rewrite the instances row').toBe(
+      '2026-10-09T07:45:00.000Z',
+    );
   });
 
   it('stops the boot when a stored slice fails its schema', () => {
     // Arrange: a seeded database whose instances row was damaged into something that
     // is not a list of instances, as a hand edit or a bad disk might leave it.
+    const graphicPackagesFolder = createGraphicsFolderWithUnbuiltRaceClock();
     const { database } = openTemporaryDatabase();
-    loadInitialSlices({
-      database,
-      logger: silentLogger,
-      raceClockManifestPath: missingRaceClockManifestPath,
-    });
+    loadSlicesAtBoot({ database, graphicPackagesFolder });
     writeSliceRows(database, [
       {
         name: 'instances',
@@ -220,15 +311,31 @@ describe('loadInitialSlices on a database that already has slices', () => {
     ]);
 
     // Act: load the slices, as the next boot does.
-    const loadTheDamagedSlices = () =>
-      loadInitialSlices({
-        database,
-        logger: silentLogger,
-        raceClockManifestPath: missingRaceClockManifestPath,
-      });
+    const loadTheDamagedSlices = () => loadSlicesAtBoot({ database, graphicPackagesFolder });
 
     // Assert: the boot stops; running on state it cannot read could put the wrong
     // thing on air.
     expect(loadTheDamagedSlices, 'a damaged slice must stop the boot').toThrow();
+  });
+
+  it('stops the boot, with a log line, when the slices table has rows but no layers row', () => {
+    // Arrange: a database whose layers row was lost while the others remain, and a
+    // logger we can read. Booting on would refuse every take for want of layers.
+    const graphicPackagesFolder = createGraphicsFolderWithUnbuiltRaceClock();
+    const { database } = openTemporaryDatabase();
+    loadSlicesAtBoot({ database, graphicPackagesFolder });
+    database.$client.prepare("DELETE FROM slices WHERE name = 'layers'").run();
+    const { logger, readRecordedLines } = createRecordingLogger();
+
+    // Act: load the slices, as the next boot does.
+    const loadWithoutLayers = () => loadSlicesAtBoot({ database, graphicPackagesFolder, logger });
+
+    // Assert: the boot stops, and an error line says why.
+    const expectedMessage =
+      'the slices table has rows but no layers row; the database is damaged, so the boot stops';
+    expect(loadWithoutLayers, 'a missing layers row must stop the boot').toThrow(expectedMessage);
+    expect(readRecordedLines(), 'an error must say the layers row is missing').toContainEqual(
+      expect.objectContaining({ level: 'error', message: expectedMessage }),
+    );
   });
 });

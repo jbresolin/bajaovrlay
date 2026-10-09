@@ -19,8 +19,8 @@ export type StartServerOptions = {
   port: number;
   databasePath: string;
   migrationsFolder: string;
-  raceClockManifestPath: string;
-  graphicPackagesFolder?: string | undefined;
+  /** packages/graphics: registered as graphics at boot and served under /graphics/. */
+  graphicPackagesFolder: string;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /** Defaults to 15 s; tests use a few milliseconds. */
@@ -62,7 +62,7 @@ async function startServingFromDatabase(
   const stateStore = createStateStore({
     database,
     logger: options.logger,
-    raceClockManifestPath: options.raceClockManifestPath,
+    graphicPackagesFolder: options.graphicPackagesFolder,
   });
   const app = createServerApp({
     logger: options.logger,

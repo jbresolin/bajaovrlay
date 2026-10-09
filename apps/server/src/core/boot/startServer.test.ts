@@ -23,7 +23,7 @@ import {
   writeBrokenMigrationsFolder,
 } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
-import { missingRaceClockManifestPath } from '../store/raceClockManifest.testSupport.js';
+import { missingGraphicsFolderPath } from '../store/builtGraphicsFolder.testSupport.js';
 import { startServer } from './startServer.js';
 
 /** The options production uses, on a random port, a temporary file and a silent logger. */
@@ -35,7 +35,7 @@ function buildBootOptions(migrationsFolder: string) {
     port: 0,
     databasePath: createTemporaryDatabasePath(),
     migrationsFolder,
-    raceClockManifestPath: missingRaceClockManifestPath,
+    graphicPackagesFolder: missingGraphicsFolderPath,
   };
 }
 

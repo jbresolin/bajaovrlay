@@ -18,10 +18,10 @@ import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
 /** What a store needs. The last three have production defaults; tests replace them. */
-export type StateStoreOptions = LoadInitialSlicesOptions & {
+export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
   /** The authorisation step; defaults to allowEveryCommand (no login in M0). */
   isCommandAllowed?: IsCommandAllowed | undefined;
-  /** The clock used for timestamps; defaults to the real time. */
+  /** The clock used for every timestamp, at boot and per command; defaults to real time. */
   readCurrentTime?: (() => Date) | undefined;
   /** Makes the id of each new instance; defaults to a random UUID. */
   createInstanceId?: (() => string) | undefined;
@@ -55,7 +55,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   const createInstanceId = options.createInstanceId ?? (() => randomUUID());
   const listeners = new Set<SliceChangeListener>();
-  let currentSlices = loadInitialSlices(options);
+  let currentSlices = loadInitialSlices({ ...options, readCurrentTime });
 
   // Always in this order: validate → authorise → apply the pure reducer → save the
   // changed slices and the event-log row (one transaction) → update memory → tell

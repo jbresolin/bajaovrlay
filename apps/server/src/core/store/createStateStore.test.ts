@@ -34,8 +34,8 @@ import { readAllSliceRows } from '../db/sliceRowStorage.js';
 import { openTemporaryDatabase } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
 import type { IsCommandAllowed } from './authorizeCommand.js';
+import { createGraphicsFolderWithBuiltRaceClock } from './builtGraphicsFolder.testSupport.js';
 import { createStateStore } from './createStateStore.js';
-import { writeTemporaryRaceClockManifest } from './raceClockManifest.testSupport.js';
 
 const timeOfEveryCommand = new Date('2026-10-09T14:32:05.000Z');
 const idOfEveryNewInstance = '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f';
@@ -59,7 +59,7 @@ function createStoreWithRaceClockRegistered(
   const store = createStateStore({
     database,
     logger: createLogger({ level: 'silent' }),
-    raceClockManifestPath: writeTemporaryRaceClockManifest(),
+    graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     readCurrentTime: () => timeOfEveryCommand,
     createInstanceId: () => idOfEveryNewInstance,
     isCommandAllowed: options.isCommandAllowed,

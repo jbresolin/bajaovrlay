@@ -20,9 +20,6 @@ const repositoryRootFolder = fileURLToPath(new URL('../../../', import.meta.url)
 const graphicPackagesFolder = fileURLToPath(
   new URL('../../../packages/graphics/', import.meta.url),
 );
-const raceClockManifestPath = fileURLToPath(
-  new URL('../../../packages/graphics/race-clock/dist/race-clock.ograf.json', import.meta.url),
-);
 const databasePath = resolveDatabasePath(environment.DATABASE_PATH, repositoryRootFolder);
 
 // The built pages are looked up once, at boot. Building them later needs a restart.
@@ -43,7 +40,6 @@ try {
     port: environment.PORT,
     databasePath,
     migrationsFolder: committedMigrationsFolder,
-    raceClockManifestPath,
     graphicPackagesFolder,
     controlPageFolder,
     rendererPageFolder,

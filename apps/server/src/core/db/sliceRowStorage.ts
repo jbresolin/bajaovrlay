@@ -29,8 +29,11 @@ export function writeSliceRows(database: ServerDatabase, rowsToWrite: SliceRow[]
   }
 }
 
-/** Writes the seed slices of a first boot in one transaction: all of them or none. */
-export function writeSeedSliceRows(database: ServerDatabase, seedRows: SliceRow[]): void {
-  const writeAllSeedRows = database.$client.transaction(() => writeSliceRows(database, seedRows));
-  writeAllSeedRows();
+/**
+ * Writes the rows a boot produces (the first-boot seed, the refreshed graphics) in one
+ * transaction: all of them or none.
+ */
+export function writeBootSliceRows(database: ServerDatabase, bootRows: SliceRow[]): void {
+  const writeAllBootRows = database.$client.transaction(() => writeSliceRows(database, bootRows));
+  writeAllBootRows();
 }

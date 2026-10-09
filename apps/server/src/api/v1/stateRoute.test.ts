@@ -22,8 +22,8 @@ import { describe, expect, it } from 'vitest';
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger } from '../../core/logger/createLogger.js';
+import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { createStateStore } from '../../core/store/createStateStore.js';
-import { writeTemporaryRaceClockManifest } from '../../core/store/raceClockManifest.testSupport.js';
 
 /** Builds the server app on a freshly seeded store, without opening a port. */
 function createServerAppWithSeededStore() {
@@ -31,7 +31,7 @@ function createServerAppWithSeededStore() {
   const stateStore = createStateStore({
     database: openTemporaryDatabase().database,
     logger,
-    raceClockManifestPath: writeTemporaryRaceClockManifest(),
+    graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
   });
   const app = createServerApp({ logger, version: '0.3.1', stateStore });
   return { app, stateStore };
