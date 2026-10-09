@@ -94,7 +94,8 @@ export function writeClockTimeAt(
   nowWallClockMs: number,
 ): void {
   const clockTimeMs = computeClockTimeMsAtWallClock(data, nowWallClockMs);
-  writeTextIfChanged(parts.clockTime, formatClockTimeAsHoursMinutesSeconds(clockTimeMs));
+  const clockText = formatClockTimeAsHoursMinutesSeconds(clockTimeMs, data.clockMode);
+  writeTextIfChanged(parts.clockTime, clockText);
 }
 
 /** Shows a flag state on the current layer straight away and hides the incoming one. */
