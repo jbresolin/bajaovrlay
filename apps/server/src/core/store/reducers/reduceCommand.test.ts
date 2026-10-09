@@ -11,7 +11,8 @@
  *   - takeGraphic puts an instance on an empty layer, replaces what was on the same
  *     layer and output, and leaves every other layer and output alone.
  *   - takeGraphic is refused for a layer or a graphic that does not exist.
- *   - clearLayer empties one layer; clearAll empties every layer.
+ *   - clearLayer empties one layer on both outputs, program and preview; clearAll
+ *     empties every layer, persistent ones such as the clock included.
  *   - clearLayer is refused for a layer that does not exist.
  *   - A reducer never changes the slices it was given.
  *
@@ -45,6 +46,15 @@ function buildRaceClockOnAir(): Instance {
     currentStep: 0,
     status: 'on-air',
     takenAt: '2026-10-09T13:00:00.000Z',
+  };
+}
+
+/** Builds the race clock being rehearsed on the preview output, on the clock layer. */
+function buildRaceClockOnPreview(): Instance {
+  return {
+    ...buildRaceClockOnAir(),
+    id: 'e5a9d3b1-6c2f-4d8a-b7e4-3f1c0a9e8d27',
+    target: 'preview',
   };
 }
 
@@ -199,6 +209,17 @@ const appliedCommandScenarios: Array<{
     command: { type: 'clearLayer', layerId: 'lower-third' },
     expectedInstancesAfter: [buildRaceClockOnAir()],
   },
+  // clearLayer names only a layer, not an output, so it clears program and preview both.
+  {
+    name: 'clearLayer removes the clock from program and preview alike',
+    instancesBefore: [
+      buildRaceClockOnAir(),
+      buildRaceClockOnPreview(),
+      buildTeam42LowerThirdOnAir(),
+    ],
+    command: { type: 'clearLayer', layerId: 'clock' },
+    expectedInstancesAfter: [buildTeam42LowerThirdOnAir()],
+  },
   // Clearing a layer that shows nothing is harmless, not an error.
   {
     name: 'clearLayer on an empty layer changes nothing',
@@ -206,9 +227,10 @@ const appliedCommandScenarios: Array<{
     command: { type: 'clearLayer', layerId: 'fullscreen' },
     expectedInstancesAfter: [buildRaceClockOnAir()],
   },
-  // The panic button: everything off air, whatever the layer.
+  // The panic button: everything off air, whatever the layer. The clock layer is
+  // persistent, and clearAll clears it anyway: persistent has no effect until M1.
   {
-    name: 'clearAll removes every instance on every layer',
+    name: 'clearAll removes every instance on every layer, persistent ones included',
     instancesBefore: [buildRaceClockOnAir(), buildTeam42LowerThirdOnAir()],
     command: { type: 'clearAll' },
     expectedInstancesAfter: [],

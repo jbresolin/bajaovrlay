@@ -9,11 +9,13 @@
  *   another package (BAJAOVRLAY-10), so a missing manifest is a warning, not a crash.
  *
  * What these tests prove (with a real SQLite file in a temporary folder):
- *   - An empty database is seeded with the five layers in ascending z-order, and the
- *     seed is saved, not only held in memory.
+ *   - An empty database is seeded with the five layers in ascending z-order, each with
+ *     its pt-BR name, `out-then-in` swaps, and only the logo and clock persistent;
+ *     the seed is saved, not only held in memory.
  *   - A present manifest registers the race clock with it; a missing one logs a
  *     warning and boot carries on without it; a broken one logs an error and carries on.
  *   - A database that already has slices is never seeded again.
+ *   - A stored slice that fails its schema stops the boot instead of running on it.
  *
  * What these tests deliberately do not cover:
  *   - Loading back slices changed by commands; storeRestart.test.ts covers it.
@@ -24,7 +26,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it, onTestFinished } from 'vitest';
 
-import { readAllSliceRows } from '../db/sliceRowStorage.js';
+import { readAllSliceRows, writeSliceRows } from '../db/sliceRowStorage.js';
 import {
   createTemporaryDatabasePath,
   openDatabaseForTests,
@@ -63,10 +65,33 @@ describe('loadInitialSlices on an empty database', () => {
     });
 
     // Assert: the five layers, bottom to top, and the seed is in the slices table.
-    expect(
-      slices.layers.map((layer) => layer.id),
-      'the seeded layers must be bug, ticker, clock, lower-third, fullscreen',
-    ).toEqual(['bug', 'ticker', 'clock', 'lower-third', 'fullscreen']);
+    // Every layer swaps out-then-in (two graphics never overlap); only the logo and the
+    // clock are persistent, the two things meant to stay on screen all day.
+    expect(slices.layers, 'the seeded layers must be exactly these five').toEqual([
+      { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
+      {
+        id: 'ticker',
+        name: 'Letreiro',
+        zIndex: 20,
+        replacePolicy: 'out-then-in',
+        persistent: false,
+      },
+      { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
+      {
+        id: 'lower-third',
+        name: 'Tarja',
+        zIndex: 40,
+        replacePolicy: 'out-then-in',
+        persistent: false,
+      },
+      {
+        id: 'fullscreen',
+        name: 'Tela cheia',
+        zIndex: 50,
+        replacePolicy: 'out-then-in',
+        persistent: false,
+      },
+    ]);
     const zIndexes = slices.layers.map((layer) => layer.zIndex);
     expect(zIndexes, 'each layer must sit above the one before').toEqual(
       [...zIndexes].sort((lower, higher) => lower - higher),
@@ -175,5 +200,35 @@ describe('loadInitialSlices on a database that already has slices', () => {
       [],
     );
     expect(slicesOnSecondBoot.layers.length, 'the saved layers must load back').toBe(5);
+  });
+
+  it('stops the boot when a stored slice fails its schema', () => {
+    // Arrange: a seeded database whose instances row was damaged into something that
+    // is not a list of instances, as a hand edit or a bad disk might leave it.
+    const { database } = openTemporaryDatabase();
+    loadInitialSlices({
+      database,
+      logger: silentLogger,
+      raceClockManifestPath: missingRaceClockManifestPath,
+    });
+    writeSliceRows(database, [
+      {
+        name: 'instances',
+        json: [{ id: 'relogio-no-ar', layerId: 'clock' }],
+        updatedAt: '2026-10-09T14:32:05.000Z',
+      },
+    ]);
+
+    // Act: load the slices, as the next boot does.
+    const loadTheDamagedSlices = () =>
+      loadInitialSlices({
+        database,
+        logger: silentLogger,
+        raceClockManifestPath: missingRaceClockManifestPath,
+      });
+
+    // Assert: the boot stops; running on state it cannot read could put the wrong
+    // thing on air.
+    expect(loadTheDamagedSlices, 'a damaged slice must stop the boot').toThrow();
   });
 });
