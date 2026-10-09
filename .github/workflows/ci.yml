@@ -48,8 +48,10 @@ jobs:
       - name: Build every package
         run: pnpm build
 
+      # From the root: every package takes @playwright/test from the pnpm catalog, so this
+      # one browser matches every package's Playwright version.
       - name: Install the Playwright browser
-        run: pnpm --filter @bajaovrlay/renderer exec playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       # Runs every package's `test:e2e` script, so a new package with Playwright tests
       # joins this step without any change to this file.
