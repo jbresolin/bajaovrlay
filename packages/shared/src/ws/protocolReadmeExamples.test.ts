@@ -9,7 +9,9 @@
  *   - The README has at least one example of each of the five message shapes
  *     (hello, slice, command, ok commandResult, error commandResult).
  *   - Every example passes the schema for its direction: `command` the client schema,
- *     everything else the server schema.
+ *     everything else the server schema. The client envelope does not check the
+ *     command inside it (the store does), so that command is checked against
+ *     CommandSchema too: a misspelt field in the README would otherwise slip through.
  *
  * What these tests deliberately do not cover:
  *   - Whether the prose around the examples is accurate; that is a review judgement.
@@ -18,6 +20,7 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
+import { CommandSchema } from '../commands/command.js';
 import { ClientMessageSchema } from './clientMessages.js';
 import { ServerMessageSchema } from './serverMessages.js';
 
@@ -47,6 +50,22 @@ function describeMessageShape(example: unknown): string {
   return String(exampleAsRecord.type);
 }
 
+/**
+ * True when an example passes the schema of the side that sends it; a client command
+ * must also carry a command that passes CommandSchema.
+ */
+function passesTheSchemaForItsDirection(example: unknown): boolean {
+  const isSentByAClient = describeMessageShape(example) === 'command';
+  if (!isSentByAClient) {
+    return ServerMessageSchema.safeParse(example).success;
+  }
+  const parsedEnvelope = ClientMessageSchema.safeParse(example);
+  if (!parsedEnvelope.success) {
+    return false;
+  }
+  return CommandSchema.safeParse(parsedEnvelope.data.command).success;
+}
+
 describe('packages/shared/src/ws/README.md', () => {
   it('shows one example of each of the five message shapes', () => {
     // Arrange: read the README from disk.
@@ -66,11 +85,9 @@ describe('packages/shared/src/ws/README.md', () => {
     const examples = readEveryJsonCodeBlock(readFileSync(protocolReadmePath, 'utf8'));
 
     // Act: check each example against the schema of the side that sends it.
-    const examplesThatFailTheirSchema = examples.filter((example) => {
-      const isSentByAClient = describeMessageShape(example) === 'command';
-      const schemaForItsDirection = isSentByAClient ? ClientMessageSchema : ServerMessageSchema;
-      return !schemaForItsDirection.safeParse(example).success;
-    });
+    const examplesThatFailTheirSchema = examples.filter(
+      (example) => !passesTheSchemaForItsDirection(example),
+    );
 
     // Assert: none fails.
     expect(examplesThatFailTheirSchema, 'every README example must be a valid message').toEqual([]);
