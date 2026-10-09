@@ -53,12 +53,12 @@ import {
 /** Must match "stepCount" in race-clock.ograf.json: play shows the clock, stop hides it. */
 const raceClockStepCount = 1;
 
-type Lifecycle = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
+type LifecycleStage = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
 
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 
 /** Builds a 4xx answer with a pt-BR message; OGraf actions answer errors, never throw. */
-function refuse(statusCode: number, statusMessage: string): OGrafReturnPayload {
+function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafReturnPayload {
   return { statusCode, statusMessage };
 }
 
@@ -66,7 +66,7 @@ function refuse(statusCode: number, statusMessage: string): OGrafReturnPayload {
 export default class RaceClockGraphic extends LitElement implements OGrafGraphic {
   static override styles = raceClockStyles;
 
-  private lifecycle: Lifecycle = 'unloaded';
+  private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
   private data: RaceClockData | undefined = undefined;
   private parts: RaceClockParts | undefined = undefined;
@@ -91,14 +91,14 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
    */
   async load(params: OGrafLoadParams): Promise<OGrafReturnPayload> {
     if (this.lifecycle === 'disposed') {
-      return refuse(409, ptBR.actionProblems.alreadyDisposed);
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
     }
     if (this.lifecycle !== 'unloaded') {
-      return refuse(409, ptBR.actionProblems.alreadyLoaded);
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyLoaded);
     }
     const dataCheck = parseCompleteRaceClockData(params.data);
     if (!dataCheck.isValid) {
-      return refuse(400, dataCheck.problem);
+      return buildRefusalAnswer(400, dataCheck.problem);
     }
     this.lifecycle = 'loading';
 
@@ -110,7 +110,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     // A dispose that came while load was waiting must win; going on would bring a
     // disposed graphic back to life.
     if (this.readLifecycleNow() === 'disposed') {
-      return refuse(409, ptBR.actionProblems.alreadyDisposed);
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
     }
 
     const parts = findRaceClockParts(this.renderRoot);
@@ -138,7 +138,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
       delta: params.delta,
     });
     if (target.outcome === 'invalidStep') {
-      return refuse(400, ptBR.actionProblems.invalidPlayStep);
+      return buildRefusalAnswer(400, ptBR.actionProblems.invalidPlayStep);
     }
     if (target.outcome === 'goToEnd') {
       const stopAnswer = await this.stopAction({ skipAnimation });
@@ -155,7 +155,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     await this.runPanelTimeline(buildPlayInTimeline(this.requireParts()), skipAnimation);
 
     if (this.readLifecycleNow() === 'disposed') {
-      return refuse(409, ptBR.actionProblems.alreadyDisposed);
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
     }
     // A stop during the play-in took the clock off again: report the step actually on
     // air (none), so a renderer tracking steps from this answer stays in step.
@@ -189,33 +189,42 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     return okAnswer;
   }
 
-  /** OGraf updateAction: merges partial data in; a flag change wipes the new colour in. */
+  /**
+   * OGraf updateAction: merges partial data in at any time after load, on air or off
+   * (João's ruling: the server may correct the data before play or after stop). On air
+   * a flag change wipes the new colour in; off air it is simply drawn, ready for play.
+   */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
     if (refusal !== undefined) {
       return refusal;
     }
-    if (this.lifecycle !== 'onAir' || this.data === undefined) {
-      return refuse(409, ptBR.actionProblems.notOnAirYet);
-    }
-    const dataCheck = mergePartialUpdateIntoRaceClockData(this.data, params.data);
+    const dataBeforeUpdate = this.requireData();
+    const dataCheck = mergePartialUpdateIntoRaceClockData(dataBeforeUpdate, params.data);
     if (!dataCheck.isValid) {
-      return refuse(400, dataCheck.problem);
+      return buildRefusalAnswer(400, dataCheck.problem);
     }
 
-    const previousFlagState = this.data.state;
     this.data = dataCheck.data;
     writeSessionCaptionAndLaps(this.requireParts(), dataCheck.data);
     this.redrawClockTime();
-    if (dataCheck.data.state !== previousFlagState) {
-      await this.wipeInFlagState(dataCheck.data.state, params.skipAnimation ?? false);
+    const isFlagChange = dataCheck.data.state !== dataBeforeUpdate.state;
+    if (!isFlagChange) {
+      return okAnswer;
     }
+    if (this.lifecycle !== 'onAir') {
+      // Nobody sees a wipe off air; draw the new flag so the next play shows it.
+      this.finishRunningFlagWipe();
+      showFlagStateAtOnce(this.requireParts(), dataCheck.data.state);
+      return okAnswer;
+    }
+    await this.wipeInFlagState(dataCheck.data.state, params.skipAnimation ?? false);
     return okAnswer;
   }
 
   /** OGraf customAction: the race clock has none, so every id is unknown. */
   async customAction(params: OGrafCustomActionParams): Promise<OGrafReturnPayload> {
-    return refuse(404, ptBR.actionProblems.unknownCustomAction(params.id));
+    return buildRefusalAnswer(404, ptBR.actionProblems.unknownCustomAction(params.id));
   }
 
   /**
@@ -239,16 +248,16 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
    * while the animation ran; reading through a method stops TypeScript from assuming
    * it is still the value it had before the await.
    */
-  private readLifecycleNow(): Lifecycle {
+  private readLifecycleNow(): LifecycleStage {
     return this.lifecycle;
   }
 
   private refuseUnlessLoaded(): OGrafReturnPayload | undefined {
     if (this.lifecycle === 'unloaded' || this.lifecycle === 'loading') {
-      return refuse(409, ptBR.actionProblems.notLoadedYet);
+      return buildRefusalAnswer(409, ptBR.actionProblems.notLoadedYet);
     }
     if (this.lifecycle === 'disposed') {
-      return refuse(409, ptBR.actionProblems.alreadyDisposed);
+      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
     }
     return undefined;
   }
@@ -258,6 +267,13 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
       throw new Error('race clock parts are read only after load; this is a bug in race-clock.ts');
     }
     return this.parts;
+  }
+
+  private requireData(): RaceClockData {
+    if (this.data === undefined) {
+      throw new Error('race clock data is read only after load; this is a bug in race-clock.ts');
+    }
+    return this.data;
   }
 
   /** Called on every frame while on air: writes the clock time if it changed. */

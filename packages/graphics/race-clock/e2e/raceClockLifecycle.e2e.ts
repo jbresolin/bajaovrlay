@@ -10,9 +10,10 @@
  *
  * What these tests prove:
  *   - The built dist/ works from /graphics/race-clock/: manifest, module and assets load.
- *   - load → play → update → stop → dispose each resolve, in that order, with 200;
- *     play reports step 0, and stop resolves only once the graphic is off screen.
- *   - updateAction before playAction answers a 4xx status instead of throwing.
+ *   - load → play → update → stop → update → dispose each resolve, in that order, with
+ *     200; play reports step 0, stop resolves only once the graphic is off screen, and
+ *     an update after stop is accepted (João's ruling: updates are fine once loaded).
+ *   - updateAction before load answers a 4xx status instead of throwing.
  *
  * What these tests deliberately do not cover:
  *   - The real BajaOvrLay renderer (apps/renderer), which does not load graphics yet;
@@ -42,7 +43,7 @@ async function loadGraphicFromItsManifestLikeARenderer(page: Page): Promise<stri
 }
 
 test.describe('the race clock driven like a renderer', () => {
-  test('resolves load, play, update, stop and dispose in order, each with 200', async ({
+  test('resolves load, play, update, stop, update and dispose in order, each with 200', async ({
     page,
   }) => {
     // Arrange: the built graphic, loaded from its manifest into a page.
@@ -85,6 +86,8 @@ test.describe('the race clock driven like a renderer', () => {
       const stopAnswer = await graphic.stopAction({});
       const panelOpacityWhenStopResolved = panel ? getComputedStyle(panel).opacity : 'no panel';
       answers.push({ action: 'stop', statusCode: stopAnswer.statusCode });
+      const updateOffAirAnswer = await graphic.updateAction({ data: { state: 'red' } });
+      answers.push({ action: 'update off air', statusCode: updateOffAirAnswer.statusCode });
       const disposeAnswer = await graphic.dispose({});
       answers.push({ action: 'dispose', statusCode: disposeAnswer.statusCode });
       return { answers, panelOpacityWhenStopResolved };
@@ -98,6 +101,7 @@ test.describe('the race clock driven like a renderer', () => {
       { action: 'play', statusCode: 200, currentStep: 0 },
       { action: 'update', statusCode: 200 },
       { action: 'stop', statusCode: 200 },
+      { action: 'update off air', statusCode: 200 },
       { action: 'dispose', statusCode: 200 },
     ]);
     expect(
@@ -106,30 +110,12 @@ test.describe('the race clock driven like a renderer', () => {
     ).toBe('0');
   });
 
-  test('answers a 4xx status, not an error, to updateAction before playAction', async ({
-    page,
-  }) => {
-    // Arrange: the built graphic, loaded from its manifest and given its data, but
-    // never played.
+  test('answers a 4xx status, not an error, to updateAction before load', async ({ page }) => {
+    // Arrange: the built graphic, loaded from its manifest onto the page but never
+    // given its data with load.
     await loadGraphicFromItsManifestLikeARenderer(page);
-    await page.evaluate(async () => {
-      type OGrafGraphic = HTMLElement & { load: (params: object) => Promise<unknown> };
-      const graphic = document.querySelector('baja-race-clock') as OGrafGraphic;
-      await graphic.load({
-        data: {
-          sessionName: 'Enduro de Resistência',
-          state: 'green',
-          clockMode: 'elapsed',
-          referenceTimeMs: 0,
-          referenceWallClockMs: Date.now(),
-          running: false,
-        },
-        renderType: 'realtime',
-        renderCharacteristics: {},
-      });
-    });
 
-    // Act: send an update before the graphic was ever played.
+    // Act: send an update before load.
     const updateAnswer = await page.evaluate(async () => {
       type ActionAnswer = { statusCode: number; statusMessage?: string };
       type OGrafGraphic = HTMLElement & { updateAction: (params: object) => Promise<ActionAnswer> };
@@ -138,12 +124,12 @@ test.describe('the race clock driven like a renderer', () => {
     });
 
     // Assert: a client-error status with a pt-BR explanation, not a thrown error.
-    expect(updateAnswer.statusCode, 'update before play must answer 4xx').toBeGreaterThanOrEqual(
+    expect(updateAnswer.statusCode, 'update before load must answer 4xx').toBeGreaterThanOrEqual(
       400,
     );
-    expect(updateAnswer.statusCode, 'update before play must answer 4xx').toBeLessThan(500);
+    expect(updateAnswer.statusCode, 'update before load must answer 4xx').toBeLessThan(500);
     expect(updateAnswer.statusMessage, 'the answer must explain itself in pt-BR').toBe(
-      'O relógio não está no ar: chame playAction antes de atualizar.',
+      'O relógio ainda não foi carregado (load).',
     );
   });
 });

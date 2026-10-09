@@ -74,8 +74,6 @@ describe('the leader laps line', () => {
 
     // Assert: the laps line is visible and reads "12 VOLTAS".
     expect(parts.laps.hidden, 'with a lap count, the laps line must be shown').toBe(false);
-    expect(parts.laps.textContent, 'the laps line must read the pt-BR lap count').toBe(
-      '12 VOLTAS',
-    );
+    expect(parts.laps.textContent, 'the laps line must read the pt-BR lap count').toBe('12 VOLTAS');
   });
 });

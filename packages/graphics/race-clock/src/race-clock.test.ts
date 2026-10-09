@@ -1,5 +1,5 @@
 /**
- * The race clock web component (packages/graphics/race-clock)
+ * The race clock web component: load, play, stop and dispose (packages/graphics/race-clock)
  *
  * What this module is for:
  *   race-clock.ts is the OGraf graphic itself: a web component the renderer loads,
@@ -7,114 +7,38 @@
  *   and the animations together; each of those has its own tests.
  *
  * What these tests prove:
- *   - Calls made at the wrong moment (before load, update before play, a second load,
- *     anything after dispose, a custom action it does not have) answer a 4xx status with
- *     a pt-BR message instead of throwing, as OGraf asks. Stop before play is harmless.
+ *   - Calls made at the wrong moment (play before load, a second load, anything after
+ *     dispose, a custom action it does not have) answer a 4xx status with a pt-BR
+ *     message instead of throwing, as OGraf asks. Stop before play is harmless.
  *   - Play while on air takes the clock off (OGraf's "past the last step" rule), and a
  *     play cut short by a stop reports no step, matching what is on screen.
- *   - Bad data answers 400 with a pt-BR message naming the field.
- *   - A partial update changes what is shown and keeps the rest.
+ *   - Bad load data answers 400 with a pt-BR message naming the field.
  *   - dispose stops the per-frame clock redraw and kills the running timelines; a play
  *     that was animating when dispose came still resolves (with 409) instead of
  *     hanging, and a dispose that lands while load is still waiting is not undone.
  *
  * What these tests deliberately do not cover:
+ *   - updateAction, which race-clock.updateAction.test.ts covers.
  *   - Real rendering, fonts and timing; jsdom draws nothing. The Playwright suites in
  *     e2e/ run the built component in Chromium for the lifecycle order and screenshots.
  *   - Loading the display font: jsdom has no FontFace, so displayFont.ts is replaced
  *     by a stand-in that is ready at once.
  */
 import { gsap } from 'gsap';
-import { describe, expect, it, onTestFinished, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import RaceClockGraphic from './race-clock.js';
-import type { RaceClockData } from './raceClockModel.js';
+import {
+  createGreenFlagEnduroData,
+  createRaceClockOnThePage,
+  loadRaceClockWithData,
+  readPanelOpacity,
+  readShownText,
+  takeControlOfFramesAndTime,
+} from './raceClockOnThePage.testSupport.js';
 
 vi.mock('./displayFont.js', () => ({
   loadDisplayFontOnce: () => Promise.resolve(),
 }));
-
-// The renderer, not the graphic, picks the tag name; these tests pick their own.
-customElements.define('baja-race-clock-under-test', RaceClockGraphic);
-
-/** 16 May 2026, 14:30:00 UTC: when the clock reading in these tests was taken. */
-const readingWallClockMs = Date.parse('2026-05-16T14:30:00.000Z');
-
-/** Builds the data the server sends when the enduro is under green flag, 1:05:00 in. */
-function createGreenFlagEnduroData(): RaceClockData {
-  return {
-    sessionName: 'Enduro de Resistência',
-    state: 'green',
-    clockMode: 'elapsed',
-    referenceTimeMs: 3_900_000,
-    referenceWallClockMs: readingWallClockMs,
-    running: true,
-    lapsCompletedByLeader: 12,
-  };
-}
-
-/**
- * Puts a fresh race clock element on the page, as a renderer does before calling load.
- * When the test ends it is disposed and removed, so no clock keeps ticking into the
- * next test.
- */
-function createRaceClockOnThePage(): RaceClockGraphic {
-  const raceClock = document.createElement('baja-race-clock-under-test') as RaceClockGraphic;
-  document.body.append(raceClock);
-  onTestFinished(async () => {
-    await raceClock.dispose();
-    raceClock.remove();
-  });
-  return raceClock;
-}
-
-/** Loads the race clock the way an OBS renderer does: real-time, at 1920x1080. */
-function loadRaceClockWithData(raceClock: RaceClockGraphic, data: unknown) {
-  return raceClock.load({
-    data,
-    renderType: 'realtime',
-    renderCharacteristics: { resolution: { width: 1920, height: 1080 } },
-  });
-}
-
-/** Reads the text of one part of the graphic, found by its test id inside the shadow root. */
-function readShownText(raceClock: RaceClockGraphic, testId: string): string | null | undefined {
-  return raceClock.shadowRoot?.querySelector(`[data-testid="${testId}"]`)?.textContent;
-}
-
-/**
- * Replaces requestAnimationFrame with frames that run only when the test says so, and
- * fixes Date.now, so the test decides exactly when time passes and frames happen. The
- * real ones come back when the test ends, even if it failed or timed out.
- */
-function takeControlOfFramesAndTime() {
-  vi.useFakeTimers({ toFake: ['Date'] });
-  vi.setSystemTime(readingWallClockMs);
-  const pendingCallbacks = new Map<number, FrameRequestCallback>();
-  let lastFrameId = 0;
-  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-    lastFrameId += 1;
-    pendingCallbacks.set(lastFrameId, callback);
-    return lastFrameId;
-  });
-  vi.stubGlobal('cancelAnimationFrame', (frameId: number) => pendingCallbacks.delete(frameId));
-  onTestFinished(() => {
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
-  });
-  return {
-    runPendingFrames(): void {
-      const callbacksDueNow = [...pendingCallbacks.values()];
-      pendingCallbacks.clear();
-      for (const callback of callbacksDueNow) {
-        callback(performance.now());
-      }
-    },
-    letWallClockTimePass(milliseconds: number): void {
-      vi.setSystemTime(Date.now() + milliseconds);
-    },
-  };
-}
 
 describe('calls made at the wrong moment', () => {
   it('answers 409 to playAction before load, without throwing', async () => {
@@ -128,21 +52,6 @@ describe('calls made at the wrong moment', () => {
     expect(answer, 'play before load must answer 409 with a pt-BR message').toEqual({
       statusCode: 409,
       statusMessage: 'O relógio ainda não foi carregado (load).',
-    });
-  });
-
-  it('answers 409 to updateAction before playAction, without throwing', async () => {
-    // Arrange: a loaded race clock that is not on air yet.
-    const raceClock = createRaceClockOnThePage();
-    await loadRaceClockWithData(raceClock, createGreenFlagEnduroData());
-
-    // Act: try to throw the yellow flag before the clock is on air.
-    const answer = await raceClock.updateAction({ data: { state: 'yellow' } });
-
-    // Assert: a 409 with a pt-BR explanation.
-    expect(answer, 'update before play must answer 409 with a pt-BR message').toEqual({
-      statusCode: 409,
-      statusMessage: 'O relógio não está no ar: chame playAction antes de atualizar.',
     });
   });
 
@@ -228,13 +137,12 @@ describe('playing and stopping', () => {
     // Act: play again; OGraf says a step past the last one means "go to the end".
     const answer = await raceClock.playAction({ skipAnimation: true });
 
-    // Assert: 200 with no current step, and the clock is now off air (updates refused).
+    // Assert: 200 with no current step, and the panel has gone invisible.
     expect(answer, 'playing past the last step must take the clock off').toEqual({
       statusCode: 200,
       currentStep: undefined,
     });
-    const updateAnswer = await raceClock.updateAction({ data: { state: 'yellow' } });
-    expect(updateAnswer.statusCode, 'once off air, updates must be refused').toBe(409);
+    expect(readPanelOpacity(raceClock), 'the clock must be off screen once taken off').toBe('0');
   });
 
   it('answers a play cut short by a stop with no current step, since nothing is on air', async () => {
@@ -256,7 +164,7 @@ describe('playing and stopping', () => {
   });
 });
 
-describe('bad data', () => {
+describe('bad load data', () => {
   it('answers 400 from load with a pt-BR message naming the bad field', async () => {
     // Arrange: a race clock and data with a flag state it cannot draw.
     const raceClock = createRaceClockOnThePage();
@@ -270,55 +178,6 @@ describe('bad data', () => {
       statusCode: 400,
       statusMessage: 'Valor inválido no campo "state".',
     });
-  });
-
-  it('answers 400 from updateAction and keeps showing the previous data', async () => {
-    // Arrange: a race clock on air under green flag.
-    const raceClock = createRaceClockOnThePage();
-    await loadRaceClockWithData(raceClock, createGreenFlagEnduroData());
-    await raceClock.playAction({ skipAnimation: true });
-
-    // Act: send an update with a misspelled flag state.
-    const answer = await raceClock.updateAction({ data: { state: 'amarela' } });
-
-    // Assert: a 400 naming the field, and the green flag is still shown.
-    expect(answer, 'a bad update must answer 400 naming the field').toEqual({
-      statusCode: 400,
-      statusMessage: 'Valor inválido no campo "state".',
-    });
-    expect(
-      readShownText(raceClock, 'race-clock-flag-label'),
-      'a refused update must leave the green flag on air',
-    ).toBe('VERDE');
-  });
-});
-
-describe('a partial update', () => {
-  it('changes the flag on air and keeps the session name and laps', async () => {
-    // Arrange: a race clock on air under green flag.
-    const raceClock = createRaceClockOnThePage();
-    await loadRaceClockWithData(raceClock, createGreenFlagEnduroData());
-    await raceClock.playAction({ skipAnimation: true });
-
-    // Act: race control throws the yellow flag; only the state is sent.
-    const answer = await raceClock.updateAction({
-      data: { state: 'yellow' },
-      skipAnimation: true,
-    });
-
-    // Assert: 200, the yellow label is shown, the rest is unchanged.
-    expect(answer, 'a good update must answer 200').toEqual({ statusCode: 200 });
-    expect(readShownText(raceClock, 'race-clock-flag-label'), 'the yellow flag must show').toBe(
-      'AMARELA',
-    );
-    expect(
-      readShownText(raceClock, 'race-clock-session-name'),
-      'the session name must survive a partial update',
-    ).toBe('Enduro de Resistência');
-    expect(
-      readShownText(raceClock, 'race-clock-laps'),
-      'the leader lap count must survive a partial update',
-    ).toBe('12 VOLTAS');
   });
 });
 
