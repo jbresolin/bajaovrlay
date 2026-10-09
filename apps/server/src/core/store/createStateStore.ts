@@ -67,35 +67,25 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     const validation = CommandSchema.safeParse(commandInput);
     if (!validation.success) {
       const badFieldPath = validation.error.issues[0]?.path ?? [];
-      const error = refuseInvalidCommand(badFieldPath);
-      recordOutcome({
-        nextSlices: currentSlices,
-        logEntry: {
-          ts: now,
-          actor,
-          command: readCommandNameAsSent(commandInput),
-          payload: describePayloadAsReceived(commandInput),
-          result: { status: 'failed', error },
-        },
+      return recordRefusal({
+        now,
+        actor,
+        commandName: readCommandNameAsSent(commandInput),
+        payload: describePayloadAsReceived(commandInput),
+        error: refuseInvalidCommand(badFieldPath),
       });
-      return { ok: false, error };
     }
     const command = validation.data;
 
     // Step 2, authorise: a hook that says yes to everything until login exists.
     if (!isCommandAllowed(command, actor)) {
-      const error = refuseUnauthorizedCommand();
-      recordOutcome({
-        nextSlices: currentSlices,
-        logEntry: {
-          ts: now,
-          actor,
-          command: command.type,
-          payload: command,
-          result: { status: 'failed', error },
-        },
+      return recordRefusal({
+        now,
+        actor,
+        commandName: command.type,
+        payload: command,
+        error: refuseUnauthorizedCommand(),
       });
-      return { ok: false, error };
     }
 
     // Step 3, apply: the pure reducer, given the id and time it may need.
@@ -104,18 +94,13 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       now,
     });
     if (reducerOutcome.status === 'refused') {
-      const error = reducerOutcome.error;
-      recordOutcome({
-        nextSlices: currentSlices,
-        logEntry: {
-          ts: now,
-          actor,
-          command: command.type,
-          payload: command,
-          result: { status: 'failed', error },
-        },
+      return recordRefusal({
+        now,
+        actor,
+        commandName: command.type,
+        payload: command,
+        error: reducerOutcome.error,
       });
-      return { ok: false, error };
     }
 
     // Steps 4 to 6: save, append to the event log, tell listeners.
@@ -130,6 +115,30 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       },
     });
     return { ok: true };
+  }
+
+  /**
+   * Logs a refused command as failed, leaving every slice as it was, and returns the
+   * answer the operator is shown. Used by the validate, authorise and apply steps.
+   */
+  function recordRefusal(refusal: {
+    now: string;
+    actor: string;
+    commandName: string;
+    payload: unknown;
+    error: CommandError;
+  }): CommandOutcome {
+    recordOutcome({
+      nextSlices: currentSlices,
+      logEntry: {
+        ts: refusal.now,
+        actor: refusal.actor,
+        command: refusal.commandName,
+        payload: refusal.payload,
+        result: { status: 'failed', error: refusal.error },
+      },
+    });
+    return { ok: false, error: refusal.error };
   }
 
   /**
