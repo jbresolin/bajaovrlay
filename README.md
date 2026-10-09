@@ -10,8 +10,5 @@ contract for how this repository is built, and it summarises the design authorit
 - `packages/graphics` — OGraf graphics, one package each.
 - `docs/` — design docs, task briefs and `testing-style.md` (how every test is written).
 
-Requirements: Node 22 (`.nvmrc`) and pnpm (version pinned in `package.json`; run
-`corepack enable` once). Then `pnpm install` and `pnpm dev`.
-
-Checks, all run by CI on every pull request: `pnpm lint`, `pnpm typecheck`, `pnpm test`,
-`pnpm build`, `pnpm test:e2e`.
+Needs Node 22 (`.nvmrc`) and pnpm (`corepack enable` once), then `pnpm install` and
+`pnpm dev`. CI runs `pnpm lint`, `typecheck`, `test`, `build` and `test:e2e` on every PR.
