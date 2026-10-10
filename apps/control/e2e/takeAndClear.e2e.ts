@@ -8,21 +8,21 @@
  *
  * What these tests prove:
  *   - Filling the race clock form and pressing "Colocar no ar" makes the layer panel
- *     show the clock on the "Relógio" layer within 2 seconds.
+ *     show the clock on the "Relógio" layer within 2 seconds, and the program monitor
+ *     (the renderer page in a frame, as OBS loads it) contains the race clock element.
  *   - Reloading the page changes nothing: the panel still shows the clock, because the
  *     state lives on the server and not in the page; and the form comes back showing
  *     what is on air instead of its defaults.
  *   - Pressing "Limpar" on that layer brings it back to "vazia".
  *
  * What these tests deliberately do not cover:
- *   - The clock appearing inside the program monitor. That needs the renderer to draw
- *     instances, which is BAJAOVRLAY-9 (open, not merged when this was written). Add the
- *     assertion "the program monitor frame contains the clock element" once it is in.
+ *   - What the clock in the program monitor looks like or which time it shows; the
+ *     renderer's raceClockOnAir.e2e.ts checks that. Here it only has to be in the frame.
  *   - A restart of the server keeping the state; the server's storeRestart.test.ts does.
  *   - Field validation, clear all and the keyboard; the component tests cover those.
  *
- * What it needs: the race clock built (`pnpm build`, or its own browser tests, which
- * pnpm runs before these), because the server only registers built graphics.
+ * What it needs: the race clock and the renderer built (`pnpm build`), because the server
+ * only registers built graphics and the program monitor frames the built renderer page.
  */
 import { expect, test } from '@playwright/test';
 
@@ -58,6 +58,15 @@ test.describe('taking and clearing the race clock', () => {
     await expect(clockLayerRow, 'a layer with the clock on it is not "vazia"').not.toContainText(
       'vazia',
     );
+    // The program monitor is the renderer page in a frame, so the clock element must be
+    // inside that frame, on the clock layer, exactly as OBS would have it.
+    const raceClockInProgramMonitor = page
+      .frameLocator('iframe[title="Programa"]')
+      .locator('[data-layer-id="clock"] > baja-graphic-race-clock');
+    await expect(
+      raceClockInProgramMonitor,
+      'the program monitor frame must contain the race clock element after the take',
+    ).toBeAttached();
 
     // Act: reload the page, as an operator does when the browser misbehaves.
     await page.reload();
