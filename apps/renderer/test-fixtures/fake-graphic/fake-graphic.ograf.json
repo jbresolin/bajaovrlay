@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-fake-graphic",
+  "version": "0.1.0",
+  "name": "Gráfico de teste",
+  "description": "Anota cada chamada do ciclo de vida OGraf; usado só pelos testes do renderer.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "fake-graphic.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1
+}

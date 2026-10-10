@@ -36,8 +36,14 @@ export default defineConfig(
   },
 
   {
-    // Code that runs in the browser: the control page, the renderer and every graphic.
-    files: ['apps/control/src/**', 'apps/renderer/src/**', 'packages/graphics/*/src/**'],
+    // Code that runs in the browser: the control page, the renderer (and the fake graphic
+    // its browser tests load) and every graphic.
+    files: [
+      'apps/control/src/**',
+      'apps/renderer/src/**',
+      'apps/renderer/test-fixtures/**',
+      'packages/graphics/*/src/**',
+    ],
     languageOptions: { globals: globals.browser },
   },
 

@@ -274,10 +274,20 @@ importers:
         version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
   apps/renderer:
+    dependencies:
+      '@bajaovrlay/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
     devDependencies:
+      '@bajaovrlay/race-clock':
+        specifier: workspace:*
+        version: link:../../packages/graphics/race-clock
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.62.0
+      jsdom:
+        specifier: ^30.1.2
+        version: 30.1.2
       vite:
         specifier: ^8.3.3
         version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
