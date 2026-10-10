@@ -61,9 +61,11 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
     await sendCommand(takeCommand);
   }
   async function sendFormAsUpdateCommand(formValues: RaceClockTakeFormValues): Promise<void> {
-    // The clock can leave the air between the drawing of the button and the press (another
-    // operator's "Limpar"). Then there is no time to keep, and undefined makes the update
-    // fall back to the typed time.
+    // The `?.` is here only because the type allows undefined: "Atualizar" is drawn only
+    // while the clock is on air, so a press always finds the instance of that same drawing
+    // (were it undefined, the builder would fall back to the typed time). What can go
+    // wrong: a press that races another operator's "Limpar" still sees that instance, and
+    // puts the clock back on air with the time it last showed.
     const updateCommand = buildUpdateRaceClockCommand(
       formValues,
       raceClockInstanceOnAir?.resolvedData,
