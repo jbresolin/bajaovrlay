@@ -77,10 +77,15 @@ export function buildRaceClockInstanceUpdate(
   // never taken away: laps left out of the command stay on screen, and the graphic
   // refuses a null. Rather than send the other changes and leave the laps on air as if
   // all had worked, nothing is sent and the panel tells the operator what to press.
+  // That applies only while laps are on air. An emptied field can still count as changed
+  // when there are none: the operator erased laps, then another operator put a clock
+  // without laps on air, and react-hook-form keeps the field marked. Then there is
+  // nothing to remove, and the empty field is simply left out further down.
   const wereTheLapsChanged = fieldsTheOperatorChanged.lapsCompletedByLeader === true;
-  const wereTheLapsErased =
-    wereTheLapsChanged && dataFromTheForm.lapsCompletedByLeader === undefined;
-  if (wereTheLapsErased) {
+  const isTheLapsFieldEmpty = dataFromTheForm.lapsCompletedByLeader === undefined;
+  const areLapsOnAir = dataOnAir.lapsCompletedByLeader !== undefined;
+  const wereLapsOnAirErased = wereTheLapsChanged && isTheLapsFieldEmpty && areLapsOnAir;
+  if (wereLapsOnAirErased) {
     return { outcome: 'lapsCannotBeRemoved' };
   }
 

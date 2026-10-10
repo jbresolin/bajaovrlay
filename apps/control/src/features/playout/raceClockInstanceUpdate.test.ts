@@ -18,7 +18,8 @@
  *     counting from its own reference.
  *   - With nothing changed there is nothing to send.
  *   - Erased laps cannot be sent (a partial update cannot remove a field), and the answer
- *     says so instead of sending something else.
+ *     says so instead of sending something else. That holds only while laps are on air:
+ *     with none on air an emptied laps field asks for nothing and the rest is sent.
  *   - When the on-air data cannot be read, the whole form is sent.
  *
  * What these tests deliberately do not cover:
@@ -269,6 +270,35 @@ describe('buildRaceClockInstanceUpdate', () => {
     // that is left out stays on air; the page says so instead of sending half the change.
     expect(update, 'erased laps must be reported, not silently left on air').toEqual({
       outcome: 'lapsCannotBeRemoved',
+    });
+  });
+
+  it('sends the other changes when the laps field was emptied but no laps are on air', () => {
+    // Arrange: a clock on air that shows no laps (another operator took it that way), and
+    // a form whose laps field is empty yet still counts as changed, because this operator
+    // had erased laps that were on air before. The flag was changed too.
+    const raceClockDataOnAirWithoutLaps: Partial<RaceClockData> = buildRaceClockDataOnAir();
+    delete raceClockDataOnAirWithoutLaps.lapsCompletedByLeader;
+    const formValues = { ...buildFormDisagreeingWithEveryFieldOnAir(), lapsCompletedByLeader: '' };
+
+    // Act: work out what the press sends.
+    const update = buildRaceClockInstanceUpdate({
+      instanceId: idOfTheInstanceOnAir,
+      formValues,
+      fieldsTheOperatorChanged: { lapsCompletedByLeader: true, state: true },
+      raceClockDataOnAir: raceClockDataOnAirWithoutLaps,
+      nowInMilliseconds: momentOfThePressInMilliseconds,
+    });
+
+    // Assert: the flag goes out alone. There are no laps on air to remove, so the empty
+    // laps field asks for nothing and must not hold the flag back.
+    expect(update, 'with no laps on air an empty laps field must not block the update').toEqual({
+      outcome: 'sendCommand',
+      command: {
+        type: 'updateInstanceData',
+        instanceId: idOfTheInstanceOnAir,
+        data: { state: 'yellow' },
+      },
     });
   });
 
