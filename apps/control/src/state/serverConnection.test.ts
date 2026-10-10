@@ -1,0 +1,492 @@
+/**
+ * Server connection (apps/control)
+ *
+ * What this module is for:
+ *   The control page talks to the server over one WebSocket. Everything the page knows
+ *   arrives on it (a hello with all the state, then one message per change), and
+ *   everything the operator does leaves on it as a command. sendCommand numbers each
+ *   command and waits for the server's answer to that number.
+ *
+ * What these tests prove:
+ *   - The page dials the address it was given; a hello fills the store and marks the
+ *     page connected; a slice message updates that slice.
+ *   - A message that is not JSON, or not in the protocol, changes nothing and is logged.
+ *   - sendCommand sends the command with a request id, and settles only on the answer
+ *     carrying that id: it resolves on ok, rejects with the server's code and pt-BR
+ *     message on a refusal, and rejects after 5 seconds of silence.
+ *   - A command sent while disconnected is refused at once and never leaves the page.
+ *   - A failure is left in the store for the page to show; the next success removes it.
+ *   - When the line drops the page says "reconnecting", dials again after a wait that
+ *     doubles each time (0.5 s, 1 s, 2 s, 4 s, then 5 s), and starts over from 0.5 s once
+ *     a hello arrives. Hanging up on purpose stops the dialling.
+ *
+ * What these tests deliberately do not cover:
+ *   - The browser's real WebSocket: a fake server socket stands in for it, driven by
+ *     hand. The few lines that adapt the real one are exercised by e2e/takeAndClear.e2e.ts.
+ *   - The real clock: time is moved by hand, so "5 seconds" takes no time to test.
+ */
+import { describe, expect, it, vi } from 'vitest';
+
+import { createFakeServerSocket } from './fakeServerSocket.testSupport';
+import { connectToServer } from './serverConnection';
+import { createServerStateStore } from './serverStateStore';
+import {
+  buildRaceClockInstanceOnTheClockLayer,
+  buildSlicesWithNothingOnAir,
+  buildSlicesWithTheRaceClockOnAir,
+} from './slicesLikeTheServerSends.testSupport';
+
+const momentTheClockWentOnAir = '2026-10-09T13:00:00.000Z';
+
+/** One line the connection wrote to the log, as the test recorded it. */
+type RecordedLogLine = { level: string; message: string; details: Record<string, unknown> };
+
+/**
+ * Builds a control page connection dialling a fake server. Request ids are handed out
+ * as pedido-1, pedido-2, ... so the tests can name them. The server has not picked up yet.
+ */
+function connectControlPageToFakeServer() {
+  const serverStateStore = createServerStateStore();
+  const fakeServerSocket = createFakeServerSocket();
+  const recordedLogLines: RecordedLogLine[] = [];
+  let numberOfRequestIdsHandedOut = 0;
+
+  const serverConnection = connectToServer({
+    webSocketAddress: 'ws://192.168.0.10:3000/ws',
+    serverStateStore,
+    openSocket: fakeServerSocket.openSocket,
+    logEvent: (level, message, details = {}) => {
+      recordedLogLines.push({ level, message, details });
+    },
+    createRequestId: () => {
+      numberOfRequestIdsHandedOut += 1;
+      return `pedido-${numberOfRequestIdsHandedOut}`;
+    },
+  });
+
+  return { serverStateStore, fakeServerSocket, recordedLogLines, serverConnection };
+}
+
+/** The same, after the server picked up and said hello with nothing on air. */
+function connectControlPageToFakeServerThatSaidHello() {
+  const controlPage = connectControlPageToFakeServer();
+  controlPage.fakeServerSocket.acceptConnection();
+  controlPage.fakeServerSocket.sendMessage({
+    type: 'hello',
+    slices: buildSlicesWithNothingOnAir(),
+  });
+  return controlPage;
+}
+
+describe('connecting and receiving state', () => {
+  it('dials the address it was given and says connecting until the server says hello', () => {
+    // Arrange: nothing to prepare.
+
+    // Act: connect; the server picks up but has not sent its hello yet.
+    const { serverStateStore, fakeServerSocket } = connectControlPageToFakeServer();
+    fakeServerSocket.acceptConnection();
+
+    // Assert: one call went out to the right address, and the page is still connecting.
+    expect(fakeServerSocket.countConnectionsOpened(), 'the page must dial exactly once').toBe(1);
+    expect(
+      fakeServerSocket.readLastAddressDialled(),
+      'the page must dial the address it was given',
+    ).toBe('ws://192.168.0.10:3000/ws');
+    expect(
+      serverStateStore.getState().connectionStatus,
+      'the page is not connected until it has the state from the hello',
+    ).toBe('connecting');
+  });
+
+  it('fills the store and says connected when the server says hello', () => {
+    // Arrange: a connection the server has picked up.
+    const { serverStateStore, fakeServerSocket } = connectControlPageToFakeServer();
+    fakeServerSocket.acceptConnection();
+
+    // Act: the server says hello with the race clock already on air.
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+    });
+
+    // Assert: the store mirrors the hello and the page is connected.
+    const state = serverStateStore.getState();
+    expect(state.connectionStatus, 'a hello means the page is connected').toBe('connected');
+    expect(state.layers, 'the layers from the hello must be in the store').toHaveLength(5);
+    expect(state.instances, 'the instance from the hello must be in the store').toEqual([
+      buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir),
+    ]);
+  });
+
+  it('updates one slice when the server sends a slice message', () => {
+    // Arrange: a connected page with nothing on air.
+    const { serverStateStore, fakeServerSocket } = connectControlPageToFakeServerThatSaidHello();
+
+    // Act: the server says the instances slice now holds the race clock.
+    fakeServerSocket.sendMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir)],
+    });
+
+    // Assert: the store shows the race clock on air.
+    expect(
+      serverStateStore.getState().instances,
+      'the instances slice must be what the server just sent',
+    ).toEqual([buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir)]);
+  });
+});
+
+describe('messages the page cannot understand', () => {
+  const unreadableMessageScenarios = [
+    // Text that is not JSON at all, as a proxy's HTML error page would be.
+    {
+      name: 'ignores and logs a message that is not JSON',
+      rawText: '<html>502 Bad Gateway</html>',
+    },
+    // Valid JSON of a kind the protocol does not have (a newer server, or a bug).
+    {
+      name: 'ignores and logs a JSON message that is not in the protocol',
+      rawText: JSON.stringify({ type: 'placar', teams: [{ number: 42, name: 'Baja UFPR' }] }),
+    },
+    // A known kind with the wrong content: a slice message whose instance has no id.
+    {
+      name: 'ignores and logs a slice message whose content breaks the schema',
+      rawText: JSON.stringify({ type: 'slice', name: 'instances', slice: [{ layerId: 'clock' }] }),
+    },
+  ];
+
+  it.each(unreadableMessageScenarios)('$name', ({ rawText }) => {
+    // Arrange: a connected page with the race clock on air.
+    const { serverStateStore, fakeServerSocket, recordedLogLines } =
+      connectControlPageToFakeServer();
+    fakeServerSocket.acceptConnection();
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+    });
+    const stateBeforeTheBadMessage = serverStateStore.getState();
+
+    // Act: the bad message arrives.
+    fakeServerSocket.sendRawText(rawText);
+
+    // Assert: nothing changed, and one warning was logged about it.
+    expect(serverStateStore.getState(), 'a bad message must not change any state').toBe(
+      stateBeforeTheBadMessage,
+    );
+    expect(recordedLogLines, 'a bad message must be logged, exactly once').toHaveLength(1);
+    expect(recordedLogLines[0]?.level, 'a bad message is a warning, not a crash').toBe('warn');
+    expect(recordedLogLines[0]?.message, 'the log line must say what happened').toBe(
+      'ignored a server message that is not in the protocol',
+    );
+  });
+});
+
+describe('sendCommand', () => {
+  it('sends the command with a request id and resolves when that id is answered ok', async () => {
+    // Arrange: a connected page.
+    const { fakeServerSocket, serverConnection } = connectControlPageToFakeServerThatSaidHello();
+
+    // Act: clear the clock layer, and let the server answer ok.
+    const sending = serverConnection.sendCommand({ type: 'clearLayer', layerId: 'clock' });
+    fakeServerSocket.acceptLastCommand();
+    const commandResult = await sending;
+
+    // Assert: the server got the command in the protocol's envelope, and the page got ok.
+    expect(
+      fakeServerSocket.listCommandMessagesReceived(),
+      'exactly one command message must reach the server, with its request id',
+    ).toEqual([
+      {
+        type: 'command',
+        requestId: 'pedido-1',
+        command: { type: 'clearLayer', layerId: 'clock' },
+      },
+    ]);
+    expect(commandResult, 'the promise must resolve with the ok answer').toEqual({
+      ok: true,
+      requestId: 'pedido-1',
+    });
+  });
+
+  it('matches each answer to its own command when two are waiting', async () => {
+    // Arrange: a connected page with two commands sent and neither answered.
+    const { fakeServerSocket, serverConnection } = connectControlPageToFakeServerThatSaidHello();
+    const sendingClearLayer = serverConnection.sendCommand({
+      type: 'clearLayer',
+      layerId: 'clock',
+    });
+    const sendingClearAll = serverConnection.sendCommand({ type: 'clearAll' });
+    const whyClearLayerFailed = sendingClearLayer.catch((failure: unknown) => failure);
+
+    // Act: the server answers the second command ok first, then refuses the first.
+    fakeServerSocket.sendMessage({ type: 'commandResult', requestId: 'pedido-2', ok: true });
+    fakeServerSocket.sendMessage({
+      type: 'commandResult',
+      requestId: 'pedido-1',
+      ok: false,
+      error: { code: 'LAYER_NOT_FOUND', message: 'A camada "clock" não existe.' },
+    });
+
+    // Assert: each promise got the answer that carried its own request id.
+    expect(await sendingClearAll, 'clearAll (pedido-2) must get the ok answer').toEqual({
+      ok: true,
+      requestId: 'pedido-2',
+    });
+    expect(
+      await whyClearLayerFailed,
+      'clearLayer (pedido-1) must get the refusal, not the ok meant for pedido-2',
+    ).toMatchObject({ code: 'LAYER_NOT_FOUND' });
+  });
+
+  it("rejects with the server's code and pt-BR message when the command is refused", async () => {
+    // Arrange: a connected page.
+    const { serverStateStore, fakeServerSocket, serverConnection } =
+      connectControlPageToFakeServerThatSaidHello();
+
+    // Act: take a graphic the server does not have, and let the server refuse it.
+    const sending = serverConnection.sendCommand({
+      type: 'takeGraphic',
+      graphicId: 'placar-geral',
+      layerId: 'fullscreen',
+      data: {},
+    });
+    const whyItFailed = sending.catch((failure: unknown) => failure);
+    fakeServerSocket.refuseLastCommand({
+      code: 'GRAPHIC_NOT_FOUND',
+      message: 'O gráfico "placar-geral" não está registrado.',
+    });
+
+    // Assert: the promise rejected with the refusal, and the store keeps it for the page.
+    expect(await whyItFailed, 'the rejection must carry the code and the message').toMatchObject({
+      name: 'CommandFailedError',
+      code: 'GRAPHIC_NOT_FOUND',
+      message: 'O gráfico "placar-geral" não está registrado.',
+    });
+    expect(
+      serverStateStore.getState().lastCommandError,
+      'the store must remember which command failed and why',
+    ).toEqual({
+      commandType: 'takeGraphic',
+      code: 'GRAPHIC_NOT_FOUND',
+      message: 'O gráfico "placar-geral" não está registrado.',
+    });
+  });
+
+  it('forgets the last error once a later command succeeds', async () => {
+    // Arrange: a connected page whose last command was refused.
+    const { serverStateStore, fakeServerSocket, serverConnection } =
+      connectControlPageToFakeServerThatSaidHello();
+    const refusedSending = serverConnection.sendCommand({ type: 'clearLayer', layerId: 'placar' });
+    const whyItFailed = refusedSending.catch((failure: unknown) => failure);
+    fakeServerSocket.refuseLastCommand({
+      code: 'LAYER_NOT_FOUND',
+      message: 'A camada "placar" não existe.',
+    });
+    await whyItFailed;
+
+    // Act: send another command, which the server accepts.
+    const acceptedSending = serverConnection.sendCommand({ type: 'clearAll' });
+    fakeServerSocket.acceptLastCommand();
+    await acceptedSending;
+
+    // Assert: the old error is no longer shown.
+    expect(
+      serverStateStore.getState().lastCommandError,
+      'a success must clear the error left by the earlier failure',
+    ).toBeNull();
+  });
+
+  it('rejects after 5 seconds without an answer, and not a moment before', async () => {
+    // Arrange: a connected page, with time moved by hand.
+    vi.useFakeTimers();
+    const { serverStateStore, serverConnection } = connectControlPageToFakeServerThatSaidHello();
+    let hasFailed = false;
+
+    // Act: send a command the server never answers; wait 4.999 s, then the last millisecond.
+    const sending = serverConnection.sendCommand({ type: 'clearAll' });
+    const whyItFailed = sending.catch((failure: unknown) => {
+      hasFailed = true;
+      return failure;
+    });
+    await vi.advanceTimersByTimeAsync(4_999);
+    const hadFailedJustBeforeFiveSeconds = hasFailed;
+    await vi.advanceTimersByTimeAsync(1);
+
+    // Assert: still waiting at 4.999 s; failed at 5 s with a pt-BR explanation.
+    expect(hadFailedJustBeforeFiveSeconds, 'the command must still be waiting at 4.999 s').toBe(
+      false,
+    );
+    expect(await whyItFailed, 'at 5 s the promise must reject as timed out').toMatchObject({
+      name: 'CommandFailedError',
+      code: 'COMMAND_TIMED_OUT',
+      message:
+        'O servidor não respondeu em 5 segundos. Confira nas camadas se o comando foi aplicado.',
+    });
+    expect(
+      serverStateStore.getState().lastCommandError?.code,
+      'the store must remember the timeout for the page to show',
+    ).toBe('COMMAND_TIMED_OUT');
+  });
+
+  it('ignores and logs an answer that arrives after its command timed out', async () => {
+    // Arrange: a connected page whose command has already timed out.
+    vi.useFakeTimers();
+    const { fakeServerSocket, serverConnection, recordedLogLines } =
+      connectControlPageToFakeServerThatSaidHello();
+    const sending = serverConnection.sendCommand({ type: 'clearAll' });
+    const whyItFailed = sending.catch((failure: unknown) => failure);
+    await vi.advanceTimersByTimeAsync(5_000);
+    await whyItFailed;
+
+    // Act: the server's answer finally arrives.
+    fakeServerSocket.acceptLastCommand();
+
+    // Assert: nothing breaks, and the late answer is noted in the log.
+    expect(recordedLogLines, 'a late answer must be logged, exactly once').toHaveLength(1);
+    expect(recordedLogLines[0]?.message, 'the log line must say what happened').toBe(
+      'ignored a command result nobody is waiting for',
+    );
+    expect(recordedLogLines[0]?.details, 'the log line must name the request').toEqual({
+      requestId: 'pedido-1',
+    });
+  });
+
+  it('refuses at once, without sending anything, while the page is not connected', async () => {
+    // Arrange: a page that has dialled but whose server has not picked up.
+    const { serverStateStore, fakeServerSocket, serverConnection } =
+      connectControlPageToFakeServer();
+
+    // Act: try to clear everything.
+    const sending = serverConnection.sendCommand({ type: 'clearAll' });
+    const whyItFailed = await sending.catch((failure: unknown) => failure);
+
+    // Assert: the promise rejected with a pt-BR reason and nothing was sent.
+    expect(whyItFailed, 'a command with no connection must be refused').toMatchObject({
+      name: 'CommandFailedError',
+      code: 'NOT_CONNECTED',
+      message: 'Sem conexão com o servidor. O comando não foi enviado.',
+    });
+    expect(
+      fakeServerSocket.listCommandMessagesReceived(),
+      'nothing may be sent while the page is not connected',
+    ).toEqual([]);
+    expect(
+      serverStateStore.getState().lastCommandError?.code,
+      'the store must remember the failure for the page to show',
+    ).toBe('NOT_CONNECTED');
+  });
+});
+
+describe('losing the connection', () => {
+  it('says reconnecting and keeps the last known state when the line drops', () => {
+    // Arrange: a connected page with the race clock on air.
+    vi.useFakeTimers();
+    const { serverStateStore, fakeServerSocket } = connectControlPageToFakeServer();
+    fakeServerSocket.acceptConnection();
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+    });
+
+    // Act: the line drops.
+    fakeServerSocket.dropConnection();
+
+    // Assert: the page says so, and still shows what it last knew.
+    const state = serverStateStore.getState();
+    expect(state.connectionStatus, 'a dropped line means the page is reconnecting').toBe(
+      'reconnecting',
+    );
+    expect(state.instances, 'the last known instances must stay on screen').toHaveLength(1);
+  });
+
+  it('dials again after waits of 0.5 s, 1 s, 2 s, 4 s and then 5 s at most', () => {
+    // Arrange: a connected page whose line has just dropped, with time moved by hand.
+    vi.useFakeTimers();
+    const { fakeServerSocket } = connectControlPageToFakeServerThatSaidHello();
+    fakeServerSocket.dropConnection();
+    const waitsBeforeEachNewCallInMilliseconds = [500, 1_000, 2_000, 4_000, 5_000, 5_000];
+    const callsCountedJustBeforeEachWaitEnded: number[] = [];
+    const callsCountedRightAfterEachWaitEnded: number[] = [];
+
+    // Act: for each wait, go to one millisecond before its end, then to its end; every
+    // new call fails straight away (the server is still down), which starts the next wait.
+    for (const waitInMilliseconds of waitsBeforeEachNewCallInMilliseconds) {
+      vi.advanceTimersByTime(waitInMilliseconds - 1);
+      callsCountedJustBeforeEachWaitEnded.push(fakeServerSocket.countConnectionsOpened());
+      vi.advanceTimersByTime(1);
+      callsCountedRightAfterEachWaitEnded.push(fakeServerSocket.countConnectionsOpened());
+      fakeServerSocket.dropConnection();
+    }
+
+    // Assert: no call is made early, and exactly one is made when each wait ends.
+    expect(
+      callsCountedJustBeforeEachWaitEnded,
+      'no new call may go out before its wait is over',
+    ).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(
+      callsCountedRightAfterEachWaitEnded,
+      'one new call must go out when each wait ends',
+    ).toEqual([2, 3, 4, 5, 6, 7]);
+  });
+
+  it('is connected again, with fresh state, once the server says hello after a drop', () => {
+    // Arrange: a page that showed nothing on air, lost the line and has dialled again.
+    vi.useFakeTimers();
+    const { serverStateStore, fakeServerSocket } = connectControlPageToFakeServerThatSaidHello();
+    fakeServerSocket.dropConnection();
+    vi.advanceTimersByTime(500);
+
+    // Act: the server picks up and says hello; meanwhile the race clock went on air.
+    fakeServerSocket.acceptConnection();
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+    });
+
+    // Assert: connected, and showing the server's state rather than the old one.
+    const state = serverStateStore.getState();
+    expect(state.connectionStatus, 'a hello after a drop means connected again').toBe('connected');
+    expect(state.instances, 'the state must be the one from the new hello').toHaveLength(1);
+  });
+
+  it('starts the waits over from 0.5 s after a successful reconnection', () => {
+    // Arrange: a page that needed three calls to get back (waits of 0.5 s and 1 s).
+    vi.useFakeTimers();
+    const { fakeServerSocket } = connectControlPageToFakeServerThatSaidHello();
+    fakeServerSocket.dropConnection();
+    vi.advanceTimersByTime(500);
+    fakeServerSocket.dropConnection();
+    vi.advanceTimersByTime(1_000);
+    fakeServerSocket.acceptConnection();
+    fakeServerSocket.sendMessage({ type: 'hello', slices: buildSlicesWithNothingOnAir() });
+    const callsBeforeTheSecondOutage = fakeServerSocket.countConnectionsOpened();
+
+    // Act: the line drops again, and half a second passes.
+    fakeServerSocket.dropConnection();
+    vi.advanceTimersByTime(500);
+
+    // Assert: the page has already dialled again, instead of waiting 2 s.
+    expect(
+      fakeServerSocket.countConnectionsOpened(),
+      'after a good connection the first retry must come after 0.5 s again',
+    ).toBe(callsBeforeTheSecondOutage + 1);
+  });
+
+  it('stops dialling once the connection is closed on purpose', () => {
+    // Arrange: a connected page, with time moved by hand.
+    vi.useFakeTimers();
+    const { fakeServerSocket, serverConnection } = connectControlPageToFakeServerThatSaidHello();
+
+    // Act: the page hangs up (as when its tab closes), the socket closes, a minute passes.
+    serverConnection.close();
+    fakeServerSocket.dropConnection();
+    vi.advanceTimersByTime(60_000);
+
+    // Assert: the only call ever made is the first one.
+    expect(
+      fakeServerSocket.countConnectionsOpened(),
+      'a page that hung up on purpose must not dial again',
+    ).toBe(1);
+  });
+});
