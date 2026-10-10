@@ -11,6 +11,8 @@
  *     ograf-schema/, so this runs offline), and a manifest with a required field
  *     removed fails it, so the check has teeth.
  *   - The settings the brief fixes: id, real-time only, one step.
+ *   - The manifest tells the BajaOvrLay server, in its vendor field `v_baja`, that the
+ *     race clock goes on the clock layer and in the clock category.
  *   - The play and stop durations in the manifest are the real animation lengths.
  *   - Every data field has a pt-BR title, and the manifest's data schema accepts and
  *     refuses exactly the same payloads as the graphic's own validation.
@@ -121,6 +123,19 @@ describe('race-clock.ograf.json settings', () => {
       supportsNonRealTime: false,
       stepCount: 1,
     });
+  });
+
+  it('declares the clock layer and the clock category in the v_baja vendor field', () => {
+    // Arrange: nothing to set up; the manifest is read from disk.
+
+    // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_.
+    const bajaVendorFields = raceClockManifest.v_baja;
+
+    // Assert: the server reads the default layer and the category from exactly these two.
+    expect(
+      bajaVendorFields,
+      'the race clock must ask for the clock layer and the clock category',
+    ).toEqual({ defaultLayerId: 'clock', category: 'clock' });
   });
 
   it('declares the real play and stop animation lengths', () => {

@@ -37,7 +37,13 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const operatorSlices = isFirstBoot
     ? buildSeedOperatorSlices()
     : readStoredOperatorSlices(storedRows, options.logger);
-  const graphics = discoverBuiltGraphics(options.graphicPackagesFolder, options.logger);
+  // The layers come first: a graphic's manifest names its default layer, and the name
+  // only counts if that layer exists.
+  const graphics = discoverBuiltGraphics({
+    graphicPackagesFolder: options.graphicPackagesFolder,
+    existingLayerIds: operatorSlices.layers.map((layer) => layer.id),
+    logger: options.logger,
+  });
 
   // The graphics row is rewritten on every boot; layers and instances only when seeded.
   const updatedAt = options.readCurrentTime().toISOString();

@@ -1,10 +1,11 @@
 import type { Command } from '@bajaovrlay/shared';
 
-import { refuseInvalidCommand } from '../commandRefusals.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
+import { reduceReportInstanceStatus } from './reportInstanceStatus.js';
 import { reduceTakeGraphic } from './takeGraphic.js';
+import { reduceUpdateInstanceData } from './updateInstanceData.js';
 
 /**
  * Sends a valid command to its reducer (one file per command). Pure: same slices,
@@ -19,12 +20,9 @@ export function reduceCommand(
     case 'takeGraphic':
       return reduceTakeGraphic(slices, command, context);
     case 'updateInstanceData':
+      return reduceUpdateInstanceData(slices, command);
     case 'reportInstanceStatus':
-      // PLACEHOLDER (BAJAOVRLAY-12): the shared schemas for these two commands landed
-      // before their reducers. Until the server work of the same task replaces this
-      // branch, they are refused exactly as they were before the schemas existed: as a
-      // command whose `type` the server does not run.
-      return { status: 'refused', error: refuseInvalidCommand(['type']) };
+      return reduceReportInstanceStatus(slices, command);
     case 'clearLayer':
       return reduceClearLayer(slices, command);
     case 'clearAll':

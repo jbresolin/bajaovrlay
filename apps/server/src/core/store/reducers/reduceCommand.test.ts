@@ -21,6 +21,10 @@
  * What these tests deliberately do not cover:
  *   - Checking the command's shape, authorising it, saving or broadcasting the result;
  *     the store (createStateStore.test.ts) does those around the reducer.
+ *   - updateInstanceData and reportInstanceStatus, which have a test file each next to
+ *     their reducer, and takeGraphic's check of the data against the graphic's manifest
+ *     schema (takeGraphicData.test.ts). The two graphics here declare no data schema,
+ *     so any data is accepted.
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';

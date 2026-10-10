@@ -15,7 +15,8 @@ Every message is one JSON object, told apart by its `type` field:
   `on-air` after its play finished or `failed` (with an optional `detail`) after an
   import, load or play that did not work. The server turns it into the
   `reportInstanceStatus` command, which only a renderer may send: a connection is a
-  renderer when it connects to `/ws?role=renderer`, and an operator otherwise.
+  renderer when it connects to `/ws?role=renderer`, and an operator otherwise. It
+  carries no `requestId`, so its `commandResult` comes back with `requestId: null`.
 - `commandResult` (server → the client that sent the command): `ok: true`, or
   `ok: false` with an `error` carrying a stable `code` and a pt-BR `message`. The
   `slice` messages a command causes are sent before its `commandResult`.

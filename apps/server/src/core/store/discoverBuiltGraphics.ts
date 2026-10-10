@@ -4,30 +4,25 @@ import { join } from 'node:path';
 import { type Graphic, OGrafManifestSchema } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../logger/createLogger.js';
+import { decideGraphicPlacementFromManifest } from './graphicPlacement.js';
 
-/** Where a known package's takes go by default, and how the control page groups it. */
-type GraphicPlacement = Pick<Graphic, 'defaultLayerId' | 'category'>;
-
-const knownGraphicPlacements: Record<string, GraphicPlacement> = {
-  'race-clock': { defaultLayerId: 'clock', category: 'clock' },
-};
-
-// A package nobody has placed yet goes to the top layer by default: there it can never
-// replace the logo, the clock or a lower third that is on air.
-const placementOfUnplacedGraphics: GraphicPlacement = {
-  defaultLayerId: 'fullscreen',
-  category: 'other',
+/** What discoverBuiltGraphics needs: the folder to read, the layers that exist, a logger. */
+export type DiscoverBuiltGraphicsOptions = {
+  /** Absolute path of packages/graphics. */
+  graphicPackagesFolder: string;
+  /** The ids of the layers in the layers slice; a manifest's default layer must be one. */
+  existingLayerIds: string[];
+  logger: ServerLogger;
 };
 
 /**
  * Lists every built graphic under `graphicPackagesFolder` (one `dist/*.ograf.json` per
  * package folder), in folder-name order. A package that is not built, or whose manifest
- * is broken, is logged and left out; it never stops the boot.
+ * is broken, is logged and left out; it never stops the boot. Each graphic's default
+ * layer and category come from its own manifest (`v_baja`); see graphicPlacement.ts.
  */
-export function discoverBuiltGraphics(
-  graphicPackagesFolder: string,
-  logger: ServerLogger,
-): Graphic[] {
+export function discoverBuiltGraphics(options: DiscoverBuiltGraphicsOptions): Graphic[] {
+  const { graphicPackagesFolder, logger } = options;
   if (!existsSync(graphicPackagesFolder)) {
     logger.warn(
       { graphics_folder: graphicPackagesFolder },
@@ -43,7 +38,12 @@ export function discoverBuiltGraphics(
 
   const graphics: Graphic[] = [];
   for (const packageName of packageNames) {
-    const graphic = readBuiltGraphic(join(graphicPackagesFolder, packageName), packageName, logger);
+    const graphic = readBuiltGraphic({
+      packageFolder: join(graphicPackagesFolder, packageName),
+      packageName,
+      existingLayerIds: options.existingLayerIds,
+      logger,
+    });
     if (graphic !== undefined) {
       graphics.push(graphic);
     }
@@ -52,11 +52,13 @@ export function discoverBuiltGraphics(
 }
 
 /** Reads one package's built manifest; undefined (after a log line) when it cannot. */
-function readBuiltGraphic(
-  packageFolder: string,
-  packageName: string,
-  logger: ServerLogger,
-): Graphic | undefined {
+function readBuiltGraphic(options: {
+  packageFolder: string;
+  packageName: string;
+  existingLayerIds: string[];
+  logger: ServerLogger;
+}): Graphic | undefined {
+  const { packageFolder, packageName, logger } = options;
   const distFolder = join(packageFolder, 'dist');
   const manifestFileNames = existsSync(distFolder)
     ? readdirSync(distFolder).filter((fileName) => fileName.endsWith('.ograf.json'))
@@ -88,11 +90,23 @@ function readBuiltGraphic(
 
   // The id is the package folder name, because the renderer loads the graphic's files
   // from /graphics/<id>/ (the race clock's OGraf id inside its manifest is different).
-  const placement = knownGraphicPlacements[packageName] ?? placementOfUnplacedGraphics;
+  const placementDecision = decideGraphicPlacementFromManifest(manifest, options.existingLayerIds);
+  if (placementDecision.reasonForUsingFullscreen !== undefined) {
+    // Not an error: the graphic can still be taken, on any layer the operator chooses.
+    logger.warn(
+      {
+        graphic_package: packageName,
+        declared_default_layer_id: manifest.v_baja?.defaultLayerId,
+        reason: placementDecision.reasonForUsingFullscreen,
+      },
+      'graphic has no usable default layer in its manifest; using fullscreen',
+    );
+  }
   return {
     id: packageName,
     manifest,
-    ...placement,
+    defaultLayerId: placementDecision.placement.defaultLayerId,
+    category: placementDecision.placement.category,
     thumbnailUrl: null,
     defaultFields: {},
   };

@@ -4,8 +4,8 @@
  * What this module is for:
  *   The store holds every slice in memory and is the only thing that changes them.
  *   `applyCommand(command, actor)` is the single code path, in this order: check the
- *   command's shape (Zod), authorise it (a hook that allows everything until operators
- *   log in), apply the command's pure reducer, save the changed slices and the
+ *   command's shape (Zod), authorise it (a hook the store is given; the default one
+ *   decides by the actor's role), apply the command's pure reducer, save the changed slices and the
  *   event-log row in one SQLite transaction, then tell subscribers what changed.
  *
  * What these tests prove:
@@ -21,7 +21,9 @@
  *   - When saving fails, memory keeps matching the database: nothing changes.
  *
  * What these tests deliberately do not cover:
- *   - The rules of each command; reducers/reduceCommand.test.ts covers them.
+ *   - The rules of each command; the tests in reducers/ cover them.
+ *   - Which actor the default authorisation hook lets through; authorizeCommand.test.ts
+ *     and storeAuthorisation.test.ts cover it.
  *   - Restarting from the database file and seeding; storeRestart.test.ts and
  *     loadInitialSlices.test.ts cover those.
  */
@@ -41,11 +43,22 @@ const timeOfEveryCommand = new Date('2026-10-09T14:32:05.000Z');
 const idOfEveryNewInstance = '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f';
 const operatorActor = 'operador:conexao-7';
 
+// The enduro under green flag, 1:05:00 in and running: all six fields the race clock's
+// manifest schema requires, because the server now refuses a take that leaves one out.
+const greenFlagEnduroData = {
+  sessionName: 'Enduro de Resistência',
+  state: 'green',
+  clockMode: 'elapsed',
+  referenceTimeMs: 3_900_000,
+  referenceWallClockMs: 1_791_550_800_000,
+  running: true,
+};
+
 const takeRaceClockOnTheClockLayer = {
   type: 'takeGraphic',
   graphicId: 'race-clock',
   layerId: 'clock',
-  data: { sessionName: 'Enduro de Resistência', state: 'green' },
+  data: greenFlagEnduroData,
 };
 
 /**
@@ -71,7 +84,11 @@ describe('applyCommand with an invalid command', () => {
   it('refuses it with the missing field named in a pt-BR message', () => {
     // Arrange: a store, and a take that forgot to say which layer.
     const { store } = createStoreWithRaceClockRegistered();
-    const takeWithoutLayer = { type: 'takeGraphic', graphicId: 'race-clock', data: {} };
+    const takeWithoutLayer = {
+      type: 'takeGraphic',
+      graphicId: 'race-clock',
+      data: greenFlagEnduroData,
+    };
 
     // Act: apply it as the operator.
     const outcome = store.applyCommand(takeWithoutLayer, operatorActor);
@@ -181,7 +198,7 @@ describe('applyCommand with a valid command', () => {
         layerId: 'clock',
         graphicId: 'race-clock',
         target: 'program',
-        resolvedData: { sessionName: 'Enduro de Resistência', state: 'green' },
+        resolvedData: greenFlagEnduroData,
         currentStep: 0,
         status: 'loading',
         takenAt: '2026-10-09T14:32:05.000Z',
@@ -251,7 +268,7 @@ describe('applyCommand with a command that must be refused', () => {
 
     // Assert: refused in pt-BR, logged as failed, and nothing went on air.
     const expectedError = {
-      code: 'UNAUTHORIZED_COMMAND',
+      code: 'NOT_ALLOWED',
       message: 'Você não tem permissão para executar este comando.',
     };
     const slicesAfter = store.readAllSlices();

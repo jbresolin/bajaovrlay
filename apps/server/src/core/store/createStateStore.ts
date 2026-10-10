@@ -11,15 +11,15 @@ import {
 import { saveCommandOutcome } from '../db/commandOutcomeStorage.js';
 import type { SliceRow } from '../db/tables.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
-import { allowEveryCommand, type IsCommandAllowed } from './authorizeCommand.js';
-import { refuseInvalidCommand, refuseUnauthorizedCommand } from './commandRefusals.js';
+import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
+import { refuseCommandNotAllowed, refuseInvalidCommand } from './commandRefusals.js';
 import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialSlices.js';
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
 /** What a store needs. The last three have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
-  /** The authorisation step; defaults to allowEveryCommand (no login in M0). */
+  /** The authorisation step; defaults to allowCommandForActorRole (no login yet). */
   isCommandAllowed?: IsCommandAllowed | undefined;
   /** The clock used for every timestamp, at boot and per command; defaults to real time. */
   readCurrentTime?: (() => Date) | undefined;
@@ -51,7 +51,7 @@ const sliceNamesChangedByCommands = ['layers', 'graphics', 'instances'] as const
  * Its applyCommand is the single code path for every change; see the steps inside.
  */
 export function createStateStore(options: StateStoreOptions): StateStore {
-  const isCommandAllowed = options.isCommandAllowed ?? allowEveryCommand;
+  const isCommandAllowed = options.isCommandAllowed ?? allowCommandForActorRole;
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   const createInstanceId = options.createInstanceId ?? (() => randomUUID());
   const listeners = new Set<SliceChangeListener>();
@@ -77,14 +77,14 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     }
     const command = validation.data;
 
-    // Step 2, authorise: a hook that says yes to everything until login exists.
+    // Step 2, authorise: the hook decides whether this actor may run this command.
     if (!isCommandAllowed(command, actor)) {
       return recordRefusal({
         now,
         actor,
         commandName: command.type,
         payload: command,
-        error: refuseUnauthorizedCommand(),
+        error: refuseCommandNotAllowed(),
       });
     }
 

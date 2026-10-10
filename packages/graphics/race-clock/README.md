@@ -11,5 +11,6 @@ Preview: `pnpm --filter race-clock dev`, then http://localhost:5175/preview.html
 `?data=<url-encoded JSON>`). Unit tests: `pnpm --filter race-clock test`; Playwright on the
 built `dist/` under `/graphics/race-clock/`: `pnpm --filter race-clock test:e2e`, and after a
 deliberate visual change `pnpm --filter race-clock test:e2e --update-snapshots`.
-New graphic: copy this folder, rename the package, manifest id, `main`, tag and dev ports,
-then replace the model, styles and template; keep the tests' shape.
+New graphic: copy this folder, rename the package, manifest id, `main`, tag and dev ports, set
+`v_baja` (the default layer and category the server reads), then replace the model, styles
+and template; keep the tests' shape. The server refuses data the manifest `schema` refuses.
