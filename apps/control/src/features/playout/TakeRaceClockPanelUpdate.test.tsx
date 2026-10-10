@@ -13,19 +13,25 @@
  *     edit a second time.
  *   - After a refusal the operator's edit is still in the form and still goes out on
  *     the next press.
- *   - When someone else changes the clock while the operator is half-way through an
- *     edit, the edit is kept, the untouched fields follow the air, and the edit then
- *     goes out without undoing the other operator's change.
  *   - "Colocar no ar" always sends the form as it stands, typed time included.
+ *   - A time typed and then put back to what the field showed counts as untouched, so
+ *     "Atualizar" leaves the clock on air at its own time.
  *   - On-air data that cannot be read leaves the form alone, and "Atualizar" then sends
  *     the whole form.
+ *   - A value on air that the form's rules refuse (an empty session name) blocks
+ *     "Atualizar" with the field's message until it is corrected.
  *
  * What these tests deliberately do not cover:
- *   - "Atualizar" right after a reload (the three scenarios of the ruling) and the form
- *     as the page loads: TakeRaceClockPanel.test.tsx.
+ *   - "Atualizar" after a reload (the three scenarios of the ruling) and the form as the
+ *     page loads: TakeRaceClockPanel.test.tsx.
+ *   - The clock changing or leaving the air through someone else while this operator is
+ *     editing or waiting for an answer: TakeRaceClockPanelOtherOperator.test.tsx.
  *   - Every combination of changed fields, and stopped clocks and countdowns:
  *     raceClockUpdateCommand.test.ts and raceClockDataOnAir.test.ts.
- *   - The clock leaving the air ("Limpar"): the form is then simply left as it is.
+ *   - A field other than the time put back to its old value: the form value and the
+ *     on-air value are then the same, so no command could tell the two apart.
+ *   - The other value the form's rules refuse, a time on air past 999:59: it takes the
+ *     same road as the empty session name, and no race runs for 16 hours.
  *   - The real server's order of messages (the changed slice, then "ok"); the fake
  *     server copies it and apps/server's own tests prove it.
  */
@@ -33,16 +39,14 @@ import type { Instance } from '@bajaovrlay/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import {
-  type ControlPageOnFakeServer,
-  renderOnControlPageConnectedToFakeServer,
-} from '@/state/controlPageOnFakeServer.testSupport';
+import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.testSupport';
 
 import {
   buildRaceClockInstanceHoldingThisData,
   chooseOptionInDropdown,
   letTheServerPutTheLastTakeOnAir,
+  pressButtonAndWaitForCommand,
   typeIntoField,
 } from './operatingTheRaceClockForm.testSupport';
 import { TakeRaceClockPanel } from './TakeRaceClockPanel';
@@ -52,8 +56,6 @@ import { TakeRaceClockPanel } from './TakeRaceClockPanel';
 const quarterToTen = '2026-10-10T12:45:00.000Z';
 const tenOClock = '2026-10-10T13:00:00.000Z';
 const fivePastTen = '2026-10-10T13:05:00.000Z';
-
-type FakeServer = ControlPageOnFakeServer['fakeServer'];
 
 /** The first heat as the server holds it: green flag, running from 12:34 since 9:45. */
 function buildFirstHeatDataOnAir() {
@@ -92,44 +94,10 @@ function renderPanelAtTenOClockWithTheFirstHeatOnAir() {
   ]);
 }
 
-/** Presses a button and waits until the fake server holds that many commands. */
-async function pressButtonAndWaitForCommand(
-  buttonName: string,
-  commandsExpectedByThen: number,
-  fakeServer: FakeServer,
-) {
-  fireEvent.click(screen.getByRole('button', { name: buttonName }));
-  await waitFor(() => {
-    expect(
-      fakeServer.listCommandsReceived(),
-      `pressing "${buttonName}" must send a command`,
-    ).toHaveLength(commandsExpectedByThen);
-  });
-}
-
-/**
- * What this page hears when a second operator, at 10:00, shows the red flag and stops
- * the first heat's clock at the 27:34 (1 654 000 ms) it shows.
- */
-function letASecondOperatorStopTheClockUnderTheRedFlag(fakeServer: FakeServer) {
-  const dataAfterTheRedFlag = {
-    ...buildFirstHeatDataOnAir(),
-    state: 'red',
-    referenceTimeMs: 1_654_000,
-    referenceWallClockMs: Date.parse(tenOClock),
-    running: false,
-  };
-  fakeServer.sendMessage({
-    type: 'slice',
-    name: 'instances',
-    slice: [buildRaceClockInstanceHoldingThisData(dataAfterTheRedFlag, tenOClock)],
-  });
-}
-
 describe('the race clock form following what is on air', () => {
   it('starts untouched again after an accepted "Atualizar": the next press does not resend the typed time', async () => {
     // Arrange: the first heat on air. At 10:00 the operator corrects the clock to 20:00
-    // with "Atualizar", and the server puts that on air and accepts.
+    // with "Atualizar", and the server puts that on air and accepts. Then five minutes pass.
     const { fakeServer, moveThePageClockTo } = renderPanelAtTenOClockWithTheFirstHeatOnAir();
     typeIntoField('Tempo de referência (mm:ss)', '20:00');
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
@@ -141,9 +109,9 @@ describe('the race clock form following what is on air', () => {
       ).toBeEnabled();
     });
 
-    // Act: five minutes later the operator presses "Atualizar" again without touching
-    // anything.
     moveThePageClockTo(fivePastTen);
+
+    // Act: at 10:05 the operator presses "Atualizar" again without touching anything.
     await pressButtonAndWaitForCommand('Atualizar', 2, fakeServer);
 
     // Assert: the second command carries the time the clock shows now, 25:00
@@ -170,7 +138,8 @@ describe('the race clock form following what is on air', () => {
 
   it('starts untouched after an accepted "Colocar no ar": a later flag change keeps the clock running', async () => {
     // Arrange: nothing on air. At 10:00 the operator fills the form for the first heat
-    // and presses "Colocar no ar"; the server puts it on air and accepts.
+    // and presses "Colocar no ar"; the server puts it on air and accepts. Five minutes
+    // later a yellow flag comes out, and the operator changes only the flag.
     const { fakeServer, moveThePageClockTo } = renderPanelAtTenOClock([]);
     typeIntoField('Nome da sessão', 'Enduro de Resistência — Bateria 1');
     chooseOptionInDropdown('Bandeira', 'Verde');
@@ -179,11 +148,10 @@ describe('the race clock form following what is on air', () => {
     await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
     letTheServerPutTheLastTakeOnAir(fakeServer, tenOClock);
     await screen.findByRole('button', { name: 'Atualizar' });
-
-    // Act: five minutes later a yellow flag. The operator changes only the flag and
-    // presses "Atualizar".
     moveThePageClockTo(fivePastTen);
     chooseOptionInDropdown('Bandeira', 'Amarela');
+
+    // Act: press "Atualizar" at 10:05.
     await pressButtonAndWaitForCommand('Atualizar', 2, fakeServer);
 
     // Assert: the clock goes on from 17:34 (12:34 + 5:00 = 1 054 000 ms). The 12:34 typed
@@ -252,63 +220,6 @@ describe('the race clock form following what is on air', () => {
     fakeServer.acceptLastCommand();
   });
 
-  it('keeps a half-typed edit when someone else changes the clock, and lets the other fields follow the air', () => {
-    // Arrange: the first heat on air, and the operator half-way through renaming the
-    // session (typed, not sent).
-    const { fakeServer } = renderPanelAtTenOClockWithTheFirstHeatOnAir();
-    typeIntoField('Nome da sessão', 'Enduro de Resistência — Bateria 2');
-
-    // Act: a second operator shows the red flag and stops the clock at 27:34; the server
-    // tells this page about it.
-    letASecondOperatorStopTheClockUnderTheRedFlag(fakeServer);
-
-    // Assert: the typed session name was not wiped, and the fields the operator had not
-    // touched now show what is on air.
-    expect(
-      screen.getByLabelText('Nome da sessão'),
-      'an edit the operator has not sent yet must survive a change from the server',
-    ).toHaveValue('Enduro de Resistência — Bateria 2');
-    expect(
-      screen.getByRole('combobox', { name: 'Bandeira' }),
-      'an untouched flag must follow what is on air',
-    ).toHaveTextContent('Vermelha');
-    expect(
-      screen.getByRole('switch', { name: 'Relógio correndo' }),
-      'an untouched switch must follow what is on air',
-    ).not.toBeChecked();
-  });
-
-  it("sends a half-typed edit without undoing another operator's change", async () => {
-    // Arrange: the first heat on air, the operator half-way through renaming the session,
-    // and a second operator who meanwhile showed the red flag and stopped the clock.
-    const { fakeServer } = renderPanelAtTenOClockWithTheFirstHeatOnAir();
-    typeIntoField('Nome da sessão', 'Enduro de Resistência — Bateria 2');
-    letASecondOperatorStopTheClockUnderTheRedFlag(fakeServer);
-
-    // Act: the first operator presses "Atualizar".
-    await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
-
-    // Assert: the new session name goes out, and the red flag and the stopped clock of
-    // the other operator are still there.
-    expect(
-      fakeServer.listCommandsReceived()[0],
-      "the edit must go out without undoing the other operator's change",
-    ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 2',
-        state: 'red',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_654_000,
-        referenceWallClockMs: Date.parse(tenOClock),
-        running: false,
-      },
-    });
-    fakeServer.acceptLastCommand();
-  });
-
   it('"Colocar no ar" sends the form as it stands while the clock is on air, typed time included', async () => {
     // Arrange: the first heat on air showing 27:34, and 20:00 typed in the form.
     const { fakeServer } = renderPanelAtTenOClockWithTheFirstHeatOnAir();
@@ -338,18 +249,81 @@ describe('the race clock form following what is on air', () => {
     fakeServer.acceptLastCommand();
   });
 
+  it('counts a time typed and then put back as untouched, so "Atualizar" leaves the clock at its own time', async () => {
+    // Arrange: the first heat on air; the form, filled at 10:00, shows 27:34. At 10:05
+    // the clock on air shows 32:34. The operator types 20:00, thinks again, and types
+    // the 27:34 that was there before.
+    const { fakeServer, moveThePageClockTo } = renderPanelAtTenOClockWithTheFirstHeatOnAir();
+    moveThePageClockTo(fivePastTen);
+    typeIntoField('Tempo de referência (mm:ss)', '20:00');
+    typeIntoField('Tempo de referência (mm:ss)', '27:34');
+
+    // Act: press "Atualizar".
+    await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
+
+    // Assert: the time field counts as untouched, so the command carries the 32:34
+    // (1 954 000 ms) the clock on air shows, not the 27:34 written in the field. What
+    // this means for the operator: "Atualizar" cannot set the clock to exactly the time
+    // the field already shows; "Colocar no ar" does that.
+    expect(
+      fakeServer.listCommandsReceived()[0],
+      'a field put back to what it showed must count as untouched',
+    ).toEqual({
+      type: 'takeGraphic',
+      graphicId: 'race-clock',
+      layerId: 'clock',
+      data: {
+        sessionName: 'Enduro de Resistência — Bateria 1',
+        state: 'green',
+        clockMode: 'elapsed',
+        referenceTimeMs: 1_954_000,
+        referenceWallClockMs: Date.parse(fivePastTen),
+        running: true,
+      },
+    });
+    fakeServer.acceptLastCommand();
+  });
+
+  it('shows the field message and sends nothing when the session name on air is empty', async () => {
+    // Arrange: a clock on air with an empty session name, which the graphic allows and
+    // the form's rules do not (put there by another tool, say). The operator changes
+    // only the flag.
+    const { fakeServer } = renderPanelAtTenOClock([
+      buildRaceClockInstanceHoldingThisData(
+        { ...buildFirstHeatDataOnAir(), sessionName: '' },
+        quarterToTen,
+      ),
+    ]);
+    chooseOptionInDropdown('Bandeira', 'Amarela');
+
+    // Act: press "Atualizar".
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
+
+    // Assert: the untouched session name is still checked. Its message is shown, and the
+    // yellow flag does not go out until the operator types a name.
+    expect(
+      await screen.findByText('Informe o nome da sessão.'),
+      'the empty session name taken from the air must be explained under its field',
+    ).toBeInTheDocument();
+    expect(
+      fakeServer.listCommandsReceived(),
+      'nothing may be sent while a field holds a value the form refuses',
+    ).toEqual([]);
+  });
+
   it('leaves the form alone when the on-air data cannot be read, and "Atualizar" sends the whole form', async () => {
     // Arrange: something sits on the clock layer under the race clock's name, but its
-    // data has no clock fields (an older version of the graphic, say).
+    // data has no clock fields (an older version of the graphic, say). The operator
+    // changes only the flag.
     const { fakeServer } = renderPanelAtTenOClock([
       buildRaceClockInstanceHoldingThisData(
         { sessionName: 'Enduro de Resistência — Bateria 1', state: 'green' },
         quarterToTen,
       ),
     ]);
-
-    // Act: the operator changes only the flag and presses "Atualizar".
     chooseOptionInDropdown('Bandeira', 'Amarela');
+
+    // Act: press "Atualizar".
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
 
     // Assert: the form was not filled from the unreadable data (it still has the default

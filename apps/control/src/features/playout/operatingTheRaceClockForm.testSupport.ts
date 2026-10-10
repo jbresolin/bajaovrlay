@@ -1,8 +1,9 @@
 // Test support: the few things an operator does to the race clock form, and the one
-// thing the server does back, written once so the three panel test files read the same.
+// thing the server does back, written once so the four panel test files read the same.
 // Nothing here keeps state between calls.
 import type { Instance } from '@bajaovrlay/shared';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { expect } from 'vitest';
 import { z } from 'zod';
 
 import type { ControlPageOnFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
@@ -22,6 +23,21 @@ export function typeIntoField(fieldLabel: string, text: string): void {
 export function chooseOptionInDropdown(dropdownLabel: string, optionLabel: string): void {
   fireEvent.keyDown(screen.getByRole('combobox', { name: dropdownLabel }), { key: 'Enter' });
   fireEvent.click(screen.getByRole('option', { name: optionLabel }));
+}
+
+/** Presses a button and waits until the fake server holds that many commands. */
+export async function pressButtonAndWaitForCommand(
+  buttonName: string,
+  commandsExpectedByThen: number,
+  fakeServer: ControlPageOnFakeServer['fakeServer'],
+): Promise<void> {
+  fireEvent.click(screen.getByRole('button', { name: buttonName }));
+  await waitFor(() => {
+    expect(
+      fakeServer.listCommandsReceived(),
+      `pressing "${buttonName}" must send a command`,
+    ).toHaveLength(commandsExpectedByThen);
+  });
 }
 
 /** A race clock instance on the clock layer of the program output, holding this data. */

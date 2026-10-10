@@ -14,13 +14,13 @@
  *   - While the page is not connected both buttons are disabled and say why.
  *
  * What these tests deliberately do not cover:
- *   - What the two buttons send when all is well; TakeRaceClockPanel.test.tsx does.
+ *   - What the two buttons send when all is well: TakeRaceClockPanel.test.tsx and
+ *     TakeRaceClockPanelUpdate.test.tsx.
+ *   - A field message or a waiting command while someone else changes the clock:
+ *     TakeRaceClockPanelOtherOperator.test.tsx.
  *   - Every rule and every mm:ss case: raceClockTakeForm.test.ts and
  *     minutesAndSeconds.test.ts list them one by one.
  *   - The real server and the real graphic; e2e/takeAndClear.e2e.ts uses the real server.
- *
- * These five tests were in TakeRaceClockPanel.test.tsx until gate 2, round 2; they moved
- * here unchanged to keep that file under the 400-line limit.
  */
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
