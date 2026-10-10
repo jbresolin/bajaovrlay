@@ -47,6 +47,9 @@ export function useKeyboardShortcut(
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
+    // Deliberate: callers pass a new `onPressed` function on every render, so the listener
+    // is removed and added again each time. That is cheap and never leaves two listeners;
+    // holding the callback in a ref would avoid it at the price of a less obvious hook.
   }, [key, onPressed, isEnabled, isIgnoredWhileTyping]);
 }
 
