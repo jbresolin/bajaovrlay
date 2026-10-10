@@ -104,3 +104,112 @@ BAJAOVRLAY-8:
   public"). Until then "CI blocks merge" is a working rule, not something GitHub enforces.
 - No renderer↔server wiring yet. Nothing loads graphics into the renderer or acknowledges takes;
   that is M1 per the briefs.
+
+## M0 closing round — 2026-10-09/10
+
+The last two M0 tasks were worked through in order (BAJAOVRLAY-9, then BAJAOVRLAY-11), each on
+its own branch off main, tests committed before the code. Each branch was checked by four
+independent reviewers (brief compliance, readability law, testing style, correctness), an
+adversarial verifier checked their findings, and the confirmed ones were fixed tests-first before
+pushing. Both PRs are open and unmerged, and CI passed on Node 22 on the first run for both.
+Local runs were on Node 24, as before.
+
+### Status at a glance
+
+| Task | PR | State | CI |
+| --- | --- | --- | --- |
+| BAJAOVRLAY-9 renderer | [#4](https://github.com/jbresolin/bajaovrlay/pull/4) | **Open, waiting for your review** | green |
+| BAJAOVRLAY-11 control page | [#5](https://github.com/jbresolin/bajaovrlay/pull/5) | **Open, waiting for your review** | green |
+
+### What was built
+
+- **BAJAOVRLAY-9 (PR #4).** `apps/renderer` mirrors the program `instances` slice: layer
+  containers in z-order, graphic modules imported from `/graphics/<id>/`, a pure reconciler that
+  returns named operations, and a player that runs them through the OGraf lifecycle (one queue per
+  layer, layers in parallel). Every hello disposes and rebuilds the stage with
+  `skipAnimation: true`. A broken graphic leaves its own layer empty and nothing else. 8 commits;
+  7 Vitest files and 3 Playwright files added, plus the `fake-graphic` fixture. On the branch the
+  repository has 244 unit tests and 25 renderer browser tests.
+- **BAJAOVRLAY-11 (PR #5).** The control page: WebSocket client with `sendCommand`, a Zustand
+  store that is the only home of server state, the layer status panel with **Limpar**, the
+  hand-written race-clock take form (**Colocar no ar** / **Atualizar**), the two-press **Limpar
+  tudo**, the connection badge that disables every action while disconnected, the program monitor
+  iframe, and the `Esc` / `Backspace` shortcuts. 6 commits; 11 Vitest files added, `App.test.tsx`
+  extended, and 1 Playwright test against the real server. On the branch the repository has 301
+  unit tests. The only new runtime dependency is zustand.
+
+### What is waiting for you
+
+1. **Review PR #4 and PR #5.** Each description says which tests to read first, the commands to
+   see it working (PR #4 has the wscat/curl lines; PR #5 has the OBS walk-through) and its
+   decisions.
+2. **Merging both: one conflict.** Both branches append to `docs/decisions.md`; keep both sets of
+   lines. A trial merge showed `eslint.config.js` and `pnpm-lock.yaml` merging cleanly as text,
+   but run `pnpm install --frozen-lockfile` after the second merge to confirm the lockfile.
+3. **After both are merged,** add the one assertion PR #5 skipped: the program monitor iframe
+   contains the clock element (`apps/control/e2e/takeAndClear.e2e.ts`; the gap is named in that
+   file's header). M0's definition of done is only met once both are in.
+4. **Confirm the decisions below that change behaviour** (marked ★).
+
+### Decisions taken (full lists are in each PR and in `docs/decisions.md`)
+
+BAJAOVRLAY-9 (17 decisions):
+
+- ★ A graphic whose module import failed stays failed until the browser source is refreshed.
+  Chromium never fetches a failed module address again, so a plain retry cannot work. A retry
+  with a unique address (`?retry=<n>`) is possible and was left for you to decide.
+- ★ The renderer awaits a graphic's promises with no timeout, so a graphic that never settles
+  blocks its own layer until the page is reloaded.
+- ★ `cut` stops and disposes the old graphic before loading the new one, so the layer is empty
+  while the new one loads. `crossfade` is treated as `cut` in M0, as the brief says.
+- A `load` that answers non-2xx, or a lifecycle call that answers no status code at all, is
+  treated as a refusal: logged, element removed, layer left empty.
+- A refused or failed stop is logged and the graphic is disposed anyway.
+- Late hello and a failed `GET /api/v1/state`: the socket is closed and the normal reconnect
+  takes over; the stage is not touched.
+- The renderer's Playwright run starts the real server on port 5185 with its own SQLite file.
+
+BAJAOVRLAY-11 (19 decisions):
+
+- ★ `sendCommand` resolves only on an ok result and rejects on a refusal, on 5 s without an
+  answer, and with no connection. The brief said both `Promise<CommandResult>` and "rejects on
+  error result"; the test list won.
+- ★ **Atualizar** is a second take, as the brief specifies: the graphic animates in again and the
+  clock restarts from the time typed in the form. To change only the flag mid-race the operator
+  must first retype the current time. This is an operator hazard until `updateItemFields` exists.
+- ★ `Esc` (clear all) works while typing; `Backspace` (clear the clock layer) does not, and is
+  also ignored on dropdowns and the switch.
+- ★ The reference time accepts minutes past 59 (up to 999:59), so the four-hour enduro is typed
+  as 240:00; a time with an hours part (1:00:00) is refused.
+- The form refuses an empty session name although the manifest allows one.
+- Request ids are a per-page counter (`pedido-1`, …), because `crypto.randomUUID` does not exist
+  over plain http on the LAN.
+- The control dev server forwards `/render` and `/graphics` to the server, which serves built
+  files, so `pnpm build` is needed once before `pnpm dev`.
+- Hard-coded UI text in `features/` and `app/` is caught by an ESLint rule; text inside braces
+  is not.
+
+### What I would change in the briefs
+
+- **BAJAOVRLAY-9:** the brief names port 8080 while the server's default is 3000; say whether a
+  failed import should be retried; say whether `cut` may leave the layer empty while the new
+  graphic loads; give lifecycle promises a timeout or say there is none.
+- **BAJAOVRLAY-11:** pick one of "`Promise<CommandResult>`" and "rejects on error result"; say
+  `pnpm build` is needed once before `pnpm dev`; say whether dropdowns and switches count as
+  inputs for `Backspace`.
+
+### Not done / follow-ups
+
+- The two `wscat` lines in PR #4 were not run, because running them means downloading a tool.
+  The same `takeGraphic` message was sent from a script against the built server and showed the
+  clock, and `e2e/raceClockOnAir.e2e.ts` runs that path on every CI build.
+- Every instance reads "carregando" in the layer panel, and the renderer acknowledges nothing,
+  until BAJAOVRLAY-12.
+- The take form is not filled back in from on-air data after a reload, and no test proves its
+  hand-written rules still match `race-clock.ograf.json`. BAJAOVRLAY-14 replaces the form.
+- The control bundle is 503 kB (160 kB gzip), just over Vite's 500 kB warning. It is not split.
+- `.prettierignore` on main still contains merge-conflict markers from the earlier merge. They
+  are harmless to Prettier and were left alone as outside both tasks; it is a one-line cleanup.
+- Root `pnpm test:e2e` takes about 7 minutes on this machine although the tests take seconds
+  (Playwright's first probe of a closed port is slow under `pnpm --recursive`). It predates this
+  round, does not happen on CI (about 2 minutes for the whole job), and was not investigated.
