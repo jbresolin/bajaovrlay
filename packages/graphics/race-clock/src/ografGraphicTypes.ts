@@ -5,7 +5,7 @@
  * to keep a dependency out of the graphic; vendor-specific `v_*` fields are left out.
  */
 
-/** What every OGraf action resolves to: an HTTP-like status, 2xx for success. */
+/** What an OGraf action resolves to when it answers: an HTTP-like status, 2xx for success. */
 export type OGrafReturnPayload = {
   statusCode: number;
   statusMessage?: string;
@@ -55,12 +55,17 @@ export type OGrafCustomActionParams = {
 /**
  * The methods a real-time OGraf graphic implements. goToTime and setActionsSchedule are
  * left out: they are required only with "supportsNonRealTime": true.
+ *
+ * Every action may also resolve with nothing (`void`). The specification says: "If the
+ * returned Promise resolves to `undefined`, it MUST be treated as a `{ statusCode: 200 }`."
+ * The race clock itself always answers with a status; the `void` is here so this copy of
+ * the contract says what the specification says.
  */
 export interface OGrafGraphic {
-  load: (params: OGrafLoadParams) => Promise<OGrafReturnPayload>;
-  dispose: (params: Record<string, never>) => Promise<OGrafReturnPayload>;
-  playAction: (params: OGrafPlayActionParams) => Promise<OGrafPlayActionReturnPayload>;
-  stopAction: (params: OGrafStopActionParams) => Promise<OGrafReturnPayload>;
-  updateAction: (params: OGrafUpdateActionParams) => Promise<OGrafReturnPayload>;
-  customAction: (params: OGrafCustomActionParams) => Promise<OGrafReturnPayload>;
+  load: (params: OGrafLoadParams) => Promise<OGrafReturnPayload | void>;
+  dispose: (params: Record<string, never>) => Promise<OGrafReturnPayload | void>;
+  playAction: (params: OGrafPlayActionParams) => Promise<OGrafPlayActionReturnPayload | void>;
+  stopAction: (params: OGrafStopActionParams) => Promise<OGrafReturnPayload | void>;
+  updateAction: (params: OGrafUpdateActionParams) => Promise<OGrafReturnPayload | void>;
+  customAction: (params: OGrafCustomActionParams) => Promise<OGrafReturnPayload | void>;
 }

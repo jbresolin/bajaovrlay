@@ -11,7 +11,7 @@
  *   - The renderer announces "renderer ready" in the console once it has started.
  *
  * What these tests deliberately do not cover:
- *   - Graphics on the stage; there are none yet (the first arrives in BAJAOVRLAY-10).
+ *   - Graphics on the stage; lifecycle.e2e.ts and raceClockOnAir.e2e.ts cover those.
  *   - OBS itself; Chromium stands in for OBS's browser source.
  */
 import { expect, test } from '@playwright/test';
