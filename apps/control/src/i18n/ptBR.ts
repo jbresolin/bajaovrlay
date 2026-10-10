@@ -40,6 +40,10 @@ export const ptBR = {
       ready: 'pronto',
       'on-air': 'no ar',
       stopping: 'saindo',
+      // PLACEHOLDER (BAJAOVRLAY-12): added with the shared `failed` status so the layer
+      // row still compiles; the control work of the same task settles the wording and
+      // the badge colours.
+      failed: 'falhou',
     },
   },
   playout: {

@@ -45,6 +45,15 @@ export function answerClientMessage(options: {
     return buildErrorCommandResult(requestIdIfReadable ?? null, describeInvalidMessage());
   }
 
+  if (parsedMessage.data.type === 'instanceStatus') {
+    // PLACEHOLDER (BAJAOVRLAY-12): the shared schema for the renderer's report landed
+    // before the server handles it. Until the server work of the same task turns it
+    // into a reportInstanceStatus command, it is answered as it was before the schema
+    // existed: as a message outside the protocol.
+    logger.warn('websocket message refused: instanceStatus is not handled yet');
+    return buildErrorCommandResult(null, describeInvalidMessage());
+  }
+
   const requestId = parsedMessage.data.requestId ?? null;
   try {
     const outcome = stateStore.applyCommand(parsedMessage.data.command, actor);

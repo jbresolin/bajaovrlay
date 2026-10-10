@@ -7,10 +7,15 @@ export const InstanceTargetSchema = z.enum(['program', 'preview']);
 export type InstanceTarget = z.infer<typeof InstanceTargetSchema>;
 
 /**
- * Where an instance is in its life: `loading` until the renderer confirms it, `ready`,
- * `on-air` while shown, `stopping` while animating out.
+ * Where an instance is in its life: `loading` until the renderer reports on it, `ready`,
+ * `on-air` once the renderer says it is shown, `stopping` while animating out, and
+ * `failed` when the renderer could not show it. A failed instance stays in the slice
+ * until its layer is cleared or taken again, so the operator sees that it failed.
  */
-export const InstanceStatusSchema = z.enum(['loading', 'ready', 'on-air', 'stopping']);
+export const InstanceStatusSchema = z.enum(['loading', 'ready', 'on-air', 'stopping', 'failed']);
+
+/** One of InstanceStatusSchema's values. */
+export type InstanceStatus = z.infer<typeof InstanceStatusSchema>;
 
 /**
  * An instance is one graphic taken on one layer of one output, with the resolved data
@@ -25,6 +30,12 @@ export const InstanceSchema = z.object({
   /** The OGraf step the graphic is on; 0 is the first. */
   currentStep: z.number().int().min(0),
   status: InstanceStatusSchema,
+  /**
+   * What the renderer said about the status, for the layer panel: today, why the
+   * instance failed. Absent when the renderer gave no detail. It comes from code (an
+   * error message), so it may be in English.
+   */
+  statusDetail: z.string().min(1).optional(),
   /** When the take happened, as an ISO 8601 timestamp. */
   takenAt: z.iso.datetime(),
 });

@@ -9,8 +9,13 @@ Every message is one JSON object, told apart by its `type` field:
 
 - `hello` (server → client): every slice, sent once right after the client connects.
 - `slice` (server → client): one slice that changed, sent to every client.
-- `command` (client → server): the only way a client changes state. `requestId` is
+- `command` (client → server): the only way an operator changes state. `requestId` is
   optional and is echoed in the `commandResult`.
+- `instanceStatus` (renderer → server): what really happened to an instance on screen,
+  `on-air` after its play finished or `failed` (with an optional `detail`) after an
+  import, load or play that did not work. The server turns it into the
+  `reportInstanceStatus` command, which only a renderer may send: a connection is a
+  renderer when it connects to `/ws?role=renderer`, and an operator otherwise.
 - `commandResult` (server → the client that sent the command): `ok: true`, or
   `ok: false` with an `error` carrying a stable `code` and a pt-BR `message`. The
   `slice` messages a command causes are sent before its `commandResult`.
@@ -95,6 +100,44 @@ not answer the previous ping.
     "layerId": "clock",
     "data": { "sessionName": "Enduro de Resistência", "state": "green" }
   }
+}
+```
+
+## command (update in place)
+
+`data` carries only the fields that change; the instance keeps its id, so the graphic
+stays on screen.
+
+```json
+{
+  "type": "command",
+  "requestId": "pedido-19",
+  "command": {
+    "type": "updateInstanceData",
+    "instanceId": "7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11",
+    "data": { "state": "yellow" }
+  }
+}
+```
+
+## instanceStatus (on air)
+
+```json
+{
+  "type": "instanceStatus",
+  "instanceId": "7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11",
+  "status": "on-air"
+}
+```
+
+## instanceStatus (failed)
+
+```json
+{
+  "type": "instanceStatus",
+  "instanceId": "7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11",
+  "status": "failed",
+  "detail": "Failed to fetch dynamically imported module: /graphics/race-clock/race-clock.js"
 }
 ```
 

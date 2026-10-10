@@ -2,14 +2,18 @@ import { z } from 'zod';
 
 import { ClearAllCommandSchema } from './clearAll.js';
 import { ClearLayerCommandSchema } from './clearLayer.js';
+import { ReportInstanceStatusCommandSchema } from './reportInstanceStatus.js';
 import { TakeGraphicCommandSchema } from './takeGraphic.js';
+import { UpdateInstanceDataCommandSchema } from './updateInstanceData.js';
 
 /**
  * Every command the server accepts, told apart by `type`. A command is the only way
- * state changes. takeItem and the rundown commands arrive in M1.
+ * state changes. takeItem and the rundown commands arrive later in M1.
  */
 export const CommandSchema = z.discriminatedUnion('type', [
   TakeGraphicCommandSchema,
+  UpdateInstanceDataCommandSchema,
+  ReportInstanceStatusCommandSchema,
   ClearLayerCommandSchema,
   ClearAllCommandSchema,
 ]);

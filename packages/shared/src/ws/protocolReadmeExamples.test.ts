@@ -6,12 +6,13 @@
  *   message. People building a client copy those examples, so they must be valid.
  *
  * What these tests prove:
- *   - The README has at least one example of each of the five message shapes
- *     (hello, slice, command, ok commandResult, error commandResult).
- *   - Every example passes the schema for its direction: `command` the client schema,
- *     everything else the server schema. The client envelope does not check the
- *     command inside it (the store does), so that command is checked against
- *     CommandSchema too: a misspelt field in the README would otherwise slip through.
+ *   - The README has at least one example of each of the six message shapes
+ *     (hello, slice, command, instanceStatus, ok commandResult, error commandResult).
+ *   - Every example passes the schema for its direction: `command` and
+ *     `instanceStatus` the client schema, everything else the server schema. The
+ *     client envelope does not check the command inside a `command` message (the store
+ *     does), so that command is checked against CommandSchema too: a misspelt field in
+ *     the README would otherwise slip through.
  *
  * What these tests deliberately do not cover:
  *   - Whether the prose around the examples is accurate; that is a review judgement.
@@ -50,24 +51,29 @@ function describeMessageShape(example: unknown): string {
   return String(exampleAsRecord.type);
 }
 
+const shapesSentByAClient = ['command', 'instanceStatus'];
+
 /**
- * True when an example passes the schema of the side that sends it; a client command
- * must also carry a command that passes CommandSchema.
+ * True when an example passes the schema of the side that sends it; a client `command`
+ * message must also carry a command that passes CommandSchema.
  */
 function passesTheSchemaForItsDirection(example: unknown): boolean {
-  const isSentByAClient = describeMessageShape(example) === 'command';
+  const isSentByAClient = shapesSentByAClient.includes(describeMessageShape(example));
   if (!isSentByAClient) {
     return ServerMessageSchema.safeParse(example).success;
   }
-  const parsedEnvelope = ClientMessageSchema.safeParse(example);
-  if (!parsedEnvelope.success) {
+  const parsedClientMessage = ClientMessageSchema.safeParse(example);
+  if (!parsedClientMessage.success) {
     return false;
   }
-  return CommandSchema.safeParse(parsedEnvelope.data.command).success;
+  if (parsedClientMessage.data.type === 'instanceStatus') {
+    return true;
+  }
+  return CommandSchema.safeParse(parsedClientMessage.data.command).success;
 }
 
 describe('packages/shared/src/ws/README.md', () => {
-  it('shows one example of each of the five message shapes', () => {
+  it('shows one example of each of the six message shapes', () => {
     // Arrange: read the README from disk.
     const readme = readFileSync(protocolReadmePath, 'utf8');
 
@@ -76,7 +82,14 @@ describe('packages/shared/src/ws/README.md', () => {
 
     // Assert: every shape appears.
     expect(new Set(shapesShown), 'every message shape must have an example').toEqual(
-      new Set(['hello', 'slice', 'command', 'commandResult ok', 'commandResult error']),
+      new Set([
+        'hello',
+        'slice',
+        'command',
+        'instanceStatus',
+        'commandResult ok',
+        'commandResult error',
+      ]),
     );
   });
 
