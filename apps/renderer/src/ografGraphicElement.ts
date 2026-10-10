@@ -6,11 +6,18 @@
  * side of the same contract.
  */
 
-/** What every OGraf action resolves to: an HTTP-like status, 2xx for success. */
+/** What an OGraf action resolves to when it answers: an HTTP-like status, 2xx for success. */
 export type OGrafAnswer = {
   statusCode: number;
   statusMessage?: string;
 };
+
+/**
+ * What an OGraf action may resolve to: an answer, or nothing. The specification says of
+ * every action: "If the returned Promise resolves to `undefined`, it MUST be treated as a
+ * `{ statusCode: 200 }`." lifecycleCall.ts is where the renderer does that.
+ */
+export type OGrafAnswerOrNothing = OGrafAnswer | void;
 
 /** What the renderer passes to load(): the data to show and how it is being rendered. */
 export type OGrafLoadParams = {
@@ -21,9 +28,9 @@ export type OGrafLoadParams = {
 
 /** A graphic on the page: an ordinary element that also answers the OGraf lifecycle. */
 export type OGrafGraphicElement = HTMLElement & {
-  load: (params: OGrafLoadParams) => Promise<OGrafAnswer>;
-  playAction: (params: { goto: number; skipAnimation?: boolean }) => Promise<OGrafAnswer>;
-  updateAction: (params: { data: Record<string, unknown> }) => Promise<OGrafAnswer>;
-  stopAction: (params: { skipAnimation?: boolean }) => Promise<OGrafAnswer>;
-  dispose: (params: Record<string, never>) => Promise<OGrafAnswer>;
+  load: (params: OGrafLoadParams) => Promise<OGrafAnswerOrNothing>;
+  playAction: (params: { goto: number; skipAnimation?: boolean }) => Promise<OGrafAnswerOrNothing>;
+  updateAction: (params: { data: Record<string, unknown> }) => Promise<OGrafAnswerOrNothing>;
+  stopAction: (params: { skipAnimation?: boolean }) => Promise<OGrafAnswerOrNothing>;
+  dispose: (params: Record<string, never>) => Promise<OGrafAnswerOrNothing>;
 };
