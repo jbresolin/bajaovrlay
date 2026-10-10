@@ -11,8 +11,8 @@
  * What these tests prove, with the real page in Chromium:
  *   - The page dials `/ws?role=renderer`, the address by which the server knows a
  *     renderer from an operator.
- *   - After a take, once the graphic was played, the server hears exactly one message:
- *     that instance, `on-air`, with no detail.
+ *   - After a take, once the graphic was played, the server hears the message: that
+ *     instance, `on-air`, with no detail.
  *   - For each way a graphic can fail to go on air (module missing, load rejects, load
  *     refused with a 400, graphic not in the graphics slice, layer not in the layers
  *     slice) the server hears `failed` with a detail that says which of those it was.
@@ -23,6 +23,9 @@
  *   - That the report is made only after playAction has resolved, never before; that
  *     needs the page and the server on one clock, so src/instancePlayer.status.test.ts
  *     proves it with a playAction the test holds back.
+ *   - That each instance is reported at most once per connection. These tests stop
+ *     looking as soon as the expected message has arrived, so a second report arriving
+ *     later would go unseen; src/instancePlayer.status.test.ts proves "once".
  *   - What the server does with the message (the `reportInstanceStatus` command and who
  *     may send it); the server's own tests. Here the server is the stand-in of
  *     fakeServerForPage.ts, which only writes down what it hears.
@@ -71,15 +74,15 @@ test.describe('a graphic that goes on air', () => {
     fakeServer.sendInstances([createEnduroInstance('green')]);
     await waitUntilTheEnduroClockWasPlayed(page, 1);
 
-    // Assert: the page dialled the renderer's address, and the server heard exactly one
-    // message: the clock is on air.
+    // Assert: the page dialled the renderer's address, and the server heard the message
+    // saying the clock is on air.
     expect(
       fakeServer.readConnectionAddresses(),
       'the page must connect to /ws?role=renderer, so the server knows it is a renderer',
     ).toEqual([expect.stringMatching(/\/ws\?role=renderer$/)]);
     await expect
       .poll(() => fakeServer.readMessagesFromThePage(), {
-        message: 'the server must hear one instanceStatus message saying the clock is on-air',
+        message: 'the server must hear the instanceStatus message saying the clock is on-air',
       })
       .toEqual([enduroClockIsOnAir]);
   });
@@ -184,10 +187,10 @@ test.describe('a graphic that cannot go on air', () => {
       // Act: the broken graphic of this row is taken.
       fakeServer.sendInstances([brokenInstance]);
 
-      // Assert: the server hears exactly one message: that instance failed, and why.
+      // Assert: the server hears the message saying that instance failed, and why.
       await expect
         .poll(() => fakeServer.readMessagesFromThePage(), {
-          message: 'the server must hear one instanceStatus message saying the instance failed',
+          message: 'the server must hear the instanceStatus message saying the instance failed',
         })
         .toHaveLength(1);
       expect(

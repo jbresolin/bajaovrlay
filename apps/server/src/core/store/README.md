@@ -4,10 +4,8 @@ The in-memory state slices and the single path that changes them. Start reading 
 `createStateStore.ts`: `applyCommand` validates → authorises → applies a reducer →
 saves (one SQLite transaction) → appends to the event log → tells listeners.
 
-- `reducers/` — one pure reducer per command (`takeGraphic`, `updateInstanceData`,
-  `reportInstanceStatus`, `clearLayer`, `clearAll`), plus `reduceCommand.ts` choosing it.
-- `graphicDataValidation.ts` — checks a take's or an update's data against the JSON
-  Schema in the graphic's manifest (Ajv; compiled once per graphic id).
+- `reducers/` — one pure reducer per command, plus `reduceCommand.ts` choosing it.
+- `graphicDataValidation.ts` — checks a take's or update's data against the manifest's schema.
 - `authorizeCommand.ts` — the authorisation hook: a renderer may only report instance
   status, nobody else may. `commandActors.ts` builds and reads the `role:id` actor names.
 - `commandRefusals.ts` — every refusal, with its code and pt-BR message.

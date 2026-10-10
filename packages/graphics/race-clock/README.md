@@ -12,5 +12,4 @@ Preview: `pnpm --filter race-clock dev`, then http://localhost:5175/preview.html
 built `dist/` under `/graphics/race-clock/`: `pnpm --filter race-clock test:e2e`, and after a
 deliberate visual change `pnpm --filter race-clock test:e2e --update-snapshots`.
 New graphic: copy this folder, rename the package, manifest id, `main`, tag and dev ports, set
-`v_baja` (the default layer and category the server reads), then replace the model, styles
-and template; keep the tests' shape. The server refuses data the manifest `schema` refuses.
+`v_baja` (default layer, category), replace model, schema, styles, template; keep the tests' shape.
