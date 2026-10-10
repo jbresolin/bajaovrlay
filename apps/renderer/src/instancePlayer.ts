@@ -56,7 +56,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
 
   // What is really on each layer right now, as far as the page goes. A graphic whose
   // load failed is never in this map, even though the server lists its instance.
-  const graphicOnLayerById = new Map<string, GraphicOnLayer>();
+  const graphicOnLayerByLayerId = new Map<string, GraphicOnLayer>();
   // The end of each layer's queue: the promise of the last operation queued on it.
   const endOfQueueByLayerId = new Map<string, Promise<void>>();
 
@@ -153,7 +153,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
       logCouldNotGoOnAir(subject, 'its load failed or was refused');
       return;
     }
-    graphicOnLayerById.set(instance.layerId, { subject, element });
+    graphicOnLayerByLayerId.set(instance.layerId, { subject, element });
 
     await makeLifecycleCall(
       subject,
@@ -242,12 +242,12 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
 
   /** Disposes the graphic on a layer, whichever it is, and removes its element. */
   async function disposeWhateverIsOnLayer(layerId: string): Promise<void> {
-    const graphicOnLayer = graphicOnLayerById.get(layerId);
+    const graphicOnLayer = graphicOnLayerByLayerId.get(layerId);
     if (graphicOnLayer === undefined) {
       return;
     }
     // Forgotten first: whatever dispose answers, this graphic is no longer on its layer.
-    graphicOnLayerById.delete(layerId);
+    graphicOnLayerByLayerId.delete(layerId);
     await makeLifecycleCall(
       graphicOnLayer.subject,
       { action: 'dispose', skipAnimation: false, run: () => graphicOnLayer.element.dispose({}) },
@@ -265,7 +265,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     instanceId: string,
     operationKind: InstanceOperation['kind'],
   ): GraphicOnLayer | undefined {
-    const graphicOnLayer = graphicOnLayerById.get(layerId);
+    const graphicOnLayer = graphicOnLayerByLayerId.get(layerId);
     if (graphicOnLayer === undefined || graphicOnLayer.subject.instanceId !== instanceId) {
       logEvent('info', 'operation skipped: the instance is not on its layer', {
         operation: operationKind,

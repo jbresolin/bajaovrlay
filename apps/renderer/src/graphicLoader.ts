@@ -11,7 +11,8 @@ export type GraphicLoader = {
   /**
    * Makes the graphic's element available and resolves with its tag name, ready for
    * `document.createElement`. Rejects when the module cannot be imported or does not
-   * export a class; the caller logs it and leaves the layer empty.
+   * export a class; the caller logs it and leaves the layer empty. A graphic that failed
+   * keeps failing the same way until the page is reloaded.
    */
   defineGraphicElement: (graphic: Graphic) => Promise<string>;
 };
@@ -34,6 +35,12 @@ export function createGraphicLoader(options: GraphicLoaderOptions = {}): Graphic
   const importModule = options.importModule ?? importModuleFromAddress;
   // One import per graphic id, shared by every take of that graphic. The promise is
   // remembered (not its result) so two takes at the same moment share one import.
+  //
+  // A failed import is remembered as well, on purpose. Trying again would not help:
+  // Chromium (the engine inside OBS) keeps a failed module address in its own module map
+  // for the life of the page, so a second `import()` of the same address fails without
+  // asking the server. A graphic whose import failed needs the page to be reloaded (in
+  // OBS: refresh the browser source); every take until then is logged by the caller.
   const tagNameByGraphicId = new Map<string, Promise<string>>();
 
   function defineGraphicElement(graphic: Graphic): Promise<string> {
@@ -44,11 +51,6 @@ export function createGraphicLoader(options: GraphicLoaderOptions = {}): Graphic
 
     const tagName = importAndDefineGraphicElement(graphic, importModule);
     tagNameByGraphicId.set(graphic.id, tagName);
-    // A failure is forgotten, so the next take tries again: the package may simply not
-    // have been built yet. The rejection itself still reaches whoever asked.
-    tagName.catch(() => {
-      tagNameByGraphicId.delete(graphic.id);
-    });
     return tagName;
   }
 
