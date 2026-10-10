@@ -298,9 +298,15 @@ test.describe('a graphic that answers nothing, which OGraf counts as a 200', () 
       page.locator('[data-layer-id="clock"] > *'),
       'the cleared layer must hold no element',
     ).toHaveCount(0);
+    // waitForLogLineAboutInstance is not used here on purpose: it returns the first line
+    // with this message about the instance, which is the answer to its load, not the
+    // answer to its dispose. This finder also looks at the action.
     const findDisposeAnswerLogLine = () =>
       logLines.find(
-        (line) => line.message === 'graphic lifecycle call answered' && line.action === 'dispose',
+        (line) =>
+          line.message === 'graphic lifecycle call answered' &&
+          line.instanceId === enduroInstanceId &&
+          line.action === 'dispose',
       );
     await expect
       .poll(() => findDisposeAnswerLogLine() !== undefined, {
@@ -312,6 +318,7 @@ test.describe('a graphic that answers nothing, which OGraf counts as a 200', () 
       'the dispose must be logged at info level as a 200 the renderer assumed',
     ).toMatchObject({
       level: 'info',
+      action: 'dispose',
       instanceId: enduroInstanceId,
       layerId: 'clock',
       statusCode: 200,
