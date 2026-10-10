@@ -1,0 +1,78 @@
+// Test support: slices that read like what the real server sends, so every test starts
+// from the same believable state. Each function builds new objects on every call, so
+// no test can change what another test sees.
+import type { Graphic, Instance, Layer, Slices } from '@bajaovrlay/shared';
+
+/** The five layers the server seeds on its first boot, bottom to top. */
+export function buildLayersSeededByTheServer(): Layer[] {
+  return [
+    { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
+    { id: 'ticker', name: 'Letreiro', zIndex: 20, replacePolicy: 'out-then-in', persistent: false },
+    { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
+    {
+      id: 'lower-third',
+      name: 'Tarja',
+      zIndex: 40,
+      replacePolicy: 'out-then-in',
+      persistent: false,
+    },
+    {
+      id: 'fullscreen',
+      name: 'Tela cheia',
+      zIndex: 50,
+      replacePolicy: 'out-then-in',
+      persistent: false,
+    },
+  ];
+}
+
+/** The race clock as the server registers it once its package is built. */
+export function buildRaceClockGraphic(): Graphic {
+  return {
+    id: 'race-clock',
+    manifest: { id: 'baja-race-clock', name: 'Relógio de prova', main: 'race-clock.js' },
+    defaultLayerId: 'clock',
+    category: 'clock',
+    thumbnailUrl: null,
+    defaultFields: {},
+  };
+}
+
+/** The race clock on air on the clock layer, showing the endurance race under green. */
+export function buildRaceClockInstanceOnTheClockLayer(takenAt: string): Instance {
+  return {
+    id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
+    layerId: 'clock',
+    graphicId: 'race-clock',
+    target: 'program',
+    resolvedData: {
+      sessionName: 'Enduro de Resistência',
+      state: 'green',
+      clockMode: 'elapsed',
+      referenceTimeMs: 754_000,
+      referenceWallClockMs: Date.parse(takenAt),
+      running: true,
+    },
+    currentStep: 0,
+    status: 'loading',
+    takenAt,
+  };
+}
+
+/** What the server sends right after boot: its layers, the race clock, nothing on air. */
+export function buildSlicesWithNothingOnAir(): Slices {
+  return {
+    layers: buildLayersSeededByTheServer(),
+    graphics: [buildRaceClockGraphic()],
+    instances: [],
+    eventLog: [],
+  };
+}
+
+/** The same state with the race clock on air on the clock layer since `takenAt`. */
+export function buildSlicesWithTheRaceClockOnAir(takenAt: string): Slices {
+  return {
+    ...buildSlicesWithNothingOnAir(),
+    instances: [buildRaceClockInstanceOnTheClockLayer(takenAt)],
+  };
+}

@@ -51,4 +51,27 @@ export default defineConfig(
     files: ['apps/control/src/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat.recommended],
   },
+
+  {
+    // Every word the operator reads comes from the pt-BR catalog (src/i18n/ptBR.ts).
+    // These two rules catch the ways text gets written inline by accident: words between
+    // tags, and a quoted string in an attribute people read or hear. Text in braces
+    // (`{'...'}`) is not caught, so this is a safety net and not a proof. Tests are
+    // exempt: they must spell out the expected text.
+    files: ['apps/control/src/features/**/*.tsx', 'apps/control/src/app/**/*.tsx'],
+    ignores: ['**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'JSXText[value=/\\S/]',
+          message: 'No inline UI text: add the string to src/i18n/ptBR.ts and use it from there.',
+        },
+        {
+          selector: 'JSXAttribute[name.name=/^(aria-label|title|placeholder|alt)$/] > Literal',
+          message: 'No inline UI text: add the string to src/i18n/ptBR.ts and use it from there.',
+        },
+      ],
+    },
+  },
 );

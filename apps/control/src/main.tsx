@@ -1,4 +1,5 @@
-// Entry point of the control page: mounts <App /> into index.html.
+// Entry point of the control page: builds the one store, opens the one connection to
+// the server, and mounts <App /> into index.html with both made available to it.
 import './index.css';
 
 import { StrictMode } from 'react';
@@ -6,6 +7,10 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
 import { ptBR } from './i18n/ptBR';
+import { buildWebSocketAddress, openBrowserWebSocket } from './state/browserWebSocket';
+import { ControlPageStateProvider } from './state/ControlPageStateProvider';
+import { connectToServer } from './state/serverConnection';
+import { createServerStateStore } from './state/serverStateStore';
 
 const rootElement = document.getElementById('root');
 if (rootElement === null) {
@@ -14,8 +19,23 @@ if (rootElement === null) {
 
 document.title = ptBR.app.title;
 
+// Created here, outside React, so there is exactly one of each for the life of the
+// page: a redraw (or StrictMode's double draw in development) can never open a second
+// WebSocket.
+const serverStateStore = createServerStateStore();
+const serverConnection = connectToServer({
+  webSocketAddress: buildWebSocketAddress(window.location),
+  serverStateStore,
+  openSocket: openBrowserWebSocket,
+});
+
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <ControlPageStateProvider
+      serverStateStore={serverStateStore}
+      sendCommand={serverConnection.sendCommand}
+    >
+      <App />
+    </ControlPageStateProvider>
   </StrictMode>,
 );

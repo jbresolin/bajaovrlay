@@ -14,6 +14,8 @@ export default mergeConfig(
       setupFiles: ['./src/testSetup.ts'],
       // Every test starts with a real `fetch` again, even if the previous one stubbed it.
       unstubGlobals: true,
+      // Browser tests live in e2e/ and are Playwright's, not Vitest's.
+      exclude: ['e2e/**', 'node_modules/**'],
     },
   }),
 );

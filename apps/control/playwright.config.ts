@@ -1,0 +1,61 @@
+import { defineConfig, devices } from '@playwright/test';
+
+// The tests drive the control page's dev server, which forwards /ws, /api, /health,
+// /render and /graphics to a REAL BajaOvrLay server started just for them. Both use
+// ports of their own, so a `pnpm dev` left running (3000, 5173) is neither used nor
+// disturbed, and the other packages' browser tests can run at the same time.
+const realServerPort = '5187';
+const controlPagePort = '5188';
+const realServerAddress = `http://127.0.0.1:${realServerPort}`;
+const controlPageAddress = `http://127.0.0.1:${controlPagePort}`;
+const isRunningInCI = Boolean(process.env.CI);
+
+// A relative DATABASE_PATH is read from the repository root. The folder is gitignored
+// and deleted before every start, so each run begins on an empty, newly seeded database.
+const temporaryDatabasePath = 'apps/control/e2e-data/takeAndClear.sqlite';
+
+export default defineConfig({
+  testDir: './e2e',
+  testMatch: '**/*.e2e.ts',
+  forbidOnly: isRunningInCI,
+  // No retries: a flaky test is a bug, and a retry would hide it.
+  retries: 0,
+  // One at a time: the tests share one server, and state on it is the thing under test.
+  workers: 1,
+  reporter: isRunningInCI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  use: {
+    baseURL: controlPageAddress,
+    trace: 'retain-on-failure',
+  },
+  projects: [
+    {
+      name: 'chromium',
+      // The operator's desktop browser, at a common laptop size.
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 } },
+    },
+  ],
+  webServer: [
+    {
+      // The real server from its TypeScript source, exactly as `pnpm dev` runs it, but
+      // without reading the root .env: every setting it needs is given right here.
+      command:
+        'rm -rf e2e-data && pnpm --filter @bajaovrlay/server exec tsx --conditions=@bajaovrlay/source src/main.ts',
+      env: {
+        PORT: realServerPort,
+        HOST: '127.0.0.1',
+        LOG_LEVEL: 'warn',
+        DATABASE_PATH: temporaryDatabasePath,
+      },
+      url: `${realServerAddress}/health`,
+      reuseExistingServer: !isRunningInCI,
+    },
+    {
+      // vite.config.ts reads PORT and HOST to know where the server is; given here, they
+      // win over the root .env, so the page under test talks to the server above.
+      command: `pnpm exec vite --host 127.0.0.1 --port ${controlPagePort}`,
+      env: { PORT: realServerPort, HOST: '127.0.0.1' },
+      url: controlPageAddress,
+      reuseExistingServer: !isRunningInCI,
+    },
+  ],
+});
