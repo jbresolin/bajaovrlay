@@ -10,7 +10,8 @@
  *   - Filling the race clock form and pressing "Colocar no ar" makes the layer panel
  *     show the clock on the "Relógio" layer within 2 seconds.
  *   - Reloading the page changes nothing: the panel still shows the clock, because the
- *     state lives on the server and not in the page.
+ *     state lives on the server and not in the page; and the form comes back showing
+ *     what is on air instead of its defaults.
  *   - Pressing "Limpar" on that layer brings it back to "vazia".
  *
  * What these tests deliberately do not cover:
@@ -62,7 +63,8 @@ test.describe('taking and clearing the race clock', () => {
     await page.reload();
 
     // Assert: nothing was lost, because the server is the truth; and since the clock is
-    // on air, the panel now offers "Atualizar".
+    // on air, the panel now offers "Atualizar" and its form shows what is on air. (The
+    // time field is not checked: the clock is running, so its text depends on the second.)
     await expect(
       clockLayerRow,
       'after a reload the layer panel must still show the race clock',
@@ -71,6 +73,18 @@ test.describe('taking and clearing the race clock', () => {
       page.getByRole('button', { name: 'Atualizar' }),
       'with the clock on air the form must offer "Atualizar"',
     ).toBeVisible();
+    await expect(
+      page.getByLabel('Nome da sessão'),
+      'after a reload the form must show the session name that is on air, not its default',
+    ).toHaveValue('Enduro de Resistência — Bateria 1');
+    await expect(
+      page.getByRole('combobox', { name: 'Bandeira' }),
+      'after a reload the form must show the flag that is on air',
+    ).toHaveText('Verde');
+    await expect(
+      page.getByRole('switch', { name: 'Relógio correndo' }),
+      'after a reload the switch must be on, because the clock on air is running',
+    ).toBeChecked();
 
     // Act: clear the clock layer.
     await clockLayerRow.getByRole('button', { name: 'Limpar' }).click();

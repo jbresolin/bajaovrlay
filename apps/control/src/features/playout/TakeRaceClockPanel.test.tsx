@@ -3,46 +3,51 @@
  *
  * What this module is for:
  *   The panel where the operator fills the race clock's data and puts it on air with
- *   "Colocar no ar". While the clock is on air a second button, "Atualizar", sends the
- *   form again so the flag, the session name or the laps can change mid-race without
- *   the clock losing its time.
+ *   "Colocar no ar". While the clock is on air a second button, "Atualizar", changes
+ *   what the operator touched and leaves everything else as it is on air, so a flag
+ *   change in the middle of a race never resets the clock or stops it.
  *
  * What these tests prove:
- *   - The form opens with the manifest's defaults, and "Atualizar" exists only while
- *     the race clock is on air.
+ *   - With nothing on air the form opens with the manifest's defaults and there is no
+ *     "Atualizar".
  *   - "Colocar no ar" sends one `takeGraphic` command built from what was typed and
  *     chosen, with the moment of the press as the clock's reference.
- *   - A missing or badly typed field shows its pt-BR message under the field and
- *     nothing is sent.
- *   - When the server refuses the take, its pt-BR message is shown in the panel, and it
- *     disappears after a take that works.
- *   - While the page is not connected both buttons are disabled and say why.
+ *   - When the page loads with the clock already on air (a reload in the middle of a
+ *     race), the form shows what is on air, with the time the clock shows at that moment.
+ *   - "Atualizar" after such a reload: a field the operator changed goes out as changed,
+ *     a typed time becomes the clock's new time, and every field left alone goes out as
+ *     it is on air, the time carried forward to the press.
  *
  * What these tests deliberately do not cover:
- *   - Every rule and every mm:ss case: raceClockTakeForm.test.ts and
- *     minutesAndSeconds.test.ts list them one by one.
- *   - What "Atualizar" sends (the new flag with the time the clock on air shows, never
- *     a reset clock): TakeRaceClockPanelUpdate.test.tsx, and raceClockUpdateCommand.test.ts
- *     for the rarer cases.
+ *   - The form after a take or an "Atualizar" the server accepted, a change another
+ *     operator made, and on-air data that cannot be read:
+ *     TakeRaceClockPanelUpdate.test.tsx.
+ *   - Field messages, server refusals and the buttons while disconnected:
+ *     TakeRaceClockPanelProblems.test.tsx.
+ *   - Every combination of changed fields: raceClockUpdateCommand.test.ts, without
+ *     drawing anything. Every rule and mm:ss case: raceClockTakeForm.test.ts and
+ *     minutesAndSeconds.test.ts.
  *   - The real server and the real graphic; e2e/takeAndClear.e2e.ts uses the real server.
- *   - Filling the form back in from what is on air after a page reload: M0 does not do it.
+ *   - The graphic animating out and in again on every "Atualizar": the server replaces
+ *     the instance, and that blink stays until an update command exists (M1).
  */
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import {
-  focusAreaAroundDisabledButton,
-  renderOnControlPageConnectedToFakeServer,
-} from '@/state/controlPageOnFakeServer.testSupport';
-import {
-  buildSlicesWithNothingOnAir,
-  buildSlicesWithTheRaceClockOnAir,
-} from '@/state/slicesLikeTheServerSends.testSupport';
+import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
+import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.testSupport';
 
+import {
+  buildRaceClockInstanceHoldingThisData,
+  chooseOptionInDropdown,
+  typeIntoField,
+} from './operatingTheRaceClockForm.testSupport';
 import { TakeRaceClockPanel } from './TakeRaceClockPanel';
 
-// 10:00 in Brasília on the Saturday of the endurance race. The panel is told this is
-// "now", so the tests know exactly which reference moment the command must carry.
+// The clock went on air at 9:45 in Brasília on the Saturday of the endurance race. The
+// panel is told that "now" is 10:00, 15 minutes (900 000 ms) later, so the tests know
+// exactly which time the clock shows and which reference moment a command must carry.
+const momentTheClockWentOnAir = '2026-10-10T12:45:00.000Z';
 const momentOfThePressInMilliseconds = Date.parse('2026-10-10T13:00:00.000Z');
 
 /** Draws the panel on a connected page with nothing on air, with "now" held still. */
@@ -53,51 +58,28 @@ function renderPanelWithNothingOnAir() {
   );
 }
 
-/** Draws the panel on a connected page with the race clock already on air. */
-function renderPanelWithTheRaceClockOnAir() {
+/**
+ * Draws the panel the way a reload in the middle of the race finds it: the first heat
+ * has been on air since 9:45 under the green flag, running from 754 000 ms (12:34), with
+ * 7 laps for the leader. At 10:00 that clock shows 27:34 (1 654 000 ms).
+ */
+function renderPanelAfterAReloadWithTheFirstHeatOnAir() {
+  const raceClockInstanceOnAir = buildRaceClockInstanceHoldingThisData(
+    {
+      sessionName: 'Enduro de Resistência — Bateria 1',
+      state: 'green',
+      clockMode: 'elapsed',
+      referenceTimeMs: 754_000,
+      referenceWallClockMs: Date.parse(momentTheClockWentOnAir),
+      running: true,
+      lapsCompletedByLeader: 7,
+    },
+    momentTheClockWentOnAir,
+  );
   return renderOnControlPageConnectedToFakeServer(
     <TakeRaceClockPanel readCurrentTimeInMilliseconds={() => momentOfThePressInMilliseconds} />,
-    buildSlicesWithTheRaceClockOnAir('2026-10-10T12:45:00.000Z'),
+    { ...buildSlicesWithNothingOnAir(), instances: [raceClockInstanceOnAir] },
   );
-}
-
-/**
- * Draws the panel as it looks after a take the server refused: the server's message is
- * on screen and "Colocar no ar" can be pressed again.
- */
-async function renderPanelShowingARefusedTake() {
-  const controlPage = renderPanelWithNothingOnAir();
-  fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
-  await waitFor(() => {
-    expect(
-      controlPage.fakeServer.listCommandsReceived(),
-      'the take that will be refused must have been sent',
-    ).toHaveLength(1);
-  });
-  controlPage.fakeServer.refuseLastCommand({
-    code: 'GRAPHIC_NOT_FOUND',
-    message: 'O gráfico "race-clock" não está registrado.',
-  });
-  await screen.findByRole('alert');
-  // The button is off while the page waits for an answer, so wait for it to be back on.
-  await waitFor(() => {
-    expect(
-      screen.getByRole('button', { name: 'Colocar no ar' }),
-      'the button must come back once the server has answered',
-    ).toBeEnabled();
-  });
-  return controlPage;
-}
-
-/** Types into a text field found by its label, replacing what was there. */
-function typeIntoField(fieldLabel: string, text: string) {
-  fireEvent.change(screen.getByLabelText(fieldLabel), { target: { value: text } });
-}
-
-/** Opens a dropdown found by its label and picks one of its options. */
-function chooseOptionInDropdown(dropdownLabel: string, optionLabel: string) {
-  fireEvent.keyDown(screen.getByRole('combobox', { name: dropdownLabel }), { key: 'Enter' });
-  fireEvent.click(screen.getByRole('option', { name: optionLabel }));
 }
 
 describe('the take race clock panel', () => {
@@ -182,109 +164,126 @@ describe('the take race clock panel', () => {
     fakeServer.acceptLastCommand();
   });
 
-  it('shows the pt-BR message under an empty required field and sends nothing', async () => {
-    // Arrange: the panel with the session name erased.
-    const { fakeServer } = renderPanelWithNothingOnAir();
-    typeIntoField('Nome da sessão', '');
+  it('shows what is on air, with the time the clock shows now, when the page loads with the clock on air', () => {
+    // Arrange: the first heat on air since 9:45, running from 12:34 (see the factory).
 
-    // Act: press "Colocar no ar".
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
+    // Act: the page is loaded at 10:00, as after a reload.
+    renderPanelAfterAReloadWithTheFirstHeatOnAir();
 
-    // Assert: the field explains what is missing, is marked invalid, and nothing was sent.
-    expect(
-      await screen.findByText('Informe o nome da sessão.'),
-      'the message for the missing session name must be on screen',
-    ).toBeInTheDocument();
+    // Assert: the form is not at its defaults. It repeats what is on air, and its time
+    // is the 27:34 the clock shows at 10:00, not the 12:34 of the take.
     expect(
       screen.getByLabelText('Nome da sessão'),
-      'the field must be marked invalid for screen readers',
-    ).toBeInvalid();
+      'the session name must be the one on air',
+    ).toHaveValue('Enduro de Resistência — Bateria 1');
     expect(
-      screen.getByLabelText('Nome da sessão'),
-      'the field must point at its message for screen readers',
-    ).toHaveAccessibleDescription('Informe o nome da sessão.');
+      screen.getByRole('combobox', { name: 'Bandeira' }),
+      'the flag must be the one on air',
+    ).toHaveTextContent('Verde');
     expect(
-      fakeServer.listCommandsReceived(),
-      'a form with a missing field must not send any command',
-    ).toEqual([]);
-  });
-
-  it('explains the mm:ss format when the reference time is typed with hours', async () => {
-    // Arrange: the panel with one hour typed as h:mm:ss.
-    const { fakeServer } = renderPanelWithNothingOnAir();
-    typeIntoField('Tempo de referência (mm:ss)', '1:00:00');
-
-    // Act: press "Colocar no ar".
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
-
-    // Assert: the message shows the expected format, and nothing was sent.
+      screen.getByRole('combobox', { name: 'Modo do relógio' }),
+      'the clock mode must be the one on air',
+    ).toHaveTextContent('Tempo decorrido');
     expect(
-      await screen.findByText('Use minutos e segundos no formato mm:ss, por exemplo 12:30.'),
-      'the message must explain how to type the time',
+      screen.getByRole('switch', { name: 'Relógio correndo' }),
+      'the switch must be on, because the clock on air is running',
+    ).toBeChecked();
+    expect(
+      screen.getByLabelText('Tempo de referência (mm:ss)'),
+      'the time must be the one the clock shows now',
+    ).toHaveValue('27:34');
+    expect(
+      screen.getByLabelText('Voltas do líder (opcional)'),
+      'the laps must be the ones on air',
+    ).toHaveValue('7');
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }),
+      'with the clock on air the panel must offer "Atualizar"',
     ).toBeInTheDocument();
-    expect(
-      fakeServer.listCommandsReceived(),
-      'a form with a badly typed time must not send any command',
-    ).toEqual([]);
   });
 
-  it("shows the server's pt-BR message when the take is refused", async () => {
-    // Arrange: the panel with "Colocar no ar" pressed, and the take on its way.
-    const { fakeServer } = renderPanelWithNothingOnAir();
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
-    await waitFor(() => {
-      expect(fakeServer.listCommandsReceived(), 'the take must have been sent').toHaveLength(1);
-    });
+  const scenariosWhereAtualizarIsPressedAfterAReload = [
+    // The trap this rule closes: a reload, then a yellow flag. The session name, the
+    // running clock and its time must survive; only the flag changes.
+    {
+      name: 'the operator changes only the flag: session name, running and the time on air are kept',
+      flagTheOperatorChooses: 'Amarela',
+      timeTheOperatorTypes: undefined,
+      expectedData: {
+        sessionName: 'Enduro de Resistência — Bateria 1',
+        state: 'yellow',
+        clockMode: 'elapsed',
+        referenceTimeMs: 1_654_000,
+        referenceWallClockMs: momentOfThePressInMilliseconds,
+        running: true,
+        lapsCompletedByLeader: 7,
+      },
+    },
+    // Correcting the clock: the typed 20:00 (1 200 000 ms) goes out instead of the 27:34
+    // the clock shows, counted from the press. Nothing else was touched, so nothing else
+    // changes.
+    {
+      name: 'the operator types a new time: that time goes out, counted from the press',
+      flagTheOperatorChooses: undefined,
+      timeTheOperatorTypes: '20:00',
+      expectedData: {
+        sessionName: 'Enduro de Resistência — Bateria 1',
+        state: 'green',
+        clockMode: 'elapsed',
+        referenceTimeMs: 1_200_000,
+        referenceWallClockMs: momentOfThePressInMilliseconds,
+        running: true,
+        lapsCompletedByLeader: 7,
+      },
+    },
+    // A press with nothing changed must be harmless: what is on air goes out again, and
+    // only the time has moved, from 12:34 at 9:45 to 27:34 at the press.
+    {
+      name: 'the operator changes nothing: what is on air goes out again, only the time carried forward',
+      flagTheOperatorChooses: undefined,
+      timeTheOperatorTypes: undefined,
+      expectedData: {
+        sessionName: 'Enduro de Resistência — Bateria 1',
+        state: 'green',
+        clockMode: 'elapsed',
+        referenceTimeMs: 1_654_000,
+        referenceWallClockMs: momentOfThePressInMilliseconds,
+        running: true,
+        lapsCompletedByLeader: 7,
+      },
+    },
+  ];
 
-    // Act: the server answers that the race clock package is not registered (not built).
-    fakeServer.refuseLastCommand({
-      code: 'GRAPHIC_NOT_FOUND',
-      message: 'O gráfico "race-clock" não está registrado.',
-    });
+  it.each(scenariosWhereAtualizarIsPressedAfterAReload)(
+    '"Atualizar" after a reload with the clock on air at 754 000 ms and running: $name',
+    async ({ flagTheOperatorChooses, timeTheOperatorTypes, expectedData }) => {
+      // Arrange: the page reloaded at 10:00 with the first heat on air since 9:45, and
+      // the operator doing only what the scenario says (possibly nothing at all).
+      const { fakeServer } = renderPanelAfterAReloadWithTheFirstHeatOnAir();
+      if (flagTheOperatorChooses !== undefined) {
+        chooseOptionInDropdown('Bandeira', flagTheOperatorChooses);
+      }
+      if (timeTheOperatorTypes !== undefined) {
+        typeIntoField('Tempo de referência (mm:ss)', timeTheOperatorTypes);
+      }
 
-    // Assert: the panel shows the refusal in the server's own words.
-    expect(
-      await screen.findByRole('alert'),
-      "the panel must show the server's pt-BR message",
-    ).toHaveTextContent('O gráfico "race-clock" não está registrado.');
-  });
+      // Act: press "Atualizar".
+      fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
 
-  it('removes the old error once a later take works', async () => {
-    // Arrange: the panel showing the message of a take the server refused.
-    const { fakeServer } = await renderPanelShowingARefusedTake();
-
-    // Act: the operator presses "Colocar no ar" again, and this time the server accepts.
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
-    await waitFor(() => {
-      expect(fakeServer.listCommandsReceived(), 'the retry must have been sent').toHaveLength(2);
-    });
-    fakeServer.acceptLastCommand();
-
-    // Assert: the message of the refused take is gone.
-    await waitFor(() => {
-      expect(
-        screen.queryByRole('alert'),
-        'the old error must disappear once a take works',
-      ).toBeNull();
-    });
-  });
-
-  it('disables both buttons and says why while the connection is down', async () => {
-    // Arrange: the race clock on air, so both buttons exist.
-    const { fakeServer } = renderPanelWithTheRaceClockOnAir();
-
-    // Act: the line drops, and the operator reaches for "Colocar no ar".
-    fakeServer.dropConnection();
-    const takeButton = screen.getByRole('button', { name: 'Colocar no ar' });
-    const updateButton = screen.getByRole('button', { name: 'Atualizar' });
-    focusAreaAroundDisabledButton(takeButton);
-
-    // Assert: neither button can be pressed, and the tooltip explains it in pt-BR.
-    expect(takeButton, '"Colocar no ar" cannot work without a connection').toBeDisabled();
-    expect(updateButton, '"Atualizar" cannot work without a connection').toBeDisabled();
-    expect(
-      await screen.findByRole('tooltip'),
-      'the tooltip must tell the operator why the buttons are disabled',
-    ).toHaveTextContent('Sem conexão com o servidor. Os comandos voltam quando ela voltar.');
-  });
+      // Assert: one takeGraphic for the same layer (the server replaces the instance on
+      // it; there is no separate "update" command yet). What the operator touched is in
+      // it as touched; everything else is what was on air.
+      await waitFor(() => {
+        expect(
+          fakeServer.listCommandsReceived(),
+          '"Atualizar" must change what the operator touched and keep the rest as it is on air',
+        ).toEqual([
+          { type: 'takeGraphic', graphicId: 'race-clock', layerId: 'clock', data: expectedData },
+        ]);
+      });
+      // (Then the server answers, so no command is left waiting for its 5-second timeout
+      // once the test is over.)
+      fakeServer.acceptLastCommand();
+    },
+  );
 });

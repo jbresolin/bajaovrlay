@@ -2,34 +2,33 @@
  * Race clock update: the command "Atualizar" sends (apps/control)
  *
  * What this module is for:
- *   While the race clock is on air the operator changes the flag, the session name or
- *   the laps and presses "Atualizar". There is no update command yet, so the page sends
- *   a second `takeGraphic`. raceClockUpdateCommand builds that command so that the
- *   clock on air keeps its time: under race conditions a flag change must never reset
- *   the clock.
+ *   While the race clock is on air the operator changes a field or two and presses
+ *   "Atualizar". There is no update command yet, so the page sends a second
+ *   `takeGraphic`. raceClockUpdateCommand builds that command from two sources: a field
+ *   the operator changed comes from the form, and a field the operator left alone comes
+ *   from what is on air. Under race conditions nothing the operator did not touch may
+ *   change, least of all the clock's time.
  *
  * What these tests prove:
- *   - The time the clock shows at the moment of the press is carried into the command:
- *     a running clock continues from where it is (forwards for elapsed time, backwards
- *     for remaining time, never below zero) and a stopped clock stays where it stopped.
- *   - The time typed in the form is not used while the on-air data can be read.
- *   - Session name, flag, clock mode, running and laps come from the form.
- *   - When the form changes the clock mode, the number on screen is kept and only its
- *     direction changes (27:34 elapsed becomes 27:34 remaining).
- *   - The moment of the press always becomes the clock's new reference moment.
- *   - When the on-air data cannot be read as race clock data, or there is none at all,
- *     the whole command is the one "Colocar no ar" would send: the time typed in the form.
+ *   - Field by field: a changed field goes out as the form has it, and every other field
+ *     goes out as it is on air, whatever the form happens to show for it.
+ *   - An untouched time is the time the clock on air shows at the press; a typed time
+ *     replaces it. Either way the press becomes the clock's new reference moment.
+ *   - The laps follow the same rule, including "erased in the form" (laps removed) and
+ *     "not on air and not touched" (still no laps).
+ *   - A stopped clock switched on in the form goes on from where it stopped.
+ *   - When the on-air data cannot be read, or there is none, the whole command is the one
+ *     "Colocar no ar" would send: every field from the form.
  *
  * What these tests deliberately do not cover:
- *   - Finding the race clock among the instances and pressing the button;
- *     TakeRaceClockPanelUpdate.test.tsx does.
+ *   - How the page knows which fields the operator changed (react-hook-form's
+ *     `dirtyFields`) and pressing the button; TakeRaceClockPanel.test.tsx does.
+ *   - Which time each kind of clock shows on air; raceClockDataOnAir.test.ts lists them.
  *   - The rules for each form field; raceClockTakeForm.test.ts lists them.
- *   - The graphic's own arithmetic (packages/graphics/race-clock); this file repeats
- *     the same sum on purpose and nothing checks that the two stay in step.
  */
 import { describe, expect, it } from 'vitest';
 
-import type { RaceClockTakeFormValues } from './raceClockTakeForm';
+import type { RaceClockData, RaceClockTakeFormValues } from './raceClockTakeForm';
 import { buildUpdateRaceClockCommand } from './raceClockUpdateCommand';
 
 // The clock went on air at 9:45 in Brasília on the Saturday of the endurance race, and
@@ -37,129 +36,232 @@ import { buildUpdateRaceClockCommand } from './raceClockUpdateCommand';
 const momentTheClockWentOnAirInMilliseconds = Date.parse('2026-10-10T12:45:00.000Z');
 const momentOfThePressInMilliseconds = Date.parse('2026-10-10T13:00:00.000Z');
 
-/** The three things about the clock on air that decide which time it shows now. */
-type ClockOnAir = {
-  clockMode: 'elapsed' | 'remaining';
-  referenceTimeMs: number;
-  running: boolean;
-};
-
-/** The race clock data the server holds for the instance on air, under the green flag. */
-function buildRaceClockDataOnAir(clockOnAir: ClockOnAir): Record<string, unknown> {
+/**
+ * What the server holds for the clock on air: the first heat under the green flag, taken
+ * at 9:45 running from 12:34, with 7 laps for the leader.
+ */
+function buildRaceClockDataOnAir(): RaceClockData {
   return {
-    sessionName: 'Enduro de Resistência',
+    sessionName: 'Enduro de Resistência — Bateria 1',
     state: 'green',
-    clockMode: clockOnAir.clockMode,
-    referenceTimeMs: clockOnAir.referenceTimeMs,
+    clockMode: 'elapsed',
+    referenceTimeMs: 754_000,
     referenceWallClockMs: momentTheClockWentOnAirInMilliseconds,
-    running: clockOnAir.running,
+    running: true,
+    lapsCompletedByLeader: 7,
   };
 }
 
 /**
- * The form of an operator who changes only the flag, to yellow: everything else agrees
- * with what is on air, and the time field still holds the "0:00" the form opens with.
+ * The same data as it must go out when the operator changed nothing: only the time has
+ * moved, from 12:34 to the 27:34 the clock shows at the press, counted from the press.
  */
-function buildFormChangingOnlyTheFlagToYellow(clockOnAir: ClockOnAir): RaceClockTakeFormValues {
+function buildDataOnAirCarriedForwardToThePress(): RaceClockData {
   return {
-    sessionName: 'Enduro de Resistência',
+    sessionName: 'Enduro de Resistência — Bateria 1',
+    state: 'green',
+    clockMode: 'elapsed',
+    referenceTimeMs: 1_654_000,
+    referenceWallClockMs: momentOfThePressInMilliseconds,
+    running: true,
+    lapsCompletedByLeader: 7,
+  };
+}
+
+/**
+ * A form in which every field disagrees with what is on air, so each test can tell where
+ * a value in the command came from: second heat, yellow flag, counting down, stopped,
+ * 20:00, 9 laps.
+ */
+function buildFormDisagreeingWithEveryFieldOnAir(): RaceClockTakeFormValues {
+  return {
+    sessionName: 'Enduro de Resistência — Bateria 2',
     state: 'yellow',
-    clockMode: clockOnAir.clockMode,
-    running: clockOnAir.running,
-    referenceTime: '0:00',
-    lapsCompletedByLeader: '',
+    clockMode: 'remaining',
+    running: false,
+    referenceTime: '20:00',
+    lapsCompletedByLeader: '9',
   };
 }
 
 describe('buildUpdateRaceClockCommand', () => {
-  const scenariosWhereTheClockKeepsItsTime = [
-    // The trap this module exists for: a yellow flag 15 minutes after the take must
-    // show 12:34 + 15:00 = 27:34, not go back to the 0:00 left in the form.
+  const scenariosByWhatTheOperatorChanged = [
+    // Nothing touched: what is on air goes out again, and only the time has moved on.
     {
-      name: 'continues a running elapsed clock from the time it shows now',
-      clockOnAir: { clockMode: 'elapsed', referenceTimeMs: 754_000, running: true },
-      expectedReferenceTimeMs: 1_654_000,
+      name: 'sends what is on air, with the time it shows now, when nothing was changed',
+      fieldsTheOperatorChanged: {},
+      expectedData: buildDataOnAirCarriedForwardToThePress(),
     },
-    // A clock stopped under a red flag has shown 12:34 all along and must still show it.
+    // The case the rule exists for: a yellow flag in the middle of the race changes the
+    // flag and nothing else. The session name, the running clock and its time survive.
     {
-      name: 'keeps a stopped clock at the time it stopped',
-      clockOnAir: { clockMode: 'elapsed', referenceTimeMs: 754_000, running: false },
-      expectedReferenceTimeMs: 754_000,
+      name: 'changes only the flag when only the flag was changed',
+      fieldsTheOperatorChanged: { state: true },
+      expectedData: { ...buildDataOnAirCarriedForwardToThePress(), state: 'yellow' },
     },
-    // A countdown runs the other way: four hours less the 15 minutes is 3 h 45 min.
+    // A corrected session name must not disturb the clock.
     {
-      name: 'continues a running countdown downwards',
-      clockOnAir: { clockMode: 'remaining', referenceTimeMs: 14_400_000, running: true },
-      expectedReferenceTimeMs: 13_500_000,
+      name: 'changes only the session name when only it was changed',
+      fieldsTheOperatorChanged: { sessionName: true },
+      expectedData: {
+        ...buildDataOnAirCarriedForwardToThePress(),
+        sessionName: 'Enduro de Resistência — Bateria 2',
+      },
     },
-    // A countdown that ran out 5 minutes ago shows 0:00; the data must not go negative
-    // (the graphic refuses a reference time below zero).
+    // The operator types 20:00 to correct the clock: that time goes out, counted from the
+    // press, instead of the 27:34 the clock shows.
     {
-      name: 'holds a countdown that already ran out at zero',
-      clockOnAir: { clockMode: 'remaining', referenceTimeMs: 600_000, running: true },
-      expectedReferenceTimeMs: 0,
+      name: 'sets the clock to the typed time when the time was changed',
+      fieldsTheOperatorChanged: { referenceTime: true },
+      expectedData: { ...buildDataOnAirCarriedForwardToThePress(), referenceTimeMs: 1_200_000 },
     },
-    // A stopped countdown is not moved either.
+    // Stopping the clock (a red flag) freezes it at the time it shows at the press.
     {
-      name: 'keeps a stopped countdown at the time it stopped',
-      clockOnAir: { clockMode: 'remaining', referenceTimeMs: 600_000, running: false },
-      expectedReferenceTimeMs: 600_000,
+      name: 'stops the clock at the time it shows when only "running" was changed',
+      fieldsTheOperatorChanged: { running: true },
+      expectedData: { ...buildDataOnAirCarriedForwardToThePress(), running: false },
     },
-  ] as const;
+    // A changed mode keeps the number on screen and turns only its direction: 27:34
+    // elapsed becomes 27:34 remaining. Nothing better can be guessed without knowing how
+    // long the session lasts.
+    {
+      name: 'keeps the number on screen when only the clock mode was changed',
+      fieldsTheOperatorChanged: { clockMode: true },
+      expectedData: { ...buildDataOnAirCarriedForwardToThePress(), clockMode: 'remaining' },
+    },
+    // The leader finished two more laps.
+    {
+      name: 'changes only the laps when only the laps were changed',
+      fieldsTheOperatorChanged: { lapsCompletedByLeader: true },
+      expectedData: { ...buildDataOnAirCarriedForwardToThePress(), lapsCompletedByLeader: 9 },
+    },
+    // react-hook-form may mark a field `false` after it was changed and changed back.
+    // That is "not changed", the same as a field it does not mention.
+    {
+      name: 'treats a field marked false as not changed',
+      fieldsTheOperatorChanged: { state: false, referenceTime: false },
+      expectedData: buildDataOnAirCarriedForwardToThePress(),
+    },
+    // Every field touched: nothing is left to take from the air.
+    {
+      name: 'sends the whole form when every field was changed',
+      fieldsTheOperatorChanged: {
+        sessionName: true,
+        state: true,
+        clockMode: true,
+        running: true,
+        referenceTime: true,
+        lapsCompletedByLeader: true,
+      },
+      expectedData: {
+        sessionName: 'Enduro de Resistência — Bateria 2',
+        state: 'yellow',
+        clockMode: 'remaining',
+        referenceTimeMs: 1_200_000,
+        referenceWallClockMs: momentOfThePressInMilliseconds,
+        running: false,
+        lapsCompletedByLeader: 9,
+      },
+    },
+  ];
 
-  it.each(scenariosWhereTheClockKeepsItsTime)(
+  it.each(scenariosByWhatTheOperatorChanged)(
     '$name',
-    ({ clockOnAir, expectedReferenceTimeMs }) => {
-      // Arrange: the clock on air as the scenario says, and a form changing only the flag.
-      const raceClockDataOnAir = buildRaceClockDataOnAir(clockOnAir);
-      const formValues = buildFormChangingOnlyTheFlagToYellow(clockOnAir);
+    ({ fieldsTheOperatorChanged, expectedData }) => {
+      // Arrange: the first heat on air since 9:45, and a form that disagrees with it in
+      // every field. Which of those fields the operator really changed is the scenario.
+      const raceClockDataOnAir = buildRaceClockDataOnAir();
+      const formValues = buildFormDisagreeingWithEveryFieldOnAir();
 
-      // Act: build the command for a press of "Atualizar" 15 minutes after the take.
-      const command = buildUpdateRaceClockCommand(
+      // Act: build the command for a press of "Atualizar" at 10:00.
+      const command = buildUpdateRaceClockCommand({
         formValues,
+        fieldsTheOperatorChanged,
         raceClockDataOnAir,
-        momentOfThePressInMilliseconds,
-      );
+        nowInMilliseconds: momentOfThePressInMilliseconds,
+      });
 
-      // Assert: the whole command. The flag is the new one, the time is the one the clock
-      // shows at the press (not the form's 0:00), and the press is the new reference moment.
-      expect(command, 'the update must carry the new flag and the time the clock shows').toEqual({
+      // Assert: the whole command. Changed fields are the form's, the rest is what is on
+      // air, and the press is the clock's new reference moment.
+      expect(
+        command,
+        'changed fields must come from the form and every other field from what is on air',
+      ).toEqual({
         type: 'takeGraphic',
         graphicId: 'race-clock',
         layerId: 'clock',
-        data: {
-          sessionName: 'Enduro de Resistência',
-          state: 'yellow',
-          clockMode: clockOnAir.clockMode,
-          referenceTimeMs: expectedReferenceTimeMs,
-          referenceWallClockMs: momentOfThePressInMilliseconds,
-          running: clockOnAir.running,
-        },
+        data: expectedData,
       });
     },
   );
 
-  it('starts a stopped clock from where it stopped when the form switches it on', () => {
-    // Arrange: the clock stopped on air at 12:34, and a form with "running" switched on
-    // (the restart after a red flag).
-    const clockOnAir: ClockOnAir = {
-      clockMode: 'elapsed',
-      referenceTimeMs: 754_000,
-      running: false,
-    };
-    const raceClockDataOnAir = buildRaceClockDataOnAir(clockOnAir);
-    const formValues = { ...buildFormChangingOnlyTheFlagToYellow(clockOnAir), running: true };
+  it('takes the laps off air when the operator erased them in the form', () => {
+    // Arrange: 7 laps on air, and a form whose laps field the operator emptied.
+    const raceClockDataOnAir = buildRaceClockDataOnAir();
+    const formValues = { ...buildFormDisagreeingWithEveryFieldOnAir(), lapsCompletedByLeader: '' };
+
+    // Act: build the command, the laps being the only field changed.
+    const command = buildUpdateRaceClockCommand({
+      formValues,
+      fieldsTheOperatorChanged: { lapsCompletedByLeader: true },
+      raceClockDataOnAir,
+      nowInMilliseconds: momentOfThePressInMilliseconds,
+    });
+
+    // Assert: the command has no laps field at all (the graphic refuses a null), and the
+    // rest is still what is on air.
+    expect(command.data, 'erased laps must leave the command, and nothing else may change').toEqual(
+      {
+        sessionName: 'Enduro de Resistência — Bateria 1',
+        state: 'green',
+        clockMode: 'elapsed',
+        referenceTimeMs: 1_654_000,
+        referenceWallClockMs: momentOfThePressInMilliseconds,
+        running: true,
+      },
+    );
+  });
+
+  it('sends no laps when none are on air and the operator did not touch them', () => {
+    // Arrange: a clock on air without laps, and a form that shows 9 laps the operator
+    // never typed (a form can be out of date; the air is the truth for untouched fields).
+    const raceClockDataOnAir: Record<string, unknown> = { ...buildRaceClockDataOnAir() };
+    delete raceClockDataOnAir.lapsCompletedByLeader;
+    const formValues = buildFormDisagreeingWithEveryFieldOnAir();
+
+    // Act: build the command with only the flag changed.
+    const command = buildUpdateRaceClockCommand({
+      formValues,
+      fieldsTheOperatorChanged: { state: true },
+      raceClockDataOnAir,
+      nowInMilliseconds: momentOfThePressInMilliseconds,
+    });
+
+    // Assert: the laps are still absent.
+    expect(
+      command.data.lapsCompletedByLeader,
+      'laps that are not on air must not appear because the form shows some',
+    ).toBeUndefined();
+    expect(command.data.state, 'the changed flag must still go out').toBe('yellow');
+  });
+
+  it('starts a stopped clock from where it stopped when the operator switches it on', () => {
+    // Arrange: the clock stopped on air at 12:34 (a red flag), and a form in which the
+    // operator switched "running" on for the restart and touched nothing else.
+    const raceClockDataOnAir = { ...buildRaceClockDataOnAir(), running: false };
+    const formValues = { ...buildFormDisagreeingWithEveryFieldOnAir(), running: true };
 
     // Act: build the command.
-    const command = buildUpdateRaceClockCommand(
+    const command = buildUpdateRaceClockCommand({
       formValues,
+      fieldsTheOperatorChanged: { running: true },
       raceClockDataOnAir,
-      momentOfThePressInMilliseconds,
-    );
+      nowInMilliseconds: momentOfThePressInMilliseconds,
+    });
 
     // Assert: the clock runs again from 12:34, counted from the moment of the press. The
     // 15 minutes it stood still are not added.
-    expect(command.data.running, 'the form decides whether the clock runs').toBe(true);
+    expect(command.data.running, 'the clock must run, as the operator asked').toBe(true);
     expect(
       command.data.referenceTimeMs,
       'a restarted clock must go on from the time it stopped at',
@@ -170,127 +272,54 @@ describe('buildUpdateRaceClockCommand', () => {
     ).toBe(momentOfThePressInMilliseconds);
   });
 
-  it('takes the session name, the clock mode and the laps from the form', () => {
-    // Arrange: a running elapsed clock on air with no laps, and a form with a new session
-    // name, the leader's laps filled in and the other clock mode.
-    const clockOnAir: ClockOnAir = {
-      clockMode: 'elapsed',
-      referenceTimeMs: 754_000,
-      running: true,
-    };
-    const raceClockDataOnAir = buildRaceClockDataOnAir(clockOnAir);
-    const formValues: RaceClockTakeFormValues = {
-      ...buildFormChangingOnlyTheFlagToYellow(clockOnAir),
-      sessionName: 'Enduro de Resistência — Bateria 2',
-      clockMode: 'remaining',
-      lapsCompletedByLeader: '7',
-    };
-
-    // Act: build the command.
-    const command = buildUpdateRaceClockCommand(
-      formValues,
-      raceClockDataOnAir,
-      momentOfThePressInMilliseconds,
-    );
-
-    // Assert: those three fields are the form's, not the ones on air.
-    expect(command.data.sessionName, 'the session name must be the one in the form').toBe(
-      'Enduro de Resistência — Bateria 2',
-    );
-    expect(command.data.clockMode, 'the clock mode must be the one in the form').toBe('remaining');
-    expect(command.data.lapsCompletedByLeader, 'the laps must be the ones in the form').toBe(7);
-  });
-
-  it('keeps the number on screen when the form changes the clock mode, turning only its direction', () => {
-    // Arrange: an elapsed clock that went on air running at 12:34, and a form that changes
-    // only the clock mode, to remaining time.
-    const clockOnAir: ClockOnAir = {
-      clockMode: 'elapsed',
-      referenceTimeMs: 754_000,
-      running: true,
-    };
-    const raceClockDataOnAir = buildRaceClockDataOnAir(clockOnAir);
-    const formValues: RaceClockTakeFormValues = {
-      ...buildFormChangingOnlyTheFlagToYellow(clockOnAir),
-      clockMode: 'remaining',
-    };
-
-    // Act: build the command for a press of "Atualizar" 15 minutes after the take.
-    const command = buildUpdateRaceClockCommand(
-      formValues,
-      raceClockDataOnAir,
-      momentOfThePressInMilliseconds,
-    );
-
-    // Assert: the clock shows 27:34 at the press (12:34 + 15:00) and the command carries
-    // that same 27:34, now counting down. Nothing better can be guessed without knowing
-    // how long the session lasts.
-    expect(command.data.clockMode, 'the clock must now count down, as the form says').toBe(
-      'remaining',
-    );
-    expect(
-      command.data.referenceTimeMs,
-      'the number on screen must not jump when the mode changes',
-    ).toBe(1_654_000);
-  });
-
   const scenariosWhereTheOnAirDataCannotBeRead = [
     // The panel hands over undefined if it finds no race clock instance. It cannot happen
     // today (the button is only drawn while the clock is on air), but the type allows it.
     {
-      name: 'falls back to the typed time when there is no on-air data at all',
-      dataOnAir: undefined,
+      name: 'sends the whole form when there is no on-air data at all',
+      raceClockDataOnAir: undefined,
     },
     // Data of a graphic that is not a race clock, or of an older version of it: the
     // fields that say which time the clock shows are missing.
     {
-      name: 'falls back to the typed time when the on-air data has no clock fields',
-      dataOnAir: { sessionName: 'Enduro de Resistência', state: 'green' },
+      name: 'sends the whole form when the on-air data has no clock fields',
+      raceClockDataOnAir: { sessionName: 'Enduro de Resistência — Bateria 1', state: 'green' },
     },
     // A field of the wrong kind (text where a number belongs) is not trusted either.
     {
-      name: 'falls back to the typed time when the on-air reference time is not a number',
-      dataOnAir: {
-        clockMode: 'elapsed',
-        referenceTimeMs: '12:34',
-        referenceWallClockMs: momentTheClockWentOnAirInMilliseconds,
-        running: true,
-      },
+      name: 'sends the whole form when the on-air reference time is not a number',
+      raceClockDataOnAir: { ...buildRaceClockDataOnAir(), referenceTimeMs: '12:34' },
     },
   ];
 
-  it.each(scenariosWhereTheOnAirDataCannotBeRead)('$name', ({ dataOnAir }) => {
+  it.each(scenariosWhereTheOnAirDataCannotBeRead)('$name', ({ raceClockDataOnAir }) => {
     // Arrange: on-air data that is not readable as race clock data (see the scenario),
-    // and a form with 20:00 typed as the reference time.
-    const formValues: RaceClockTakeFormValues = {
-      sessionName: 'Enduro de Resistência',
-      state: 'yellow',
-      clockMode: 'elapsed',
-      running: true,
-      referenceTime: '20:00',
-      lapsCompletedByLeader: '',
-    };
+    // and a form in which the operator changed only the flag.
+    const formValues = buildFormDisagreeingWithEveryFieldOnAir();
 
     // Act: build the command.
-    const command = buildUpdateRaceClockCommand(
+    const command = buildUpdateRaceClockCommand({
       formValues,
-      dataOnAir,
-      momentOfThePressInMilliseconds,
-    );
+      fieldsTheOperatorChanged: { state: true },
+      raceClockDataOnAir,
+      nowInMilliseconds: momentOfThePressInMilliseconds,
+    });
 
-    // Assert: the whole command. With nothing to carry forward it is the one "Colocar no
-    // ar" sends: the typed 20:00 (1 200 000 ms), counted from the moment of the press.
-    expect(command, 'with no readable on-air data the update must send the typed time').toEqual({
+    // Assert: the whole command. With nothing readable on air there is nothing to keep, so
+    // it is the command "Colocar no ar" sends: every field from the form, untouched ones
+    // included, with the typed 20:00 (1 200 000 ms) counted from the press.
+    expect(command, 'with no readable on-air data the update must send the whole form').toEqual({
       type: 'takeGraphic',
       graphicId: 'race-clock',
       layerId: 'clock',
       data: {
-        sessionName: 'Enduro de Resistência',
+        sessionName: 'Enduro de Resistência — Bateria 2',
         state: 'yellow',
-        clockMode: 'elapsed',
+        clockMode: 'remaining',
         referenceTimeMs: 1_200_000,
         referenceWallClockMs: momentOfThePressInMilliseconds,
-        running: true,
+        running: false,
+        lapsCompletedByLeader: 9,
       },
     });
   });
