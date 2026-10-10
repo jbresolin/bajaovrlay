@@ -14,9 +14,11 @@
  *     for remaining time, never below zero) and a stopped clock stays where it stopped.
  *   - The time typed in the form is not used while the on-air data can be read.
  *   - Session name, flag, clock mode, running and laps come from the form.
+ *   - When the form changes the clock mode, the number on screen is kept and only its
+ *     direction changes (27:34 elapsed becomes 27:34 remaining).
  *   - The moment of the press always becomes the clock's new reference moment.
- *   - When the on-air data cannot be read as race clock data, the command falls back to
- *     the time typed in the form, exactly as "Colocar no ar" would send it.
+ *   - When the on-air data cannot be read as race clock data, or there is none at all,
+ *     the whole command is the one "Colocar no ar" would send: the time typed in the form.
  *
  * What these tests deliberately do not cover:
  *   - Finding the race clock among the instances and pressing the button;
@@ -191,13 +193,41 @@ describe('buildUpdateRaceClockCommand', () => {
       momentOfThePressInMilliseconds,
     );
 
-    // Assert: those three fields are the form's. The time is still the 27:34 the clock
-    // shows: changing the mode keeps the number on screen and only turns its direction.
+    // Assert: those three fields are the form's, not the ones on air.
     expect(command.data.sessionName, 'the session name must be the one in the form').toBe(
       'Enduro de Resistência — Bateria 2',
     );
     expect(command.data.clockMode, 'the clock mode must be the one in the form').toBe('remaining');
     expect(command.data.lapsCompletedByLeader, 'the laps must be the ones in the form').toBe(7);
+  });
+
+  it('keeps the number on screen when the form changes the clock mode, turning only its direction', () => {
+    // Arrange: an elapsed clock that went on air running at 12:34, and a form that changes
+    // only the clock mode, to remaining time.
+    const clockOnAir: ClockOnAir = {
+      clockMode: 'elapsed',
+      referenceTimeMs: 754_000,
+      running: true,
+    };
+    const raceClockDataOnAir = buildRaceClockDataOnAir(clockOnAir);
+    const formValues: RaceClockTakeFormValues = {
+      ...buildFormChangingOnlyTheFlagToYellow(clockOnAir),
+      clockMode: 'remaining',
+    };
+
+    // Act: build the command for a press of "Atualizar" 15 minutes after the take.
+    const command = buildUpdateRaceClockCommand(
+      formValues,
+      raceClockDataOnAir,
+      momentOfThePressInMilliseconds,
+    );
+
+    // Assert: the clock shows 27:34 at the press (12:34 + 15:00) and the command carries
+    // that same 27:34, now counting down. Nothing better can be guessed without knowing
+    // how long the session lasts.
+    expect(command.data.clockMode, 'the clock must now count down, as the form says').toBe(
+      'remaining',
+    );
     expect(
       command.data.referenceTimeMs,
       'the number on screen must not jump when the mode changes',
@@ -205,6 +235,12 @@ describe('buildUpdateRaceClockCommand', () => {
   });
 
   const scenariosWhereTheOnAirDataCannotBeRead = [
+    // The panel hands over undefined if it finds no race clock instance. It cannot happen
+    // today (the button is only drawn while the clock is on air), but the type allows it.
+    {
+      name: 'falls back to the typed time when there is no on-air data at all',
+      dataOnAir: undefined,
+    },
     // Data of a graphic that is not a race clock, or of an older version of it: the
     // fields that say which time the clock shows are missing.
     {
@@ -242,14 +278,20 @@ describe('buildUpdateRaceClockCommand', () => {
       momentOfThePressInMilliseconds,
     );
 
-    // Assert: with nothing to carry forward, the typed 20:00 is sent, as a take would.
-    expect(
-      command.data.referenceTimeMs,
-      'with unreadable on-air data the typed time is the only one there is',
-    ).toBe(1_200_000);
-    expect(
-      command.data.referenceWallClockMs,
-      'the press is the reference moment in the fallback too',
-    ).toBe(momentOfThePressInMilliseconds);
+    // Assert: the whole command. With nothing to carry forward it is the one "Colocar no
+    // ar" sends: the typed 20:00 (1 200 000 ms), counted from the moment of the press.
+    expect(command, 'with no readable on-air data the update must send the typed time').toEqual({
+      type: 'takeGraphic',
+      graphicId: 'race-clock',
+      layerId: 'clock',
+      data: {
+        sessionName: 'Enduro de Resistência',
+        state: 'yellow',
+        clockMode: 'elapsed',
+        referenceTimeMs: 1_200_000,
+        referenceWallClockMs: momentOfThePressInMilliseconds,
+        running: true,
+      },
+    });
   });
 });
