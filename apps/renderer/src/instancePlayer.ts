@@ -1,30 +1,31 @@
 /**
- * Carries out the operations instanceReconciler decided: creates graphic elements inside
- * their layer containers and drives them through the OGraf lifecycle (load, playAction,
- * updateAction, stopAction, dispose).
+ * Carries out the operations instanceReconciler decided: brings graphic elements into
+ * their layer containers (instanceLoading.ts) and drives them through the rest of the
+ * OGraf lifecycle (playAction, updateAction, stopAction, dispose). It also tells the
+ * server what really happened to each instance it tried to put on air.
  *
- * Two rules shape this file:
+ * Three rules shape this file:
  *   - Operations on one layer run strictly one after the other, each waiting for the
  *     graphic's promise. Different layers each have their own queue and never wait for
  *     one another, so a slow animation on the clock cannot hold up a lower third.
  *   - A graphic that fails (its module cannot be imported, its load throws or is refused)
  *     is logged and leaves its layer empty. It never stops the queue of its own layer or
  *     of any other.
+ *   - Every instance the player tries to put on air is reported to the server exactly as
+ *     it ended: `on-air` once its playAction resolved, `failed` with the reason otherwise.
  *
  * What could go wrong: the renderer only awaits the graphic's promises (concept §6). A
- * graphic whose promise never settles blocks its own layer until the page is reloaded.
+ * graphic whose promise never settles blocks its own layer until the page is reloaded;
+ * lifecycleCall.ts writes a warning after ten seconds so that at least it can be seen.
  */
-import type { Graphic, Instance } from '@bajaovrlay/shared';
+import type { Graphic, Instance, InstanceStatusMessage } from '@bajaovrlay/shared';
 
 import type { GraphicLoader } from './graphicLoader.js';
+import { type GraphicOnLayer, loadInstanceIntoItsLayer } from './instanceLoading.js';
 import type { InstanceOperation, LayerOperations } from './instanceReconciler.js';
 import type { LayerContainers } from './layerContainers.js';
-import { type LifecycleCallSubject, makeLifecycleCall } from './lifecycleCall.js';
-import type { OGrafGraphicElement } from './ografGraphicElement.js';
+import { makeLifecycleCall } from './lifecycleCall.js';
 import { logRendererEvent } from './rendererLog.js';
-
-// The stage is the stream canvas: horizontal 16:9 only (concept §18.6).
-const stageResolution = { width: 1920, height: 1080 };
 
 /** What the renderer asks of the player. */
 export type InstancePlayer = {
@@ -36,23 +37,23 @@ export type InstancePlayer = {
   runLayerOperations: (layerOperations: LayerOperations[], graphics: Graphic[]) => void;
 };
 
-/** What the player works with; `logEvent` is replaceable so a test can capture the log. */
+/**
+ * What the player works with. `reportInstanceStatus` is how it tells the server what
+ * happened to an instance (renderer.ts hands it the connection's sendInstanceStatus);
+ * `logEvent` is replaceable so a test can capture the log.
+ */
 export type InstancePlayerOptions = {
   layerContainers: LayerContainers;
   graphicLoader: GraphicLoader;
+  reportInstanceStatus: (statusReport: InstanceStatusMessage) => void;
   logEvent?: typeof logRendererEvent;
-};
-
-/** A graphic element that was loaded successfully and sits in its layer's container. */
-type GraphicOnLayer = {
-  subject: LifecycleCallSubject;
-  element: OGrafGraphicElement;
 };
 
 /** Builds the player for one stage. Nothing is on any layer until operations arrive. */
 export function createInstancePlayer(options: InstancePlayerOptions): InstancePlayer {
-  const { layerContainers, graphicLoader } = options;
+  const { layerContainers, graphicLoader, reportInstanceStatus } = options;
   const logEvent = options.logEvent ?? logRendererEvent;
+  const loadingTools = { layerContainers, graphicLoader, logEvent };
 
   // What is really on each layer right now, as far as the page goes. A graphic whose
   // load failed is never in this map, even though the server lists its instance.
@@ -74,6 +75,17 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
               operation: operation.kind,
               reason: String(unexpectedError),
             });
+            // Without this report the instance would read "loading" in the layer panel
+            // for ever, with nothing on screen and nothing to say why.
+            const instanceGoingOnAir = findInstanceAnOperationPutsOnAir(operation);
+            if (instanceGoingOnAir !== undefined) {
+              reportInstanceStatus({
+                type: 'instanceStatus',
+                instanceId: instanceGoingOnAir.id,
+                status: 'failed',
+                detail: `the renderer failed unexpectedly: ${String(unexpectedError)}`,
+              });
+            }
           });
         endOfQueueByLayerId.set(layerId, thisOperation);
       }
@@ -86,7 +98,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     graphics: Graphic[],
   ): Promise<void> {
     if (operation.kind === 'loadAndPlay') {
-      await loadAndPlayInstance(operation.instance, graphics, operation.skipAnimation);
+      await putInstanceOnItsEmptyLayer(operation.instance, graphics, operation.skipAnimation);
       return;
     }
     if (operation.kind === 'updateData') {
@@ -102,15 +114,21 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
       return;
     }
     if (operation.kind === 'replace') {
-      // `out-then-in` animates the old graphic out and the new one in. `cut` skips both
-      // animations. `crossfade` is treated as `cut` in M0: a real crossfade needs both
-      // graphics on the layer at once, which no M0 graphic is designed for.
-      // Trade-off of this order for `cut`: the layer is empty while the new graphic
-      // loads; loading the new one first would avoid that and is left for when a layer
-      // actually uses `cut` (every seeded layer is `out-then-in`).
-      const skipAnimation = operation.replacePolicy !== 'out-then-in';
-      await stopAndDisposeInstance(layerId, operation.outgoingInstanceId, skipAnimation);
-      await loadAndPlayInstance(operation.incomingInstance, graphics, skipAnimation);
+      if (operation.replacePolicy === 'out-then-in') {
+        // The old graphic animates out, and only then is the new one loaded and animated
+        // in. The layer is empty in between; with this policy that is the design.
+        await stopAndDisposeInstance(layerId, operation.outgoingInstanceId, false);
+        await putInstanceOnItsEmptyLayer(operation.incomingInstance, graphics, false);
+        return;
+      }
+      // `cut`, and `crossfade`, which is treated as `cut`: a real crossfade needs both
+      // graphics visible on the layer at once, which no graphic is designed for yet.
+      await cutToInstance(
+        layerId,
+        operation.outgoingInstanceId,
+        operation.incomingInstance,
+        graphics,
+      );
       return;
     }
     // Every kind is handled above. Two guards keep it that way. The `never` line stops
@@ -122,51 +140,111 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     throw new Error(`the renderer does not know the operation kind "${unknownKind}"`);
   }
 
-  /** Creates the instance's element in its layer, loads it, then plays step 0. */
-  async function loadAndPlayInstance(
+  /** Loads the instance on its layer, which must be empty by now, then plays step 0. */
+  async function putInstanceOnItsEmptyLayer(
     instance: Instance,
     graphics: Graphic[],
     skipAnimation: boolean,
   ): Promise<void> {
-    const subject: LifecycleCallSubject = {
+    // Two graphics must never share a layer by accident. Nothing should be here (the
+    // reconciler always clears a layer first), so this only guards against a bug elsewhere.
+    await disposeWhateverIsOnLayer(instance.layerId);
+
+    const graphicOnLayer = await loadInstanceAndReportAFailure(instance, graphics, 'visible');
+    if (graphicOnLayer === undefined) {
+      return;
+    }
+    graphicOnLayerByLayerId.set(instance.layerId, graphicOnLayer);
+    await playGraphicAndReportHowItWent(graphicOnLayer, skipAnimation);
+  }
+
+  /**
+   * Swaps the graphic on a layer for a new one without the layer ever being empty while
+   * the new one loads: the new graphic is loaded first, hidden, behind the old one; then
+   * the old one is stopped and disposed and the new one played, all without animation.
+   */
+  async function cutToInstance(
+    layerId: string,
+    outgoingInstanceId: string,
+    incomingInstance: Instance,
+    graphics: Graphic[],
+  ): Promise<void> {
+    // For as long as this takes (a module to import, fonts to fetch) the old graphic
+    // stays on air untouched. This is the one moment two graphics share a layer.
+    let incomingGraphic: GraphicOnLayer | undefined;
+    try {
+      incomingGraphic = await loadInstanceAndReportAFailure(incomingInstance, graphics, 'hidden');
+    } catch (unexpectedError) {
+      // The renderer itself threw (not the graphic, whose failures come back as
+      // "not loaded"). The old graphic must leave all the same, for the reason given
+      // below; the error then goes on to the layer's queue, which logs it and reports
+      // the new instance failed.
+      await stopAndDisposeInstance(layerId, outgoingInstanceId, true);
+      throw unexpectedError;
+    }
+
+    // The old graphic leaves even when the new one failed to load: the server no longer
+    // lists it, so it must not stay on air. The layer is then empty, as after any failure.
+    await stopAndDisposeInstance(layerId, outgoingInstanceId, true);
+    // Normally nothing is left by now. This only guards against a bug elsewhere having
+    // left some other graphic here, which the new one would otherwise sit on top of.
+    await disposeWhateverIsOnLayer(layerId);
+    if (incomingGraphic === undefined) {
+      return;
+    }
+
+    // Shown in the same turn in which the old element was removed, before the browser
+    // draws its next frame, so no frame has an empty layer (e2e/replaceWithCut.e2e.ts
+    // watches the frames). What the viewer sees from here on is up to the graphic: one
+    // that draws nothing until it is played shows nothing until the play below is done.
+    incomingGraphic.element.style.removeProperty('visibility');
+    graphicOnLayerByLayerId.set(layerId, incomingGraphic);
+    await playGraphicAndReportHowItWent(incomingGraphic, true);
+  }
+
+  /**
+   * Brings the instance's graphic into its layer, loaded. Undefined when that failed,
+   * after a log line and a `failed` report to the server carrying the reason.
+   */
+  async function loadInstanceAndReportAFailure(
+    instance: Instance,
+    graphics: Graphic[],
+    visibilityWhileLoading: 'visible' | 'hidden',
+  ): Promise<GraphicOnLayer | undefined> {
+    const loadOutcome = await loadInstanceIntoItsLayer(
+      instance,
+      graphics,
+      visibilityWhileLoading,
+      loadingTools,
+    );
+    if (loadOutcome.wasLoaded) {
+      return loadOutcome.graphicOnLayer;
+    }
+    logEvent('error', 'graphic could not go on air; its layer stays empty', {
       instanceId: instance.id,
       layerId: instance.layerId,
       graphicId: instance.graphicId,
-    };
-    const element = await createGraphicElement(subject, graphics);
-    if (element === undefined) {
-      return;
-    }
-    // Two graphics must never share a layer. Nothing should be here (the reconciler
-    // always clears a layer first), so this only guards against a bug elsewhere.
-    await disposeWhateverIsOnLayer(instance.layerId);
+      reason: loadOutcome.reason,
+    });
+    reportInstanceStatus({
+      type: 'instanceStatus',
+      instanceId: instance.id,
+      status: 'failed',
+      detail: loadOutcome.reason,
+    });
+    return undefined;
+  }
 
-    // The id is on the element for people reading the page in DevTools, and for tests.
-    element.dataset.instanceId = instance.id;
-    layerContainers.findContainerOfLayer(instance.layerId)?.append(element);
-
-    const wasLoaded = await makeLifecycleCall(
-      subject,
-      {
-        action: 'load',
-        skipAnimation: false,
-        run: () =>
-          element.load({
-            data: instance.resolvedData,
-            renderType: 'realtime',
-            renderCharacteristics: { resolution: stageResolution },
-          }),
-      },
-      logEvent,
-    );
-    if (!wasLoaded) {
-      element.remove();
-      logCouldNotGoOnAir(subject, 'its load failed or was refused');
-      return;
-    }
-    graphicOnLayerByLayerId.set(instance.layerId, { subject, element });
-
-    await makeLifecycleCall(
+  /**
+   * Plays step 0 of a loaded graphic and tells the server how it ended: `on-air` once the
+   * playAction has resolved and was accepted, `failed` with the reason otherwise.
+   */
+  async function playGraphicAndReportHowItWent(
+    graphicOnLayer: GraphicOnLayer,
+    skipAnimation: boolean,
+  ): Promise<void> {
+    const { subject, element } = graphicOnLayer;
+    const playOutcome = await makeLifecycleCall(
       subject,
       {
         action: 'playAction',
@@ -176,34 +254,22 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
       },
       logEvent,
     );
-  }
-
-  /**
-   * Imports the graphic's module and creates its element (not yet on the page).
-   * Undefined, after a log line, when the layer or the graphic is unknown or the module
-   * cannot be loaded.
-   */
-  async function createGraphicElement(
-    subject: LifecycleCallSubject,
-    graphics: Graphic[],
-  ): Promise<OGrafGraphicElement | undefined> {
-    if (layerContainers.findContainerOfLayer(subject.layerId) === undefined) {
-      logCouldNotGoOnAir(subject, 'its layer is not in the layers slice');
-      return undefined;
+    if (playOutcome.wasAccepted) {
+      reportInstanceStatus({
+        type: 'instanceStatus',
+        instanceId: subject.instanceId,
+        status: 'on-air',
+      });
+      return;
     }
-    const graphic = graphics.find((candidate) => candidate.id === subject.graphicId);
-    if (graphic === undefined) {
-      logCouldNotGoOnAir(subject, 'its graphic is not in the graphics slice');
-      return undefined;
-    }
-    let tagName: string;
-    try {
-      tagName = await graphicLoader.defineGraphicElement(graphic);
-    } catch (importError) {
-      logCouldNotGoOnAir(subject, `its module could not be loaded: ${String(importError)}`);
-      return undefined;
-    }
-    return document.createElement(tagName) as OGrafGraphicElement;
+    // The graphic stays on its layer (it is loaded, and a later clear must still find it
+    // to stop and dispose it), but nobody can say it is showing, so it is not "on air".
+    reportInstanceStatus({
+      type: 'instanceStatus',
+      instanceId: subject.instanceId,
+      status: 'failed',
+      detail: `its playAction failed or was refused: ${playOutcome.whyNot}`,
+    });
   }
 
   /** Sends the changed fields to the graphic of this instance, if it is on its layer. */
@@ -288,12 +354,16 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     return graphicOnLayer;
   }
 
-  function logCouldNotGoOnAir(subject: LifecycleCallSubject, reason: string): void {
-    logEvent('error', 'graphic could not go on air; its layer stays empty', {
-      ...subject,
-      reason,
-    });
-  }
-
   return { runLayerOperations };
+}
+
+/** The instance an operation is meant to put on air, or undefined when it puts none. */
+function findInstanceAnOperationPutsOnAir(operation: InstanceOperation): Instance | undefined {
+  if (operation.kind === 'loadAndPlay') {
+    return operation.instance;
+  }
+  if (operation.kind === 'replace') {
+    return operation.incomingInstance;
+  }
+  return undefined;
 }

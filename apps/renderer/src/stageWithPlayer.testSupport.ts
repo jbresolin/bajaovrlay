@@ -1,15 +1,17 @@
-// Test support: the stage instancePlayer.test.ts plays on. It builds a stage with the two
+// Test support: the stage the instancePlayer tests play on. It builds a stage with the two
 // layers of instancesOnAir.testSupport.ts, a player whose graphics write down their calls
-// (recordingGraphic.testSupport.ts) and a log kept in a list. Every function builds fresh
-// objects, so no test can change what another one sees; the one exception, a counter that
-// only keeps tag names apart, is explained in recordingGraphic.testSupport.ts.
-import type { Graphic, Instance } from '@bajaovrlay/shared';
+// (recordingGraphic.testSupport.ts), a log kept in a list, and a second list with what the
+// player reported to the server about each instance. Every function builds fresh objects,
+// so no test can change what another one sees; the one exception, a counter that only
+// keeps tag names apart, is explained in recordingGraphic.testSupport.ts.
+import type { Graphic, Instance, InstanceStatusMessage } from '@bajaovrlay/shared';
 
 import type { GraphicLoader } from './graphicLoader.js';
 import { createInstancePlayer } from './instancePlayer.js';
 import type { LayerOperations } from './instanceReconciler.js';
 import {
   createEnduroClockInstance,
+  createFinalClockInstance,
   createTeamLowerThirdInstance,
   enduroClockInstanceId,
   feiLowerThirdInstanceId,
@@ -70,7 +72,8 @@ export const graphicsWithTheFinalScoreboard: Graphic[] = [
 
 /**
  * Builds a stage with the clock and lower-third layers, a player on it, graphics that
- * write down their calls, and a log kept in a list.
+ * write down their calls, a log kept in a list, and the list of what the player reported
+ * to the server (`statusReports`).
  */
 export function createStageWithPlayer() {
   const recording = createRecordingGraphicLoader(nameByInstanceId);
@@ -96,7 +99,30 @@ export function createStageWhoseFinalScoreboardCannotBeCreated() {
   return createStageWithPlayerOnLoader(recording, loaderThatCannotCreateTheScoreboard);
 }
 
-/** Puts the layers, the player and the list that keeps the log around one loader. */
+/** What Chromium answers when a graphic's main file is missing from the server. */
+export const reasonTheModuleCannotBeImported =
+  'TypeError: Failed to fetch dynamically imported module: /graphics/race-clock/race-clock.js';
+
+/**
+ * Builds the same stage, except that no graphic's module can be imported, as when the
+ * server lists a package whose files were deleted from disk.
+ */
+export function createStageWhoseGraphicModulesCannotBeImported() {
+  const recording = createRecordingGraphicLoader(nameByInstanceId);
+  const loaderWhoseImportsFail: GraphicLoader = {
+    defineGraphicElement: async () => {
+      throw new TypeError(
+        'Failed to fetch dynamically imported module: /graphics/race-clock/race-clock.js',
+      );
+    },
+  };
+  return createStageWithPlayerOnLoader(recording, loaderWhoseImportsFail);
+}
+
+/**
+ * Puts the layers, the player, the list that keeps the log and the list that keeps the
+ * status reports around one loader.
+ */
 function createStageWithPlayerOnLoader(
   recording: RecordingGraphicLoader,
   graphicLoader: GraphicLoader,
@@ -105,14 +131,18 @@ function createStageWithPlayerOnLoader(
   const layerContainers = createLayerContainers(stage);
   layerContainers.showLayers(layersOfTheStream);
   const logLines: CapturedLogLine[] = [];
+  const statusReports: InstanceStatusMessage[] = [];
   const instancePlayer = createInstancePlayer({
     layerContainers,
     graphicLoader,
+    reportInstanceStatus: (statusReport) => {
+      statusReports.push(statusReport);
+    },
     logEvent: (level, message, details = {}) => {
       logLines.push({ level, message, details });
     },
   });
-  return { stage, instancePlayer, recording, logLines };
+  return { stage, instancePlayer, recording, logLines, statusReports };
 }
 
 /**
@@ -146,6 +176,31 @@ export function createEnduroClockThatLoadsSlowly(): Instance {
       fakeGraphicLoadOutcome: 'waits-to-be-released',
     },
   });
+}
+
+/**
+ * Builds an enduro clock with the data field that tells the recording graphic how its
+ * playAction must go: `'rejects'`, or `'waits-to-be-released'` for a long in-animation.
+ */
+export function createEnduroClockWhosePlay(
+  fakeGraphicPlayOutcome: 'rejects' | 'waits-to-be-released',
+): Instance {
+  return createEnduroClockInstance({
+    resolvedData: { sessionName: 'Enduro de Resistência', fakeGraphicPlayOutcome },
+  });
+}
+
+/**
+ * Builds the clock of the final heat with the data field that tells the recording graphic
+ * how its load must go: `'rejects'`, or `'waits-to-be-released'` for a slow graphic.
+ */
+export function createFinalClockWhoseLoad(
+  fakeGraphicLoadOutcome: 'rejects' | 'waits-to-be-released',
+): Instance {
+  return {
+    ...createFinalClockInstance(),
+    resolvedData: { sessionName: 'Final', fakeGraphicLoadOutcome },
+  };
 }
 
 /**
@@ -188,4 +243,20 @@ export function readInstanceIdsOnLayer(
   const container = stage.querySelector(`[data-layer-id="${layerId}"]`);
   const elements = Array.from(container?.children ?? []) as HTMLElement[];
   return elements.map((element) => element.dataset.instanceId);
+}
+
+/**
+ * Lists the elements inside one layer's container as sentences, in page order:
+ * `Enduro: visible`, `Final: hidden`. Hidden means the player set `visibility: hidden` on
+ * the element, which it does while a graphic loads behind the one it will replace.
+ */
+export function readVisibilityOfElementsOnLayer(stage: HTMLElement, layerId: string): string[] {
+  const container = stage.querySelector(`[data-layer-id="${layerId}"]`);
+  const elements = Array.from(container?.children ?? []) as HTMLElement[];
+  return elements.map((element) => {
+    const instanceId = element.dataset.instanceId ?? '';
+    const instanceName = nameByInstanceId[instanceId] ?? instanceId;
+    const visibility = element.style.visibility === 'hidden' ? 'hidden' : 'visible';
+    return `${instanceName}: ${visibility}`;
+  });
 }

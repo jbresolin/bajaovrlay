@@ -9,7 +9,8 @@
  *
  * What these tests prove:
  *   - A new instance on an empty layer is loaded and played, with its in-animation.
- *   - The same instance with the same data needs nothing at all.
+ *   - The same instance with the same data needs nothing at all, also when its status
+ *     changed (the server marking it on air after the renderer's own report).
  *   - The same instance with changed data gets an update holding only the changed fields;
  *     a field that disappeared is sent as `undefined`. A list counts as changed when
  *     its contents or their order differ, not merely because it is a new list object.
@@ -23,7 +24,7 @@
  *   - Rebuilding the whole stage after a reconnect; instanceReconciler.rebuild.test.ts.
  *   - Calling the graphics (load, playAction, ...); e2e/lifecycle.e2e.ts checks that in
  *     a real browser.
- *   - A change of `currentStep`; stepping through a graphic arrives with BAJAOVRLAY-12.
+ *   - A change of `currentStep`; stepping through a graphic is a later task.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -70,6 +71,14 @@ const sliceChangeScenarios = [
     name: 'does nothing when the same instance has the same data',
     previousInstances: [createEnduroClockInstance()],
     nextInstances: [createEnduroClockInstance()],
+    expectedLayerOperations: [],
+  },
+  // The renderer reported the clock on air and the server changed its status: the same
+  // instance comes back with only `status` different, and the graphic must not be touched.
+  {
+    name: 'does nothing when only the status of the same instance changed',
+    previousInstances: [createEnduroClockInstance()],
+    nextInstances: [createEnduroClockInstance({ status: 'on-air' })],
     expectedLayerOperations: [],
   },
   // The flag went yellow: only `state` changed, so only `state` is sent to the graphic.

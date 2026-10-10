@@ -145,8 +145,9 @@ function decideOperationForOneLayer(
     };
   }
 
-  // The same instance. Only its data is compared: a change of `currentStep` (stepping
-  // through a graphic) is BAJAOVRLAY-12 and is deliberately ignored in M0.
+  // The same instance. Only its data is compared. A change of `status` is the server
+  // repeating what this renderer reported, so there is nothing to do about it; a change
+  // of `currentStep` (stepping through a graphic) is a later task and is ignored for now.
   const changedData = findChangedFields(previousInstance.resolvedData, nextInstance.resolvedData);
   if (Object.keys(changedData).length === 0) {
     return undefined;

@@ -1,7 +1,8 @@
 // Entry point of the renderer page that OBS loads as a browser source. It only wires the
 // parts together: the layer containers on the stage, the connection to the server, and
 // the reconciler/player pair that makes the stage match the server's `instances` slice.
-// The renderer decides nothing about what is on air: if the slice says it, it is drawn.
+// The renderer decides nothing about what is on air: if the slice says it, it is drawn,
+// and the server is told how that went (on air, or failed and why).
 import type { Instance } from '@bajaovrlay/shared';
 
 import { createGraphicLoader } from './graphicLoader.js';
@@ -13,21 +14,23 @@ import { connectToServer } from './serverConnection.js';
 
 /** Builds the renderer on the stage element and connects it to the server it came from. */
 function startRenderer(stage: HTMLElement): void {
+  // The page is served by the server (or by the dev server that forwards to it), so the
+  // WebSocket and the API live on the page's own host. `role=renderer` is how the server
+  // tells this page from an operator's: only a renderer may report what is on screen.
+  const webSocketScheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const connection = connectToServer({
+    webSocketAddress: `${webSocketScheme}//${location.host}/ws?role=renderer`,
+    stateAddress: `${location.origin}/api/v1/state`,
+  });
+
   const layerContainers = createLayerContainers(stage);
   const instancePlayer = createInstancePlayer({
     layerContainers,
     graphicLoader: createGraphicLoader(),
+    reportInstanceStatus: connection.sendInstanceStatus,
   });
   // What the last delivery said is on air, to compare the next one against.
   let instancesOfLastDelivery: Instance[] = [];
-
-  // The page is served by the server (or by the dev server that forwards to it), so the
-  // WebSocket and the API live on the page's own host.
-  const webSocketScheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const connection = connectToServer({
-    webSocketAddress: `${webSocketScheme}//${location.host}/ws`,
-    stateAddress: `${location.origin}/api/v1/state`,
-  });
 
   connection.onSlices(({ slices, isFullSnapshot }) => {
     layerContainers.showLayers(slices.layers);

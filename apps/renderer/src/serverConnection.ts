@@ -1,13 +1,17 @@
 /**
- * The renderer's connection to the server: a WebSocket to `/ws` that is kept open for as
- * long as the page lives. Every message is checked against the shared protocol before it
- * is believed. The renderer only listens; it sends no commands in M0.
+ * The renderer's connection to the server: a WebSocket to `/ws?role=renderer` that is
+ * kept open for as long as the page lives. Every message is checked against the shared
+ * protocol before it is believed.
  *
  * What the renderer gets out of it is a stream of deliveries: all the slices, either as a
  * full snapshot (after a `hello`, which is the whole truth and makes the renderer rebuild
  * the stage) or with one slice replaced (after a `slice` message).
+ *
+ * What the renderer says over it is one kind of message, `instanceStatus`: what really
+ * happened on screen to an instance. It sends no commands.
  */
 import {
+  type InstanceStatusMessage,
   type ServerMessage,
   ServerMessageSchema,
   type Slices,
@@ -39,12 +43,14 @@ export type ServerSocket = {
   onOpen: (listener: () => void) => void;
   onMessage: (listener: (data: unknown) => void) => void;
   onClose: (listener: () => void) => void;
+  /** Sends one text. Only called between the socket's open and its close. */
+  send: (text: string) => void;
   close: () => void;
 };
 
 /** Where to connect, and (for tests) stand-ins for the socket, the HTTP read and the log. */
 export type ServerConnectionOptions = {
-  /** For example `ws://192.168.0.10:3000/ws`. */
+  /** For example `ws://192.168.0.10:3000/ws?role=renderer`. */
   webSocketAddress: string;
   /** For example `http://192.168.0.10:3000/api/v1/state`. */
   stateAddress: string;
@@ -57,6 +63,11 @@ export type ServerConnectionOptions = {
 export type ServerConnection = {
   /** Registers who receives the slices. Call it right after connecting. */
   onSlices: (callback: (delivery: SlicesDelivery) => void) => void;
+  /**
+   * Tells the server what happened on screen to one instance. Sent at once when the
+   * socket is open; otherwise logged and dropped, never kept for later.
+   */
+  sendInstanceStatus: (statusReport: InstanceStatusMessage) => void;
 };
 
 /** Opens the browser's own WebSocket and exposes it as a ServerSocket. */
@@ -67,6 +78,7 @@ function openBrowserWebSocket(address: string): ServerSocket {
     onMessage: (listener) =>
       webSocket.addEventListener('message', (event: MessageEvent<unknown>) => listener(event.data)),
     onClose: (listener) => webSocket.addEventListener('close', () => listener()),
+    send: (text) => webSocket.send(text),
     close: () => webSocket.close(),
   };
 }
@@ -94,6 +106,23 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   // only kept so a `slice` message (one slice) can be delivered together with the rest.
   let slicesFromServer: Slices | undefined = undefined;
   let nextReconnectWaitInMilliseconds = firstReconnectWaitInMilliseconds;
+  // The socket that is open right now, if there is one: set when a socket opens and
+  // emptied when it closes. It is the only socket anything may be sent on.
+  let socketThatIsOpen: ServerSocket | undefined = undefined;
+
+  function sendInstanceStatus(statusReport: InstanceStatusMessage): void {
+    if (socketThatIsOpen === undefined) {
+      // Not kept for later, on purpose: after the reconnect the server's hello makes the
+      // renderer rebuild the stage, and the rebuild reports every instance afresh. A
+      // report kept from before the drop could by then be about an instance that is gone.
+      logEvent('warn', 'instance status not sent: no open connection to the server', {
+        instanceId: statusReport.instanceId,
+        status: statusReport.status,
+      });
+      return;
+    }
+    socketThatIsOpen.send(JSON.stringify(statusReport));
+  }
 
   function deliverFullSnapshot(slices: Slices): void {
     slicesFromServer = slices;
@@ -125,7 +154,17 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: false }));
       return { wasHello: false };
     }
-    // A commandResult: the renderer sends no commands, so there is nothing to do with it.
+    // A commandResult. The renderer never waits for one, but the server may answer an
+    // instanceStatus with it. An ok needs nothing. A refusal (the instance is already
+    // gone, or this connection is not counted as a renderer) changes nothing here either,
+    // yet it is written down: the OBS console is the only place it could be read.
+    if (!message.ok) {
+      // `serverMessage`, because `message` is already the key of the log line's own text.
+      logEvent('warn', 'server refused a message from the renderer', {
+        code: message.error.code,
+        serverMessage: message.error.message,
+      });
+    }
     return { wasHello: false };
   }
 
@@ -161,6 +200,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     }
 
     socket.onOpen(() => {
+      socketThatIsOpen = socket;
       logEvent('info', 'connected to the server', { address: options.webSocketAddress });
       helloWaitTimer = setTimeout(() => {
         void readStateBecauseHelloIsLate();
@@ -177,6 +217,11 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 
     socket.onClose(() => {
       isClosed = true;
+      // Checked, so that a close reported late by an old socket could never empty the
+      // slot of a newer one that has opened meanwhile.
+      if (socketThatIsOpen === socket) {
+        socketThatIsOpen = undefined;
+      }
       clearTimeout(helloWaitTimer);
       const waitInMilliseconds = nextReconnectWaitInMilliseconds;
       nextReconnectWaitInMilliseconds = Math.min(
@@ -196,6 +241,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     onSlices: (callback) => {
       slicesCallbacks.push(callback);
     },
+    sendInstanceStatus,
   };
 }
 
