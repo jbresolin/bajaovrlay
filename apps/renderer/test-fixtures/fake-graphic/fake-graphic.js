@@ -15,7 +15,10 @@
  *   - `window.__fakeGraphicDelayInMilliseconds`: how long every call takes (default 0),
  *     standing in for an animation.
  *   - `fakeGraphicLoadOutcome` in the data given to load: `'rejects'` makes load throw,
- *     `'refuses'` makes it answer 400, like a graphic that does not accept its data.
+ *     `'refuses'` makes it answer 400, like a graphic that does not accept its data,
+ *     `'answers-nothing'` makes it resolve with no answer object at all.
+ *   - `fakeGraphicDisposeOutcome: 'answers-nothing'` in the data given to load: dispose
+ *     then resolves with no answer object, like an `async dispose()` without a `return`.
  */
 
 /** Resolves after the delay the test asked for, standing in for an animation. */
@@ -52,6 +55,9 @@ export default class FakeGraphic extends HTMLElement {
     if (loadOutcome === 'refuses') {
       return { statusCode: 400, statusMessage: 'O gráfico de teste recusou os dados.' };
     }
+    if (loadOutcome === 'answers-nothing') {
+      return undefined;
+    }
     this.currentData = { ...params.data };
     this.textContent = JSON.stringify(this.currentData);
     return { statusCode: 200 };
@@ -81,6 +87,9 @@ export default class FakeGraphic extends HTMLElement {
 
   async dispose(params) {
     await this.recordAndWait('dispose', params);
+    if (this.currentData?.fakeGraphicDisposeOutcome === 'answers-nothing') {
+      return undefined;
+    }
     return { statusCode: 200 };
   }
 }

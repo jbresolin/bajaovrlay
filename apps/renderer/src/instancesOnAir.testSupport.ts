@@ -1,4 +1,4 @@
-// Test support: the instances and layers the reconciler tests share, written the way the
+// Test support: the instances and layers the renderer's unit tests share, written the way the
 // server lists them. Every function builds a fresh object, so no test can change what
 // another one sees.
 import type { Instance, Layer } from '@bajaovrlay/shared';

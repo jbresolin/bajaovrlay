@@ -7,6 +7,8 @@
  *   attempt, and never leaves the stage waiting on a socket that opened but stays quiet.
  *
  * What these tests prove:
+ *   - A drop by itself delivers nothing, so whatever is on the stage stays there until
+ *     the next hello.
  *   - After a drop the waits are 0.5 s, 1 s, 2 s, 4 s, then 5 s every time.
  *   - A full snapshot starts the waits over at 0.5 s.
  *   - The `hello` after a reconnect is a full snapshot again, so the stage is rebuilt.
@@ -14,6 +16,8 @@
  *     GET /api/v1/state instead and delivered as a full snapshot; a hello in time makes
  *     that read unnecessary.
  *   - If that read fails too, the socket is closed so the normal reconnect takes over.
+ *   - An HTTP answer that comes back after a hello arrived, or after the socket dropped,
+ *     is ignored: it is older than what the renderer already knows or is about to hear.
  *
  * What these tests deliberately do not cover:
  *   - The messages themselves (hello, slice, unusable ones); serverConnection.test.ts.
@@ -23,14 +27,43 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
+import { createEnduroClockInstance } from './instancesOnAir.testSupport.js';
 import {
-  createEnduroClockInstance,
   createSlicesWithInstances,
+  createStateReadAnsweredByHand,
   serverStateAddress,
   startConnectionForTests,
 } from './serverConnection.testSupport.js';
 
+/** Builds the slices of a server whose enduro clock is on air under the given flag. */
+function createSlicesWithEnduroClockUnderFlag(flagState: string) {
+  const enduroClock = createEnduroClockInstance({
+    resolvedData: { sessionName: 'Enduro de Resistência', state: flagState, running: true },
+  });
+  return createSlicesWithInstances([enduroClock]);
+}
+
 describe('reconnecting after the socket drops', () => {
+  it('delivers nothing when the socket drops, so what is on the stage stays there', () => {
+    // Arrange: a connection that received its hello with the clock on air.
+    const connection = startConnectionForTests();
+    const slicesWithGreenClock = createSlicesWithEnduroClockUnderFlag('green');
+    connection.latestSocket().simulateOpen();
+    connection.latestSocket().simulateMessage({ type: 'hello', slices: slicesWithGreenClock });
+
+    // Act: the socket drops, and the first reconnect wait passes with the server still away.
+    connection.latestSocket().simulateDrop();
+    vi.advanceTimersByTime(500);
+
+    // Assert: the renderer heard nothing new, so it has no reason to touch the clock; a
+    // second socket is being tried meanwhile.
+    expect(
+      connection.deliveries,
+      'a drop must deliver nothing: the stage is only rebuilt by the next hello',
+    ).toEqual([{ slices: slicesWithGreenClock, isFullSnapshot: true }]);
+    expect(connection.openedSockets, 'the renderer must be trying to reconnect').toHaveLength(2);
+  });
+
   it('waits 0.5 s, then doubles up to 5 s between attempts', () => {
     // Arrange: a connection whose first socket is about to drop, and the waits we expect.
     const connection = startConnectionForTests();
@@ -96,7 +129,7 @@ describe('reconnecting after the socket drops', () => {
     connection.latestSocket().simulateOpen();
 
     // Act: the server (restarted meanwhile) greets with the clock on air.
-    const slicesAfterRestart = createSlicesWithInstances([createEnduroClockInstance('yellow')]);
+    const slicesAfterRestart = createSlicesWithEnduroClockUnderFlag('yellow');
     connection.latestSocket().simulateMessage({ type: 'hello', slices: slicesAfterRestart });
 
     // Assert: the new hello is the full truth, so the renderer rebuilds the stage from it.
@@ -110,7 +143,7 @@ describe('reconnecting after the socket drops', () => {
 describe('reading the state over HTTP when the hello is late', () => {
   it('reads GET /api/v1/state 3 s after the socket opened without a hello', async () => {
     // Arrange: a server whose socket opens but never greets, and whose state address works.
-    const slicesWithRedClock = createSlicesWithInstances([createEnduroClockInstance('red')]);
+    const slicesWithRedClock = createSlicesWithEnduroClockUnderFlag('red');
     const connection = startConnectionForTests(async () => slicesWithRedClock);
     connection.latestSocket().simulateOpen();
 
@@ -154,45 +187,95 @@ describe('reading the state over HTTP when the hello is late', () => {
   const failedStateReadScenarios = [
     // The server is half up: the socket opened but HTTP answers nothing.
     {
-      name: 'the request fails',
+      name: 'closes the socket to try again when the request fails',
       readStateOverHttp: async () => {
         throw new TypeError('Failed to fetch');
       },
     },
     // The server answered, but not with slices (an error body, or another program on the port).
     {
-      name: 'the answer is not the slices',
+      name: 'closes the socket to try again when the answer is not the slices',
       readStateOverHttp: async () => ({
         error: { code: 'ROUTE_NOT_FOUND', message: 'Endereço não encontrado no servidor.' },
       }),
     },
   ];
 
-  it.each(failedStateReadScenarios)(
-    'closes the socket to try again when $name',
-    async ({ readStateOverHttp }) => {
-      // Arrange: a socket that opens but never greets, and a state read that fails.
-      const connection = startConnectionForTests(readStateOverHttp);
-      const silentSocket = connection.latestSocket();
-      silentSocket.simulateOpen();
+  it.each(failedStateReadScenarios)('$name', async ({ readStateOverHttp }) => {
+    // Arrange: a socket that opens but never greets, and a state read that fails.
+    const connection = startConnectionForTests(readStateOverHttp);
+    const silentSocket = connection.latestSocket();
+    silentSocket.simulateOpen();
 
-      // Act: let the 3 s pass, then the first 0.5 s reconnect wait.
-      await vi.advanceTimersByTimeAsync(3000);
-      await vi.advanceTimersByTimeAsync(500);
+    // Act: let the 3 s pass, then the first 0.5 s reconnect wait.
+    await vi.advanceTimersByTimeAsync(3000);
+    await vi.advanceTimersByTimeAsync(500);
 
-      // Assert: nothing was delivered, the failure was logged, and a fresh socket is tried.
-      expect(connection.deliveries, 'a failed state read must deliver nothing').toEqual([]);
-      expect(
-        connection.logLines,
-        'the failed state read must be logged as an error',
-      ).toContainEqual({ level: 'error', message: 'state read over HTTP failed; reconnecting' });
-      expect(
-        silentSocket.wasClosedByTheRenderer(),
-        'the silent socket must be closed so the reconnect starts',
-      ).toBe(true);
-      expect(connection.openedSockets, 'a new socket must be opened after the wait').toHaveLength(
-        2,
-      );
-    },
-  );
+    // Assert: nothing was delivered, the failure was logged, and a fresh socket is tried.
+    expect(connection.deliveries, 'a failed state read must deliver nothing').toEqual([]);
+    expect(connection.logLines, 'the failed state read must be logged as an error').toContainEqual({
+      level: 'error',
+      message: 'state read over HTTP failed; reconnecting',
+    });
+    expect(
+      silentSocket.wasClosedByTheRenderer(),
+      'the silent socket must be closed so the reconnect starts',
+    ).toBe(true);
+    expect(connection.openedSockets, 'a new socket must be opened after the wait').toHaveLength(2);
+  });
+});
+
+describe('something else happening while GET /api/v1/state is under way', () => {
+  it('ignores the HTTP answer when the hello arrives while the read is under way', async () => {
+    // Arrange: a socket that opened 3 s ago without a hello, so the state is being read
+    // over HTTP; the test decides when that read is answered.
+    const stateRead = createStateReadAnsweredByHand();
+    const connection = startConnectionForTests(stateRead.readStateOverHttp);
+    const slicesOfTheHello = createSlicesWithEnduroClockUnderFlag('yellow');
+    const olderSlicesReadOverHttp = createSlicesWithEnduroClockUnderFlag('red');
+    connection.latestSocket().simulateOpen();
+    await vi.advanceTimersByTimeAsync(3000);
+
+    // Act: the late hello arrives first, then the HTTP read is answered with what the
+    // server held a moment earlier.
+    connection.latestSocket().simulateMessage({ type: 'hello', slices: slicesOfTheHello });
+    stateRead.answerWith(olderSlicesReadOverHttp);
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Assert: only the hello was delivered; the older HTTP answer never reached the stage.
+    expect(
+      connection.stateAddressesRead,
+      'the state read must have been under way when the hello arrived',
+    ).toEqual([serverStateAddress]);
+    expect(
+      connection.deliveries,
+      'an HTTP answer older than the hello must not be delivered after it',
+    ).toEqual([{ slices: slicesOfTheHello, isFullSnapshot: true }]);
+  });
+
+  it('ignores the HTTP answer when the socket dropped while the read was under way', async () => {
+    // Arrange: the same quiet socket, with the state read under way.
+    const stateRead = createStateReadAnsweredByHand();
+    const connection = startConnectionForTests(stateRead.readStateOverHttp);
+    const quietSocket = connection.latestSocket();
+    quietSocket.simulateOpen();
+    await vi.advanceTimersByTimeAsync(3000);
+
+    // Act: the socket drops (the server went down), and then the HTTP read fails too.
+    quietSocket.simulateDrop();
+    stateRead.failWith(new TypeError('Failed to fetch'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Assert: nothing was delivered, and the failed read changed nothing: the drop had
+    // already started the reconnect, so there is no second close and no misleading line.
+    expect(connection.deliveries, 'nothing may be delivered after the drop').toEqual([]);
+    expect(
+      connection.logLines.map((line) => line.message),
+      'a read that fails after the drop must not be logged as the reason to reconnect',
+    ).not.toContain('state read over HTTP failed; reconnecting');
+    expect(
+      quietSocket.wasClosedByTheRenderer(),
+      'a socket that already dropped must not be closed a second time',
+    ).toBe(false);
+  });
 });

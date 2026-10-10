@@ -1,6 +1,8 @@
 // Test support: a stand-in for the server's side of the renderer's WebSocket. A test
 // drives it by hand (open, send a message, drop) with time faked, so every wait in
 // serverConnection.ts is checked to the millisecond without a real server or a real wait.
+// It also builds what that stand-in server says: the slices of a hello, and an answer to
+// GET /api/v1/state that the test gives by hand.
 import type { Instance, Slices } from '@bajaovrlay/shared';
 import { onTestFinished, vi } from 'vitest';
 
@@ -44,21 +46,10 @@ function createFakeServerSocket(address: string): FakeServerSocket {
   };
 }
 
-/** Builds the race clock of the enduro, on air on the clock layer. */
-export function createEnduroClockInstance(flagState: string): Instance {
-  return {
-    id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
-    layerId: 'clock',
-    graphicId: 'race-clock',
-    target: 'program',
-    resolvedData: { sessionName: 'Enduro de Resistência', state: flagState },
-    currentStep: 0,
-    status: 'loading',
-    takenAt: '2026-10-09T13:00:00.000Z',
-  };
-}
-
-/** Builds every slice as the server holds them: one layer, one graphic, the given instances. */
+/**
+ * Builds every slice as the server sends them in a hello: one layer, one graphic and the
+ * given instances (built with the factories of instancesOnAir.testSupport.ts).
+ */
 export function createSlicesWithInstances(instances: Instance[]): Slices {
   return {
     layers: [
@@ -76,6 +67,24 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     ],
     instances,
     eventLog: [],
+  };
+}
+
+/**
+ * Builds a GET /api/v1/state that stays under way until the test answers it or makes it
+ * fail, so a test can make something else happen while the read is still in flight.
+ */
+export function createStateReadAnsweredByHand() {
+  let answerWith: (body: unknown) => void = () => undefined;
+  let failWith: (reason: Error) => void = () => undefined;
+  const stateReadUnderWay = new Promise<unknown>((resolve, reject) => {
+    answerWith = resolve;
+    failWith = reject;
+  });
+  return {
+    readStateOverHttp: () => stateReadUnderWay,
+    answerWith: (body: unknown) => answerWith(body),
+    failWith: (reason: Error) => failWith(reason),
   };
 }
 

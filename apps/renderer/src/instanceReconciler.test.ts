@@ -11,7 +11,8 @@
  *   - A new instance on an empty layer is loaded and played, with its in-animation.
  *   - The same instance with the same data needs nothing at all.
  *   - The same instance with changed data gets an update holding only the changed fields;
- *     a field that disappeared is sent as `undefined`.
+ *     a field that disappeared is sent as `undefined`. A list counts as changed when
+ *     its contents or their order differ, not merely because it is a new list object.
  *   - A different instance on an occupied layer is a replace, carrying that layer's
  *     replace policy (and `out-then-in` when the layer is unknown).
  *   - An instance that is gone is stopped and disposed.
@@ -36,6 +37,18 @@ import {
   layersOfTheStream,
   ufprLowerThirdInstanceId,
 } from './instancesOnAir.testSupport.js';
+
+/** Builds the enduro clock with the numbers of the three leading teams, in race order. */
+function createEnduroClockInstanceWithTopThree(topThreeTeamNumbers: number[]) {
+  return createEnduroClockInstance({
+    resolvedData: {
+      sessionName: 'Enduro de Resistência',
+      state: 'green',
+      running: true,
+      topThreeTeamNumbers,
+    },
+  });
+}
 
 const sliceChangeScenarios = [
   // The everyday take: the operator puts the clock on an empty layer.
@@ -126,6 +139,33 @@ const sliceChangeScenarios = [
             kind: 'updateData',
             instanceId: enduroClockInstanceId,
             changedData: { running: undefined },
+          },
+        ],
+      },
+    ],
+  },
+  // Every message from the server is read afresh, so a list that did not change still
+  // arrives as a new list object. It must be compared by its contents, or every resend
+  // of the slice would send the graphic a needless update.
+  {
+    name: 'does nothing when a list in the data has the same contents',
+    previousInstances: [createEnduroClockInstanceWithTopThree([42, 7, 13])],
+    nextInstances: [createEnduroClockInstanceWithTopThree([42, 7, 13])],
+    expectedLayerOperations: [],
+  },
+  // Team 7 overtook team 42: the same numbers in another order are a real change.
+  {
+    name: 'updates when the order of a list changes',
+    previousInstances: [createEnduroClockInstanceWithTopThree([42, 7, 13])],
+    nextInstances: [createEnduroClockInstanceWithTopThree([7, 42, 13])],
+    expectedLayerOperations: [
+      {
+        layerId: 'clock',
+        operations: [
+          {
+            kind: 'updateData',
+            instanceId: enduroClockInstanceId,
+            changedData: { topThreeTeamNumbers: [7, 42, 13] },
           },
         ],
       },

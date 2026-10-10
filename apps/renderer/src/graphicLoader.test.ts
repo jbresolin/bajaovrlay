@@ -11,13 +11,18 @@
  * What these tests prove:
  *   - The module is imported from `/graphics/<graphic id>/<manifest main>` and its class
  *     is registered under `baja-graphic-<graphic id>`.
- *   - A graphic taken twice is imported once: the second take reuses the first import.
- *   - A failed import is not remembered: the next take tries again.
+ *   - A graphic taken twice at the same moment is imported once: both takes share the
+ *     one import.
+ *   - A failed import is remembered too: the next take fails the same way without a
+ *     second import, until the page is reloaded.
  *   - A module with no class as its default export is refused with a clear error.
  *
  * What these tests deliberately do not cover:
  *   - A real `import()` over the network; e2e/lifecycle.e2e.ts loads a real module in
  *     Chromium. Here the import is a stand-in that answers with a module object.
+ *   - Why a failed import is not retried: Chromium itself remembers a failed module
+ *     address for the life of the page (measured with the pinned Playwright Chromium),
+ *     so a second `import()` of the same address fails without asking the server again.
  *   - What happens on screen when loading fails (the layer stays empty); the same
  *     Playwright file checks that.
  */
@@ -82,17 +87,22 @@ describe('createGraphicLoader', () => {
       },
     });
 
-    // Act: two takes of the same graphic (team 42, then team 7).
-    const firstTagName = await graphicLoader.defineGraphicElement(teamLowerThird);
-    const secondTagName = await graphicLoader.defineGraphicElement(teamLowerThird);
+    // Act: two takes of the same graphic at the same moment, as a macro does (team 42
+    // and team 7); neither waits for the other before asking.
+    const firstTake = graphicLoader.defineGraphicElement(teamLowerThird);
+    const secondTake = graphicLoader.defineGraphicElement(teamLowerThird);
+    const firstTagName = await firstTake;
+    const secondTagName = await secondTake;
 
     // Assert: one import served both, and both got the same tag.
-    expect(importCount, 'the second take must reuse the first import').toBe(1);
+    expect(importCount, 'the second take must share the import the first one started').toBe(1);
     expect(secondTagName, 'both takes must get the same tag').toBe(firstTagName);
   });
 
-  it('tries the import again after a failed one', async () => {
-    // Arrange: a sponsor roll whose file is missing at first (not built yet), then there.
+  it('remembers a failed import, so the next take fails the same way without importing again', async () => {
+    // Arrange: a sponsor roll whose file is missing at first (not built yet). The import
+    // stand-in would succeed the second time, unlike Chromium, which keeps answering
+    // with the first failure for the same address.
     const sponsorRoll = createGraphic('sponsor-roll', 'Patrocinadores', 'sponsor-roll.js');
     const sponsorRollModule = createGraphicModule();
     let importCount = 0;
@@ -106,18 +116,23 @@ describe('createGraphicLoader', () => {
       },
     });
 
-    // Act: the first take fails; the operator takes it again after the build.
-    const firstTake = graphicLoader.defineGraphicElement(sponsorRoll);
-    await expect(firstTake, 'a failed import must reject the first take').rejects.toThrow(
-      'Failed to fetch dynamically imported module',
-    );
-    const tagNameOfSecondTake = await graphicLoader.defineGraphicElement(sponsorRoll);
+    // Act: the first take fails; the operator takes the graphic again after the build.
+    const outcomeOfFirstTake = await graphicLoader
+      .defineGraphicElement(sponsorRoll)
+      .catch((error: unknown) => error);
+    const outcomeOfSecondTake = await graphicLoader
+      .defineGraphicElement(sponsorRoll)
+      .catch((error: unknown) => error);
 
-    // Assert: the second take imported again and succeeded.
-    expect(importCount, 'a failed import must not be remembered').toBe(2);
-    expect(tagNameOfSecondTake, 'the second take must get the tag').toBe(
-      'baja-graphic-sponsor-roll',
+    // Assert: both takes failed with the import's error, and the import ran only once.
+    expect(String(outcomeOfFirstTake), 'a failed import must reject the first take').toBe(
+      'TypeError: Failed to fetch dynamically imported module',
     );
+    expect(
+      String(outcomeOfSecondTake),
+      'the next take must fail the same way: only a page reload imports the module again',
+    ).toBe('TypeError: Failed to fetch dynamically imported module');
+    expect(importCount, 'a failed import must not be tried a second time').toBe(1);
   });
 
   it('refuses a module whose default export is not a class', async () => {

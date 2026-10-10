@@ -23,8 +23,8 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { createEnduroClockInstance } from './instancesOnAir.testSupport.js';
 import {
-  createEnduroClockInstance,
   createSlicesWithInstances,
   serverWebSocketAddress,
   startConnectionForTests,
@@ -34,7 +34,7 @@ describe('messages from the server', () => {
   it('delivers every slice of a hello as a full snapshot', () => {
     // Arrange: a connection whose socket has just opened.
     const connection = startConnectionForTests();
-    const slicesWithGreenClock = createSlicesWithInstances([createEnduroClockInstance('green')]);
+    const slicesWithGreenClock = createSlicesWithInstances([createEnduroClockInstance()]);
     connection.latestSocket().simulateOpen();
 
     // Act: the server greets with every slice.
@@ -62,7 +62,7 @@ describe('messages from the server', () => {
     connection.latestSocket().simulateMessage({
       type: 'slice',
       name: 'instances',
-      slice: [createEnduroClockInstance('green')],
+      slice: [createEnduroClockInstance()],
     });
 
     // Assert: the second delivery has the clock and the untouched layers and graphics,
@@ -71,7 +71,7 @@ describe('messages from the server', () => {
       connection.deliveries.at(-1),
       'a slice message must deliver all slices with the changed one replaced',
     ).toEqual({
-      slices: createSlicesWithInstances([createEnduroClockInstance('green')]),
+      slices: createSlicesWithInstances([createEnduroClockInstance()]),
       isFullSnapshot: false,
     });
     expect(connection.deliveries, 'there must be one delivery per message').toHaveLength(2);
@@ -79,17 +79,20 @@ describe('messages from the server', () => {
 
   const unusableMessageScenarios = [
     // A proxy or a bug sent plain text: it cannot even be read as JSON.
-    { name: 'text that is not JSON', text: 'servidor reiniciando' },
+    { name: 'logs and ignores text that is not JSON', text: 'servidor reiniciando' },
     // Valid JSON, but not a message of the protocol.
-    { name: 'JSON that is not in the protocol', text: '{"type":"placar","pontos":42}' },
+    {
+      name: 'logs and ignores JSON that is not in the protocol',
+      text: '{"type":"placar","pontos":42}',
+    },
     // A hello whose slices are broken must not reach the screen half-read.
     {
-      name: 'a hello whose slices are incomplete',
+      name: 'logs and ignores a hello whose slices are incomplete',
       text: '{"type":"hello","slices":{"layers":[]}}',
     },
   ];
 
-  it.each(unusableMessageScenarios)('logs and ignores $name', ({ text }) => {
+  it.each(unusableMessageScenarios)('$name', ({ text }) => {
     // Arrange: a connection whose socket has just opened.
     const connection = startConnectionForTests();
     connection.latestSocket().simulateOpen();

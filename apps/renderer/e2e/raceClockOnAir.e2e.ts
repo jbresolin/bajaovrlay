@@ -25,7 +25,7 @@
  */
 import { expect, type Page, test } from '@playwright/test';
 
-import { sendCommandToRealServer } from './realServer.js';
+import { type CommandAnswer, sendCommandToRealServer } from './realServer.js';
 
 /**
  * The enduro under green flag, held at 1:05:00 (running = false) so the time cannot move
@@ -56,15 +56,37 @@ function collectPlayActionLogLines(page: Page): string[] {
   return playActionLogLines;
 }
 
+/**
+ * Clears everything on the real server (an earlier test or run may have left a clock on
+ * air), so a test starts from a stage it arranged itself.
+ */
+async function clearEverythingOnTheRealServer(): Promise<void> {
+  await sendCommandToRealServer({ type: 'clearAll' });
+}
+
+/**
+ * Takes the held enduro clock on the clock layer, as the control page will, and resolves
+ * with the server's answer.
+ */
+function takeHeldEnduroClockOnTheRealServer(): Promise<CommandAnswer> {
+  return sendCommandToRealServer({
+    type: 'takeGraphic',
+    graphicId: 'race-clock',
+    layerId: 'clock',
+    data: heldEnduroClockData,
+  });
+}
+
 // The two tests share one server and one clock layer, so they run one after the other.
+// Neither relies on what the other left there: each clears the server and arranges its own.
 test.describe.configure({ mode: 'serial' });
 
 test.describe('the race clock taken on the real server', () => {
   test('shows the clock on the stage after a takeGraphic sent over the WebSocket', async ({
     page,
   }) => {
-    // Arrange: nothing on air (an earlier run may have left a clock), and the renderer open.
-    await sendCommandToRealServer({ type: 'clearAll' });
+    // Arrange: nothing on air, and the renderer open.
+    await clearEverythingOnTheRealServer();
     const playActionLogLines = collectPlayActionLogLines(page);
     await page.goto('/render/');
     await expect(
@@ -73,12 +95,7 @@ test.describe('the race clock taken on the real server', () => {
     ).toBeAttached();
 
     // Act: take the race clock on the clock layer, as the control page will.
-    const takeAnswer = await sendCommandToRealServer({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: heldEnduroClockData,
-    });
+    const takeAnswer = await takeHeldEnduroClockOnTheRealServer();
 
     // Assert: the server accepted the take, and the clock is on the stage, inside the
     // clock layer, at its designed place, with the data of the take.
@@ -113,8 +130,13 @@ test.describe('the race clock taken on the real server', () => {
   });
 
   test('brings the clock back after a page reload, without the in-animation', async ({ page }) => {
-    // Arrange: the clock is still on air on the server from the test above; a fresh page
-    // stands in for OBS refreshing its browser source.
+    // Arrange: the clock was taken on the server before this page existed, so the page
+    // stands in for OBS refreshing its browser source in the middle of the race.
+    await clearEverythingOnTheRealServer();
+    const takeAnswer = await takeHeldEnduroClockOnTheRealServer();
+    expect(takeAnswer, 'the server must accept the takeGraphic that sets the scene').toEqual({
+      ok: true,
+    });
     const playActionLogLines = collectPlayActionLogLines(page);
 
     // Act: open the renderer, sending no command at all.

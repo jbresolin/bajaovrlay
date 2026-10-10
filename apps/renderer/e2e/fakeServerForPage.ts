@@ -12,12 +12,21 @@ const fakeGraphicFolder = fileURLToPath(new URL('../test-fixtures/fake-graphic/'
 
 /**
  * The layers the stand-in server announces. The clock layer swaps out-then-in like every
- * seeded layer; the lower third cuts, so the tests can watch both replace policies.
+ * seeded layer; the lower third cuts and fullscreen crossfades, so the tests can watch
+ * all three replace policies. There is no `ticker` layer, on purpose: one test takes a
+ * graphic on it to see what the renderer does with a layer it was never told about.
  */
 export const layersOfTheFakeServer: Layer[] = [
   { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
   { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
   { id: 'lower-third', name: 'Legenda', zIndex: 40, replacePolicy: 'cut', persistent: false },
+  {
+    id: 'fullscreen',
+    name: 'Tela cheia',
+    zIndex: 50,
+    replacePolicy: 'crossfade',
+    persistent: false,
+  },
 ];
 
 /** The fake graphic, registered from its real manifest file in test-fixtures/. */

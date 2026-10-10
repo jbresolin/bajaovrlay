@@ -14,6 +14,8 @@
  *   - Replace on an out-then-in layer: the old graphic has finished stopping and
  *     disposing before the new one starts loading.
  *   - Replace on a cut layer: both the stop and the play skip their animation.
+ *   - Replace on a crossfade layer: treated exactly like cut in M0.
+ *   - Every lifecycle call is logged with the instance id, the layer and the graphic.
  *   - Two layers work at the same time; one never waits for the other.
  *   - Reconnect, and a page that opens with a graphic already on air (OBS refreshing the
  *     browser source): everything is rebuilt and played with `skipAnimation: true`.
@@ -37,12 +39,14 @@ import {
   createEnduroInstance,
   createFinalInstance,
   createTeamInstance,
+  createTeamInstanceOnLayer,
   enduroInstanceId,
   feiInstanceId,
   finalInstanceId,
   instanceNames,
   ufprInstanceId,
 } from './instancesOnTheFakeServer.js';
+import { collectRendererLogLines } from './rendererLogLines.js';
 
 /** Waits until the fake graphics have written exactly these sentences, in this order. */
 async function expectCallSentences(
@@ -64,7 +68,8 @@ const callsOfATake = [
 
 test.describe('one graphic on one layer', () => {
   test('take: loads the graphic, then plays it, inside its layer', async ({ page }) => {
-    // Arrange: a renderer connected to a server with nothing on air.
+    // Arrange: a renderer connected to a server with nothing on air, and its log kept.
+    const logLines = collectRendererLogLines(page);
     const fakeServer = await startFakeServerForPage(page, { instancesOnAir: [] });
     await openRendererAndWaitForItsLayers(page);
 
@@ -72,8 +77,24 @@ test.describe('one graphic on one layer', () => {
     fakeServer.sendInstances([createEnduroInstance('green')]);
 
     // Assert: load finished before play was called, with the arguments OGraf expects,
-    // and the element sits inside the clock layer's container.
+    // the element sits inside the clock layer's container, and the log says which
+    // instance, layer and graphic each call was for.
     await expectCallSentences(page, callsOfATake, 'a take must load, then play, in order');
+    const lifecycleCallLogLines = logLines.filter(
+      (line) => line.message === 'graphic lifecycle call',
+    );
+    expect(
+      lifecycleCallLogLines,
+      'every lifecycle call must be logged with the instance id, the layer and the graphic',
+    ).toMatchObject([
+      { action: 'load', instanceId: enduroInstanceId, layerId: 'clock', graphicId: 'fake-graphic' },
+      {
+        action: 'playAction',
+        instanceId: enduroInstanceId,
+        layerId: 'clock',
+        graphicId: 'fake-graphic',
+      },
+    ]);
     expect(
       await readParamsOfCalls(page, enduroInstanceId, 'load'),
       'load must get the resolved data and the 1920x1080 realtime render settings',
@@ -191,53 +212,71 @@ test.describe('replacing a graphic on its layer', () => {
     ).toEqual([finalInstanceId]);
   });
 
-  test('cut: the old graphic stops and the new one plays without animation', async ({ page }) => {
-    // Arrange: team 42's lower third on air on the lower-third layer, which cuts.
-    const fakeServer = await startFakeServerForPage(page, { instancesOnAir: [] });
-    await openRendererAndWaitForItsLayers(page);
-    fakeServer.sendInstances([createTeamInstance(ufprInstanceId, 42, 'Baja UFPR')]);
-    await expectCallSentences(
-      page,
-      [
-        'UFPR: load called',
-        'UFPR: load finished',
-        'UFPR: playAction called',
-        'UFPR: playAction finished',
-      ],
-      "team 42's lower third must be on air first",
-    );
+  const replaceWithoutAnimationScenarios = [
+    // The lower-third layer cuts: the swap is instant by design.
+    {
+      name: 'cut: the old graphic stops and the new one plays without animation',
+      layerId: 'lower-third',
+    },
+    // The fullscreen layer crossfades. A real crossfade needs both graphics on the layer
+    // at once, which no M0 graphic is built for, so in M0 it must behave exactly like cut.
+    {
+      name: 'crossfade: behaves like cut in M0, with both animations skipped',
+      layerId: 'fullscreen',
+    },
+  ];
 
-    // Act: the operator takes team 7's lower third on the same layer.
-    fakeServer.sendInstances([createTeamInstance(feiInstanceId, 7, 'FEI Baja')]);
+  for (const { name, layerId } of replaceWithoutAnimationScenarios) {
+    test(name, async ({ page }) => {
+      // Arrange: team 42's graphic on air on the layer of this row.
+      const fakeServer = await startFakeServerForPage(page, { instancesOnAir: [] });
+      await openRendererAndWaitForItsLayers(page);
+      fakeServer.sendInstances([
+        createTeamInstanceOnLayer(layerId, ufprInstanceId, 42, 'Baja UFPR'),
+      ]);
+      await expectCallSentences(
+        page,
+        [
+          'UFPR: load called',
+          'UFPR: load finished',
+          'UFPR: playAction called',
+          'UFPR: playAction finished',
+        ],
+        "team 42's graphic must be on air first",
+      );
 
-    // Assert: same order as any replace, but both animations are skipped.
-    await expectCallSentences(
-      page,
-      [
-        'UFPR: load called',
-        'UFPR: load finished',
-        'UFPR: playAction called',
-        'UFPR: playAction finished',
-        'UFPR: stopAction called',
-        'UFPR: stopAction finished',
-        'UFPR: dispose called',
-        'UFPR: dispose finished',
-        'FEI: load called',
-        'FEI: load finished',
-        'FEI: playAction called',
-        'FEI: playAction finished',
-      ],
-      'a cut replace must still finish the old graphic before loading the new one',
-    );
-    expect(
-      await readParamsOfCalls(page, ufprInstanceId, 'stopAction'),
-      'on a cut layer the old graphic must stop without its out-animation',
-    ).toEqual([{ skipAnimation: true }]);
-    expect(
-      await readParamsOfCalls(page, feiInstanceId, 'playAction'),
-      'on a cut layer the new graphic must play without its in-animation',
-    ).toEqual([{ goto: 0, skipAnimation: true }]);
-  });
+      // Act: the operator takes team 7's graphic on the same layer.
+      fakeServer.sendInstances([createTeamInstanceOnLayer(layerId, feiInstanceId, 7, 'FEI Baja')]);
+
+      // Assert: same order as any replace, but both animations are skipped.
+      await expectCallSentences(
+        page,
+        [
+          'UFPR: load called',
+          'UFPR: load finished',
+          'UFPR: playAction called',
+          'UFPR: playAction finished',
+          'UFPR: stopAction called',
+          'UFPR: stopAction finished',
+          'UFPR: dispose called',
+          'UFPR: dispose finished',
+          'FEI: load called',
+          'FEI: load finished',
+          'FEI: playAction called',
+          'FEI: playAction finished',
+        ],
+        'the old graphic must still be finished before the new one is loaded',
+      );
+      expect(
+        await readParamsOfCalls(page, ufprInstanceId, 'stopAction'),
+        'on this layer the old graphic must stop without its out-animation',
+      ).toEqual([{ skipAnimation: true }]);
+      expect(
+        await readParamsOfCalls(page, feiInstanceId, 'playAction'),
+        'on this layer the new graphic must play without its in-animation',
+      ).toEqual([{ goto: 0, skipAnimation: true }]);
+    });
+  }
 });
 
 test.describe('several layers', () => {

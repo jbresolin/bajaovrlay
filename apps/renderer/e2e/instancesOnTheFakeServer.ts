@@ -58,5 +58,15 @@ export function createTeamInstance(
   teamNumber: number,
   teamName: string,
 ): Instance {
-  return createInstance(instanceId, 'lower-third', 'fake-graphic', { teamNumber, teamName });
+  return createTeamInstanceOnLayer('lower-third', instanceId, teamNumber, teamName);
+}
+
+/** A graphic naming one team on the layer the test chooses, e.g. a card on `fullscreen`. */
+export function createTeamInstanceOnLayer(
+  layerId: string,
+  instanceId: string,
+  teamNumber: number,
+  teamName: string,
+): Instance {
+  return createInstance(instanceId, layerId, 'fake-graphic', { teamNumber, teamName });
 }
