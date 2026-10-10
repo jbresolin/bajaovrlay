@@ -17,71 +17,25 @@
  *   - An instance that is gone is stopped and disposed.
  *   - Two layers changing at once get two separate lists, one per layer.
  *   - Instances on the `preview` output are ignored, coming or going.
- *   - After a reconnect, everything drawn is disposed at once and everything on air is
- *     loaded again with its in-animation skipped.
  *
  * What these tests deliberately do not cover:
+ *   - Rebuilding the whole stage after a reconnect; instanceReconciler.rebuild.test.ts.
  *   - Calling the graphics (load, playAction, ...); e2e/lifecycle.e2e.ts checks that in
  *     a real browser.
  *   - A change of `currentStep`; stepping through a graphic arrives with BAJAOVRLAY-12.
  */
-import type { Instance, Layer } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { decideLayerOperations, decideRebuildOperations } from './instanceReconciler.js';
-
-const enduroClockInstanceId = '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11';
-const finalClockInstanceId = 'b84f6c1e-0a3d-4c59-8e7b-5d2a9f31c602';
-const ufprLowerThirdInstanceId = '2c9e7f40-6b1a-4d83-9f25-e1a0c4b7d915';
-const feiLowerThirdInstanceId = '91d0a3b7-5e2c-47f6-a8c4-3b6e0f2d7a48';
-
-/** The two layers these tests use: the clock animates out then in, the lower third cuts. */
-const layersOfTheStream: Layer[] = [
-  { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
-  { id: 'lower-third', name: 'Legenda', zIndex: 40, replacePolicy: 'cut', persistent: false },
-];
-
-/** Builds the race clock of the enduro, on air on the clock layer under green flag. */
-function createEnduroClockInstance(changes: Partial<Instance> = {}): Instance {
-  return {
-    id: enduroClockInstanceId,
-    layerId: 'clock',
-    graphicId: 'race-clock',
-    target: 'program',
-    resolvedData: { sessionName: 'Enduro de Resistência', state: 'green', running: true },
-    currentStep: 0,
-    status: 'loading',
-    takenAt: '2026-10-09T13:00:00.000Z',
-    ...changes,
-  };
-}
-
-/** Builds the race clock of the final heat, a different take on the same clock layer. */
-function createFinalClockInstance(): Instance {
-  return createEnduroClockInstance({
-    id: finalClockInstanceId,
-    resolvedData: { sessionName: 'Final', state: 'pre', running: false },
-    takenAt: '2026-10-09T15:30:00.000Z',
-  });
-}
-
-/** Builds a lower third naming one team, on the lower-third layer. */
-function createTeamLowerThirdInstance(
-  instanceId: string,
-  teamNumber: number,
-  teamName: string,
-): Instance {
-  return {
-    id: instanceId,
-    layerId: 'lower-third',
-    graphicId: 'team-lower-third',
-    target: 'program',
-    resolvedData: { teamNumber, teamName },
-    currentStep: 0,
-    status: 'loading',
-    takenAt: '2026-10-09T13:05:00.000Z',
-  };
-}
+import { decideLayerOperations } from './instanceReconciler.js';
+import {
+  createEnduroClockInstance,
+  createFinalClockInstance,
+  createTeamLowerThirdInstance,
+  enduroClockInstanceId,
+  feiLowerThirdInstanceId,
+  layersOfTheStream,
+  ufprLowerThirdInstanceId,
+} from './instancesOnAir.testSupport.js';
 
 const sliceChangeScenarios = [
   // The everyday take: the operator puts the clock on an empty layer.
@@ -327,86 +281,5 @@ describe('decideLayerOperations', () => {
         ],
       },
     ]);
-  });
-});
-
-describe('decideRebuildOperations', () => {
-  it('disposes what was drawn and loads what is on air with the animation skipped', () => {
-    // Arrange: the enduro clock was drawn before the connection dropped; when it came
-    // back, the server says the final clock and a lower third are on air.
-    const instancesDrawnBeforeTheDrop = [createEnduroClockInstance()];
-    const instancesOnAirNow = [
-      createFinalClockInstance(),
-      createTeamLowerThirdInstance(ufprLowerThirdInstanceId, 42, 'Baja UFPR'),
-    ];
-
-    // Act: ask how to rebuild the stage.
-    const layerOperations = decideRebuildOperations({
-      previousInstances: instancesDrawnBeforeTheDrop,
-      nextInstances: instancesOnAirNow,
-    });
-
-    // Assert: the old clock goes at once, and both graphics appear without animating in.
-    expect(
-      layerOperations,
-      'a rebuild must dispose everything local, then load each on-air instance with skipAnimation',
-    ).toEqual([
-      {
-        layerId: 'clock',
-        operations: [
-          { kind: 'disposeAtOnce', instanceId: enduroClockInstanceId },
-          { kind: 'loadAndPlay', instance: createFinalClockInstance(), skipAnimation: true },
-        ],
-      },
-      {
-        layerId: 'lower-third',
-        operations: [
-          {
-            kind: 'loadAndPlay',
-            instance: createTeamLowerThirdInstance(ufprLowerThirdInstanceId, 42, 'Baja UFPR'),
-            skipAnimation: true,
-          },
-        ],
-      },
-    ]);
-  });
-
-  it('rebuilds the same instance too, because the page may have lost it', () => {
-    // Arrange: the same clock before and after; nothing changed on the server.
-    const instancesBeforeAndAfter = [createEnduroClockInstance()];
-
-    // Act: ask how to rebuild the stage.
-    const layerOperations = decideRebuildOperations({
-      previousInstances: instancesBeforeAndAfter,
-      nextInstances: instancesBeforeAndAfter,
-    });
-
-    // Assert: it is disposed and loaded again; a rebuild never assumes what is drawn.
-    expect(
-      layerOperations,
-      'a rebuild must reload an unchanged instance instead of trusting the page',
-    ).toEqual([
-      {
-        layerId: 'clock',
-        operations: [
-          { kind: 'disposeAtOnce', instanceId: enduroClockInstanceId },
-          { kind: 'loadAndPlay', instance: createEnduroClockInstance(), skipAnimation: true },
-        ],
-      },
-    ]);
-  });
-
-  it('leaves preview instances out of a rebuild', () => {
-    // Arrange: only a rehearsal clock exists, on the preview output.
-    const rehearsalOnly = [createEnduroClockInstance({ target: 'preview' })];
-
-    // Act: ask how to rebuild the stage.
-    const layerOperations = decideRebuildOperations({
-      previousInstances: [],
-      nextInstances: rehearsalOnly,
-    });
-
-    // Assert: nothing to do; /render/ draws the program output only.
-    expect(layerOperations, 'a preview instance must never be drawn on /render/').toEqual([]);
   });
 });

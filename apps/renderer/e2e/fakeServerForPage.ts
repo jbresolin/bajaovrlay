@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import type { Graphic, Instance, Layer, Slices } from '@bajaovrlay/shared';
-import type { Page, WebSocketRoute } from '@playwright/test';
+import { expect, type Page, type WebSocketRoute } from '@playwright/test';
 
 const fakeGraphicFolder = fileURLToPath(new URL('../test-fixtures/fake-graphic/', import.meta.url));
 
@@ -108,4 +108,16 @@ export async function startFakeServerForPage(
     dropConnection: () => latestConnection().close(),
     countConnections: () => connections.length,
   };
+}
+
+/**
+ * Opens the renderer and waits until it has heard the stand-in server's hello and built
+ * its layer containers, so the next thing a test sends finds the page ready.
+ */
+export async function openRendererAndWaitForItsLayers(page: Page): Promise<void> {
+  await page.goto('/render/');
+  await expect(
+    page.locator('[data-layer-id="clock"]'),
+    'the renderer must build the layer containers from the hello',
+  ).toBeAttached();
 }

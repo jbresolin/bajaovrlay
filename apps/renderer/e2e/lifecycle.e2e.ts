@@ -17,16 +17,14 @@
  *   - Two layers work at the same time; one never waits for the other.
  *   - Reconnect, and a page that opens with a graphic already on air (OBS refreshing the
  *     browser source): everything is rebuilt and played with `skipAnimation: true`.
- *   - A graphic that cannot be imported, whose load fails or whose load is refused leaves
- *     its layer empty, is logged, and breaks neither the other layers nor the next take.
  *
  * What these tests deliberately do not cover:
+ *   - Graphics that fail to load; brokenGraphic.e2e.ts covers those.
  *   - The real server and a real graphic; raceClockOnAir.e2e.ts covers those. Here the
  *     server is a stand-in inside the page (fakeServerForPage.ts) and the graphic is the
  *     fake one in test-fixtures/fake-graphic, which writes down every call it receives.
- *   - How long the reconnect waits; serverConnection.test.ts covers the waits.
+ *   - How long the reconnect waits; serverConnection.reconnect.test.ts covers the waits.
  */
-import type { Instance } from '@bajaovrlay/shared';
 import { expect, type Page, test } from '@playwright/test';
 
 import {
@@ -34,70 +32,17 @@ import {
   readFakeGraphicCallsAsSentences,
   readParamsOfCalls,
 } from './fakeGraphicCalls.js';
-import { startFakeServerForPage } from './fakeServerForPage.js';
-
-const enduroInstanceId = '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11';
-const finalInstanceId = 'b84f6c1e-0a3d-4c59-8e7b-5d2a9f31c602';
-const ufprInstanceId = '2c9e7f40-6b1a-4d83-9f25-e1a0c4b7d915';
-const feiInstanceId = '91d0a3b7-5e2c-47f6-a8c4-3b6e0f2d7a48';
-
-/** The names the call sentences use for each instance, e.g. "Enduro: load called". */
-const instanceNames = {
-  [enduroInstanceId]: 'Enduro',
-  [finalInstanceId]: 'Final',
-  [ufprInstanceId]: 'UFPR',
-  [feiInstanceId]: 'FEI',
-};
-
-/** Builds an instance as the server lists it: one graphic taken on one program layer. */
-function createInstance(
-  instanceId: string,
-  layerId: string,
-  graphicId: string,
-  resolvedData: Record<string, unknown>,
-): Instance {
-  return {
-    id: instanceId,
-    layerId,
-    graphicId,
-    target: 'program',
-    resolvedData,
-    currentStep: 0,
-    status: 'loading',
-    takenAt: '2026-10-09T13:00:00.000Z',
-  };
-}
-
-/** The enduro's clock on the clock layer, drawn by the fake graphic. */
-function createEnduroInstance(flagState: string): Instance {
-  return createInstance(enduroInstanceId, 'clock', 'fake-graphic', {
-    sessionName: 'Enduro de Resistência',
-    state: flagState,
-    lapsCompletedByLeader: 12,
-  });
-}
-
-/** The final's clock: a different take on the same clock layer. */
-function createFinalInstance(): Instance {
-  return createInstance(finalInstanceId, 'clock', 'fake-graphic', {
-    sessionName: 'Final',
-    state: 'pre',
-  });
-}
-
-/** A lower third naming one team, on the lower-third layer (which cuts). */
-function createTeamInstance(instanceId: string, teamNumber: number, teamName: string): Instance {
-  return createInstance(instanceId, 'lower-third', 'fake-graphic', { teamNumber, teamName });
-}
-
-/** Opens the renderer and waits until it has heard the hello and built its layers. */
-async function openRendererAndWaitForItsLayers(page: Page): Promise<void> {
-  await page.goto('/render/');
-  await expect(
-    page.locator('[data-layer-id="clock"]'),
-    'the renderer must build the layer containers from the hello',
-  ).toBeAttached();
-}
+import { openRendererAndWaitForItsLayers, startFakeServerForPage } from './fakeServerForPage.js';
+import {
+  createEnduroInstance,
+  createFinalInstance,
+  createTeamInstance,
+  enduroInstanceId,
+  feiInstanceId,
+  finalInstanceId,
+  instanceNames,
+  ufprInstanceId,
+} from './instancesOnTheFakeServer.js';
 
 /** Waits until the fake graphics have written exactly these sentences, in this order. */
 async function expectCallSentences(
@@ -377,80 +322,4 @@ test.describe('rebuilding the stage', () => {
       'exactly one clock element must be left after the rebuild',
     ).toHaveCount(1);
   });
-});
-
-const brokenGraphicScenarios = [
-  // The package is listed by the server but its files are gone: the import answers 404.
-  {
-    name: 'whose module cannot be imported',
-    brokenInstance: createInstance(ufprInstanceId, 'lower-third', 'sponsor-roll', {
-      sponsorName: 'Oficina do Zé',
-    }),
-  },
-  // The module loads, but its load() throws (a bug in the graphic).
-  {
-    name: 'whose load rejects',
-    brokenInstance: createInstance(ufprInstanceId, 'lower-third', 'fake-graphic', {
-      teamNumber: 42,
-      fakeGraphicLoadOutcome: 'rejects',
-    }),
-  },
-  // The module loads, but load() answers 400: the graphic does not accept this data.
-  {
-    name: 'whose load is refused with a 400',
-    brokenInstance: createInstance(ufprInstanceId, 'lower-third', 'fake-graphic', {
-      teamNumber: 42,
-      fakeGraphicLoadOutcome: 'refuses',
-    }),
-  },
-];
-
-test.describe('a graphic that cannot go on air', () => {
-  for (const { name, brokenInstance } of brokenGraphicScenarios) {
-    test(`a graphic ${name} leaves its layer empty and the others working`, async ({ page }) => {
-      // Arrange: a renderer with nothing on air, and every console line kept.
-      const consoleLines: string[] = [];
-      page.on('console', (message) => consoleLines.push(message.text()));
-      const fakeServer = await startFakeServerForPage(page, { instancesOnAir: [] });
-      await openRendererAndWaitForItsLayers(page);
-
-      // Act: the broken graphic and the enduro clock are taken together; once the
-      // failure is logged, team 7's lower third is taken on the layer the broken one
-      // was meant for.
-      fakeServer.sendInstances([brokenInstance, createEnduroInstance('green')]);
-      await expect
-        .poll(
-          () =>
-            consoleLines.some(
-              (line) =>
-                line.includes('"message":"graphic could not go on air; its layer stays empty"') &&
-                line.includes(ufprInstanceId),
-            ),
-          { message: 'the failure must be logged with the instance id' },
-        )
-        .toBe(true);
-      const elementsLeftByTheBrokenGraphic = await page
-        .locator('[data-layer-id="lower-third"] > *')
-        .count();
-      fakeServer.sendInstances([
-        createTeamInstance(feiInstanceId, 7, 'FEI Baja'),
-        createEnduroInstance('green'),
-      ]);
-
-      // Assert: the broken graphic left nothing behind, the clock on the other layer
-      // played, and the next take on the same layer played too.
-      expect(elementsLeftByTheBrokenGraphic, 'a broken graphic must leave its layer empty').toBe(0);
-      await expect
-        .poll(() => readFakeGraphicCallsAsSentences(page, instanceNames), {
-          message: 'the clock and the next lower third must both be played',
-        })
-        .toEqual(
-          expect.arrayContaining(['Enduro: playAction finished', 'FEI: playAction finished']),
-        );
-      await expect(
-        page.locator('[data-layer-id="lower-third"] > baja-graphic-fake-graphic'),
-        'the next take must be the only element on the layer',
-      ).toHaveCount(1);
-    });
-  }
 });
