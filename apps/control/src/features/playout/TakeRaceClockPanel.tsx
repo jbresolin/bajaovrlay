@@ -15,6 +15,7 @@ import {
   type RaceClockTakeFormValues,
 } from './raceClockTakeForm';
 import { resolveRaceClockTakeForm } from './raceClockTakeFormResolver';
+import { buildUpdateRaceClockCommand } from './raceClockUpdateCommand';
 
 /** What the panel can be given; the page gives it nothing and gets the real clock. */
 export type TakeRaceClockPanelProps = {
@@ -24,10 +25,12 @@ export type TakeRaceClockPanelProps = {
 
 /**
  * The race clock's form and its two actions. "Colocar no ar" sends `takeGraphic` for
- * the clock layer. "Atualizar", shown while the race clock is on air, sends the very
- * same command with the form as it is now: the server replaces the instance on the
- * layer (there is no update command yet), so the graphic animates in again and the
- * clock restarts from the typed reference time at the moment of the press.
+ * the clock layer with the typed reference time. "Atualizar", shown while the race
+ * clock is on air, sends a `takeGraphic` too (there is no update command yet), but with
+ * the time the clock on air shows at the press instead of the typed one, so changing the
+ * flag mid-race never resets the clock. The server replaces the instance on the layer,
+ * so the graphic still animates out and in; that blink stays until `updateItemFields`
+ * lands in M1.
  *
  * Hand-written for M0; BAJAOVRLAY-14 replaces it with a form generated from the manifest.
  */
@@ -40,23 +43,36 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
     resolver: resolveRaceClockTakeForm,
   });
 
-  const isRaceClockOnAir = instances.some(
+  const raceClockInstanceOnAir = instances.find(
     (instance) =>
       instance.layerId === clockLayerId &&
       instance.target === 'program' &&
       instance.graphicId === raceClockGraphicId,
   );
+  const isRaceClockOnAir = raceClockInstanceOnAir !== undefined;
   // While a take waits for the server's answer both buttons are off, so an impatient
   // second click cannot send the clock to air twice.
   const isWaitingForTheServer = form.formState.isSubmitting;
 
-  // Runs only when every field passed its rule; otherwise react-hook-form puts the
-  // messages under the fields and this is never called.
+  // Both functions run only when every field passed its rule; otherwise react-hook-form
+  // puts the messages under the fields and neither is called.
   async function sendFormAsTakeCommand(formValues: RaceClockTakeFormValues): Promise<void> {
     const takeCommand = buildTakeRaceClockCommand(formValues, readCurrentTimeInMilliseconds());
     await sendCommand(takeCommand);
   }
-  const checkFormThenSend = form.handleSubmit(sendFormAsTakeCommand);
+  async function sendFormAsUpdateCommand(formValues: RaceClockTakeFormValues): Promise<void> {
+    // The clock can leave the air between the drawing of the button and the press (another
+    // operator's "Limpar"). Then there is no time to keep, and undefined makes the update
+    // fall back to the typed time.
+    const updateCommand = buildUpdateRaceClockCommand(
+      formValues,
+      raceClockInstanceOnAir?.resolvedData,
+      readCurrentTimeInMilliseconds(),
+    );
+    await sendCommand(updateCommand);
+  }
+  const checkFormThenTake = form.handleSubmit(sendFormAsTakeCommand);
+  const checkFormThenUpdate = form.handleSubmit(sendFormAsUpdateCommand);
 
   return (
     <Card>
@@ -72,7 +88,7 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
           <RaceClockFormFields form={form} />
         </CardContent>
         <CardFooter className="flex flex-wrap items-center gap-3">
-          <ActionButton type="button" disabled={isWaitingForTheServer} onClick={checkFormThenSend}>
+          <ActionButton type="button" disabled={isWaitingForTheServer} onClick={checkFormThenTake}>
             {ptBR.playout.takeButton}
           </ActionButton>
           {isRaceClockOnAir && (
@@ -80,7 +96,7 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
               type="button"
               variant="secondary"
               disabled={isWaitingForTheServer}
-              onClick={checkFormThenSend}
+              onClick={checkFormThenUpdate}
             >
               {ptBR.playout.updateButton}
             </ActionButton>
