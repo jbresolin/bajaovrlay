@@ -12,5 +12,4 @@ Putting graphics on air and taking them off. Start reading at `TakeRaceClockPane
 - `ClearAllButton.tsx` (red panic button and Esc, two presses within 3 s),
   `useBackspaceToClearClockLayer.ts`, `CommandErrorMessage.tsx` (why a command failed).
 
-The form is hand-written for M0 and mirrors the race clock's manifest by hand;
-BAJAOVRLAY-14 replaces it with forms generated from each graphic's schema.
+Hand-written for M0 from the manifest; BAJAOVRLAY-14 generates forms from each schema.
