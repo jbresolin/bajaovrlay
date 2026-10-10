@@ -10,3 +10,7 @@ overnight-prompt.md
 docs/README.md
 docs/00-concept.md
 docs/briefs/
+
+# The OGraf JSON Schemas, vendored byte for byte from ograf.ebu.io; reformatting them
+# would make them differ from the published files.
+packages/graphics/*/ograf-schema/

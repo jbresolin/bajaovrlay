@@ -1,0 +1,94 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-race-clock",
+  "version": "0.1.0",
+  "name": "Relógio de prova",
+  "description": "Nome da sessão, tempo de prova correndo, voltas do líder e a faixa da bandeira.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "race-clock.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "actionDurations": [
+    { "type": "playAction", "duration": 600 },
+    { "type": "stopAction", "duration": 400 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "sessionName": {
+        "type": "string",
+        "title": "Nome da sessão",
+        "gddType": "single-line",
+        "default": "Enduro de Resistência"
+      },
+      "state": {
+        "type": "string",
+        "title": "Bandeira",
+        "enum": ["pre", "green", "yellow", "red", "checkered", "finished"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "pre": "Pré-largada",
+            "green": "Verde",
+            "yellow": "Amarela",
+            "red": "Vermelha",
+            "checkered": "Quadriculada",
+            "finished": "Encerrada"
+          }
+        },
+        "default": "pre"
+      },
+      "clockMode": {
+        "type": "string",
+        "title": "Modo do relógio",
+        "enum": ["elapsed", "remaining"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "elapsed": "Tempo decorrido",
+            "remaining": "Tempo restante"
+          }
+        },
+        "default": "elapsed"
+      },
+      "referenceTimeMs": {
+        "type": "integer",
+        "title": "Tempo de referência (ms)",
+        "description": "Tempo decorrido ou restante, em milissegundos, no instante referenceWallClockMs.",
+        "minimum": 0,
+        "default": 0
+      },
+      "referenceWallClockMs": {
+        "type": "integer",
+        "title": "Horário da referência (ms desde 1970)",
+        "description": "Horário (Date.now()) em que referenceTimeMs era verdadeiro; o gráfico calcula o tempo a cada quadro a partir dele.",
+        "minimum": 0,
+        "default": 0
+      },
+      "running": {
+        "type": "boolean",
+        "title": "Relógio correndo",
+        "description": "Quando falso, o relógio fica parado em referenceTimeMs.",
+        "default": false
+      },
+      "lapsCompletedByLeader": {
+        "type": "integer",
+        "title": "Voltas completadas pelo líder",
+        "description": "Opcional; quando ausente, a contagem de voltas não aparece.",
+        "minimum": 0
+      }
+    },
+    "required": [
+      "sessionName",
+      "state",
+      "clockMode",
+      "referenceTimeMs",
+      "referenceWallClockMs",
+      "running"
+    ],
+    "additionalProperties": false
+  }
+}
