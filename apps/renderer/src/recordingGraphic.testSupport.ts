@@ -21,7 +21,9 @@ export type RecordingGraphicLoader = {
 };
 
 // A custom element tag can be registered only once per page, and every loader below
-// registers its own element class, so each one needs a tag of its own.
+// registers its own element class, so each one needs a tag of its own. This counter is
+// the one deliberate exception to "no shared mutable state" in the tests: it only keeps
+// the tag names apart, and no test reads it or asserts on a tag.
 let numberOfLoadersBuilt = 0;
 
 /**

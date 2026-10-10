@@ -31,10 +31,13 @@
  *     stage built by stageWithPlayer.testSupport.ts.
  *   - What each call logs and what counts as "accepted"; lifecycleCall.test.ts.
  *   - Which operations a change of the slice produces; instanceReconciler.test.ts.
+ *   - Two of the five operation kinds: `updateData` (updateAction on the graphic already
+ *     on air) and `disposeAtOnce` (the clear before the stage is rebuilt after a
+ *     reconnect). e2e/lifecycle.e2e.ts covers both in Chromium, in its "update" and
+ *     "reconnect" tests.
  *   - A graphic whose promise never settles: nothing times out (docs/decisions.md), so
  *     its layer stays blocked until the page is reloaded.
  */
-import type { Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import type { InstanceOperation } from './instanceReconciler.js';
@@ -49,12 +52,15 @@ import {
 } from './instancesOnAir.testSupport.js';
 import {
   createEnduroClockThatLoadsSlowly,
-  createGraphic,
+  createFinalScoreboardInstance,
+  createStageWhoseFinalScoreboardCannotBeCreated,
   createStageWithPlayer,
   createTakeOf,
   createUfprLowerThirdWhoseLoad,
   graphicsOfTheStream,
+  graphicsWithTheFinalScoreboard,
   readInstanceIdsOnLayer,
+  tagNoPageAccepts,
   waitForQueuedOperations,
 } from './stageWithPlayer.testSupport.js';
 
@@ -189,34 +195,21 @@ describe('replacing the graphic on a layer', () => {
 
 describe("a layer's queue of operations", () => {
   it('carries on with the next operation of a layer after one that throws', async () => {
-    // Arrange: a loader that answers a tag no page accepts for the `placar final` graphic
-    // (a package folder with a space in its name), so creating its element throws inside
-    // the player. Every other graphic is drawn by the recording stand-in.
-    const { stage, instancePlayer, recording, logLines } = createStageWithPlayer(
-      (recordingLoader) => ({
-        defineGraphicElement: async (graphic) => {
-          if (graphic.id === 'placar final') {
-            return 'baja-graphic-placar final';
-          }
-          return recordingLoader.defineGraphicElement(graphic);
-        },
-      }),
-    );
-    const scoreboardInstance: Instance = {
-      ...createTeamLowerThirdInstance(feiLowerThirdInstanceId, 7, 'FEI Baja'),
-      graphicId: 'placar final',
-    };
-    const graphicsWithTheScoreboard = [
-      ...graphicsOfTheStream,
-      createGraphic('placar final', 'Placar final'),
-    ];
+    // Arrange: a stage on which the element of the final scoreboard cannot be created,
+    // because its tag has a space in it and no page accepts such a tag. Creating it
+    // throws inside the player. Every other graphic is the usual recording stand-in.
+    const { stage, instancePlayer, recording, logLines } =
+      createStageWhoseFinalScoreboardCannotBeCreated();
 
-    // Act: the scoreboard is taken on the lower-third layer and, right behind it on the
-    // same layer, team 42's lower third.
-    instancePlayer.runLayerOperations(createTakeOf(scoreboardInstance), graphicsWithTheScoreboard);
+    // Act: the final scoreboard is taken on the lower-third layer and, right behind it on
+    // the same layer, team 42's lower third.
+    instancePlayer.runLayerOperations(
+      createTakeOf(createFinalScoreboardInstance()),
+      graphicsWithTheFinalScoreboard,
+    );
     instancePlayer.runLayerOperations(
       createTakeOf(createTeamLowerThirdInstance(ufprLowerThirdInstanceId, 42, 'Baja UFPR')),
-      graphicsWithTheScoreboard,
+      graphicsWithTheFinalScoreboard,
     );
     await waitForQueuedOperations();
 
@@ -230,7 +223,7 @@ describe("a layer's queue of operations", () => {
       details: {
         layerId: 'lower-third',
         operation: 'loadAndPlay',
-        reason: expect.stringContaining('baja-graphic-placar final'),
+        reason: expect.stringContaining(tagNoPageAccepts),
       },
     });
     expect(
