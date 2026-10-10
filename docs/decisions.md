@@ -77,3 +77,18 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-10-09 — page 00 §19 — updateAction is accepted at any time after load, including off air.
 - 2026-10-09 — page 00 §19 — A countdown rounds partial seconds up; an elapsed clock rounds down.
 - 2026-10-09 — page 00 §19 — A built package with no known default layer goes on the fullscreen layer for now; in M1 each manifest declares its default layer in a `v_baja` vendor field, with fullscreen and a logged warning as the fallback.
+- 2026-10-09 — PR #TBD — A data field that disappears from an instance's resolvedData is sent to updateAction with the value undefined, instead of being left out of the changed keys.
+- 2026-10-09 — PR #TBD — Every hello is the full truth, including one that arrives after the HTTP fallback already delivered the state; the stage is then rebuilt a second time.
+- 2026-10-09 — PR #TBD — The reconnect wait goes back to 0.5 s only after a full snapshot (hello or HTTP fallback) arrives, not when the socket merely opens.
+- 2026-10-09 — PR #TBD — When the hello is late and GET /api/v1/state also fails, the renderer closes the socket and reconnects; what is on the stage stays untouched.
+- 2026-10-09 — PR #TBD — A graphic whose load answers a non-2xx status is treated like one whose load rejects: logged, its element removed and its layer left empty.
+- 2026-10-09 — PR #TBD — A stop that is refused or fails is logged and the graphic is disposed anyway, because the server says it is off air.
+- 2026-10-09 — PR #TBD — The `cut` replace policy stops and disposes the old graphic before loading the new one (both without animation), so the layer is empty while the new one loads; `crossfade` is treated as `cut` in M0.
+- 2026-10-09 — PR #TBD — A change of the layers slice keeps the container of every layer that stays, so a graphic on air survives it.
+- 2026-10-09 — PR #TBD — A failed graphic module import is not cached; the next take of that graphic imports it again.
+- 2026-10-09 — PR #TBD — The renderer awaits a graphic's promises with no timeout, so a graphic that never settles blocks its own layer until the page is reloaded.
+- 2026-10-09 — PR #TBD — The renderer's Vite dev server forwards /ws, /api and /graphics to the server, reading PORT and HOST as the control page does.
+- 2026-10-09 — PR #TBD — The renderer's Playwright run starts the real server from source on port 5185 with its own SQLite file (apps/renderer/.e2e-data/, gitignored) and its Vite dev server on port 5184, so `pnpm dev` and its data are never touched.
+- 2026-10-09 — PR #TBD — The race-clock package is a devDependency of the renderer, so pnpm runs race-clock's build and browser tests before the renderer's and the two never rebuild race-clock/dist at the same time.
+- 2026-10-09 — PR #TBD — The on-air smoke test compares a screenshot of the clock panel (1% tolerance) and checks its position on the stage, instead of a full-stage screenshot that would be mostly empty.
+- 2026-10-09 — PR #TBD — The lifecycle browser tests use a stand-in server inside the page (Playwright routeWebSocket); only raceClockOnAir.e2e.ts uses the real server.
