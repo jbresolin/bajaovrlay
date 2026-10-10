@@ -6,20 +6,22 @@
  *   flag, clock mode, whether the clock is running, the time it should show (typed as
  *   mm:ss) and, optionally, the leader's laps. raceClockTakeForm holds everything about
  *   that form that is not drawing: its starting values, the rule for each field with its
- *   pt-BR message, the mm:ss conversion, and the `takeGraphic` command built from it.
+ *   pt-BR message, and the `takeGraphic` command built from it.
  *
  * What these tests prove:
  *   - A correctly filled form becomes exactly the `takeGraphic` command the server and
  *     the race clock expect, on the `clock` layer, with the time in milliseconds and the
  *     moment of the take as the clock's reference.
  *   - Leaving the laps blank leaves the field out of the command, so the graphic hides it.
- *   - mm:ss text converts to milliseconds; text in any other shape is refused.
  *   - Each required field, when missing, gets the pt-BR message for that field; a wrong
  *     time or laps value gets its own message.
  *   - The form's starting values are valid and match the defaults in the manifest.
  *
  * What these tests deliberately do not cover:
  *   - Drawing the form and showing the messages; TakeRaceClockPanel.test.tsx does.
+ *   - Every mm:ss case (0:00, 59:59, 240:00, 1:00:00 refused...); minutesAndSeconds.test.ts
+ *     lists them one by one.
+ *   - The command "Atualizar" sends; raceClockUpdateCommand.test.ts does.
  *   - That these rules still match packages/graphics/race-clock/race-clock.ograf.json:
  *     they are a hand-written mirror, replaced by a generated form in BAJAOVRLAY-14.
  */
@@ -27,7 +29,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildTakeRaceClockCommand,
-  convertMinutesAndSecondsToMilliseconds,
   defaultRaceClockTakeFormValues,
   findRaceClockTakeFormErrors,
   type RaceClockTakeFormValues,
@@ -95,60 +96,6 @@ describe('buildTakeRaceClockCommand', () => {
 
     // Assert: the name goes on air without the stray spaces.
     expect(command.data.sessionName, 'the session name must be trimmed').toBe('Enduro');
-  });
-});
-
-describe('convertMinutesAndSecondsToMilliseconds', () => {
-  const timesTheFormAccepts = [
-    // The start of a session: the clock at zero.
-    { name: 'reads 0:00 as zero', text: '0:00', milliseconds: 0 },
-    // Minutes and seconds both count: 65 seconds.
-    { name: 'reads 1:05 as 65 seconds', text: '1:05', milliseconds: 65_000 },
-    // A leading zero on the minutes is how many people type it.
-    { name: 'reads 05:07 the same as 5:07', text: '05:07', milliseconds: 307_000 },
-    // The last second before one hour.
-    { name: 'reads 59:59 as one second short of an hour', text: '59:59', milliseconds: 3_599_000 },
-    // The endurance race lasts four hours, so minutes may go past 59.
-    { name: 'reads 240:00 as four hours', text: '240:00', milliseconds: 14_400_000 },
-    // Spaces around the text come from copy and paste and mean nothing.
-    { name: 'ignores spaces around the text', text: ' 12:34 ', milliseconds: 754_000 },
-  ];
-
-  it.each(timesTheFormAccepts)('$name', ({ text, milliseconds }) => {
-    // Arrange: the text as typed in the "tempo de referência" field (see the scenario).
-
-    // Act: convert it.
-    const convertedTime = convertMinutesAndSecondsToMilliseconds(text);
-
-    // Assert: the result is the same time in milliseconds.
-    expect(convertedTime, `"${text}" must be ${milliseconds} milliseconds`).toBe(milliseconds);
-  });
-
-  const textsTheFormRefuses = [
-    // Hours are not part of mm:ss; one hour is typed as 60:00.
-    { name: 'refuses 1:00:00, which has an hours part', text: '1:00:00' },
-    // There is no 60th second; it is the next minute.
-    { name: 'refuses 1:60, because seconds stop at 59', text: '1:60' },
-    // Seconds always take two digits, so 1:5 is ambiguous (five or fifty?).
-    { name: 'refuses 1:5, because seconds need two digits', text: '1:5' },
-    // A bare number does not say whether it means minutes or seconds.
-    { name: 'refuses 90, which has no colon', text: '90' },
-    // Words are not a time.
-    { name: 'refuses "doze e trinta"', text: 'doze e trinta' },
-    // A clock never shows negative time.
-    { name: 'refuses -1:00', text: '-1:00' },
-    // Nothing typed at all.
-    { name: 'refuses an empty text', text: '' },
-  ];
-
-  it.each(textsTheFormRefuses)('$name', ({ text }) => {
-    // Arrange: the text as typed in the "tempo de referência" field (see the scenario).
-
-    // Act: try to convert it.
-    const convertedTime = convertMinutesAndSecondsToMilliseconds(text);
-
-    // Assert: there is no result, which is how the form knows to show a message.
-    expect(convertedTime, `"${text}" is not a valid mm:ss time`).toBeUndefined();
   });
 });
 

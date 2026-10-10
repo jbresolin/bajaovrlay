@@ -20,7 +20,7 @@
  *
  * What these tests deliberately do not cover:
  *   - Finding the race clock among the instances and pressing the button;
- *     TakeRaceClockPanel.test.tsx does.
+ *     TakeRaceClockPanelUpdate.test.tsx does.
  *   - The rules for each form field; raceClockTakeForm.test.ts lists them.
  *   - The graphic's own arithmetic (packages/graphics/race-clock); this file repeats
  *     the same sum on purpose and nothing checks that the two stay in step.

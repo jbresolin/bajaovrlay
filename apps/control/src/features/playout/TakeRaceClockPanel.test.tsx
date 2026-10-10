@@ -11,11 +11,7 @@
  *   - The form opens with the manifest's defaults, and "Atualizar" exists only while
  *     the race clock is on air.
  *   - "Colocar no ar" sends one `takeGraphic` command built from what was typed and
- *     chosen, with the moment of the press as the clock's reference. It does so even
- *     while the clock is on air: it is the way to set the clock to a typed time.
- *   - "Atualizar" sends the same kind of command with the changed flag, but the time is
- *     the one the clock on air shows at the press, not the one typed in the form: a
- *     running clock continues, a stopped clock stays, a countdown keeps counting down.
+ *     chosen, with the moment of the press as the clock's reference.
  *   - A missing or badly typed field shows its pt-BR message under the field and
  *     nothing is sent.
  *   - When the server refuses the take, its pt-BR message is shown in the panel, and it
@@ -23,9 +19,11 @@
  *   - While the page is not connected both buttons are disabled and say why.
  *
  * What these tests deliberately do not cover:
- *   - Every rule and every mm:ss case: raceClockTakeForm.test.ts lists them one by one.
- *   - The rarer "Atualizar" cases (a countdown past zero, restarting a stopped clock,
- *     on-air data that cannot be read); raceClockUpdateCommand.test.ts covers those.
+ *   - Every rule and every mm:ss case: raceClockTakeForm.test.ts and
+ *     minutesAndSeconds.test.ts list them one by one.
+ *   - What "Atualizar" sends (the new flag with the time the clock on air shows, never
+ *     a reset clock): TakeRaceClockPanelUpdate.test.tsx, and raceClockUpdateCommand.test.ts
+ *     for the rarer cases.
  *   - The real server and the real graphic; e2e/takeAndClear.e2e.ts uses the real server.
  *   - Filling the form back in from what is on air after a page reload: M0 does not do it.
  */
@@ -37,7 +35,6 @@ import {
   renderOnControlPageConnectedToFakeServer,
 } from '@/state/controlPageOnFakeServer.testSupport';
 import {
-  buildRaceClockInstanceOnTheClockLayer,
   buildSlicesWithNothingOnAir,
   buildSlicesWithTheRaceClockOnAir,
 } from '@/state/slicesLikeTheServerSends.testSupport';
@@ -62,39 +59,6 @@ function renderPanelWithTheRaceClockOnAir() {
     <TakeRaceClockPanel readCurrentTimeInMilliseconds={() => momentOfThePressInMilliseconds} />,
     buildSlicesWithTheRaceClockOnAir('2026-10-10T12:45:00.000Z'),
   );
-}
-
-/** The three things about the clock on air that decide which time it shows now. */
-type ClockOnAir = {
-  clockMode: 'elapsed' | 'remaining';
-  referenceTimeMs: number;
-  running: boolean;
-};
-
-/**
- * Draws the panel on a connected page whose race clock went on air at 9:45 in Brasília,
- * 15 minutes before the moment the panel is told is "now", in the given mode and state.
- */
-function renderPanelWithThisClockOnAir(clockOnAir: ClockOnAir) {
-  const momentTheClockWentOnAir = '2026-10-10T12:45:00.000Z';
-  const raceClockInstance = buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir);
-  const raceClockInstanceAsTheScenarioSays = {
-    ...raceClockInstance,
-    resolvedData: { ...raceClockInstance.resolvedData, ...clockOnAir },
-  };
-  return renderOnControlPageConnectedToFakeServer(
-    <TakeRaceClockPanel readCurrentTimeInMilliseconds={() => momentOfThePressInMilliseconds} />,
-    { ...buildSlicesWithNothingOnAir(), instances: [raceClockInstanceAsTheScenarioSays] },
-  );
-}
-
-/** Leaves the "Relógio correndo" switch on or off, pressing it only if it must change. */
-function setRunningSwitch(shouldBeOn: boolean) {
-  const runningSwitch = screen.getByRole('switch', { name: 'Relógio correndo' });
-  const isOnNow = runningSwitch.getAttribute('aria-checked') === 'true';
-  if (isOnNow !== shouldBeOn) {
-    fireEvent.click(runningSwitch);
-  }
 }
 
 /**
@@ -209,114 +173,6 @@ describe('the take race clock panel', () => {
             referenceWallClockMs: momentOfThePressInMilliseconds,
             running: true,
             lapsCompletedByLeader: 7,
-          },
-        },
-      ]);
-    });
-    // (Then the server answers, so no command is left waiting for its 5-second timeout
-    // once the test is over.)
-    fakeServer.acceptLastCommand();
-  });
-
-  const scenariosWhereAtualizarChangesTheFlagMidRace = [
-    // The trap: 15 minutes after a take at 12:34 the clock shows 27:34. A yellow flag
-    // must go on air with that time, not with the 0:00 still sitting in the form.
-    {
-      name: 'a running clock continues from the time it shows',
-      clockOnAir: { clockMode: 'elapsed', referenceTimeMs: 754_000, running: true },
-      clockModeLabelInTheForm: 'Tempo decorrido',
-      expectedReferenceTimeMs: 1_654_000,
-    },
-    // A clock stopped at 12:34 (a red flag) has not moved, and must not move now.
-    {
-      name: 'a stopped clock stays at the time it stopped',
-      clockOnAir: { clockMode: 'elapsed', referenceTimeMs: 754_000, running: false },
-      clockModeLabelInTheForm: 'Tempo decorrido',
-      expectedReferenceTimeMs: 754_000,
-    },
-    // A four-hour countdown runs backwards: 15 minutes later it shows 3 h 45 min.
-    {
-      name: 'a running countdown continues downwards',
-      clockOnAir: { clockMode: 'remaining', referenceTimeMs: 14_400_000, running: true },
-      clockModeLabelInTheForm: 'Tempo restante',
-      expectedReferenceTimeMs: 13_500_000,
-    },
-  ] as const;
-
-  it.each(scenariosWhereAtualizarChangesTheFlagMidRace)(
-    '"Atualizar" changes the flag without resetting the clock: $name',
-    async ({ clockOnAir, clockModeLabelInTheForm, expectedReferenceTimeMs }) => {
-      // Arrange: the clock on air since 9:45 as the scenario says. The form agrees with
-      // it on the mode and on running; the operator changes only the flag, to yellow,
-      // and never touches the time field, which still reads 0:00.
-      const { fakeServer } = renderPanelWithThisClockOnAir(clockOnAir);
-      chooseOptionInDropdown('Modo do relógio', clockModeLabelInTheForm);
-      setRunningSwitch(clockOnAir.running);
-      chooseOptionInDropdown('Bandeira', 'Amarela');
-
-      // Act: press "Atualizar" at 10:00, 15 minutes after the clock went on air.
-      fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
-
-      // Assert: one takeGraphic for the same layer (the server replaces the instance on
-      // it; there is no separate "update" command yet) with the yellow flag, the time
-      // the clock shows at the press, and the press as the new reference moment.
-      await waitFor(() => {
-        expect(
-          fakeServer.listCommandsReceived(),
-          '"Atualizar" must send the new flag and keep the time the clock shows on air',
-        ).toEqual([
-          {
-            type: 'takeGraphic',
-            graphicId: 'race-clock',
-            layerId: 'clock',
-            data: {
-              sessionName: 'Enduro de Resistência',
-              state: 'yellow',
-              clockMode: clockOnAir.clockMode,
-              referenceTimeMs: expectedReferenceTimeMs,
-              referenceWallClockMs: momentOfThePressInMilliseconds,
-              running: clockOnAir.running,
-            },
-          },
-        ]);
-      });
-      // (Then the server answers, so no command is left waiting for its 5-second timeout
-      // once the test is over.)
-      fakeServer.acceptLastCommand();
-    },
-  );
-
-  it('"Colocar no ar" still sends the typed time while the clock is on air', async () => {
-    // Arrange: a running clock on air showing 27:34, and 20:00 typed in the form because
-    // the operator wants to correct the clock.
-    const { fakeServer } = renderPanelWithThisClockOnAir({
-      clockMode: 'elapsed',
-      referenceTimeMs: 754_000,
-      running: true,
-    });
-    setRunningSwitch(true);
-    typeIntoField('Tempo de referência (mm:ss)', '20:00');
-
-    // Act: press "Colocar no ar", not "Atualizar".
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
-
-    // Assert: the take carries the typed 20:00; only "Atualizar" keeps the on-air time.
-    await waitFor(() => {
-      expect(
-        fakeServer.listCommandsReceived(),
-        '"Colocar no ar" must set the clock to the typed time',
-      ).toEqual([
-        {
-          type: 'takeGraphic',
-          graphicId: 'race-clock',
-          layerId: 'clock',
-          data: {
-            sessionName: 'Enduro de Resistência',
-            state: 'pre',
-            clockMode: 'elapsed',
-            referenceTimeMs: 1_200_000,
-            referenceWallClockMs: momentOfThePressInMilliseconds,
-            running: true,
           },
         },
       ]);

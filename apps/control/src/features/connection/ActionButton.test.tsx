@@ -18,6 +18,7 @@
  *   - The commands the buttons send; each button's own test file covers its command.
  */
 import { fireEvent, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -28,6 +29,20 @@ import {
 import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.testSupport';
 
 import { ActionButton } from './ActionButton';
+
+/** Draws the button on a page that has dialled the server and not heard from it yet. */
+function renderOnPageStillConnecting(actionButton: ReactElement): void {
+  renderOnControlPageStillWaitingForTheServer(actionButton);
+}
+
+/** Draws the button on a page that was connected and then lost the line. */
+function renderOnPageThatLostItsConnection(actionButton: ReactElement): void {
+  const { fakeServer } = renderOnControlPageConnectedToFakeServer(
+    actionButton,
+    buildSlicesWithNothingOnAir(),
+  );
+  fakeServer.dropConnection();
+}
 
 describe('an action button', () => {
   it('can be pressed while the page is connected', () => {
@@ -48,26 +63,23 @@ describe('an action button', () => {
 
   const disconnectedScenarios = [
     // The page has just opened and the server has not answered yet.
-    { name: 'while the page is still connecting', hasTheServerSaidHello: false },
+    {
+      name: 'while the page is still connecting',
+      renderOnDisconnectedPage: renderOnPageStillConnecting,
+    },
     // The page was working and the line dropped.
-    { name: 'while the page is reconnecting', hasTheServerSaidHello: true },
+    {
+      name: 'while the page is reconnecting',
+      renderOnDisconnectedPage: renderOnPageThatLostItsConnection,
+    },
   ];
 
   it.each(disconnectedScenarios)(
     'is disabled and explains why $name',
-    async ({ hasTheServerSaidHello }) => {
+    async ({ renderOnDisconnectedPage }) => {
       // Arrange: a button that notes each press, on a page in the scenario's state.
       const notePress = vi.fn();
-      const actionButton = <ActionButton onClick={notePress}>Colocar no ar</ActionButton>;
-      if (hasTheServerSaidHello) {
-        const { fakeServer } = renderOnControlPageConnectedToFakeServer(
-          actionButton,
-          buildSlicesWithNothingOnAir(),
-        );
-        fakeServer.dropConnection();
-      } else {
-        renderOnControlPageStillWaitingForTheServer(actionButton);
-      }
+      renderOnDisconnectedPage(<ActionButton onClick={notePress}>Colocar no ar</ActionButton>);
 
       // Act: the operator tries to press the button, then rests on it to see why it
       // did nothing (in that order: a click on a tooltip's owner closes the tooltip).
