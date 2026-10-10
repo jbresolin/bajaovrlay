@@ -3,8 +3,11 @@
 BajaOvrLay is a stream-graphics system for Baja SAE Brasil live streams: an operator
 control page (apps/control), a Node server that owns all state (apps/server), a
 renderer page loaded by OBS (apps/renderer), and OGraf graphics (packages/graphics).
-The design authority is the Plane page "00 — Concept & Architecture" (BAJAOVRLAY
-project, `personal` workspace); the parts an agent needs are restated here.
+The design authority is docs/00-concept.md, a copy of the Plane page "00 — Concept &
+Architecture" (BAJAOVRLAY project, `personal` workspace), which stays the editable
+original. The parts an agent needs are restated here: stack (§10), architecture
+(§3, §6), state model and commands (§4), layout (§11), readability law (§12) and
+testing policy (§13). The decision records §18 and §19 win over everything before them.
 
 The person reviewing this code is not its author, reviews mostly by reading the tests,
 and will not have an IDE open. Every rule below follows from that.
@@ -107,6 +110,8 @@ green. CI blocks merge on lint, typecheck or any test failure.
 - Do not merge your own PR unless the brief for that task explicitly says so.
 - The PR description lists: what was built, the commands João can run to see it
   working, decisions taken, and anything left out and why.
+- Every PR that records a decision also appends it to docs/decisions.md: one line,
+  newest at the bottom, with the date, the PR number and the decision in one sentence.
 
 ## When unsure
 

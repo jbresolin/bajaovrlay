@@ -1,0 +1,79 @@
+# Decisions
+
+Append-only log of every design decision, newest at the bottom. One line each: date, source
+(page 00 section, or the PR that recorded it), the decision. Never edit or delete a line; a
+later decision that changes an earlier one is a new line that says so. `00-concept.md` §18
+and §19 are the authority; PR lines record what an agent chose and João has not yet ruled on.
+
+- 2026-09-29 — page 00 §18.1 — The scoring system is read over the Baja app's REST endpoints; missing endpoints are built in the Baja app's own task queue, and the recorder/replayer covers any that are not ready.
+- 2026-09-29 — page 00 §18.2 — The control page stack is Vite + React served by Hono, not Next.js.
+- 2026-09-29 — page 00 §18.3 — LAN auth is a PIN per role (producer, data).
+- 2026-09-29 — page 00 §18.4 — Elimination brackets are fully derived from the Baja app's `tournament` table; the M3 bracket graphic is presentation only.
+- 2026-09-29 — page 00 §18.5 — pt-BR only for v1, for operator UI and on-air graphics alike; no en-US catalog.
+- 2026-09-29 — page 00 §18.6 — Output is horizontal 16:9 only; vertical output is dropped from the roadmap.
+- 2026-10-09 — PR #1 — TypeScript is held at ~6.0.3, the newest version typescript-eslint 8.71 supports.
+- 2026-10-09 — PR #1 — packages/shared exports its TypeScript source under the `@bajaovrlay/source` condition in development, and the server's production build imports its dist.
+- 2026-10-09 — PR #1 — The control and renderer tsconfigs use Bundler module resolution; Node code stays on NodeNext.
+- 2026-10-09 — PR #1 — shadcn/ui files are written by hand from the registry JSON, because the shadcn CLI would download and execute code.
+- 2026-10-09 — PR #1 — The shadcn Button imports `cn` from the cn package, and its destructive variant uses the semantic token text-destructive-foreground instead of text-white.
+- 2026-10-09 — PR #1 — HOST defaults to 127.0.0.1; serving other machines needs HOST=0.0.0.0.
+- 2026-10-09 — PR #1 — The control dev proxy reads PORT and HOST from the root .env through Vite's loadEnv, the same file the server reads.
+- 2026-10-09 — PR #1 — Log lines use the key `message`, not pino's `msg`, so server and renderer lines share one shape.
+- 2026-10-09 — PR #1 — The renderer's Playwright tests run against its Vite dev server, so test:e2e needs no build first.
+- 2026-10-09 — PR #1 — @playwright/test is pinned exactly to 1.62.0 through a pnpm catalog shared by every package, and CI installs its browser once from the root.
+- 2026-10-09 — PR #1 — Import ordering uses eslint-plugin-simple-import-sort, which has no dependencies.
+- 2026-10-09 — PR #1 — Prettier skips the hand-written documents (CLAUDE.md, overnight-prompt.md, docs/README.md, docs/briefs/).
+- 2026-10-09 — PR #2 — The race clock has six flag states with one screenshot each; `pre` shows a neutral grey band labelled PRÉ-LARGADA.
+- 2026-10-09 — PR #2 — A race clock's load needs complete data (400 otherwise) and is called once; a second load answers 409.
+- 2026-10-09 — PR #2 — A play cut short by stop answers 200 with no currentStep, and one cut short by dispose answers 409.
+- 2026-10-09 — PR #2 — Zod validates data inside the graphic, and a test keeps it in agreement with the manifest's JSON Schema.
+- 2026-10-09 — PR #2 — Unknown data fields answer 400 in both load and update.
+- 2026-10-09 — PR #2 — The OGraf TypeScript interface is copied into ografGraphicTypes.ts, with its source cited, instead of adding a dependency.
+- 2026-10-09 — PR #2 — A new call skips the running animation to its end rather than queueing behind it.
+- 2026-10-09 — PR #2 — GSAP is used under its standard no-charge license, with no paid plugins.
+- 2026-10-09 — PR #2 — The race clock's font is Barlow Condensed (OFL-1.1), bundled and registered with FontFace, because Chromium ignores @font-face inside a shadow root.
+- 2026-10-09 — PR #2 — Theme values are `var(--baja-*, default)` fallbacks, so a theme set on :root reaches the graphic.
+- 2026-10-09 — PR #2 — A graphic package's Playwright suite builds and serves its own `dist/` under `/graphics/<name>/`.
+- 2026-10-09 — PR #2 — Screenshot tests allow a 1% pixel difference, taken with the clock held, fonts loaded and animations finished.
+- 2026-10-09 — PR #2 (gate 2, João) — updateAction is accepted at any time after load, on air or off, and refused only before load.
+- 2026-10-09 — PR #2 (gate 2, João) — A countdown rounds partial seconds up, so it reaches 0:00 only at zero; an elapsed clock rounds down.
+- 2026-10-09 — PR #2 (gate 2) — Every GSAP timeline is killed once it reaches its end, including one jumped there with skipAnimation.
+- 2026-10-09 — PR #3 — better-sqlite3 needs no pnpm build-allowlist entry, since 13.x ships prebuilt binaries with no install script.
+- 2026-10-09 — PR #3 — A WebSocket command's actor is `operador:<connection UUID>` until login exists.
+- 2026-10-09 — PR #3 — takeGraphic refuses an unknown graphic (GRAPHIC_NOT_FOUND) as well as an unknown layer.
+- 2026-10-09 — PR #3 — A new instance starts in status `loading`, because nothing acknowledges a take in M0.
+- 2026-10-09 — PR #3 — clearLayer and clearAll remove instances at once instead of marking them `stopping`.
+- 2026-10-09 — PR #3 — takeGraphic's `target` defaults to `program`; a take replaces only the same layer and output, and clearLayer clears both outputs.
+- 2026-10-09 — PR #3 — clearAll ignores `persistent`, because it is the panic button.
+- 2026-10-09 — PR #3 — The eventLog slice holds the newest 200 entries while the event_log table keeps them all.
+- 2026-10-09 — PR #3 — A command's changed slices and its event-log row are saved in one SQLite transaction, and memory changes only after the commit.
+- 2026-10-09 — PR #3 — event_log.result is a JSON column holding `{status:'ok'}` or `{status:'failed', error:{code, message}}`.
+- 2026-10-09 — PR #3 — Event-log entries in the slice carry the table's row id, which gives their order.
+- 2026-10-09 — PR #3 — The eventLog slice is not stored in the slices table; event_log is its only source of truth.
+- 2026-10-09 — PR #3 — The seeded layers have z-indexes 10 to 50, all swap out-then-in, and only bug and clock are persistent.
+- 2026-10-09 — PR #3 — A graphic is registered under its package folder name (`race-clock`), not its OGraf id.
+- 2026-10-09 — PR #3 — A stored slice that fails its schema stops the boot.
+- 2026-10-09 — PR #3 — An invalid WebSocket message is answered with an error commandResult, not a fifth message type.
+- 2026-10-09 — PR #3 — The WebSocket envelope does not check the command inside it; the store does, so a malformed command still reaches the event log.
+- 2026-10-09 — PR #3 — The OpenAPI document is generated by @hono/zod-openapi and served at /api/v1/openapi.json.
+- 2026-10-09 — PR #3 — A relative DATABASE_PATH is resolved from the repository root, not the working directory.
+- 2026-10-09 — PR #3 — Shutdown terminates WebSocket clients instead of waiting for a graceful close.
+- 2026-10-09 — PR #3 — A null or absent command is logged with the payload `{"commandWasMissing":true}`.
+- 2026-10-09 — PR #3 — An upgrade request whose address cannot be parsed gets a 404 instead of crashing the server.
+- 2026-10-09 — PR #3 (gate 2, João) — The graphics slice is rebuilt from the built packages on every boot and saved; layers and instances keep their stored values.
+- 2026-10-09 — PR #3 (gate 2) — A built package with no known placement defaults to the fullscreen layer, category `other`.
+- 2026-10-09 — PR #3 (gate 2) — A slices table with rows but no layers row stops the boot with an error log line, rather than re-seeding the layers.
+- 2026-10-09 — PR #3 (gate 2) — An instance whose package has since been removed stays on air; the graphics refresh changes only the graphics slice.
+- 2026-10-09 — PR #3 (gate 2) — A reducer that changes nothing hands back the same instances array, so nothing is saved or broadcast.
+- 2026-10-09 — page 00 §19 — A graphic's id is its folder name under packages/graphics, which is also its URL path; the OGraf manifest id is metadata only.
+- 2026-10-09 — page 00 §19 — The graphics slice is derived from the filesystem and refreshed from every `packages/graphics/*/dist/*.ograf.json` on every boot.
+- 2026-10-09 — page 00 §19 — New instances start in status loading; renderer acknowledgement that moves them on-air is an M1 item (BAJAOVRLAY-12).
+- 2026-10-09 — page 00 §19 — clearLayer and clearAll remove instances immediately, and clearAll ignores the persistent flag.
+- 2026-10-09 — page 00 §19 — takeGraphic's target defaults to program, and a take replaces only the instance on the same layer and target.
+- 2026-10-09 — page 00 §19 — The eventLog slice carries the newest 200 entries; the table keeps everything.
+- 2026-10-09 — page 00 §19 — WebSocket protocol errors are answered as commandResult errors; there is no separate error message type.
+- 2026-10-09 — page 00 §19 — The race clock's `pre` is a real sixth state (PRÉ-LARGADA, neutral band).
+- 2026-10-09 — page 00 §19 — A race clock's load requires complete data and is called once per instance; unknown fields are refused with 400 and the previous data is kept.
+- 2026-10-09 — page 00 §19 — updateAction is accepted at any time after load, including off air.
+- 2026-10-09 — page 00 §19 — A countdown rounds partial seconds up; an elapsed clock rounds down.
+- 2026-10-09 — page 00 §19 — A built package with no known default layer goes on the fullscreen layer for now; in M1 each manifest declares its default layer in a `v_baja` vendor field, with fullscreen and a logged warning as the fallback.

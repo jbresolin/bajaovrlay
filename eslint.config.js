@@ -36,8 +36,8 @@ export default defineConfig(
   },
 
   {
-    // Code that runs in the browser: the control page and the renderer.
-    files: ['apps/control/src/**', 'apps/renderer/src/**'],
+    // Code that runs in the browser: the control page, the renderer and every graphic.
+    files: ['apps/control/src/**', 'apps/renderer/src/**', 'packages/graphics/*/src/**'],
     languageOptions: { globals: globals.browser },
   },
 

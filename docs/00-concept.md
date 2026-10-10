@@ -1,0 +1,254 @@
+# 00 — Concept & Architecture
+
+Design authority for BajaOvrLay. Moved from the Plane page of the same name (BAJAOVRLAY project, `personal` workspace), which remains the editable original; this copy is updated whenever that page changes. v0.1 rev 3 plus decision records §18–§19.
+
+## 1. What this is
+
+A stream-graphics system for Baja SAE Brasil live streams: an operator control page where graphics are configured, pre-programmed and queued, and a renderer page that OBS loads as a browser source and that plays the graphics on air. Graphics get their data from the Baja scoring system, from small databases we run ourselves (teams, people, sponsors, schedule), and from values typed in by hand.
+
+The previous attempt failed on three fronts (functionality, control, looks), so this project starts from a written design and treats operator usability as the primary requirement. A stream at the track is run by volunteers under time pressure; anything that needs explanation on the day is a defect.
+
+### Non-goals for v1
+
+- A visual template editor. Graphics are authored in code by a developer; operators only fill fields and press buttons.
+- CasparCG or SDI output, newsroom (MOS) integration, 24/7 unattended playout.
+- Multi-tenant or public hosting. This runs on our LAN at the event and on TrueNAS between events.
+
+## 2. Vocabulary
+
+- Graphic: one on-screen element type (clock, lower third, standings table), packaged as an EBU OGraf graphic: a manifest, a web component and assets.
+- Layer: a named slot in the output where at most one graphic instance is on air at a time (clock, lower-third, fullscreen, ticker, bug). Layers have a fixed z-order.
+- Item: a prepared use of a graphic: which graphic, which layer, and a value or a binding for each field. Items live in a rundown or in a quick-fire panel.
+- Binding: a field value looked up from a data source instead of typed (for example scoring.enduro.positions). A binding is either live (keeps updating while on air) or a snapshot (frozen at take).
+- Rundown: an ordered list of items for a session, with a cursor for "next".
+- Take, Clear, Next: put an item on air on its layer; remove what is on that layer; advance a multi-step graphic (or the rundown cursor).
+- Preview: rendering an item off-air so the operator can see it before taking it.
+- Instance: a graphic currently loaded in the renderer (previewing or on air), with the data it was resolved with.
+- Data source: a poller that produces a normalized JSON snapshot: scoring, a sheet or CSV, the entity library.
+- Entity: a record in our own library: team, person (speaker, judge), sponsor, schedule slot.
+- Macro: a named list of commands run as one button press (clock on, positions on, bug on).
+
+## 3. Architecture
+
+Four deployable parts, one repository, one Node process at runtime.
+
+- Control page (browser) talks to the server over WebSocket and REST.
+- Server (Node) holds the state store (in memory, persisted to SQLite), the data sources (pollers producing snapshots), the binding resolver (item fields plus snapshots become data for a graphic), OBS control (obs-websocket) and the REST API at /api/v1 with OpenAPI, used by Companion, Stream Deck and scripts.
+- Renderer page (browser inside OBS) receives state from the server over WebSocket.
+- Graphics (OGraf packages) are static files served by the server and loaded by the renderer.
+
+### 3.1 The server owns the truth
+
+The server holds the whole application state in memory and persists it to SQLite. Clients never hold state of their own; they send commands and receive state. Every command is appended to an event log (who, when, what). This is the NodeCG "replicant" idea reimplemented in one module: a store of named slices, each validated by a Zod schema, each broadcast to every connected client when it changes.
+
+Consequences:
+
+- A control page refresh loses nothing.
+- A renderer refresh (OBS reloading the browser source) re-requests the snapshot and rebuilds exactly what was on air.
+- Two operators on two devices see the same thing at the same time.
+
+### 3.2 The renderer is thin and dumb
+
+A framework-free TypeScript page. One absolutely positioned container element per layer, stacked in z-order. It loads OGraf graphics as ES modules and drives them through the OGraf lifecycle (load, playAction, updateAction, stopAction, dispose). It has no logic about what to show; it mirrors the instances slice. Every dependency in the renderer is a frame-drop risk inside OBS, so it stays minimal.
+
+### 3.3 Graphics are OGraf, nothing else
+
+Each graphic is an OGraf v1 package with a JSON Schema for its data. That schema is what the control page uses to generate the item form; no hand-written form per graphic. Graphics receive resolved data only and never fetch anything themselves. Theme values (colors, fonts, logos) arrive as CSS custom properties that the renderer sets on the layer container.
+
+### 3.4 The control page is a realtime console
+
+React with shadcn/ui, fully client-rendered, fed by the WebSocket state stream. Three areas always visible on a desktop layout: rundown (left), preview and program monitor (center), quick-fire panel and layer status (right). Data-operator screens (entities, standings overrides, data-source health) are separate routes that work on a tablet.
+
+## 4. State model
+
+Slices, each a Zod schema in packages/shared. Field names below are the real ones to be used in code.
+
+layers: id, name, zIndex, replacePolicy (one of out-then-in, cut, crossfade), persistent. Fixed list per theme; not operator-editable.
+
+graphics: installed OGraf manifests plus our metadata: id, manifest, defaultLayerId, category, thumbnailUrl, defaultFields.
+
+rundowns and items: Rundown has id, name, sessionLabel, cursorItemId. Item has id, rundownId or quickFirePanelId, order, graphicId, layerId, fields (a map from field key to FieldValue), autoOutAfterMs (optional), label, color, notes.
+
+FieldValue is one of:
+
+- literal: kind 'literal', value
+- binding: kind 'binding', sourceId, path, live (boolean), transformId (optional)
+- entity reference: kind 'entity', entityType, entityId, attribute (sugar for a binding into the entity library)
+
+Transforms are a registry of named, pure functions (topN(6), formatLapTime, abbreviateUniversity), never free-form expressions. Readable, testable, no surprises on air.
+
+dataSources: id, kind (one of scoring, csv-url, entities, manual), config, pollIntervalMs, status (lastOkAt, lastError, isStale), snapshot. The snapshot is the last good payload; on failure it is kept and marked stale, never blanked.
+
+overrides: sourceId, path, value, reason, setBy, setAt. Operator-typed values that win over the source until cleared. Shown as a badge everywhere the path appears.
+
+instances (what the renderer mirrors): id, layerId, itemId, target (program or preview), resolvedData, currentStep, status (one of loading, ready, on-air, stopping), takenAt.
+
+entities: tables for teams, people, sponsors, scheduleSlots. Teams carry number, name, university, city, logo, car photo. Sponsors carry tier and roll weight.
+
+theme: semantic tokens for the on-air graphics (brand primary color, display font, logos, event name and year). One active theme.
+
+macros: id, label, commands (a list of Command).
+
+eventLog: append-only: ts, actor, command, payload, result.
+
+### Commands, the only way state changes
+
+takeItem, clearLayer, clearAll, nextOnLayer, previewItem, stopPreview, updateItemFields, reorderItems, moveCursor, runMacro, setOverride, clearOverride, setDataSourceEnabled, upsertEntity, importEntities. Each has a Zod input schema; each is validated, authorized, applied, logged and broadcast, in that order, in one code path.
+
+## 5. Binding resolution and live updates
+
+1. On take, the resolver walks the item's fields: literals pass through; bindings read the source snapshot at the path, apply overrides, apply the transform; entity references read the entity table. Result: resolvedData matching the graphic's schema. A validation failure refuses the take with a readable message; never a half-rendered graphic.
+2. While an instance is on air, every time a data source snapshot changes the resolver recomputes resolvedData for instances with live bindings and, if anything differs, the renderer calls updateAction with only the changed keys.
+3. Snapshot bindings are resolved once at take and never touched again.
+4. A stale source does not stop live updates from being attempted; it shows a stale badge on the instance in the control page. Operators decide whether to clear.
+
+## 6. Renderer contract
+
+- URLs: /render/program (all layers, 1920x1080, transparent background) and /render/preview with an instanceId parameter (one instance, embedded in the control page).
+- Load a graphic: create the custom element inside its layer container, await load with data, then playAction to step 0.
+- Replace on the same layer, per the layer's replacePolicy. Default out-then-in: stopAction on the old, dispose, then load and play the new.
+- Clear: stopAction (animated), then dispose.
+- Next: playAction with delta 1; when the graphic reports it reached its end, the server marks the instance stopped.
+- Reconnect: request the full instances slice, dispose everything local, rebuild each on-air instance with skipAnimation true.
+- Timing metadata from the manifest (actionDurations) is used by the control page to show "animating" and to sequence macros; the renderer only awaits the promises.
+- Later, optional: expose the OGraf Server API over REST so third-party controllers can drive our renderer.
+
+## 7. Operator experience, the rules
+
+1. Nothing goes to air without being visible first. Preview is one click and is always the same pixels as program.
+2. One-press actions for the common case: take, clear layer, clear all, next. Keyboard: Space = take, Backspace = clear layer, Esc = clear all, Right arrow = next. Same actions exposed to Companion and Stream Deck via /api/v1.
+3. Forms are generated from the graphic's schema with sensible widgets: a team field is a searchable picker over the entity library, a standings field is a source picker, a duration is a number with units. Required fields block take with a message saying what is missing.
+4. The state of every layer is visible at all times (what is on it, since when, live or stale badge). No hidden state.
+5. Undo the last take (re-take the previous item on that layer) and a clearly marked clear all are always on screen.
+6. Macros and quick-fire panels cover "the ten things we do every hour"; the rundown covers the scripted parts (openings, podiums, sponsor blocks).
+7. Roles: producer (playout), data (entities, overrides, rundown prep), dev (graphics; not a UI role). Auth on the LAN is a per-role PIN.
+8. Rehearsal mode: a data source can replay a recorded feed, so the whole show can be practiced with no scoring system running.
+
+## 8. Data sources
+
+- Scoring system: REST endpoints on the Baja app (see §18). Poll every 2 to 5 s during sessions; normalized into positions, standings.overall, standings.EVENT, brackets.EVENT, session (state, clock, flags).
+- Entities: SQLite tables in the server. CSV import plus UI editing; logos and photos stored under data/media.
+- Sheet or CSV URL: HTTP poll. For things the committee already keeps in a sheet (schedule, speakers).
+- Manual: overrides and literal fields. Always available, always visible as such.
+
+Every adapter implements the same interface: a poll function returning a Snapshot, plus a describe function listing the paths it produces (the control page uses this to build the binding picker). Every adapter ships with a recorder (writes snapshots to disk with timestamps), and a shared replayer provides rehearsal mode.
+
+## 9. Graphics catalogue, v1 target
+
+Persistent: race clock and session state with flags; sponsor bug; ticker.
+
+Transient: lower third (person or speaker); team card; race positions tower; standings (overall and per event); elimination bracket (multi-step); upcoming events board; podium reveal (multi-step); fastest lap popup; battle card (two cars, gap); penalty or incident notice; countdown to next session; full-screen intermission board; sponsor roll; social and QR card.
+
+Each graphic has: manifest, component, a preview.html with sample data, and a Playwright screenshot test. Aesthetics are reviewed against the screenshots, not in OBS.
+
+## 10. Stack, aligned with Paddock
+
+Identical to Paddock unless listed under deviations: TypeScript strict, Node 22 LTS, ESM, pnpm workspaces; Drizzle; Zod at every boundary; /api/v1 with OpenAPI generated from Zod; shadcn/ui with semantic tokens; react-hook-form with Zod; Vitest and Playwright; structured logger with request_id, console.log lint-banned; i18n catalog (pt-BR only, see §18); module layout core plus modules, each module with schema.ts, service.ts, api.ts, index.ts; qualified cross-module imports; branches named like BAJAOVRLAY-12-rundown-reorder, one task = one PR, squash merge, CI gates.
+
+Deviations, on purpose:
+
+- SQLite (better-sqlite3 via Drizzle) instead of Postgres: single node, must run offline at the track, backup is a file copy.
+- Vite + React for the control page instead of Next.js, served by a Hono server that also owns the WebSocket, REST, pollers and OBS control. The control page is 100% client-rendered realtime UI (Paddock's field-capture case, generalized) and Next has no native WebSocket path.
+- Renderer is framework-free; graphics use Lit for the web components and GSAP for animation.
+
+## 11. Repository layout
+
+- apps/server: Hono + ws + Drizzle (SQLite); core and modules folders as in Paddock.
+- apps/control: Vite + React operator UI.
+- apps/renderer: framework-free TS page loaded by OBS.
+- packages/shared: Zod schemas, TS types, WS protocol, command definitions.
+- packages/graphics/race-clock, packages/graphics/lower-third, and so on: one OGraf package per graphic (manifest, component, preview, tests).
+- docs: this document and its siblings.
+- CLAUDE.md: agent contract, adapted from Paddock's.
+
+## 12. Readability law, a merge criterion for all code
+
+The person reviewing this code is not its author and will not have an IDE open. Every rule below follows from that.
+
+Naming. Names are sentences with the vowels left in: resolveItemFieldsIntoGraphicData, not resolve; isStale, not st. Abbreviations only for domain terms everyone here knows (OBS, WS, RPM). Booleans read as questions (hasLiveBindings). Functions are verbs, data is nouns.
+
+Files. One responsibility per file, and the filename says which. Target 80 to 300 lines; under 40 lines probably belongs with its neighbour, over 400 means a second responsibility moved in. No utils.ts or helpers.ts grab-bags; generic helpers get a named home (lapTimes.ts, ordering.ts).
+
+Folders. Folder = feature or concept, never top-level dumping grounds like types, hooks or services. Every package and every module folder has a 5 to 15 line README.md saying what lives there and where to start reading.
+
+Comments. Explain why and what could go wrong, not what the line does. Every exported function has a 1 to 3 line doc comment stating its purpose and the non-obvious inputs. Any deliberate trade-off ("we keep the stale snapshot on purpose; a blank table on air is worse") is written next to the code, not in the PR.
+
+Cleverness budget: zero. No conditional-type gymnastics, no generic abstractions with one call site, no metaprogramming, no clever one-liners. If a reviewer would need to run it in their head, rewrite it as steps with named intermediates.
+
+Public surface. Each module's index.ts lists what it exports with a one-line comment each. Nothing else is importable from outside.
+
+## 13. Testing policy
+
+Tests are the primary review artefact. A PR is reviewed by reading its tests first; if the tests do not explain the behavior on their own, the PR is incomplete.
+
+- Unit (Vitest): binding resolver, transforms, command handlers, layer replace logic, WS protocol codec, each data adapter's normalizer.
+- Integration (Vitest with a real SQLite file): persistence round-trips, migrations, event log, snapshot and reconnect rebuild.
+- Component (Vitest with Testing Library): generated item forms from real manifests, layer status panel, rundown reordering.
+- Renderer (Playwright): OGraf lifecycle ordering against a fake graphic, reconnect rebuild, one screenshot per graphic with sample data.
+- E2E (Playwright): open control, preview, take, live update from a replayed feed, clear.
+- Chaos (scenario suite): data source down, stale, garbage payload; WS drop mid-take; two operators taking on one layer at once.
+
+Test readability, written for a beginner. Paddock's law applies (sentence-style names, arrange-act-assert separated by blank lines, table-driven named scenarios, no clever generation, factories named for what they build), plus:
+
+- Every test file opens with a plain-language header: what this module is for, what these tests prove, what they deliberately do not cover.
+- Every test has a one-line comment above arrange, act and assert explaining in everyday words what is being set up, done and checked, even when it looks obvious.
+- Table-driven scenarios have a comment per row saying why that row exists.
+- Test data reads like the real thing (team 42, "Baja UFPR"), never foo, bar or x1.
+- Assertions state the expectation in the failure message, for example: expect(result, 'the leader must be first after the pit stop').
+
+Flaky test = bug; quarantine visibly, never delete to green. CI blocks merge on lint, typecheck or any test failure.
+
+## 14. Deployment
+
+- Between events: one Docker image (the server serves the control and renderer builds and the graphics), compose stack on TrueNAS via Portainer, behind the existing proxy. The SQLite file and media live on a dataset covered by the nightly dump script.
+- At the event: the same image on the stream PC (Docker Desktop) or on a small box at the desk. OBS browser source points at the box on port 8080, path /render/program. Nothing on screen depends on the uplink; the scoring poller degrades to stale, never to blank.
+- Backups at the event: copy the data folder to a USB stick at every session break (a one-click action on the control page's admin route).
+
+## 15. Integrations
+
+- OBS via obs-websocket (same library as Baja Playout): scene switch as a macro step; tally of which scene is live shown in the control page.
+- Companion and Stream Deck: plain HTTP calls to /api/v1/commands with a static token, documented by the generated OpenAPI. A proper Companion module is a later nice-to-have.
+- Audio: read the XR18 mute state through the existing OSC bridge to drive an "on mic" indicator on speaker lower thirds. Later milestone.
+
+## 16. Milestones
+
+- M0: scaffold, state store, renderer, race-clock graphic end to end. Done means: clock on air in OBS from a button on the control page; refresh both sides and nothing is lost.
+- M1: layers, rundown, items, preview and program, generated forms, quick-fire, macros. Done means: producer runs a rehearsal show with literal data only.
+- M2: data sources (scoring adapter, entities, CSV), live and snapshot bindings, overrides, recorder and replayer. Done means: positions tower updates live from a replayed feed; stale badge works.
+- M3: full graphics catalogue, theme, screenshot tests. Done means: every v1 graphic reviewed from screenshots and signed off.
+- M4: OBS control, Companion API, roles and PINs, event log viewer, undo. Done means: full show run by two volunteers using the one-page operator guide.
+- M5: event hardening (chaos suite, USB backup, offline verification, packaging for the stream PC). Done means: dry run on the real stream PC with the uplink unplugged.
+
+## 17. Open decisions
+
+Closed on 2026-09-29; see §18. Kept for the numbering.
+
+1. Scoring system access.
+2. Vite + React + Hono versus strict Next.js.
+3. LAN per-role PIN auth.
+4. Elimination brackets: data-derived or partly manual.
+5. en-US catalog or pt-BR only.
+6. Vertical 9:16 output.
+
+## 18. Decision record (2026-09-29)
+
+João's answers to §17. This record wins.
+
+1. Scoring system access: REST. Some endpoints exist, some need implementing. That work is a separate project, handled in the Baja app task queue; BajaOvrLay only consumes the endpoints. The scoring adapter in M2 is written against the REST contract, with the recorder/replayer covering any endpoint that is not ready yet.
+2. Control page stack: Vite + React + Hono, confirmed.
+3. LAN per-role PIN auth: accepted.
+4. Elimination brackets: fully derivable from scoring data. The existing Baja-app bracket code holds all progression logic in its `tournament` table; the M3 bracket graphic is pure presentation over a REST read of it (see the review on BAJAOVRLAY-25).
+5. Language: pt-BR only for v1, both the operator UI strings and the on-air graphics. No en-US catalog.
+6. Output format: horizontal 16:9 only. Vertical output dropped from the roadmap.
+
+## 19. Decisions from M0 review (2026-10-09)
+
+- A graphic's id is its folder name under packages/graphics (for example race-clock), which is also its URL path /graphics/race-clock/. The OGraf manifest id (baja-race-clock) is metadata only.
+- The graphics slice is derived from the filesystem, never from operator state: it is refreshed from every packages/graphics/*/dist/*.ograf.json on every boot.
+- New instances start in status loading; renderer acknowledgement that moves them to on-air is an M1 item (BAJAOVRLAY-12).
+- clearLayer and clearAll remove instances immediately; clearAll ignores the persistent flag (it is the panic button).
+- takeGraphic has a target field defaulting to program; a take replaces only the instance on the same layer and target.
+- The eventLog slice carries the newest 200 entries; the table keeps everything.
+- Protocol errors on the WebSocket are answered as commandResult errors; there is no separate error message type.
+- Race clock: pre is a real sixth state (PRÉ-LARGADA, neutral band). load requires complete data and is called once per instance; unknown fields are refused with 400 and the previous data is kept. updateAction is accepted at any time after load, including off air. A countdown (remaining mode) rounds partial seconds up; an elapsed clock rounds down.
+- A built graphic package with no known default layer is registered on the fullscreen layer (a take there cannot displace the bug, clock or lower third). M1 replaces this guess: each manifest declares its default layer in a v_baja vendor field, and fullscreen with a logged warning remains the fallback.
