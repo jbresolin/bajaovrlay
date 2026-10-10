@@ -1,0 +1,103 @@
+/**
+ * Saving a command's outcome in one transaction (apps/server)
+ *
+ * What this module is for:
+ *   After a command, the store saves the slices it changed and its event-log row. Both
+ *   are written in one SQLite transaction, so a crash or a failed write can never leave
+ *   the slices saying one thing and the event log another.
+ *
+ * What these tests prove (with a real SQLite file in a temporary folder):
+ *   - The changed slices and the event-log row are both saved, and the row's id is
+ *     returned.
+ *   - When the event-log write fails, the slices are not saved either.
+ *   - Each new event-log row gets a larger id than the one before, so ids give the order.
+ *
+ * What these tests deliberately do not cover:
+ *   - Deciding what to save; the store does that (createStateStore.test.ts).
+ */
+import { describe, expect, it } from 'vitest';
+
+import { saveCommandOutcome } from './commandOutcomeStorage.js';
+import { readNewestEventLogRows } from './eventLogRowStorage.js';
+import { readAllSliceRows } from './sliceRowStorage.js';
+import { openTemporaryDatabase } from './temporaryDatabase.testSupport.js';
+
+const savedAt = '2026-10-09T14:32:05.000Z';
+
+const raceClockInstances = [
+  {
+    id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
+    layerId: 'clock',
+    graphicId: 'race-clock',
+    target: 'program',
+    resolvedData: { sessionName: 'Enduro de Resistência', state: 'green' },
+    currentStep: 0,
+    status: 'loading',
+    takenAt: savedAt,
+  },
+];
+
+/** Builds the event-log row of a successful race-clock take by the operator. */
+function buildRaceClockTakeRow() {
+  return {
+    ts: savedAt,
+    actor: 'operador:conexao-7',
+    command: 'takeGraphic',
+    payload: { type: 'takeGraphic', graphicId: 'race-clock', layerId: 'clock' },
+    result: { status: 'ok' },
+  };
+}
+
+describe('saveCommandOutcome', () => {
+  it('saves the changed slices and the event-log row, and returns the row id', () => {
+    // Arrange: an empty database.
+    const { database } = openTemporaryDatabase();
+
+    // Act: save a take that changed the instances slice.
+    const eventLogId = saveCommandOutcome(database, {
+      changedSliceRows: [{ name: 'instances', json: raceClockInstances, updatedAt: savedAt }],
+      eventLogRow: buildRaceClockTakeRow(),
+    });
+
+    // Assert: both are in the database, and the first row has id 1.
+    expect(eventLogId, 'the first event-log row must have id 1').toBe(1);
+    expect(readAllSliceRows(database), 'the instances slice must be saved').toEqual([
+      { name: 'instances', json: raceClockInstances, updatedAt: savedAt },
+    ]);
+    expect(readNewestEventLogRows(database, 10), 'the event-log row must be saved').toEqual([
+      { id: 1, ...buildRaceClockTakeRow() },
+    ]);
+  });
+
+  it('saves neither the slices nor the row when the event-log write fails', () => {
+    // Arrange: a database whose event_log table has vanished, as a damaged file might.
+    const { database } = openTemporaryDatabase();
+    database.$client.exec('DROP TABLE event_log');
+
+    // Act: try to save a take.
+    const saveTheTake = () =>
+      saveCommandOutcome(database, {
+        changedSliceRows: [{ name: 'instances', json: raceClockInstances, updatedAt: savedAt }],
+        eventLogRow: buildRaceClockTakeRow(),
+      });
+
+    // Assert: the save throws and the instances slice was rolled back.
+    expect(saveTheTake, 'a failed event-log write must fail the whole save').toThrow();
+    expect(readAllSliceRows(database), 'the slices must not be saved without their row').toEqual(
+      [],
+    );
+  });
+
+  it('gives each new event-log row a larger id than the one before', () => {
+    // Arrange: an empty database.
+    const { database } = openTemporaryDatabase();
+
+    // Act: save three outcomes one after the other.
+    const savedIds = [1, 2, 3].map(() =>
+      saveCommandOutcome(database, { changedSliceRows: [], eventLogRow: buildRaceClockTakeRow() }),
+    );
+
+    // Assert: the ids go up, so they give the order the commands ran in.
+    expect(savedIds, 'event-log ids must increase with every row').toEqual([1, 2, 3]);
+  });
+});

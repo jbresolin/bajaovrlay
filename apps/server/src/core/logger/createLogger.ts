@@ -1,4 +1,10 @@
-import { type LevelWithSilent, type Logger, pino } from 'pino';
+import {
+  type DestinationStream,
+  type LevelWithSilent,
+  type Logger,
+  type LoggerOptions,
+  pino,
+} from 'pino';
 
 /** The server's logger type; every module logs through one of these, never `console`. */
 export type ServerLogger = Logger;
@@ -19,11 +25,14 @@ export type ServerLogLevel = (typeof serverLogLevels)[number];
 
 /**
  * Creates the structured JSON logger: one JSON object per line on stdout, with an ISO
- * timestamp and the level as a word (`"level":"info"`) so logs read well without tools.
- * The text goes under `message`, the same key the renderer's log lines use.
+ * timestamp, the level as a word and the text under `message` (as the renderer logs).
+ * `destination` replaces stdout; only tests use it, to read the lines back.
  */
-export function createLogger(options: { level: ServerLogLevel }): ServerLogger {
-  return pino({
+export function createLogger(options: {
+  level: ServerLogLevel;
+  destination?: DestinationStream;
+}): ServerLogger {
+  const loggerOptions: LoggerOptions = {
     level: options.level,
     base: { service: 'bajaovrlay-server' },
     timestamp: pino.stdTimeFunctions.isoTime,
@@ -31,5 +40,9 @@ export function createLogger(options: { level: ServerLogLevel }): ServerLogger {
     formatters: {
       level: (levelName) => ({ level: levelName }),
     },
-  });
+  };
+  if (options.destination === undefined) {
+    return pino(loggerOptions);
+  }
+  return pino(loggerOptions, options.destination);
 }
