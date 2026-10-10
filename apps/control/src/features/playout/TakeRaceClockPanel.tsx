@@ -1,5 +1,5 @@
 import type { Instance } from '@bajaovrlay/shared';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,11 @@ import { buildUpdateRaceClockCommand } from './raceClockUpdateCommand';
 
 /** What the panel can be given; the page gives it nothing and gets the real clock. */
 export type TakeRaceClockPanelProps = {
-  /** Returns "now" as Date.now() does. A parameter so tests can hold the clock still. */
+  /**
+   * Returns "now" as Date.now() does. A parameter so tests can hold the clock still.
+   * Must be the same function on every draw: the form is refilled from what is on air
+   * whenever it changes, so a new function per draw would refill it on every draw.
+   */
   readCurrentTimeInMilliseconds?: () => number;
 };
 
@@ -73,16 +77,23 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
 
   const raceClockInstanceOnAir = findRaceClockInstanceOnAir(instances);
   const isRaceClockOnAir = raceClockInstanceOnAir !== undefined;
-  // While a take waits for the server's answer both buttons are off, so an impatient
-  // second click cannot send the clock to air twice.
-  const isWaitingForTheServer = form.formState.isSubmitting;
+  // While a press is being checked and its command waits for the server's answer both
+  // buttons are off, so an impatient second click cannot send the clock to air twice.
+  // The panel keeps this flag itself instead of reading react-hook-form's `isSubmitting`:
+  // every `reset` switches that one off, and the form is reset whenever news about the
+  // clock arrives, which can be in the middle of the wait.
+  const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
 
   // Whenever what is on air changes (the page has just loaded with the clock on air, or
   // another operator changed it) the form follows it. `keepDirtyValues` is what protects
   // an edit the operator has not sent yet: changed fields keep their text, untouched
   // fields take the on-air value. Data that cannot be read, or no clock on air at all,
-  // leaves the form as it is. What could go wrong: the time shown in an untouched field
-  // is the time at this moment and does not tick; see buildRaceClockFormValuesFromDataOnAir.
+  // leaves the form as it is. `keepErrors` keeps the message under a badly typed field
+  // next to its text, and `keepIsSubmitted` keeps the form checking that field again as
+  // the operator corrects it. What could go wrong: the time shown in an untouched field
+  // is the time at this moment and does not tick (see buildRaceClockFormValuesFromDataOnAir);
+  // and a message under an untouched field (an empty session name that came from the air)
+  // stays after someone else corrects that value on air, until this operator's next press.
   useEffect(() => {
     const raceClockDataOnAir = readRaceClockDataOnAir(raceClockInstanceOnAir?.resolvedData);
     if (raceClockDataOnAir === undefined) {
@@ -92,7 +103,11 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
       raceClockDataOnAir,
       readCurrentTimeInMilliseconds(),
     );
-    resetForm(formValuesOnAir, { keepDirtyValues: true });
+    resetForm(formValuesOnAir, {
+      keepDirtyValues: true,
+      keepErrors: true,
+      keepIsSubmitted: true,
+    });
   }, [raceClockInstanceOnAir, readCurrentTimeInMilliseconds, resetForm]);
 
   // After a command the server accepted nothing in the form is an unsent edit any more,
@@ -143,6 +158,18 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
   const checkFormThenTake = form.handleSubmit(sendFormAsTakeCommand);
   const checkFormThenUpdate = form.handleSubmit(sendFormAsUpdateCommand);
 
+  // What a press on either button does: both buttons go off, the form is checked and, if
+  // it passes, sent; the buttons come back whatever the outcome (accepted, refused, no
+  // answer within 5 s, or a field that failed its rule).
+  async function runWithBothButtonsOff(checkFormThenSend: () => Promise<void>): Promise<void> {
+    setIsWaitingForTheServer(true);
+    try {
+      await checkFormThenSend();
+    } finally {
+      setIsWaitingForTheServer(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -157,7 +184,11 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
           <RaceClockFormFields form={form} />
         </CardContent>
         <CardFooter className="flex flex-wrap items-center gap-3">
-          <ActionButton type="button" disabled={isWaitingForTheServer} onClick={checkFormThenTake}>
+          <ActionButton
+            type="button"
+            disabled={isWaitingForTheServer}
+            onClick={() => runWithBothButtonsOff(checkFormThenTake)}
+          >
             {ptBR.playout.takeButton}
           </ActionButton>
           {isRaceClockOnAir && (
@@ -165,7 +196,7 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
               type="button"
               variant="secondary"
               disabled={isWaitingForTheServer}
-              onClick={checkFormThenUpdate}
+              onClick={() => runWithBothButtonsOff(checkFormThenUpdate)}
             >
               {ptBR.playout.updateButton}
             </ActionButton>
