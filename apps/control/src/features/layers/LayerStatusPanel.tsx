@@ -1,0 +1,71 @@
+import type { Graphic, Instance } from '@bajaovrlay/shared';
+
+import { Card, CardContent } from '@/components/ui/card';
+import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
+
+import { LayerStatusRow } from './LayerStatusRow';
+import { useCurrentTime } from './useCurrentTime';
+
+// "há 2 min" changes once a minute; refreshing every 10 s keeps it at most 10 s late.
+const relativeTimeRefreshIntervalInMilliseconds = 10_000;
+
+/**
+ * Lists every layer, from the bottom of the screen stack to the top, with what is on
+ * air on it. Always visible: the operator must never have to guess what a layer shows.
+ * It only repeats the server's slices; pressing "Limpar" sends `clearLayer` and the row
+ * changes when the server's next instances slice arrives, not before.
+ */
+export function LayerStatusPanel() {
+  const layers = useServerState((state) => state.layers);
+  const graphics = useServerState((state) => state.graphics);
+  const instances = useServerState((state) => state.instances);
+  const sendCommand = useSendCommand();
+  const currentTime = useCurrentTime(relativeTimeRefreshIntervalInMilliseconds);
+
+  // Copied before sorting: the list in the store belongs to the store.
+  const layersFromBottomToTop = [...layers].sort(
+    (oneLayer, otherLayer) => oneLayer.zIndex - otherLayer.zIndex,
+  );
+
+  return (
+    <Card className="py-2">
+      <CardContent>
+        <ul className="flex flex-col divide-y">
+          {layersFromBottomToTop.map((layer) => {
+            const instanceOnProgram = findInstanceOnProgram(instances, layer.id);
+            return (
+              <LayerStatusRow
+                key={layer.id}
+                layer={layer}
+                instanceOnProgram={instanceOnProgram}
+                graphicName={findGraphicName(graphics, instanceOnProgram?.graphicId)}
+                currentTime={currentTime}
+                onClearPressed={() => void sendCommand({ type: 'clearLayer', layerId: layer.id })}
+              />
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** The instance on air on a layer. M0 has no preview output, so only program is listed. */
+function findInstanceOnProgram(instances: Instance[], layerId: string): Instance | undefined {
+  return instances.find(
+    (instance) => instance.layerId === layerId && instance.target === 'program',
+  );
+}
+
+/**
+ * The name the operator knows a graphic by (its manifest's name). Falls back to the id:
+ * the server keeps an instance on air even after its package is removed, and the panel
+ * must still list it.
+ */
+function findGraphicName(graphics: Graphic[], graphicId: string | undefined): string {
+  if (graphicId === undefined) {
+    return '';
+  }
+  const graphic = graphics.find((candidate) => candidate.id === graphicId);
+  return graphic?.manifest.name ?? graphicId;
+}

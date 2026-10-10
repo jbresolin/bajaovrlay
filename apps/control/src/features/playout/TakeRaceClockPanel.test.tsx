@@ -241,7 +241,14 @@ describe('the take race clock panel', () => {
     const errorShownAfterTheRefusal = await screen.findByRole('alert');
     const textShownAfterTheRefusal = errorShownAfterTheRefusal.textContent;
 
-    // Act again: the operator retries and this time the server accepts.
+    // Act again: the operator retries and this time the server accepts. (The button is
+    // off while the page waits for an answer, so first wait for it to be back on.)
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Colocar no ar' }),
+        'the button must come back once the server has answered',
+      ).toBeEnabled();
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
     await waitFor(() => {
       expect(fakeServer.listCommandsReceived(), 'the retry must have been sent').toHaveLength(2);

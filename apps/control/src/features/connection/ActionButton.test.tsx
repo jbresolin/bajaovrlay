@@ -69,10 +69,11 @@ describe('an action button', () => {
         renderOnControlPageStillWaitingForTheServer(actionButton);
       }
 
-      // Act: the operator reaches for the button and tries to press it.
+      // Act: the operator tries to press the button, then rests on it to see why it
+      // did nothing (in that order: a click on a tooltip's owner closes the tooltip).
       const button = screen.getByRole('button', { name: 'Colocar no ar' });
-      focusAreaAroundDisabledButton(button);
       fireEvent.click(button);
+      focusAreaAroundDisabledButton(button);
 
       // Assert: the button is disabled, the press went nowhere, and the tooltip says why.
       expect(button, 'the button must be disabled without a connection').toBeDisabled();

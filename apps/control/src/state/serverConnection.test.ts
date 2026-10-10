@@ -1,5 +1,5 @@
 /**
- * Server connection (apps/control)
+ * Server connection: state in, commands out (apps/control)
  *
  * What this module is for:
  *   The control page talks to the server over one WebSocket. Everything the page knows
@@ -16,67 +16,25 @@
  *     message on a refusal, and rejects after 5 seconds of silence.
  *   - A command sent while disconnected is refused at once and never leaves the page.
  *   - A failure is left in the store for the page to show; the next success removes it.
- *   - When the line drops the page says "reconnecting", dials again after a wait that
- *     doubles each time (0.5 s, 1 s, 2 s, 4 s, then 5 s), and starts over from 0.5 s once
- *     a hello arrives. Hanging up on purpose stops the dialling.
  *
  * What these tests deliberately do not cover:
+ *   - What happens when the line drops; serverConnectionRedialling.test.ts covers that.
  *   - The browser's real WebSocket: a fake server socket stands in for it, driven by
  *     hand. The few lines that adapt the real one are exercised by e2e/takeAndClear.e2e.ts.
  *   - The real clock: time is moved by hand, so "5 seconds" takes no time to test.
  */
 import { describe, expect, it, vi } from 'vitest';
 
-import { createFakeServerSocket } from './fakeServerSocket.testSupport';
-import { connectToServer } from './serverConnection';
-import { createServerStateStore } from './serverStateStore';
+import {
+  connectControlPageToFakeServer,
+  connectControlPageToFakeServerThatSaidHello,
+} from './connectionToFakeServer.testSupport';
 import {
   buildRaceClockInstanceOnTheClockLayer,
-  buildSlicesWithNothingOnAir,
   buildSlicesWithTheRaceClockOnAir,
 } from './slicesLikeTheServerSends.testSupport';
 
 const momentTheClockWentOnAir = '2026-10-09T13:00:00.000Z';
-
-/** One line the connection wrote to the log, as the test recorded it. */
-type RecordedLogLine = { level: string; message: string; details: Record<string, unknown> };
-
-/**
- * Builds a control page connection dialling a fake server. Request ids are handed out
- * as pedido-1, pedido-2, ... so the tests can name them. The server has not picked up yet.
- */
-function connectControlPageToFakeServer() {
-  const serverStateStore = createServerStateStore();
-  const fakeServerSocket = createFakeServerSocket();
-  const recordedLogLines: RecordedLogLine[] = [];
-  let numberOfRequestIdsHandedOut = 0;
-
-  const serverConnection = connectToServer({
-    webSocketAddress: 'ws://192.168.0.10:3000/ws',
-    serverStateStore,
-    openSocket: fakeServerSocket.openSocket,
-    logEvent: (level, message, details = {}) => {
-      recordedLogLines.push({ level, message, details });
-    },
-    createRequestId: () => {
-      numberOfRequestIdsHandedOut += 1;
-      return `pedido-${numberOfRequestIdsHandedOut}`;
-    },
-  });
-
-  return { serverStateStore, fakeServerSocket, recordedLogLines, serverConnection };
-}
-
-/** The same, after the server picked up and said hello with nothing on air. */
-function connectControlPageToFakeServerThatSaidHello() {
-  const controlPage = connectControlPageToFakeServer();
-  controlPage.fakeServerSocket.acceptConnection();
-  controlPage.fakeServerSocket.sendMessage({
-    type: 'hello',
-    slices: buildSlicesWithNothingOnAir(),
-  });
-  return controlPage;
-}
 
 describe('connecting and receiving state', () => {
   it('dials the address it was given and says connecting until the server says hello', () => {
@@ -375,118 +333,5 @@ describe('sendCommand', () => {
       serverStateStore.getState().lastCommandError?.code,
       'the store must remember the failure for the page to show',
     ).toBe('NOT_CONNECTED');
-  });
-});
-
-describe('losing the connection', () => {
-  it('says reconnecting and keeps the last known state when the line drops', () => {
-    // Arrange: a connected page with the race clock on air.
-    vi.useFakeTimers();
-    const { serverStateStore, fakeServerSocket } = connectControlPageToFakeServer();
-    fakeServerSocket.acceptConnection();
-    fakeServerSocket.sendMessage({
-      type: 'hello',
-      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
-    });
-
-    // Act: the line drops.
-    fakeServerSocket.dropConnection();
-
-    // Assert: the page says so, and still shows what it last knew.
-    const state = serverStateStore.getState();
-    expect(state.connectionStatus, 'a dropped line means the page is reconnecting').toBe(
-      'reconnecting',
-    );
-    expect(state.instances, 'the last known instances must stay on screen').toHaveLength(1);
-  });
-
-  it('dials again after waits of 0.5 s, 1 s, 2 s, 4 s and then 5 s at most', () => {
-    // Arrange: a connected page whose line has just dropped, with time moved by hand.
-    vi.useFakeTimers();
-    const { fakeServerSocket } = connectControlPageToFakeServerThatSaidHello();
-    fakeServerSocket.dropConnection();
-    const waitsBeforeEachNewCallInMilliseconds = [500, 1_000, 2_000, 4_000, 5_000, 5_000];
-    const callsCountedJustBeforeEachWaitEnded: number[] = [];
-    const callsCountedRightAfterEachWaitEnded: number[] = [];
-
-    // Act: for each wait, go to one millisecond before its end, then to its end; every
-    // new call fails straight away (the server is still down), which starts the next wait.
-    for (const waitInMilliseconds of waitsBeforeEachNewCallInMilliseconds) {
-      vi.advanceTimersByTime(waitInMilliseconds - 1);
-      callsCountedJustBeforeEachWaitEnded.push(fakeServerSocket.countConnectionsOpened());
-      vi.advanceTimersByTime(1);
-      callsCountedRightAfterEachWaitEnded.push(fakeServerSocket.countConnectionsOpened());
-      fakeServerSocket.dropConnection();
-    }
-
-    // Assert: no call is made early, and exactly one is made when each wait ends.
-    expect(
-      callsCountedJustBeforeEachWaitEnded,
-      'no new call may go out before its wait is over',
-    ).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(
-      callsCountedRightAfterEachWaitEnded,
-      'one new call must go out when each wait ends',
-    ).toEqual([2, 3, 4, 5, 6, 7]);
-  });
-
-  it('is connected again, with fresh state, once the server says hello after a drop', () => {
-    // Arrange: a page that showed nothing on air, lost the line and has dialled again.
-    vi.useFakeTimers();
-    const { serverStateStore, fakeServerSocket } = connectControlPageToFakeServerThatSaidHello();
-    fakeServerSocket.dropConnection();
-    vi.advanceTimersByTime(500);
-
-    // Act: the server picks up and says hello; meanwhile the race clock went on air.
-    fakeServerSocket.acceptConnection();
-    fakeServerSocket.sendMessage({
-      type: 'hello',
-      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
-    });
-
-    // Assert: connected, and showing the server's state rather than the old one.
-    const state = serverStateStore.getState();
-    expect(state.connectionStatus, 'a hello after a drop means connected again').toBe('connected');
-    expect(state.instances, 'the state must be the one from the new hello').toHaveLength(1);
-  });
-
-  it('starts the waits over from 0.5 s after a successful reconnection', () => {
-    // Arrange: a page that needed three calls to get back (waits of 0.5 s and 1 s).
-    vi.useFakeTimers();
-    const { fakeServerSocket } = connectControlPageToFakeServerThatSaidHello();
-    fakeServerSocket.dropConnection();
-    vi.advanceTimersByTime(500);
-    fakeServerSocket.dropConnection();
-    vi.advanceTimersByTime(1_000);
-    fakeServerSocket.acceptConnection();
-    fakeServerSocket.sendMessage({ type: 'hello', slices: buildSlicesWithNothingOnAir() });
-    const callsBeforeTheSecondOutage = fakeServerSocket.countConnectionsOpened();
-
-    // Act: the line drops again, and half a second passes.
-    fakeServerSocket.dropConnection();
-    vi.advanceTimersByTime(500);
-
-    // Assert: the page has already dialled again, instead of waiting 2 s.
-    expect(
-      fakeServerSocket.countConnectionsOpened(),
-      'after a good connection the first retry must come after 0.5 s again',
-    ).toBe(callsBeforeTheSecondOutage + 1);
-  });
-
-  it('stops dialling once the connection is closed on purpose', () => {
-    // Arrange: a connected page, with time moved by hand.
-    vi.useFakeTimers();
-    const { fakeServerSocket, serverConnection } = connectControlPageToFakeServerThatSaidHello();
-
-    // Act: the page hangs up (as when its tab closes), the socket closes, a minute passes.
-    serverConnection.close();
-    fakeServerSocket.dropConnection();
-    vi.advanceTimersByTime(60_000);
-
-    // Assert: the only call ever made is the first one.
-    expect(
-      fakeServerSocket.countConnectionsOpened(),
-      'a page that hung up on purpose must not dial again',
-    ).toBe(1);
   });
 });

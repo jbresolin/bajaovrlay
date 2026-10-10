@@ -50,7 +50,11 @@ const relativeTimeScenarios = [
   // A four-hour endurance race: the clock has been on air since the start.
   { name: 'says "há 4 h" 4 hours after', pastMoment: '2026-10-10T09:00:00.000Z', text: 'há 4 h' },
   // A graphic left on overnight: singular "dia".
-  { name: 'says "há 1 dia" 30 hours after', pastMoment: '2026-10-09T07:00:00.000Z', text: 'há 1 dia' },
+  {
+    name: 'says "há 1 dia" 30 hours after',
+    pastMoment: '2026-10-09T07:00:00.000Z',
+    text: 'há 1 dia',
+  },
   // A graphic left on since the first day of the event: plural "dias".
   {
     name: 'says "há 3 dias" 3 days after',

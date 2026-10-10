@@ -173,12 +173,13 @@ describe('the clear all button', () => {
     // Arrange: the button on a connected page.
     const { fakeServer } = renderClearAllButtonOnConnectedPage();
 
-    // Act: the line drops; the operator reaches for the button and presses Esc twice.
+    // Act: the line drops; the operator presses Esc twice, then rests on the button to
+    // see why nothing happened (in that order: Esc also closes an open tooltip).
     fakeServer.dropConnection();
     const clearAllButton = screen.getByRole('button', { name: 'Limpar tudo' });
+    pressEscapeKey();
+    pressEscapeKey();
     focusAreaAroundDisabledButton(clearAllButton);
-    pressEscapeKey();
-    pressEscapeKey();
 
     // Assert: the button cannot be pressed, explains itself, and nothing was sent.
     expect(clearAllButton, 'clear all cannot work without a connection').toBeDisabled();

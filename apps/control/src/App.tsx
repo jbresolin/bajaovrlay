@@ -1,12 +1,9 @@
-import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
-import { ptBR } from '@/i18n/ptBR';
+import { AppShell } from '@/app/AppShell';
 
-/** The control page. For now: the product name and the server check. */
+/**
+ * The control page. It must be drawn inside a ControlPageStateProvider (main.tsx does
+ * that with the real server connection; tests do it with a fake server).
+ */
 export function App() {
-  return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
-      <h1 className="text-3xl font-semibold tracking-tight">{ptBR.app.title}</h1>
-      <ServerHealthCheck />
-    </main>
-  );
+  return <AppShell />;
 }

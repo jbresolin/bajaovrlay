@@ -1,15 +1,16 @@
 # @bajaovrlay/control
 
-The operator's control page: Vite + React + Tailwind v4 + shadcn/ui. Today it shows the
-product name and a button that checks `GET /health`; real features arrive from M1.
+The operator's control page (Vite + React + Tailwind v4 + shadcn/ui). In M0 it takes the
+race clock to air, clears layers, and always shows what is on every layer. Start reading
+at `src/main.tsx`, then `src/app/AppShell.tsx`.
 
-Start reading at `src/App.tsx`, then `src/features/serverHealth/`.
+- `src/app/` — the header and the three-column layout.
+- `src/features/<name>/` — `connection`, `layers`, `playout`, `programMonitor`, `serverHealth`.
+- `src/state/` — the WebSocket client and the store; the only place server state lives.
+- `src/i18n/` — every string the operator reads (`ptBR.ts`). No inline UI text.
+- `src/keyboard/`, `src/logging/` — shortcuts (Esc, Backspace) and the JSON console log.
+- `src/components/ui/` — shadcn/ui components, styled with semantic tokens only.
+- `e2e/` — Playwright against the real server on a new SQLite file (`pnpm test:e2e`).
 
-- `src/features/<name>/` — one folder per feature: its components and hooks.
-- `src/components/ui/` — shadcn/ui components (only `button.tsx` so far). Style them with
-  the semantic tokens defined in `src/index.css` only, never raw colours.
-- `src/i18n/ptBR.ts` — every string the operator reads. No inline UI text.
-- `src/state/` — the WebSocket client and store (from BAJAOVRLAY-8 onwards).
-
-`pnpm dev` (repo root) serves it at http://localhost:5173 and forwards `/api`, `/ws` and
-`/health` to the server. `pnpm build` writes `dist/`, which the server serves at `/`.
+`pnpm build` once (the server only offers built graphics), then `pnpm dev` serves it at
+http://localhost:5173, forwarding `/api`, `/ws`, `/health`, `/render`, `/graphics`.
