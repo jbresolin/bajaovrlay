@@ -57,6 +57,34 @@ function renderPanelWithTheRaceClockOnAir() {
   );
 }
 
+/**
+ * Draws the panel as it looks after a take the server refused: the server's message is
+ * on screen and "Colocar no ar" can be pressed again.
+ */
+async function renderPanelShowingARefusedTake() {
+  const controlPage = renderPanelWithNothingOnAir();
+  fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
+  await waitFor(() => {
+    expect(
+      controlPage.fakeServer.listCommandsReceived(),
+      'the take that will be refused must have been sent',
+    ).toHaveLength(1);
+  });
+  controlPage.fakeServer.refuseLastCommand({
+    code: 'GRAPHIC_NOT_FOUND',
+    message: 'O gráfico "race-clock" não está registrado.',
+  });
+  await screen.findByRole('alert');
+  // The button is off while the page waits for an answer, so wait for it to be back on.
+  await waitFor(() => {
+    expect(
+      screen.getByRole('button', { name: 'Colocar no ar' }),
+      'the button must come back once the server has answered',
+    ).toBeEnabled();
+  });
+  return controlPage;
+}
+
 /** Types into a text field found by its label, replacing what was there. */
 function typeIntoField(fieldLabel: string, text: string) {
   fireEvent.change(screen.getByLabelText(fieldLabel), { target: { value: text } });
@@ -145,6 +173,8 @@ describe('the take race clock panel', () => {
         },
       ]);
     });
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
     fakeServer.acceptLastCommand();
   });
 
@@ -178,6 +208,8 @@ describe('the take race clock panel', () => {
         },
       ]);
     });
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
     fakeServer.acceptLastCommand();
   });
 
@@ -196,7 +228,11 @@ describe('the take race clock panel', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('Nome da sessão'),
-      'the field must be marked invalid and point at its message for screen readers',
+      'the field must be marked invalid for screen readers',
+    ).toBeInvalid();
+    expect(
+      screen.getByLabelText('Nome da sessão'),
+      'the field must point at its message for screen readers',
     ).toHaveAccessibleDescription('Informe o nome da sessão.');
     expect(
       fakeServer.listCommandsReceived(),
@@ -223,14 +259,12 @@ describe('the take race clock panel', () => {
     ).toEqual([]);
   });
 
-  it("shows the server's message when the take is refused, and removes it after a good take", async () => {
-    // Arrange: the panel on a server that will refuse the take.
+  it("shows the server's pt-BR message when the take is refused", async () => {
+    // Arrange: the panel with "Colocar no ar" pressed, and the take on its way.
     const { fakeServer } = renderPanelWithNothingOnAir();
     fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
     await waitFor(() => {
-      expect(fakeServer.listCommandsReceived(), 'the first take must have been sent').toHaveLength(
-        1,
-      );
+      expect(fakeServer.listCommandsReceived(), 'the take must have been sent').toHaveLength(1);
     });
 
     // Act: the server answers that the race clock package is not registered (not built).
@@ -238,27 +272,26 @@ describe('the take race clock panel', () => {
       code: 'GRAPHIC_NOT_FOUND',
       message: 'O gráfico "race-clock" não está registrado.',
     });
-    const errorShownAfterTheRefusal = await screen.findByRole('alert');
-    const textShownAfterTheRefusal = errorShownAfterTheRefusal.textContent;
 
-    // Act again: the operator retries and this time the server accepts. (The button is
-    // off while the page waits for an answer, so first wait for it to be back on.)
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: 'Colocar no ar' }),
-        'the button must come back once the server has answered',
-      ).toBeEnabled();
-    });
+    // Assert: the panel shows the refusal in the server's own words.
+    expect(
+      await screen.findByRole('alert'),
+      "the panel must show the server's pt-BR message",
+    ).toHaveTextContent('O gráfico "race-clock" não está registrado.');
+  });
+
+  it('removes the old error once a later take works', async () => {
+    // Arrange: the panel showing the message of a take the server refused.
+    const { fakeServer } = await renderPanelShowingARefusedTake();
+
+    // Act: the operator presses "Colocar no ar" again, and this time the server accepts.
     fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
     await waitFor(() => {
       expect(fakeServer.listCommandsReceived(), 'the retry must have been sent').toHaveLength(2);
     });
     fakeServer.acceptLastCommand();
 
-    // Assert: the refusal was shown in the server's own words, and is gone after the retry.
-    expect(textShownAfterTheRefusal, "the panel must show the server's pt-BR message").toBe(
-      'O gráfico "race-clock" não está registrado.',
-    );
+    // Assert: the message of the refused take is gone.
     await waitFor(() => {
       expect(
         screen.queryByRole('alert'),

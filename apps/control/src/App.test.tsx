@@ -14,7 +14,8 @@
  *   - The three areas are there: the rundown placeholder, the program monitor (a frame
  *     showing `/render/`, the same page OBS loads) with the race clock panel, and the
  *     layer list with "Limpar tudo".
- *   - Backspace clears the clock layer, but not while the operator is typing in a field.
+ *   - Backspace clears the clock layer, but not while the operator is typing in a field,
+ *     choosing in a dropdown (closed or open) or resting on the switch.
  *   - When the server refuses a clear, its pt-BR message appears next to the layers.
  *
  * What these tests deliberately do not cover:
@@ -174,6 +175,8 @@ describe('the Backspace key', () => {
       fakeServer.listCommandsReceived(),
       'Backspace outside a field must clear the clock layer',
     ).toEqual([{ type: 'clearLayer', layerId: 'clock' }]);
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
     fakeServer.acceptLastCommand();
   });
 
@@ -188,6 +191,53 @@ describe('the Backspace key', () => {
     expect(
       fakeServer.listCommandsReceived(),
       'Backspace inside a text field must not clear any layer',
+    ).toEqual([]);
+  });
+
+  it('clears nothing while the flag dropdown has focus', () => {
+    // Arrange: the page with the race clock on air.
+    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
+
+    // Act: press Backspace on the closed "Bandeira" dropdown, where the focus rests
+    // right after the operator has picked a flag.
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Bandeira' }), { key: 'Backspace' });
+
+    // Assert: no command was sent; the operator is editing the form, not clearing.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'Backspace on a dropdown must not clear any layer',
+    ).toEqual([]);
+  });
+
+  it('clears nothing while the list of an open dropdown has focus', () => {
+    // Arrange: the page with the race clock on air and the "Bandeira" dropdown opened
+    // from the keyboard, so its six flags are listed.
+    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Bandeira' }), { key: 'Enter' });
+
+    // Act: press Backspace on one of the listed flags.
+    fireEvent.keyDown(screen.getByRole('option', { name: 'Verde' }), { key: 'Backspace' });
+
+    // Assert: no command was sent.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'Backspace inside an open dropdown list must not clear any layer',
+    ).toEqual([]);
+  });
+
+  it('clears nothing while the "Relógio correndo" switch has focus', () => {
+    // Arrange: the page with the race clock on air.
+    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
+
+    // Act: press Backspace on the switch, another control of the form being edited.
+    fireEvent.keyDown(screen.getByRole('switch', { name: 'Relógio correndo' }), {
+      key: 'Backspace',
+    });
+
+    // Assert: no command was sent.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'Backspace on the switch must not clear any layer',
     ).toEqual([]);
   });
 });

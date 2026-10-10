@@ -31,7 +31,7 @@ describe('logControlEvent', () => {
     logControlEvent(
       'warn',
       'ignored a command result nobody is waiting for',
-      { requestId: 'pedido-17' },
+      { request_id: 'pedido-17' },
       fixedNow,
     );
     consoleInfo.mockRestore();
@@ -45,7 +45,7 @@ describe('logControlEvent', () => {
       level: 'warn',
       message: 'ignored a command result nobody is waiting for',
       time: '2026-10-10T13:00:00.000Z',
-      requestId: 'pedido-17',
+      request_id: 'pedido-17',
     });
   });
 });

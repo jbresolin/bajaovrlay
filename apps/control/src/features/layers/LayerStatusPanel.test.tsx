@@ -186,6 +186,8 @@ describe('the layer status panel', () => {
       fakeServer.listCommandsReceived(),
       `"Limpar" on "${layerName}" must send clearLayer for "${layerId}" and nothing else`,
     ).toEqual([{ type: 'clearLayer', layerId }]);
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
     fakeServer.acceptLastCommand();
   });
 

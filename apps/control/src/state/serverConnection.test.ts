@@ -305,8 +305,11 @@ describe('sendCommand', () => {
     expect(recordedLogLines[0]?.message, 'the log line must say what happened').toBe(
       'ignored a command result nobody is waiting for',
     );
-    expect(recordedLogLines[0]?.details, 'the log line must name the request').toEqual({
-      requestId: 'pedido-1',
+    expect(
+      recordedLogLines[0]?.details,
+      'the log line must name the request under `request_id`, the key the server logs it under',
+    ).toEqual({
+      request_id: 'pedido-1',
     });
   });
 

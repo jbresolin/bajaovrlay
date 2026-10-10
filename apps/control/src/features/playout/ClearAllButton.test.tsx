@@ -84,6 +84,8 @@ describe('the clear all button', () => {
       screen.getByRole('button', { name: 'Limpar tudo' }),
       'after confirming, the button must be ready for a new first press',
     ).toBeInTheDocument();
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
     fakeServer.acceptLastCommand();
   });
 
@@ -128,6 +130,8 @@ describe('the clear all button', () => {
     expect(fakeServer.listCommandsReceived(), 'the second Esc must send clearAll, once').toEqual([
       { type: 'clearAll' },
     ]);
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
     fakeServer.acceptLastCommand();
   });
 
@@ -145,6 +149,8 @@ describe('the clear all button', () => {
       fakeServer.listCommandsReceived(),
       'Esc and the button are the same action, so they confirm each other',
     ).toEqual([{ type: 'clearAll' }]);
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
     fakeServer.acceptLastCommand();
   });
 
@@ -171,7 +177,7 @@ describe('the clear all button', () => {
 
   it('is disabled and says why while the connection is down, and Esc does nothing', async () => {
     // Arrange: the button on a connected page.
-    const { fakeServer } = renderClearAllButtonOnConnectedPage();
+    const { fakeServer, serverStateStore } = renderClearAllButtonOnConnectedPage();
 
     // Act: the line drops; the operator presses Esc twice, then rests on the button to
     // see why nothing happened (in that order: Esc also closes an open tooltip).
@@ -181,15 +187,21 @@ describe('the clear all button', () => {
     pressEscapeKey();
     focusAreaAroundDisabledButton(clearAllButton);
 
-    // Assert: the button cannot be pressed, explains itself, and nothing was sent.
+    // Assert: the button cannot be pressed, explains itself, and Esc did nothing at all.
+    // A command tried without a connection never reaches the server; it leaves a "not
+    // connected" error in the store instead, so that is where an attempt would show.
     expect(clearAllButton, 'clear all cannot work without a connection').toBeDisabled();
     expect(
       await screen.findByRole('tooltip'),
       'the tooltip must tell the operator why the button is disabled',
     ).toHaveTextContent('Sem conexão com o servidor. Os comandos voltam quando ela voltar.');
     expect(
+      serverStateStore.getState().lastCommandError,
+      'Esc must not even try a command while disconnected',
+    ).toBeNull();
+    expect(
       fakeServer.listCommandsReceived(),
-      'Esc must not try to send anything while disconnected',
+      'nothing may reach the server while disconnected',
     ).toEqual([]);
   });
 });
