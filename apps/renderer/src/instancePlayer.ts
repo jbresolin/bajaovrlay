@@ -36,7 +36,7 @@ export type InstancePlayer = {
   runLayerOperations: (layerOperations: LayerOperations[], graphics: Graphic[]) => void;
 };
 
-/** What the player works with; `logEvent` is replaceable so a test could capture the log. */
+/** What the player works with; `logEvent` is replaceable so a test can capture the log. */
 export type InstancePlayerOptions = {
   layerContainers: LayerContainers;
   graphicLoader: GraphicLoader;
@@ -66,7 +66,8 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
         const endOfQueue = endOfQueueByLayerId.get(layerId) ?? Promise.resolve();
         const thisOperation = endOfQueue
           .then(() => runOneOperation(layerId, operation, graphics))
-          // Nothing below is expected to throw; if it does, the layer's queue must go on.
+          // Nothing below is expected to throw; if it does, the layer's queue must go on
+          // (instancePlayer.test.ts proves it with an element that cannot be created).
           .catch((unexpectedError: unknown) => {
             logEvent('error', 'renderer operation failed unexpectedly', {
               layerId,
@@ -100,15 +101,25 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
       await disposeWhateverIsOnLayer(layerId);
       return;
     }
-    // A replace. `out-then-in` animates the old graphic out and the new one in. `cut`
-    // skips both animations. `crossfade` is treated as `cut` in M0: a real crossfade
-    // needs both graphics on the layer at once, which no M0 graphic is designed for.
-    // Trade-off of this order for `cut`: the layer is empty while the new graphic
-    // loads; loading the new one first would avoid that and is left for when a layer
-    // actually uses `cut` (every seeded layer is `out-then-in`).
-    const skipAnimation = operation.replacePolicy !== 'out-then-in';
-    await stopAndDisposeInstance(layerId, operation.outgoingInstanceId, skipAnimation);
-    await loadAndPlayInstance(operation.incomingInstance, graphics, skipAnimation);
+    if (operation.kind === 'replace') {
+      // `out-then-in` animates the old graphic out and the new one in. `cut` skips both
+      // animations. `crossfade` is treated as `cut` in M0: a real crossfade needs both
+      // graphics on the layer at once, which no M0 graphic is designed for.
+      // Trade-off of this order for `cut`: the layer is empty while the new graphic
+      // loads; loading the new one first would avoid that and is left for when a layer
+      // actually uses `cut` (every seeded layer is `out-then-in`).
+      const skipAnimation = operation.replacePolicy !== 'out-then-in';
+      await stopAndDisposeInstance(layerId, operation.outgoingInstanceId, skipAnimation);
+      await loadAndPlayInstance(operation.incomingInstance, graphics, skipAnimation);
+      return;
+    }
+    // Every kind is handled above. Two guards keep it that way. The `never` line stops
+    // the build when a new kind is added to InstanceOperation without a branch here. The
+    // throw covers what the build cannot see (an operation that did not come from this
+    // version's reconciler): the queue logs it by name instead of guessing what to do.
+    const unhandledOperation: never = operation;
+    const unknownKind = String((unhandledOperation as { kind?: unknown }).kind);
+    throw new Error(`the renderer does not know the operation kind "${unknownKind}"`);
   }
 
   /** Creates the instance's element in its layer, loads it, then plays step 0. */
