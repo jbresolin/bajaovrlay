@@ -17,7 +17,8 @@
  *   - A replace calls stop and dispose on the old graphic before load and play on the new
  *     one; `out-then-in` animates both, `cut` and `crossfade` skip both animations.
  *   - An operation that throws is logged and does not stop the next operation on the same
- *     layer.
+ *     layer. An operation of a kind the player does not know is one of those: it is
+ *     logged by name and never carried out as if it were a replace.
  *   - Two layers run independently: the lower third plays while the clock is still
  *     loading. On one layer, the second operation waits for the first.
  *   - A graphic whose load throws leaves its layer empty, and the next take on that layer
@@ -36,6 +37,7 @@
 import type { Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import type { InstanceOperation } from './instanceReconciler.js';
 import {
   createEnduroClockInstance,
   createFinalClockInstance,
@@ -46,23 +48,15 @@ import {
   ufprLowerThirdInstanceId,
 } from './instancesOnAir.testSupport.js';
 import {
+  createEnduroClockThatLoadsSlowly,
   createGraphic,
   createStageWithPlayer,
   createTakeOf,
+  createUfprLowerThirdWhoseLoad,
   graphicsOfTheStream,
   readInstanceIdsOnLayer,
   waitForQueuedOperations,
 } from './stageWithPlayer.testSupport.js';
-
-/** Builds an enduro clock whose load does not finish until the test releases it. */
-function createEnduroClockThatLoadsSlowly(): Instance {
-  return createEnduroClockInstance({
-    resolvedData: {
-      sessionName: 'Enduro de Resistência',
-      fakeGraphicLoadOutcome: 'waits-to-be-released',
-    },
-  });
-}
 
 describe('a new instance on an empty layer', () => {
   it('is created inside its layer, loaded with its data, then played', async () => {
@@ -102,10 +96,7 @@ describe('a new instance on an empty layer', () => {
     // Arrange: team 42's lower third, drawn by a graphic whose load resolves with no
     // answer, which OGraf v1 says must be treated as `{ statusCode: 200 }`.
     const { stage, instancePlayer, recording } = createStageWithPlayer();
-    const lowerThirdWhoseLoadAnswersNothing: Instance = {
-      ...createTeamLowerThirdInstance(ufprLowerThirdInstanceId, 42, 'Baja UFPR'),
-      resolvedData: { teamNumber: 42, fakeGraphicLoadOutcome: 'answers-nothing' },
-    };
+    const lowerThirdWhoseLoadAnswersNothing = createUfprLowerThirdWhoseLoad('answers-nothing');
 
     // Act: the lower third is taken.
     instancePlayer.runLayerOperations(
@@ -252,6 +243,39 @@ describe("a layer's queue of operations", () => {
     ).toEqual([ufprLowerThirdInstanceId]);
   });
 
+  it('logs an operation of a kind it does not know, and carries on with the layer', async () => {
+    // Arrange: an operation kind this player was never taught, as a reconciler from a
+    // later version could send. TypeScript forbids it, so it is forced in here.
+    const { instancePlayer, recording, logLines } = createStageWithPlayer();
+    const fadeToBlack = { kind: 'fadeToBlack' } as unknown as InstanceOperation;
+
+    // Act: the unknown operation is queued on the clock layer, then the enduro clock.
+    instancePlayer.runLayerOperations(
+      [{ layerId: 'clock', operations: [fadeToBlack] }],
+      graphicsOfTheStream,
+    );
+    instancePlayer.runLayerOperations(
+      createTakeOf(createEnduroClockInstance()),
+      graphicsOfTheStream,
+    );
+    await waitForQueuedOperations();
+
+    // Assert: the log names the unknown kind instead of guessing what to do with it, no
+    // graphic was touched on its account, and the clock behind it was played.
+    expect(
+      logLines.find((line) => line.message === 'renderer operation failed unexpectedly')?.details,
+      'an unknown operation kind must be logged by name, not carried out as a replace',
+    ).toEqual({
+      layerId: 'clock',
+      operation: 'fadeToBlack',
+      reason: 'Error: the renderer does not know the operation kind "fadeToBlack"',
+    });
+    expect(
+      recording.lifecycleCalls,
+      'only the take queued behind the unknown operation may reach a graphic',
+    ).toEqual(['Enduro: load', 'Enduro: playAction']);
+  });
+
   it('lets the lower third play while the clock is still loading', async () => {
     // Arrange: an empty stage, and an enduro clock whose load will not finish until the
     // test says so, like a graphic waiting for its fonts.
@@ -323,10 +347,7 @@ describe('a graphic that fails', () => {
   it('leaves its layer empty when its load throws, and the next take on that layer plays', async () => {
     // Arrange: team 42's lower third, drawn by a graphic whose load throws.
     const { stage, instancePlayer, recording, logLines } = createStageWithPlayer();
-    const lowerThirdWhoseLoadThrows: Instance = {
-      ...createTeamLowerThirdInstance(ufprLowerThirdInstanceId, 42, 'Baja UFPR'),
-      resolvedData: { teamNumber: 42, fakeGraphicLoadOutcome: 'rejects' },
-    };
+    const lowerThirdWhoseLoadThrows = createUfprLowerThirdWhoseLoad('rejects');
     // The server still lists the broken instance, so the reconciler describes the next
     // take as a replace of it.
     const replaceByTeamSeven = {

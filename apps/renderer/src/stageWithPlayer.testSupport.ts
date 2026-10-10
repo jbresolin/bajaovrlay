@@ -8,6 +8,8 @@ import type { GraphicLoader } from './graphicLoader.js';
 import { createInstancePlayer } from './instancePlayer.js';
 import type { LayerOperations } from './instanceReconciler.js';
 import {
+  createEnduroClockInstance,
+  createTeamLowerThirdInstance,
   enduroClockInstanceId,
   feiLowerThirdInstanceId,
   finalClockInstanceId,
@@ -72,6 +74,27 @@ export function createStageWithPlayer(
     },
   });
   return { stage, instancePlayer, recording, logLines };
+}
+
+/** Builds an enduro clock whose load does not finish until the test releases it. */
+export function createEnduroClockThatLoadsSlowly(): Instance {
+  return createEnduroClockInstance({
+    resolvedData: {
+      sessionName: 'Enduro de Resistência',
+      fakeGraphicLoadOutcome: 'waits-to-be-released',
+    },
+  });
+}
+
+/**
+ * Builds team 42's lower third with the data field that tells the recording graphic how
+ * its load must go: `'rejects'` or `'answers-nothing'`.
+ */
+export function createUfprLowerThirdWhoseLoad(fakeGraphicLoadOutcome: string): Instance {
+  return {
+    ...createTeamLowerThirdInstance(ufprLowerThirdInstanceId, 42, 'Baja UFPR'),
+    resolvedData: { teamNumber: 42, teamName: 'Baja UFPR', fakeGraphicLoadOutcome },
+  };
 }
 
 /** Builds what the reconciler sends for a plain take: load and play it on its own layer. */
