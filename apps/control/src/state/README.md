@@ -9,7 +9,7 @@ sending a command. Start reading at `serverConnection.ts`, then `serverStateStor
 - `serverStateStore.ts` — Zustand store: the four slices, connection status, last error.
 - `commandFailure.ts` — the codes and the error a failed command carries.
 - `browserWebSocket.ts` — the few lines that touch the browser's WebSocket API.
-- `ControlPageStateProvider.tsx` — `useServerState`, `useSendCommand` for components.
+- `ControlPageStateProvider.tsx` — `useServerState`, `useSendCommand`, `useReadServerStateNow`.
 - `*.testSupport.*` — the fake server socket and believable slices for tests.
 
 Components never copy server state: they read it with a selector and wait for the next slice.

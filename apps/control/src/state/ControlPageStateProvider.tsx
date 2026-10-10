@@ -55,6 +55,17 @@ export function useServerState<SelectedPiece>(
   return useStore(serverStateStore, selectPiece);
 }
 
+/**
+ * Returns a function that reads the server state as it is at the moment of the call,
+ * without redrawing anything. For code that runs after waiting for the server (a button
+ * handler past its `await`), where the state the component drew with is already old.
+ * To draw something, use `useServerState`.
+ */
+export function useReadServerStateNow(): () => ServerState {
+  const { serverStateStore } = useControlPageState();
+  return serverStateStore.getState;
+}
+
 /** Whether the page can send commands right now (it holds a hello from the server). */
 export function useIsConnectedToServer(): boolean {
   return useServerState((state) => state.connectionStatus === 'connected');

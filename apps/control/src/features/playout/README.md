@@ -6,9 +6,9 @@ Putting graphics on air and taking them off. Start reading at `TakeRaceClockPane
   `RaceClockFormFields.tsx` draws its six fields, `FormFieldRow.tsx` one labelled field.
 - `raceClockTakeForm.ts` — the form's values, rules (pt-BR messages) and the `takeGraphic`
   command; `raceClockTakeFormResolver.ts` hands the rules to react-hook-form;
-  `minutesAndSeconds.ts` reads the time typed as mm:ss.
-- `raceClockUpdateCommand.ts` — the command "Atualizar" sends: everything from the form
-  except the time, which is the one the clock on air shows (a flag change never resets it).
+  `minutesAndSeconds.ts` reads and writes a time as mm:ss.
+- `raceClockDataOnAir.ts` reads the clock on air; `raceClockUpdateCommand.ts` builds what
+  "Atualizar" sends: changed fields from the form, every other field as it is on air.
 - `ClearAllButton.tsx` (red panic button and Esc, two presses within 3 s),
   `useBackspaceToClearClockLayer.ts`, `CommandErrorMessage.tsx` (why a command failed).
 

@@ -1,6 +1,7 @@
 /**
  * Reading a time typed as mm:ss, the way the operator types the race clock's reference
- * time. Its own file so the take form's rules do not also carry time arithmetic.
+ * time, and writing one back the same way. Its own file so the take form's rules do not
+ * also carry time arithmetic.
  */
 
 // Minutes may have up to three digits so the four-hour endurance race fits (240:00).
@@ -21,4 +22,17 @@ export function convertMinutesAndSecondsToMilliseconds(text: string): number | u
   const minutes = Number(match[1]);
   const seconds = Number(match[2]);
   return (minutes * secondsPerMinute + seconds) * millisecondsPerSecond;
+}
+
+/**
+ * Writes milliseconds as mm:ss ("12:34"), the shape the function above reads. A part of
+ * a second is dropped. Minutes are never turned into hours, so four hours read "240:00";
+ * past 999:59 the text has four minute digits, which the form's rule refuses.
+ */
+export function formatMillisecondsAsMinutesAndSeconds(milliseconds: number): string {
+  const wholeSeconds = Math.floor(milliseconds / millisecondsPerSecond);
+  const minutes = Math.floor(wholeSeconds / secondsPerMinute);
+  const secondsPastTheMinute = wholeSeconds % secondsPerMinute;
+  const twoDigitSeconds = String(secondsPastTheMinute).padStart(2, '0');
+  return `${minutes}:${twoDigitSeconds}`;
 }

@@ -3,80 +3,94 @@
  *
  * There is no update command yet (`updateItemFields` comes in M1), so "Atualizar" is a
  * second `takeGraphic` and the server replaces the instance on the layer. The command is
- * built so that the replacement shows the same time as the clock it replaces: a flag
- * change in the middle of a race must never reset the clock.
- *
- * Trade-off, written here on purpose: the time typed in the form is NOT used by
- * "Atualizar" (unless the on-air data cannot be read). To set the clock to a typed time
- * the operator presses "Colocar no ar" again.
+ * therefore the whole of the clock's data, put together from two sources: a field the
+ * operator changed comes from the form, and a field the operator left alone comes from
+ * what is on air. A flag change in the middle of a race then changes the flag and
+ * nothing else; it cannot reset the clock, stop it or rename the session.
  */
-import { z } from 'zod';
-
+import { findTimeShownOnAir, readRaceClockDataOnAir } from './raceClockDataOnAir';
 import {
   buildTakeRaceClockCommand,
-  clockModes,
+  type RaceClockData,
   type RaceClockTakeFormValues,
   type TakeRaceClockCommand,
 } from './raceClockTakeForm';
 
-// Only the four fields that decide which time the clock shows. The server stores an
-// instance's data as "any object", so it is checked here before any arithmetic on it.
-// Unknown fields are ignored; the rest of the on-air data is not needed.
-const ClockReadingOnAirSchema = z.object({
-  clockMode: z.enum(clockModes),
-  referenceTimeMs: z.number().min(0),
-  referenceWallClockMs: z.number().min(0),
-  running: z.boolean(),
-});
-
-type ClockReadingOnAir = z.infer<typeof ClockReadingOnAirSchema>;
-
 /**
- * The time the clock on air shows at `nowInMilliseconds`, in milliseconds. This is the
- * same sum the graphic does on every frame (clockExtrapolation.ts in the race clock
- * package), repeated here because the control page does not import code from graphics.
- * Nothing checks that the two stay in step; a change there must be repeated here.
+ * Which form fields the operator changed since the form was last filled. This is the
+ * shape of react-hook-form's `formState.dirtyFields`: a changed field is `true`, and an
+ * unchanged one is absent or `false`.
  */
-function findTimeShownOnAir(clockReading: ClockReadingOnAir, nowInMilliseconds: number): number {
-  if (!clockReading.running) {
-    return clockReading.referenceTimeMs;
-  }
+export type RaceClockFieldsTheOperatorChanged = Partial<
+  Record<keyof RaceClockTakeFormValues, boolean>
+>;
 
-  const timeSinceTheReading = nowInMilliseconds - clockReading.referenceWallClockMs;
-  const timeShown =
-    clockReading.clockMode === 'elapsed'
-      ? clockReading.referenceTimeMs + timeSinceTheReading
-      : clockReading.referenceTimeMs - timeSinceTheReading;
-  // A countdown that ran out shows zero, and the graphic refuses a negative time.
-  return Math.max(0, timeShown);
-}
+/** Everything buildUpdateRaceClockCommand needs, named so a call reads on its own. */
+export type UpdateRaceClockCommandInput = {
+  /** The form as it stands, already checked by the form's rules. */
+  formValues: RaceClockTakeFormValues;
+  fieldsTheOperatorChanged: RaceClockFieldsTheOperatorChanged;
+  /** The on-air instance's `resolvedData`, unchecked, exactly as the server sent it. */
+  raceClockDataOnAir: unknown;
+  /** Date.now() at the press. */
+  nowInMilliseconds: number;
+};
 
 /**
- * Builds the `takeGraphic` command for "Atualizar". Session name, flag, clock mode,
- * running and laps come from the form; the clock's time is the one the instance on air
- * shows at `nowInMilliseconds`, which also becomes the new reference moment.
+ * Builds the `takeGraphic` command for "Atualizar". Each changed field comes from the
+ * form and each unchanged field from the instance on air. An unchanged time is the time
+ * the clock on air shows at `nowInMilliseconds`; a changed time is the typed one. Either
+ * way `nowInMilliseconds` becomes the clock's new reference moment.
  *
- * `raceClockDataOnAir` is the on-air instance's `resolvedData`. If it cannot be read as
- * race clock data the command is the same one "Colocar no ar" sends (the typed time).
+ * If the on-air data cannot be read as race clock data there is nothing to keep, and
+ * the command is the same one "Colocar no ar" sends: every field from the form.
  */
 export function buildUpdateRaceClockCommand(
-  formValues: RaceClockTakeFormValues,
-  raceClockDataOnAir: unknown,
-  nowInMilliseconds: number,
+  input: UpdateRaceClockCommandInput,
 ): TakeRaceClockCommand {
+  const { formValues, fieldsTheOperatorChanged, nowInMilliseconds } = input;
   const commandFromTheFormAlone = buildTakeRaceClockCommand(formValues, nowInMilliseconds);
 
-  const clockReadingOnAir = ClockReadingOnAirSchema.safeParse(raceClockDataOnAir);
-  if (!clockReadingOnAir.success) {
+  const dataOnAir = readRaceClockDataOnAir(input.raceClockDataOnAir);
+  if (dataOnAir === undefined) {
     return commandFromTheFormAlone;
   }
+  const dataFromTheForm = commandFromTheFormAlone.data;
 
-  // If the form changes the clock mode, the number on screen is kept and only its
+  // If only the clock mode was changed, the number on screen is kept and only its
   // direction changes: 27:34 elapsed becomes 27:34 remaining. Nothing better can be
   // guessed without knowing how long the session lasts.
-  const timeShownOnAir = findTimeShownOnAir(clockReadingOnAir.data, nowInMilliseconds);
-  return {
-    ...commandFromTheFormAlone,
-    data: { ...commandFromTheFormAlone.data, referenceTimeMs: timeShownOnAir },
+  const timeShownOnAir = findTimeShownOnAir(dataOnAir, nowInMilliseconds);
+
+  // One line per field, written out, so each can be read against the rule: changed in
+  // the form, or else as it is on air.
+  const data: RaceClockData = {
+    sessionName:
+      fieldsTheOperatorChanged.sessionName === true
+        ? dataFromTheForm.sessionName
+        : dataOnAir.sessionName,
+    state: fieldsTheOperatorChanged.state === true ? dataFromTheForm.state : dataOnAir.state,
+    clockMode:
+      fieldsTheOperatorChanged.clockMode === true ? dataFromTheForm.clockMode : dataOnAir.clockMode,
+    referenceTimeMs:
+      fieldsTheOperatorChanged.referenceTime === true
+        ? dataFromTheForm.referenceTimeMs
+        : timeShownOnAir,
+    // Always the press: both a typed time and a carried-forward time are "the time at
+    // this moment". Keeping the old reference moment would count the time since it twice.
+    referenceWallClockMs: nowInMilliseconds,
+    running:
+      fieldsTheOperatorChanged.running === true ? dataFromTheForm.running : dataOnAir.running,
   };
+  // The graphic refuses a null or unknown field, so absent laps are left out entirely:
+  // erased in the form if the operator changed them, or simply not on air.
+  const laps =
+    fieldsTheOperatorChanged.lapsCompletedByLeader === true
+      ? dataFromTheForm.lapsCompletedByLeader
+      : dataOnAir.lapsCompletedByLeader;
+  if (laps !== undefined) {
+    data.lapsCompletedByLeader = laps;
+  }
+
+  return { ...commandFromTheFormAlone, data };
 }
