@@ -273,25 +273,23 @@ const sliceChangeScenarios = [
 ];
 
 describe('decideLayerOperations', () => {
-  it.each(sliceChangeScenarios)(
-    '$name',
-    ({ previousInstances, nextInstances, expectedLayerOperations }) => {
-      // Arrange: the instances drawn last and the ones that just arrived, from the table.
+  it.each(sliceChangeScenarios)('$name', (scenario) => {
+    // Arrange: the instances drawn last and the ones that just arrived, from the row.
+    const { previousInstances, nextInstances, expectedLayerOperations } = scenario;
 
-      // Act: ask what to do on each layer.
-      const layerOperations = decideLayerOperations({
-        previousInstances,
-        nextInstances,
-        layers: layersOfTheStream,
-      });
+    // Act: ask what to do on each layer.
+    const layerOperations = decideLayerOperations({
+      previousInstances,
+      nextInstances,
+      layers: layersOfTheStream,
+    });
 
-      // Assert: exactly the expected operations, layer by layer.
-      expect(
-        layerOperations,
-        'the operations must be exactly what this change calls for',
-      ).toStrictEqual(expectedLayerOperations);
-    },
-  );
+    // Assert: exactly the expected operations, layer by layer.
+    expect(
+      layerOperations,
+      'the operations must be exactly what this change calls for',
+    ).toStrictEqual(expectedLayerOperations);
+  });
 
   it('replaces with out-then-in when the layer is not in the layers slice', () => {
     // Arrange: a replace on the clock layer, but a layers slice that does not list it.

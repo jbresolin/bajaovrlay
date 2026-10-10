@@ -102,30 +102,31 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: true }));
   }
 
-  function handleMessage(data: unknown): 'hello' | 'other' {
+  /** Acts on one message, and tells the socket whether it was the hello it waits for. */
+  function handleMessage(data: unknown): { wasHello: boolean } {
     const message = parseServerMessage(data);
     if (message === undefined) {
       logEvent('warn', 'server message ignored: not in the protocol');
-      return 'other';
+      return { wasHello: false };
     }
     if (message.type === 'hello') {
       deliverFullSnapshot(message.slices);
-      return 'hello';
+      return { wasHello: true };
     }
     if (message.type === 'slice') {
       if (slicesFromServer === undefined) {
         logEvent('warn', 'slice message ignored: no full snapshot received yet', {
           sliceName: message.name,
         });
-        return 'other';
+        return { wasHello: false };
       }
       const slices: Slices = { ...slicesFromServer, [message.name]: message.slice };
       slicesFromServer = slices;
       slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: false }));
-      return 'other';
+      return { wasHello: false };
     }
     // A commandResult: the renderer sends no commands, so there is nothing to do with it.
-    return 'other';
+    return { wasHello: false };
   }
 
   function openOneSocket(): void {
@@ -167,7 +168,8 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     });
 
     socket.onMessage((data) => {
-      if (handleMessage(data) === 'hello') {
+      const { wasHello } = handleMessage(data);
+      if (wasHello) {
         hasReceivedHello = true;
         clearTimeout(helloWaitTimer);
       }
