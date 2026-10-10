@@ -143,7 +143,10 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     if (requestId === null || commandAwaitingThisResult === undefined) {
       // Either the command already timed out, or the server is answering a message it
       // could not read. Nobody is waiting, so there is nothing to settle.
-      logEvent('warn', 'ignored a command result nobody is waiting for', { requestId });
+      // The key is `request_id`, as in the server's log lines, so one search finds both.
+      logEvent('warn', 'ignored a command result nobody is waiting for', {
+        request_id: requestId,
+      });
       return;
     }
 

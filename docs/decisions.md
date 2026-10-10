@@ -95,3 +95,4 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-10-09 — PR #TBD — The control page's Playwright suite starts the real server from source on port 5187 and the control dev server on 5188, with its SQLite file in the gitignored apps/control/e2e-data/, deleted before every start.
 - 2026-10-09 — PR #TBD — @bajaovrlay/control lists @bajaovrlay/race-clock as a devDependency so pnpm finishes the race clock's build and browser tests (which rebuild its dist) before the control page's start.
 - 2026-10-09 — PR #TBD — Relative times read "agora" under one minute, then whole minutes, hours and days rounded down; a moment in the future also reads "agora".
+- 2026-10-10 — PR #TBD — Backspace (clear clock layer) is also ignored while the focus is on a dropdown (closed or with its list open) or on the "Relógio correndo" switch, not only in a text field; the brief names only "a non-input element", so the switch is counted as an input.

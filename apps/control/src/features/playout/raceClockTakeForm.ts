@@ -42,7 +42,7 @@ export type RaceClockTakeFormValues = {
 
 /** The values the form opens with: the defaults the manifest declares. */
 export const defaultRaceClockTakeFormValues: RaceClockTakeFormValues = {
-  sessionName: 'Enduro de Resistência',
+  sessionName: ptBR.playout.defaultSessionName,
   state: 'pre',
   clockMode: 'elapsed',
   running: false,

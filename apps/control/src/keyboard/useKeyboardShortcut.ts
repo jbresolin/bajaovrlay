@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 export type KeyboardShortcutOptions = {
   /** false switches the shortcut off (for example, while the page is not connected). */
   isEnabled: boolean;
-  /** true makes the shortcut ignore key presses made inside a text field or dropdown. */
+  /** true makes the shortcut ignore key presses made on a text field, dropdown or switch. */
   isIgnoredWhileTyping: boolean;
 };
 
@@ -50,14 +50,25 @@ export function useKeyboardShortcut(
   }, [key, onPressed, isEnabled, isIgnoredWhileTyping]);
 }
 
-/** Whether a key press landed somewhere the operator types or picks a value. */
+/**
+ * Whether a key press landed on a form control: somewhere the operator types, picks a
+ * value or flips a switch.
+ */
 function isTypingTarget(eventTarget: EventTarget | null): boolean {
   if (!(eventTarget instanceof HTMLElement)) {
     return false;
   }
+  // The browser's own controls. The page has no native <select> today; it stays in the
+  // list so one added later is covered without anyone remembering this file.
   const isFormField =
     eventTarget instanceof HTMLInputElement ||
     eventTarget instanceof HTMLTextAreaElement ||
     eventTarget instanceof HTMLSelectElement;
-  return isFormField || eventTarget.isContentEditable;
+  // The shadcn/ui dropdown and switch are built from buttons and divs, so they can only
+  // be recognised by their role. A closed dropdown is a "combobox"; its open list is a
+  // "listbox" with the options inside it. Neither uses Backspace itself, so without
+  // this check a Backspace on them would reach the shortcut and take the clock off air.
+  const isInsideDropdown = eventTarget.closest('[role="combobox"], [role="listbox"]') !== null;
+  const isOnSwitch = eventTarget.closest('[role="switch"]') !== null;
+  return isFormField || eventTarget.isContentEditable || isInsideDropdown || isOnSwitch;
 }

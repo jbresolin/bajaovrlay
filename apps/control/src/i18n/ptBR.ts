@@ -52,6 +52,9 @@ export const ptBR = {
       referenceTime: 'Tempo de referência (mm:ss)',
       lapsCompletedByLeader: 'Voltas do líder (opcional)',
     },
+    // What the session name field opens with. It repeats the `default` the race clock's
+    // manifest declares for `sessionName`, and goes on air if the operator leaves it.
+    defaultSessionName: 'Enduro de Resistência',
     // The same six labels the race clock's manifest gives its `state` values.
     flagStateLabels: {
       pre: 'Pré-largada',
