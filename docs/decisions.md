@@ -92,3 +92,6 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-10-09 — PR #TBD — The race-clock package is a devDependency of the renderer, so pnpm runs race-clock's build and browser tests before the renderer's and the two never rebuild race-clock/dist at the same time.
 - 2026-10-09 — PR #TBD — The on-air smoke test compares a screenshot of the clock panel (1% tolerance) and checks its position on the stage, instead of a full-stage screenshot that would be mostly empty.
 - 2026-10-09 — PR #TBD — The lifecycle browser tests use a stand-in server inside the page (Playwright routeWebSocket); only raceClockOnAir.e2e.ts uses the real server.
+- 2026-10-09 — PR #TBD — An instance whose graphic is not in the graphics slice, or whose layer is not in the layers slice, is logged and its layer left empty.
+- 2026-10-09 — PR #TBD — A graphic that answers a lifecycle call with no status code is treated like one that refused it: logged as an error and counted as not accepted.
+- 2026-10-09 — PR #TBD — A failed graphic module import is remembered until the page is reloaded, because Chromium never fetches a failed module address again; this replaces the earlier line that said the next take imports it again.
