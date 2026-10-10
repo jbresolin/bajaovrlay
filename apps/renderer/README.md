@@ -8,9 +8,9 @@ purpose. Start at `src/renderer.ts` (the wiring), then follow one delivery of sl
 - `src/layerContainers.ts` — one container per layer on the stage, stacked by `zIndex`.
 - `src/instanceReconciler.ts` — pure: previous and next instances in, named operations out.
 - `src/instancePlayer.ts` — runs them: elements and the OGraf lifecycle (`lifecycleCall.ts`
-  makes and logs each call, `graphicLoader.ts` imports modules, `rendererLog.ts` logs).
+  makes and logs each call, `graphicLoader.ts` imports modules, `rendererLog.ts` logs);
+  `instancePlayer.test.ts` proves its queue with the stand-ins in `*.testSupport.ts`.
 - `e2e/` — Playwright in real Chromium (`pnpm test:e2e`), with `test-fixtures/fake-graphic`.
 
-`pnpm dev` serves it at http://localhost:5174/render/ and forwards `/ws`, `/api` and
-`/graphics` to the server. `pnpm build` writes `dist/`, served by the server at `/render/`;
-point OBS at `http://<server>:<PORT>/render/` with a 1920x1080 browser source.
+`pnpm dev` serves http://localhost:5174/render/ and forwards `/ws`, `/api`, `/graphics` to the
+server. `pnpm build` writes `dist/`; point OBS (1920x1080) at `http://<server>:<PORT>/render/`.
