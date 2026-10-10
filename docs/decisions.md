@@ -77,3 +77,21 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-10-09 — page 00 §19 — updateAction is accepted at any time after load, including off air.
 - 2026-10-09 — page 00 §19 — A countdown rounds partial seconds up; an elapsed clock rounds down.
 - 2026-10-09 — page 00 §19 — A built package with no known default layer goes on the fullscreen layer for now; in M1 each manifest declares its default layer in a `v_baja` vendor field, with fullscreen and a logged warning as the fallback.
+- 2026-10-09 — PR #TBD — The control page's sendCommand resolves only on an ok result and rejects with a CommandFailedError on a refusal, on 5 s without an answer, and when there is no connection.
+- 2026-10-09 — PR #TBD — A failed command stays in the store's lastCommandError with its command type, is shown next to the buttons that sent it, and is removed by the next command that succeeds.
+- 2026-10-09 — PR #TBD — Command request ids are a per-page counter (pedido-1, pedido-2, ...), because browsers only offer crypto.randomUUID on https or localhost and operators open the page over plain http on the LAN.
+- 2026-10-09 — PR #TBD — The control page counts as connected only once the hello has arrived; after a drop it redials after 0.5, 1, 2 and 4 s, then every 5 s, and commands still waiting for an answer are left to time out.
+- 2026-10-09 — PR #TBD — The layer panel lists layers from the lowest z-index to the highest and shows the program output only; "Limpar" stays enabled on an empty layer.
+- 2026-10-09 — PR #TBD — The race clock form's reference time accepts minutes past 59 (up to 999:59) so the four-hour enduro can be typed as 240:00; a time with an hours part is refused.
+- 2026-10-09 — PR #TBD — The race clock form refuses an empty session name, although the manifest's schema allows one.
+- 2026-10-09 — PR #TBD — "Atualizar" sends the same takeGraphic as "Colocar no ar" with the moment of the press as the reference, so the clock restarts from the typed time; the form is not filled back in from what is on air after a reload.
+- 2026-10-09 — PR #TBD — Pressing Enter in a field of the race clock form never takes; only the two buttons do.
+- 2026-10-09 — PR #TBD — Esc (clear all) works even while typing in a field and Backspace (clear clock layer) does not; both ignore a held-down key, Ctrl/Alt/Meta combinations and a key another control already used, and both are off while disconnected.
+- 2026-10-09 — PR #TBD — The "Verificar servidor" button from BAJAOVRLAY-7 stays, in the header beside the connection badge.
+- 2026-10-09 — PR #TBD — The control dev server forwards /render and /graphics to the server (the built renderer and graphics), not to the renderer's dev server.
+- 2026-10-09 — PR #TBD — The shadcn Select draws its three icons as inline SVG instead of adding lucide-react, and tw-animate-css is not added, so shadcn's enter and exit animations do nothing.
+- 2026-10-09 — PR #TBD — The race clock form's rules reach react-hook-form through a hand-written resolver instead of adding @hookform/resolvers.
+- 2026-10-09 — PR #TBD — Hard-coded UI text in apps/control features/ and app/ is caught by an ESLint no-restricted-syntax rule (text between tags, and literal aria-label/title/placeholder/alt); text in braces is not caught.
+- 2026-10-09 — PR #TBD — The control page's Playwright suite starts the real server from source on port 5187 and the control dev server on 5188, with its SQLite file in the gitignored apps/control/e2e-data/, deleted before every start.
+- 2026-10-09 — PR #TBD — @bajaovrlay/control lists @bajaovrlay/race-clock as a devDependency so pnpm finishes the race clock's build and browser tests (which rebuild its dist) before the control page's start.
+- 2026-10-09 — PR #TBD — Relative times read "agora" under one minute, then whole minutes, hours and days rounded down; a moment in the future also reads "agora".
