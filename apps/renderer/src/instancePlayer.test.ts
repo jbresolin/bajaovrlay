@@ -12,7 +12,8 @@
  *
  * What these tests prove:
  *   - A new instance is created inside its layer's container, loaded with its data for a
- *     real-time 1920x1080 stage, then played.
+ *     real-time 1920x1080 stage, then played; a load that answers nothing counts as a
+ *     successful load (OGraf v1), so that graphic is played too.
  *   - A replace calls stop and dispose on the old graphic before load and play on the new
  *     one; `out-then-in` animates both, `cut` and `crossfade` skip both animations.
  *   - An operation that throws is logged and does not stop the next operation on the same
@@ -95,6 +96,33 @@ describe('a new instance on an empty layer', () => {
       readInstanceIdsOnLayer(stage, 'clock'),
       'the element must be inside the clock layer, marked with its instance id',
     ).toEqual([enduroClockInstanceId]);
+  });
+
+  it('stays on its layer and is played when its load answers nothing', async () => {
+    // Arrange: team 42's lower third, drawn by a graphic whose load resolves with no
+    // answer, which OGraf v1 says must be treated as `{ statusCode: 200 }`.
+    const { stage, instancePlayer, recording } = createStageWithPlayer();
+    const lowerThirdWhoseLoadAnswersNothing: Instance = {
+      ...createTeamLowerThirdInstance(ufprLowerThirdInstanceId, 42, 'Baja UFPR'),
+      resolvedData: { teamNumber: 42, fakeGraphicLoadOutcome: 'answers-nothing' },
+    };
+
+    // Act: the lower third is taken.
+    instancePlayer.runLayerOperations(
+      createTakeOf(lowerThirdWhoseLoadAnswersNothing),
+      graphicsOfTheStream,
+    );
+    await waitForQueuedOperations();
+
+    // Assert: the graphic was played after its load and its element is still on the layer.
+    expect(
+      recording.lifecycleCalls,
+      'a load that answers nothing is a successful load, so the graphic must be played',
+    ).toEqual(['UFPR: load', 'UFPR: playAction']);
+    expect(
+      readInstanceIdsOnLayer(stage, 'lower-third'),
+      'the element must stay on its layer',
+    ).toEqual([ufprLowerThirdInstanceId]);
   });
 });
 

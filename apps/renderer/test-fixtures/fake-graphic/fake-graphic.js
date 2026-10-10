@@ -16,9 +16,11 @@
  *     standing in for an animation.
  *   - `fakeGraphicLoadOutcome` in the data given to load: `'rejects'` makes load throw,
  *     `'refuses'` makes it answer 400, like a graphic that does not accept its data,
- *     `'answers-nothing'` makes it resolve with no answer object at all.
+ *     `'answers-nothing'` makes it draw its data and resolve with no answer object,
+ *     which OGraf v1 allows and a renderer must count as `{ statusCode: 200 }`.
  *   - `fakeGraphicDisposeOutcome: 'answers-nothing'` in the data given to load: dispose
- *     then resolves with no answer object, like an `async dispose()` without a `return`.
+ *     then resolves with no answer object, like an `async dispose()` without a `return`,
+ *     which is allowed in the same way.
  */
 
 /** Resolves after the delay the test asked for, standing in for an animation. */
@@ -55,11 +57,11 @@ export default class FakeGraphic extends HTMLElement {
     if (loadOutcome === 'refuses') {
       return { statusCode: 400, statusMessage: 'O gráfico de teste recusou os dados.' };
     }
+    this.currentData = { ...params.data };
+    this.textContent = JSON.stringify(this.currentData);
     if (loadOutcome === 'answers-nothing') {
       return undefined;
     }
-    this.currentData = { ...params.data };
-    this.textContent = JSON.stringify(this.currentData);
     return { statusCode: 200 };
   }
 

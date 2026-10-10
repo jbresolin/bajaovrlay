@@ -8,16 +8,20 @@
  *   stream any of these must cost one layer at most. The renderer logs the failure,
  *   leaves that layer empty and carries on with everything else.
  *
- * What these tests prove, once for each of the five ways a graphic can fail to go on air
+ * What these tests prove, once for each of the four ways a graphic can fail to go on air
  * (its module cannot be imported, its load rejects, its load is refused with a 400, its
- * load answers nothing, its graphic is missing from the graphics slice):
+ * graphic is missing from the graphics slice):
  *   - The failure is logged with the instance id, the layer, the graphic and the reason.
  *   - The broken graphic leaves no element behind on its layer.
  *   - A graphic taken on another layer at the same moment is played normally.
  *   - The next take on the layer the broken graphic was meant for is played normally.
- * And two cases of their own:
+ * And one case of its own:
  *   - An instance on a layer that is not in the layers slice is logged and draws nothing.
- *   - A graphic whose dispose answers nothing is still removed from its layer.
+ * And the opposite, a graphic that looks broken but is not. OGraf v1 says: "If the
+ * returned Promise resolves to `undefined`, it MUST be treated as a `{ statusCode: 200 }`."
+ *   - A graphic whose load answers nothing goes on air and is played like any other.
+ *   - A graphic whose dispose answers nothing is removed from its layer, and no error is
+ *     logged about it.
  *
  * What these tests deliberately do not cover:
  *   - A graphic whose promise never settles; the renderer only awaits the promises
@@ -77,16 +81,6 @@ const brokenGraphicScenarios = [
       'a graphic whose load is refused with a 400 leaves its layer empty while the clock plays',
     nameOfTheNextTakeTest: 'the next take plays on the layer of a graphic whose load was refused',
     brokenInstance: createLowerThirdWhoseLoad('refuses'),
-    reasonInTheLog: 'its load failed or was refused',
-  },
-  // load() resolves with no answer object (an `async load()` that forgot its `return`).
-  // Reading the status of that answer used to throw and leave the element on the layer.
-  {
-    nameOfTheEmptyLayerTest:
-      'a graphic whose load answers nothing leaves its layer empty while the clock plays',
-    nameOfTheNextTakeTest:
-      'the next take plays on the layer of a graphic whose load answered nothing',
-    brokenInstance: createLowerThirdWhoseLoad('answers-nothing'),
     reasonInTheLog: 'its load failed or was refused',
   },
   // The instance names a graphic the graphics slice no longer lists: the server keeps an
@@ -226,12 +220,59 @@ test.describe('a graphic that cannot go on air', () => {
       'the clock must be the only graphic element on the stage',
     ).toEqual([enduroInstanceId]);
   });
+});
 
-  test('a graphic whose dispose answers nothing is still removed from its layer', async ({
+test.describe('a graphic that answers nothing, which OGraf counts as a 200', () => {
+  test('a graphic whose load answers nothing goes on air and is played', async ({ page }) => {
+    // Arrange: a renderer with nothing on air, and its log kept.
+    const logLines = collectRendererLogLines(page);
+    const fakeServer = await startFakeServerForPage(page, { instancesOnAir: [] });
+    await openRendererAndWaitForItsLayers(page);
+
+    // Act: team 42's lower third is taken, drawn by a graphic whose load resolves with
+    // no answer object (an `async load()` with no `return`).
+    fakeServer.sendInstances([createLowerThirdWhoseLoad('answers-nothing')]);
+
+    // Assert: the graphic was played and is on its layer, its load is logged as an
+    // assumed 200, and nothing was logged about a graphic that could not go on air.
+    await expect
+      .poll(() => readFakeGraphicCallsAsSentences(page, instanceNames), {
+        message: 'a graphic whose load answers nothing must be played like any other',
+      })
+      .toContain('UFPR: playAction finished');
+    expect(
+      await page
+        .locator('[data-layer-id="lower-third"] > *')
+        .evaluateAll((elements) =>
+          elements.map((element) => element.getAttribute('data-instance-id')),
+        ),
+      'the graphic must stay on its layer',
+    ).toEqual([ufprInstanceId]);
+    const loadAnswerLogLine = await waitForLogLineAboutInstance(
+      logLines,
+      'graphic lifecycle call answered',
+      ufprInstanceId,
+    );
+    expect(
+      loadAnswerLogLine,
+      'the load must be logged at info level as a 200 the renderer assumed',
+    ).toMatchObject({
+      level: 'info',
+      action: 'load',
+      statusCode: 200,
+      wasAnsweredWithNothing: true,
+    });
+    expect(
+      logLines.filter((line) => line.message === couldNotGoOnAirMessage),
+      'a load that answers nothing must not be reported as a failure',
+    ).toEqual([]);
+  });
+
+  test('a graphic whose dispose answers nothing is removed from its layer and no error is logged', async ({
     page,
   }) => {
     // Arrange: the enduro clock on air, drawn by a graphic whose dispose will resolve
-    // with no answer object (an `async dispose()` that forgot its `return`).
+    // with no answer object (an `async dispose()` with no `return`).
     const logLines = collectRendererLogLines(page);
     const fakeServer = await startFakeServerForPage(page, { instancesOnAir: [] });
     await openRendererAndWaitForItsLayers(page);
@@ -251,20 +292,34 @@ test.describe('a graphic that cannot go on air', () => {
     // Act: the operator clears the layer.
     fakeServer.sendInstances([]);
 
-    // Assert: the missing answer is logged for that instance, and the element is gone
-    // all the same, so nothing stays on air that the server says is off.
-    const missingAnswerLogLine = await waitForLogLineAboutInstance(
-      logLines,
-      'graphic answered a lifecycle call without a status',
-      enduroInstanceId,
-    );
-    expect(
-      missingAnswerLogLine,
-      'the missing answer must be logged against the dispose of that instance',
-    ).toMatchObject({ level: 'error', action: 'dispose', layerId: 'clock' });
+    // Assert: the element is gone, the dispose is logged as an assumed 200, and the
+    // renderer logged no error at all.
     await expect(
       page.locator('[data-layer-id="clock"] > *'),
-      'the cleared layer must hold no element, whatever dispose answered',
+      'the cleared layer must hold no element',
     ).toHaveCount(0);
+    const findDisposeAnswerLogLine = () =>
+      logLines.find(
+        (line) => line.message === 'graphic lifecycle call answered' && line.action === 'dispose',
+      );
+    await expect
+      .poll(() => findDisposeAnswerLogLine() !== undefined, {
+        message: 'the answer to the dispose must be logged',
+      })
+      .toBe(true);
+    expect(
+      findDisposeAnswerLogLine(),
+      'the dispose must be logged at info level as a 200 the renderer assumed',
+    ).toMatchObject({
+      level: 'info',
+      instanceId: enduroInstanceId,
+      layerId: 'clock',
+      statusCode: 200,
+      wasAnsweredWithNothing: true,
+    });
+    expect(
+      logLines.filter((line) => line.level === 'error'),
+      'a dispose that answers nothing must not be logged as an error',
+    ).toEqual([]);
   });
 });

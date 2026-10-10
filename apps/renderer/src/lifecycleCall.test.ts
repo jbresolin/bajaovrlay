@@ -14,8 +14,12 @@
  *   - A call the graphic refuses (a non-2xx status) is logged as a warning with the three
  *     ids, the status code and the graphic's message, and the answer is "not accepted".
  *   - A call that throws is logged as an error with the three ids and the reason.
- *   - A graphic that answers with nothing, or with no status code, is logged as an error
- *     and counts as "not accepted"; the call still does not throw.
+ *   - A call the graphic answers with nothing at all (`undefined`) counts as accepted with
+ *     a 200, because OGraf v1 says so: "If the returned Promise resolves to `undefined`,
+ *     it MUST be treated as a `{ statusCode: 200 }`." The log line says the 200 was assumed.
+ *   - Any other answer with no status code (`null`, an object in another shape) is not
+ *     what OGraf allows: it is logged as an error and counts as "not accepted"; the call
+ *     still does not throw.
  *
  * What these tests deliberately do not cover:
  *   - The console itself: the log is captured in a list here; rendererLog.test.ts checks
@@ -170,13 +174,48 @@ describe('makeLifecycleCall', () => {
     });
   });
 
-  // TypeScript says a graphic always answers with a status, but a graphic is plain
-  // JavaScript loaded at run time, so the answers below do reach the renderer.
+  it('counts a call answered with nothing as accepted with a 200, as OGraf requires', async () => {
+    // Arrange: a captured log, and a graphic whose dispose cleans up and returns nothing,
+    // which OGraf v1 allows: a promise resolving to `undefined` means `{ statusCode: 200 }`.
+    const { logLines, logEvent } = createCapturedLog();
+    const disposeThatReturnsNothing = async (): Promise<void> => {};
+
+    // Act: make the dispose call.
+    const wasAccepted = await makeLifecycleCall(
+      ufprLowerThird,
+      { action: 'dispose', skipAnimation: false, run: disposeThatReturnsNothing },
+      logEvent,
+    );
+
+    // Assert: accepted, and the last line is the ordinary "answered" info line with the
+    // 200 the renderer assumed and a note that the graphic itself answered nothing.
+    expect(wasAccepted, 'an answer of nothing must count as accepted').toBe(true);
+    expect(
+      logLines.at(-1),
+      'an answer of nothing must be logged as an assumed 200 at info level, not as a fault',
+    ).toEqual({
+      level: 'info',
+      message: 'graphic lifecycle call answered',
+      details: {
+        action: 'dispose',
+        skipAnimation: false,
+        instanceId: ufprLowerThirdInstanceId,
+        layerId: 'lower-third',
+        graphicId: 'team-lower-third',
+        statusCode: 200,
+        wasAnsweredWithNothing: true,
+      },
+    });
+  });
+
+  // TypeScript says a graphic answers with a status or with nothing, but a graphic is
+  // plain JavaScript loaded at run time, so the answers below do reach the renderer.
+  // OGraf excuses only `undefined`; anything else without a status code is a fault.
   const answersWithoutAStatusScenarios = [
-    // The usual slip: an `async dispose()` that cleans up and forgets its `return`.
+    // `null` is a value the graphic chose to return, not a missing `return`.
     {
-      name: 'counts a call answered with nothing as not accepted, without throwing',
-      answerOfTheGraphic: undefined,
+      name: 'counts a call answered with null as not accepted, without throwing',
+      answerOfTheGraphic: null,
     },
     // An answer object in some other shape, for example `{ ok: true }`.
     {

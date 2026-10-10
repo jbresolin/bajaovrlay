@@ -7,7 +7,8 @@ never built, never served by the real server and never shown on air.
 - `fake-graphic.js` — the web component. It records every lifecycle call (load,
   playAction, updateAction, stopAction, dispose) with its arguments on
   `window.__fakeGraphicCalls`, and resolves after `window.__fakeGraphicDelayInMilliseconds`.
-  Its data can also tell it to misbehave (a load that throws, refuses or answers nothing).
+  Its data can also tell it to misbehave (a load that throws or refuses) or to answer
+  nothing from load or dispose, which OGraf allows and counts as a 200.
 
 Start reading at the comment on top of `fake-graphic.js`: it lists what a test can read
 and what it can set. `e2e/fakeServerForPage.ts` serves this folder to the page as
