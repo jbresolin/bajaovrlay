@@ -3,9 +3,10 @@
  *
  * What this module is for:
  *   The panel where the operator fills the race clock's data and puts it on air with
- *   "Colocar no ar". While the clock is on air a second button, "Atualizar", changes
- *   what the operator touched and leaves everything else as it is on air, so a flag
- *   change in the middle of a race never resets the clock or stops it.
+ *   "Colocar no ar". While the clock is on air a second button, "Atualizar", sends only
+ *   what the operator touched, as an `updateInstanceData` for the instance on air. The
+ *   graphic changes in place, so a flag change in the middle of a race never takes the
+ *   clock off the screen, resets it or stops it.
  *
  * What these tests prove:
  *   - With nothing on air the form opens with the manifest's defaults and there is no
@@ -14,10 +15,12 @@
  *     chosen, with the moment of the press as the clock's reference.
  *   - When the page loads with the clock already on air (a reload in the middle of a
  *     race), the form shows what is on air, with the time the clock shows at that moment.
- *   - "Atualizar" five minutes after such a reload: a field the operator changed goes
- *     out as changed, a typed time becomes the clock's new time, and every field left
- *     alone goes out as it is on air. A time left alone is the one the clock shows at the
- *     press, not the older one still written in the form.
+ *   - "Atualizar" five minutes after such a reload sends `updateInstanceData` naming the
+ *     instance on air and holding only what the operator changed: the flag alone for a
+ *     flag change; a typed time with the press as its moment; and, when the clock is
+ *     stopped, the time it shows at the press (not the older one still written in the
+ *     form) so that it stops where it is.
+ *   - "Atualizar" with nothing changed sends nothing.
  *
  * What these tests deliberately do not cover:
  *   - The form after a take or an "Atualizar" the server accepted, and on-air data
@@ -26,12 +29,11 @@
  *     editing or waiting: TakeRaceClockPanelOtherOperator.test.tsx.
  *   - Field messages, server refusals and the buttons while disconnected:
  *     TakeRaceClockPanelProblems.test.tsx.
- *   - Every combination of changed fields: raceClockUpdateCommand.test.ts, without
+ *   - Every combination of changed fields: raceClockInstanceUpdate.test.ts, without
  *     drawing anything. Every rule and mm:ss case: raceClockTakeForm.test.ts and
  *     minutesAndSeconds.test.ts.
- *   - The real server and the real graphic; e2e/takeAndClear.e2e.ts uses the real server.
- *   - The graphic animating out and in again on every "Atualizar": the server replaces
- *     the instance, and that blink stays until an update command exists (M1).
+ *   - The real server laying the fields over what is on air, and the graphic staying on
+ *     screen while it changes; e2e/takeAndClear.e2e.ts walks that in a real browser.
  */
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -42,6 +44,8 @@ import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.te
 import {
   buildRaceClockInstanceHoldingThisData,
   chooseOptionInDropdown,
+  idOfTheRaceClockInstanceOnAir,
+  pressButtonAndWaitUntilThePressIsOver,
   typeIntoField,
 } from './operatingTheRaceClockForm.testSupport';
 import { TakeRaceClockPanel } from './TakeRaceClockPanel';
@@ -217,65 +221,54 @@ describe('the take race clock panel', () => {
   });
 
   const scenariosWhereAtualizarIsPressedAfterAReload = [
-    // The trap this rule closes: a reload, then a yellow flag. The session name, the
-    // running clock and its time must survive; only the flag changes. The time is the
-    // 32:34 (1 954 000 ms) on air at the press, not the 27:34 still written in the form:
-    // that difference is what shows the untouched time was read from the air.
+    // The trap this rule closes: a reload, then a yellow flag. Only the flag is sent, so
+    // the session name, the laps and the running clock are not touched: the clock on air
+    // goes on counting from its own reference.
     {
-      name: 'the operator changes only the flag: session name, running and the time on air are kept',
+      name: 'the operator changes only the flag: only the flag is sent',
       flagTheOperatorChooses: 'Amarela',
       timeTheOperatorTypes: undefined,
-      expectedData: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'yellow',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_954_000,
-        referenceWallClockMs: momentOfTheLaterPressInMilliseconds,
-        running: true,
-        lapsCompletedByLeader: 7,
-      },
+      operatorStopsTheClock: false,
+      expectedData: { state: 'yellow' },
     },
-    // Correcting the clock: the typed 20:00 (1 200 000 ms) goes out instead of the 32:34
-    // the clock shows, counted from the press. Nothing else was touched, so nothing else
-    // changes.
+    // Correcting the clock: the typed 20:00 (1 200 000 ms) goes out, true at the press.
+    // The two time fields always travel together.
     {
-      name: 'the operator types a new time: that time goes out, counted from the press',
+      name: 'the operator types a new time: that time goes out with the press as its moment',
       flagTheOperatorChooses: undefined,
       timeTheOperatorTypes: '20:00',
+      operatorStopsTheClock: false,
       expectedData: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'green',
-        clockMode: 'elapsed',
         referenceTimeMs: 1_200_000,
         referenceWallClockMs: momentOfTheLaterPressInMilliseconds,
-        running: true,
-        lapsCompletedByLeader: 7,
       },
     },
-    // A press with nothing changed must be harmless: what is on air goes out again, and
-    // only the time has moved, from 12:34 at 9:45 to 32:34 at the press. Had the form's
-    // own 27:34 gone out, the clock on screen would have jumped back five minutes.
+    // Stopping the clock: it must stop at the 32:34 (1 954 000 ms) it shows at the press.
+    // Not at the 27:34 still written in the form, and not at the 12:34 of the take: that
+    // difference is what shows the untouched time was worked out from what is on air.
     {
-      name: 'the operator changes nothing: what is on air goes out again, only the time carried forward',
+      name: 'the operator stops the clock: the time it shows at the press goes with it',
       flagTheOperatorChooses: undefined,
       timeTheOperatorTypes: undefined,
+      operatorStopsTheClock: true,
       expectedData: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'green',
-        clockMode: 'elapsed',
+        running: false,
         referenceTimeMs: 1_954_000,
         referenceWallClockMs: momentOfTheLaterPressInMilliseconds,
-        running: true,
-        lapsCompletedByLeader: 7,
       },
     },
   ];
 
   it.each(scenariosWhereAtualizarIsPressedAfterAReload)(
     '"Atualizar" after a reload with the clock on air at 754 000 ms and running: $name',
-    async ({ flagTheOperatorChooses, timeTheOperatorTypes, expectedData }) => {
+    async ({
+      flagTheOperatorChooses,
+      timeTheOperatorTypes,
+      operatorStopsTheClock,
+      expectedData,
+    }) => {
       // Arrange: the page reloaded at 10:00 with the first heat on air since 9:45. Five
-      // minutes later the operator does only what the scenario says (possibly nothing).
+      // minutes later the operator does only what the scenario says.
       const { fakeServer, letFiveMinutesPassOnThePage } =
         renderPanelAfterAReloadWithTheFirstHeatOnAir();
       letFiveMinutesPassOnThePage();
@@ -285,19 +278,26 @@ describe('the take race clock panel', () => {
       if (timeTheOperatorTypes !== undefined) {
         typeIntoField('Tempo de referência (mm:ss)', timeTheOperatorTypes);
       }
+      if (operatorStopsTheClock) {
+        fireEvent.click(screen.getByRole('switch', { name: 'Relógio correndo' }));
+      }
 
       // Act: press "Atualizar" at 10:05.
       fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
 
-      // Assert: one takeGraphic for the same layer (the server replaces the instance on
-      // it; there is no separate "update" command yet). What the operator touched is in
-      // it as touched; everything else is what is on air at 10:05.
+      // Assert: one updateInstanceData naming the instance that is on air, so the server
+      // changes it in place instead of replacing it. It holds what the operator touched
+      // and nothing else.
       await waitFor(() => {
         expect(
           fakeServer.listCommandsReceived(),
-          '"Atualizar" must change what the operator touched and keep the rest as it is on air',
+          '"Atualizar" must send only what the operator touched, for the instance on air',
         ).toEqual([
-          { type: 'takeGraphic', graphicId: 'race-clock', layerId: 'clock', data: expectedData },
+          {
+            type: 'updateInstanceData',
+            instanceId: idOfTheRaceClockInstanceOnAir,
+            data: expectedData,
+          },
         ]);
       });
       // (Then the server answers, so no command is left waiting for its 5-second timeout
@@ -305,4 +305,22 @@ describe('the take race clock panel', () => {
       fakeServer.acceptLastCommand();
     },
   );
+
+  it('sends nothing when "Atualizar" is pressed after a reload with nothing changed', async () => {
+    // Arrange: the page reloaded at 10:00 with the first heat on air since 9:45, and five
+    // minutes pass without the operator touching the form.
+    const { fakeServer, letFiveMinutesPassOnThePage } =
+      renderPanelAfterAReloadWithTheFirstHeatOnAir();
+    letFiveMinutesPassOnThePage();
+
+    // Act: press "Atualizar" at 10:05 and wait until the panel is done with the press.
+    await pressButtonAndWaitUntilThePressIsOver('Atualizar');
+
+    // Assert: no command at all. There is nothing to change, and the clock on air keeps
+    // counting by itself; sending its own data back could only disturb it.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'a press with nothing changed must not send any command',
+    ).toEqual([]);
+  });
 });

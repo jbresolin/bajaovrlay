@@ -17,6 +17,7 @@ import {
   readRaceClockDataOnAir,
 } from './raceClockDataOnAir';
 import { RaceClockFormFields } from './RaceClockFormFields';
+import { buildRaceClockInstanceUpdate } from './raceClockInstanceUpdate';
 import {
   buildTakeRaceClockCommand,
   clockLayerId,
@@ -25,7 +26,6 @@ import {
   type RaceClockTakeFormValues,
 } from './raceClockTakeForm';
 import { resolveRaceClockTakeForm } from './raceClockTakeFormResolver';
-import { buildUpdateRaceClockCommand } from './raceClockUpdateCommand';
 
 /** What the panel can be given; the page gives it nothing and gets the real clock. */
 export type TakeRaceClockPanelProps = {
@@ -49,11 +49,11 @@ function findRaceClockInstanceOnAir(instances: Instance[]): Instance | undefined
 
 /**
  * The race clock's form and its two actions. "Colocar no ar" sends `takeGraphic` for
- * the clock layer with the form as it stands. "Atualizar", shown while the race clock is
- * on air, sends a `takeGraphic` too (there is no update command yet) in which only the
- * fields the operator changed come from the form; the rest is what is on air, the time
- * carried forward to the press. The server replaces the instance on the layer, so the
- * graphic still animates out and in; that blink stays until `updateItemFields` lands in M1.
+ * the clock layer with the form as it stands, and the server replaces whatever is on that
+ * layer. "Atualizar", shown while the race clock is on air, sends `updateInstanceData`
+ * for the instance on air with only the fields the operator changed
+ * (raceClockInstanceUpdate.ts); the server keeps the instance, so the graphic changes in
+ * place without leaving the screen.
  *
  * "Changed" is react-hook-form's `dirtyFields`: a field that differs from the value the
  * form was last filled with. So the form is filled from what is on air whenever that
@@ -114,8 +114,8 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
   // so every field is filled from what is on air and counts as untouched again. The
   // instance is read from the store at this moment, not taken from the last drawing: the
   // server sends the changed instances before its "ok" (webSocketHub.ts), so the store
-  // already holds the instance this command created. If its data cannot be read the form
-  // is left alone, as above.
+  // already holds the instance this command created or changed. If its data cannot be
+  // read the form is left alone, as above.
   function fillFormFromWhatIsOnAirNow(): void {
     const raceClockInstanceOnAirNow = findRaceClockInstanceOnAir(readServerStateNow().instances);
     const raceClockDataOnAirNow = readRaceClockDataOnAir(raceClockInstanceOnAirNow?.resolvedData);
@@ -138,25 +138,48 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
       fillFormFromWhatIsOnAirNow();
     }
   }
-  async function sendFormAsUpdateCommand(formValues: RaceClockTakeFormValues): Promise<void> {
-    // The `?.` is here only because the type allows undefined: "Atualizar" is drawn only
-    // while the clock is on air, so a press always finds the instance of that same drawing
-    // (were it undefined, the builder would send the whole form). What can go wrong: a
-    // press that races another operator's "Limpar" still sees that instance, and puts the
-    // clock back on air with the time it last showed.
-    const updateCommand = buildUpdateRaceClockCommand({
+  async function sendChangedFieldsAsUpdateCommand(
+    formValues: RaceClockTakeFormValues,
+  ): Promise<void> {
+    // This check is here only because the type allows undefined: "Atualizar" is drawn
+    // only while the clock is on air, so a press always finds the instance of that same
+    // drawing. With no instance there is nothing to update, and nothing is sent. What can
+    // go wrong: a press that races another operator's "Limpar" still names that instance;
+    // the server then refuses with its "not found" message, shown next to the buttons,
+    // and the clock stays off air.
+    if (raceClockInstanceOnAir === undefined) {
+      return;
+    }
+    const update = buildRaceClockInstanceUpdate({
+      instanceId: raceClockInstanceOnAir.id,
       formValues,
       fieldsTheOperatorChanged,
-      raceClockDataOnAir: raceClockInstanceOnAir?.resolvedData,
+      raceClockDataOnAir: raceClockInstanceOnAir.resolvedData,
       nowInMilliseconds: readCurrentTimeInMilliseconds(),
     });
-    const wasAcceptedByTheServer = await sendCommand(updateCommand);
+
+    // Nothing changed: there is nothing to say to the server, and the clock on air keeps
+    // counting by itself. The press does nothing the operator can see.
+    if (update.outcome === 'nothingChanged') {
+      return;
+    }
+    // The message goes under the laps field like any other field message. It stays until
+    // the operator types in that field or presses a button again.
+    if (update.outcome === 'lapsCannotBeRemoved') {
+      form.setError('lapsCompletedByLeader', {
+        type: 'lapsCannotBeRemoved',
+        message: ptBR.playout.fieldErrors.lapsCannotBeRemovedByUpdate,
+      });
+      return;
+    }
+
+    const wasAcceptedByTheServer = await sendCommand(update.command);
     if (wasAcceptedByTheServer) {
       fillFormFromWhatIsOnAirNow();
     }
   }
   const checkFormThenTake = form.handleSubmit(sendFormAsTakeCommand);
-  const checkFormThenUpdate = form.handleSubmit(sendFormAsUpdateCommand);
+  const checkFormThenUpdate = form.handleSubmit(sendChangedFieldsAsUpdateCommand);
 
   // What a press on either button does: both buttons go off, the form is checked and, if
   // it passes, sent; the buttons come back whatever the outcome (accepted, refused, no
@@ -201,7 +224,7 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
               {ptBR.playout.updateButton}
             </ActionButton>
           )}
-          <CommandErrorMessage commandTypes={['takeGraphic']} />
+          <CommandErrorMessage commandTypes={['takeGraphic', 'updateInstanceData']} />
         </CardFooter>
       </form>
     </Card>

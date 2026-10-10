@@ -35,16 +35,17 @@ export const ptBR = {
   layers: {
     emptyLayer: 'vazia',
     clearLayerButton: 'Limpar',
+    // The word on each row's status badge. "Carregando" is what the server sets at the
+    // take; "No ar" and "Falhou" are what the renderer reports back.
     instanceStatus: {
-      loading: 'carregando',
-      ready: 'pronto',
-      'on-air': 'no ar',
-      stopping: 'saindo',
-      // PLACEHOLDER (BAJAOVRLAY-12): added with the shared `failed` status so the layer
-      // row still compiles; the control work of the same task settles the wording and
-      // the badge colours.
-      failed: 'falhou',
+      loading: 'Carregando',
+      ready: 'Pronto',
+      'on-air': 'No ar',
+      stopping: 'Saindo',
+      failed: 'Falhou',
     },
+    // The tooltip on a "Falhou" badge when the renderer gave no detail of its own.
+    failedWithoutDetail: 'O renderizador não informou o motivo da falha.',
   },
   playout: {
     raceClockPanelTitle: 'Relógio de prova',
@@ -80,6 +81,9 @@ export const ptBR = {
       referenceTimeMissing: 'Informe o tempo de referência.',
       referenceTimeInvalid: 'Use minutos e segundos no formato mm:ss, por exemplo 12:30.',
       lapsCompletedByLeaderInvalid: 'Informe as voltas como um número inteiro ou deixe em branco.',
+      // "Atualizar" changes fields of the clock on air; it cannot take one away.
+      lapsCannotBeRemovedByUpdate:
+        '"Atualizar" não tira as voltas do ar. Use "Colocar no ar" para isso.',
     },
     takeButton: 'Colocar no ar',
     updateButton: 'Atualizar',

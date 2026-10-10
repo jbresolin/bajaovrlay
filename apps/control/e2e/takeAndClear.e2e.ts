@@ -2,14 +2,20 @@
  * Take and clear, end to end (apps/control, Playwright)
  *
  * What this module is for:
- *   M0 is done when an operator can open the control page, put the race clock on air,
- *   and take it off again, with the server as the only owner of the state. This test
- *   walks that path in a real Chromium against the real server and a real SQLite file.
+ *   An operator must be able to open the control page, put the race clock on air, change
+ *   it while it is on air without it leaving the screen, and take it off again, with the
+ *   server as the only owner of the state. This test walks that path in a real Chromium
+ *   against the real server, the real renderer page and a real SQLite file.
  *
  * What these tests prove:
  *   - Filling the race clock form and pressing "Colocar no ar" makes the layer panel
  *     show the clock on the "Relógio" layer within 2 seconds, and the program monitor
  *     (the renderer page in a frame, as OBS loads it) contains the race clock element.
+ *   - Within a second of the take the layer panel says "No ar": the renderer page told
+ *     the server the clock really is on screen, and the server told this page.
+ *   - Changing the flag and pressing "Atualizar" changes the flag band of the clock in
+ *     the program monitor, and the clock there is the very same element as before: it
+ *     was updated in place and never left the screen (no blink).
  *   - Reloading the page changes nothing: the panel still shows the clock, because the
  *     state lives on the server and not in the page; and the form comes back showing
  *     what is on air instead of its defaults.
@@ -17,7 +23,10 @@
  *
  * What these tests deliberately do not cover:
  *   - What the clock in the program monitor looks like or which time it shows; the
- *     renderer's raceClockOnAir.e2e.ts checks that. Here it only has to be in the frame.
+ *     renderer's raceClockOnAir.e2e.ts checks that. Here it only has to be in the frame,
+ *     stay the same element and show the new flag's word.
+ *   - A graphic that fails to load ("Falhou"); the renderer's own browser tests and
+ *     InstanceStatusBadge.test.tsx cover the two halves of that.
  *   - A restart of the server keeping the state; the server's storeRestart.test.ts does.
  *   - Field validation, clear all and the keyboard; the component tests cover those.
  *
@@ -26,8 +35,8 @@
  */
 import { expect, test } from '@playwright/test';
 
-test.describe('taking and clearing the race clock', () => {
-  test('shows the clock on its layer after the take, keeps it across a reload, and empties the layer on clear', async ({
+test.describe('taking, updating and clearing the race clock', () => {
+  test('shows the clock on its layer after the take, updates it in place, keeps it across a reload, and empties the layer on clear', async ({
     page,
   }) => {
     // Arrange: open the control page, wait until it is connected, and fill the form for
@@ -50,7 +59,14 @@ test.describe('taking and clearing the race clock', () => {
     // Act: put the clock on air.
     await page.getByRole('button', { name: 'Colocar no ar' }).click();
 
-    // Assert: within 2 seconds the layer panel shows the race clock on the clock layer.
+    // Assert: within a second the layer panel says the clock is "No ar". That word only
+    // appears after the renderer page in the program monitor has played the clock in and
+    // reported it to the server, so it proves the whole round trip.
+    await expect(
+      clockLayerRow,
+      'the layer panel must say "No ar" within a second of the take',
+    ).toContainText('No ar', { timeout: 1_000 });
+    // And within 2 seconds the layer panel shows the race clock on the clock layer.
     await expect(
       clockLayerRow,
       'the layer panel must show the race clock within 2 seconds of the take',
@@ -68,12 +84,48 @@ test.describe('taking and clearing the race clock', () => {
       'the program monitor frame must contain the race clock element after the take',
     ).toBeAttached();
 
+    await expect(
+      raceClockInProgramMonitor.getByTestId('race-clock-flag-label'),
+      'the clock in the program monitor must show the green flag it was taken with',
+    ).toHaveText('VERDE');
+
+    // Arrange (for the update): remember which element the clock in the program monitor
+    // is. A handle points at that one element; it is not found again later.
+    const raceClockElementBeforeTheUpdate = await raceClockInProgramMonitor.elementHandle();
+
+    // Act: a yellow flag comes out. Change only the flag and press "Atualizar".
+    await page.getByRole('combobox', { name: 'Bandeira' }).click();
+    await page.getByRole('option', { name: 'Amarela' }).click();
+    await page.getByRole('button', { name: 'Atualizar' }).click();
+
+    // Assert: the clock in the program monitor shows the yellow flag, and it is the same
+    // element as before the update. Had the clock been taken off and put back (the blink
+    // this command exists to remove), a new element would be in its place.
+    await expect(
+      raceClockInProgramMonitor.getByTestId('race-clock-flag-label'),
+      'after "Atualizar" the clock in the program monitor must show the yellow flag',
+    ).toHaveText('AMARELA');
+    const isTheSameElementAsBeforeTheUpdate = await raceClockInProgramMonitor.evaluate(
+      (raceClockElementNow, raceClockElementBefore) =>
+        raceClockElementNow === raceClockElementBefore,
+      raceClockElementBeforeTheUpdate,
+    );
+    expect(
+      isTheSameElementAsBeforeTheUpdate,
+      'the race clock must be updated in place: the same element as before, not a new one',
+    ).toBe(true);
+    await expect(
+      clockLayerRow,
+      'an update must leave the clock "No ar"; it never goes back to "Carregando"',
+    ).toContainText('No ar');
+
     // Act: reload the page, as an operator does when the browser misbehaves.
     await page.reload();
 
     // Assert: nothing was lost, because the server is the truth; and since the clock is
-    // on air, the panel now offers "Atualizar" and its form shows what is on air. (The
-    // time field is not checked: the clock is running, so its text depends on the second.)
+    // on air, the panel offers "Atualizar" and its form shows what is on air, yellow flag
+    // included. (The time field is not checked: the clock is running, so its text depends
+    // on the second.)
     await expect(
       clockLayerRow,
       'after a reload the layer panel must still show the race clock',
@@ -89,7 +141,7 @@ test.describe('taking and clearing the race clock', () => {
     await expect(
       page.getByRole('combobox', { name: 'Bandeira' }),
       'after a reload the form must show the flag that is on air',
-    ).toHaveText('Verde');
+    ).toHaveText('Amarela');
     await expect(
       page.getByRole('switch', { name: 'Relógio correndo' }),
       'after a reload the switch must be on, because the clock on air is running',

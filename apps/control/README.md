@@ -1,8 +1,8 @@
 # @bajaovrlay/control
 
-The operator's control page (Vite + React + Tailwind v4 + shadcn/ui). In M0 it takes the
-race clock to air, clears layers, and always shows what is on every layer. Start reading
-at `src/main.tsx`, then `src/app/AppShell.tsx`.
+The operator's control page (Vite + React + Tailwind v4 + shadcn/ui). It takes the race
+clock to air, updates it in place, clears layers, and always shows what is on every layer
+and whether the renderer confirmed it. Start at `src/main.tsx`, then `src/app/AppShell.tsx`.
 
 - `src/app/` — the header and the three-column layout.
 - `src/features/<name>/` — `connection`, `layers`, `playout`, `programMonitor`, `serverHealth`.

@@ -37,6 +37,7 @@ import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.te
 import {
   buildRaceClockInstanceHoldingThisData,
   chooseOptionInDropdown,
+  idOfTheRaceClockInstanceOnAir,
   pressButtonAndWaitForCommand,
   typeIntoField,
 } from './operatingTheRaceClockForm.testSupport';
@@ -133,23 +134,16 @@ describe('the race clock panel when someone else changes the clock', () => {
     // Act: the first operator presses "Atualizar".
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
 
-    // Assert: the new session name goes out, and the red flag and the stopped clock of
-    // the other operator are still there.
+    // Assert: only the new session name goes out. The flag, the switch and the time are
+    // not in the command, so the red flag and the stopped clock of the other operator
+    // cannot be undone by it.
     expect(
       fakeServer.listCommandsReceived()[0],
       "the edit must go out without undoing the other operator's change",
     ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 2',
-        state: 'red',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_654_000,
-        referenceWallClockMs: Date.parse(tenOClock),
-        running: false,
-      },
+      type: 'updateInstanceData',
+      instanceId: idOfTheRaceClockInstanceOnAir,
+      data: { sessionName: 'Enduro de Resistência — Bateria 2' },
     });
     fakeServer.acceptLastCommand();
   });

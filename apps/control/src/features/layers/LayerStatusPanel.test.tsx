@@ -12,6 +12,9 @@
  *   - An empty layer says "vazia"; a layer with a graphic shows the graphic's name, how
  *     long ago it was taken ("há 2 min") and its status, and the time keeps up as
  *     minutes pass.
+ *   - The status follows the server: "Carregando" at the take, "No ar" once the server
+ *     passes on the renderer's acknowledgement, and "Falhou" with the renderer's detail in
+ *     a tooltip when the graphic failed. A failed graphic stays listed on its layer.
  *   - A graphic the server no longer has registered is still listed, by its id.
  *   - "Limpar" sends `clearLayer` with the id of the layer of its own row.
  *   - While the page is not connected every "Limpar" is disabled and says why.
@@ -21,6 +24,7 @@
  *     real ones are exercised by e2e/takeAndClear.e2e.ts.
  *   - The preview output: M0 has none, so the panel lists what is on program only.
  *   - The message shown when the server refuses a clear; App.test.tsx covers it.
+ *   - The colour of each status badge; InstanceStatusBadge.test.tsx covers it.
  */
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -31,6 +35,7 @@ import {
   renderOnControlPageConnectedToFakeServer,
 } from '@/state/controlPageOnFakeServer.testSupport';
 import {
+  buildRaceClockInstanceOnTheClockLayer,
   buildSlicesWithNothingOnAir,
   buildSlicesWithTheRaceClockOnAir,
 } from '@/state/slicesLikeTheServerSends.testSupport';
@@ -119,7 +124,7 @@ describe('the layer status panel', () => {
       'the row must say how long ago the graphic was taken',
     ).toBeInTheDocument();
     expect(
-      clockRow.getByText('carregando'),
+      clockRow.getByText('Carregando'),
       'the row must show the status the server gives the instance',
     ).toBeInTheDocument();
     expect(clockRow.queryByText('vazia'), 'a layer with a graphic is not "vazia"').toBeNull();
@@ -145,6 +150,75 @@ describe('the layer status panel', () => {
       clockRow.getByText('há 3 min'),
       'the elapsed time must follow the clock while the page is open',
     ).toBeInTheDocument();
+  });
+
+  it('changes the status from "Carregando" to "No ar" when the server passes on the renderer\'s acknowledgement', () => {
+    // Arrange: the panel with the race clock just taken, so still "Carregando".
+    const slices = buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir);
+    const { fakeServer } = renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
+
+    // Act: the renderer reports the clock is on screen, and the server sends the same
+    // instance (same id) with its new status.
+    const raceClockInstanceAcknowledged = {
+      ...buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir),
+      status: 'on-air' as const,
+    };
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [raceClockInstanceAcknowledged],
+    });
+
+    // Assert: the clock row now says "No ar" and no longer "Carregando".
+    const clockRow = within(screen.getByRole('listitem', { name: 'Relógio' }));
+    expect(
+      clockRow.getByText('No ar'),
+      'the row must say "No ar" once the renderer has acknowledged the take',
+    ).toBeInTheDocument();
+    expect(
+      clockRow.queryByText('Carregando'),
+      'an acknowledged graphic is not "Carregando" any more',
+    ).toBeNull();
+  });
+
+  it('keeps a failed graphic on its row as "Falhou", with the renderer\'s detail in a tooltip', async () => {
+    // Arrange: the race clock was taken, but the renderer could not load its package and
+    // reported the failure. The server keeps the instance, marked as failed.
+    const slices = buildSlicesWithNothingOnAir();
+    slices.instances = [
+      {
+        ...buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir),
+        status: 'failed',
+        statusDetail:
+          'Failed to fetch dynamically imported module: /graphics/race-clock/race-clock.js',
+      },
+    ];
+
+    // Act: draw the panel, and rest on the status badge of the clock row.
+    renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
+    const clockRow = within(screen.getByRole('listitem', { name: 'Relógio' }));
+    const focusableAreaAroundTheBadge = clockRow.getByText('Falhou').parentElement;
+    if (focusableAreaAroundTheBadge === null) {
+      throw new Error('the "Falhou" badge is not on the page');
+    }
+    fireEvent.focus(focusableAreaAroundTheBadge);
+
+    // Assert: the graphic is still listed (the layer is not "vazia": the operator must
+    // clear or retake it), and the tooltip says why it failed.
+    expect(
+      clockRow.getByText('Relógio de prova'),
+      'a failed graphic must stay listed on its layer',
+    ).toBeInTheDocument();
+    expect(
+      clockRow.queryByText('vazia'),
+      'a layer with a failed graphic is not "vazia"',
+    ).toBeNull();
+    expect(
+      await screen.findByRole('tooltip'),
+      'the tooltip must carry the detail the renderer reported',
+    ).toHaveTextContent(
+      'Failed to fetch dynamically imported module: /graphics/race-clock/race-clock.js',
+    );
   });
 
   it('lists a graphic by its id when the server no longer has it registered', () => {

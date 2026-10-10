@@ -21,7 +21,7 @@
  *   - Drawing the form and showing the messages; TakeRaceClockPanel.test.tsx does.
  *   - Every mm:ss case (0:00, 59:59, 240:00, 1:00:00 refused...); minutesAndSeconds.test.ts
  *     lists them one by one.
- *   - The command "Atualizar" sends; raceClockUpdateCommand.test.ts does.
+ *   - The command "Atualizar" sends; raceClockInstanceUpdate.test.ts does.
  *   - That these rules still match packages/graphics/race-clock/race-clock.ograf.json:
  *     they are a hand-written mirror, replaced by a generated form in BAJAOVRLAY-14.
  */

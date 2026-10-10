@@ -1,5 +1,5 @@
-// Test support: the few things an operator does to the race clock form, and the one
-// thing the server does back, written once so the four panel test files read the same.
+// Test support: the few things an operator does to the race clock form, and the two
+// things the server does back, written once so the four panel test files read the same.
 // Nothing here keeps state between calls.
 import type { Instance } from '@bajaovrlay/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
@@ -8,9 +8,18 @@ import { z } from 'zod';
 
 import type { ControlPageOnFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 
+/** The id the server gave the race clock instance every panel test puts on air. */
+export const idOfTheRaceClockInstanceOnAir = 'c41f7e9a-63d2-4b1c-8a0f-5e2d9b7a3c66';
+
 // What the fake server needs from a take it received: the data to put on air.
 const TakeCommandReceivedSchema = z.object({
   type: z.literal('takeGraphic'),
+  data: z.record(z.string(), z.unknown()),
+});
+
+// What the fake server needs from an update it received: the fields to lay over the data.
+const UpdateCommandReceivedSchema = z.object({
+  type: z.literal('updateInstanceData'),
   data: z.record(z.string(), z.unknown()),
 });
 
@@ -40,19 +49,34 @@ export async function pressButtonAndWaitForCommand(
   });
 }
 
+/**
+ * Presses a button and waits until the panel has finished with the press. Both buttons
+ * are off while a press is being checked and sent, so "the button is on again" is how a
+ * test knows the press is over, also when it sent nothing.
+ */
+export async function pressButtonAndWaitUntilThePressIsOver(buttonName: string): Promise<void> {
+  fireEvent.click(screen.getByRole('button', { name: buttonName }));
+  await waitFor(() => {
+    expect(
+      screen.getByRole('button', { name: buttonName }),
+      `"${buttonName}" must come back on once the press was dealt with`,
+    ).toBeEnabled();
+  });
+}
+
 /** A race clock instance on the clock layer of the program output, holding this data. */
 export function buildRaceClockInstanceHoldingThisData(
   raceClockData: Record<string, unknown>,
   takenAt: string,
 ): Instance {
   return {
-    id: 'c41f7e9a-63d2-4b1c-8a0f-5e2d9b7a3c66',
+    id: idOfTheRaceClockInstanceOnAir,
     layerId: 'clock',
     graphicId: 'race-clock',
     target: 'program',
     resolvedData: raceClockData,
     currentStep: 0,
-    status: 'loading',
+    status: 'on-air',
     takenAt,
   };
 }
@@ -72,5 +96,25 @@ export function letTheServerPutTheLastTakeOnAir(
   const instanceTheTakeCreates = buildRaceClockInstanceHoldingThisData(takeCommand.data, takenAt);
 
   fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [instanceTheTakeCreates] });
+  fakeServer.acceptLastCommand();
+}
+
+/**
+ * The fake server does what the real one does with an update it accepts: it lays the
+ * fields of the newest command over the data the instance held, keeps the instance's id
+ * and the moment it was taken, tells the page so, and only then answers "ok".
+ */
+export function letTheServerApplyTheLastUpdate(
+  fakeServer: ControlPageOnFakeServer['fakeServer'],
+  raceClockInstanceBeforeTheUpdate: Instance,
+): void {
+  const lastCommandReceived = fakeServer.listCommandsReceived().at(-1);
+  const updateCommand = UpdateCommandReceivedSchema.parse(lastCommandReceived);
+  const instanceAfterTheUpdate: Instance = {
+    ...raceClockInstanceBeforeTheUpdate,
+    resolvedData: { ...raceClockInstanceBeforeTheUpdate.resolvedData, ...updateCommand.data },
+  };
+
+  fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [instanceAfterTheUpdate] });
   fakeServer.acceptLastCommand();
 }

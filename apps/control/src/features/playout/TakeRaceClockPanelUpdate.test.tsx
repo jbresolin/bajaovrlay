@@ -2,10 +2,10 @@
  * Take race clock panel: the form following what is on air (apps/control)
  *
  * What this module is for:
- *   "Atualizar" sends the fields the operator changed and keeps the rest as it is on
- *   air. For that to stay true the form must know two things at every moment: what is
- *   on air, and which fields hold a change the operator has not sent yet. These tests
- *   follow the form through the moments where that could go wrong.
+ *   "Atualizar" sends the fields the operator changed, as `updateInstanceData`, and
+ *   nothing else. For that to stay true the form must know two things at every moment:
+ *   what is on air, and which fields hold a change the operator has not sent yet. These
+ *   tests follow the form through the moments where that could go wrong.
  *
  * What these tests prove:
  *   - After a take or an "Atualizar" the server accepted, the form shows what is now on
@@ -15,7 +15,7 @@
  *     the next press.
  *   - "Colocar no ar" always sends the form as it stands, typed time included.
  *   - A time typed and then put back to what the field showed counts as untouched, so
- *     "Atualizar" leaves the clock on air at its own time.
+ *     "Atualizar" sends no time and the clock on air is left at its own.
  *   - On-air data that cannot be read leaves the form alone, and "Atualizar" then sends
  *     the whole form.
  *   - A value on air that the form's rules refuse (an empty session name) blocks
@@ -27,13 +27,16 @@
  *   - The clock changing or leaving the air through someone else while this operator is
  *     editing or waiting for an answer: TakeRaceClockPanelOtherOperator.test.tsx.
  *   - Every combination of changed fields, and stopped clocks and countdowns:
- *     raceClockUpdateCommand.test.ts and raceClockDataOnAir.test.ts.
+ *     raceClockInstanceUpdate.test.ts and raceClockDataOnAir.test.ts.
  *   - A field other than the time put back to its old value: the form value and the
  *     on-air value are then the same, so no command could tell the two apart.
  *   - The other value the form's rules refuse, a time on air past 999:59: it takes the
  *     same road as the empty session name, and no race runs for 16 hours.
- *   - The real server's order of messages (the changed slice, then "ok"); the fake
- *     server copies it and apps/server's own tests prove it.
+ *   - Erased laps, and an "Atualizar" for a clock someone else has just cleared:
+ *     TakeRaceClockPanelProblems.test.tsx.
+ *   - The real server's order of messages (the changed slice, then "ok") and its laying
+ *     the sent fields over the data on air; the fake server copies both and apps/server's
+ *     own tests prove them.
  */
 import type { Instance } from '@bajaovrlay/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
@@ -45,8 +48,11 @@ import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.te
 import {
   buildRaceClockInstanceHoldingThisData,
   chooseOptionInDropdown,
+  idOfTheRaceClockInstanceOnAir,
+  letTheServerApplyTheLastUpdate,
   letTheServerPutTheLastTakeOnAir,
   pressButtonAndWaitForCommand,
+  pressButtonAndWaitUntilThePressIsOver,
   typeIntoField,
 } from './operatingTheRaceClockForm.testSupport';
 import { TakeRaceClockPanel } from './TakeRaceClockPanel';
@@ -87,56 +93,51 @@ function renderPanelAtTenOClock(instancesOnAir: Instance[]) {
   };
 }
 
+/** The first heat as an instance on the clock layer, on air since 9:45. */
+function buildFirstHeatInstanceOnAir(): Instance {
+  return buildRaceClockInstanceHoldingThisData(buildFirstHeatDataOnAir(), quarterToTen);
+}
+
 /** The same panel with the first heat on air since 9:45. */
 function renderPanelAtTenOClockWithTheFirstHeatOnAir() {
-  return renderPanelAtTenOClock([
-    buildRaceClockInstanceHoldingThisData(buildFirstHeatDataOnAir(), quarterToTen),
-  ]);
+  return renderPanelAtTenOClock([buildFirstHeatInstanceOnAir()]);
 }
 
 describe('the race clock form following what is on air', () => {
   it('starts untouched again after an accepted "Atualizar": the next press does not resend the typed time', async () => {
     // Arrange: the first heat on air. At 10:00 the operator corrects the clock to 20:00
-    // with "Atualizar", and the server puts that on air and accepts. Then five minutes pass.
+    // with "Atualizar"; the server lays that over what is on air and accepts. Then five
+    // minutes pass.
     const { fakeServer, moveThePageClockTo } = renderPanelAtTenOClockWithTheFirstHeatOnAir();
     typeIntoField('Tempo de referência (mm:ss)', '20:00');
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
-    letTheServerPutTheLastTakeOnAir(fakeServer, tenOClock);
+    letTheServerApplyTheLastUpdate(fakeServer, buildFirstHeatInstanceOnAir());
     await waitFor(() => {
       expect(
         screen.getByRole('button', { name: 'Atualizar' }),
         'the button must come back once the server has answered',
       ).toBeEnabled();
     });
-
     moveThePageClockTo(fivePastTen);
 
     // Act: at 10:05 the operator presses "Atualizar" again without touching anything.
-    await pressButtonAndWaitForCommand('Atualizar', 2, fakeServer);
+    await pressButtonAndWaitUntilThePressIsOver('Atualizar');
 
-    // Assert: the second command carries the time the clock shows now, 25:00
-    // (1 500 000 ms), counted from 10:05. Had the form still counted the time field as
-    // changed, the clock would have jumped back to 20:00.
+    // Assert: the only command is still the first one. Had the form still counted the
+    // time field as changed, a second command would have put the clock back to 20:00.
     expect(
-      fakeServer.listCommandsReceived()[1],
+      fakeServer.listCommandsReceived(),
       'a field already sent must not be sent again as a change',
-    ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'green',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_500_000,
-        referenceWallClockMs: Date.parse(fivePastTen),
-        running: true,
+    ).toEqual([
+      {
+        type: 'updateInstanceData',
+        instanceId: idOfTheRaceClockInstanceOnAir,
+        data: { referenceTimeMs: 1_200_000, referenceWallClockMs: Date.parse(tenOClock) },
       },
-    });
-    fakeServer.acceptLastCommand();
+    ]);
   });
 
-  it('starts untouched after an accepted "Colocar no ar": a later flag change keeps the clock running', async () => {
+  it('starts untouched after an accepted "Colocar no ar": a later flag change sends the flag and no time', async () => {
     // Arrange: nothing on air. At 10:00 the operator fills the form for the first heat
     // and presses "Colocar no ar"; the server puts it on air and accepts. Five minutes
     // later a yellow flag comes out, and the operator changes only the flag.
@@ -154,23 +155,16 @@ describe('the race clock form following what is on air', () => {
     // Act: press "Atualizar" at 10:05.
     await pressButtonAndWaitForCommand('Atualizar', 2, fakeServer);
 
-    // Assert: the clock goes on from 17:34 (12:34 + 5:00 = 1 054 000 ms). The 12:34 typed
-    // for the take was sent once and is not a pending change any more.
+    // Assert: only the flag. The session name, the switch and the 12:34 typed for the
+    // take were sent once and are not pending changes any more, so the clock on air goes
+    // on running from the take.
     expect(
       fakeServer.listCommandsReceived()[1],
-      'after a take the typed time must not be sent again by "Atualizar"',
+      'after a take the fields typed for it must not be sent again by "Atualizar"',
     ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'yellow',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_054_000,
-        referenceWallClockMs: Date.parse(fivePastTen),
-        running: true,
-      },
+      type: 'updateInstanceData',
+      instanceId: idOfTheRaceClockInstanceOnAir,
+      data: { state: 'yellow' },
     });
     fakeServer.acceptLastCommand();
   });
@@ -182,8 +176,8 @@ describe('the race clock form following what is on air', () => {
     chooseOptionInDropdown('Bandeira', 'Amarela');
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
     fakeServer.refuseLastCommand({
-      code: 'GRAPHIC_NOT_FOUND',
-      message: 'O gráfico "race-clock" não está registrado.',
+      code: 'INVALID_GRAPHIC_DATA',
+      message: 'O gráfico "race-clock" não aceita o campo "state".',
     });
     await screen.findByRole('alert');
     await waitFor(() => {
@@ -205,17 +199,9 @@ describe('the race clock form following what is on air', () => {
       fakeServer.listCommandsReceived()[1],
       'a refused change must still be pending on the next press',
     ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'yellow',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_654_000,
-        referenceWallClockMs: Date.parse(tenOClock),
-        running: true,
-      },
+      type: 'updateInstanceData',
+      instanceId: idOfTheRaceClockInstanceOnAir,
+      data: { state: 'yellow' },
     });
     fakeServer.acceptLastCommand();
   });
@@ -249,37 +235,31 @@ describe('the race clock form following what is on air', () => {
     fakeServer.acceptLastCommand();
   });
 
-  it('counts a time typed and then put back as untouched, so "Atualizar" leaves the clock at its own time', async () => {
+  it('counts a time typed and then put back as untouched, so "Atualizar" sends no time', async () => {
     // Arrange: the first heat on air; the form, filled at 10:00, shows 27:34. At 10:05
     // the clock on air shows 32:34. The operator types 20:00, thinks again, and types
-    // the 27:34 that was there before.
+    // the 27:34 that was there before. The flag is changed to yellow as well, so that
+    // there is something to send.
     const { fakeServer, moveThePageClockTo } = renderPanelAtTenOClockWithTheFirstHeatOnAir();
     moveThePageClockTo(fivePastTen);
     typeIntoField('Tempo de referência (mm:ss)', '20:00');
     typeIntoField('Tempo de referência (mm:ss)', '27:34');
+    chooseOptionInDropdown('Bandeira', 'Amarela');
 
     // Act: press "Atualizar".
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
 
-    // Assert: the time field counts as untouched, so the command carries the 32:34
-    // (1 954 000 ms) the clock on air shows, not the 27:34 written in the field. What
-    // this means for the operator: "Atualizar" cannot set the clock to exactly the time
-    // the field already shows; "Colocar no ar" does that.
+    // Assert: the time field counts as untouched, so the command carries the flag and no
+    // time field: the clock on air keeps its own 32:34 and is not set to the 27:34
+    // written in the field. What this means for the operator: "Atualizar" cannot set the
+    // clock to exactly the time the field already shows; "Colocar no ar" does that.
     expect(
       fakeServer.listCommandsReceived()[0],
       'a field put back to what it showed must count as untouched',
     ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'green',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_954_000,
-        referenceWallClockMs: Date.parse(fivePastTen),
-        running: true,
-      },
+      type: 'updateInstanceData',
+      instanceId: idOfTheRaceClockInstanceOnAir,
+      data: { state: 'yellow' },
     });
     fakeServer.acceptLastCommand();
   });
@@ -327,7 +307,8 @@ describe('the race clock form following what is on air', () => {
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
 
     // Assert: the form was not filled from the unreadable data (it still has the default
-    // session name), and with nothing on air to keep, the command is the whole form.
+    // session name). It never started from what is on air, so "changed" means nothing
+    // here: the update carries every field of the form, for the instance on air.
     expect(
       screen.getByLabelText('Nome da sessão'),
       'unreadable on-air data must not be put into the form',
@@ -336,9 +317,8 @@ describe('the race clock form following what is on air', () => {
       fakeServer.listCommandsReceived()[0],
       'with unreadable on-air data "Atualizar" must send every field of the form',
     ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
+      type: 'updateInstanceData',
+      instanceId: idOfTheRaceClockInstanceOnAir,
       data: {
         sessionName: 'Enduro de Resistência',
         state: 'yellow',
