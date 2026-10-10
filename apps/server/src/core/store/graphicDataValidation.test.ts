@@ -14,6 +14,8 @@
  *     schema refuses are each reported with the kind of problem and the field's name;
  *     a field inside an object is named with its full path (`leader.teamNumber`).
  *   - A graphic whose manifest has no `schema` accepts any data.
+ *   - A `format` keyword in a schema (`date-time`, say) is not enforced: any text is
+ *     accepted, the `type` beside it is still checked, and nothing goes to the console.
  *   - A `schema` that is not a usable JSON Schema is reported as such, never thrown.
  *   - The compiled schema kept for a graphic id is not used once that graphic's
  *     manifest carries a different schema.
@@ -25,7 +27,7 @@
  *     wrong answer is checked.
  */
 import type { Graphic } from '@bajaovrlay/shared';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { raceClockManifestForTests } from './builtGraphicsFolder.testSupport.js';
 import { findProblemInGraphicData } from './graphicDataValidation.js';
@@ -180,6 +182,44 @@ describe('findProblemInGraphicData with data the schema refuses', () => {
       kind: 'missingField',
       fieldPath: 'leader.teamNumber',
     });
+  });
+});
+
+describe('findProblemInGraphicData with a schema that uses `format`', () => {
+  it('accepts any text for a field with a format and writes nothing to the console', () => {
+    // Arrange: a session banner whose start time is declared as a `date-time` text, and
+    // a watch on the console, where Ajv would print "unknown format ... ignored".
+    const sessionBanner = buildGraphicWithDataSchema('session-banner', {
+      type: 'object',
+      properties: { startsAt: { type: 'string', format: 'date-time' } },
+    });
+    const consoleWarnings = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const consoleLines = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const consoleErrors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    // Act: check a start time written the way a person would, not as a date-time, and
+    // one that is not even text.
+    const problemInLooseText = findProblemInGraphicData(sessionBanner, { startsAt: 'sábado 9h' });
+    const problemInNumber = findProblemInGraphicData(sessionBanner, { startsAt: 9 });
+    const numberOfConsoleCalls =
+      consoleWarnings.mock.calls.length +
+      consoleLines.mock.calls.length +
+      consoleErrors.mock.calls.length;
+    vi.restoreAllMocks();
+
+    // Assert: the format is not enforced, the type still is, and the console stayed quiet.
+    expect(
+      problemInLooseText,
+      'a `format` keyword is not enforced: any text must be accepted',
+    ).toBeUndefined();
+    expect(problemInNumber, 'the `type` beside the format must still be enforced').toEqual({
+      kind: 'invalidValue',
+      fieldPath: 'startsAt',
+    });
+    expect(
+      numberOfConsoleCalls,
+      'the check must never write to the console; the server logs only structured JSON',
+    ).toBe(0);
   });
 });
 

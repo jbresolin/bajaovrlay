@@ -14,6 +14,8 @@
  *     and the instance keeps its id, layer, output, status and place in the list.
  *   - An update whose result breaks the manifest's schema is refused with a pt-BR
  *     message naming the field, and so is an update for an instance that is not there.
+ *   - An update for an instance whose graphic is no longer registered (its package was
+ *     removed across a restart) is refused with GRAPHIC_NOT_FOUND and changes nothing.
  *   - An update that carries no field changes nothing and hands back the same array.
  *   - A graphic whose manifest has no data schema accepts any update.
  *   - The reducer never changes the slices it was given.
@@ -215,6 +217,38 @@ describe('updateInstanceData, when the update must be refused', () => {
       status: 'refused',
       error: expectedError,
     });
+  });
+});
+
+describe('updateInstanceData, when the graphic of the instance is no longer registered', () => {
+  it('refuses the update with GRAPHIC_NOT_FOUND and changes nothing', () => {
+    // Arrange: the race clock on air, but no race clock among the registered graphics,
+    // as after a restart with the race-clock package removed from the graphics folder.
+    const raceDaySlices = buildRaceDaySlicesWithInstances([
+      buildRaceClockInstanceWithStatus('on-air'),
+    ]);
+    const slicesBefore = {
+      ...raceDaySlices,
+      graphics: raceDaySlices.graphics.filter((graphic) => graphic.id !== 'race-clock'),
+    };
+    const copyOfSlicesBefore = structuredClone(slicesBefore);
+
+    // Act: change the flag to yellow.
+    const outcome = reduceCommand(
+      slicesBefore,
+      { type: 'updateInstanceData', instanceId: raceClockInstanceId, data: { state: 'yellow' } },
+      contextOfTheCommand,
+    );
+
+    // Assert: refused, because without the manifest's schema the data cannot be checked.
+    expect(outcome, 'an update for an unregistered graphic must be refused in pt-BR').toEqual({
+      status: 'refused',
+      error: {
+        code: 'GRAPHIC_NOT_FOUND',
+        message: 'O gráfico "race-clock" não está registrado.',
+      },
+    });
+    expect(slicesBefore, 'a refused update must change nothing').toEqual(copyOfSlicesBefore);
   });
 });
 

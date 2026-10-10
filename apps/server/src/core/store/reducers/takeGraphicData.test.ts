@@ -13,13 +13,15 @@
  *   - A take whose data breaks the schema (a missing required field, a wrong value, a
  *     field the graphic does not have) is refused with a pt-BR message naming the
  *     field, and what was on air before is still there.
+ *   - A take of a graphic whose manifest schema the server cannot read is refused with
+ *     a pt-BR message asking to fix the manifest and restart, and nothing changes.
  *
  * What these tests deliberately do not cover:
  *   - The other rules of a take (replacing, layers, outputs); reduceCommand.test.ts
  *     covers them with graphics that have no data schema.
  *   - Every kind of schema violation; graphicDataValidation.test.ts covers them.
  */
-import type { Command } from '@bajaovrlay/shared';
+import type { Command, Graphic } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -123,5 +125,57 @@ describe('takeGraphic with data the manifest schema refuses', () => {
       slicesBefore,
       'a refused take must change nothing: the clock on air stays as it was',
     ).toEqual(copyOfSlicesBefore);
+  });
+});
+
+describe('takeGraphic of a graphic whose manifest schema cannot be read', () => {
+  it('refuses the take in pt-BR, asking for the manifest to be fixed', () => {
+    // Arrange: the race clock on air, and a scoreboard registered with a schema that says
+    // `type: "texto"`, which is not a JSON Schema type, so the server cannot check its data.
+    const raceDaySlices = buildRaceDaySlicesWithInstances([
+      buildRaceClockInstanceWithStatus('on-air'),
+    ]);
+    const scoreboardWithBrokenSchema: Graphic = {
+      id: 'scoreboard-quebrado',
+      manifest: {
+        id: 'baja-scoreboard-quebrado',
+        name: 'Placar',
+        main: 'scoreboard-quebrado.js',
+        schema: { type: 'object', properties: { leaderName: { type: 'texto' } } },
+      },
+      defaultLayerId: 'fullscreen',
+      category: 'other',
+      thumbnailUrl: null,
+      defaultFields: {},
+    };
+    const slicesBefore = {
+      ...raceDaySlices,
+      graphics: [...raceDaySlices.graphics, scoreboardWithBrokenSchema],
+    };
+    const copyOfSlicesBefore = structuredClone(slicesBefore);
+
+    // Act: take the scoreboard on the fullscreen layer with the leader's name.
+    const outcome = reduceCommand(
+      slicesBefore,
+      {
+        type: 'takeGraphic',
+        graphicId: 'scoreboard-quebrado',
+        layerId: 'fullscreen',
+        data: { leaderName: 'Baja UFPR' },
+        target: 'program',
+      },
+      contextOfTheCommand,
+    );
+
+    // Assert: refused with the sentence that points at the manifest, and nothing changed.
+    expect(outcome, 'a take of a graphic with an unreadable schema must be refused').toEqual({
+      status: 'refused',
+      error: {
+        code: 'INVALID_GRAPHIC_DATA',
+        message:
+          'O gráfico "scoreboard-quebrado" tem um esquema de dados que o servidor não consegue ler. Corrija o manifesto do gráfico e reinicie o servidor.',
+      },
+    });
+    expect(slicesBefore, 'a refused take must change nothing').toEqual(copyOfSlicesBefore);
   });
 });

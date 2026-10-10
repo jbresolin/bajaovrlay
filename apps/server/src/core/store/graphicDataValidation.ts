@@ -82,8 +82,12 @@ function readOrCompileDataSchema(
     // A fresh Ajv per schema: one shared instance would refuse to compile a second
     // schema carrying the same `$id` (a rebuilt graphic). `strict: false` because OGraf
     // data schemas carry form hints (`gddType`, `gddOptions`) that are not JSON Schema
-    // keywords; strict mode would refuse every such schema.
-    const schemaCompiler = new Ajv2020({ strict: false });
+    // keywords; strict mode would refuse every such schema. `logger: false` because Ajv
+    // otherwise prints plain-text warnings to the console (for example about a `format`
+    // it does not know), and a reducer has no request id to log with. What goes unseen:
+    // `format` keywords are not enforced (ajv-formats is not installed), so a field
+    // declared `format: "date-time"` accepts any text.
+    const schemaCompiler = new Ajv2020({ strict: false, logger: false });
     validateData = schemaCompiler.compile(manifestSchema);
   } catch {
     validateData = undefined;
