@@ -13,6 +13,8 @@
  *   - Without a second press the button resets after 3 seconds, and a later press
  *     counts as a first press again.
  *   - Esc counts as a press, alone or mixed with a click; a held-down Esc counts once.
+ *   - The tooltip of a failed graphic's badge does not use up an Esc: with it showing,
+ *     the first Esc still arms the button and the second still clears.
  *   - While the page is not connected the button is disabled and says why, and Esc does
  *     nothing.
  *
@@ -24,6 +26,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { InstanceStatusBadge } from '@/features/layers/InstanceStatusBadge';
 import {
   focusAreaAroundDisabledButton,
   letTimePassOnThePage,
@@ -173,6 +176,49 @@ describe('the clear all button', () => {
       screen.getByRole('button', { name: 'Confirmar: limpar tudo' }),
       'the button must still be asking for confirmation',
     ).toBeInTheDocument();
+  });
+
+  it('arms on the first Esc and clears on the second while the tooltip of a failed graphic is showing', async () => {
+    // Arrange: the button on a connected page, next to the red "Falhou" badge of a race
+    // clock the renderer could not load, with the operator resting on that badge so its
+    // tooltip shows the reason. A tooltip is exactly what is open when a graphic has
+    // just failed and the operator reaches for the panic key.
+    const { fakeServer } = renderOnControlPageConnectedToFakeServer(
+      <>
+        <InstanceStatusBadge
+          status="failed"
+          statusDetail="its module could not be loaded: /graphics/race-clock/race-clock.js"
+        />
+        <ClearAllButton />
+      </>,
+      buildSlicesWithTheRaceClockOnAir('2026-10-10T13:00:00.000Z'),
+    );
+    const focusableAreaAroundTheBadge = screen.getByText('Falhou').parentElement;
+    if (focusableAreaAroundTheBadge === null) {
+      throw new Error('the badge "Falhou" is not on the page');
+    }
+    fireEvent.focus(focusableAreaAroundTheBadge);
+    await screen.findByRole('tooltip');
+
+    // Act: press Esc twice.
+    pressEscapeKey();
+    const labelAfterTheFirstEscape = screen.getByRole('button').textContent;
+    const commandsAfterTheFirstEscape = fakeServer.listCommandsReceived();
+    pressEscapeKey();
+
+    // Assert: the first Esc armed the button (the tooltip did not use it up), and the
+    // second one cleared everything.
+    expect(
+      labelAfterTheFirstEscape,
+      'the first Esc must arm clear all even while a tooltip is showing',
+    ).toBe('Confirmar: limpar tudo');
+    expect(commandsAfterTheFirstEscape, 'one Esc alone must not clear anything').toEqual([]);
+    expect(fakeServer.listCommandsReceived(), 'the second Esc must send clearAll, once').toEqual([
+      { type: 'clearAll' },
+    ]);
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
+    fakeServer.acceptLastCommand();
   });
 
   it('is disabled and says why while the connection is down, and Esc does nothing', async () => {

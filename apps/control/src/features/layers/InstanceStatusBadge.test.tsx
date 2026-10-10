@@ -12,7 +12,8 @@
  *     colour, "Carregando" in the muted (grey) colour, "Falhou" in the destructive (red)
  *     colour. The two statuses nothing sets yet keep a plain outline.
  *   - A failed graphic explains itself: the renderer's detail is in a tooltip on the
- *     badge, reachable with the mouse and with the Tab key.
+ *     badge, tied to a small area around it that the Tab key can reach and that a
+ *     screen reader reads the detail for.
  *   - A failure the renderer gave no detail for still has a tooltip, saying so.
  *   - A status that is not a failure has no tooltip.
  *
@@ -20,6 +21,11 @@
  *   - The colours themselves. The tests check which semantic colour token the badge
  *     uses (`bg-success`, `bg-secondary`, `bg-destructive`); the token values are in
  *     index.css and are checked by eye in the browser.
+ *   - The tooltip appearing and disappearing. It is shown by CSS alone (mouse over the
+ *     badge, or keyboard focus on it), and these tests run without the page's style
+ *     sheet, so they find the tooltip whether or not it would be visible; that part is
+ *     checked by eye in the browser.
+ *   - That the tooltip leaves the Esc key alone; ClearAllButton.test.tsx proves that.
  *   - Where the status and its detail come from; LayerStatusPanel.test.tsx draws the
  *     whole panel from the server's slices.
  *   - The language of the detail: it is the renderer's own error text, shown as received.
@@ -121,6 +127,17 @@ describe('the instance status badge', () => {
       await screen.findByRole('tooltip'),
       'the tooltip must tell the operator why the graphic failed',
     ).toHaveTextContent(
+      'Failed to fetch dynamically imported module: /graphics/race-clock/race-clock.js',
+    );
+    const focusableAreaAroundTheBadge = screen.getByText('Falhou').parentElement;
+    expect(
+      focusableAreaAroundTheBadge,
+      'the Tab key must be able to reach the area the tooltip belongs to',
+    ).toHaveAttribute('tabindex', '0');
+    expect(
+      focusableAreaAroundTheBadge,
+      'a screen reader must read the detail when it reaches the badge',
+    ).toHaveAccessibleDescription(
       'Failed to fetch dynamically imported module: /graphics/race-clock/race-clock.js',
     );
   });
