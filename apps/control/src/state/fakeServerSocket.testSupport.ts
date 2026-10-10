@@ -2,15 +2,24 @@
 // `openSocket` to connectToServer, then plays the server by hand: it accepts the
 // connection, sends messages, drops the line, and reads what the control page sent.
 import type { CommandError, ServerMessage } from '@bajaovrlay/shared';
+import { z } from 'zod';
 
 import type { OpenServerSocket, ServerSocketHandlers } from './serverConnection';
 
+// The shape every text the control page sends must have. It is stricter than the shared
+// CommandMessageSchema in one place: the control page always sends a requestId, and the
+// fake server needs it to answer. The command inside is left unchecked, as on the wire.
+// Strict, so a field the page should not be sending fails the test instead of vanishing.
+const CommandMessageReceivedByFakeServerSchema = z.strictObject({
+  type: z.literal('command'),
+  requestId: z.string().min(1),
+  command: z.unknown(),
+});
+
 /** One `command` message as the control page sent it over the socket. */
-export type CommandMessageReceivedByFakeServer = {
-  type: 'command';
-  requestId: string;
-  command: unknown;
-};
+export type CommandMessageReceivedByFakeServer = z.infer<
+  typeof CommandMessageReceivedByFakeServerSchema
+>;
 
 /** The server's end of the socket, driven by the test. */
 export type FakeServerSocket = {
@@ -52,10 +61,13 @@ export function createFakeServerSocket(): FakeServerSocket {
     return newestHandlers;
   }
 
+  // Checked instead of cast: if the control page ever sends something that is not a
+  // command message, the test fails here with the field named, not later with `undefined`.
   function listCommandMessagesReceived(): CommandMessageReceivedByFakeServer[] {
-    return textsReceived.map(
-      (text) => JSON.parse(text) as unknown as CommandMessageReceivedByFakeServer,
-    );
+    return textsReceived.map((text) => {
+      const messageAsSent: unknown = JSON.parse(text);
+      return CommandMessageReceivedByFakeServerSchema.parse(messageAsSent);
+    });
   }
 
   function readLastCommandMessageReceived(): CommandMessageReceivedByFakeServer {
