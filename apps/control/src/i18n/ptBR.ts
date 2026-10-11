@@ -92,4 +92,78 @@ export const ptBR = {
     hoursAgo: (hours: number) => `há ${hours} h`,
     daysAgo: (days: number) => (days === 1 ? 'há 1 dia' : `há ${days} dias`),
   },
+  // The item editor (features/items): preparing a new item and changing a saved one.
+  itemEditor: {
+    panelLabel: 'Editor de item',
+    newItemTitle: 'Novo item',
+    editItemTitle: 'Editar item',
+    fields: {
+      graphic: 'Gráfico',
+      layer: 'Camada',
+      label: 'Rótulo',
+      color: 'Cor',
+      notes: 'Observações',
+      autoOutAfterSeconds: 'Saída automática (segundos, opcional)',
+    },
+    // One name per colour of ItemColorSchema, so a colour is never told by colour alone.
+    colorNames: {
+      neutral: 'Neutra',
+      info: 'Informação',
+      success: 'Sucesso',
+      warning: 'Atenção',
+      danger: 'Perigo',
+      highlight: 'Destaque',
+    },
+    fieldErrors: {
+      graphicMissing: 'Escolha o gráfico.',
+      layerMissing: 'Escolha a camada.',
+      labelMissing: 'Informe o rótulo do item.',
+      colorMissing: 'Escolha a cor.',
+      autoOutAfterSecondsInvalid:
+        'Informe os segundos como um número inteiro maior que zero ou deixe em branco.',
+      lapsCannotBeRemoved:
+        'As voltas de um item salvo não podem ser apagadas. Informe um número ou exclua o item e crie outro.',
+    },
+    graphicAndLayerCannotChange:
+      'O gráfico e a camada de um item salvo não mudam. Para trocá-los, exclua o item e crie outro.',
+    genericEditorComesLater:
+      'Editor genérico chega em BAJAOVRLAY-14. Até lá, os campos deste gráfico não podem ser preenchidos aqui.',
+    // Shown under the race clock fields: what a prepared clock does when taken later.
+    preparedClockNote:
+      'Relógio parado: vai ao ar mostrando o tempo digitado. Relógio correndo: conta a partir do momento em que o item foi salvo, não de quando vai ao ar. Para largar na hora, salve o relógio parado e inicie-o pelo painel "Relógio de prova".',
+    fieldsThatCouldNotBeRead: (fieldLabels: string) =>
+      `Estes campos do item não puderam ser lidos e aparecem com o valor padrão; salvar grava o que está no formulário: ${fieldLabels}.`,
+    saveButton: 'Salvar item',
+    cancelButton: 'Cancelar',
+  },
+  // The rundown column (features/rundown): the list of prepared items and its buttons.
+  rundown: {
+    noRundownOnServer: 'O servidor não enviou nenhum rundown.',
+    emptyRundown: 'Nenhum item neste rundown. Use "+ Item" para preparar o primeiro.',
+    addItemButton: '+ Item',
+    itemListLabel: (rundownName: string) => `Itens de ${rundownName}`,
+    // The mark on the row at the cursor: the item Space puts on air.
+    nextItemBadge: 'Próximo',
+    takeItemButton: 'Disparar',
+    editItemButton: 'Editar',
+    deleteItemButton: 'Excluir',
+    moveItemHandle: 'Mover',
+    // What a screen reader hears while a row is dragged. dnd-kit's own texts are in
+    // English, so every one of them is replaced here.
+    dragAndDrop: {
+      handleRoleDescription: 'item que pode mudar de posição',
+      keyboardInstructions:
+        'Para mudar um item de posição, pressione Espaço ou Enter, mova com as setas para cima e para baixo e pressione Espaço ou Enter de novo para soltar. Esc cancela.',
+      pickedUp: (itemLabel: string) => `Item ${itemLabel} levantado.`,
+      movedOver: (itemLabel: string, otherItemLabel: string) =>
+        `Item ${itemLabel} sobre a posição de ${otherItemLabel}.`,
+      // dnd-kit reports a row as "over itself" right after it is picked up, and again
+      // whenever it is brought back to where it started.
+      overItsOwnPlace: (itemLabel: string) => `Item ${itemLabel} no lugar de onde saiu.`,
+      movedOutsideTheList: (itemLabel: string) => `Item ${itemLabel} fora da lista.`,
+      dropped: (itemLabel: string) =>
+        `Item ${itemLabel} solto. A nova ordem aparece quando o servidor confirmar.`,
+      leftWhereItWas: (itemLabel: string) => `Item ${itemLabel} continua onde estava.`,
+    },
+  },
 } as const;

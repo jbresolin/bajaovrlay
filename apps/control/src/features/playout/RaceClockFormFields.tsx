@@ -14,24 +14,39 @@ import { ptBR } from '@/i18n/ptBR';
 import { buildErrorAttributesForControl, FormFieldRow } from './FormFieldRow';
 import { clockModes, flagStates, type RaceClockTakeFormValues } from './raceClockTakeForm';
 
-// Each control's id, used to tie its label and its error message to it.
-const controlIds = {
-  sessionName: 'race-clock-session-name',
-  state: 'race-clock-state',
-  clockMode: 'race-clock-clock-mode',
-  running: 'race-clock-running',
-  referenceTime: 'race-clock-reference-time',
-  lapsCompletedByLeader: 'race-clock-laps-completed-by-leader',
-} as const;
+/** The start of every control id when the caller does not give another one. */
+const defaultControlIdPrefix = 'race-clock';
+
+/**
+ * Each control's id, used to tie its label and its error message to it. The prefix
+ * exists because an id must be unique on a page: the take panel and the item editor
+ * (features/items) both draw these fields, and with equal ids a label of the second
+ * form would point at the control of the first.
+ */
+function buildControlIds(controlIdPrefix: string) {
+  return {
+    sessionName: `${controlIdPrefix}-session-name`,
+    state: `${controlIdPrefix}-state`,
+    clockMode: `${controlIdPrefix}-clock-mode`,
+    running: `${controlIdPrefix}-running`,
+    referenceTime: `${controlIdPrefix}-reference-time`,
+    lapsCompletedByLeader: `${controlIdPrefix}-laps-completed-by-leader`,
+  };
+}
 
 /**
  * The six fields of the race clock form, in the order the operator fills them. Text
  * fields are registered with react-hook-form directly; the dropdowns and the switch are
  * shadcn/ui controls with no native input to register, so each sits in a `Controller`
  * that passes the form's value in and the operator's choice out.
+ * A second form on the same page must pass its own `controlIdPrefix`.
  */
-export function RaceClockFormFields(props: { form: UseFormReturn<RaceClockTakeFormValues> }) {
+export function RaceClockFormFields(props: {
+  form: UseFormReturn<RaceClockTakeFormValues>;
+  controlIdPrefix?: string;
+}) {
   const { control, register, formState } = props.form;
+  const controlIds = buildControlIds(props.controlIdPrefix ?? defaultControlIdPrefix);
   const fieldLabels = ptBR.playout.fields;
   const errorMessages = {
     sessionName: formState.errors.sessionName?.message,
