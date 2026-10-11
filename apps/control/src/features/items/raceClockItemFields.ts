@@ -166,6 +166,36 @@ export function readRaceClockFormValuesFromItemFields(
 }
 
 /**
+ * Answers whether the item stores the time the form holds, as far as the form can tell.
+ * The form shows and reads whole seconds (mm:ss), so a stored 90 500 ms (written by a
+ * script; the editor itself only stores whole seconds) is shown as "1:30" and comes back
+ * as 90 000 ms. That difference is the form's rounding, not a change by the operator,
+ * so both are compared as the mm:ss text the form shows.
+ * A stored time the form cannot show (missing, not a literal, not a whole number of
+ * milliseconds) is never the same: the form then shows its default, and saving replaces it.
+ * What could go wrong: the part of a second stays stored until the operator types a
+ * different time; typing the same mm:ss again does not remove it.
+ */
+export function isStoredReferenceTimeTheOneTheFormHolds(
+  itemFields: ItemFields,
+  referenceTimeFromTheFormInMilliseconds: number,
+): boolean {
+  const storedReferenceTimeMs = StoredMillisecondsSchema.safeParse(
+    readLiteralValueOfField(itemFields, 'referenceTimeMs'),
+  );
+  if (!storedReferenceTimeMs.success) {
+    return false;
+  }
+  const storedTimeAsTheFormShowsIt = formatMillisecondsAsMinutesAndSeconds(
+    storedReferenceTimeMs.data,
+  );
+  const timeOfTheFormAsTheFormShowsIt = formatMillisecondsAsMinutesAndSeconds(
+    referenceTimeFromTheFormInMilliseconds,
+  );
+  return storedTimeAsTheFormShowsIt === timeOfTheFormAsTheFormShowsIt;
+}
+
+/**
  * Answers whether the item stores a reference moment the clock can use: a literal whole
  * number of milliseconds. Without one the graphic refuses the item's data at the take.
  */

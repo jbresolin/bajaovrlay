@@ -28,6 +28,7 @@ import {
 import {
   buildRaceClockItemFieldsFromFormValues,
   hasReferenceMomentTheClockCanUse,
+  isStoredReferenceTimeTheOneTheFormHolds,
 } from './raceClockItemFields';
 
 /** Answers whether a graphic is the one the editor has a hand-written form for. */
@@ -97,7 +98,8 @@ function isStoredFieldTheSameLiteral(
 
 /**
  * The race clock fields an update must send: the ones whose value differs from the
- * stored item. The reference moment is special. Built from "now", it always differs
+ * stored item. The time counts as different only when the form shows another mm:ss than
+ * the stored time does. The reference moment is special. Built from "now", it always differs
  * from the stored one, yet sending it alone would shift a running clock. So it travels
  * only together with a changed time or a changed "running" (a new reference), or when
  * the stored item has none the clock can use.
@@ -110,6 +112,19 @@ function findRaceClockFieldsThatChanged(
   for (const fieldKey of Object.keys(fieldsFromTheForm)) {
     const fieldFromTheForm = fieldsFromTheForm[fieldKey];
     if (fieldFromTheForm === undefined || fieldKey === 'referenceWallClockMs') {
+      continue;
+    }
+    // The time is judged first and by its own rule: the form works in whole seconds, so
+    // a stored time with a part of a second would always look changed to `===` below,
+    // and a label-only edit would then give a running clock a new reference.
+    if (fieldKey === 'referenceTimeMs') {
+      const timeFromTheForm = fieldFromTheForm.value;
+      const isTimeTheOneTheItemStores =
+        typeof timeFromTheForm === 'number' &&
+        isStoredReferenceTimeTheOneTheFormHolds(fieldsOnTheItem, timeFromTheForm);
+      if (!isTimeTheOneTheItemStores) {
+        fieldsThatChanged[fieldKey] = fieldFromTheForm;
+      }
       continue;
     }
     if (!isStoredFieldTheSameLiteral(fieldFromTheForm, fieldsOnTheItem[fieldKey])) {

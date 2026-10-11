@@ -27,6 +27,8 @@
  *     features/playout/raceClockTakeForm.test.ts): these builders are given valid values.
  *   - Removing the laps from an item, which the update command cannot do; the panel
  *     refuses that before building anything (ItemEditorPanelEditing.test.tsx).
+ *   - A stored clock time with a part of a second, which only a script can store
+ *     (itemCommandsFromFormStoredTime.test.ts); every time here is in whole seconds.
  *   - What the server does with the commands (apps/server).
  */
 import type { ItemFields } from '@bajaovrlay/shared';
