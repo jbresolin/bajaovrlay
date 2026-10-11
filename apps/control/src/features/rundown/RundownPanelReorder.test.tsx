@@ -24,7 +24,9 @@
  *   prove the panel is wired to it. The keyboard is used because the test browser
  *   (jsdom) has no mouse pointer and draws nothing; for the same reason the test tells
  *   it where each row "is" on screen (60 px tall, one under the other), which is what
- *   dnd-kit reads to know which row the dragged one is over.
+ *   dnd-kit reads to know which row the dragged one is over. dnd-kit also reacts to each
+ *   key a few milliseconds later, on timers of its own; the test moves the page's clock
+ *   by hand past them instead of waiting, so no test depends on how fast the machine is.
  *
  * What these tests deliberately do not cover:
  *   - Dragging with the mouse, the animation of the rows, and the other announcements
@@ -75,15 +77,27 @@ function giveEachRundownRowAPlaceOnScreen(): void {
 }
 
 /**
- * Presses one key on a row's "Mover" handle and then waits a moment, because dnd-kit
- * reacts to each key a little later (it measures the rows between one key and the next).
+ * Makes time on the page stand still until the test moves it (`vi.useFakeTimers()`), and
+ * tells the test browser where each row is. Every test that drags starts with this.
+ */
+function prepareThePageForAKeyboardDrag(): void {
+  vi.useFakeTimers();
+  giveEachRundownRowAPlaceOnScreen();
+}
+
+/**
+ * Presses one key on a row's "Mover" handle and then moves the page's clock 20 ms on,
+ * because dnd-kit reacts to each key a little later (it starts listening for the next
+ * key, and measures the rows, on timers of its own). The clock is moved by hand, not
+ * waited for: a real 20 ms wait could be too short on a busy machine, and the test
+ * would then fail now and again. Needs prepareThePageForAKeyboardDrag() first.
  * `keyCode` is the physical key, as dnd-kit reads it: 'Space', 'ArrowDown', ...
  */
 async function pressKeyOnMoveHandle(moveHandle: HTMLElement, keyCode: string): Promise<void> {
   const keyAsTheBrowserNamesIt = keyCode === 'Space' ? ' ' : keyCode;
   await act(async () => {
     fireEvent.keyDown(moveHandle, { code: keyCode, key: keyAsTheBrowserNamesIt });
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await vi.advanceTimersByTimeAsync(20);
   });
 }
 
@@ -101,7 +115,7 @@ function findMoveHandleOfItem(itemLabel: string): HTMLElement {
 describe('reordering the rundown by drag', () => {
   it('sends reorderItems with every item id in the new order when a row is moved down', async () => {
     // Arrange: the main rundown — start, yellow flag, finish — with each row given a place.
-    giveEachRundownRowAPlaceOnScreen();
+    prepareThePageForAKeyboardDrag();
     const slices = buildSlicesWithTheEnduranceRundown('item-largada-do-enduro');
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(<RundownPanel />, slices);
     const moveHandleOfTheStart = findMoveHandleOfItem('Largada do enduro');
@@ -133,7 +147,7 @@ describe('reordering the rundown by drag', () => {
 
   it("keeps the rows in the server's order after the drop, until the new items slice arrives", async () => {
     // Arrange: the main rundown, and the start dragged one row down and dropped.
-    giveEachRundownRowAPlaceOnScreen();
+    prepareThePageForAKeyboardDrag();
     const slices = buildSlicesWithTheEnduranceRundown('item-largada-do-enduro');
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(<RundownPanel />, slices);
     const moveHandleOfTheStart = findMoveHandleOfItem('Largada do enduro');
@@ -163,7 +177,7 @@ describe('reordering the rundown by drag', () => {
 
   it('sends nothing when a row is picked up and dropped where it was', async () => {
     // Arrange: the main rundown with each row given a place.
-    giveEachRundownRowAPlaceOnScreen();
+    prepareThePageForAKeyboardDrag();
     const slices = buildSlicesWithTheEnduranceRundown('item-largada-do-enduro');
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(<RundownPanel />, slices);
     const moveHandleOfTheYellowFlag = findMoveHandleOfItem('Bandeira amarela');
@@ -182,7 +196,7 @@ describe('reordering the rundown by drag', () => {
 
   it('tells a screen reader in pt-BR which row the dragged one is over, by the labels of the items', async () => {
     // Arrange: the main rundown with each row given a place.
-    giveEachRundownRowAPlaceOnScreen();
+    prepareThePageForAKeyboardDrag();
     const slices = buildSlicesWithTheEnduranceRundown('item-largada-do-enduro');
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(<RundownPanel />, slices);
     const moveHandleOfTheStart = findMoveHandleOfItem('Largada do enduro');
