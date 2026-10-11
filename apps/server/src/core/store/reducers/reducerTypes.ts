@@ -2,7 +2,8 @@ import type { CommandError, Slices } from '@bajaovrlay/shared';
 
 /**
  * The slices a command may change. The event log is not among them: the store appends
- * to it after every command, whatever the reducer decided.
+ * to it itself, after a command that changed one of these slices or was refused. A
+ * command that is accepted and changes nothing leaves no entry.
  */
 export type SlicesChangedByCommands = Pick<Slices, 'layers' | 'graphics' | 'instances'>;
 

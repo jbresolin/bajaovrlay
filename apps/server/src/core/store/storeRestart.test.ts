@@ -9,8 +9,9 @@
  * What these tests prove (with a real SQLite file in a temporary folder):
  *   - A new store on the same file has exactly the slices the old one had.
  *   - The event log comes back in the order the commands were applied.
- *   - The database keeps every event-log entry, while the slice (in memory and after a
- *     restart) keeps only the newest 200.
+ *   - The database keeps every event-log entry (one per command that changed something
+ *     or was refused), while the slice (in memory and after a restart) keeps only the
+ *     newest 200.
  *
  * What these tests deliberately do not cover:
  *   - Seeding an empty database; loadInitialSlices.test.ts covers it.
@@ -121,13 +122,16 @@ describe('a store opened on the file of a previous store', () => {
     'keeps every entry in the database but only the newest 200 in the slice',
     { timeout: 30_000 },
     () => {
-      // Arrange: a store that ran 201 commands, one more than the slice keeps.
+      // Arrange: a store that took the race clock 201 times, one more than the slice
+      // keeps. Each take replaces the clock before it, so each one changes the stage and
+      // is written to the event log; a command that changes nothing (a clearAll of an
+      // empty stage, say) writes no entry and could not fill the log.
       const databasePath = createTemporaryDatabasePath();
       const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
       const firstDatabase = openDatabaseForTests(databasePath);
       const storeBeforeRestart = openStoreOnDatabase(firstDatabase, graphicPackagesFolder);
-      for (let commandNumber = 1; commandNumber <= 201; commandNumber += 1) {
-        storeBeforeRestart.applyCommand({ type: 'clearAll' }, 'operador:conexao-7');
+      for (let takeNumber = 1; takeNumber <= 201; takeNumber += 1) {
+        storeBeforeRestart.applyCommand(takeRaceClockOnProgram, 'operador:conexao-7');
       }
       const sliceBeforeRestart = storeBeforeRestart.readAllSlices().eventLog;
 

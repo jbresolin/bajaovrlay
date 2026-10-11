@@ -17,6 +17,9 @@
  *     and in the database.
  *   - A command refused by its reducer or by the authorisation hook is written to the
  *     event log as failed, and leaves the slices alone.
+ *   - An accepted command that changes nothing (a second renderer reporting the same
+ *     clock on air, or any other, such as a clear of an empty stage) is answered ok and
+ *     leaves no trace: no event-log row in memory or on disk, and no subscriber told.
  *   - Subscribers hear about exactly the slices that changed.
  *   - When saving fails, memory keeps matching the database: nothing changes.
  *
@@ -228,6 +231,52 @@ describe('applyCommand with a valid command', () => {
     expect(readNewestEventLogRows(database, 10), 'the database must hold the same entry').toEqual([
       expectedEntry,
     ]);
+  });
+});
+
+describe('applyCommand with an accepted command that changes nothing', () => {
+  it('answers ok, writes no event-log row and tells no subscriber', () => {
+    // Arrange: the race clock taken and already reported on air by OBS, and a subscriber
+    // that starts writing down what it hears only now.
+    const { store, database } = createStoreWithRaceClockRegistered();
+    const reportRaceClockOnAir = {
+      type: 'reportInstanceStatus',
+      instanceId: idOfEveryNewInstance,
+      status: 'on-air',
+    };
+    store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
+    store.applyCommand(reportRaceClockOnAir, 'renderer:conexao-obs');
+    const slicesBefore = store.readAllSlices();
+    const changedSliceNamesHeard: SliceName[][] = [];
+    store.subscribeToSliceChanges((changedSliceNames) => {
+      changedSliceNamesHeard.push(changedSliceNames);
+    });
+
+    // Act: the control page's monitor, which shows the same clock, reports it on air too.
+    const outcome = store.applyCommand(reportRaceClockOnAir, 'renderer:conexao-monitor');
+
+    // Assert: the sender is told ok and nothing else happened: the event log still holds
+    // only the take and the first report, memory is untouched and no subscriber heard.
+    expect(outcome, 'a command that changes nothing is still accepted').toEqual({ ok: true });
+    expect(
+      store.readAllSlices().eventLog.map((entry) => [entry.actor, entry.command]),
+      'the event-log slice must hold only the take and the first report',
+    ).toEqual([
+      ['operador:conexao-7', 'takeGraphic'],
+      ['renderer:conexao-obs', 'reportInstanceStatus'],
+    ]);
+    expect(
+      readNewestEventLogRows(database, 10),
+      'the event_log table must not gain a row for a command that changed nothing',
+    ).toHaveLength(2);
+    expect(
+      store.readAllSlices(),
+      'memory must be left exactly as it was, the very same slices',
+    ).toBe(slicesBefore);
+    expect(
+      changedSliceNamesHeard,
+      'no subscriber may be told anything, so nothing is broadcast',
+    ).toEqual([]);
   });
 });
 

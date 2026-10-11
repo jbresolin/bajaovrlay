@@ -4,7 +4,7 @@
  * What this module is for:
  *   The server owns all state as four named slices: `layers` (where graphics can go),
  *   `graphics` (what can be shown), `instances` (what is showing now) and `eventLog`
- *   (every command, in order). SlicesSchema describes all four; the server checks what
+ *   (the commands that changed something or were refused, in order). SlicesSchema describes all four; the server checks what
  *   it stores and sends against it, and the control page and renderer check what they
  *   receive.
  *
