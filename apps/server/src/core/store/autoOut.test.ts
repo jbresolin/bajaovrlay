@@ -25,6 +25,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The rules of takeItem and clearLayer themselves; the tests in reducers/ cover them.
+ *   - A take on the preview output and clearAll; autoOutPreviewAndClearAll.test.ts.
  */
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
