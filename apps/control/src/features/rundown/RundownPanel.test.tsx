@@ -12,15 +12,17 @@
  *   - Each row shows the item's colour, its label, the graphic's name and the layer's.
  *   - Only the row at the cursor is marked as next; with no cursor, no row is; and the
  *     mark follows the server when a new cursor arrives.
- *   - "Disparar" sends `takeItem` and "Excluir" sends `deleteItem`, each with the id of
- *     its own row; the page changes nothing by itself and waits for the server's slices.
+ *   - "Disparar" sends `takeItem` with the id of its own row; the page changes nothing
+ *     by itself and waits for the server's slices.
  *   - A refusal from the server is shown in the panel, in the server's pt-BR words.
  *   - An empty rundown, and a server with no rundown, each say so instead of a blank box.
  *   - Without a connection every button of the panel is disabled.
  *
  * What these tests deliberately do not cover:
- *   - Reordering by drag (RundownPanelReorder.test.tsx), the Space and Right arrow keys
- *     (RundownPanelKeyboard.test.tsx) and opening the item editor
+ *   - Reordering by drag (RundownPanelReorder.test.tsx), the Space key
+ *     (RundownPanelKeyboard.test.tsx), the arrow keys and the click on a label
+ *     (RundownPanelCursor.test.tsx), "Excluir" and its two presses
+ *     (RundownPanelDelete.test.tsx) and opening the item editor
  *     (RundownPanelItemEditor.test.tsx).
  *   - The real server: a fake one stands in; e2e/rundownTakeWithSpace.e2e.ts uses the real one.
  *   - Colours on screen: the test reads which colour NAME a row's chip carries; that the
@@ -241,13 +243,6 @@ describe('the buttons of a rundown row', () => {
       buttonName: 'Disparar',
       expectedCommand: { type: 'takeItem', itemId: 'item-chegada-do-enduro' },
     },
-    // Deleting: one command with the id of the row, nothing else.
-    {
-      name: '"Excluir" on the middle row sends deleteItem for that item',
-      itemLabel: 'Bandeira amarela',
-      buttonName: 'Excluir',
-      expectedCommand: { type: 'deleteItem', itemId: 'item-bandeira-amarela' },
-    },
   ];
 
   it.each(rowButtonScenarios)('$name', ({ itemLabel, buttonName, expectedCommand }) => {
@@ -271,27 +266,6 @@ describe('the buttons of a rundown row', () => {
     // (Then the server answers, so no command is left waiting for its 5-second timeout
     // once the test is over.)
     fakeServer.acceptLastCommand();
-  });
-
-  it('removes the row once the server sends the items without it', () => {
-    // Arrange: the panel, with "Excluir" pressed on the yellow flag and accepted.
-    const slices = buildSlicesWithTheEnduranceRundown('item-largada-do-enduro');
-    const { fakeServer } = renderOnControlPageConnectedToFakeServer(<RundownPanel />, slices);
-    const yellowFlagRow = within(screen.getByRole('listitem', { name: 'Bandeira amarela' }));
-    fireEvent.click(yellowFlagRow.getByRole('button', { name: 'Excluir' }));
-    fakeServer.acceptLastCommand();
-
-    // Act: the server sends the items slice that no longer has the yellow flag.
-    const itemsWithoutTheYellowFlag = slices.items.filter(
-      (item) => item.id !== 'item-bandeira-amarela',
-    );
-    fakeServer.sendMessage({ type: 'slice', name: 'items', slice: itemsWithoutTheYellowFlag });
-
-    // Assert: two rows are left.
-    expect(
-      listItemLabelsInRowOrder(),
-      'the deleted item must leave the list when the server says it is gone',
-    ).toEqual(['Largada do enduro', 'Chegada do enduro']);
   });
 
   it("shows the server's pt-BR message in the panel when a take is refused", async () => {

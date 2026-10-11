@@ -19,9 +19,9 @@ type ItemEditorTarget =
 
 /**
  * The rundown column: the items prepared for the session in firing order, the cursor on
- * the next one, and the ways to fire, reorder, edit, delete and add items. It only
- * repeats the server's `rundowns` and `items` slices; every button sends one command
- * and the list changes when the server's next slice arrives, not before.
+ * the next one, and the ways to fire, reorder, edit, delete and add items and to move
+ * the cursor. It only repeats the server's `rundowns` and `items` slices; every button
+ * sends one command and the list changes when the server's next slice arrives, not before.
  */
 export function RundownPanel() {
   const rundowns = useServerState((state) => state.rundowns);
@@ -92,8 +92,11 @@ export function RundownPanel() {
           graphics={graphics}
           layers={layers}
           onTakePressed={(itemId) => void sendCommand({ type: 'takeItem', itemId })}
+          onSetCursorPressed={(itemId) =>
+            void sendCommand({ type: 'moveCursor', rundownId, itemId })
+          }
           onEditPressed={(itemId) => setItemEditorTarget({ kind: 'existingItem', itemId })}
-          onDeletePressed={(itemId) => void sendCommand({ type: 'deleteItem', itemId })}
+          onDeleteConfirmed={(itemId) => void sendCommand({ type: 'deleteItem', itemId })}
           onItemsReordered={(itemIdsInNewOrder) =>
             void sendCommand({
               type: 'reorderItems',

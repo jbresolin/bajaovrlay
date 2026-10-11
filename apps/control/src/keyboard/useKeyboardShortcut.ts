@@ -7,16 +7,11 @@ export type KeyboardShortcutOptions = {
   /** true makes the shortcut ignore key presses made on a text field, dropdown or switch. */
   isIgnoredWhileTyping: boolean;
   /**
-   * true makes the shortcut ignore key presses made while the focus is on a button or a
-   * link. For keys those controls use themselves: Space presses the focused button, and
-   * a shortcut on Space that fired as well would do two things with one press.
-   * Left out means false, which is what Esc and Backspace want.
-   */
-  isIgnoredOnButtonsAndLinks?: boolean;
-  /**
-   * true stops the browser from also doing its own thing with the key once the shortcut
-   * has fired. For keys the browser uses on a plain page: Space scrolls down and the
-   * Right arrow scrolls sideways. Left out means false.
+   * true keeps the key for the shortcut alone: the browser is told not to do its own
+   * thing with it, both when the shortcut fires and when the key is let go. For keys the
+   * browser uses itself: Space scrolls a plain page and PRESSES the button the focus is
+   * on, the arrows scroll sideways. Left out means false, which is what Esc and
+   * Backspace want.
    */
   isKeptFromTheBrowser?: boolean;
 };
@@ -26,7 +21,7 @@ export type KeyboardShortcutOptions = {
  * anywhere on the page. Three kinds of press never count, because each would send a
  * command the operator did not mean: a key held down (the keyboard's auto-repeat), a key
  * with Ctrl/Alt/Meta (a browser shortcut), and a key another control already used
- * (Esc closing an open dropdown).
+ * (Esc closing an open dropdown, Space picking a rundown row up for a keyboard drag).
  */
 export function useKeyboardShortcut(
   key: string,
@@ -34,7 +29,6 @@ export function useKeyboardShortcut(
   options: KeyboardShortcutOptions,
 ): void {
   const { isEnabled, isIgnoredWhileTyping } = options;
-  const isIgnoredOnButtonsAndLinks = options.isIgnoredOnButtonsAndLinks ?? false;
   const isKeptFromTheBrowser = options.isKeptFromTheBrowser ?? false;
 
   useEffect(() => {
@@ -55,30 +49,44 @@ export function useKeyboardShortcut(
       if (isIgnoredWhileTyping && isTypingTarget(event.target)) {
         return;
       }
-      if (isIgnoredOnButtonsAndLinks && isButtonOrLinkTarget(event.target)) {
-        return;
-      }
       if (isKeptFromTheBrowser) {
         event.preventDefault();
       }
       onPressed();
     }
 
+    // A browser presses the focused button when Space is LET GO, not when it goes down,
+    // and browsers disagree on whether refusing the key going down is enough to stop
+    // that (it is not after a held key, nor in Firefox). So a key kept from the browser
+    // is refused on its way up as well. This is safe for the two controls that use the
+    // key themselves: a keyboard drag acts when the key goes down, and the switch and
+    // the dropdowns are "typing" places, which are left alone here as above.
+    function handleKeyUp(event: KeyboardEvent): void {
+      if (event.key !== key) {
+        return;
+      }
+      const hasModifierKey = event.ctrlKey || event.altKey || event.metaKey;
+      if (hasModifierKey) {
+        return;
+      }
+      if (isIgnoredWhileTyping && isTypingTarget(event.target)) {
+        return;
+      }
+      event.preventDefault();
+    }
+
     window.addEventListener('keydown', handleKeyDown);
+    if (isKeptFromTheBrowser) {
+      window.addEventListener('keyup', handleKeyUp);
+    }
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
-    // Deliberate: callers pass a new `onPressed` function on every render, so the listener
-    // is removed and added again each time. That is cheap and never leaves two listeners;
+    // Deliberate: callers pass a new `onPressed` function on every render, so the listeners
+    // are removed and added again each time. That is cheap and never leaves two listeners;
     // holding the callback in a ref would avoid it at the price of a less obvious hook.
-  }, [
-    key,
-    onPressed,
-    isEnabled,
-    isIgnoredWhileTyping,
-    isIgnoredOnButtonsAndLinks,
-    isKeptFromTheBrowser,
-  ]);
+  }, [key, onPressed, isEnabled, isIgnoredWhileTyping, isKeptFromTheBrowser]);
 }
 
 /**
@@ -102,19 +110,4 @@ function isTypingTarget(eventTarget: EventTarget | null): boolean {
   const isInsideDropdown = eventTarget.closest('[role="combobox"], [role="listbox"]') !== null;
   const isOnSwitch = eventTarget.closest('[role="switch"]') !== null;
   return isFormField || eventTarget.isContentEditable || isInsideDropdown || isOnSwitch;
-}
-
-/**
- * Whether a key press landed on something the keyboard "presses": a button, a link, or
- * an element that plays one of those parts through its role (the radio buttons and
- * checkboxes of shadcn/ui are buttons underneath; a drag handle has the role "button").
- */
-function isButtonOrLinkTarget(eventTarget: EventTarget | null): boolean {
-  if (!(eventTarget instanceof HTMLElement)) {
-    return false;
-  }
-  const closestPressableControl = eventTarget.closest(
-    'button, a[href], summary, [role="button"], [role="radio"], [role="checkbox"]',
-  );
-  return closestPressableControl !== null;
 }

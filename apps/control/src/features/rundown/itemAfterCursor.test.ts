@@ -16,7 +16,7 @@
  *   - In an empty rundown the answer is null.
  *
  * What these tests deliberately do not cover:
- *   - Listening to the key and sending `moveCursor`; RundownPanelKeyboard.test.tsx does.
+ *   - Listening to the key and sending `moveCursor`; RundownPanelCursor.test.tsx does.
  *   - The cursor moving after a take: the server does that by itself.
  */
 import type { Item } from '@bajaovrlay/shared';

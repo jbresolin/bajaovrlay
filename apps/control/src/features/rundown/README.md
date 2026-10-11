@@ -2,14 +2,14 @@
 
 The left column: the items prepared for a session, in firing order, with the cursor on
 the next one. Start reading at `RundownPanel.tsx`. No order or cursor is kept here: after
-a drop the rows wait for the server's next slice.
+a drop or a click the rows wait for the server's next slice.
 
-- `RundownPanel.tsx` — reads the `rundowns` and `items` slices, shows the first rundown,
-  sends `takeItem`, `deleteItem`, `reorderItems`; opens `features/items/ItemEditorPanel`.
+- `RundownPanel.tsx` — reads the `rundowns` and `items` slices, shows the first rundown, sends
+  `takeItem`, `moveCursor`, `deleteItem`, `reorderItems`; opens `features/items/ItemEditorPanel`.
 - `RundownItemList.tsx` (dnd-kit: mouse and keyboard drag) and `RundownItemRow.tsx` (handle,
-  colour, label, graphic, layer, "Disparar", "Editar", "Excluir"; `ItemColorChip.tsx`).
-- `useRundownKeyboardShortcuts.ts` — Space = `takeNext`, Right arrow = `moveCursor`.
-- `useEscapeBelongsToTheDragWhileDragging.ts` — the Esc that cancels a drag never arms "Limpar tudo".
-- Pure helpers: `itemIdsInOrderAfterDrag.ts` (the full id list a drop sends), `itemAfterCursor.ts`
-  (where the Right arrow goes), `graphicAndLayerNames.ts`. Row order: shared's `listItemsOfRundownInOrder`.
-- `rundownDragAnnouncements.ts` — what a screen reader hears during a drag, in pt-BR.
+  colour, the label that sets the cursor, "Disparar", "Editar"; `ItemColorChip.tsx`).
+- `DeleteItemButton.tsx` — "Excluir" deletes only at a second press within 3 seconds.
+- `useRundownKeyboardShortcuts.ts` — Space = `takeNext` (always, also on a focused button),
+  Right / Left arrow = `moveCursor`; `itemAfterCursor.ts`, `itemBeforeCursor.ts` say where to.
+- `useEscapeBelongsToTheDragWhileDragging.ts` (Esc cancelling a drag never arms "Limpar tudo"),
+  `itemIdsInOrderAfterDrag.ts`, `graphicAndLayerNames.ts`, `rundownDragAnnouncements.ts` (pt-BR).

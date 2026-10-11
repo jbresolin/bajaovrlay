@@ -8,6 +8,7 @@ import { ActionButton } from '@/features/connection/ActionButton';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
 
+import { DeleteItemButton } from './DeleteItemButton';
 import { ItemColorChip } from './ItemColorChip';
 
 /** What one row needs: its item, the names to show, and what each button does. */
@@ -18,19 +19,32 @@ export type RundownItemRowProps = {
   graphicName: string;
   layerName: string;
   onTakePressed: () => void;
+  /** Called when the label is clicked: put the cursor on this row. */
+  onSetCursorPressed: () => void;
   onEditPressed: () => void;
-  onDeletePressed: () => void;
+  /** Called once "Excluir" was pressed twice within 3 seconds. */
+  onDeleteConfirmed: () => void;
 };
 
 /**
  * One row of the rundown: a handle to drag it by, the item's colour and label, the
  * graphic and the layer it uses, and the buttons "Disparar", "Editar" and "Excluir".
- * The row at the cursor is marked for the eye (border and "Próximo") and for a screen
- * reader (`aria-current`). Must be drawn inside RundownItemList, which owns the dragging.
+ * The label is itself a button: a click on it puts the cursor on this row, without
+ * taking anything. The row at the cursor is marked for the eye (border and "Próximo")
+ * and for a screen reader (`aria-current`). Must be drawn inside RundownItemList, which
+ * owns the dragging.
  */
 export function RundownItemRow(props: RundownItemRowProps) {
-  const { item, isAtCursor, graphicName, layerName } = props;
+  const { item, isAtCursor, graphicName, layerName, onTakePressed } = props;
   const isConnected = useIsConnectedToServer();
+
+  // After a mouse click the focus would stay on "Disparar". Space never presses a button
+  // on this page (useRundownKeyboardShortcuts.ts), but Enter does, and an Enter meant for
+  // something else would then fire this row again. So the button lets go of the focus.
+  function takeThisItemAndLetGoOfTheFocus(takeButton: HTMLButtonElement): void {
+    takeButton.blur();
+    onTakePressed();
+  }
 
   // dnd-kit's hook for one row of a sortable list. While this row is dragged, or makes
   // room for one that is, `transform` says how far to shift it on screen. That shift is
@@ -84,7 +98,17 @@ export function RundownItemRow(props: RundownItemRowProps) {
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-center gap-2">
           <ItemColorChip color={item.color} />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.label}</span>
+          {/* A real button, so the keyboard reaches it too. It reads as plain text; its
+              longer name ("Marcar como próximo: ...") tells a screen reader what it does. */}
+          <button
+            type="button"
+            disabled={!isConnected}
+            aria-label={ptBR.rundown.setCursorToItemButton(item.label)}
+            onClick={props.onSetCursorPressed}
+            className="min-w-0 flex-1 cursor-pointer truncate rounded-sm text-left text-sm font-medium outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:no-underline"
+          >
+            {item.label}
+          </button>
           {isAtCursor ? <Badge>{ptBR.rundown.nextItemBadge}</Badge> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -92,15 +116,16 @@ export function RundownItemRow(props: RundownItemRowProps) {
           <Badge variant="outline">{layerName}</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-1">
-          <ActionButton size="xs" onClick={props.onTakePressed}>
+          <ActionButton
+            size="xs"
+            onClick={(click) => takeThisItemAndLetGoOfTheFocus(click.currentTarget)}
+          >
             {ptBR.rundown.takeItemButton}
           </ActionButton>
           <ActionButton size="xs" variant="ghost" onClick={props.onEditPressed}>
             {ptBR.rundown.editItemButton}
           </ActionButton>
-          <ActionButton size="xs" variant="ghost" onClick={props.onDeletePressed}>
-            {ptBR.rundown.deleteItemButton}
-          </ActionButton>
+          <DeleteItemButton onDeleteConfirmed={props.onDeleteConfirmed} />
         </div>
       </div>
     </li>

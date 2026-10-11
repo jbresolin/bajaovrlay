@@ -37,8 +37,11 @@ export type RundownItemListProps = {
   graphics: Graphic[];
   layers: Layer[];
   onTakePressed: (itemId: string) => void;
+  /** Called when a row's label is clicked: the operator wants the cursor on that row. */
+  onSetCursorPressed: (itemId: string) => void;
   onEditPressed: (itemId: string) => void;
-  onDeletePressed: (itemId: string) => void;
+  /** Called once a row's "Excluir" was pressed twice within 3 seconds. */
+  onDeleteConfirmed: (itemId: string) => void;
   /** Called after a drop that changes the order, with EVERY item id in the new order. */
   onItemsReordered: (itemIdsInNewOrder: string[]) => void;
 };
@@ -118,8 +121,9 @@ export function RundownItemList(props: RundownItemListProps) {
               graphicName={findGraphicNameOrItsId(graphics, item.graphicId)}
               layerName={findLayerNameOrItsId(layers, item.layerId)}
               onTakePressed={() => props.onTakePressed(item.id)}
+              onSetCursorPressed={() => props.onSetCursorPressed(item.id)}
               onEditPressed={() => props.onEditPressed(item.id)}
-              onDeletePressed={() => props.onDeletePressed(item.id)}
+              onDeleteConfirmed={() => props.onDeleteConfirmed(item.id)}
             />
           ))}
         </ol>
