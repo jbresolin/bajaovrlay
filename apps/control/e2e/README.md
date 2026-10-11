@@ -1,15 +1,15 @@
 # apps/control/e2e
 
-Browser tests of the control page (Playwright, Chromium). Start reading at
-`takeAndClear.e2e.ts`: the operator's whole path, walked in a real browser.
+Browser tests of the control page (Playwright, Chromium). Start reading at the one file:
 
-- `takeAndClear.e2e.ts` — fill the race clock form, "Colocar no ar" (the layer says
-  "No ar" once the monitor reports), change the flag with "Atualizar" (the clock in the program
-  monitor stays the same element), reload, "Limpar".
+- `takeAndClear.e2e.ts` — the operator's whole path in a real browser: fill the race clock
+  form, "Colocar no ar" (the layer says "No ar" within 3 s, once the monitor reports), change
+  the flag with "Atualizar" (the clock in the monitor stays the same element), reload, "Limpar".
 
-Nothing is faked here: `../playwright.config.ts` starts the real server from source on
-port 5187 with a new SQLite file in the gitignored `../e2e-data/`, and the control page's
-dev server on 5188. A `pnpm dev` left running on 3000 and 5173 is not used or disturbed.
+Nothing is faked: `../playwright.config.ts` starts the real server from source (port 5187,
+a new SQLite file in the gitignored `../e2e-data/`) and the control dev server (5188); a
+running `pnpm dev` is not disturbed. A `[vite] ws proxy error: write EPIPE` line, seen once
+in a full run around a page closing, is harmless teardown noise that fails no test.
 
-Run with `pnpm --filter @bajaovrlay/control test:e2e`, after `pnpm build` once: the
-server only registers built graphics and the program monitor frames the built renderer.
+Run `pnpm --filter @bajaovrlay/control test:e2e` after one `pnpm build`: the server only
+registers built graphics and the program monitor frames the built renderer.

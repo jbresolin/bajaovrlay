@@ -11,7 +11,7 @@
  *   - Filling the race clock form and pressing "Colocar no ar" makes the layer panel
  *     show the clock on the "Relógio" layer within 2 seconds, and the program monitor
  *     (the renderer page in a frame, as OBS loads it) contains the race clock element.
- *   - After the take the layer panel comes to say "No ar": the renderer page in the
+ *   - Within 3 seconds of the take the layer panel says "No ar": the renderer page in the
  *     program monitor told the server it played the clock, and the server told this page.
  *   - Changing the flag and pressing "Atualizar" changes the flag band of the clock in
  *     the program monitor, and the clock there is the very same element as before: it
@@ -25,8 +25,9 @@
  *   - What the clock in the program monitor looks like or which time it shows; the
  *     renderer's raceClockOnAir.e2e.ts checks that. Here it only has to be in the frame,
  *     stay the same element and show the new flag's word.
- *   - How soon "No ar" appears. The brief's "within a second" is checked by eye in OBS;
- *     here the clock's own play-in animation takes 600 ms of any such second.
+ *   - That "No ar" appears within one second, as the brief says. That is checked by eye
+ *     in OBS; here the limit is 3 seconds, because the clock's own play-in animation
+ *     takes 600 ms of any such second and a busy CI machine can use up the rest.
  *   - What OBS itself shows: the report comes from the program monitor's renderer page.
  *   - A graphic that fails to load ("Falhou"); the renderer's own browser tests and
  *     InstanceStatusBadge.test.tsx cover the two halves of that.
@@ -64,13 +65,14 @@ test.describe('taking, updating and clearing the race clock', () => {
 
     // Assert: the layer panel comes to say the clock is "No ar". That word only appears
     // after the renderer page in the program monitor has played the clock in (a 600 ms
-    // animation) and reported it to the server, so it proves the whole round trip. How
-    // long that takes is not measured here: on a busy CI machine the animation alone
-    // leaves too little of one second, so the check waits Playwright's usual time.
+    // animation) and reported it to the server, so it proves the whole round trip. The
+    // limit is 3 seconds, by João's ruling: the brief's one second leaves too little
+    // after the animation on a busy CI machine, and no limit at all would let a round
+    // trip that has become slow go unnoticed.
     await expect(
       clockLayerRow,
-      'the layer panel must say "No ar" once the renderer page has reported the clock',
-    ).toContainText('No ar');
+      'the layer panel must say "No ar" within 3 seconds of the take, once the renderer page has reported the clock',
+    ).toContainText('No ar', { timeout: 3_000 });
     // And within 2 seconds the layer panel shows the race clock on the clock layer.
     await expect(
       clockLayerRow,
