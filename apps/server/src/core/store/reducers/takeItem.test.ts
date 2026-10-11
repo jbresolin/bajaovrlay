@@ -5,14 +5,16 @@
  *   takeItem puts a prepared item on air with one press. It turns the item's field
  *   values into the data the graphic receives, hands that to the very same takeGraphic
  *   reducer a take by hand uses, stamps the new instance with the item's id (so the
- *   layer panel can name the item on air) and moves the rundown's cursor to the item
- *   after the one taken.
+ *   layer panel can name the item on air) and, when the item taken was the one the
+ *   rundown's cursor was on, moves the cursor to the item after it.
  *
  * What these tests prove:
  *   - The instance is exactly what a direct takeGraphic with the same data gives, plus
  *     `itemId`; it replaces what was on the same layer and leaves other layers alone.
- *   - The cursor moves to the item after the one taken, wherever it was before, and
- *     becomes null after the last item of the rundown.
+ *   - Taking the cursor item moves the cursor to the item after it, and to nothing after
+ *     the last item of the rundown.
+ *   - Taking any other item (a row fired ad hoc) leaves the cursor exactly where it was,
+ *     an empty cursor included, and hands back the very same rundowns array.
  *   - The items slice, and the other rundown, are untouched.
  *   - An item that does not exist is refused; a refusal of takeGraphic itself (the
  *     item's graphic or layer is gone) comes back unchanged; an item with a field value
@@ -23,7 +25,8 @@
  *
  * What these tests deliberately do not cover:
  *   - The auto-out that may follow the take; autoOut.test.ts covers it.
- *   - Every detail of resolving field values; resolveItemFields.test.ts covers it.
+ *   - Every detail of resolving field values; resolveItemFields.test.ts covers it, and
+ *     takeItemTakeTime.test.ts covers a field stamped with the moment of the take.
  *   - Every way data can break a graphic's schema; takeGraphicData.test.ts and
  *     graphicDataValidation.test.ts cover them. One case here shows items inherit it.
  */
@@ -140,34 +143,44 @@ const cursorAfterTakeScenarios: Array<{
   takenItemId: string;
   expectedCursorAfter: string | null;
 }> = [
-  // The scripted flow: the cursor item is taken and "next" becomes the following one.
+  // The scripted flow: taking the cursor item still advances "next" to the following one.
   {
-    name: 'moves the cursor from the first item to the second when the first is taken',
+    name: 'moves the cursor from the first item to the second when the cursor item is taken',
     cursorBefore: 'item-largada-do-enduro',
     takenItemId: 'item-largada-do-enduro',
     expectedCursorAfter: 'item-bandeira-amarela',
   },
-  // The operator takes a row out of order with its button: the show goes on from there.
+  // The operator fires another row ad hoc with its button (a yellow flag nobody
+  // planned): the plan must not move, so Space still fires the start afterwards.
   {
-    name: 'puts the cursor after the taken item even when the cursor was elsewhere',
+    name: 'leaves the cursor where it was when an item other than the cursor item is taken',
     cursorBefore: 'item-largada-do-enduro',
     takenItemId: 'item-bandeira-amarela',
+    expectedCursorAfter: 'item-largada-do-enduro',
+  },
+  // The same, with the ad hoc row above the cursor: taking an earlier item again must
+  // not pull the plan backwards either.
+  {
+    name: 'leaves the cursor where it was when an item before the cursor item is taken',
+    cursorBefore: 'item-chegada-do-enduro',
+    takenItemId: 'item-largada-do-enduro',
     expectedCursorAfter: 'item-chegada-do-enduro',
   },
   // Nothing follows the last item, so the cursor ends on nothing instead of wrapping
   // round to the top, where Space would fire the opening again by accident.
   {
-    name: 'leaves the cursor on nothing after the last item is taken',
+    name: 'leaves the cursor on nothing after the last item is taken as the cursor item',
     cursorBefore: 'item-chegada-do-enduro',
     takenItemId: 'item-chegada-do-enduro',
     expectedCursorAfter: null,
   },
-  // A take with the cursor on nothing still tells the rundown where the show is.
+  // With the cursor on nothing no item is the cursor item, so a take is always ad hoc
+  // and the cursor stays on nothing; the operator chooses the next item by hand.
   {
-    name: 'puts an empty cursor on the item after the one taken',
+    name: 'leaves an empty cursor empty whichever item is taken',
     cursorBefore: null,
     takenItemId: 'item-largada-do-enduro',
-    expectedCursorAfter: 'item-bandeira-amarela',
+    expectedCursorAfter: null,
   },
 ];
 
@@ -188,17 +201,45 @@ describe('takeItem and the cursor', () => {
         contextOfTheRundownCommand,
       );
 
-      // Assert: the cursor is on the item after the one taken; the items are untouched.
+      // Assert: the take happened, the cursor is where this scenario says, and the items
+      // are untouched.
       const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
-      expect(slicesAfter?.rundowns, 'the cursor must be on the item after the one taken').toEqual([
-        buildMainSessionRundown(expectedCursorAfter),
-        buildPodiumRundown(null),
-      ]);
+      expect(
+        slicesAfter?.instances.map((instance) => instance.itemId),
+        'the item named must be the one on air, whatever happens to the cursor',
+      ).toEqual([takenItemId]);
+      expect(
+        slicesAfter?.rundowns,
+        'the cursor must move on only when the item taken was the cursor item',
+      ).toEqual([buildMainSessionRundown(expectedCursorAfter), buildPodiumRundown(null)]);
       expect(slicesAfter?.items, 'taking an item must not change the items').toBe(
         slicesBefore.items,
       );
     },
   );
+
+  it('hands back the very same rundowns when an item other than the cursor item is taken', () => {
+    // Arrange: the main session with three items and the cursor on the start.
+    const slicesBefore = buildRaceDaySlicesWithRundown({
+      rundowns: [buildMainSessionRundown('item-largada-do-enduro'), buildPodiumRundown(null)],
+      items: buildThreeEnduroItems(),
+    });
+
+    // Act: fire the yellow flag row, which is not the cursor item.
+    const outcome = reduceCommand(
+      slicesBefore,
+      { type: 'takeItem', itemId: 'item-bandeira-amarela' },
+      contextOfTheRundownCommand,
+    );
+
+    // Assert: the rundowns are the same array, not an equal copy. The store tells a
+    // changed slice from an unchanged one by exactly that, so a copy would be saved and
+    // sent to every page for nothing.
+    const rundownsAfter = outcome.status === 'applied' ? outcome.slices.rundowns : undefined;
+    expect(rundownsAfter, 'an ad hoc take must not touch the rundowns at all').toBe(
+      slicesBefore.rundowns,
+    );
+  });
 });
 
 describe('takeItem, when it must be refused', () => {
@@ -306,8 +347,8 @@ describe('takeItem, when it must be refused', () => {
 
   it('refuses an item with a field value the server cannot resolve yet, naming M2', () => {
     // Arrange: an item whose session name is bound to a data source, which only M2 will
-    // understand. Today's types allow only literals, so the test has to force it in and
-    // call the reducer directly. Through the running server this cannot happen yet: the
+    // understand. Today's types allow only literal and takeTime, so the test forces it in
+    // and calls the reducer directly. Through the running server this cannot happen yet: the
     // command schema answers INVALID_COMMAND first, and a stored item like this one
     // stops the boot. The refusal is a guard kept ready for M2.
     const fieldsWithBinding = {
