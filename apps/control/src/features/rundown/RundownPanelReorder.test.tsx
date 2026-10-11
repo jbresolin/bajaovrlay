@@ -14,6 +14,8 @@
  *     server's order, and they change only when the server's new items slice arrives.
  *   - Picking a row up and dropping it where it was sends nothing.
  *   - Picking a row up with Space does not fire the rundown (Space is also "take next").
+ *   - While a row is dragged over another, the page's announcement area (what a screen
+ *     reader reads out) says so in pt-BR and names both items by their labels.
  *   - Without a connection the handles are disabled.
  *
  * How, and why this way:
@@ -25,8 +27,10 @@
  *   dnd-kit reads to know which row the dragged one is over.
  *
  * What these tests deliberately do not cover:
- *   - Dragging with the mouse, the animation of the rows, and what a screen reader
- *     announces; those are dnd-kit's and are checked by hand in the browser.
+ *   - Dragging with the mouse, the animation of the rows, and the other announcements
+ *     (pick up, drop, cancel); those are dnd-kit's and are checked by hand in the
+ *     browser. The one thing about a mouse drag that is tested is the Esc key, in
+ *     RundownPanelEscapeDuringDrag.test.tsx.
  *   - The server refusing a list that is not a full permutation (the server's tests).
  */
 import { act, fireEvent, screen, within } from '@testing-library/react';
