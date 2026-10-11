@@ -6,7 +6,7 @@ the event → tells listeners. A command that changes nothing is not saved, logg
 
 - `reducers/` — one pure reducer per command, plus `reduceCommand.ts` choosing it.
 - `graphicDataValidation.ts` — checks a take's or update's data against the manifest's schema.
-- `authorizeCommand.ts` — a renderer may only report instance status, nobody else may; `commandActors.ts`: `role:id` actor names.
+- `authorizeCommand.ts` — a renderer may only report instance status, `sistema:` only clearLayer; `commandActors.ts`: `role:id` actor names.
 - `commandRefusals.ts`, `rundownCommandRefusals.ts` — every refusal, its code and pt-BR message.
 - `loadInitialSlices.ts` — loads or seeds layers and instances at boot (`seedLayers.ts`); rebuilds
   graphics (`discoverBuiltGraphics.ts`), placed by `v_baja` (`graphicPlacement.ts`).

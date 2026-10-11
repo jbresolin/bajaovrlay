@@ -5,8 +5,9 @@ import type { StateStore } from './createStateStore.js';
 
 /**
  * The actor every auto-out clear is signed with in the event log. `sistema` (pt-BR,
- * because people read the event log) says no operator sent it; it is not a renderer,
- * so any authorisation by role treats it like an operator and lets clearLayer through.
+ * because people read the event log) says no operator sent it. The default
+ * authorisation hook lets a `sistema:` actor send clearLayer and nothing else, so this
+ * scheduler must never be made to send another command without changing that rule too.
  */
 export const autoOutActor = 'sistema:auto-out';
 

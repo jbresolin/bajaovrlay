@@ -4,12 +4,15 @@
  * What this module is for:
  *   Every command passes an authorisation step between validation and the reducer.
  *   There is no operator login yet, so the default hook, `allowCommandForActorRole`,
- *   only tells two kinds of sender apart by the role at the start of the actor name:
+ *   only tells three kinds of sender apart by the role at the start of the actor name:
  *   a renderer (`renderer:<connection id>`) may report what is really on screen and
- *   nothing else, and everyone else (`operador:<connection id>`) may do everything
- *   except pretend to be a renderer.
+ *   nothing else; the server's own timers (`sistema:<what>`, today only the auto-out)
+ *   may clear one layer and nothing else; and everyone else (`operador:<connection
+ *   id>`) may do everything except pretend to be a renderer.
  *
  * What these tests prove:
+ *   - The system may send clearLayer and is refused a take, the panic clear, a rundown
+ *     take and a screen report.
  *   - An operator may send every command that changes what is on air, and each of the
  *     seven item and rundown commands.
  *   - `reportInstanceStatus` is allowed from a renderer and not from an operator.
@@ -28,6 +31,8 @@ import { allowCommandForActorRole } from './authorizeCommand.js';
 
 const operatorActor = 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81';
 const rendererActor = 'renderer:b8d4e6f0-1a2c-4e3b-9d5f-6a7c8e9f0b12';
+// The name the auto-out scheduler signs its clears with; no connection has this role.
+const systemActor = 'sistema:auto-out';
 
 const takeRaceClock: Command = {
   type: 'takeGraphic',
@@ -237,6 +242,41 @@ const authorisationScenarios: Array<{
     name: 'refuses takeNext from a renderer',
     command: { type: 'takeNext', rundownId: 'sessao-principal' },
     actor: rendererActor,
+    expectedIsAllowed: false,
+  },
+  // The one thing the server does by itself: the auto-out takes an item's layer off air.
+  {
+    name: 'allows clearLayer from the system',
+    command: { type: 'clearLayer', layerId: 'lower-third' },
+    actor: systemActor,
+    expectedIsAllowed: true,
+  },
+  // Nothing in the server may put a graphic on air without an operator asking.
+  {
+    name: 'refuses takeGraphic from the system',
+    command: takeRaceClock,
+    actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // The panic button clears every layer; the system only ever clears the one it timed.
+  {
+    name: 'refuses clearAll from the system',
+    command: { type: 'clearAll' },
+    actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // Nor may it fire a row of the rundown: a take is the operator's decision.
+  {
+    name: 'refuses takeItem from the system',
+    command: { type: 'takeItem', itemId: 'item-bandeira-amarela' },
+    actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // The system cannot see the OBS output any more than an operator's page can.
+  {
+    name: 'refuses reportInstanceStatus from the system',
+    command: reportRaceClockOnAir,
+    actor: systemActor,
     expectedIsAllowed: false,
   },
 ];
