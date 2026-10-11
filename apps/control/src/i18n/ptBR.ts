@@ -86,6 +86,10 @@ export const ptBR = {
     },
     takeButton: 'Colocar no ar',
     updateButton: 'Atualizar',
+    // Shown above the form while more than one race clock is on air (on different
+    // layers): which one the form shows and "Atualizar" changes.
+    followingMostRecentRaceClock: (numberOfRaceClocksOnAir: number, layerName: string) =>
+      `Há ${numberOfRaceClocksOnAir} relógios no ar. Este painel acompanha o mais recente, na camada ${layerName}.`,
     clearAllButton: 'Limpar tudo',
     clearAllConfirmButton: 'Confirmar: limpar tudo',
   },
@@ -144,9 +148,11 @@ export const ptBR = {
   rundown: {
     noRundownOnServer: 'O servidor não enviou nenhum rundown.',
     emptyRundown: 'Nenhum item neste rundown. Use "+ Item" para preparar o primeiro.',
-    // Shown when there are items but the cursor is on nothing (the last item was fired),
-    // so Space has nothing to take until the operator places the cursor again.
+    // Shown when there are items but the cursor is on nothing, so Space has nothing to
+    // take until the operator places the cursor. The first only after the last item was
+    // taken at the cursor (the server marks the rundown); the second in every other case.
     endOfRundownHint: 'Fim do rundown — clique num item para posicionar o cursor',
+    placeTheCursorHint: 'Clique num item para posicionar o cursor',
     addItemButton: '+ Item',
     itemListLabel: (rundownName: string) => `Itens de ${rundownName}`,
     // The mark on the row at the cursor: the item Space puts on air.
