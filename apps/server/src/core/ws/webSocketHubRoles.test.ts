@@ -15,8 +15,16 @@
  *     new instances slice, and the renderer gets an ok `commandResult` whose requestId
  *     is null (the message carries none).
  *   - The same message from an operator connection is answered NOT_ALLOWED in pt-BR.
+ *   - ANY connection that says `?role=renderer` is taken at its word: a client that is
+ *     not a renderer page at all can report an instance on air and the report is
+ *     applied. Nothing proves the role today. This spoof is accepted on purpose until
+ *     the LAN PINs of M4; the test records it so nobody mistakes the role for security.
+ *   - A renderer's report that arrives after the instance was cleared (the report races
+ *     the clear) is answered ok and leaves no event-log entry.
  *
  * What these tests deliberately do not cover:
+ *   - The control page's program monitor: it connects with no role, so to the server it
+ *     is an ordinary non-renderer connection, like the control page in these tests.
  *   - The status rules themselves; reducers/reportInstanceStatus.test.ts covers them.
  *   - Everything else the hub does; webSocketHub.test.ts covers it.
  */
@@ -167,6 +175,83 @@ describe('an instanceStatus message', () => {
       requestId: null,
       ok: true,
     });
+  });
+
+  it('from any connection that says ?role=renderer is applied, because nothing proves the role', async () => {
+    // Arrange: a running server with the race clock taken, and no renderer page at all:
+    // no OBS is open. A script on someone's laptop in the paddock connects to /ws and
+    // simply writes role=renderer in the address, as anyone on the network can.
+    const runningServer = await startServerOnARandomPort();
+    const controlPage = await connectWebSocketTestClient(runningServer.port);
+    await takeRaceClockFromControlPage(controlPage);
+    const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
+    const scriptClaimingToBeRenderer = await connectWebSocketTestClient(runningServer.port, {
+      role: 'renderer',
+    });
+
+    // Act: the script claims the clock is on air, although no screen is showing it.
+    scriptClaimingToBeRenderer.sendJson({
+      type: 'instanceStatus',
+      instanceId: idOfTheRaceClockInstance,
+      status: 'on-air',
+    });
+    const result = await scriptClaimingToBeRenderer.waitForMessage(
+      'report result',
+      isCommandResultMessage,
+    );
+
+    // Assert: the claim is believed. This is the known gap until the LAN PINs of M4.
+    expect(result, 'a connection that says it is a renderer is answered as one').toEqual({
+      type: 'commandResult',
+      requestId: null,
+      ok: true,
+    });
+    expect(
+      runningServer.stateStore.readAllSlices().instances[0]?.status,
+      'the report is applied: the role in the address is taken at its word until M4',
+    ).toBe('on-air');
+  });
+
+  it('from a renderer about an instance already cleared is answered ok and leaves no event-log entry', async () => {
+    // Arrange: a running server and a renderer; the operator takes the race clock and
+    // clears its layer straight away, before the clock's play animation has finished.
+    const runningServer = await startServerOnARandomPort();
+    const controlPage = await connectWebSocketTestClient(runningServer.port);
+    const renderer = await connectWebSocketTestClient(runningServer.port, { role: 'renderer' });
+    await takeRaceClockFromControlPage(controlPage);
+    const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
+    controlPage.sendJson({
+      type: 'command',
+      requestId: 'pedido-2',
+      command: { type: 'clearLayer', layerId: 'clock' },
+    });
+    await controlPage.waitForMessage(
+      'clear result',
+      (message) => message.type === 'commandResult' && message.requestId === 'pedido-2',
+    );
+
+    // Act: the renderer's report about the clock, sent before it heard of the clear, arrives.
+    renderer.sendJson({
+      type: 'instanceStatus',
+      instanceId: idOfTheRaceClockInstance,
+      status: 'on-air',
+    });
+    const result = await renderer.waitForMessage('report result', isCommandResultMessage);
+
+    // Assert: answered ok, and the event log holds only what the operator did.
+    expect(result, 'a late report is normal and must not come back as an error').toEqual({
+      type: 'commandResult',
+      requestId: null,
+      ok: true,
+    });
+    expect(
+      runningServer.stateStore.readAllSlices().eventLog.map((entry) => entry.command),
+      'a quick clear must not leave a failed reportInstanceStatus in the event log',
+    ).toEqual(['takeGraphic', 'clearLayer']);
+    expect(
+      runningServer.stateStore.readAllSlices().instances,
+      'the cleared clock must not come back',
+    ).toEqual([]);
   });
 
   it('from an operator connection is answered NOT_ALLOWED in pt-BR', async () => {

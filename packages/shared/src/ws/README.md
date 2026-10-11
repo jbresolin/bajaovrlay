@@ -21,7 +21,8 @@ Every message is one JSON object, told apart by its `type` field:
   `ok: false` with an `error` carrying a stable `code` and a pt-BR `message`. The
   `slice` messages a command causes are sent before its `commandResult`. An accepted
   command that changes nothing (a second `instanceStatus` for an instance already on
-  air, a clear of an empty stage) causes no `slice` message at all, not even `eventLog`,
+  air, a late one for an instance already cleared, a clear of an empty stage) causes no
+  `slice` message at all, not even `eventLog`,
   and leaves no event-log entry; its sender still gets `ok: true`.
 
 A message that is not JSON or not in the protocol is answered with an error

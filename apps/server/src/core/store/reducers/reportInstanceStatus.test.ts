@@ -15,15 +15,20 @@
  *     failure after another one already showed it: a failure is never kept from the
  *     operator.
  *   - Every other report changes nothing and hands back the very same array, so the
- *     store saves, logs and broadcasts nothing: a second `on-air` (two renderers show
- *     the same instance: OBS and the control page's monitor), and any report about an
- *     instance that is already `failed`, which stays failed, with its first detail,
- *     until it is cleared or replaced.
- *   - A report about an instance that is not there is refused with a pt-BR reason.
+ *     store saves, logs and broadcasts nothing: a second `on-air` (two renderer pages
+ *     on the program output show the same instance: a second OBS machine, or OBS
+ *     reloading its browser source), and any report about an instance that is already
+ *     `failed`, which stays failed, with its first detail, until it is cleared or
+ *     replaced.
+ *   - A report about an instance that is not there is accepted and changes nothing: the
+ *     very same slices come back. It is the normal end of a quick clear (the renderer's
+ *     report races the clear), so it must not litter the event log as a failed command.
  *   - The reducer never changes the slices it was given.
  *
  * What these tests deliberately do not cover:
  *   - That only a renderer may send this command; authorizeCommand.test.ts covers it.
+ *     The control page's program monitor shows the same graphics but is not a renderer
+ *     connection and never reports; only pages on the program output (OBS) do.
  *   - How the renderer's `instanceStatus` message becomes this command;
  *     clientMessageAnswers.test.ts and webSocketHub.test.ts cover it.
  */
@@ -86,7 +91,8 @@ const statusReportScenarios: Array<{
     expectedRaceClockAfter: buildRaceClockInstanceWithStatus('failed'),
     isInstancesSliceUnchanged: false,
   },
-  // OBS and the control page's monitor both play the same instance and both report it.
+  // Two renderer pages on the program output (the main OBS machine and the backup one)
+  // both play the same instance and both report it.
   {
     name: 'on-air → on-air is a no-op that returns the same array',
     raceClockBefore: buildRaceClockInstanceWithStatus('on-air'),
@@ -94,8 +100,9 @@ const statusReportScenarios: Array<{
     expectedRaceClockAfter: buildRaceClockInstanceWithStatus('on-air'),
     isInstancesSliceUnchanged: true,
   },
-  // The control page's monitor showed the clock, then OBS could not: the operator must
-  // see the failure and its reason, because the badge would otherwise keep saying "No ar".
+  // The main OBS machine showed the clock, then the backup OBS machine could not: the
+  // operator must see the failure and its reason, because the badge would otherwise
+  // keep saying "No ar".
   {
     name: 'on-air → failed, with the detail, when another renderer reports a failure',
     raceClockBefore: buildRaceClockInstanceWithStatus('on-air'),
@@ -155,22 +162,38 @@ describe('reportInstanceStatus, for an instance that is there', () => {
   );
 });
 
+const lateReportScenarios: Array<{ name: string; command: Command }> = [
+  // The usual race: the operator cleared the clock while its play animation was still
+  // running, and the renderer's "on air" arrives a moment after the clear.
+  {
+    name: 'a late on-air report is a no-op that returns the very same slices',
+    command: reportOnAir,
+  },
+  // The same race when the graphic's module never loaded: the failure has nobody left to
+  // be shown to, so it must not come back as a failed command either.
+  {
+    name: 'a late failed report is a no-op that returns the very same slices',
+    command: reportFailedWithDetail,
+  },
+];
+
 describe('reportInstanceStatus, for an instance that is not there', () => {
-  it('is refused with INSTANCE_NOT_FOUND and a pt-BR reason', () => {
+  it.each(lateReportScenarios)('$name', ({ command }) => {
     // Arrange: only team 42's lower third is on air; the clock was cleared a moment ago.
     const slicesBefore = buildRaceDaySlicesWithInstances([buildTeam42LowerThirdOnAir()]);
 
     // Act: the renderer's late report about the cleared clock arrives.
-    const outcome = reduceCommand(slicesBefore, reportOnAir, contextOfTheCommand);
+    const outcome = reduceCommand(slicesBefore, command, contextOfTheCommand);
 
-    // Assert: refused, naming the instance.
-    expect(outcome, 'a report about a missing instance must be refused').toEqual({
-      status: 'refused',
-      error: {
-        code: 'INSTANCE_NOT_FOUND',
-        message: `A instância "${raceClockInstanceId}" não existe; o gráfico pode já ter saído do ar.`,
-      },
-    });
+    // Assert: accepted, with nothing changed. The store saves, logs and broadcasts only
+    // when it is handed different slices, so the very same object must come back.
+    expect(outcome.status, 'a late report about a cleared instance is normal, not a failure').toBe(
+      'applied',
+    );
+    expect(
+      outcome.status === 'applied' ? outcome.slices : undefined,
+      'the very same slices must come back, so no event-log row is written',
+    ).toBe(slicesBefore);
   });
 });
 
