@@ -52,6 +52,9 @@ export function RundownPanel() {
       ? itemsInOrder.find((item) => item.id === itemEditorTarget.itemId)
       : undefined;
   const isItemEditorOnScreen = itemEditorTarget.kind === 'newItem' || itemBeingEdited !== undefined;
+  // The cursor is on nothing after the last item was fired. Space then has nothing to
+  // take, which without a word on screen looks like a keyboard that stopped working.
+  const isCursorPastTheLastItem = itemsInOrder.length > 0 && rundown.cursorItemId === null;
 
   function closeItemEditor(): void {
     setItemEditorTarget({ kind: 'closed' });
@@ -106,6 +109,12 @@ export function RundownPanel() {
           }
         />
       )}
+
+      {isCursorPastTheLastItem ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          {ptBR.rundown.endOfRundownHint}
+        </p>
+      ) : null}
 
       <CommandErrorMessage
         commandTypes={['takeItem', 'takeNext', 'moveCursor', 'reorderItems', 'deleteItem']}

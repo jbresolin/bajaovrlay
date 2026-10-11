@@ -144,6 +144,9 @@ export const ptBR = {
   rundown: {
     noRundownOnServer: 'O servidor não enviou nenhum rundown.',
     emptyRundown: 'Nenhum item neste rundown. Use "+ Item" para preparar o primeiro.',
+    // Shown when there are items but the cursor is on nothing (the last item was fired),
+    // so Space has nothing to take until the operator places the cursor again.
+    endOfRundownHint: 'Fim do rundown — clique num item para posicionar o cursor',
     addItemButton: '+ Item',
     itemListLabel: (rundownName: string) => `Itens de ${rundownName}`,
     // The mark on the row at the cursor: the item Space puts on air.
