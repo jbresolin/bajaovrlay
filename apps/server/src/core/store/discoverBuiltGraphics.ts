@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { type Graphic, OGrafManifestSchema } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../logger/createLogger.js';
+import { isDataSchemaOfGraphicUsable } from './graphicDataValidation.js';
 import { decideGraphicPlacementFromManifest } from './graphicPlacement.js';
 
 /** What discoverBuiltGraphics needs: the folder to read, the layers that exist, a logger. */
@@ -20,6 +21,7 @@ export type DiscoverBuiltGraphicsOptions = {
  * package folder), in folder-name order. A package that is not built, or whose manifest
  * is broken, is logged and left out; it never stops the boot. Each graphic's default
  * layer and category come from its own manifest (`v_baja`); see graphicPlacement.ts.
+ * A graphic whose data schema cannot be used is kept, with a warning naming it.
  */
 export function discoverBuiltGraphics(options: DiscoverBuiltGraphicsOptions): Graphic[] {
   const { graphicPackagesFolder, logger } = options;
@@ -102,7 +104,7 @@ function readBuiltGraphic(options: {
       'graphic has no usable default layer in its manifest; using fullscreen',
     );
   }
-  return {
+  const graphic: Graphic = {
     id: packageName,
     manifest,
     defaultLayerId: placementDecision.placement.defaultLayerId,
@@ -110,4 +112,14 @@ function readBuiltGraphic(options: {
     thumbnailUrl: null,
     defaultFields: {},
   };
+  if (!isDataSchemaOfGraphicUsable(graphic)) {
+    // The graphic stays registered, so the control page shows it and the refusal of its
+    // takes can name it; leaving it out would make it vanish without a reason on screen.
+    // Without this line the first sign of a broken schema would be a refused take on air.
+    logger.warn(
+      { graphic_package: packageName },
+      'graphic has a data schema that cannot be used; every take of it will be refused',
+    );
+  }
+  return graphic;
 }

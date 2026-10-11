@@ -63,6 +63,20 @@ export function findProblemInGraphicData(
 }
 
 /**
+ * Says whether the data schema in a graphic's manifest can be used to check data. False
+ * means every take and update of the graphic will be refused, so the boot calls this to
+ * warn about it before the first take. A manifest with no schema is usable: it accepts
+ * any data. Never throws; the compiled schema is kept for the takes that follow.
+ */
+export function isDataSchemaOfGraphicUsable(graphic: Graphic): boolean {
+  const manifestSchema = graphic.manifest.schema;
+  if (manifestSchema === undefined) {
+    return true;
+  }
+  return readOrCompileDataSchema(graphic.id, manifestSchema) !== undefined;
+}
+
+/**
  * Returns the compiled check for a graphic's schema, compiling it the first time (and
  * again if the same graphic id later carries a different schema object, as after a
  * rebuild). Undefined means the schema cannot be compiled; that answer is kept too, so
@@ -98,15 +112,21 @@ function readOrCompileDataSchema(
 
 /** Turns one Ajv error into the kind of problem and the name of the field it is about. */
 function describeSchemaErrorAsProblem(schemaError: ErrorObject): GraphicDataProblem {
-  // Ajv points at the object that has the problem ("/leader"); for a missing or an
-  // unknown field, the field's own name is in the error's params.
-  const pathOfTheParent = convertJsonPointerToFieldPath(schemaError.instancePath);
+  // What Ajv's `instancePath` points at depends on the kind of error:
+  // - for a missing or an unknown field (`required`, `additionalProperties`) it is the
+  //   object the field belongs in ("/leader", or "" for the top of the data), and the
+  //   field's own name is in the error's params;
+  // - for a value the schema refuses (`type`, `enum`, `minimum`...) it is the failing
+  //   field itself ("/leader/teamNumber"), so it is already the whole path.
+  // What could go wrong: joining a field name onto the path in the second case would
+  // name a field that does not exist ("state.state").
+  const pathAjvPointsAt = convertJsonPointerToFieldPath(schemaError.instancePath);
   const params: Record<string, unknown> = schemaError.params;
 
   if (schemaError.keyword === 'required' && typeof params.missingProperty === 'string') {
     return {
       kind: 'missingField',
-      fieldPath: joinFieldPath(pathOfTheParent, params.missingProperty),
+      fieldPath: joinFieldPath(pathAjvPointsAt, params.missingProperty),
     };
   }
   if (
@@ -115,13 +135,13 @@ function describeSchemaErrorAsProblem(schemaError: ErrorObject): GraphicDataProb
   ) {
     return {
       kind: 'unknownField',
-      fieldPath: joinFieldPath(pathOfTheParent, params.additionalProperty),
+      fieldPath: joinFieldPath(pathAjvPointsAt, params.additionalProperty),
     };
   }
-  if (pathOfTheParent === '') {
+  if (pathAjvPointsAt === '') {
     return { kind: 'invalidValue', fieldPath: nameOfTheWholeData };
   }
-  return { kind: 'invalidValue', fieldPath: pathOfTheParent };
+  return { kind: 'invalidValue', fieldPath: pathAjvPointsAt };
 }
 
 /**
