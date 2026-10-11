@@ -7,6 +7,7 @@ import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
+import { chooseEmptyCursorHint } from './emptyCursorHint';
 import { RundownItemList } from './RundownItemList';
 import { useRundownKeyboardShortcuts } from './useRundownKeyboardShortcuts';
 
@@ -52,9 +53,9 @@ export function RundownPanel() {
       ? itemsInOrder.find((item) => item.id === itemEditorTarget.itemId)
       : undefined;
   const isItemEditorOnScreen = itemEditorTarget.kind === 'newItem' || itemBeingEdited !== undefined;
-  // The cursor is on nothing after the last item was fired. Space then has nothing to
-  // take, which without a word on screen looks like a keyboard that stopped working.
-  const isCursorPastTheLastItem = itemsInOrder.length > 0 && rundown.cursorItemId === null;
+  // With the cursor on nothing Space has nothing to take, which without a word on screen
+  // looks like a keyboard that stopped working. The words depend on why it is on nothing.
+  const emptyCursorHint = chooseEmptyCursorHint(rundown, itemsInOrder.length);
 
   function closeItemEditor(): void {
     setItemEditorTarget({ kind: 'closed' });
@@ -110,11 +111,13 @@ export function RundownPanel() {
         />
       )}
 
-      {isCursorPastTheLastItem ? (
+      {emptyCursorHint === 'none' ? null : (
         <p role="status" className="text-sm text-muted-foreground">
-          {ptBR.rundown.endOfRundownHint}
+          {emptyCursorHint === 'endOfRundown'
+            ? ptBR.rundown.endOfRundownHint
+            : ptBR.rundown.placeTheCursorHint}
         </p>
-      ) : null}
+      )}
 
       <CommandErrorMessage
         commandTypes={['takeItem', 'takeNext', 'moveCursor', 'reorderItems', 'deleteItem']}

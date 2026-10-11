@@ -12,7 +12,8 @@
  *   - The instance is exactly what a direct takeGraphic with the same data gives, plus
  *     `itemId`; it replaces what was on the same layer and leaves other layers alone.
  *   - Taking the cursor item moves the cursor to the item after it, and to nothing after
- *     the last item of the rundown.
+ *     the last item of the rundown, which is then marked as played to its end
+ *     (wasLastItemTakenAtCursor). No other take sets that mark.
  *   - Taking any other item (a row fired ad hoc) leaves the cursor exactly where it was,
  *     an empty cursor included, and hands back the very same rundowns array.
  *   - The items slice, and the other rundown, are untouched.
@@ -142,6 +143,8 @@ const cursorAfterTakeScenarios: Array<{
   cursorBefore: string | null;
   takenItemId: string;
   expectedCursorAfter: string | null;
+  /** true when the rundown must come out marked as played to its end. */
+  expectedIsPlayedToItsEnd: boolean;
 }> = [
   // The scripted flow: taking the cursor item still advances "next" to the following one.
   {
@@ -149,6 +152,7 @@ const cursorAfterTakeScenarios: Array<{
     cursorBefore: 'item-largada-do-enduro',
     takenItemId: 'item-largada-do-enduro',
     expectedCursorAfter: 'item-bandeira-amarela',
+    expectedIsPlayedToItsEnd: false,
   },
   // The operator fires another row ad hoc with its button (a yellow flag nobody
   // planned): the plan must not move, so Space still fires the start afterwards.
@@ -157,6 +161,7 @@ const cursorAfterTakeScenarios: Array<{
     cursorBefore: 'item-largada-do-enduro',
     takenItemId: 'item-bandeira-amarela',
     expectedCursorAfter: 'item-largada-do-enduro',
+    expectedIsPlayedToItsEnd: false,
   },
   // The same, with the ad hoc row above the cursor: taking an earlier item again must
   // not pull the plan backwards either.
@@ -165,29 +170,41 @@ const cursorAfterTakeScenarios: Array<{
     cursorBefore: 'item-chegada-do-enduro',
     takenItemId: 'item-largada-do-enduro',
     expectedCursorAfter: 'item-chegada-do-enduro',
+    expectedIsPlayedToItsEnd: false,
   },
   // Nothing follows the last item, so the cursor ends on nothing instead of wrapping
-  // round to the top, where Space would fire the opening again by accident.
+  // round to the top, where Space would fire the opening again by accident. The rundown
+  // is marked as played to its end, so the control page can say so.
   {
-    name: 'leaves the cursor on nothing after the last item is taken as the cursor item',
+    name: 'leaves the cursor on nothing, and marks the rundown as played to its end, after the last item is taken as the cursor item',
     cursorBefore: 'item-chegada-do-enduro',
     takenItemId: 'item-chegada-do-enduro',
     expectedCursorAfter: null,
+    expectedIsPlayedToItsEnd: true,
   },
   // With the cursor on nothing no item is the cursor item, so a take is always ad hoc
-  // and the cursor stays on nothing; the operator chooses the next item by hand.
+  // and the cursor stays on nothing; nothing was played to its end, so there is no mark.
   {
-    name: 'leaves an empty cursor empty whichever item is taken',
+    name: 'leaves an empty cursor empty, and the rundown unmarked, whichever item is taken',
     cursorBefore: null,
     takenItemId: 'item-largada-do-enduro',
     expectedCursorAfter: null,
+    expectedIsPlayedToItsEnd: false,
+  },
+  // The last item fired ad hoc with the cursor elsewhere: the plan did not end, no mark.
+  {
+    name: 'does not mark the rundown when the last item is taken while the cursor is on another item',
+    cursorBefore: 'item-largada-do-enduro',
+    takenItemId: 'item-chegada-do-enduro',
+    expectedCursorAfter: 'item-largada-do-enduro',
+    expectedIsPlayedToItsEnd: false,
   },
 ];
 
 describe('takeItem and the cursor', () => {
   it.each(cursorAfterTakeScenarios)(
     '$name',
-    ({ cursorBefore, takenItemId, expectedCursorAfter }) => {
+    ({ cursorBefore, takenItemId, expectedCursorAfter, expectedIsPlayedToItsEnd }) => {
       // Arrange: the main session with three items and the cursor of this scenario.
       const slicesBefore = buildRaceDaySlicesWithRundown({
         rundowns: [buildMainSessionRundown(cursorBefore), buildPodiumRundown(null)],
@@ -204,14 +221,17 @@ describe('takeItem and the cursor', () => {
       // Assert: the take happened, the cursor is where this scenario says, and the items
       // are untouched.
       const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
+      const expectedMainRundownAfter = expectedIsPlayedToItsEnd
+        ? { ...buildMainSessionRundown(expectedCursorAfter), wasLastItemTakenAtCursor: true }
+        : buildMainSessionRundown(expectedCursorAfter);
       expect(
         slicesAfter?.instances.map((instance) => instance.itemId),
         'the item named must be the one on air, whatever happens to the cursor',
       ).toEqual([takenItemId]);
       expect(
         slicesAfter?.rundowns,
-        'the cursor must move on only when the item taken was the cursor item',
-      ).toEqual([buildMainSessionRundown(expectedCursorAfter), buildPodiumRundown(null)]);
+        'the cursor must move on only when the item taken was the cursor item, and only the last item taken at the cursor marks the rundown as played to its end',
+      ).toEqual([expectedMainRundownAfter, buildPodiumRundown(null)]);
       expect(slicesAfter?.items, 'taking an item must not change the items').toBe(
         slicesBefore.items,
       );

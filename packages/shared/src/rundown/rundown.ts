@@ -17,6 +17,14 @@ export const RundownSchema = z.object({
    * that leaves it out is refused, so "no next item" is never said by accident.
    */
   cursorItemId: z.string().min(1).nullable(),
+  /**
+   * True while the cursor is on nothing because the last item of the rundown was taken
+   * at the cursor: the rundown was played to its end. The control page then says "Fim do
+   * rundown" instead of only asking for the cursor to be placed. Left out means no, so
+   * a rundown stored before this field existed still passes; the server takes the mark
+   * off again as soon as the cursor is put on an item.
+   */
+  wasLastItemTakenAtCursor: z.boolean().optional(),
 });
 
 /** A rundown that has passed RundownSchema. */

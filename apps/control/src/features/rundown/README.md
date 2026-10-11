@@ -8,7 +8,7 @@ a drop or a click the rows wait for the server's next slice.
   `takeItem`, `moveCursor`, `deleteItem`, `reorderItems`; opens `features/items/ItemEditorPanel`.
 - `RundownItemList.tsx` (dnd-kit: mouse and keyboard drag) and `RundownItemRow.tsx` (handle,
   colour, the label that sets the cursor, "Disparar", "Editar"; `ItemColorChip.tsx`).
-- `DeleteItemButton.tsx` — "Excluir" deletes only at a second press within 3 seconds.
+- `DeleteItemButton.tsx` — two-press "Excluir"; `emptyCursorHint.ts` — what to say with no cursor.
 - `useRundownKeyboardShortcuts.ts` — Space = `takeNext` (always, also on a focused button),
   Right / Left arrow = `moveCursor`; `itemAfterCursor.ts`, `itemBeforeCursor.ts` say where to.
 - `useEscapeBelongsToTheDragWhileDragging.ts` (Esc cancelling a drag never arms "Limpar tudo"),

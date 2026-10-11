@@ -4,7 +4,7 @@ import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import { findItemThatFollows } from './itemOrdering.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
-import { putRundownCursorOnItem } from './rundownCursor.js';
+import { leaveRundownCursorPastItsLastItem, putRundownCursorOnItem } from './rundownCursor.js';
 import { reduceTakeGraphic } from './takeGraphic.js';
 
 /**
@@ -16,7 +16,8 @@ import { reduceTakeGraphic } from './takeGraphic.js';
  * being written twice. Then it stamps the new instance with the item's id. If the item
  * taken was the one the rundown's cursor was on, the cursor moves to the item after it;
  * after the last item the cursor is on nothing, rather than back at the top where
- * "next" would fire the opening again. Taking any other item leaves the cursor alone.
+ * "next" would fire the opening again, and the rundown is marked as played to its end
+ * (`wasLastItemTakenAtCursor`). Taking any other item leaves the cursor alone.
  * Refused if the item does not exist, if a field cannot be resolved, or for any reason
  * takeGraphic refuses (the item's layer or graphic is gone); nothing changes then.
  */
@@ -77,5 +78,10 @@ function moveCursorOnIfItWasOnTakenItem(
     return slices.rundowns;
   }
   const nextItem = findItemThatFollows(slices.items, takenItem);
-  return putRundownCursorOnItem(slices.rundowns, takenItem.rundownId, nextItem?.id ?? null);
+  if (nextItem === undefined) {
+    // The plan was carried out to its last item: the cursor is left on nothing and the
+    // rundown is marked as played to its end, which the control page says in words.
+    return leaveRundownCursorPastItsLastItem(slices.rundowns, takenItem.rundownId);
+  }
+  return putRundownCursorOnItem(slices.rundowns, takenItem.rundownId, nextItem.id);
 }
