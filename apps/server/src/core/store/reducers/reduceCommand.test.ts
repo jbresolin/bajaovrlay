@@ -3,9 +3,9 @@
  *
  * What this module is for:
  *   A reducer is the pure heart of a command: given the current slices, one valid
- *   command and a context (the id for a new instance and the current time, both made
- *   by the store), it returns the new slices or a refusal with a pt-BR reason. It does
- *   no I/O, so the same input always gives the same output.
+ *   command and a context (the ids for a new instance and a new item and the current
+ *   time, all made by the store), it returns the new slices or a refusal with a pt-BR
+ *   reason. It does no I/O, so the same input always gives the same output.
  *
  * What these tests prove:
  *   - takeGraphic puts an instance on an empty layer, replaces what was on the same
@@ -21,6 +21,12 @@
  * What these tests deliberately do not cover:
  *   - Checking the command's shape, authorising it, saving or broadcasting the result;
  *     the store (createStateStore.test.ts) does those around the reducer.
+ *   - updateInstanceData and reportInstanceStatus, which have a test file each next to
+ *     their reducer, and takeGraphic's check of the data against the graphic's manifest
+ *     schema (takeGraphicData.test.ts). The two graphics here declare no data schema,
+ *     so any data is accepted.
+ *   - The seven item and rundown commands (createItem, updateItemFields, deleteItem,
+ *     reorderItems, moveCursor, takeItem, takeNext), which have a test file each too.
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';

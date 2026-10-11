@@ -12,6 +12,9 @@
  *     two items made with the default id maker get different ids.
  *   - Subscribers hear about exactly the slices each command changed: the rundowns only
  *     when a cursor moved, the items only when an item changed.
+ *   - A rundown command that is accepted and changes nothing (the cursor moved to where
+ *     it is, the same order, the same label) answers ok, writes no event-log row and
+ *     tells no subscriber, like every other command that changes nothing.
  *   - Preparing two items and pressing "next" twice puts them on air in order, and a
  *     third press is refused in pt-BR and logged as failed.
  *   - Three clock items prepared before a session go on air one after the other with
@@ -156,6 +159,63 @@ describe('subscribers of the store and the rundown commands', () => {
       ['instances', 'rundowns', 'eventLog'],
     ]);
   });
+});
+
+const rundownCommandsThatChangeNothingScenarios: Array<{
+  name: string;
+  command: Record<string, unknown>;
+}> = [
+  // The operator marks as "next" the row that already is.
+  {
+    name: 'moveCursor to the item the cursor is already on',
+    command: { type: 'moveCursor', rundownId: 'sessao-principal', itemId: 'item-1' },
+  },
+  // A row dragged and dropped so that the list ends in the order it already had.
+  {
+    name: 'reorderItems to the order the rundown already has',
+    command: {
+      type: 'reorderItems',
+      rundownId: 'sessao-principal',
+      orderedItemIds: ['item-1', 'item-2'],
+    },
+  },
+  // An update that carries the label the item already has.
+  {
+    name: 'updateItemFields with the label the item already has',
+    command: { type: 'updateItemFields', itemId: 'item-1', label: 'Largada do enduro' },
+  },
+];
+
+describe('a rundown command that is accepted and changes nothing', () => {
+  it.each(rundownCommandsThatChangeNothingScenarios)(
+    'answers ok, writes no event-log row and tells no subscriber: $name',
+    ({ command }) => {
+      // Arrange: a store with two prepared items, the cursor on the first, and a
+      // subscriber that starts listening only now.
+      const { store } = createStoreOnFreshDatabase();
+      store.applyCommand(buildCreateClockItemCommand('Largada do enduro', 'green'), operatorActor);
+      store.applyCommand(buildCreateClockItemCommand('Bandeira amarela', 'yellow'), operatorActor);
+      const numberOfLogRowsBefore = store.readAllSlices().eventLog.length;
+      const changedSliceNamesHeard: SliceName[][] = [];
+      store.subscribeToSliceChanges((changedSliceNames) => {
+        changedSliceNamesHeard.push(changedSliceNames);
+      });
+
+      // Act: send the command of this scenario, which asks for what is already so.
+      const outcome = store.applyCommand(command, operatorActor);
+
+      // Assert: the sender gets its ok, and nothing was logged or announced.
+      expect(outcome, 'a command that changes nothing is still accepted').toEqual({ ok: true });
+      expect(
+        store.readAllSlices().eventLog.length,
+        'an accepted command that changes nothing must write no event-log row',
+      ).toBe(numberOfLogRowsBefore);
+      expect(
+        changedSliceNamesHeard,
+        'an accepted command that changes nothing must not be announced, so nothing is broadcast',
+      ).toEqual([]);
+    },
+  );
 });
 
 describe('preparing two items and firing them with "next"', () => {

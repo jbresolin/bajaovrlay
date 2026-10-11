@@ -12,8 +12,9 @@
  *   - Pressing that button reads `GET /health` and shows the server's version; when the
  *     server cannot be reached, the page says so in pt-BR instead of breaking.
  *   - The three areas are there: the rundown with "+ Item", the program monitor (a frame
- *     showing `/render/`, the same page OBS loads) with the race clock panel, and the
- *     layer list with "Limpar tudo".
+ *     showing `/render/?monitor=1`, the page OBS loads but marked as a monitor so it
+ *     never reports what is on air) with the race clock panel, and the layer list with
+ *     "Limpar tudo".
  *   - Backspace clears the clock layer, but not while the operator is typing in a field,
  *     choosing in a dropdown (closed or open) or resting on the switch.
  *   - When the server refuses a clear, its pt-BR message appears next to the layers.
@@ -137,12 +138,13 @@ describe('the three areas of the control page', () => {
     // Act: draw the page.
     renderControlPageWithTheRaceClockOnAir();
 
-    // Assert: the centre holds a frame on /render/ labelled "Programa", and the take form.
+    // Assert: the centre holds a frame on the renderer page, marked as a monitor and
+    // labelled "Programa", and the take form.
     const centreArea = within(screen.getByRole('region', { name: 'Programa e relógio' }));
     expect(
       centreArea.getByTitle('Programa'),
-      'the program monitor must show the renderer page, the same one OBS loads',
-    ).toHaveAttribute('src', '/render/');
+      'the program monitor must show the renderer page marked as a monitor, so only OBS reports what is on air',
+    ).toHaveAttribute('src', '/render/?monitor=1');
     expect(
       centreArea.getByRole('heading', { name: 'Programa' }),
       'the program monitor must be labelled "Programa"',

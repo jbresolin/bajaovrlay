@@ -10,10 +10,11 @@ export const EventLogResultSchema = z.discriminatedUnion('status', [
 
 /**
  * One line of the append-only event log: who sent which command, when, with what
- * payload, and how it ended. Failed commands are logged too.
+ * payload, and how it ended. Failed commands are logged too; an accepted command that
+ * changed nothing (a clear of an empty stage) is not.
  */
 export const EventLogEntrySchema = z.object({
-  /** The event_log row id; it increases with every command, so it gives the order. */
+  /** The event_log row id; it increases with every logged command, so it gives the order. */
   id: z.number().int().positive(),
   /** When the command was applied, as an ISO 8601 timestamp. */
   ts: z.iso.datetime(),

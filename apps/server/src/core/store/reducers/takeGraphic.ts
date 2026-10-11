@@ -1,12 +1,18 @@
 import type { Instance, TakeGraphicCommand } from '@bajaovrlay/shared';
 
-import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
+import {
+  refuseInvalidGraphicData,
+  refuseUnknownGraphic,
+  refuseUnknownLayer,
+} from '../commandRefusals.js';
+import { findProblemInGraphicData } from '../graphicDataValidation.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
  * takeGraphic: puts a new instance of the graphic on the layer and output, replacing
  * the instance already there (one per layer per output). Other layers and the other
- * output are left alone. Refused if the layer or the graphic does not exist.
+ * output are left alone. Refused, before anything changes, if the layer or the graphic
+ * does not exist or if the data breaks the graphic's manifest schema.
  */
 export function reduceTakeGraphic(
   slices: SlicesChangedByCommands,
@@ -17,13 +23,21 @@ export function reduceTakeGraphic(
   if (!layerExists) {
     return { status: 'refused', error: refuseUnknownLayer(command.layerId) };
   }
-  const graphicIsRegistered = slices.graphics.some((graphic) => graphic.id === command.graphicId);
-  if (!graphicIsRegistered) {
+  const graphic = slices.graphics.find(
+    (registeredGraphic) => registeredGraphic.id === command.graphicId,
+  );
+  if (graphic === undefined) {
     return { status: 'refused', error: refuseUnknownGraphic(command.graphicId) };
   }
+  // Checked here rather than left to the graphic: by the time a graphic refuses its
+  // data in the renderer, the instance it replaced has already left the screen.
+  const problemInData = findProblemInGraphicData(graphic, command.data);
+  if (problemInData !== undefined) {
+    return { status: 'refused', error: refuseInvalidGraphicData(graphic.id, problemInData) };
+  }
 
-  // No renderer acknowledges a take yet (M0), so a new instance stays `loading`
-  // until a later task adds that acknowledgement and moves it on.
+  // A new instance is `loading` until a renderer reports what happened to it on
+  // screen; reportInstanceStatus then moves it to `on-air` or `failed`.
   const newInstance: Instance = {
     id: context.newInstanceId,
     layerId: command.layerId,

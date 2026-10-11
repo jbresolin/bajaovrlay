@@ -9,14 +9,18 @@ import { TakeNextCommandSchema } from '../rundown/takeNext.js';
 import { UpdateItemFieldsCommandSchema } from '../rundown/updateItemFields.js';
 import { ClearAllCommandSchema } from './clearAll.js';
 import { ClearLayerCommandSchema } from './clearLayer.js';
+import { ReportInstanceStatusCommandSchema } from './reportInstanceStatus.js';
 import { TakeGraphicCommandSchema } from './takeGraphic.js';
+import { UpdateInstanceDataCommandSchema } from './updateInstanceData.js';
 
 /**
  * Every command the server accepts, told apart by `type`. A command is the only way
- * state changes. takeItem and the rundown commands arrive in M1.
+ * state changes. Macro commands arrive later in M1.
  */
 export const CommandSchema = z.discriminatedUnion('type', [
   TakeGraphicCommandSchema,
+  UpdateInstanceDataCommandSchema,
+  ReportInstanceStatusCommandSchema,
   ClearLayerCommandSchema,
   ClearAllCommandSchema,
   // The item and rundown commands (BAJAOVRLAY-13); their schemas live in ../rundown/.

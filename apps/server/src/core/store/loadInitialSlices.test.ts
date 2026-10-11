@@ -17,7 +17,6 @@
  *     seed is saved, stamped with the store's clock rather than the machine's.
  *   - A built race clock is registered with its manifest, under its folder name; an
  *     unbuilt one logs a warning, a broken one logs an error, and the boot carries on.
- *   - A package nobody has placed yet defaults to the fullscreen layer.
  *   - A second boot registers a race clock built since the first, and saves it, while
  *     the stored layers and instances come back untouched.
  *   - A stored slice that fails its schema, or a damaged database with no layers row,
@@ -25,10 +24,10 @@
  *
  * What these tests deliberately do not cover:
  *   - Loading back slices changed by commands; storeRestart.test.ts covers it.
+ *   - Which default layer and category a graphic gets (from its manifest, or fullscreen
+ *     with a warning); loadInitialSlicesGraphicPlacement.test.ts covers it. The test
+ *     "registers a package nobody has placed yet on the fullscreen layer" moved there.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import type { Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
@@ -164,34 +163,6 @@ describe('loadInitialSlices on an empty database', () => {
     // Assert: one graphic, the race clock, carrying the manifest as written.
     expect(slices.graphics, 'the race clock must be registered with its manifest').toEqual([
       raceClockGraphic,
-    ]);
-  });
-
-  it('registers a package nobody has placed yet on the fullscreen layer', () => {
-    // Arrange: a brand-new database and a built package the server has no placement
-    // for, as when someone copies race-clock into a new graphic.
-    const { database } = openTemporaryDatabase();
-    const graphicPackagesFolder = createGraphicsFolderWithUnbuiltRaceClock();
-    const scoreboardDistFolder = join(graphicPackagesFolder, 'scoreboard', 'dist');
-    mkdirSync(scoreboardDistFolder, { recursive: true });
-    writeFileSync(
-      join(scoreboardDistFolder, 'scoreboard.ograf.json'),
-      JSON.stringify({ id: 'baja-scoreboard', name: 'Placar', main: 'scoreboard.js' }),
-    );
-
-    // Act: load the slices.
-    const slices = loadSlicesAtBoot({ database, graphicPackagesFolder });
-
-    // Assert: it is registered on the top layer, where it cannot replace anything else.
-    expect(slices.graphics, 'an unplaced package must default to the fullscreen layer').toEqual([
-      {
-        id: 'scoreboard',
-        manifest: { id: 'baja-scoreboard', name: 'Placar', main: 'scoreboard.js' },
-        defaultLayerId: 'fullscreen',
-        category: 'other',
-        thumbnailUrl: null,
-        defaultFields: {},
-      },
     ]);
   });
 

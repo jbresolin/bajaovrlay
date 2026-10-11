@@ -46,7 +46,16 @@ const takeRaceClockCommand = {
   type: 'takeGraphic',
   graphicId: 'race-clock',
   layerId: 'clock',
-  data: { sessionName: 'Enduro de Resistência', state: 'green' },
+  // All six fields the race clock's manifest schema requires: the enduro under green
+  // flag, 1:05:00 in and running.
+  data: {
+    sessionName: 'Enduro de Resistência',
+    state: 'green',
+    clockMode: 'elapsed',
+    referenceTimeMs: 3_900_000,
+    referenceWallClockMs: 1_791_550_800_000,
+    running: true,
+  },
 };
 
 /**

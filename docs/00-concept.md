@@ -39,7 +39,7 @@ Four deployable parts, one repository, one Node process at runtime.
 
 ### 3.1 The server owns the truth
 
-The server holds the whole application state in memory and persists it to SQLite. Clients never hold state of their own; they send commands and receive state. Every command is appended to an event log (who, when, what). This is the NodeCG "replicant" idea reimplemented in one module: a store of named slices, each validated by a Zod schema, each broadcast to every connected client when it changes.
+The server holds the whole application state in memory and persists it to SQLite. Clients never hold state of their own; they send commands and receive state. Every command that changes something or is refused is appended to an event log (who, when, what). This is the NodeCG "replicant" idea reimplemented in one module: a store of named slices, each validated by a Zod schema, each broadcast to every connected client when it changes.
 
 Consequences:
 
@@ -91,7 +91,7 @@ dataSources: id, kind (one of scoring, csv-url, entities, manual), config, pollI
 
 overrides: sourceId, path, value, reason, setBy, setAt. Operator-typed values that win over the source until cleared. Shown as a badge everywhere the path appears.
 
-instances (what the renderer mirrors): id, layerId, itemId, target (program or preview), resolvedData, currentStep, status (one of loading, ready, on-air, stopping), takenAt.
+instances (what the renderer mirrors): id, layerId, itemId, target (program or preview), resolvedData, currentStep, status (one of loading, ready, on-air, stopping, failed), statusDetail (optional; why a failed instance failed, as the renderer reported it), takenAt. A new instance is loading until a renderer reports it on-air or failed, and an on-air instance becomes failed if a renderer reports a failure afterwards; a failed instance stays in the slice until it is cleared or replaced, never removed on its own.
 
 entities: tables for teams, people, sponsors, scheduleSlots. Teams carry number, name, university, city, logo, car photo. Sponsors carry tier and roll weight.
 
@@ -104,6 +104,12 @@ eventLog: append-only: ts, actor, command, payload, result.
 ### Commands, the only way state changes
 
 takeItem, clearLayer, clearAll, nextOnLayer, previewItem, stopPreview, updateItemFields, reorderItems, moveCursor, runMacro, setOverride, clearOverride, setDataSourceEnabled, upsertEntity, importEntities. Each has a Zod input schema; each is validated, authorized, applied, logged and broadcast, in that order, in one code path.
+
+updateInstanceData (instanceId, data) changes an instance that is on air without replacing it: the fields in data are laid over resolvedData (top-level keys only), the result is validated against the JSON Schema in the graphic's manifest, and the instance keeps its id, so the renderer calls updateAction instead of taking the graphic off and on again. An unknown instance is refused with INSTANCE_NOT_FOUND; data the schema does not accept, in a take or in an update, is refused with INVALID_GRAPHIC_DATA and a pt-BR message naming the field.
+
+reportInstanceStatus (instanceId, status on-air or failed, detail optional) is how a renderer says what really happened on screen: it moves a loading instance to on-air or to failed, and an on-air instance to failed when a renderer reports a failure later. Any other report (a second on-air, anything about an instance that is already failed, or a late report about an instance that is no longer there, which is the normal end of a quick clear) changes nothing and is answered ok, not refused. It is the one command an operator may not send and the only one a renderer may; the authorize step refuses the rest with NOT_ALLOWED. Until login exists a WebSocket connection is a renderer when it connects to /ws?role=renderer (its actor is renderer: followed by the connection id) and an operator otherwise (operador: followed by the connection id); the role is taken at its word until the LAN PINs of M4. Only the program output reports: the page OBS loads (/render/) connects as a renderer, while the program monitor on the control page frames /render/?monitor=1, which connects to /ws with no role and never sends instanceStatus. With no program renderer connected an instance therefore stays loading.
+
+The renderer does not wrap that command in a command message. It sends the client message instanceStatus (type, instanceId, status, detail optional) after playAction resolves, or after an import, load or play that failed, and the server builds reportInstanceStatus from it and runs it through the same code path as every other command.
 
 ## 5. Binding resolution and live updates
 

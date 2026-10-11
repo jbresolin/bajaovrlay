@@ -17,14 +17,20 @@
  *   - An item that does not exist is refused; a refusal of takeGraphic itself (the
  *     item's graphic or layer is gone) comes back unchanged; an item with a field value
  *     the server cannot resolve yet is refused. Each has a pt-BR reason.
+ *   - An item whose stored fields the graphic's data schema does not accept is refused
+ *     at the take with INVALID_GRAPHIC_DATA (takeGraphic's own check, inherited), and
+ *     what was on air and the cursor stay as they were.
  *
  * What these tests deliberately do not cover:
  *   - The auto-out that may follow the take; autoOut.test.ts covers it.
  *   - Every detail of resolving field values; resolveItemFields.test.ts covers it.
+ *   - Every way data can break a graphic's schema; takeGraphicData.test.ts and
+ *     graphicDataValidation.test.ts cover them. One case here shows items inherit it.
  */
-import type { Instance, Item, ItemFields } from '@bajaovrlay/shared';
+import type { Graphic, Instance, Item, ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import { raceClockManifestForTests } from '../builtGraphicsFolder.testSupport.js';
 import { reduceCommand } from './reduceCommand.js';
 import {
   buildEnduroClockData,
@@ -243,6 +249,59 @@ describe('takeItem, when it must be refused', () => {
         message: 'O gráfico "classificacao-geral" não está registrado.',
       },
     });
+  });
+
+  it('refuses an item whose stored fields the data schema of its graphic does not accept', () => {
+    // Arrange: the race clock registered with its real data schema; the start item saved
+    // with a negative clock time (createItem does not check field values against the
+    // graphic, so such an item can be stored); the cursor on that item and the green
+    // clock on air.
+    const startItemWithNegativeTime: Item = {
+      ...buildEnduroStartItem(0),
+      fields: {
+        ...buildEnduroStartItem(0).fields,
+        referenceTimeMs: { kind: 'literal', value: -5000 },
+      },
+    };
+    const raceClockWithItsDataSchema: Graphic = {
+      id: 'race-clock',
+      manifest: raceClockManifestForTests,
+      defaultLayerId: 'clock',
+      category: 'clock',
+      thumbnailUrl: null,
+      defaultFields: {},
+    };
+    const slicesBefore = {
+      ...buildRaceDaySlicesWithRundown({
+        rundowns: [buildMainSessionRundown('item-largada-do-enduro')],
+        items: [startItemWithNegativeTime, buildYellowFlagItem(1)],
+        instances: [buildGreenFlagClockTakenByHand()],
+      }),
+      graphics: [raceClockWithItsDataSchema],
+    };
+    const copyOfSlicesBefore = structuredClone(slicesBefore);
+
+    // Act: take the item.
+    const outcome = reduceCommand(
+      slicesBefore,
+      { type: 'takeItem', itemId: 'item-largada-do-enduro' },
+      contextOfTheRundownCommand,
+    );
+
+    // Assert: the very refusal a take by hand with that data gets, naming the field, and
+    // nothing changed: the green clock is still on air and the cursor is still on the item.
+    expect(outcome, 'an item with data the graphic refuses must be refused at the take').toEqual({
+      status: 'refused',
+      error: {
+        code: 'INVALID_GRAPHIC_DATA',
+        message:
+          'Dados inválidos para o gráfico "race-clock": o campo "referenceTimeMs" tem um valor que o gráfico não aceita.',
+      },
+    });
+    expect(
+      slicesBefore,
+      'a refused take must change nothing, the clock on air and the cursor included',
+    ).toEqual(copyOfSlicesBefore);
   });
 
   it('refuses an item with a field value the server cannot resolve yet, naming M2', () => {

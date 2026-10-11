@@ -1,10 +1,11 @@
 import type { Instance, Layer } from '@bajaovrlay/shared';
 
-import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { ItemLabelOnAir } from '@/features/layers/ItemLabelOnAir';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
+
+import { InstanceStatusBadge } from './InstanceStatusBadge';
 
 /** What one row needs: its layer, what is on it (if anything), and how to clear it. */
 export type LayerStatusRowProps = {
@@ -19,7 +20,8 @@ export type LayerStatusRowProps = {
 
 /**
  * One line of the layer panel: the layer's name, what is on it and since when, its
- * status, and the "Limpar" button. An empty layer says "vazia".
+ * status badge, and the "Limpar" button. An empty layer says "vazia". A graphic that
+ * failed stays on its row until the operator clears the layer or takes again.
  */
 export function LayerStatusRow(props: LayerStatusRowProps) {
   const { layer, instanceOnProgram, graphicName, currentTime, onClearPressed } = props;
@@ -37,7 +39,10 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
             <span className="text-muted-foreground">
               {formatRelativeTimePtBR(new Date(instanceOnProgram.takenAt), currentTime)}
             </span>
-            <Badge variant="outline">{ptBR.layers.instanceStatus[instanceOnProgram.status]}</Badge>
+            <InstanceStatusBadge
+              status={instanceOnProgram.status}
+              statusDetail={instanceOnProgram.statusDetail}
+            />
           </span>
         )}
       </div>

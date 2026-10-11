@@ -9,14 +9,14 @@
  *
  * What these tests prove:
  *   - A layer whose instance came from an item shows the item's label, next to the
- *     graphic's name.
+ *     graphic's name and the status badge.
  *   - A layer whose instance was taken by hand (no item id) shows only the graphic's name.
  *   - If the item was deleted after it went on air, the row keeps the graphic's name and
  *     shows no label, instead of an id nobody can read.
  *   - The label follows the server: when the item is renamed, the row shows the new name.
  *
  * What these tests deliberately do not cover:
- *   - Everything else on the row (time, status, "Limpar"); LayerStatusPanel.test.tsx does.
+ *   - Everything else on the row (time, each status, "Limpar"); LayerStatusPanel.test.tsx does.
  *   - Taking an item; the rundown's tests and e2e/rundownTakeWithSpace.e2e.ts do.
  */
 import { screen, within } from '@testing-library/react';
@@ -41,7 +41,8 @@ describe('the item label on the layer panel', () => {
     // Act: draw the panel.
     renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
 
-    // Assert: the clock row names the item and still names the graphic.
+    // Assert: the clock row names the item, still names the graphic, and still carries
+    // its status badge ("Carregando": no renderer has confirmed this take yet).
     const clockRow = within(screen.getByRole('listitem', { name: 'Relógio' }));
     expect(
       clockRow.getByText('Largada do enduro'),
@@ -50,6 +51,10 @@ describe('the item label on the layer panel', () => {
     expect(
       clockRow.getByText('Relógio de prova'),
       'the row must keep showing the name of the graphic',
+    ).toBeInTheDocument();
+    expect(
+      clockRow.getByText('Carregando'),
+      'the item label must not push the status badge off the row',
     ).toBeInTheDocument();
   });
 

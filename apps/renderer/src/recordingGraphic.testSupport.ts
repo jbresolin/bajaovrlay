@@ -1,5 +1,5 @@
 // Test support: a stand-in for a graphic and for the loader that brings it into the page,
-// used by instancePlayer.test.ts. The stand-in graphic draws nothing; it writes down every
+// used by the instancePlayer tests. The stand-in graphic draws nothing; it writes down every
 // lifecycle call the player makes, so a test can read back what was called and in which
 // order. It is the unit-test cousin of test-fixtures/fake-graphic, which the browser tests
 // load as a real module.
@@ -18,6 +18,8 @@ export type RecordingGraphicLoader = {
   loadParams: OGrafLoadParams[];
   /** Lets every load that was told to wait (see below) finish. */
   releaseLoadsThatWait: () => void;
+  /** Lets every play that was told to wait (see below) finish. */
+  releasePlaysThatWait: () => void;
 };
 
 // A custom element tag can be registered only once per page, and every loader below
@@ -35,7 +37,10 @@ let numberOfLoadersBuilt = 0;
  *   - `fakeGraphicLoadOutcome: 'rejects'` makes load throw,
  *   - `fakeGraphicLoadOutcome: 'answers-nothing'` makes load resolve with no answer,
  *   - `fakeGraphicLoadOutcome: 'waits-to-be-released'` keeps load pending until the test
- *     calls `releaseLoadsThatWait`, standing in for a slow graphic.
+ *     calls `releaseLoadsThatWait`, standing in for a slow graphic,
+ *   - `fakeGraphicPlayOutcome: 'rejects'` makes playAction throw,
+ *   - `fakeGraphicPlayOutcome: 'waits-to-be-released'` keeps playAction pending until the
+ *     test calls `releasePlaysThatWait`, standing in for a long in-animation.
  */
 export function createRecordingGraphicLoader(
   nameByInstanceId: Record<string, string>,
@@ -46,8 +51,15 @@ export function createRecordingGraphicLoader(
   const loadsMayFinish = new Promise<void>((resolve) => {
     releaseLoadsThatWait = resolve;
   });
+  let releasePlaysThatWait: () => void = () => undefined;
+  const playsMayFinish = new Promise<void>((resolve) => {
+    releasePlaysThatWait = resolve;
+  });
 
   class RecordingGraphic extends HTMLElement {
+    /** How the data given to load said playAction must go; read when it is played. */
+    playOutcome: unknown = undefined;
+
     /** Writes the call down under the name of the instance this element draws. */
     recordCall(action: string, params: { skipAnimation?: boolean }): void {
       const instanceId = this.dataset.instanceId ?? '';
@@ -59,6 +71,7 @@ export function createRecordingGraphicLoader(
     async load(params: OGrafLoadParams): Promise<unknown> {
       this.recordCall('load', {});
       loadParams.push(params);
+      this.playOutcome = params.data.fakeGraphicPlayOutcome;
       const loadOutcome = params.data.fakeGraphicLoadOutcome;
       if (loadOutcome === 'rejects') {
         throw new Error('O gráfico de teste foi instruído a falhar no load.');
@@ -74,6 +87,12 @@ export function createRecordingGraphicLoader(
 
     async playAction(params: { skipAnimation?: boolean }): Promise<unknown> {
       this.recordCall('playAction', params);
+      if (this.playOutcome === 'rejects') {
+        throw new Error('O gráfico de teste foi instruído a falhar no playAction.');
+      }
+      if (this.playOutcome === 'waits-to-be-released') {
+        await playsMayFinish;
+      }
       return { statusCode: 200, currentStep: 0 };
     }
 
@@ -103,5 +122,6 @@ export function createRecordingGraphicLoader(
     lifecycleCalls,
     loadParams,
     releaseLoadsThatWait: () => releaseLoadsThatWait(),
+    releasePlaysThatWait: () => releasePlaysThatWait(),
   };
 }

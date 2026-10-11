@@ -2,10 +2,11 @@
  * State slices (packages/shared)
  *
  * What this module is for:
- *   The server owns all state as four named slices: `layers` (where graphics can go),
- *   `graphics` (what can be shown), `instances` (what is showing now) and `eventLog`
- *   (every command, in order). SlicesSchema describes all four; the server checks what
- *   it stores and sends against it, and the control page and renderer check what they
+ *   The server owns all state as six named slices: `layers` (where graphics can go),
+ *   `graphics` (what can be shown), `instances` (what is showing now), `rundowns` and
+ *   `items` (the planned show) and `eventLog` (the commands that changed something or
+ *   were refused, in order). SlicesSchema describes all six; the server checks what it
+ *   stores and sends against it, and the control page and renderer check what they
  *   receive.
  *
  * What these tests prove:
@@ -14,6 +15,8 @@
  *   - A layer with a replace policy the renderer does not know is refused, and the
  *     failure names the field.
  *   - An instance in a status outside the lifecycle is refused.
+ *   - An instance may be `failed` and carry the reason the renderer gave
+ *     (`statusDetail`), and that reason must be a text.
  *   - A failed event-log entry must carry the error a person reads.
  *
  * What these tests deliberately do not cover:
@@ -112,7 +115,51 @@ describe('SlicesSchema', () => {
     const result = SlicesSchema.safeParse(stateWithUnknownStatus);
 
     // Assert: it is refused.
-    expect(result.success, 'only loading, ready, on-air and stopping are statuses').toBe(false);
+    expect(result.success, 'only loading, ready, on-air, stopping and failed are statuses').toBe(
+      false,
+    );
+  });
+
+  it('accepts a failed instance that carries the reason the renderer gave', () => {
+    // Arrange: the renderer reported that the clock could not be loaded, and why.
+    const raceDayState = buildRaceDayStateWithTheClockOnAir();
+    const stateWithFailedClock = {
+      ...raceDayState,
+      instances: [
+        {
+          ...raceDayState.instances[0],
+          status: 'failed',
+          statusDetail:
+            'Failed to fetch dynamically imported module: /graphics/race-clock/race-clock.js',
+        },
+      ],
+    };
+
+    // Act: check it against the schema.
+    const result = SlicesSchema.safeParse(stateWithFailedClock);
+
+    // Assert: it is accepted, and the reason is still there for the layer panel to show.
+    expect(result.success, 'failed must be a status an instance can be in').toBe(true);
+    expect(result.data, 'the reason for the failure must be kept').toEqual(stateWithFailedClock);
+  });
+
+  it('refuses an instance whose status detail is not a text, naming the field', () => {
+    // Arrange: the failed clock carries an error object instead of words a person reads.
+    const raceDayState = buildRaceDayStateWithTheClockOnAir();
+    const stateWithUnreadableDetail = {
+      ...raceDayState,
+      instances: [
+        { ...raceDayState.instances[0], status: 'failed', statusDetail: { statusCode: 500 } },
+      ],
+    };
+
+    // Act: check it and turn the failure into readable text.
+    const result = SlicesSchema.safeParse(stateWithUnreadableDetail);
+    const failureMessage = result.error ? z.prettifyError(result.error) : '';
+
+    // Assert: it is refused and the message points at statusDetail.
+    expect(result.success, 'the status detail must be a text').toBe(false);
+    expect(failureMessage, 'the failure must name the bad field').toContain('statusDetail');
   });
 
   it('refuses a failed event-log entry that does not say why it failed', () => {

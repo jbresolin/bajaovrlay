@@ -11,6 +11,10 @@
   "supportsRealTime": true,
   "supportsNonRealTime": false,
   "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "clock",
+    "category": "clock"
+  },
   "actionDurations": [
     { "type": "playAction", "duration": 600 },
     { "type": "stopAction", "duration": 400 }

@@ -1,7 +1,9 @@
 // Test support: a stand-in for the server, living inside one Playwright page. It answers
-// the page's WebSocket at /ws like the real server (a hello with every slice, then slice
-// messages) and serves the fake graphic's files at /graphics/fake-graphic/. Nothing leaves
-// the browser, so a test decides exactly what the renderer hears and when.
+// the page's WebSocket at /ws?role=renderer like the real server (a hello with every slice,
+// then slice messages; a program monitor is answered at plain /ws), keeps every message
+// the page sends, and serves the fake graphic's
+// files at /graphics/fake-graphic/. Nothing leaves the browser, so a test decides exactly
+// what the renderer hears and when, and reads back exactly what it said.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -44,7 +46,8 @@ function readFakeGraphicFromItsManifest(): Graphic {
 
 /**
  * A graphic the server lists but whose files do not exist, like a package that was
- * registered and then deleted from disk. Its module answers 404.
+ * registered and then deleted from disk. Its module answers 404 until a test calls
+ * `buildSponsorRollPackage`.
  */
 const sponsorRollWithoutFiles: Graphic = {
   id: 'sponsor-roll',
@@ -66,15 +69,30 @@ export type FakeServerForPage = {
   dropConnection: () => Promise<void>;
   /** How many times the page has connected so far. */
   countConnections: () => number;
+  /** The WebSocket address of every connection the page made, oldest first. */
+  readConnectionAddresses: () => string[];
+  /** Every message the page has sent over its WebSocket so far, as parsed JSON, oldest first. */
+  readMessagesFromThePage: () => unknown[];
+  /**
+   * Makes the sponsor roll's files exist from now on, as when someone builds the package
+   * while the stream is running. The module served is the fake graphic's.
+   */
+  buildSponsorRollPackage: () => void;
+  /**
+   * The path of every request for a sponsor roll file, oldest first, followed by
+   * `?retry=<n>` when the renderer asked for it as a retry.
+   */
+  readSponsorRollRequests: () => string[];
 };
 
 /**
  * Installs the stand-in server on a page. Call it before `page.goto`, so the page's very
  * first connection is already answered. `instancesOnAir` is what the first hello holds.
+ * `pageIsAProgramMonitor` is for the page opened with `?monitor=1` (see the comment below).
  */
 export async function startFakeServerForPage(
   page: Page,
-  options: { instancesOnAir: Instance[] },
+  options: { instancesOnAir: Instance[]; pageIsAProgramMonitor?: boolean },
 ): Promise<FakeServerForPage> {
   const slices: Slices = {
     layers: layersOfTheFakeServer,
@@ -86,10 +104,25 @@ export async function startFakeServerForPage(
     eventLog: [],
   };
   const connections: WebSocketRoute[] = [];
+  const messagesFromThePage: unknown[] = [];
+  const sponsorRollRequests: string[] = [];
+  let isSponsorRollPackageBuilt = false;
 
-  // Only the renderer's socket ends in /ws; Vite's own dev socket has another address.
-  await page.routeWebSocket(/\/ws$/, (connection) => {
+  // Only a socket that says it is the renderer is answered, as the real server tells a
+  // renderer from an operator by this address. A page that dialled plain /ws would get no
+  // hello here and every test would fail. Vite's own dev socket has another address.
+  //
+  // For a test of the program monitor it is the other way round: the monitor must dial
+  // plain /ws. There both addresses are answered, so that a monitor wrongly dialling as a
+  // renderer is caught here, with its address and its messages written down for the test
+  // to read, instead of slipping past to the real server behind the dev server.
+  const addressesThisServerAnswers =
+    options.pageIsAProgramMonitor === true ? /\/ws(\?role=renderer)?$/ : /\/ws\?role=renderer$/;
+  await page.routeWebSocket(addressesThisServerAnswers, (connection) => {
     connections.push(connection);
+    connection.onMessage((messageText) => {
+      messagesFromThePage.push(JSON.parse(String(messageText)));
+    });
     connection.send(JSON.stringify({ type: 'hello', slices }));
   });
 
@@ -97,9 +130,19 @@ export async function startFakeServerForPage(
     const fileName = new URL(route.request().url()).pathname.split('/').at(-1) ?? '';
     return route.fulfill({ path: `${fakeGraphicFolder}${fileName}` });
   });
-  await page.route('**/graphics/sponsor-roll/*', (route) =>
-    route.fulfill({ status: 404, contentType: 'application/json', body: '{}' }),
-  );
+  await page.route('**/graphics/sponsor-roll/*', (route) => {
+    // Only the path and the renderer's own `retry` number are kept. The Vite dev server
+    // these tests run on adds a marker of its own (`?import`) to every dynamic import;
+    // the built page OBS loads does not, so the marker is left out of what a test reads.
+    const requestAddress = new URL(route.request().url());
+    const retryNumber = requestAddress.searchParams.get('retry');
+    const retryPartOfTheAddress = retryNumber === null ? '' : `?retry=${retryNumber}`;
+    sponsorRollRequests.push(`${requestAddress.pathname}${retryPartOfTheAddress}`);
+    if (isSponsorRollPackageBuilt) {
+      return route.fulfill({ path: `${fakeGraphicFolder}fake-graphic.js` });
+    }
+    return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+  });
 
   /** The connection opened most recently; a test that uses it expects the page connected. */
   function latestConnection(): WebSocketRoute {
@@ -119,6 +162,12 @@ export async function startFakeServerForPage(
     },
     dropConnection: () => latestConnection().close(),
     countConnections: () => connections.length,
+    readConnectionAddresses: () => connections.map((connection) => connection.url()),
+    readMessagesFromThePage: () => [...messagesFromThePage],
+    buildSponsorRollPackage: () => {
+      isSponsorRollPackageBuilt = true;
+    },
+    readSponsorRollRequests: () => [...sponsorRollRequests],
   };
 }
 
@@ -131,5 +180,17 @@ export async function openRendererAndWaitForItsLayers(page: Page): Promise<void>
   await expect(
     page.locator('[data-layer-id="clock"]'),
     'the renderer must build the layer containers from the hello',
+  ).toBeAttached();
+}
+
+/**
+ * Opens the renderer page the way the control page frames it, as a program monitor
+ * (`?monitor=1`), and waits for its layer containers like the function above.
+ */
+export async function openProgramMonitorAndWaitForItsLayers(page: Page): Promise<void> {
+  await page.goto('/render/?monitor=1');
+  await expect(
+    page.locator('[data-layer-id="clock"]'),
+    'the monitor must build the layer containers from the hello',
   ).toBeAttached();
 }

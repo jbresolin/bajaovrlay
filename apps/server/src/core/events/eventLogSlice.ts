@@ -2,7 +2,7 @@ import type { EventLogEntry } from '@bajaovrlay/shared';
 
 /**
  * How many of the newest event-log entries the `eventLog` slice keeps. The slice is
- * broadcast to every client after every command, so keeping the whole race day in it
+ * broadcast to every client after every logged command, so keeping the whole race day in it
  * would make every message grow all day; the database keeps every entry regardless.
  */
 export const eventLogSliceSize = 200;

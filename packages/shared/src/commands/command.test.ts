@@ -3,8 +3,10 @@
  *
  * What this module is for:
  *   A command is the only way state changes. CommandSchema lists every command the
- *   server accepts, told apart by their `type` field. For M0 there are three:
- *   `takeGraphic` (put a graphic on a layer), `clearLayer` and `clearAll`.
+ *   server accepts, told apart by their `type` field. M0 had three, covered here:
+ *   `takeGraphic` (put a graphic on a layer), `clearLayer` and `clearAll`. The two
+ *   added since, `updateInstanceData` and `reportInstanceStatus`, each have a test
+ *   file of their own next to their schema.
  *
  * What these tests prove:
  *   - A takeGraphic without a target goes to the program output (the on-air one).

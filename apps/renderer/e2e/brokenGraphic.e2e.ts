@@ -26,8 +26,9 @@
  * What these tests deliberately do not cover:
  *   - A graphic whose promise never settles; the renderer only awaits the promises
  *     (concept §6), so such a graphic blocks its own layer until the page is reloaded.
- *   - Taking the same broken graphic again: a failed import is remembered until the page
- *     is reloaded (graphicLoader.test.ts).
+ *   - Taking the same broken graphic again after its package was rebuilt;
+ *     retryAfterFailedImport.e2e.ts.
+ *   - What the renderer tells the server about a graphic that failed; instanceStatus.e2e.ts.
  *   - Healthy graphics; lifecycle.e2e.ts covers the calls and their order.
  */
 import { expect, test } from '@playwright/test';

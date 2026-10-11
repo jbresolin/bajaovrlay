@@ -1,6 +1,7 @@
 // Test support: a stand-in for the server's side of the renderer's WebSocket. A test
 // drives it by hand (open, send a message, drop) with time faked, so every wait in
 // serverConnection.ts is checked to the millisecond without a real server or a real wait.
+// It also keeps what the renderer sent, so a test can read back what the server would hear.
 // It also builds what that stand-in server says: the slices of a hello, and an answer to
 // GET /api/v1/state that the test gives by hand.
 import type { Instance, Slices } from '@bajaovrlay/shared';
@@ -8,12 +9,14 @@ import { onTestFinished, vi } from 'vitest';
 
 import { connectToServer, type ServerSocket, type SlicesDelivery } from './serverConnection.js';
 
-export const serverWebSocketAddress = 'ws://192.168.0.10:3000/ws';
+export const serverWebSocketAddress = 'ws://192.168.0.10:3000/ws?role=renderer';
 export const serverStateAddress = 'http://192.168.0.10:3000/api/v1/state';
 
 /** A stand-in socket the test drives by hand, as if it were the server's side talking. */
 export type FakeServerSocket = ServerSocket & {
   address: string;
+  /** Every text the renderer sent on this socket, oldest first. */
+  textsSentByTheRenderer: string[];
   wasClosedByTheRenderer: () => boolean;
   simulateOpen: () => void;
   simulateMessage: (message: unknown) => void;
@@ -26,9 +29,12 @@ function createFakeServerSocket(address: string): FakeServerSocket {
   const openListeners: Array<() => void> = [];
   const messageListeners: Array<(data: unknown) => void> = [];
   const closeListeners: Array<() => void> = [];
+  const textsSentByTheRenderer: string[] = [];
   let wasClosed = false;
   return {
     address,
+    textsSentByTheRenderer,
+    send: (text) => textsSentByTheRenderer.push(text),
     onOpen: (listener) => openListeners.push(listener),
     onMessage: (listener) => messageListeners.push(listener),
     onClose: (listener) => closeListeners.push(listener),
@@ -93,7 +99,9 @@ export function createStateReadAnsweredByHand() {
 
 /**
  * Starts a connection on stand-in sockets with time faked, and returns everything a test
- * looks at: the sockets opened so far, the deliveries, the log lines and the state reads.
+ * looks at: the sockets opened so far, the deliveries, the log lines (once as level and
+ * message only, once with their details) and the state reads. `sendInstanceStatus` is the
+ * connection's own, for the tests about what the renderer tells the server.
  */
 export function startConnectionForTests(
   readStateOverHttp: (address: string) => Promise<unknown> = async () => {
@@ -108,6 +116,7 @@ export function startConnectionForTests(
   const openedSockets: FakeServerSocket[] = [];
   const deliveries: SlicesDelivery[] = [];
   const logLines: Array<{ level: string; message: string }> = [];
+  const logLinesWithDetails: Array<{ level: string; message: string; details: unknown }> = [];
   const stateAddressesRead: string[] = [];
 
   const connection = connectToServer({
@@ -122,8 +131,9 @@ export function startConnectionForTests(
       stateAddressesRead.push(address);
       return readStateOverHttp(address);
     },
-    logEvent: (level, message) => {
+    logEvent: (level, message, details = {}) => {
       logLines.push({ level, message });
+      logLinesWithDetails.push({ level, message, details });
     },
   });
   connection.onSlices((delivery) => deliveries.push(delivery));
@@ -142,5 +152,14 @@ export function startConnectionForTests(
     return logLines.filter((line) => line.level === 'warn');
   }
 
-  return { openedSockets, deliveries, logLines, stateAddressesRead, latestSocket, readWarnings };
+  return {
+    openedSockets,
+    deliveries,
+    logLines,
+    logLinesWithDetails,
+    stateAddressesRead,
+    latestSocket,
+    readWarnings,
+    sendInstanceStatus: connection.sendInstanceStatus,
+  };
 }
