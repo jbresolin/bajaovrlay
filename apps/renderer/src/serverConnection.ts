@@ -155,9 +155,10 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       return { wasHello: false };
     }
     // A commandResult. The renderer never waits for one, but the server may answer an
-    // instanceStatus with it. An ok needs nothing. A refusal (the instance is already
-    // gone, or this connection is not counted as a renderer) changes nothing here either,
-    // yet it is written down: the OBS console is the only place it could be read.
+    // instanceStatus with it. An ok needs nothing (a late report about an
+    // instance already cleared is answered ok too). A refusal (this connection is not
+    // counted as a renderer) changes nothing here either, yet it is written down: the OBS
+    // console is the only place it could be read.
     if (!message.ok) {
       // `serverMessage`, because `message` is already the key of the log line's own text.
       logEvent('warn', 'server refused a message from the renderer', {

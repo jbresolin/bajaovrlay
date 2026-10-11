@@ -141,13 +141,16 @@ describe('a commandResult in which the server refuses something', () => {
     connection.latestSocket().simulateOpen();
     connection.sendInstanceStatus(enduroClockIsOnAir);
 
-    // Act: the server answers that the instance no longer exists (it was cleared while
-    // its in-animation was still running).
+    // Act: the server answers that this connection may not report (it does not count the
+    // page as a renderer).
     connection.latestSocket().simulateMessage({
       type: 'commandResult',
       requestId: null,
       ok: false,
-      error: { code: 'INSTANCE_NOT_FOUND', message: 'A instância não existe mais.' },
+      error: {
+        code: 'NOT_ALLOWED',
+        message: 'Você não tem permissão para executar este comando.',
+      },
     });
 
     // Assert: one warning carrying what the server said, so it can be read in OBS.
@@ -158,7 +161,10 @@ describe('a commandResult in which the server refuses something', () => {
       {
         level: 'warn',
         message: 'server refused a message from the renderer',
-        details: { code: 'INSTANCE_NOT_FOUND', serverMessage: 'A instância não existe mais.' },
+        details: {
+          code: 'NOT_ALLOWED',
+          serverMessage: 'Você não tem permissão para executar este comando.',
+        },
       },
     ]);
   });
