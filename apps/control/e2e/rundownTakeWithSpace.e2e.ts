@@ -19,6 +19,8 @@
  *     that button, and puts nothing on air.
  *   - Reloading the page changes nothing: the rundown, the cursor and the label on the
  *     layer are all still there, because they live on the server and not in the page.
+ *   - "Excluir" takes two presses: the first only asks ("Confirmar: excluir"), the second
+ *     takes the row out of the rundown.
  *
  * What these tests deliberately do not cover:
  *   - Every field of the item editor, reordering by drag, the Right arrow, the click on
@@ -30,16 +32,17 @@
  *     stays "Carregando". takeAndClear.e2e.ts covers that report.
  *   - Auto-out and a server restart; the server's tests cover both.
  *
- * Sharing the server with the other test files:
- *   Every file in this folder runs against the same server, one after the other. This
- *   test therefore empties the rundown and clears the clock layer before it starts (so
- *   leftovers of an earlier run cannot confuse it) and again after it ends, passed or
- *   failed, so the next file finds the server as a new database would be.
+ * Sharing the server with the other tests:
+ *   Every test in this folder runs against the same server. Before each test the server
+ *   is emptied (nothing on air, no item in the rundown), so this test passes whatever
+ *   ran before it, in any order, and leaves its own items and clock behind without harm.
  *
  * What it needs: the race clock and the renderer built (`pnpm build`), because the server
  * only registers built graphics.
  */
 import { expect, type Locator, type Page, test } from '@playwright/test';
+
+import { emptyTheServerState } from './emptyTheServerState';
 
 // How long the test lets pass between saving the running clock and taking it. Long
 // enough that "counted from the save" (6 s or more on the clock) and "counted from the
@@ -47,48 +50,27 @@ import { expect, type Locator, type Page, test } from '@playwright/test';
 const timeBetweenTheSaveAndTheTakeInMilliseconds = 6_000;
 
 /**
- * Deletes every item of the rundown. "Excluir" asks for a second press within 3 seconds
- * ("Confirmar: excluir"), so each row is pressed twice; after each pair the function
- * waits until the server has taken the row away.
+ * Opens the control page and waits until it is connected and shows the seeded rundown,
+ * empty, with nothing on the clock layer: the server as it is before every test.
  */
-async function deleteEveryItemOfTheRundown(rundownArea: Locator): Promise<void> {
-  const rundownRows = rundownArea.getByRole('listitem');
-  let numberOfRowsLeft = await rundownRows.count();
-  while (numberOfRowsLeft > 0) {
-    const firstRow = rundownRows.first();
-    await firstRow.getByRole('button', { name: 'Excluir', exact: true }).click();
-    await firstRow.getByRole('button', { name: 'Confirmar: excluir' }).click();
-    numberOfRowsLeft = numberOfRowsLeft - 1;
-    await expect(
-      rundownRows,
-      'the second press of "Excluir" must take exactly one row out of the rundown',
-    ).toHaveCount(numberOfRowsLeft);
-  }
-}
-
-/**
- * Opens the control page anew, waits until it is connected, deletes every item of the
- * rundown and clears the clock layer: the server as a new database would have it.
- */
-async function openThePageAndEmptyTheRundownAndTheClockLayer(page: Page): Promise<void> {
+async function openThePageOnAnEmptyRundown(page: Page): Promise<void> {
   await page.goto('/');
   await expect(
     page.getByRole('status', { name: 'Conexão com o servidor' }),
-    'the page must connect to the server before anything can be prepared or tidied up',
+    'the page must connect to the server before anything can be prepared',
   ).toHaveText('Conectado');
   const rundownArea = page.getByRole('region', { name: 'Rundown' });
-  const clockLayerRow = page
-    .getByRole('region', { name: 'Camadas' })
-    .getByRole('listitem', { name: 'Relógio' });
   await expect(
     rundownArea.getByRole('heading', { name: 'Sessão principal' }),
     'the server must have seeded the rundown "Sessão principal"',
   ).toBeVisible();
-  await deleteEveryItemOfTheRundown(rundownArea);
-  await clockLayerRow.getByRole('button', { name: 'Limpar' }).click();
   await expect(
-    clockLayerRow,
-    'the clock layer must be empty once the tidying up is done',
+    rundownArea.getByRole('listitem'),
+    'the rundown must start with no items, because the server was emptied before the test',
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('region', { name: 'Camadas' }).getByRole('listitem', { name: 'Relógio' }),
+    'the clock layer must start empty, because the server was emptied before the test',
   ).toContainText('vazia');
 }
 
@@ -138,20 +120,17 @@ function findRaceClockInProgramMonitor(page: Page): Locator {
     .locator('[data-layer-id="clock"] > baja-graphic-race-clock');
 }
 
-test.describe('preparing a rundown and firing it with Space', () => {
-  // Runs after the test whether it passed or failed, so the next test file finds an
-  // empty rundown and an empty clock layer even when this one stopped halfway.
-  test.afterEach(async ({ page }) => {
-    await openThePageAndEmptyTheRundownAndTheClockLayer(page);
-  });
+test.beforeEach(async () => {
+  await emptyTheServerState();
+});
 
-  test('creates two clock items, takes the first with Space from a focused button, starts its clock at the take, moves the cursor back with the Left arrow, and keeps it all across a reload', async ({
+test.describe('preparing a rundown and firing it with Space', () => {
+  test('creates two clock items, takes the first with Space from a focused button, starts its clock at the take, moves the cursor back with the Left arrow, keeps it all across a reload, and deletes an item with two presses', async ({
     page,
   }) => {
-    // Arrange: open the control page, wait until it is connected, start from an empty
-    // rundown and an empty clock layer, and prepare two items: the start of the
-    // endurance race, with its clock running, and its finish.
-    await openThePageAndEmptyTheRundownAndTheClockLayer(page);
+    // Arrange: open the control page on the emptied server and prepare two items: the
+    // start of the endurance race, with its clock running, and its finish.
+    await openThePageOnAnEmptyRundown(page);
     const rundownArea = page.getByRole('region', { name: 'Rundown' });
     const clockLayerRow = page
       .getByRole('region', { name: 'Camadas' })
@@ -270,5 +249,27 @@ test.describe('preparing a rundown and firing it with Space', () => {
       clockLayerRow,
       'after a reload the layer panel must still name the item that is on air',
     ).toContainText('Largada do enduro');
+
+    // Act: press "Excluir" once on the finish item.
+    await finishRow.getByRole('button', { name: 'Excluir', exact: true }).click();
+
+    // Assert: one press only asks; both items are still in the rundown.
+    await expect(
+      finishRow.getByRole('button', { name: 'Confirmar: excluir' }),
+      'the first press of "Excluir" must only ask for a second one',
+    ).toBeVisible();
+    await expect(
+      rundownArea.getByRole('listitem'),
+      'one press of "Excluir" must not take anything out of the rundown',
+    ).toHaveCount(2);
+
+    // Act: press it again, within its 3 seconds.
+    await finishRow.getByRole('button', { name: 'Confirmar: excluir' }).click();
+
+    // Assert: the finish item is gone and the start item is all that is left.
+    await expect(
+      rundownArea.getByRole('listitem'),
+      'the second press of "Excluir" must take exactly that row out of the rundown',
+    ).toHaveText([/Largada do enduro/]);
   });
 });

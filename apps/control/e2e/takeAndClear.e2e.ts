@@ -42,10 +42,16 @@
  *   - Field validation, clear all and the keyboard; the component tests cover those.
  *
  * What it needs: the race clock and the renderer built (`pnpm build`), because the server
- * only registers built graphics and both renderer pages are the built renderer. The
- * tests share one server, so each one ends with the clock layer empty and OBS closed.
+ * only registers built graphics and both renderer pages are the built renderer.
+ *
+ * Sharing the server with the other tests:
+ *   Every test in this folder runs against the same server. Before each test the server
+ *   is emptied (nothing on air, no item in the rundown), so a test here passes whatever
+ *   ran before it, in any order, and one that stops halfway cannot fail the next.
  */
 import { type BrowserContext, expect, type Locator, type Page, test } from '@playwright/test';
+
+import { emptyTheServerState } from './emptyTheServerState';
 
 /** Opens the control page and waits until it says it is connected to the server. */
 async function openControlPageAndWaitUntilConnected(page: Page): Promise<void> {
@@ -89,6 +95,10 @@ function findRaceClockInProgramMonitor(page: Page): Locator {
     .frameLocator('iframe[title="Programa"]')
     .locator('[data-layer-id="clock"] > baja-graphic-race-clock');
 }
+
+test.beforeEach(async () => {
+  await emptyTheServerState();
+});
 
 test.describe('taking, updating and clearing the race clock with OBS connected', () => {
   test('says "No ar" after the take, updates the clock in place, keeps it across a reload, and empties the layer on clear', async ({
@@ -202,7 +212,7 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
       'vazia',
     );
 
-    // Tidy up: close OBS's stand-in, so the next test starts with no program output.
+    // Tidy up: close OBS's stand-in.
     await programOutputPage.close();
   });
 });
@@ -256,11 +266,8 @@ test.describe('taking the race clock with no OBS connected', () => {
       'the layer must say "No ar" once the program output has drawn and reported the clock',
     ).toContainText('No ar', { timeout: 5_000 });
 
-    // Tidy up: clear the clock layer and close OBS's stand-in, for whichever test is next.
-    await clockLayerRow.getByRole('button', { name: 'Limpar' }).click();
-    await expect(clockLayerRow, 'after "Limpar" the clock layer must say "vazia"').toContainText(
-      'vazia',
-    );
+    // Tidy up: close OBS's stand-in. The clock is left on air on purpose: the next test,
+    // whichever it is, empties the server before it starts.
     await programOutputPage.close();
   });
 });
