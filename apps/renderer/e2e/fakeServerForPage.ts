@@ -1,6 +1,7 @@
 // Test support: a stand-in for the server, living inside one Playwright page. It answers
 // the page's WebSocket at /ws?role=renderer like the real server (a hello with every slice,
-// then slice messages), keeps every message the page sends, and serves the fake graphic's
+// then slice messages; a program monitor is answered at plain /ws), keeps every message
+// the page sends, and serves the fake graphic's
 // files at /graphics/fake-graphic/. Nothing leaves the browser, so a test decides exactly
 // what the renderer hears and when, and reads back exactly what it said.
 import { readFileSync } from 'node:fs';
@@ -87,10 +88,11 @@ export type FakeServerForPage = {
 /**
  * Installs the stand-in server on a page. Call it before `page.goto`, so the page's very
  * first connection is already answered. `instancesOnAir` is what the first hello holds.
+ * `pageIsAProgramMonitor` is for the page opened with `?monitor=1` (see the comment below).
  */
 export async function startFakeServerForPage(
   page: Page,
-  options: { instancesOnAir: Instance[] },
+  options: { instancesOnAir: Instance[]; pageIsAProgramMonitor?: boolean },
 ): Promise<FakeServerForPage> {
   const slices: Slices = {
     layers: layersOfTheFakeServer,
@@ -106,7 +108,14 @@ export async function startFakeServerForPage(
   // Only a socket that says it is the renderer is answered, as the real server tells a
   // renderer from an operator by this address. A page that dialled plain /ws would get no
   // hello here and every test would fail. Vite's own dev socket has another address.
-  await page.routeWebSocket(/\/ws\?role=renderer$/, (connection) => {
+  //
+  // For a test of the program monitor it is the other way round: the monitor must dial
+  // plain /ws. There both addresses are answered, so that a monitor wrongly dialling as a
+  // renderer is caught here, with its address and its messages written down for the test
+  // to read, instead of slipping past to the real server behind the dev server.
+  const addressesThisServerAnswers =
+    options.pageIsAProgramMonitor === true ? /\/ws(\?role=renderer)?$/ : /\/ws\?role=renderer$/;
+  await page.routeWebSocket(addressesThisServerAnswers, (connection) => {
     connections.push(connection);
     connection.onMessage((messageText) => {
       messagesFromThePage.push(JSON.parse(String(messageText)));
@@ -168,5 +177,17 @@ export async function openRendererAndWaitForItsLayers(page: Page): Promise<void>
   await expect(
     page.locator('[data-layer-id="clock"]'),
     'the renderer must build the layer containers from the hello',
+  ).toBeAttached();
+}
+
+/**
+ * Opens the renderer page the way the control page frames it, as a program monitor
+ * (`?monitor=1`), and waits for its layer containers like the function above.
+ */
+export async function openProgramMonitorAndWaitForItsLayers(page: Page): Promise<void> {
+  await page.goto('/render/?monitor=1');
+  await expect(
+    page.locator('[data-layer-id="clock"]'),
+    'the monitor must build the layer containers from the hello',
   ).toBeAttached();
 }

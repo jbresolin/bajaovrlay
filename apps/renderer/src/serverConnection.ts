@@ -1,7 +1,7 @@
 /**
- * The renderer's connection to the server: a WebSocket to `/ws?role=renderer` that is
- * kept open for as long as the page lives. Every message is checked against the shared
- * protocol before it is believed.
+ * The renderer's connection to the server: a WebSocket to `/ws?role=renderer` (plain
+ * `/ws` for a program monitor, see rendererPageRole.ts) that is kept open for as long as
+ * the page lives. Every message is checked against the shared protocol before it is believed.
  *
  * What the renderer gets out of it is a stream of deliveries: all the slices, either as a
  * full snapshot (after a `hello`, which is the whole truth and makes the renderer rebuild

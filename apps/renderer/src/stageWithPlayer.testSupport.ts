@@ -146,6 +146,35 @@ function createStageWithPlayerOnLoader(
 }
 
 /**
+ * Builds the stage of a program monitor: the same layers, graphics and captured log, but
+ * the player is given no way to report to the server, as renderer.ts builds it for a page
+ * opened with `?monitor=1`. The final scoreboard cannot be created here either, so a test
+ * can watch the renderer's own failure on a page that reports nothing.
+ */
+export function createStageWithPlayerThatHasNoStatusReporter() {
+  const recording = createRecordingGraphicLoader(nameByInstanceId);
+  const stage = document.createElement('div');
+  const layerContainers = createLayerContainers(stage);
+  layerContainers.showLayers(layersOfTheStream);
+  const logLines: CapturedLogLine[] = [];
+  const instancePlayer = createInstancePlayer({
+    layerContainers,
+    graphicLoader: {
+      defineGraphicElement: async (graphic) => {
+        if (graphic.id === finalScoreboardGraphicId) {
+          return tagNoPageAccepts;
+        }
+        return recording.graphicLoader.defineGraphicElement(graphic);
+      },
+    },
+    logEvent: (level, message, details = {}) => {
+      logLines.push({ level, message, details });
+    },
+  });
+  return { stage, instancePlayer, recording, logLines };
+}
+
+/**
  * Builds the final scoreboard of the competition with its top two teams. The stage of
  * these tests has no full-screen layer, so it is taken on the lower-third layer.
  */

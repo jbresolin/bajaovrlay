@@ -17,7 +17,7 @@
  *     and in the database.
  *   - A command refused by its reducer or by the authorisation hook is written to the
  *     event log as failed, and leaves the slices alone.
- *   - An accepted command that changes nothing (a second renderer reporting the same
+ *   - An accepted command that changes nothing (a second OBS machine reporting the same
  *     clock on air, or any other, such as a clear of an empty stage) is answered ok and
  *     leaves no trace: no event-log row in memory or on disk, and no subscriber told.
  *   - Subscribers hear about exactly the slices that changed.
@@ -236,8 +236,8 @@ describe('applyCommand with a valid command', () => {
 
 describe('applyCommand with an accepted command that changes nothing', () => {
   it('answers ok, writes no event-log row and tells no subscriber', () => {
-    // Arrange: the race clock taken and already reported on air by OBS, and a subscriber
-    // that starts writing down what it hears only now.
+    // Arrange: the race clock taken and already reported on air by the main OBS machine,
+    // and a subscriber that starts writing down what it hears only now.
     const { store, database } = createStoreWithRaceClockRegistered();
     const reportRaceClockOnAir = {
       type: 'reportInstanceStatus',
@@ -252,8 +252,8 @@ describe('applyCommand with an accepted command that changes nothing', () => {
       changedSliceNamesHeard.push(changedSliceNames);
     });
 
-    // Act: the control page's monitor, which shows the same clock, reports it on air too.
-    const outcome = store.applyCommand(reportRaceClockOnAir, 'renderer:conexao-monitor');
+    // Act: the backup OBS machine, which shows the same clock, reports it on air too.
+    const outcome = store.applyCommand(reportRaceClockOnAir, 'renderer:conexao-obs-reserva');
 
     // Assert: the sender is told ok and nothing else happened: the event log still holds
     // only the take and the first report, memory is untouched and no subscriber heard.

@@ -13,6 +13,7 @@
  *     of any other.
  *   - Every instance the player tries to put on air is reported to the server exactly as
  *     it ended: `on-air` once its playAction resolved, `failed` with the reason otherwise.
+ *     The one exception is a program monitor, whose player has no reporter and tells nothing.
  *
  * What could go wrong: the renderer only awaits the graphic's promises (concept §6). A
  * graphic whose promise never settles blocks its own layer until the page is reloaded;
@@ -39,19 +40,28 @@ export type InstancePlayer = {
 
 /**
  * What the player works with. `reportInstanceStatus` is how it tells the server what
- * happened to an instance (renderer.ts hands it the connection's sendInstanceStatus);
- * `logEvent` is replaceable so a test can capture the log.
+ * happened to an instance (renderer.ts hands it the connection's sendInstanceStatus).
+ * A program monitor leaves it out: that page is not the program output, so it must tell
+ * the server nothing (instancePlayer.noReporter.test.ts). `logEvent` is replaceable so a
+ * test can capture the log.
  */
 export type InstancePlayerOptions = {
   layerContainers: LayerContainers;
   graphicLoader: GraphicLoader;
-  reportInstanceStatus: (statusReport: InstanceStatusMessage) => void;
+  reportInstanceStatus?: (statusReport: InstanceStatusMessage) => void;
   logEvent?: typeof logRendererEvent;
 };
 
+/** Stands in for the reporter on a page that was given none (a program monitor). */
+function reportNothingToTheServer(): void {
+  // Empty on purpose. Everything the player does around a report (the log line, the
+  // empty layer, the queue going on) must happen on a monitor too; only the telling stops.
+}
+
 /** Builds the player for one stage. Nothing is on any layer until operations arrive. */
 export function createInstancePlayer(options: InstancePlayerOptions): InstancePlayer {
-  const { layerContainers, graphicLoader, reportInstanceStatus } = options;
+  const { layerContainers, graphicLoader } = options;
+  const reportInstanceStatus = options.reportInstanceStatus ?? reportNothingToTheServer;
   const logEvent = options.logEvent ?? logRendererEvent;
   const loadingTools = { layerContainers, graphicLoader, logEvent };
 
