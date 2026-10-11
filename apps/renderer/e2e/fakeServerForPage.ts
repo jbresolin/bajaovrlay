@@ -80,6 +80,9 @@ export async function startFakeServerForPage(
     layers: layersOfTheFakeServer,
     graphics: [readFakeGraphicFromItsManifest(), sponsorRollWithoutFiles],
     instances: options.instancesOnAir,
+    // The renderer never reads these two; they are here because every hello carries them.
+    rundowns: [],
+    items: [],
     eventLog: [],
   };
   const connections: WebSocketRoute[] = [];

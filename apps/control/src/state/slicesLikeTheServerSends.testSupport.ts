@@ -66,6 +66,10 @@ export function buildSlicesWithNothingOnAir(): Slices {
     graphics: [buildRaceClockGraphic()],
     instances: [],
     eventLog: [],
+    // PLACEHOLDER (BAJAOVRLAY-13): no rundown and no item yet; the control-page work of
+    // this task replaces these with the seeded "Sessão principal" and its test items.
+    rundowns: [],
+    items: [],
   };
 }
 

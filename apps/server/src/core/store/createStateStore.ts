@@ -170,6 +170,11 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       layers: outcome.nextSlices.layers,
       graphics: outcome.nextSlices.graphics,
       instances: outcome.nextSlices.instances,
+      // PLACEHOLDER (BAJAOVRLAY-13): carried over untouched, because no reducer can change
+      // them yet. The server work of this task takes both from outcome.nextSlices, and
+      // adds them to SlicesChangedByCommands and to sliceNamesChangedByCommands above.
+      rundowns: currentSlices.rundowns,
+      items: currentSlices.items,
       eventLog: appendToEventLogSlice(currentSlices.eventLog, savedLogEntry),
     };
     tellListeners([...changedSliceNames, 'eventLog']);

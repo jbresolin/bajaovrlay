@@ -10,7 +10,7 @@ import type { LastCommandError } from './commandFailure';
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting';
 
 /**
- * Everything the control page knows: the server's four slices, mirrored as received,
+ * Everything the control page knows: every slice of the server, mirrored as received,
  * plus two facts about the page itself (connection status, last failed command). The
  * functions are the only ways to change it, and only serverConnection.ts calls them.
  */
@@ -38,6 +38,8 @@ export function createServerStateStore(): ServerStateStore {
     layers: [],
     graphics: [],
     instances: [],
+    rundowns: [],
+    items: [],
     eventLog: [],
     connectionStatus: 'connecting',
     lastCommandError: null,
@@ -47,6 +49,8 @@ export function createServerStateStore(): ServerStateStore {
         layers: slices.layers,
         graphics: slices.graphics,
         instances: slices.instances,
+        rundowns: slices.rundowns,
+        items: slices.items,
         eventLog: slices.eventLog,
       });
     },
@@ -64,6 +68,12 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'instances':
           set({ instances: message.slice });
+          break;
+        case 'rundowns':
+          set({ rundowns: message.slice });
+          break;
+        case 'items':
+          set({ items: message.slice });
           break;
         case 'eventLog':
           set({ eventLog: message.slice });

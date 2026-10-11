@@ -64,6 +64,9 @@ function buildRaceDayStateWithTheClockOnAir() {
         result: { status: 'ok' },
       },
     ],
+    // No rundown and no prepared item: rundownAndItemSlices.test.ts covers those slices.
+    rundowns: [],
+    items: [],
   };
 }
 

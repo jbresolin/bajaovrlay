@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+import { CreateItemCommandSchema } from '../rundown/createItem.js';
+import { DeleteItemCommandSchema } from '../rundown/deleteItem.js';
+import { MoveCursorCommandSchema } from '../rundown/moveCursor.js';
+import { ReorderItemsCommandSchema } from '../rundown/reorderItems.js';
+import { TakeItemCommandSchema } from '../rundown/takeItem.js';
+import { TakeNextCommandSchema } from '../rundown/takeNext.js';
+import { UpdateItemFieldsCommandSchema } from '../rundown/updateItemFields.js';
 import { ClearAllCommandSchema } from './clearAll.js';
 import { ClearLayerCommandSchema } from './clearLayer.js';
 import { TakeGraphicCommandSchema } from './takeGraphic.js';
@@ -12,6 +19,14 @@ export const CommandSchema = z.discriminatedUnion('type', [
   TakeGraphicCommandSchema,
   ClearLayerCommandSchema,
   ClearAllCommandSchema,
+  // The item and rundown commands (BAJAOVRLAY-13); their schemas live in ../rundown/.
+  CreateItemCommandSchema,
+  UpdateItemFieldsCommandSchema,
+  DeleteItemCommandSchema,
+  ReorderItemsCommandSchema,
+  MoveCursorCommandSchema,
+  TakeItemCommandSchema,
+  TakeNextCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

@@ -57,6 +57,15 @@ not answer the previous ping.
       }
     ],
     "instances": [],
+    "rundowns": [
+      {
+        "id": "sessao-principal",
+        "name": "Sessão principal",
+        "sessionLabel": "",
+        "cursorItemId": null
+      }
+    ],
+    "items": [],
     "eventLog": []
   }
 }

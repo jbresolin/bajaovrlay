@@ -59,7 +59,17 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const eventLog = readNewestEventLogRows(options.database, eventLogSliceSize).map(
     convertEventLogRowToEntry,
   );
-  return { layers: operatorSlices.layers, graphics, instances: operatorSlices.instances, eventLog };
+  return {
+    layers: operatorSlices.layers,
+    graphics,
+    instances: operatorSlices.instances,
+    eventLog,
+    // PLACEHOLDER (BAJAOVRLAY-13): always empty and never read from the database. The
+    // server work of this task loads both from their stored rows and seeds the rundown
+    // "Sessão principal" on the first boot.
+    rundowns: [],
+    items: [],
+  };
 }
 
 /** The first-boot layers and instances: the fixed layers, nothing on air. */

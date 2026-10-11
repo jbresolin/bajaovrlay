@@ -9,3 +9,6 @@ messages themselves live in the server's catalog (apps/server/src/core/messages/
 
 The rules each command follows live in the server's reducers
 (apps/server/src/core/store/reducers/), one file per command.
+
+The item and rundown commands (`createItem`, `takeItem`, `takeNext` and the rest) are in
+the same union, but their schemas live beside the item and rundown slices in `../rundown/`.

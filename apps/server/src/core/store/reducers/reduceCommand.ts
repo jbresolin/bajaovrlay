@@ -1,5 +1,6 @@
 import type { Command } from '@bajaovrlay/shared';
 
+import { describeUnexpectedServerError } from '../commandRefusals.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
@@ -21,5 +22,17 @@ export function reduceCommand(
       return reduceClearLayer(slices, command);
     case 'clearAll':
       return reduceClearAll(slices);
+    // PLACEHOLDER (BAJAOVRLAY-13): the shared contract already accepts these seven
+    // commands, but their reducers are not written yet, so each one is refused as a
+    // server error and changes nothing. The server work of this task replaces this
+    // block with one case per command, each calling its own reducer file.
+    case 'createItem':
+    case 'updateItemFields':
+    case 'deleteItem':
+    case 'reorderItems':
+    case 'moveCursor':
+    case 'takeItem':
+    case 'takeNext':
+      return { status: 'refused', error: describeUnexpectedServerError() };
   }
 }

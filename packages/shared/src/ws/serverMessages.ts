@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import { CommandErrorSchema } from '../commands/commandError.js';
+import { ItemSchema } from '../rundown/item.js';
+import { RundownSchema } from '../rundown/rundown.js';
 import { EventLogEntrySchema } from '../slices/eventLogEntry.js';
 import { GraphicSchema } from '../slices/graphic.js';
 import { InstanceSchema } from '../slices/instance.js';
@@ -29,6 +31,12 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     name: z.literal('instances'),
     slice: z.array(InstanceSchema),
   }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('rundowns'),
+    slice: z.array(RundownSchema),
+  }),
+  z.object({ type: z.literal('slice'), name: z.literal('items'), slice: z.array(ItemSchema) }),
   z.object({
     type: z.literal('slice'),
     name: z.literal('eventLog'),

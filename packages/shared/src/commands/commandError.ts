@@ -17,6 +17,18 @@ export const CommandErrorCodeSchema = z.enum([
   'INVALID_MESSAGE',
   /** Something broke on the server (for example, saving to the database). */
   'UNEXPECTED_SERVER_ERROR',
+  /** The command names an item that does not exist (never created, or deleted). */
+  'ITEM_NOT_FOUND',
+  /** The command names a rundown that does not exist. */
+  'RUNDOWN_NOT_FOUND',
+  /** moveCursor named an item that exists but belongs to another rundown. */
+  'ITEM_NOT_IN_RUNDOWN',
+  /** reorderItems sent a list that is not exactly the rundown's items, once each. */
+  'ITEMS_NOT_A_PERMUTATION',
+  /** takeNext was sent while the rundown's cursor is on nothing. */
+  'RUNDOWN_CURSOR_EMPTY',
+  /** An item has a field value of a kind the server cannot resolve before M2. */
+  'UNSUPPORTED_FIELD_KIND',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */
