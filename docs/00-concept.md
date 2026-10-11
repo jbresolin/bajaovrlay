@@ -69,11 +69,21 @@ graphics: installed OGraf manifests plus our metadata: id, manifest, defaultLaye
 
 rundowns and items: Rundown has id, name, sessionLabel, cursorItemId. Item has id, rundownId or quickFirePanelId, order, graphicId, layerId, fields (a map from field key to FieldValue), autoOutAfterMs (optional), label, color, notes.
 
+As built in M1: rundowns and items are two slices, persisted like the others. cursorItemId is the id of the "next" item or null. One rundown, "Sessão principal" (id sessao-principal), is seeded on the first boot and on a database that has none. Every item has a rundownId; quickFirePanelId arrives with the quick-fire panels. order is counted from 0 and the server keeps each rundown's orders as 0, 1, 2 and so on with no gaps. color is one of six semantic names (neutral, info, success, warning, danger, highlight). autoOutAfterMs is a whole number of milliseconds above zero; no auto-out is said by leaving it out.
+
 FieldValue is one of:
 
 - literal: kind 'literal', value
 - binding: kind 'binding', sourceId, path, live (boolean), transformId (optional)
 - entity reference: kind 'entity', entityType, entityId, attribute (sugar for a binding into the entity library)
+
+In M1 the FieldValue schema is a discriminated union on kind with the single member literal (its value may be anything, null included, but must be present); binding and entity reference join the union in M2, and until then a field of any other kind refuses the take with UNSUPPORTED_FIELD_KIND and a message that names M2.
+
+The item and rundown commands, as settled by BAJAOVRLAY-13: createItem (rundownId, graphicId, layerId, fields, label, and optionally order, color, notes, autoOutAfterMs) puts the item at the end of the rundown, or at the given position with the items from there on moving down by one; the server makes the id. updateItemFields (itemId, and any of fields, label, color, notes, autoOutAfterMs) changes only what it carries: fields are merged key by key, autoOutAfterMs null removes the delay, and the rundown, graphic and layer of an item cannot be changed. deleteItem (itemId) removes the item and renumbers the rest. reorderItems (rundownId, orderedItemIds) takes the full list and is refused with ITEMS_NOT_A_PERMUTATION unless it holds exactly the rundown's items, once each. moveCursor (rundownId, itemId or null) is refused for an item of another rundown. takeItem (itemId) resolves the item's fields into data and runs the same reducer as a take by hand, always on the program output, so the new instance is what takeGraphic would make plus itemId; an instance taken by hand has no itemId, and an instance keeps its itemId even after the item is deleted. takeNext (rundownId) is a takeItem of the item at the cursor and is refused with RUNDOWN_CURSOR_EMPTY when the cursor is on nothing.
+
+The cursor rules: the first item created in an empty rundown gets the cursor and no later create moves it; a take (takeItem or takeNext) puts the cursor on the item after the one taken, wherever it was before, and on nothing after the last item (it never wraps to the top); deleting the item at the cursor moves the cursor to the item that followed it, or to nothing; reordering keeps the cursor on the same item; a refused command never moves it.
+
+When an item taken with takeItem or takeNext has autoOutAfterMs, the server sends a clearLayer for the item's layer after that delay, as the actor sistema:auto-out, unless the instance has left the layer first. The wait lives in memory only: after a server restart nothing is rescheduled and the item stays on air until it is cleared.
 
 Transforms are a registry of named, pure functions (topN(6), formatLapTime, abbreviateUniversity), never free-form expressions. Readable, testable, no surprises on air.
 
