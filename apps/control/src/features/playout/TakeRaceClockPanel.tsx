@@ -1,4 +1,3 @@
-import type { Instance } from '@bajaovrlay/shared';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -17,12 +16,11 @@ import {
   readRaceClockDataOnAir,
 } from './raceClockDataOnAir';
 import { RaceClockFormFields } from './RaceClockFormFields';
+import { findRaceClockInstanceToFollow } from './raceClockInstanceToFollow';
 import { buildRaceClockInstanceUpdate } from './raceClockInstanceUpdate';
 import {
   buildTakeRaceClockCommand,
-  clockLayerId,
   defaultRaceClockTakeFormValues,
-  raceClockGraphicId,
   type RaceClockTakeFormValues,
 } from './raceClockTakeForm';
 import { resolveRaceClockTakeForm } from './raceClockTakeFormResolver';
@@ -37,23 +35,20 @@ export type TakeRaceClockPanelProps = {
   readCurrentTimeInMilliseconds?: () => number;
 };
 
-/** The race clock on the clock layer of the program output, if it is on air. */
-function findRaceClockInstanceOnAir(instances: Instance[]): Instance | undefined {
-  return instances.find(
-    (instance) =>
-      instance.layerId === clockLayerId &&
-      instance.target === 'program' &&
-      instance.graphicId === raceClockGraphicId,
-  );
-}
-
 /**
  * The race clock's form and its two actions. "Colocar no ar" sends `takeGraphic` for
- * the clock layer with the form as it stands, and the server replaces whatever is on that
- * layer. "Atualizar", shown while the race clock is on air, sends `updateInstanceData`
- * for the instance on air with only the fields the operator changed
- * (raceClockInstanceUpdate.ts); the server keeps the instance, so the graphic changes in
- * place without leaving the screen.
+ * the clock layer (the race clock's default layer) with the form as it stands, and the
+ * server replaces whatever is on that layer. "Atualizar", shown while a race clock is on
+ * air, sends `updateInstanceData` for the instance on air with only the fields the
+ * operator changed (raceClockInstanceUpdate.ts); the server keeps the instance, so the
+ * graphic changes in place without leaving the screen.
+ *
+ * The race clock on air is found by its graphic on the program output, on ANY layer
+ * (raceClockInstanceToFollow.ts): a rundown item can put it on a layer other than the
+ * clock layer. If two are on air the panel follows the one taken most recently and says
+ * so in a line. What could go wrong: "Colocar no ar" does not follow the clock on air, so
+ * with a clock on another layer it puts a second one on the clock layer, and the panel
+ * then follows that one.
  *
  * "Changed" is react-hook-form's `dirtyFields`: a field that differs from the value the
  * form was last filled with. So the form is filled from what is on air whenever that
@@ -64,6 +59,7 @@ function findRaceClockInstanceOnAir(instances: Instance[]): Instance | undefined
 export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
   const readCurrentTimeInMilliseconds = props.readCurrentTimeInMilliseconds ?? Date.now;
   const instances = useServerState((state) => state.instances);
+  const layers = useServerState((state) => state.layers);
   const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
   const form = useForm<RaceClockTakeFormValues>({
@@ -75,8 +71,18 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
   // up to date only the parts of `formState` a component reads as it draws.
   const fieldsTheOperatorChanged = form.formState.dirtyFields;
 
-  const raceClockInstanceOnAir = findRaceClockInstanceOnAir(instances);
+  const raceClocksFound = findRaceClockInstanceToFollow(instances);
+  const raceClockInstanceOnAir = raceClocksFound.instanceToFollow;
   const isRaceClockOnAir = raceClockInstanceOnAir !== undefined;
+  // With more than one race clock on air the operator must be told which one the form
+  // shows and "Atualizar" changes. The layer is named as the layer panel names it; a
+  // layer the server no longer lists is named by its id.
+  const areSeveralRaceClocksOnAir = raceClocksFound.numberOfRaceClocksOnProgram > 1;
+  const layerOfTheRaceClockFollowed = layers.find(
+    (layer) => layer.id === raceClockInstanceOnAir?.layerId,
+  );
+  const nameOfTheLayerFollowed =
+    layerOfTheRaceClockFollowed?.name ?? raceClockInstanceOnAir?.layerId ?? '';
   // While a press is being checked and its command waits for the server's answer both
   // buttons are off, so an impatient second click cannot send the clock to air twice.
   // The panel keeps this flag itself instead of reading react-hook-form's `isSubmitting`:
@@ -117,7 +123,9 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
   // already holds the instance this command created or changed. If its data cannot be
   // read the form is left alone, as above.
   function fillFormFromWhatIsOnAirNow(): void {
-    const raceClockInstanceOnAirNow = findRaceClockInstanceOnAir(readServerStateNow().instances);
+    const raceClockInstanceOnAirNow = findRaceClockInstanceToFollow(
+      readServerStateNow().instances,
+    ).instanceToFollow;
     const raceClockDataOnAirNow = readRaceClockDataOnAir(raceClockInstanceOnAirNow?.resolvedData);
     if (raceClockDataOnAirNow === undefined) {
       return;
@@ -204,6 +212,14 @@ export function TakeRaceClockPanel(props: TakeRaceClockPanelProps) {
           cancelled: pressing Enter in a text field must never put a graphic on air. */}
       <form onSubmit={(event) => event.preventDefault()} noValidate className="contents">
         <CardContent>
+          {areSeveralRaceClocksOnAir ? (
+            <p role="status" className="mb-3 text-sm text-muted-foreground">
+              {ptBR.playout.followingMostRecentRaceClock(
+                raceClocksFound.numberOfRaceClocksOnProgram,
+                nameOfTheLayerFollowed,
+              )}
+            </p>
+          ) : null}
           <RaceClockFormFields form={form} />
         </CardContent>
         <CardFooter className="flex flex-wrap items-center gap-3">
