@@ -7,12 +7,24 @@ import { z } from 'zod';
 export const CommandErrorCodeSchema = z.enum([
   /** The command's shape is wrong; the message names the field. */
   'INVALID_COMMAND',
-  /** The authorisation step said no. */
+  /**
+   * The authorisation step said no, under its older name. Kept on purpose (João's
+   * ruling, 2026-10-10) so that event-log rows written before BAJAOVRLAY-12 still parse:
+   * the event log keeps every row ever written, and a row carrying this code must
+   * still pass its schema. The server answers NOT_ALLOWED now and never this code.
+   * What could go wrong if it is removed: a stored row fails EventLogEntrySchema.
+   */
   'UNAUTHORIZED_COMMAND',
+  /** This sender may not send this command (for example, an operator reporting a status). */
+  'NOT_ALLOWED',
   /** The command names a layer that does not exist. */
   'LAYER_NOT_FOUND',
   /** The command names a graphic that is not registered. */
   'GRAPHIC_NOT_FOUND',
+  /** The command names an instance that is not on any layer (never taken, or cleared). */
+  'INSTANCE_NOT_FOUND',
+  /** The data does not fit the graphic's manifest schema; the message names the field. */
+  'INVALID_GRAPHIC_DATA',
   /** A WebSocket message that is not JSON or not in the protocol. */
   'INVALID_MESSAGE',
   /** Something broke on the server (for example, saving to the database). */

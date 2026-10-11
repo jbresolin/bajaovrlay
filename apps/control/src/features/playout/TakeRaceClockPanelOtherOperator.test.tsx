@@ -11,6 +11,8 @@
  *   - A change from someone else keeps the field this operator has edited and not sent,
  *     and puts the on-air value into the fields this operator has not touched.
  *   - The edit then goes out with "Atualizar" without undoing the other person's change.
+ *   - Laps this operator erased, followed by someone else's clock that has no laps, do
+ *     not block a later "Atualizar": the other changes are sent and no laps message shows.
  *   - When someone else takes the clock off air, the form is left exactly as it is.
  *   - While a command waits for the server's answer both buttons stay off, even if news
  *     from someone else arrives in between, so the clock cannot be sent twice.
@@ -37,6 +39,7 @@ import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.te
 import {
   buildRaceClockInstanceHoldingThisData,
   chooseOptionInDropdown,
+  idOfTheRaceClockInstanceOnAir,
   pressButtonAndWaitForCommand,
   typeIntoField,
 } from './operatingTheRaceClockForm.testSupport';
@@ -133,24 +136,57 @@ describe('the race clock panel when someone else changes the clock', () => {
     // Act: the first operator presses "Atualizar".
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
 
-    // Assert: the new session name goes out, and the red flag and the stopped clock of
-    // the other operator are still there.
+    // Assert: only the new session name goes out. The flag, the switch and the time are
+    // not in the command, so the red flag and the stopped clock of the other operator
+    // cannot be undone by it.
     expect(
       fakeServer.listCommandsReceived()[0],
       "the edit must go out without undoing the other operator's change",
     ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 2',
-        state: 'red',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_654_000,
-        referenceWallClockMs: Date.parse(tenOClock),
-        running: false,
-      },
+      type: 'updateInstanceData',
+      instanceId: idOfTheRaceClockInstanceOnAir,
+      data: { sessionName: 'Enduro de Resistência — Bateria 2' },
     });
+    fakeServer.acceptLastCommand();
+  });
+
+  it('sends a flag change after someone else put a clock without laps on air, although this operator had erased the laps', async () => {
+    // Arrange: the first heat on air with 7 laps for the leader. The operator erases the
+    // laps field (not sent). Then a second operator puts the clock on air again with no
+    // laps at all, so the erased field and the air now agree: both are empty.
+    const firstHeatWithSevenLaps = { ...buildFirstHeatDataOnAir(), lapsCompletedByLeader: 7 };
+    const { fakeServer } = renderOnControlPageConnectedToFakeServer(
+      <TakeRaceClockPanel readCurrentTimeInMilliseconds={() => Date.parse(tenOClock)} />,
+      {
+        ...buildSlicesWithNothingOnAir(),
+        instances: [buildRaceClockInstanceHoldingThisData(firstHeatWithSevenLaps, quarterToTen)],
+      },
+    );
+    typeIntoField('Voltas do líder (opcional)', '');
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [buildRaceClockInstanceHoldingThisData(buildFirstHeatDataOnAir(), tenOClock)],
+    });
+
+    // Act: the first operator changes the flag to yellow and presses "Atualizar".
+    chooseOptionInDropdown('Bandeira', 'Amarela');
+    await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
+
+    // Assert: the flag goes out, and the laps field shows no message: there are no laps
+    // on air for "Atualizar" to fail to remove.
+    expect(
+      fakeServer.listCommandsReceived()[0],
+      'the flag change must be sent; an empty laps field must not block it with no laps on air',
+    ).toEqual({
+      type: 'updateInstanceData',
+      instanceId: idOfTheRaceClockInstanceOnAir,
+      data: { state: 'yellow' },
+    });
+    expect(
+      screen.queryByText('"Atualizar" não tira as voltas do ar. Use "Colocar no ar" para isso.'),
+      'the laps message must not appear when no laps are on air',
+    ).toBeNull();
     fakeServer.acceptLastCommand();
   });
 

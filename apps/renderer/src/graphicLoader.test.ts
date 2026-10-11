@@ -13,18 +13,21 @@
  *     is registered under `baja-graphic-<graphic id>`.
  *   - A graphic taken twice at the same moment is imported once: both takes share the
  *     one import.
- *   - A failed import is remembered too: the next take fails the same way without a
- *     second import, until the page is reloaded.
+ *   - After a failed import, the next take imports `…/<main>?retry=1`, the one after
+ *     that `?retry=2`, and each retry is logged; so "rebuild the package, take again"
+ *     works without reloading the page. Once an import works, it is not repeated.
+ *   - Two takes that shared one failed import count as one failure, not two.
  *   - A module with no class as its default export is refused with a clear error.
  *
  * What these tests deliberately do not cover:
  *   - A real `import()` over the network; e2e/lifecycle.e2e.ts loads a real module in
- *     Chromium. Here the import is a stand-in that answers with a module object.
- *   - Why a failed import is not retried: Chromium itself remembers a failed module
- *     address for the life of the page (measured with the pinned Playwright Chromium),
- *     so a second `import()` of the same address fails without asking the server again.
- *   - What happens on screen when loading fails (the layer stays empty); the same
- *     Playwright file checks that.
+ *     Chromium, and e2e/retryAfterFailedImport.e2e.ts proves there that Chromium really
+ *     asks the server again for the `?retry=` address. Here the import is a stand-in.
+ *   - Why the address changes at all: Chromium remembers a failed module address for the
+ *     life of the page (measured with the pinned Playwright Chromium), so a second
+ *     `import()` of the very same address fails without asking the server again.
+ *   - What happens on screen when loading fails (the layer stays empty);
+ *     e2e/brokenGraphic.e2e.ts checks that.
  */
 import type { Graphic } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
@@ -99,40 +102,115 @@ describe('createGraphicLoader', () => {
     expect(secondTagName, 'both takes must get the same tag').toBe(firstTagName);
   });
 
-  it('remembers a failed import, so the next take fails the same way without importing again', async () => {
-    // Arrange: a sponsor roll whose file is missing at first (not built yet). The import
-    // stand-in would succeed the second time, unlike Chromium, which keeps answering
-    // with the first failure for the same address.
+  it('imports …?retry=1, then …?retry=2, on the takes after a failed import, and logs each retry', async () => {
+    // Arrange: a sponsor roll whose file is missing for the first two takes (the package
+    // is not built yet) and is there for the third. The import stand-in notes every
+    // address it is asked for, and the log is kept in a list.
     const sponsorRoll = createGraphic('sponsor-roll', 'Patrocinadores', 'sponsor-roll.js');
     const sponsorRollModule = createGraphicModule();
-    let importCount = 0;
+    const importedAddresses: string[] = [];
+    const logLines: Array<{ level: string; message: string; details: unknown }> = [];
     const graphicLoader = createGraphicLoader({
-      importModule: async () => {
-        importCount += 1;
-        if (importCount === 1) {
+      importModule: async (address) => {
+        importedAddresses.push(address);
+        if (importedAddresses.length <= 2) {
           throw new TypeError('Failed to fetch dynamically imported module');
         }
         return sponsorRollModule;
       },
+      logEvent: (level, message, details) => {
+        logLines.push({ level, message, details });
+      },
     });
 
-    // Act: the first take fails; the operator takes the graphic again after the build.
+    // Act: the operator takes the sponsor roll three times, building the package before
+    // the third; then a fourth time, with the graphic already working.
     const outcomeOfFirstTake = await graphicLoader
       .defineGraphicElement(sponsorRoll)
       .catch((error: unknown) => error);
     const outcomeOfSecondTake = await graphicLoader
       .defineGraphicElement(sponsorRoll)
       .catch((error: unknown) => error);
+    const tagNameOfThirdTake = await graphicLoader.defineGraphicElement(sponsorRoll);
+    const tagNameOfFourthTake = await graphicLoader.defineGraphicElement(sponsorRoll);
 
-    // Assert: both takes failed with the import's error, and the import ran only once.
-    expect(String(outcomeOfFirstTake), 'a failed import must reject the first take').toBe(
-      'TypeError: Failed to fetch dynamically imported module',
-    );
+    // Assert: each take after a failure asked for a new address with the next retry
+    // number, the third take worked, the fourth did not import again, and both retries
+    // are in the log with the graphic, the number and the address.
     expect(
-      String(outcomeOfSecondTake),
-      'the next take must fail the same way: only a page reload imports the module again',
-    ).toBe('TypeError: Failed to fetch dynamically imported module');
-    expect(importCount, 'a failed import must not be tried a second time').toBe(1);
+      [String(outcomeOfFirstTake), String(outcomeOfSecondTake)],
+      'the first two takes must fail with the error of the import',
+    ).toEqual([
+      'TypeError: Failed to fetch dynamically imported module',
+      'TypeError: Failed to fetch dynamically imported module',
+    ]);
+    expect(
+      importedAddresses,
+      'every take after a failed import must ask for the next ?retry= address, and a working graphic must not be imported again',
+    ).toEqual([
+      '/graphics/sponsor-roll/sponsor-roll.js',
+      '/graphics/sponsor-roll/sponsor-roll.js?retry=1',
+      '/graphics/sponsor-roll/sponsor-roll.js?retry=2',
+    ]);
+    expect(
+      [tagNameOfThirdTake, tagNameOfFourthTake],
+      'the take after the build, and the one after it, must both get the tag of the graphic',
+    ).toEqual(['baja-graphic-sponsor-roll', 'baja-graphic-sponsor-roll']);
+    expect(
+      logLines,
+      'each retry must be logged with the graphic, its number and its address',
+    ).toEqual([
+      {
+        level: 'info',
+        message: 'graphic module import retried after an earlier failure',
+        details: {
+          graphicId: 'sponsor-roll',
+          retryNumber: 1,
+          moduleAddress: '/graphics/sponsor-roll/sponsor-roll.js?retry=1',
+        },
+      },
+      {
+        level: 'info',
+        message: 'graphic module import retried after an earlier failure',
+        details: {
+          graphicId: 'sponsor-roll',
+          retryNumber: 2,
+          moduleAddress: '/graphics/sponsor-roll/sponsor-roll.js?retry=2',
+        },
+      },
+    ]);
+  });
+
+  it('counts two takes that shared one failed import as one failure', async () => {
+    // Arrange: a podium graphic whose file is missing at first, and an import stand-in
+    // that notes every address it is asked for.
+    const podium = createGraphic('podium', 'Pódio', 'podium.js');
+    const podiumModule = createGraphicModule();
+    const importedAddresses: string[] = [];
+    const graphicLoader = createGraphicLoader({
+      importModule: async (address) => {
+        importedAddresses.push(address);
+        if (importedAddresses.length === 1) {
+          throw new TypeError('Failed to fetch dynamically imported module');
+        }
+        return podiumModule;
+      },
+      logEvent: () => undefined,
+    });
+
+    // Act: a macro takes the podium on two layers at the same moment and both fail on
+    // the one shared import; after the build the operator takes it again.
+    const firstTake = graphicLoader.defineGraphicElement(podium).catch((error: unknown) => error);
+    const secondTake = graphicLoader.defineGraphicElement(podium).catch((error: unknown) => error);
+    await firstTake;
+    await secondTake;
+    await graphicLoader.defineGraphicElement(podium);
+
+    // Assert: one import served the two failed takes, and the retry is number 1, not 2.
+    expect(
+      importedAddresses,
+      'one failed import is one failure, however many takes were waiting for it',
+    ).toEqual(['/graphics/podium/podium.js', '/graphics/podium/podium.js?retry=1']);
   });
 
   it('refuses a module whose default export is not a class', async () => {

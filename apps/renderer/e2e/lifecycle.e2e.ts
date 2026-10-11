@@ -13,14 +13,15 @@
  *   - Clear: the graphic is stopped, then disposed, and its element leaves the page.
  *   - Replace on an out-then-in layer: the old graphic has finished stopping and
  *     disposing before the new one starts loading.
- *   - Replace on a cut layer: both the stop and the play skip their animation.
- *   - Replace on a crossfade layer: treated exactly like cut in M0.
  *   - Every lifecycle call is logged with the instance id, the layer and the graphic.
  *   - Two layers work at the same time; one never waits for the other.
  *   - Reconnect, and a page that opens with a graphic already on air (OBS refreshing the
  *     browser source): everything is rebuilt and played with `skipAnimation: true`.
  *
  * What these tests deliberately do not cover:
+ *   - Replace on a cut or a crossfade layer, where the new graphic is loaded before the
+ *     old one leaves; replaceWithCut.e2e.ts.
+ *   - What the renderer tells the server about each instance; instanceStatus.e2e.ts.
  *   - Graphics that fail to load; brokenGraphic.e2e.ts covers those.
  *   - The real server and a real graphic; raceClockOnAir.e2e.ts covers those. Here the
  *     server is a stand-in inside the page (fakeServerForPage.ts) and the graphic is the
@@ -39,9 +40,7 @@ import {
   createEnduroInstance,
   createFinalInstance,
   createTeamInstance,
-  createTeamInstanceOnLayer,
   enduroInstanceId,
-  feiInstanceId,
   finalInstanceId,
   instanceNames,
   ufprInstanceId,
@@ -211,72 +210,6 @@ test.describe('replacing a graphic on its layer', () => {
       'only the new graphic may remain in the layer',
     ).toEqual([finalInstanceId]);
   });
-
-  const replaceWithoutAnimationScenarios = [
-    // The lower-third layer cuts: the swap is instant by design.
-    {
-      name: 'cut: the old graphic stops and the new one plays without animation',
-      layerId: 'lower-third',
-    },
-    // The fullscreen layer crossfades. A real crossfade needs both graphics on the layer
-    // at once, which no M0 graphic is built for, so in M0 it must behave exactly like cut.
-    {
-      name: 'crossfade: behaves like cut in M0, with both animations skipped',
-      layerId: 'fullscreen',
-    },
-  ];
-
-  for (const { name, layerId } of replaceWithoutAnimationScenarios) {
-    test(name, async ({ page }) => {
-      // Arrange: team 42's graphic on air on the layer of this row.
-      const fakeServer = await startFakeServerForPage(page, { instancesOnAir: [] });
-      await openRendererAndWaitForItsLayers(page);
-      fakeServer.sendInstances([
-        createTeamInstanceOnLayer(layerId, ufprInstanceId, 42, 'Baja UFPR'),
-      ]);
-      await expectCallSentences(
-        page,
-        [
-          'UFPR: load called',
-          'UFPR: load finished',
-          'UFPR: playAction called',
-          'UFPR: playAction finished',
-        ],
-        "team 42's graphic must be on air first",
-      );
-
-      // Act: the operator takes team 7's graphic on the same layer.
-      fakeServer.sendInstances([createTeamInstanceOnLayer(layerId, feiInstanceId, 7, 'FEI Baja')]);
-
-      // Assert: same order as any replace, but both animations are skipped.
-      await expectCallSentences(
-        page,
-        [
-          'UFPR: load called',
-          'UFPR: load finished',
-          'UFPR: playAction called',
-          'UFPR: playAction finished',
-          'UFPR: stopAction called',
-          'UFPR: stopAction finished',
-          'UFPR: dispose called',
-          'UFPR: dispose finished',
-          'FEI: load called',
-          'FEI: load finished',
-          'FEI: playAction called',
-          'FEI: playAction finished',
-        ],
-        'the old graphic must still be finished before the new one is loaded',
-      );
-      expect(
-        await readParamsOfCalls(page, ufprInstanceId, 'stopAction'),
-        'on this layer the old graphic must stop without its out-animation',
-      ).toEqual([{ skipAnimation: true }]);
-      expect(
-        await readParamsOfCalls(page, feiInstanceId, 'playAction'),
-        'on this layer the new graphic must play without its in-animation',
-      ).toEqual([{ goto: 0, skipAnimation: true }]);
-    });
-  }
 });
 
 test.describe('several layers', () => {

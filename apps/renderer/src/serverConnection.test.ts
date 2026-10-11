@@ -3,17 +3,19 @@
  *
  * What this module is for:
  *   The renderer holds no state of its own: it draws what the server says. serverConnection
- *   keeps a WebSocket open to `/ws`, checks every message against the shared protocol and
- *   hands the renderer the slices: all of them after a `hello` (a "full snapshot"), or the
- *   same set with one slice replaced after a `slice` message.
+ *   keeps a WebSocket open to `/ws?role=renderer`, checks every message against the shared
+ *   protocol and hands the renderer the slices: all of them after a `hello` (a "full
+ *   snapshot"), or the same set with one slice replaced after a `slice` message.
  *
  * What these tests prove:
  *   - A `hello` delivers every slice, marked as a full snapshot.
  *   - A `slice` message delivers the slices with that one replaced, not as a full snapshot.
  *   - Anything that is not a protocol message is logged and ignored; so is a `slice` that
- *     arrives before any `hello`. A `commandResult` is ignored silently.
+ *     arrives before any `hello`. A `commandResult` that says ok is ignored silently.
  *
  * What these tests deliberately do not cover:
+ *   - What the renderer sends (the `instanceStatus` message) and a `commandResult` that
+ *     refuses it; serverConnection.instanceStatus.test.ts.
  *   - Reconnecting after a drop, and reading the state over HTTP when the hello is late;
  *     serverConnection.reconnect.test.ts covers both.
  *   - A real WebSocket or a real server: a stand-in socket is driven by hand
@@ -43,7 +45,7 @@ describe('messages from the server', () => {
     // Assert: one delivery, holding those slices and marked as the full truth.
     expect(
       connection.openedSockets.map((socket) => socket.address),
-      'the connection must open one socket, at the /ws address it was given',
+      'the connection must open one socket, at the address it was given',
     ).toEqual([serverWebSocketAddress]);
     expect(connection.deliveries, 'a hello must deliver its slices as a full snapshot').toEqual([
       { slices: slicesWithGreenClock, isFullSnapshot: true },
@@ -126,7 +128,7 @@ describe('messages from the server', () => {
     ]);
   });
 
-  it('ignores a commandResult without logging, because the renderer sends no commands', () => {
+  it('ignores a commandResult that says ok, without logging it', () => {
     // Arrange: a connection that already received its hello.
     const connection = startConnectionForTests();
     connection.latestSocket().simulateOpen();
@@ -135,14 +137,15 @@ describe('messages from the server', () => {
       .simulateMessage({ type: 'hello', slices: createSlicesWithInstances([]) });
     const logLineCountAfterHello = connection.logLines.length;
 
-    // Act: a commandResult arrives.
+    // Act: a commandResult that says ok arrives, as an answer to something the renderer
+    // reported.
     connection
       .latestSocket()
       .simulateMessage({ type: 'commandResult', requestId: 'pedido-17', ok: true });
 
     // Assert: still only the hello's delivery, and no new log line.
     expect(connection.deliveries, 'a commandResult must not deliver anything').toHaveLength(1);
-    expect(connection.logLines, 'a commandResult must not be logged').toHaveLength(
+    expect(connection.logLines, 'an ok commandResult must not be logged').toHaveLength(
       logLineCountAfterHello,
     );
   });

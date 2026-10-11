@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import type { Server } from 'node:http';
+import type { IncomingMessage, Server } from 'node:http';
 
 import { type WebSocket, WebSocketServer } from 'ws';
 
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
+import { buildActorForConnection } from './connectionActor.js';
 import { startHeartbeat } from './heartbeat.js';
 import {
   buildHelloMessage,
@@ -30,7 +31,9 @@ export type WebSocketHub = { close: () => Promise<void> };
 /**
  * Attaches the WebSocket protocol to the HTTP server, on the same port at `/ws`. Each
  * client gets `hello`, then a `slice` message whenever a slice changes, and a
- * `commandResult` for each command it sends. Any other upgrade path is refused.
+ * `commandResult` for each message it sends (a command, or a renderer's
+ * `instanceStatus`). A connection to `/ws?role=renderer` acts as a renderer, any other
+ * as an operator. Any other upgrade path is refused.
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
@@ -60,12 +63,12 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     });
   });
 
-  webSocketServer.on('connection', (client: WebSocket) => {
-    // No login in M0: every connection acts as an operator, told apart by its own id
-    // so the event log can still say which connection sent what.
+  webSocketServer.on('connection', (client: WebSocket, request: IncomingMessage) => {
+    // No login yet: a connection is a renderer or an operator by the address it chose,
+    // and is told apart by its own id so the event log can say which one sent what.
     const connectionId = randomUUID();
-    const actor = `operador:${connectionId}`;
-    const connectionLogger = logger.child({ connection_id: connectionId });
+    const actor = buildActorForConnection(request.url, connectionId);
+    const connectionLogger = logger.child({ connection_id: connectionId, actor });
     connectionLogger.info('websocket client connected');
 
     heartbeat.trackClient(client);

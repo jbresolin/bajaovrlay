@@ -6,7 +6,14 @@ import { join } from 'node:path';
 
 import { onTestFinished } from 'vitest';
 
-/** The manifest the stand-in build holds: the fields the server reads, plus a few more. */
+/**
+ * The manifest the stand-in build holds: the fields the server reads, plus a few more.
+ * Its data `schema` and `v_baja` say the same as the real
+ * packages/graphics/race-clock/race-clock.ograf.json (six required fields, optional
+ * laps, nothing else allowed; clock layer), so a take the server accepts here is one
+ * the real race clock accepts too. `gddType` is kept on one field on purpose: it is an
+ * OGraf form hint, not a JSON Schema keyword, and the server must not choke on it.
+ */
 export const raceClockManifestForTests = {
   $schema: 'https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json',
   id: 'baja-race-clock',
@@ -17,6 +24,32 @@ export const raceClockManifestForTests = {
   supportsRealTime: true,
   supportsNonRealTime: false,
   stepCount: 1,
+  schema: {
+    type: 'object',
+    properties: {
+      sessionName: { type: 'string', title: 'Nome da sessão', gddType: 'single-line' },
+      state: {
+        type: 'string',
+        title: 'Bandeira',
+        enum: ['pre', 'green', 'yellow', 'red', 'checkered', 'finished'],
+      },
+      clockMode: { type: 'string', title: 'Modo do relógio', enum: ['elapsed', 'remaining'] },
+      referenceTimeMs: { type: 'integer', title: 'Tempo de referência (ms)', minimum: 0 },
+      referenceWallClockMs: { type: 'integer', title: 'Horário da referência', minimum: 0 },
+      running: { type: 'boolean', title: 'Relógio correndo' },
+      lapsCompletedByLeader: { type: 'integer', title: 'Voltas do líder', minimum: 0 },
+    },
+    required: [
+      'sessionName',
+      'state',
+      'clockMode',
+      'referenceTimeMs',
+      'referenceWallClockMs',
+      'running',
+    ],
+    additionalProperties: false,
+  },
+  v_baja: { defaultLayerId: 'clock', category: 'clock' },
 };
 
 /** A graphics folder path that never exists, as on a machine with no graphics at all. */

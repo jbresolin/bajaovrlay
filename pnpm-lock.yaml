@@ -303,6 +303,9 @@ importers:
       '@hono/zod-openapi':
         specifier: ^1.6.3
         version: 1.6.3(hono@4.13.13)(zod@4.6.5)
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       better-sqlite3:
         specifier: ^13.0.3
         version: 13.0.3

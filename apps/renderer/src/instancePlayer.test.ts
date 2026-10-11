@@ -14,8 +14,6 @@
  *   - A new instance is created inside its layer's container, loaded with its data for a
  *     real-time 1920x1080 stage, then played; a load that answers nothing counts as a
  *     successful load (OGraf v1), so that graphic is played too.
- *   - A replace calls stop and dispose on the old graphic before load and play on the new
- *     one; `out-then-in` animates both, `cut` and `crossfade` skip both animations.
  *   - An operation that throws is logged and does not stop the next operation on the same
  *     layer. An operation of a kind the player does not know is one of those: it is
  *     logged by name and never carried out as if it were a replace.
@@ -25,6 +23,10 @@
  *     plays.
  *
  * What these tests deliberately do not cover:
+ *   - Replacing one graphic by another (out-then-in, cut, crossfade);
+ *     instancePlayer.replace.test.ts.
+ *   - What the player reports to the server about each instance (on air, failed);
+ *     instancePlayer.status.test.ts.
  *   - A real graphic module in a real browser; e2e/lifecycle.e2e.ts and
  *     e2e/brokenGraphic.e2e.ts run the same paths in Chromium. Here the graphic is a
  *     stand-in that only writes down its calls (recordingGraphic.testSupport.ts), on a
@@ -36,18 +38,17 @@
  *     reconnect). e2e/lifecycle.e2e.ts covers both in Chromium, in its "update" and
  *     "reconnect" tests.
  *   - A graphic whose promise never settles: nothing times out (docs/decisions.md), so
- *     its layer stays blocked until the page is reloaded.
+ *     its layer stays blocked until the page is reloaded. The warning written after ten
+ *     seconds of waiting is in lifecycleCall.slow.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
 import type { InstanceOperation } from './instanceReconciler.js';
 import {
   createEnduroClockInstance,
-  createFinalClockInstance,
   createTeamLowerThirdInstance,
   enduroClockInstanceId,
   feiLowerThirdInstanceId,
-  finalClockInstanceId,
   ufprLowerThirdInstanceId,
 } from './instancesOnAir.testSupport.js';
 import {
@@ -120,76 +121,6 @@ describe('a new instance on an empty layer', () => {
       readInstanceIdsOnLayer(stage, 'lower-third'),
       'the element must stay on its layer',
     ).toEqual([ufprLowerThirdInstanceId]);
-  });
-});
-
-describe('replacing the graphic on a layer', () => {
-  const callsOfAnAnimatedReplace = [
-    'Enduro: stopAction',
-    'Enduro: dispose',
-    'Final: load',
-    'Final: playAction',
-  ];
-  const callsOfAReplaceWithoutAnimation = [
-    'Enduro: stopAction (skipAnimation)',
-    'Enduro: dispose',
-    'Final: load',
-    'Final: playAction (skipAnimation)',
-  ];
-  const replacePolicyScenarios = [
-    // The default of every seeded layer: the old clock animates out, the new one in.
-    {
-      name: 'animates the old graphic out and the new one in with out-then-in',
-      replacePolicy: 'out-then-in' as const,
-      expectedCalls: callsOfAnAnimatedReplace,
-    },
-    // A cut is instant: neither the out-animation nor the in-animation is shown.
-    {
-      name: 'skips both animations with cut',
-      replacePolicy: 'cut' as const,
-      expectedCalls: callsOfAReplaceWithoutAnimation,
-    },
-    // No M0 graphic can share its layer, so a crossfade is carried out as a cut for now.
-    {
-      name: 'treats crossfade as cut',
-      replacePolicy: 'crossfade' as const,
-      expectedCalls: callsOfAReplaceWithoutAnimation,
-    },
-  ];
-
-  it.each(replacePolicyScenarios)('$name', async ({ replacePolicy, expectedCalls }) => {
-    // Arrange: the enduro clock on air, and the number of calls it took to get there.
-    const { stage, instancePlayer, recording } = createStageWithPlayer();
-    instancePlayer.runLayerOperations(
-      createTakeOf(createEnduroClockInstance()),
-      graphicsOfTheStream,
-    );
-    await waitForQueuedOperations();
-    const numberOfCallsBeforeTheReplace = recording.lifecycleCalls.length;
-
-    // Act: the clock of the final heat is taken on the same layer, with the row's policy.
-    const replaceOfTheClock = {
-      kind: 'replace' as const,
-      outgoingInstanceId: enduroClockInstanceId,
-      incomingInstance: createFinalClockInstance(),
-      replacePolicy,
-    };
-    instancePlayer.runLayerOperations(
-      [{ layerId: 'clock', operations: [replaceOfTheClock] }],
-      graphicsOfTheStream,
-    );
-    await waitForQueuedOperations();
-
-    // Assert: the old clock was stopped and disposed before the new one was loaded, with
-    // the animations the policy asks for, and only the new clock is left on the layer.
-    expect(
-      recording.lifecycleCalls.slice(numberOfCallsBeforeTheReplace),
-      'the old graphic must be stopped and disposed before the new one is loaded and played',
-    ).toEqual(expectedCalls);
-    expect(
-      readInstanceIdsOnLayer(stage, 'clock'),
-      'only the new clock may be left on the layer',
-    ).toEqual([finalClockInstanceId]);
   });
 });
 
@@ -377,7 +308,8 @@ describe('a graphic that fails', () => {
         instanceId: ufprLowerThirdInstanceId,
         layerId: 'lower-third',
         graphicId: 'team-lower-third',
-        reason: 'its load failed or was refused',
+        reason:
+          'its load failed or was refused: Error: O gráfico de teste foi instruído a falhar no load.',
       },
     });
     expect(

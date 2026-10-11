@@ -34,13 +34,15 @@ export type WebSocketTestClient = {
 /**
  * Connects to ws://127.0.0.1:<port>/ws and resolves once the socket is open. With
  * `answersPings: false` the client ignores the server's pings, like a frozen browser tab.
+ * With `role: 'renderer'` it connects to /ws?role=renderer, as the renderer page does.
  * The socket is closed when the test ends.
  */
 export async function connectWebSocketTestClient(
   port: number,
-  options: { answersPings?: boolean } = {},
+  options: { answersPings?: boolean; role?: 'renderer' } = {},
 ): Promise<WebSocketTestClient> {
-  const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`, {
+  const roleQuery = options.role === undefined ? '' : `?role=${options.role}`;
+  const socket = new WebSocket(`ws://127.0.0.1:${port}/ws${roleQuery}`, {
     autoPong: options.answersPings ?? true,
   });
   onTestFinished(() => socket.terminate());

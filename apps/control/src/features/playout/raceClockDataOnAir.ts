@@ -2,8 +2,8 @@
  * The race clock data the server holds for the instance on air: reading it safely,
  * working out which time the clock shows right now, and turning it into form values.
  *
- * The panel uses this to fill the form with what is on air, and "Atualizar" uses it for
- * every field the operator did not touch (raceClockUpdateCommand.ts).
+ * The panel uses this to fill the form with what is on air, and "Atualizar" uses it to
+ * carry the clock's time forward to the press (raceClockInstanceUpdate.ts).
  */
 import { z } from 'zod';
 
@@ -20,8 +20,9 @@ const millisecondsPerSecond = 1_000;
 // The server stores an instance's data as "any object", so it is checked here before
 // anything is built on it. The rules repeat the manifest's data schema by hand, as
 // raceClockTakeForm.ts does; a field the manifest does not know is dropped. What could
-// go wrong: a manifest that gains a field makes this page silently drop it on
-// "Atualizar" until the field is added here (BAJAOVRLAY-14 replaces all of this).
+// go wrong: a manifest that gains a field is not shown in the form until the field is
+// added here (BAJAOVRLAY-14 replaces all of this). "Atualizar" does not lose it: it
+// sends changed fields only, and the server keeps the rest.
 const RaceClockDataOnAirSchema = z.object({
   sessionName: z.string(),
   state: z.enum(flagStates),
@@ -72,8 +73,8 @@ export function findTimeShownOnAir(
  * The form's values for what is on air at `nowInMilliseconds`: every field as the
  * server holds it, and the time the clock shows at that moment as mm:ss. The text does
  * not tick: it is the time at the moment the form was filled. That is harmless for
- * "Atualizar", which reads an untouched time from the air and not from this text, but
- * "Colocar no ar" sends the text as it stands.
+ * "Atualizar", which never sends an untouched time field's text, but "Colocar no ar"
+ * sends the text as it stands.
  */
 export function buildRaceClockFormValuesFromDataOnAir(
   raceClockDataOnAir: RaceClockData,

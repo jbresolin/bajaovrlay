@@ -45,7 +45,7 @@ export default defineConfig({
       '/api': serverAddress,
       '/health': serverAddress,
       '/ws': { target: serverAddress, ws: true },
-      // The program monitor frames /render/, which loads graphics from /graphics/. Both
+      // The program monitor frames /render/?monitor=1, which loads graphics from /graphics/. Both
       // come from the server, exactly as OBS gets them: the BUILT renderer and graphics
       // (`pnpm build`), not the renderer's own dev server on port 5174.
       '/render': serverAddress,

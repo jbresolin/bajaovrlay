@@ -7,9 +7,9 @@ Putting graphics on air and taking them off. Start reading at `TakeRaceClockPane
 - `raceClockTakeForm.ts` — the form's values, rules (pt-BR messages) and the `takeGraphic`
   command; `raceClockTakeFormResolver.ts` hands the rules to react-hook-form;
   `minutesAndSeconds.ts` reads and writes a time as mm:ss.
-- `raceClockDataOnAir.ts` reads the clock on air; `raceClockUpdateCommand.ts` builds what
-  "Atualizar" sends: changed fields from the form, every other field as it is on air.
+- `raceClockDataOnAir.ts` reads the clock on air; `raceClockInstanceUpdate.ts` builds what
+  "Atualizar" sends: `updateInstanceData` with the changed fields only (in-place update).
 - `ClearAllButton.tsx` (red panic button and Esc, two presses within 3 s),
   `useBackspaceToClearClockLayer.ts`, `CommandErrorMessage.tsx` (why a command failed).
 
-Hand-written for M0 from the manifest; BAJAOVRLAY-14 generates forms from each schema.
+Hand-written from the manifest; BAJAOVRLAY-14 generates forms from each schema.

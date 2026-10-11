@@ -11,15 +11,15 @@ import {
 import { saveCommandOutcome } from '../db/commandOutcomeStorage.js';
 import type { SliceRow } from '../db/tables.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
-import { allowEveryCommand, type IsCommandAllowed } from './authorizeCommand.js';
-import { refuseInvalidCommand, refuseUnauthorizedCommand } from './commandRefusals.js';
+import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
+import { refuseCommandNotAllowed, refuseInvalidCommand } from './commandRefusals.js';
 import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialSlices.js';
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
 /** What a store needs. The last three have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
-  /** The authorisation step; defaults to allowEveryCommand (no login in M0). */
+  /** The authorisation step; defaults to allowCommandForActorRole (no login yet). */
   isCommandAllowed?: IsCommandAllowed | undefined;
   /** The clock used for every timestamp, at boot and per command; defaults to real time. */
   readCurrentTime?: (() => Date) | undefined;
@@ -30,7 +30,10 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
 /** How applyCommand answers: ok, or the error the operator is shown. */
 export type CommandOutcome = { ok: true } | { ok: false; error: CommandError };
 
-/** Called after every command with the names of the slices that changed, and all slices. */
+/**
+ * Called after every command that changed a slice or was refused (so the event log
+ * changed), with the names of the slices that changed, and all slices.
+ */
 export type SliceChangeListener = (changedSliceNames: SliceName[], slices: Slices) => void;
 
 /** The store: the only holder of state and the only way to change it. */
@@ -51,7 +54,7 @@ const sliceNamesChangedByCommands = ['layers', 'graphics', 'instances'] as const
  * Its applyCommand is the single code path for every change; see the steps inside.
  */
 export function createStateStore(options: StateStoreOptions): StateStore {
-  const isCommandAllowed = options.isCommandAllowed ?? allowEveryCommand;
+  const isCommandAllowed = options.isCommandAllowed ?? allowCommandForActorRole;
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   const createInstanceId = options.createInstanceId ?? (() => randomUUID());
   const listeners = new Set<SliceChangeListener>();
@@ -60,6 +63,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   // Always in this order: validate → authorise → apply the pure reducer → save the
   // changed slices and the event-log row (one transaction) → update memory → tell
   // listeners what changed. A command that fails any step is still logged, as failed.
+  // An accepted command that changes nothing skips the save, the log and the listeners.
   function applyCommand(commandInput: unknown, actor: string): CommandOutcome {
     const now = readCurrentTime().toISOString();
 
@@ -77,14 +81,14 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     }
     const command = validation.data;
 
-    // Step 2, authorise: a hook that says yes to everything until login exists.
+    // Step 2, authorise: the hook decides whether this actor may run this command.
     if (!isCommandAllowed(command, actor)) {
       return recordRefusal({
         now,
         actor,
         commandName: command.type,
         payload: command,
-        error: refuseUnauthorizedCommand(),
+        error: refuseCommandNotAllowed(),
       });
     }
 
@@ -101,6 +105,17 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         payload: command,
         error: reducerOutcome.error,
       });
+    }
+
+    // An accepted command that changed nothing (a second renderer reporting the same
+    // instance on air, a clear of a stage that is already empty) stops here: nothing is
+    // saved, no event-log row is written and no listener is told, so nothing is
+    // broadcast. The sender still gets its ok. João's ruling, 2026-10-10.
+    // What could go wrong: the event log no longer shows that such a command was sent
+    // at all, so "did the second renderer ever report?" cannot be answered from it.
+    const isAnySliceChanged = findNamesOfChangedSlices(reducerOutcome.slices).length > 0;
+    if (!isAnySliceChanged) {
+      return { ok: true };
     }
 
     // Steps 4 to 6: save, append to the event log, tell listeners.
@@ -150,10 +165,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     nextSlices: SlicesChangedByCommands;
     logEntry: Omit<EventLogEntry, 'id'>;
   }): void {
-    // A reducer returns an unchanged slice as the very same array.
-    const changedSliceNames = sliceNamesChangedByCommands.filter(
-      (sliceName) => outcome.nextSlices[sliceName] !== currentSlices[sliceName],
-    );
+    const changedSliceNames = findNamesOfChangedSlices(outcome.nextSlices);
     const changedSliceRows: SliceRow[] = changedSliceNames.map((sliceName) => ({
       name: sliceName,
       json: outcome.nextSlices[sliceName],
@@ -173,6 +185,21 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       eventLog: appendToEventLogSlice(currentSlices.eventLog, savedLogEntry),
     };
     tellListeners([...changedSliceNames, 'eventLog']);
+  }
+
+  /**
+   * Names the slices a reducer changed. A reducer hands back an unchanged slice as the
+   * very same array, so comparing the two arrays themselves is enough.
+   * What could go wrong: a reducer that builds a new array with equal contents (an
+   * updateInstanceData that sends the values already on air) counts as a change, so it is
+   * saved, logged and broadcast although nothing on screen moves.
+   */
+  function findNamesOfChangedSlices(
+    nextSlices: SlicesChangedByCommands,
+  ): Array<keyof SlicesChangedByCommands> {
+    return sliceNamesChangedByCommands.filter(
+      (sliceName) => nextSlices[sliceName] !== currentSlices[sliceName],
+    );
   }
 
   /** Calls every listener; one that throws is logged and does not stop the others. */

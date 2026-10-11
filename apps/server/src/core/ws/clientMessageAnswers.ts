@@ -1,4 +1,9 @@
-import { ClientMessageSchema, type CommandResultMessage } from '@bajaovrlay/shared';
+import {
+  ClientMessageSchema,
+  type CommandResultMessage,
+  type InstanceStatusMessage,
+  type ReportInstanceStatusCommand,
+} from '@bajaovrlay/shared';
 import { z } from 'zod';
 
 import type { ServerLogger } from '../logger/createLogger.js';
@@ -10,9 +15,9 @@ import { buildErrorCommandResult, buildOkCommandResult } from './serverMessageBu
 const MessageWithRequestIdSchema = z.object({ requestId: z.string().min(1).max(200) });
 
 /**
- * Handles one client message and returns the `commandResult` to send back; anything
- * outside the protocol gets INVALID_MESSAGE and a warning. Never throws, so a bad
- * message can never close the socket.
+ * Handles one client message (a command, or a renderer's `instanceStatus`) and returns
+ * the `commandResult` to send back; anything outside the protocol gets INVALID_MESSAGE
+ * and a warning. Never throws, so a bad message can never close the socket.
  */
 export function answerClientMessage(options: {
   messageText: string | undefined;
@@ -45,16 +50,67 @@ export function answerClientMessage(options: {
     return buildErrorCommandResult(requestIdIfReadable ?? null, describeInvalidMessage());
   }
 
-  const requestId = parsedMessage.data.requestId ?? null;
+  const clientMessage = parsedMessage.data;
+  if (clientMessage.type === 'instanceStatus') {
+    // A renderer's report is not a command envelope and carries no requestId, but it
+    // changes state, so it goes through the same single command path as everything else.
+    return applyCommandAndBuildCommandResult({
+      commandInput: buildReportInstanceStatusCommand(clientMessage),
+      requestId: null,
+      stateStore,
+      actor,
+      logger,
+    });
+  }
+  return applyCommandAndBuildCommandResult({
+    commandInput: clientMessage.command,
+    requestId: clientMessage.requestId ?? null,
+    stateStore,
+    actor,
+    logger,
+  });
+}
+
+/**
+ * The reportInstanceStatus command for a renderer's `instanceStatus` message: the same
+ * instance id, status and detail. A message without a detail gives a command without
+ * the key, because the command's schema refuses an empty or undefined one.
+ */
+function buildReportInstanceStatusCommand(
+  instanceStatusMessage: InstanceStatusMessage,
+): ReportInstanceStatusCommand {
+  const command: ReportInstanceStatusCommand = {
+    type: 'reportInstanceStatus',
+    instanceId: instanceStatusMessage.instanceId,
+    status: instanceStatusMessage.status,
+  };
+  if (instanceStatusMessage.detail !== undefined) {
+    command.detail = instanceStatusMessage.detail;
+  }
+  return command;
+}
+
+/**
+ * Runs one command through the store and builds the `commandResult` for its sender:
+ * ok, the store's refusal, or UNEXPECTED_SERVER_ERROR when the store threw.
+ */
+function applyCommandAndBuildCommandResult(options: {
+  commandInput: unknown;
+  requestId: string | null;
+  stateStore: StateStore;
+  actor: string;
+  logger: ServerLogger;
+}): CommandResultMessage {
+  const { commandInput, requestId, stateStore, actor, logger } = options;
   try {
-    const outcome = stateStore.applyCommand(parsedMessage.data.command, actor);
+    const outcome = stateStore.applyCommand(commandInput, actor);
     if (outcome.ok) {
       return buildOkCommandResult(requestId);
     }
     return buildErrorCommandResult(requestId, outcome.error);
   } catch (commandError) {
     // Saving failed (for example the disk is full). Memory is unchanged; tell the
-    // operator in pt-BR and keep the details in the log.
+    // sender in pt-BR and keep the details in the log.
     logger.error({ err: commandError, request_id: requestId }, 'command failed unexpectedly');
     return buildErrorCommandResult(requestId, describeUnexpectedServerError());
   }

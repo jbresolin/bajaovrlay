@@ -20,8 +20,12 @@
  *   - Any other answer with no status code (`null`, an object in another shape) is not
  *     what OGraf allows: it is logged as an error and counts as "not accepted"; the call
  *     still does not throw.
+ *   - Every "not accepted" answer says why in a few words (`whyNot`), which the renderer
+ *     passes on to the server as the reason an instance failed.
  *
  * What these tests deliberately do not cover:
+ *   - The warning written when a load or a playAction has been awaited for ten seconds;
+ *     lifecycleCall.slow.test.ts.
  *   - The console itself: the log is captured in a list here; rendererLog.test.ts checks
  *     the JSON line written to the console.
  *   - What the renderer does after a refusal (the layer stays empty);
@@ -68,14 +72,14 @@ describe('makeLifecycleCall', () => {
     const loadThatIsAccepted = async (): Promise<OGrafAnswer> => ({ statusCode: 200 });
 
     // Act: make the load call for team 42's lower third.
-    const wasAccepted = await makeLifecycleCall(
+    const outcome = await makeLifecycleCall(
       ufprLowerThird,
       { action: 'load', skipAnimation: false, run: loadThatIsAccepted },
       logEvent,
     );
 
     // Assert: two info lines, both naming the instance, its layer and its graphic.
-    expect(wasAccepted, 'a 200 answer must count as accepted').toBe(true);
+    expect(outcome, 'a 200 answer must count as accepted').toEqual({ wasAccepted: true });
     expect(
       logLines,
       'the call and its answer must both be logged with instance id, layer and graphic',
@@ -115,14 +119,18 @@ describe('makeLifecycleCall', () => {
     });
 
     // Act: make the load call.
-    const wasAccepted = await makeLifecycleCall(
+    const outcome = await makeLifecycleCall(
       ufprLowerThird,
       { action: 'load', skipAnimation: false, run: loadThatIsRefused },
       logEvent,
     );
 
-    // Assert: not accepted, and the last line is a warning that says who refused and why.
-    expect(wasAccepted, 'a 400 answer must count as not accepted').toBe(false);
+    // Assert: not accepted, with the status and the graphic's own words as the reason,
+    // and the last line is a warning that says who refused and why.
+    expect(outcome, 'a 400 answer must count as not accepted, and say why').toEqual({
+      wasAccepted: false,
+      whyNot: 'it answered 400: O campo teamName é obrigatório.',
+    });
     expect(
       logLines.at(-1),
       'a refusal must be logged with instance id, layer, graphic, status code and message',
@@ -149,14 +157,18 @@ describe('makeLifecycleCall', () => {
     };
 
     // Act: make the stop call, without its animation.
-    const wasAccepted = await makeLifecycleCall(
+    const outcome = await makeLifecycleCall(
       ufprLowerThird,
       { action: 'stopAction', skipAnimation: true, run: stopThatThrows },
       logEvent,
     );
 
-    // Assert: not accepted, and the last line is an error carrying the reason.
-    expect(wasAccepted, 'a call that throws must count as not accepted').toBe(false);
+    // Assert: not accepted, with the thrown error as the reason, and the last line is an
+    // error carrying the same reason.
+    expect(outcome, 'a call that throws must count as not accepted, and say why').toEqual({
+      wasAccepted: false,
+      whyNot: 'Error: A animação de saída não foi encontrada.',
+    });
     expect(
       logLines.at(-1),
       'a thrown error must be logged with instance id, layer, graphic and the reason',
@@ -181,7 +193,7 @@ describe('makeLifecycleCall', () => {
     const disposeThatReturnsNothing = async (): Promise<void> => {};
 
     // Act: make the dispose call.
-    const wasAccepted = await makeLifecycleCall(
+    const outcome = await makeLifecycleCall(
       ufprLowerThird,
       { action: 'dispose', skipAnimation: false, run: disposeThatReturnsNothing },
       logEvent,
@@ -189,7 +201,7 @@ describe('makeLifecycleCall', () => {
 
     // Assert: accepted, and the last line is the ordinary "answered" info line with the
     // 200 the renderer assumed and a note that the graphic itself answered nothing.
-    expect(wasAccepted, 'an answer of nothing must count as accepted').toBe(true);
+    expect(outcome, 'an answer of nothing must count as accepted').toEqual({ wasAccepted: true });
     expect(
       logLines.at(-1),
       'an answer of nothing must be logged as an assumed 200 at info level, not as a fault',
@@ -231,14 +243,17 @@ describe('makeLifecycleCall', () => {
       Promise.resolve(answerOfTheGraphic as unknown as OGrafAnswer);
 
     // Act: make the dispose call.
-    const wasAccepted = await makeLifecycleCall(
+    const outcome = await makeLifecycleCall(
       ufprLowerThird,
       { action: 'dispose', skipAnimation: false, run: disposeWithoutAStatus },
       logEvent,
     );
 
     // Assert: not accepted, and the last line is an error naming the instance.
-    expect(wasAccepted, 'an answer without a status must count as not accepted').toBe(false);
+    expect(outcome, 'an answer without a status must count as not accepted').toEqual({
+      wasAccepted: false,
+      whyNot: 'it answered without a status code',
+    });
     expect(
       logLines.at(-1),
       'an answer without a status must be logged as an error with the three ids',

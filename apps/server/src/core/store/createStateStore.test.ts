@@ -4,8 +4,8 @@
  * What this module is for:
  *   The store holds every slice in memory and is the only thing that changes them.
  *   `applyCommand(command, actor)` is the single code path, in this order: check the
- *   command's shape (Zod), authorise it (a hook that allows everything until operators
- *   log in), apply the command's pure reducer, save the changed slices and the
+ *   command's shape (Zod), authorise it (a hook the store is given; the default one
+ *   decides by the actor's role), apply the command's pure reducer, save the changed slices and the
  *   event-log row in one SQLite transaction, then tell subscribers what changed.
  *
  * What these tests prove:
@@ -17,11 +17,16 @@
  *     and in the database.
  *   - A command refused by its reducer or by the authorisation hook is written to the
  *     event log as failed, and leaves the slices alone.
+ *   - An accepted command that changes nothing (a second OBS machine reporting the same
+ *     clock on air, or any other, such as a clear of an empty stage) is answered ok and
+ *     leaves no trace: no event-log row in memory or on disk, and no subscriber told.
  *   - Subscribers hear about exactly the slices that changed.
  *   - When saving fails, memory keeps matching the database: nothing changes.
  *
  * What these tests deliberately do not cover:
- *   - The rules of each command; reducers/reduceCommand.test.ts covers them.
+ *   - The rules of each command; the tests in reducers/ cover them.
+ *   - Which actor the default authorisation hook lets through; authorizeCommand.test.ts
+ *     and storeAuthorisation.test.ts cover it.
  *   - Restarting from the database file and seeding; storeRestart.test.ts and
  *     loadInitialSlices.test.ts cover those.
  */
@@ -41,11 +46,22 @@ const timeOfEveryCommand = new Date('2026-10-09T14:32:05.000Z');
 const idOfEveryNewInstance = '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f';
 const operatorActor = 'operador:conexao-7';
 
+// The enduro under green flag, 1:05:00 in and running: all six fields the race clock's
+// manifest schema requires, because the server now refuses a take that leaves one out.
+const greenFlagEnduroData = {
+  sessionName: 'Enduro de Resistência',
+  state: 'green',
+  clockMode: 'elapsed',
+  referenceTimeMs: 3_900_000,
+  referenceWallClockMs: 1_791_550_800_000,
+  running: true,
+};
+
 const takeRaceClockOnTheClockLayer = {
   type: 'takeGraphic',
   graphicId: 'race-clock',
   layerId: 'clock',
-  data: { sessionName: 'Enduro de Resistência', state: 'green' },
+  data: greenFlagEnduroData,
 };
 
 /**
@@ -71,7 +87,11 @@ describe('applyCommand with an invalid command', () => {
   it('refuses it with the missing field named in a pt-BR message', () => {
     // Arrange: a store, and a take that forgot to say which layer.
     const { store } = createStoreWithRaceClockRegistered();
-    const takeWithoutLayer = { type: 'takeGraphic', graphicId: 'race-clock', data: {} };
+    const takeWithoutLayer = {
+      type: 'takeGraphic',
+      graphicId: 'race-clock',
+      data: greenFlagEnduroData,
+    };
 
     // Act: apply it as the operator.
     const outcome = store.applyCommand(takeWithoutLayer, operatorActor);
@@ -181,7 +201,7 @@ describe('applyCommand with a valid command', () => {
         layerId: 'clock',
         graphicId: 'race-clock',
         target: 'program',
-        resolvedData: { sessionName: 'Enduro de Resistência', state: 'green' },
+        resolvedData: greenFlagEnduroData,
         currentStep: 0,
         status: 'loading',
         takenAt: '2026-10-09T14:32:05.000Z',
@@ -211,6 +231,52 @@ describe('applyCommand with a valid command', () => {
     expect(readNewestEventLogRows(database, 10), 'the database must hold the same entry').toEqual([
       expectedEntry,
     ]);
+  });
+});
+
+describe('applyCommand with an accepted command that changes nothing', () => {
+  it('answers ok, writes no event-log row and tells no subscriber', () => {
+    // Arrange: the race clock taken and already reported on air by the main OBS machine,
+    // and a subscriber that starts writing down what it hears only now.
+    const { store, database } = createStoreWithRaceClockRegistered();
+    const reportRaceClockOnAir = {
+      type: 'reportInstanceStatus',
+      instanceId: idOfEveryNewInstance,
+      status: 'on-air',
+    };
+    store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
+    store.applyCommand(reportRaceClockOnAir, 'renderer:conexao-obs');
+    const slicesBefore = store.readAllSlices();
+    const changedSliceNamesHeard: SliceName[][] = [];
+    store.subscribeToSliceChanges((changedSliceNames) => {
+      changedSliceNamesHeard.push(changedSliceNames);
+    });
+
+    // Act: the backup OBS machine, which shows the same clock, reports it on air too.
+    const outcome = store.applyCommand(reportRaceClockOnAir, 'renderer:conexao-obs-reserva');
+
+    // Assert: the sender is told ok and nothing else happened: the event log still holds
+    // only the take and the first report, memory is untouched and no subscriber heard.
+    expect(outcome, 'a command that changes nothing is still accepted').toEqual({ ok: true });
+    expect(
+      store.readAllSlices().eventLog.map((entry) => [entry.actor, entry.command]),
+      'the event-log slice must hold only the take and the first report',
+    ).toEqual([
+      ['operador:conexao-7', 'takeGraphic'],
+      ['renderer:conexao-obs', 'reportInstanceStatus'],
+    ]);
+    expect(
+      readNewestEventLogRows(database, 10),
+      'the event_log table must not gain a row for a command that changed nothing',
+    ).toHaveLength(2);
+    expect(
+      store.readAllSlices(),
+      'memory must be left exactly as it was, the very same slices',
+    ).toBe(slicesBefore);
+    expect(
+      changedSliceNamesHeard,
+      'no subscriber may be told anything, so nothing is broadcast',
+    ).toEqual([]);
   });
 });
 
@@ -251,7 +317,7 @@ describe('applyCommand with a command that must be refused', () => {
 
     // Assert: refused in pt-BR, logged as failed, and nothing went on air.
     const expectedError = {
-      code: 'UNAUTHORIZED_COMMAND',
+      code: 'NOT_ALLOWED',
       message: 'Você não tem permissão para executar este comando.',
     };
     const slicesAfter = store.readAllSlices();
