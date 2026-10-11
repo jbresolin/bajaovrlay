@@ -13,7 +13,8 @@
  *   - The fields sent replace the same top-level fields, every other field is kept,
  *     and the instance keeps its id, layer, output, status and place in the list.
  *   - An update whose result breaks the manifest's schema is refused with a pt-BR
- *     message naming the field, and so is an update for an instance that is not there.
+ *     message naming the field (an optional field set to null included: null is not
+ *     "absent"), and so is an update for an instance that is not there.
  *   - An update for an instance whose graphic is no longer registered (its package was
  *     removed across a restart) is refused with GRAPHIC_NOT_FOUND and changes nothing.
  *   - An update that carries no field changes nothing and hands back the same array.
@@ -186,6 +187,22 @@ const refusedUpdateScenarios: Array<{
         'Dados inválidos para o gráfico "race-clock": o campo "bandeira" não existe neste gráfico.',
     },
   },
+  // The leader's laps are optional, but "optional" means the field may be left out, not
+  // that it may be null: the schema wants a whole number. The control page relies on
+  // this refusal (João's gate-2 note), so the row records it.
+  {
+    name: 'an optional field set to null is refused with INVALID_GRAPHIC_DATA',
+    command: {
+      type: 'updateInstanceData',
+      instanceId: raceClockInstanceId,
+      data: { lapsCompletedByLeader: null },
+    },
+    expectedError: {
+      code: 'INVALID_GRAPHIC_DATA',
+      message:
+        'Dados inválidos para o gráfico "race-clock": o campo "lapsCompletedByLeader" tem um valor que o gráfico não aceita.',
+    },
+  },
   // The instance was cleared (or never existed): there is nothing to update.
   {
     name: 'refuses an update for an instance that is not there',
@@ -204,19 +221,23 @@ const refusedUpdateScenarios: Array<{
 
 describe('updateInstanceData, when the update must be refused', () => {
   it.each(refusedUpdateScenarios)('$name', ({ command, expectedError }) => {
-    // Arrange: the race clock on air.
+    // Arrange: the race clock on air, with a deep copy kept for comparison.
     const slicesBefore = buildRaceDaySlicesWithInstances([
       buildRaceClockInstanceWithStatus('on-air'),
     ]);
+    const copyOfSlicesBefore = structuredClone(slicesBefore);
 
     // Act: reduce the update.
     const outcome = reduceCommand(slicesBefore, command, contextOfTheCommand);
 
-    // Assert: refused with a stable code and the pt-BR reason.
+    // Assert: refused with a stable code and the pt-BR reason, and nothing was changed.
     expect(outcome, 'the update must be refused with the pt-BR reason').toEqual({
       status: 'refused',
       error: expectedError,
     });
+    expect(slicesBefore, 'a refused update must leave the slices exactly as they were').toEqual(
+      copyOfSlicesBefore,
+    );
   });
 });
 

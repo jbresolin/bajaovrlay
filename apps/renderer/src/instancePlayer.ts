@@ -184,18 +184,15 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     let incomingGraphic: GraphicOnLayer | undefined;
     try {
       incomingGraphic = await loadInstanceAndReportAFailure(incomingInstance, graphics, 'hidden');
-    } catch (unexpectedError) {
-      // The renderer itself threw (not the graphic, whose failures come back as
-      // "not loaded"). The old graphic must leave all the same, for the reason given
-      // below; the error then goes on to the layer's queue, which logs it and reports
-      // the new instance failed.
+    } finally {
+      // The old graphic leaves however the load ended: the server no longer lists it, so
+      // it must not stay on air. That covers the new graphic loaded, the new graphic
+      // failing to load (the layer is then empty, as after any failure) and the renderer
+      // itself throwing (not the graphic, whose failures come back as "not loaded"). In
+      // that last case the error goes on, after this, to the layer's queue, which logs it
+      // and reports the new instance failed.
       await stopAndDisposeInstance(layerId, outgoingInstanceId, true);
-      throw unexpectedError;
     }
-
-    // The old graphic leaves even when the new one failed to load: the server no longer
-    // lists it, so it must not stay on air. The layer is then empty, as after any failure.
-    await stopAndDisposeInstance(layerId, outgoingInstanceId, true);
     // Normally nothing is left by now. This only guards against a bug elsewhere having
     // left some other graphic here, which the new one would otherwise sit on top of.
     await disposeWhateverIsOnLayer(layerId);

@@ -27,7 +27,7 @@
  *     wrong answer is checked.
  */
 import type { Graphic } from '@bajaovrlay/shared';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { raceClockManifestForTests } from './builtGraphicsFolder.testSupport.js';
 import { findProblemInGraphicData } from './graphicDataValidation.js';
@@ -196,6 +196,11 @@ describe('findProblemInGraphicData with a schema that uses `format`', () => {
     const consoleWarnings = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const consoleLines = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const consoleErrors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    // Registered before anything can fail: a failing assertion below must not leave the
+    // console silenced for the tests that run after this one.
+    onTestFinished(() => {
+      vi.restoreAllMocks();
+    });
 
     // Act: check a start time written the way a person would, not as a date-time, and
     // one that is not even text.
@@ -205,7 +210,6 @@ describe('findProblemInGraphicData with a schema that uses `format`', () => {
       consoleWarnings.mock.calls.length +
       consoleLines.mock.calls.length +
       consoleErrors.mock.calls.length;
-    vi.restoreAllMocks();
 
     // Assert: the format is not enforced, the type still is, and the console stayed quiet.
     expect(
