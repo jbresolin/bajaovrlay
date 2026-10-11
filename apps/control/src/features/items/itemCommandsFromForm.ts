@@ -25,11 +25,8 @@ import {
   convertAutoOutSecondsTextToMilliseconds,
   type ItemEditorFormValues,
 } from './itemEditorForm';
-import {
-  buildRaceClockItemFieldsFromFormValues,
-  hasReferenceMomentTheClockCanUse,
-  isStoredReferenceTimeTheOneTheFormHolds,
-} from './raceClockItemFields';
+import { buildRaceClockItemFieldsFromFormValues } from './raceClockItemFields';
+import { applyRaceClockReferenceRules } from './raceClockReferenceRules';
 
 /** Answers whether a graphic is the one the editor has a hand-written form for. */
 export function isGraphicTheRaceClock(graphicId: string): boolean {
@@ -42,8 +39,6 @@ export type CreateItemCommandParts = {
   itemFormValues: ItemEditorFormValues;
   /** The race clock part of the form, or undefined for a graphic without a form. */
   raceClockFormValues: RaceClockTakeFormValues | undefined;
-  /** Date.now() at the press; it becomes the clock's reference moment. */
-  nowInMilliseconds: number;
 };
 
 /**
@@ -51,12 +46,12 @@ export type CreateItemCommandParts = {
  * puts the item at the end of the rundown. A graphic without a form gets empty fields.
  */
 export function buildCreateItemCommand(parts: CreateItemCommandParts): CreateItemCommand {
-  const { rundownId, itemFormValues, raceClockFormValues, nowInMilliseconds } = parts;
+  const { rundownId, itemFormValues, raceClockFormValues } = parts;
 
   const fields: ItemFields =
     raceClockFormValues === undefined
       ? {}
-      : buildRaceClockItemFieldsFromFormValues(raceClockFormValues, nowInMilliseconds);
+      : buildRaceClockItemFieldsFromFormValues(raceClockFormValues);
 
   const command: CreateItemCommand = {
     type: 'createItem',
@@ -79,79 +74,44 @@ export function buildCreateItemCommand(parts: CreateItemCommandParts): CreateIte
 }
 
 /**
- * Answers whether the stored field holds the same literal as the one built from the
- * form. The race clock's values are text, numbers and booleans, so `===` compares them
- * fully. A missing stored field, or one of another kind, is never "the same".
+ * Answers whether the stored field says the same as the one built from the form. Two
+ * literals are the same when their values are (the form's values are text, numbers and
+ * booleans, so `===` compares them fully); "the moment of the take" is the same as
+ * itself. A missing stored field, or one of another kind, is never "the same".
  */
-function isStoredFieldTheSameLiteral(
+function isStoredFieldTheSameAsTheOneFromTheForm(
   fieldFromTheForm: FieldValue,
   fieldOnTheItem: FieldValue | undefined,
 ): boolean {
   if (fieldOnTheItem === undefined) {
     return false;
   }
-  // PLACEHOLDER (BAJAOVRLAY-13 gate 2): only literals are compared. The form builds no
-  // `takeTime` field yet, so the first check below never fires today; it is here because
-  // only a literal has a `value` to read. A stored `takeTime` counts as changed.
-  if (fieldFromTheForm.kind !== 'literal') {
-    return false;
+  if (fieldFromTheForm.kind === 'literal') {
+    return fieldOnTheItem.kind === 'literal' && fieldOnTheItem.value === fieldFromTheForm.value;
   }
-  if (fieldOnTheItem.kind !== 'literal') {
-    return false;
-  }
-  return fieldOnTheItem.value === fieldFromTheForm.value;
+  return fieldOnTheItem.kind === fieldFromTheForm.kind;
 }
 
 /**
- * The race clock fields an update must send: the ones whose value differs from the
- * stored item. The time counts as different only when the form shows another mm:ss than
- * the stored time does. The reference moment is special. Built from "now", it always differs
- * from the stored one, yet sending it alone would shift a running clock. So it travels
- * only together with a changed time or a changed "running" (a new reference), or when
- * the stored item has none the clock can use.
+ * The fields built from the form that differ from the stored item, whatever the graphic.
+ * It knows nothing about what any field means; the race clock's own exceptions are
+ * applied afterwards, by applyRaceClockReferenceRules.
  */
-function findRaceClockFieldsThatChanged(
+function findFieldsThatDifferFromTheStoredOnes(
   fieldsFromTheForm: ItemFields,
   fieldsOnTheItem: ItemFields,
 ): ItemFields {
-  const fieldsThatChanged: ItemFields = {};
+  const fieldsThatDiffer: ItemFields = {};
   for (const fieldKey of Object.keys(fieldsFromTheForm)) {
     const fieldFromTheForm = fieldsFromTheForm[fieldKey];
-    if (fieldFromTheForm === undefined || fieldKey === 'referenceWallClockMs') {
+    if (fieldFromTheForm === undefined) {
       continue;
     }
-    // The time is judged first and by its own rule: the form works in whole seconds, so
-    // a stored time with a part of a second would always look changed to `===` below,
-    // and a label-only edit would then give a running clock a new reference.
-    if (fieldKey === 'referenceTimeMs') {
-      // PLACEHOLDER (BAJAOVRLAY-13 gate 2): the form always builds the time as a literal;
-      // the kind is checked only because a `takeTime` has no `value` to read.
-      const timeFromTheForm =
-        fieldFromTheForm.kind === 'literal' ? fieldFromTheForm.value : undefined;
-      const isTimeTheOneTheItemStores =
-        typeof timeFromTheForm === 'number' &&
-        isStoredReferenceTimeTheOneTheFormHolds(fieldsOnTheItem, timeFromTheForm);
-      if (!isTimeTheOneTheItemStores) {
-        fieldsThatChanged[fieldKey] = fieldFromTheForm;
-      }
-      continue;
-    }
-    if (!isStoredFieldTheSameLiteral(fieldFromTheForm, fieldsOnTheItem[fieldKey])) {
-      fieldsThatChanged[fieldKey] = fieldFromTheForm;
+    if (!isStoredFieldTheSameAsTheOneFromTheForm(fieldFromTheForm, fieldsOnTheItem[fieldKey])) {
+      fieldsThatDiffer[fieldKey] = fieldFromTheForm;
     }
   }
-
-  const isClockReferenceChanged =
-    fieldsThatChanged.referenceTimeMs !== undefined || fieldsThatChanged.running !== undefined;
-  const isStoredReferenceMomentMissing = !hasReferenceMomentTheClockCanUse(fieldsOnTheItem);
-  const referenceMomentFromTheForm = fieldsFromTheForm.referenceWallClockMs;
-  if (
-    (isClockReferenceChanged || isStoredReferenceMomentMissing) &&
-    referenceMomentFromTheForm !== undefined
-  ) {
-    fieldsThatChanged.referenceWallClockMs = referenceMomentFromTheForm;
-  }
-  return fieldsThatChanged;
+  return fieldsThatDiffer;
 }
 
 /** What buildUpdateItemFieldsCommand needs. */
@@ -161,8 +121,6 @@ export type UpdateItemFieldsCommandParts = {
   itemFormValues: ItemEditorFormValues;
   /** The race clock part of the form, or undefined for a graphic without a form. */
   raceClockFormValues: RaceClockTakeFormValues | undefined;
-  /** Date.now() at the press; the reference moment of a clock whose time or state changed. */
-  nowInMilliseconds: number;
 };
 
 /**
@@ -175,7 +133,7 @@ export type UpdateItemFieldsCommandParts = {
 export function buildUpdateItemFieldsCommand(
   parts: UpdateItemFieldsCommandParts,
 ): UpdateItemFieldsCommand | undefined {
-  const { itemBeingEdited, itemFormValues, raceClockFormValues, nowInMilliseconds } = parts;
+  const { itemBeingEdited, itemFormValues, raceClockFormValues } = parts;
   const command: UpdateItemFieldsCommand = { type: 'updateItemFields', itemId: itemBeingEdited.id };
 
   const labelFromTheForm = itemFormValues.label.trim();
@@ -198,12 +156,15 @@ export function buildUpdateItemFieldsCommand(
   }
 
   if (raceClockFormValues !== undefined) {
-    const fieldsFromTheForm = buildRaceClockItemFieldsFromFormValues(
-      raceClockFormValues,
-      nowInMilliseconds,
-    );
-    const fieldsThatChanged = findRaceClockFieldsThatChanged(
+    const fieldsFromTheForm = buildRaceClockItemFieldsFromFormValues(raceClockFormValues);
+    const fieldsThatDiffer = findFieldsThatDifferFromTheStoredOnes(
       fieldsFromTheForm,
+      itemBeingEdited.fields,
+    );
+    // The form here is the race clock's, so the clock's own rules have the last word on
+    // its time and its reference moment (raceClockReferenceRules.ts; gone in BAJAOVRLAY-14).
+    const fieldsThatChanged = applyRaceClockReferenceRules(
+      fieldsThatDiffer,
       itemBeingEdited.fields,
     );
     const hasAnyFieldChanged = Object.keys(fieldsThatChanged).length > 0;

@@ -3,25 +3,31 @@
  *
  * What this module is for:
  *   A race clock item stores, for each field of the race clock, the value the operator
- *   typed (a "literal"). raceClockItemFields turns the race clock form (the same six
- *   fields as the take panel) into those stored fields when an item is saved, and turns
- *   stored fields back into form values when an item is opened for editing.
+ *   typed (a "literal"). The one exception is the clock's reference moment, the instant
+ *   a running clock counts from: the editor stores "the moment of the take" there, and
+ *   the server writes the real instant in when the item goes on air. raceClockItemFields
+ *   turns the race clock form (the same six fields as the take panel) into those stored
+ *   fields when an item is saved, and turns stored fields back into form values when an
+ *   item is opened for editing.
  *
  * What these tests prove:
  *   - A filled form becomes one literal per race clock field, with the time in
- *     milliseconds and the moment of the SAVE as the clock's reference moment.
+ *     milliseconds, and the reference moment as "the moment of the take", never a number.
  *   - Blank laps are left out of the fields altogether.
  *   - Stored fields come back as the form values the operator typed. The time is the
  *     one stored, never carried forward, because the item is not on air.
+ *   - An item saved by an earlier editor, with a number as its reference moment, is read
+ *     exactly like one saved today: the form does not show the reference moment at all.
  *   - A stored field that is missing, is not a literal, or holds a value the form
  *     cannot show comes back as the form's default and is named as "could not be read".
+ *   - A reference moment is usable by the clock when it is "the moment of the take" or a
+ *     whole number of milliseconds, and not when it is missing or anything else.
  *   - Blanking the laps of an item that has laps is recognised, because the update
  *     command cannot remove a field.
  *
  * What these tests deliberately do not cover:
- *   - How a clock saved as running behaves when the item is taken hours later: it counts
- *     from the moment of the save (see the comment in raceClockItemFields.ts). No test
- *     here can prove what the graphic shows; that is an open question for João.
+ *   - The server writing the instant of the take into the field (apps/server), and what
+ *     the clock then shows on air (e2e/rundownTakeWithSpace.e2e.ts).
  *   - The rules of the six fields (features/playout/raceClockTakeForm.test.ts).
  *   - Which of these fields an update sends (itemCommandsFromForm.test.ts).
  */
@@ -32,10 +38,12 @@ import type { RaceClockTakeFormValues } from '@/features/playout/raceClockTakeFo
 
 import {
   buildEnduranceStartClockItem,
+  buildEnduranceStartClockItemSavedWithTheMomentOfTheSave,
   momentTheItemWasSavedInMilliseconds,
 } from './itemsLikeTheEditorSaves.testSupport';
 import {
   buildRaceClockItemFieldsFromFormValues,
+  hasReferenceMomentTheClockCanUse,
   isFormBlankingLapsTheItemHas,
   readRaceClockFormValuesFromItemFields,
 } from './raceClockItemFields';
@@ -62,23 +70,25 @@ function buildBindingFieldValueFromM2(): FieldValue {
 }
 
 describe('buildRaceClockItemFieldsFromFormValues', () => {
-  it('turns a filled form into one literal per race clock field', () => {
-    // Arrange: the form filled for the second heat.
+  it('turns a filled form into one literal per field, and the reference moment into "the moment of the take"', () => {
+    // Arrange: the form filled for the second heat, a clock that is running.
     const formValues = buildFormFilledForTheSecondHeat();
 
-    // Act: build the fields at the moment of the save (Friday evening).
-    const itemFields = buildRaceClockItemFieldsFromFormValues(
-      formValues,
-      momentTheItemWasSavedInMilliseconds,
-    );
+    // Act: build the fields, as "Salvar item" does on Friday evening.
+    const itemFields = buildRaceClockItemFieldsFromFormValues(formValues);
 
-    // Assert: every field is a literal; 12:34 is 754 000 ms; the reference is the save.
-    expect(itemFields, 'each race clock field must be stored as the literal typed').toEqual({
+    // Assert: what was typed is stored as literals (12:34 is 754 000 ms). The reference
+    // moment is not a number at all: the clock must count from the take on Saturday, not
+    // from this save on Friday.
+    expect(
+      itemFields,
+      'each typed field must be a literal, and the reference moment must be left to the take',
+    ).toEqual({
       sessionName: { kind: 'literal', value: 'Enduro de Resistência — Bateria 2' },
       state: { kind: 'literal', value: 'green' },
       clockMode: { kind: 'literal', value: 'elapsed' },
       referenceTimeMs: { kind: 'literal', value: 754_000 },
-      referenceWallClockMs: { kind: 'literal', value: momentTheItemWasSavedInMilliseconds },
+      referenceWallClockMs: { kind: 'takeTime' },
       running: { kind: 'literal', value: true },
       lapsCompletedByLeader: { kind: 'literal', value: 7 },
     });
@@ -89,10 +99,7 @@ describe('buildRaceClockItemFieldsFromFormValues', () => {
     const formValues = { ...buildFormFilledForTheSecondHeat(), lapsCompletedByLeader: '' };
 
     // Act: build the fields.
-    const itemFields = buildRaceClockItemFieldsFromFormValues(
-      formValues,
-      momentTheItemWasSavedInMilliseconds,
-    );
+    const itemFields = buildRaceClockItemFieldsFromFormValues(formValues);
 
     // Assert: there is no laps field at all (the graphic refuses a null field).
     expect(itemFields, 'blank laps must not become a field').not.toHaveProperty(
@@ -121,6 +128,32 @@ describe('readRaceClockFormValuesFromItemFields', () => {
     expect(
       whatWasRead.formFieldsThatCouldNotBeRead,
       'every field of a well-formed item must be readable (missing laps are normal)',
+    ).toEqual([]);
+  });
+
+  it('reads an item saved by an earlier editor, whose reference moment is a number, the same way', () => {
+    // Arrange: the same item as it was saved before "the moment of the take" existed:
+    // its reference moment is the Friday evening of the save, as a plain number.
+    const itemFields = buildEnduranceStartClockItemSavedWithTheMomentOfTheSave().fields;
+
+    // Act: read the form values from its fields.
+    const whatWasRead = readRaceClockFormValuesFromItemFields(itemFields);
+
+    // Assert: the form is the same as for an item saved today, and nothing is unreadable.
+    expect(
+      whatWasRead.formValues,
+      'an item with a number as its reference moment must still open with its stored values',
+    ).toEqual({
+      sessionName: 'Enduro de Resistência',
+      state: 'pre',
+      clockMode: 'remaining',
+      running: false,
+      referenceTime: '240:00',
+      lapsCompletedByLeader: '',
+    });
+    expect(
+      whatWasRead.formFieldsThatCouldNotBeRead,
+      'the reference moment is not a field of the form, so its kind must not raise a warning',
     ).toEqual([]);
   });
 
@@ -226,6 +259,56 @@ describe('readRaceClockFormValuesFromItemFields', () => {
       whatWasRead.formFieldsThatCouldNotBeRead,
       'the five required fields are missing and must be named in form order',
     ).toEqual(['sessionName', 'state', 'clockMode', 'running', 'referenceTime']);
+  });
+});
+
+describe('hasReferenceMomentTheClockCanUse', () => {
+  const referenceMomentScenarios = [
+    // What the editor saves today: the server writes the instant in at the take.
+    {
+      name: 'says yes for "the moment of the take"',
+      storedReferenceMoment: { kind: 'takeTime' } as FieldValue,
+      expected: true,
+    },
+    // What an earlier editor saved, and what a script may store: a real instant.
+    {
+      name: 'says yes for a whole number of milliseconds',
+      storedReferenceMoment: {
+        kind: 'literal',
+        value: momentTheItemWasSavedInMilliseconds,
+      } as FieldValue,
+      expected: true,
+    },
+    // A hand-made API call that left the field out: the graphic would refuse the take.
+    {
+      name: 'says no when the item has no reference moment',
+      storedReferenceMoment: undefined,
+      expected: false,
+    },
+    // A date typed as text is not an instant the clock can count from.
+    {
+      name: 'says no for a reference moment stored as text',
+      storedReferenceMoment: { kind: 'literal', value: '2026-10-09T21:30:00.000Z' } as FieldValue,
+      expected: false,
+    },
+  ];
+
+  it.each(referenceMomentScenarios)('$name', ({ storedReferenceMoment, expected }) => {
+    // Arrange: the endurance start item with the scenario's reference moment, or none.
+    const itemFields: ItemFields = { ...buildEnduranceStartClockItem().fields };
+    delete itemFields.referenceWallClockMs;
+    if (storedReferenceMoment !== undefined) {
+      itemFields.referenceWallClockMs = storedReferenceMoment;
+    }
+
+    // Act: ask whether the clock can use what is stored.
+    const hasUsableReferenceMoment = hasReferenceMomentTheClockCanUse(itemFields);
+
+    // Assert: only "the moment of the take" and a whole number of milliseconds are usable.
+    expect(
+      hasUsableReferenceMoment,
+      'only the moment of the take or a whole number of milliseconds is a usable reference',
+    ).toBe(expected);
   });
 });
 

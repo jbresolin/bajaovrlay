@@ -19,9 +19,6 @@ import {
   idOfTheMainSessionRundown,
 } from './itemsLikeTheEditorSaves.testSupport';
 
-/** Saturday 9:40 in Brasília, twenty minutes before the start: the panel's "now". */
-export const momentOfTheSaveInMilliseconds = Date.parse('2026-10-10T12:40:00.000Z');
-
 /** What a panel test gets back: the fake server and the record of "close" requests. */
 export type ItemEditorOnFakeServer = {
   fakeServer: ControlPageOnFakeServer['fakeServer'];
@@ -45,8 +42,8 @@ export function buildSlicesWithTheRaceClockAndTheDriverLowerThird(): Slices {
 
 /**
  * Draws the item editor on a connected page that knows the race clock and the driver
- * lower third, with "now" held at 9:40 on Saturday. `itemBeingEdited` null draws the
- * editor for a new item of the main session's rundown.
+ * lower third. `itemBeingEdited` null draws the editor for a new item of the main
+ * session's rundown.
  */
 export function renderItemEditorPanelOnFakeServer(
   itemBeingEdited: Item | null,
@@ -57,7 +54,6 @@ export function renderItemEditorPanelOnFakeServer(
       rundownId={idOfTheMainSessionRundown}
       itemBeingEdited={itemBeingEdited}
       onClose={onClose}
-      readCurrentTimeInMilliseconds={() => momentOfTheSaveInMilliseconds}
     />,
     buildSlicesWithTheRaceClockAndTheDriverLowerThird(),
   );

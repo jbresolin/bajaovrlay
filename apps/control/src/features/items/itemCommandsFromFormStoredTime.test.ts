@@ -3,8 +3,9 @@
  *
  * What this module is for:
  *   "Salvar item" on a stored item sends `updateItemFields` with only what the operator
- *   changed. For the race clock that matters twice over: a changed time also sends a new
- *   reference moment, which restarts a running clock from the moment of the save.
+ *   changed. For the race clock that matters twice over: on an item whose reference
+ *   moment is a stored number (as a script stores it), a changed time also replaces that
+ *   number by "the moment of the take", which changes where a running clock counts from.
  *   The editor itself only stores times in whole seconds, but a script may store any
  *   number of milliseconds through the API. The form shows such a time in whole seconds
  *   ("1:30" for 90 500 ms), so the time it hands back is 500 ms short of the stored one
@@ -14,7 +15,8 @@
  *   - With a running clock stored at 90 500 ms, a new label sends only the label: the
  *     time and the reference moment stay as stored, so the clock on the item is not moved.
  *   - Changing another clock field (the flag) does not drag the untouched time along.
- *   - A time the operator really typed anew is still sent, with the moment of the save.
+ *   - A time the operator really typed anew is still sent, with the reference moment
+ *     replaced by "the moment of the take".
  *   - A stored time the form cannot show at all (not a whole number of milliseconds) is
  *     replaced by the form's time, as the editor's warning promises.
  *
@@ -33,12 +35,9 @@ import type { RaceClockTakeFormValues } from '@/features/playout/raceClockTakeFo
 import { buildUpdateItemFieldsCommand } from './itemCommandsFromForm';
 import type { ItemEditorFormValues } from './itemEditorForm';
 import {
-  buildEnduranceStartClockItem,
+  buildEnduranceStartClockItemSavedWithTheMomentOfTheSave,
   momentTheItemWasSavedInMilliseconds,
 } from './itemsLikeTheEditorSaves.testSupport';
-
-// Saturday 9:40 in Brasília, when the operator opens the item and saves it.
-const momentOfTheEditInMilliseconds = Date.parse('2026-10-10T12:40:00.000Z');
 
 const idOfTheSecondHeatItem = '7c3e5a19-4d02-4b8f-a6e1-9f2b8d0c1e47';
 
@@ -116,9 +115,9 @@ describe('buildUpdateItemFieldsCommand for a running clock stored at 90 500 ms',
         fields: { state: { kind: 'literal', value: 'yellow' } },
       },
     },
-    // A time the operator really changed is still a new reference, sent with its moment.
+    // A time the operator really changed is a new reference: it counts from the take now.
     {
-      name: 'a time typed anew sends the time together with the moment of this save',
+      name: 'a time typed anew sends the time and replaces the number by the moment of the take',
       changesToTheItemForm: {},
       changesToTheClockForm: { referenceTime: '2:00' },
       expectedCommand: {
@@ -126,7 +125,7 @@ describe('buildUpdateItemFieldsCommand for a running clock stored at 90 500 ms',
         itemId: idOfTheSecondHeatItem,
         fields: {
           referenceTimeMs: { kind: 'literal', value: 120_000 },
-          referenceWallClockMs: { kind: 'literal', value: momentOfTheEditInMilliseconds },
+          referenceWallClockMs: { kind: 'takeTime' },
         },
       },
     },
@@ -147,12 +146,11 @@ describe('buildUpdateItemFieldsCommand for a running clock stored at 90 500 ms',
         ...changesToTheClockForm,
       } as RaceClockTakeFormValues;
 
-      // Act: build the update on Saturday morning.
+      // Act: build the update.
       const command = buildUpdateItemFieldsCommand({
         itemBeingEdited,
         itemFormValues,
         raceClockFormValues,
-        nowInMilliseconds: momentOfTheEditInMilliseconds,
       });
 
       // Assert: only what the operator changed travels; the half second the form cannot
@@ -173,7 +171,6 @@ describe('buildUpdateItemFieldsCommand for a running clock stored at 90 500 ms',
       itemBeingEdited,
       itemFormValues: buildItemFormShowingTheSecondHeatItem(),
       raceClockFormValues: buildClockFormShowingTheSecondHeatItem(),
-      nowInMilliseconds: momentOfTheEditInMilliseconds,
     });
 
     // Assert: opening and saving an item must never, by itself, change it.
@@ -182,14 +179,14 @@ describe('buildUpdateItemFieldsCommand for a running clock stored at 90 500 ms',
 });
 
 describe('buildUpdateItemFieldsCommand for a stored time the form cannot show', () => {
-  it('sends the time of the form, with the moment of the save', () => {
+  it('sends the time of the form, and replaces the stored number by the moment of the take', () => {
     // Arrange: the endurance start item whose time a script stored with a part of a
     // millisecond (14 400 000.5), which the form cannot show. The editor then shows the
     // form's default time with a warning; here the operator typed 240:00 and saved.
     const itemBeingEdited: Item = {
-      ...buildEnduranceStartClockItem(),
+      ...buildEnduranceStartClockItemSavedWithTheMomentOfTheSave(),
       fields: {
-        ...buildEnduranceStartClockItem().fields,
+        ...buildEnduranceStartClockItemSavedWithTheMomentOfTheSave().fields,
         referenceTimeMs: { kind: 'literal', value: 14_400_000.5 },
       },
     };
@@ -215,17 +212,16 @@ describe('buildUpdateItemFieldsCommand for a stored time the form cannot show', 
       itemBeingEdited,
       itemFormValues,
       raceClockFormValues,
-      nowInMilliseconds: momentOfTheEditInMilliseconds,
     });
 
     // Assert: the unusable time is replaced by the form's, as the editor's warning says,
-    // together with a new reference moment.
+    // and from then on the clock counts from the take.
     expect(command, 'a stored time the form cannot show must be replaced by the save').toEqual({
       type: 'updateItemFields',
       itemId: '0b6f2d1e-8c47-4e39-9a15-3d7c5e2f4a90',
       fields: {
         referenceTimeMs: { kind: 'literal', value: 14_400_000 },
-        referenceWallClockMs: { kind: 'literal', value: momentOfTheEditInMilliseconds },
+        referenceWallClockMs: { kind: 'takeTime' },
       },
     });
   });

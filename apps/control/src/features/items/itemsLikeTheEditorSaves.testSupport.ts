@@ -10,10 +10,11 @@ export const idOfTheMainSessionRundown = 'sessao-principal';
 export const momentTheItemWasSavedInMilliseconds = Date.parse('2026-10-09T21:30:00.000Z');
 
 /**
- * The item prepared on Friday for the start of the four-hour endurance race: the race
- * clock on the clock layer, stopped at 240:00 (14 400 000 ms) and counting down, under
- * the pre-start flag, with no laps shown. It is green in the rundown, has a note for
- * the operator and no auto-out.
+ * The item prepared on Friday for the start of the four-hour endurance race, as the
+ * editor saves it: the race clock on the clock layer, stopped at 240:00 (14 400 000 ms)
+ * and counting down, under the pre-start flag, with no laps shown, and its reference
+ * moment left to be stamped at the take. It is green in the rundown, has a note for the
+ * operator and no auto-out.
  */
 export function buildEnduranceStartClockItem(): Item {
   return {
@@ -27,12 +28,28 @@ export function buildEnduranceStartClockItem(): Item {
       state: { kind: 'literal', value: 'pre' },
       clockMode: { kind: 'literal', value: 'remaining' },
       referenceTimeMs: { kind: 'literal', value: 14_400_000 },
-      referenceWallClockMs: { kind: 'literal', value: momentTheItemWasSavedInMilliseconds },
+      referenceWallClockMs: { kind: 'takeTime' },
       running: { kind: 'literal', value: false },
     },
     label: 'Largada do Enduro',
     color: 'success',
     notes: 'Entrar quando os carros alinharem.',
+  };
+}
+
+/**
+ * The same item as an earlier version of the editor saved it (or as a script stores it
+ * through the API): its reference moment is a plain number, the moment of the SAVE on
+ * Friday evening, instead of "the moment of the take".
+ */
+export function buildEnduranceStartClockItemSavedWithTheMomentOfTheSave(): Item {
+  const enduranceStartItem = buildEnduranceStartClockItem();
+  return {
+    ...enduranceStartItem,
+    fields: {
+      ...enduranceStartItem.fields,
+      referenceWallClockMs: { kind: 'literal', value: momentTheItemWasSavedInMilliseconds },
+    },
   };
 }
 

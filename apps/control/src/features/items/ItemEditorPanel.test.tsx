@@ -13,8 +13,10 @@
  *     their defaults — whether the server's graphics arrive after the panel is drawn
  *     or were already on the page when it opened (the "+ Item" case).
  *   - The colour dropdown offers the six fixed colours, each with a name in words.
- *   - "Salvar item" builds the right `createItem` from what was typed and chosen, and
- *     the panel asks to be closed only after the server accepted it.
+ *   - "Salvar item" builds the right `createItem` from what was typed and chosen, with
+ *     the clock's reference moment left to the take, and the panel asks to be closed
+ *     only after the server accepted it.
+ *   - The earlier warning that a clock saved running counts from the save is gone.
  *   - Choosing a graphic the editor has no form for moves the layer to that graphic's
  *     default, replaces the race clock fields by the "BAJAOVRLAY-14" notice, and saves
  *     an item with empty fields.
@@ -30,8 +32,7 @@
  *   - Every combination of values: itemCommandsFromForm.test.ts, without drawing.
  *   - The rundown that opens this panel and the real server: features/rundown and
  *     e2e/, which use the real ones.
- *   - How a clock saved as running behaves when taken hours later; the panel only
- *     shows the notice that explains it.
+ *   - A clock counting from the take on air: e2e/rundownTakeWithSpace.e2e.ts.
  */
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -45,7 +46,6 @@ import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnF
 import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.testSupport';
 
 import {
-  momentOfTheSaveInMilliseconds,
   pressSaveAndWaitForCommand,
   renderItemEditorPanelOnFakeServer,
   renderItemEditorPanelOpenedOnAPageThatAlreadyKnowsTheGraphics,
@@ -93,9 +93,9 @@ describe('the item editor panel for a new item', () => {
       'the reference time must start at zero',
     ).toHaveValue('0:00');
     expect(
-      screen.getByText(/Relógio correndo: conta a partir do momento em que o item foi salvo/),
-      'the panel must warn how a clock saved running behaves when taken later',
-    ).toBeInTheDocument();
+      screen.queryByText(/conta a partir do momento em que o item foi salvo/),
+      'the old warning about a running clock counting from the save must be gone: a clock now counts from the take',
+    ).toBeNull();
   });
 
   it('opens with the first graphic and its layer when the page already knew the graphics, as after "+ Item"', () => {
@@ -157,7 +157,8 @@ describe('the item editor panel for a new item', () => {
     fakeServer.acceptLastCommand();
 
     // Assert: one createItem for the main session's rundown with the form as literals
-    // (240:00 is 14 400 000 ms, 90 s is 90 000 ms, the reference moment is the save).
+    // (240:00 is 14 400 000 ms, 90 s is 90 000 ms). The clock's reference moment is not
+    // a number: it is left for the server to stamp when the item is taken.
     expect(
       fakeServer.listCommandsReceived(),
       'the press must send exactly one createItem carrying the whole form',
@@ -176,7 +177,7 @@ describe('the item editor panel for a new item', () => {
           state: { kind: 'literal', value: 'pre' },
           clockMode: { kind: 'literal', value: 'remaining' },
           referenceTimeMs: { kind: 'literal', value: 14_400_000 },
-          referenceWallClockMs: { kind: 'literal', value: momentOfTheSaveInMilliseconds },
+          referenceWallClockMs: { kind: 'takeTime' },
           running: { kind: 'literal', value: false },
         },
       },

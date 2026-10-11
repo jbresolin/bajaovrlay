@@ -9,9 +9,11 @@ import { reduceTakeGraphic } from './takeGraphic.js';
 
 /**
  * takeItem: puts a prepared item on the program output. It resolves the item's field
- * values into data and hands the take to reduceTakeGraphic, the same reducer a take by
- * hand uses, so every rule of a take (one instance per layer and output, the refusals,
- * any check added to takeGraphic later) holds for items without being written twice.
+ * values into data (a `takeTime` field gets the moment of this command, the same one
+ * the instance's `takenAt` says) and hands the take to reduceTakeGraphic, the same
+ * reducer a take by hand uses, so every rule of a take (one instance per layer and
+ * output, the refusals, any check added to takeGraphic later) holds for items without
+ * being written twice.
  * Then it stamps the new instance with the item's id and moves the rundown's cursor to
  * the item after the one taken; after the last item the cursor is on nothing, rather
  * than back at the top where "next" would fire the opening again.
@@ -27,7 +29,7 @@ export function reduceTakeItem(
   if (item === undefined) {
     return { status: 'refused', error: refuseUnknownItem(command.itemId) };
   }
-  const resolution = resolveItemFieldsIntoGraphicData(item.fields);
+  const resolution = resolveItemFieldsIntoGraphicData(item.fields, context.now);
   if (resolution.status === 'refused') {
     return { status: 'refused', error: resolution.error };
   }

@@ -12,12 +12,13 @@
  * What these tests prove:
  *   - A new race clock item becomes exactly the `createItem` the server expects: the
  *     rundown, graphic, layer, trimmed label, colour, notes, the race clock values as
- *     literals, and the auto-out delay in milliseconds (left out when blank).
+ *     literals, the clock's reference moment as "the moment of the take", and the
+ *     auto-out delay in milliseconds (left out when blank).
  *   - A new item of a graphic the editor has no form for is created with empty fields.
  *   - An update names only the parts that differ from the stored item; among the race
  *     clock fields only the ones whose value changed.
- *   - The clock's reference moment is sent again only together with a changed time or a
- *     changed "running", so editing a label never moves a prepared clock.
+ *   - For an item saved by this editor the reference moment is already "the moment of
+ *     the take", so it never travels again: a new time sends the time alone.
  *   - Auto-out: a new number sets it, blank over a stored delay sends `null` (remove),
  *     and an untouched delay is not sent.
  *   - An edit that changed nothing builds no command at all.
@@ -27,11 +28,12 @@
  *     features/playout/raceClockTakeForm.test.ts): these builders are given valid values.
  *   - Removing the laps from an item, which the update command cannot do; the panel
  *     refuses that before building anything (ItemEditorPanelEditing.test.tsx).
+ *   - An item whose stored reference moment is a number (saved by an earlier editor or
+ *     by a script) or is missing: itemCommandsFromFormEarlierReference.test.ts.
  *   - A stored clock time with a part of a second, which only a script can store
  *     (itemCommandsFromFormStoredTime.test.ts); every time here is in whole seconds.
  *   - What the server does with the commands (apps/server).
  */
-import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import type { RaceClockTakeFormValues } from '@/features/playout/raceClockTakeForm';
@@ -42,11 +44,7 @@ import {
   buildDriverLowerThirdItem,
   buildEnduranceStartClockItem,
   idOfTheMainSessionRundown,
-  momentTheItemWasSavedInMilliseconds,
 } from './itemsLikeTheEditorSaves.testSupport';
-
-// Saturday 9:40 in Brasília, twenty minutes before the start, when the operator edits.
-const momentOfTheEditInMilliseconds = Date.parse('2026-10-10T12:40:00.000Z');
 
 /** The item part of the form exactly as the stored endurance start item fills it. */
 function buildItemFormShowingTheEnduranceStartItem(): ItemEditorFormValues {
@@ -83,15 +81,15 @@ describe('buildCreateItemCommand', () => {
     };
     const raceClockFormValues = buildClockFormShowingTheEnduranceStartItem();
 
-    // Act: build the command at the moment of the save.
+    // Act: build the command.
     const command = buildCreateItemCommand({
       rundownId: idOfTheMainSessionRundown,
       itemFormValues,
       raceClockFormValues,
-      nowInMilliseconds: momentTheItemWasSavedInMilliseconds,
     });
 
     // Assert: the whole command, part by part (240:00 is 14 400 000 ms, 90 s is 90 000 ms).
+    // The reference moment carries no number: the server stamps it when the item is taken.
     expect(command, 'the command must be exactly what the server expects').toEqual({
       type: 'createItem',
       rundownId: 'sessao-principal',
@@ -106,7 +104,7 @@ describe('buildCreateItemCommand', () => {
         state: { kind: 'literal', value: 'pre' },
         clockMode: { kind: 'literal', value: 'remaining' },
         referenceTimeMs: { kind: 'literal', value: 14_400_000 },
-        referenceWallClockMs: { kind: 'literal', value: momentTheItemWasSavedInMilliseconds },
+        referenceWallClockMs: { kind: 'takeTime' },
         running: { kind: 'literal', value: false },
       },
     });
@@ -121,7 +119,6 @@ describe('buildCreateItemCommand', () => {
       rundownId: idOfTheMainSessionRundown,
       itemFormValues,
       raceClockFormValues: buildClockFormShowingTheEnduranceStartItem(),
-      nowInMilliseconds: momentTheItemWasSavedInMilliseconds,
     });
 
     // Assert: neither key is in the command; the server reads their absence.
@@ -150,7 +147,6 @@ describe('buildCreateItemCommand', () => {
       rundownId: idOfTheMainSessionRundown,
       itemFormValues,
       raceClockFormValues: undefined,
-      nowInMilliseconds: momentTheItemWasSavedInMilliseconds,
     });
 
     // Assert: the item is created with no field values (BAJAOVRLAY-14 brings its form).
@@ -218,32 +214,27 @@ describe('buildUpdateItemFieldsCommand', () => {
         fields: { state: { kind: 'literal', value: 'green' } },
       },
     },
-    // A new time is a new reference: the time and the moment it was typed go together.
+    // A new time travels alone: the item already says "count from the take", and sending
+    // that again would break the rule that only what changed is sent.
     {
-      name: 'a new time sends the time together with the moment of this save',
+      name: 'a new time sends the time alone, because the reference is already the take',
       changesToTheItemForm: {},
       changesToTheClockForm: { referenceTime: '90:00' },
       expectedCommand: {
         type: 'updateItemFields',
         itemId: idOfTheEnduranceStartItem,
-        fields: {
-          referenceTimeMs: { kind: 'literal', value: 5_400_000 },
-          referenceWallClockMs: { kind: 'literal', value: momentOfTheEditInMilliseconds },
-        },
+        fields: { referenceTimeMs: { kind: 'literal', value: 5_400_000 } },
       },
     },
-    // Starting the clock also fixes the moment it starts counting from: this save.
+    // The same for starting the clock: it will count from the take, as the item says.
     {
-      name: 'switching the clock to running sends "running" with the moment of this save',
+      name: 'switching the clock to running sends "running" alone',
       changesToTheItemForm: {},
       changesToTheClockForm: { running: true },
       expectedCommand: {
         type: 'updateItemFields',
         itemId: idOfTheEnduranceStartItem,
-        fields: {
-          running: { kind: 'literal', value: true },
-          referenceWallClockMs: { kind: 'literal', value: momentOfTheEditInMilliseconds },
-        },
+        fields: { running: { kind: 'literal', value: true } },
       },
     },
     // Laps typed on an item that had none are a new field.
@@ -274,12 +265,11 @@ describe('buildUpdateItemFieldsCommand', () => {
         ...changesToTheClockForm,
       } as RaceClockTakeFormValues;
 
-      // Act: build the update on Saturday morning.
+      // Act: build the update.
       const command = buildUpdateItemFieldsCommand({
         itemBeingEdited,
         itemFormValues,
         raceClockFormValues,
-        nowInMilliseconds: momentOfTheEditInMilliseconds,
       });
 
       // Assert: the command names the item and only what changed.
@@ -293,52 +283,15 @@ describe('buildUpdateItemFieldsCommand', () => {
     // Arrange: the stored item and the form exactly as the item filled it.
     const itemBeingEdited = buildEnduranceStartClockItem();
 
-    // Act: build the update twelve hours after the item was saved.
+    // Act: build the update.
     const command = buildUpdateItemFieldsCommand({
       itemBeingEdited,
       itemFormValues: buildItemFormShowingTheEnduranceStartItem(),
       raceClockFormValues: buildClockFormShowingTheEnduranceStartItem(),
-      nowInMilliseconds: momentOfTheEditInMilliseconds,
     });
 
-    // Assert: there is nothing to send. In particular the later "now" alone is not a
-    // change: the clock's reference moment is the one stored on Friday.
+    // Assert: there is nothing to send; opening and saving an item must never change it.
     expect(command, 'an untouched form must not build a command').toBeUndefined();
-  });
-
-  it('sends the reference moment when the stored item has none the clock can use', () => {
-    // Arrange: the endurance start item whose reference moment was lost (a hand-made
-    // API call stored fields without it), opened and saved with only a new label.
-    const fieldsWithoutTheReferenceMoment: ItemFields = {
-      ...buildEnduranceStartClockItem().fields,
-    };
-    delete fieldsWithoutTheReferenceMoment.referenceWallClockMs;
-    const itemBeingEdited = {
-      ...buildEnduranceStartClockItem(),
-      fields: fieldsWithoutTheReferenceMoment,
-    };
-    const itemFormValues = {
-      ...buildItemFormShowingTheEnduranceStartItem(),
-      label: 'Largada do Enduro (sábado)',
-    };
-
-    // Act: build the update.
-    const command = buildUpdateItemFieldsCommand({
-      itemBeingEdited,
-      itemFormValues,
-      raceClockFormValues: buildClockFormShowingTheEnduranceStartItem(),
-      nowInMilliseconds: momentOfTheEditInMilliseconds,
-    });
-
-    // Assert: the missing reference is repaired, because the graphic requires that field.
-    expect(command, 'a missing reference moment must be filled in by the save').toEqual({
-      type: 'updateItemFields',
-      itemId: '0b6f2d1e-8c47-4e39-9a15-3d7c5e2f4a90',
-      label: 'Largada do Enduro (sábado)',
-      fields: {
-        referenceWallClockMs: { kind: 'literal', value: momentOfTheEditInMilliseconds },
-      },
-    });
   });
 
   it('sends null to remove the auto-out when the operator blanks a stored delay', () => {
@@ -358,7 +311,6 @@ describe('buildUpdateItemFieldsCommand', () => {
       itemBeingEdited,
       itemFormValues,
       raceClockFormValues: undefined,
-      nowInMilliseconds: momentOfTheEditInMilliseconds,
     });
 
     // Assert: null is how the command says "remove the delay"; its fields are not touched.

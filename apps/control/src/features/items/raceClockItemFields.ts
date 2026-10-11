@@ -2,16 +2,17 @@
  * The race clock's field values as an item stores them: built from the race clock form
  * when an item is saved, and read back into form values when an item is opened.
  *
- * How a prepared clock behaves (a deliberate trade-off, open for João to revisit):
- * an item stores exactly what the operator typed, plus the moment of the SAVE as the
- * clock's reference moment (`referenceWallClockMs`), because the graphic requires that
- * field and the server only passes literals through until M2 brings bindings.
- *   - A clock saved STOPPED shows the typed time whenever the item is taken. This is
- *     the case that works for an item prepared the evening before.
- *   - A clock saved RUNNING counts from the moment of the save, not from the take: saved
- *     at 240:00 remaining on Friday, it reads 0:00 on Saturday. To start a clock at the
- *     take, save it stopped and start it from the race clock panel.
- * The panel says this under the fields (ptBR.itemEditor.preparedClockNote).
+ * How a prepared clock behaves (João's ruling at gate 2 of BAJAOVRLAY-13): an item
+ * stores exactly what the operator typed, as literals, and its reference moment
+ * (`referenceWallClockMs`, the instant a running clock counts from) as
+ * `{ kind: 'takeTime' }`. The server writes the instant of the take into that field
+ * when the item goes on air. So a clock saved running at 240:00 on Friday starts at
+ * 240:00 when it is taken on Saturday, and a clock saved stopped shows the typed time.
+ *
+ * Items saved before that ruling, or stored by a script, may hold a literal number
+ * there. They are read as before, and nothing rewrites the number until a save changes
+ * the clock's time or its "running" switch (raceClockReferenceRules.ts). What could go
+ * wrong: until such an edit, a clock stored running still counts from that number.
  *
  * The rules repeat the manifest (packages/graphics/race-clock/race-clock.ograf.json) by
  * hand, as features/playout does; BAJAOVRLAY-14 replaces all of it with generated forms.
@@ -43,26 +44,34 @@ const StoredRunningSchema = z.boolean();
 const StoredMillisecondsSchema = z.number().int().min(0);
 const StoredLapsSchema = z.number().int().min(0);
 
+// The take panel's builder wants a moment for the clock to count from. An item has none
+// until it is taken, so the builder is given this one and its answer for that field is
+// thrown away: the item stores `{ kind: 'takeTime' }` there instead.
+const referenceMomentThatIsNeverStored = 0;
+
 /**
  * Builds the stored fields from race clock form values that passed the take panel's
- * rules: one literal per field of the race clock, `nowInMilliseconds` (the moment of
- * the save) as the reference moment, and no laps field when the laps are blank.
+ * rules: one literal per typed field, the reference moment as "the moment of the take"
+ * (the server stamps it when the item goes on air), and no laps field when the laps are
+ * blank.
  */
 export function buildRaceClockItemFieldsFromFormValues(
   formValues: RaceClockTakeFormValues,
-  nowInMilliseconds: number,
 ): ItemFields {
   // The take panel's builder already turns the form into the data the graphic expects
   // (trimmed name, mm:ss to milliseconds, blank laps left out). It is reused here so an
   // item and a take by hand can never disagree about that conversion.
-  const raceClockData = buildTakeRaceClockCommand(formValues, nowInMilliseconds).data;
+  const raceClockData = buildTakeRaceClockCommand(
+    formValues,
+    referenceMomentThatIsNeverStored,
+  ).data;
 
   const itemFields: ItemFields = {
     sessionName: { kind: 'literal', value: raceClockData.sessionName },
     state: { kind: 'literal', value: raceClockData.state },
     clockMode: { kind: 'literal', value: raceClockData.clockMode },
     referenceTimeMs: { kind: 'literal', value: raceClockData.referenceTimeMs },
-    referenceWallClockMs: { kind: 'literal', value: raceClockData.referenceWallClockMs },
+    referenceWallClockMs: { kind: 'takeTime' },
     running: { kind: 'literal', value: raceClockData.running },
   };
   if (raceClockData.lapsCompletedByLeader !== undefined) {
@@ -76,20 +85,15 @@ export function buildRaceClockItemFieldsFromFormValues(
 
 /**
  * The literal value stored under `fieldKey`, or undefined when the item has no such
- * field or the field is of a kind this editor cannot edit (M2's bindings).
+ * field or the field is not a literal: "the moment of the take" has no value to show,
+ * and neither have the kinds M2 brings (bindings).
  */
 function readLiteralValueOfField(itemFields: ItemFields, fieldKey: string): unknown {
   const fieldValue = itemFields[fieldKey];
-  if (fieldValue === undefined) {
+  if (fieldValue === undefined || fieldValue.kind !== 'literal') {
     return undefined;
   }
-  switch (fieldValue.kind) {
-    case 'literal':
-      return fieldValue.value;
-    default:
-      // A kind added after this task. The editor cannot show it, so it reads as unusable.
-      return undefined;
-  }
+  return fieldValue.value;
 }
 
 /**
@@ -196,10 +200,16 @@ export function isStoredReferenceTimeTheOneTheFormHolds(
 }
 
 /**
- * Answers whether the item stores a reference moment the clock can use: a literal whole
- * number of milliseconds. Without one the graphic refuses the item's data at the take.
+ * Answers whether the item stores a reference moment the clock can use: "the moment of
+ * the take" (what this editor saves), or a literal whole number of milliseconds (what an
+ * earlier editor saved and what a script may store). Without one the graphic refuses
+ * the item's data at the take.
  */
 export function hasReferenceMomentTheClockCanUse(itemFields: ItemFields): boolean {
+  const isStampedAtTheTake = itemFields.referenceWallClockMs?.kind === 'takeTime';
+  if (isStampedAtTheTake) {
+    return true;
+  }
   const storedReferenceMoment = StoredMillisecondsSchema.safeParse(
     readLiteralValueOfField(itemFields, 'referenceWallClockMs'),
   );

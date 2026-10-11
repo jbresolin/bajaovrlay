@@ -135,9 +135,6 @@ export const ptBR = {
       'O gráfico e a camada de um item salvo não mudam. Para trocá-los, exclua o item e crie outro.',
     genericEditorComesLater:
       'Editor genérico chega em BAJAOVRLAY-14. Até lá, os campos deste gráfico não podem ser preenchidos aqui.',
-    // Shown under the race clock fields: what a prepared clock does when taken later.
-    preparedClockNote:
-      'Relógio parado: vai ao ar mostrando o tempo digitado. Relógio correndo: conta a partir do momento em que o item foi salvo, não de quando vai ao ar. Para largar na hora, salve o relógio parado e inicie-o pelo painel "Relógio de prova".',
     fieldsThatCouldNotBeRead: (fieldLabels: string) =>
       `Estes campos do item não puderam ser lidos e aparecem com o valor padrão; salvar grava o que está no formulário: ${fieldLabels}.`,
     saveButton: 'Salvar item',
@@ -154,6 +151,11 @@ export const ptBR = {
     takeItemButton: 'Disparar',
     editItemButton: 'Editar',
     deleteItemButton: 'Excluir',
+    // What "Excluir" reads for 3 seconds after its first press, while it waits for the second.
+    deleteItemConfirmButton: 'Confirmar: excluir',
+    // The accessible name of a row's label, which is a button that puts the cursor on
+    // that row. The eye sees only the label itself.
+    setCursorToItemButton: (itemLabel: string) => `Marcar como próximo: ${itemLabel}`,
     moveItemHandle: 'Mover',
     // What a screen reader hears while a row is dragged. dnd-kit's own texts are in
     // English, so every one of them is replaced here.

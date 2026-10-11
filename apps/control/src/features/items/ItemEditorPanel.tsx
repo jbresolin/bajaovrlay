@@ -40,11 +40,6 @@ export type ItemEditorPanelProps = {
   itemBeingEdited: Item | null;
   /** Called after the server accepted the save, and when the operator cancels. */
   onClose: () => void;
-  /**
-   * Returns "now" as Date.now() does. A parameter so tests can hold the clock still;
-   * the page leaves it out and gets the real clock.
-   */
-  readCurrentTimeInMilliseconds?: () => number;
 };
 
 // The race clock fields are drawn by the take panel too. This prefix keeps the ids of
@@ -75,7 +70,6 @@ export function ItemEditorPanel(props: ItemEditorPanelProps) {
  */
 function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   const { rundownId, onClose } = props;
-  const readCurrentTimeInMilliseconds = props.readCurrentTimeInMilliseconds ?? Date.now;
   const graphics = useServerState((state) => state.graphics);
   const layers = useServerState((state) => state.layers);
   const sendCommand = useSendCommand();
@@ -155,19 +149,17 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   }
 
   // Runs only when every field of both forms passed its rule. `raceClockFormValues` is
-  // undefined for a graphic the editor has no form for.
+  // undefined for a graphic the editor has no form for. The moment of the save plays no
+  // part: a clock's reference moment is stamped by the server when the item is taken.
   async function sendFormsAsCommand(
     itemFormValues: ItemEditorFormValues,
     raceClockFormValues: RaceClockTakeFormValues | undefined,
   ): Promise<void> {
-    const nowInMilliseconds = readCurrentTimeInMilliseconds();
-
     if (itemAsItWasWhenOpened === null) {
       const createCommand = buildCreateItemCommand({
         rundownId,
         itemFormValues,
         raceClockFormValues,
-        nowInMilliseconds,
       });
       setHasSentASaveInThisOpening(true);
       const wasAcceptedByTheServer = await sendCommand(createCommand);
@@ -194,7 +186,6 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
       itemBeingEdited: itemAsItWasWhenOpened,
       itemFormValues,
       raceClockFormValues,
-      nowInMilliseconds,
     });
     // Nothing was changed: there is nothing to send, and the operator is done.
     if (updateCommand === undefined) {
@@ -281,13 +272,10 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
               </p>
             )}
             {isRaceClockChosen && (
-              <>
-                <RaceClockFormFields
-                  form={raceClockForm}
-                  controlIdPrefix={raceClockControlIdPrefix}
-                />
-                <p className="text-sm text-muted-foreground">{ptBR.itemEditor.preparedClockNote}</p>
-              </>
+              <RaceClockFormFields
+                form={raceClockForm}
+                controlIdPrefix={raceClockControlIdPrefix}
+              />
             )}
             {isGraphicChosen && !isRaceClockChosen && (
               <p className="text-sm text-muted-foreground">
