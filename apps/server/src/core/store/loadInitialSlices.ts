@@ -8,6 +8,7 @@ import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { eventLogSliceSize } from '../events/eventLogSlice.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import { discoverBuiltGraphics } from './discoverBuiltGraphics.js';
+import { loadOrSeedRundownSlices } from './loadRundownSlices.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 import { seededLayers } from './seedLayers.js';
 
@@ -29,7 +30,8 @@ type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'>;
  * database (so a restart restores what was on air), or seeded when it is empty. The
  * graphics slice is rebuilt from the built packages on every boot and saved, because it
  * describes what is on disk, not what the operator did. The event-log slice is the
- * newest entries of the event_log table.
+ * newest entries of the event_log table. Rundowns and items are the operator's too:
+ * loaded, or seeded when missing, by loadRundownSlices.ts.
  */
 export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const storedRows = readAllSliceRows(options.database);
@@ -47,7 +49,11 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     graphicsRow,
     { name: 'instances', json: operatorSlices.instances, updatedAt },
   ];
-  writeBootSliceRows(options.database, isFirstBoot ? seedRows : [graphicsRow]);
+  // Rundowns and items are loaded, or seeded when their row is missing (a first boot,
+  // or a database written before they existed); see loadRundownSlices.ts.
+  const rundownSlices = loadOrSeedRundownSlices(storedRows, updatedAt, options.logger);
+  const layerAndGraphicRows = isFirstBoot ? seedRows : [graphicsRow];
+  writeBootSliceRows(options.database, [...layerAndGraphicRows, ...rundownSlices.seededRows]);
   if (isFirstBoot) {
     options.logger.info('empty database seeded with the fixed layers');
   }
@@ -64,11 +70,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     graphics,
     instances: operatorSlices.instances,
     eventLog,
-    // PLACEHOLDER (BAJAOVRLAY-13): always empty and never read from the database. The
-    // server work of this task loads both from their stored rows and seeds the rundown
-    // "Sessão principal" on the first boot.
-    rundowns: [],
-    items: [],
+    rundowns: rundownSlices.rundowns,
+    items: rundownSlices.items,
   };
 }
 

@@ -10,3 +10,6 @@ saves (one SQLite transaction) → appends to the event log → tells listeners.
 - `loadInitialSlices.ts` — loads layers and instances at boot, or seeds an empty
   database (`seedLayers.ts`); rebuilds graphics every boot (`discoverBuiltGraphics.ts`).
 - `builtGraphicsFolder.testSupport.ts` — stand-in graphics folders for tests.
+- Rundowns and items: `loadRundownSlices.ts` loads or seeds them (`seedRundowns.ts`);
+  `resolveItemFields.ts` turns an item's fields into graphic data at the take; `autoOut.ts`
+  clears an item's layer after its delay; `rundownCommandRefusals.ts` holds their refusals.

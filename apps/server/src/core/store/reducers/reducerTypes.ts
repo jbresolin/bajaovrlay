@@ -4,7 +4,10 @@ import type { CommandError, Slices } from '@bajaovrlay/shared';
  * The slices a command may change. The event log is not among them: the store appends
  * to it after every command, whatever the reducer decided.
  */
-export type SlicesChangedByCommands = Pick<Slices, 'layers' | 'graphics' | 'instances'>;
+export type SlicesChangedByCommands = Pick<
+  Slices,
+  'layers' | 'graphics' | 'instances' | 'rundowns' | 'items'
+>;
 
 /**
  * Everything a reducer needs that is not pure: made by the store before calling it, so
@@ -15,6 +18,8 @@ export type ReducerContext = {
   newInstanceId: string;
   /** The current time, as an ISO 8601 timestamp. */
   now: string;
+  /** The id to give an item the command creates (createItem). */
+  newItemId: string;
 };
 
 /**

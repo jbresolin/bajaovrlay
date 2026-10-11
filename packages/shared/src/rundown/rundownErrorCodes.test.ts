@@ -32,25 +32,25 @@ describe('CommandErrorSchema and the rundown error codes', () => {
     {
       name: 'accepts RUNDOWN_NOT_FOUND',
       code: 'RUNDOWN_NOT_FOUND',
-      message: 'O roteiro "sessao-de-sabado" não existe.',
+      message: 'O rundown "sessao-de-sabado" não existe.',
     },
     // moveCursor pointed a rundown's cursor at an item that lives in another rundown.
     {
       name: 'accepts ITEM_NOT_IN_RUNDOWN',
       code: 'ITEM_NOT_IN_RUNDOWN',
-      message: 'O item "b1f7c2d0" não pertence ao roteiro "sessao-principal".',
+      message: 'O item "b1f7c2d0" não pertence ao rundown "sessao-principal".',
     },
     // reorderItems sent a list that leaves an item out or names one from elsewhere.
     {
       name: 'accepts ITEMS_NOT_A_PERMUTATION',
       code: 'ITEMS_NOT_A_PERMUTATION',
-      message: 'A nova ordem precisa conter todos os itens do roteiro, uma vez cada.',
+      message: 'A nova ordem precisa conter todos os itens do rundown, uma vez cada.',
     },
     // takeNext (the Space key) was pressed while the cursor was on nothing.
     {
       name: 'accepts RUNDOWN_CURSOR_EMPTY',
       code: 'RUNDOWN_CURSOR_EMPTY',
-      message: 'Não há próximo item: o cursor do roteiro está vazio.',
+      message: 'Não há próximo item: o cursor do rundown está vazio.',
     },
     // The resolver met a field value of a kind it cannot handle before M2.
     {

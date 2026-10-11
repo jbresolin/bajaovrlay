@@ -17,7 +17,7 @@ import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialS
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
-/** What a store needs. The last three have production defaults; tests replace them. */
+/** What a store needs. The last four have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
   /** The authorisation step; defaults to allowEveryCommand (no login in M0). */
   isCommandAllowed?: IsCommandAllowed | undefined;
@@ -25,6 +25,8 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
   readCurrentTime?: (() => Date) | undefined;
   /** Makes the id of each new instance; defaults to a random UUID. */
   createInstanceId?: (() => string) | undefined;
+  /** Makes the id of each new item (createItem); defaults to a random UUID. */
+  createItemId?: (() => string) | undefined;
 };
 
 /** How applyCommand answers: ok, or the error the operator is shown. */
@@ -44,7 +46,13 @@ export type StateStore = {
 };
 
 // The slices a reducer may change, in the order changes are reported.
-const sliceNamesChangedByCommands = ['layers', 'graphics', 'instances'] as const;
+const sliceNamesChangedByCommands = [
+  'layers',
+  'graphics',
+  'instances',
+  'rundowns',
+  'items',
+] as const;
 
 /**
  * Creates the store, loading its slices from the database (or seeding an empty one).
@@ -54,6 +62,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const isCommandAllowed = options.isCommandAllowed ?? allowEveryCommand;
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   const createInstanceId = options.createInstanceId ?? (() => randomUUID());
+  const createItemId = options.createItemId ?? (() => randomUUID());
   const listeners = new Set<SliceChangeListener>();
   let currentSlices = loadInitialSlices({ ...options, readCurrentTime });
 
@@ -92,6 +101,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     const reducerOutcome = reduceCommand(currentSlices, command, {
       newInstanceId: createInstanceId(),
       now,
+      newItemId: createItemId(),
     });
     if (reducerOutcome.status === 'refused') {
       return recordRefusal({
@@ -170,11 +180,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       layers: outcome.nextSlices.layers,
       graphics: outcome.nextSlices.graphics,
       instances: outcome.nextSlices.instances,
-      // PLACEHOLDER (BAJAOVRLAY-13): carried over untouched, because no reducer can change
-      // them yet. The server work of this task takes both from outcome.nextSlices, and
-      // adds them to SlicesChangedByCommands and to sliceNamesChangedByCommands above.
-      rundowns: currentSlices.rundowns,
-      items: currentSlices.items,
+      rundowns: outcome.nextSlices.rundowns,
+      items: outcome.nextSlices.items,
       eventLog: appendToEventLogSlice(currentSlices.eventLog, savedLogEntry),
     };
     tellListeners([...changedSliceNames, 'eventLog']);
