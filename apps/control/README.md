@@ -4,8 +4,7 @@ The operator's control page (Vite + React + Tailwind v4 + shadcn/ui). It keeps t
 its items and the race clock to air, updates the clock in place, clears layers, and shows what is on
 every layer and whether the renderer confirmed it. Start at `src/main.tsx`, `src/app/AppShell.tsx`.
 
-- `src/app/` — the header and the three-column layout.
-- `src/features/<name>/` — `connection`, `items`, `layers`, `playout`, `programMonitor`, `rundown`, `serverHealth`.
+- `src/app/` (the three-column layout) and `src/features/<name>/`, one folder per feature.
 - `src/state/` — the WebSocket client and the store; the only place server state lives.
 - `src/i18n/` — every string the operator reads (`ptBR.ts`). No inline UI text.
 - `src/keyboard/`, `src/logging/` — shortcuts (Esc, Backspace, Space, ←, →) and the JSON console log.
