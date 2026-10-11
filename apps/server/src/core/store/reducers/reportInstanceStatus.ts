@@ -5,9 +5,9 @@ import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js'
 
 /**
  * reportInstanceStatus: records what a renderer says really happened to an instance.
- * A `loading` instance becomes `on-air`, or `failed` with the renderer's detail. An
- * instance in any other status is left exactly as it is (the same array is handed
- * back). Refused only if the instance is not there.
+ * A `loading` instance becomes `on-air`, or `failed` with the renderer's detail, and an
+ * `on-air` instance becomes `failed`. Every other report leaves the instance exactly as
+ * it is (the same array is handed back). Refused only if the instance is not there.
  */
 export function reduceReportInstanceStatus(
   slices: SlicesChangedByCommands,
@@ -18,16 +18,21 @@ export function reduceReportInstanceStatus(
     return { status: 'refused', error: refuseUnknownInstance(command.instanceId) };
   }
 
-  // Only the first report about an instance counts. Several renderers show the same
-  // instance (OBS, the control page's monitor) and each one reports, so:
-  // - a second `on-air` is expected and must not cause a save and a broadcast;
-  // - a `failed` after `on-air` must not turn the badge red while OBS is showing the
-  //   graphic, and an `on-air` after `failed` must not hide a failure the operator has
-  //   not dealt with: a failed instance stays until it is cleared or replaced.
-  // What goes unseen: a renderer that fails after another already reported `on-air`.
-  // That report is still in the event log, with its detail.
+  // Several renderers show the same instance (OBS, the control page's monitor) and each
+  // one reports, so a failure wins over a success (João's ruling, 2026-10-10):
+  // - a `failed` after `on-air` turns the badge red, because some screen is not showing
+  //   the graphic and the operator must know;
+  // - an `on-air` after `failed` must not hide a failure the operator has not dealt
+  //   with, and a second `failed` must not replace the reason already being read: a
+  //   failed instance stays as it is until it is cleared or replaced;
+  // - a second `on-air` is expected and changes nothing.
+  // What could go wrong: the badge says "Falhou" while OBS is in fact showing the
+  // graphic, when it was only the control page's monitor that failed. And since a
+  // report that changes nothing is not written to the event log either, a second
+  // failure's detail is recorded nowhere on the server (only in that renderer's log).
   const isWaitingForItsFirstReport = reportedInstance.status === 'loading';
-  if (!isWaitingForItsFirstReport) {
+  const isFailureAfterOnAir = reportedInstance.status === 'on-air' && command.status === 'failed';
+  if (!isWaitingForItsFirstReport && !isFailureAfterOnAir) {
     return { status: 'applied', slices };
   }
 

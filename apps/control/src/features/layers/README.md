@@ -11,5 +11,5 @@ docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
   "Carregando", red "Falhou" with the renderer's detail in a tooltip.
 - `useCurrentTime.ts` — redraws the rows every 10 s so the relative times keep up.
 
-Program output only; there is no preview yet. A take starts as "Carregando" and the
-renderer's report makes it "No ar" or "Falhou"; a failed graphic stays until cleared.
+Program output only; there is no preview yet. A take starts as "Carregando"; a renderer's
+report makes it "No ar" or (even after "No ar") "Falhou", which stays until cleared.

@@ -7,10 +7,11 @@ export const InstanceTargetSchema = z.enum(['program', 'preview']);
 export type InstanceTarget = z.infer<typeof InstanceTargetSchema>;
 
 /**
- * Where an instance is in its life: `loading` until the renderer reports on it, `ready`,
- * `on-air` once the renderer says it is shown, `stopping` while animating out, and
- * `failed` when the renderer could not show it. A failed instance stays in the slice
- * until its layer is cleared or taken again, so the operator sees that it failed.
+ * Where an instance is in its life: `loading` until a renderer reports on it, `ready`,
+ * `on-air` once a renderer says it is shown, `stopping` while animating out, and
+ * `failed` when a renderer could not show it, even if another one already had. A failed
+ * instance stays in the slice until its layer is cleared or taken again, so the operator
+ * sees that it failed.
  */
 export const InstanceStatusSchema = z.enum(['loading', 'ready', 'on-air', 'stopping', 'failed']);
 

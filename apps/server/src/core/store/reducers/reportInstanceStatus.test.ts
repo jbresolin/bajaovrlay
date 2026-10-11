@@ -11,11 +11,14 @@
  * What these tests prove:
  *   - A `loading` instance becomes `on-air`, or `failed` with the renderer's detail
  *     (and without a detail when the renderer gave none).
- *   - Only a `loading` instance moves. A second `on-air` report (two renderers show the
- *     same instance: OBS and the control page's monitor) changes nothing and hands back
- *     the very same array, so nothing is saved or broadcast. The same goes for every
- *     other report about an instance that is already `on-air` or `failed`: a `failed`
- *     instance stays failed, with its first detail, until it is cleared or replaced.
+ *   - An `on-air` instance becomes `failed`, with the detail, when a renderer reports a
+ *     failure after another one already showed it: a failure is never kept from the
+ *     operator.
+ *   - Every other report changes nothing and hands back the very same array, so the
+ *     store saves, logs and broadcasts nothing: a second `on-air` (two renderers show
+ *     the same instance: OBS and the control page's monitor), and any report about an
+ *     instance that is already `failed`, which stays failed, with its first detail,
+ *     until it is cleared or replaced.
  *   - A report about an instance that is not there is refused with a pt-BR reason.
  *   - The reducer never changes the slices it was given.
  *
@@ -91,18 +94,18 @@ const statusReportScenarios: Array<{
     expectedRaceClockAfter: buildRaceClockInstanceWithStatus('on-air'),
     isInstancesSliceUnchanged: true,
   },
-  // One renderer already showed it; a second one failing must not flip the badge to
-  // failed while the graphic is on screen in OBS. The report is still in the event log.
+  // The control page's monitor showed the clock, then OBS could not: the operator must
+  // see the failure and its reason, because the badge would otherwise keep saying "No ar".
   {
-    name: 'on-air stays on-air when another renderer reports a failure',
+    name: 'on-air → failed, with the detail, when another renderer reports a failure',
     raceClockBefore: buildRaceClockInstanceWithStatus('on-air'),
     command: reportFailedWithDetail,
-    expectedRaceClockAfter: buildRaceClockInstanceWithStatus('on-air'),
-    isInstancesSliceUnchanged: true,
+    expectedRaceClockAfter: buildRaceClockInstanceWithStatus('failed', moduleImportFailure),
+    isInstancesSliceUnchanged: false,
   },
   // A failure is never hidden by a later success: it stays until cleared or replaced.
   {
-    name: 'failed stays failed, with its detail, when a renderer later reports on-air',
+    name: 'failed → on-air is a no-op that returns the same array and keeps the detail',
     raceClockBefore: buildRaceClockInstanceWithStatus('failed', moduleImportFailure),
     command: reportOnAir,
     expectedRaceClockAfter: buildRaceClockInstanceWithStatus('failed', moduleImportFailure),
@@ -110,7 +113,7 @@ const statusReportScenarios: Array<{
   },
   // A second failure report must not overwrite the reason the operator is already reading.
   {
-    name: 'failed keeps its first detail when a second failure is reported',
+    name: 'failed → failed is a no-op that returns the same array and keeps the first detail',
     raceClockBefore: buildRaceClockInstanceWithStatus('failed', moduleImportFailure),
     command: {
       type: 'reportInstanceStatus',
