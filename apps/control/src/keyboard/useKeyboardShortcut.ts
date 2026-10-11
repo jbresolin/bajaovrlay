@@ -6,6 +6,19 @@ export type KeyboardShortcutOptions = {
   isEnabled: boolean;
   /** true makes the shortcut ignore key presses made on a text field, dropdown or switch. */
   isIgnoredWhileTyping: boolean;
+  /**
+   * true makes the shortcut ignore key presses made while the focus is on a button or a
+   * link. For keys those controls use themselves: Space presses the focused button, and
+   * a shortcut on Space that fired as well would do two things with one press.
+   * Left out means false, which is what Esc and Backspace want.
+   */
+  isIgnoredOnButtonsAndLinks?: boolean;
+  /**
+   * true stops the browser from also doing its own thing with the key once the shortcut
+   * has fired. For keys the browser uses on a plain page: Space scrolls down and the
+   * Right arrow scrolls sideways. Left out means false.
+   */
+  isKeptFromTheBrowser?: boolean;
 };
 
 /**
@@ -21,6 +34,8 @@ export function useKeyboardShortcut(
   options: KeyboardShortcutOptions,
 ): void {
   const { isEnabled, isIgnoredWhileTyping } = options;
+  const isIgnoredOnButtonsAndLinks = options.isIgnoredOnButtonsAndLinks ?? false;
+  const isKeptFromTheBrowser = options.isKeptFromTheBrowser ?? false;
 
   useEffect(() => {
     if (!isEnabled) {
@@ -40,6 +55,12 @@ export function useKeyboardShortcut(
       if (isIgnoredWhileTyping && isTypingTarget(event.target)) {
         return;
       }
+      if (isIgnoredOnButtonsAndLinks && isButtonOrLinkTarget(event.target)) {
+        return;
+      }
+      if (isKeptFromTheBrowser) {
+        event.preventDefault();
+      }
       onPressed();
     }
 
@@ -50,7 +71,14 @@ export function useKeyboardShortcut(
     // Deliberate: callers pass a new `onPressed` function on every render, so the listener
     // is removed and added again each time. That is cheap and never leaves two listeners;
     // holding the callback in a ref would avoid it at the price of a less obvious hook.
-  }, [key, onPressed, isEnabled, isIgnoredWhileTyping]);
+  }, [
+    key,
+    onPressed,
+    isEnabled,
+    isIgnoredWhileTyping,
+    isIgnoredOnButtonsAndLinks,
+    isKeptFromTheBrowser,
+  ]);
 }
 
 /**
@@ -74,4 +102,19 @@ function isTypingTarget(eventTarget: EventTarget | null): boolean {
   const isInsideDropdown = eventTarget.closest('[role="combobox"], [role="listbox"]') !== null;
   const isOnSwitch = eventTarget.closest('[role="switch"]') !== null;
   return isFormField || eventTarget.isContentEditable || isInsideDropdown || isOnSwitch;
+}
+
+/**
+ * Whether a key press landed on something the keyboard "presses": a button, a link, or
+ * an element that plays one of those parts through its role (the radio buttons and
+ * checkboxes of shadcn/ui are buttons underneath; a drag handle has the role "button").
+ */
+function isButtonOrLinkTarget(eventTarget: EventTarget | null): boolean {
+  if (!(eventTarget instanceof HTMLElement)) {
+    return false;
+  }
+  const closestPressableControl = eventTarget.closest(
+    'button, a[href], summary, [role="button"], [role="radio"], [role="checkbox"]',
+  );
+  return closestPressableControl !== null;
 }

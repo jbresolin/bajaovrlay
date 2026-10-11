@@ -2,6 +2,7 @@ import type { Instance, Layer } from '@bajaovrlay/shared';
 
 import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
+import { ItemLabelOnAir } from '@/features/layers/ItemLabelOnAir';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
 
@@ -31,6 +32,7 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           <span className="text-sm text-muted-foreground">{ptBR.layers.emptyLayer}</span>
         ) : (
           <span className="flex flex-wrap items-center gap-2 text-sm">
+            <ItemLabelOnAir itemId={instanceOnProgram.itemId} />
             <span className="truncate">{graphicName}</span>
             <span className="text-muted-foreground">
               {formatRelativeTimePtBR(new Date(instanceOnProgram.takenAt), currentTime)}

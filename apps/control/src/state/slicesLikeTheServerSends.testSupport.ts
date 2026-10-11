@@ -66,9 +66,11 @@ export function buildSlicesWithNothingOnAir(): Slices {
     graphics: [buildRaceClockGraphic()],
     instances: [],
     eventLog: [],
-    // PLACEHOLDER (BAJAOVRLAY-13): no rundown and no item yet; the control-page work of
-    // this task replaces these with the seeded "Sessão principal" and its test items.
-    rundowns: [],
+    // The one rundown the server seeds on its first boot, still empty. Tests that need
+    // items in it use rundownLikeTheServerSends.testSupport.ts.
+    rundowns: [
+      { id: 'sessao-principal', name: 'Sessão principal', sessionLabel: '', cursorItemId: null },
+    ],
     items: [],
   };
 }

@@ -6,7 +6,6 @@ export const ptBR = {
   app: {
     title: 'BajaOvrLay',
     rundownAreaTitle: 'Rundown',
-    rundownPlaceholder: 'Rundown — M1',
     playoutAreaTitle: 'Programa e relógio',
     layersAreaTitle: 'Camadas',
   },
