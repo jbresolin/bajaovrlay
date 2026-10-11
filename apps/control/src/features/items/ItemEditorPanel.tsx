@@ -88,16 +88,27 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
       : undefined;
   });
 
+  // Until "Salvar item" is pressed for the first time nothing is checked while typing.
+  // From that press on, each field is checked again as it changes, so a message goes away
+  // the moment its field is corrected. react-hook-form switches this on by itself only
+  // for its own `handleSubmit`; the press below checks with `trigger`, so the panel says
+  // it here. What could go wrong: this relies on react-hook-form reading `mode` anew on
+  // every draw (ItemEditorPanelCheckAtThePress.test.tsx fails if an upgrade ends that).
+  const [hasCheckedTheFormsOnce, setHasCheckedTheFormsOnce] = useState(false);
+  const whenFieldsAreChecked = hasCheckedTheFormsOnce ? 'onChange' : 'onSubmit';
+
   const itemForm = useForm<ItemEditorFormValues>({
     defaultValues:
       itemAsItWasWhenOpened === null
         ? buildItemEditorFormValuesForNewItem(graphics[0])
         : buildItemEditorFormValuesFromItem(itemAsItWasWhenOpened),
     resolver: resolveItemEditorForm,
+    mode: whenFieldsAreChecked,
   });
   const raceClockForm = useForm<RaceClockTakeFormValues>({
     defaultValues: raceClockValuesReadFromItem?.formValues ?? defaultRaceClockTakeFormValues,
     resolver: resolveRaceClockTakeForm,
+    mode: whenFieldsAreChecked,
   });
   const chosenGraphicId = useWatch({ control: itemForm.control, name: 'graphicId' });
   const isGraphicChosen = chosenGraphicId !== '';
@@ -199,32 +210,25 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
     }
   }
 
-  // `handleSubmit` checks one form and calls its first function when every field passed,
-  // its second when some did not (the messages are then under the fields). The item
-  // form goes first. Whatever its result, the race clock form is checked too when it is
-  // on screen, so one press shows every problem; only when both passed is anything sent.
-  // (The checks are put together here, at the press, and not while drawing: they end in
-  // `askToBeClosedOnce`, which reads a ref, and a ref must not be read while drawing.)
+  // `trigger` checks every field of one form, puts the messages under the wrong ones and
+  // answers whether all passed. The item part goes first. Whatever its result, the race
+  // clock part is checked too when it is on screen, so one press shows every problem;
+  // only when both passed is anything sent.
   async function checkBothFormsThenSend(): Promise<void> {
-    const checkRaceClockFormOnly = raceClockForm.handleSubmit(() => undefined);
-    const checkItemFormThenTheRaceClockForm = itemForm.handleSubmit(
-      async (itemFormValues) => {
-        if (!isRaceClockChosen) {
-          await sendFormsAsCommand(itemFormValues, undefined);
-          return;
-        }
-        const checkRaceClockFormThenSend = raceClockForm.handleSubmit((raceClockFormValues) =>
-          sendFormsAsCommand(itemFormValues, raceClockFormValues),
-        );
-        await checkRaceClockFormThenSend();
-      },
-      async () => {
-        if (isRaceClockChosen) {
-          await checkRaceClockFormOnly();
-        }
-      },
-    );
-    await checkItemFormThenTheRaceClockForm();
+    setHasCheckedTheFormsOnce(true);
+
+    const isItemPartValid = await itemForm.trigger(undefined, { shouldFocus: true });
+    // The typing cursor goes to the first wrong field from the top. So the race clock
+    // part may take the focus only when the item part, drawn above it, had nothing wrong.
+    const isRaceClockPartValid = isRaceClockChosen
+      ? await raceClockForm.trigger(undefined, { shouldFocus: isItemPartValid })
+      : true;
+    if (!isItemPartValid || !isRaceClockPartValid) {
+      return;
+    }
+
+    const raceClockFormValues = isRaceClockChosen ? raceClockForm.getValues() : undefined;
+    await sendFormsAsCommand(itemForm.getValues(), raceClockFormValues);
   }
 
   // What a press on "Salvar item" does: the button goes off, the forms are checked and,
