@@ -247,8 +247,10 @@ describe('takeItem, when it must be refused', () => {
 
   it('refuses an item with a field value the server cannot resolve yet, naming M2', () => {
     // Arrange: an item whose session name is bound to a data source, which only M2 will
-    // understand. Today's types allow only literals, so the test has to force it in, as
-    // a database written by a newer server would.
+    // understand. Today's types allow only literals, so the test has to force it in and
+    // call the reducer directly. Through the running server this cannot happen yet: the
+    // command schema answers INVALID_COMMAND first, and a stored item like this one
+    // stops the boot. The refusal is a guard kept ready for M2.
     const fieldsWithBinding = {
       ...buildEnduroStartItem(0).fields,
       sessionName: { kind: 'binding', sourceId: 'cronometragem', path: 'session.name' },

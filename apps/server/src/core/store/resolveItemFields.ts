@@ -18,9 +18,13 @@ export type ItemFieldsResolution =
 export function resolveItemFieldsIntoGraphicData(fields: ItemFields): ItemFieldsResolution {
   const resolvedKeysAndValues: Array<[string, unknown]> = [];
   for (const [fieldKey, fieldValue] of Object.entries(fields)) {
-    // Read as plain text on purpose: the type says a kind is always 'literal', but a
-    // database written by a newer server could hold a kind this server has never
-    // heard of, and that must be refused in words instead of resolving to nothing.
+    // Read as plain text on purpose, as a guard kept ready for M2 (BAJAOVRLAY-20): the
+    // `default` below cannot be reached through the server today. A command carrying
+    // another kind is refused earlier with INVALID_COMMAND by the command schema, and a
+    // stored items row holding one fails its schema and stops the boot. Only a direct
+    // call with hand-built fields gets here. The guard stays so that the day the schema
+    // accepts a new kind before this function has its `case`, the take is refused in
+    // words instead of resolving the field to nothing.
     const fieldKind: string = fieldValue.kind;
     switch (fieldKind) {
       case 'literal':

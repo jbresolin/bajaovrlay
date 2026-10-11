@@ -105,6 +105,8 @@ describe('resolveItemFieldsIntoGraphicData with a kind it does not know', () => 
   it('refuses the whole resolution with a message that names M2', () => {
     // Arrange: a clock whose flag is bound to the timing system, which only M2 will
     // understand. Today's types allow only literals, so the test has to force it in.
+    // (Through the running server this cannot happen yet: the command schema refuses
+    // such a command and a stored item like this stops the boot. This is a guard for M2.)
     const fieldsWithBinding = {
       sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
       state: { kind: 'binding', sourceId: 'cronometragem', path: 'session.flag' },
