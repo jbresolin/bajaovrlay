@@ -1,10 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { realServerPort as realServerPortNumber } from './e2e/emptyTheServerState';
+
 // The tests drive the control page's dev server, which forwards /ws, /api, /health,
 // /render and /graphics to a REAL BajaOvrLay server started just for them. Both use
 // ports of their own, so a `pnpm dev` left running (3000, 5173) is neither used nor
-// disturbed, and the other packages' browser tests can run at the same time.
-const realServerPort = '5187';
+// disturbed. The root `pnpm test:e2e` still runs the packages' browser tests one
+// package at a time, so they do not compete for the machine.
+const realServerPort = String(realServerPortNumber);
 const controlPagePort = '5188';
 const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 const controlPageAddress = `http://127.0.0.1:${controlPagePort}`;

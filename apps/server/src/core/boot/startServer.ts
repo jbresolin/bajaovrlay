@@ -6,6 +6,7 @@ import { serve } from '@hono/node-server';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
 import type { ServerLogger } from '../logger/createLogger.js';
+import { startAutoOutScheduler } from '../store/autoOut.js';
 import { createStateStore, type StateStore } from '../store/createStateStore.js';
 import { defaultHeartbeatIntervalInMilliseconds } from '../ws/heartbeat.js';
 import { attachWebSocketHub } from '../ws/webSocketHub.js';
@@ -31,7 +32,10 @@ export type StartServerOptions = {
 export type RunningServer = {
   port: number;
   stateStore: StateStore;
-  /** Drops WebSocket clients, stops listening and closes the database. Safe to call twice. */
+  /**
+   * Calls off pending auto-outs, drops WebSocket clients, stops listening and closes
+   * the database. Safe to call twice.
+   */
   close: () => Promise<void>;
 };
 
@@ -64,6 +68,9 @@ async function startServingFromDatabase(
     logger: options.logger,
     graphicPackagesFolder: options.graphicPackagesFolder,
   });
+  // Started before anything can send a command, so no take of an item with an
+  // auto-out delay is missed. It holds no timer until such a take happens.
+  const autoOutScheduler = startAutoOutScheduler({ stateStore, logger: options.logger });
   const app = createServerApp({
     logger: options.logger,
     version: options.version,
@@ -86,6 +93,8 @@ async function startServingFromDatabase(
   });
 
   async function closeEverything(): Promise<void> {
+    // First, so no auto-out timer fires a command at a store whose database is closing.
+    autoOutScheduler.stop();
     await webSocketHub.close();
     await new Promise<void>((resolve) => {
       httpServer.close(() => resolve());

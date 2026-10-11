@@ -8,8 +8,8 @@ docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
 - `LayerStatusRow.tsx` — one row: layer, graphic, "há 2 min", badge, button; or "vazia".
 - `InstanceStatusBadge.tsx` — green "No ar", grey "Carregando", red "Falhou" + why (tooltip).
 - `useCurrentTime.ts` — redraws the rows every 10 s so the relative times keep up.
+- `ItemLabelOnAir.tsx` — the label of the rundown item that put the graphic on air.
 
-Program output only; there is no preview yet. A take starts as "Carregando"; a renderer's
-report makes it "No ar" or (even after "No ar") "Falhou", which stays until cleared. With
-no OBS connected the badge stays "Carregando" until a renderer reports (the program
-monitor never does); that is correct behaviour, not a fault.
+Program output only; there is no preview yet. A take starts as "Carregando"; a renderer's report
+makes it "No ar" or (even after "No ar") "Falhou", which stays until cleared. With no OBS connected
+the badge stays "Carregando" (the program monitor never reports); that is correct, not a fault.

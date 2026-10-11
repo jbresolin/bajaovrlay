@@ -10,10 +10,11 @@ import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js'
 /** The id of the race clock instance every factory below builds. */
 export const raceClockInstanceId = '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11';
 
-/** The id and time the store would hand a reducer at 14:32:05 UTC on 9 October 2026. */
+/** The ids and time the store would hand a reducer at 14:32:05 UTC on 9 October 2026. */
 export const contextOfTheCommand: ReducerContext = {
   newInstanceId: '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f',
   now: '2026-10-09T14:32:05.000Z',
+  newItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
 };
 
 /** Builds complete race clock data: the enduro under green flag, 1:05:00 in, running. */
@@ -69,6 +70,7 @@ export function buildTeam42LowerThirdOnAir(): Instance {
 /**
  * Builds race day slices: the five seeded layers, the race clock (whose manifest has a
  * data schema) and a team lower third (whose manifest has none), and the given instances.
+ * No rundown and no items: the commands these slices are for never read them.
  */
 export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesChangedByCommands {
   return {
@@ -92,5 +94,7 @@ export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesCh
       },
     ],
     instances,
+    rundowns: [],
+    items: [],
   };
 }

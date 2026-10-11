@@ -5,7 +5,10 @@ import type { CommandError, Slices } from '@bajaovrlay/shared';
  * to it itself, after a command that changed one of these slices or was refused. A
  * command that is accepted and changes nothing leaves no entry.
  */
-export type SlicesChangedByCommands = Pick<Slices, 'layers' | 'graphics' | 'instances'>;
+export type SlicesChangedByCommands = Pick<
+  Slices,
+  'layers' | 'graphics' | 'instances' | 'rundowns' | 'items'
+>;
 
 /**
  * Everything a reducer needs that is not pure: made by the store before calling it, so
@@ -16,6 +19,8 @@ export type ReducerContext = {
   newInstanceId: string;
   /** The current time, as an ISO 8601 timestamp. */
   now: string;
+  /** The id to give an item the command creates (createItem). */
+  newItemId: string;
 };
 
 /**

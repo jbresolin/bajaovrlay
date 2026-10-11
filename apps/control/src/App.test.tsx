@@ -4,14 +4,14 @@
  * What this module is for:
  *   The operator's control page as a whole: a header with the product name and the
  *   connection badge, and three areas that are always on screen — the rundown on the
- *   left (a placeholder until M1), the program monitor and the race clock panel in the
- *   centre, the layer status and "Limpar tudo" on the right.
+ *   left, the program monitor and the race clock panel in the centre, the layer status
+ *   and "Limpar tudo" on the right.
  *
  * What these tests prove:
  *   - The page shows the title, the connection badge and the "Verificar servidor" button.
  *   - Pressing that button reads `GET /health` and shows the server's version; when the
  *     server cannot be reached, the page says so in pt-BR instead of breaking.
- *   - The three areas are there: the rundown placeholder, the program monitor (a frame
+ *   - The three areas are there: the rundown with "+ Item", the program monitor (a frame
  *     showing `/render/?monitor=1`, the page OBS loads but marked as a monitor so it
  *     never reports what is on air) with the race clock panel, and the layer list with
  *     "Limpar tudo".
@@ -23,6 +23,8 @@
  *   - The real server: `fetch` is replaced with a stand-in that answers like the server,
  *     and a fake server stands in on the WebSocket; e2e/takeAndClear.e2e.ts uses the real one.
  *   - What the program monitor shows inside its frame: that is the renderer's page.
+ *   - What the rundown does (rows, drag, Space, Right arrow): features/rundown/ has
+ *     tests of its own.
  *   - Styling and the three-column layout; those are checked by eye in the browser.
  */
 import { fireEvent, screen, within } from '@testing-library/react';
@@ -111,17 +113,22 @@ describe('the control page', () => {
 });
 
 describe('the three areas of the control page', () => {
-  it('shows the rundown placeholder on the left', () => {
-    // Arrange: nothing to prepare beyond a connected page.
+  it('shows the rundown on the left, with the button that adds an item', () => {
+    // Arrange: nothing to prepare beyond a connected page; the server's seeded rundown,
+    // "Sessão principal", has no items yet.
 
     // Act: draw the page.
     renderControlPageWithTheRaceClockOnAir();
 
-    // Assert: the rundown area exists and says it arrives in M1.
+    // Assert: the left area names the rundown and offers "+ Item".
     const rundownArea = within(screen.getByRole('region', { name: 'Rundown' }));
     expect(
-      rundownArea.getByText('Rundown — M1'),
-      'the left area must hold the rundown placeholder',
+      rundownArea.getByRole('heading', { name: 'Sessão principal' }),
+      'the left area must hold the rundown the server sent',
+    ).toBeInTheDocument();
+    expect(
+      rundownArea.getByRole('button', { name: '+ Item' }),
+      'the rundown must offer the button that opens the item editor',
     ).toBeInTheDocument();
   });
 

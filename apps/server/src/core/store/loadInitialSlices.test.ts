@@ -143,6 +143,9 @@ describe('loadInitialSlices on an empty database', () => {
       ['layers', '2026-10-09T08:00:00.000Z'],
       ['graphics', '2026-10-09T08:00:00.000Z'],
       ['instances', '2026-10-09T08:00:00.000Z'],
+      // Seeded too since BAJAOVRLAY-13; loadRundownSlices.test.ts covers what they hold.
+      ['rundowns', '2026-10-09T08:00:00.000Z'],
+      ['items', '2026-10-09T08:00:00.000Z'],
     ]);
     expect(slices.instances, 'nothing is on air on the first boot').toEqual([]);
   });

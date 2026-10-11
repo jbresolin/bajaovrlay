@@ -8,6 +8,8 @@
  *
  * What these tests prove (with a real port and a real SQLite file):
  *   - A booted server answers GET /api/v1/state over real HTTP with the seeded layers.
+ *   - A booted server has the seeded rundown and a running auto-out scheduler: an item
+ *     taken with a delay leaves the air by itself (in real time, with a 40 ms delay).
  *   - A migration failure makes the boot reject, so main.ts can exit non-zero.
  *   - After close() the port no longer answers.
  *
@@ -15,7 +17,7 @@
  *   - main.ts itself (reading the environment, exiting on failure); it only wires
  *     these pieces together and is checked by booting it with `pnpm dev`.
  */
-import { describe, expect, it, onTestFinished } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { committedMigrationsFolder } from '../db/openDatabase.js';
 import {
@@ -23,7 +25,10 @@ import {
   writeBrokenMigrationsFolder,
 } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
-import { missingGraphicsFolderPath } from '../store/builtGraphicsFolder.testSupport.js';
+import {
+  createGraphicsFolderWithBuiltRaceClock,
+  missingGraphicsFolderPath,
+} from '../store/builtGraphicsFolder.testSupport.js';
 import { startServer } from './startServer.js';
 
 /** The options production uses, on a random port, a temporary file and a silent logger. */
@@ -55,6 +60,60 @@ describe('startServer', () => {
       body.layers.map((layer) => layer.id),
       'the seeded layers must be served',
     ).toEqual(['bug', 'ticker', 'clock', 'lower-third', 'fullscreen']);
+  });
+
+  it('takes an item with an auto-out delay off air by itself, and seeds the rundown', async () => {
+    // Arrange: a booted server with a built race clock, and a clock item for the
+    // seeded rundown that leaves by itself after 40 milliseconds (real time).
+    const runningServer = await startServer({
+      ...buildBootOptions(committedMigrationsFolder),
+      graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
+    });
+    onTestFinished(() => runningServer.close());
+    const { stateStore } = runningServer;
+    const seededRundown = stateStore.readAllSlices().rundowns[0];
+    stateStore.applyCommand(
+      {
+        type: 'createItem',
+        rundownId: seededRundown?.id,
+        graphicId: 'race-clock',
+        layerId: 'clock',
+        label: 'Relógio do patrocinador',
+        fields: {
+          sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
+          state: { kind: 'literal', value: 'green' },
+          clockMode: { kind: 'literal', value: 'elapsed' },
+          referenceTimeMs: { kind: 'literal', value: 3_900_000 },
+          referenceWallClockMs: { kind: 'literal', value: 1_791_550_800_000 },
+          running: { kind: 'literal', value: true },
+        },
+        autoOutAfterMs: 40,
+      },
+      'operador:conexao-7',
+    );
+
+    // Act: press "next", as the Space key does, and look at once.
+    const outcomeOfTheTake = stateStore.applyCommand(
+      { type: 'takeNext', rundownId: seededRundown?.id },
+      'operador:conexao-7',
+    );
+    const numberOfInstancesRightAfterTheTake = stateStore.readAllSlices().instances.length;
+
+    // Assert: the boot seeded "Sessão principal", the item went on air, and the booted
+    // server's own scheduler cleared it, signed sistema:auto-out, without anyone asking.
+    expect(seededRundown?.name, 'the boot must seed the rundown').toBe('Sessão principal');
+    expect(outcomeOfTheTake, 'the take must be accepted').toEqual({ ok: true });
+    expect(numberOfInstancesRightAfterTheTake, 'the item must be on air after the take').toBe(1);
+    await vi.waitFor(() => {
+      expect(
+        stateStore.readAllSlices().instances,
+        'the item must leave the air by itself once its delay is over',
+      ).toEqual([]);
+    });
+    expect(
+      stateStore.readAllSlices().eventLog.at(-1)?.actor,
+      'the clear must be signed by the auto-out scheduler',
+    ).toBe('sistema:auto-out');
   });
 
   it('rejects when a migration fails, so the boot stops', async () => {

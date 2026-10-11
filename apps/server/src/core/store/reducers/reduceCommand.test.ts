@@ -3,9 +3,9 @@
  *
  * What this module is for:
  *   A reducer is the pure heart of a command: given the current slices, one valid
- *   command and a context (the id for a new instance and the current time, both made
- *   by the store), it returns the new slices or a refusal with a pt-BR reason. It does
- *   no I/O, so the same input always gives the same output.
+ *   command and a context (the ids for a new instance and a new item and the current
+ *   time, all made by the store), it returns the new slices or a refusal with a pt-BR
+ *   reason. It does no I/O, so the same input always gives the same output.
  *
  * What these tests prove:
  *   - takeGraphic puts an instance on an empty layer, replaces what was on the same
@@ -25,6 +25,8 @@
  *     their reducer, and takeGraphic's check of the data against the graphic's manifest
  *     schema (takeGraphicData.test.ts). The two graphics here declare no data schema,
  *     so any data is accepted.
+ *   - The seven item and rundown commands (createItem, updateItemFields, deleteItem,
+ *     reorderItems, moveCursor, takeItem, takeNext), which have a test file each too.
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
@@ -36,6 +38,7 @@ import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js'
 const contextOfTheTake: ReducerContext = {
   newInstanceId: '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f',
   now: '2026-10-09T14:32:05.000Z',
+  newItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
 };
 
 const raceClockData = { sessionName: 'Enduro de Resistência', state: 'green' };
@@ -101,6 +104,9 @@ function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesChangedBy
       },
     ],
     instances,
+    // No rundown or item: the commands tested here never read or change them.
+    rundowns: [],
+    items: [],
   };
 }
 

@@ -3,9 +3,11 @@
 BajaOvrLay is a stream-graphics system for Baja SAE Brasil live streams: an operator
 control page (apps/control), a Node server that owns all state (apps/server), a
 renderer page loaded by OBS (apps/renderer), and OGraf graphics (packages/graphics).
-The design authority is docs/00-concept.md, a copy of the Plane page "00 — Concept &
-Architecture" (BAJAOVRLAY project, `personal` workspace), which stays the editable
-original. The parts an agent needs are restated here: stack (§10), architecture
+The design authority is docs/00-concept.md. The repo file is authoritative between
+milestones, and as-built changes are written into it in the PR that makes them. The
+Plane page "00 — Concept & Architecture" (BAJAOVRLAY project, `personal` workspace) is
+the human-readable mirror, which João updates from the repo copy at each milestone
+close. The parts an agent needs are restated here: stack (§10), architecture
 (§3, §6), state model and commands (§4), layout (§11), readability law (§12) and
 testing policy (§13). The decision records §18 and §19 win over everything before them.
 

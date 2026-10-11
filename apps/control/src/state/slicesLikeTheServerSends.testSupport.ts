@@ -66,6 +66,12 @@ export function buildSlicesWithNothingOnAir(): Slices {
     graphics: [buildRaceClockGraphic()],
     instances: [],
     eventLog: [],
+    // The one rundown the server seeds on its first boot, still empty. Tests that need
+    // items in it use rundownLikeTheServerSends.testSupport.ts.
+    rundowns: [
+      { id: 'sessao-principal', name: 'Sessão principal', sessionLabel: '', cursorItemId: null },
+    ],
+    items: [],
   };
 }
 

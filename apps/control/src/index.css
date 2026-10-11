@@ -96,3 +96,39 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * The six item colours (BAJAOVRLAY-13). An item stores a colour NAME (neutral, info,
+ * success, warning, danger, highlight; see ItemColorSchema in packages/shared) and these
+ * tokens give each name its colour, used as bg-item-neutral, bg-item-info, ...
+ * They are tokens of their own, in a block of their own, because shadcn's base tokens
+ * have no blue, green, amber or purple, and because an item's "danger" marks a row in
+ * the rundown while `destructive` means "this button removes something".
+ * What could go wrong: a seventh name added to ItemColorSchema needs a token here.
+ */
+:root {
+  --item-color-neutral: oklch(0.556 0 0);
+  --item-color-info: oklch(0.588 0.158 241.966);
+  --item-color-success: oklch(0.627 0.194 149.214);
+  --item-color-warning: oklch(0.769 0.188 70.08);
+  --item-color-danger: oklch(0.577 0.245 27.325);
+  --item-color-highlight: oklch(0.558 0.288 302.321);
+}
+
+.dark {
+  --item-color-neutral: oklch(0.708 0 0);
+  --item-color-info: oklch(0.746 0.16 232.661);
+  --item-color-success: oklch(0.792 0.209 151.711);
+  --item-color-warning: oklch(0.828 0.189 84.429);
+  --item-color-danger: oklch(0.704 0.191 22.216);
+  --item-color-highlight: oklch(0.714 0.203 305.504);
+}
+
+@theme inline {
+  --color-item-neutral: var(--item-color-neutral);
+  --color-item-info: var(--item-color-info);
+  --color-item-success: var(--item-color-success);
+  --color-item-warning: var(--item-color-warning);
+  --color-item-danger: var(--item-color-danger);
+  --color-item-highlight: var(--item-color-highlight);
+}

@@ -39,6 +39,12 @@ export const InstanceSchema = z.object({
   statusDetail: z.string().min(1).optional(),
   /** When the take happened, as an ISO 8601 timestamp. */
   takenAt: z.iso.datetime(),
+  /**
+   * The item this instance was taken from, so the layer panel can show the item's
+   * label. Left out for a take made by hand (takeGraphic). The item may have been
+   * deleted since: an instance stays on air when its item goes away.
+   */
+  itemId: z.string().min(1).optional(),
 });
 
 /** An instance that has passed InstanceSchema. */

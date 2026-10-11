@@ -2,11 +2,12 @@
  * State slices (packages/shared)
  *
  * What this module is for:
- *   The server owns all state as four named slices: `layers` (where graphics can go),
- *   `graphics` (what can be shown), `instances` (what is showing now) and `eventLog`
- *   (the commands that changed something or were refused, in order). SlicesSchema
- *   describes all four; the server checks what it stores and sends against it, and the
- *   control page and renderer check what they receive.
+ *   The server owns all state as six named slices: `layers` (where graphics can go),
+ *   `graphics` (what can be shown), `instances` (what is showing now), `rundowns` and
+ *   `items` (the planned show) and `eventLog` (the commands that changed something or
+ *   were refused, in order). SlicesSchema describes all six; the server checks what it
+ *   stores and sends against it, and the control page and renderer check what they
+ *   receive.
  *
  * What these tests prove:
  *   - A realistic race-day state (five layers, the race clock registered and on air,
@@ -66,6 +67,9 @@ function buildRaceDayStateWithTheClockOnAir() {
         result: { status: 'ok' },
       },
     ],
+    // No rundown and no prepared item: rundownAndItemSlices.test.ts covers those slices.
+    rundowns: [],
+    items: [],
   };
 }
 

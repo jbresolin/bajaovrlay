@@ -73,6 +73,9 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     ],
     instances,
     eventLog: [],
+    // The renderer never reads these two; they are here because every hello carries them.
+    rundowns: [],
+    items: [],
   };
 }
 

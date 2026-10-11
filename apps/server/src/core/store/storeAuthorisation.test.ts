@@ -4,14 +4,18 @@
  * What this module is for:
  *   The renderer reports what is really on screen with `reportInstanceStatus`. That
  *   report is trusted only from a renderer, and a renderer is trusted with nothing
- *   else. A store created without a hook of its own uses the default one, which decides
- *   by the role at the start of the actor name (`renderer:` or anything else).
+ *   else. The server's own auto-out (`sistema:auto-out`) is trusted with clearing one
+ *   layer and nothing else. A store created without a hook of its own uses the default
+ *   one, which decides by the role at the start of the actor name (`renderer:`,
+ *   `sistema:` or anything else).
  *
  * What these tests prove (with a real SQLite file and the store's default hook):
  *   - A renderer's report moves a loading instance to on-air and is logged as ok.
  *   - The same report from an operator is refused with NOT_ALLOWED in pt-BR, logged as
  *     failed, and the instance stays loading.
  *   - A take from a renderer is refused with NOT_ALLOWED and nothing goes on air.
+ *   - A take from the system is refused the same way and logged as failed, while its
+ *     clearLayer is accepted, takes the graphic off air and is logged under its name.
  *
  * What these tests deliberately do not cover:
  *   - Every command and role pair; authorizeCommand.test.ts lists them against the hook
@@ -28,6 +32,8 @@ import { createStateStore } from './createStateStore.js';
 const idOfTheRaceClockInstance = '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f';
 const operatorActor = 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81';
 const rendererActor = 'renderer:b8d4e6f0-1a2c-4e3b-9d5f-6a7c8e9f0b12';
+// The name the auto-out scheduler signs its clears with.
+const systemActor = 'sistema:auto-out';
 
 const takeRaceClockOnTheClockLayer = {
   type: 'takeGraphic',
@@ -131,5 +137,50 @@ describe('takeGraphic through the store', () => {
       error: expectedNotAllowedError,
     });
     expect(store.readAllSlices().instances, 'nothing may go on air').toEqual([]);
+  });
+
+  it('is refused from the system with NOT_ALLOWED, logged as failed, and nothing goes on air', () => {
+    // Arrange: a store with the race clock registered and nothing on air.
+    const store = createStoreWithTheDefaultAuthorisation();
+
+    // Act: something signing as the server's own auto-out tries to take the race clock.
+    const outcome = store.applyCommand(takeRaceClockOnTheClockLayer, systemActor);
+
+    // Assert: refused in pt-BR, written in the event log as failed, and nothing on air.
+    const slicesAfter = store.readAllSlices();
+    expect(outcome, 'the system must not be able to put a graphic on air').toEqual({
+      ok: false,
+      error: expectedNotAllowedError,
+    });
+    expect(
+      slicesAfter.eventLog.map((entry) => [entry.actor, entry.command, entry.result]),
+      'the refused take must be in the event log under the system, as failed',
+    ).toEqual([[systemActor, 'takeGraphic', { status: 'failed', error: expectedNotAllowedError }]]);
+    expect(slicesAfter.instances, 'nothing may go on air').toEqual([]);
+  });
+});
+
+describe('clearLayer through the store', () => {
+  it('is accepted from the system and takes the clock off air', () => {
+    // Arrange: a store where an operator has just taken the race clock.
+    const store = createStoreWithTheDefaultAuthorisation();
+    store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
+
+    // Act: the auto-out clears the clock layer, as it does when an item's delay is over.
+    const outcome = store.applyCommand({ type: 'clearLayer', layerId: 'clock' }, systemActor);
+
+    // Assert: ok, the clock is gone, and the event log names the system.
+    const slicesAfter = store.readAllSlices();
+    expect(outcome, 'clearing one layer is the one command the system may send').toEqual({
+      ok: true,
+    });
+    expect(slicesAfter.instances, 'the clock must be off air').toEqual([]);
+    expect(
+      slicesAfter.eventLog.map((entry) => [entry.actor, entry.command, entry.result.status]),
+      'the clear must be in the event log under the system, after the take',
+    ).toEqual([
+      [operatorActor, 'takeGraphic', 'ok'],
+      [systemActor, 'clearLayer', 'ok'],
+    ]);
   });
 });

@@ -22,6 +22,10 @@ export function buildSliceMessage(sliceName: SliceName, slices: Slices): SliceMe
       return { type: 'slice', name: 'graphics', slice: slices.graphics };
     case 'instances':
       return { type: 'slice', name: 'instances', slice: slices.instances };
+    case 'rundowns':
+      return { type: 'slice', name: 'rundowns', slice: slices.rundowns };
+    case 'items':
+      return { type: 'slice', name: 'items', slice: slices.items };
     case 'eventLog':
       return { type: 'slice', name: 'eventLog', slice: slices.eventLog };
   }

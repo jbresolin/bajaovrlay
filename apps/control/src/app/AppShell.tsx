@@ -5,6 +5,7 @@ import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { TakeRaceClockPanel } from '@/features/playout/TakeRaceClockPanel';
 import { useBackspaceToClearClockLayer } from '@/features/playout/useBackspaceToClearClockLayer';
 import { ProgramMonitor } from '@/features/programMonitor/ProgramMonitor';
+import { RundownPanel } from '@/features/rundown/RundownPanel';
 import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
 import { ptBR } from '@/i18n/ptBR';
 
@@ -13,6 +14,8 @@ import { ptBR } from '@/i18n/ptBR';
  * that are always on screen on a desktop — rundown on the left, program monitor and
  * take panel in the centre, layer status and clear all on the right. Layout only; each
  * area's behaviour lives in its feature folder.
+ * The left column is 20rem wide: a rundown row holds a label, the graphic, the layer and
+ * three buttons, and the item editor opens in the same column.
  */
 export function AppShell() {
   useBackspaceToClearClockLayer();
@@ -27,11 +30,9 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="grid flex-1 grid-cols-[16rem_minmax(0,1fr)_22rem] items-start gap-4">
+      <main className="grid flex-1 grid-cols-[20rem_minmax(0,1fr)_22rem] items-start gap-4">
         <section aria-label={ptBR.app.rundownAreaTitle} className="flex flex-col gap-3">
-          <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            {ptBR.app.rundownPlaceholder}
-          </p>
+          <RundownPanel />
         </section>
 
         <section aria-label={ptBR.app.playoutAreaTitle} className="flex flex-col gap-4">
