@@ -13,6 +13,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { useState } from 'react';
 
 import { findGraphicNameOrItsId, findLayerNameOrItsId } from './graphicAndLayerNames';
 import { listItemIdsInOrderAfterDrag } from './itemIdsInOrderAfterDrag';
@@ -21,6 +22,7 @@ import {
   rundownDragInstructionsForScreenReaders,
 } from './rundownDragAnnouncements';
 import { RundownItemRow } from './RundownItemRow';
+import { useEscapeBelongsToTheDragWhileDragging } from './useEscapeBelongsToTheDragWhileDragging';
 
 // A press that moves less than this is a click, not the start of a drag.
 const pointerDistanceThatStartsADragInPixels = 4;
@@ -62,7 +64,23 @@ export function RundownItemList(props: RundownItemListProps) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // True from the moment a handle is pressed (a drag is "pending" until the mouse has
+  // moved 4 px) until the row is dropped, the drag is cancelled, or the press ends
+  // without ever becoming a drag. While it is true, Esc belongs to the drag and must not
+  // reach the panic key. This is not the order of the rows, which stays the server's.
+  const [isDragActiveOrPending, setIsDragActiveOrPending] = useState(false);
+  useEscapeBelongsToTheDragWhileDragging(isDragActiveOrPending);
+
+  function rememberADragIsActiveOrPending(): void {
+    setIsDragActiveOrPending(true);
+  }
+
+  function rememberNoDragIsActiveOrPending(): void {
+    setIsDragActiveOrPending(false);
+  }
+
   function handleDragEnd(dragEnd: DragEndEvent): void {
+    rememberNoDragIsActiveOrPending();
     const draggedItemId = String(dragEnd.active.id);
     const itemIdDroppedOnto = dragEnd.over === null ? null : String(dragEnd.over.id);
     const itemIdsInNewOrder = listItemIdsInOrderAfterDrag(
@@ -80,7 +98,11 @@ export function RundownItemList(props: RundownItemListProps) {
     <DndContext
       sensors={dragSensors}
       collisionDetection={closestCenter}
+      onDragPending={rememberADragIsActiveOrPending}
+      onDragStart={rememberADragIsActiveOrPending}
       onDragEnd={handleDragEnd}
+      onDragCancel={rememberNoDragIsActiveOrPending}
+      onDragAbort={rememberNoDragIsActiveOrPending}
       accessibility={{
         announcements: buildRundownDragAnnouncements(itemsInOrder),
         screenReaderInstructions: rundownDragInstructionsForScreenReaders,
