@@ -53,7 +53,8 @@ jobs:
       - name: Install the Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
-      # Runs every package's `test:e2e` script, so a new package with Playwright tests
+      # Runs every package's `test:e2e` script, one package at a time so their browsers do
+      # not compete for the runner's few cores; a new package with Playwright tests
       # joins this step without any change to this file.
       - name: Browser tests (Playwright)
         run: pnpm test:e2e

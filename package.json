@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --project tsconfig.json && pnpm --recursive --if-present run typecheck",
     "test": "vitest run",
-    "test:e2e": "pnpm --recursive --if-present run test:e2e",
+    "test:e2e": "pnpm --recursive --workspace-concurrency=1 --if-present run test:e2e",
     "start": "pnpm --filter @bajaovrlay/server run start"
   },
   "devDependencies": {
