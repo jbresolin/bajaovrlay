@@ -8,9 +8,11 @@ export const CommandErrorCodeSchema = z.enum([
   /** The command's shape is wrong; the message names the field. */
   'INVALID_COMMAND',
   /**
-   * The authorisation step said no. NOT_ALLOWED is what the server answers since
-   * BAJAOVRLAY-12; this older name stays in the list only because the event log keeps
-   * every row ever written, and a row carrying it must still pass its schema.
+   * The authorisation step said no, under its older name. Kept on purpose (João's
+   * ruling, 2026-10-10) so that event-log rows written before BAJAOVRLAY-12 still parse:
+   * the event log keeps every row ever written, and a row carrying this code must
+   * still pass its schema. The server answers NOT_ALLOWED now and never this code.
+   * What could go wrong if it is removed: a stored row fails EventLogEntrySchema.
    */
   'UNAUTHORIZED_COMMAND',
   /** This sender may not send this command (for example, an operator reporting a status). */
