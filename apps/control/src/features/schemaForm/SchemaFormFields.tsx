@@ -1,0 +1,105 @@
+import { type UseFormReturn, useWatch } from 'react-hook-form';
+
+import { ptBR } from '@/i18n/ptBR';
+
+import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
+import { SchemaFormFieldRow } from './SchemaFormFieldRow';
+import type { SchemaFormValues, UnsupportedValueAsJson } from './schemaFormValues';
+import { UnsupportedValueBox } from './UnsupportedValueBox';
+
+/**
+ * Puts the kept values of a whole unsupported schema back together as one JSON text for
+ * reading, or undefined when nothing was kept. Each kept text is JSON written by this
+ * folder (buildSchemaFormValues.ts), so JSON.parse reads it back.
+ */
+function writeAllUnsupportedValuesAsOneJsonText(
+  unsupportedValuesAsJson: UnsupportedValueAsJson[],
+): string | undefined {
+  if (unsupportedValuesAsJson.length === 0) {
+    return undefined;
+  }
+  const keysAndValues: Array<[string, unknown]> = unsupportedValuesAsJson.map(
+    (unsupportedValue) => [unsupportedValue.key, JSON.parse(unsupportedValue.jsonText)],
+  );
+  return JSON.stringify(Object.fromEntries(keysAndValues), null, 2);
+}
+
+/** Text and unsupported fields take the full width; the smaller controls sit two to a row. */
+function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
+  const takesTheFullWidth = field.control === 'text' || field.control === 'unsupported';
+  return takesTheFullWidth ? 'col-span-2' : 'col-span-2 sm:col-span-1';
+}
+
+/**
+ * Draws the fields of a generated form, in the manifest's order, for a
+ * `useForm<SchemaFormValues>()` whose values came from buildSchemaFormValues.ts and whose
+ * resolver came from buildSchemaFormResolver. It draws no buttons and sends nothing: the
+ * panel around it owns the form and the commands.
+ * - A graphic with no data schema draws nothing.
+ * - A schema that is not an object with properties draws one read-only JSON box.
+ * `controlIdPrefix` starts every element id. Two generated forms are on the page at once
+ * (the item editor and "Edição rápida"), and with equal ids a label of the second would
+ * point at a control of the first, so each must pass its own.
+ */
+export function SchemaFormFields(props: {
+  form: UseFormReturn<SchemaFormValues>;
+  description: SchemaFormDescription;
+  controlIdPrefix: string;
+  /** Turns every control off, for example while there is no connection. Default: false. */
+  isDisabled?: boolean;
+}) {
+  const { form, description, controlIdPrefix } = props;
+  const isDisabled = props.isDisabled ?? false;
+  const unsupportedValuesAsJson =
+    useWatch({ control: form.control, name: 'unsupportedValuesAsJson' }) ?? [];
+
+  if (description.isWholeDataSchemaUnsupported) {
+    return (
+      <UnsupportedValueBox
+        controlId={`${controlIdPrefix}-whole-data`}
+        label={ptBR.schemaForm.unsupportedWholeDataLabel}
+        note={ptBR.schemaForm.unsupportedWholeDataNote}
+        jsonText={writeAllUnsupportedValuesAsOneJsonText(unsupportedValuesAsJson)}
+      />
+    );
+  }
+  if (description.fields.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      {description.fields.map((field, positionInTheForm) => {
+        if (field.control === 'unsupported') {
+          // The position, not the key, makes the id: a key the form cannot hold (one with
+          // a dot or a bracket) is not a safe part of an element id either.
+          const keptValue = unsupportedValuesAsJson.find((entry) => entry.key === field.key);
+          return (
+            <div key={field.key} className={chooseWidthClassOfField(field)}>
+              <UnsupportedValueBox
+                controlId={`${controlIdPrefix}-unsupported-${positionInTheForm}`}
+                label={field.label}
+                note={
+                  keptValue === undefined
+                    ? ptBR.schemaForm.unsupportedPropertyWithoutValueNote
+                    : ptBR.schemaForm.unsupportedPropertyNote
+                }
+                jsonText={keptValue?.jsonText}
+              />
+            </div>
+          );
+        }
+        return (
+          <div key={field.key} className={chooseWidthClassOfField(field)}>
+            <SchemaFormFieldRow
+              form={form}
+              field={field}
+              controlId={`${controlIdPrefix}-${field.key}`}
+              isDisabled={isDisabled}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}

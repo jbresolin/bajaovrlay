@@ -21,7 +21,7 @@ export function reduceCommand(
     case 'takeGraphic':
       return reduceTakeGraphic(slices, command, context);
     case 'updateInstanceData':
-      return reduceUpdateInstanceData(slices, command);
+      return reduceUpdateInstanceData(slices, command, context);
     case 'reportInstanceStatus':
       return reduceReportInstanceStatus(slices, command);
     case 'clearLayer':

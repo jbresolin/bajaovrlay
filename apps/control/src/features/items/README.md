@@ -1,15 +1,15 @@
 # apps/control/src/features/items
 
-The item editor: preparing a new item for a rundown and changing a stored one. Start
-reading at `ItemEditorPanel.tsx`; the rundown (features/rundown) opens it.
+The item editor: preparing a new item for a rundown and changing a stored one, for any
+graphic. Start reading at `ItemEditorPanel.tsx`; the rundown (features/rundown) opens it.
 
-- `ItemEditorPanel.tsx` — the panel and "Salvar item": `createItem` for a new item,
-  `updateItemFields` with only what changed for a stored one.
-- `ItemEditorFormFields.tsx` draws the fields every item has; `itemColorChip.ts` gives
-  each colour its chip; `itemEditorForm.ts` holds their values and rules (pt-BR), which
-  `itemEditorFormResolver.ts` hands to react-hook-form.
-- `raceClockItemFields.ts` — the race clock form to stored fields and back: literals, and
-  the clock's reference moment as `{ kind: 'takeTime' }`, stamped by the server at the take.
-- `itemCommandsFromForm.ts` — the two commands, built without drawing anything.
-  `raceClockReferenceRules.ts` holds the clock's own exceptions to "send what differs".
-  Only the race clock has fields here; BAJAOVRLAY-14 generates them for every graphic.
+- `ItemEditorPanel.tsx` — the panel and its buttons: "Salvar item" (`createItem`, or
+  `updateItemFields` with only what changed) and, for an item on air, "Atualizar no ar"
+  (the save, then `updateInstanceData` with the changed typed values).
+- `ItemEditorFormFields.tsx`, `FormFieldRow.tsx`, `itemEditorForm.ts`, `itemColorChip.ts`,
+  `itemEditorFormResolver.ts` — the fields every item has, their pt-BR rules and drawing.
+- `ItemGraphicFieldsForm.tsx`, `graphicFieldsOfItemEditor.ts` — the fields of the chosen
+  graphic, generated from its manifest by features/schemaForm. Nothing here knows a graphic.
+- `itemCommandsFromEditor.ts` — the three commands, built without drawing anything.
+- `itemInstanceOnAir.ts` finds the item's instance on program; `useAskToBeClosedOnce.ts`
+  keeps a late answer from closing the editor twice.

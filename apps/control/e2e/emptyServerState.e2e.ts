@@ -45,21 +45,25 @@ test.describe('emptying the server state', () => {
     page,
   }) => {
     // Arrange: leave behind what a test that stopped halfway would: the race clock on
-    // air (taken with the form as it opens) and one item prepared in the rundown.
+    // air (taken from "Edição rápida" with its form as it opens, only the session name
+    // typed) and one item prepared in the rundown.
     await openControlPageAndWaitUntilConnected(page);
     const clockLayerRow = page
       .getByRole('region', { name: 'Camadas' })
       .getByRole('listitem', { name: 'Relógio' });
     const rundownArea = page.getByRole('region', { name: 'Rundown' });
-    await page.getByLabel('Nome da sessão').fill('Enduro de Resistência — Bateria 1');
-    await page.getByRole('button', { name: 'Colocar no ar' }).click();
+    const quickEditArea = page.getByRole('region', { name: 'Programa e edição rápida' });
+    await quickEditArea
+      .getByLabel('Nome da sessão', { exact: true })
+      .fill('Enduro de Resistência — Bateria 1');
+    await quickEditArea.getByRole('button', { name: 'Colocar no ar' }).click();
     await expect(clockLayerRow, 'the clock must be on its layer before the reset').toContainText(
       'Relógio de prova',
     );
     await page.getByRole('button', { name: '+ Item' }).click();
     const itemEditor = page.getByRole('region', { name: 'Editor de item' });
-    await itemEditor.getByLabel('Rótulo').fill('Largada do enduro');
-    await itemEditor.getByLabel('Nome da sessão').fill('Enduro — Largada');
+    await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
+    await itemEditor.getByLabel('Nome da sessão', { exact: true }).fill('Enduro — Largada');
     await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
     await expect(
       rundownArea.getByRole('listitem'),

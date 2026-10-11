@@ -9,8 +9,9 @@
  * What these tests prove:
  *   - A missing label shows its pt-BR message under the field, sends nothing and keeps
  *     the panel open.
- *   - Problems in the item's own fields and in the race clock fields are all shown at
- *     the same press.
+ *   - Problems in the item's own fields and in the fields generated for the graphic are
+ *     all shown at the same press.
+ *   - A required field of the graphic left empty is refused with a message naming it.
  *   - When the server refuses the save, its pt-BR message is shown in the panel, the
  *     form keeps what was typed and the panel stays open.
  *   - A refusal the page still remembers from an earlier opening of the editor is not
@@ -23,21 +24,27 @@
  * What these tests deliberately do not cover:
  *   - What a correct save sends: ItemEditorPanel.test.tsx and
  *     ItemEditorPanelEditing.test.tsx.
- *   - Every rule: itemEditorForm.test.ts and features/playout/raceClockTakeForm.test.ts
- *     list them one by one.
+ *   - The same problems at a press of "Atualizar no ar":
+ *     ItemEditorPanelUpdateOnAirProblems.test.tsx.
+ *   - Every rule: itemEditorForm.test.ts and
+ *     features/schemaForm/checkSchemaFormValues.test.ts list them one by one.
  *   - A save the server never answers (the 5-second timeout), which state/ tests cover
  *     for every command alike.
  */
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { typeIntoField } from '@/features/playout/operatingTheRaceClockForm.testSupport';
+import {
+  chooseOptionInDropdown,
+  typeIntoField,
+} from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 import { focusAreaAroundDisabledButton } from '@/state/controlPageOnFakeServer.testSupport';
 
 import {
   pressSaveAndWaitForCommand,
   renderItemEditorPanelOnFakeServer,
 } from './itemEditorOnFakeServer.testSupport';
+import { raceClockReferenceTimeLabel } from './itemsLikeTheEditorSaves.testSupport';
 
 describe('the item editor panel when something is wrong', () => {
   it('shows the pt-BR message under an empty label, sends nothing and stays open', async () => {
@@ -67,11 +74,11 @@ describe('the item editor panel when something is wrong', () => {
     expect(onClose, 'the panel must stay open so the label can be typed').not.toHaveBeenCalled();
   });
 
-  it('shows the problems of the item fields and of the race clock fields at the same press', async () => {
+  it("shows the problems of the item fields and of the graphic's fields at the same press", async () => {
     // Arrange: a new item with no label, an auto-out of zero and one hour typed as h:mm:ss.
     const { fakeServer } = renderItemEditorPanelOnFakeServer(null);
     typeIntoField('Saída automática (segundos, opcional)', '0');
-    typeIntoField('Tempo de referência (mm:ss)', '1:00:00');
+    typeIntoField(raceClockReferenceTimeLabel, '1:00:00');
 
     // Act: press "Salvar item".
     fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
@@ -88,13 +95,41 @@ describe('the item editor panel when something is wrong', () => {
       'the auto-out of zero must be reported',
     ).toBeInTheDocument();
     expect(
-      await screen.findByText('Use minutos e segundos no formato mm:ss, por exemplo 12:30.'),
-      'the badly typed time of the race clock must be reported at the same press',
+      await screen.findByText(
+        `Use minutos e segundos no formato mm:ss em "${raceClockReferenceTimeLabel}", por exemplo 12:30.`,
+      ),
+      "the badly typed time among the graphic's fields must be reported at the same press",
     ).toBeInTheDocument();
     expect(
       fakeServer.listCommandsReceived(),
       'a form with wrong fields must not send any command',
     ).toEqual([]);
+  });
+
+  it('refuses a required field of the graphic that was left empty, naming the field', async () => {
+    // Arrange: a new item of the interview lower third with a label, but with no name
+    // and no car number, both of which its manifest requires.
+    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    chooseOptionInDropdown('Gráfico', 'Tarja de entrevista');
+    typeIntoField('Rótulo', 'Tarja da equipe 42');
+
+    // Act: press "Salvar item".
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
+
+    // Assert: each missing field is named in its own message, and nothing was sent.
+    expect(
+      await screen.findByText('O campo "Nome" é obrigatório.'),
+      'the missing name must be reported, naming the field',
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText('O campo "Número do carro" é obrigatório.'),
+      'the missing car number must be reported, naming the field',
+    ).toBeInTheDocument();
+    expect(
+      fakeServer.listCommandsReceived(),
+      'an item with a required field missing must not be sent',
+    ).toEqual([]);
+    expect(onClose, 'the panel must stay open so the fields can be filled').not.toHaveBeenCalled();
   });
 
   it("shows the server's pt-BR message when the save is refused, keeps the form and stays open", async () => {

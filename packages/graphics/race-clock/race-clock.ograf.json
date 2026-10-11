@@ -60,22 +60,24 @@
       },
       "referenceTimeMs": {
         "type": "integer",
-        "title": "Tempo de referência (ms)",
-        "description": "Tempo decorrido ou restante, em milissegundos, no instante referenceWallClockMs.",
+        "title": "Tempo de referência",
+        "description": "Tempo decorrido ou restante que o relógio mostrava no horário da referência.",
         "minimum": 0,
-        "default": 0
+        "default": 0,
+        "v_baja": { "unit": "ms" }
       },
       "referenceWallClockMs": {
         "type": "integer",
         "title": "Horário da referência (ms desde 1970)",
-        "description": "Horário (Date.now()) em que referenceTimeMs era verdadeiro; o gráfico calcula o tempo a cada quadro a partir dele.",
+        "description": "Momento em que o tempo de referência valia; o relógio conta a partir dele.",
         "minimum": 0,
-        "default": 0
+        "default": 0,
+        "v_baja": { "role": "wallClock" }
       },
       "running": {
         "type": "boolean",
         "title": "Relógio correndo",
-        "description": "Quando falso, o relógio fica parado em referenceTimeMs.",
+        "description": "Desligado, o relógio fica parado no tempo de referência.",
         "default": false
       },
       "lapsCompletedByLeader": {

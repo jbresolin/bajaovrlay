@@ -217,13 +217,13 @@ describe('applyCommand with a valid command', () => {
     // Act: take the race clock as the operator.
     store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
 
-    // Assert: the same ok entry is in the event-log slice and in the event_log table.
+    // Assert: the same ok entry (the command with its two defaults) is in slice and table.
     const expectedEntry = {
       id: 1,
       ts: '2026-10-09T14:32:05.000Z',
       actor: 'operador:conexao-7',
       command: 'takeGraphic',
-      payload: { ...takeRaceClockOnTheClockLayer, target: 'program' },
+      payload: { ...takeRaceClockOnTheClockLayer, target: 'program', takeTimeFieldKeys: [] },
       result: { status: 'ok' },
     };
     expect(store.readAllSlices().eventLog, 'the slice must hold the ok entry').toEqual([

@@ -13,8 +13,7 @@
  *   - The fields sent replace the same top-level fields, every other field is kept,
  *     and the instance keeps its id, layer, output, status and place in the list.
  *   - An update whose result breaks the manifest's schema is refused with a pt-BR
- *     message naming the field (an optional field set to null included: null is not
- *     "absent"), and so is an update for an instance that is not there.
+ *     message naming the field, and so is an update for an instance that is not there.
  *   - An update for an instance whose graphic is no longer registered (its package was
  *     removed across a restart) is refused with GRAPHIC_NOT_FOUND and changes nothing.
  *   - An update that carries no field changes nothing and hands back the same array.
@@ -26,6 +25,9 @@
  *     covers them.
  *   - The command's shape (packages/shared) and who may send it
  *     (authorizeCommand.test.ts).
+ *   - A field sent as null (taken off air) and a field the server stamps with the
+ *     moment of the command; updateInstanceDataClearedAndStampedFields.test.ts covers
+ *     both. Every update here names no field to stamp (`takeTimeFieldKeys: []`).
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
@@ -52,6 +54,7 @@ const appliedUpdateScenarios: Array<{
       type: 'updateInstanceData',
       instanceId: raceClockInstanceId,
       data: { state: 'yellow' },
+      takeTimeFieldKeys: [],
     },
     expectedInstancesAfter: [
       {
@@ -68,6 +71,7 @@ const appliedUpdateScenarios: Array<{
       type: 'updateInstanceData',
       instanceId: raceClockInstanceId,
       data: { state: 'red', running: false, lapsCompletedByLeader: 12 },
+      takeTimeFieldKeys: [],
     },
     expectedInstancesAfter: [
       {
@@ -90,6 +94,7 @@ const appliedUpdateScenarios: Array<{
       type: 'updateInstanceData',
       instanceId: buildTeam42LowerThirdOnAir().id,
       data: { teamName: 'Baja UFPR Trovão' },
+      takeTimeFieldKeys: [],
     },
     expectedInstancesAfter: [
       buildRaceClockInstanceWithStatus('on-air'),
@@ -138,7 +143,12 @@ describe('updateInstanceData, when the update can be applied', () => {
     // Act: send an update with an empty data object, as a form with nothing changed would.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'updateInstanceData', instanceId: raceClockInstanceId, data: {} },
+      {
+        type: 'updateInstanceData',
+        instanceId: raceClockInstanceId,
+        data: {},
+        takeTimeFieldKeys: [],
+      },
       contextOfTheCommand,
     );
 
@@ -166,6 +176,7 @@ const refusedUpdateScenarios: Array<{
       type: 'updateInstanceData',
       instanceId: raceClockInstanceId,
       data: { state: 'azul' },
+      takeTimeFieldKeys: [],
     },
     expectedError: {
       code: 'INVALID_GRAPHIC_DATA',
@@ -180,27 +191,12 @@ const refusedUpdateScenarios: Array<{
       type: 'updateInstanceData',
       instanceId: raceClockInstanceId,
       data: { bandeira: 'yellow' },
+      takeTimeFieldKeys: [],
     },
     expectedError: {
       code: 'INVALID_GRAPHIC_DATA',
       message:
         'Dados inválidos para o gráfico "race-clock": o campo "bandeira" não existe neste gráfico.',
-    },
-  },
-  // The leader's laps are optional, but "optional" means the field may be left out, not
-  // that it may be null: the schema wants a whole number. The control page relies on
-  // this refusal (João's gate-2 note), so the row records it.
-  {
-    name: 'an optional field set to null is refused with INVALID_GRAPHIC_DATA',
-    command: {
-      type: 'updateInstanceData',
-      instanceId: raceClockInstanceId,
-      data: { lapsCompletedByLeader: null },
-    },
-    expectedError: {
-      code: 'INVALID_GRAPHIC_DATA',
-      message:
-        'Dados inválidos para o gráfico "race-clock": o campo "lapsCompletedByLeader" tem um valor que o gráfico não aceita.',
     },
   },
   // The instance was cleared (or never existed): there is nothing to update.
@@ -210,6 +206,7 @@ const refusedUpdateScenarios: Array<{
       type: 'updateInstanceData',
       instanceId: 'e5a9d3b1-6c2f-4d8a-b7e4-3f1c0a9e8d27',
       data: { state: 'yellow' },
+      takeTimeFieldKeys: [],
     },
     expectedError: {
       code: 'INSTANCE_NOT_FOUND',
@@ -257,7 +254,12 @@ describe('updateInstanceData, when the graphic of the instance is no longer regi
     // Act: change the flag to yellow.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'updateInstanceData', instanceId: raceClockInstanceId, data: { state: 'yellow' } },
+      {
+        type: 'updateInstanceData',
+        instanceId: raceClockInstanceId,
+        data: { state: 'yellow' },
+        takeTimeFieldKeys: [],
+      },
       contextOfTheCommand,
     );
 
@@ -284,7 +286,12 @@ describe('updateInstanceData purity', () => {
     // Act: change the flag to yellow.
     reduceCommand(
       slicesBefore,
-      { type: 'updateInstanceData', instanceId: raceClockInstanceId, data: { state: 'yellow' } },
+      {
+        type: 'updateInstanceData',
+        instanceId: raceClockInstanceId,
+        data: { state: 'yellow' },
+        takeTimeFieldKeys: [],
+      },
       contextOfTheCommand,
     );
 

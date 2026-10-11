@@ -12,7 +12,10 @@ import { onTestFinished } from 'vitest';
  * packages/graphics/race-clock/race-clock.ograf.json (six required fields, optional
  * laps, nothing else allowed; clock layer), so a take the server accepts here is one
  * the real race clock accepts too. `gddType` is kept on one field on purpose: it is an
- * OGraf form hint, not a JSON Schema keyword, and the server must not choke on it.
+ * OGraf form hint, not a JSON Schema keyword, and the server must not choke on it. The
+ * same goes for the per-field `v_baja` hints the control page's generated form reads
+ * (`unit: 'ms'` on the reference time, `role: 'wallClock'` on the reference moment):
+ * the server's data check ignores them.
  */
 export const raceClockManifestForTests = {
   $schema: 'https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json',
@@ -34,8 +37,18 @@ export const raceClockManifestForTests = {
         enum: ['pre', 'green', 'yellow', 'red', 'checkered', 'finished'],
       },
       clockMode: { type: 'string', title: 'Modo do relógio', enum: ['elapsed', 'remaining'] },
-      referenceTimeMs: { type: 'integer', title: 'Tempo de referência (ms)', minimum: 0 },
-      referenceWallClockMs: { type: 'integer', title: 'Horário da referência', minimum: 0 },
+      referenceTimeMs: {
+        type: 'integer',
+        title: 'Tempo de referência',
+        minimum: 0,
+        v_baja: { unit: 'ms' },
+      },
+      referenceWallClockMs: {
+        type: 'integer',
+        title: 'Horário da referência',
+        minimum: 0,
+        v_baja: { role: 'wallClock' },
+      },
       running: { type: 'boolean', title: 'Relógio correndo' },
       lapsCompletedByLeader: { type: 'integer', title: 'Voltas do líder', minimum: 0 },
     },

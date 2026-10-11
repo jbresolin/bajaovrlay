@@ -1,6 +1,7 @@
 // Test support: slices that read like what the real server sends, so every test starts
 // from the same believable state. Each function builds new objects on every call, so
 // no test can change what another test sees.
+import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
 import type { Graphic, Instance, Layer, Slices } from '@bajaovrlay/shared';
 
 /** The five layers the server seeds on its first boot, bottom to top. */
@@ -26,11 +27,16 @@ export function buildLayersSeededByTheServer(): Layer[] {
   ];
 }
 
-/** The race clock as the server registers it once its package is built. */
+/**
+ * The race clock as the server registers it once its package is built: the graphic
+ * carries the package's whole manifest, data schema included, because the control page
+ * generates the graphic's form from that schema. The manifest is the real one
+ * (packages/graphics/race-clock), copied on every call.
+ */
 export function buildRaceClockGraphic(): Graphic {
   return {
     id: 'race-clock',
-    manifest: { id: 'baja-race-clock', name: 'Relógio de prova', main: 'race-clock.js' },
+    manifest: structuredClone(raceClockManifest),
     defaultLayerId: 'clock',
     category: 'clock',
     thumbnailUrl: null,

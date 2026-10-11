@@ -13,7 +13,8 @@ import { reduceTakeGraphic } from './takeGraphic.js';
  * the instance's `takenAt` says) and hands the take to reduceTakeGraphic, the same
  * reducer a take by hand uses, so every rule of a take (one instance per layer and
  * output, the refusals, any check added to takeGraphic later) holds for items without
- * being written twice. Then it stamps the new instance with the item's id. If the item
+ * being written twice; one of those rules is that a field whose stored value is a
+ * literal `null` (a field cleared in the item editor) is left out of the data. Then it stamps the new instance with the item's id. If the item
  * taken was the one the rundown's cursor was on, the cursor moves to the item after it;
  * after the last item the cursor is on nothing, rather than back at the top where
  * "next" would fire the opening again, and the rundown is marked as played to its end
@@ -42,6 +43,9 @@ export function reduceTakeItem(
     layerId: item.layerId,
     data: resolution.data,
     target: 'program',
+    // Nothing is left for takeGraphic to stamp: an item's `takeTime` fields were turned
+    // into this command's moment by the resolver just above.
+    takeTimeFieldKeys: [],
   };
   const takeOutcome = reduceTakeGraphic(slices, takeOfTheItemGraphic, context);
   if (takeOutcome.status === 'refused') {

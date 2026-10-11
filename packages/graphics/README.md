@@ -11,3 +11,33 @@ Each graphic folder is its own workspace package (`pnpm-workspace.yaml` already 
 `packages/graphics/*`). A graphic joins the checks without editing anything at the root:
 a `vitest.config.ts` is picked up by `pnpm test`, and a `test:e2e` script by
 `pnpm test:e2e` and CI, provided it depends on `"@playwright/test": "catalog:"`.
+
+## What the control page reads from your manifest
+
+The operator's form for a graphic is generated from the manifest; no control-page code is
+written per graphic. Write every `title` and `description` in pt-BR.
+
+On the manifest itself:
+
+- `v_baja.defaultLayerId` — the layer the graphic is offered on (missing or unknown:
+  fullscreen, with a logged warning).
+- `v_baja.category` — the group it is listed under (missing: `other`).
+
+On each property of `schema.properties` (`type` picks the control: `string` text,
+`integer`/`number` number, `boolean` switch):
+
+- `title` — the field's label (missing: the property key). `description` — the help text.
+- `enum` — makes a `string` a select; option labels come from `gddOptions.labels`
+  (missing: the enum value itself).
+- `default` — the value a new form starts with.
+- `minimum` / `maximum` — the limits of a number field.
+- `format: "date-time"` on a `string` — a date and time input, sent as ISO 8601 text.
+- `v_baja.unit: "ms"` on an `integer`/`number` — typed as `mm:ss`, sent as milliseconds.
+- `v_baja.role: "wallClock"` on an `integer` — the field may be left "to the moment of the
+  take": the server then writes its own clock's milliseconds into it.
+
+`schema.required` lists the fields that cannot be left blank; every other field gets a
+"limpar" control and, once cleared, is not sent to the graphic at all (never as `null`).
+
+Arrays, nested objects and `oneOf` are not supported yet: such a property is shown as
+read-only JSON until M2/M3.

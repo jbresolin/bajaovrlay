@@ -9,22 +9,29 @@
  *
  * What these tests prove:
  *   - The panel is titled "Editar item" and shows what the item stores, the clock's
- *     time as stored (not moved on by the hours since the save).
+ *     time as stored (not moved on by the hours since the save) and each field in the
+ *     kind it is stored in.
  *   - The graphic and the layer of a saved item cannot be changed, and the panel says so.
  *   - Changing one thing sends an `updateItemFields` with that one thing, and the panel
  *     asks to be closed once the server accepted it.
  *   - Saving with nothing changed sends nothing and asks to be closed.
- *   - A stored field the form cannot read is shown with the form's default and named in
- *     a warning.
- *   - Blanking the laps of an item that has laps is refused with a message, because the
- *     update command cannot remove a field.
+ *   - A stored field the form cannot show is drawn with the manifest's default and named
+ *     in a warning.
+ *   - Clearing an optional field of an item that has it (the leader's laps) is saved: the
+ *     field is sent as "no value".
+ *   - An item whose reference moment is a stored number shows that number, and an edit of
+ *     something else leaves it alone.
+ *   - An item with no reference moment at all is named in the warning and gets "the
+ *     moment of the take" at the next save, whatever else was changed.
  *   - When the rundown hands the panel another item, the form shows that other item.
  *
  * What these tests deliberately do not cover:
  *   - Preparing a new item: ItemEditorPanel.test.tsx.
+ *   - An item that is on air and "Atualizar no ar": ItemEditorPanelUpdateOnAir.test.tsx.
  *   - Field messages, a refused save and the lost connection:
  *     ItemEditorPanelProblems.test.tsx.
- *   - Every combination of changed parts: itemCommandsFromForm.test.ts, without drawing.
+ *   - Every way a field can differ from what is stored:
+ *     features/schemaForm/itemFieldsFromSchemaForm.test.ts, without drawing.
  *   - Another operator changing the same item while this panel is open: the form keeps
  *     showing the item as it was when opened, and the save sends only what this
  *     operator changed since then. No test here plays the second operator.
@@ -35,35 +42,32 @@ import { describe, expect, it } from 'vitest';
 
 import {
   chooseOptionInDropdown,
+  pressButton,
   typeIntoField,
-} from '@/features/playout/operatingTheRaceClockForm.testSupport';
+} from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 import { ControlPageStateProvider } from '@/state/ControlPageStateProvider';
 import type { SendCommand } from '@/state/serverConnection';
 import { createServerStateStore } from '@/state/serverStateStore';
 
 import {
-  buildSlicesWithTheRaceClockAndTheDriverLowerThird,
   pressSaveAndWaitForCommand,
   renderItemEditorPanelOnFakeServer,
 } from './itemEditorOnFakeServer.testSupport';
 import { ItemEditorPanel } from './ItemEditorPanel';
 import {
-  buildDriverLowerThirdItem,
   buildEnduranceStartClockItem,
+  buildEnduranceStartClockItemSavedWithTheMomentOfTheSave,
+  buildEnduranceStartClockItemWithSevenLaps,
+  buildInterviewLowerThirdItem,
+  buildSlicesWithTheRaceClockAndTheLowerThird,
   idOfTheMainSessionRundown,
+  momentTheItemWasSavedInMilliseconds,
+  raceClockLapsLabel,
+  raceClockReferenceMomentLabel,
+  raceClockReferenceTimeLabel,
 } from './itemsLikeTheEditorSaves.testSupport';
 
-/** The endurance start item after the leader's seventh lap was typed into it. */
-function buildEnduranceStartClockItemWithSevenLaps(): Item {
-  const enduranceStartItem = buildEnduranceStartClockItem();
-  return {
-    ...enduranceStartItem,
-    fields: {
-      ...enduranceStartItem.fields,
-      lapsCompletedByLeader: { kind: 'literal', value: 7 },
-    },
-  };
-}
+const idOfTheEnduranceStartItem = '0b6f2d1e-8c47-4e39-9a15-3d7c5e2f4a90';
 
 describe('the item editor panel for an existing item', () => {
   it('is titled "Editar item" and shows what the item stores', () => {
@@ -98,9 +102,17 @@ describe('the item editor panel for an existing item', () => {
       'the clock mode must be the stored one',
     ).toHaveTextContent('Tempo restante');
     expect(
-      screen.getByLabelText('Tempo de referência (mm:ss)'),
+      screen.getByLabelText(raceClockReferenceTimeLabel),
       'the time must be the stored one, not moved on since the save',
     ).toHaveValue('240:00');
+    expect(
+      screen.getByRole('combobox', { name: `Como preencher ${raceClockReferenceMomentLabel}` }),
+      'a reference moment stored as "the moment of the take" must be shown as that',
+    ).toHaveTextContent('Momento da entrada no ar');
+    expect(
+      screen.queryByRole('status'),
+      'an item the form can show in full must open without any warning',
+    ).toBeNull();
   });
 
   it('does not let the graphic or the layer of a saved item be changed, and says why', () => {
@@ -145,7 +157,7 @@ describe('the item editor panel for an existing item', () => {
     ).toEqual([
       {
         type: 'updateItemFields',
-        itemId: '0b6f2d1e-8c47-4e39-9a15-3d7c5e2f4a90',
+        itemId: idOfTheEnduranceStartItem,
         label: 'Largada — Enduro de Resistência',
         fields: { state: { kind: 'literal', value: 'green' } },
       },
@@ -177,23 +189,23 @@ describe('the item editor panel for an existing item', () => {
     ).toEqual([]);
   });
 
-  it('shows the default and a warning for a stored field it cannot read', () => {
+  it('shows the default and a warning for a stored field it cannot show', () => {
     // Arrange: the endurance start item whose flag was stored by a script as "blue",
     // which is not one of the race clock's six flags.
     const enduranceStartItem = buildEnduranceStartClockItem();
-    const itemWithAFlagTheFormCannotRead: Item = {
+    const itemWithAFlagTheFormCannotShow: Item = {
       ...enduranceStartItem,
       fields: { ...enduranceStartItem.fields, state: { kind: 'literal', value: 'blue' } },
     };
 
     // Act: open it in the editor.
-    renderItemEditorPanelOnFakeServer(itemWithAFlagTheFormCannotRead);
+    renderItemEditorPanelOnFakeServer(itemWithAFlagTheFormCannotShow);
 
-    // Assert: the flag shows the form's default, and a warning names the field and
+    // Assert: the flag shows the manifest's default, and a warning names the field and
     // says what saving will do.
     expect(
       screen.getByRole('combobox', { name: 'Bandeira' }),
-      'a flag that cannot be read must show the default "Pré-largada"',
+      'a flag that cannot be shown must appear as the default "Pré-largada"',
     ).toHaveTextContent('Pré-largada');
     expect(
       screen.getByRole('status'),
@@ -203,40 +215,121 @@ describe('the item editor panel for an existing item', () => {
     );
   });
 
-  it('refuses to blank the laps of an item that has laps, and sends nothing', async () => {
+  it('saves the laps of an item as "no value" when the operator clears them', async () => {
     // Arrange: the endurance start item with 7 laps, open in the editor.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(
+    const { fakeServer } = renderItemEditorPanelOnFakeServer(
       buildEnduranceStartClockItemWithSevenLaps(),
     );
+    const lapsShownAtTheOpening = (screen.getByLabelText(raceClockLapsLabel) as HTMLInputElement)
+      .value;
 
-    // Act: erase the laps and press "Salvar item".
-    typeIntoField('Voltas do líder (opcional)', '');
-    fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
+    // Act: clear the laps with their "limpar" button and save.
+    pressButton(`Limpar ${raceClockLapsLabel}`);
+    await pressSaveAndWaitForCommand(1, fakeServer);
 
-    // Assert: the laps field explains why, nothing was sent and the panel stays open.
-    expect(
-      await screen.findByText(
-        'As voltas de um item salvo não podem ser apagadas. Informe um número ou exclua o item e crie outro.',
-      ),
-      'the laps field must explain that a stored field cannot be removed',
-    ).toBeInTheDocument();
+    // Assert: the update stores "no value" for the laps. The update command cannot remove
+    // a field, so it writes null, and the server leaves a null field out at the take.
+    expect(lapsShownAtTheOpening, 'the stored laps must be shown when the item opens').toBe('7');
     expect(
       fakeServer.listCommandsReceived(),
-      'a save that would need to remove a field must not send any command',
-    ).toEqual([]);
+      'cleared laps must be saved as a literal null, with nothing else in the update',
+    ).toEqual([
+      {
+        type: 'updateItemFields',
+        itemId: idOfTheEnduranceStartItem,
+        fields: { lapsCompletedByLeader: { kind: 'literal', value: null } },
+      },
+    ]);
+    // (Then the server answers, so no command is left waiting for its 5-second timeout.)
+    fakeServer.acceptLastCommand();
+  });
+
+  it('shows a reference moment stored as a number and leaves it alone when something else is edited', async () => {
+    // Arrange: the item as an earlier editor (or a script) stored it: its reference
+    // moment is the number of the Friday save, not "the moment of the take".
+    const { fakeServer } = renderItemEditorPanelOnFakeServer(
+      buildEnduranceStartClockItemSavedWithTheMomentOfTheSave(),
+    );
+    const kindShownAtTheOpening = screen.getByRole('combobox', {
+      name: `Como preencher ${raceClockReferenceMomentLabel}`,
+    }).textContent;
+    const referenceMomentShownAtTheOpening = (
+      screen.getByLabelText(raceClockReferenceMomentLabel) as HTMLInputElement
+    ).value;
+
+    // Act: change the label and the clock's time, and save.
+    typeIntoField('Rótulo', 'Largada — Enduro de Resistência');
+    typeIntoField(raceClockReferenceTimeLabel, '90:00');
+    await pressSaveAndWaitForCommand(1, fakeServer);
+
+    // Assert: the stored number was shown as a typed value, and the update carries the
+    // label and the time (90:00 is 5 400 000 ms) only. The editor has no rule of its own
+    // about clocks any more: a reference moment changes only when the operator changes it.
+    expect(kindShownAtTheOpening, 'a stored number must be shown as a typed value').toContain(
+      'Valor digitado',
+    );
+    expect(referenceMomentShownAtTheOpening, 'the stored number must be the one on screen').toBe(
+      String(momentTheItemWasSavedInMilliseconds),
+    );
     expect(
-      onClose,
-      'the panel must stay open so the operator can correct it',
-    ).not.toHaveBeenCalled();
+      fakeServer.listCommandsReceived(),
+      'the reference moment must not travel with an edit of something else',
+    ).toEqual([
+      {
+        type: 'updateItemFields',
+        itemId: idOfTheEnduranceStartItem,
+        label: 'Largada — Enduro de Resistência',
+        fields: { referenceTimeMs: { kind: 'literal', value: 5_400_000 } },
+      },
+    ]);
+    // (Then the server answers, so no command is left waiting for its 5-second timeout.)
+    fakeServer.acceptLastCommand();
+  });
+
+  it('names a missing reference moment in the warning and stores "the moment of the take" at the next save', async () => {
+    // Arrange: the item as a hand-made API call stored it, with no reference moment at
+    // all, although the race clock requires one.
+    const enduranceStartItem = buildEnduranceStartClockItem();
+    const fieldsWithoutAReferenceMoment = Object.fromEntries(
+      Object.entries(enduranceStartItem.fields).filter(
+        ([fieldKey]) => fieldKey !== 'referenceWallClockMs',
+      ),
+    );
+    const { fakeServer } = renderItemEditorPanelOnFakeServer({
+      ...enduranceStartItem,
+      fields: fieldsWithoutAReferenceMoment,
+    });
+    const warningShownAtTheOpening = screen.getByRole('status').textContent;
+
+    // Act: change only the label and save.
+    typeIntoField('Rótulo', 'Largada — Enduro de Resistência');
+    await pressSaveAndWaitForCommand(1, fakeServer);
+
+    // Assert: the warning named the field, and the save wrote what the form shows for it,
+    // "the moment of the take", as the warning says a save does.
+    expect(warningShownAtTheOpening, 'the warning must name the missing field').toContain(
+      raceClockReferenceMomentLabel,
+    );
+    expect(
+      fakeServer.listCommandsReceived(),
+      'the save must give the item the reference moment it lacks, left to the take',
+    ).toEqual([
+      {
+        type: 'updateItemFields',
+        itemId: idOfTheEnduranceStartItem,
+        label: 'Largada — Enduro de Resistência',
+        fields: { referenceWallClockMs: { kind: 'takeTime' } },
+      },
+    ]);
+    // (Then the server answers, so no command is left waiting for its 5-second timeout.)
+    fakeServer.acceptLastCommand();
   });
 
   it('shows the other item when the rundown hands it another item to edit', () => {
     // Arrange: a page already holding the server's state, with the endurance start item
     // open in the editor. (Drawn by hand here because the test must draw twice.)
     const serverStateStore = createServerStateStore();
-    serverStateStore
-      .getState()
-      .replaceEverySlice(buildSlicesWithTheRaceClockAndTheDriverLowerThird());
+    serverStateStore.getState().replaceEverySlice(buildSlicesWithTheRaceClockAndTheLowerThird());
     serverStateStore.getState().changeConnectionStatus('connected');
     // This test saves nothing, so the page's way to send commands is never called.
     const sendCommandNeverUsedHere: SendCommand = () =>
@@ -258,9 +351,10 @@ describe('the item editor panel for an existing item', () => {
     const page = render(buildPageShowingItem(buildEnduranceStartClockItem()));
 
     // Act: the operator clicks another row of the rundown: the lower third of team 42.
-    page.rerender(buildPageShowingItem(buildDriverLowerThirdItem()));
+    page.rerender(buildPageShowingItem(buildInterviewLowerThirdItem()));
 
-    // Assert: the form is that item's, not a leftover of the first one.
+    // Assert: the form is that item's, not a leftover of the first one, down to the
+    // fields of its graphic.
     expect(screen.getByLabelText('Rótulo'), "the label must be the second item's").toHaveValue(
       'Tarja da equipe 42',
     );
@@ -272,5 +366,9 @@ describe('the item editor panel for an existing item', () => {
       screen.queryByLabelText('Nome da sessão'),
       'the race clock fields of the first item must be gone',
     ).toBeNull();
+    expect(
+      screen.getByLabelText('Nome'),
+      "the fields of the second item's graphic must show what that item stores",
+    ).toHaveValue('Ana Souza');
   });
 });

@@ -7,8 +7,9 @@
  *   that path in a real Chromium against the real server and a real SQLite file.
  *
  * What these tests prove:
- *   - Two race clock items made in the item editor appear in the rundown in the order
- *     they were made, and the first one gets the cursor ("Próximo").
+ *   - Two race clock items made in the item editor, whose fields are generated from the
+ *     clock's manifest, appear in the rundown in the order they were made, and the first
+ *     one gets the cursor ("Próximo").
  *   - Space puts the item at the cursor on air even though the last mouse click left the
  *     focus on a button ("Limpar tudo"): the layer panel names the item by its label on
  *     the "Relógio" layer, the button under the focus was NOT pressed, and the cursor
@@ -30,6 +31,7 @@
  *   - "No ar" on the layer: no OBS stand-in is opened here, and the program monitor
  *     (`/render/?monitor=1`) draws the clock without ever reporting it, so the layer
  *     stays "Carregando". takeAndClear.e2e.ts covers that report.
+ *   - Changing an item that is on air ("Atualizar no ar"); itemUpdateOnAir.e2e.ts does.
  *   - Auto-out and a server restart; the server's tests cover both.
  *
  * Sharing the server with the other tests:
@@ -87,22 +89,24 @@ type RaceClockItemToPrepare = {
  * Prepares one race clock item through the item editor: "+ Item", the label, the session
  * name, the "Relógio correndo" switch when asked for, "Salvar item"; then waits for the
  * editor to close, which it does once the server has accepted the new item. The time is
- * left at the form's 0:00, counting up.
+ * left at the manifest's default, 0:00 counting up, and the moment it refers to as the
+ * form opens for a new item, "Momento da entrada no ar": the server writes it at the take.
  */
 async function createRaceClockItemInTheEditor(
   page: Page,
   itemToPrepare: RaceClockItemToPrepare,
 ): Promise<void> {
   await page.getByRole('button', { name: '+ Item' }).click();
-  // The editor has a "Nome da sessão" field of its own, and so does the take panel in
-  // the centre of the page; everything is looked up inside the editor to tell them apart.
+  // The editor draws the clock's fields from its manifest, and so does "Edição rápida" in
+  // the centre of the page, with the same labels; everything is looked up inside the
+  // editor to tell them apart.
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
   await expect(
-    itemEditor.getByRole('combobox', { name: 'Gráfico' }),
+    itemEditor.getByRole('combobox', { name: 'Gráfico', exact: true }),
     'a new item must start on the race clock, the one graphic the server has',
   ).toContainText('Relógio de prova');
-  await itemEditor.getByLabel('Rótulo').fill(itemToPrepare.itemLabel);
-  await itemEditor.getByLabel('Nome da sessão').fill(itemToPrepare.sessionName);
+  await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemToPrepare.itemLabel);
+  await itemEditor.getByLabel('Nome da sessão', { exact: true }).fill(itemToPrepare.sessionName);
   if (itemToPrepare.isClockRunning) {
     await itemEditor.getByRole('switch', { name: 'Relógio correndo' }).click();
   }

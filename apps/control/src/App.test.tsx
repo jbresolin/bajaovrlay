@@ -4,8 +4,8 @@
  * What this module is for:
  *   The operator's control page as a whole: a header with the product name and the
  *   connection badge, and three areas that are always on screen — the rundown on the
- *   left, the program monitor and the race clock panel in the centre, the layer status
- *   and "Limpar tudo" on the right.
+ *   left, the program monitor and "Edição rápida" (the panel that takes and updates any
+ *   graphic) in the centre, the layer status and "Limpar tudo" on the right.
  *
  * What these tests prove:
  *   - The page shows the title, the connection badge and the "Verificar servidor" button.
@@ -13,7 +13,7 @@
  *     server cannot be reached, the page says so in pt-BR instead of breaking.
  *   - The three areas are there: the rundown with "+ Item", the program monitor (a frame
  *     showing `/render/?monitor=1`, the page OBS loads but marked as a monitor so it
- *     never reports what is on air) with the race clock panel, and the layer list with
+ *     never reports what is on air) with "Edição rápida", and the layer list with
  *     "Limpar tudo".
  *   - Backspace clears the clock layer, but not while the operator is typing in a field,
  *     choosing in a dropdown (closed or open) or resting on the switch.
@@ -24,7 +24,7 @@
  *     and a fake server stands in on the WebSocket; e2e/takeAndClear.e2e.ts uses the real one.
  *   - What the program monitor shows inside its frame: that is the renderer's page.
  *   - What the rundown does (rows, drag, Space, Right arrow): features/rundown/ has
- *     tests of its own.
+ *     tests of its own. What "Edição rápida" sends: features/playout/ has tests of its own.
  *   - Styling and the three-column layout; those are checked by eye in the browser.
  */
 import { fireEvent, screen, within } from '@testing-library/react';
@@ -132,15 +132,15 @@ describe('the three areas of the control page', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows the program monitor and the race clock panel in the centre', () => {
+  it('shows the program monitor and "Edição rápida" in the centre', () => {
     // Arrange: nothing to prepare beyond a connected page.
 
     // Act: draw the page.
     renderControlPageWithTheRaceClockOnAir();
 
     // Assert: the centre holds a frame on the renderer page, marked as a monitor and
-    // labelled "Programa", and the take form.
-    const centreArea = within(screen.getByRole('region', { name: 'Programa e relógio' }));
+    // labelled "Programa", and the "Edição rápida" panel with its take button.
+    const centreArea = within(screen.getByRole('region', { name: 'Programa e edição rápida' }));
     expect(
       centreArea.getByTitle('Programa'),
       'the program monitor must show the renderer page marked as a monitor, so only OBS reports what is on air',
@@ -150,8 +150,12 @@ describe('the three areas of the control page', () => {
       'the program monitor must be labelled "Programa"',
     ).toBeInTheDocument();
     expect(
+      centreArea.getByRole('heading', { name: 'Edição rápida' }),
+      'the quick edit panel must be in the centre area',
+    ).toBeInTheDocument();
+    expect(
       centreArea.getByRole('button', { name: 'Colocar no ar' }),
-      'the race clock panel must be in the centre area',
+      'the quick edit panel must offer its take button',
     ).toBeInTheDocument();
   });
 
