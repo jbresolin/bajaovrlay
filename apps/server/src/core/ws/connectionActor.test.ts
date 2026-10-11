@@ -2,7 +2,7 @@
  * The actor name of a WebSocket connection (apps/server)
  *
  * What this module is for:
- *   Every command is logged with an actor, and the authorisation step decides by the
+ *   Every command runs under an actor name, and the authorisation step decides by the
  *   role at the start of that name. Until operators log in, a connection says what it
  *   is with the address it connects to: `/ws?role=renderer` is a renderer page, and
  *   anything else is an operator. The connection's own id follows the role, so the

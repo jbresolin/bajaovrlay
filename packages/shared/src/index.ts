@@ -25,7 +25,7 @@ export {
   type InstanceTarget,
   InstanceTargetSchema,
 } from './slices/instance.js';
-// The `eventLog` slice: one line per command, ok or failed with its error.
+// The `eventLog` slice: one line per command that changed something or was refused.
 export {
   type EventLogEntry,
   EventLogEntrySchema,

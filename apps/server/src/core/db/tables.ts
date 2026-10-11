@@ -15,8 +15,8 @@ export const sliceRows = sqliteTable('slices', {
 export type SliceRow = typeof sliceRows.$inferSelect;
 
 /**
- * The append-only event log: one row per command, ok or failed. The autoincrement id
- * gives the order commands ran in; ids are never reused, even after a row is deleted.
+ * The append-only event log: one row per command that changed something (ok) or was
+ * refused (failed). The autoincrement id gives the order commands ran in; ids are never reused, even after a row is deleted.
  */
 export const eventLogRows = sqliteTable('event_log', {
   id: integer('id').primaryKey({ autoIncrement: true }),

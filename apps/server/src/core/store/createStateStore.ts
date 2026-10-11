@@ -190,6 +190,9 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   /**
    * Names the slices a reducer changed. A reducer hands back an unchanged slice as the
    * very same array, so comparing the two arrays themselves is enough.
+   * What could go wrong: a reducer that builds a new array with equal contents (an
+   * updateInstanceData that sends the values already on air) counts as a change, so it is
+   * saved, logged and broadcast although nothing on screen moves.
    */
   function findNamesOfChangedSlices(
     nextSlices: SlicesChangedByCommands,

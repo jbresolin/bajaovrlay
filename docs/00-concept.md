@@ -39,7 +39,7 @@ Four deployable parts, one repository, one Node process at runtime.
 
 ### 3.1 The server owns the truth
 
-The server holds the whole application state in memory and persists it to SQLite. Clients never hold state of their own; they send commands and receive state. Every command is appended to an event log (who, when, what). This is the NodeCG "replicant" idea reimplemented in one module: a store of named slices, each validated by a Zod schema, each broadcast to every connected client when it changes.
+The server holds the whole application state in memory and persists it to SQLite. Clients never hold state of their own; they send commands and receive state. Every command that changes something or is refused is appended to an event log (who, when, what). This is the NodeCG "replicant" idea reimplemented in one module: a store of named slices, each validated by a Zod schema, each broadcast to every connected client when it changes.
 
 Consequences:
 
