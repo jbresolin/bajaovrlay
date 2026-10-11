@@ -26,10 +26,17 @@ export function resolveItemFieldsIntoGraphicData(fields: ItemFields): ItemFields
     // accepts a new kind before this function has its `case`, the take is refused in
     // words instead of resolving the field to nothing.
     const fieldKind: string = fieldValue.kind;
-    switch (fieldKind) {
+    switch (fieldValue.kind) {
       case 'literal':
         resolvedKeysAndValues.push([fieldKey, fieldValue.value]);
         break;
+      case 'takeTime':
+        // PLACEHOLDER (BAJAOVRLAY-13 gate 2): the shared schema accepts `takeTime` since
+        // the gate-2 ruling, but this function does not yet receive the time of the take.
+        // Until it does, an item with such a field is refused at the take with the same
+        // UNSUPPORTED_FIELD_KIND as an unknown kind (whose message wrongly names M2),
+        // never put on air with the field missing.
+        return { status: 'refused', error: refuseUnsupportedFieldKind(fieldKey, fieldKind) };
       default:
         return { status: 'refused', error: refuseUnsupportedFieldKind(fieldKey, fieldKind) };
     }

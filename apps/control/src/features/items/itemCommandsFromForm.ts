@@ -90,6 +90,12 @@ function isStoredFieldTheSameLiteral(
   if (fieldOnTheItem === undefined) {
     return false;
   }
+  // PLACEHOLDER (BAJAOVRLAY-13 gate 2): only literals are compared. The form builds no
+  // `takeTime` field yet, so the first check below never fires today; it is here because
+  // only a literal has a `value` to read. A stored `takeTime` counts as changed.
+  if (fieldFromTheForm.kind !== 'literal') {
+    return false;
+  }
   if (fieldOnTheItem.kind !== 'literal') {
     return false;
   }
@@ -118,7 +124,10 @@ function findRaceClockFieldsThatChanged(
     // a stored time with a part of a second would always look changed to `===` below,
     // and a label-only edit would then give a running clock a new reference.
     if (fieldKey === 'referenceTimeMs') {
-      const timeFromTheForm = fieldFromTheForm.value;
+      // PLACEHOLDER (BAJAOVRLAY-13 gate 2): the form always builds the time as a literal;
+      // the kind is checked only because a `takeTime` has no `value` to read.
+      const timeFromTheForm =
+        fieldFromTheForm.kind === 'literal' ? fieldFromTheForm.value : undefined;
       const isTimeTheOneTheItemStores =
         typeof timeFromTheForm === 'number' &&
         isStoredReferenceTimeTheOneTheFormHolds(fieldsOnTheItem, timeFromTheForm);

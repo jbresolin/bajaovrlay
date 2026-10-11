@@ -110,7 +110,7 @@ describe('createItem', () => {
       changedPart: { color: 'purple' },
       fieldNamedInTheFailure: 'color',
     },
-    // Bindings arrive in M2 (BAJAOVRLAY-20); the editor can only send literals today.
+    // Bindings arrive in M2 (BAJAOVRLAY-20); the editor cannot send one today.
     {
       name: 'refuses a field bound to a data source, naming kind',
       changedPart: {

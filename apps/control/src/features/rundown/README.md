@@ -10,6 +10,6 @@ a drop the rows wait for the server's next slice.
   colour, label, graphic, layer, "Disparar", "Editar", "Excluir"; `ItemColorChip.tsx`).
 - `useRundownKeyboardShortcuts.ts` — Space = `takeNext`, Right arrow = `moveCursor`.
 - `useEscapeBelongsToTheDragWhileDragging.ts` — the Esc that cancels a drag never arms "Limpar tudo".
-- Pure helpers: `itemsOfRundownInOrder.ts`, `itemIdsInOrderAfterDrag.ts` (the full id list
-  a drop sends), `itemAfterCursor.ts` (where the Right arrow goes), `graphicAndLayerNames.ts`.
+- Pure helpers: `itemIdsInOrderAfterDrag.ts` (the full id list a drop sends), `itemAfterCursor.ts`
+  (where the Right arrow goes), `graphicAndLayerNames.ts`. Row order: shared's `listItemsOfRundownInOrder`.
 - `rundownDragAnnouncements.ts` — what a screen reader hears during a drag, in pt-BR.

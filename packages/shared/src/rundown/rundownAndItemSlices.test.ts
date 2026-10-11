@@ -181,7 +181,7 @@ describe('ItemSchema', () => {
       changedPart: { color: '#ff0000' },
       fieldNamedInTheFailure: 'color',
     },
-    // Bindings to data sources arrive in M2 (BAJAOVRLAY-20); until then only literals exist.
+    // Bindings to data sources arrive in M2 (BAJAOVRLAY-20); until then no field is bound.
     {
       name: 'refuses a field bound to a data source, naming kind',
       changedPart: {

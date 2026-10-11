@@ -6,7 +6,8 @@
 export { type Rundown, RundownSchema } from './rundown.js';
 // The `items` slice: a prepared use of a graphic (graphic, layer, field values, label).
 export { type Item, ItemSchema } from './item.js';
-// How a field of an item gets its value (only `literal` until M2), and an item's fields.
+// How a field of an item gets its value (`literal`, or `takeTime` stamped by the server
+// at the take; bindings arrive in M2), and an item's fields.
 export {
   type FieldValue,
   FieldValueSchema,
@@ -14,7 +15,11 @@ export {
   ItemFieldsSchema,
   type LiteralFieldValue,
   LiteralFieldValueSchema,
+  type TakeTimeFieldValue,
+  TakeTimeFieldValueSchema,
 } from './fieldValue.js';
+// The items of one rundown, first to last; the one place that reads a rundown's order.
+export { listItemsOfRundownInOrder } from './itemsOfRundownInOrder.js';
 // The six named colours of an item, and the one a new item gets.
 export { defaultItemColor, type ItemColor, ItemColorSchema } from './itemColor.js';
 // The auto-out delay of an item, in whole milliseconds above zero.

@@ -1,3 +1,4 @@
+import { listItemsOfRundownInOrder } from '@bajaovrlay/shared';
 import { useState } from 'react';
 
 import { ActionButton } from '@/features/connection/ActionButton';
@@ -6,7 +7,6 @@ import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
-import { listItemsOfRundownInOrder } from './itemsOfRundownInOrder';
 import { RundownItemList } from './RundownItemList';
 import { useRundownKeyboardShortcuts } from './useRundownKeyboardShortcuts';
 

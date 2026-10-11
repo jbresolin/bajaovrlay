@@ -1,11 +1,7 @@
-import type { DeleteItemCommand } from '@bajaovrlay/shared';
+import { type DeleteItemCommand, listItemsOfRundownInOrder } from '@bajaovrlay/shared';
 
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
-import {
-  findItemThatFollows,
-  listItemsOfRundownInOrder,
-  numberItemsByPositionInList,
-} from './itemOrdering.js';
+import { findItemThatFollows, numberItemsByPositionInList } from './itemOrdering.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { putRundownCursorOnItem } from './rundownCursor.js';
 

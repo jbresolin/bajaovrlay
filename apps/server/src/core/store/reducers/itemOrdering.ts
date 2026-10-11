@@ -1,13 +1,8 @@
-// The order of a rundown's items: reading it and renumbering it. Every reducer that
-// adds, removes or moves an item goes through here, so a rundown is always numbered
-// 0, 1, 2, ... with no gaps and no repeats.
-import type { Item } from '@bajaovrlay/shared';
-
-/** The items of one rundown, sorted by their position; the list given is not changed. */
-export function listItemsOfRundownInOrder(items: Item[], rundownId: string): Item[] {
-  const itemsOfRundown = items.filter((item) => item.rundownId === rundownId);
-  return itemsOfRundown.sort((first, second) => first.order - second.order);
-}
+// The order of a rundown's items: renumbering it and finding what follows an item. Every
+// reducer that adds, removes or moves an item goes through here, so a rundown is always
+// numbered 0, 1, 2, ... with no gaps and no repeats. Reading the order itself is
+// `listItemsOfRundownInOrder` of @bajaovrlay/shared, which the control page uses too.
+import { type Item, listItemsOfRundownInOrder } from '@bajaovrlay/shared';
 
 /**
  * Gives each item named in `orderedItemIds` the position it has in that list (the first

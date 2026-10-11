@@ -1,10 +1,10 @@
-import type { ReorderItemsCommand } from '@bajaovrlay/shared';
+import { listItemsOfRundownInOrder, type ReorderItemsCommand } from '@bajaovrlay/shared';
 
 import {
   refuseOrderThatIsNotAPermutation,
   refuseUnknownRundown,
 } from '../rundownCommandRefusals.js';
-import { listItemsOfRundownInOrder, numberItemsByPositionInList } from './itemOrdering.js';
+import { numberItemsByPositionInList } from './itemOrdering.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**

@@ -1,8 +1,8 @@
-import type { CreateItemCommand, Item } from '@bajaovrlay/shared';
+import { type CreateItemCommand, type Item, listItemsOfRundownInOrder } from '@bajaovrlay/shared';
 
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
 import { refuseUnknownRundown } from '../rundownCommandRefusals.js';
-import { listItemsOfRundownInOrder, numberItemsByPositionInList } from './itemOrdering.js';
+import { numberItemsByPositionInList } from './itemOrdering.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { putRundownCursorOnItem } from './rundownCursor.js';
 
