@@ -111,6 +111,42 @@ describe('updateInstanceData for a preview instance', () => {
   });
 });
 
+describe('updateInstanceData that stamps a field of a preview instance', () => {
+  it('makes the preview remember the stamped field, so the take stamps it again', () => {
+    // Arrange: the yellow flag item previewed. Every field of it was typed, so the
+    // preview remembers no field for the take to stamp.
+    const previewBefore = buildYellowFlagItemOnPreview();
+    const slicesBefore = buildRaceDaySlicesWithTheRaceClockSchema({
+      items: [buildYellowFlagItem(0)],
+      instances: [previewBefore],
+    });
+
+    // Act: an update asks the server to write its own moment into the reference moment.
+    const outcome = reduceCommand(
+      slicesBefore,
+      {
+        type: 'updateInstanceData',
+        instanceId: previewBefore.id,
+        data: {},
+        takeTimeFieldKeys: ['referenceWallClockMs'],
+      },
+      contextOfTheRundownCommand,
+    );
+
+    // Assert: the preview now lists that field. Without it, takePreview would send the
+    // moment of this update to air, and the clock would go on air already minutes in.
+    const previewAfter = outcome.status === 'applied' ? outcome.slices.instances.at(0) : undefined;
+    expect(
+      previewAfter?.takeTimeFieldKeys,
+      'a field stamped on a preview must be remembered for the take to stamp again',
+    ).toEqual(['referenceWallClockMs']);
+    expect(
+      previewAfter?.resolvedData.referenceWallClockMs,
+      'the field must hold the moment of the update while it is only previewed',
+    ).toBe(Date.parse(contextOfTheRundownCommand.now));
+  });
+});
+
 describe('reportInstanceStatus about a preview instance', () => {
   it('moves a loading preview instance to on-air, as it does for any instance', () => {
     // Arrange: the yellow flag item previewed and still `loading`.

@@ -145,6 +145,20 @@ export function reduceUpdateInstanceData(
   // The status is left alone: an update says nothing about what the renderer managed
   // to show, so a `failed` instance stays failed until it is cleared or replaced.
   const updatedInstance: Instance = { ...instanceToUpdate, resolvedData: dataAfterUpdate };
+
+  // A preview remembers which fields the server stamped, because takePreview stamps
+  // exactly those again with the moment of the take. A field stamped by this update
+  // joins that list; otherwise the take would send this update's moment to air and a
+  // clock would go on air already counting. Program instances never carry the list.
+  const isPreviewInstance = instanceToUpdate.target === 'preview';
+  if (isPreviewInstance && command.takeTimeFieldKeys.length > 0) {
+    const keysRememberedSoFar = instanceToUpdate.takeTimeFieldKeys ?? [];
+    const keysStampedForTheFirstTime = command.takeTimeFieldKeys.filter(
+      (stampedKey) => !keysRememberedSoFar.includes(stampedKey),
+    );
+    updatedInstance.takeTimeFieldKeys = [...keysRememberedSoFar, ...keysStampedForTheFirstTime];
+  }
+
   const instancesAfterUpdate = slices.instances.map((instance) =>
     instance.id === command.instanceId ? updatedInstance : instance,
   );
