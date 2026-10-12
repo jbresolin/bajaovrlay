@@ -55,6 +55,12 @@ export type SchemaFormFieldDescription = {
    */
   offersTakeTime: boolean;
   /**
+   * The manifest's `v_baja.role` exactly as written, or undefined when there is none (or
+   * it is not text). The form itself reads only `wallClock` (see `offersTakeTime`); the
+   * word is handed on so a panel can find a field by what it is for instead of by its key.
+   */
+  role: string | undefined;
+  /**
    * The manifest's `default`, exactly as written (undefined when there is none). It is
    * data, not text for a control: buildSchemaFormValues.ts turns it into what the control
    * shows, and ignores it when it is not a value the control can show.

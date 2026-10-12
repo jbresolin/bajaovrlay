@@ -1,4 +1,5 @@
 import { type CommandInput, type ServerMessage, ServerMessageSchema } from '@bajaovrlay/shared';
+import { recordServerClockSample } from '@bajaovrlay/shared/clock';
 
 import { ptBR } from '@/i18n/ptBR';
 import { type LogControlEvent, logControlEvent } from '@/logging/controlLog';
@@ -113,11 +114,15 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   }
 
   function handleMessageText(text: unknown): void {
+    // Read before the message is checked: checking a large hello takes a few
+    // milliseconds, and each of them would make the sample of the server's clock later.
+    const localTimeAtArrivalMs = Date.now();
     const message = readServerMessage(text);
     if (message === undefined) {
       logEvent('warn', 'ignored a server message that is not in the protocol');
       return;
     }
+    recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
 
     switch (message.type) {
       case 'hello':
@@ -226,6 +231,29 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 
   dialTheServer();
   return { sendCommand, close };
+}
+
+/**
+ * Hands the server's time in a hello or slice message to the shared server-aligned
+ * clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
+ * does the same (apps/renderer/src/serverConnection.ts), so the page and the screen
+ * count from the same clock.
+ * What could go wrong: the sample is late by the time the message took to arrive, and
+ * with nothing changing on the server no sample comes, so a step of this computer's
+ * clock stays uncorrected until three more messages have arrived.
+ */
+function recordServerClockSampleOfMessage(
+  message: ServerMessage,
+  localTimeAtArrivalMs: number,
+): void {
+  if (message.type === 'commandResult') {
+    return;
+  }
+  // The field is optional in the protocol; a message without it gives no sample.
+  if (message.serverNowMs === undefined) {
+    return;
+  }
+  recordServerClockSample(message.serverNowMs, localTimeAtArrivalMs);
 }
 
 /** Reads one message as the protocol defines it, or undefined when it is not one. */

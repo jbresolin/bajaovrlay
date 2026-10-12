@@ -17,7 +17,8 @@
  *     `takeTimeFieldKeys` for the server to fill. A blank optional field is left out.
  *   - Pressing Enter in a field sends nothing.
  *   - When the page loads with the clock already on air (a reload in the middle of a
- *     race), the form shows what is on air, exactly as the server holds it.
+ *     race), the form shows what is on air as the server holds it; the one exception is
+ *     the time, which shows what the screen shows at that moment.
  *   - "Atualizar" after such a reload sends `updateInstanceData` naming the instance on
  *     air and holding only what the operator changed; a field cleared with "limpar" goes
  *     as null; a field switched to "filled by the server" is named in `takeTimeFieldKeys`.
@@ -30,12 +31,13 @@
  *   - Field messages, refusals and a dropped connection: QuickEditPanelProblems.test.tsx.
  *   - Another graphic, and which graphic the panel shows: QuickEditPanelChoosingTheGraphic.test.tsx.
  *   - Every control and every rule of a generated form: features/schemaForm has its own tests.
- *   - The clock's arithmetic. The panel does not know the two reference fields belong
- *     together: a typed time or a stopped clock goes out as that one field (see the
- *     scenarios below). The server is what keeps the clock from jumping: the race
- *     clock's manifest names the update rule `carryClockForward`, which also writes the
- *     time on screen and the moment of the update. QuickEditPanelUpdate.test.tsx shows
- *     the form taking that answer.
+ *   - The time field following the screen second by second, and what the cursor and
+ *     typing do to it: QuickEditPanelTimeOnScreen.test.tsx.
+ *   - The clock's arithmetic. What the panel sends knows no clock rule: a typed time or
+ *     a stopped clock goes out as that one field (see the scenarios below). The server
+ *     is what keeps the clock from jumping: the race clock's manifest names the update
+ *     rule `carryClockForward`, which also writes the time on screen and the moment of
+ *     the update. QuickEditPanelUpdate.test.tsx shows the form taking that answer.
  *   - The real server filling the moment, carrying the clock forward and laying the
  *     fields over what is on air; apps/server's tests prove that, and e2e walks it in a
  *     real browser (clockStoppedOnAir.e2e.ts for the clock not jumping).
@@ -52,6 +54,7 @@ import {
 
 import {
   buildRaceClockInstanceHoldingThisData,
+  holdThePageClockAt,
   idOfTheRaceClockInstanceOnAir,
   lapsLabel,
   pressButtonAndWaitForCommand,
@@ -62,8 +65,10 @@ import {
   renderQuickEditPanelWithTheseInstancesOnAir,
 } from './operatingTheQuickEditPanel.testSupport';
 
-// The clock went on air at 9:45 in Brasília on the Saturday of the endurance race.
+// The clock went on air at 9:45 in Brasília on the Saturday of the endurance race, and
+// the page is reloaded at 10:00, fifteen minutes later.
 const momentTheClockWentOnAir = '2026-10-10T12:45:00.000Z';
+const momentThePageIsReloaded = '2026-10-10T13:00:00.000Z';
 
 /**
  * Draws the panel the way a reload in the middle of the race finds it: the first heat
@@ -228,15 +233,17 @@ describe('"Edição rápida" with the race clock and nothing on air', () => {
 });
 
 describe('"Edição rápida" after a reload with the race clock on air', () => {
-  it('shows what is on air, exactly as the server holds it', () => {
+  it('shows what is on air as the server holds it, and in the time field the time on screen', () => {
     // Arrange: the first heat on air since 9:45, running from 12:34 (see the factory).
+    // The page's clock reads 10:00.
+    holdThePageClockAt(momentThePageIsReloaded);
 
     // Act: the page is loaded, as after a reload.
     renderPanelAfterAReloadWithTheFirstHeatOnAir();
 
     // Assert: the form is not at its defaults; it repeats what is on air. The time is
-    // the 12:34 the server holds as the reference (the form does no clock arithmetic),
-    // and the reference moment is a typed value: the number that is on air.
+    // the 27:34 the screen shows at 10:00, not the 12:34 the server holds as the
+    // reference, and the reference moment is a typed value: the number that is on air.
     expect(
       screen.getByLabelText('Nome da sessão'),
       'the session name must be the one on air',
@@ -255,8 +262,8 @@ describe('"Edição rápida" after a reload with the race clock on air', () => {
     ).toBeChecked();
     expect(
       screen.getByLabelText(referenceTimeLabel),
-      'the time must be the reference time on air',
-    ).toHaveValue('12:34');
+      'the time must be the one on screen: 12:34 plus the fifteen minutes since 9:45',
+    ).toHaveValue('27:34');
     expect(
       screen.getByRole('combobox', { name: referenceMomentKindSelectorName }),
       'the reference moment on air is a number, so it must show as a typed value',

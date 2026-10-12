@@ -3,19 +3,19 @@
  *
  * What this module is for:
  *   A race clock on air holds one reading ("at 9:45 it read 12:34") and counts on from
- *   it. The control page's form is generated from the manifest and knows no clock rule,
- *   so when the operator stops the clock or types it a new time, "Atualizar" sends that
- *   one field. It is the server that keeps the clock from jumping: the race clock's
+ *   it. What the control page sends knows no clock rule: when the operator stops the
+ *   clock or types it a new time, "Atualizar" sends that one field. It is the server that keeps the clock from jumping: the race clock's
  *   manifest names the update rule `carryClockForward`, and the server then also writes
  *   the time the screen was showing (or the typed time) and the moment of the update.
  *   The page's part is small and easy to get wrong: send only what was touched, and
  *   afterwards show what the server wrote, not what the form held before.
  *
  * What these tests prove:
- *   - Stopping a running clock sends the switch alone. After the server's answer the
- *     form shows the clock stopped at the time the screen was showing (27:34, not the
- *     12:34 it held) and the moment of the press, and counts as untouched: a second
- *     "Atualizar" sends nothing.
+ *   - Stopping a running clock sends the switch alone, although the time field was
+ *     showing the time on screen (27:34) and not the 12:34 on air: a time the page only
+ *     shows is never sent. After the server's answer the form shows the clock stopped at
+ *     27:34 and the moment of the press, and counts as untouched: a second "Atualizar"
+ *     sends nothing.
  *   - Typing a new time for a running clock sends the time alone. After the server's
  *     answer the form shows that time counting from the moment of the press, and counts
  *     as untouched: a second "Atualizar" does not put the clock back to the typed time.
@@ -40,6 +40,7 @@ import { flipSwitch, typeIntoField } from '@/features/schemaForm/schemaFormOnTes
 
 import {
   buildRaceClockInstanceHoldingThisData,
+  holdThePageClockAt,
   idOfTheRaceClockInstanceOnAir,
   letTheServerApplyTheLastUpdate,
   pressButtonAndWaitForCommand,
@@ -71,12 +72,19 @@ function buildFirstHeatInstanceOnAir(): Instance {
   );
 }
 
-/** Draws the panel with the first heat on air since 9:45. */
+/**
+ * Draws the panel with the first heat on air since 9:45, on a page whose clock reads
+ * 10:00 and stands still there, the same moment the fake server answers at.
+ */
 function renderPanelWithTheFirstHeatOnAir() {
+  holdThePageClockAt(tenOClock);
   return renderQuickEditPanelWithTheseInstancesOnAir([buildFirstHeatInstanceOnAir()]);
 }
 
-/** What the form shows of the clock: the switch, the time and the moment the time is true at. */
+/**
+ * What the form shows of the clock: the switch, the time (for an untouched field, the
+ * time on screen at the page's 10:00) and the reference moment that is on air.
+ */
 function readClockFieldsShownInTheForm() {
   return {
     isRunning: screen
@@ -90,7 +98,8 @@ function readClockFieldsShownInTheForm() {
 describe('the quick edit form after an "Atualizar" that changed the clock itself', () => {
   it('stops a running clock at the time it was showing: sends the switch alone, then shows the 27:34 the server kept and counts as untouched', async () => {
     // Arrange: the first heat on air, running from 12:34 since 9:45. At 10:00 the screen
-    // shows 27:34, while the form still shows the 12:34 that is on air as the reference.
+    // shows 27:34, and so does the form's time field, next to the 9:45 that is on air as
+    // the reference moment.
     const { fakeServer } = renderPanelWithTheFirstHeatOnAir();
     const clockFieldsBeforeThePress = readClockFieldsShownInTheForm();
 
@@ -104,14 +113,14 @@ describe('the quick edit form after an "Atualizar" that changed the clock itself
     const clockFieldsAfterTheAnswer = readClockFieldsShownInTheForm();
     await pressButtonAndWaitUntilThePressIsOver('Atualizar');
 
-    // Assert: the page sent the switch and nothing else. It worked out no time: keeping
-    // the clock where it was is the server's job.
+    // Assert: the page sent the switch and nothing else. The 27:34 it was showing is not
+    // in the command: keeping the clock where it was is the server's job.
     expect(
       clockFieldsBeforeThePress,
-      'before the press the form must show the running clock as it is on air',
+      'before the press the form must show the running clock with the time on screen',
     ).toEqual({
       isRunning: 'true',
-      referenceTime: '12:34',
+      referenceTime: '27:34',
       referenceMoment: String(Date.parse(quarterToTen)),
     });
     expect(

@@ -21,8 +21,10 @@ import {
   useServerState,
 } from '@/state/ControlPageStateProvider';
 
+import { findClockFieldKeysOfGraphic } from './clockFieldsOfGraphic';
 import { CommandErrorMessage } from './CommandErrorMessage';
 import { findInstanceOfGraphicToFollow } from './instanceOfGraphicToFollow';
+import { useTimeOnScreenInQuickEdit } from './useTimeOnScreenInQuickEdit';
 
 // The start of every element id of this form. The item editor draws a generated form on
 // the same page, and with equal ids its labels would point at this panel's controls.
@@ -57,6 +59,14 @@ export type QuickEditFormProps = {
  * changes, and again after every command the server accepts. A field the server fills
  * with the moment of the command ("Momento da entrada no ar") is named in the command's
  * `takeTimeFieldKeys`; this page never reads its own clock to build data.
+ *
+ * One field may show something the form does not hold: for a graphic whose manifest
+ * describes a clock (clockFieldsOfGraphic.ts), the untouched time field shows the time
+ * on screen right now (useTimeOnScreenInQuickEdit.ts) while the form goes on holding the
+ * reading that is on air. So that field stays "unchanged": "Atualizar" does not send it,
+ * and "Colocar no ar" sends the reading as it is on air, time and moment together, which
+ * puts the same clock on screen without a jump. A time the operator types is held and
+ * sent as typed; the server makes it true at the moment of the update.
  *
  * The panel draws this component with the graphic's id as its React `key`, so choosing
  * another graphic starts a fresh form. What could go wrong: a graphic whose package is
@@ -116,6 +126,14 @@ export function QuickEditForm(props: QuickEditFormProps) {
   // up to date only the parts of `formState` a component reads as it draws.
   const fieldsTheOperatorChanged = form.formState.dirtyFields;
   const hasTheOperatorChangedAField = form.formState.isDirty;
+
+  // The time on screen for the time field of a clock on air; undefined for every other
+  // graphic, off air, and once the operator changed the clock's time or its moment.
+  const timeOnScreenForTheTimeField = useTimeOnScreenInQuickEdit({
+    clockFieldKeys: findClockFieldKeysOfGraphic(graphic.manifest.v_baja?.updateRule, description),
+    dataOnAir: instanceOnAir?.resolvedData,
+    fieldsTheOperatorChanged,
+  });
 
   // While a press is being checked and its command waits for the server's answer both
   // buttons are off, so an impatient second click cannot send the graphic to air twice.
@@ -295,6 +313,7 @@ export function QuickEditForm(props: QuickEditFormProps) {
           form={form}
           description={description}
           controlIdPrefix={controlIdPrefixOfQuickEdit}
+          textShownInUntouchedField={timeOnScreenForTheTimeField}
         />
       </CardContent>
       <CardFooter className="flex flex-wrap items-center gap-3">

@@ -22,10 +22,12 @@ On the manifest itself:
 - `v_baja.defaultLayerId` — the layer the graphic is offered on (missing or unknown:
   fullscreen, with a logged warning).
 - `v_baja.category` — the group it is listed under (missing: `other`).
-- `v_baja.updateRule` — read by the server, not the control page: the named rule every
-  update of the graphic on air runs through (`carryClockForward` keeps a clock from
-  jumping). An unknown name, or a schema without the fields the rule needs, is warned
-  about at boot and makes every update of the graphic refused. Missing: no rule.
+- `v_baja.updateRule` — the named rule the server runs every update of the graphic on
+  air through (`carryClockForward` keeps a clock from jumping). An unknown name, or a
+  schema without the fields the rule needs, is warned about at boot and makes every
+  update of the graphic refused. Missing: no rule. The control page reads it too: with
+  `carryClockForward` and the four clock roles below, "Edição rápida" shows the time on
+  screen in the time field while the graphic is on air.
 
 On each property of `schema.properties` (`type` picks the control: `string` text,
 `integer`/`number` number, `boolean` switch):
@@ -40,6 +42,10 @@ On each property of `schema.properties` (`type` picks the control: `string` text
 - `v_baja.role: "wallClock"` on an `integer` — the field may be left "to the moment of the
   take": the server then writes its own clock's milliseconds into it. The server refuses
   to do that for any field not declared exactly so.
+- `v_baja.role: "clockTime"` (on the `unit: "ms"` time), `"clockRunning"` (on the
+  `boolean`) and `"clockMode"` (on the `elapsed`/`remaining` enum) — with `wallClock`,
+  the four fields that are a clock. Each role once; if one is missing the time field
+  shows the reference time, as for any graphic.
 
 `schema.required` lists the fields that cannot be left blank; every other field gets a
 "limpar" control and, once cleared, is not sent to the graphic at all (never as `null`).

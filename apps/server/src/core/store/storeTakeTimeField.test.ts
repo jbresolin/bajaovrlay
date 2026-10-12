@@ -12,6 +12,8 @@
  *   - Space (takeNext) puts it on air with the take's milliseconds in the field, the
  *     race clock's schema accepts that, and the database holds the same number.
  *   - Firing the same item again later (takeItem) stamps the later moment.
+ *   - createItem and updateItemFields refuse a takeTime on a field that is not a
+ *     wall-clock moment, and neither memory nor the database changes.
  *
  * What these tests deliberately do not cover:
  *   - Resolving field values in detail; resolveItemFields.test.ts covers it.
@@ -130,5 +132,59 @@ describe('an item whose clock starts at the take, through the store', () => {
       store.readAllSlices().instances.map((instance) => instance.resolvedData.referenceWallClockMs),
       'the second take must carry its own moment, not the first one',
     ).toEqual([momentOfTheSecondTakeInMilliseconds]);
+  });
+});
+
+describe('an item whose takeTime field is not a wall-clock moment, through the store', () => {
+  it('is refused when it is created and when it is edited, and the database keeps the good item', () => {
+    // Arrange: a store with the start item prepared as it should be, and what the
+    // database holds for the items at that point.
+    const { store, database } = createStoreWithAClockTheTestSets();
+    store.applyCommand(createStartItemThatStartsAtTheTake, operatorActor);
+    const itemsBefore = store.readAllSlices().items;
+    const refusalForTheReferenceTime = {
+      ok: false,
+      error: {
+        code: 'INVALID_GRAPHIC_DATA',
+        message:
+          'O gráfico "race-clock" não aceita que o servidor preencha o campo "referenceTimeMs" com o momento do comando: o manifesto do gráfico não marca esse campo como um horário (número inteiro com v_baja.role "wallClock").',
+      },
+    };
+
+    // Act: create a second item that asks for the take's moment in the reference TIME (a
+    // duration), then ask the same of the item already stored.
+    const outcomeOfCreate = store.applyCommand(
+      {
+        ...createStartItemThatStartsAtTheTake,
+        label: 'Relargada do enduro',
+        fields: {
+          ...createStartItemThatStartsAtTheTake.fields,
+          referenceTimeMs: { kind: 'takeTime' },
+        },
+      },
+      operatorActor,
+    );
+    const outcomeOfUpdate = store.applyCommand(
+      {
+        type: 'updateItemFields',
+        itemId: idOfTheStartItem,
+        fields: { referenceTimeMs: { kind: 'takeTime' } },
+      },
+      operatorActor,
+    );
+
+    // Assert: both refused with the message the take gives; memory and the database
+    // still hold the one good item, unchanged.
+    expect(
+      [outcomeOfCreate, outcomeOfUpdate],
+      'saving a takeTime on a field that is not a moment must be refused',
+    ).toEqual([refusalForTheReferenceTime, refusalForTheReferenceTime]);
+    expect(store.readAllSlices().items, 'the items in memory must be unchanged').toEqual(
+      itemsBefore,
+    );
+    const storedItemsRow = readAllSliceRows(database).find((row) => row.name === 'items');
+    expect(storedItemsRow?.json, 'the database must still hold only the good item').toEqual(
+      itemsBefore,
+    );
   });
 });

@@ -17,12 +17,21 @@ import {
 /** The only path that upgrades to a WebSocket (the control page's dev proxy forwards it). */
 export const webSocketPath = '/ws';
 
-/** What the hub needs: the HTTP server to share, the store, a logger, the ping interval. */
+/**
+ * What the hub needs: the HTTP server to share, the store, a logger, the ping interval,
+ * and (for tests) the clock whose time goes into each `hello` and `slice` message.
+ */
 export type WebSocketHubOptions = {
   httpServer: Server;
   stateStore: StateStore;
   logger: ServerLogger;
   heartbeatIntervalInMilliseconds: number;
+  /**
+   * Defaults to the machine's clock. It must be the clock the store stamps commands
+   * with: renderers line their own clock up with this one, and a race clock counts from
+   * a moment the store stamped.
+   */
+  readCurrentTime?: (() => Date) | undefined;
 };
 
 /** The running hub; close() drops every client and stops the heartbeat. */
@@ -30,13 +39,15 @@ export type WebSocketHub = { close: () => Promise<void> };
 
 /**
  * Attaches the WebSocket protocol to the HTTP server, on the same port at `/ws`. Each
- * client gets `hello`, then a `slice` message whenever a slice changes, and a
+ * client gets `hello`, then a `slice` message whenever a slice changes (both carrying
+ * `serverNowMs`, the server's clock at the moment the message is built), and a
  * `commandResult` for each message it sends (a command, or a renderer's
  * `instanceStatus`). A connection to `/ws?role=renderer` acts as a renderer, any other
  * as an operator. Any other upgrade path is refused.
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
+  const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   // noServer: the HTTP server is Hono's; this hub only takes over the upgrades below.
   const webSocketServer = new WebSocketServer({ noServer: true });
   const heartbeat = startHeartbeat({
@@ -72,7 +83,8 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     connectionLogger.info('websocket client connected');
 
     heartbeat.trackClient(client);
-    client.send(serializeServerMessage(buildHelloMessage(stateStore.readAllSlices())));
+    const helloMessage = buildHelloMessage(stateStore.readAllSlices(), readCurrentTime().getTime());
+    client.send(serializeServerMessage(helloMessage));
 
     client.on('message', (data, isBinary) => {
       const commandResult = answerClientMessage({
@@ -93,7 +105,11 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   // applyCommand, so the slices reach the sender before its commandResult does.
   const stopListening = stateStore.subscribeToSliceChanges((changedSliceNames, slices) => {
     for (const sliceName of changedSliceNames) {
-      const messageText = serializeServerMessage(buildSliceMessage(sliceName, slices));
+      // The clock is read for each message, as late as possible: a renderer takes the
+      // difference between this time and its own clock at arrival, so every millisecond
+      // between this reading and the send shows up as an error in its sample.
+      const sliceMessage = buildSliceMessage(sliceName, slices, readCurrentTime().getTime());
+      const messageText = serializeServerMessage(sliceMessage);
       for (const client of webSocketServer.clients) {
         if (client.readyState === client.OPEN) {
           client.send(messageText);

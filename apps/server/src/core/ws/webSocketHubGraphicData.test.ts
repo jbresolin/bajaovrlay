@@ -181,6 +181,8 @@ describe('an updateInstanceData sent over /ws', () => {
           resolvedData: { ...raceClockDataUnderGreenFlag, state: 'yellow' },
         },
       ],
+      // The time of the server's clock; webSocketHub.test.ts checks its exact value.
+      serverNowMs: expect.any(Number),
     });
   });
 

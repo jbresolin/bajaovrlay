@@ -1,8 +1,9 @@
 // Test support: the slices of a race day with rundowns and prepared items, for the tests
 // of the seven rundown commands. Every function builds fresh objects on each call, so
 // no test can change what another one sees.
-import type { Instance, Item, ItemFields, Rundown } from '@bajaovrlay/shared';
+import type { Graphic, Instance, Item, ItemFields, Rundown } from '@bajaovrlay/shared';
 
+import { raceClockManifestForTests } from '../builtGraphicsFolder.testSupport.js';
 import { seededLayers } from '../seedLayers.js';
 import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
 
@@ -190,5 +191,33 @@ export function buildRaceDaySlicesWithRundown(parts: {
     instances: parts.instances ?? [],
     rundowns: parts.rundowns ?? [buildMainSessionRundown(null), buildPodiumRundown(null)],
     items: parts.items,
+  };
+}
+
+/**
+ * Builds the same race day slices, but with the race clock registered with its real data
+ * schema (the one that marks `referenceWallClockMs` as a wall-clock moment). The team
+ * lower third stays without a schema. For the tests about which field may say takeTime.
+ */
+export function buildRaceDaySlicesWithTheRaceClockSchema(parts: {
+  rundowns?: Rundown[];
+  items: Item[];
+  instances?: Instance[];
+}): SlicesChangedByCommands {
+  const raceDaySlices = buildRaceDaySlicesWithRundown(parts);
+  const raceClockWithItsDataSchema: Graphic = {
+    id: 'race-clock',
+    manifest: raceClockManifestForTests,
+    defaultLayerId: 'clock',
+    category: 'clock',
+    thumbnailUrl: null,
+    defaultFields: {},
+  };
+  const graphicsOtherThanTheRaceClock = raceDaySlices.graphics.filter(
+    (graphic) => graphic.id !== 'race-clock',
+  );
+  return {
+    ...raceDaySlices,
+    graphics: [raceClockWithItsDataSchema, ...graphicsOtherThanTheRaceClock],
   };
 }

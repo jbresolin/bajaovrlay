@@ -12,4 +12,4 @@ the event → tells listeners. A command that changes nothing is not saved, logg
   graphics (`discoverBuiltGraphics.ts`), placed by `v_baja` (`graphicPlacement.ts`).
 - `*.testSupport.ts` — stand-in graphics folders and race-day slices for tests.
 - `loadRundownSlices.ts` — loads or seeds rundowns and items (`seedRundowns.ts`); `autoOut.ts` clears
-  an item's layer after its delay; `resolveItemFields.ts` builds graphic data at the take.
+  an item's layer after its delay; `resolveItemFields.ts` builds graphic data at the take; `itemTakeTimeFields.ts` refuses a takeTime on a field that is not a wall-clock moment.

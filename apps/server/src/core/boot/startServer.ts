@@ -26,6 +26,12 @@ export type StartServerOptions = {
   rendererPageFolder?: string | undefined;
   /** Defaults to 15 s; tests use a few milliseconds. */
   heartbeatIntervalInMilliseconds?: number | undefined;
+  /**
+   * The server's wall clock; defaults to the machine's. One clock for the store (which
+   * stamps commands and race clock readings) and for the WebSocket hub (which tells
+   * renderers what time it is), so the two can never disagree. Tests hold it still.
+   */
+  readCurrentTime?: (() => Date) | undefined;
 };
 
 /** A booted server: the port it listens on, its store, and how to stop it. */
@@ -67,6 +73,7 @@ async function startServingFromDatabase(
     database,
     logger: options.logger,
     graphicPackagesFolder: options.graphicPackagesFolder,
+    readCurrentTime: options.readCurrentTime,
   });
   // Started before anything can send a command, so no take of an item with an
   // auto-out delay is missed. It holds no timer until such a take happens.
@@ -90,6 +97,7 @@ async function startServingFromDatabase(
     logger: options.logger,
     heartbeatIntervalInMilliseconds:
       options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
+    readCurrentTime: options.readCurrentTime,
   });
 
   async function closeEverything(): Promise<void> {

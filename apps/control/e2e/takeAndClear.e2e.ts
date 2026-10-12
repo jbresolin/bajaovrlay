@@ -215,8 +215,9 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
 
     // Assert: nothing was lost, because the server is the truth; and since the clock is
     // on air, "Edição rápida" offers "Atualizar" and its form shows what is on air, yellow
-    // flag included. The time field shows the reference time that is on air, 12:34, and
-    // not the time the running clock has reached: the form shows the data, as it is.
+    // flag included. The time field shows the time the running clock shows on screen now,
+    // which is past the 12:34 it was taken with: several seconds have gone by since the
+    // take (the wait for "No ar", the update and the reload), and the clock is running.
     await expect(
       clockLayerRow,
       'after a reload the layer panel must still show the race clock',
@@ -239,8 +240,8 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
     ).toBeChecked();
     await expect(
       quickEditArea.getByLabel('Tempo de referência', { exact: true }),
-      'after a reload the time field must show the reference time on air as minutes and seconds',
-    ).toHaveValue('12:34');
+      'after a reload the time field must show the time on screen now, later than the 12:34 the clock was taken with',
+    ).toHaveValue(/^12:(3[5-9]|[45]\d)$/);
 
     // Act: clear the clock layer.
     await clockLayerRow.getByRole('button', { name: 'Limpar' }).click();

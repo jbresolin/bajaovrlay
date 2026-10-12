@@ -57,7 +57,8 @@
             "remaining": "Tempo restante"
           }
         },
-        "default": "elapsed"
+        "default": "elapsed",
+        "v_baja": { "role": "clockMode" }
       },
       "referenceTimeMs": {
         "type": "integer",
@@ -65,7 +66,7 @@
         "description": "Tempo decorrido ou restante que o relógio mostrava no horário da referência.",
         "minimum": 0,
         "default": 0,
-        "v_baja": { "unit": "ms" }
+        "v_baja": { "unit": "ms", "role": "clockTime" }
       },
       "referenceWallClockMs": {
         "type": "integer",
@@ -79,7 +80,8 @@
         "type": "boolean",
         "title": "Relógio correndo",
         "description": "Desligado, o relógio fica parado no tempo de referência.",
-        "default": false
+        "default": false,
+        "v_baja": { "role": "clockRunning" }
       },
       "lapsCompletedByLeader": {
         "type": "integer",

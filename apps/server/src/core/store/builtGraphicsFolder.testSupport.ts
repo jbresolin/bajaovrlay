@@ -38,12 +38,17 @@ export const raceClockManifestForTests = {
         title: 'Bandeira',
         enum: ['pre', 'green', 'yellow', 'red', 'checkered', 'finished'],
       },
-      clockMode: { type: 'string', title: 'Modo do relógio', enum: ['elapsed', 'remaining'] },
+      clockMode: {
+        type: 'string',
+        title: 'Modo do relógio',
+        enum: ['elapsed', 'remaining'],
+        v_baja: { role: 'clockMode' },
+      },
       referenceTimeMs: {
         type: 'integer',
         title: 'Tempo de referência',
         minimum: 0,
-        v_baja: { unit: 'ms' },
+        v_baja: { unit: 'ms', role: 'clockTime' },
       },
       referenceWallClockMs: {
         type: 'integer',
@@ -51,7 +56,7 @@ export const raceClockManifestForTests = {
         minimum: 0,
         v_baja: { role: 'wallClock' },
       },
-      running: { type: 'boolean', title: 'Relógio correndo' },
+      running: { type: 'boolean', title: 'Relógio correndo', v_baja: { role: 'clockRunning' } },
       lapsCompletedByLeader: { type: 'integer', title: 'Voltas do líder', minimum: 0 },
     },
     required: [

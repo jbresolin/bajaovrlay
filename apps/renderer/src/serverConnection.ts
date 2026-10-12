@@ -9,6 +9,11 @@
  *
  * What the renderer says over it is one kind of message, `instanceStatus`: what really
  * happened on screen to an instance. It sends no commands.
+ *
+ * It also learns the server's clock here: every `hello` and `slice` message says what
+ * the server's clock showed (`serverNowMs`), and each is recorded as one sample for the
+ * shared "now" the graphics read (@bajaovrlay/shared/clock). A program monitor does the
+ * same, since it runs this very code.
  */
 import {
   type InstanceStatusMessage,
@@ -17,6 +22,7 @@ import {
   type Slices,
   SlicesSchema,
 } from '@bajaovrlay/shared';
+import { recordServerClockSample } from '@bajaovrlay/shared/clock';
 
 import { logRendererEvent } from './rendererLog.js';
 
@@ -133,11 +139,15 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 
   /** Acts on one message, and tells the socket whether it was the hello it waits for. */
   function handleMessage(data: unknown): { wasHello: boolean } {
+    // Read first, before the message is even parsed: checking a large hello takes a few
+    // milliseconds, and each of them would make the sample of the server's clock later.
+    const localTimeAtArrivalMs = Date.now();
     const message = parseServerMessage(data);
     if (message === undefined) {
       logEvent('warn', 'server message ignored: not in the protocol');
       return { wasHello: false };
     }
+    recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
     if (message.type === 'hello') {
       deliverFullSnapshot(message.slices);
       return { wasHello: true };
@@ -244,6 +254,31 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     },
     sendInstanceStatus,
   };
+}
+
+/**
+ * Records what a `hello` or `slice` message says the server's clock showed, as one
+ * sample for the shared "now" the graphics read. A `commandResult` carries no clock, and
+ * neither does a message from a stand-in server that leaves `serverNowMs` out.
+ * What could go wrong: the message spent some time on the network, so every sample is
+ * late by that much and the clock on air runs that much behind the server's (a few
+ * milliseconds on a local network). One message held up for longer is left aside by the
+ * median of the last five samples. The state read over HTTP when a hello is late gives
+ * no sample: GET /api/v1/state answers the slices alone. And with no slice changing no
+ * sample arrives, so a step of this machine's clock stays uncorrected until three more
+ * messages have come.
+ */
+function recordServerClockSampleOfMessage(
+  message: ServerMessage,
+  localTimeAtArrivalMs: number,
+): void {
+  if (message.type === 'commandResult') {
+    return;
+  }
+  if (message.serverNowMs === undefined) {
+    return;
+  }
+  recordServerClockSample(message.serverNowMs, localTimeAtArrivalMs);
 }
 
 /** Reads one WebSocket message; undefined when it is not text, not JSON or not in the protocol. */

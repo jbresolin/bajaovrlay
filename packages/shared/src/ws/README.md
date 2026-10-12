@@ -9,6 +9,11 @@ Every message is one JSON object, told apart by its `type` field:
 
 - `hello` (server → client): every slice, sent once right after the client connects.
 - `slice` (server → client): one slice that changed, sent to every client.
+  Both carry `serverNowMs`: the server's wall clock, in whole milliseconds since 1970, when
+  the message was built. A renderer subtracts its own clock from it and keeps the median of
+  the last five differences, so the race clock on air counts on the server's clock
+  (`../clock/serverAlignedTime.ts`). The schema lets a message leave it out (test
+  stand-ins do); the server always sends it. `commandResult` does not carry it.
 - `command` (client → server): the only way an operator changes state. `requestId` is
   optional and is echoed in the `commandResult`.
 - `instanceStatus` (renderer → server): what really happened to an instance on screen,
@@ -77,7 +82,8 @@ not answer the previous ping.
     ],
     "items": [],
     "eventLog": []
-  }
+  },
+  "serverNowMs": 1791550800000
 }
 ```
 
@@ -98,7 +104,8 @@ not answer the previous ping.
       "status": "loading",
       "takenAt": "2026-10-09T13:00:00.000Z"
     }
-  ]
+  ],
+  "serverNowMs": 1791550800250
 }
 ```
 

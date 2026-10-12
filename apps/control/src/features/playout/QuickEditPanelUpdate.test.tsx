@@ -200,9 +200,10 @@ describe('the quick edit form following what is on air', () => {
   });
 
   it('counts a time typed and then put back as untouched, so "Atualizar" sends no time', async () => {
-    // Arrange: the first heat on air; the form shows the 12:34 on air. The operator
-    // types 20:00, thinks again, and types the 12:34 that was there before. The flag is
-    // changed to yellow as well, so that there is something to send.
+    // Arrange: the first heat on air; the form holds the 12:34 on air (its time field
+    // shows the time on screen instead while untouched). The operator types 20:00, thinks
+    // again, and types the 12:34 the form held before. The flag is changed to yellow as
+    // well, so that there is something to send.
     const { fakeServer } = renderPanelWithTheFirstHeatOnAir();
     typeIntoField(referenceTimeLabel, '20:00');
     typeIntoField(referenceTimeLabel, '12:34');
@@ -215,7 +216,7 @@ describe('the quick edit form following what is on air', () => {
     // no time.
     expect(
       fakeServer.listCommandsReceived()[0],
-      'a field put back to what it showed must count as untouched',
+      'a field put back to the value the form held must count as untouched',
     ).toEqual({
       type: 'updateInstanceData',
       instanceId: idOfTheRaceClockInstanceOnAir,

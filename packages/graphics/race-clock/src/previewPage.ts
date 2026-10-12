@@ -4,6 +4,8 @@
  * stop and each flag state. `data-preview-state` on <body> tells tests and people what
  * happened last: loading, busy, onAir, offAir or error.
  */
+import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
+
 import type { OGrafReturnPayload } from './ografGraphicTypes.js';
 import { choosePreviewData } from './previewData.js';
 import { ptBR } from './ptBR.js';
@@ -82,7 +84,10 @@ async function startPreview(): Promise<void> {
     });
   }
 
-  const dataChoice = choosePreviewData(location.search, Date.now());
+  // The same "now" the graphic counts with, so the sample reading and the clock drawn
+  // from it share one clock. On this page no renderer records the server's time, so it
+  // is simply this machine's clock.
+  const dataChoice = choosePreviewData(location.search, readServerAlignedTimeMs());
   if (!dataChoice.isReadable) {
     previewLastAnswer.textContent = dataChoice.problem;
     setPreviewState('error');

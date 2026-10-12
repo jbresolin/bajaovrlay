@@ -12,6 +12,8 @@
  *   - Each shape the form supports gets the right control, label, help and "required".
  *   - Dropdown options take their words from the manifest, or show the value itself.
  *   - Limits, lengths, the default and "may be filled by the server at the take" are read.
+ *   - A property's `v_baja.role` is handed on as the manifest wrote it, for a panel that
+ *     looks a field up by its role; a role that is missing or is not text reads as none.
  *   - A list and a nested object become the read-only unsupported control.
  *   - The real race clock manifest reads as its seven fields.
  *
@@ -225,5 +227,66 @@ describe('describeSchemaFormFromDataSchema, on the real race clock manifest', ()
       description.fields.filter((field) => !field.isRequired).map((field) => field.key),
       'only the laps are optional',
     ).toEqual(['lapsCompletedByLeader']);
+  });
+});
+
+describe('describeSchemaFormFromDataSchema, on the role a manifest gives a property', () => {
+  const rolesAsManifestsWriteThem = [
+    // The role the server already reads: the moment a clock's time belongs to.
+    {
+      name: 'hands on the role of a wall-clock moment',
+      propertySchema: {
+        type: 'integer',
+        title: 'Horário da referência',
+        v_baja: { role: 'wallClock' },
+      },
+      expectedRole: 'wallClock',
+    },
+    // A role next to a unit: the mm:ss time of a clock carries both keywords.
+    {
+      name: 'hands on a role written next to a unit',
+      propertySchema: {
+        type: 'integer',
+        title: 'Tempo de referência',
+        v_baja: { unit: 'ms', role: 'clockTime' },
+      },
+      expectedRole: 'clockTime',
+    },
+    // The form does not judge the word: a role it never heard of is handed on all the same.
+    {
+      name: 'hands on a role the form itself has no use for',
+      propertySchema: {
+        type: 'boolean',
+        title: 'Relógio correndo',
+        v_baja: { role: 'clockRunning' },
+      },
+      expectedRole: 'clockRunning',
+    },
+    // Most properties have no role at all.
+    {
+      name: 'reads no role when the property has no v_baja keyword',
+      propertySchema: { type: 'string', title: 'Nome da sessão' },
+      expectedRole: undefined,
+    },
+    // A manifest is written by hand; a number where the word belongs is not a role.
+    {
+      name: 'reads no role when the manifest wrote a number in its place',
+      propertySchema: { type: 'integer', title: 'Voltas', v_baja: { role: 7 } },
+      expectedRole: undefined,
+    },
+  ];
+
+  it.each(rolesAsManifestsWriteThem)('$name', ({ propertySchema, expectedRole }) => {
+    // Arrange: a data schema with that one property.
+    const dataSchema = { type: 'object', properties: { campoDoRelogio: propertySchema } };
+
+    // Act: read it.
+    const description = describeSchemaFormFromDataSchema(dataSchema);
+
+    // Assert: the field's role is the manifest's word, or none.
+    expect(
+      description.fields[0]?.role,
+      'the role must be the text the manifest wrote under v_baja.role, or undefined',
+    ).toBe(expectedRole);
   });
 });
