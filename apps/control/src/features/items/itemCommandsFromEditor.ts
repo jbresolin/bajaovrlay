@@ -12,7 +12,8 @@
  * Sending only the changes is a deliberate choice: the server merges an update part by
  * part, so two operators who change different parts of one item both keep their change.
  * What could go wrong: "changed" is judged against the item handed in, so the caller
- * must pass the item as it was when the form was filled, not a newer copy.
+ * must pass the item as it was when the form was filled, plus only what this same editor
+ * has saved since (itemsTheServerMayStore.ts), never a newer copy from the server.
  */
 import type {
   CreateItemCommand,
@@ -69,7 +70,7 @@ export function buildCreateItemCommand(parts: CreateItemCommandParts): CreateIte
 
 /** What buildUpdateItemFieldsCommand needs. */
 export type UpdateItemFieldsCommandParts = {
-  /** The stored item as it was when the form was filled from it. */
+  /** The stored item as the form was filled from it, plus what this editor saved since. */
   itemBeingEdited: Item;
   itemFormValues: ItemEditorFormValues;
   /**
@@ -127,7 +128,10 @@ export function buildUpdateItemFieldsCommand(
 export type UpdateInstanceDataCommandParts = {
   /** The instance of the item on the program output (findInstanceOfItemOnProgram). */
   instanceId: string;
-  /** The same changed fields the `updateItemFields` of this press was built from. */
+  /**
+   * The fields in which the form differs from the item as it was when the editor opened,
+   * which is what the air is compared with until this editor changes it.
+   */
   changedFields: ItemFields;
 };
 

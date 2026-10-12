@@ -5,8 +5,9 @@
 import type { FieldValue, ItemFields } from '@bajaovrlay/shared';
 
 import { readCheckedFieldsOfValidSchemaForm } from './checkSchemaFormValues';
+import { convertDataValueIntoFormValue, readDataValueFromFormValue } from './fieldValueConversion';
 import { readOwnValueOfRecord } from './plainRecord';
-import type { SchemaFormDescription } from './schemaFormDescription';
+import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import type { SchemaFormValues } from './schemaFormValues';
 
 /**
@@ -42,13 +43,43 @@ export function buildItemFieldsFromSchemaForm(
 }
 
 /**
+ * Whether the item stores nothing for a field, as the form sees it: no such field, a
+ * literal null, or a literal the field's control shows and then reads back as blank (a
+ * text that is empty or only spaces). The last one is why an untouched blank text is not
+ * rewritten as null at the first save of anything else.
+ */
+function isStoredFieldNothingToTheForm(
+  field: SchemaFormFieldDescription | undefined,
+  storedField: FieldValue | undefined,
+): boolean {
+  if (storedField === undefined) {
+    return true;
+  }
+  if (storedField.kind !== 'literal') {
+    return false;
+  }
+  if (storedField.value === null) {
+    return true;
+  }
+  if (field === undefined) {
+    return false;
+  }
+  const storedValueShown = convertDataValueIntoFormValue(field, storedField.value);
+  if (storedValueShown.status !== 'shown') {
+    return false;
+  }
+  return readDataValueFromFormValue(field, storedValueShown.formValue).status === 'blank';
+}
+
+/**
  * Builds, for `updateItemFields.fields`, only the fields in which the form differs from
  * what the item stores (that command merges key by key, so the rest is left out):
  * - a value differs unless the item stores the very same value as a literal;
  * - "filled by the server at the take" differs unless the item already stores that;
  * - a cleared field is sent as `{ kind: 'literal', value: null }`, because the command
  *   cannot remove a key, and only when the item stores something there (the server
- *   strips the null at the take). An item that has no such field is left alone.
+ *   strips the null at the take). An item that has no such field, or stores a text that
+ *   is empty or only spaces there, is left alone.
  * - a property the form cannot edit is never sent.
  * An empty answer means there is nothing to save in the fields.
  * What could go wrong: values are compared as data, not as shown. A stored time with a
@@ -87,9 +118,8 @@ export function buildChangedItemFieldsFromSchemaForm(
         break;
       }
       case 'cleared': {
-        const isStoredWithNothing =
-          storedField === undefined ||
-          (storedField.kind === 'literal' && storedField.value === null);
+        const fieldOfTheForm = description.fields.find((field) => field.key === checkedField.key);
+        const isStoredWithNothing = isStoredFieldNothingToTheForm(fieldOfTheForm, storedField);
         if (!isStoredWithNothing) {
           changedFieldPairs.push([checkedField.key, { kind: 'literal', value: null }]);
         }

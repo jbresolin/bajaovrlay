@@ -12,7 +12,8 @@
  *   - "limpar" on an optional field makes its value null, shows "Sem valor" and turns
  *     the button off; typing, choosing or switching again is the way back.
  *   - An optional typed field that is emptied by hand is cleared (null) as well, while
- *     a required one keeps its empty text.
+ *     a required one keeps its empty text. An optional text that was already empty when
+ *     the form was filled is cleared from the start, so emptying it again is no change.
  *   - When the form is checked, a wrong field shows its pt-BR message, is marked
  *     invalid and has the message tied to it for screen readers; a correct form shows none.
  *   - A key such as "piloto.nome" does not break the form around it.
@@ -28,9 +29,13 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { buildEmptySchemaFormValues } from './buildSchemaFormValues';
+import {
+  buildEmptySchemaFormValues,
+  buildSchemaFormValuesFromDataOnAir,
+} from './buildSchemaFormValues';
 import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSchema';
 import {
+  buildLowerThirdDataForCar42,
   buildLowerThirdFormValuesForCar42,
   describeLowerThirdFixtureForm,
 } from './lowerThirdFixtureSchema.testSupport';
@@ -47,6 +52,19 @@ function renderLowerThirdFormForCar42() {
   return renderSchemaFormOnTestPage({
     description: describeLowerThirdFixtureForm(),
     formValues: buildLowerThirdFormValuesForCar42(),
+  });
+}
+
+/**
+ * Draws the lower third's form filled from car 42's data as a script put it on air: with
+ * the optional "cargo" there, but as an empty text.
+ */
+function renderLowerThirdFormForCar42WithAnEmptyCargoOnAir() {
+  const description = describeLowerThirdFixtureForm();
+  const dataOnAir = { ...buildLowerThirdDataForCar42(), cargo: '' };
+  return renderSchemaFormOnTestPage({
+    description,
+    formValues: buildSchemaFormValuesFromDataOnAir(description, dataOnAir).formValues,
   });
 }
 
@@ -133,6 +151,35 @@ describe('clearing an optional field', () => {
       'an emptied optional field holds null',
     ).toBeNull();
     expect(screen.getByText('Sem valor'), 'the cleared state must be visible').toBeInTheDocument();
+  });
+
+  it('shows an optional text that is empty on air as a field with no value', () => {
+    // Arrange: nothing beyond the data: car 42's lower third with an empty "cargo".
+
+    // Act: draw the form filled from it.
+    renderLowerThirdFormForCar42WithAnEmptyCargoOnAir();
+
+    // Assert: a blank optional field reads "Sem valor" and has nothing to clear.
+    expect(screen.getByText('Sem valor'), 'a blank optional field has no value').toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Limpar Cargo' }),
+      'there is nothing to clear',
+    ).toBeDisabled();
+  });
+
+  it('does not count an optional text as changed when it is typed in and erased again', () => {
+    // Arrange: the same form, where "Cargo" starts blank.
+    const formOnPage = renderLowerThirdFormForCar42WithAnEmptyCargoOnAir();
+
+    // Act: type a letter into "Cargo" and erase it again.
+    typeIntoField('Cargo', 'C');
+    typeIntoField('Cargo', '');
+
+    // Assert: the field is as it was filled, so "Atualizar" would not take it off air.
+    expect(
+      formOnPage.readDirtyFields().values?.cargo ?? false,
+      'a field put back to blank must not count as changed',
+    ).toBe(false);
   });
 
   it('keeps the empty text of a required field, which cannot be cleared', () => {

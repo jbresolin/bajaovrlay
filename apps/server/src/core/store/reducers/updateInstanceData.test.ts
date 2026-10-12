@@ -14,9 +14,9 @@
  *     and the instance keeps its id, layer, output, status and place in the list.
  *   - An update whose result breaks the manifest's schema is refused with a pt-BR
  *     message naming the field, and so is an update for an instance that is not there.
- *   - An update for an instance whose graphic is no longer registered (its package was
- *     removed across a restart) is refused with GRAPHIC_NOT_FOUND and changes nothing.
  *   - An update that carries no field changes nothing and hands back the same array.
+ *   - An update whose values are the ones already on air changes nothing and hands back
+ *     the very same slices, so the store saves, logs and broadcasts nothing.
  *   - A graphic whose manifest has no data schema accepts any update.
  *   - The reducer never changes the slices it was given.
  *
@@ -28,6 +28,8 @@
  *   - A field sent as null (taken off air) and a field the server stamps with the
  *     moment of the command; updateInstanceDataClearedAndStampedFields.test.ts covers
  *     both. Every update here names no field to stamp (`takeTimeFieldKeys: []`).
+ *   - An instance whose graphic is no longer registered;
+ *     updateInstanceDataWithoutItsGraphic.test.ts covers it.
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
@@ -164,6 +166,76 @@ describe('updateInstanceData, when the update can be applied', () => {
   });
 });
 
+const updatesThatResendWhatIsOnAir: Array<{ name: string; command: Command }> = [
+  // The control page's "Atualizar" pressed straight after the news of the green flag
+  // arrived: the form still sends the flag, and the air already holds it.
+  {
+    name: 'the flag the race clock is already showing',
+    command: {
+      type: 'updateInstanceData',
+      instanceId: raceClockInstanceId,
+      data: { state: 'green' },
+      takeTimeFieldKeys: [],
+    },
+  },
+  // A whole form sent untouched: every field equals the one on air, so the comparison
+  // must look at all of them, not only at the first.
+  {
+    name: 'every field of the race clock, each with the value on air',
+    command: {
+      type: 'updateInstanceData',
+      instanceId: raceClockInstanceId,
+      data: buildGreenFlagEnduroData(),
+      takeTimeFieldKeys: [],
+    },
+  },
+  // An equal value next to a null for a field that is not on air: neither changes anything.
+  {
+    name: 'the flag on air together with a null for the lap count that is not showing',
+    command: {
+      type: 'updateInstanceData',
+      instanceId: raceClockInstanceId,
+      data: { state: 'green', lapsCompletedByLeader: null },
+      takeTimeFieldKeys: [],
+    },
+  },
+  // A graphic without a data schema follows the same rule: nothing is checked, and
+  // nothing changed either.
+  {
+    name: 'the team name the lower third is already showing',
+    command: {
+      type: 'updateInstanceData',
+      instanceId: buildTeam42LowerThirdOnAir().id,
+      data: { teamName: 'Baja UFPR' },
+      takeTimeFieldKeys: [],
+    },
+  },
+];
+
+describe('updateInstanceData, when the update re-sends what is already on air', () => {
+  it.each(updatesThatResendWhatIsOnAir)(
+    'changes nothing and hands back the very same slices for $name',
+    ({ command }) => {
+      // Arrange: the race clock under green flag and team 42's lower third on air.
+      const slicesBefore = buildRaceDaySlicesWithInstances([
+        buildRaceClockInstanceWithStatus('on-air'),
+        buildTeam42LowerThirdOnAir(),
+      ]);
+
+      // Act: reduce the update whose values are the ones on air.
+      const outcome = reduceCommand(slicesBefore, command, contextOfTheCommand);
+
+      // Assert: accepted, and the same object comes back (not an equal copy), which is
+      // how the store knows there is nothing to save, log or broadcast.
+      expect(outcome.status, 're-sending the values on air must be accepted').toBe('applied');
+      expect(
+        outcome.status === 'applied' ? outcome.slices : undefined,
+        'the slices must be the very same object, because nothing on air changed',
+      ).toBe(slicesBefore);
+    },
+  );
+});
+
 const refusedUpdateScenarios: Array<{
   name: string;
   command: Command;
@@ -235,43 +307,6 @@ describe('updateInstanceData, when the update must be refused', () => {
     expect(slicesBefore, 'a refused update must leave the slices exactly as they were').toEqual(
       copyOfSlicesBefore,
     );
-  });
-});
-
-describe('updateInstanceData, when the graphic of the instance is no longer registered', () => {
-  it('refuses the update with GRAPHIC_NOT_FOUND and changes nothing', () => {
-    // Arrange: the race clock on air, but no race clock among the registered graphics,
-    // as after a restart with the race-clock package removed from the graphics folder.
-    const raceDaySlices = buildRaceDaySlicesWithInstances([
-      buildRaceClockInstanceWithStatus('on-air'),
-    ]);
-    const slicesBefore = {
-      ...raceDaySlices,
-      graphics: raceDaySlices.graphics.filter((graphic) => graphic.id !== 'race-clock'),
-    };
-    const copyOfSlicesBefore = structuredClone(slicesBefore);
-
-    // Act: change the flag to yellow.
-    const outcome = reduceCommand(
-      slicesBefore,
-      {
-        type: 'updateInstanceData',
-        instanceId: raceClockInstanceId,
-        data: { state: 'yellow' },
-        takeTimeFieldKeys: [],
-      },
-      contextOfTheCommand,
-    );
-
-    // Assert: refused, because without the manifest's schema the data cannot be checked.
-    expect(outcome, 'an update for an unregistered graphic must be refused in pt-BR').toEqual({
-      status: 'refused',
-      error: {
-        code: 'GRAPHIC_NOT_FOUND',
-        message: 'O gráfico "race-clock" não está registrado.',
-      },
-    });
-    expect(slicesBefore, 'a refused update must change nothing').toEqual(copyOfSlicesBefore);
   });
 });
 

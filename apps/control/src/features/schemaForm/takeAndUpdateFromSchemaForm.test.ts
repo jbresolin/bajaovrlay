@@ -10,7 +10,8 @@
  * What these tests prove:
  *   - A take carries every field that has a value, leaves a cleared field out, names a
  *     field the server fills in `takeTimeFieldKeys`, and passes the values of properties
- *     the form cannot edit through exactly as they were.
+ *     the form cannot edit, and of keys the schema does not declare, through exactly as
+ *     they were.
  *   - An update carries only the changed fields: a value, null for a cleared field, or
  *     the key of a field now filled by the server; a change of kind counts as a change.
  *   - An update with nothing changed says so, so the panel sends no command.
@@ -119,6 +120,28 @@ describe('buildTakeDataFromSchemaForm', () => {
 
     // Assert: the data goes out exactly as it came in.
     expect(take.data, 'data the form cannot edit must pass through untouched').toEqual(dataOnAir);
+  });
+
+  it('carries a key on air that the schema does not declare through a new take', () => {
+    // Arrange: a ticker whose schema declares only its text; it is on air with a speed
+    // another client sent. The operator retypes the text.
+    const description = describeSchemaFormFromDataSchema({
+      type: 'object',
+      properties: { texto: { type: 'string', title: 'Texto' } },
+      required: ['texto'],
+    });
+    const dataOnAir = { texto: 'Largada às 10h', velocidade: 2 };
+    const formValues = buildSchemaFormValuesFromDataOnAir(description, dataOnAir).formValues;
+    formValues.values.texto = 'Largada às 10h30';
+
+    // Act: build the take that "Colocar no ar" sends while the ticker is on air.
+    const take = buildTakeDataFromSchemaForm(description, formValues);
+
+    // Assert: the new text goes out, and the speed is still there, untouched.
+    expect(take.data, 'a take must not remove data the form never showed').toEqual({
+      texto: 'Largada às 10h30',
+      velocidade: 2,
+    });
   });
 
   it('refuses to build a take from a form that did not pass the check', () => {

@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+
 import type { Instance, UpdateInstanceDataCommand } from '@bajaovrlay/shared';
 
 import {
@@ -20,7 +22,8 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * each field named in `takeTimeFieldKeys` gets the moment of this command in
  * milliseconds; every other field sent replaces the one on air. Refused if the instance
  * is not there, or if the resulting data breaks the graphic's manifest schema (taking
- * off a required field does).
+ * off a required field does). An update that leaves the data exactly as it is on air
+ * hands back the same slices.
  */
 export function reduceUpdateInstanceData(
   slices: SlicesChangedByCommands,
@@ -47,12 +50,23 @@ export function reduceUpdateInstanceData(
     return isOnAir && !isWrittenAnyway;
   });
 
-  // Nothing to write and nothing on air to take off (no field sent at all, or only
-  // nulls for fields that are not on air) means nothing to change: hand back the same
-  // slices, so nothing is saved, logged or broadcast.
-  const hasNothingToChange =
-    Object.keys(fieldsToWrite).length === 0 && keysToTakeOffAir.length === 0;
-  if (hasNothingToChange) {
+  const keysAndValuesKeptFromAir = Object.entries(dataOnAir).filter(
+    ([fieldKey]) => !keysToTakeOffAir.includes(fieldKey),
+  );
+  const dataAfterUpdate = {
+    ...Object.fromEntries(keysAndValuesKeptFromAir),
+    ...fieldsToWrite,
+  };
+
+  // Compared by content: no field sent at all, only nulls for fields that are not on
+  // air, or values equal to the ones on air (an "Atualizar" pressed on an untouched
+  // form) all leave the data as it is. Hand back the same slices, so nothing is saved,
+  // logged or broadcast. A stamped field holds the moment of this command, which differs
+  // from the one on air, so a stamp is a change.
+  // Deliberate trade-off: this comes before the schema check, so re-sending what is on
+  // air is answered ok even for an instance whose graphic is no longer registered.
+  const leavesTheDataOnAirAsItIs = isDeepStrictEqual(dataAfterUpdate, dataOnAir);
+  if (leavesTheDataOnAirAsItIs) {
     return { status: 'applied', slices };
   }
 
@@ -69,13 +83,6 @@ export function reduceUpdateInstanceData(
   // The whole result is checked, not only the fields sent: the graphic receives the
   // whole object, a field that is valid alone can be invalid next to the others, and a
   // required field that was just taken off is found missing here.
-  const keysAndValuesKeptFromAir = Object.entries(dataOnAir).filter(
-    ([fieldKey]) => !keysToTakeOffAir.includes(fieldKey),
-  );
-  const dataAfterUpdate = {
-    ...Object.fromEntries(keysAndValuesKeptFromAir),
-    ...fieldsToWrite,
-  };
   const problemInData = findProblemInGraphicData(graphic, dataAfterUpdate);
   if (problemInData !== undefined) {
     return { status: 'refused', error: refuseInvalidGraphicData(graphic.id, problemInData) };

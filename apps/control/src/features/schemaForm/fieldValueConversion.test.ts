@@ -13,7 +13,9 @@
  *   - What a control holds is read back as data; nothing typed, only spaces and a
  *     cleared field are all "blank".
  *   - A number, an mm:ss time or a date that cannot be read is reported with its reason.
- *   - An mm:ss time and a date survive the round trip data → control → data.
+ *   - An mm:ss time, a date and a dropdown option survive the round trip data → control
+ *     → data; a number JavaScript would write with an exponent is not shown at all.
+ *   - An empty text in an optional typed field is the same as a cleared field.
  *
  * What these tests deliberately do not cover:
  *   - Limits (minimum, maximum, lengths) and "required": checkSchemaFormValues.test.ts
@@ -23,7 +25,12 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { convertDataValueIntoFormValue, readDataValueFromFormValue } from './fieldValueConversion';
+import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSchema';
+import {
+  clearBlankOptionalTypedFormValue,
+  convertDataValueIntoFormValue,
+  readDataValueFromFormValue,
+} from './fieldValueConversion';
 import { describeLowerThirdFixtureForm } from './lowerThirdFixtureSchema.testSupport';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 
@@ -91,6 +98,19 @@ describe('convertDataValueIntoFormValue', () => {
     { name: 'a text in a switch', key: 'destaque', dataValue: 'sim' },
     // The manifest says integer; 42.5 is not a car number.
     { name: 'a decimal in a whole-number field', key: 'numeroDoCarro', dataValue: 42.5 },
+    // JavaScript writes a number this small as "1e-7", which the number field refuses
+    // when it is typed; showing it would block the form on a value nobody typed.
+    {
+      name: 'a weight so small it is written with an exponent',
+      key: 'pesoDoCarroKg',
+      dataValue: 0.0000001,
+    },
+    // The same at the other end: 1e21 is written "1e+21".
+    {
+      name: 'a car number so large it is written with an exponent',
+      key: 'numeroDoCarro',
+      dataValue: 1e21,
+    },
     // A date written for people, not ISO 8601.
     { name: 'a date that is not ISO 8601', key: 'horario', dataValue: '10/10/2026 09:45' },
     // No value at all (the manifest gave no default).
@@ -248,6 +268,37 @@ describe('readDataValueFromFormValue', () => {
   });
 });
 
+describe('clearBlankOptionalTypedFormValue', () => {
+  const formValuesAndWhatTheFormHolds = [
+    // The case the rule exists for: an optional text with nothing in it has no value.
+    { name: 'clears an empty optional text', key: 'cargo', formValue: '', held: null },
+    // An optional number emptied by hand is the same.
+    { name: 'clears an empty optional number', key: 'pesoDoCarroKg', formValue: '', held: null },
+    // Spaces alone are read back as blank, so they are held as cleared too; otherwise a
+    // text of spaces put on air by a script would look filled and still send nothing.
+    { name: 'clears an optional text of spaces only', key: 'cargo', formValue: '   ', held: null },
+    // The spaces of a required text stay, like its empty text, for the check to refuse.
+    { name: 'keeps the spaces of a required text', key: 'nome', formValue: '   ', held: '   ' },
+    // A required field cannot be cleared: its empty text stays, for the check to refuse.
+    { name: 'keeps the empty text of a required text', key: 'nome', formValue: '', held: '' },
+    // Anything typed is kept as typed.
+    { name: 'keeps a typed optional text', key: 'cargo', formValue: 'Capitã', held: 'Capitã' },
+    // A switch that is off holds false, which is a value and not a blank.
+    { name: 'keeps a switch that is off', key: 'destaque', formValue: false, held: false },
+  ];
+
+  it.each(formValuesAndWhatTheFormHolds)('$name', ({ key, formValue, held }) => {
+    // Arrange: the field of this scenario.
+    const field = describeLowerThirdField(key);
+
+    // Act: ask what the form should hold for what the control reports.
+    const formValueHeld = clearBlankOptionalTypedFormValue(field, formValue);
+
+    // Assert: blank and cleared are one state for an optional typed field, and only there.
+    expect(formValueHeld, `${key} must be held as ${String(held)}`).toBe(held);
+  });
+});
+
 describe('the round trip from data to control and back', () => {
   it('brings an mm:ss time back as the same milliseconds', () => {
     // Arrange: 12 minutes 34 seconds, as a graphic's data holds it.
@@ -264,6 +315,32 @@ describe('the round trip from data to control and back', () => {
     expect(dataValueRead, 'the same milliseconds must come back').toEqual({
       status: 'value',
       value: 754_000,
+    });
+  });
+
+  it('brings a dropdown option back with the spaces its value has in the manifest', () => {
+    // Arrange: a flag dropdown whose manifest wrote one value with a space after it and
+    // one with a space before it; the green flag is on air.
+    const description = describeSchemaFormFromDataSchema({
+      type: 'object',
+      properties: {
+        bandeira: { type: 'string', title: 'Bandeira', enum: ['verde ', ' vermelha'] },
+      },
+    });
+    const [flagField] = description.fields;
+    if (flagField === undefined) {
+      throw new Error('The schema of one property must give one field description');
+    }
+
+    // Act: show the flag on air in the dropdown, then read the dropdown again.
+    const valueShown = convertDataValueIntoFormValue(flagField, 'verde ');
+    const optionChosen = valueShown.status === 'shown' ? valueShown.formValue : null;
+    const dataValueRead = readDataValueFromFormValue(flagField, optionChosen);
+
+    // Assert: a chosen option is not typed text, so nothing is cut off it.
+    expect(dataValueRead, 'the option must come back exactly as the manifest wrote it').toEqual({
+      status: 'value',
+      value: 'verde ',
     });
   });
 

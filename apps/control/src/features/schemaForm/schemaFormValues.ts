@@ -39,7 +39,8 @@ export type UnsupportedValueAsJson = {
  * and compares what it holds key by key, and a property key such as `__proto__` or `a.b`
  * would be lost or misread on the way. Text in a list passes through it unharmed. It has
  * an entry only for a property that had a value where the form was filled from; nothing
- * is ever invented for a property the form cannot edit.
+ * is ever invented for a property the form cannot edit. A form filled from what is on
+ * air also has an entry for every key on air that the schema does not declare.
  */
 export type SchemaFormValues = {
   values: Record<string, SchemaFormFieldValue>;

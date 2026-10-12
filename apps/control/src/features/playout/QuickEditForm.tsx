@@ -123,9 +123,18 @@ export function QuickEditForm(props: QuickEditFormProps) {
   // every `reset` switches that one off, and the form is reset whenever news about the
   // graphic arrives, which can be in the middle of the wait.
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
-  // A refusal is shown only once this form has sent something: the item editor sends
-  // `updateInstanceData` too, and its refusals are shown there, not under these buttons.
-  const [hasSentACommandFromThisForm, setHasSentACommandFromThisForm] = useState(false);
+  // A refusal is shown under these buttons only while it is the one this form's own
+  // last command got: the item editor sends `updateInstanceData` too, and its refusals
+  // are shown there. The page keeps one "last command error" for everybody, so the form
+  // remembers the very error its own command left there and shows the page's error only
+  // while it is still that one. What could go wrong: when another part of the page is
+  // refused afterwards, this form's message goes away although nothing here succeeded.
+  const lastCommandErrorOfThePage = useServerState((state) => state.lastCommandError);
+  const [errorOfTheLastCommandFromThisForm, setErrorOfTheLastCommandFromThisForm] =
+    useState<typeof lastCommandErrorOfThePage>(null);
+  const isTheErrorOfThePageFromThisForm =
+    lastCommandErrorOfThePage !== null &&
+    lastCommandErrorOfThePage === errorOfTheLastCommandFromThisForm;
 
   // An operator who started editing must not have the form swapped for another graphic's
   // by a take from the rundown, so the panel is told at the first change.
@@ -192,11 +201,23 @@ export function QuickEditForm(props: QuickEditFormProps) {
     resetForm(formValuesOnAirNow.formValues);
   }
 
+  // What the form does once its own command was answered. Accepted: the form follows
+  // the air. Not accepted (refused, no answer in time, no connection): the error the
+  // page has just been left with is this command's, because the store is written before
+  // the answer reaches the form (serverConnection.ts), so it is remembered as this form's.
+  function finishCommandSentFromThisForm(wasAcceptedByTheServer: boolean): void {
+    if (wasAcceptedByTheServer) {
+      setErrorOfTheLastCommandFromThisForm(null);
+      fillFormFromWhatIsOnAirNow();
+      return;
+    }
+    setErrorOfTheLastCommandFromThisForm(readServerStateNow().lastCommandError);
+  }
+
   // Both functions run only when every field passed its rule; otherwise react-hook-form
   // puts the messages under the fields and neither is called.
   async function sendFormAsTakeCommand(formValues: SchemaFormValues): Promise<void> {
     const takeData = buildTakeDataFromSchemaForm(description, formValues);
-    setHasSentACommandFromThisForm(true);
     const wasAcceptedByTheServer = await sendCommand({
       type: 'takeGraphic',
       graphicId,
@@ -204,9 +225,7 @@ export function QuickEditForm(props: QuickEditFormProps) {
       data: takeData.data,
       takeTimeFieldKeys: takeData.takeTimeFieldKeys,
     });
-    if (wasAcceptedByTheServer) {
-      fillFormFromWhatIsOnAirNow();
-    }
+    finishCommandSentFromThisForm(wasAcceptedByTheServer);
   }
   async function sendChangedFieldsAsUpdateCommand(formValues: SchemaFormValues): Promise<void> {
     // This check is here only because the type allows undefined: "Atualizar" is drawn
@@ -228,16 +247,13 @@ export function QuickEditForm(props: QuickEditFormProps) {
       return;
     }
 
-    setHasSentACommandFromThisForm(true);
     const wasAcceptedByTheServer = await sendCommand({
       type: 'updateInstanceData',
       instanceId: instanceOnAir.id,
       data: update.data,
       takeTimeFieldKeys: update.takeTimeFieldKeys,
     });
-    if (wasAcceptedByTheServer) {
-      fillFormFromWhatIsOnAirNow();
-    }
+    finishCommandSentFromThisForm(wasAcceptedByTheServer);
   }
   const checkFormThenTake = form.handleSubmit(sendFormAsTakeCommand);
   const checkFormThenUpdate = form.handleSubmit(sendChangedFieldsAsUpdateCommand);
@@ -299,7 +315,7 @@ export function QuickEditForm(props: QuickEditFormProps) {
             {ptBR.playout.updateButton}
           </ActionButton>
         )}
-        {hasSentACommandFromThisForm && (
+        {isTheErrorOfThePageFromThisForm && (
           <CommandErrorMessage commandTypes={['takeGraphic', 'updateInstanceData']} />
         )}
       </CardFooter>

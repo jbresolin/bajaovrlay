@@ -16,6 +16,10 @@
  *     id, removes the laps and writes the later moment; the database holds the result.
  *   - An update that only clears a field which is not on air is answered ok and leaves
  *     nothing behind: no event-log row, no listener told.
+ *   - An update that re-sends the values already on air (an "Atualizar" pressed on an
+ *     untouched form) leaves nothing behind either: the instances row is not saved
+ *     again, no event-log row in memory or on disk, no listener told. The same update
+ *     with a stamp asked for is a real change, and is saved, logged and broadcast.
  *
  * What these tests deliberately do not cover:
  *   - Every combination of null and stamp; the reducer tests cover them
@@ -25,6 +29,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { countEventLogRows } from '../db/eventLogRowStorage.js';
 import { readAllSliceRows } from '../db/sliceRowStorage.js';
 import { openTemporaryDatabase } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
@@ -197,5 +202,88 @@ describe('an update that clears a field and asks for a new stamp, through the st
       'a command that changed nothing must leave no event-log row',
     ).toBe(eventLogBefore);
     expect(numberOfTimesTheListenerWasTold, 'no listener must be told, so nothing is sent').toBe(0);
+  });
+});
+
+describe('an update that re-sends the values already on air, through the store', () => {
+  it('leaves nothing behind: no save, no event-log row and no listener told', () => {
+    // Arrange: the clock taken under green flag at 14:32:05, the store's clock moved on
+    // to 14:47:30 and a quarter, and a listener counting what it is told.
+    const { store, database, setTheClockTo } = createStoreWithAClockTheTestSets();
+    store.applyCommand(takeRaceClockStartingAtTheTake, operatorActor);
+    setTheClockTo(momentOfTheUpdate);
+    const eventLogBefore = store.readAllSlices().eventLog;
+    const numberOfEventLogRowsBefore = countEventLogRows(database);
+    let numberOfTimesTheListenerWasTold = 0;
+    store.subscribeToSliceChanges(() => {
+      numberOfTimesTheListenerWasTold += 1;
+    });
+
+    // Act: press "Atualizar" with the flag and the running state the air already holds.
+    const outcome = store.applyCommand(
+      {
+        type: 'updateInstanceData',
+        instanceId: idOfTheClockInstance,
+        data: { state: 'green', running: true },
+      },
+      operatorActor,
+    );
+
+    // Assert: ok; the instances row on disk still carries the moment of the take (a save
+    // would have written 14:47:30), the event log has no new row in memory or on disk,
+    // and no listener was told.
+    expect(outcome, 're-sending the values on air must be answered ok').toEqual({ ok: true });
+    const storedInstancesRow = readAllSliceRows(database).find((row) => row.name === 'instances');
+    expect(
+      storedInstancesRow?.updatedAt,
+      'the instances row must not be saved again when nothing on air changed',
+    ).toBe(momentOfTheTake);
+    expect(
+      store.readAllSlices().eventLog,
+      'a command that changed nothing must leave no event-log row in memory',
+    ).toBe(eventLogBefore);
+    expect(
+      countEventLogRows(database),
+      'a command that changed nothing must leave no event-log row on disk',
+    ).toBe(numberOfEventLogRowsBefore);
+    expect(numberOfTimesTheListenerWasTold, 'no listener must be told, so nothing is sent').toBe(0);
+  });
+
+  it('is saved, logged and broadcast when it also asks for a stamp', () => {
+    // Arrange: the same clock on air, the store's clock moved on, and a listener writing
+    // down the slices it is told about.
+    const { store, database, setTheClockTo } = createStoreWithAClockTheTestSets();
+    store.applyCommand(takeRaceClockStartingAtTheTake, operatorActor);
+    setTheClockTo(momentOfTheUpdate);
+    const numberOfEventLogRowsBefore = countEventLogRows(database);
+    const changedSliceNamesHeard: string[][] = [];
+    store.subscribeToSliceChanges((changedSliceNames) => {
+      changedSliceNamesHeard.push(changedSliceNames);
+    });
+
+    // Act: re-send the flag on air, and ask the server for a new reference moment.
+    const outcome = store.applyCommand(
+      {
+        type: 'updateInstanceData',
+        instanceId: idOfTheClockInstance,
+        data: { state: 'green' },
+        takeTimeFieldKeys: ['referenceWallClockMs'],
+      },
+      operatorActor,
+    );
+
+    // Assert: ok; the stamp is the later moment, so this is a real change: one new
+    // event-log row and one notification naming the instances and the event log.
+    expect(outcome, 'the update must be accepted').toEqual({ ok: true });
+    expect(
+      store.readAllSlices().instances[0]?.resolvedData.referenceWallClockMs,
+      'the clock on air must now count from the moment of the update',
+    ).toBe(momentOfTheUpdateInMilliseconds);
+    expect(countEventLogRows(database), 'a stamped update must add exactly one event-log row').toBe(
+      numberOfEventLogRowsBefore + 1,
+    );
+    expect(changedSliceNamesHeard, 'listeners must hear of the instances once').toEqual([
+      ['instances', 'eventLog'],
+    ]);
   });
 });

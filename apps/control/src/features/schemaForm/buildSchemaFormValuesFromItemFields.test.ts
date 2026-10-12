@@ -11,11 +11,12 @@
  * What these tests prove:
  *   - Stored literals are shown, and a stored `takeTime` shows as "filled by the server"
  *     where the form offers that; a literal number stored there shows as typed.
- *   - A stored value the form cannot show falls back to the starting value, as a typed
- *     field, and is listed by its label.
- *   - A required wall-clock field the item does not store starts as in a new item.
- *   - An optional field stored as null is cleared and not listed; a stored value the
- *     form cannot edit is kept as JSON text for reading.
+ *   - A stored value the form cannot show falls back to the starting value and is listed
+ *     by its label; the field starts as in a new item, so a typed field stays typed.
+ *   - A wall-clock field the item does not store, or stores as something the form cannot
+ *     show, starts as in a new item: "filled by the server".
+ *   - An optional field stored as null, or an optional text stored empty, is cleared and
+ *     not listed; a stored value the form cannot edit is kept as JSON text for reading.
  *
  * What these tests deliberately do not cover:
  *   - An empty form and a form filled from what is on air: buildSchemaFormValues.test.ts.
@@ -164,6 +165,34 @@ describe('buildSchemaFormValuesFromItemFields', () => {
     ).toHaveLength(1);
   });
 
+  it('starts a reference moment stored as text as "filled by the server", and lists it', () => {
+    // Arrange: a race clock item written through the API with a date text as its
+    // reference moment, where the graphic expects milliseconds.
+    const description = describeRaceClockForm();
+    const itemFields: ItemFields = {
+      sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
+      state: { kind: 'literal', value: 'pre' },
+      clockMode: { kind: 'literal', value: 'elapsed' },
+      referenceTimeMs: { kind: 'literal', value: 0 },
+      referenceWallClockMs: { kind: 'literal', value: '2026-10-10T12:45:00.000Z' },
+      running: { kind: 'literal', value: false },
+    };
+
+    // Act: fill the form from it.
+    const formRead = buildSchemaFormValuesFromItemFields(description, itemFields);
+
+    // Assert: the field starts as in a new item, not as the typed default 0 (1 January
+    // 1970), so the next save stores a moment the clock can count from.
+    expect(
+      formRead.formValues.kinds.referenceWallClockMs,
+      'an unreadable reference moment must start as in a new item',
+    ).toBe('takeTime');
+    expect(
+      formRead.labelsOfFieldsThatCouldNotBeRead,
+      'the operator must be told the field does not show what is stored',
+    ).toEqual([raceClockManifest.schema.properties.referenceWallClockMs.title]);
+  });
+
   it('treats an optional field stored as null as cleared, without listing it', () => {
     // Arrange: a lower third whose "cargo" was cleared in an earlier save (stored null,
     // because updateItemFields cannot remove a key).
@@ -188,5 +217,28 @@ describe('buildSchemaFormValuesFromItemFields', () => {
       formRead.formValues.unsupportedValuesAsJson,
       'the stored list must be kept as JSON text',
     ).toEqual([{ key: 'patrocinadores', jsonText: '[\n  "Oficina do Zé"\n]' }]);
+  });
+
+  it('treats an optional text stored as the empty text as cleared, without listing it', () => {
+    // Arrange: a lower third created through the API with an empty "cargo".
+    const description = describeLowerThirdFixtureForm();
+    const itemFields: ItemFields = {
+      nome: { kind: 'literal', value: 'Ana Souza' },
+      cargo: { kind: 'literal', value: '' },
+      equipe: { kind: 'literal', value: 'baja-ufpr' },
+      duracaoMs: { kind: 'literal', value: 8_000 },
+      destaque: { kind: 'literal', value: false },
+      numeroDoCarro: { kind: 'literal', value: 42 },
+    };
+
+    // Act: fill the form from it.
+    const formRead = buildSchemaFormValuesFromItemFields(description, itemFields);
+
+    // Assert: the form holds null, the same as after the operator empties the field.
+    expect(
+      formRead.formValues.values.cargo,
+      'an empty optional text is a cleared field',
+    ).toBeNull();
+    expect(formRead.labelsOfFieldsThatCouldNotBeRead, 'nothing fell back').toEqual([]);
   });
 });

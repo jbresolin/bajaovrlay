@@ -12,7 +12,8 @@
  *   - A new item stores every field with a value as a literal, leaves cleared fields
  *     out and stores a field the server fills as `{ kind: 'takeTime' }`.
  *   - For a stored item only the fields that differ are built; a cleared field becomes
- *     a literal null, and only when the item stores something there.
+ *     a literal null, and only when the item stores something there (a text that is
+ *     empty or only spaces counts as nothing).
  *   - A form that shows exactly what is stored builds nothing.
  *   - "Atualizar no ar" gets the changed literals (null for a cleared one) and never a
  *     field that was changed to takeTime.
@@ -244,6 +245,50 @@ describe('buildChangedItemFieldsFromSchemaForm, on the stored endurance race clo
       referenceTimeMs: { kind: 'literal', value: 90_000 },
     });
   });
+});
+
+describe('buildChangedItemFieldsFromSchemaForm, on a stored lower third with a blank text', () => {
+  const blankTextsAnItemCanStore = [
+    // The empty text: an item created through the API with `cargo: ""`.
+    { name: 'empty', storedJobTitle: '' },
+    // Spaces alone are shown as a cleared field too, and read back as nothing.
+    { name: 'only spaces', storedJobTitle: '   ' },
+  ];
+
+  it.each(blankTextsAnItemCanStore)(
+    'leaves an optional text the item stores as $name alone when another field is saved',
+    ({ storedJobTitle }) => {
+      // Arrange: car 42's lower third stored with a blank "cargo"; the form shows it as a
+      // cleared field, and the operator corrects only the name.
+      const description = describeLowerThirdFixtureForm();
+      const storedItemFields: ItemFields = {
+        nome: { kind: 'literal', value: 'Ana Sousa' },
+        cargo: { kind: 'literal', value: storedJobTitle },
+        equipe: { kind: 'literal', value: 'baja-ufpr' },
+        duracaoMs: { kind: 'literal', value: 8_000 },
+        destaque: { kind: 'literal', value: false },
+        numeroDoCarro: { kind: 'literal', value: 42 },
+      };
+      const formValues = buildSchemaFormValuesFromItemFields(
+        description,
+        storedItemFields,
+      ).formValues;
+      formValues.values.nome = 'Ana Souza';
+
+      // Act: build what the save must send.
+      const fieldsToSave = buildChangedItemFieldsFromSchemaForm(
+        description,
+        formValues,
+        storedItemFields,
+      );
+
+      // Assert: the name alone. A null written over the blank text would change what the
+      // graphic receives at the next take (no "cargo" at all) without anyone asking.
+      expect(fieldsToSave, 'a blank text nobody touched must not be rewritten as null').toEqual({
+        nome: { kind: 'literal', value: 'Ana Souza' },
+      });
+    },
+  );
 });
 
 describe('buildInstanceUpdateDataFromChangedItemFields', () => {

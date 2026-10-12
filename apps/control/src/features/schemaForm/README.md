@@ -6,9 +6,8 @@ Start reading at `index.ts` (the public surface), then `describeSchemaFormFromDa
 
 - `describeSchemaFormFromDataSchema.ts` reads the manifest's JSON Schema into field
   descriptions (`schemaFormDescription.ts`); `plainRecord.ts` reads untrusted objects safely.
-- `buildSchemaFormValues.ts` fills the form (`schemaFormValues.ts`): empty, from the air, from
-  an item. `fieldValueConversion.ts` turns a value between data and control, with
-  `minutesAndSeconds.ts` (mm:ss) and `localDateAndTimeText.ts` (date and time).
+- `buildSchemaFormValues.ts` fills the form (`schemaFormValues.ts`); `fieldValueConversion.ts`
+  turns a value between data and control (`minutesAndSeconds.ts`, `localDateAndTimeText.ts`).
 - `checkSchemaFormValues.ts` checks the form with `zodSchemaFromDataSchema.ts` (pt-BR messages;
   the server stays the authority); `schemaFormResolver.ts` hands it to react-hook-form.
 - `takeDataFromSchemaForm.ts`, `instanceUpdateFromSchemaForm.ts`, `itemFieldsFromSchemaForm.ts`

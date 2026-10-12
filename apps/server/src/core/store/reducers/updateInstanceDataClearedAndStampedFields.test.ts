@@ -16,7 +16,8 @@
  *   - An update holding only nulls for fields that are not on air changes nothing and
  *     hands back the very same slices, so nothing is saved, logged or broadcast.
  *   - A field named in `takeTimeFieldKeys` gets the moment of the command, with or
- *     without other data, and replaces a value sent for the same field.
+ *     without other data, and replaces a value sent for the same field. A stamp is a
+ *     change even when every other value sent is the one already on air.
  *   - A field both sent as null and named for stamping ends up stamped.
  *   - A stamp on a field the schema does not accept a number for is refused.
  *
@@ -95,6 +96,17 @@ const appliedUpdateScenarios: Array<{
       referenceWallClockMs: momentOfTheCommandInMilliseconds,
     },
   },
+  // The flag sent is the one on air, which alone would change nothing; the stamp still
+  // writes a new moment, so the update as a whole is a change and must be applied.
+  {
+    name: 'stamps a field when every other value sent is the one already on air',
+    command: buildUpdateOfTheRaceClock({ state: 'green' }, ['referenceWallClockMs']),
+    expectedDataAfter: {
+      ...buildGreenFlagEnduroData(),
+      lapsCompletedByLeader: 12,
+      referenceWallClockMs: momentOfTheCommandInMilliseconds,
+    },
+  },
   // A client that sends its own moment and also asks for the stamp gets the server's.
   {
     name: 'lets the stamp replace a value sent for the same field',
@@ -135,6 +147,10 @@ describe('updateInstanceData with a cleared or a stamped field, when it can be a
       instancesAfter,
       'the instance must keep its id and hold the data after clearing and stamping',
     ).toEqual([{ ...buildRaceClockOnAirShowingLap12(), resolvedData: expectedDataAfter }]);
+    expect(
+      instancesAfter === slicesBefore.instances,
+      'a changed instances slice must be a new array, so the store saves and broadcasts it',
+    ).toBe(false);
   });
 });
 

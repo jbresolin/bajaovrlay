@@ -70,9 +70,11 @@ export function SchemaFormFields(props: {
   return (
     <div className="grid grid-cols-2 gap-4">
       {description.fields.map((field, positionInTheForm) => {
+        // The position in the form, not the key, makes every element id. A key is whatever
+        // the graphic's author wrote: one with a space would break `aria-describedby`
+        // (a list of ids separated by spaces), and "titulo-help" next to "titulo" would
+        // give two elements the id of the first one's help text.
         if (field.control === 'unsupported') {
-          // The position, not the key, makes the id: a key the form cannot hold (one with
-          // a dot or a bracket) is not a safe part of an element id either.
           const keptValue = unsupportedValuesAsJson.find((entry) => entry.key === field.key);
           return (
             <div key={field.key} className={chooseWidthClassOfField(field)}>
@@ -94,7 +96,7 @@ export function SchemaFormFields(props: {
             <SchemaFormFieldRow
               form={form}
               field={field}
-              controlId={`${controlIdPrefix}-${field.key}`}
+              controlId={`${controlIdPrefix}-field-${positionInTheForm}`}
               isDisabled={isDisabled}
             />
           </div>

@@ -18,7 +18,10 @@ export type TakeDataFromSchemaForm = {
  * - a field set to "filled by the server at the take" is named in `takeTimeFieldKeys`
  *   and left out of `data`; this page never reads a clock to build data;
  * - a property the form cannot edit goes into `data` exactly as it was where the form
- *   was filled from, and is left out when it had no value there.
+ *   was filled from, and is left out when it had no value there;
+ * - a key that was on air without being declared by the schema goes into `data` the
+ *   same way (buildSchemaFormValuesFromDataOnAir keeps it), so a new take of a graphic
+ *   that is on air never removes data the form did not show.
  * What could go wrong: the JSON text of an unsupported property is written by this
  * folder (JSON.stringify) and never edited, so JSON.parse reads it back; text put there
  * by other code that is not JSON would make this throw.

@@ -1,8 +1,8 @@
 // Test support: draws the item editor panel wired as in the browser but talking to a
 // fake server, and presses its buttons the way an operator does. The panel test files
 // use it so they all start from the same page. Nothing here keeps state between calls.
-import type { Item, Slices } from '@bajaovrlay/shared';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import type { Instance, Item, Slices } from '@bajaovrlay/shared';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { StrictMode, useState } from 'react';
 import { expect, type Mock, vi } from 'vitest';
 
@@ -79,15 +79,74 @@ export function renderItemEditorPanelForItemOnAir(itemOnAir: Item): ItemEditorOn
   return renderItemEditorPanelOnFakeServerWithSlices(itemOnAir, {
     ...buildSlicesWithTheRaceClockAndTheLowerThird(),
     items: [itemOnAir],
-    instances: [
-      buildInstanceTakenFromItem({
-        id: idOfTheInstanceTakenFromTheItem,
-        item: itemOnAir,
-        layerId: itemOnAir.layerId,
-        target: 'program',
-        takenAt: momentTheItemWasTaken,
-      }),
-    ],
+    instances: [buildInstanceOnProgramTakenFromItem(itemOnAir)],
+  });
+}
+
+/** The instance on the program output, on the item's own layer, made by taking the item. */
+function buildInstanceOnProgramTakenFromItem(itemOnAir: Item): Instance {
+  return buildInstanceTakenFromItem({
+    id: idOfTheInstanceTakenFromTheItem,
+    item: itemOnAir,
+    layerId: itemOnAir.layerId,
+    target: 'program',
+    takenAt: momentTheItemWasTaken,
+  });
+}
+
+/** The text of the stand-in button that hands the editor another item, in the test below. */
+export const openAnotherItemButtonText = 'Abrir outro item no editor';
+
+/**
+ * Stands in for the rundown: the editor for one item, and a button that hands the editor
+ * another item, as a click on another row of the rundown does. It never closes the editor.
+ */
+function ItemEditorWithAnotherItemToOpen(props: { itemOpenedFirst: Item; anotherItem: Item }) {
+  const [itemBeingEdited, setItemBeingEdited] = useState(props.itemOpenedFirst);
+  return (
+    <div>
+      <button type="button" onClick={() => setItemBeingEdited(props.anotherItem)}>
+        {openAnotherItemButtonText}
+      </button>
+      <ItemEditorPanel
+        rundownId={idOfTheMainSessionRundown}
+        itemBeingEdited={itemBeingEdited}
+        onClose={() => undefined}
+      />
+    </div>
+  );
+}
+
+/**
+ * Draws the item editor for a stored item that is on air, next to a button that opens
+ * `anotherItem` in the editor instead. The server's slices hold both items and the
+ * instance made by taking the first one.
+ */
+export function renderItemEditorPanelForItemOnAirWithAnotherItemToOpen(
+  itemOnAir: Item,
+  anotherItem: Item,
+): ControlPageOnFakeServer['fakeServer'] {
+  const controlPage = renderOnControlPageConnectedToFakeServer(
+    <ItemEditorWithAnotherItemToOpen itemOpenedFirst={itemOnAir} anotherItem={anotherItem} />,
+    {
+      ...buildSlicesWithTheRaceClockAndTheLowerThird(),
+      items: [itemOnAir, anotherItem],
+      instances: [buildInstanceOnProgramTakenFromItem(itemOnAir)],
+    },
+  );
+  return controlPage.fakeServer;
+}
+
+/**
+ * Waits until the page has finished everything the server's last answer set off. For a
+ * test that must prove something did NOT happen after an answer, when nothing on screen
+ * shows that the answer was dealt with (the editor that was waiting for it is gone).
+ * The answer is handed to the page at once and what follows runs before any timer, so
+ * one turn of the timer queue is enough.
+ */
+export async function waitForThePageToDealWithTheLastAnswer(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
 

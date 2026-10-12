@@ -9,6 +9,8 @@
  * What these tests prove:
  *   - Every shape of the lower third fixture is drawn with the right kind of control,
  *     under the manifest's title, holding the value the form was filled with.
+ *   - A number input carries the manifest's minimum, maximum and step, and a text input
+ *     its maximum length.
  *   - A required field carries a visible mark and is announced as required; an optional
  *     one has a "limpar" button instead.
  *   - The manifest's description is tied to the control as its help text.
@@ -22,6 +24,7 @@
  *   - Typing, clearing, the kind selector and error messages:
  *     SchemaFormFieldsEditing.test.tsx.
  *   - The real race clock manifest: SchemaFormFieldsRaceClock.test.tsx.
+ *   - Element ids and what a label points at: SchemaFormFieldsIdsAndLabels.test.tsx.
  *   - How the page looks (widths, colours); nothing is laid out in these tests.
  */
 import { screen } from '@testing-library/react';
@@ -173,6 +176,67 @@ describe('SchemaFormFields, on the lower third fixture', () => {
     expect(screen.getByLabelText('Peso do carro (kg)'), 'the weight must be shown').toHaveValue(
       182.5,
     );
+  });
+
+  const fieldsAndTheLimitsTheBrowserIsTold = [
+    // An integer with both limits: the browser's arrows stay inside 1–999, in whole steps.
+    {
+      name: 'tells the browser "Número do carro" goes from 1 to 999 in whole steps',
+      label: 'Número do carro',
+      min: '1',
+      max: '999',
+      step: '1',
+      maxLength: null,
+    },
+    // A decimal number: step "any" is what lets the browser accept 182.5.
+    {
+      name: 'tells the browser "Peso do carro (kg)" goes from 100 to 300 with any decimals',
+      label: 'Peso do carro (kg)',
+      min: '100',
+      max: '300',
+      step: 'any',
+      maxLength: null,
+    },
+    // A text with maxLength: the browser stops the typing at 40 characters.
+    {
+      name: 'tells the browser "Nome" holds at most 40 characters',
+      label: 'Nome',
+      min: null,
+      max: null,
+      step: null,
+      maxLength: '40',
+    },
+    // A text without limits in the manifest must not be given one by the form.
+    {
+      name: 'gives "Cargo" no limit the manifest does not have',
+      label: 'Cargo',
+      min: null,
+      max: null,
+      step: null,
+      maxLength: null,
+    },
+  ];
+
+  it.each(fieldsAndTheLimitsTheBrowserIsTold)('$name', ({ label, min, max, step, maxLength }) => {
+    // Arrange: nothing beyond the form itself.
+
+    // Act: draw the lower third's form, filled from car 42's data.
+    renderLowerThirdFormForCar42();
+
+    // Assert: the input carries the manifest's limits, so the browser helps before the
+    // form's own check has to refuse anything.
+    const limitsOnTheInput = {
+      min: screen.getByLabelText(label).getAttribute('min'),
+      max: screen.getByLabelText(label).getAttribute('max'),
+      step: screen.getByLabelText(label).getAttribute('step'),
+      maxLength: screen.getByLabelText(label).getAttribute('maxlength'),
+    };
+    expect(limitsOnTheInput, `"${label}" must carry exactly the manifest's limits`).toEqual({
+      min,
+      max,
+      step,
+      maxLength,
+    });
   });
 
   it('marks required fields and gives optional ones a "limpar" button', () => {

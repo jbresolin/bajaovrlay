@@ -25,15 +25,23 @@ const keywordsOfShapesTheFormCannotEdit = ['oneOf', 'anyOf', 'allOf', 'not', '$r
 // changes the object itself instead of adding a key.
 const keysReactHookFormCannotHold = ['__proto__', 'constructor', 'prototype'];
 
+// The characters at which react-hook-form cuts a field name into the steps of a path.
+const charactersReactHookFormSplitsANameAt = ['.', '[', ']', "'", '"'];
+
 /**
  * Answers whether a property key can be used as part of a react-hook-form field name.
  * react-hook-form reads a name as a path: `values.a.b` and `values.a[0]` mean "b inside
- * a" and "the first of a", and a key that starts with a digit is taken for a position in
- * a list. A property with such a key would be stored somewhere else than it is read from,
- * so it is shown as unsupported (read-only) instead. Conservative on purpose.
+ * a" and "the first of a", a quote splits the name just as a dot does (`values.a'b` is
+ * "b inside a"), and a key that starts with a digit is taken for a position in a list.
+ * A property with such a key would be stored somewhere else than it is read from, so it
+ * is shown as unsupported (read-only) instead. Conservative on purpose.
+ * What could go wrong: the list below is the five characters react-hook-form 7 splits a
+ * name at (`. [ ] ' "`). If a later version splits at more, they must be added here.
  */
 function isKeySafeAsFormFieldName(key: string): boolean {
-  const hasPathCharacter = key.includes('.') || key.includes('[') || key.includes(']');
+  const hasPathCharacter = charactersReactHookFormSplitsANameAt.some((character) =>
+    key.includes(character),
+  );
   const startsWithDigit = /^\d/.test(key);
   const isRefusedName = keysReactHookFormCannotHold.includes(key);
   return key !== '' && !hasPathCharacter && !startsWithDigit && !isRefusedName;

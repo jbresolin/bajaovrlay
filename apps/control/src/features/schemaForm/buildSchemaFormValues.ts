@@ -10,7 +10,10 @@
  */
 import type { ItemFields } from '@bajaovrlay/shared';
 
-import { convertDataValueIntoFormValue } from './fieldValueConversion';
+import {
+  clearBlankOptionalTypedFormValue,
+  convertDataValueIntoFormValue,
+} from './fieldValueConversion';
 import { isPlainRecord, readOwnValueOfRecord } from './plainRecord';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import type {
@@ -36,11 +39,14 @@ export type SchemaFormValuesReadFromData = {
  * show it; otherwise empty text for a required typed field (the operator must fill it),
  * "off" for a required switch (a switch cannot look empty), and cleared for everything
  * optional and for a dropdown with nothing to preselect.
+ * An optional text whose default is the empty text starts cleared too: here and in the
+ * two fill functions below, a shown value goes through clearBlankOptionalTypedFormValue,
+ * so the form never holds '' where emptying the field by hand would leave null.
  */
 function buildStartingValueOfField(field: SchemaFormFieldDescription): SchemaFormFieldValue {
   const defaultShown = convertDataValueIntoFormValue(field, field.defaultDataValue);
   if (defaultShown.status === 'shown') {
-    return defaultShown.formValue;
+    return clearBlankOptionalTypedFormValue(field, defaultShown.formValue);
   }
   if (!field.isRequired || field.control === 'select') {
     return null;
@@ -102,12 +108,15 @@ export function buildEmptySchemaFormValues(description: SchemaFormDescription): 
 
 /**
  * Fills a form from the data of an instance on air (`instance.resolvedData`). Every
- * field is `literal`, also a wall-clock one: the number on air is what is on air.
- * - A field the data does not have: cleared when optional; its starting value, and
- *   listed, when required.
- * - A value the control cannot show: the starting value, and listed.
- * - A property the form cannot edit: kept as JSON text when the data has it. When the
- *   whole schema is unsupported, every key of the data is kept that way.
+ * field shown is `literal`, also a wall-clock one: the number on air is what is on air.
+ * - A field the data does not have: cleared when optional; listed, and started as in an
+ *   empty form (starting value and starting kind), when required.
+ * - A value the control cannot show: listed, and started as in an empty form. So a
+ *   wall-clock field that cannot be read is "filled by the server at the take", and a
+ *   take does not send the manifest's default number as the moment the clock counts from.
+ * - A property the form cannot edit: kept as JSON text when the data has it.
+ * - A key of the data the schema does not declare: kept as JSON text too, after the
+ *   others, so a take carries it. When the whole schema is unsupported, that is every key.
  */
 export function buildSchemaFormValuesFromDataOnAir(
   description: SchemaFormDescription,
@@ -119,12 +128,6 @@ export function buildSchemaFormValuesFromDataOnAir(
   const unsupportedValuesAsJson: UnsupportedValueAsJson[] = [];
   const labelsOfFieldsThatCouldNotBeRead: string[] = [];
 
-  if (description.isWholeDataSchemaUnsupported) {
-    for (const [key, value] of Object.entries(dataOnAir)) {
-      unsupportedValuesAsJson.push(...writeUnsupportedValueAsJson(key, value));
-    }
-  }
-
   for (const field of description.fields) {
     const isOnAir = Object.hasOwn(dataOnAir, field.key);
     const valueOnAir = readOwnValueOfRecord(dataOnAir, field.key);
@@ -135,19 +138,34 @@ export function buildSchemaFormValuesFromDataOnAir(
       continue;
     }
 
-    kindPairs.push([field.key, 'literal']);
     const valueShown = convertDataValueIntoFormValue(field, valueOnAir);
     if (valueShown.status === 'shown') {
-      valuePairs.push([field.key, valueShown.formValue]);
+      valuePairs.push([field.key, clearBlankOptionalTypedFormValue(field, valueShown.formValue)]);
+      kindPairs.push([field.key, 'literal']);
       continue;
     }
     const isOptionalFieldWithNoValue = !field.isRequired && !isOnAir;
     if (isOptionalFieldWithNoValue) {
       valuePairs.push([field.key, null]);
+      kindPairs.push([field.key, 'literal']);
       continue;
     }
     valuePairs.push([field.key, buildStartingValueOfField(field)]);
+    kindPairs.push([field.key, chooseStartingKindOfField(field)]);
     labelsOfFieldsThatCouldNotBeRead.push(field.label);
+  }
+
+  // Deliberate: a key on air that no field describes is kept like an unsupported value,
+  // so "Colocar no ar" pressed while the graphic is on air sends it on untouched instead
+  // of taking it off air unseen. The server accepts such keys whenever the schema does
+  // not say `additionalProperties: false` (a take sent through the API can carry them).
+  // They are drawn nowhere and are not listed as problems. When the whole schema is
+  // unsupported there are no fields, so this keeps every key of the data.
+  const keysTheFieldsDescribe = description.fields.map((field) => field.key);
+  for (const [key, value] of Object.entries(dataOnAir)) {
+    if (!keysTheFieldsDescribe.includes(key)) {
+      unsupportedValuesAsJson.push(...writeUnsupportedValueAsJson(key, value));
+    }
   }
 
   return {
@@ -160,11 +178,15 @@ export function buildSchemaFormValuesFromDataOnAir(
  * Fills a form from the stored fields of an item. A `literal` shows its value and a
  * `takeTime` shows as "filled by the server at the take" where the form offers that.
  * - A field the item does not store, or stores as a literal null: cleared when optional;
- *   its starting value and starting kind, and listed, when required.
+ *   listed, and started as in an empty form (starting value and kind), when required.
  * - A literal the control cannot show, or a `takeTime` on a field that does not offer
- *   it: the starting value as a literal, and listed.
+ *   it: listed, and started as in an empty form. Only a wall-clock field starts as
+ *   "filled by the server" there; every other field starts as a typed value.
  * - A property the form cannot edit: its literal value kept as JSON text, for reading
  *   only. When the whole schema is unsupported, every stored literal is kept that way.
+ * - A stored field the schema does not declare is not kept here (unlike data on air): a
+ *   save sends only the fields that changed and the server merges them key by key, so
+ *   the stored field stays where it is.
  * What could go wrong: a listed field differs from what is stored, so the next save
  * writes what the form shows. The panel's warning must say so.
  */
@@ -202,7 +224,7 @@ export function buildSchemaFormValuesFromItemFields(
     if (storedField?.kind === 'literal') {
       const valueShown = convertDataValueIntoFormValue(field, storedField.value);
       if (valueShown.status === 'shown') {
-        valuePairs.push([field.key, valueShown.formValue]);
+        valuePairs.push([field.key, clearBlankOptionalTypedFormValue(field, valueShown.formValue)]);
         kindPairs.push([field.key, 'literal']);
         continue;
       }
@@ -215,10 +237,10 @@ export function buildSchemaFormValuesFromItemFields(
       kindPairs.push([field.key, 'literal']);
       continue;
     }
+    // A field that could not be read starts as it does in an empty form, so a missing or
+    // unreadable wall-clock reference becomes "filled at the take" at the next save.
     valuePairs.push([field.key, buildStartingValueOfField(field)]);
-    // A required field the item does not store starts as it does in an empty form, so a
-    // missing wall-clock reference becomes "filled at the take" at the next save.
-    kindPairs.push([field.key, hasNoStoredValue ? chooseStartingKindOfField(field) : 'literal']);
+    kindPairs.push([field.key, chooseStartingKindOfField(field)]);
     labelsOfFieldsThatCouldNotBeRead.push(field.label);
   }
 

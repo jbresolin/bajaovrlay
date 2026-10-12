@@ -7,7 +7,7 @@ here knows a graphic by name: forms come from each manifest (`features/schemaFor
   `QuickEditForm.tsx` with "Colocar no ar" (`takeGraphic` on the graphic's default layer)
   and "Atualizar" (`updateInstanceData` with the changed fields only, in place).
 - `graphicForQuickEdit.ts` chooses the graphic shown (the one the operator chose or is
-  editing, else the latest take on program, else the first listed);
+  editing, else the latest take the panel followed, on air or not, else the first listed);
   `instanceOfGraphicToFollow.ts` finds its instance on air (any layer; the latest of several).
 - `ClearAllButton.tsx` (red panic button and Esc, two presses within 3 s),
   `useBackspaceToClearClockLayer.ts`, `CommandErrorMessage.tsx` (why a command failed).

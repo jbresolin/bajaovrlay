@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
  * nothing typed here could ever be sent, so the box must not look editable.
  */
 export function UnsupportedValueBox(props: {
-  /** The element id of the box, which its label points at. */
+  /** The element id of the box, which its label points at while there is a box. */
   controlId: string;
   label: string;
   /** The note above the box; the caller picks the wording for "has a value" or "has none". */
@@ -21,7 +21,9 @@ export function UnsupportedValueBox(props: {
 
   return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor={controlId}>{label}</Label>
+      {/* Without a value there is no box, so the label is left pointing at nothing
+          instead of naming an element id that is not on the page. */}
+      <Label htmlFor={jsonText === undefined ? undefined : controlId}>{label}</Label>
       <p id={noteId} className="text-xs text-muted-foreground">
         {note}
       </p>

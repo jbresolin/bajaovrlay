@@ -12,7 +12,8 @@
  *     label shows as itself.
  *   - An integer whose `v_baja.role` is `wallClock` may be filled by the server.
  *   - Shapes the form cannot edit, and keys react-hook-form cannot hold (a dot, a
- *     bracket, a leading digit, `__proto__`), become the read-only unsupported control.
+ *     bracket, a quote, a leading digit, `__proto__`), become the read-only unsupported
+ *     control.
  *   - No schema gives no fields; a schema that is not an object with properties is
  *     marked as unsupported as a whole.
  *
@@ -116,6 +117,15 @@ describe('describeSchemaFormFromDataSchema, on single properties', () => {
     {
       name: 'a key that starts with a digit',
       key: '1aBateria',
+      propertySchema: { type: 'string' },
+    },
+    // react-hook-form also splits a name at an apostrophe: what is typed under
+    // "caixaD'Agua" would be stored as "Agua" inside "caixaD" and never be sent.
+    { name: 'a key with an apostrophe', key: "caixaD'Agua", propertySchema: { type: 'string' } },
+    // The same happens at a double quote.
+    {
+      name: 'a key with a double quote',
+      key: 'apelido"Trovão"',
       propertySchema: { type: 'string' },
     },
   ];

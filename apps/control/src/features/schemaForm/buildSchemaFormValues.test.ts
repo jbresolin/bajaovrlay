@@ -11,10 +11,15 @@
  *   - An empty form starts from the manifest's defaults; a field without one starts
  *     empty when required and cleared when optional; a wall-clock field starts as
  *     "filled by the server at the take".
- *   - From on-air data every field is a typed value, a missing optional field is
+ *   - From on-air data every field shown is a typed value, a missing optional field is
  *     cleared, and a value the control cannot show falls back and is listed.
+ *   - An optional text that is empty or only spaces on air, or empty as the manifest's
+ *     default, is cleared.
+ *   - A wall-clock field that is missing or unreadable on air starts as "filled by the
+ *     server at the take", as in an empty form, and is listed.
  *   - Values of properties the form cannot edit are kept as JSON text, only when they
- *     exist, also when the property is named `__proto__`.
+ *     exist, also when the property is named `__proto__`; so is a key on air that the
+ *     schema does not declare.
  *
  * What these tests deliberately do not cover:
  *   - A form filled from a stored item: buildSchemaFormValuesFromItemFields.test.ts.
@@ -96,6 +101,20 @@ describe('buildEmptySchemaFormValues', () => {
       'a new clock must count from the take (gate 2 of BAJAOVRLAY-13)',
     ).toBe('takeTime');
     expect(formValues.kinds.referenceTimeMs, 'every other field is typed').toBe('literal');
+  });
+
+  it('starts an optional text whose default is the empty text as cleared', () => {
+    // Arrange: an optional nickname whose manifest wrote `default: ""`.
+    const description = describeSchemaFormFromDataSchema({
+      type: 'object',
+      properties: { apelido: { type: 'string', title: 'Apelido', default: '' } },
+    });
+
+    // Act: build the empty form.
+    const formValues = buildEmptySchemaFormValues(description);
+
+    // Assert: an empty optional text has no value, so the form holds null from the start.
+    expect(formValues.values.apelido, 'an empty default must start as cleared').toBeNull();
   });
 
   it('ignores a default the control cannot show', () => {
@@ -220,6 +239,102 @@ describe('buildSchemaFormValuesFromDataOnAir', () => {
     ]);
     expect(formRead.formValues.values, 'there are no editable fields').toEqual({});
   });
+
+  it('keeps a key the schema does not declare, so the next take carries it', () => {
+    // Arrange: a ticker whose schema declares only its text and does not forbid other
+    // keys; another client put it on air with a speed as well.
+    const description = describeSchemaFormFromDataSchema({
+      type: 'object',
+      properties: { texto: { type: 'string', title: 'Texto' } },
+      required: ['texto'],
+    });
+    const dataOnAir = { texto: 'Largada às 10h', velocidade: 2 };
+
+    // Act: fill the form from it.
+    const formRead = buildSchemaFormValuesFromDataOnAir(description, dataOnAir);
+
+    // Assert: the speed is kept as text beside the form; it is neither a field nor a problem.
+    expect(formRead.formValues.values, 'only the declared text is a field').toEqual({
+      texto: 'Largada às 10h',
+    });
+    expect(
+      formRead.formValues.unsupportedValuesAsJson,
+      'data on air the schema does not declare must not be lost',
+    ).toEqual([{ key: 'velocidade', jsonText: '2' }]);
+    expect(
+      formRead.labelsOfFieldsThatCouldNotBeRead,
+      'an undeclared key is not a field that fell back',
+    ).toEqual([]);
+  });
+
+  const blankTextsOnAir = [
+    // The empty text: what a script sends for "no job title".
+    { name: 'empty', cargoOnAir: '' },
+    // Spaces alone are sent as nothing by the form, so they must not look like a value.
+    { name: 'only spaces', cargoOnAir: '   ' },
+  ];
+
+  it.each(blankTextsOnAir)(
+    'reads an optional text that is $name on air as a cleared field',
+    ({ cargoOnAir }) => {
+      // Arrange: car 42's lower third, put on air by a script with a blank "cargo".
+      const description = describeLowerThirdFixtureForm();
+      const dataOnAir = { ...buildLowerThirdDataForCar42(), cargo: cargoOnAir };
+
+      // Act: fill the form from it.
+      const formRead = buildSchemaFormValuesFromDataOnAir(description, dataOnAir);
+
+      // Assert: blank and cleared are one state, so the form holds null, as it would
+      // after the operator emptied the field; nothing fell back.
+      expect(
+        formRead.formValues.values.cargo,
+        'a blank optional text must be held as cleared',
+      ).toBeNull();
+      expect(formRead.labelsOfFieldsThatCouldNotBeRead, 'a blank text is not a problem').toEqual(
+        [],
+      );
+    },
+  );
+
+  const referenceMomentsOnAirThatCannotBeRead = [
+    // A script took the clock without the moment the time counts from.
+    { name: 'missing', referenceMomentOnAir: undefined },
+    // The moment was written as a date text, where the graphic expects milliseconds.
+    { name: 'a date written as text', referenceMomentOnAir: '2026-10-10T12:45:00.000Z' },
+  ];
+
+  it.each(referenceMomentsOnAirThatCannotBeRead)(
+    'starts a reference moment that is $name on air as "filled by the server", and lists it',
+    ({ referenceMomentOnAir }) => {
+      // Arrange: the first heat on air, with a reference moment the form cannot show.
+      const description = describeRaceClockForm();
+      const dataOnAir: Record<string, unknown> = {
+        sessionName: 'Enduro de Resistência — Bateria 1',
+        state: 'green',
+        clockMode: 'elapsed',
+        referenceTimeMs: 754_000,
+        running: true,
+      };
+      if (referenceMomentOnAir !== undefined) {
+        dataOnAir.referenceWallClockMs = referenceMomentOnAir;
+      }
+
+      // Act: fill the form from it.
+      const formRead = buildSchemaFormValuesFromDataOnAir(description, dataOnAir);
+
+      // Assert: the field starts as in an empty form, so "Colocar no ar" lets the server
+      // write the moment of the take instead of sending the default 0 (1 January 1970),
+      // from which a running clock would count more than fifty years.
+      expect(
+        formRead.formValues.kinds.referenceWallClockMs,
+        'a reference moment that cannot be read must start as in an empty form',
+      ).toBe('takeTime');
+      expect(
+        formRead.labelsOfFieldsThatCouldNotBeRead,
+        'the operator must be told the field does not show what is on air',
+      ).toEqual([raceClockManifest.schema.properties.referenceWallClockMs.title]);
+    },
+  );
 
   it('keeps the value of a property named __proto__', () => {
     // Arrange: a schema and data as JSON text, because only JSON.parse makes

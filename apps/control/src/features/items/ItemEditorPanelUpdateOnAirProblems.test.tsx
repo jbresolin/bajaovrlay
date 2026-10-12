@@ -13,8 +13,11 @@
  *     and the panel stays open.
  *   - When the save is accepted and the on-air update is refused, the server's message is
  *     shown next to the buttons and the panel stays open with the form as typed.
- *   - A second press after that sends both commands again (the server treats the
- *     repeated save as a change of nothing), and the panel closes once both are accepted.
+ *   - A second press after that sends only the on-air update again (the item is already
+ *     saved), and the panel closes once it is accepted.
+ *   - A field put back after that is saved again, with "Salvar item" or with "Atualizar
+ *     no ar", so the item does not keep the value the operator gave up on; the air, which
+ *     never changed, is sent nothing.
  *   - When the item leaves the air while the save is waiting, the on-air update is not
  *     sent and the panel asks to be closed: the item is saved and nothing is on air.
  *   - A refused on-air update the page remembers from elsewhere ("Edição rápida") is not
@@ -22,6 +25,9 @@
  *
  * What these tests deliberately do not cover:
  *   - What a press sends when all goes well: ItemEditorPanelUpdateOnAir.test.tsx.
+ *   - "Cancelar" or another item opened while the save is waiting:
+ *     ItemEditorPanelClosedDuringAPress.test.tsx.
+ *   - A save the server never answered: ItemEditorPanelUnansweredSave.test.tsx.
  *   - The server's reasons to refuse data (apps/server).
  *   - A command the server never answers (the 5-second timeout), which state/ tests
  *     cover for every command alike.
@@ -37,6 +43,7 @@ import {
 
 import {
   idOfTheInstanceTakenFromTheItem,
+  type ItemEditorOnFakeServer,
   pressSaveAndWaitForCommand,
   pressUpdateOnAirAndWaitForCommand,
   renderItemEditorPanelForItemOnAir,
@@ -60,6 +67,36 @@ const onAirUpdateOfTheGreenFlag = {
   data: { state: 'green' },
   takeTimeFieldKeys: [],
 };
+const saveOfThePreStartFlagPutBack = {
+  type: 'updateItemFields',
+  itemId: idOfTheEnduranceStartItem,
+  fields: { state: { kind: 'literal', value: 'pre' } },
+};
+
+/**
+ * Draws the editor for the endurance start clock on air and plays a half-done "Atualizar
+ * no ar": the green flag is chosen, its save is accepted and its on-air update is
+ * refused. It returns once the buttons are back, with the panel still open.
+ */
+async function renderEditorWithGreenFlagSavedAndRefusedOnAir(): Promise<ItemEditorOnFakeServer> {
+  const editorOnFakeServer = renderItemEditorPanelForItemOnAir(buildEnduranceStartClockItem());
+  const { fakeServer } = editorOnFakeServer;
+  chooseOptionInDropdown('Bandeira', 'Verde');
+  await pressUpdateOnAirAndWaitForCommand(1, fakeServer);
+  fakeServer.acceptLastCommand();
+  await waitForCommandsReceived(2, fakeServer);
+  fakeServer.refuseLastCommand({
+    code: 'INVALID_GRAPHIC_DATA',
+    message: 'Os dados não são aceitos pelo gráfico "Relógio de prova".',
+  });
+  await waitFor(() => {
+    expect(
+      screen.getByRole('button', { name: 'Atualizar no ar' }),
+      'the button must come back before it can be pressed again',
+    ).toBeEnabled();
+  });
+  return editorOnFakeServer;
+}
 
 describe('a press of "Atualizar no ar" when something is wrong', () => {
   it('shows the message of a wrong field and sends nothing', async () => {
@@ -154,50 +191,69 @@ describe('a press of "Atualizar no ar" when something is wrong', () => {
     expect(onClose, 'a refused on-air update must not close the panel').not.toHaveBeenCalled();
   });
 
-  it('sends both commands again at a second press, and closes once both are accepted', async () => {
+  it('sends only the on-air update again at a second press, and closes once it is accepted', async () => {
     // Arrange: the same story: save accepted, on-air update refused, panel still open.
-    const { fakeServer, onClose } = renderItemEditorPanelForItemOnAir(
-      buildEnduranceStartClockItem(),
-    );
-    chooseOptionInDropdown('Bandeira', 'Verde');
-    await pressUpdateOnAirAndWaitForCommand(1, fakeServer);
-    fakeServer.acceptLastCommand();
-    await waitForCommandsReceived(2, fakeServer);
-    fakeServer.refuseLastCommand({
-      code: 'INVALID_GRAPHIC_DATA',
-      message: 'Os dados não são aceitos pelo gráfico "Relógio de prova".',
-    });
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: 'Atualizar no ar' }),
-        'the button must come back before it can be pressed again',
-      ).toBeEnabled();
-    });
+    const { fakeServer, onClose } = await renderEditorWithGreenFlagSavedAndRefusedOnAir();
 
-    // Act: press "Atualizar no ar" again; this time the server accepts both commands.
+    // Act: press "Atualizar no ar" again; this time the server accepts the on-air update.
     await pressUpdateOnAirAndWaitForCommand(3, fakeServer);
     fakeServer.acceptLastCommand();
-    await waitForCommandsReceived(4, fakeServer);
-    fakeServer.acceptLastCommand();
 
-    // Assert: the second press repeated the save (the editor still compares with the
-    // item as it was when opened; the server finds nothing to change) and then the
-    // on-air update, and the panel closed.
+    // Assert: the green flag is already saved, so the second press had nothing to save
+    // and went straight to the on-air update, and the panel closed.
     expect(
       fakeServer.listCommandsReceived(),
-      'the second press must send the save and the on-air update again',
-    ).toEqual([
-      saveOfTheGreenFlag,
-      onAirUpdateOfTheGreenFlag,
-      saveOfTheGreenFlag,
-      onAirUpdateOfTheGreenFlag,
-    ]);
+      'the second press must send the on-air update again, and no second save',
+    ).toEqual([saveOfTheGreenFlag, onAirUpdateOfTheGreenFlag, onAirUpdateOfTheGreenFlag]);
     await waitFor(() => {
       expect(
         onClose,
-        'the panel must ask to be closed once both commands were accepted',
+        'the panel must ask to be closed once the on-air update was accepted',
       ).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('saves a flag put back after the on-air update was refused, so the item does not keep the unwanted one', async () => {
+    // Arrange: the green flag is saved in the item, but the air refused it; panel open.
+    const { fakeServer, onClose } = await renderEditorWithGreenFlagSavedAndRefusedOnAir();
+
+    // Act: the operator gives up on the green flag, puts "Pré-largada" back and saves.
+    chooseOptionInDropdown('Bandeira', 'Pré-largada');
+    await pressSaveAndWaitForCommand(3, fakeServer);
+    fakeServer.acceptLastCommand();
+
+    // Assert: the item is saved again with the pre-start flag. Without this third
+    // command the server would keep "green" and the next take would air the green flag.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'the flag put back must be saved over the green one the server already stores',
+    ).toEqual([saveOfTheGreenFlag, onAirUpdateOfTheGreenFlag, saveOfThePreStartFlagPutBack]);
+    await waitFor(() => {
+      expect(
+        onClose,
+        'the panel must ask to be closed once the save was accepted',
+      ).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('saves a flag put back with "Atualizar no ar" and leaves the air alone, since it never changed', async () => {
+    // Arrange: the green flag is saved in the item, but the air refused it; panel open.
+    const { fakeServer, onClose } = await renderEditorWithGreenFlagSavedAndRefusedOnAir();
+
+    // Act: the operator puts "Pré-largada" back and presses "Atualizar no ar".
+    chooseOptionInDropdown('Bandeira', 'Pré-largada');
+    await pressUpdateOnAirAndWaitForCommand(3, fakeServer);
+    fakeServer.acceptLastCommand();
+
+    // Assert: the item is saved with the pre-start flag and the panel closes. No on-air
+    // update follows: the air still shows the pre-start flag it showed all along.
+    await waitFor(() => {
+      expect(onClose, 'the panel must ask to be closed after the save').toHaveBeenCalledTimes(1);
+    });
+    expect(
+      fakeServer.listCommandsReceived(),
+      'only the save may follow: the air already shows the flag that was put back',
+    ).toEqual([saveOfTheGreenFlag, onAirUpdateOfTheGreenFlag, saveOfThePreStartFlagPutBack]);
   });
 
   it('sends no on-air update and asks to be closed when the item left the air during the save', async () => {

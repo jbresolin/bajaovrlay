@@ -14,7 +14,8 @@
  *   - When the server refuses an "Atualizar" (someone else has just cleared the
  *     graphic), its pt-BR message is shown in the panel too.
  *   - A refused `updateInstanceData` that this panel did not send (the item editor's
- *     "Atualizar no ar" sends that command too) is not shown under this panel's buttons.
+ *     "Atualizar no ar" sends that command too) is not shown under this panel's buttons,
+ *     neither before this panel has sent anything nor after a take of its own went well.
  *   - While the page is not connected both buttons are disabled and say why.
  *
  * What these tests deliberately do not cover:
@@ -233,6 +234,42 @@ describe('the quick edit panel when something is wrong', () => {
     expect(
       screen.queryByRole('alert'),
       'a refusal of a command this panel did not send must not appear under its buttons',
+    ).toBeNull();
+  });
+
+  it('does not show a refused update from another part of the page after its own take was accepted', async () => {
+    // Arrange: the panel next to the button that stands in for the item editor. The
+    // operator presses "Colocar no ar" in this panel and the server accepts. Later the
+    // other button is pressed.
+    const { fakeServer, serverStateStore } = renderOnControlPageConnectedToFakeServer(
+      <>
+        <QuickEditPanel />
+        <ButtonStandingInForTheItemEditor />
+      </>,
+      buildSlicesWithTheRaceClockOnAir(quarterToTen),
+    );
+    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
+    fakeServer.acceptLastCommand();
+    await waitUntilButtonIsOnAgain('Colocar no ar');
+    await pressButtonAndWaitForCommand('Atualizar no ar', 2, fakeServer);
+
+    // Act: the server refuses the other button's update.
+    fakeServer.refuseLastCommand({
+      code: 'INSTANCE_NOT_FOUND',
+      message: 'Este gráfico não está mais no ar.',
+    });
+
+    // Assert: the page knows about the refusal, and this panel still does not show it.
+    // Having sent a command of its own earlier does not make a later refusal its own.
+    await waitFor(() => {
+      expect(
+        serverStateStore.getState().lastCommandError?.message,
+        'the page must have heard the refusal',
+      ).toBe('Este gráfico não está mais no ar.');
+    });
+    expect(
+      screen.queryByRole('alert'),
+      'only the refusal of the command this panel sent last may appear under its buttons',
     ).toBeNull();
   });
 

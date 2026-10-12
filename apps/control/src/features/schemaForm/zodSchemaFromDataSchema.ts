@@ -24,12 +24,30 @@ const fieldErrors = ptBR.schemaForm.fieldErrors;
 /** What Zod hands a message function: the value that was refused (undefined when missing). */
 type RefusedValue = { input?: unknown };
 
+const millisecondsPerSecond = 1_000;
+
 /** Writes a limit the way the operator typed the field: mm:ss for a time, pt-BR digits otherwise. */
 function writeLimitForReading(field: SchemaFormFieldDescription, limit: number): string {
   if (field.control === 'duration') {
     return formatMillisecondsAsMinutesAndSeconds(limit);
   }
   return new Intl.NumberFormat('pt-BR').format(limit);
+}
+
+/**
+ * Writes a minimum for reading. An mm:ss field holds whole seconds and writing a time
+ * drops the part of a second, which is right for a maximum (90 500 ms: nothing over 1:30
+ * passes) but wrong for a minimum: 500 ms would read "0:00", the very time that was just
+ * refused. So a time's minimum is first raised to the next whole second, the smallest
+ * time the operator can actually type.
+ */
+function writeMinimumForReading(field: SchemaFormFieldDescription, minimum: number): string {
+  if (field.control !== 'duration') {
+    return writeLimitForReading(field, minimum);
+  }
+  const smallestWholeSecondAllowed =
+    Math.ceil(minimum / millisecondsPerSecond) * millisecondsPerSecond;
+  return writeLimitForReading(field, smallestWholeSecondAllowed);
 }
 
 /**
@@ -85,7 +103,7 @@ function buildRuleForNumber(field: SchemaFormFieldDescription): z.ZodType {
     rule = rule.int({ error: fieldErrors.notAWholeNumber(field.label) });
   }
   if (field.minimum !== undefined) {
-    const limit = writeLimitForReading(field, field.minimum);
+    const limit = writeMinimumForReading(field, field.minimum);
     rule = rule.min(field.minimum, { error: fieldErrors.belowMinimum(field.label, limit) });
   }
   if (field.maximum !== undefined) {

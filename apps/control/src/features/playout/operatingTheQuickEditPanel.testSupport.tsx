@@ -1,6 +1,6 @@
 // Test support: "Edição rápida" drawn on a page connected to a fake server that lists two
 // graphics (the real race clock and the lower third fixture), the few things an operator
-// does to the panel, and the two things the server does back. Written once so the panel's
+// does to the panel, and the three things the server does back. Written once so the panel's
 // test files read the same. Nothing here keeps state between calls.
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
 import type { Instance } from '@bajaovrlay/shared';
@@ -186,4 +186,36 @@ export function letTheServerApplyTheLastUpdate(
 
   fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [instanceAfterTheUpdate] });
   fakeServer.acceptLastCommand();
+}
+
+/**
+ * The fake server does what the real one does with an update whose result lacks a
+ * required field of the race clock: it lays the fields of the newest command over the
+ * data the instance held, looks for the first field the manifest requires that is still
+ * not there, and refuses in the real server's words, changing nothing on air. The real
+ * server checks the whole result, not only the fields sent (updateInstanceData.ts).
+ */
+export function letTheServerRefuseTheLastUpdateForARequiredFieldMissingOnAir(
+  fakeServer: FakeServer,
+  raceClockInstanceBeforeTheUpdate: Instance,
+): void {
+  const updateCommand = UpdateCommandReceivedSchema.parse(fakeServer.listCommandsReceived().at(-1));
+  const dataTheUpdateWouldLeaveOnAir = prepareDataAsTheServerDoes(
+    raceClockInstanceBeforeTheUpdate.resolvedData,
+    updateCommand.data,
+    updateCommand.takeTimeFieldKeys,
+    raceClockInstanceBeforeTheUpdate.takenAt,
+  );
+  const firstRequiredFieldStillMissing = raceClockManifest.schema.required.find(
+    (requiredFieldKey) => !(requiredFieldKey in dataTheUpdateWouldLeaveOnAir),
+  );
+  expect(
+    firstRequiredFieldStillMissing,
+    'this helper is for an update the real server refuses: a required field must be missing',
+  ).toBeDefined();
+
+  fakeServer.refuseLastCommand({
+    code: 'INVALID_GRAPHIC_DATA',
+    message: `Dados inválidos para o gráfico "race-clock": o campo "${firstRequiredFieldStillMissing}" é obrigatório e não foi enviado.`,
+  });
 }

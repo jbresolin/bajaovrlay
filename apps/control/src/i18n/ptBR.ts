@@ -63,9 +63,11 @@ export const ptBR = {
         layerName: string,
       ) =>
         `"${graphicName}" está no ar em ${numberOfLayersItIsOn} camadas. Este painel acompanha a entrada mais recente, na camada ${layerName}.`,
-      // Shown above the form while it could not show everything that is on air.
+      // Shown above the form while it could not show everything that is on air. The
+      // server checks the whole result of an "Atualizar", so it refuses one that leaves
+      // a required field missing on air; only "Colocar no ar" gets out of that.
       fieldsOnAirThatCouldNotBeRead: (fieldLabels: string) =>
-        `Estes campos do que está no ar não puderam ser lidos e aparecem com o valor inicial: ${fieldLabels}. "Atualizar" envia só o que você alterar; "Colocar no ar" envia o formulário inteiro.`,
+        `Estes campos do que está no ar não puderam ser lidos e aparecem com o valor inicial: ${fieldLabels}. "Atualizar" envia só o que você alterar, e o servidor recusa enquanto faltar um campo obrigatório no ar; "Colocar no ar" envia o formulário inteiro e substitui o que está no ar.`,
     },
     takeButton: 'Colocar no ar',
     updateButton: 'Atualizar',

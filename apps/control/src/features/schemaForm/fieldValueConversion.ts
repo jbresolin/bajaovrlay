@@ -52,8 +52,9 @@ function isNumberTheFieldCanHold(field: SchemaFormFieldDescription, dataValue: u
  * Turns a data value (from the manifest's `default`, from what is on air, or from a
  * stored item) into what the field's control holds. Answers "cannot be shown" when the
  * value is not of the kind the control edits: a text where a number belongs, an option
- * the dropdown does not have, a time past 999:59. The caller decides what to show
- * instead. An unsupported field can never be shown.
+ * the dropdown does not have, a time past 999:59, a number JavaScript writes with an
+ * exponent. The caller decides what to show instead. An unsupported field can never be
+ * shown.
  * What could go wrong: an mm:ss field shows whole seconds, so 90 500 ms shows as "1:30".
  */
 export function convertDataValueIntoFormValue(
@@ -76,10 +77,19 @@ export function convertDataValueIntoFormValue(
         typeof dataValue === 'string' ? convertIsoTextToLocalDateAndTimeText(dataValue) : undefined;
       return localText === undefined ? cannotBeShown : { status: 'shown', formValue: localText };
     }
-    case 'number':
-      return isNumberTheFieldCanHold(field, dataValue)
-        ? { status: 'shown', formValue: String(dataValue) }
+    case 'number': {
+      if (!isNumberTheFieldCanHold(field, dataValue)) {
+        return cannotBeShown;
+      }
+      // JavaScript writes a very small or very large number with an exponent ("1e-7",
+      // "1e+21"), which the reader below refuses. Showing that text would make the form
+      // invalid over a value nobody typed, so such a number counts as "cannot be shown"
+      // and the caller lists the field for the operator instead.
+      const digitsOfTheNumber = String(dataValue);
+      return plainNumberPattern.test(digitsOfTheNumber)
+        ? { status: 'shown', formValue: digitsOfTheNumber }
         : cannotBeShown;
+    }
     case 'duration': {
       if (typeof dataValue !== 'number' || !isNumberTheFieldCanHold(field, dataValue)) {
         return cannotBeShown;
@@ -100,10 +110,35 @@ export function convertDataValueIntoFormValue(
 }
 
 /**
+ * Answers what the form holds for what a control reports or a filled form shows: null
+ * (cleared) for a blank text in an optional typed field (text, number, mm:ss, date), and
+ * the value itself in every other case. Blank is what readDataValueFromFormValue below
+ * reads as blank: the empty text, or spaces only.
+ * For those fields blank and cleared are one state. Holding it as one value, both when
+ * the form is filled and when the operator empties the field, is what lets
+ * react-hook-form see a field that was emptied again as unchanged.
+ * What could go wrong: a space typed into an empty optional field is dropped at once,
+ * since the field stays cleared; a space after the first letter is kept.
+ */
+export function clearBlankOptionalTypedFormValue(
+  field: SchemaFormFieldDescription,
+  formValue: SchemaFormFieldValue,
+): SchemaFormFieldValue {
+  const isTypedControl =
+    field.control === 'text' ||
+    field.control === 'number' ||
+    field.control === 'duration' ||
+    field.control === 'dateTime';
+  const isBlankText = typeof formValue === 'string' && formValue.trim() === '';
+  const isBlankOptionalTypedField = isBlankText && isTypedControl && !field.isRequired;
+  return isBlankOptionalTypedField ? null : formValue;
+}
+
+/**
  * Turns what a field's control holds into the data value the graphic receives.
  * - Cleared (null), nothing typed, or only spaces: `blank`. Whether a blank is allowed
  *   is the caller's question (checkSchemaFormValues.ts).
- * - Text is sent without the spaces around it.
+ * - Typed text is sent without the spaces around it; a chosen option is sent as it is.
  * - A number, an mm:ss time or a date typed in a shape that cannot be read: `unreadable`
  *   with the reason, so the form can put a message under that field.
  * An unsupported field is always blank here: its value never comes from a control.
@@ -120,13 +155,18 @@ export function readDataValueFromFormValue(
     return field.control === 'switch' ? { status: 'value', value: formValue } : { status: 'blank' };
   }
 
+  if (field.control === 'select') {
+    // An option was chosen, not typed: it is sent exactly as the manifest wrote it, also
+    // when that has a space at either end, or it would no longer be one of the options.
+    return formValue === '' ? { status: 'blank' } : { status: 'value', value: formValue };
+  }
+
   const typedText = formValue.trim();
   if (typedText === '' || field.control === 'switch') {
     return { status: 'blank' };
   }
   switch (field.control) {
     case 'text':
-    case 'select':
       return { status: 'value', value: typedText };
     case 'number': {
       if (!plainNumberPattern.test(typedText)) {

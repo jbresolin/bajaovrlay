@@ -11,7 +11,8 @@
  *   - Data that respects the manifest passes, with and without its optional fields.
  *   - Each kind of mistake (missing, wrong type, too short or long, not an option, not a
  *     date, not a whole number, under the minimum, over the maximum) is refused with a
- *     pt-BR message that names the field by its label; a time limit is written as mm:ss.
+ *     pt-BR message that names the field by its label; a time limit is written as mm:ss,
+ *     as the nearest whole second the field accepts.
  *   - Keys the schema does not name, and properties the form cannot edit, are let
  *     through unchecked, although the fixture says `additionalProperties: false`.
  *   - A missing schema and an unsupported one accept any object.
@@ -203,6 +204,48 @@ describe('buildZodSchemaFromDataSchema, on data the manifest refuses', () => {
     const messages = check.success ? [] : check.error.issues.map((issue) => issue.message);
     expect(check.success, 'the mistake must be refused').toBe(false);
     expect(messages, 'the operator must read which field is wrong and why').toEqual([message]);
+  });
+
+  const timeLimitsThatAreNotWholeSeconds = [
+    // An mm:ss field holds whole seconds, so the smallest time a minimum of half a second
+    // lets through is 0:01; "menor que 0:00" would contradict the 0:00 just typed.
+    {
+      name: 'writes a minimum of 500 ms as the next whole second',
+      limits: { minimum: 500 },
+      durationMs: 0,
+      message: 'O campo "Tempo de exibição" não pode ser menor que 0:01.',
+    },
+    // The largest whole second under a maximum of 90 500 ms is 1:30, so that one is cut.
+    {
+      name: 'writes a maximum of 90 500 ms as the whole second before it',
+      limits: { maximum: 90_500 },
+      durationMs: 91_000,
+      message: 'O campo "Tempo de exibição" não pode ser maior que 1:30.',
+    },
+  ];
+
+  it.each(timeLimitsThatAreNotWholeSeconds)('$name', ({ limits, durationMs, message }) => {
+    // Arrange: a time typed as mm:ss whose manifest limit falls inside a second.
+    const rules = buildZodSchemaFromDataSchema({
+      type: 'object',
+      properties: {
+        tempoDeExibicaoMs: {
+          type: 'number',
+          title: 'Tempo de exibição',
+          v_baja: { unit: 'ms' },
+          ...limits,
+        },
+      },
+    });
+
+    // Act: check a time on the wrong side of the limit.
+    const check = rules.safeParse({ tempoDeExibicaoMs: durationMs });
+
+    // Assert: the message names a time the operator can actually type.
+    const messages = check.success ? [] : check.error.issues.map((issue) => issue.message);
+    expect(messages, 'the limit must be written as the nearest time the field accepts').toEqual([
+      message,
+    ]);
   });
 
   it('says "1 caractere" in the singular', () => {

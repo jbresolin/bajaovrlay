@@ -27,6 +27,13 @@ import { ItemEditorFormFields } from './ItemEditorFormFields';
 import { resolveItemEditorForm } from './itemEditorFormResolver';
 import { ItemGraphicFieldsForm, type ItemGraphicFieldsFormHandle } from './ItemGraphicFieldsForm';
 import { findInstanceOfItemOnProgram } from './itemInstanceOnAir';
+import {
+  type AnswerToSave,
+  type ItemsTheServerMayStore,
+  joinSavesOfOneFormIntoOne,
+  listEveryItemTheServerMayStore,
+  recordAnswerToSave,
+} from './itemsTheServerMayStore';
 import { useAskToBeClosedOnce } from './useAskToBeClosedOnce';
 
 /** What the rundown gives the panel. */
@@ -69,7 +76,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   const instances = useServerState((state) => state.instances);
   const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
-  const askToBeClosedOnce = useAskToBeClosedOnce(props.onClose);
+  const { askToBeClosedOnce, hasEditorFinishedWithThisItem } = useAskToBeClosedOnce(props.onClose);
 
   // The item as it was when the panel opened. Kept on purpose, and never replaced by a
   // newer copy from the server: "what changed" is judged against the values the form
@@ -77,6 +84,17 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // did not touch, is not sent back with its old value.
   const [itemAsItWasWhenOpened] = useState(props.itemBeingEdited);
   const isEditingStoredItem = itemAsItWasWhenOpened !== null;
+  // What the server may store for the item as far as this editor knows: the item as
+  // opened plus every save this editor had accepted since, and one more possibility per
+  // save the server never answered (itemsTheServerMayStore.ts). A save is compared with
+  // all of them, so a field put back after an accepted or an unanswered save is saved
+  // again. It is a ref because only a press reads it; nothing drawn depends on it. Null
+  // for a new item, which is sent whole.
+  const itemsTheServerMayStoreRef = useRef<ItemsTheServerMayStore | null>(
+    itemAsItWasWhenOpened === null
+      ? null
+      : { itemAfterTheAnsweredSaves: itemAsItWasWhenOpened, itemsIfAnUnansweredSaveWasApplied: [] },
+  );
 
   // Until a save button is pressed for the first time nothing is checked while typing.
   // From that press on, each field is checked again as it changes, so a message goes away
@@ -169,51 +187,72 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
     return sendCommand(createCommand);
   }
 
-  // The fields of the graphic in which the form differs from the stored item. Both
-  // commands of a press are built from this one answer, so they always agree.
-  function findChangedFieldsOfStoredItem(storedItem: Item): ItemFields {
+  // The fields of the graphic in which the form differs from what `comparedItem` stores.
+  function findFieldsChangedFrom(comparedItem: Item): ItemFields {
     const graphicFieldsForm = graphicFieldsFormHandleRef.current;
     return graphicFieldsForm === null
       ? {}
-      : graphicFieldsForm.findFieldsChangedFromStoredItem(storedItem);
+      : graphicFieldsForm.findFieldsChangedFromStoredItem(comparedItem);
   }
 
-  // Saves what changed in a stored item. Answers false only when the server refused;
-  // when nothing was changed there is nothing to send, and that counts as done.
+  // How the save just sent ended. "No answer within 5 s" is told apart from a refusal by
+  // the failure the page keeps, read straight after the wait, before any other command
+  // can replace it: a refused save was not applied, an unanswered one may have been.
+  function describeAnswerToSave(wasSaveAccepted: boolean): AnswerToSave {
+    if (wasSaveAccepted) {
+      return 'accepted';
+    }
+    const wasLeftUnanswered = readServerStateNow().lastCommandError?.code === 'COMMAND_TIMED_OUT';
+    return wasLeftUnanswered ? 'leftUnanswered' : 'refused';
+  }
+
+  // Saves every part in which the form differs from any item the server may store.
+  // Answers false only when the server did not accept; when nothing differs there is
+  // nothing to send, and that counts as done. The answer to the save decides what the
+  // next press is compared with.
   async function saveChangesToStoredItem(
-    storedItem: Item,
-    changedFields: ItemFields,
+    itemsTheServerMayStore: ItemsTheServerMayStore,
   ): Promise<boolean> {
-    const updateCommand = buildUpdateItemFieldsCommand({
-      itemBeingEdited: storedItem,
-      itemFormValues: itemForm.getValues(),
-      changedFields,
-    });
+    const savesAgainstEachItem = listEveryItemTheServerMayStore(itemsTheServerMayStore).map(
+      (itemTheServerMayStore) =>
+        buildUpdateItemFieldsCommand({
+          itemBeingEdited: itemTheServerMayStore,
+          itemFormValues: itemForm.getValues(),
+          changedFields: findFieldsChangedFrom(itemTheServerMayStore),
+        }),
+    );
+    const updateCommand = joinSavesOfOneFormIntoOne(savesAgainstEachItem);
     if (updateCommand === undefined) {
       return true;
     }
     rememberCommandTypeWasSent('updateItemFields');
-    return sendCommand(updateCommand);
+    const wasSaveAccepted = await sendCommand(updateCommand);
+    itemsTheServerMayStoreRef.current = recordAnswerToSave(
+      itemsTheServerMayStore,
+      updateCommand,
+      describeAnswerToSave(wasSaveAccepted),
+    );
+    return wasSaveAccepted;
   }
 
-  // Puts the changed fields on the item's instance on air. Answers false only when the
-  // server refused. Nothing is sent, and that counts as done, when no typed value changed
-  // (a new label is not on air) or when the item left the air while the save was waiting:
-  // the instance is looked up at this moment, not as it was when the button was drawn.
-  async function updateInstanceOfItemOnAir(
-    storedItem: Item,
-    changedFields: ItemFields,
-  ): Promise<boolean> {
+  // Puts on the item's instance on air the fields in which the form differs from the item
+  // as it was when the editor opened: this editor has changed nothing on air yet, so that
+  // is still what the air is compared with, whatever has been saved since. Answers false
+  // only when the server refused. Nothing is sent, and that counts as done, when no typed
+  // value differs (a new label is not on air) or when the item left the air while the
+  // save was waiting: the instance is looked up at this moment, not as it was when the
+  // button was drawn.
+  async function updateInstanceOfItemOnAir(itemAsOpened: Item): Promise<boolean> {
     const instanceOnAirNow = findInstanceOfItemOnProgram(
       readServerStateNow().instances,
-      storedItem.id,
+      itemAsOpened.id,
     );
     if (instanceOnAirNow === undefined) {
       return true;
     }
     const updateOnAirCommand = buildUpdateInstanceDataCommandFromChangedFields({
       instanceId: instanceOnAirNow.id,
-      changedFields,
+      changedFields: findFieldsChangedFrom(itemAsOpened),
     });
     if (updateOnAirCommand === undefined) {
       return true;
@@ -229,18 +268,23 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // "Atualizar no ar" sends two commands in a row, the save first: what is on air must
   // never be ahead of what the item stores, or the next take of the item would undo it.
   // If the save is accepted and the on-air update is refused, the item is already saved
-  // and the editor stays open. "What changed" is still judged against the item as it was
-  // when the editor opened, so a second press sends both commands again: the server
-  // treats the repeated save as a change of nothing (it leaves no trace), and the on-air
-  // update gets its second try. Keeping no memory of "already saved" is deliberate: it is
-  // one rule for every press instead of a second state that could go stale.
+  // and the editor stays open. The next press is then compared with what was saved, so it
+  // saves again only what the operator changed since (a field put back included), while
+  // the on-air update, still compared with the item as opened, gets its second try.
+  // After a save the server never answered, the next press is compared both with the item
+  // before that save and with the item after it, since the server may store either.
+  //
+  // "Cancelar" stays on during a press, and the rundown can hand the editor another item.
+  // So the press asks before each command whether the editor has finished with this
+  // item, and then sends nothing more: the air must not change after a "Cancelar".
   async function checkBothFormsThenSend(whatThePressAsksFor: WhatThePressAsksFor): Promise<void> {
     const areBothFormsValid = await checkBothForms();
-    if (!areBothFormsValid) {
+    if (!areBothFormsValid || hasEditorFinishedWithThisItem()) {
       return;
     }
 
-    if (itemAsItWasWhenOpened === null) {
+    const itemsTheServerMayStore = itemsTheServerMayStoreRef.current;
+    if (itemAsItWasWhenOpened === null || itemsTheServerMayStore === null) {
       const wasNewItemAccepted = await createTheNewItem();
       if (wasNewItemAccepted) {
         askToBeClosedOnce();
@@ -248,19 +292,13 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
       return;
     }
 
-    const changedFields = findChangedFieldsOfStoredItem(itemAsItWasWhenOpened);
-    const wasSaveAcceptedOrNotNeeded = await saveChangesToStoredItem(
-      itemAsItWasWhenOpened,
-      changedFields,
-    );
-    if (!wasSaveAcceptedOrNotNeeded) {
+    const wasSaveAcceptedOrNotNeeded = await saveChangesToStoredItem(itemsTheServerMayStore);
+    if (!wasSaveAcceptedOrNotNeeded || hasEditorFinishedWithThisItem()) {
       return;
     }
     if (whatThePressAsksFor === 'saveItemAndUpdateOnAir') {
-      const wasOnAirUpdateAcceptedOrNotNeeded = await updateInstanceOfItemOnAir(
-        itemAsItWasWhenOpened,
-        changedFields,
-      );
+      const wasOnAirUpdateAcceptedOrNotNeeded =
+        await updateInstanceOfItemOnAir(itemAsItWasWhenOpened);
       if (!wasOnAirUpdateAcceptedOrNotNeeded) {
         return;
       }

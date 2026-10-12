@@ -19,6 +19,9 @@
  *     through untouched; "Atualizar" never sends them.
  *   - A graphic taken from elsewhere moves an untouched panel to that graphic, and does
  *     not move a panel whose operator chose a graphic or changed a field.
+ *   - When the graphic an untouched panel went to leaves the air, the panel stays on it
+ *     with the values that were on air, so "Colocar no ar" puts the same thing back; a
+ *     take fired after that still moves the panel.
  *   - Going to another graphic and back starts from a fresh form: the unsent edit is gone.
  *   - With no graphics on the server the panel says so and draws no form and no buttons.
  *
@@ -52,6 +55,7 @@ import { QuickEditPanel } from './QuickEditPanel';
 // and the interview's lower third at 10:00.
 const quarterToTen = '2026-10-10T12:45:00.000Z';
 const tenOClock = '2026-10-10T13:00:00.000Z';
+const quarterPastTen = '2026-10-10T13:15:00.000Z';
 
 const graphicDropdownName = 'Gráfico a editar';
 
@@ -282,6 +286,80 @@ describe('"Edição rápida" when another graphic goes on air', () => {
       screen.getByLabelText('Nome da sessão'),
       'coming back to a graphic must start its form again from the defaults',
     ).toHaveValue('Enduro de Resistência');
+  });
+});
+
+describe('"Edição rápida" when the graphic it went to by itself leaves the air', () => {
+  it('stays on that graphic with the values that were on air, although an earlier take is still on air', async () => {
+    // Arrange: the race clock on air since 9:45 and the lower third since 10:00. The
+    // panel opened on the lower third by itself; the operator has touched nothing.
+    const raceClockOnAir = buildRaceClockInstanceOnTheClockLayer(quarterToTen);
+    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
+      raceClockOnAir,
+      buildLowerThirdOfCar42OnAirSinceTenOClock(),
+    ]);
+
+    // Act: the lower third leaves the air (someone pressed "Limpar" on its layer, or its
+    // time ran out); the race clock stays. Then the operator presses "Colocar no ar".
+    fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [raceClockOnAir] });
+    const graphicShownAfterTheLowerThirdLeft = screen.getByRole('combobox', {
+      name: graphicDropdownName,
+    }).textContent;
+    const updateButtonAfterTheLowerThirdLeft = screen.queryByRole('button', { name: 'Atualizar' });
+    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
+
+    // Assert: the panel did not jump to the race clock, "Atualizar" is gone, and the take
+    // puts back exactly the lower third that was on air, not a race clock and not the
+    // lower third's defaults.
+    expect(
+      graphicShownAfterTheLowerThirdLeft,
+      'the panel must stay on the graphic that just left the air',
+    ).toBe('Tarja de entrevista');
+    expect(
+      updateButtonAfterTheLowerThirdLeft,
+      'there is nothing to update once the graphic is off air',
+    ).toBeNull();
+    expect(
+      fakeServer.listCommandsReceived()[0],
+      '"Colocar no ar" must put back the lower third as it was on air',
+    ).toEqual({
+      type: 'takeGraphic',
+      graphicId: 'lower-third-fixture',
+      layerId: 'lower-third',
+      data: buildLowerThirdDataForCar42(),
+      takeTimeFieldKeys: [],
+    });
+    fakeServer.acceptLastCommand();
+  });
+
+  it('still moves to a graphic taken after that', () => {
+    // Arrange: only the lower third on air since 10:00, the panel on it and untouched,
+    // and then everything cleared: the panel is still on the lower third.
+    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
+      buildLowerThirdOfCar42OnAirSinceTenOClock(),
+    ]);
+    fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [] });
+    const graphicShownWithNothingOnAir = screen.getByRole('combobox', {
+      name: graphicDropdownName,
+    }).textContent;
+
+    // Act: the race clock is fired from the rundown at 10:15.
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [buildRaceClockInstanceOnTheClockLayer(quarterPastTen)],
+    });
+
+    // Assert: the panel stayed on the lower third while nothing was on air (it did not
+    // jump to the first graphic listed), and followed the new take when it came.
+    expect(
+      graphicShownWithNothingOnAir,
+      'with nothing left on air the panel must stay on the graphic it was showing',
+    ).toBe('Tarja de entrevista');
+    expect(
+      screen.getByRole('combobox', { name: graphicDropdownName }),
+      'an untouched panel must still follow a take fired later',
+    ).toHaveTextContent('Relógio de prova');
   });
 });
 

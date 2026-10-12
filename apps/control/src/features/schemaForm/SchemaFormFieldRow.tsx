@@ -11,9 +11,10 @@ import {
 } from '@/components/ui/select';
 import { ptBR } from '@/i18n/ptBR';
 
+import { clearBlankOptionalTypedFormValue } from './fieldValueConversion';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormValueControl } from './SchemaFormValueControl';
-import type { SchemaFormFieldValue, SchemaFormValues } from './schemaFormValues';
+import type { SchemaFormValues } from './schemaFormValues';
 
 // The kinds the selector lists, in the order the operator reads them.
 const kindsTheSelectorOffers = ['literal', 'takeTime'] as const;
@@ -33,10 +34,12 @@ function joinIdsOfDescribingTexts(idsOrNothing: Array<string | undefined>): stri
  * Two things here decide what the form sends, so they are spelled out:
  * - An optional typed field (text, number, mm:ss, date) that is emptied becomes cleared
  *   (null) at once: for those, blank and cleared are one state, and typing again is the
- *   way back. A dropdown or a switch can only be cleared with "limpar"; choosing an
- *   option or flipping the switch is the way back.
+ *   way back. The form is filled by the same rule (clearBlankOptionalTypedFormValue), so
+ *   a field emptied again reads as untouched. A dropdown or a switch can only be cleared
+ *   with "limpar"; choosing an option or flipping the switch is the way back.
  * - While the kind is "filled by the server", the control is replaced by a note and the
- *   typed value is kept underneath, so switching back shows it again.
+ *   typed value is kept underneath, so switching back shows it again. The note is read
+ *   out with the kind selector, the one control left in the row.
  */
 export function SchemaFormFieldRow(props: {
   form: UseFormReturn<SchemaFormValues>;
@@ -47,6 +50,7 @@ export function SchemaFormFieldRow(props: {
 }) {
   const { form, field, controlId, isDisabled } = props;
   const kindSelectorId = `${controlId}-kind`;
+  const takeTimeNoteId = `${controlId}-take-time-note`;
   const helpTextId = `${controlId}-help`;
   const errorMessageId = `${controlId}-error`;
 
@@ -58,18 +62,14 @@ export function SchemaFormFieldRow(props: {
     field.help === undefined ? undefined : helpTextId,
     hasError ? errorMessageId : undefined,
   ]);
-  const isTypedControl = field.control !== 'select' && field.control !== 'switch';
-
-  /** Stores what a control reports; an optional typed field that is emptied is cleared. */
-  function chooseValueToStore(formValue: SchemaFormFieldValue): SchemaFormFieldValue {
-    const isEmptiedOptionalTypedField = formValue === '' && isTypedControl && !field.isRequired;
-    return isEmptiedOptionalTypedField ? null : formValue;
-  }
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-1">
-        <Label htmlFor={controlId}>{field.label}</Label>
+        {/* While the server fills the field there is no control for the value, so the
+            label points at nothing: the note is not a control, and the kind selector
+            already has its own name ("Como preencher …"). */}
+        <Label htmlFor={isFilledByTheServer ? undefined : controlId}>{field.label}</Label>
         {field.isRequired && (
           <span
             aria-hidden="true"
@@ -96,6 +96,7 @@ export function SchemaFormFieldRow(props: {
                 size="sm"
                 className="w-full"
                 aria-label={ptBR.schemaForm.kindSelectorLabel(field.label)}
+                aria-describedby={isFilledByTheServer ? takeTimeNoteId : undefined}
               >
                 <SelectValue />
               </SelectTrigger>
@@ -112,7 +113,7 @@ export function SchemaFormFieldRow(props: {
       )}
 
       {isFilledByTheServer ? (
-        <p id={controlId} className="text-sm text-muted-foreground">
+        <p id={takeTimeNoteId} className="text-sm text-muted-foreground">
           {ptBR.schemaForm.takeTimeNote}
         </p>
       ) : (
@@ -127,7 +128,7 @@ export function SchemaFormFieldRow(props: {
                   controlId={controlId}
                   formValue={valueField.value ?? null}
                   onFormValueChange={(formValue) =>
-                    valueField.onChange(chooseValueToStore(formValue))
+                    valueField.onChange(clearBlankOptionalTypedFormValue(field, formValue))
                   }
                   onBlur={valueField.onBlur}
                   focusRef={valueField.ref}
