@@ -3,9 +3,11 @@
  * change only text and data-flag-state attributes in place. Nothing here rebuilds
  * elements, so an update or a clock frame touches only what really changed.
  */
+// The clock's sum is shared with the server, which must find the same time on screen.
+// Only the `/clock` entry is imported: it carries no Zod and nothing else of shared.
+import { computeClockTimeMsAtWallClock } from '@bajaovrlay/shared/clock';
 import { html, type TemplateResult } from 'lit';
 
-import { computeClockTimeMsAtWallClock } from './clockExtrapolation.js';
 import { formatClockTimeAsHoursMinutesSeconds } from './clockFormatting.js';
 import { ptBR } from './ptBR.js';
 import { hideIncomingFlagLayer, type RaceClockAnimatedElements } from './raceClockAnimations.js';

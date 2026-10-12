@@ -144,6 +144,7 @@ const appliedCommandScenarios: Array<{
       layerId: 'clock',
       data: raceClockData,
       target: 'program',
+      takeTimeFieldKeys: [],
     },
     expectedInstancesAfter: [
       buildExpectedNewInstance({
@@ -164,6 +165,7 @@ const appliedCommandScenarios: Array<{
       layerId: 'clock',
       data: { ...raceClockData, state: 'yellow' },
       target: 'program',
+      takeTimeFieldKeys: [],
     },
     expectedInstancesAfter: [
       buildExpectedNewInstance({
@@ -184,6 +186,7 @@ const appliedCommandScenarios: Array<{
       layerId: 'lower-third',
       data: teamLowerThirdData,
       target: 'program',
+      takeTimeFieldKeys: [],
     },
     expectedInstancesAfter: [
       buildRaceClockOnAir(),
@@ -205,6 +208,7 @@ const appliedCommandScenarios: Array<{
       layerId: 'clock',
       data: raceClockData,
       target: 'preview',
+      takeTimeFieldKeys: [],
     },
     expectedInstancesAfter: [
       buildRaceClockOnAir(),
@@ -305,6 +309,7 @@ const refusedCommandScenarios: Array<{
       layerId: 'placar',
       data: raceClockData,
       target: 'program',
+      takeTimeFieldKeys: [],
     },
     expectedError: { code: 'LAYER_NOT_FOUND', message: 'A camada "placar" não existe.' },
   },
@@ -317,6 +322,7 @@ const refusedCommandScenarios: Array<{
       layerId: 'fullscreen',
       data: {},
       target: 'program',
+      takeTimeFieldKeys: [],
     },
     expectedError: {
       code: 'GRAPHIC_NOT_FOUND',
@@ -366,6 +372,7 @@ describe('reduceCommand purity', () => {
         layerId: 'clock',
         data: raceClockData,
         target: 'program',
+        takeTimeFieldKeys: [],
       },
       contextOfTheTake,
     );

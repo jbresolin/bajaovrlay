@@ -9,9 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { buildErrorAttributesForControl, FormFieldRow } from '@/features/playout/FormFieldRow';
 import { ptBR } from '@/i18n/ptBR';
 
+import { buildErrorAttributesForControl, FormFieldRow } from './FormFieldRow';
 import { chipClassForEachItemColor } from './itemColorChip';
 import type { ItemEditorFormValues } from './itemEditorForm';
 

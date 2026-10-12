@@ -3,10 +3,20 @@
 // Schema for the body of GET /health, and the type it validates.
 export { type HealthResponse, HealthResponseSchema } from './health/healthResponse.js';
 
+// The race clock's arithmetic: one reading in, the time the clock shows at a moment out,
+// and the whole second it shows for that time. Graphics import the same three from
+// `@bajaovrlay/shared/clock`, which carries no Zod.
+export {
+  type ClockReading,
+  computeClockTimeMsAtWallClock,
+  countWholeSecondsClockShows,
+} from './clock/index.js';
+
 // The `layers` slice: fixed screen slots, and how a layer swaps one graphic for the next.
 export { type Layer, LayerReplacePolicySchema, LayerSchema } from './slices/layer.js';
 // The `graphics` slice: registered OGraf packages, the manifest fields the server reads
-// (including the data `schema`), and our `v_baja` vendor field (default layer, category).
+// (including the data `schema`), and our `v_baja` vendor field (default layer, category,
+// update rule).
 export {
   type BajaVendorManifestFields,
   BajaVendorManifestFieldsSchema,

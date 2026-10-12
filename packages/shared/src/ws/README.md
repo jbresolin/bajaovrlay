@@ -120,7 +120,10 @@ not answer the previous ping.
 ## command (update in place)
 
 `data` carries only the fields that change; the instance keeps its id, so the graphic
-stays on screen.
+stays on screen. A field sent as `null` is taken off air. Both this command and
+`takeGraphic` accept an optional `takeTimeFieldKeys` (a list of field names, such as
+`["referenceWallClockMs"]`): the server writes the command's own moment, in wall-clock
+milliseconds, into each of them, so a client never sends its own clock.
 
 ```json
 {

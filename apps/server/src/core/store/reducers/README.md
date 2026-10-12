@@ -4,7 +4,7 @@ One pure reducer per command: current slices + a valid command + a context (ids 
 made by the store) in, new slices or a pt-BR refusal out. No I/O, no clock, no random ids.
 Start reading at `reduceCommand.ts`, the switch that sends each command to its file.
 
-- On-air commands: `takeGraphic.ts`, `clearLayer.ts`, `clearAll.ts`.
+- On-air commands: `takeGraphic.ts`, `updateInstanceData.ts` (runs `../updateRules/`), `clearLayer.ts`, `clearAll.ts`.
 - Rundown and item commands, chosen by `reduceItemOrRundownCommand.ts`: `createItem.ts`,
   `updateItemFields.ts`, `deleteItem.ts`, `reorderItems.ts`, `moveCursor.ts`, `takeItem.ts`
   (calls `takeGraphic.ts`), `takeNext.ts` (calls `takeItem.ts`).

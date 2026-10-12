@@ -6,7 +6,7 @@ export const ptBR = {
   app: {
     title: 'BajaOvrLay',
     rundownAreaTitle: 'Rundown',
-    playoutAreaTitle: 'Programa e relógio',
+    playoutAreaTitle: 'Programa e edição rápida',
     layersAreaTitle: 'Camadas',
   },
   serverHealth: {
@@ -46,50 +46,31 @@ export const ptBR = {
     // The tooltip on a "Falhou" badge when the renderer gave no detail of its own.
     failedWithoutDetail: 'O renderizador não informou o motivo da falha.',
   },
+  // Putting graphics on air and taking them off (features/playout).
   playout: {
-    raceClockPanelTitle: 'Relógio de prova',
-    fields: {
-      sessionName: 'Nome da sessão',
-      state: 'Bandeira',
-      clockMode: 'Modo do relógio',
-      running: 'Relógio correndo',
-      referenceTime: 'Tempo de referência (mm:ss)',
-      lapsCompletedByLeader: 'Voltas do líder (opcional)',
-    },
-    // What the session name field opens with. It repeats the `default` the race clock's
-    // manifest declares for `sessionName`, and goes on air if the operator leaves it.
-    defaultSessionName: 'Enduro de Resistência',
-    // The same six labels the race clock's manifest gives its `state` values.
-    flagStateLabels: {
-      pre: 'Pré-largada',
-      green: 'Verde',
-      yellow: 'Amarela',
-      red: 'Vermelha',
-      checkered: 'Quadriculada',
-      finished: 'Encerrada',
-    },
-    clockModeLabels: {
-      elapsed: 'Tempo decorrido',
-      remaining: 'Tempo restante',
-    },
-    fieldErrors: {
-      sessionNameMissing: 'Informe o nome da sessão.',
-      stateMissing: 'Escolha a bandeira.',
-      clockModeMissing: 'Escolha o modo do relógio.',
-      runningMissing: 'Diga se o relógio está correndo ou parado.',
-      referenceTimeMissing: 'Informe o tempo de referência.',
-      referenceTimeInvalid: 'Use minutos e segundos no formato mm:ss, por exemplo 12:30.',
-      lapsCompletedByLeaderInvalid: 'Informe as voltas como um número inteiro ou deixe em branco.',
-      // "Atualizar" changes fields of the clock on air; it cannot take one away.
-      lapsCannotBeRemovedByUpdate:
-        '"Atualizar" não tira as voltas do ar. Use "Colocar no ar" para isso.',
+    // "Edição rápida" (features/playout/QuickEditPanel.tsx): the centre panel that puts
+    // any graphic on air and changes it in place. Field labels come from the manifest.
+    quickEdit: {
+      panelTitle: 'Edição rápida',
+      // Not just "Gráfico": the item editor has a dropdown of that name on the same page.
+      graphicLabel: 'Gráfico a editar',
+      noGraphicsOnServer: 'O servidor não enviou nenhum gráfico.',
+      // Shown above the form while the chosen graphic is on air more than once (on
+      // different layers): which one the form shows and "Atualizar" changes.
+      followingMostRecentInstance: (
+        graphicName: string,
+        numberOfLayersItIsOn: number,
+        layerName: string,
+      ) =>
+        `"${graphicName}" está no ar em ${numberOfLayersItIsOn} camadas. Este painel acompanha a entrada mais recente, na camada ${layerName}.`,
+      // Shown above the form while it could not show everything that is on air. The
+      // server checks the whole result of an "Atualizar", so it refuses one that leaves
+      // a required field missing on air; only "Colocar no ar" gets out of that.
+      fieldsOnAirThatCouldNotBeRead: (fieldLabels: string) =>
+        `Estes campos do que está no ar não puderam ser lidos e aparecem com o valor inicial: ${fieldLabels}. "Atualizar" envia só o que você alterar, e o servidor recusa enquanto faltar um campo obrigatório no ar; "Colocar no ar" envia o formulário inteiro e substitui o que está no ar.`,
     },
     takeButton: 'Colocar no ar',
     updateButton: 'Atualizar',
-    // Shown above the form while more than one race clock is on air (on different
-    // layers): which one the form shows and "Atualizar" changes.
-    followingMostRecentRaceClock: (numberOfRaceClocksOnAir: number, layerName: string) =>
-      `Há ${numberOfRaceClocksOnAir} relógios no ar. Este painel acompanha o mais recente, na camada ${layerName}.`,
     clearAllButton: 'Limpar tudo',
     clearAllConfirmButton: 'Confirmar: limpar tudo',
   },
@@ -132,17 +113,76 @@ export const ptBR = {
       colorMissing: 'Escolha a cor.',
       autoOutAfterSecondsInvalid:
         'Informe os segundos como um número inteiro maior que zero ou deixe em branco.',
-      lapsCannotBeRemoved:
-        'As voltas de um item salvo não podem ser apagadas. Informe um número ou exclua o item e crie outro.',
     },
     graphicAndLayerCannotChange:
       'O gráfico e a camada de um item salvo não mudam. Para trocá-los, exclua o item e crie outro.',
-    genericEditorComesLater:
-      'Editor genérico chega em BAJAOVRLAY-14. Até lá, os campos deste gráfico não podem ser preenchidos aqui.',
+    // Shown in place of the graphic's fields when a saved item names a graphic the
+    // server no longer has, so there is no manifest to generate the fields from.
+    graphicOfItemNotRegistered:
+      'O gráfico deste item não está registrado no servidor, então os campos dele não aparecem aqui. Rótulo, cor, observações e saída automática ainda podem ser alterados.',
     fieldsThatCouldNotBeRead: (fieldLabels: string) =>
       `Estes campos do item não puderam ser lidos e aparecem com o valor padrão; salvar grava o que está no formulário: ${fieldLabels}.`,
     saveButton: 'Salvar item',
+    // Offered only while the saved item being edited is on air: saves the item and
+    // changes its instance on the program output without a new take.
+    updateOnAirButton: 'Atualizar no ar',
     cancelButton: 'Cancelar',
+  },
+  // The form generated from a graphic's manifest (features/schemaForm). Field labels,
+  // help texts and dropdown options come from the manifest itself; only the words the
+  // form adds around them are here.
+  schemaForm: {
+    // Shown next to the label of a field the manifest requires.
+    requiredMarker: '*',
+    requiredMarkerHint: 'Campo obrigatório',
+    clearFieldButton: 'limpar',
+    // The clear button's accessible name: a form has one per optional field.
+    clearFieldButtonLabel: (fieldLabel: string) => `Limpar ${fieldLabel}`,
+    // Shown under an optional field that has no value at all.
+    clearedFieldNote: 'Sem valor',
+    nothingChosenPlaceholder: 'Escolha…',
+    durationPlaceholder: 'mm:ss',
+    // The small dropdown that says where a field's value comes from.
+    kindSelectorLabel: (fieldLabel: string) => `Como preencher ${fieldLabel}`,
+    kindLabels: {
+      literal: 'Valor digitado',
+      takeTime: 'Momento da entrada no ar',
+    },
+    takeTimeNote: 'Preenchido pelo servidor no momento em que entra no ar.',
+    unsupportedPropertyNote:
+      'O formulário ainda não sabe editar este campo. O valor abaixo é só para leitura e segue como está.',
+    unsupportedPropertyWithoutValueNote:
+      'O formulário ainda não sabe editar este campo, e ele está sem valor.',
+    unsupportedWholeDataLabel: 'Dados do gráfico',
+    unsupportedWholeDataNote:
+      'O formulário ainda não sabe editar os dados deste gráfico. O que aparece abaixo é só para leitura e segue como está.',
+    fieldErrors: {
+      required: (fieldLabel: string) => `O campo "${fieldLabel}" é obrigatório.`,
+      notText: (fieldLabel: string) => `O campo "${fieldLabel}" precisa ser um texto.`,
+      tooShort: (fieldLabel: string, minimumLength: number) =>
+        minimumLength === 1
+          ? `O campo "${fieldLabel}" precisa ter pelo menos 1 caractere.`
+          : `O campo "${fieldLabel}" precisa ter pelo menos ${minimumLength} caracteres.`,
+      tooLong: (fieldLabel: string, maximumLength: number) =>
+        maximumLength === 1
+          ? `O campo "${fieldLabel}" pode ter no máximo 1 caractere.`
+          : `O campo "${fieldLabel}" pode ter no máximo ${maximumLength} caracteres.`,
+      notOneOfTheOptions: (fieldLabel: string) => `Escolha uma das opções de "${fieldLabel}".`,
+      notADateAndTime: (fieldLabel: string) =>
+        `O campo "${fieldLabel}" precisa de uma data e hora válidas.`,
+      notANumber: (fieldLabel: string) => `O campo "${fieldLabel}" precisa ser um número.`,
+      notAWholeNumber: (fieldLabel: string) =>
+        `O campo "${fieldLabel}" precisa ser um número inteiro.`,
+      // `limit` arrives already written for reading: "0", "1,5" or, for a time, "0:00".
+      belowMinimum: (fieldLabel: string, limit: string) =>
+        `O campo "${fieldLabel}" não pode ser menor que ${limit}.`,
+      aboveMaximum: (fieldLabel: string, limit: string) =>
+        `O campo "${fieldLabel}" não pode ser maior que ${limit}.`,
+      notMinutesAndSeconds: (fieldLabel: string) =>
+        `Use minutos e segundos no formato mm:ss em "${fieldLabel}", por exemplo 12:30.`,
+      notOnOrOff: (fieldLabel: string) =>
+        `O campo "${fieldLabel}" precisa estar ligado ou desligado.`,
+    },
   },
   // The rundown column (features/rundown): the list of prepared items and its buttons.
   rundown: {

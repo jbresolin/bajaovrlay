@@ -20,7 +20,7 @@ const leftArrowKey = 'ArrowLeft';
  * João's ruling (gate 2 of BAJAOVRLAY-13): Space is ALWAYS "take next", also when a
  * mouse click left the focus on a button. The key takes and the button is not pressed.
  * The keys are left alone only where the operator is plainly doing something else:
- * typing in a field, on a dropdown or on the "Relógio correndo" switch (there Space
+ * typing in a field, on a dropdown or on a switch of a generated form (there Space
  * opens, picks or flips), and while a rundown row is being dragged from the keyboard
  * (the drag uses the key first). What could go wrong: with the focus on any button of
  * the page, "Salvar item" included, Space no longer presses it; Enter still does.

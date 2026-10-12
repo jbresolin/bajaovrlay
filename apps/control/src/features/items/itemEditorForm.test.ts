@@ -17,9 +17,9 @@
  *   - An existing item fills the form with what it holds, its delay shown in seconds.
  *
  * What these tests deliberately do not cover:
- *   - The race clock's own fields, which keep the rules of the take panel
- *     (features/playout/raceClockTakeForm.test.ts).
- *   - The commands built from the form (itemCommandsFromForm.test.ts) and drawing the
+ *   - The fields of the chosen graphic, which are generated from its manifest and keep
+ *     their own rules (features/schemaForm/checkSchemaFormValues.test.ts).
+ *   - The commands built from the form (itemCommandsFromEditor.test.ts) and drawing the
  *     form (ItemEditorPanel.test.tsx).
  */
 import { describe, expect, it } from 'vitest';
@@ -32,8 +32,8 @@ import {
   type ItemEditorFormValues,
 } from './itemEditorForm';
 import {
-  buildDriverLowerThirdItem,
   buildEnduranceStartClockItem,
+  buildInterviewLowerThirdItem,
 } from './itemsLikeTheEditorSaves.testSupport';
 
 /** The form as an operator fills it for the podium clock, off air by itself after 30 s. */
@@ -230,7 +230,7 @@ describe('buildItemEditorFormValuesFromItem', () => {
 
   it('shows an auto-out of 8 000 ms as 8 seconds', () => {
     // Arrange: the lower third of team 42, which leaves by itself after 8 000 ms.
-    const item = buildDriverLowerThirdItem();
+    const item = buildInterviewLowerThirdItem();
 
     // Act: build the form values from it.
     const formValues = buildItemEditorFormValuesFromItem(item);

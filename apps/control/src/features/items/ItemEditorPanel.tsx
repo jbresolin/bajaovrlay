@@ -1,4 +1,4 @@
-import type { Item } from '@bajaovrlay/shared';
+import type { Command, Item, ItemFields } from '@bajaovrlay/shared';
 import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
@@ -6,20 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
-import { RaceClockFormFields } from '@/features/playout/RaceClockFormFields';
-import {
-  defaultRaceClockTakeFormValues,
-  type RaceClockTakeFormValues,
-} from '@/features/playout/raceClockTakeForm';
-import { resolveRaceClockTakeForm } from '@/features/playout/raceClockTakeFormResolver';
 import { ptBR } from '@/i18n/ptBR';
-import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
+import {
+  useReadServerStateNow,
+  useSendCommand,
+  useServerState,
+} from '@/state/ControlPageStateProvider';
 
 import {
   buildCreateItemCommand,
+  buildUpdateInstanceDataCommandFromChangedFields,
   buildUpdateItemFieldsCommand,
-  isGraphicTheRaceClock,
-} from './itemCommandsFromForm';
+} from './itemCommandsFromEditor';
 import {
   buildItemEditorFormValuesForNewItem,
   buildItemEditorFormValuesFromItem,
@@ -27,10 +25,16 @@ import {
 } from './itemEditorForm';
 import { ItemEditorFormFields } from './ItemEditorFormFields';
 import { resolveItemEditorForm } from './itemEditorFormResolver';
+import { ItemGraphicFieldsForm, type ItemGraphicFieldsFormHandle } from './ItemGraphicFieldsForm';
+import { findInstanceOfItemOnProgram } from './itemInstanceOnAir';
 import {
-  isFormBlankingLapsTheItemHas,
-  readRaceClockFormValuesFromItemFields,
-} from './raceClockItemFields';
+  type AnswerToSave,
+  type ItemsTheServerMayStore,
+  joinSavesOfOneFormIntoOne,
+  listEveryItemTheServerMayStore,
+  recordAnswerToSave,
+} from './itemsTheServerMayStore';
+import { useAskToBeClosedOnce } from './useAskToBeClosedOnce';
 
 /** What the rundown gives the panel. */
 export type ItemEditorPanelProps = {
@@ -42,9 +46,8 @@ export type ItemEditorPanelProps = {
   onClose: () => void;
 };
 
-// The race clock fields are drawn by the take panel too. This prefix keeps the ids of
-// this panel's copy apart from the take panel's, which is on the page at the same time.
-const raceClockControlIdPrefix = 'item-editor-race-clock';
+/** What a press asks for: "Salvar item", or "Atualizar no ar" (save, then change the air). */
+type WhatThePressAsksFor = 'saveItem' | 'saveItemAndUpdateOnAir';
 
 /**
  * The item editor: prepares a new item (`createItem`) or changes a stored one
@@ -62,17 +65,18 @@ export function ItemEditorPanel(props: ItemEditorPanelProps) {
 
 /**
  * The editor for one item, from the moment it is opened until it is closed. It holds
- * two react-hook-form forms: the fields every item has, and the race clock's fields,
- * which are the take panel's own component and rules, reused. Both are checked at every
- * press of "Salvar item", so every wrong field shows its message at once.
- *
- * Hand-written for the race clock; BAJAOVRLAY-14 generates the fields of every graphic.
+ * two react-hook-form forms: the fields every item has, and the fields of the chosen
+ * graphic, generated from its manifest (features/schemaForm). Both are checked at every
+ * press of a save button, so every wrong field shows its message at once.
  */
 function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
-  const { rundownId, onClose } = props;
+  const { rundownId } = props;
   const graphics = useServerState((state) => state.graphics);
   const layers = useServerState((state) => state.layers);
+  const instances = useServerState((state) => state.instances);
+  const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
+  const { askToBeClosedOnce, hasEditorFinishedWithThisItem } = useAskToBeClosedOnce(props.onClose);
 
   // The item as it was when the panel opened. Kept on purpose, and never replaced by a
   // newer copy from the server: "what changed" is judged against the values the form
@@ -80,15 +84,19 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // did not touch, is not sent back with its old value.
   const [itemAsItWasWhenOpened] = useState(props.itemBeingEdited);
   const isEditingStoredItem = itemAsItWasWhenOpened !== null;
-  const [raceClockValuesReadFromItem] = useState(() => {
-    const isStoredRaceClockItem =
-      itemAsItWasWhenOpened !== null && isGraphicTheRaceClock(itemAsItWasWhenOpened.graphicId);
-    return isStoredRaceClockItem
-      ? readRaceClockFormValuesFromItemFields(itemAsItWasWhenOpened.fields)
-      : undefined;
-  });
+  // What the server may store for the item as far as this editor knows: the item as
+  // opened plus every save this editor had accepted since, and one more possibility per
+  // save the server never answered (itemsTheServerMayStore.ts). A save is compared with
+  // all of them, so a field put back after an accepted or an unanswered save is saved
+  // again. It is a ref because only a press reads it; nothing drawn depends on it. Null
+  // for a new item, which is sent whole.
+  const itemsTheServerMayStoreRef = useRef<ItemsTheServerMayStore | null>(
+    itemAsItWasWhenOpened === null
+      ? null
+      : { itemAfterTheAnsweredSaves: itemAsItWasWhenOpened, itemsIfAnUnansweredSaveWasApplied: [] },
+  );
 
-  // Until "Salvar item" is pressed for the first time nothing is checked while typing.
+  // Until a save button is pressed for the first time nothing is checked while typing.
   // From that press on, each field is checked again as it changes, so a message goes away
   // the moment its field is corrected. react-hook-form switches this on by itself only
   // for its own `handleSubmit`; the press below checks with `trigger`, so the panel says
@@ -105,21 +113,29 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
     resolver: resolveItemEditorForm,
     mode: whenFieldsAreChecked,
   });
-  const raceClockForm = useForm<RaceClockTakeFormValues>({
-    defaultValues: raceClockValuesReadFromItem?.formValues ?? defaultRaceClockTakeFormValues,
-    resolver: resolveRaceClockTakeForm,
-    mode: whenFieldsAreChecked,
-  });
   const chosenGraphicId = useWatch({ control: itemForm.control, name: 'graphicId' });
-  const isGraphicChosen = chosenGraphicId !== '';
-  const isRaceClockChosen = isGraphicTheRaceClock(chosenGraphicId);
-  // The button is off while a press is being checked and its command waits for the
+  const chosenGraphic = graphics.find((graphic) => graphic.id === chosenGraphicId);
+
+  // The second form lives in ItemGraphicFieldsForm, drawn below once the page knows the
+  // chosen graphic. This is how the panel reaches it at a press: the form puts its handle
+  // here while it is on the page. Null means there is no such form right now (no graphic
+  // chosen yet, or a stored item whose graphic the server no longer has), and then the
+  // item has no fields of a graphic to check or to send.
+  const graphicFieldsFormHandleRef = useRef<ItemGraphicFieldsFormHandle | null>(null);
+
+  // The buttons are off while a press is being checked and its commands wait for the
   // server's answer, so an impatient second click cannot create the item twice.
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
   // The page remembers the last refused command until some command succeeds. Without
-  // this, an editor opened again after a refused save would greet the operator with the
-  // refusal of a save it never made.
-  const [hasSentASaveInThisOpening, setHasSentASaveInThisOpening] = useState(false);
+  // this list, an editor opened again after a refused save would greet the operator with
+  // the refusal of a save it never made; and a refused "Atualizar" of "Edição rápida"
+  // would appear here although this editor never sent an on-air update.
+  const [commandTypesSentInThisOpening, setCommandTypesSentInThisOpening] = useState<
+    Command['type'][]
+  >([]);
+  function rememberCommandTypeWasSent(commandType: Command['type']): void {
+    setCommandTypesSentInThisOpening((typesSentSoFar) => [...typesSentSoFar, commandType]);
+  }
 
   // A new item starts on the first graphic the server has, on that graphic's default
   // layer. When the page already knows the graphics (the usual case: "+ Item" pressed
@@ -140,113 +156,176 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
     setItemFormValue('layerId', firstGraphic.defaultLayerId);
   }, [graphics, isEditingStoredItem, getItemFormValues, setItemFormValue]);
 
-  // The panel asks to be closed at most once, and never after it left the page. A save
-  // can still be waiting for the server when the operator presses "Cancelar" or opens
-  // another item; without this, the late "accepted" would call `onClose` a second time
-  // and could close an editor the operator has opened since.
-  const hasFinishedWithThisItemRef = useRef(false);
-  useEffect(() => {
-    hasFinishedWithThisItemRef.current = false;
-    return () => {
-      hasFinishedWithThisItemRef.current = true;
-    };
-  }, []);
-  function askToBeClosedOnce(): void {
-    if (hasFinishedWithThisItemRef.current) {
-      return;
-    }
-    hasFinishedWithThisItemRef.current = true;
-    onClose();
+  // `trigger` checks every field of one form, puts the messages under the wrong ones and
+  // answers whether all passed. The item part goes first. Whatever its result, the
+  // graphic's fields are checked too when they are on screen, so one press shows every
+  // problem; only when both passed is anything sent.
+  async function checkBothForms(): Promise<boolean> {
+    setHasCheckedTheFormsOnce(true);
+
+    const isItemPartValid = await itemForm.trigger(undefined, { shouldFocus: true });
+    // The typing cursor goes to the first wrong field from the top. So the graphic's
+    // part may take the focus only when the item part, drawn above it, had nothing wrong.
+    const graphicFieldsForm = graphicFieldsFormHandleRef.current;
+    const isGraphicPartValid =
+      graphicFieldsForm === null
+        ? true
+        : await graphicFieldsForm.checkFields({ shouldFocusFirstWrongField: isItemPartValid });
+    return isItemPartValid && isGraphicPartValid;
   }
 
-  // Runs only when every field of both forms passed its rule. `raceClockFormValues` is
-  // undefined for a graphic the editor has no form for. The moment of the save plays no
-  // part: a clock's reference moment is stamped by the server when the item is taken.
-  async function sendFormsAsCommand(
-    itemFormValues: ItemEditorFormValues,
-    raceClockFormValues: RaceClockTakeFormValues | undefined,
-  ): Promise<void> {
-    if (itemAsItWasWhenOpened === null) {
-      const createCommand = buildCreateItemCommand({
-        rundownId,
-        itemFormValues,
-        raceClockFormValues,
-      });
-      setHasSentASaveInThisOpening(true);
-      const wasAcceptedByTheServer = await sendCommand(createCommand);
-      if (wasAcceptedByTheServer) {
+  // Sends the whole of a new item. Answers whether the server accepted it. The moment of
+  // the save plays no part: a wall-clock field is stamped by the server at the take.
+  async function createTheNewItem(): Promise<boolean> {
+    const graphicFieldsForm = graphicFieldsFormHandleRef.current;
+    const createCommand = buildCreateItemCommand({
+      rundownId,
+      itemFormValues: itemForm.getValues(),
+      fields: graphicFieldsForm === null ? {} : graphicFieldsForm.buildFieldsOfNewItem(),
+    });
+    rememberCommandTypeWasSent('createItem');
+    return sendCommand(createCommand);
+  }
+
+  // The fields of the graphic in which the form differs from what `comparedItem` stores.
+  function findFieldsChangedFrom(comparedItem: Item): ItemFields {
+    const graphicFieldsForm = graphicFieldsFormHandleRef.current;
+    return graphicFieldsForm === null
+      ? {}
+      : graphicFieldsForm.findFieldsChangedFromStoredItem(comparedItem);
+  }
+
+  // How the save just sent ended. "No answer within 5 s" is told apart from a refusal by
+  // the failure the page keeps, read straight after the wait, before any other command
+  // can replace it: a refused save was not applied, an unanswered one may have been.
+  function describeAnswerToSave(wasSaveAccepted: boolean): AnswerToSave {
+    if (wasSaveAccepted) {
+      return 'accepted';
+    }
+    const wasLeftUnanswered = readServerStateNow().lastCommandError?.code === 'COMMAND_TIMED_OUT';
+    return wasLeftUnanswered ? 'leftUnanswered' : 'refused';
+  }
+
+  // Saves every part in which the form differs from any item the server may store.
+  // Answers false only when the server did not accept; when nothing differs there is
+  // nothing to send, and that counts as done. The answer to the save decides what the
+  // next press is compared with.
+  async function saveChangesToStoredItem(
+    itemsTheServerMayStore: ItemsTheServerMayStore,
+  ): Promise<boolean> {
+    const savesAgainstEachItem = listEveryItemTheServerMayStore(itemsTheServerMayStore).map(
+      (itemTheServerMayStore) =>
+        buildUpdateItemFieldsCommand({
+          itemBeingEdited: itemTheServerMayStore,
+          itemFormValues: itemForm.getValues(),
+          changedFields: findFieldsChangedFrom(itemTheServerMayStore),
+        }),
+    );
+    const updateCommand = joinSavesOfOneFormIntoOne(savesAgainstEachItem);
+    if (updateCommand === undefined) {
+      return true;
+    }
+    rememberCommandTypeWasSent('updateItemFields');
+    const wasSaveAccepted = await sendCommand(updateCommand);
+    itemsTheServerMayStoreRef.current = recordAnswerToSave(
+      itemsTheServerMayStore,
+      updateCommand,
+      describeAnswerToSave(wasSaveAccepted),
+    );
+    return wasSaveAccepted;
+  }
+
+  // Puts on the item's instance on air the fields in which the form differs from the item
+  // as it was when the editor opened: this editor has changed nothing on air yet, so that
+  // is still what the air is compared with, whatever has been saved since. Answers false
+  // only when the server refused. Nothing is sent, and that counts as done, when no typed
+  // value differs (a new label is not on air) or when the item left the air while the
+  // save was waiting: the instance is looked up at this moment, not as it was when the
+  // button was drawn.
+  async function updateInstanceOfItemOnAir(itemAsOpened: Item): Promise<boolean> {
+    const instanceOnAirNow = findInstanceOfItemOnProgram(
+      readServerStateNow().instances,
+      itemAsOpened.id,
+    );
+    if (instanceOnAirNow === undefined) {
+      return true;
+    }
+    const updateOnAirCommand = buildUpdateInstanceDataCommandFromChangedFields({
+      instanceId: instanceOnAirNow.id,
+      changedFields: findFieldsChangedFrom(itemAsOpened),
+    });
+    if (updateOnAirCommand === undefined) {
+      return true;
+    }
+    rememberCommandTypeWasSent('updateInstanceData');
+    return sendCommand(updateOnAirCommand);
+  }
+
+  // One press, start to finish. The editor closes only when everything the press sent was
+  // accepted (or there was nothing to send); after a refusal it stays open with the form
+  // as typed and the server's message next to the buttons.
+  //
+  // "Atualizar no ar" sends two commands in a row, the save first: what is on air must
+  // never be ahead of what the item stores, or the next take of the item would undo it.
+  // If the save is accepted and the on-air update is refused, the item is already saved
+  // and the editor stays open. The next press is then compared with what was saved, so it
+  // saves again only what the operator changed since (a field put back included), while
+  // the on-air update, still compared with the item as opened, gets its second try.
+  // After a save the server never answered, the next press is compared both with the item
+  // before that save and with the item after it, since the server may store either.
+  //
+  // "Cancelar" stays on during a press, and the rundown can hand the editor another item.
+  // So the press asks before each command whether the editor has finished with this
+  // item, and then sends nothing more: the air must not change after a "Cancelar".
+  async function checkBothFormsThenSend(whatThePressAsksFor: WhatThePressAsksFor): Promise<void> {
+    const areBothFormsValid = await checkBothForms();
+    if (!areBothFormsValid || hasEditorFinishedWithThisItem()) {
+      return;
+    }
+
+    const itemsTheServerMayStore = itemsTheServerMayStoreRef.current;
+    if (itemAsItWasWhenOpened === null || itemsTheServerMayStore === null) {
+      const wasNewItemAccepted = await createTheNewItem();
+      if (wasNewItemAccepted) {
         askToBeClosedOnce();
       }
       return;
     }
 
-    // The update command cannot remove a field, so erased laps cannot be saved. Saying
-    // so under the field is better than silently keeping the old laps.
-    const isTryingToRemoveLaps =
-      raceClockFormValues !== undefined &&
-      isFormBlankingLapsTheItemHas(itemAsItWasWhenOpened.fields, raceClockFormValues);
-    if (isTryingToRemoveLaps) {
-      raceClockForm.setError('lapsCompletedByLeader', {
-        type: 'validation',
-        message: ptBR.itemEditor.fieldErrors.lapsCannotBeRemoved,
-      });
+    const wasSaveAcceptedOrNotNeeded = await saveChangesToStoredItem(itemsTheServerMayStore);
+    if (!wasSaveAcceptedOrNotNeeded || hasEditorFinishedWithThisItem()) {
       return;
     }
-
-    const updateCommand = buildUpdateItemFieldsCommand({
-      itemBeingEdited: itemAsItWasWhenOpened,
-      itemFormValues,
-      raceClockFormValues,
-    });
-    // Nothing was changed: there is nothing to send, and the operator is done.
-    if (updateCommand === undefined) {
-      askToBeClosedOnce();
-      return;
+    if (whatThePressAsksFor === 'saveItemAndUpdateOnAir') {
+      const wasOnAirUpdateAcceptedOrNotNeeded =
+        await updateInstanceOfItemOnAir(itemAsItWasWhenOpened);
+      if (!wasOnAirUpdateAcceptedOrNotNeeded) {
+        return;
+      }
     }
-    setHasSentASaveInThisOpening(true);
-    const wasAcceptedByTheServer = await sendCommand(updateCommand);
-    if (wasAcceptedByTheServer) {
-      askToBeClosedOnce();
-    }
+    askToBeClosedOnce();
   }
 
-  // `trigger` checks every field of one form, puts the messages under the wrong ones and
-  // answers whether all passed. The item part goes first. Whatever its result, the race
-  // clock part is checked too when it is on screen, so one press shows every problem;
-  // only when both passed is anything sent.
-  async function checkBothFormsThenSend(): Promise<void> {
-    setHasCheckedTheFormsOnce(true);
-
-    const isItemPartValid = await itemForm.trigger(undefined, { shouldFocus: true });
-    // The typing cursor goes to the first wrong field from the top. So the race clock
-    // part may take the focus only when the item part, drawn above it, had nothing wrong.
-    const isRaceClockPartValid = isRaceClockChosen
-      ? await raceClockForm.trigger(undefined, { shouldFocus: isItemPartValid })
-      : true;
-    if (!isItemPartValid || !isRaceClockPartValid) {
-      return;
-    }
-
-    const raceClockFormValues = isRaceClockChosen ? raceClockForm.getValues() : undefined;
-    await sendFormsAsCommand(itemForm.getValues(), raceClockFormValues);
-  }
-
-  // What a press on "Salvar item" does: the button goes off, the forms are checked and,
-  // if they pass, sent; the button comes back whatever the outcome (accepted, refused,
+  // What a press on a save button does: the buttons go off, the forms are checked and,
+  // if they pass, sent; the buttons come back whatever the outcome (accepted, refused,
   // no answer within 5 s, or a field that failed its rule).
-  async function runWithSaveButtonOff(): Promise<void> {
+  async function runWithSaveButtonsOff(whatThePressAsksFor: WhatThePressAsksFor): Promise<void> {
     setIsWaitingForTheServer(true);
     try {
-      await checkBothFormsThenSend();
+      await checkBothFormsThenSend(whatThePressAsksFor);
     } finally {
       setIsWaitingForTheServer(false);
     }
   }
 
-  const labelsOfFieldsThatCouldNotBeRead = (
-    raceClockValuesReadFromItem?.formFieldsThatCouldNotBeRead ?? []
-  ).map((formFieldName) => ptBR.playout.fields[formFieldName]);
-  const hasFieldsThatCouldNotBeRead = labelsOfFieldsThatCouldNotBeRead.length > 0;
+  const isItemOnAir =
+    itemAsItWasWhenOpened !== null &&
+    findInstanceOfItemOnProgram(instances, itemAsItWasWhenOpened.id) !== undefined;
+  // An empty list of graphics means the server has not answered yet, not that the
+  // graphic is gone, so the notice waits for a list that lacks the item's graphic.
+  const isGraphicOfStoredItemGone =
+    isEditingStoredItem && graphics.length > 0 && chosenGraphic === undefined;
+  const hasSentACommandInThisOpening = commandTypesSentInThisOpening.length > 0;
 
   return (
     <section aria-label={ptBR.itemEditor.panelLabel}>
@@ -259,7 +338,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
           </CardTitle>
         </CardHeader>
         {/* The buttons are plain buttons, not submit buttons, and the form's own submit
-            is cancelled, as in the take panel: Enter in a text field does nothing. */}
+            is cancelled, as in "Edição rápida": Enter in a text field does nothing. */}
         <form onSubmit={(event) => event.preventDefault()} noValidate className="contents">
           <CardContent className="flex flex-col gap-4">
             <ItemEditorFormFields
@@ -268,38 +347,46 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
               layers={layers}
               isEditingStoredItem={isEditingStoredItem}
             />
-            {hasFieldsThatCouldNotBeRead && (
+            {isGraphicOfStoredItemGone && (
               <p role="status" className="text-sm text-muted-foreground">
-                {ptBR.itemEditor.fieldsThatCouldNotBeRead(
-                  labelsOfFieldsThatCouldNotBeRead.join(', '),
-                )}
+                {ptBR.itemEditor.graphicOfItemNotRegistered}
               </p>
             )}
-            {isRaceClockChosen && (
-              <RaceClockFormFields
-                form={raceClockForm}
-                controlIdPrefix={raceClockControlIdPrefix}
+            {/* The key makes "another graphic" mean "a new form, from that graphic's
+                defaults": React throws the form of the first graphic away. */}
+            {chosenGraphic !== undefined && (
+              <ItemGraphicFieldsForm
+                key={chosenGraphic.id}
+                graphic={chosenGraphic}
+                itemAsItWasWhenOpened={itemAsItWasWhenOpened}
+                whenFieldsAreChecked={whenFieldsAreChecked}
+                handleRef={graphicFieldsFormHandleRef}
               />
-            )}
-            {isGraphicChosen && !isRaceClockChosen && (
-              <p className="text-sm text-muted-foreground">
-                {ptBR.itemEditor.genericEditorComesLater}
-              </p>
             )}
           </CardContent>
           <CardFooter className="flex flex-wrap items-center gap-3">
             <ActionButton
               type="button"
               disabled={isWaitingForTheServer}
-              onClick={() => runWithSaveButtonOff()}
+              onClick={() => runWithSaveButtonsOff('saveItem')}
             >
               {ptBR.itemEditor.saveButton}
             </ActionButton>
+            {isItemOnAir && (
+              <ActionButton
+                type="button"
+                variant="secondary"
+                disabled={isWaitingForTheServer}
+                onClick={() => runWithSaveButtonsOff('saveItemAndUpdateOnAir')}
+              >
+                {ptBR.itemEditor.updateOnAirButton}
+              </ActionButton>
+            )}
             <Button type="button" variant="outline" onClick={() => askToBeClosedOnce()}>
               {ptBR.itemEditor.cancelButton}
             </Button>
-            {hasSentASaveInThisOpening && (
-              <CommandErrorMessage commandTypes={['createItem', 'updateItemFields']} />
+            {hasSentACommandInThisOpening && (
+              <CommandErrorMessage commandTypes={commandTypesSentInThisOpening} />
             )}
           </CardFooter>
         </form>

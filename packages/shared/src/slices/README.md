@@ -5,7 +5,8 @@ which lists all six slices; four have a file here:
 
 - `layer.ts` — the fixed screen slots, bottom to top by `zIndex`.
 - `graphic.ts` — graphics the operator can take (built OGraf packages), with the
-  manifest fields the server reads: the data `schema` and our `v_baja` vendor field.
+  manifest fields the server reads: the data `schema` and our `v_baja` vendor field
+  (default layer, category, and the name of the rule its updates run through).
 - `instance.ts` — what is on each layer and output right now, and its status
   (`failed` carries the renderer's reason in `statusDetail`).
 - `eventLogEntry.ts` — one line of the append-only command log.

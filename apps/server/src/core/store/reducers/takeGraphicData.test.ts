@@ -40,6 +40,7 @@ function buildTakeOfTheRaceClockWithData(data: Record<string, unknown>): Command
     layerId: 'clock',
     data,
     target: 'program',
+    takeTimeFieldKeys: [],
   };
 }
 
@@ -163,6 +164,7 @@ describe('takeGraphic of a graphic whose manifest schema cannot be read', () => 
         layerId: 'fullscreen',
         data: { leaderName: 'Baja UFPR' },
         target: 'program',
+        takeTimeFieldKeys: [],
       },
       contextOfTheCommand,
     );

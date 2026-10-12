@@ -2,7 +2,8 @@
  * Everything about the part of the item editor that is the same for every graphic and
  * is not drawing: its values, its rules with their pt-BR messages, the values a stored
  * item fills it with, and the auto-out delay converted to the server's milliseconds.
- * (The race clock's own fields keep the take panel's rules, features/playout/.)
+ * (The fields of the chosen graphic are generated from its manifest and keep their own
+ * values and rules, features/schemaForm/.)
  */
 import {
   defaultItemColor,

@@ -6,6 +6,7 @@ import { type Graphic, OGrafManifestSchema } from '@bajaovrlay/shared';
 import type { ServerLogger } from '../logger/createLogger.js';
 import { isDataSchemaOfGraphicUsable } from './graphicDataValidation.js';
 import { decideGraphicPlacementFromManifest } from './graphicPlacement.js';
+import { chooseUpdateRuleOfGraphic } from './updateRules/index.js';
 
 /** What discoverBuiltGraphics needs: the folder to read, the layers that exist, a logger. */
 export type DiscoverBuiltGraphicsOptions = {
@@ -21,7 +22,8 @@ export type DiscoverBuiltGraphicsOptions = {
  * package folder), in folder-name order. A package that is not built, or whose manifest
  * is broken, is logged and left out; it never stops the boot. Each graphic's default
  * layer and category come from its own manifest (`v_baja`); see graphicPlacement.ts.
- * A graphic whose data schema cannot be used is kept, with a warning naming it.
+ * A graphic whose data schema cannot be used, or whose manifest names an update rule
+ * that cannot be run, is kept, with a warning naming it.
  */
 export function discoverBuiltGraphics(options: DiscoverBuiltGraphicsOptions): Graphic[] {
   const { graphicPackagesFolder, logger } = options;
@@ -119,6 +121,16 @@ function readBuiltGraphic(options: {
     logger.warn(
       { graphic_package: packageName },
       'graphic has a data schema that cannot be used; every take of it will be refused',
+    );
+  }
+  const updateRuleChoice = chooseUpdateRuleOfGraphic(graphic);
+  if (updateRuleChoice.status === 'unusable') {
+    // Same reasoning as above: the graphic stays registered and can still be taken (a
+    // take runs no rule), but every update of it on air will be refused, and without
+    // this line the first sign would be a refused "Atualizar" in the middle of a race.
+    logger.warn(
+      { graphic_package: packageName, update_rule_problem: updateRuleChoice.problem },
+      'graphic names an update rule that cannot be run; every update of it will be refused',
     );
   }
   return graphic;

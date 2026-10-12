@@ -40,11 +40,13 @@ const takeRaceClock: Command = {
   layerId: 'clock',
   data: { sessionName: 'Enduro de Resistência' },
   target: 'program',
+  takeTimeFieldKeys: [],
 };
 const changeFlagToYellow: Command = {
   type: 'updateInstanceData',
   instanceId: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
   data: { state: 'yellow' },
+  takeTimeFieldKeys: [],
 };
 const reportRaceClockOnAir: Command = {
   type: 'reportInstanceStatus',

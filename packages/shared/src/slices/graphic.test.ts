@@ -14,14 +14,16 @@
  *     accepted and comes back with every field as written.
  *   - A manifest with neither `schema` nor `v_baja` is still accepted (both are
  *     optional in OGraf, and older packages have no `v_baja`).
- *   - `v_baja` may give only the layer, without a category.
- *   - A `v_baja` whose layer id or category is not a text, and a `schema` that is not
- *     an object, are refused, and the failure names the field.
+ *   - `v_baja` may give only the layer, without a category, and may name an update rule.
+ *   - A `v_baja` whose layer id, category or update rule is not a non-empty text, and a
+ *     `schema` that is not an object, are refused, and the failure names the field.
  *
  * What these tests deliberately do not cover:
  *   - Whether the layer `v_baja` names exists, and the fall back to the fullscreen
  *     layer; the server's graphics discovery (apps/server/src/core/store/) does that.
  *   - Whether `schema` is a valid JSON Schema; Ajv in the server finds that out.
+ *   - Whether the server knows the update rule a manifest names; the server's
+ *     updateRules folder (apps/server/src/core/store/updateRules/) checks that.
  *   - The full OGraf manifest schema, which the race-clock package's manifest test
  *     checks against the EBU files.
  */
@@ -87,6 +89,15 @@ describe('OGrafManifestSchema', () => {
         v_baja: { defaultLayerId: 'lower-third' },
       },
     },
+    // The race clock names the server rule its updates run through; the name is kept
+    // as written, and whether the server knows it is the server's check, not this one.
+    {
+      name: 'accepts a v_baja that names an update rule',
+      manifest: {
+        ...buildRaceClockManifest(),
+        v_baja: { defaultLayerId: 'clock', category: 'clock', updateRule: 'carryClockForward' },
+      },
+    },
     // v_baja exists but says nothing about the layer; the server then falls back.
     {
       name: 'accepts a v_baja that gives only the category',
@@ -132,6 +143,24 @@ describe('OGrafManifestSchema', () => {
         v_baja: { defaultLayerId: 'clock', category: ['clock'] },
       },
       fieldNamedInTheFailure: 'category',
+    },
+    // An update rule is one name; an empty text can never be the name of a rule.
+    {
+      name: 'refuses a v_baja whose update rule is empty, naming updateRule',
+      manifest: {
+        ...buildRaceClockManifest(),
+        v_baja: { defaultLayerId: 'clock', category: 'clock', updateRule: '' },
+      },
+      fieldNamedInTheFailure: 'updateRule',
+    },
+    // A list of rules is not supported: one graphic, at most one rule.
+    {
+      name: 'refuses a v_baja whose update rule is a list, naming updateRule',
+      manifest: {
+        ...buildRaceClockManifest(),
+        v_baja: { defaultLayerId: 'clock', category: 'clock', updateRule: ['carryClockForward'] },
+      },
+      fieldNamedInTheFailure: 'updateRule',
     },
     // The data schema is a JSON Schema object; an address pointing at one is not.
     {

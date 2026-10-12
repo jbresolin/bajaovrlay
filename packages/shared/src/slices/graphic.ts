@@ -13,6 +13,12 @@ export const BajaVendorManifestFieldsSchema = z.looseObject({
   defaultLayerId: z.string().min(1).optional(),
   /** How the control page groups the graphic (for example `clock`). */
   category: z.string().min(1).optional(),
+  /**
+   * The name of the server rule that runs on every update of this graphic's data on
+   * air, before the data is checked (for example `carryClockForward`). The server
+   * checks that it knows the name; this schema only checks that it is a text.
+   */
+  updateRule: z.string().min(1).optional(),
 });
 
 /** A manifest's `v_baja` field after validation. */
@@ -34,7 +40,7 @@ export const OGrafManifestSchema = z.looseObject({
    * usable JSON Schema is found out by the server when it compiles it.
    */
   schema: z.record(z.string(), z.unknown()).optional(),
-  /** Our vendor field: where the graphic goes by default and how it is grouped. */
+  /** Our vendor field: default layer, grouping, and the rule its updates run through. */
   v_baja: BajaVendorManifestFieldsSchema.optional(),
 });
 

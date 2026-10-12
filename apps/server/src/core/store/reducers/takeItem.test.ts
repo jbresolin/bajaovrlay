@@ -26,8 +26,8 @@
  *
  * What these tests deliberately do not cover:
  *   - The auto-out that may follow the take; autoOut.test.ts covers it.
- *   - Every detail of resolving field values; resolveItemFields.test.ts covers it, and
- *     takeItemTakeTime.test.ts covers a field stamped with the moment of the take.
+ *   - Every detail of resolving field values; resolveItemFields.test.ts covers it. A field
+ *     stamped at the take: takeItemTakeTime.test.ts. A cleared one: takeItemClearedField.test.ts.
  *   - Every way data can break a graphic's schema; takeGraphicData.test.ts and
  *     graphicDataValidation.test.ts cover them. One case here shows items inherit it.
  */
@@ -83,6 +83,7 @@ describe('takeItem, the instance it puts on air', () => {
         layerId: 'clock',
         data: buildEnduroClockData('yellow'),
         target: 'program',
+        takeTimeFieldKeys: [],
       },
       contextOfTheRundownCommand,
     );
@@ -218,8 +219,7 @@ describe('takeItem and the cursor', () => {
         contextOfTheRundownCommand,
       );
 
-      // Assert: the take happened, the cursor is where this scenario says, and the items
-      // are untouched.
+      // Assert: the take happened, the cursor is where this scenario says, items untouched.
       const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
       const expectedMainRundownAfter = expectedIsPlayedToItsEnd
         ? { ...buildMainSessionRundown(expectedCursorAfter), wasLastItemTakenAtCursor: true }

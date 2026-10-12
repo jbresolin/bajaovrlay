@@ -1,8 +1,8 @@
 # @bajaovrlay/control
 
 The operator's control page (Vite + React + Tailwind v4 + shadcn/ui). It keeps the rundown, takes
-its items and the race clock to air, updates the clock in place, clears layers, and shows what is on
-every layer and whether the renderer confirmed it. Start at `src/main.tsx`, `src/app/AppShell.tsx`.
+its items or any graphic to air, changes them in place, clears layers, and shows what is on every
+layer and whether the renderer confirmed it. Forms are generated from each graphic's manifest. Start at `src/main.tsx`, `src/app/AppShell.tsx`.
 
 - `src/app/` (the three-column layout) and `src/features/<name>/`, one folder per feature.
 - `src/state/` — the WebSocket client and the store; the only place server state lives.

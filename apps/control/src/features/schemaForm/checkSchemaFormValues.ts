@@ -1,0 +1,141 @@
+/**
+ * Checks what a generated form holds, field by field, and answers either one pt-BR
+ * message per wrong field or the values as data, ready for the files that build
+ * commands (`...FromSchemaForm.ts`). Pure: no react-hook-form, no clock.
+ *
+ * The order of the rules, for each field the form can edit:
+ *  1. A field set to "filled by the server at the take" is not checked at all: it has no
+ *     value yet, and the server writes one.
+ *  2. What was typed is read as data. A number, an mm:ss time or a date that cannot be
+ *     read gets its message.
+ *  3. The blank rules: a required field left blank is refused (also a required text: an
+ *     empty required text counts as missing, which is stricter than JSON Schema); an
+ *     optional field left blank or cleared with "limpar" is cleared.
+ *  4. Every value that got this far is checked against the manifest's limits with the
+ *     Zod schema built from the same JSON Schema.
+ * The server's Ajv check stays the authority; see zodSchemaFromDataSchema.ts.
+ */
+import { ptBR } from '@/i18n/ptBR';
+
+import { type ProblemReadingFormValue, readDataValueFromFormValue } from './fieldValueConversion';
+import { readOwnValueOfRecord } from './plainRecord';
+import type { SchemaFormDescription } from './schemaFormDescription';
+import type { SchemaFormValues } from './schemaFormValues';
+import { buildZodSchemaFromDataSchema } from './zodSchemaFromDataSchema';
+
+/** One field of a form that passed the check, as the commands need it. */
+export type CheckedSchemaFormField =
+  | { key: string; outcome: 'value'; value: string | number | boolean }
+  | { key: string; outcome: 'cleared' }
+  | { key: string; outcome: 'takeTime' };
+
+/** The pt-BR message for one wrong field. */
+export type SchemaFormFieldMessage = {
+  fieldKey: string;
+  message: string;
+};
+
+/** What checking a form gives: every editable field as data, or every wrong field's message. */
+export type SchemaFormCheck =
+  | { status: 'valid'; checkedFields: CheckedSchemaFormField[] }
+  | { status: 'invalid'; fieldMessages: SchemaFormFieldMessage[] };
+
+const fieldErrors = ptBR.schemaForm.fieldErrors;
+
+/** The message for a typed text that could not be read as data. */
+function writeMessageForUnreadableValue(problem: ProblemReadingFormValue, fieldLabel: string) {
+  switch (problem) {
+    case 'notANumber':
+      return fieldErrors.notANumber(fieldLabel);
+    case 'notMinutesAndSeconds':
+      return fieldErrors.notMinutesAndSeconds(fieldLabel);
+    case 'notADateAndTime':
+      return fieldErrors.notADateAndTime(fieldLabel);
+  }
+}
+
+/**
+ * Checks the form's values against the description they were built from. Every wrong
+ * field is reported at once, each with its first problem only. Fields the form cannot
+ * edit (the read-only JSON boxes) are neither checked nor listed.
+ */
+export function checkSchemaFormValues(
+  description: SchemaFormDescription,
+  formValues: SchemaFormValues,
+): SchemaFormCheck {
+  const checkedFields: CheckedSchemaFormField[] = [];
+  const fieldMessages: SchemaFormFieldMessage[] = [];
+  const dataPairsToCheckAgainstTheLimits: Array<[string, string | number | boolean]> = [];
+
+  for (const field of description.fields) {
+    if (field.control === 'unsupported') {
+      continue;
+    }
+    const kind = readOwnValueOfRecord(formValues.kinds, field.key);
+    if (field.offersTakeTime && kind === 'takeTime') {
+      checkedFields.push({ key: field.key, outcome: 'takeTime' });
+      continue;
+    }
+
+    const formValue = readOwnValueOfRecord(formValues.values, field.key);
+    const dataValueRead = readDataValueFromFormValue(field, formValue);
+    if (dataValueRead.status === 'unreadable') {
+      const message = writeMessageForUnreadableValue(dataValueRead.problem, field.label);
+      fieldMessages.push({ fieldKey: field.key, message });
+      continue;
+    }
+    if (dataValueRead.status === 'blank') {
+      if (field.isRequired) {
+        fieldMessages.push({ fieldKey: field.key, message: fieldErrors.required(field.label) });
+      } else {
+        checkedFields.push({ key: field.key, outcome: 'cleared' });
+      }
+      continue;
+    }
+    checkedFields.push({ key: field.key, outcome: 'value', value: dataValueRead.value });
+    dataPairsToCheckAgainstTheLimits.push([field.key, dataValueRead.value]);
+  }
+
+  // Only the fields that have a value are handed to Zod, so it also reports every
+  // required field that is not among them (blank, unreadable, or filled at the take).
+  // Those were dealt with above; only a message about a field that was handed over counts.
+  const keysHandedToZod = dataPairsToCheckAgainstTheLimits.map(([fieldKey]) => fieldKey);
+  const limitsCheck = buildZodSchemaFromDataSchema(description.dataSchema).safeParse(
+    Object.fromEntries(dataPairsToCheckAgainstTheLimits),
+  );
+  if (!limitsCheck.success) {
+    for (const issue of limitsCheck.error.issues) {
+      const fieldKey = issue.path[0];
+      const isAboutAFieldHandedOver =
+        typeof fieldKey === 'string' && keysHandedToZod.includes(fieldKey);
+      const hasMessageAlready = fieldMessages.some((entry) => entry.fieldKey === fieldKey);
+      if (typeof fieldKey === 'string' && isAboutAFieldHandedOver && !hasMessageAlready) {
+        fieldMessages.push({ fieldKey, message: issue.message });
+      }
+    }
+  }
+
+  if (fieldMessages.length > 0) {
+    return { status: 'invalid', fieldMessages };
+  }
+  return { status: 'valid', checkedFields };
+}
+
+/**
+ * The checked fields of a form that must already be valid, for the builders of commands:
+ * they are called only after react-hook-form let the press through.
+ * Throws when the form is not valid, because building a command from it would send
+ * something the operator never saw checked.
+ */
+export function readCheckedFieldsOfValidSchemaForm(
+  description: SchemaFormDescription,
+  formValues: SchemaFormValues,
+): CheckedSchemaFormField[] {
+  const check = checkSchemaFormValues(description, formValues);
+  if (check.status === 'invalid') {
+    throw new Error(
+      'A command can only be built from schema form values that passed checkSchemaFormValues',
+    );
+  }
+  return check.checkedFields;
+}

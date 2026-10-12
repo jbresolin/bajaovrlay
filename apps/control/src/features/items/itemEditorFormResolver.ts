@@ -7,7 +7,7 @@ import { findItemEditorFormErrors, type ItemEditorFormValues } from './itemEdito
  * values whenever the form is checked, it answers either "valid, here are the values" or
  * one message per wrong field, in the shape react-hook-form expects. All the rules
  * themselves are in itemEditorForm.ts; this function only reshapes their result. (It is
- * the same bridge as features/playout/raceClockTakeFormResolver.ts, for the other form.)
+ * the same bridge as features/schemaForm/schemaFormResolver.ts, for the other form.)
  */
 export function resolveItemEditorForm(
   formValues: ItemEditorFormValues,

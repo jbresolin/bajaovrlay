@@ -2,7 +2,7 @@ import { ConnectionBadge } from '@/features/connection/ConnectionBadge';
 import { LayerStatusPanel } from '@/features/layers/LayerStatusPanel';
 import { ClearAllButton } from '@/features/playout/ClearAllButton';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
-import { TakeRaceClockPanel } from '@/features/playout/TakeRaceClockPanel';
+import { QuickEditPanel } from '@/features/playout/QuickEditPanel';
 import { useBackspaceToClearClockLayer } from '@/features/playout/useBackspaceToClearClockLayer';
 import { ProgramMonitor } from '@/features/programMonitor/ProgramMonitor';
 import { RundownPanel } from '@/features/rundown/RundownPanel';
@@ -12,8 +12,9 @@ import { ptBR } from '@/i18n/ptBR';
 /**
  * The frame of the control page (docs/00-concept.md §3.4): a header and three areas
  * that are always on screen on a desktop — rundown on the left, program monitor and
- * take panel in the centre, layer status and clear all on the right. Layout only; each
- * area's behaviour lives in its feature folder.
+ * "Edição rápida" (the take and update panel for any graphic) in the centre, layer
+ * status and clear all on the right. Layout only; each area's behaviour lives in its
+ * feature folder, and nothing here knows any graphic by name.
  * The left column is 20rem wide: a rundown row holds a label, the graphic, the layer and
  * three buttons, and the item editor opens in the same column.
  */
@@ -37,7 +38,7 @@ export function AppShell() {
 
         <section aria-label={ptBR.app.playoutAreaTitle} className="flex flex-col gap-4">
           <ProgramMonitor />
-          <TakeRaceClockPanel />
+          <QuickEditPanel />
         </section>
 
         <section aria-label={ptBR.app.layersAreaTitle} className="flex flex-col gap-3">

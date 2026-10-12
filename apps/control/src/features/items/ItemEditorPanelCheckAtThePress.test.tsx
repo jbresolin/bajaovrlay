@@ -3,34 +3,37 @@
  *
  * What this module is for:
  *   A press of "Salvar item" checks two forms one after the other: the fields every item
- *   has, and the race clock's fields. Besides showing the messages, that check does two
- *   quieter things an operator relies on: it puts the typing cursor on the first wrong
- *   field, and from then on a message goes away as soon as its field is corrected.
+ *   has, and the fields generated for the chosen graphic (here the race clock's).
+ *   Besides showing the messages, that check does two quieter things an operator relies
+ *   on: it puts the typing cursor on the first wrong field, and from then on a message
+ *   goes away as soon as its field is corrected.
  *
  * What these tests prove:
  *   - Before the first press nothing is checked while typing: an emptied label shows no
  *     message.
  *   - After a press that found a problem, correcting the field takes its message away
- *     at once, without another press; this holds for the item's fields and for the race
- *     clock's fields.
+ *     at once, without another press; this holds for the item's fields and for the
+ *     graphic's fields.
  *   - With problems in both parts, the focus goes to the first wrong field of the item
- *     part (the label), not to the race clock's.
- *   - With a problem only in the race clock part, the focus goes to that field.
+ *     part (the label), not to the graphic's.
+ *   - With a problem only in the graphic's part, the focus goes to that field.
  *
  * What these tests deliberately do not cover:
  *   - Which messages appear at the press and that nothing is sent:
  *     ItemEditorPanelProblems.test.tsx.
- *   - Every rule: itemEditorForm.test.ts and features/playout/raceClockTakeForm.test.ts.
+ *   - Every rule: itemEditorForm.test.ts and
+ *     features/schemaForm/checkSchemaFormValues.test.ts.
  */
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { typeIntoField } from '@/features/playout/operatingTheRaceClockForm.testSupport';
+import { typeIntoField } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 
 import { renderItemEditorPanelOnFakeServer } from './itemEditorOnFakeServer.testSupport';
+import { raceClockReferenceTimeLabel } from './itemsLikeTheEditorSaves.testSupport';
 
 const messageOfTheMissingLabel = 'Informe o rótulo do item.';
-const messageOfTheBadlyTypedTime = 'Use minutos e segundos no formato mm:ss, por exemplo 12:30.';
+const messageOfTheBadlyTypedTime = `Use minutos e segundos no formato mm:ss em "${raceClockReferenceTimeLabel}", por exemplo 12:30.`;
 
 describe('the item editor panel before the first press of "Salvar item"', () => {
   it('shows no message while the operator is still typing', () => {
@@ -72,12 +75,12 @@ describe('the item editor panel after a press of "Salvar item" that found proble
     // Arrange: a new item with a label, saved with one hour typed as h:mm:ss.
     renderItemEditorPanelOnFakeServer(null);
     typeIntoField('Rótulo', 'Largada do Enduro');
-    typeIntoField('Tempo de referência (mm:ss)', '1:00:00');
+    typeIntoField(raceClockReferenceTimeLabel, '1:00:00');
     fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await screen.findByText(messageOfTheBadlyTypedTime);
 
     // Act: type the hour as 60:00, without pressing "Salvar item" again.
-    typeIntoField('Tempo de referência (mm:ss)', '60:00');
+    typeIntoField(raceClockReferenceTimeLabel, '60:00');
 
     // Assert: the message is gone.
     await waitFor(() => {
@@ -91,7 +94,7 @@ describe('the item editor panel after a press of "Salvar item" that found proble
   it('puts the focus on the label when both the label and the race clock time are wrong', async () => {
     // Arrange: a new item with no label and one hour typed as h:mm:ss.
     renderItemEditorPanelOnFakeServer(null);
-    typeIntoField('Tempo de referência (mm:ss)', '1:00:00');
+    typeIntoField(raceClockReferenceTimeLabel, '1:00:00');
 
     // Act: press "Salvar item" and wait until both messages are on screen.
     fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
@@ -111,7 +114,7 @@ describe('the item editor panel after a press of "Salvar item" that found proble
     // Arrange: a new item with a label and one hour typed as h:mm:ss.
     renderItemEditorPanelOnFakeServer(null);
     typeIntoField('Rótulo', 'Largada do Enduro');
-    typeIntoField('Tempo de referência (mm:ss)', '1:00:00');
+    typeIntoField(raceClockReferenceTimeLabel, '1:00:00');
 
     // Act: press "Salvar item" and wait until the message is on screen.
     fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
@@ -120,7 +123,7 @@ describe('the item editor panel after a press of "Salvar item" that found proble
     // Assert: the typing cursor is on the time field, the only one to correct.
     await waitFor(() => {
       expect(
-        screen.getByLabelText('Tempo de referência (mm:ss)'),
+        screen.getByLabelText(raceClockReferenceTimeLabel),
         'the focus must go to the one wrong field',
       ).toHaveFocus();
     });

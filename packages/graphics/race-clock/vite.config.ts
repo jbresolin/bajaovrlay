@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-import { defineConfig, type Plugin } from 'vite';
+import { defaultClientConditions, defineConfig, type Plugin } from 'vite';
 
 const manifestFileName = 'race-clock.ograf.json';
 
@@ -24,6 +24,11 @@ export default defineConfig({
   // graphic must work there (and under any other folder) without being rebuilt.
   base: './',
   plugins: [copyOGrafManifestIntoDist()],
+  resolve: {
+    // Import @bajaovrlay/shared/clock from its TypeScript source, so this package builds
+    // without a build of shared first; see packages/shared/README.md.
+    conditions: ['@bajaovrlay/source', ...defaultClientConditions],
+  },
   server: {
     port: 5175,
     strictPort: true,

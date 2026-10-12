@@ -9,6 +9,11 @@
       "@bajaovrlay/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./clock": {
+      "@bajaovrlay/source": "./src/clock/index.ts",
+      "types": "./dist/clock/index.d.ts",
+      "default": "./dist/clock/index.js"
     }
   },
   "scripts": {

@@ -35,7 +35,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ClearAllButton } from '@/features/playout/ClearAllButton';
-import { TakeRaceClockPanel } from '@/features/playout/TakeRaceClockPanel';
+import { QuickEditPanel } from '@/features/playout/QuickEditPanel';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithTheEnduranceRundown } from '@/state/rundownLikeTheServerSends.testSupport';
 
@@ -47,13 +47,13 @@ vi.mock('@/features/items/ItemEditorPanel', () => import('./itemEditorStandIn.te
 const takeNextOfTheMainRundown = { type: 'takeNext', rundownId: 'sessao-principal' };
 
 /**
- * Draws the rundown panel with its neighbours on the real page: the take panel (a text
- * field, dropdowns and a switch) and the "Limpar tudo" button.
+ * Draws the rundown panel with its neighbours on the real page: "Edição rápida" showing
+ * the race clock's form (a text field, dropdowns and a switch) and the "Limpar tudo" button.
  */
 function renderRundownPanelWithItsNeighbours(cursorItemId: string | null) {
   return renderOnControlPageConnectedToFakeServer(
     <>
-      <TakeRaceClockPanel />
+      <QuickEditPanel />
       <ClearAllButton />
       <RundownPanel />
     </>,

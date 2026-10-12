@@ -6,11 +6,10 @@ commands) is described here once and validated on both sides.
 
 Start reading at `src/index.ts`, which lists every export. Each concept has its own
 folder: `src/health/`, `src/slices/` (the state the server owns), `src/commands/` (the
-only way state changes), `src/rundown/` (rundowns, items and their commands) and
-`src/ws/` (the WebSocket protocol, with an example of every message in its README).
+only way state changes), `src/rundown/` (rundowns, items and their commands), `src/ws/`
+(the WebSocket protocol) and `src/clock/` (the race clock's arithmetic, Zod-free).
 
 **How other packages import it.** `package.json` exports the source file under the
 custom condition `@bajaovrlay/source` and the built `dist/` otherwise. Typecheck, Vitest,
-Vite and `pnpm dev` all turn that condition on, so they read the TypeScript source and
-never need a build first. Only the built server (`pnpm build`, `pnpm start`) uses
-`dist/`, which `pnpm build` produces before building the server.
+Vite and `pnpm dev` turn that condition on, so they read the TypeScript source and need
+no build first. Only the built server (`pnpm build`, `pnpm start`) uses `dist/`.

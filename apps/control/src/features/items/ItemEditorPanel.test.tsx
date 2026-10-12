@@ -4,58 +4,66 @@
  * What this module is for:
  *   Before a session the operator prepares items: a graphic, the layer it goes on, the
  *   values of its fields, and a label, colour and notes to find it in the rundown. The
- *   item editor panel is where that is typed. "Salvar item" sends one `createItem`
- *   command, and the panel asks to be closed once the server has accepted it.
+ *   item editor panel is where that is typed. The fields of the graphic are not written
+ *   by hand for any graphic: they are generated from the graphic's manifest. "Salvar
+ *   item" sends one `createItem` command, and the panel asks to be closed once the server
+ *   has accepted it.
  *
  * What these tests prove:
  *   - For a new item the panel opens with the first graphic chosen, that graphic's
- *     default layer, an empty label, the neutral colour and the race clock fields at
- *     their defaults — whether the server's graphics arrive after the panel is drawn
- *     or were already on the page when it opened (the "+ Item" case).
+ *     default layer, an empty label, the neutral colour and the graphic's fields at the
+ *     defaults of its manifest — whether the server's graphics arrive after the panel is
+ *     drawn or were already on the page when it opened (the "+ Item" case).
+ *   - The race clock's reference moment opens as "filled by the server at the take".
  *   - The colour dropdown offers the six fixed colours, each with a name in words.
  *   - "Salvar item" builds the right `createItem` from what was typed and chosen, with
  *     the clock's reference moment left to the take, and the panel asks to be closed
  *     only after the server accepted it.
- *   - The earlier warning that a clock saved running counts from the save is gone.
- *   - Choosing a graphic the editor has no form for moves the layer to that graphic's
- *     default, replaces the race clock fields by the "BAJAOVRLAY-14" notice, and saves
- *     an item with empty fields.
+ *   - A reference moment switched to "Valor digitado" is saved as the typed number.
  *   - A layer chosen by hand is the one sent.
  *   - "Cancelar" asks to be closed and sends nothing.
- *   - With the take panel on the same page, the editor's race clock fields are its own:
- *     typing into one does not touch the take panel's field of the same name.
+ *   - With another generated form of the same graphic on the page, the editor's fields
+ *     are its own: typing into one does not touch the other form's field of that name.
  *
  * What these tests deliberately do not cover:
- *   - Editing an existing item: ItemEditorPanelEditing.test.tsx.
+ *   - A graphic other than the race clock, and changing the graphic of a new item:
+ *     ItemEditorPanelOtherGraphic.test.tsx.
+ *   - Editing an existing item: ItemEditorPanelEditing.test.tsx, and
+ *     ItemEditorPanelUpdateOnAir.test.tsx for an item that is on air.
  *   - Field messages, a refused save and the lost connection:
  *     ItemEditorPanelProblems.test.tsx.
- *   - Every combination of values: itemCommandsFromForm.test.ts, without drawing.
+ *   - Every control and rule of a generated form: features/schemaForm.
  *   - The rundown that opens this panel and the real server: features/rundown and
  *     e2e/, which use the real ones.
- *   - A clock counting from the take on air: e2e/rundownTakeWithSpace.e2e.ts.
  */
+import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildEmptySchemaFormValues,
+  describeSchemaFormFromDataSchema,
+} from '@/features/schemaForm';
+import {
   chooseOptionInDropdown,
+  renderSchemaFormOnTestPage,
   typeIntoField,
-} from '@/features/playout/operatingTheRaceClockForm.testSupport';
-import { TakeRaceClockPanel } from '@/features/playout/TakeRaceClockPanel';
-import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
-import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.testSupport';
+} from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 
 import {
   pressSaveAndWaitForCommand,
   renderItemEditorPanelOnFakeServer,
   renderItemEditorPanelOpenedOnAPageThatAlreadyKnowsTheGraphics,
 } from './itemEditorOnFakeServer.testSupport';
-import { ItemEditorPanel } from './ItemEditorPanel';
-import { idOfTheMainSessionRundown } from './itemsLikeTheEditorSaves.testSupport';
+import {
+  raceClockLapsLabel,
+  raceClockReferenceMomentLabel,
+  raceClockReferenceTimeLabel,
+} from './itemsLikeTheEditorSaves.testSupport';
 
 describe('the item editor panel for a new item', () => {
   it('opens with the first graphic, its default layer, an empty label and the neutral colour', () => {
-    // Arrange: a connected page that knows the race clock and the driver lower third.
+    // Arrange: a connected page that knows the race clock and the interview lower third.
 
     // Act: draw the editor for a new item.
     renderItemEditorPanelOnFakeServer(null);
@@ -84,23 +92,53 @@ describe('the item editor panel for a new item', () => {
       screen.getByLabelText('Saída automática (segundos, opcional)'),
       'the auto-out must start blank, meaning "stay on air"',
     ).toHaveValue('');
+  });
+
+  it("shows the race clock's fields generated from its manifest, at the manifest's defaults", () => {
+    // Arrange: the same connected page; the race clock is the first graphic.
+
+    // Act: draw the editor for a new item.
+    renderItemEditorPanelOnFakeServer(null);
+
+    // Assert: the fields the manifest describes, each starting at its default. The
+    // reference moment is not typed: it is left for the server to stamp at the take.
     expect(
       screen.getByLabelText('Nome da sessão'),
-      'the race clock fields must be there, at the defaults of the take panel',
+      'the session name must start as the manifest default',
     ).toHaveValue('Enduro de Resistência');
     expect(
-      screen.getByLabelText('Tempo de referência (mm:ss)'),
-      'the reference time must start at zero',
+      screen.getByRole('combobox', { name: 'Bandeira' }),
+      'the flag must start as "Pré-largada"',
+    ).toHaveTextContent('Pré-largada');
+    expect(
+      screen.getByRole('combobox', { name: 'Modo do relógio' }),
+      'the clock mode must start as "Tempo decorrido"',
+    ).toHaveTextContent('Tempo decorrido');
+    expect(
+      screen.getByLabelText(raceClockReferenceTimeLabel),
+      'the reference time must be typed as mm:ss and start at zero',
     ).toHaveValue('0:00');
     expect(
-      screen.queryByText(/conta a partir do momento em que o item foi salvo/),
-      'the old warning about a running clock counting from the save must be gone: a clock now counts from the take',
+      screen.getByRole('switch', { name: 'Relógio correndo' }),
+      'the clock must start stopped',
+    ).not.toBeChecked();
+    expect(
+      screen.getByLabelText(raceClockLapsLabel),
+      'the laps are optional and must start blank',
+    ).toHaveValue(null);
+    expect(
+      screen.getByRole('combobox', { name: `Como preencher ${raceClockReferenceMomentLabel}` }),
+      'the reference moment of a new item must start as "filled at the take"',
+    ).toHaveTextContent('Momento da entrada no ar');
+    expect(
+      screen.queryByText(/Editor genérico chega em BAJAOVRLAY-14/),
+      'the notice that promised the generated form must be gone',
     ).toBeNull();
   });
 
-  it('opens with the first graphic and its layer when the page already knew the graphics, as after "+ Item"', () => {
+  it('opens with the first graphic and its fields when the page already knew the graphics, as after "+ Item"', () => {
     // Arrange: a connected page that already holds the graphics and the layers. (The
-    // test above draws the editor before the server's hello; a real operator presses
+    // tests above draw the editor before the server's hello; a real operator presses
     // "+ Item" long after it.)
 
     // Act: open the editor for a new item with a button press.
@@ -117,8 +155,8 @@ describe('the item editor panel for a new item', () => {
     ).toHaveTextContent('Relógio');
     expect(
       screen.getByLabelText('Nome da sessão'),
-      'the race clock fields must be on screen for the graphic chosen at the start',
-    ).toBeInTheDocument();
+      'the fields of the graphic chosen at the start must be on screen, at their defaults',
+    ).toHaveValue('Enduro de Resistência');
   });
 
   it('offers the six fixed colours, each with a name in words', () => {
@@ -149,7 +187,7 @@ describe('the item editor panel for a new item', () => {
     typeIntoField('Saída automática (segundos, opcional)', '90');
     typeIntoField('Nome da sessão', 'Enduro de Resistência — Largada');
     chooseOptionInDropdown('Modo do relógio', 'Tempo restante');
-    typeIntoField('Tempo de referência (mm:ss)', '240:00');
+    typeIntoField(raceClockReferenceTimeLabel, '240:00');
 
     // Act: press "Salvar item", and then the server accepts the command.
     await pressSaveAndWaitForCommand(1, fakeServer);
@@ -158,7 +196,8 @@ describe('the item editor panel for a new item', () => {
 
     // Assert: one createItem for the main session's rundown with the form as literals
     // (240:00 is 14 400 000 ms, 90 s is 90 000 ms). The clock's reference moment is not
-    // a number: it is left for the server to stamp when the item is taken.
+    // a number: it is left for the server to stamp when the item is taken. The blank
+    // laps are not in the fields at all.
     expect(
       fakeServer.listCommandsReceived(),
       'the press must send exactly one createItem carrying the whole form',
@@ -194,50 +233,29 @@ describe('the item editor panel for a new item', () => {
     });
   });
 
-  it('shows the BAJAOVRLAY-14 notice instead of fields for a graphic without a form, and saves empty fields', async () => {
-    // Arrange: the editor for a new item, with a label for team 42's lower third.
+  it('saves a reference moment switched to "Valor digitado" as the number that was typed', async () => {
+    // Arrange: a new clock item whose operator wants the clock to count from a fixed
+    // instant, the official start at 10:00 in Brasília on race day, whenever it is taken.
+    const officialStartInMilliseconds = Date.parse('2026-10-10T13:00:00.000Z');
     const { fakeServer } = renderItemEditorPanelOnFakeServer(null);
-    typeIntoField('Rótulo', 'Tarja da equipe 42');
+    typeIntoField('Rótulo', 'Relógio desde a largada oficial');
 
-    // Act: choose the driver lower third as the graphic, then save.
-    chooseOptionInDropdown('Gráfico', 'Tarja de piloto');
-    const layerShownAfterChoosingTheGraphic = screen.getByRole('combobox', {
-      name: 'Camada',
-    }).textContent;
-    const isRaceClockFormStillShown = screen.queryByLabelText('Nome da sessão') !== null;
+    // Act: switch the reference moment to a typed value, type the instant and save.
+    chooseOptionInDropdown(`Como preencher ${raceClockReferenceMomentLabel}`, 'Valor digitado');
+    typeIntoField(raceClockReferenceMomentLabel, String(officialStartInMilliseconds));
     await pressSaveAndWaitForCommand(1, fakeServer);
 
-    // Assert: the layer followed the graphic's default, the race clock fields are gone,
-    // the notice is shown, and the item is created with no field values.
+    // Assert: the item stores the typed number as a literal, not "the moment of the take".
     expect(
-      layerShownAfterChoosingTheGraphic,
-      "the layer must move to the new graphic's default layer",
-    ).toContain('Tarja');
-    expect(
-      isRaceClockFormStillShown,
-      'the race clock fields must not be offered for another graphic',
-    ).toBe(false);
-    expect(
-      screen.getByText(/Editor genérico chega em BAJAOVRLAY-14/),
-      'the panel must say when the fields of this graphic arrive',
-    ).toBeInTheDocument();
-    expect(
-      fakeServer.listCommandsReceived(),
-      'an item of a graphic without a form must be created with empty fields',
-    ).toEqual([
-      {
-        type: 'createItem',
-        rundownId: 'sessao-principal',
-        graphicId: 'driver-lower-third',
-        layerId: 'lower-third',
-        label: 'Tarja da equipe 42',
-        color: 'neutral',
-        notes: '',
-        fields: {},
+      fakeServer.listCommandsReceived()[0],
+      'a typed reference moment must be stored as that number',
+    ).toMatchObject({
+      type: 'createItem',
+      fields: {
+        referenceWallClockMs: { kind: 'literal', value: officialStartInMilliseconds },
       },
-    ]);
-    // (Then the server answers, so no command is left waiting for its 5-second timeout
-    // once the test is over.)
+    });
+    // (Then the server answers, so no command is left waiting for its 5-second timeout.)
     fakeServer.acceptLastCommand();
   });
 
@@ -273,21 +291,18 @@ describe('the item editor panel for a new item', () => {
   });
 });
 
-describe('the item editor panel on the same page as the take panel', () => {
-  it('keeps its race clock fields apart from the take panel fields of the same name', () => {
-    // Arrange: the page as the operator has it: the take panel (the quick manual path)
-    // and, below it, the editor for a new item. Both draw a "Nome da sessão" field.
-    renderOnControlPageConnectedToFakeServer(
-      <>
-        <TakeRaceClockPanel />
-        <ItemEditorPanel
-          rundownId={idOfTheMainSessionRundown}
-          itemBeingEdited={null}
-          onClose={() => undefined}
-        />
-      </>,
-      buildSlicesWithNothingOnAir(),
-    );
+describe('the item editor panel on the same page as another generated form', () => {
+  it('keeps its fields apart from the fields of the same name in the other form', () => {
+    // Arrange: the page as the operator has it: the editor for a new item and, beside
+    // it, another form generated from the race clock's manifest (on the real page that
+    // is "Edição rápida"; here a plain generated form stands in for it). Both draw a
+    // "Nome da sessão" field.
+    renderItemEditorPanelOnFakeServer(null);
+    const raceClockFormDescription = describeSchemaFormFromDataSchema(raceClockManifest.schema);
+    renderSchemaFormOnTestPage({
+      description: raceClockFormDescription,
+      formValues: buildEmptySchemaFormValues(raceClockFormDescription),
+    });
     const editorPanel = screen.getByRole('region', { name: 'Editor de item' });
     const sessionNameFields = screen.getAllByLabelText('Nome da sessão');
     const sessionNameFieldOfTheEditor = within(editorPanel).getByLabelText('Nome da sessão');
@@ -296,18 +311,18 @@ describe('the item editor panel on the same page as the take panel', () => {
     fireEvent.change(sessionNameFieldOfTheEditor, { target: { value: 'Enduro — Bateria 2' } });
 
     // Assert: there are two separate fields, and only the editor's one changed. (With
-    // equal ids, the editor's label would point at the take panel's field instead.)
-    const sessionNameFieldOfTheTakePanel = sessionNameFields.find(
+    // equal ids, the editor's label would point at the other form's field instead.)
+    const sessionNameFieldOfTheOtherForm = sessionNameFields.find(
       (sessionNameField) => sessionNameField !== sessionNameFieldOfTheEditor,
     );
-    expect(sessionNameFields, 'each panel must have its own session name field').toHaveLength(2);
+    expect(sessionNameFields, 'each form must have its own session name field').toHaveLength(2);
     expect(
       sessionNameFieldOfTheEditor,
       'the editor field must hold what was typed into it',
     ).toHaveValue('Enduro — Bateria 2');
     expect(
-      sessionNameFieldOfTheTakePanel,
-      'the take panel field must be left as it was',
+      sessionNameFieldOfTheOtherForm,
+      'the field of the other form must be left as it was',
     ).toHaveValue('Enduro de Resistência');
   });
 });

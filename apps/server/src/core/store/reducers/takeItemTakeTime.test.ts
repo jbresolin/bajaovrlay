@@ -16,6 +16,8 @@
  *   - The stored item still says `takeTime` afterwards.
  *
  * What these tests deliberately do not cover:
+ *   - A `takeTime` field that is not a wall-clock moment of the graphic, which the take
+ *     refuses; takeItemTakeTimeOnWrongField.test.ts covers it.
  *   - The store reading the real clock and saving the result; storeTakeTimeField.test.ts.
  *   - The other rules of a take and of the cursor; takeItem.test.ts covers them.
  */

@@ -19,39 +19,22 @@
  * What these tests deliberately do not cover:
  *   - That a take or an update of such a graphic is refused; graphicDataValidation.test.ts
  *     covers the answer and the reducer tests cover the refusal.
- *   - The other boot warnings (unbuilt package, no default layer);
- *     loadInitialSlices.test.ts and loadInitialSlicesGraphicPlacement.test.ts cover them.
+ *   - The other boot warnings (unbuilt package, no default layer, an update rule that
+ *     cannot be run); loadInitialSlices.test.ts, loadInitialSlicesGraphicPlacement.test.ts
+ *     and loadInitialSlicesUnusableUpdateRule.test.ts cover them.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 import { openTemporaryDatabase } from '../db/temporaryDatabase.testSupport.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
 import {
   createGraphicsFolderWithBuiltRaceClock,
-  createGraphicsFolderWithUnbuiltRaceClock,
+  createGraphicsFolderWithBuiltScoreboard,
 } from './builtGraphicsFolder.testSupport.js';
 import { loadInitialSlices } from './loadInitialSlices.js';
 
 const messageOfTheUnusableSchemaWarning =
   'graphic has a data schema that cannot be used; every take of it will be refused';
-
-/**
- * Creates a graphics folder holding one built package, `scoreboard`, with the given
- * manifest (and the race clock's source without a build). Returns the folder's path.
- */
-function createGraphicsFolderWithBuiltScoreboard(scoreboardManifest: object): string {
-  const graphicPackagesFolder = createGraphicsFolderWithUnbuiltRaceClock();
-  const scoreboardDistFolder = join(graphicPackagesFolder, 'scoreboard', 'dist');
-  mkdirSync(scoreboardDistFolder, { recursive: true });
-  writeFileSync(
-    join(scoreboardDistFolder, 'scoreboard.ograf.json'),
-    JSON.stringify(scoreboardManifest),
-  );
-  return graphicPackagesFolder;
-}
 
 /** Boots the slices on a brand-new database, with a logger whose lines can be read. */
 function loadSlicesOnFirstBoot(graphicPackagesFolder: string) {

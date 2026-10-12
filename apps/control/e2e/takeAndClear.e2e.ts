@@ -7,6 +7,10 @@
  *   server as the only owner of the state. These tests walk that path in a real Chromium
  *   against the real server, the real renderer page and a real SQLite file.
  *
+ *   The form they fill is "Edição rápida", in the centre of the page. Nothing in the page
+ *   is written for the race clock: the fields are generated from the clock's manifest, so
+ *   their labels here are the manifest's titles.
+ *
  *   Two renderer pages take part, and they are not equals. The program output is the
  *   page OBS loads, `/render/`; here a second browser page opened at that address stands
  *   in for OBS. The program monitor is the small frame on the control page,
@@ -16,13 +20,14 @@
  * What these tests prove:
  *   - With OBS (its stand-in) connected, pressing "Colocar no ar" makes the layer panel
  *     say "No ar" within 3 seconds and show the clock on the "Relógio" layer, and the
- *     program monitor contains the race clock element.
+ *     program monitor contains the race clock element, counting on from the typed time
+ *     (the server stamps the moment of the take; the page sends no clock of its own).
  *   - Changing the flag and pressing "Atualizar" changes the flag band of the clock in
  *     the program monitor, and the clock there is the very same element as before: it
  *     was updated in place and never left the screen (no blink).
  *   - Reloading the page changes nothing: the panel still shows the clock, because the
  *     state lives on the server and not in the page; and the form comes back showing
- *     what is on air instead of its defaults.
+ *     what is on air instead of the manifest's defaults, the time as mm:ss.
  *   - Pressing "Limpar" on that layer brings it back to "vazia".
  *   - With only the control page open (no OBS), the layer stays "Carregando" after the
  *     take even though the clock is plainly visible in the program monitor; it turns to
@@ -40,6 +45,10 @@
  *     InstanceStatusBadge.test.tsx cover the two halves of that.
  *   - A restart of the server keeping the state; the server's storeRestart.test.ts does.
  *   - Field validation, clear all and the keyboard; the component tests cover those.
+ *   - An item of the rundown changed on air from the item editor ("Atualizar no ar");
+ *     itemUpdateOnAir.e2e.ts covers that.
+ *   - A running clock stopped with "Atualizar" (it must not jump back to its reference
+ *     time); clockStoppedOnAir.e2e.ts covers that.
  *
  * What it needs: the race clock and the renderer built (`pnpm build`), because the server
  * only registers built graphics and both renderer pages are the built renderer.
@@ -63,15 +72,32 @@ async function openControlPageAndWaitUntilConnected(page: Page): Promise<void> {
 }
 
 /**
- * Fills the race clock form for the endurance race, 12 min 34 s in, under the green
- * flag, with the clock running. It does not press "Colocar no ar".
+ * Finds the centre area of the control page, which holds the program monitor and
+ * "Edição rápida". Fields are looked up inside it, because the item editor (in the
+ * rundown column) draws a generated form with the same labels when it is open.
  */
-async function fillRaceClockFormForTheEnduranceRace(page: Page): Promise<void> {
-  await page.getByLabel('Nome da sessão').fill('Enduro de Resistência — Bateria 1');
-  await page.getByRole('combobox', { name: 'Bandeira' }).click();
+function findProgramAndQuickEditArea(page: Page): Locator {
+  return page.getByRole('region', { name: 'Programa e edição rápida' });
+}
+
+/**
+ * Fills "Edição rápida" for the endurance race, 12 min 34 s in, under the green flag,
+ * with the clock running. It does not press "Colocar no ar". The moment the time refers
+ * to is left as the form opens, "Momento da entrada no ar": the server writes it at the take.
+ */
+async function fillQuickEditForTheEnduranceRace(page: Page): Promise<void> {
+  const quickEditArea = findProgramAndQuickEditArea(page);
+  await expect(
+    quickEditArea.getByRole('combobox', { name: 'Gráfico a editar' }),
+    '"Edição rápida" must open on the race clock, the one graphic the server has',
+  ).toContainText('Relógio de prova');
+  await quickEditArea
+    .getByLabel('Nome da sessão', { exact: true })
+    .fill('Enduro de Resistência — Bateria 1');
+  await quickEditArea.getByRole('combobox', { name: 'Bandeira', exact: true }).click();
   await page.getByRole('option', { name: 'Verde' }).click();
-  await page.getByRole('switch', { name: 'Relógio correndo' }).click();
-  await page.getByLabel('Tempo de referência (mm:ss)').fill('12:34');
+  await quickEditArea.getByRole('switch', { name: 'Relógio correndo' }).click();
+  await quickEditArea.getByLabel('Tempo de referência', { exact: true }).fill('12:34');
 }
 
 /**
@@ -111,7 +137,7 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
     await openControlPageAndWaitUntilConnected(page);
     const clockLayerRow = page.getByRole('listitem', { name: 'Relógio' });
     await expect(clockLayerRow, 'the clock layer must start empty').toContainText('vazia');
-    await fillRaceClockFormForTheEnduranceRace(page);
+    await fillQuickEditForTheEnduranceRace(page);
 
     // Act: put the clock on air.
     await page.getByRole('button', { name: 'Colocar no ar' }).click();
@@ -145,15 +171,23 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
       raceClockInProgramMonitor.getByTestId('race-clock-flag-label'),
       'the clock in the program monitor must show the green flag it was taken with',
     ).toHaveText('VERDE');
+    // The clock counts on from the typed 12:34, starting at the take. The page sent no
+    // moment of its own: the server wrote the moment of the take into the data.
+    // (12:34 to 12:39 are the first seconds after the take.)
+    await expect(
+      raceClockInProgramMonitor.getByTestId('race-clock-time'),
+      'a clock taken running at 12:34 must count on from 12:34 at the take',
+    ).toHaveText(/^\s*12:3[4-9]\s*$/);
 
     // Arrange (for the update): remember which element the clock in the program monitor
     // is. A handle points at that one element; it is not found again later.
     const raceClockElementBeforeTheUpdate = await raceClockInProgramMonitor.elementHandle();
 
     // Act: a yellow flag comes out. Change only the flag and press "Atualizar".
-    await page.getByRole('combobox', { name: 'Bandeira' }).click();
+    const quickEditArea = findProgramAndQuickEditArea(page);
+    await quickEditArea.getByRole('combobox', { name: 'Bandeira', exact: true }).click();
     await page.getByRole('option', { name: 'Amarela' }).click();
-    await page.getByRole('button', { name: 'Atualizar' }).click();
+    await quickEditArea.getByRole('button', { name: 'Atualizar', exact: true }).click();
 
     // Assert: the clock in the program monitor shows the yellow flag, and it is the same
     // element as before the update. Had the clock been taken off and put back (the blink
@@ -180,29 +214,33 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
     await page.reload();
 
     // Assert: nothing was lost, because the server is the truth; and since the clock is
-    // on air, the panel offers "Atualizar" and its form shows what is on air, yellow flag
-    // included. (The time field is not checked: the clock is running, so its text depends
-    // on the second.)
+    // on air, "Edição rápida" offers "Atualizar" and its form shows what is on air, yellow
+    // flag included. The time field shows the reference time that is on air, 12:34, and
+    // not the time the running clock has reached: the form shows the data, as it is.
     await expect(
       clockLayerRow,
       'after a reload the layer panel must still show the race clock',
     ).toContainText('Relógio de prova');
     await expect(
-      page.getByRole('button', { name: 'Atualizar' }),
+      quickEditArea.getByRole('button', { name: 'Atualizar', exact: true }),
       'with the clock on air the form must offer "Atualizar"',
     ).toBeVisible();
     await expect(
-      page.getByLabel('Nome da sessão'),
+      quickEditArea.getByLabel('Nome da sessão', { exact: true }),
       'after a reload the form must show the session name that is on air, not its default',
     ).toHaveValue('Enduro de Resistência — Bateria 1');
     await expect(
-      page.getByRole('combobox', { name: 'Bandeira' }),
+      quickEditArea.getByRole('combobox', { name: 'Bandeira', exact: true }),
       'after a reload the form must show the flag that is on air',
     ).toHaveText('Amarela');
     await expect(
-      page.getByRole('switch', { name: 'Relógio correndo' }),
+      quickEditArea.getByRole('switch', { name: 'Relógio correndo' }),
       'after a reload the switch must be on, because the clock on air is running',
     ).toBeChecked();
+    await expect(
+      quickEditArea.getByLabel('Tempo de referência', { exact: true }),
+      'after a reload the time field must show the reference time on air as minutes and seconds',
+    ).toHaveValue('12:34');
 
     // Act: clear the clock layer.
     await clockLayerRow.getByRole('button', { name: 'Limpar' }).click();
@@ -227,7 +265,7 @@ test.describe('taking the race clock with no OBS connected', () => {
     await openControlPageAndWaitUntilConnected(page);
     const clockLayerRow = page.getByRole('listitem', { name: 'Relógio' });
     await expect(clockLayerRow, 'the clock layer must start empty').toContainText('vazia');
-    await fillRaceClockFormForTheEnduranceRace(page);
+    await fillQuickEditForTheEnduranceRace(page);
 
     // Act: put the clock on air.
     await page.getByRole('button', { name: 'Colocar no ar' }).click();

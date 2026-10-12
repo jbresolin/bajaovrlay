@@ -12,7 +12,12 @@
  *     removed fails it, so the check has teeth.
  *   - The settings the brief fixes: id, real-time only, one step.
  *   - The manifest tells the BajaOvrLay server, in its vendor field `v_baja`, that the
- *     race clock goes on the clock layer and in the clock category.
+ *     race clock goes on the clock layer and in the clock category, and that an update
+ *     of it runs the server's `carryClockForward` rule (the clock must not jump).
+ *   - The manifest tells the control page's generated form, in a `v_baja` field on the
+ *     property itself, that the reference time is typed as mm:ss (`unit: 'ms'`) and that
+ *     the reference moment may be left to the server (`role: 'wallClock'`); no other
+ *     field carries such a hint. The official schema accepts a `v_` field there too.
  *   - The play and stop durations in the manifest are the real animation lengths.
  *   - Every data field has a pt-BR title, and the manifest's data schema accepts and
  *     refuses exactly the same payloads as the graphic's own validation.
@@ -43,9 +48,21 @@ function createOGrafSchemaValidator() {
   // These are OGraf annotations, not 2020-12 keywords: `example` (lib/action.json) and
   // the GDD form hints a data schema may carry (gdd/object.json). Strict mode refuses
   // unknown keywords, so it is told they are annotations that validate nothing.
+  // `v_baja` is BajaOvrLay's own vendor field on a data property. The official manifest
+  // schema allows any `v_` field there by pattern, but when the data schema is compiled
+  // on its own (the agreement tests below) strict mode knows no such pattern and would
+  // stop with `strict mode: unknown keyword: "v_baja"`.
   const validator = new Ajv2020({ allErrors: true });
-  for (const ografAnnotation of ['example', 'gddType', 'gddOptions', 'hidden', 'order']) {
-    validator.addKeyword(ografAnnotation);
+  const annotationsThatValidateNothing = [
+    'example',
+    'gddType',
+    'gddOptions',
+    'hidden',
+    'order',
+    'v_baja',
+  ];
+  for (const annotation of annotationsThatValidateNothing) {
+    validator.addKeyword(annotation);
   }
   validator.addSchema([
     gddBasicTypesSchema,
@@ -125,17 +142,39 @@ describe('race-clock.ograf.json settings', () => {
     });
   });
 
-  it('declares the clock layer and the clock category in the v_baja vendor field', () => {
+  it('declares the clock layer, the clock category and its update rule in the v_baja vendor field', () => {
     // Arrange: nothing to set up; the manifest is read from disk.
 
     // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_.
     const bajaVendorFields = raceClockManifest.v_baja;
 
-    // Assert: the server reads the default layer and the category from exactly these two.
+    // Assert: the server reads the default layer and the category from the first two.
+    // The third names the server's rule that keeps the time on screen when an update
+    // stops, starts or turns the clock, so the clock on air never jumps.
     expect(
       bajaVendorFields,
-      'the race clock must ask for the clock layer and the clock category',
-    ).toEqual({ defaultLayerId: 'clock', category: 'clock' });
+      'the race clock must ask for the clock layer, the clock category and carryClockForward',
+    ).toEqual({ defaultLayerId: 'clock', category: 'clock', updateRule: 'carryClockForward' });
+  });
+
+  it('tells the generated form which field is a duration and which is a wall-clock moment', () => {
+    // Arrange: the data fields as the manifest describes them.
+    const dataFields = Object.entries(raceClockManifest.schema.properties);
+
+    // Act: collect the v_baja hint of every field that has one.
+    const hintsByField: Record<string, unknown> = {};
+    for (const [fieldName, field] of dataFields) {
+      if ('v_baja' in field) {
+        hintsByField[fieldName] = field.v_baja;
+      }
+    }
+
+    // Assert: the reference time is in milliseconds (so the form shows mm:ss) and the
+    // reference moment is a wall-clock field (so the form offers "at the take").
+    expect(hintsByField, 'only the two reference fields must carry a v_baja hint').toEqual({
+      referenceTimeMs: { unit: 'ms' },
+      referenceWallClockMs: { role: 'wallClock' },
+    });
   });
 
   it('declares the real play and stop animation lengths', () => {
@@ -165,7 +204,7 @@ describe('race-clock.ograf.json settings', () => {
       sessionName: 'Nome da sessão',
       state: 'Bandeira',
       clockMode: 'Modo do relógio',
-      referenceTimeMs: 'Tempo de referência (ms)',
+      referenceTimeMs: 'Tempo de referência',
       referenceWallClockMs: 'Horário da referência (ms desde 1970)',
       running: 'Relógio correndo',
       lapsCompletedByLeader: 'Voltas completadas pelo líder',
