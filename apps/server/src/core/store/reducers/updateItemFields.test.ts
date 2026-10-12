@@ -18,6 +18,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The command's shape; the shared schema tests cover it.
+ *   - Which field may say takeTime; updateItemFieldsTakeTimeField.test.ts.
  *   - An instance already on air from this item: it keeps the data it was taken with,
  *     which takeItem.test.ts shows by never reading the item again after the take.
  */

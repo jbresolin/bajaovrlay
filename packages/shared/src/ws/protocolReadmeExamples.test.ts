@@ -13,6 +13,7 @@
  *     client envelope does not check the command inside a `command` message (the store
  *     does), so that command is checked against CommandSchema too: a misspelt field in
  *     the README would otherwise slip through.
+ *   - The hello and slice examples carry `serverNowMs`, as the server always sends it.
  *
  * What these tests deliberately do not cover:
  *   - Whether the prose around the examples is accurate; that is a review judgement.
@@ -104,5 +105,25 @@ describe('packages/shared/src/ws/README.md', () => {
 
     // Assert: none fails.
     expect(examplesThatFailTheirSchema, 'every README example must be a valid message').toEqual([]);
+  });
+
+  it('shows the time of the server clock on the hello and slice examples', () => {
+    // Arrange: read the README and keep its hello and slice examples.
+    const examples = readEveryJsonCodeBlock(readFileSync(protocolReadmePath, 'utf8'));
+    const helloAndSliceExamples = examples.filter((example) =>
+      ['hello', 'slice'].includes(describeMessageShape(example)),
+    );
+
+    // Act: read what each of them says the server's clock showed.
+    const serverClockTimesShown = helloAndSliceExamples.map(
+      (example) => typeof (example as { serverNowMs?: unknown }).serverNowMs,
+    );
+
+    // Assert: both carry a number. The schema would also accept them without it, so
+    // this is what keeps the page showing what the server really sends.
+    expect(
+      serverClockTimesShown,
+      'the hello and the slice example must each carry serverNowMs as a number',
+    ).toEqual(['number', 'number']);
   });
 });

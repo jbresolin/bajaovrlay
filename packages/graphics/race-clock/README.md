@@ -3,7 +3,7 @@
 The race clock OGraf graphic: session name, running race time, leader laps and a flag band.
 `race-clock.ograf.json` is what a renderer reads; its `main` points at the default export of
 `src/race-clock.ts` (a Lit element), which only wires the pure modules beside it: data model,
-time (`clockFormatting.ts`; the sum is `@bajaovrlay/shared/clock`, shared with the server), frame loop, GSAP animations, `ptBR.ts`.
+time (`clockFormatting.ts`; the sum and the server-aligned "now" it counts with, never `Date.now()`, are `@bajaovrlay/shared/clock`), frame loop, GSAP animations, `ptBR.ts`.
 Lifecycle: `load` once with complete data; `playAction` animates in, `stopAction` out;
 `updateAction` is accepted any time after load, on air or off, and refused only before it;
 every call answers a status code, never throws. Theme via `--baja-*` CSS custom properties.

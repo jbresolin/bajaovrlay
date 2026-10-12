@@ -12,6 +12,9 @@
  * What these tests prove (with a real server on a random port and a real SQLite file):
  *   - A client gets `hello` with every slice, including the seeded layers, on connect.
  *   - A command from client A produces a `slice` message on client B.
+ *   - `hello` and every `slice` message carry `serverNowMs`, the time the server's clock
+ *     showed when that message was built (the clock is held by the test), and a
+ *     `commandResult` does not.
  *   - The sender gets the slices first, then a `commandResult` echoing its requestId.
  *   - A refused command gets an error `commandResult` in pt-BR.
  *   - A message that is not JSON, or not in the protocol, or a binary frame, gets an
@@ -58,12 +61,21 @@ const takeRaceClockCommand = {
   },
 };
 
+// The server's clock is held at 14:32:05 UTC on 9 October 2026 unless a test moves it,
+// so the `serverNowMs` of every message can be compared exactly.
+const momentTheServerClockIsHeldAt = '2026-10-09T14:32:05.000Z';
+const momentTheServerClockIsHeldAtInMilliseconds = 1_791_556_325_000;
+
 /**
  * Starts the whole server on a random free port with a fresh temporary database and the
  * race clock registered (silent unless a logger is given). It is shut down when the test ends.
  */
 async function startServerOnARandomPort(
-  options: { heartbeatIntervalInMilliseconds?: number; logger?: ServerLogger } = {},
+  options: {
+    heartbeatIntervalInMilliseconds?: number;
+    logger?: ServerLogger;
+    readCurrentTime?: () => Date;
+  } = {},
 ) {
   const runningServer = await startServer({
     logger: options.logger ?? createLogger({ level: 'silent' }),
@@ -74,6 +86,7 @@ async function startServerOnARandomPort(
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     heartbeatIntervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
+    readCurrentTime: options.readCurrentTime ?? (() => new Date(momentTheServerClockIsHeldAt)),
   });
   onTestFinished(() => runningServer.close());
   return runningServer;
@@ -98,10 +111,12 @@ describe('connecting to /ws', () => {
     const client = await connectWebSocketTestClient(runningServer.port);
     const hello = await client.waitForMessage('hello', (message) => message.type === 'hello');
 
-    // Assert: hello carries the very slices the store holds, five layers among them.
-    expect(hello, 'hello must carry every slice the store holds').toEqual({
+    // Assert: hello carries the very slices the store holds, five layers among them,
+    // and the time the server's clock showed.
+    expect(hello, 'hello must carry every slice the store holds and the server clock').toEqual({
       type: 'hello',
       slices: runningServer.stateStore.readAllSlices(),
+      serverNowMs: momentTheServerClockIsHeldAtInMilliseconds,
     });
     expect(
       hello.type === 'hello' ? hello.slices.layers.length : 0,
@@ -124,16 +139,58 @@ describe('a command sent over /ws', () => {
       isInstancesSliceMessage,
     );
 
-    // Assert: the renderer hears about the new race-clock instance.
+    // Assert: the renderer hears about the new race-clock instance, with the time the
+    // server's clock showed.
     expect(sliceOnRenderer, 'the renderer must get the new instances slice').toEqual({
       type: 'slice',
       name: 'instances',
       slice: runningServer.stateStore.readAllSlices().instances,
+      serverNowMs: momentTheServerClockIsHeldAtInMilliseconds,
     });
     expect(
       sliceOnRenderer.type === 'slice' ? sliceOnRenderer.slice.length : 0,
       'exactly one instance must be on air',
     ).toBe(1);
+  });
+
+  it('stamps each slice message with the server clock as it is when that message is built', async () => {
+    // Arrange: a server whose clock the test sets by hand, and a renderer that connected
+    // at 14:32:05 and got its hello.
+    let momentTheServerClockShows = momentTheServerClockIsHeldAt;
+    const runningServer = await startServerOnARandomPort({
+      readCurrentTime: () => new Date(momentTheServerClockShows),
+    });
+    const controlPage = await connectWebSocketTestClient(runningServer.port);
+    const renderer = await connectWebSocketTestClient(runningServer.port);
+    const hello = await renderer.waitForMessage('hello', (message) => message.type === 'hello');
+
+    // Act: forty seconds later on the server's clock, the control page takes the race clock.
+    momentTheServerClockShows = '2026-10-09T14:32:45.000Z';
+    controlPage.sendJson({ type: 'command', requestId: 'pedido-6', command: takeRaceClockCommand });
+    // The event log slice is the last message a take causes, so waiting for it on the
+    // renderer means the instances slice before it has arrived too.
+    await renderer.waitForMessage(
+      'eventLog slice',
+      (message) => message.type === 'slice' && message.name === 'eventLog',
+    );
+
+    // Assert: the hello says 14:32:05, and both slice messages of the take (instances and
+    // event log) say 14:32:45: the clock is read for each message, not once at connect.
+    const serverClockOfEachSliceMessage = renderer
+      .readReceivedMessages()
+      .filter((message) => message.type === 'slice')
+      .map((message) => (message.type === 'slice' ? message.serverNowMs : undefined));
+    expect(
+      hello.type === 'hello' ? hello.serverNowMs : undefined,
+      'the hello must carry the server clock of the moment the client connected',
+    ).toBe(momentTheServerClockIsHeldAtInMilliseconds);
+    expect(
+      serverClockOfEachSliceMessage,
+      'each slice message must carry the server clock of forty seconds later',
+    ).toEqual([
+      momentTheServerClockIsHeldAtInMilliseconds + 40_000,
+      momentTheServerClockIsHeldAtInMilliseconds + 40_000,
+    ]);
   });
 
   it('answers the sender with the slices first, then a commandResult echoing its requestId', async () => {

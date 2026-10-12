@@ -20,7 +20,8 @@
  * What these tests deliberately do not cover:
  *   - The command's shape (label not empty, order a whole number); the shared schema
  *     tests in packages/shared/src/rundown cover it.
- *   - Whether the field values suit the graphic; that is only checked at the take.
+ *   - Whether the typed field values suit the graphic; that is only checked at the take.
+ *   - Which field may say takeTime; createItemTakeTimeField.test.ts.
  */
 import type { Command, CreateItemCommand, Item } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';

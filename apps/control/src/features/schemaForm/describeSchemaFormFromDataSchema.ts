@@ -143,8 +143,8 @@ function describeProperty(
   const propertySchema = isPlainRecord(propertySchemaAsWritten) ? propertySchemaAsWritten : {};
   const type = readOwnValueOfRecord(propertySchema, 'type');
   const isWholeNumber = type === 'integer';
-  const isWallClockMoment =
-    isWholeNumber && readBajaVendorKeywords(propertySchema).role === 'wallClock';
+  const role = readTextOrUndefined(readBajaVendorKeywords(propertySchema).role);
+  const isWallClockMoment = isWholeNumber && role === 'wallClock';
   const selectOptions = readSelectOptions(propertySchema);
   const control = chooseControlForProperty(key, propertySchema, selectOptions, isWallClockMoment);
 
@@ -161,6 +161,7 @@ function describeProperty(
     minimumLength: readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'minLength')),
     maximumLength: readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'maxLength')),
     offersTakeTime: control === 'number' && isWallClockMoment,
+    role,
     defaultDataValue: readOwnValueOfRecord(propertySchema, 'default'),
   };
 }

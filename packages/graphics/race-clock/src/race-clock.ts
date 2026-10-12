@@ -8,6 +8,7 @@
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
+import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 import { LitElement } from 'lit';
 
 import { type ClockTicker, createClockTicker } from './clockTicker.js';
@@ -117,7 +118,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     this.parts = parts;
     this.data = dataCheck.data;
     writeSessionCaptionAndLaps(parts, dataCheck.data);
-    writeClockTimeAt(parts, dataCheck.data, Date.now());
+    writeClockTimeAt(parts, dataCheck.data, readServerAlignedTimeMs());
     showFlagStateAtOnce(parts, dataCheck.data.state);
     placePanelOffAir(parts);
     this.lifecycle = 'offAir';
@@ -276,12 +277,19 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     return this.data;
   }
 
-  /** Called on every frame while on air: writes the clock time if it changed. */
+  /**
+   * Called on every frame while on air: writes the clock time if it changed. "Now" is
+   * the shared server-aligned time, never Date.now(): the reading in the data was
+   * stamped by the server's clock, and this machine's clock may differ from it.
+   * What could go wrong: on a page where no renderer has recorded a message from the
+   * server (the preview page, or the first moments of a renderer) that time is this
+   * machine's own, and the clock is off by whatever the two machines differ.
+   */
   private redrawClockTime(): void {
     if (this.data === undefined || this.parts === undefined) {
       return;
     }
-    writeClockTimeAt(this.parts, this.data, Date.now());
+    writeClockTimeAt(this.parts, this.data, readServerAlignedTimeMs());
   }
 
   /**

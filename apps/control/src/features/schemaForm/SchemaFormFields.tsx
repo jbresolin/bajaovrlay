@@ -5,6 +5,7 @@ import { ptBR } from '@/i18n/ptBR';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';
 import type { SchemaFormValues, UnsupportedValueAsJson } from './schemaFormValues';
+import type { TextShownInUntouchedField } from './textShownInUntouchedField';
 import { UnsupportedValueBox } from './UnsupportedValueBox';
 
 /**
@@ -40,6 +41,8 @@ function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
  * `controlIdPrefix` starts every element id. Two generated forms are on the page at once
  * (the item editor and "Edição rápida"), and with equal ids a label of the second would
  * point at a control of the first, so each must pass its own.
+ * `textShownInUntouchedField` lets the panel have one text or mm:ss field show a text of
+ * the panel's own while the operator has not touched it (textShownInUntouchedField.ts).
  */
 export function SchemaFormFields(props: {
   form: UseFormReturn<SchemaFormValues>;
@@ -47,8 +50,10 @@ export function SchemaFormFields(props: {
   controlIdPrefix: string;
   /** Turns every control off, for example while there is no connection. Default: false. */
   isDisabled?: boolean;
+  /** A text for one untouched field to show in place of its value. Default: none. */
+  textShownInUntouchedField?: TextShownInUntouchedField;
 }) {
-  const { form, description, controlIdPrefix } = props;
+  const { form, description, controlIdPrefix, textShownInUntouchedField } = props;
   const isDisabled = props.isDisabled ?? false;
   const unsupportedValuesAsJson =
     useWatch({ control: form.control, name: 'unsupportedValuesAsJson' }) ?? [];
@@ -98,6 +103,11 @@ export function SchemaFormFields(props: {
               field={field}
               controlId={`${controlIdPrefix}-field-${positionInTheForm}`}
               isDisabled={isDisabled}
+              textShownWhileUntouched={
+                textShownInUntouchedField?.fieldKey === field.key
+                  ? textShownInUntouchedField
+                  : undefined
+              }
             />
           </div>
         );

@@ -157,7 +157,7 @@ describe('race-clock.ograf.json settings', () => {
     ).toEqual({ defaultLayerId: 'clock', category: 'clock', updateRule: 'carryClockForward' });
   });
 
-  it('tells the generated form which field is a duration and which is a wall-clock moment', () => {
+  it('tells the control page which field is a duration and which four fields are the clock', () => {
     // Arrange: the data fields as the manifest describes them.
     const dataFields = Object.entries(raceClockManifest.schema.properties);
 
@@ -170,10 +170,17 @@ describe('race-clock.ograf.json settings', () => {
     }
 
     // Assert: the reference time is in milliseconds (so the form shows mm:ss) and the
-    // reference moment is a wall-clock field (so the form offers "at the take").
-    expect(hintsByField, 'only the two reference fields must carry a v_baja hint').toEqual({
-      referenceTimeMs: { unit: 'ms' },
+    // reference moment is a wall-clock field (so the form offers "at the take"). Each of
+    // the four clock fields has its role, which is how "Edição rápida" finds them to show
+    // the time on screen without knowing this graphic's field names.
+    expect(
+      hintsByField,
+      'the four clock fields, and no other field, must carry a v_baja hint, each with its role',
+    ).toEqual({
+      clockMode: { role: 'clockMode' },
+      referenceTimeMs: { unit: 'ms', role: 'clockTime' },
       referenceWallClockMs: { role: 'wallClock' },
+      running: { role: 'clockRunning' },
     });
   });
 

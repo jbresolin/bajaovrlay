@@ -79,3 +79,7 @@ export {
 
 // Draws the fields of a generated form for a react-hook-form `form`.
 export { SchemaFormFields } from './SchemaFormFields';
+// A text a panel has one untouched field show in place of the value the form holds.
+export type { TextShownInUntouchedField } from './textShownInUntouchedField';
+// Writes milliseconds as mm:ss ("12:34"), the way a duration field shows them.
+export { formatMillisecondsAsMinutesAndSeconds } from './minutesAndSeconds';

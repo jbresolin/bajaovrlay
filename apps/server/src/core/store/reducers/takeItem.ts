@@ -1,5 +1,6 @@
 import type { Item, Rundown, TakeGraphicCommand, TakeItemCommand } from '@bajaovrlay/shared';
 
+import { listKeysOfTakeTimeFields } from '../itemTakeTimeFields.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import { findItemThatFollows } from './itemOrdering.js';
@@ -39,9 +40,7 @@ export function reduceTakeItem(
     return { status: 'refused', error: resolution.error };
   }
 
-  const keysOfTakeTimeFields = Object.keys(item.fields).filter(
-    (fieldKey) => item.fields[fieldKey]?.kind === 'takeTime',
-  );
+  const keysOfTakeTimeFields = listKeysOfTakeTimeFields(item.fields);
 
   // An item always goes to the program output; previewing an item is a later task.
   const takeOfTheItemGraphic: TakeGraphicCommand = {

@@ -8,26 +8,37 @@ import {
   type Slices,
 } from '@bajaovrlay/shared';
 
-/** The `hello` a client gets right after connecting: every slice. */
-export function buildHelloMessage(slices: Slices): ServerMessage {
-  return { type: 'hello', slices };
+/**
+ * The `hello` a client gets right after connecting: every slice, and `serverNowMs`, what
+ * the server's wall clock shows now, in milliseconds.
+ */
+export function buildHelloMessage(slices: Slices, serverNowMs: number): ServerMessage {
+  return { type: 'hello', slices, serverNowMs };
 }
 
-/** The `slice` message for one slice, read from the current slices. */
-export function buildSliceMessage(sliceName: SliceName, slices: Slices): SliceMessage {
+/**
+ * The `slice` message for one slice, read from the current slices, with `serverNowMs`,
+ * what the server's wall clock shows now, in milliseconds. A renderer compares that with
+ * its own clock so the race clock on air counts on the server's.
+ */
+export function buildSliceMessage(
+  sliceName: SliceName,
+  slices: Slices,
+  serverNowMs: number,
+): SliceMessage {
   switch (sliceName) {
     case 'layers':
-      return { type: 'slice', name: 'layers', slice: slices.layers };
+      return { type: 'slice', name: 'layers', slice: slices.layers, serverNowMs };
     case 'graphics':
-      return { type: 'slice', name: 'graphics', slice: slices.graphics };
+      return { type: 'slice', name: 'graphics', slice: slices.graphics, serverNowMs };
     case 'instances':
-      return { type: 'slice', name: 'instances', slice: slices.instances };
+      return { type: 'slice', name: 'instances', slice: slices.instances, serverNowMs };
     case 'rundowns':
-      return { type: 'slice', name: 'rundowns', slice: slices.rundowns };
+      return { type: 'slice', name: 'rundowns', slice: slices.rundowns, serverNowMs };
     case 'items':
-      return { type: 'slice', name: 'items', slice: slices.items };
+      return { type: 'slice', name: 'items', slice: slices.items, serverNowMs };
     case 'eventLog':
-      return { type: 'slice', name: 'eventLog', slice: slices.eventLog };
+      return { type: 'slice', name: 'eventLog', slice: slices.eventLog, serverNowMs };
   }
 }
 

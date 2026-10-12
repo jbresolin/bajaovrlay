@@ -10,6 +10,7 @@ import type { SchemaFormDescription } from './schemaFormDescription';
 import { SchemaFormFields } from './SchemaFormFields';
 import { buildSchemaFormResolver } from './schemaFormResolver';
 import type { SchemaFormDirtyFields, SchemaFormValues } from './schemaFormValues';
+import type { TextShownInUntouchedField } from './textShownInUntouchedField';
 
 /** The start of every element id of the form on the test page. */
 export const controlIdPrefixOnTestPage = 'formulario-de-teste';
@@ -29,6 +30,8 @@ export function renderSchemaFormOnTestPage(options: {
   description: SchemaFormDescription;
   formValues: SchemaFormValues;
   isDisabled?: boolean;
+  /** A text for one untouched field to show in place of its value, as a panel hands it. */
+  textShownInUntouchedField?: TextShownInUntouchedField;
 }): SchemaFormOnTestPage {
   // The form lives inside the page; this holder is how the test reaches it afterwards.
   const holder: {
@@ -55,6 +58,7 @@ export function renderSchemaFormOnTestPage(options: {
         description={options.description}
         controlIdPrefix={controlIdPrefixOnTestPage}
         isDisabled={options.isDisabled}
+        textShownInUntouchedField={options.textShownInUntouchedField}
       />
     );
   }

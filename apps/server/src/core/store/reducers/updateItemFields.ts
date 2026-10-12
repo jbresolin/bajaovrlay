@@ -1,14 +1,21 @@
 import { isDeepStrictEqual } from 'node:util';
 
-import type { Item, UpdateItemFieldsCommand } from '@bajaovrlay/shared';
+import type { CommandError, Item, UpdateItemFieldsCommand } from '@bajaovrlay/shared';
 
+import { refuseUnknownGraphic } from '../commandRefusals.js';
+import {
+  findRefusalOfTakeTimeFieldsForGraphic,
+  listKeysOfTakeTimeFields,
+} from '../itemTakeTimeFields.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
  * updateItemFields: changes the parts of an item the command names (field values,
  * label, colour, notes, auto-out delay) and keeps every other part. Field values are
- * merged key by key over the item's own. Refused if the item does not exist.
+ * merged key by key over the item's own. Refused if the item does not exist, or if a
+ * field value in the command says takeTime and the item's graphic does not mark that
+ * field as a wall-clock moment (the check and the message of a take).
  * An update that leaves the item exactly as it was hands back the same slices.
  * What could go wrong: a graphic already on air from this item keeps the data it was
  * taken with; the change shows only the next time the item is taken.
@@ -21,6 +28,10 @@ export function reduceUpdateItemFields(
   if (itemBefore === undefined) {
     return { status: 'refused', error: refuseUnknownItem(command.itemId) };
   }
+  const refusalOfATakeTimeField = findRefusalOfTakeTimeFieldsInCommand(slices, itemBefore, command);
+  if (refusalOfATakeTimeField !== undefined) {
+    return { status: 'refused', error: refusalOfATakeTimeField };
+  }
 
   const itemAfter = buildItemWithChangedParts(itemBefore, command);
   // Compared by content: the editor may save a form the operator did not touch, and
@@ -30,6 +41,36 @@ export function reduceUpdateItemFields(
   }
   const itemsAfter = slices.items.map((item) => (item.id === itemBefore.id ? itemAfter : item));
   return { status: 'applied', slices: { ...slices, items: itemsAfter } };
+}
+
+/**
+ * The refusal for a takeTime value the command carries on a field the item's graphic does
+ * not mark as a wall-clock moment, or undefined when the command may go on.
+ * Only the fields in the command are judged. A takeTime the item already holds on a
+ * wrong field (saved before this check, or before the manifest changed) is left alone,
+ * so such an item can still be renamed or repaired; the take refuses it anyway.
+ * Deliberate: checked before the "nothing changed" comparison, so a wrong takeTime that
+ * a client of the API sends again is refused even though the item already holds it. (The
+ * control page's editor cannot send one: it offers takeTime on wall-clock fields only.)
+ * Deliberate: when the item's graphic is no longer registered there is no manifest to
+ * say the field is a moment, so a command carrying a takeTime value is refused with
+ * GRAPHIC_NOT_FOUND, while one carrying none is applied as it always was.
+ */
+function findRefusalOfTakeTimeFieldsInCommand(
+  slices: SlicesChangedByCommands,
+  itemBefore: Item,
+  command: UpdateItemFieldsCommand,
+): CommandError | undefined {
+  const fieldsInCommand = command.fields ?? {};
+  const commandCarriesATakeTimeField = listKeysOfTakeTimeFields(fieldsInCommand).length > 0;
+  if (!commandCarriesATakeTimeField) {
+    return undefined;
+  }
+  const graphicOfTheItem = slices.graphics.find((graphic) => graphic.id === itemBefore.graphicId);
+  if (graphicOfTheItem === undefined) {
+    return refuseUnknownGraphic(itemBefore.graphicId);
+  }
+  return findRefusalOfTakeTimeFieldsForGraphic(graphicOfTheItem, fieldsInCommand);
 }
 
 /** A copy of the item with each part the command names replaced, and the rest kept. */

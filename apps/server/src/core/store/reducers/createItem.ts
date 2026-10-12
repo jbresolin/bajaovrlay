@@ -1,6 +1,7 @@
 import { type CreateItemCommand, type Item, listItemsOfRundownInOrder } from '@bajaovrlay/shared';
 
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
+import { findRefusalOfTakeTimeFieldsForGraphic } from '../itemTakeTimeFields.js';
 import { refuseUnknownRundown } from '../rundownCommandRefusals.js';
 import { numberItemsByPositionInList } from './itemOrdering.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
@@ -9,9 +10,12 @@ import { putRundownCursorOnItem } from './rundownCursor.js';
 /**
  * createItem: adds a prepared item to a rundown, at the end or at the position the
  * command names (the items from there on move down by one; a position past the end
- * means the end). Refused if the rundown, the layer or the graphic does not exist.
+ * means the end). Refused if the rundown, the layer or the graphic does not exist, or if
+ * a field says takeTime and the graphic's schema does not mark that field as a
+ * wall-clock moment (the check and the message of a take; a graphic without a schema
+ * accepts no takeTime field).
  * The first item of an empty rundown also gets the cursor, so "next" works at once.
- * What could go wrong: the field values are not checked against the graphic here, so
+ * What could go wrong: typed field values are not checked against the graphic here, so
  * an item with a wrong value is only refused when it is taken.
  */
 export function reduceCreateItem(
@@ -27,9 +31,17 @@ export function reduceCreateItem(
   if (!layerExists) {
     return { status: 'refused', error: refuseUnknownLayer(command.layerId) };
   }
-  const graphicIsRegistered = slices.graphics.some((graphic) => graphic.id === command.graphicId);
-  if (!graphicIsRegistered) {
+  const graphic = slices.graphics.find(
+    (registeredGraphic) => registeredGraphic.id === command.graphicId,
+  );
+  if (graphic === undefined) {
     return { status: 'refused', error: refuseUnknownGraphic(command.graphicId) };
+  }
+  // Said now, while the rundown is being prepared, rather than at the press of Space on
+  // air: a field may say takeTime only if the graphic marks it as a wall-clock moment.
+  const refusalOfATakeTimeField = findRefusalOfTakeTimeFieldsForGraphic(graphic, command.fields);
+  if (refusalOfATakeTimeField !== undefined) {
+    return { status: 'refused', error: refusalOfATakeTimeField };
   }
 
   const itemsAlreadyInRundown = listItemsOfRundownInOrder(slices.items, command.rundownId);

@@ -14,6 +14,11 @@
  *     except the pt-BR catalog (src/i18n/) and the tests and their support files
  *     (*.test.ts, *.test.tsx, *.testSupport.ts, *.testSupport.tsx). A failure names each
  *     file and line.
+ *   - One exception, spelled out: features/playout/timeOnScreenOfClockOnAir.ts may hold
+ *     `referenceWallClockMs`, because that is also the name of a property of the shared
+ *     ClockReading (packages/shared/src/clock) which the shared clock sum takes. The
+ *     file fills that property from a key found in the manifest; it reads no graphic's
+ *     data under that name. The graphic's id is still refused there.
  *   - The search itself works: it reports the right lines of a text that has the words,
  *     and it really went through the page's files (it saw the shell and a feature file).
  *
@@ -40,8 +45,21 @@ const textOfEveryFileUnderSrc: Record<string, string> = import.meta.glob('./**/*
   eager: true,
 });
 
+// The one file that hands the shared clock sum its reading, and the one word it may
+// hold: the name of the ClockReading property for the moment of the reading. Remove
+// this exception if packages/shared ever gives that property a name of its own.
+const fileThatBuildsTheSharedClockReading = './features/playout/timeOnScreenOfClockOnAir.ts';
+const propertyNameOfTheSharedClockReading = 'referenceWallClockMs';
+
 /** One place where a race clock word was found. */
 type ForbiddenWordFound = { filePath: string; lineNumber: number; word: string };
+
+/** Answers whether a finding is the shared ClockReading's property name in the one file allowed to hold it. */
+function isSharedClockReadingPropertyInItsOneFile(found: ForbiddenWordFound): boolean {
+  const isTheOneFile = found.filePath === fileThatBuildsTheSharedClockReading;
+  const isThePropertyName = found.word === propertyNameOfTheSharedClockReading;
+  return isTheOneFile && isThePropertyName;
+}
 
 /** Answers whether a file may name the race clock: the catalog, tests and test support. */
 function mayFileNameTheRaceClock(filePath: string): boolean {
@@ -96,6 +114,39 @@ describe('the search for race clock words', () => {
     ]);
   });
 
+  it('lets the shared clock reading’s property name pass in one file only, and nothing else there', () => {
+    // Arrange: the same two lines found in the file that builds the shared reading and
+    // in another file of the same folder.
+    const textWithBothWords = [
+      'return { referenceWallClockMs: referenceMomentMs };',
+      "const isTheClock = graphic.id === 'race-clock';",
+    ].join('\n');
+    const foundInTheOneFile = findRaceClockWordsInText(
+      './features/playout/timeOnScreenOfClockOnAir.ts',
+      textWithBothWords,
+    );
+    const foundInAnotherFile = findRaceClockWordsInText(
+      './features/playout/QuickEditForm.tsx',
+      textWithBothWords,
+    );
+
+    // Act: take out the findings the exception covers.
+    const stillForbidden = [...foundInTheOneFile, ...foundInAnotherFile].filter(
+      (found) => !isSharedClockReadingPropertyInItsOneFile(found),
+    );
+
+    // Assert: only the property name in the one file passes. The graphic's id there,
+    // and both words anywhere else, are still reported.
+    expect(
+      stillForbidden.map(describeForbiddenWordFound),
+      'the exception must cover one word in one file and nothing more',
+    ).toEqual([
+      'apps/control/src/features/playout/timeOnScreenOfClockOnAir.ts:2 — race-clock',
+      'apps/control/src/features/playout/QuickEditForm.tsx:1 — referenceWallClockMs',
+      'apps/control/src/features/playout/QuickEditForm.tsx:2 — race-clock',
+    ]);
+  });
+
   it('went through the files of the control page', () => {
     // Arrange: nothing; the files were read when this test file was loaded.
 
@@ -118,10 +169,11 @@ describe('apps/control/src', () => {
       ([filePath]) => !mayFileNameTheRaceClock(filePath),
     );
 
-    // Act: search each of them for the race clock's words.
-    const wordsFound = filesThatMustNotNameTheRaceClock.flatMap(([filePath, text]) =>
-      findRaceClockWordsInText(filePath, text),
-    );
+    // Act: search each of them for the race clock's words, and take out the one
+    // exception (the shared clock reading's property name in the file that builds it).
+    const wordsFound = filesThatMustNotNameTheRaceClock
+      .flatMap(([filePath, text]) => findRaceClockWordsInText(filePath, text))
+      .filter((found) => !isSharedClockReadingPropertyInItsOneFile(found));
 
     // Assert: nothing was found. On failure the list below says where to look.
     expect(

@@ -123,7 +123,10 @@ export async function startFakeServerForPage(
     connection.onMessage((messageText) => {
       messagesFromThePage.push(JSON.parse(String(messageText)));
     });
-    connection.send(JSON.stringify({ type: 'hello', slices }));
+    // As the real server does, each message says what the server's clock shows. Here the
+    // "server" is this test process, on the same machine as the page, so the renderer
+    // measures a difference of about zero.
+    connection.send(JSON.stringify({ type: 'hello', slices, serverNowMs: Date.now() }));
   });
 
   await page.route('**/graphics/fake-graphic/*', (route) => {
@@ -157,7 +160,12 @@ export async function startFakeServerForPage(
     sendInstances: (instances) => {
       slices.instances = instances;
       latestConnection().send(
-        JSON.stringify({ type: 'slice', name: 'instances', slice: instances }),
+        JSON.stringify({
+          type: 'slice',
+          name: 'instances',
+          slice: instances,
+          serverNowMs: Date.now(),
+        }),
       );
     },
     dropConnection: () => latestConnection().close(),

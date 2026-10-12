@@ -22,8 +22,11 @@
  *   - A take-time field on the race clock's reference moment, which is accepted;
  *     takeItemTakeTime.test.ts covers it.
  *   - The same check for a take by hand; takeGraphicClearedAndStampedFields.test.ts.
- *   - Saving such an item: createItem and updateItemFields store it, and only the take
- *     refuses it. graphicSchemaProperties.test.ts covers how the schema is read.
+ *   - Saving such an item: createItem and updateItemFields refuse it too
+ *     (createItemTakeTimeField.test.ts, updateItemFieldsTakeTimeField.test.ts). The take
+ *     still checks, because an item may have been saved before that rule or before its
+ *     graphic's manifest changed. graphicSchemaProperties.test.ts covers how the schema
+ *     is read.
  */
 import type { Graphic, Item } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';

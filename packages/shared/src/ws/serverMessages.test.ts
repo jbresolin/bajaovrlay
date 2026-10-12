@@ -9,6 +9,8 @@
  *
  * What these tests prove:
  *   - A `slice` message is accepted only when its contents match the slice it names.
+ *   - `hello` and `slice` may carry `serverNowMs`, the time of the server's clock in
+ *     whole milliseconds; it survives validation, and a wrong kind of value is refused.
  *   - An ok `commandResult` echoes the requestId; an error one must carry a code from
  *     the closed list and a pt-BR message.
  *   - A message with an unknown `type` is refused.
@@ -51,6 +53,93 @@ describe('ServerMessageSchema', () => {
 
     // Assert: it is refused, so a client never stores layers as instances.
     expect(result.success, 'the slice contents must match the slice name').toBe(false);
+  });
+
+  const serverClockScenarios = [
+    // What the server sends: the time of its own clock, in whole milliseconds since 1970.
+    {
+      name: 'accepts a slice message carrying the time of the server clock',
+      message: {
+        type: 'slice',
+        name: 'layers',
+        slice: [lowerThirdLayer],
+        serverNowMs: 1_791_556_325_000,
+      },
+      isAccepted: true,
+    },
+    // The same on the first message of a connection.
+    {
+      name: 'accepts a hello carrying the time of the server clock',
+      message: {
+        type: 'hello',
+        slices: { layers: [], graphics: [], instances: [], rundowns: [], items: [], eventLog: [] },
+        serverNowMs: 1_791_556_325_000,
+      },
+      isAccepted: true,
+    },
+    // Optional in the schema (see serverMessages.ts): test stand-ins for the server that
+    // were written before the field existed leave it out, and a client then takes no sample.
+    {
+      name: 'accepts a hello that leaves the time of the server clock out',
+      message: {
+        type: 'hello',
+        slices: { layers: [], graphics: [], instances: [], rundowns: [], items: [], eventLog: [] },
+      },
+      isAccepted: true,
+    },
+    // A clock in text would be added to a number as text by a careless client.
+    {
+      name: 'refuses a server clock time written as text',
+      message: {
+        type: 'slice',
+        name: 'layers',
+        slice: [lowerThirdLayer],
+        serverNowMs: '2026-10-09T14:32:05.000Z',
+      },
+      isAccepted: false,
+    },
+    // Milliseconds are whole; a fraction means something other than Date.now() wrote it.
+    {
+      name: 'refuses a server clock time with a fraction of a millisecond',
+      message: {
+        type: 'slice',
+        name: 'layers',
+        slice: [lowerThirdLayer],
+        serverNowMs: 1_791_556_325_000.5,
+      },
+      isAccepted: false,
+    },
+  ];
+
+  it.each(serverClockScenarios)('$name', ({ message, isAccepted }) => {
+    // Arrange: a hello or slice message (from the table above).
+    const messageWithOrWithoutTheServerClock = message;
+
+    // Act: check the message.
+    const result = ServerMessageSchema.safeParse(messageWithOrWithoutTheServerClock);
+
+    // Assert: it is accepted or refused as the row says.
+    expect(result.success, 'the server clock time must be judged as the scenario says').toBe(
+      isAccepted,
+    );
+  });
+
+  it('keeps the time of the server clock on the message it accepts', () => {
+    // Arrange: an instances slice stamped by the server at 14:32:05 UTC on 9 October 2026.
+    const stampedSliceMessage = {
+      type: 'slice',
+      name: 'instances',
+      slice: [],
+      serverNowMs: 1_791_556_325_000,
+    };
+
+    // Act: check the message.
+    const result = ServerMessageSchema.safeParse(stampedSliceMessage);
+
+    // Assert: the time is still there after validation, so the renderer can read it.
+    expect(result.data, 'validation must not drop the server clock time').toEqual(
+      stampedSliceMessage,
+    );
   });
 
   const commandResultScenarios = [

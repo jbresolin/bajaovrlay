@@ -5,8 +5,8 @@
 // the panel's test files read the same. Nothing here keeps state between calls.
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
 import type { Graphic, Instance } from '@bajaovrlay/shared';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { expect } from 'vitest';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { expect, vi } from 'vitest';
 import { z } from 'zod';
 
 import {
@@ -65,6 +65,42 @@ export function renderQuickEditPanelWithTheseInstancesOnAir(
     ...buildSlicesWithNothingOnAir(),
     graphics: buildGraphicsTheFakeServerLists(),
     instances: instancesOnAir,
+  });
+}
+
+/**
+ * Makes the page's clock read this moment and stand still there, so the time field of a
+ * clock on air shows a time the test can name. Only the clock is held: timers go on in
+ * real time, so the waits of the helpers below work as usual, and the panel's
+ * once-a-second redraw finds the same moment every time. A test that must see a second
+ * pass uses `vi.useFakeTimers()` itself and moves time by hand. testSetup.ts gives the
+ * next test a real clock again.
+ */
+export function holdThePageClockAt(momentAsIsoText: string): void {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(momentAsIsoText));
+}
+
+/**
+ * Makes all time on the page stand still at this moment until the test moves it
+ * (`vi.useFakeTimers()`): the clock and every timer. For tests that must see a second
+ * pass: "a second later" then takes no real time and is exactly a second. The helpers
+ * below that wait (`pressButtonAndWaitForCommand` and the like) cannot be used with it;
+ * use letTimePassAndThePageSettle instead.
+ */
+export function holdAllTimeOnThePageAt(momentAsIsoText: string): void {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(momentAsIsoText));
+}
+
+/**
+ * Moves the page's clock forward and lets the page finish what it started (drawing
+ * again, checking a form, sending a command). Zero milliseconds means "just let it
+ * finish". Only after holdAllTimeOnThePageAt().
+ */
+export async function letTimePassAndThePageSettle(milliseconds: number): Promise<void> {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(milliseconds);
   });
 }
 

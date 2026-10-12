@@ -169,6 +169,8 @@ describe('an instanceStatus message', () => {
       type: 'slice',
       name: 'instances',
       slice: runningServer.stateStore.readAllSlices().instances,
+      // The time of the server's clock; webSocketHub.test.ts checks its exact value.
+      serverNowMs: expect.any(Number),
     });
     expect(resultOnRenderer, 'the renderer must be answered ok, with a null requestId').toEqual({
       type: 'commandResult',

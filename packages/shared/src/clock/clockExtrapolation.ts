@@ -26,8 +26,9 @@ export type ClockReading = {
  * The result may be negative for a countdown; whoever shows or stores it clamps it.
  *
  * What could go wrong: the reading's wall clock is the server's and, in the graphic,
- * `now` is the OBS machine's. If those two clocks disagree, the shown time is off by
- * the difference.
+ * `now` is read on the OBS machine. If those two clocks disagree, the shown time is off
+ * by the difference; that is why the graphic passes readServerAlignedTimeMs() here
+ * (serverAlignedTime.ts) and never its own Date.now().
  */
 export function computeClockTimeMsAtWallClock(
   reading: ClockReading,
