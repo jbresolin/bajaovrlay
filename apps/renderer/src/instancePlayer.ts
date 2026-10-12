@@ -13,7 +13,8 @@
  *     of any other.
  *   - Every instance the player tries to put on air is reported to the server exactly as
  *     it ended: `on-air` once its playAction resolved, `failed` with the reason otherwise.
- *     The one exception is a program monitor, whose player has no reporter and tells nothing.
+ *     The exceptions are a program monitor and a preview page, whose player has no
+ *     reporter and tells nothing.
  *
  * What could go wrong: the renderer only awaits the graphic's promises (concept §6). A
  * graphic whose promise never settles blocks its own layer until the page is reloaded;
@@ -41,8 +42,8 @@ export type InstancePlayer = {
 /**
  * What the player works with. `reportInstanceStatus` is how it tells the server what
  * happened to an instance (renderer.ts hands it the connection's sendInstanceStatus).
- * A program monitor leaves it out: that page is not the program output, so it must tell
- * the server nothing (instancePlayer.noReporter.test.ts). `logEvent` is replaceable so a
+ * A program monitor and a preview page leave it out: such a page is not the program
+ * output, so it must tell the server nothing (instancePlayer.noReporter.test.ts). `logEvent` is replaceable so a
  * test can capture the log.
  */
 export type InstancePlayerOptions = {
@@ -52,10 +53,10 @@ export type InstancePlayerOptions = {
   logEvent?: typeof logRendererEvent;
 };
 
-/** Stands in for the reporter on a page that was given none (a program monitor). */
+/** Stands in for the reporter on a page that was given none (a monitor, a preview page). */
 function reportNothingToTheServer(): void {
   // Empty on purpose. Everything the player does around a report (the log line, the
-  // empty layer, the queue going on) must happen on a monitor too; only the telling stops.
+  // empty layer, the queue going on) must happen on such a page too; only the telling stops.
 }
 
 /** Builds the player for one stage. Nothing is on any layer until operations arrive. */

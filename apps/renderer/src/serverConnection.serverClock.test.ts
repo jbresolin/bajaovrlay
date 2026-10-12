@@ -12,8 +12,12 @@
  *   - Before any message the shared "now" is the machine's own time.
  *   - After the hello it is the server's time; slice messages keep it there as time passes.
  *   - A program monitor (`?monitor=1`, plain `/ws`) gets the same correction.
+ *   - A `time` message, which the server sends every ten seconds, gives a sample exactly
+ *     as a hello does, and the renderer does nothing else with it: no delivery, no log line.
  *   - A message without `serverNowMs`, a `commandResult` and the state read over HTTP
- *     give no sample, and nothing breaks.
+ *     give no sample, and nothing breaks. "No sample" is not "offset zero": before any
+ *     sample the time read stays the machine's own, and a correction already learned is
+ *     left exactly as it was.
  *   - One message that spent 850 ms on the network does not move the time read.
  *
  * What these tests deliberately do not cover:
@@ -174,7 +178,137 @@ describe('the time of the server clock, learned from its messages', () => {
   });
 });
 
+describe('the time message the server sends every ten seconds', () => {
+  it('gives a sample exactly as a hello does, on a page that had none', () => {
+    // Arrange: a connection on the machine that is 2.3 s behind, which has heard nothing.
+    const connection = startConnectionOnAMachineBehindTheServer();
+
+    // Act: the server's ten-second time message arrives, saying 14:32:05.
+    connection.latestSocket().simulateMessage({
+      type: 'time',
+      serverNowMs: serverTimeAtTheHelloMs,
+    });
+
+    // Assert: the shared "now" is the server's time.
+    expect(readServerAlignedTimeMs(), 'a time message must correct the time read').toBe(
+      serverTimeAtTheHelloMs,
+    );
+  });
+
+  it('keeps the time read on the server clock through a quiet minute with no slice message', () => {
+    // Arrange: a connection that got its hello; then nothing changes on the server.
+    const connection = startConnectionOnAMachineBehindTheServer();
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([createEnduroClockInstance()]),
+      serverNowMs: readServerClockNowMs(),
+    });
+
+    // Act: twenty seconds in, a time sync moves this machine's clock 5 s further back
+    // (it is now 7.3 s behind the server); the time messages keep coming every ten
+    // seconds until the minute is over, each saying what the server's clock shows.
+    let lagOfThisMachineMs = renderMachineLagMs;
+    for (let secondsSinceTheHello = 10; secondsSinceTheHello <= 60; secondsSinceTheHello += 10) {
+      vi.setSystemTime(Date.now() + 10_000);
+      if (secondsSinceTheHello === 20) {
+        vi.setSystemTime(Date.now() - 5_000);
+        lagOfThisMachineMs = renderMachineLagMs + 5_000;
+      }
+      connection.latestSocket().simulateMessage({
+        type: 'time',
+        serverNowMs: Date.now() + lagOfThisMachineMs,
+      });
+    }
+
+    // Assert: a minute after the hello the time read is the server's again, although no
+    // slice changed in between. Without the time messages it would be 5 s behind.
+    expect(
+      readServerAlignedTimeMs(),
+      'the time messages alone must bring the time read back to the server clock',
+    ).toBe(serverTimeAtTheHelloMs + 60_000);
+  });
+
+  it('does nothing else with it: no delivery and no log line', () => {
+    // Arrange: a connection that got its hello, and how many log lines it has written.
+    const connection = startConnectionOnAMachineBehindTheServer();
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([createEnduroClockInstance()]),
+      serverNowMs: serverTimeAtTheHelloMs,
+    });
+    const numberOfLogLinesBefore = connection.logLines.length;
+
+    // Act: a time message arrives.
+    connection.latestSocket().simulateMessage({
+      type: 'time',
+      serverNowMs: serverTimeAtTheHelloMs,
+    });
+
+    // Assert: still only the delivery of the hello (so the stage is not rebuilt or
+    // touched every ten seconds), and nothing was written to the log.
+    expect(connection.deliveries, 'a time message must deliver no slices').toHaveLength(1);
+    expect(connection.logLines.length, 'a time message must write no log line').toBe(
+      numberOfLogLinesBefore,
+    );
+  });
+});
+
 describe('what gives no sample of the server clock', () => {
+  it('leaves a correction already learned exactly as it was after messages without serverNowMs', () => {
+    // Arrange: a connection that learned from its hello that it is 2.3 s behind.
+    const connection = startConnectionOnAMachineBehindTheServer();
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([]),
+      serverNowMs: serverTimeAtTheHelloMs,
+    });
+
+    // Act: five messages that leave the server's time out arrive: slices and a hello.
+    // Read as "the clocks agree" (an offset of zero), five of them would outvote the one
+    // real sample and put the time read back on the machine's own clock.
+    for (let messageNumber = 1; messageNumber <= 4; messageNumber += 1) {
+      connection.latestSocket().simulateMessage({
+        type: 'slice',
+        name: 'instances',
+        slice: [createEnduroClockInstance()],
+      });
+    }
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([createEnduroClockInstance()]),
+    });
+
+    // Assert: the time read is still the server's; the messages were delivered as always.
+    expect(
+      readServerAlignedTimeMs(),
+      'a message without serverNowMs must never count as an offset of zero',
+    ).toBe(serverTimeAtTheHelloMs);
+    expect(connection.deliveries, 'all six messages must still deliver their slices').toHaveLength(
+      6,
+    );
+  });
+
+  it('leaves the time read on the clock of the machine after a slice without serverNowMs', () => {
+    // Arrange: a connection whose hello left the server's time out, so it has no sample.
+    const connection = startConnectionOnAMachineBehindTheServer();
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([]),
+    });
+
+    // Act: a slice message that also leaves it out arrives.
+    connection.latestSocket().simulateMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [createEnduroClockInstance()],
+    });
+
+    // Assert: still the machine's own time: nothing was recorded.
+    expect(readServerAlignedTimeMs(), 'no serverNowMs, so no correction').toBe(
+      serverTimeAtTheHelloMs - renderMachineLagMs,
+    );
+  });
+
   const messagesWithoutASample = [
     // A stand-in server written before the field existed: the schema lets it be left out.
     {

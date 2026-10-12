@@ -13,6 +13,11 @@
  *     a computer whose own clock is 2.3 seconds behind.
  *   - A message without `serverNowMs` (an older server) gives no sample, so the shared
  *     "now" stays this computer's own clock.
+ *   - "No sample" is not "offset zero": a correction already learned is left exactly as
+ *     it was by hello and slice messages that carry no server time.
+ *   - The `time` message the server sends every ten seconds gives a sample exactly as a
+ *     hello does, and the page does nothing else with it: the store is untouched and no
+ *     log line is written.
  *
  * What these tests deliberately do not cover:
  *   - How samples become one offset (the median of the last five); that is
@@ -93,5 +98,86 @@ describe('the server clock samples of the control page', () => {
       readServerAlignedTimeMs(),
       'without a server time the shared clock must read the clock of this computer',
     ).toBe(thisComputersTimeMs);
+  });
+
+  it('keeps a correction already learned when later messages carry no server time', () => {
+    // Arrange: the same computer, which learned from a hello that it is 2.3 seconds behind.
+    vi.useFakeTimers();
+    vi.setSystemTime(thisComputersTimeMs);
+    const { fakeServerSocket } = connectControlPageToFakeServer();
+    fakeServerSocket.acceptConnection();
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+      serverNowMs: serverTimeMs,
+    });
+
+    // Act: four slice messages and a hello arrive with no server time in them. Read as
+    // "the clocks agree" (an offset of zero), five of them would outvote the one real
+    // sample and put the page back on this computer's own clock.
+    for (let messageNumber = 1; messageNumber <= 4; messageNumber += 1) {
+      fakeServerSocket.sendMessage({ type: 'slice', name: 'instances', slice: [] });
+    }
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+    });
+
+    // Assert: "now" for the page is still the server's time.
+    expect(
+      readServerAlignedTimeMs(),
+      'a message without a server time must never count as an offset of zero',
+    ).toBe(serverTimeMs);
+  });
+});
+
+describe('the time message the server sends every ten seconds', () => {
+  it('gives a sample exactly as a hello does, on a page whose hello carried no time', () => {
+    // Arrange: this computer 2.3 seconds behind, connected by a hello with no time in it.
+    vi.useFakeTimers();
+    vi.setSystemTime(thisComputersTimeMs);
+    const { fakeServerSocket } = connectControlPageToFakeServer();
+    fakeServerSocket.acceptConnection();
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+    });
+
+    // Act: the server's time message arrives.
+    fakeServerSocket.sendMessage({ type: 'time', serverNowMs: serverTimeMs });
+
+    // Assert: "now" for the page is the server's time.
+    expect(
+      readServerAlignedTimeMs(),
+      'a time message must put the shared clock on the time of the server',
+    ).toBe(serverTimeMs);
+  });
+
+  it('changes nothing in the store and writes no log line', () => {
+    // Arrange: a connected page, and what its store and its log hold at this point.
+    vi.useFakeTimers();
+    vi.setSystemTime(thisComputersTimeMs);
+    const { fakeServerSocket, serverStateStore, recordedLogLines } =
+      connectControlPageToFakeServer();
+    fakeServerSocket.acceptConnection();
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+      serverNowMs: serverTimeMs,
+    });
+    const storeStateBefore = serverStateStore.getState();
+    const numberOfLogLinesBefore = recordedLogLines.length;
+
+    // Act: a time message arrives.
+    fakeServerSocket.sendMessage({ type: 'time', serverNowMs: serverTimeMs });
+
+    // Assert: the store holds the very same state object (nothing was set, so no
+    // component redraws every ten seconds), and the log has no new line.
+    expect(serverStateStore.getState(), 'a time message must not touch the store').toBe(
+      storeStateBefore,
+    );
+    expect(recordedLogLines.length, 'a time message must write no log line').toBe(
+      numberOfLogLinesBefore,
+    );
   });
 });

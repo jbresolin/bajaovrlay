@@ -27,6 +27,9 @@
  *     so any data is accepted.
  *   - The seven item and rundown commands (createItem, updateItemFields, deleteItem,
  *     reorderItems, moveCursor, takeItem, takeNext), which have a test file each too.
+ *   - The four preview commands (previewItem, previewGraphic, stopPreview, takePreview),
+ *     which have a test file each, and what the clears do to a preview made by them
+ *     (previewAndOlderCommands.test.ts).
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';

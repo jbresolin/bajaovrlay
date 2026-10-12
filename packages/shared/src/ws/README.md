@@ -13,7 +13,11 @@ Every message is one JSON object, told apart by its `type` field:
   the message was built. A renderer subtracts its own clock from it and keeps the median of
   the last five differences, so the race clock on air counts on the server's clock
   (`../clock/serverAlignedTime.ts`). The schema lets a message leave it out (test
-  stand-ins do); the server always sends it. `commandResult` does not carry it.
+  stand-ins do); the server always sends it. `commandResult` does not carry it. A message
+  without it gives a page no sample at all; it is never read as "the clocks agree".
+- `time` (server → every client, every 10 s): `serverNowMs` and nothing else, so a page
+  keeps getting samples while no slice changes. Here the field is required. A page
+  records the sample and does nothing more with the message.
 - `command` (client → server): the only way an operator changes state. `requestId` is
   optional and is echoed in the `commandResult`.
 - `instanceStatus` (renderer → server): what really happened to an instance on screen,
@@ -109,6 +113,12 @@ not answer the previous ping.
 }
 ```
 
+## time
+
+```json
+{ "type": "time", "serverNowMs": 1791550810000 }
+```
+
 ## command
 
 ```json
@@ -141,6 +151,28 @@ milliseconds, into each of them, so a client never sends its own clock.
     "instanceId": "7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11",
     "data": { "state": "yellow" }
   }
+}
+```
+
+## command (preview, then take)
+
+`previewItem` shows an item on the preview output of its layer (`previewGraphic` does
+the same for hand-typed data); `takePreview` then sends exactly what was previewed on
+that layer to program, and `stopPreview` throws it away (`"layerId": null` for every layer).
+
+```json
+{
+  "type": "command",
+  "requestId": "pedido-20",
+  "command": { "type": "previewItem", "itemId": "b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10" }
+}
+```
+
+```json
+{
+  "type": "command",
+  "requestId": "pedido-21",
+  "command": { "type": "takePreview", "layerId": "clock" }
 }
 ```
 

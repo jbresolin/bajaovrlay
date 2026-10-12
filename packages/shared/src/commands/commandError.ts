@@ -41,6 +41,8 @@ export const CommandErrorCodeSchema = z.enum([
   'RUNDOWN_CURSOR_EMPTY',
   /** An item has a field value of a kind the server cannot resolve before M2. */
   'UNSUPPORTED_FIELD_KIND',
+  /** takePreview named a layer that has nothing on its preview output. */
+  'LAYER_PREVIEW_EMPTY',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

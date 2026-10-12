@@ -8,7 +8,8 @@
  *   goes to the stream, so it must never tell the server "this is on air" or "this failed":
  *   only the page OBS loads may (gate-2 ruling on BAJAOVRLAY-12). renderer.ts therefore
  *   builds the monitor's instancePlayer without a `reportInstanceStatus` function. There
- *   is nothing to send with and nothing is attempted.
+ *   is nothing to send with and nothing is attempted. The preview page
+ *   (`?target=preview`) gets the very same player, so what is proven here holds there.
  *
  * What these tests prove, for a player built without a reporter:
  *   - A taken graphic is loaded and played on its layer exactly as on the program page.

@@ -12,9 +12,11 @@
  *   - Everything drawn before is disposed at once (no out-animation), and everything on
  *     air now is loaded with its in-animation skipped, so the viewers see no replay.
  *   - Even an instance that did not change is disposed and loaded again.
- *   - Instances on the `preview` output are left out.
+ *   - Instances on the `preview` output are left out by the page that draws `program`.
  *
  * What these tests deliberately do not cover:
+ *   - The rebuild of a page that draws the `preview` output;
+ *     instanceReconciler.preview.test.ts.
  *   - Ordinary changes between two slices (take, update, replace, clear);
  *     instanceReconciler.test.ts covers those.
  *   - The calls made on the graphics during a rebuild; e2e/lifecycle.e2e.ts checks them
@@ -45,6 +47,7 @@ describe('decideRebuildOperations', () => {
     const layerOperations = decideRebuildOperations({
       previousInstances: instancesDrawnBeforeTheDrop,
       nextInstances: instancesOnAirNow,
+      drawnOutput: 'program',
     });
 
     // Assert: the old clock goes at once, and both graphics appear without animating in.
@@ -80,6 +83,7 @@ describe('decideRebuildOperations', () => {
     const layerOperations = decideRebuildOperations({
       previousInstances: instancesBeforeAndAfter,
       nextInstances: instancesBeforeAndAfter,
+      drawnOutput: 'program',
     });
 
     // Assert: it is disposed and loaded again; a rebuild never assumes what is drawn.
@@ -105,6 +109,7 @@ describe('decideRebuildOperations', () => {
     const layerOperations = decideRebuildOperations({
       previousInstances: [],
       nextInstances: rehearsalOnly,
+      drawnOutput: 'program',
     });
 
     // Assert: nothing to do; /render/ draws the program output only.

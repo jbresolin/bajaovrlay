@@ -12,12 +12,13 @@
  *
  * What these tests prove:
  *   - The system may send clearLayer and is refused a take, the panic clear, a rundown
- *     take and a screen report.
- *   - An operator may send every command that changes what is on air, and each of the
- *     seven item and rundown commands.
+ *     take, a screen report and each of the four preview commands.
+ *   - An operator may send every command that changes what is on air, each of the
+ *     seven item and rundown commands and each of the four preview commands.
  *   - `reportInstanceStatus` is allowed from a renderer and not from an operator.
  *   - A renderer may send no other command: a page that only draws must never be able
- *     to put a graphic on air or take one off, nor to change the rundown or its items.
+ *     to put a graphic on air or take one off, to change the rundown or its items, nor
+ *     to preview, stop a preview or send one to air.
  *
  * What these tests deliberately do not cover:
  *   - What the store does with a "no" (the NOT_ALLOWED refusal and its event-log row);
@@ -77,6 +78,15 @@ const putCursorOnTheYellowFlag: Command = {
   type: 'moveCursor',
   rundownId: 'sessao-principal',
   itemId: 'item-bandeira-amarela',
+};
+
+const previewYellowFlagItem: Command = { type: 'previewItem', itemId: 'item-bandeira-amarela' };
+const previewRaceClock: Command = {
+  type: 'previewGraphic',
+  graphicId: 'race-clock',
+  layerId: 'clock',
+  data: { sessionName: 'Enduro de Resistência' },
+  takeTimeFieldKeys: [],
 };
 
 const authorisationScenarios: Array<{
@@ -278,6 +288,90 @@ const authorisationScenarios: Array<{
   {
     name: 'refuses reportInstanceStatus from the system',
     command: reportRaceClockOnAir,
+    actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // Looking before taking is the operator's job: a row's "Prévia" button.
+  {
+    name: 'allows previewItem from an operator',
+    command: previewYellowFlagItem,
+    actor: operatorActor,
+    expectedIsAllowed: true,
+  },
+  // The "Prévia" button of "Edição rápida".
+  {
+    name: 'allows previewGraphic from an operator',
+    command: previewRaceClock,
+    actor: operatorActor,
+    expectedIsAllowed: true,
+  },
+  // "Descartar" under the Prévia monitor.
+  {
+    name: 'allows stopPreview from an operator',
+    command: { type: 'stopPreview', layerId: 'clock' },
+    actor: operatorActor,
+    expectedIsAllowed: true,
+  },
+  // "Tomar" under the Prévia monitor: this one puts a graphic on air.
+  {
+    name: 'allows takePreview from an operator',
+    command: { type: 'takePreview', layerId: 'clock' },
+    actor: operatorActor,
+    expectedIsAllowed: true,
+  },
+  // A page that only draws must not fill the Prévia monitor of the operators.
+  {
+    name: 'refuses previewItem from a renderer',
+    command: previewYellowFlagItem,
+    actor: rendererActor,
+    expectedIsAllowed: false,
+  },
+  // Nor with data of its own.
+  {
+    name: 'refuses previewGraphic from a renderer',
+    command: previewRaceClock,
+    actor: rendererActor,
+    expectedIsAllowed: false,
+  },
+  // Nor empty it under the operator's eyes.
+  {
+    name: 'refuses stopPreview from a renderer',
+    command: { type: 'stopPreview', layerId: null },
+    actor: rendererActor,
+    expectedIsAllowed: false,
+  },
+  // Least of all send a preview to air: that is a take like any other.
+  {
+    name: 'refuses takePreview from a renderer',
+    command: { type: 'takePreview', layerId: 'clock' },
+    actor: rendererActor,
+    expectedIsAllowed: false,
+  },
+  // The server's timers clear one layer and do nothing else: they preview nothing.
+  {
+    name: 'refuses previewItem from the system',
+    command: previewYellowFlagItem,
+    actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // Not with hand-made data either.
+  {
+    name: 'refuses previewGraphic from the system',
+    command: previewRaceClock,
+    actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // An auto-out clears with clearLayer; it never needs to stop a preview by itself.
+  {
+    name: 'refuses stopPreview from the system',
+    command: { type: 'stopPreview', layerId: 'clock' },
+    actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // Nothing in the server may put a graphic on air without an operator asking.
+  {
+    name: 'refuses takePreview from the system',
+    command: { type: 'takePreview', layerId: 'clock' },
     actor: systemActor,
     expectedIsAllowed: false,
   },

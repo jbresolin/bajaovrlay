@@ -2,10 +2,14 @@ import type { Command } from '@bajaovrlay/shared';
 
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
+import { reducePreviewGraphic } from './previewGraphic.js';
+import { reducePreviewItem } from './previewItem.js';
 import { reduceItemOrRundownCommand } from './reduceItemOrRundownCommand.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { reduceReportInstanceStatus } from './reportInstanceStatus.js';
+import { reduceStopPreview } from './stopPreview.js';
 import { reduceTakeGraphic } from './takeGraphic.js';
+import { reduceTakePreview } from './takePreview.js';
 import { reduceUpdateInstanceData } from './updateInstanceData.js';
 
 /**
@@ -28,6 +32,15 @@ export function reduceCommand(
       return reduceClearLayer(slices, command);
     case 'clearAll':
       return reduceClearAll(slices);
+    // The four commands of the preview output.
+    case 'previewItem':
+      return reducePreviewItem(slices, command, context);
+    case 'previewGraphic':
+      return reducePreviewGraphic(slices, command, context);
+    case 'stopPreview':
+      return reduceStopPreview(slices, command);
+    case 'takePreview':
+      return reduceTakePreview(slices, command, context);
     // The item and rundown commands have a switch of their own, one reducer file each.
     case 'createItem':
     case 'updateItemFields':

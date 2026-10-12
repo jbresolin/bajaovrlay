@@ -6,14 +6,14 @@
  *   message. People building a client copy those examples, so they must be valid.
  *
  * What these tests prove:
- *   - The README has at least one example of each of the six message shapes
- *     (hello, slice, command, instanceStatus, ok commandResult, error commandResult).
+ *   - The README has at least one example of each of the seven message shapes
+ *     (hello, slice, time, command, instanceStatus, ok commandResult, error commandResult).
  *   - Every example passes the schema for its direction: `command` and
  *     `instanceStatus` the client schema, everything else the server schema. The
  *     client envelope does not check the command inside a `command` message (the store
  *     does), so that command is checked against CommandSchema too: a misspelt field in
  *     the README would otherwise slip through.
- *   - The hello and slice examples carry `serverNowMs`, as the server always sends it.
+ *   - The hello, slice and time examples carry `serverNowMs`, as the server always sends it.
  *
  * What these tests deliberately do not cover:
  *   - Whether the prose around the examples is accurate; that is a review judgement.
@@ -74,7 +74,7 @@ function passesTheSchemaForItsDirection(example: unknown): boolean {
 }
 
 describe('packages/shared/src/ws/README.md', () => {
-  it('shows one example of each of the six message shapes', () => {
+  it('shows one example of each of the seven message shapes', () => {
     // Arrange: read the README from disk.
     const readme = readFileSync(protocolReadmePath, 'utf8');
 
@@ -86,6 +86,7 @@ describe('packages/shared/src/ws/README.md', () => {
       new Set([
         'hello',
         'slice',
+        'time',
         'command',
         'instanceStatus',
         'commandResult ok',
@@ -107,23 +108,23 @@ describe('packages/shared/src/ws/README.md', () => {
     expect(examplesThatFailTheirSchema, 'every README example must be a valid message').toEqual([]);
   });
 
-  it('shows the time of the server clock on the hello and slice examples', () => {
-    // Arrange: read the README and keep its hello and slice examples.
+  it('shows the time of the server clock on the hello, slice and time examples', () => {
+    // Arrange: read the README and keep its hello, slice and time examples.
     const examples = readEveryJsonCodeBlock(readFileSync(protocolReadmePath, 'utf8'));
-    const helloAndSliceExamples = examples.filter((example) =>
-      ['hello', 'slice'].includes(describeMessageShape(example)),
+    const examplesThatCarryTheServerClock = examples.filter((example) =>
+      ['hello', 'slice', 'time'].includes(describeMessageShape(example)),
     );
 
     // Act: read what each of them says the server's clock showed.
-    const serverClockTimesShown = helloAndSliceExamples.map(
+    const serverClockTimesShown = examplesThatCarryTheServerClock.map(
       (example) => typeof (example as { serverNowMs?: unknown }).serverNowMs,
     );
 
-    // Assert: both carry a number. The schema would also accept them without it, so
-    // this is what keeps the page showing what the server really sends.
+    // Assert: all three carry a number. The schema would also accept the hello and the
+    // slice without it, so this is what keeps the page showing what the server really sends.
     expect(
       serverClockTimesShown,
-      'the hello and the slice example must each carry serverNowMs as a number',
-    ).toEqual(['number', 'number']);
+      'the hello, the slice and the time example must each carry serverNowMs as a number',
+    ).toEqual(['number', 'number', 'number']);
   });
 });

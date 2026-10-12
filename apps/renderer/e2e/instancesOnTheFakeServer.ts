@@ -35,6 +35,14 @@ export function createInstance(
   };
 }
 
+/**
+ * The same instance as a rehearsal: on the `preview` output of its layer instead of on
+ * air, as the server lists an item the operator is previewing.
+ */
+export function createRehearsalOf(instance: Instance): Instance {
+  return { ...instance, target: 'preview' };
+}
+
 /** The enduro's clock on the clock layer, drawn by the fake graphic. */
 export function createEnduroInstance(flagState: string): Instance {
   return createInstance(enduroInstanceId, 'clock', 'fake-graphic', {

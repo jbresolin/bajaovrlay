@@ -31,8 +31,9 @@ export type AutoOutScheduler = { stop: () => void };
 type PendingAutoOut = { layerId: string; timerHandle: unknown };
 
 /**
- * Watches the store and, whenever an item that has `autoOutAfterMs` is taken, waits
- * that long and then sends a clearLayer for the item's layer through
+ * Watches the store and, whenever an item that has `autoOutAfterMs` goes on the program
+ * output (takeItem, takeNext, or takePreview of a preview of that item), waits that
+ * long and then sends a clearLayer for the item's layer through
  * stateStore.applyCommand, the same single path every command takes, so the clear is
  * validated, saved, logged (as `sistema:auto-out`) and broadcast like any other.
  *
@@ -77,8 +78,19 @@ export function startAutoOutScheduler(options: AutoOutSchedulerOptions): AutoOut
     instanceIdsAlreadySeen = instanceIdsNow;
   }
 
-  /** Starts the wait for a new instance, if it came from an item that has a delay. */
+  /**
+   * Starts the wait for a new instance, if it is on air and came from an item that has
+   * a delay.
+   */
   function startWaitIfItemHasAutoOut(newInstance: Instance, slices: Slices): void {
+    // An item that is only previewed is not on air: no wait. What could go wrong without
+    // this: the wait of a preview would end in a clearLayer, which empties the layer on
+    // BOTH outputs and so takes off air whatever program shows there. When the preview
+    // is sent to air (takePreview) a new program instance appears, and its wait starts
+    // then, from that take.
+    if (newInstance.target !== 'program') {
+      return;
+    }
     const item = slices.items.find((candidate) => candidate.id === newInstance.itemId);
     if (item?.autoOutAfterMs === undefined) {
       return;

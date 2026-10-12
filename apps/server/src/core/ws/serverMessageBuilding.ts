@@ -6,6 +6,7 @@ import {
   type SliceMessage,
   type SliceName,
   type Slices,
+  type TimeMessage,
 } from '@bajaovrlay/shared';
 
 /**
@@ -40,6 +41,14 @@ export function buildSliceMessage(
     case 'eventLog':
       return { type: 'slice', name: 'eventLog', slice: slices.eventLog, serverNowMs };
   }
+}
+
+/**
+ * The `time` message every client gets every ten seconds: `serverNowMs`, what the
+ * server's wall clock shows now, in milliseconds, and nothing else.
+ */
+export function buildTimeMessage(serverNowMs: number): TimeMessage {
+  return { type: 'time', serverNowMs };
 }
 
 /** The ok `commandResult`, echoing the client's requestId (or null). */

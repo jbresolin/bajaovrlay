@@ -4,7 +4,7 @@
  * What this module is for:
  *   A page refresh or a server restart must lose nothing. The store saves every slice
  *   that changes and every event-log entry to SQLite, and a new store opened on the
- *   same file loads them back, including the instances that were on air.
+ *   same file loads them back, including the instances that were on the program output.
  *
  * What these tests prove (with a real SQLite file in a temporary folder):
  *   - A new store on the same file has exactly the slices the old one had.
@@ -14,6 +14,8 @@
  *     newest 200.
  *
  * What these tests deliberately do not cover:
+ *   - What is on the preview output, the one thing a restart drops on purpose;
+ *     storeRestartDropsPreviews.test.ts covers it.
  *   - Seeding an empty database; loadInitialSlices.test.ts covers it.
  *   - A broken migration at boot; openDatabase.test.ts covers it.
  */
@@ -62,14 +64,16 @@ function reopenDatabase(database: ServerDatabase, databasePath: string): ServerD
 
 describe('a store opened on the file of a previous store', () => {
   it('has exactly the slices the previous store had, including what was on air', () => {
-    // Arrange: a store that took the race clock on program and on preview.
+    // Arrange: a store that took the race clock on program on two layers, the clock
+    // layer and the fullscreen layer. (Until BAJAOVRLAY-15 the second take was on the
+    // preview output; a preview is now dropped at boot, see storeRestartDropsPreviews.test.ts.)
     const databasePath = createTemporaryDatabasePath();
     const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const firstDatabase = openDatabaseForTests(databasePath);
     const storeBeforeRestart = openStoreOnDatabase(firstDatabase, graphicPackagesFolder);
     storeBeforeRestart.applyCommand(takeRaceClockOnProgram, 'operador:conexao-7');
     storeBeforeRestart.applyCommand(
-      { ...takeRaceClockOnProgram, target: 'preview' },
+      { ...takeRaceClockOnProgram, layerId: 'fullscreen' },
       'operador:conexao-7',
     );
     const slicesBeforeRestart = storeBeforeRestart.readAllSlices();

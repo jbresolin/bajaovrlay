@@ -15,8 +15,9 @@
  *   before its first message) reads its own machine's clock, uncorrected.
  * - Every sample is late by the time its message spent on the network, so the time read
  *   is behind the server's by about that much (a few milliseconds on a local network).
- * - The offset only moves when messages arrive. If the machine's clock steps while no
- *   slice is changing, the time read stays wrong until three new messages have come.
+ * - The offset only moves when messages arrive. The server sends a `time` message every
+ *   ten seconds for exactly that, so if the machine's clock steps, the time read stays
+ *   wrong until three of them have come (the median of five), about thirty seconds.
  * - It imports nothing but its neighbour on purpose: graphics bundle this folder.
  */
 import {
@@ -41,8 +42,10 @@ const globalThatMayHoldTheOffset: GlobalThatMayHoldTheOffset = globalThis;
 
 /**
  * Records one sample: the server's clock read `serverNowMs` in a message that arrived
- * when this machine's clock read `localNowMs`. The renderer calls it for every `hello`
- * and `slice` message. The offset in use becomes the median of the last five samples.
+ * when this machine's clock read `localNowMs`. The renderer and the control page call it
+ * for every `hello`, `slice` and `time` message that carries the server's time, and not
+ * at all for one that does not. The offset in use becomes the median of the last five
+ * samples.
  */
 export function recordServerClockSample(serverNowMs: number, localNowMs: number): void {
   const offsetBefore = globalThatMayHoldTheOffset.__bajaovrlayServerClockOffset;

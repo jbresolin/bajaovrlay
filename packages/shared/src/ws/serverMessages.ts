@@ -16,7 +16,8 @@ import { SlicesSchema } from '../slices/slices.js';
  * Deliberate: optional here although the server always sends it. Thirteen test files of
  * the control page build these messages by hand, and making the field required meant
  * editing all of them while another task was changing that app. A client that gets a
- * message without it takes no sample; it loses nothing else.
+ * message without it takes no sample (it never counts as "the clocks agree"); it loses
+ * nothing else, and the `time` message below brings a sample every ten seconds anyway.
  */
 const ServerNowMsSchema = z.number().int().optional();
 
@@ -95,11 +96,27 @@ export const CommandResultMessageSchema = z.discriminatedUnion('ok', [
 /** One commandResult message after validation. */
 export type CommandResultMessage = z.infer<typeof CommandResultMessageSchema>;
 
+/**
+ * Sent to every client every ten seconds: what the server's wall clock shows, in whole
+ * milliseconds since 1970, and nothing else. It exists so that a page keeps getting
+ * samples of the server's clock while no slice is changing; without it a step of the
+ * page's own clock stayed uncorrected until something changed on the server. Here
+ * `serverNowMs` is required: the time is all this message has to say.
+ */
+export const TimeMessageSchema = z.object({
+  type: z.literal('time'),
+  serverNowMs: z.number().int(),
+});
+
+/** One time message after validation. */
+export type TimeMessage = z.infer<typeof TimeMessageSchema>;
+
 /** Every message the server sends, told apart by `type`. */
 export const ServerMessageSchema = z.discriminatedUnion('type', [
   HelloMessageSchema,
   SliceMessageSchema,
   CommandResultMessageSchema,
+  TimeMessageSchema,
 ]);
 
 /** Any server message after validation. */

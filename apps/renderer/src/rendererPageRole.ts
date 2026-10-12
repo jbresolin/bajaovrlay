@@ -1,5 +1,5 @@
 /**
- * Decides, from the page's own address, which of its two roles this renderer page has.
+ * Decides, from the page's own address, which of its three roles this renderer page has.
  *
  *   - Program renderer: what OBS loads (`/render/`). It is the program output, so it dials
  *     `/ws?role=renderer` and tells the server what really went on air.
@@ -7,28 +7,51 @@
  *     can watch the picture. It draws the same graphics but dials plain `/ws`, like any
  *     page that is not a renderer, and reports nothing: only the program output is the
  *     truth (gate-2 ruling on BAJAOVRLAY-12).
+ *   - Preview page: what the control page frames as "Prévia"
+ *     (`/render/?target=preview&monitor=1`). It draws the instances of the `preview`
+ *     output, the item the operator is rehearsing, and never the ones on air. It is not
+ *     the program output either, so it dials plain `/ws` and reports nothing, with or
+ *     without `monitor=1`.
  *
- * What could go wrong: the default is the reporting role, on purpose. OBS must keep
- * reporting whatever is appended to its address, so only the exact `monitor=1` silences a
- * page. The price is that a monitor address typed wrong (`monitor=true`) reports like OBS.
+ * What could go wrong: the default is the reporting program role, on purpose. OBS must
+ * keep drawing the stream and reporting whatever is appended to its address, so only the
+ * exact `monitor=1` silences a page and only the exact `target=preview` makes it draw the
+ * rehearsal. The price is that an address typed wrong (`monitor=true`, `target=PREVIEW`)
+ * draws the program output and reports like OBS.
  */
+import type { Instance } from '@bajaovrlay/shared';
 
-/** Which role the page has and the WebSocket path, on the page's own host, it must dial. */
+/** What the page draws, whether it reports, and the WebSocket path it must dial. */
 export type RendererPageRole = {
-  isProgramMonitor: boolean;
-  /** `/ws` for a monitor, `/ws?role=renderer` for the program renderer. */
+  /** The output whose instances this page draws; instances of the other one are ignored. */
+  drawnOutput: Instance['target'];
+  /** True only for the program renderer: the one page allowed to send `instanceStatus`. */
+  reportsInstanceStatus: boolean;
+  /** `/ws?role=renderer` for the page that reports, plain `/ws` for every other. */
   webSocketPath: string;
 };
 
 /**
  * Answers the role of a renderer page from the query part of its address
- * (`location.search`: `''`, `'?monitor=1'`, …). Pure: it reads nothing but its argument.
+ * (`location.search`: `''`, `'?monitor=1'`, `'?target=preview&monitor=1'`, …). Pure: it
+ * reads nothing but its argument.
  */
 export function decideRendererPageRole(pageAddressSearch: string): RendererPageRole {
-  const monitorParameter = new URLSearchParams(pageAddressSearch).get('monitor');
-  const isProgramMonitor = monitorParameter === '1';
-  if (isProgramMonitor) {
-    return { isProgramMonitor: true, webSocketPath: '/ws' };
+  const addressParameters = new URLSearchParams(pageAddressSearch);
+  const isPreviewPage = addressParameters.get('target') === 'preview';
+  const isMonitor = addressParameters.get('monitor') === '1';
+
+  // A preview page never reports, whatever `monitor` says: what it draws is not on air,
+  // so "on-air" from it would be a lie and "failed" would mark an instance OBS may show.
+  if (isPreviewPage) {
+    return { drawnOutput: 'preview', reportsInstanceStatus: false, webSocketPath: '/ws' };
   }
-  return { isProgramMonitor: false, webSocketPath: '/ws?role=renderer' };
+  if (isMonitor) {
+    return { drawnOutput: 'program', reportsInstanceStatus: false, webSocketPath: '/ws' };
+  }
+  return {
+    drawnOutput: 'program',
+    reportsInstanceStatus: true,
+    webSocketPath: '/ws?role=renderer',
+  };
 }

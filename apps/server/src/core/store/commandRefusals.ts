@@ -20,6 +20,14 @@ export function refuseUnknownInstance(instanceId: string): CommandError {
 }
 
 /**
+ * The refusal for a takePreview of a layer that has nothing on its preview output. The
+ * layer is named as the operator reads it on screen, since the server has its name.
+ */
+export function refuseTakeOfEmptyPreview(layerName: string): CommandError {
+  return { code: 'LAYER_PREVIEW_EMPTY', message: ptBR.commandErrors.layerPreviewEmpty(layerName) };
+}
+
+/**
  * The refusal for a command the authorisation hook said no to. The older code
  * UNAUTHORIZED_COMMAND is no longer answered; it stays in the shared list only so
  * event-log rows written with it can still be read.

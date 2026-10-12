@@ -4,8 +4,11 @@
  * list per layer. Nothing here touches the page; instancePlayer.ts carries the
  * operations out.
  *
- * Only instances on the `program` output count. The `preview` output is drawn elsewhere
- * (a later task), so a preview instance is invisible to these functions.
+ * A page draws one output, named by `drawnOutput`: `program` for the page OBS loads and
+ * its monitor, `preview` for the page the control page frames as "Prévia". Only instances
+ * on that output count; an instance on the other one is invisible to these functions.
+ * That, and the way a replace is carried out (see `replacePolicyOnThePreviewOutput`), is
+ * all that differs between the two: there is one set of rules, not one per output.
  */
 import type { Instance, Layer } from '@bajaovrlay/shared';
 
@@ -63,25 +66,42 @@ export type LayerOperations = {
 // never overlap on a layer. Used when an instance sits on a layer the slice does not list.
 const replacePolicyOfUnknownLayers: Layer['replacePolicy'] = 'out-then-in';
 
+// On the preview output every replace is carried out as a `cut`, whatever the layer says:
+// the new graphic is loaded behind the old one and swapped in with both animations
+// skipped (instancePlayer.ts, cutToInstance). The preview is for looking at the next
+// graphic, not for reviewing animations, and the operator stepping through the rundown
+// must not wait for an out-animation on every row. The trade-off, taken on purpose: the
+// preview does not show how a replace will look on air.
+const replacePolicyOnThePreviewOutput: Layer['replacePolicy'] = 'cut';
+
 /**
  * Compares the instances drawn last with the ones that just arrived and answers what to
- * do on each layer that changed. Layers with nothing to do are left out of the answer.
+ * do on each layer that changed, looking only at the instances of `drawnOutput`. Layers
+ * with nothing to do are left out of the answer.
  */
 export function decideLayerOperations(change: {
   previousInstances: Instance[];
   nextInstances: Instance[];
   layers: Layer[];
+  drawnOutput: Instance['target'];
 }): LayerOperations[] {
-  const previousByLayer = findProgramInstanceOfEachLayer(change.previousInstances);
-  const nextByLayer = findProgramInstanceOfEachLayer(change.nextInstances);
+  const previousByLayer = findInstanceOfEachLayerOnOutput(
+    change.previousInstances,
+    change.drawnOutput,
+  );
+  const nextByLayer = findInstanceOfEachLayerOnOutput(change.nextInstances, change.drawnOutput);
   const layerIds = listLayerIdsInOrderOfAppearance(previousByLayer, nextByLayer);
 
   const layerOperations: LayerOperations[] = [];
   for (const layerId of layerIds) {
+    const replacePolicy =
+      change.drawnOutput === 'preview'
+        ? replacePolicyOnThePreviewOutput
+        : findReplacePolicyOfLayer(layerId, change.layers);
     const operation = decideOperationForOneLayer(
       previousByLayer.get(layerId),
       nextByLayer.get(layerId),
-      findReplacePolicyOfLayer(layerId, change.layers),
+      replacePolicy,
     );
     if (operation !== undefined) {
       layerOperations.push({ layerId, operations: [operation] });
@@ -92,16 +112,20 @@ export function decideLayerOperations(change: {
 
 /**
  * Answers how to rebuild the whole stage after a `hello` (a reconnect, or OBS reloading
- * the page): dispose everything drawn so far at once, then load every instance on air
- * with its in-animation skipped. Even an unchanged instance is rebuilt, because after a
- * drop the renderer cannot know what it missed.
+ * the page): dispose everything drawn so far at once, then load every instance of
+ * `drawnOutput` with its in-animation skipped. Even an unchanged instance is rebuilt,
+ * because after a drop the renderer cannot know what it missed.
  */
 export function decideRebuildOperations(change: {
   previousInstances: Instance[];
   nextInstances: Instance[];
+  drawnOutput: Instance['target'];
 }): LayerOperations[] {
-  const previousByLayer = findProgramInstanceOfEachLayer(change.previousInstances);
-  const nextByLayer = findProgramInstanceOfEachLayer(change.nextInstances);
+  const previousByLayer = findInstanceOfEachLayerOnOutput(
+    change.previousInstances,
+    change.drawnOutput,
+  );
+  const nextByLayer = findInstanceOfEachLayerOnOutput(change.nextInstances, change.drawnOutput);
   const layerIds = listLayerIdsInOrderOfAppearance(previousByLayer, nextByLayer);
 
   const layerOperations: LayerOperations[] = [];
@@ -157,17 +181,20 @@ function decideOperationForOneLayer(
 }
 
 /**
- * Maps each layer id to its instance on the `program` output. The server keeps at most
- * one per layer and output; if a slice ever listed two, the later one in the list wins.
+ * Maps each layer id to its instance on the output this page draws. The server keeps at
+ * most one per layer and output; if a slice ever listed two, the later one in the list wins.
  */
-function findProgramInstanceOfEachLayer(instances: Instance[]): Map<string, Instance> {
-  const programInstanceByLayer = new Map<string, Instance>();
+function findInstanceOfEachLayerOnOutput(
+  instances: Instance[],
+  drawnOutput: Instance['target'],
+): Map<string, Instance> {
+  const instanceByLayer = new Map<string, Instance>();
   for (const instance of instances) {
-    if (instance.target === 'program') {
-      programInstanceByLayer.set(instance.layerId, instance);
+    if (instance.target === drawnOutput) {
+      instanceByLayer.set(instance.layerId, instance);
     }
   }
-  return programInstanceByLayer;
+  return instanceByLayer;
 }
 
 /** Lists every layer id of either map once: the previous ones first, then the new ones. */

@@ -45,6 +45,17 @@ export const InstanceSchema = z.object({
    * deleted since: an instance stays on air when its item goes away.
    */
   itemId: z.string().min(1).optional(),
+  /**
+   * Only on an instance of the preview output: the fields of `resolvedData` the server
+   * stamped with the moment of the preview (a clock's reference moment). takePreview
+   * writes the moment of the take over exactly these fields, so a previewed clock starts
+   * counting when it goes on air. The server leaves it out when no field was stamped
+   * (an empty list means the same), and the program instance a take creates never
+   * carries it.
+   * What could go wrong: an updateInstanceData that types a value into one of these
+   * fields of a preview does not take the key off this list, so the take stamps over it.
+   */
+  takeTimeFieldKeys: z.array(z.string().min(1)).optional(),
 });
 
 /** An instance that has passed InstanceSchema. */
