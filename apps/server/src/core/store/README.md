@@ -5,7 +5,7 @@ The in-memory state slices and the single path that changes them. Start at `crea
 the event → tells listeners. A command that changes nothing is not saved, logged or broadcast.
 
 - `reducers/` — one pure reducer per command, plus `reduceCommand.ts` choosing it.
-- `graphicDataPreparation.ts` (null fields out, `takeTimeFieldKeys` stamped), then `graphicDataValidation.ts` (manifest schema): a take's or update's data.
+- `graphicDataPreparation.ts` (null fields out, `takeTimeFieldKeys` stamped; `graphicSchemaProperties.ts` says which fields may be), `updateRules/` (named pure rules an update runs, e.g. the clock's), then `graphicDataValidation.ts` (manifest schema).
 - `authorizeCommand.ts` — a renderer may only report instance status, `sistema:` only clearLayer; `commandActors.ts`: `role:id` actor names.
 - `commandRefusals.ts`, `rundownCommandRefusals.ts` — every refusal, its code and pt-BR message.
 - `loadInitialSlices.ts` — loads or seeds layers and instances at boot (`seedLayers.ts`); rebuilds

@@ -30,6 +30,20 @@ export const ptBR = {
       `Dados inválidos para o gráfico "${graphicId}": o campo "${fieldPath}" tem um valor que o gráfico não aceita.`,
     graphicDataSchemaUnusable: (graphicId: string) =>
       `O gráfico "${graphicId}" tem um esquema de dados que o servidor não consegue ler. Corrija o manifesto do gráfico e reinicie o servidor.`,
+    // A command asked the server to write its own moment into a field that the
+    // graphic's manifest does not mark as a wall-clock moment.
+    graphicFieldCannotBeStamped: (graphicId: string, fieldKey: string) =>
+      `O gráfico "${graphicId}" não aceita que o servidor preencha o campo "${fieldKey}" com o momento do comando: o manifesto do gráfico não marca esse campo como um horário (número inteiro com v_baja.role "wallClock").`,
+    // The two ways the update rule a manifest names (v_baja.updateRule) cannot be run.
+    // Both are mistakes in the manifest, so both say what to correct and where.
+    graphicUpdateRuleUnknown: (graphicId: string, ruleName: string) =>
+      `O gráfico "${graphicId}" não pode ser atualizado no ar: o manifesto dele pede a regra de atualização "${ruleName}", que o servidor não conhece. Corrija o manifesto do gráfico e reinicie o servidor.`,
+    graphicUpdateRuleFieldsMissing: (
+      graphicId: string,
+      ruleName: string,
+      missingFieldKeys: string[],
+    ) =>
+      `O gráfico "${graphicId}" não pode ser atualizado no ar: o manifesto dele pede a regra de atualização "${ruleName}", mas o esquema de dados não declara os campos de que ela precisa (${missingFieldKeys.join(', ')}). Corrija o manifesto do gráfico e reinicie o servidor.`,
     invalidMessage: 'Mensagem inválida: o servidor aceita apenas mensagens JSON do protocolo.',
     unexpectedServerError:
       'Erro inesperado no servidor ao executar o comando. Procure o erro no log do servidor.',

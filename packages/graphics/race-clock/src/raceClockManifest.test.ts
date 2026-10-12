@@ -12,7 +12,8 @@
  *     removed fails it, so the check has teeth.
  *   - The settings the brief fixes: id, real-time only, one step.
  *   - The manifest tells the BajaOvrLay server, in its vendor field `v_baja`, that the
- *     race clock goes on the clock layer and in the clock category.
+ *     race clock goes on the clock layer and in the clock category, and that an update
+ *     of it runs the server's `carryClockForward` rule (the clock must not jump).
  *   - The manifest tells the control page's generated form, in a `v_baja` field on the
  *     property itself, that the reference time is typed as mm:ss (`unit: 'ms'`) and that
  *     the reference moment may be left to the server (`role: 'wallClock'`); no other
@@ -141,17 +142,19 @@ describe('race-clock.ograf.json settings', () => {
     });
   });
 
-  it('declares the clock layer and the clock category in the v_baja vendor field', () => {
+  it('declares the clock layer, the clock category and its update rule in the v_baja vendor field', () => {
     // Arrange: nothing to set up; the manifest is read from disk.
 
     // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_.
     const bajaVendorFields = raceClockManifest.v_baja;
 
-    // Assert: the server reads the default layer and the category from exactly these two.
+    // Assert: the server reads the default layer and the category from the first two.
+    // The third names the server's rule that keeps the time on screen when an update
+    // stops, starts or turns the clock, so the clock on air never jumps.
     expect(
       bajaVendorFields,
-      'the race clock must ask for the clock layer and the clock category',
-    ).toEqual({ defaultLayerId: 'clock', category: 'clock' });
+      'the race clock must ask for the clock layer, the clock category and carryClockForward',
+    ).toEqual({ defaultLayerId: 'clock', category: 'clock', updateRule: 'carryClockForward' });
   });
 
   it('tells the generated form which field is a duration and which is a wall-clock moment', () => {

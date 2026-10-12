@@ -2,6 +2,7 @@ import type { CommandError } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
 import type { GraphicDataProblem } from './graphicDataValidation.js';
+import type { UpdateRuleProblem } from './updateRules/index.js';
 
 /** The refusal for a command naming a layer that does not exist. */
 export function refuseUnknownLayer(layerId: string): CommandError {
@@ -55,6 +56,45 @@ export function refuseInvalidGraphicData(
       return {
         code: 'INVALID_GRAPHIC_DATA',
         message: ptBR.commandErrors.graphicDataSchemaUnusable(graphicId),
+      };
+  }
+}
+
+/**
+ * The refusal for a take or an update that names, in `takeTimeFieldKeys`, a field the
+ * graphic's manifest does not mark as a wall-clock moment. It carries the same code as
+ * data the schema refuses: the request does not fit what the manifest says of the field.
+ */
+export function refuseFieldGraphicCannotStamp(graphicId: string, fieldKey: string): CommandError {
+  return {
+    code: 'INVALID_GRAPHIC_DATA',
+    message: ptBR.commandErrors.graphicFieldCannotBeStamped(graphicId, fieldKey),
+  };
+}
+
+/**
+ * The refusal for an update of a graphic whose manifest names an update rule that
+ * cannot be run. It carries the same code as a data schema that cannot be used: in both
+ * the manifest is at fault, and the message says what to correct in it.
+ */
+export function refuseUnusableUpdateRule(
+  graphicId: string,
+  problem: UpdateRuleProblem,
+): CommandError {
+  switch (problem.kind) {
+    case 'unknownRule':
+      return {
+        code: 'INVALID_GRAPHIC_DATA',
+        message: ptBR.commandErrors.graphicUpdateRuleUnknown(graphicId, problem.ruleName),
+      };
+    case 'schemaPropertiesMissing':
+      return {
+        code: 'INVALID_GRAPHIC_DATA',
+        message: ptBR.commandErrors.graphicUpdateRuleFieldsMissing(
+          graphicId,
+          problem.ruleName,
+          problem.missingPropertyKeys,
+        ),
       };
   }
 }

@@ -4,10 +4,13 @@
  *
  * The server's Ajv check of the same JSON Schema stays the authority
  * (apps/server/src/core/store/graphicDataValidation.ts): this file is a courtesy that
- * covers the shapes the form can edit and nothing else. Where the two could disagree,
- * this one is the more lenient: it ignores `additionalProperties`, `pattern`, every
- * `format` except `date-time` and every property the form shows as unsupported, and the
- * server then refuses the command with INVALID_GRAPHIC_DATA.
+ * covers the shapes the form can edit and nothing else. The two disagree in both
+ * directions. This one is more lenient where it ignores `additionalProperties`,
+ * `pattern`, every `format` except `date-time` and every property the form shows as
+ * unsupported; the server then refuses the command with INVALID_GRAPHIC_DATA. It is
+ * stricter in three places: it checks `date-time` (the server enforces no format), it
+ * refuses a required text left empty, and it refuses a whole number outside JavaScript's
+ * safe range. String length is counted in code points by both.
  *
  * M3 extends this file together with describeSchemaFormFromDataSchema.ts.
  */

@@ -27,6 +27,8 @@
  *   - Which commands the press sends and in which order, a refused save or a refused
  *     on-air update; ItemEditorPanelUpdateOnAir.test.tsx and its "Problems" file do.
  *   - "Atualizar" of "Edição rápida"; takeAndClear.e2e.ts covers that.
+ *   - A running clock stopped with "Atualizar no ar" (it must not jump back to the time
+ *     the item stores); clockStoppedOnAir.e2e.ts covers that.
  *   - Clearing a field on air with "limpar", and a graphic other than the race clock
  *     (the server of this run registers only the built race clock); the component tests
  *     use a second fixture manifest for both.

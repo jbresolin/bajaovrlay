@@ -1,6 +1,18 @@
+import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // Tests read @bajaovrlay/shared/clock from its TypeScript source, as the build does,
+  // so they never need a build of shared first. The condition is given twice because
+  // Vitest resolves a file the browser way or the server way depending on the test.
+  resolve: {
+    conditions: ['@bajaovrlay/source', ...defaultClientConditions],
+  },
+  ssr: {
+    resolve: {
+      conditions: ['@bajaovrlay/source', ...defaultServerConditions],
+    },
+  },
   test: {
     name: 'race-clock',
     // jsdom gives the web component a document to live in; the pure modules ignore it.

@@ -11,4 +11,5 @@ here knows a graphic by name: forms come from each manifest (`features/schemaFor
   `instanceOfGraphicToFollow.ts` finds its instance on air (any layer; the latest of several).
 - `ClearAllButton.tsx` (red panic button and Esc, two presses within 3 s),
   `useBackspaceToClearClockLayer.ts`, `CommandErrorMessage.tsx` (why a command failed).
-- `operatingTheQuickEditPanel.testSupport.tsx` — the panel on a fake server, for the tests.
+- `operatingTheQuickEditPanel.testSupport.tsx` — the panel on a fake server, for the tests;
+  `graphicDataAsTheServerPreparesIt.testSupport.ts` — what that fake does to data, as the real one.

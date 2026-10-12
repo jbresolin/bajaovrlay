@@ -352,6 +352,9 @@ importers:
 
   packages/graphics/race-clock:
     dependencies:
+      '@bajaovrlay/shared':
+        specifier: workspace:*
+        version: link:../../shared
       '@fontsource/barlow-condensed':
         specifier: ^5.3.0
         version: 5.3.0

@@ -23,7 +23,9 @@ export const TakeGraphicCommandSchema = z.object({
    * The fields of `data` the server writes itself, with the moment of this command in
    * wall-clock milliseconds (the same moment as the instance's `takenAt`), before the
    * data is checked. It exists so that a client never reads its own clock to say when a
-   * race clock started. Leaving it out means no field is stamped.
+   * race clock started. Leaving it out means no field is stamped. The server refuses a
+   * key that the graphic's data schema does not declare as an integer with
+   * `v_baja.role: "wallClock"`.
    */
   takeTimeFieldKeys: z.array(z.string().min(1)).default([]),
 });

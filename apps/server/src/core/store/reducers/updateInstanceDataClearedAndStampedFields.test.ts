@@ -19,12 +19,18 @@
  *     without other data, and replaces a value sent for the same field. A stamp is a
  *     change even when every other value sent is the one already on air.
  *   - A field both sent as null and named for stamping ends up stamped.
- *   - A stamp on a field the schema does not accept a number for is refused.
+ *   - A stamp is refused, naming the field, unless the graphic's schema declares that
+ *     field as a whole number marked `v_baja.role: "wallClock"`: a text field, a field
+ *     the graphic does not have and a whole number without the mark are all refused,
+ *     and a graphic with no data schema accepts no stamp at all.
  *
  * What these tests deliberately do not cover:
  *   - The plain rules of an update (laying fields over, refusals, purity);
  *     updateInstanceData.test.ts covers them.
  *   - The store saving and logging the result; storeClearedAndStampedFields.test.ts.
+ *   - The race clock's update rule, which adds nothing when the reference moment is
+ *     stamped (every stamp here) and is covered by
+ *     updateInstanceDataCarriesTheClock.test.ts.
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
@@ -33,6 +39,7 @@ import {
   buildGreenFlagEnduroData,
   buildRaceClockInstanceWithStatus,
   buildRaceDaySlicesWithInstances,
+  buildTeam42LowerThirdOnAir,
   contextOfTheCommand,
   raceClockInstanceId,
 } from './raceDaySlices.testSupport.js';
@@ -191,32 +198,58 @@ const refusedUpdateScenarios: Array<{
     expectedMessage:
       'Dados inválidos para o gráfico "race-clock": o campo "sessionName" é obrigatório e não foi enviado.',
   },
-  // A stamp is a number of milliseconds; the flag is one of six texts.
+  // From here on: the server stamps only a field the graphic's schema declares as a
+  // whole number marked `v_baja.role: "wallClock"`. The flag is one of six texts.
   {
-    name: 'refuses a stamp on a field that does not take a number, naming the field',
+    name: 'refuses a stamp on a field that is not a whole number, naming the field',
     command: buildUpdateOfTheRaceClock({}, ['state']),
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "state" tem um valor que o gráfico não aceita.',
+      'O gráfico "race-clock" não aceita que o servidor preencha o campo "state" com o momento do comando: o manifesto do gráfico não marca esse campo como um horário (número inteiro com v_baja.role "wallClock").',
   },
   // A stamp on a field the graphic does not have must not be stored next to the real ones.
   {
     name: 'refuses a stamp on a field the race clock does not have, naming it',
     command: buildUpdateOfTheRaceClock({}, ['horarioDaLargada']),
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "horarioDaLargada" não existe neste gráfico.',
+      'O gráfico "race-clock" não aceita que o servidor preencha o campo "horarioDaLargada" com o momento do comando: o manifesto do gráfico não marca esse campo como um horário (número inteiro com v_baja.role "wallClock").',
+  },
+  // The reference time is a whole number, and the schema would accept the stamp as a
+  // value: the clock would show fifty-six years. Only the wall-clock mark allows a stamp.
+  {
+    name: 'refuses a stamp on a whole number that is not marked as a wall-clock moment',
+    command: buildUpdateOfTheRaceClock({}, ['referenceTimeMs']),
+    expectedMessage:
+      'O gráfico "race-clock" não aceita que o servidor preencha o campo "referenceTimeMs" com o momento do comando: o manifesto do gráfico não marca esse campo como um horário (número inteiro com v_baja.role "wallClock").',
+  },
+  // The team lower third's manifest has no data schema, so nothing marks any of its
+  // fields as a moment: it accepts no stamp at all, though it accepts any data.
+  {
+    name: 'refuses any stamp for a graphic whose manifest has no data schema',
+    command: {
+      type: 'updateInstanceData',
+      instanceId: buildTeam42LowerThirdOnAir().id,
+      data: { teamName: 'Baja UFPR Trovão' },
+      takeTimeFieldKeys: ['shownSinceMs'],
+    },
+    expectedMessage:
+      'O gráfico "team-lower-third" não aceita que o servidor preencha o campo "shownSinceMs" com o momento do comando: o manifesto do gráfico não marca esse campo como um horário (número inteiro com v_baja.role "wallClock").',
   },
 ];
 
 describe('updateInstanceData with a cleared or a stamped field, when it must be refused', () => {
   it.each(refusedUpdateScenarios)('$name', ({ command, expectedMessage }) => {
-    // Arrange: the race clock on air with the leader on lap 12, and a copy for comparison.
-    const slicesBefore = buildRaceDaySlicesWithInstances([buildRaceClockOnAirShowingLap12()]);
+    // Arrange: the race clock on air with the leader on lap 12 and team 42's lower third
+    // beside it, and a copy for comparison.
+    const slicesBefore = buildRaceDaySlicesWithInstances([
+      buildRaceClockOnAirShowingLap12(),
+      buildTeam42LowerThirdOnAir(),
+    ]);
     const copyOfSlicesBefore = structuredClone(slicesBefore);
 
     // Act: reduce the update.
     const outcome = reduceCommand(slicesBefore, command, contextOfTheCommand);
 
-    // Assert: refused by the graphic's own schema, in pt-BR, and the clock is untouched.
+    // Assert: refused in pt-BR with the field named, and nothing on air is touched.
     expect(outcome, 'the update must be refused with the field named in pt-BR').toEqual({
       status: 'refused',
       error: { code: 'INVALID_GRAPHIC_DATA', message: expectedMessage },

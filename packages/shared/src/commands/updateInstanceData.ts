@@ -13,14 +13,18 @@ export const UpdateInstanceDataCommandSchema = z.object({
    * (top-level keys only) and checks the result against the graphic's manifest schema,
    * so nothing about the fields themselves is checked here. A top-level field sent as
    * `null` is taken off the instance's data (the way an optional field leaves the air);
-   * the result is still checked, so removing a required field is refused.
+   * the result is still checked, so removing a required field is refused. If the
+   * graphic's manifest names an update rule (`v_baja.updateRule`), the server may add
+   * fields of its own: the race clock's rule writes the time on screen and the moment
+   * of the command when an update stops, starts, turns or corrects the clock.
    */
   data: z.record(z.string(), z.unknown()),
   /**
    * The fields the server writes itself, with the moment of this command in wall-clock
    * milliseconds, before the result is checked; a field named here need not be in
    * `data`. It exists so that a client never reads its own clock to re-reference a race
-   * clock. Leaving it out means no field is stamped.
+   * clock. Leaving it out means no field is stamped. The server refuses a key that the
+   * graphic's data schema does not declare as an integer with `v_baja.role: "wallClock"`.
    */
   takeTimeFieldKeys: z.array(z.string().min(1)).default([]),
 });

@@ -30,11 +30,15 @@
  *   - Field messages, refusals and a dropped connection: QuickEditPanelProblems.test.tsx.
  *   - Another graphic, and which graphic the panel shows: QuickEditPanelChoosingTheGraphic.test.tsx.
  *   - Every control and every rule of a generated form: features/schemaForm has its own tests.
- *   - The clock's arithmetic. The panel no longer knows the two reference fields belong
- *     together: a typed time goes out alone (see the scenario below), which makes a
- *     running clock jump unless the operator also asks for a new reference moment.
- *   - The real server filling the moment and laying the fields over what is on air;
- *     apps/server's tests prove that, and e2e walks it in a real browser.
+ *   - The clock's arithmetic. The panel does not know the two reference fields belong
+ *     together: a typed time or a stopped clock goes out as that one field (see the
+ *     scenarios below). The server is what keeps the clock from jumping: the race
+ *     clock's manifest names the update rule `carryClockForward`, which also writes the
+ *     time on screen and the moment of the update. QuickEditPanelUpdate.test.tsx shows
+ *     the form taking that answer.
+ *   - The real server filling the moment, carrying the clock forward and laying the
+ *     fields over what is on air; apps/server's tests prove that, and e2e walks it in a
+ *     real browser (clockStoppedOnAir.e2e.ts for the clock not jumping).
  */
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -282,17 +286,18 @@ describe('"Edição rápida" after a reload with the race clock on air', () => {
       expectedData: { state: 'yellow' },
       expectedTakeTimeFieldKeys: [],
     },
-    // What the generated form gave up: the typed 20:00 (1 200 000 ms) goes out alone,
-    // with the old reference moment left on air, so a running clock shows 20:00 plus
-    // the time since that old moment. The next row is how the operator avoids it.
+    // A generated form knows no clock rule, so the typed 20:00 (1 200 000 ms) goes out
+    // alone. The clock does not jump for it: the server writes the moment of the update
+    // as the new reference, so the clock counts on from 20:00.
     {
       name: 'the operator types a new time: that time goes out alone',
       whatTheOperatorDoes: () => typeIntoField(referenceTimeLabel, '20:00'),
       expectedData: { referenceTimeMs: 1_200_000 },
       expectedTakeTimeFieldKeys: [],
     },
-    // Correcting a running clock: the typed time, and the server asked to write the
-    // moment of the update as the new reference, so the clock counts on from 20:00.
+    // The operator may still ask for the moment of the update in so many words. The
+    // server obeys the stamp as it comes, which for a typed time gives the same clock
+    // as the row above.
     {
       name: 'the operator types a new time and asks for a new reference moment: the server is asked to fill it',
       whatTheOperatorDoes: () => {
@@ -302,8 +307,8 @@ describe('"Edição rápida" after a reload with the race clock on air', () => {
       expectedData: { referenceTimeMs: 1_200_000 },
       expectedTakeTimeFieldKeys: ['referenceWallClockMs'],
     },
-    // Also given up: stopping the clock sends the switch alone, so the graphic stops at
-    // the reference time on air (12:34), not at the time it was showing.
+    // Stopping the clock sends the switch alone. The server stops it at the time the
+    // screen was showing, not at the 12:34 that is on air as the reference.
     {
       name: 'the operator stops the clock: only the switch is sent',
       whatTheOperatorDoes: () => flipSwitch('Relógio correndo'),

@@ -14,13 +14,16 @@ import { reduceTakeGraphic } from './takeGraphic.js';
  * reducer a take by hand uses, so every rule of a take (one instance per layer and
  * output, the refusals, any check added to takeGraphic later) holds for items without
  * being written twice; one of those rules is that a field whose stored value is a
- * literal `null` (a field cleared in the item editor) is left out of the data. Then it stamps the new instance with the item's id. If the item
- * taken was the one the rundown's cursor was on, the cursor moves to the item after it;
- * after the last item the cursor is on nothing, rather than back at the top where
- * "next" would fire the opening again, and the rundown is marked as played to its end
- * (`wasLastItemTakenAtCursor`). Taking any other item leaves the cursor alone.
- * Refused if the item does not exist, if a field cannot be resolved, or for any reason
- * takeGraphic refuses (the item's layer or graphic is gone); nothing changes then.
+ * literal `null` (a field cleared in the item editor) is left out of the data. Then it
+ * stamps the new instance with the item's id. If the item taken was the one the
+ * rundown's cursor was on, the cursor moves to the item after it; after the last item
+ * the cursor is on nothing, rather than back at the top where "next" would fire the
+ * opening again, and the rundown is marked as played to its end
+ * (`wasLastItemTakenAtCursor`). Taking any other item leaves the cursor alone. Refused
+ * if the item does not exist, if a field cannot be resolved, or for any reason
+ * takeGraphic refuses (the item's layer or graphic is gone, a `takeTime` field is not a
+ * wall-clock moment in the graphic's schema, the data breaks that schema); nothing
+ * changes then.
  */
 export function reduceTakeItem(
   slices: SlicesChangedByCommands,
@@ -36,6 +39,10 @@ export function reduceTakeItem(
     return { status: 'refused', error: resolution.error };
   }
 
+  const keysOfTakeTimeFields = Object.keys(item.fields).filter(
+    (fieldKey) => item.fields[fieldKey]?.kind === 'takeTime',
+  );
+
   // An item always goes to the program output; previewing an item is a later task.
   const takeOfTheItemGraphic: TakeGraphicCommand = {
     type: 'takeGraphic',
@@ -43,9 +50,11 @@ export function reduceTakeItem(
     layerId: item.layerId,
     data: resolution.data,
     target: 'program',
-    // Nothing is left for takeGraphic to stamp: an item's `takeTime` fields were turned
-    // into this command's moment by the resolver just above.
-    takeTimeFieldKeys: [],
+    // The resolver above already wrote this command's moment into the `takeTime`
+    // fields. Their keys are named here all the same, so that takeGraphic's check (only
+    // a wall-clock field of the graphic may be stamped) holds for items without being
+    // written twice. takeGraphic then writes the same moment over the same fields.
+    takeTimeFieldKeys: keysOfTakeTimeFields,
   };
   const takeOutcome = reduceTakeGraphic(slices, takeOfTheItemGraphic, context);
   if (takeOutcome.status === 'refused') {

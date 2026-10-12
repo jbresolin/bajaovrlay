@@ -47,6 +47,8 @@
  *   - Field validation, clear all and the keyboard; the component tests cover those.
  *   - An item of the rundown changed on air from the item editor ("Atualizar no ar");
  *     itemUpdateOnAir.e2e.ts covers that.
+ *   - A running clock stopped with "Atualizar" (it must not jump back to its reference
+ *     time); clockStoppedOnAir.e2e.ts covers that.
  *
  * What it needs: the race clock and the renderer built (`pnpm build`), because the server
  * only registers built graphics and both renderer pages are the built renderer.

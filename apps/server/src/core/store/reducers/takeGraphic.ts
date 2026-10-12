@@ -1,6 +1,7 @@
 import type { Instance, TakeGraphicCommand } from '@bajaovrlay/shared';
 
 import {
+  refuseFieldGraphicCannotStamp,
   refuseInvalidGraphicData,
   refuseUnknownGraphic,
   refuseUnknownLayer,
@@ -10,6 +11,7 @@ import {
   stampFieldsWithMomentOfTheCommand,
 } from '../graphicDataPreparation.js';
 import { findProblemInGraphicData } from '../graphicDataValidation.js';
+import { findTakeTimeFieldKeyGraphicCannotStamp } from '../graphicSchemaProperties.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
@@ -18,8 +20,10 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * output are left alone. The data the instance holds is the command's data prepared in
  * two steps: a field sent as `null` is left out (it was cleared in the form), then each
  * field named in `takeTimeFieldKeys` gets the moment of this command in milliseconds.
- * Refused, before anything changes, if the layer or the graphic does not exist or if
- * the prepared data breaks the graphic's manifest schema.
+ * Refused, before anything changes, if the layer or the graphic does not exist, if a
+ * field named for stamping is not one the graphic's schema marks as a wall-clock
+ * moment, or if the prepared data breaks the graphic's manifest schema. A take never
+ * runs the manifest's update rule: there is no data on air for it to carry forward.
  */
 export function reduceTakeGraphic(
   slices: SlicesChangedByCommands,
@@ -35,6 +39,20 @@ export function reduceTakeGraphic(
   );
   if (graphic === undefined) {
     return { status: 'refused', error: refuseUnknownGraphic(command.graphicId) };
+  }
+
+  // Before anything is stamped: the server writes its own moment only into a field the
+  // graphic's schema marks as a wall-clock moment. A graphic without a data schema
+  // marks none, so it accepts no stamp at all.
+  const keyThatCannotBeStamped = findTakeTimeFieldKeyGraphicCannotStamp(
+    graphic,
+    command.takeTimeFieldKeys,
+  );
+  if (keyThatCannotBeStamped !== undefined) {
+    return {
+      status: 'refused',
+      error: refuseFieldGraphicCannotStamp(graphic.id, keyThatCannotBeStamped),
+    };
   }
 
   // Null first, stamp second: a field that is both sent as null and named for stamping

@@ -30,6 +30,10 @@
  *     both. Every update here names no field to stamp (`takeTimeFieldKeys: []`).
  *   - An instance whose graphic is no longer registered;
  *     updateInstanceDataWithoutItsGraphic.test.ts covers it.
+ *   - The update rule a manifest may name (the race clock's keeps the clock from
+ *     jumping when an update stops, starts or turns it);
+ *     updateInstanceDataCarriesTheClock.test.ts covers it, and no update here changes
+ *     a clock field in a way that would set the rule off.
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
@@ -66,13 +70,19 @@ const appliedUpdateScenarios: Array<{
       buildTeam42LowerThirdOnAir(),
     ],
   },
-  // Several fields at once, one of them new: the clock stops and the lap count appears.
+  // Several fields at once, one of them new: the session is renamed, the yellow flag
+  // comes out and the lap count appears. None of the three is a clock field, so the
+  // race clock's update rule (see what these tests do not cover) adds nothing.
   {
     name: 'replaces two fields and adds an optional one that was not there before',
     command: {
       type: 'updateInstanceData',
       instanceId: raceClockInstanceId,
-      data: { state: 'red', running: false, lapsCompletedByLeader: 12 },
+      data: {
+        sessionName: 'Enduro de Resistência — Bateria 2',
+        state: 'yellow',
+        lapsCompletedByLeader: 12,
+      },
       takeTimeFieldKeys: [],
     },
     expectedInstancesAfter: [
@@ -80,8 +90,8 @@ const appliedUpdateScenarios: Array<{
         ...buildRaceClockInstanceWithStatus('on-air'),
         resolvedData: {
           ...buildGreenFlagEnduroData(),
-          state: 'red',
-          running: false,
+          sessionName: 'Enduro de Resistência — Bateria 2',
+          state: 'yellow',
           lapsCompletedByLeader: 12,
         },
       },

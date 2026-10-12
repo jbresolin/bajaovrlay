@@ -15,7 +15,9 @@ import { onTestFinished } from 'vitest';
  * OGraf form hint, not a JSON Schema keyword, and the server must not choke on it. The
  * same goes for the per-field `v_baja` hints the control page's generated form reads
  * (`unit: 'ms'` on the reference time, `role: 'wallClock'` on the reference moment):
- * the server's data check ignores them.
+ * the server's data check ignores them, but `role: 'wallClock'` is what lets a command
+ * have the reference moment stamped. `v_baja.updateRule` names the same rule as the real
+ * manifest, so an update here carries the clock forward exactly as on a race day.
  */
 export const raceClockManifestForTests = {
   $schema: 'https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json',
@@ -62,7 +64,7 @@ export const raceClockManifestForTests = {
     ],
     additionalProperties: false,
   },
-  v_baja: { defaultLayerId: 'clock', category: 'clock' },
+  v_baja: { defaultLayerId: 'clock', category: 'clock', updateRule: 'carryClockForward' },
 };
 
 /** A graphics folder path that never exists, as on a machine with no graphics at all. */
@@ -93,6 +95,22 @@ export function buildRaceClockInto(graphicsFolder: string): void {
 export function createGraphicsFolderWithBuiltRaceClock(): string {
   const graphicsFolder = createGraphicsFolderWithUnbuiltRaceClock();
   buildRaceClockInto(graphicsFolder);
+  return graphicsFolder;
+}
+
+/**
+ * Creates a graphics folder holding one built package, `scoreboard`, with the given
+ * manifest (and the race clock's source without a build). Returns the folder's path.
+ * For tests about a manifest the race clock does not have: a broken schema, a wrong rule.
+ */
+export function createGraphicsFolderWithBuiltScoreboard(scoreboardManifest: object): string {
+  const graphicsFolder = createGraphicsFolderWithUnbuiltRaceClock();
+  const scoreboardDistFolder = join(graphicsFolder, 'scoreboard', 'dist');
+  mkdirSync(scoreboardDistFolder, { recursive: true });
+  writeFileSync(
+    join(scoreboardDistFolder, 'scoreboard.ograf.json'),
+    JSON.stringify(scoreboardManifest),
+  );
   return graphicsFolder;
 }
 

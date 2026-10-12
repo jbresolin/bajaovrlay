@@ -8,9 +8,9 @@
  *   tests follow the race clock's form through the moments where that could go wrong.
  *
  * What these tests prove:
- *   - After a take or an "Atualizar" the server accepted, the form shows what is now on
- *     air (the moment the server wrote included) and counts as untouched again: the next
- *     "Atualizar" does not send the earlier edit a second time.
+ *   - After a take the server accepted, the form shows what is now on air (the moment
+ *     the server wrote included) and counts as untouched again: the next "Atualizar"
+ *     does not send the fields typed for the take a second time.
  *   - After a refusal the operator's edit is still in the form and still goes out on
  *     the next press.
  *   - "Colocar no ar" always sends the form as it stands, every field of it.
@@ -25,6 +25,8 @@
  *
  * What these tests deliberately do not cover:
  *   - "Atualizar" after a reload and the form as the page loads: QuickEditPanel.test.tsx.
+ *   - The form after an accepted "Atualizar" that stopped the clock or corrected its
+ *     time, where the server carries the clock forward: QuickEditPanelClockUpdate.test.tsx.
  *   - The graphic changing or leaving the air through someone else:
  *     QuickEditPanelOtherOperator.test.tsx.
  *   - A field other than the time put back to its old value: the rule is react-hook-form's
@@ -47,11 +49,9 @@ import {
 import {
   buildRaceClockInstanceHoldingThisData,
   idOfTheRaceClockInstanceOnAir,
-  letTheServerApplyTheLastUpdate,
   letTheServerPutTheLastTakeOnAir,
   letTheServerRefuseTheLastUpdateForARequiredFieldMissingOnAir,
   pressButtonAndWaitForCommand,
-  pressButtonAndWaitUntilThePressIsOver,
   referenceMomentKindSelectorName,
   referenceMomentLabel,
   referenceTimeLabel,
@@ -87,33 +87,6 @@ function renderPanelWithTheFirstHeatOnAir() {
 }
 
 describe('the quick edit form following what is on air', () => {
-  it('starts untouched again after an accepted "Atualizar": the next press does not resend the typed time', async () => {
-    // Arrange: the first heat on air. The operator corrects the clock to 20:00 with
-    // "Atualizar"; the server lays that over what is on air and accepts.
-    const { fakeServer } = renderPanelWithTheFirstHeatOnAir();
-    typeIntoField(referenceTimeLabel, '20:00');
-    await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
-    letTheServerApplyTheLastUpdate(fakeServer, buildFirstHeatInstanceOnAir(), tenOClock);
-    await waitUntilButtonIsOnAgain('Atualizar');
-
-    // Act: the operator presses "Atualizar" again without touching anything.
-    await pressButtonAndWaitUntilThePressIsOver('Atualizar');
-
-    // Assert: the only command is still the first one. Had the form still counted the
-    // time field as changed, a second command would have put the clock back to 20:00.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'a field already sent must not be sent again as a change',
-    ).toEqual([
-      {
-        type: 'updateInstanceData',
-        instanceId: idOfTheRaceClockInstanceOnAir,
-        data: { referenceTimeMs: 1_200_000 },
-        takeTimeFieldKeys: [],
-      },
-    ]);
-  });
-
   it('shows what the server put on air after an accepted "Colocar no ar", and a later flag change sends the flag alone', async () => {
     // Arrange: nothing on air. The operator fills the form for the first heat and
     // presses "Colocar no ar"; the server puts it on air at 10:00, writing that moment

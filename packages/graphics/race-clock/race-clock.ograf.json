@@ -13,7 +13,8 @@
   "stepCount": 1,
   "v_baja": {
     "defaultLayerId": "clock",
-    "category": "clock"
+    "category": "clock",
+    "updateRule": "carryClockForward"
   },
   "actionDurations": [
     { "type": "playAction", "duration": 600 },
