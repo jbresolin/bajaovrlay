@@ -19,6 +19,8 @@ export type RundownItemRowProps = {
   graphicName: string;
   layerName: string;
   onTakePressed: () => void;
+  /** Called when "Prévia" is pressed: show this item on the preview output. */
+  onPreviewPressed: () => void;
   /** Called when the label is clicked: put the cursor on this row. */
   onSetCursorPressed: () => void;
   onEditPressed: () => void;
@@ -28,7 +30,8 @@ export type RundownItemRowProps = {
 
 /**
  * One row of the rundown: a handle to drag it by, the item's colour and label, the
- * graphic and the layer it uses, and the buttons "Disparar", "Editar" and "Excluir".
+ * graphic and the layer it uses, and the buttons "Disparar", "Prévia", "Editar" and
+ * "Excluir".
  * The label is itself a button: a click on it puts the cursor on this row, without
  * taking anything. The row at the cursor is marked for the eye (border and "Próximo")
  * and for a screen reader (`aria-current`). Must be drawn inside RundownItemList, which
@@ -121,6 +124,11 @@ export function RundownItemRow(props: RundownItemRowProps) {
             onClick={(click) => takeThisItemAndLetGoOfTheFocus(click.currentTarget)}
           >
             {ptBR.rundown.takeItemButton}
+          </ActionButton>
+          {/* Shows the item on the preview output. It neither takes nor moves the cursor,
+              so any row can be looked at while the planned item stays next. */}
+          <ActionButton size="xs" variant="outline" onClick={props.onPreviewPressed}>
+            {ptBR.rundown.previewItemButton}
           </ActionButton>
           <ActionButton size="xs" variant="ghost" onClick={props.onEditPressed}>
             {ptBR.rundown.editItemButton}

@@ -22,7 +22,8 @@
  * What these tests deliberately do not cover:
  *   - The real server and WebSocket: a fake server stands in, driven by the test; the
  *     real ones are exercised by e2e/takeAndClear.e2e.ts.
- *   - The preview output: M0 has none, so the panel lists what is on program only.
+ *   - The preview output: the rows describe the program output only, and a layer that
+ *     holds a preview gets a chip; LayerStatusPanelPreviewChip.test.tsx covers that.
  *   - The message shown when the server refuses a clear; App.test.tsx covers it.
  *   - The colour of each status badge; InstanceStatusBadge.test.tsx covers it.
  */

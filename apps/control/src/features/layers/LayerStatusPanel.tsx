@@ -11,7 +11,8 @@ const relativeTimeRefreshIntervalInMilliseconds = 10_000;
 
 /**
  * Lists every layer, from the bottom of the screen stack to the top, with what is on
- * air on it. Always visible: the operator must never have to guess what a layer shows.
+ * air on it, and a chip on a layer that also holds something on the preview output.
+ * Always visible: the operator must never have to guess what a layer shows.
  * It only repeats the server's slices; pressing "Limpar" sends `clearLayer` and the row
  * changes when the server's next instances slice arrives, not before.
  */
@@ -38,6 +39,7 @@ export function LayerStatusPanel() {
                 key={layer.id}
                 layer={layer}
                 instanceOnProgram={instanceOnProgram}
+                isHoldingAPreview={isLayerHoldingAPreview(instances, layer.id)}
                 graphicName={findGraphicName(graphics, instanceOnProgram?.graphicId)}
                 currentTime={currentTime}
                 onClearPressed={() => void sendCommand({ type: 'clearLayer', layerId: layer.id })}
@@ -50,10 +52,21 @@ export function LayerStatusPanel() {
   );
 }
 
-/** The instance on air on a layer. M0 has no preview output, so only program is listed. */
+/** The instance on air on a layer: the one on the program output. */
 function findInstanceOnProgram(instances: Instance[], layerId: string): Instance | undefined {
   return instances.find(
     (instance) => instance.layerId === layerId && instance.target === 'program',
+  );
+}
+
+/**
+ * Whether a layer holds something on the preview output. The row only marks it with a
+ * chip: what is previewed, and the buttons that take or discard it, are under the
+ * "Prévia" monitor (features/outputMonitors).
+ */
+function isLayerHoldingAPreview(instances: Instance[], layerId: string): boolean {
+  return instances.some(
+    (instance) => instance.layerId === layerId && instance.target === 'preview',
   );
 }
 

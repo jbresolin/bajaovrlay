@@ -33,6 +33,8 @@ export const ptBR = {
   },
   layers: {
     emptyLayer: 'vazia',
+    // The small mark on a layer that holds something on the preview output.
+    inPreviewChip: 'em prévia',
     clearLayerButton: 'Limpar',
     // The word on each row's status badge. "Carregando" is what the server sets at the
     // take; "No ar" and "Falhou" are what the renderer reports back.
@@ -70,12 +72,22 @@ export const ptBR = {
         `Estes campos do que está no ar não puderam ser lidos e aparecem com o valor inicial: ${fieldLabels}. "Atualizar" envia só o que você alterar, e o servidor recusa enquanto faltar um campo obrigatório no ar; "Colocar no ar" envia o formulário inteiro e substitui o que está no ar.`,
     },
     takeButton: 'Colocar no ar',
+    // Shows the form as it stands on the preview output, without touching what is on air.
+    previewButton: 'Prévia',
     updateButton: 'Atualizar',
     clearAllButton: 'Limpar tudo',
     clearAllConfirmButton: 'Confirmar: limpar tudo',
   },
-  programMonitor: {
-    title: 'Programa',
+  // The two monitors in the centre and the lines under "Prévia" (features/outputMonitors).
+  outputMonitors: {
+    previewTitle: 'Prévia',
+    programTitle: 'Programa',
+    // The accessible name of the list of layers that hold a preview.
+    previewedLayersListLabel: 'Em prévia',
+    nothingInPreview: 'Nada em prévia.',
+    // On each line: send that layer's preview to air, or throw it away.
+    takePreviewButton: 'Tomar',
+    discardPreviewButton: 'Descartar',
   },
   // How long ago something happened, as formatRelativeTimePtBR writes it.
   relativeTime: {
@@ -198,6 +210,11 @@ export const ptBR = {
     // The mark on the row at the cursor: the item Space puts on air.
     nextItemBadge: 'Próximo',
     takeItemButton: 'Disparar',
+    // Shows the row's item on the preview output, without putting it on air.
+    previewItemButton: 'Prévia',
+    // The switch at the top of the rundown: while it is on, moving the cursor by hand
+    // (an arrow key or a click on a label) also previews the item the cursor lands on.
+    autoPreviewToggle: 'Prévia automática',
     editItemButton: 'Editar',
     deleteItemButton: 'Excluir',
     // What "Excluir" reads for 3 seconds after its first press, while it waits for the second.

@@ -13,9 +13,11 @@
  *
  *   Two renderer pages take part, and they are not equals. The program output is the
  *   page OBS loads, `/render/`; here a second browser page opened at that address stands
- *   in for OBS. The program monitor is the small frame on the control page,
- *   `/render/?monitor=1`. Only the program output is the truth about what is on air: it
- *   alone tells the server "the clock is on screen". The monitor draws and says nothing.
+ *   in for OBS. The program monitor is the small frame labelled "Programa" on the control
+ *   page, `/render/?monitor=1` (the frame beside it, "Prévia", shows the preview output
+ *   and has its own file, previewThenTake.e2e.ts). Only the program output is the truth
+ *   about what is on air: it alone tells the server "the clock is on screen". The monitor
+ *   draws and says nothing.
  *
  * What these tests prove:
  *   - With OBS (its stand-in) connected, pressing "Colocar no ar" makes the layer panel
@@ -115,7 +117,18 @@ async function openProgramOutputAsObsDoes(browserContext: BrowserContext): Promi
   return programOutputPage;
 }
 
-/** Finds the race clock element inside the program monitor frame of the control page. */
+/**
+ * Finds the row of the clock layer in the layer panel. It is looked up inside "Camadas",
+ * because the lines under the "Prévia" monitor are named after layers too.
+ */
+function findClockLayerRow(page: Page): Locator {
+  return page.getByRole('region', { name: 'Camadas' }).getByRole('listitem', { name: 'Relógio' });
+}
+
+/**
+ * Finds the race clock element inside the "Programa" monitor frame of the control page,
+ * the right one of its two monitors (the other, "Prévia", frames the preview output).
+ */
 function findRaceClockInProgramMonitor(page: Page): Locator {
   return page
     .frameLocator('iframe[title="Programa"]')
@@ -135,7 +148,7 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
     // stands in for it), the control page is open and connected, and the form is filled.
     const programOutputPage = await openProgramOutputAsObsDoes(context);
     await openControlPageAndWaitUntilConnected(page);
-    const clockLayerRow = page.getByRole('listitem', { name: 'Relógio' });
+    const clockLayerRow = findClockLayerRow(page);
     await expect(clockLayerRow, 'the clock layer must start empty').toContainText('vazia');
     await fillQuickEditForTheEnduranceRace(page);
 
@@ -264,7 +277,7 @@ test.describe('taking the race clock with no OBS connected', () => {
     // Arrange: only the control page is open, as when the operator starts before OBS
     // does. Its program monitor is the one renderer page there is. The form is filled.
     await openControlPageAndWaitUntilConnected(page);
-    const clockLayerRow = page.getByRole('listitem', { name: 'Relógio' });
+    const clockLayerRow = findClockLayerRow(page);
     await expect(clockLayerRow, 'the clock layer must start empty').toContainText('vazia');
     await fillQuickEditForTheEnduranceRace(page);
 

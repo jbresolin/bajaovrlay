@@ -24,6 +24,9 @@
  *   - Which item is before or after the cursor in every case; itemBeforeCursor.test.ts
  *     and itemAfterCursor.test.ts do.
  *   - The Space key (RundownPanelKeyboard.test.tsx).
+ *   - The preview that follows a move once the server accepted it, while "Prévia
+ *     automática" is on (RundownPanelPreview.test.tsx). Here every check is made before
+ *     the server answers, when only the `moveCursor` has been sent.
  *   - The arrows during a keyboard drag, where they move the dragged row
  *     (RundownPanelReorder.test.tsx).
  */
@@ -241,7 +244,9 @@ describe("a click on a row's label", () => {
       screen.queryByRole('region', { name: 'Editor de item' }),
       'a click on a label must not open the item editor',
     ).toBeNull();
-    // (Then the server answers, so no command is left waiting for its 5-second timeout.)
+    // (Then the server answers, so the moveCursor is not left waiting for its 5-second
+    // timeout. With "Prévia automática" on, as it starts, the page then asks for a
+    // preview of that row; RundownPanelPreview.test.tsx is about that.)
     fakeServer.acceptLastCommand();
   });
 

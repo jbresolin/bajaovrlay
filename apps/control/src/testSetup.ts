@@ -13,6 +13,9 @@ afterEach(() => {
   // A test that moved time by hand (`vi.useFakeTimers()`) must not leave the next test
   // with a clock that stands still.
   vi.useRealTimers();
+  // A test that switched "Prévia automática" off (the one thing the page keeps in the
+  // browser's own storage) must not leave the next test with it off.
+  window.localStorage.clear();
 });
 
 // The tests run in jsdom, a browser stand-in that draws nothing and so lacks the three

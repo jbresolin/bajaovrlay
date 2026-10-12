@@ -42,9 +42,12 @@ export type QuickEditFormProps = {
 
 /**
  * The form of one graphic in "Edição rápida", generated from the graphic's manifest
- * (features/schemaForm), with its two actions. "Colocar no ar" sends `takeGraphic` for
+ * (features/schemaForm), with its three actions. "Colocar no ar" sends `takeGraphic` for
  * the graphic's default layer with the form as it stands, and the server replaces
- * whatever is on that layer. "Atualizar", drawn only while the graphic is on air, sends
+ * whatever is on that layer. "Prévia" sends the same form as `previewGraphic`, which
+ * shows it on the preview output of that layer and leaves the air alone; it is sent to
+ * air from there with "Tomar" (features/outputMonitors), not from this form.
+ * "Atualizar", drawn only while the graphic is on air, sends
  * `updateInstanceData` for the instance on air with only the fields the operator changed;
  * the server keeps the instance, so the graphic changes in place without leaving the screen.
  *
@@ -135,8 +138,8 @@ export function QuickEditForm(props: QuickEditFormProps) {
     fieldsTheOperatorChanged,
   });
 
-  // While a press is being checked and its command waits for the server's answer both
-  // buttons are off, so an impatient second click cannot send the graphic to air twice.
+  // While a press is being checked and its command waits for the server's answer every
+  // button is off, so an impatient second click cannot send the graphic to air twice.
   // The form keeps this flag itself instead of reading react-hook-form's `isSubmitting`:
   // every `reset` switches that one off, and the form is reset whenever news about the
   // graphic arrives, which can be in the middle of the wait.
@@ -232,8 +235,8 @@ export function QuickEditForm(props: QuickEditFormProps) {
     setErrorOfTheLastCommandFromThisForm(readServerStateNow().lastCommandError);
   }
 
-  // Both functions run only when every field passed its rule; otherwise react-hook-form
-  // puts the messages under the fields and neither is called.
+  // The three functions run only when every field passed its rule; otherwise
+  // react-hook-form puts the messages under the fields and none is called.
   async function sendFormAsTakeCommand(formValues: SchemaFormValues): Promise<void> {
     const takeData = buildTakeDataFromSchemaForm(description, formValues);
     const wasAcceptedByTheServer = await sendCommand({
@@ -244,6 +247,24 @@ export function QuickEditForm(props: QuickEditFormProps) {
       takeTimeFieldKeys: takeData.takeTimeFieldKeys,
     });
     finishCommandSentFromThisForm(wasAcceptedByTheServer);
+  }
+  // "Prévia": the same data as "Colocar no ar", built by the same function, sent to the
+  // preview output of the same layer. An accepted preview changed nothing on air, so the
+  // form is NOT filled again: what the operator changed is still an unsent edit, and
+  // "Atualizar" pressed afterwards still sends it.
+  async function sendFormAsPreviewCommand(formValues: SchemaFormValues): Promise<void> {
+    const previewData = buildTakeDataFromSchemaForm(description, formValues);
+    const wasAcceptedByTheServer = await sendCommand({
+      type: 'previewGraphic',
+      graphicId,
+      layerId: graphic.defaultLayerId,
+      data: previewData.data,
+      takeTimeFieldKeys: previewData.takeTimeFieldKeys,
+    });
+    const errorLeftByThisCommand = wasAcceptedByTheServer
+      ? null
+      : readServerStateNow().lastCommandError;
+    setErrorOfTheLastCommandFromThisForm(errorLeftByThisCommand);
   }
   async function sendChangedFieldsAsUpdateCommand(formValues: SchemaFormValues): Promise<void> {
     // This check is here only because the type allows undefined: "Atualizar" is drawn
@@ -274,12 +295,13 @@ export function QuickEditForm(props: QuickEditFormProps) {
     finishCommandSentFromThisForm(wasAcceptedByTheServer);
   }
   const checkFormThenTake = form.handleSubmit(sendFormAsTakeCommand);
+  const checkFormThenPreview = form.handleSubmit(sendFormAsPreviewCommand);
   const checkFormThenUpdate = form.handleSubmit(sendChangedFieldsAsUpdateCommand);
 
-  // What a press on either button does: both buttons go off, the form is checked and, if
-  // it passes, sent; the buttons come back whatever the outcome (accepted, refused, no
-  // answer within 5 s, or a field that failed its rule).
-  async function runWithBothButtonsOff(checkFormThenSend: () => Promise<void>): Promise<void> {
+  // What a press on any of the buttons does: all of them go off, the form is checked
+  // and, if it passes, sent; the buttons come back whatever the outcome (accepted,
+  // refused, no answer within 5 s, or a field that failed its rule).
+  async function runWithEveryButtonOff(checkFormThenSend: () => Promise<void>): Promise<void> {
     setIsWaitingForTheServer(true);
     try {
       await checkFormThenSend();
@@ -320,22 +342,32 @@ export function QuickEditForm(props: QuickEditFormProps) {
         <ActionButton
           type="button"
           disabled={isWaitingForTheServer}
-          onClick={() => runWithBothButtonsOff(checkFormThenTake)}
+          onClick={() => runWithEveryButtonOff(checkFormThenTake)}
         >
           {ptBR.playout.takeButton}
+        </ActionButton>
+        <ActionButton
+          type="button"
+          variant="outline"
+          disabled={isWaitingForTheServer}
+          onClick={() => runWithEveryButtonOff(checkFormThenPreview)}
+        >
+          {ptBR.playout.previewButton}
         </ActionButton>
         {isGraphicOnAir && (
           <ActionButton
             type="button"
             variant="secondary"
             disabled={isWaitingForTheServer}
-            onClick={() => runWithBothButtonsOff(checkFormThenUpdate)}
+            onClick={() => runWithEveryButtonOff(checkFormThenUpdate)}
           >
             {ptBR.playout.updateButton}
           </ActionButton>
         )}
         {isTheErrorOfThePageFromThisForm && (
-          <CommandErrorMessage commandTypes={['takeGraphic', 'updateInstanceData']} />
+          <CommandErrorMessage
+            commandTypes={['takeGraphic', 'previewGraphic', 'updateInstanceData']}
+          />
         )}
       </CardFooter>
     </form>
