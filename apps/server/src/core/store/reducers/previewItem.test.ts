@@ -10,7 +10,7 @@
  *
  * What these tests prove:
  *   - The preview instance is exactly what takeItem would put on air, except that it is
- *     on the preview output; it carries the item's id.
+ *     on the preview output and says who asked for it; it carries the item's id.
  *   - What is on the program output stays as it was, on the same layer too.
  *   - The rundown's cursor never moves, wherever it was: the very same rundowns array
  *     comes back, so the store neither saves nor broadcasts the rundowns.
@@ -23,6 +23,8 @@
  * What these tests deliberately do not cover:
  *   - Sending the preview to air (takePreview.test.ts) or throwing it away
  *     (stopPreview.test.ts).
+ *   - What a preview made by "Prévia automática" (origin `auto`) discards; every preview
+ *     here is asked for by hand. previewItemOrigin.test.ts covers it.
  *   - That a preview starts no auto-out; autoOutAndPreview.test.ts covers it.
  *   - Every detail of resolving field values and of the data check; takeItem's own tests
  *     and resolveItemFields.test.ts cover them, and previewItem runs the same code.
@@ -80,7 +82,7 @@ describe('previewItem, the instance it puts on the preview output', () => {
     // Act: preview the yellow flag item, which lives on the same layer as the clock on air.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'previewItem', itemId: 'item-bandeira-amarela' },
+      { type: 'previewItem', itemId: 'item-bandeira-amarela', origin: 'manual' },
       contextOfTheRundownCommand,
     );
 
@@ -100,6 +102,7 @@ describe('previewItem, the instance it puts on the preview output', () => {
           currentStep: 0,
           status: 'loading',
           takenAt: '2026-10-09T14:32:05.000Z',
+          previewOrigin: 'manual',
           itemId: 'item-bandeira-amarela',
         },
       ],
@@ -120,18 +123,19 @@ describe('previewItem, the instance it puts on the preview output', () => {
     // Act: preview the same item at the same moment.
     const outcomeOfPreview = reduceCommand(
       slicesBefore,
-      { type: 'previewItem', itemId: 'item-bandeira-amarela' },
+      { type: 'previewItem', itemId: 'item-bandeira-amarela', origin: 'manual' },
       contextOfTheRundownCommand,
     );
 
-    // Assert: the same instance, field for field, except for the output it is on.
+    // Assert: the same instance, field for field, except for the output it is on and
+    // the mark every preview carries saying who asked for it.
     const instancesOfPreview =
       outcomeOfPreview.status === 'applied' ? outcomeOfPreview.slices.instances : undefined;
     expect(instanceOfTake?.target, 'the take must have gone to program').toBe('program');
     expect(
       instancesOfPreview,
-      'the preview must differ from the take in nothing but the output',
-    ).toEqual([{ ...instanceOfTake, target: 'preview' }]);
+      'the preview must differ from the take in nothing but the output and its origin mark',
+    ).toEqual([{ ...instanceOfTake, target: 'preview', previewOrigin: 'manual' }]);
   });
 
   it('stamps a field left to the moment of the take, and remembers which field it was', () => {
@@ -144,7 +148,7 @@ describe('previewItem, the instance it puts on the preview output', () => {
     // Act: preview it at 14:32:05.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'previewItem', itemId: 'item-largada-do-enduro' },
+      { type: 'previewItem', itemId: 'item-largada-do-enduro', origin: 'manual' },
       contextOfTheRundownCommand,
     );
 
@@ -191,7 +195,7 @@ describe('previewItem and the rundown cursor', () => {
     // Act: preview the yellow flag item.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'previewItem', itemId: 'item-bandeira-amarela' },
+      { type: 'previewItem', itemId: 'item-bandeira-amarela', origin: 'manual' },
       contextOfTheRundownCommand,
     );
 
@@ -221,7 +225,7 @@ describe('previewItem on a layer that already has a preview', () => {
     // Act: preview the finish item, which also lives on the clock layer.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'previewItem', itemId: 'item-chegada-do-enduro' },
+      { type: 'previewItem', itemId: 'item-chegada-do-enduro', origin: 'manual' },
       { ...contextOfTheRundownCommand, newInstanceId: 'd4b8a2f6-0c1e-4a3d-9f57-8e6c4b2a1d09' },
     );
 
@@ -312,7 +316,7 @@ describe('previewItem that must be refused', () => {
     // Act: preview the item of this row.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'previewItem', itemId },
+      { type: 'previewItem', itemId, origin: 'manual' },
       contextOfTheRundownCommand,
     );
 

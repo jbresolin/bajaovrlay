@@ -14,6 +14,9 @@
  *   - Each command is accepted in its real shape. previewGraphic gets an empty
  *     `takeTimeFieldKeys` list when it names no field for the server to stamp, and carries
  *     no `target`: it always goes to the preview output.
+ *   - previewItem says who asked for the preview in `origin`: 'manual' (a button or
+ *     Shift+Space; filled in when left out) or 'auto' ("Prévia automática" following the
+ *     cursor). Any other word is refused.
  *   - stopPreview says "every layer" with `layerId: null`, written out; a layer that
  *     happens to be called "all" is still one layer.
  *   - A command with a part missing or empty is refused, and the failure names the part.
@@ -23,8 +26,8 @@
  * What these tests deliberately do not cover:
  *   - Whether the item, graphic or layer exists, and what each command does to the
  *     state; the reducers in apps/server check those.
- *   - The `takeTimeFieldKeys` an instance on the preview output remembers; that is a field
- *     of the instance, covered in ../slices/instance.test.ts.
+ *   - The `takeTimeFieldKeys` and the `previewOrigin` an instance on the preview output
+ *     remembers; those are fields of the instance, covered in ../slices/instance.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -36,11 +39,32 @@ const yellowFlagItemId = 'b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10';
 
 describe('the preview commands in their real shape', () => {
   const acceptedPreviewCommandScenarios = [
-    // The "Prévia" button of a rundown row, and the cursor arriving on a row.
+    // The "Prévia" button of a rundown row: a client that says nothing about the origin
+    // asked by hand, so an older client can never discard previews by accident.
     {
-      name: 'accepts previewItem for one item',
+      name: 'accepts previewItem for one item and fills in the origin manual',
       command: { type: 'previewItem', itemId: yellowFlagItemId },
-      expectedAfterValidation: { type: 'previewItem', itemId: yellowFlagItemId },
+      expectedAfterValidation: {
+        type: 'previewItem',
+        itemId: yellowFlagItemId,
+        origin: 'manual',
+      },
+    },
+    // Shift+Space, written out in full.
+    {
+      name: 'accepts previewItem that says it was asked for by hand',
+      command: { type: 'previewItem', itemId: yellowFlagItemId, origin: 'manual' },
+      expectedAfterValidation: {
+        type: 'previewItem',
+        itemId: yellowFlagItemId,
+        origin: 'manual',
+      },
+    },
+    // "Prévia automática": the cursor arrived on a row and the page previews it by itself.
+    {
+      name: 'accepts previewItem that says it was made by Prévia automática',
+      command: { type: 'previewItem', itemId: yellowFlagItemId, origin: 'auto' },
+      expectedAfterValidation: { type: 'previewItem', itemId: yellowFlagItemId, origin: 'auto' },
     },
     // The "Prévia" button of "Edição rápida", with every field typed by the operator.
     {
@@ -111,7 +135,7 @@ describe('the preview commands in their real shape', () => {
     // Act: check the command.
     const result = CommandSchema.safeParse(commandFromControlPage);
 
-    // Assert: it is accepted, with only the stamp list of previewGraphic filled in.
+    // Assert: it is accepted, with only the parts the row says filled in.
     expect(result.success, 'a preview command in its real shape must be accepted').toBe(true);
     expect(result.data, 'the command must come out as the row says').toEqual(
       expectedAfterValidation,
@@ -150,6 +174,13 @@ describe('the preview commands with a part missing', () => {
       name: 'refuses a previewItem with an empty item id, naming itemId',
       command: { type: 'previewItem', itemId: '' },
       fieldNamedInTheFailure: 'itemId',
+    },
+    // The origin decides whether other previews are discarded, so a word the server does
+    // not know must not be read as either of the two.
+    {
+      name: 'refuses a previewItem with an origin that is neither auto nor manual, naming origin',
+      command: { type: 'previewItem', itemId: yellowFlagItemId, origin: 'automatica' },
+      fieldNamedInTheFailure: 'origin',
     },
     // A graphic is previewed on a layer, so the command must say which.
     {

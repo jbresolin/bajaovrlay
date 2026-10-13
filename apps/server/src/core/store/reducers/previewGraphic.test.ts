@@ -8,7 +8,8 @@
  *   run by the same code.
  *
  * What these tests prove:
- *   - The outcome is exactly the outcome of a takeGraphic with `target: 'preview'`.
+ *   - The outcome is exactly the outcome of a takeGraphic with `target: 'preview'`, and
+ *     the preview instance is marked as asked for by hand (`previewOrigin: 'manual'`).
  *   - It replaces the preview of that layer only: the program output and the previews of
  *     other layers stay.
  *   - A field named in `takeTimeFieldKeys` is stamped with the moment of the preview and
@@ -72,7 +73,8 @@ describe('previewGraphic, the instance it puts on the preview output', () => {
       contextOfTheRundownCommand,
     );
 
-    // Assert: the two outcomes are equal, and the red flag is beside the clock on air.
+    // Assert: the two outcomes are equal, and the red flag is beside the clock on air,
+    // marked as asked for by hand: "Edição rápida" is never "Prévia automática".
     expect(outcome, 'previewGraphic must be a takeGraphic on the preview output').toEqual(
       outcomeOfTakeOnPreview,
     );
@@ -88,6 +90,7 @@ describe('previewGraphic, the instance it puts on the preview output', () => {
         currentStep: 0,
         status: 'loading',
         takenAt: '2026-10-09T14:32:05.000Z',
+        previewOrigin: 'manual',
       },
     ]);
   });

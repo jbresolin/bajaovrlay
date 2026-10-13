@@ -12,8 +12,9 @@ export type AutoPreviewToggleProps = {
 };
 
 /**
- * The switch "Prévia automática" at the top of the rundown. While it is on, moving the
- * cursor by hand also previews the item the cursor lands on (useMoveCursorByHand.ts).
+ * The switch "Prévia automática" at the top of the rundown. While it is on, the item the
+ * cursor arrives on is also previewed: after a move by hand (useMoveCursorByHand.ts) and
+ * after a take sent from this page (useTakeThenPreviewNextItem.ts).
  * It is not an action button: it sends nothing to the server and works while the page is
  * disconnected, because the choice lives in this browser (autoPreviewSetting.ts).
  *

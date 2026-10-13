@@ -159,12 +159,18 @@ milliseconds, into each of them, so a client never sends its own clock.
 `previewItem` shows an item on the preview output of its layer (`previewGraphic` does
 the same for hand-typed data); `takePreview` then sends exactly what was previewed on
 that layer to program, and `stopPreview` throws it away (`"layerId": null` for every layer).
+`"origin"` is optional: `"manual"` when left out; `"auto"` ("Prévia automática") also
+discards every other preview that was made with `"auto"`.
 
 ```json
 {
   "type": "command",
   "requestId": "pedido-20",
-  "command": { "type": "previewItem", "itemId": "b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10" }
+  "command": {
+    "type": "previewItem",
+    "itemId": "b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10",
+    "origin": "auto"
+  }
 }
 ```
 

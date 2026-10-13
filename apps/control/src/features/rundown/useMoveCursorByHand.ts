@@ -8,14 +8,14 @@ import { useSendCommand } from '@/state/ControlPageStateProvider';
  * sends that very preview to air (src/keyboard/commandForOperatorKey.ts).
  * `rundownId` is undefined while the server has sent no rundown; then nothing is sent.
  *
- * Deliberate, and left for João to confirm: only a move made at this keyboard previews.
- * A cursor that moves for another reason (a take moved it on to the next item, or
- * another operator moved it) previews nothing here, because the page would then send a
- * command nobody at this keyboard asked for, and with two control pages open both would
- * send it. The price: after Space the cursor is on the next item and that item is NOT
- * previewed by itself. To see it the operator presses Shift+Space, its row's "Prévia" or
- * its label; the Right arrow would move PAST it. A Space without any of those takes the
- * item unseen, as before previews existed.
+ * The preview is sent with origin `auto`: the server first throws away every other
+ * preview that was itself automatic, so arrowing past items on different layers leaves
+ * only the item at the cursor in preview. Previews the operator asked for by hand stay.
+ *
+ * Only this page's own actions preview: a move made at this keyboard (here) and a take
+ * sent from this page (useTakeThenPreviewNextItem.ts). A cursor moved by another operator
+ * previews nothing here, because the page would then send a command nobody at this
+ * keyboard caused, and with two control pages open both would send it.
  *
  * The preview waits for the server's "ok" to the move, so a refused move is never
  * followed by a preview, and its refusal stays on screen instead of being wiped by a
@@ -36,7 +36,7 @@ export function useMoveCursorByHand(
     if (!wasTheMoveAccepted || !isAutoPreviewOn) {
       return;
     }
-    await sendCommand({ type: 'previewItem', itemId });
+    await sendCommand({ type: 'previewItem', itemId, origin: 'auto' });
   }
 
   return (itemId) => void moveCursorThenPreviewTheItem(itemId);

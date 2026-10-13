@@ -80,7 +80,11 @@ const putCursorOnTheYellowFlag: Command = {
   itemId: 'item-bandeira-amarela',
 };
 
-const previewYellowFlagItem: Command = { type: 'previewItem', itemId: 'item-bandeira-amarela' };
+const previewYellowFlagItem: Command = {
+  type: 'previewItem',
+  itemId: 'item-bandeira-amarela',
+  origin: 'manual',
+};
 const previewRaceClock: Command = {
   type: 'previewGraphic',
   graphicId: 'race-clock',

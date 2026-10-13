@@ -6,10 +6,10 @@ Start at `RundownPanel.tsx`. No order or cursor is kept here: rows wait for the 
 - `RundownPanel.tsx` — shows the first rundown; sends `takeItem`, `previewItem`, `deleteItem`,
   `reorderItems`; opens `features/items/ItemEditorPanel`. Rows: `RundownItemList.tsx` (dnd-kit)
   and `RundownItemRow.tsx` (handle, label that sets the cursor, "Disparar", "Prévia", "Editar").
-- `useMoveCursorByHand.ts` — `moveCursor`, then `previewItem` while "Prévia automática" is on
-  (`AutoPreviewToggle.tsx`; `autoPreviewSetting.ts` keeps it in localStorage, not on the server).
+- "Prévia automática" (`AutoPreviewToggle.tsx`; `autoPreviewSetting.ts`, localStorage): while on,
+  `useMoveCursorByHand.ts` (`moveCursor`) and `useTakeThenPreviewNextItem.ts` (a take sent here;
+  `itemToPreviewAfterTake.ts` decides) then send `previewItem` with origin `auto`.
 - `useRundownKeyboardShortcuts.ts` — Space and Shift+Space (`src/keyboard/commandForOperatorKey.ts`),
   Right / Left arrow; `itemAfterCursor.ts`, `itemBeforeCursor.ts` say where to.
-- `DeleteItemButton.tsx` — two-press "Excluir"; `emptyCursorHint.ts` — what to say with no cursor.
-- `useEscapeBelongsToTheDragWhileDragging.ts` (Esc cancelling a drag never arms "Limpar tudo"),
-  `itemIdsInOrderAfterDrag.ts`, `graphicAndLayerNames.ts`, `rundownDragAnnouncements.ts` (pt-BR).
+- `DeleteItemButton.tsx` (two-press "Excluir"), `emptyCursorHint.ts`, `itemIdsInOrderAfterDrag.ts`,
+  `useEscapeBelongsToTheDragWhileDragging.ts`, `graphicAndLayerNames.ts`, `rundownDragAnnouncements.ts`.

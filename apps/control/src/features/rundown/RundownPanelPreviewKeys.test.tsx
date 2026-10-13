@@ -15,8 +15,8 @@
  *   - Space sends `takePreview` for the previewed layer when the preview shows the cursor
  *     item, and `takeNext` when the preview shows another item.
  *   - A refused `takePreview` is explained once, under the "Prévia" monitor's lines.
- *   - Shift+Space sends `previewItem` for the cursor item and keeps the browser from
- *     scrolling the page; with the cursor on nothing it sends nothing and shows no error.
+ *   - Shift+Space sends `previewItem` for the cursor item (origin `manual`) and keeps the
+ *     browser from scrolling the page; with the cursor on nothing it sends nothing and shows no error.
  *   - Shift+Space is left alone while the operator types in a text field, when held
  *     down, together with Ctrl, Alt or Meta, and while the connection is down.
  *
@@ -25,7 +25,8 @@
  *   - Plain Space on buttons, dropdowns, switches and the "Mover" handle:
  *     RundownPanelKeyboard.test.tsx; those guards are the same listener.
  *   - Backspace, which belongs to the page as a whole: App.test.tsx.
- *   - The Right arrow previewing by itself: RundownPanelPreview.test.tsx.
+ *   - The Right arrow previewing by itself: RundownPanelPreview.test.tsx. Space
+ *     previewing the next item after its take: RundownPanelPreviewAfterTake.test.tsx.
  */
 import type { Instance } from '@bajaovrlay/shared';
 import { fireEvent, screen } from '@testing-library/react';
@@ -128,11 +129,12 @@ describe('Shift+Space', () => {
     // page told the browser "do not also do your own thing with this key".
     const wasLeftToTheBrowser = fireEvent.keyDown(document.body, { key: ' ', shiftKey: true });
 
-    // Assert: one previewItem for the start; nothing went on air; the page did not scroll.
+    // Assert: one previewItem for the start, asked for by hand; nothing went on air; the
+    // page did not scroll.
     expect(
       fakeServer.listCommandsReceived(),
       'Shift+Space must show the item at the cursor on the preview output and take nothing',
-    ).toEqual([{ type: 'previewItem', itemId: 'item-largada-do-enduro' }]);
+    ).toEqual([{ type: 'previewItem', itemId: 'item-largada-do-enduro', origin: 'manual' }]);
     expect(
       wasLeftToTheBrowser,
       'a Shift+Space that previews must not also scroll the page up',

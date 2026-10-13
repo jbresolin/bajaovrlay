@@ -4,8 +4,8 @@ One pure reducer per command: slices + a valid command + a context (ids and time
 slices or a pt-BR refusal out; no I/O, no clock, no random ids. Start reading at `reduceCommand.ts`, the switch.
 
 - On-air commands: `takeGraphic.ts`, `updateInstanceData.ts` (runs `../updateRules/`), `clearLayer.ts`, `clearAll.ts`.
-- Preview commands: `previewItem.ts`, `previewGraphic.ts`, `stopPreview.ts`, `takePreview.ts` (sends the
-  previewed data to program as it is, stamping only the preview's `takeTimeFieldKeys` again).
+- Preview: `previewItem.ts` (origin `auto` removes the other `auto` previews), `previewGraphic.ts`,
+  `stopPreview.ts`, `takePreview.ts` (sends the previewed data as it is, stamping only its `takeTimeFieldKeys`).
 - Rundown and item commands, chosen by `reduceItemOrRundownCommand.ts`: `createItem.ts`, `updateItemFields.ts`
   (both refuse a takeTime field that is not a wall-clock moment), `deleteItem.ts`, `reorderItems.ts`,
   `moveCursor.ts`, `takeItem.ts`, `takeNext.ts` (calls `takeItem.ts`).

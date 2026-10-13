@@ -125,8 +125,9 @@ export function RundownItemRow(props: RundownItemRowProps) {
           >
             {ptBR.rundown.takeItemButton}
           </ActionButton>
-          {/* Shows the item on the preview output. It neither takes nor moves the cursor,
-              so any row can be looked at while the planned item stays next. */}
+          {/* Shows the item on the preview output, as a preview asked for by hand. It
+              neither takes nor moves the cursor, so any row can be looked at while the
+              planned item stays next. */}
           <ActionButton size="xs" variant="outline" onClick={props.onPreviewPressed}>
             {ptBR.rundown.previewItemButton}
           </ActionButton>

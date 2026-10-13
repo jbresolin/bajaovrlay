@@ -1,5 +1,6 @@
 /**
- * An instance on the preview output and the fields it must stamp again (packages/shared)
+ * An instance on the preview output: the fields it must stamp again, and who asked for
+ * it (packages/shared)
  *
  * What this module is for:
  *   An instance is one graphic on one layer of one output. On the preview output it may
@@ -8,15 +9,22 @@
  *   air, the server writes the moment of the take over exactly those fields, so the clock
  *   starts at the take. The instance has to remember the keys, because by then the data
  *   holds plain numbers and nothing else says which of them was a stamp.
+ *   A preview also carries `previewOrigin`: 'auto' when "Prévia automática" made it
+ *   because the cursor arrived on an item, 'manual' when the operator asked for it. The
+ *   next automatic preview throws the automatic ones away and leaves the manual ones.
  *
  * What these tests prove:
  *   - A preview instance carrying the list is accepted unchanged, and so is an instance
  *     without it (every instance written before this field existed).
  *   - A list holding an empty key, or a single text instead of a list, is refused.
+ *   - A preview instance marked 'auto' or 'manual' is accepted unchanged; any other word
+ *     is refused.
  *
  * What these tests deliberately do not cover:
- *   - Who writes the list and who reads it; the previewItem, previewGraphic and
- *     takePreview reducer tests in apps/server do.
+ *   - Who writes the list and the origin and who reads them; the previewItem,
+ *     previewGraphic and takePreview reducer tests in apps/server do.
+ *   - That an instance on the program output never carries either: the schema allows it,
+ *     and takePreview.test.ts proves the server never writes it.
  *   - The other fields of an instance; slices.test.ts covers status and statusDetail.
  */
 import { describe, expect, it } from 'vitest';
@@ -90,5 +98,40 @@ describe('InstanceSchema and takeTimeFieldKeys', () => {
 
     // Assert: it is refused.
     expect(result.success, 'a broken stamp list must be refused').toBe(false);
+  });
+});
+
+describe('InstanceSchema and previewOrigin', () => {
+  const acceptedPreviewOriginScenarios = [
+    // The cursor arrived on the item and "Prévia automática" previewed it.
+    { name: 'accepts a preview instance made by Prévia automática', previewOrigin: 'auto' },
+    // A row's "Prévia" button, Shift+Space or "Edição rápida".
+    { name: 'accepts a preview instance the operator asked for by hand', previewOrigin: 'manual' },
+  ];
+
+  it.each(acceptedPreviewOriginScenarios)('$name', ({ previewOrigin }) => {
+    // Arrange: the previewed clock carrying the origin of this row.
+    const previewedClockWithItsOrigin = { ...buildEnduroClockOnPreview(), previewOrigin };
+
+    // Act: check the instance.
+    const result = InstanceSchema.safeParse(previewedClockWithItsOrigin);
+
+    // Assert: it is accepted unchanged, the origin included.
+    expect(result.success, 'a preview instance with a known origin must be accepted').toBe(true);
+    expect(result.data, 'validation must not drop the origin').toEqual(previewedClockWithItsOrigin);
+  });
+
+  it('refuses an origin that is neither auto nor manual', () => {
+    // Arrange: the previewed clock with a word the server never writes.
+    const previewedClockWithUnknownOrigin = {
+      ...buildEnduroClockOnPreview(),
+      previewOrigin: 'automatica',
+    };
+
+    // Act: check the instance.
+    const result = InstanceSchema.safeParse(previewedClockWithUnknownOrigin);
+
+    // Assert: it is refused, so no page ever has to guess what an unknown origin means.
+    expect(result.success, 'an unknown preview origin must be refused').toBe(false);
   });
 });

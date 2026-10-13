@@ -5,7 +5,11 @@
 import type { Instance } from '@bajaovrlay/shared';
 
 import type { ReducerContext } from './reducerTypes.js';
-import { buildEnduroClockData, contextOfTheRundownCommand } from './rundownSlices.testSupport.js';
+import {
+  buildEnduroClockData,
+  buildPodiumTeamItem,
+  contextOfTheRundownCommand,
+} from './rundownSlices.testSupport.js';
 
 /**
  * The moment contextOfTheRundownCommand names, 14:32:05 UTC on 9 October 2026, in
@@ -39,8 +43,8 @@ export function buildGreenFlagClockOnProgram(): Instance {
 
 /**
  * Builds the item "Bandeira amarela" on the preview output of the clock layer, exactly
- * as a previewItem at 14:32:05 leaves it. Every field of that item is a typed value, so
- * the instance remembers no field to stamp again.
+ * as a previewItem asked for by hand at 14:32:05 leaves it. Every field of that item is
+ * a typed value, so the instance remembers no field to stamp again.
  */
 export function buildYellowFlagItemOnPreview(): Instance {
   return {
@@ -52,6 +56,7 @@ export function buildYellowFlagItemOnPreview(): Instance {
     currentStep: 0,
     status: 'loading',
     takenAt: contextOfTheRundownCommand.now,
+    previewOrigin: 'manual',
     itemId: 'item-bandeira-amarela',
   };
 }
@@ -75,6 +80,7 @@ export function buildStartItemOnPreviewWithItsMomentStamped(): Instance {
     currentStep: 0,
     status: 'loading',
     takenAt: contextOfTheRundownCommand.now,
+    previewOrigin: 'manual',
     itemId: 'item-largada-do-enduro',
     takeTimeFieldKeys: ['referenceWallClockMs'],
   };
@@ -91,7 +97,43 @@ export function buildTeam42LowerThirdOnPreview(): Instance {
     currentStep: 0,
     status: 'loading',
     takenAt: '2026-10-09T14:20:00.000Z',
+    previewOrigin: 'manual',
   };
+}
+
+/**
+ * Builds the item "Pódio — Baja UFPR" on the preview output of the lower third layer,
+ * as "Prévia automática" left it a minute before the previews of these tests, when the
+ * cursor arrived on that item.
+ */
+export function buildPodiumItemOnPreviewByAutoPreview(): Instance {
+  return {
+    id: 'f3d9b7a1-5c2e-4a68-9b04-7e1c3a5d8f26',
+    layerId: 'lower-third',
+    graphicId: 'team-lower-third',
+    target: 'preview',
+    resolvedData: { teamNumber: 42, teamName: 'Baja UFPR' },
+    currentStep: 0,
+    status: 'loading',
+    takenAt: '2026-10-09T14:31:05.000Z',
+    previewOrigin: 'auto',
+    itemId: buildPodiumTeamItem(0).id,
+  };
+}
+
+/**
+ * Reads each instance as `layer on output` words, in the order of the slice, with who
+ * asked for it after a preview that says so: `lower-third on preview (auto)`.
+ */
+export function readLayerOutputAndOriginOfEachInstance(
+  instances: Instance[] | undefined,
+): string[] {
+  return (instances ?? []).map((instance) => {
+    const layerAndOutput = `${instance.layerId} on ${instance.target}`;
+    return instance.previewOrigin === undefined
+      ? layerAndOutput
+      : `${layerAndOutput} (${instance.previewOrigin})`;
+  });
 }
 
 /** Reads each instance as `layer on output` words, in the order of the slice. */

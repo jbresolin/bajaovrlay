@@ -213,14 +213,18 @@ const appliedCommandScenarios: Array<{
       target: 'preview',
       takeTimeFieldKeys: [],
     },
+    // Every preview says who asked for it; one made by a takeGraphic was asked for by hand.
     expectedInstancesAfter: [
       buildRaceClockOnAir(),
-      buildExpectedNewInstance({
-        layerId: 'clock',
-        graphicId: 'race-clock',
-        target: 'preview',
-        resolvedData: raceClockData,
-      }),
+      {
+        ...buildExpectedNewInstance({
+          layerId: 'clock',
+          graphicId: 'race-clock',
+          target: 'preview',
+          resolvedData: raceClockData,
+        }),
+        previewOrigin: 'manual',
+      },
     ],
   },
   // Taking one graphic off air: only that layer empties.

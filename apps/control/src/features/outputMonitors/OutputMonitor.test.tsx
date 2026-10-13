@@ -16,6 +16,8 @@
  *   - The "Programa" box frames `/render/?monitor=1`.
  *   - The "Prévia" box frames `/render/?target=preview&monitor=1`.
  *   - Each box is labelled with its name, as a heading and as the frame's title.
+ *   - The box is as wide as it is told to be, and the frame inside stays the stream's
+ *     1920x1080, scaled by that width / 1920 (a quarter at 480 px, a fifth at 384 px).
  *
  * What these tests deliberately do not cover:
  *   - What the renderer page does with `monitor=1` and `target=preview` (connect without
@@ -25,7 +27,9 @@
  *   - That the layer panel stays "Carregando" with only these boxes open, and that a
  *     previewed item appears in "Prévia" and not in "Programa"; e2e/takeAndClear.e2e.ts
  *     and e2e/previewThenTake.e2e.ts prove those in a real browser.
- *   - What is drawn inside a frame, and the box's size; the frames are empty here.
+ *   - What is drawn inside a frame, and how wide the box SHOULD be in a given window
+ *     (monitorWidthForColumnWidth.test.ts); the frames are empty here. That the box is
+ *     16:9 on screen needs a real browser: e2e/monitorsSideBySide.e2e.ts.
  *   - The lines under "Prévia" with "Tomar" and "Descartar" (PreviewedLayersList.test.tsx).
  */
 import { render, screen } from '@testing-library/react';
@@ -58,7 +62,7 @@ describe('an output monitor', () => {
     // Arrange: nothing to prepare; a monitor needs no data of its own.
 
     // Act: draw the monitor of this output.
-    render(<OutputMonitor output={output} />);
+    render(<OutputMonitor output={output} widthInPixels={480} />);
 
     // Assert: the frame opens exactly the address of this row.
     expect(
@@ -71,12 +75,42 @@ describe('an output monitor', () => {
     // Arrange: nothing to prepare; a monitor needs no data of its own.
 
     // Act: draw the monitor of this output.
-    render(<OutputMonitor output={output} />);
+    render(<OutputMonitor output={output} widthInPixels={480} />);
 
     // Assert: the box has its heading, so the operator can tell the two boxes apart.
     expect(
       screen.getByRole('heading', { name: title }),
       `the monitor must be labelled "${title}"`,
     ).toBeInTheDocument();
+  });
+});
+
+describe('the size of an output monitor', () => {
+  const monitorSizeScenarios = [
+    // The full size: a quarter of the stream's 1920 px.
+    { name: 'is 480 px wide with its frame at a quarter', widthInPixels: 480, scale: 0.25 },
+    // A narrower window: the same frame, scaled further down.
+    { name: 'is 384 px wide with its frame at a fifth', widthInPixels: 384, scale: 0.2 },
+  ];
+
+  it.each(monitorSizeScenarios)('$name', ({ widthInPixels, scale }) => {
+    // Arrange: nothing to prepare; the width is all a monitor is told.
+
+    // Act: draw the program monitor at the width of this row.
+    render(<OutputMonitor output="program" widthInPixels={widthInPixels} />);
+
+    // Assert: the box around the frame has that width, and the frame is still laid out
+    // at the stream's size, so the graphics inside are drawn as OBS draws them.
+    const frame = screen.getByTitle('Programa');
+    expect(frame.parentElement, 'the box must be as wide as it was told').toHaveStyle({
+      width: `${widthInPixels}px`,
+    });
+    expect(
+      [frame.getAttribute('width'), frame.getAttribute('height')],
+      'the framed page must stay laid out at 1920x1080',
+    ).toEqual(['1920', '1080']);
+    expect(frame, 'the frame must be scaled to fit the box exactly').toHaveStyle({
+      transform: `scale(${scale})`,
+    });
   });
 });

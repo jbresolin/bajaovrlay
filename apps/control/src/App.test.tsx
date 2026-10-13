@@ -17,10 +17,11 @@
  *     frame on `/render/?monitor=1`, the page OBS loads but marked as a monitor so it
  *     never reports what is on air), with what is previewed listed under "Prévia" and
  *     "Edição rápida" below; and the layer list with "Limpar tudo".
- *   - Backspace clears the clock layer, but not while the operator is typing in a field,
- *     choosing in a dropdown (closed or open) or resting on the switch.
- *   - While something is on the preview output, Backspace throws that preview away
- *     instead and leaves the clock on air; it still does nothing while typing.
+ *   - While something is on the preview output, Backspace throws that preview away and
+ *     leaves the clock on air, but not while the operator is typing in a field, choosing
+ *     in a dropdown (closed or open) or resting on the switch.
+ *   - With nothing on the preview output Backspace sends nothing: it no longer clears
+ *     the clock layer (João's ruling, gate 2 of BAJAOVRLAY-15).
  *   - When the server refuses a clear, its pt-BR message appears next to the layers.
  *
  * What these tests deliberately do not cover:
@@ -205,96 +206,16 @@ describe('the three areas of the control page', () => {
   });
 });
 
-describe('the Backspace key', () => {
-  it('clears the clock layer when the focus is not in a field', () => {
-    // Arrange: the page with the race clock on air.
-    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
-
-    // Act: press Backspace with the focus on the page itself.
-    fireEvent.keyDown(document.body, { key: 'Backspace' });
-
-    // Assert: the server received clearLayer for the clock layer.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'Backspace outside a field must clear the clock layer',
-    ).toEqual([{ type: 'clearLayer', layerId: 'clock' }]);
-    // (Then the server answers, so no command is left waiting for its 5-second timeout
-    // once the test is over.)
-    fakeServer.acceptLastCommand();
-  });
-
-  it('only erases text, and clears nothing, while the operator types in a field', () => {
-    // Arrange: the page with the race clock on air.
-    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
-
-    // Act: press Backspace inside the session name field, as when fixing a typo.
-    fireEvent.keyDown(screen.getByLabelText('Nome da sessão'), { key: 'Backspace' });
-
-    // Assert: no command was sent; fixing a typo must never take the clock off air.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'Backspace inside a text field must not clear any layer',
-    ).toEqual([]);
-  });
-
-  it('clears nothing while the flag dropdown has focus', () => {
-    // Arrange: the page with the race clock on air.
-    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
-
-    // Act: press Backspace on the closed "Bandeira" dropdown, where the focus rests
-    // right after the operator has picked a flag.
-    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Bandeira' }), { key: 'Backspace' });
-
-    // Assert: no command was sent; the operator is editing the form, not clearing.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'Backspace on a dropdown must not clear any layer',
-    ).toEqual([]);
-  });
-
-  it('clears nothing while the list of an open dropdown has focus', () => {
-    // Arrange: the page with the race clock on air and the "Bandeira" dropdown opened
-    // from the keyboard, so its six flags are listed.
-    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
-    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Bandeira' }), { key: 'Enter' });
-
-    // Act: press Backspace on one of the listed flags.
-    fireEvent.keyDown(screen.getByRole('option', { name: 'Verde' }), { key: 'Backspace' });
-
-    // Assert: no command was sent.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'Backspace inside an open dropdown list must not clear any layer',
-    ).toEqual([]);
-  });
-
-  it('clears nothing while the "Relógio correndo" switch has focus', () => {
-    // Arrange: the page with the race clock on air.
-    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
-
-    // Act: press Backspace on the switch, another control of the form being edited.
-    fireEvent.keyDown(screen.getByRole('switch', { name: 'Relógio correndo' }), {
-      key: 'Backspace',
-    });
-
-    // Assert: no command was sent.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'Backspace on the switch must not clear any layer',
-    ).toEqual([]);
-  });
-});
+/** Draws the whole page with the race clock on air and the yellow flag item previewed. */
+function renderControlPageWithTheClockOnAirAndAPreview() {
+  const slices = buildSlicesWithTheRaceClockOnAir('2026-10-10T13:00:00.000Z');
+  slices.instances.push(
+    buildRaceClockPreviewOfItem('item-bandeira-amarela', '2026-10-10T13:05:00.000Z'),
+  );
+  return renderOnControlPageConnectedToFakeServer(<App />, slices);
+}
 
 describe('the Backspace key while something is on the preview output', () => {
-  /** Draws the whole page with the race clock on air and the yellow flag item previewed. */
-  function renderControlPageWithTheClockOnAirAndAPreview() {
-    const slices = buildSlicesWithTheRaceClockOnAir('2026-10-10T13:00:00.000Z');
-    slices.instances.push(
-      buildRaceClockPreviewOfItem('item-bandeira-amarela', '2026-10-10T13:05:00.000Z'),
-    );
-    return renderOnControlPageConnectedToFakeServer(<App />, slices);
-  }
-
   it('throws the preview away and leaves the clock on air', () => {
     // Arrange: the clock is on air, and another clock is previewed on the same layer.
     const { fakeServer } = renderControlPageWithTheClockOnAirAndAPreview();
@@ -302,27 +223,73 @@ describe('the Backspace key while something is on the preview output', () => {
     // Act: press Backspace with the focus on the page itself.
     fireEvent.keyDown(document.body, { key: 'Backspace' });
 
-    // Assert: one stopPreview for the previewed layer, and no clearLayer: with a preview
-    // showing, Backspace must never take anything off air.
+    // Assert: one stopPreview for the previewed layer, and no clearLayer.
     expect(
       fakeServer.listCommandsReceived(),
       'Backspace with a preview showing must discard the preview and clear nothing on air',
     ).toEqual([{ type: 'stopPreview', layerId: 'clock' }]);
-    // (Then the server answers, so no command is left waiting for its 5-second timeout.)
+    // (Then the server answers, so no command is left waiting for its 5-second timeout
+    // once the test is over.)
     fakeServer.acceptLastCommand();
   });
 
-  it('still only erases text while the operator types in a field', () => {
-    // Arrange: the clock is on air, and another clock is previewed.
+  const placesWhereBackspaceBelongsToTheForm = [
+    // Fixing a typo in the session name must never discard the preview being looked at.
+    {
+      name: 'only erases text while the operator types in a field',
+      findThePlace: () => screen.getByLabelText('Nome da sessão'),
+    },
+    // The focus rests on the closed dropdown right after the operator has picked a flag.
+    {
+      name: 'discards nothing while the flag dropdown has focus',
+      findThePlace: () => screen.getByRole('combobox', { name: 'Bandeira' }),
+    },
+    // The open list of the same dropdown, reached from the keyboard.
+    {
+      name: 'discards nothing while the list of an open dropdown has focus',
+      findThePlace: () => {
+        fireEvent.keyDown(screen.getByRole('combobox', { name: 'Bandeira' }), { key: 'Enter' });
+        return screen.getByRole('option', { name: 'Verde' });
+      },
+    },
+    // The switch is another control of the form being edited.
+    {
+      name: 'discards nothing while the "Relógio correndo" switch has focus',
+      findThePlace: () => screen.getByRole('switch', { name: 'Relógio correndo' }),
+    },
+  ];
+
+  it.each(placesWhereBackspaceBelongsToTheForm)('$name', ({ findThePlace }) => {
+    // Arrange: the clock is on air and another clock is previewed, so a Backspace that
+    // reached the shortcut WOULD send stopPreview; the focus is on the place of this row.
     const { fakeServer } = renderControlPageWithTheClockOnAirAndAPreview();
+    const placeWithTheFocus = findThePlace();
 
-    // Act: press Backspace inside the session name field, as when fixing a typo.
-    fireEvent.keyDown(screen.getByLabelText('Nome da sessão'), { key: 'Backspace' });
+    // Act: press Backspace there.
+    fireEvent.keyDown(placeWithTheFocus, { key: 'Backspace' });
 
-    // Assert: no command was sent; fixing a typo must not discard the preview either.
+    // Assert: no command was sent; the operator is editing the form.
     expect(
       fakeServer.listCommandsReceived(),
-      'Backspace inside a text field must neither discard a preview nor clear a layer',
+      'Backspace on a form control must neither discard a preview nor clear a layer',
+    ).toEqual([]);
+  });
+});
+
+describe('the Backspace key with nothing on the preview output', () => {
+  it('sends nothing, so the clock stays on air', () => {
+    // Arrange: the page with the race clock on air and nothing previewed. Until gate 2
+    // of BAJAOVRLAY-15 this press cleared the clock layer.
+    const { fakeServer } = renderControlPageWithTheRaceClockOnAir();
+
+    // Act: press Backspace with the focus on the page itself.
+    fireEvent.keyDown(document.body, { key: 'Backspace' });
+
+    // Assert: no command at all. The clock is taken off air with its row's "Limpar"
+    // button or with Esc ("Limpar tudo"), never with Backspace.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'Backspace with nothing previewed must send nothing: it never clears a layer on air',
     ).toEqual([]);
   });
 });

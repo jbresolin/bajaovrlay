@@ -8,8 +8,8 @@ Keyboard shortcuts for the operator. Start reading at `useKeyboardShortcut.ts`.
   optionally keeping the key from the browser). It tells the shortcut whether Shift was down.
 - `commandForOperatorKey.ts` — one pure function: which command Space, Shift+Space and
   Backspace send, given the rundown and the instances (they depend on what is previewed).
-  Its test is the table to read.
+  Backspace only discards a preview; it never clears a layer. Its test is the table to read.
 
 The listeners live with their feature: Esc in `features/playout/ClearAllButton.tsx`, Backspace
-in `features/playout/useBackspaceToStopPreviewOrClearClockLayer.ts`, Space, Shift+Space and the
+in `features/outputMonitors/useBackspaceToStopPreview.ts`, Space, Shift+Space and the
 Right and Left arrows in `features/rundown/useRundownKeyboardShortcuts.ts`.

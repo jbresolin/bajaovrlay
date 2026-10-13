@@ -6,22 +6,25 @@
  *   "Prévia" button that shows its item on the preview output (`previewItem`) without
  *   putting anything on air and without moving the cursor. And while the switch "Prévia
  *   automática" at the top of the rundown is on (it starts on), moving the cursor BY HAND
- *   also previews the item the cursor lands on, so the operator's loop is: Right arrow
- *   (look at it), Space (it goes on air).
+ *   also previews the item the cursor lands on, so the operator sees an item before
+ *   Space puts it on air.
  *
  *   "By hand" means this operator's own Right arrow, Left arrow or click on a row's
- *   label. A cursor that moves for another reason (a take moved it on, or another
- *   operator moved it) previews nothing: the page never sends a command the operator at
- *   this keyboard did not ask for. The switch is remembered in this browser, not on the
+ *   label. (This operator's own TAKE previews the next item too:
+ *   RundownPanelPreviewAfterTake.test.tsx.) A cursor that moves because of someone else
+ *   (another operator's take or arrow) previews nothing: the page never sends a command
+ *   nobody at this keyboard caused. The switch is remembered in this browser, not on the
  *   server.
  *
  * What these tests prove:
- *   - "Prévia" on a row sends `previewItem` with the id of that row and nothing else; it
- *     is disabled while the connection is down; a refusal is shown in the panel.
+ *   - "Prévia" on a row sends `previewItem` with the id of that row and origin `manual`,
+ *     and nothing else; it is disabled while the connection is down; a refusal is shown
+ *     in the panel.
  *   - With the switch on, the Right arrow, the Left arrow and a click on a label each
  *     send `moveCursor` and then, once the server has accepted it, `previewItem` for
- *     that same item. Before the server answers, and when it refuses, nothing is previewed.
- *   - A cursor moved by the server's news alone (a take, another operator) sends nothing.
+ *     that same item with origin `auto`. Before the server answers, and when it refuses,
+ *     nothing is previewed.
+ *   - A cursor moved by the server's news alone (another operator) sends nothing.
  *   - The switch is drawn on, can be switched off, and then the arrow sends `moveCursor`
  *     only. It lets go of the keyboard focus after a click, so the arrows keep working.
  *   - The choice is remembered: a page opened later in the same browser starts with the
@@ -31,16 +34,18 @@
  * What these tests deliberately do not cover:
  *   - Where the arrows are ignored and which item is next: RundownPanelCursor.test.tsx.
  *   - Space, Shift+Space and Backspace: RundownPanelPreviewKeys.test.tsx and
- *     src/keyboard/commandForOperatorKey.test.ts.
+ *     src/keyboard/commandForOperatorKey.test.ts. The preview that follows this
+ *     operator's own take: RundownPanelPreviewAfterTake.test.tsx.
  *   - The storage functions case by case: autoPreviewSetting.test.ts.
  *   - What the server does with `previewItem`; apps/server's previewItem.test.ts.
  *   - The preview appearing in the "Prévia" monitor; e2e/previewThenTake.e2e.ts.
  */
-import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   type ControlPageOnFakeServer,
+  letThePageFinishWhatItStarted,
   renderOnControlPageConnectedToFakeServer,
 } from '@/state/controlPageOnFakeServer.testSupport';
 import {
@@ -58,7 +63,13 @@ const moveCursorToTheYellowFlag = {
   rundownId: 'sessao-principal',
   itemId: 'item-bandeira-amarela',
 };
-const previewTheYellowFlag = { type: 'previewItem', itemId: 'item-bandeira-amarela' };
+// Origin `auto`: "Prévia automática" asked, not the operator, so the server throws away
+// the automatic preview of the item the cursor was on before.
+const previewTheYellowFlagAutomatically = {
+  type: 'previewItem',
+  itemId: 'item-bandeira-amarela',
+  origin: 'auto',
+};
 
 /** Draws the rundown panel with the three endurance items and the cursor on the start. */
 function renderRundownPanelWithTheCursorOnTheStart(): ControlPageOnFakeServer {
@@ -66,17 +77,6 @@ function renderRundownPanelWithTheCursorOnTheStart(): ControlPageOnFakeServer {
     <RundownPanel />,
     buildSlicesWithTheEnduranceRundown('item-largada-do-enduro'),
   );
-}
-
-/**
- * Gives the page a moment to do whatever it does after the server's answer (here: send
- * the preview, or not). Tests that expect NOTHING more to be sent wait this way first,
- * so "nothing was sent" is not just "nothing was sent yet".
- */
-async function letThePageFinishWhatItStarted(): Promise<void> {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
 }
 
 /** Makes every read and write of the browser's storage fail, as a browser that blocks it does. */
@@ -104,11 +104,12 @@ describe('the "Prévia" button of a rundown row', () => {
     // Act: press "Prévia" on the finish, two rows below the cursor.
     fireEvent.click(finishRow.getByRole('button', { name: 'Prévia' }));
 
-    // Assert: one previewItem naming the finish; no take and no moveCursor.
+    // Assert: one previewItem naming the finish, marked as asked for by hand (so the
+    // automatic previews never discard it); no take and no moveCursor.
     expect(
       fakeServer.listCommandsReceived(),
       '"Prévia" must only ask the server to show that row on the preview output',
-    ).toEqual([{ type: 'previewItem', itemId: 'item-chegada-do-enduro' }]);
+    ).toEqual([{ type: 'previewItem', itemId: 'item-chegada-do-enduro', origin: 'manual' }]);
     // (Then the server answers, so no command is left waiting for its 5-second timeout.)
     fakeServer.acceptLastCommand();
   });
@@ -201,7 +202,7 @@ describe('moving the cursor by hand while "Prévia automática" is on', () => {
         expect(
           fakeServer.listCommandsReceived(),
           'once the move is accepted the page must preview the item the cursor landed on',
-        ).toEqual([moveCursorToTheYellowFlag, previewTheYellowFlag]);
+        ).toEqual([moveCursorToTheYellowFlag, previewTheYellowFlagAutomatically]);
       });
       fakeServer.acceptLastCommand();
     },
@@ -235,7 +236,7 @@ describe('moving the cursor by hand while "Prévia automática" is on', () => {
     const { fakeServer } = renderRundownPanelWithTheCursorOnTheStart();
 
     // Act: the server sends the rundown with its cursor on the yellow flag, as it does
-    // after a take moved the cursor on, or after another operator pressed the Right arrow.
+    // after another operator took the start or pressed the Right arrow.
     fakeServer.sendMessage({
       type: 'slice',
       name: 'rundowns',
@@ -250,7 +251,7 @@ describe('moving the cursor by hand while "Prévia automática" is on', () => {
     ).toHaveAttribute('aria-current', 'true');
     expect(
       fakeServer.listCommandsReceived(),
-      'a cursor moved by a take or by someone else must not make this page preview anything',
+      'a cursor moved by someone else must not make this page preview anything',
     ).toEqual([]);
   });
 });

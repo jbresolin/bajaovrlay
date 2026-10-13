@@ -116,7 +116,7 @@ function isTypingTarget(eventTarget: EventTarget | null): boolean {
   // The shadcn/ui dropdown and switch are built from buttons and divs, so they can only
   // be recognised by their role. A closed dropdown is a "combobox"; its open list is a
   // "listbox" with the options inside it. Neither uses Backspace itself, so without
-  // this check a Backspace on them would reach the shortcut and take the clock off air.
+  // this check a Backspace on them would reach the shortcut and discard a preview.
   const isInsideDropdown = eventTarget.closest('[role="combobox"], [role="listbox"]') !== null;
   const isOnSwitch = eventTarget.closest('[role="switch"]') !== null;
   return isFormField || eventTarget.isContentEditable || isInsideDropdown || isOnSwitch;

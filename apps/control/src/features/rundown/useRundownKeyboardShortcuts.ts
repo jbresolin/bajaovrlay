@@ -1,4 +1,4 @@
-import type { Item, Rundown } from '@bajaovrlay/shared';
+import type { CommandInput, Item, Rundown } from '@bajaovrlay/shared';
 
 import { chooseCommandForOperatorKey } from '@/keyboard/commandForOperatorKey';
 import { type KeyPress, useKeyboardShortcut } from '@/keyboard/useKeyboardShortcut';
@@ -21,7 +21,10 @@ const leftArrowKey = 'ArrowLeft';
  * shows the item at the cursor (`takePreview`), the item at the cursor otherwise
  * (`takeNext`). Shift+Space shows the item at the cursor on the preview output
  * (`previewItem`). What each of the two sends is decided in one place,
- * src/keyboard/commandForOperatorKey.ts. The Right and Left arrows move the cursor one
+ * src/keyboard/commandForOperatorKey.ts. A take is handed to `sendTakeByThisOperator`
+ * (useTakeThenPreviewNextItem.ts: the take, then a preview of the new cursor item while
+ * "Prévia automática" is on, which is what makes Space, Space the operator's loop).
+ * The Right and Left arrows move the cursor one
  * item forward or back without putting anything on air; `moveCursorByHand` is what they
  * call with the item to go to (useMoveCursorByHand.ts: `moveCursor`, then a preview
  * while "Prévia automática" is on). `rundown` is the rundown on screen, or undefined
@@ -40,6 +43,7 @@ export function useRundownKeyboardShortcuts(
   rundown: Rundown | undefined,
   itemsOfRundownInOrder: Item[],
   moveCursorByHand: (itemId: string) => void,
+  sendTakeByThisOperator: (takeCommand: CommandInput) => void,
 ): void {
   const sendCommand = useSendCommand();
   const isConnected = useIsConnectedToServer();
@@ -54,7 +58,12 @@ export function useRundownKeyboardShortcuts(
     if (command === null) {
       return;
     }
-    void sendCommand(command);
+    // Shift+Space only looks; plain Space is a take, whichever of the two takes it is.
+    if (operatorKey === 'shiftSpace') {
+      void sendCommand(command);
+      return;
+    }
+    sendTakeByThisOperator(command);
   }
 
   function moveCursorToNextItem(): void {

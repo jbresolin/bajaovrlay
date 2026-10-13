@@ -84,6 +84,17 @@ export function renderOnControlPageStillWaitingForTheServer(
 }
 
 /**
+ * Gives the page a moment to do whatever it does after the server's answer (for example,
+ * send a second command, or not). Tests that expect NOTHING more to be sent wait this
+ * way first, so "nothing was sent" is not just "nothing was sent yet".
+ */
+export async function letThePageFinishWhatItStarted(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
+/**
  * Moves the page's clock forward. Only for tests that called `vi.useFakeTimers()`: there
  * time stands still until the test moves it, so "3 seconds later" takes no real time.
  */

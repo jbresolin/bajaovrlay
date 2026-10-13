@@ -15,8 +15,8 @@
  *     was on program on that layer is replaced, and other layers and their previews stay.
  *   - The data is the previewed data even when the item was edited after the preview.
  *   - Data without a stamped field goes on air unchanged; data with one changes in that
- *     field alone, which holds the moment of the take; the program instance does not
- *     carry the list of stamped fields.
+ *     field alone, which holds the moment of the take; the program instance carries
+ *     neither the list of stamped fields nor the preview's `previewOrigin`.
  *   - With nothing previewed on the layer the take is refused in pt-BR, naming the layer
  *     as the operator reads it. An unknown layer is refused too.
  *   - The take goes through the checks of every take: if the graphic is no longer
@@ -174,8 +174,8 @@ describe('takePreview and the data it carries', () => {
       contextOfTheLaterTake,
     );
 
-    // Assert: the data of the row is on air, and the program instance carries no list of
-    // stamped fields: that list only ever belongs to a preview.
+    // Assert: the data of the row is on air, and the program instance carries neither the
+    // list of stamped fields nor who asked for the preview: both only belong to a preview.
     const instanceOnAir = outcome.status === 'applied' ? outcome.slices.instances[0] : undefined;
     expect(instanceOnAir?.resolvedData, 'the data on air must be the one of the row').toEqual(
       expectedDataOnAir,
@@ -183,6 +183,10 @@ describe('takePreview and the data it carries', () => {
     expect(
       instanceOnAir === undefined ? undefined : Object.hasOwn(instanceOnAir, 'takeTimeFieldKeys'),
       'a program instance must not carry the list of stamped fields',
+    ).toBe(false);
+    expect(
+      instanceOnAir === undefined ? undefined : Object.hasOwn(instanceOnAir, 'previewOrigin'),
+      'a program instance must not carry who asked for the preview',
     ).toBe(false);
   });
 });

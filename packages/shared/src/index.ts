@@ -26,7 +26,8 @@ export {
   OGrafManifestSchema,
 } from './slices/graphic.js';
 // The `instances` slice: what is on each layer and output, its output, its status, the
-// detail the renderer gave about that status and, on a preview, the fields to stamp again.
+// detail the renderer gave about that status and, on a preview, the fields to stamp again
+// and who asked for the preview (PreviewOrigin: 'auto' or 'manual').
 export {
   type Instance,
   InstanceSchema,
@@ -34,6 +35,8 @@ export {
   InstanceStatusSchema,
   type InstanceTarget,
   InstanceTargetSchema,
+  type PreviewOrigin,
+  PreviewOriginSchema,
 } from './slices/instance.js';
 // The `eventLog` slice: one line per command that changed something or was refused.
 export {

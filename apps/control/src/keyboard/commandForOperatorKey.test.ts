@@ -7,8 +7,9 @@
  *   itself is sent to air (`takePreview`), so what goes on air is exactly what was seen;
  *   otherwise the item at the cursor is taken as before (`takeNext`). Shift+Space shows
  *   the item at the cursor on the preview output (`previewItem`). Backspace throws a
- *   preview away (`stopPreview`) when there is one, and only otherwise clears the clock
- *   layer on air, as it always did. `chooseCommandForOperatorKey` is the one place that
+ *   preview away (`stopPreview`) and does nothing else: no key takes anything off air
+ *   except Esc (João's ruling, gate 2 of BAJAOVRLAY-15; until then Backspace cleared the
+ *   clock layer when nothing was previewed). `chooseCommandForOperatorKey` is the one place that
  *   decides this: it is handed the key, the rundown and the instances, and answers with
  *   the command to send, or null for "send nothing".
  *
@@ -18,12 +19,14 @@
  *     another item, when it was made by hand in "Edição rápida", when the cursor item is
  *     only on the program output, and when the cursor is on nothing; nothing at all
  *     while the server has sent no rundown.
- *   - Shift+Space: `previewItem` for the cursor item, also when it is previewed already;
- *     nothing when the cursor is on nothing or there is no rundown.
+ *   - Shift+Space: `previewItem` for the cursor item with origin `manual` (the operator
+ *     asked, so "Prévia automática" never discards it), also when it is previewed
+ *     already; nothing when the cursor is on nothing or there is no rundown.
  *   - Backspace: `stopPreview` for the layer of the preview made most recently (the later
  *     one in the list when two were made at the same moment), whatever the rundown says;
- *     `clearLayer` for the clock layer when nothing is previewed, as before previews
- *     existed, and an instance on the program output never counts as a preview.
+ *     NOTHING when no preview exists, with the clock on air or with an empty page: it no
+ *     longer sends `clearLayer`, and an instance on the program output never counts as a
+ *     preview.
  *
  * What these tests deliberately do not cover:
  *   - Where the keys are ignored (typing in a field, a dropdown, a switch, a held key,
@@ -54,7 +57,6 @@ const momentTheStartWasPreviewed = '2026-10-10T12:58:00.000Z';
 const oneMinuteLater = '2026-10-10T12:59:00.000Z';
 
 const takeNextOfTheMainRundown: CommandInput = { type: 'takeNext', rundownId: 'sessao-principal' };
-const clearTheClockLayer: CommandInput = { type: 'clearLayer', layerId: 'clock' };
 
 /** The race clock on the PROGRAM output, taken from the start item of the endurance race. */
 function buildStartItemOnProgram(): Instance {
@@ -74,8 +76,8 @@ const operatorKeyScenarios: Array<{
   instances: Instance[];
   expectedCommand: CommandInput | null;
 }> = [
-  // The loop the brief asks for: → previewed the start, Space sends that very preview to
-  // air, on the layer it is previewed on.
+  // The operator's loop: the start is in preview (the arrow or the take before put it
+  // there), Space sends that very preview to air, on the layer it is previewed on.
   {
     name: 'Space takes the preview when it shows the cursor item',
     operatorKey: 'space',
@@ -158,12 +160,12 @@ const operatorKeyScenarios: Array<{
   },
   // "Prévia automática" is off and the operator wants to see the next item first.
   {
-    name: 'Shift+Space previews the cursor item',
+    name: 'Shift+Space previews the cursor item, as a preview asked for by hand',
     operatorKey: 'shiftSpace',
     cursorItemId: enduranceStartItemId,
     isRundownOnScreen: true,
     instances: [],
-    expectedCommand: { type: 'previewItem', itemId: enduranceStartItemId },
+    expectedCommand: { type: 'previewItem', itemId: enduranceStartItemId, origin: 'manual' },
   },
   // Pressed again after the item was edited: the server resolves the item anew and
   // replaces the preview, so the key is never a dead key.
@@ -173,7 +175,7 @@ const operatorKeyScenarios: Array<{
     cursorItemId: enduranceStartItemId,
     isRundownOnScreen: true,
     instances: [buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed)],
-    expectedCommand: { type: 'previewItem', itemId: enduranceStartItemId },
+    expectedCommand: { type: 'previewItem', itemId: enduranceStartItemId, origin: 'manual' },
   },
   // previewItem names an item, and with the cursor on nothing there is none to name; the
   // rundown panel already says "Clique num item para posicionar o cursor".
@@ -229,8 +231,7 @@ const operatorKeyScenarios: Array<{
     ],
     expectedCommand: { type: 'stopPreview', layerId: 'clock' },
   },
-  // A preview and the same clock on air: Backspace touches the preview only. The clock
-  // on air is safe for as long as any preview is showing.
+  // A preview and the same clock on air: Backspace touches the preview only.
   {
     name: 'Backspace discards the preview and leaves the program output alone',
     operatorKey: 'backspace',
@@ -242,23 +243,33 @@ const operatorKeyScenarios: Array<{
     ],
     expectedCommand: { type: 'stopPreview', layerId: 'clock' },
   },
-  // Nothing previewed: Backspace is what it was before previews existed.
+  // The press too many: the last preview is gone and the clock is on air. Until gate 2
+  // this press sent clearLayer and took the clock OFF AIR; now it sends nothing.
   {
-    name: 'Backspace clears the clock layer when nothing is previewed',
+    name: 'Backspace sends nothing when nothing is previewed, and the clock on air stays',
     operatorKey: 'backspace',
     cursorItemId: yellowFlagItemId,
     isRundownOnScreen: true,
     instances: [buildStartItemOnProgram()],
-    expectedCommand: clearTheClockLayer,
+    expectedCommand: null,
   },
-  // Backspace needs no rundown: it was never a key of the rundown.
+  // An empty page with no rundown: there is nothing to discard here either.
   {
-    name: 'Backspace still clears the clock layer while the server has sent no rundown',
+    name: 'Backspace sends nothing on a page with no rundown and no instance',
     operatorKey: 'backspace',
     cursorItemId: null,
     isRundownOnScreen: false,
     instances: [],
-    expectedCommand: clearTheClockLayer,
+    expectedCommand: null,
+  },
+  // Backspace needs no rundown: it reads only what is on the preview output.
+  {
+    name: 'Backspace discards a preview while the server has sent no rundown',
+    operatorKey: 'backspace',
+    cursorItemId: null,
+    isRundownOnScreen: false,
+    instances: [buildLowerThirdPreviewMadeByHand(momentTheStartWasPreviewed)],
+    expectedCommand: { type: 'stopPreview', layerId: 'lower-third' },
   },
 ];
 

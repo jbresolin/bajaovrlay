@@ -3,10 +3,6 @@ import type { CommandInput, Instance, Rundown } from '@bajaovrlay/shared';
 /** The three operator keys whose meaning depends on what is being previewed. */
 export type OperatorKey = 'space' | 'shiftSpace' | 'backspace';
 
-// The id of the layer the server seeds for clocks. It is a layer, not a graphic: whatever
-// graphic sits on it is what Backspace takes off air when nothing is previewed.
-const clockLayerId = 'clock';
-
 /**
  * Says which command a press of Space, Shift+Space or Backspace sends, given the rundown
  * on screen (undefined while the server has sent none) and the server's instances. Null
@@ -18,7 +14,7 @@ const clockLayerId = 'clock';
  *   air (`takePreview`), so what airs is what was seen; otherwise `takeNext`, as before.
  * - Shift+Space: the item at the cursor is shown on the preview output (`previewItem`).
  * - Backspace: the most recent preview is thrown away (`stopPreview`); with nothing
- *   previewed it clears the clock layer on air (`clearLayer`), as before.
+ *   previewed it sends nothing. No key here takes anything off air.
  */
 export function chooseCommandForOperatorKey(
   operatorKey: OperatorKey,
@@ -71,12 +67,14 @@ function chooseCommandForSpace(
  * nothing there is nothing to send and no refusal to show; the rundown panel already
  * tells the operator to place the cursor. A cursor on an item this page does not list is
  * still sent: the server knows better which items exist, and refuses in pt-BR if not.
+ * The origin is `manual`: the operator asked for this preview, so the next automatic
+ * preview ("Prévia automática") does not throw it away unless it lands on the same layer.
  */
 function chooseCommandForShiftSpace(rundown: Rundown | undefined): CommandInput | null {
   if (rundown === undefined || rundown.cursorItemId === null) {
     return null;
   }
-  return { type: 'previewItem', itemId: rundown.cursorItemId };
+  return { type: 'previewItem', itemId: rundown.cursorItemId, origin: 'manual' };
 }
 
 /**
@@ -85,11 +83,12 @@ function chooseCommandForShiftSpace(rundown: Rundown | undefined): CommandInput 
  * is the one the operator has just looked at. Deliberate: not all of them at once
  * (`layerId: null`), because the brief says "the previewed layer" and a key should undo
  * one step, not several.
- * What could go wrong: once no preview is left, the next Backspace is the old one and
- * takes the clock layer OFF AIR. An operator who presses Backspace once more than there
- * are previews clears the clock.
+ * With no preview left it answers null: Backspace only ever discards a preview. João's
+ * ruling (gate 2 of BAJAOVRLAY-15) took the old "clear the clock layer" away from this
+ * key, because one press more than there were previews took the clock OFF AIR. A layer
+ * on air is cleared with its row's "Limpar" button, or everything with Esc.
  */
-function chooseCommandForBackspace(instances: Instance[]): CommandInput {
+function chooseCommandForBackspace(instances: Instance[]): CommandInput | null {
   let mostRecentPreview: Instance | undefined = undefined;
   for (const instance of instances) {
     if (instance.target !== 'preview') {
@@ -103,7 +102,7 @@ function chooseCommandForBackspace(instances: Instance[]): CommandInput {
     }
   }
   if (mostRecentPreview === undefined) {
-    return { type: 'clearLayer', layerId: clockLayerId };
+    return null;
   }
   return { type: 'stopPreview', layerId: mostRecentPreview.layerId };
 }

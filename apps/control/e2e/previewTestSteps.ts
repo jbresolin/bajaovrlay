@@ -1,5 +1,5 @@
-// Test support: the steps the two preview test files share (previewThenTake.e2e.ts and
-// previewKeyboardLoop.e2e.ts): opening the control page, opening an output in a page of
+// Test support: the steps the preview test files share (previewThenTake.e2e.ts,
+// previewKeyboardLoop.e2e.ts and autoPreviewAcrossLayers.e2e.ts): opening the control page, opening an output in a page of
 // its own, finding the race clock on an output or in a monitor frame, and preparing an
 // item. Functions only; nothing here remembers anything between calls or between tests.
 import { type BrowserContext, expect, type Locator, type Page } from '@playwright/test';
@@ -36,6 +36,14 @@ export function findRaceClockInOutputPage(outputPage: Page): Locator {
   return outputPage.locator('[data-layer-id="clock"] > baja-graphic-race-clock');
 }
 
+/**
+ * Finds the race clock element on the "Tarja" layer (id `lower-third`) of an output's
+ * own page: where an item prepared on that layer is drawn, whatever its graphic.
+ */
+export function findRaceClockOnLowerThirdLayerOfOutputPage(outputPage: Page): Locator {
+  return outputPage.locator('[data-layer-id="lower-third"] > baja-graphic-race-clock');
+}
+
 /** Finds the race clock element inside one of the two monitor frames of the control page. */
 export function findRaceClockInMonitorFrame(
   page: Page,
@@ -49,17 +57,25 @@ export function findRaceClockInMonitorFrame(
 /**
  * Prepares one race clock item through the item editor: "+ Item", the label, the session
  * name, "Salvar item"; then waits for the editor to close, which it does once the server
- * has accepted the new item. Everything else is left at the manifest's defaults.
+ * has accepted the new item. Everything else is left at the manifest's defaults, the
+ * layer included (the clock's own layer, "Relógio") unless `layerName` names another one
+ * as the "Camada" dropdown lists it.
  */
 export async function createRaceClockItemInTheEditor(
   page: Page,
   itemLabel: string,
   sessionName: string,
+  layerName?: 'Tarja',
 ): Promise<void> {
   await page.getByRole('button', { name: '+ Item' }).click();
   // "Edição rápida" draws the same fields with the same labels, so everything is looked
   // up inside the editor.
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
+  if (layerName !== undefined) {
+    await itemEditor.getByRole('combobox', { name: 'Camada', exact: true }).click();
+    // The list of options is drawn outside the editor, at the end of the page.
+    await page.getByRole('option', { name: layerName, exact: true }).click();
+  }
   await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
   await itemEditor.getByLabel('Nome da sessão', { exact: true }).fill(sessionName);
   await itemEditor.getByRole('button', { name: 'Salvar item' }).click();

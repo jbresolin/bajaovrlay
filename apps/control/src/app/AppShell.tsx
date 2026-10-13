@@ -1,10 +1,10 @@
 import { ConnectionBadge } from '@/features/connection/ConnectionBadge';
 import { LayerStatusPanel } from '@/features/layers/LayerStatusPanel';
 import { PreviewAndProgramMonitors } from '@/features/outputMonitors/PreviewAndProgramMonitors';
+import { useBackspaceToStopPreview } from '@/features/outputMonitors/useBackspaceToStopPreview';
 import { ClearAllButton } from '@/features/playout/ClearAllButton';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { QuickEditPanel } from '@/features/playout/QuickEditPanel';
-import { useBackspaceToStopPreviewOrClearClockLayer } from '@/features/playout/useBackspaceToStopPreviewOrClearClockLayer';
 import { RundownPanel } from '@/features/rundown/RundownPanel';
 import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
 import { ptBR } from '@/i18n/ptBR';
@@ -18,11 +18,13 @@ import { ptBR } from '@/i18n/ptBR';
  * lives in its feature folder, and nothing here knows any graphic by name.
  * The left column is 20rem wide: a rundown row holds a label, the graphic, the layer and
  * four buttons, and the item editor opens in the same column. The centre column takes
- * what is left: on a 1920 px wide screen that fits both 480 px monitors side by side; on
- * a narrower one "Programa" wraps under "Prévia" (PreviewAndProgramMonitors.tsx).
+ * what is left: on a 1920 px wide screen that fits both monitors at 480 px side by side;
+ * on a narrower one both shrink together and stay side by side
+ * (PreviewAndProgramMonitors.tsx). Backspace, which discards a preview, is listened to
+ * here because the key belongs to the whole page and not to one area.
  */
 export function AppShell() {
-  useBackspaceToStopPreviewOrClearClockLayer();
+  useBackspaceToStopPreview();
 
   return (
     <div className="flex min-h-screen flex-col gap-4 p-4">

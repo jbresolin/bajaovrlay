@@ -11,5 +11,5 @@ here knows a graphic by name: forms come from each manifest (`features/schemaFor
   holds the reading on air, so that text is never sent. `clockRolesOfCarryClockForward.ts`
   (the manifest words, paired with the server rule) → `clockFieldsOfGraphic.ts` (finds the
   four fields) → `timeOnScreenOfClockOnAir.ts` (shared sum) → `useTimeOnScreenInQuickEdit.ts`.
-- `ClearAllButton.tsx` (panic button and Esc), `useBackspaceToStopPreviewOrClearClockLayer.ts`,
-  `CommandErrorMessage.tsx`; `*.testSupport.*` — the panel on a fake server, for the tests.
+- `ClearAllButton.tsx` (panic button and Esc), `CommandErrorMessage.tsx`;
+  `*.testSupport.*` — the panel on a fake server, for the tests.

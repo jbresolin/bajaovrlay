@@ -11,6 +11,7 @@
  * What these tests prove (with a real SQLite file and the race clock's real data schema):
  *   - previewItem puts the item on the preview output and changes only the instances:
  *     subscribers hear about `instances` and the event log, never about the rundowns.
+ *     The origin the page sent (`auto`, "Prévia automática") is on the stored preview.
  *   - takePreview fifteen minutes later puts the same data on program, except that the
  *     clock's reference moment is the moment of the take; the preview is gone, the cursor
  *     moved on, and the database holds exactly what memory holds.
@@ -101,9 +102,10 @@ describe('previewing an item and then taking the preview, through the store', ()
     const { store, database, setTheClockTo, sliceNamesToldToSubscribers } =
       createStoreWithTheStartItemPrepared();
 
-    // Act: preview the item; fifteen minutes later, press "Tomar" for the clock layer.
+    // Act: preview the item as "Prévia automática" does when the cursor arrives on it;
+    // fifteen minutes later, press "Tomar" for the clock layer.
     const outcomeOfPreview = store.applyCommand(
-      { type: 'previewItem', itemId: idOfTheStartItem },
+      { type: 'previewItem', itemId: idOfTheStartItem, origin: 'auto' },
       operatorActor,
     );
     const instancesWhilePreviewed = store.readAllSlices().instances;
@@ -115,7 +117,8 @@ describe('previewing an item and then taking the preview, through the store', ()
     );
 
     // Assert, the preview: accepted; one instance, on the preview output, whose clock
-    // counts from the preview and which remembers that field; the cursor did not move.
+    // counts from the preview, which remembers that field and who asked for it; the
+    // cursor did not move.
     expect([outcomeOfPreview, outcomeOfTake], 'both commands must be accepted').toEqual([
       { ok: true },
       { ok: true },
@@ -137,6 +140,7 @@ describe('previewing an item and then taking the preview, through the store', ()
         currentStep: 0,
         status: 'loading',
         takenAt: momentOfThePreview,
+        previewOrigin: 'auto',
         itemId: idOfTheStartItem,
         takeTimeFieldKeys: ['referenceWallClockMs'],
       },

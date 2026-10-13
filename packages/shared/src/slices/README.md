@@ -7,8 +7,8 @@ which lists all six slices; four have a file here:
 - `graphic.ts` — graphics the operator can take (built OGraf packages), with the
   manifest fields the server reads: the data `schema` and our `v_baja` vendor field
   (default layer, category, and the name of the rule its updates run through).
-- `instance.ts` — what is on each layer and output right now, its status (`failed` has the
-  renderer's reason in `statusDetail`), and a preview's fields to stamp again at the take.
+- `instance.ts` — what is on each layer and output, its status (`failed` has the renderer's reason
+  in `statusDetail`), a preview's fields to stamp again at the take and who asked for it (`previewOrigin`).
 - `eventLogEntry.ts` — one line of the append-only command log.
 
 The `rundowns` and `items` slices are listed in `slices.ts` too; their schemas live in
