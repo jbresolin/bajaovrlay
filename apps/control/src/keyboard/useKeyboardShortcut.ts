@@ -16,16 +16,26 @@ export type KeyboardShortcutOptions = {
   isKeptFromTheBrowser?: boolean;
 };
 
+/** What a shortcut is told about the press that fired it. */
+export type KeyPress = {
+  /** true when Shift was down with the key. Only Space gives it a meaning of its own. */
+  isShiftHeld: boolean;
+};
+
 /**
  * Calls `onPressed` when `key` (a KeyboardEvent.key value such as 'Escape') is pressed
  * anywhere on the page. Three kinds of press never count, because each would send a
  * command the operator did not mean: a key held down (the keyboard's auto-repeat), a key
  * with Ctrl/Alt/Meta (a browser shortcut), and a key another control already used
  * (Esc closing an open dropdown, Space picking a rundown row up for a keyboard drag).
+ *
+ * Shift is not one of those: a key pressed with Shift counts like the key alone, as it
+ * always did here, and `onPressed` is told whether Shift was down. A shortcut that does
+ * not look at that (Esc, Backspace, the arrows) does the same with and without Shift.
  */
 export function useKeyboardShortcut(
   key: string,
-  onPressed: () => void,
+  onPressed: (keyPress: KeyPress) => void,
   options: KeyboardShortcutOptions,
 ): void {
   const { isEnabled, isIgnoredWhileTyping } = options;
@@ -52,7 +62,7 @@ export function useKeyboardShortcut(
       if (isKeptFromTheBrowser) {
         event.preventDefault();
       }
-      onPressed();
+      onPressed({ isShiftHeld: event.shiftKey });
     }
 
     // A browser presses the focused button when Space is LET GO, not when it goes down,
@@ -106,7 +116,7 @@ function isTypingTarget(eventTarget: EventTarget | null): boolean {
   // The shadcn/ui dropdown and switch are built from buttons and divs, so they can only
   // be recognised by their role. A closed dropdown is a "combobox"; its open list is a
   // "listbox" with the options inside it. Neither uses Backspace itself, so without
-  // this check a Backspace on them would reach the shortcut and take the clock off air.
+  // this check a Backspace on them would reach the shortcut and discard a preview.
   const isInsideDropdown = eventTarget.closest('[role="combobox"], [role="listbox"]') !== null;
   const isOnSwitch = eventTarget.closest('[role="switch"]') !== null;
   return isFormField || eventTarget.isContentEditable || isInsideDropdown || isOnSwitch;

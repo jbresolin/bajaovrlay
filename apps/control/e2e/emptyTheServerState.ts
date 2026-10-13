@@ -1,5 +1,5 @@
 // Test support: puts the real server of the Playwright run back to how a new database
-// has it (nothing on air, no item in the rundown), so every browser test starts from the
+// has it (nothing on air, nothing previewed, no item in the rundown), so every browser test starts from the
 // same place whatever ran before it, in any order. playwright.config.ts starts that server.
 
 /** The real server's port in a Playwright run; far from 3000 so it never meets `pnpm dev`. */
@@ -64,8 +64,9 @@ async function readItemIdsFromRealServer(): Promise<string[]> {
 }
 
 /**
- * Empties the real server: `clearAll` takes everything off air, then every item is
- * deleted, which also leaves the cursor on nothing. The seeded rundown stays. Each test
+ * Empties the real server: `clearAll` takes everything off air and off the preview
+ * output (it removes every instance, of both outputs), then every item is deleted, which
+ * also leaves the cursor on nothing. The seeded rundown stays. Each test
  * file calls this in a `test.beforeEach`, so a test never depends on the one before it.
  * What could go wrong: it deletes whatever the server holds, so it must only ever be
  * pointed at the Playwright run's own server and SQLite file, which the port guarantees.

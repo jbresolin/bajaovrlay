@@ -24,6 +24,9 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * field named for stamping is not one the graphic's schema marks as a wall-clock
  * moment, or if the prepared data breaks the graphic's manifest schema. A take never
  * runs the manifest's update rule: there is no data on air for it to carry forward.
+ * previewGraphic, previewItem and takePreview all end in this reducer, so the preview
+ * output follows the same rules; an instance on the preview output also keeps the keys
+ * that were stamped and says who asked for it (see below).
  */
 export function reduceTakeGraphic(
   slices: SlicesChangedByCommands,
@@ -85,6 +88,21 @@ export function reduceTakeGraphic(
     status: 'loading',
     takenAt: context.now,
   };
+  // A preview remembers which of its fields were stamped: takePreview writes the moment
+  // of the take over exactly those, so a previewed clock starts when it goes on air.
+  // Once stamped, a field holds a plain number and nothing else would say it was one.
+  // A program instance never carries the list, and neither does a preview with no stamp.
+  const isPreview = command.target === 'preview';
+  if (isPreview && command.takeTimeFieldKeys.length > 0) {
+    newInstance.takeTimeFieldKeys = command.takeTimeFieldKeys;
+  }
+  // Every preview says who asked for it. Made here it was asked for by hand: this is
+  // where previewGraphic ("Edição rápida"), a takeGraphic aimed at the preview output and
+  // a previewItem end. Only previewItem can say `auto`, and it changes the mark itself
+  // (previewItem.ts). A program instance never carries the mark.
+  if (isPreview) {
+    newInstance.previewOrigin = 'manual';
+  }
   const instancesKept = slices.instances.filter((instance) => {
     const isOnTheSameLayerAndOutput =
       instance.layerId === command.layerId && instance.target === command.target;

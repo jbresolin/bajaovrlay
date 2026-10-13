@@ -1,15 +1,15 @@
 # apps/control/src/features/rundown
 
-The left column: the items prepared for a session, in firing order, with the cursor on
-the next one. Start reading at `RundownPanel.tsx`. No order or cursor is kept here: after
-a drop or a click the rows wait for the server's next slice.
+The left column: the items prepared for a session, in firing order, with the cursor on the next one.
+Start at `RundownPanel.tsx`. No order or cursor is kept here: rows wait for the server's next slice.
 
-- `RundownPanel.tsx` — reads the `rundowns` and `items` slices, shows the first rundown, sends
-  `takeItem`, `moveCursor`, `deleteItem`, `reorderItems`; opens `features/items/ItemEditorPanel`.
-- `RundownItemList.tsx` (dnd-kit: mouse and keyboard drag) and `RundownItemRow.tsx` (handle,
-  colour, the label that sets the cursor, "Disparar", "Editar"; `ItemColorChip.tsx`).
-- `DeleteItemButton.tsx` — two-press "Excluir"; `emptyCursorHint.ts` — what to say with no cursor.
-- `useRundownKeyboardShortcuts.ts` — Space = `takeNext` (always, also on a focused button),
-  Right / Left arrow = `moveCursor`; `itemAfterCursor.ts`, `itemBeforeCursor.ts` say where to.
-- `useEscapeBelongsToTheDragWhileDragging.ts` (Esc cancelling a drag never arms "Limpar tudo"),
-  `itemIdsInOrderAfterDrag.ts`, `graphicAndLayerNames.ts`, `rundownDragAnnouncements.ts` (pt-BR).
+- `RundownPanel.tsx` — shows the first rundown; sends `takeItem`, `previewItem`, `deleteItem`,
+  `reorderItems`; opens `features/items/ItemEditorPanel`. Rows: `RundownItemList.tsx` (dnd-kit)
+  and `RundownItemRow.tsx` (handle, label that sets the cursor, "Disparar", "Prévia", "Editar").
+- "Prévia automática" (`AutoPreviewToggle.tsx`; `autoPreviewSetting.ts`, localStorage): while on,
+  `useMoveCursorByHand.ts` (`moveCursor`) and `useTakeThenPreviewNextItem.ts` (a take sent here;
+  `itemToPreviewAfterTake.ts` decides) then send `previewItem` with origin `auto`.
+- `useRundownKeyboardShortcuts.ts` — Space and Shift+Space (`src/keyboard/commandForOperatorKey.ts`),
+  Right / Left arrow; `itemAfterCursor.ts`, `itemBeforeCursor.ts` say where to.
+- `DeleteItemButton.tsx` (two-press "Excluir"), `emptyCursorHint.ts`, `itemIdsInOrderAfterDrag.ts`,
+  `useEscapeBelongsToTheDragWhileDragging.ts`, `graphicAndLayerNames.ts`, `rundownDragAnnouncements.ts`.

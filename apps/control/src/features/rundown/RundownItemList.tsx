@@ -37,6 +37,8 @@ export type RundownItemListProps = {
   graphics: Graphic[];
   layers: Layer[];
   onTakePressed: (itemId: string) => void;
+  /** Called when a row's "Prévia" is pressed: show that item on the preview output. */
+  onPreviewPressed: (itemId: string) => void;
   /** Called when a row's label is clicked: the operator wants the cursor on that row. */
   onSetCursorPressed: (itemId: string) => void;
   onEditPressed: (itemId: string) => void;
@@ -121,6 +123,7 @@ export function RundownItemList(props: RundownItemListProps) {
               graphicName={findGraphicNameOrItsId(graphics, item.graphicId)}
               layerName={findLayerNameOrItsId(layers, item.layerId)}
               onTakePressed={() => props.onTakePressed(item.id)}
+              onPreviewPressed={() => props.onPreviewPressed(item.id)}
               onSetCursorPressed={() => props.onSetCursorPressed(item.id)}
               onEditPressed={() => props.onEditPressed(item.id)}
               onDeleteConfirmed={() => props.onDeleteConfirmed(item.id)}

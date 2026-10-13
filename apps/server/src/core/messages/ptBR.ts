@@ -20,6 +20,9 @@ export const ptBR = {
     graphicNotFound: (graphicId: string) => `O gráfico "${graphicId}" não está registrado.`,
     instanceNotFound: (instanceId: string) =>
       `A instância "${instanceId}" não existe; o gráfico pode já ter saído do ar.`,
+    // "Tomar" was pressed for a layer whose preview is empty (already taken or discarded).
+    layerPreviewEmpty: (layerName: string) =>
+      `Não há nada em prévia na camada "${layerName}" para colocar no ar.`,
     // The four ways a take's or an update's data can fail the graphic's manifest
     // schema. The first three name the field, so the operator knows what to correct.
     graphicDataFieldMissing: (graphicId: string, fieldPath: string) =>

@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+import { PreviewGraphicCommandSchema } from '../preview/previewGraphic.js';
+import { PreviewItemCommandSchema } from '../preview/previewItem.js';
+import { StopPreviewCommandSchema } from '../preview/stopPreview.js';
+import { TakePreviewCommandSchema } from '../preview/takePreview.js';
 import { CreateItemCommandSchema } from '../rundown/createItem.js';
 import { DeleteItemCommandSchema } from '../rundown/deleteItem.js';
 import { MoveCursorCommandSchema } from '../rundown/moveCursor.js';
@@ -31,6 +35,11 @@ export const CommandSchema = z.discriminatedUnion('type', [
   MoveCursorCommandSchema,
   TakeItemCommandSchema,
   TakeNextCommandSchema,
+  // The preview commands (BAJAOVRLAY-15); their schemas live in ../preview/.
+  PreviewItemCommandSchema,
+  PreviewGraphicCommandSchema,
+  StopPreviewCommandSchema,
+  TakePreviewCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

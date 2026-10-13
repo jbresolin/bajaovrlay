@@ -17,7 +17,8 @@
  *   - A clock saved running counts from the TAKE, not from the save: taken at least six
  *     seconds after it was saved, the clock in the program monitor starts near 0:00.
  *   - The Left arrow moves the cursor back to the first item, still with the focus on
- *     that button, and puts nothing on air.
+ *     that button, and puts nothing on air; with "Prévia automática" on, as it starts,
+ *     that item is then listed under the "Prévia" monitor.
  *   - Reloading the page changes nothing: the rundown, the cursor and the label on the
  *     layer are all still there, because they live on the server and not in the page.
  *   - "Excluir" takes two presses: the first only asks ("Confirmar: excluir"), the second
@@ -32,6 +33,8 @@
  *     (`/render/?monitor=1`) draws the clock without ever reporting it, so the layer
  *     stays "Carregando". takeAndClear.e2e.ts covers that report.
  *   - Changing an item that is on air ("Atualizar no ar"); itemUpdateOnAir.e2e.ts does.
+ *   - Space sending a PREVIEW to air, and the Right arrow previewing; here nothing is
+ *     previewed when Space is pressed, so Space is `takeNext`. previewThenTake.e2e.ts does.
  *   - Auto-out and a server restart; the server's tests cover both.
  *
  * Sharing the server with the other tests:
@@ -117,7 +120,10 @@ async function createRaceClockItemInTheEditor(
   ).toBeHidden();
 }
 
-/** Finds the race clock element inside the program monitor frame of the control page. */
+/**
+ * Finds the race clock element inside the "Programa" monitor frame of the control page,
+ * the right one of its two monitors (the other, "Prévia", frames the preview output).
+ */
 function findRaceClockInProgramMonitor(page: Page): Locator {
   return page
     .frameLocator('iframe[title="Programa"]')
@@ -236,6 +242,12 @@ test.describe('preparing a rundown and firing it with Space', () => {
     await expect(clockLayerRow, 'moving the cursor must not change what is on air').toContainText(
       'Largada do enduro',
     );
+    // "Prévia automática" is on, as it starts, so the item the cursor landed on is also
+    // shown on the preview output: it is listed under the "Prévia" monitor.
+    await expect(
+      page.getByRole('list', { name: 'Em prévia' }).getByRole('listitem', { name: 'Relógio' }),
+      'the Left arrow must also preview the item the cursor landed on, while "Prévia automática" is on',
+    ).toContainText('Largada do enduro');
 
     // Act: reload the page, as an operator does when the browser misbehaves.
     await page.reload();

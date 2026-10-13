@@ -27,7 +27,8 @@ type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'>;
 
 /**
  * Returns the slices the store starts with. Layers and instances are loaded from the
- * database (so a restart restores what was on air), or seeded when it is empty. The
+ * database (so a restart restores what was on air), or seeded when it is empty; the
+ * instances of the preview output are the exception and are dropped at every boot. The
  * graphics slice is rebuilt from the built packages on every boot and saved, because it
  * describes what is on disk, not what the operator did. The event-log slice is the
  * newest entries of the event_log table. Rundowns and items are the operator's too:
@@ -47,21 +48,46 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     logger: options.logger,
   });
 
-  // The graphics row is rewritten on every boot; layers and instances only when seeded.
+  // What was on the preview output does not survive a restart: a preview is something
+  // the operator was looking at, not state the show depends on, and a stale one would
+  // sit one "Tomar" away from air with nobody remembering why. Program instances stay.
+  const instancesKeptAcrossTheRestart = operatorSlices.instances.filter(
+    (instance) => instance.target !== 'preview',
+  );
+  const numberOfPreviewInstancesDropped =
+    operatorSlices.instances.length - instancesKeptAcrossTheRestart.length;
+
+  // The graphics row is rewritten on every boot; layers only when seeded; instances
+  // when seeded and when a preview was dropped just above, so that the database holds
+  // what memory holds from the first moment (nothing else writes that row before the
+  // next command that changes an instance).
   const updatedAt = options.readCurrentTime().toISOString();
   const graphicsRow: SliceRow = { name: 'graphics', json: graphics, updatedAt };
+  const instancesRow: SliceRow = {
+    name: 'instances',
+    json: instancesKeptAcrossTheRestart,
+    updatedAt,
+  };
   const seedRows: SliceRow[] = [
     { name: 'layers', json: operatorSlices.layers, updatedAt },
     graphicsRow,
-    { name: 'instances', json: operatorSlices.instances, updatedAt },
+    instancesRow,
   ];
+  const rowsOfALaterBoot =
+    numberOfPreviewInstancesDropped > 0 ? [graphicsRow, instancesRow] : [graphicsRow];
   // Rundowns and items are loaded, or seeded when their row is missing (a first boot,
   // or a database written before they existed); see loadRundownSlices.ts.
   const rundownSlices = loadOrSeedRundownSlices(storedRows, updatedAt, options.logger);
-  const layerAndGraphicRows = isFirstBoot ? seedRows : [graphicsRow];
+  const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
   writeBootSliceRows(options.database, [...layerAndGraphicRows, ...rundownSlices.seededRows]);
   if (isFirstBoot) {
     options.logger.info('empty database seeded with the fixed layers');
+  }
+  if (numberOfPreviewInstancesDropped > 0) {
+    options.logger.info(
+      { dropped_preview_instances: numberOfPreviewInstancesDropped },
+      'preview instances dropped at boot',
+    );
   }
   options.logger.info(
     { graphics: graphics.map((graphic) => graphic.id) },
@@ -74,7 +100,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   return {
     layers: operatorSlices.layers,
     graphics,
-    instances: operatorSlices.instances,
+    instances: instancesKeptAcrossTheRestart,
     eventLog,
     rundowns: rundownSlices.rundowns,
     items: rundownSlices.items,

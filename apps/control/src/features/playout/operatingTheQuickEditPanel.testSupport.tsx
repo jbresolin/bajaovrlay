@@ -120,7 +120,7 @@ export async function pressButtonAndWaitForCommand(
 }
 
 /**
- * Presses a button and waits until the panel has finished with the press. Both buttons
+ * Presses a button and waits until the panel has finished with the press. Its buttons
  * are off while a press is being checked and sent, so "the button is on again" is how a
  * test knows the press is over, also when it sent nothing.
  */

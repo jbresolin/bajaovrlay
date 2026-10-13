@@ -1,6 +1,6 @@
 // Test support: a stand-in for the server, living inside one Playwright page. It answers
 // the page's WebSocket at /ws?role=renderer like the real server (a hello with every slice,
-// then slice messages; a program monitor is answered at plain /ws), keeps every message
+// then slice messages; a program monitor or a preview page is answered at plain /ws), keeps every message
 // the page sends, and serves the fake graphic's
 // files at /graphics/fake-graphic/. Nothing leaves the browser, so a test decides exactly
 // what the renderer hears and when, and reads back exactly what it said.
@@ -88,11 +88,12 @@ export type FakeServerForPage = {
 /**
  * Installs the stand-in server on a page. Call it before `page.goto`, so the page's very
  * first connection is already answered. `instancesOnAir` is what the first hello holds.
- * `pageIsAProgramMonitor` is for the page opened with `?monitor=1` (see the comment below).
+ * `pageMustDialWithoutTheRendererRole` is for the two pages that report nothing, the one
+ * opened with `?monitor=1` and the one opened with `?target=preview` (see the comment below).
  */
 export async function startFakeServerForPage(
   page: Page,
-  options: { instancesOnAir: Instance[]; pageIsAProgramMonitor?: boolean },
+  options: { instancesOnAir: Instance[]; pageMustDialWithoutTheRendererRole?: boolean },
 ): Promise<FakeServerForPage> {
   const slices: Slices = {
     layers: layersOfTheFakeServer,
@@ -112,12 +113,15 @@ export async function startFakeServerForPage(
   // renderer from an operator by this address. A page that dialled plain /ws would get no
   // hello here and every test would fail. Vite's own dev socket has another address.
   //
-  // For a test of the program monitor it is the other way round: the monitor must dial
-  // plain /ws. There both addresses are answered, so that a monitor wrongly dialling as a
-  // renderer is caught here, with its address and its messages written down for the test
-  // to read, instead of slipping past to the real server behind the dev server.
+  // For a test of the program monitor or of the preview page it is the other way round:
+  // such a page must dial plain /ws. There both addresses are answered, so that a page
+  // wrongly dialling as a renderer is caught here, with its address and its messages
+  // written down for the test to read, instead of slipping past to the real server behind
+  // the dev server.
   const addressesThisServerAnswers =
-    options.pageIsAProgramMonitor === true ? /\/ws(\?role=renderer)?$/ : /\/ws\?role=renderer$/;
+    options.pageMustDialWithoutTheRendererRole === true
+      ? /\/ws(\?role=renderer)?$/
+      : /\/ws\?role=renderer$/;
   await page.routeWebSocket(addressesThisServerAnswers, (connection) => {
     connections.push(connection);
     connection.onMessage((messageText) => {
@@ -200,5 +204,21 @@ export async function openProgramMonitorAndWaitForItsLayers(page: Page): Promise
   await expect(
     page.locator('[data-layer-id="clock"]'),
     'the monitor must build the layer containers from the hello',
+  ).toBeAttached();
+}
+
+/**
+ * Opens the renderer page as a preview page and waits for its layer containers like the
+ * functions above. `pageAddress` is `/render/?target=preview`, or the address the control
+ * page frames, `/render/?target=preview&monitor=1`.
+ */
+export async function openPreviewPageAndWaitForItsLayers(
+  page: Page,
+  pageAddress: string,
+): Promise<void> {
+  await page.goto(pageAddress);
+  await expect(
+    page.locator('[data-layer-id="clock"]'),
+    'the preview page must build the layer containers from the hello',
   ).toBeAttached();
 }

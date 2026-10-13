@@ -1,25 +1,30 @@
 import { ConnectionBadge } from '@/features/connection/ConnectionBadge';
 import { LayerStatusPanel } from '@/features/layers/LayerStatusPanel';
+import { PreviewAndProgramMonitors } from '@/features/outputMonitors/PreviewAndProgramMonitors';
+import { useBackspaceToStopPreview } from '@/features/outputMonitors/useBackspaceToStopPreview';
 import { ClearAllButton } from '@/features/playout/ClearAllButton';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { QuickEditPanel } from '@/features/playout/QuickEditPanel';
-import { useBackspaceToClearClockLayer } from '@/features/playout/useBackspaceToClearClockLayer';
-import { ProgramMonitor } from '@/features/programMonitor/ProgramMonitor';
 import { RundownPanel } from '@/features/rundown/RundownPanel';
 import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
 import { ptBR } from '@/i18n/ptBR';
 
 /**
  * The frame of the control page (docs/00-concept.md §3.4): a header and three areas
- * that are always on screen on a desktop — rundown on the left, program monitor and
- * "Edição rápida" (the take and update panel for any graphic) in the centre, layer
- * status and clear all on the right. Layout only; each area's behaviour lives in its
- * feature folder, and nothing here knows any graphic by name.
+ * that are always on screen on a desktop — rundown on the left; in the centre the two
+ * monitors side by side ("Prévia" with what is previewed and its "Tomar"/"Descartar",
+ * then "Programa") above "Edição rápida" (the take, preview and update panel for any
+ * graphic); layer status and clear all on the right. Layout only; each area's behaviour
+ * lives in its feature folder, and nothing here knows any graphic by name.
  * The left column is 20rem wide: a rundown row holds a label, the graphic, the layer and
- * three buttons, and the item editor opens in the same column.
+ * four buttons, and the item editor opens in the same column. The centre column takes
+ * what is left: on a 1920 px wide screen that fits both monitors at 480 px side by side;
+ * on a narrower one both shrink together and stay side by side
+ * (PreviewAndProgramMonitors.tsx). Backspace, which discards a preview, is listened to
+ * here because the key belongs to the whole page and not to one area.
  */
 export function AppShell() {
-  useBackspaceToClearClockLayer();
+  useBackspaceToStopPreview();
 
   return (
     <div className="flex min-h-screen flex-col gap-4 p-4">
@@ -37,7 +42,7 @@ export function AppShell() {
         </section>
 
         <section aria-label={ptBR.app.playoutAreaTitle} className="flex flex-col gap-4">
-          <ProgramMonitor />
+          <PreviewAndProgramMonitors />
           <QuickEditPanel />
         </section>
 

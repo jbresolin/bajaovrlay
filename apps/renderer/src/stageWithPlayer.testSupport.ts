@@ -146,9 +146,9 @@ function createStageWithPlayerOnLoader(
 }
 
 /**
- * Builds the stage of a program monitor: the same layers, graphics and captured log, but
- * the player is given no way to report to the server, as renderer.ts builds it for a page
- * opened with `?monitor=1`. The final scoreboard cannot be created here either, so a test
+ * Builds the stage of a program monitor or a preview page: the same layers, graphics and
+ * captured log, but the player is given no way to report to the server, as renderer.ts
+ * builds it for a page opened with `?monitor=1` or `?target=preview`. The final scoreboard cannot be created here either, so a test
  * can watch the renderer's own failure on a page that reports nothing.
  */
 export function createStageWithPlayerThatHasNoStatusReporter() {

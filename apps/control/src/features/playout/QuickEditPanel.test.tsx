@@ -25,6 +25,8 @@
  *   - "Atualizar" with nothing changed sends nothing.
  *
  * What these tests deliberately do not cover:
+ *   - The third button, "Prévia", which shows the form on the preview output:
+ *     QuickEditPanelPreview.test.tsx.
  *   - The form after a command the server accepted, and on-air data the form cannot show
  *     or refuses: QuickEditPanelUpdate.test.tsx.
  *   - Someone else changing the graphic on air: QuickEditPanelOtherOperator.test.tsx.
@@ -92,7 +94,7 @@ function renderPanelAfterAReloadWithTheFirstHeatOnAir() {
 }
 
 describe('"Edição rápida" with the race clock and nothing on air', () => {
-  it('opens on the race clock with the manifest defaults and only the "Colocar no ar" button', () => {
+  it('opens on the race clock with the manifest defaults, "Colocar no ar" and no "Atualizar"', () => {
     // Arrange: nothing on air; the race clock is the first graphic the server lists.
 
     // Act: draw the panel.

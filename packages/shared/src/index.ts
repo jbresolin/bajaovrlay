@@ -25,8 +25,9 @@ export {
   type OGrafManifest,
   OGrafManifestSchema,
 } from './slices/graphic.js';
-// The `instances` slice: what is on each layer and output, its output, its status and
-// the detail the renderer gave about that status.
+// The `instances` slice: what is on each layer and output, its output, its status, the
+// detail the renderer gave about that status and, on a preview, the fields to stamp again
+// and who asked for the preview (PreviewOrigin: 'auto' or 'manual').
 export {
   type Instance,
   InstanceSchema,
@@ -34,6 +35,8 @@ export {
   InstanceStatusSchema,
   type InstanceTarget,
   InstanceTargetSchema,
+  type PreviewOrigin,
+  PreviewOriginSchema,
 } from './slices/instance.js';
 // The `eventLog` slice: one line per command that changed something or was refused.
 export {
@@ -73,7 +76,7 @@ export { type ClearAllCommand, ClearAllCommandSchema } from './commands/clearAll
 // Every command, told apart by `type`; the only way state changes.
 export { type Command, type CommandInput, CommandSchema } from './commands/command.js';
 
-// WebSocket messages from the server: hello, slice and commandResult.
+// WebSocket messages from the server: hello, slice, commandResult and time.
 export {
   type CommandResultMessage,
   CommandResultMessageSchema,
@@ -82,6 +85,8 @@ export {
   ServerMessageSchema,
   type SliceMessage,
   SliceMessageSchema,
+  type TimeMessage,
+  TimeMessageSchema,
 } from './ws/serverMessages.js';
 // WebSocket messages from a client: command (control page) and instanceStatus (renderer).
 export {
@@ -95,3 +100,6 @@ export {
 
 // Rundowns and items: both slices, field values, item colours and the seven item commands.
 export * from './rundown/index.js';
+
+// The preview output: previewItem, previewGraphic, stopPreview and takePreview.
+export * from './preview/index.js';

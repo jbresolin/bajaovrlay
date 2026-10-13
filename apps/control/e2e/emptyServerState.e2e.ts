@@ -9,9 +9,10 @@
  *   that function does what the others rely on.
  *
  * What these tests prove:
- *   - With the race clock on air and an item in the rundown, `emptyTheServerState` leaves
- *     the clock layer "vazia" and the rundown without items, as the control page shows
- *     it, and the seeded rundown "Sessão principal" is still there.
+ *   - With the race clock on air, an item in the rundown and that item previewed,
+ *     `emptyTheServerState` leaves the clock layer "vazia", nothing in preview and the
+ *     rundown without items, as the control page shows it, and the seeded rundown
+ *     "Sessão principal" is still there.
  *   - Called on a server that is already empty, it changes nothing and does not fail.
  *
  * What these tests deliberately do not cover:
@@ -46,7 +47,7 @@ test.describe('emptying the server state', () => {
   }) => {
     // Arrange: leave behind what a test that stopped halfway would: the race clock on
     // air (taken from "Edição rápida" with its form as it opens, only the session name
-    // typed) and one item prepared in the rundown.
+    // typed), one item prepared in the rundown, and that item on the preview output.
     await openControlPageAndWaitUntilConnected(page);
     const clockLayerRow = page
       .getByRole('region', { name: 'Camadas' })
@@ -69,15 +70,37 @@ test.describe('emptying the server state', () => {
       rundownArea.getByRole('listitem'),
       'the rundown must hold the one item before the reset',
     ).toHaveCount(1);
+    // And that item previewed: a preview is server state too, and it would show up under
+    // the "Prévia" monitor of the next test.
+    await rundownArea
+      .getByRole('listitem', { name: 'Largada do enduro' })
+      .getByRole('button', { name: 'Prévia', exact: true })
+      .click();
+    await expect(
+      quickEditArea.getByRole('list', { name: 'Em prévia' }).getByRole('listitem'),
+      'the item must be previewed before the reset',
+    ).toHaveCount(1);
+    await expect(
+      clockLayerRow,
+      'the clock layer must carry the preview chip before the reset',
+    ).toContainText('em prévia');
 
     // Act: empty the server, as every test file does before each of its tests.
     await emptyTheServerState();
 
-    // Assert: the page, which only repeats the server, shows an empty layer and an empty
-    // rundown, and the seeded rundown is still there to be filled.
+    // Assert: the page, which only repeats the server, shows an empty layer, nothing in
+    // preview and an empty rundown, and the seeded rundown is still there to be filled.
     await expect(clockLayerRow, 'after the reset the clock layer must say "vazia"').toContainText(
       'vazia',
     );
+    await expect(
+      quickEditArea.getByText('Nada em prévia.'),
+      'after the reset nothing may be left on the preview output',
+    ).toBeVisible();
+    await expect(
+      clockLayerRow,
+      'after the reset the clock layer must no longer carry the preview chip',
+    ).not.toContainText('em prévia');
     await expect(
       rundownArea.getByRole('listitem'),
       'after the reset the rundown must hold no item',

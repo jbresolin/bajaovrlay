@@ -60,7 +60,7 @@ test.describe('a renderer page opened as a program monitor (?monitor=1)', () => 
     // Arrange: a monitor connected to a server with nothing on air.
     const fakeServer = await startFakeServerForPage(page, {
       instancesOnAir: [],
-      pageIsAProgramMonitor: true,
+      pageMustDialWithoutTheRendererRole: true,
     });
     await openProgramMonitorAndWaitForItsLayers(page);
 
@@ -86,7 +86,7 @@ test.describe('a renderer page opened as a program monitor (?monitor=1)', () => 
     // Arrange: a monitor connected to a server with nothing on air.
     const fakeServer = await startFakeServerForPage(page, {
       instancesOnAir: [],
-      pageIsAProgramMonitor: true,
+      pageMustDialWithoutTheRendererRole: true,
     });
     await openProgramMonitorAndWaitForItsLayers(page);
     const lowerThirdOfUfprWhoseLoadRejects = createInstance(

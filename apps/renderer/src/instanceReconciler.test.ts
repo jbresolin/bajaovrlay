@@ -21,6 +21,8 @@
  *   - Instances on the `preview` output are ignored, coming or going.
  *
  * What these tests deliberately do not cover:
+ *   - A page told to draw the `preview` output instead (`/render/?target=preview`);
+ *     instanceReconciler.preview.test.ts. Every test here draws `program`.
  *   - Rebuilding the whole stage after a reconnect; instanceReconciler.rebuild.test.ts.
  *   - Calling the graphics (load, playAction, ...); e2e/lifecycle.e2e.ts checks that in
  *     a real browser.
@@ -286,11 +288,12 @@ describe('decideLayerOperations', () => {
     // Arrange: the instances drawn last and the ones that just arrived, from the row.
     const { previousInstances, nextInstances, expectedLayerOperations } = scenario;
 
-    // Act: ask what to do on each layer.
+    // Act: ask what the page that draws the program output must do on each layer.
     const layerOperations = decideLayerOperations({
       previousInstances,
       nextInstances,
       layers: layersOfTheStream,
+      drawnOutput: 'program',
     });
 
     // Assert: exactly the expected operations, layer by layer.
@@ -309,6 +312,7 @@ describe('decideLayerOperations', () => {
       previousInstances: [createEnduroClockInstance()],
       nextInstances: [createFinalClockInstance()],
       layers: layersWithoutTheClock,
+      drawnOutput: 'program',
     });
 
     // Assert: the safest policy is used, the one where two graphics never overlap.

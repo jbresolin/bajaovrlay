@@ -7,9 +7,13 @@ import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
+import { useAutoPreviewSetting } from './autoPreviewSetting';
+import { AutoPreviewToggle } from './AutoPreviewToggle';
 import { chooseEmptyCursorHint } from './emptyCursorHint';
 import { RundownItemList } from './RundownItemList';
+import { useMoveCursorByHand } from './useMoveCursorByHand';
 import { useRundownKeyboardShortcuts } from './useRundownKeyboardShortcuts';
+import { useTakeThenPreviewNextItem } from './useTakeThenPreviewNextItem';
 
 /**
  * What the item editor is on screen for, if at all. This is the one thing the panel
@@ -20,9 +24,13 @@ type ItemEditorTarget =
 
 /**
  * The rundown column: the items prepared for the session in firing order, the cursor on
- * the next one, and the ways to fire, reorder, edit, delete and add items and to move
- * the cursor. It only repeats the server's `rundowns` and `items` slices; every button
- * sends one command and the list changes when the server's next slice arrives, not before.
+ * the next one, and the ways to fire, preview, reorder, edit, delete and add items and to
+ * move the cursor. It only repeats the server's `rundowns` and `items` slices; every
+ * button sends one command and the list changes when the server's next slice arrives, not
+ * before. The one exception to "one command": while the switch "Prévia automática" is on,
+ * moving the cursor by hand (useMoveCursorByHand.ts) and a take that moves the cursor on
+ * (useTakeThenPreviewNextItem.ts) each send a second command that previews the item the
+ * cursor is on afterwards.
  */
 export function RundownPanel() {
   const rundowns = useServerState((state) => state.rundowns);
@@ -38,7 +46,13 @@ export function RundownPanel() {
   const rundown = rundowns[0];
   const itemsInOrder = rundown === undefined ? [] : listItemsOfRundownInOrder(items, rundown.id);
 
-  useRundownKeyboardShortcuts(rundown, itemsInOrder);
+  // The one thing on this page kept in the browser and not on the server; why is said
+  // in autoPreviewSetting.ts. It decides whether the item the cursor arrives on is also
+  // previewed, after a move by hand and after a take sent from this page.
+  const { isAutoPreviewOn, chooseIsAutoPreviewOn } = useAutoPreviewSetting();
+  const moveCursorByHand = useMoveCursorByHand(rundown?.id, isAutoPreviewOn);
+  const sendTakeByThisOperator = useTakeThenPreviewNextItem(rundown?.id, isAutoPreviewOn);
+  useRundownKeyboardShortcuts(rundown, itemsInOrder, moveCursorByHand, sendTakeByThisOperator);
 
   if (rundown === undefined) {
     return <p className="text-sm text-muted-foreground">{ptBR.rundown.noRundownOnServer}</p>;
@@ -73,6 +87,7 @@ export function RundownPanel() {
           {ptBR.rundown.addItemButton}
         </ActionButton>
       </div>
+      <AutoPreviewToggle isAutoPreviewOn={isAutoPreviewOn} onChosen={chooseIsAutoPreviewOn} />
 
       {/* Going from one item to another without closing needs nothing here: the editor
           starts a new form by itself whenever it is handed another item. */}
@@ -95,10 +110,11 @@ export function RundownPanel() {
           cursorItemId={rundown.cursorItemId}
           graphics={graphics}
           layers={layers}
-          onTakePressed={(itemId) => void sendCommand({ type: 'takeItem', itemId })}
-          onSetCursorPressed={(itemId) =>
-            void sendCommand({ type: 'moveCursor', rundownId, itemId })
+          onTakePressed={(itemId) => sendTakeByThisOperator({ type: 'takeItem', itemId })}
+          onPreviewPressed={(itemId) =>
+            void sendCommand({ type: 'previewItem', itemId, origin: 'manual' })
           }
+          onSetCursorPressed={moveCursorByHand}
           onEditPressed={(itemId) => setItemEditorTarget({ kind: 'existingItem', itemId })}
           onDeleteConfirmed={(itemId) => void sendCommand({ type: 'deleteItem', itemId })}
           onItemsReordered={(itemIdsInNewOrder) =>
@@ -120,7 +136,14 @@ export function RundownPanel() {
       )}
 
       <CommandErrorMessage
-        commandTypes={['takeItem', 'takeNext', 'moveCursor', 'reorderItems', 'deleteItem']}
+        commandTypes={[
+          'takeItem',
+          'takeNext',
+          'previewItem',
+          'moveCursor',
+          'reorderItems',
+          'deleteItem',
+        ]}
       />
     </div>
   );

@@ -1,25 +1,18 @@
-import type { Item, Rundown, TakeGraphicCommand, TakeItemCommand } from '@bajaovrlay/shared';
+import type { TakeItemCommand } from '@bajaovrlay/shared';
 
-import { listKeysOfTakeTimeFields } from '../itemTakeTimeFields.js';
-import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
-import { refuseUnknownItem } from '../rundownCommandRefusals.js';
-import { findItemThatFollows } from './itemOrdering.js';
+import { putItemOnOutput } from './putItemOnOutput.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
-import { leaveRundownCursorPastItsLastItem, putRundownCursorOnItem } from './rundownCursor.js';
-import { reduceTakeGraphic } from './takeGraphic.js';
+import { moveRundownCursorOnIfItWasOnTakenItem } from './rundownCursor.js';
 
 /**
- * takeItem: puts a prepared item on the program output. It resolves the item's field
- * values into data (a `takeTime` field gets the moment of this command, the same one
- * the instance's `takenAt` says) and hands the take to reduceTakeGraphic, the same
- * reducer a take by hand uses, so every rule of a take (one instance per layer and
- * output, the refusals, any check added to takeGraphic later) holds for items without
- * being written twice; one of those rules is that a field whose stored value is a
- * literal `null` (a field cleared in the item editor) is left out of the data. Then it
- * stamps the new instance with the item's id. If the item taken was the one the
- * rundown's cursor was on, the cursor moves to the item after it; after the last item
- * the cursor is on nothing, rather than back at the top where "next" would fire the
- * opening again, and the rundown is marked as played to its end
+ * takeItem: puts a prepared item on the program output. putItemOnOutput does the take
+ * (it resolves the item's field values into data, a `takeTime` field getting the moment
+ * of this command, the same one the instance's `takenAt` says; hands the take to the
+ * reducer a take by hand uses; and stamps the new instance with the item's id), and
+ * previewItem goes through the same function for the preview output. If the item taken
+ * was the one the rundown's cursor was on, the cursor then moves to the item after it;
+ * after the last item the cursor is on nothing, rather than back at the top where "next"
+ * would fire the opening again, and the rundown is marked as played to its end
  * (`wasLastItemTakenAtCursor`). Taking any other item leaves the cursor alone. Refused
  * if the item does not exist, if a field cannot be resolved, or for any reason
  * takeGraphic refuses (the item's layer or graphic is gone, a `takeTime` field is not a
@@ -31,69 +24,14 @@ export function reduceTakeItem(
   command: TakeItemCommand,
   context: ReducerContext,
 ): ReducerOutcome {
-  const item = slices.items.find((candidate) => candidate.id === command.itemId);
-  if (item === undefined) {
-    return { status: 'refused', error: refuseUnknownItem(command.itemId) };
-  }
-  const resolution = resolveItemFieldsIntoGraphicData(item.fields, context.now);
-  if (resolution.status === 'refused') {
-    return { status: 'refused', error: resolution.error };
-  }
-
-  const keysOfTakeTimeFields = listKeysOfTakeTimeFields(item.fields);
-
-  // An item always goes to the program output; previewing an item is a later task.
-  const takeOfTheItemGraphic: TakeGraphicCommand = {
-    type: 'takeGraphic',
-    graphicId: item.graphicId,
-    layerId: item.layerId,
-    data: resolution.data,
-    target: 'program',
-    // The resolver above already wrote this command's moment into the `takeTime`
-    // fields. Their keys are named here all the same, so that takeGraphic's check (only
-    // a wall-clock field of the graphic may be stamped) holds for items without being
-    // written twice. takeGraphic then writes the same moment over the same fields.
-    takeTimeFieldKeys: keysOfTakeTimeFields,
-  };
-  const takeOutcome = reduceTakeGraphic(slices, takeOfTheItemGraphic, context);
+  const takeOutcome = putItemOnOutput(slices, command.itemId, 'program', context);
   if (takeOutcome.status === 'refused') {
     return takeOutcome;
   }
-
-  // The instance takeGraphic just made is the one carrying the id the store handed in.
-  const instancesWithItemStamped = takeOutcome.slices.instances.map((instance) =>
-    instance.id === context.newInstanceId ? { ...instance, itemId: item.id } : instance,
+  const rundownsAfter = moveRundownCursorOnIfItWasOnTakenItem(
+    slices.rundowns,
+    slices.items,
+    takeOutcome.item,
   );
-  const rundownsAfter = moveCursorOnIfItWasOnTakenItem(slices, item);
-
-  return {
-    status: 'applied',
-    slices: { ...takeOutcome.slices, instances: instancesWithItemStamped, rundowns: rundownsAfter },
-  };
-}
-
-/**
- * The rundowns after a take of `takenItem`. The cursor is the plan ("what Space fires
- * next"), so it moves on only when the plan itself was carried out: the item taken was
- * the cursor item. A row fired ad hoc with its button leaves the plan alone, and the
- * very same rundowns array comes back, so the store neither saves nor broadcasts it.
- */
-function moveCursorOnIfItWasOnTakenItem(
-  slices: SlicesChangedByCommands,
-  takenItem: Item,
-): Rundown[] {
-  const rundownOfTakenItem = slices.rundowns.find(
-    (candidate) => candidate.id === takenItem.rundownId,
-  );
-  const wasTakenItemTheCursorItem = rundownOfTakenItem?.cursorItemId === takenItem.id;
-  if (!wasTakenItemTheCursorItem) {
-    return slices.rundowns;
-  }
-  const nextItem = findItemThatFollows(slices.items, takenItem);
-  if (nextItem === undefined) {
-    // The plan was carried out to its last item: the cursor is left on nothing and the
-    // rundown is marked as played to its end, which the control page says in words.
-    return leaveRundownCursorPastItsLastItem(slices.rundowns, takenItem.rundownId);
-  }
-  return putRundownCursorOnItem(slices.rundowns, takenItem.rundownId, nextItem.id);
+  return { status: 'applied', slices: { ...takeOutcome.slices, rundowns: rundownsAfter } };
 }

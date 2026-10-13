@@ -136,6 +136,11 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       case 'commandResult':
         settleCommandAwaitingThisResult(message);
         break;
+      case 'time':
+        // The server's ten-second time message. Its sample was recorded just above and
+        // that is all: nothing is set in the store, so no component redraws, and no
+        // line is logged every ten seconds.
+        break;
     }
   }
 
@@ -234,13 +239,14 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 }
 
 /**
- * Hands the server's time in a hello or slice message to the shared server-aligned
+ * Hands the server's time in a hello, slice or time message to the shared server-aligned
  * clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
  * does the same (apps/renderer/src/serverConnection.ts), so the page and the screen
- * count from the same clock.
- * What could go wrong: the sample is late by the time the message took to arrive, and
- * with nothing changing on the server no sample comes, so a step of this computer's
- * clock stays uncorrected until three more messages have arrived.
+ * count from the same clock. A hello or slice without the time records NOTHING: it is
+ * "no sample", never a sample saying the two clocks agree.
+ * What could go wrong: the sample is late by the time the message took to arrive. A
+ * step of this computer's clock is corrected by the time messages, which come every ten
+ * seconds even when nothing changes; three are needed, so about thirty seconds.
  */
 function recordServerClockSampleOfMessage(
   message: ServerMessage,

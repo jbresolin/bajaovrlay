@@ -39,13 +39,19 @@ On each property of `schema.properties` (`type` picks the control: `string` text
 - `minimum` / `maximum` — the limits of a number field.
 - `format: "date-time"` on a `string` — a date and time input, sent as ISO 8601 text.
 - `v_baja.unit: "ms"` on an `integer`/`number` — typed as `mm:ss`, sent as milliseconds.
-- `v_baja.role: "wallClock"` on an `integer` — the field may be left "to the moment of the
-  take": the server then writes its own clock's milliseconds into it. The server refuses
-  to do that for any field not declared exactly so.
-- `v_baja.role: "clockTime"` (on the `unit: "ms"` time), `"clockRunning"` (on the
-  `boolean`) and `"clockMode"` (on the `elapsed`/`remaining` enum) — with `wallClock`,
-  the four fields that are a clock. Each role once; if one is missing the time field
-  shows the reference time, as for any graphic.
+- `v_baja.role` — one of the four clock roles, each on its own kind of property:
+  - `"wallClock"` on an `integer` (milliseconds since 1970): the reference moment. The
+    field may be left "to the moment of the take": the server then writes its own clock's
+    milliseconds into it, and refuses to do that for any field not declared exactly so.
+  - `"clockTime"` on the `integer`/`number` that also has `v_baja.unit: "ms"`: the
+    reference time.
+  - `"clockRunning"` on a `boolean`: whether the clock is counting.
+  - `"clockMode"` on a `string` with `enum: ["elapsed", "remaining"]`: which way it counts.
+
+  `wallClock` works alone. The four together (each exactly once, plus
+  `v_baja.updateRule: "carryClockForward"`) are what makes the graphic a clock for the
+  control page; if one is missing, repeated or on the wrong kind of property, the time
+  field shows the reference time, as for any graphic.
 
 `schema.required` lists the fields that cannot be left blank; every other field gets a
 "limpar" control and, once cleared, is not sent to the graphic at all (never as `null`).

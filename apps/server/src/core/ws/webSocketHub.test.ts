@@ -25,6 +25,9 @@
  *     crash the server, and shutting down closes every client.
  *
  * What these tests deliberately do not cover:
+ *   - The `time` message every client gets every ten seconds; it has its own file,
+ *     webSocketHubServerTime.test.ts, with a timer moved by hand. No test here lasts
+ *     ten seconds, so none ever sees one.
  *   - The rules of each command (reducers/reduceCommand.test.ts) and the event log
  *     (createStateStore.test.ts); here the store is used as the server uses it.
  *   - The answer when saving a command fails; clientMessageAnswers.test.ts covers it

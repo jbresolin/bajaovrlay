@@ -27,6 +27,9 @@
  *   - A real browser pressing a focused button at Space. The test browser (jsdom) never
  *     does that by itself, so here the proof is that the browser was TOLD not to;
  *     e2e/rundownTakeWithSpace.e2e.ts presses Space on a focused button in Chromium.
+ *   - Space while the preview output shows the item at the cursor (it then sends that
+ *     preview to air instead of `takeNext`), and Shift+Space: RundownPanelPreviewKeys.test.tsx.
+ *     Nothing is previewed in any test of this file.
  *   - The arrow keys and the click on a row's label (RundownPanelCursor.test.tsx).
  *   - Dropping the row again after a keyboard pick-up (RundownPanelReorder.test.tsx).
  *   - Esc and Backspace, which belong to features/playout and are tested in App.test.tsx.

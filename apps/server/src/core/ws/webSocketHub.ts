@@ -13,6 +13,7 @@ import {
   buildSliceMessage,
   serializeServerMessage,
 } from './serverMessageBuilding.js';
+import { startServerTimeBroadcast } from './serverTimeBroadcast.js';
 
 /** The only path that upgrades to a WebSocket (the control page's dev proxy forwards it). */
 export const webSocketPath = '/ws';
@@ -32,9 +33,17 @@ export type WebSocketHubOptions = {
    * a moment the store stamped.
    */
   readCurrentTime?: (() => Date) | undefined;
+  /**
+   * The timer behind the ten-second `time` message; defaults to Node's setInterval.
+   * Tests hand in one they move by hand, together with cancelRepeatingTimer.
+   */
+  startRepeatingTimer?:
+    ((onEachInterval: () => void, intervalInMilliseconds: number) => unknown) | undefined;
+  /** Cancels a timer started by startRepeatingTimer; defaults to Node's clearInterval. */
+  cancelRepeatingTimer?: ((timerHandle: unknown) => void) | undefined;
 };
 
-/** The running hub; close() drops every client and stops the heartbeat. */
+/** The running hub; close() drops every client and stops the heartbeat and the time message. */
 export type WebSocketHub = { close: () => Promise<void> };
 
 /**
@@ -42,8 +51,10 @@ export type WebSocketHub = { close: () => Promise<void> };
  * client gets `hello`, then a `slice` message whenever a slice changes (both carrying
  * `serverNowMs`, the server's clock at the moment the message is built), and a
  * `commandResult` for each message it sends (a command, or a renderer's
- * `instanceStatus`). A connection to `/ws?role=renderer` acts as a renderer, any other
- * as an operator. Any other upgrade path is refused.
+ * `instanceStatus`). Every ten seconds every client also gets a `time` message, so a
+ * page keeps learning the server's clock while nothing changes. A connection to
+ * `/ws?role=renderer` acts as a renderer, any other as an operator. Any other upgrade
+ * path is refused.
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
@@ -54,6 +65,12 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     webSocketServer,
     intervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
     logger,
+  });
+  const serverTimeBroadcast = startServerTimeBroadcast({
+    webSocketServer,
+    readCurrentTime,
+    startRepeatingTimer: options.startRepeatingTimer,
+    cancelRepeatingTimer: options.cancelRepeatingTimer,
   });
 
   httpServer.on('upgrade', (request, socket, head) => {
@@ -122,6 +139,8 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     close: () => {
       stopListening();
       heartbeat.stop();
+      // Before the clients are dropped, so no tick finds a half-closed server.
+      serverTimeBroadcast.stop();
       // terminate, not close: close() waits up to 30 s for a frozen client's answer.
       // Clients reconnect and get a fresh hello, so nothing is lost.
       for (const client of webSocketServer.clients) {

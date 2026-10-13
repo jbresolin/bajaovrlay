@@ -10,10 +10,11 @@
  * What the renderer says over it is one kind of message, `instanceStatus`: what really
  * happened on screen to an instance. It sends no commands.
  *
- * It also learns the server's clock here: every `hello` and `slice` message says what
- * the server's clock showed (`serverNowMs`), and each is recorded as one sample for the
- * shared "now" the graphics read (@bajaovrlay/shared/clock). A program monitor does the
- * same, since it runs this very code.
+ * It also learns the server's clock here: every `hello` and `slice` message, and the
+ * `time` message the server sends every ten seconds, says what the server's clock showed
+ * (`serverNowMs`), and each is recorded as one sample for the shared "now" the graphics
+ * read (@bajaovrlay/shared/clock). A program monitor does the same, since it runs this
+ * very code.
  */
 import {
   type InstanceStatusMessage,
@@ -164,6 +165,12 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: false }));
       return { wasHello: false };
     }
+    if (message.type === 'time') {
+      // The server's ten-second time message. Its sample was recorded just above, and
+      // that is all there is to do with it: nothing on the stage changes, and a log
+      // line every ten seconds would bury the lines that matter in the OBS console.
+      return { wasHello: false };
+    }
     // A commandResult. The renderer never waits for one, but the server may answer an
     // instanceStatus with it. An ok needs nothing (a late report about an
     // instance already cleared is answered ok too). A refusal (this connection is not
@@ -257,16 +264,19 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 }
 
 /**
- * Records what a `hello` or `slice` message says the server's clock showed, as one
- * sample for the shared "now" the graphics read. A `commandResult` carries no clock, and
- * neither does a message from a stand-in server that leaves `serverNowMs` out.
+ * Records what a `hello`, `slice` or `time` message says the server's clock showed, as
+ * one sample for the shared "now" the graphics read. A `commandResult` carries no clock,
+ * and neither does a hello or slice from a stand-in server that leaves `serverNowMs`
+ * out. Such a message records NOTHING: it is "no sample", never a sample saying the two
+ * clocks agree, which would pull a correction already learned back towards zero.
  * What could go wrong: the message spent some time on the network, so every sample is
  * late by that much and the clock on air runs that much behind the server's (a few
  * milliseconds on a local network). One message held up for longer is left aside by the
  * median of the last five samples. The state read over HTTP when a hello is late gives
- * no sample: GET /api/v1/state answers the slices alone. And with no slice changing no
- * sample arrives, so a step of this machine's clock stays uncorrected until three more
- * messages have come.
+ * no sample: GET /api/v1/state answers the slices alone. A step of this machine's clock
+ * is corrected by the `time` messages, which come every ten seconds even when no slice
+ * changes; the median needs three of them, so the clock on air is wrong for about
+ * thirty seconds after such a step.
  */
 function recordServerClockSampleOfMessage(
   message: ServerMessage,

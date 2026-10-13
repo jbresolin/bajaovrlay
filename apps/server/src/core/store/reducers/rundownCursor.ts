@@ -1,4 +1,32 @@
-import type { Rundown } from '@bajaovrlay/shared';
+import type { Item, Rundown } from '@bajaovrlay/shared';
+
+import { findItemThatFollows } from './itemOrdering.js';
+
+/**
+ * The rundowns after `takenItem` went on air (takeItem, takeNext or takePreview). The
+ * cursor is the plan ("what Space fires next"), so it moves on only when the plan itself
+ * was carried out: the item taken was the cursor item. An item fired ad hoc leaves the
+ * plan alone, and the very same rundowns array comes back, so the store neither saves
+ * nor broadcasts it.
+ */
+export function moveRundownCursorOnIfItWasOnTakenItem(
+  rundowns: Rundown[],
+  items: Item[],
+  takenItem: Item,
+): Rundown[] {
+  const rundownOfTakenItem = rundowns.find((candidate) => candidate.id === takenItem.rundownId);
+  const wasTakenItemTheCursorItem = rundownOfTakenItem?.cursorItemId === takenItem.id;
+  if (!wasTakenItemTheCursorItem) {
+    return rundowns;
+  }
+  const nextItem = findItemThatFollows(items, takenItem);
+  if (nextItem === undefined) {
+    // The plan was carried out to its last item: the cursor is left on nothing and the
+    // rundown is marked as played to its end, which the control page says in words.
+    return leaveRundownCursorPastItsLastItem(rundowns, takenItem.rundownId);
+  }
+  return putRundownCursorOnItem(rundowns, takenItem.rundownId, nextItem.id);
+}
 
 /**
  * Puts one rundown's cursor on the given item (or on nothing, with null) and hands

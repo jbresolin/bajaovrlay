@@ -10,6 +10,6 @@ a take, taken off air by an update), and a field named in `takeTimeFieldKeys` (d
 `[]`) is written by the server with the command's moment in wall-clock milliseconds.
 `commandError.ts` lists every error code the server can answer with; the pt-BR
 messages themselves live in the server's catalog (apps/server/src/core/messages/).
-The rules each command follows live in the server's reducers
-(apps/server/src/core/store/reducers/), one file per command. The item and rundown commands (`createItem`, `takeItem`, `takeNext` and the rest) are in
-the same union, but their schemas live beside the item and rundown slices in `../rundown/`.
+The rules each command follows live in the server's reducers, one file per command.
+The item and rundown commands (`createItem`, `takeItem`, ...) and the preview commands
+(`previewItem`, `takePreview`, ...) are in the same union; their schemas live in `../rundown/` and `../preview/`.

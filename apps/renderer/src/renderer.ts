@@ -4,6 +4,9 @@
 // The renderer decides nothing about what is on air: if the slice says it, it is drawn,
 // and the server is told how that went (on air, or failed and why). The same page framed
 // by the control page as a program monitor (`?monitor=1`) draws the same and tells nothing.
+// Framed as the preview page (`?target=preview`) it draws the instances of the `preview`
+// output instead and tells nothing either. rendererPageRole.ts decides which of the three
+// this page is; everything below is the same code for all of them.
 import type { Instance } from '@bajaovrlay/shared';
 
 import { createGraphicLoader } from './graphicLoader.js';
@@ -19,7 +22,7 @@ function startRenderer(stage: HTMLElement): void {
   // The page is served by the server (or by the dev server that forwards to it), so the
   // WebSocket and the API live on the page's own host. `role=renderer` is how the server
   // tells the program output from every other page: only it may report what is on screen.
-  // The copy the control page frames (`?monitor=1`) dials without the role.
+  // The copies the control page frames (`?monitor=1`, `?target=preview`) dial without it.
   const pageRole = decideRendererPageRole(location.search);
   const webSocketScheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const connection = connectToServer({
@@ -28,23 +31,30 @@ function startRenderer(stage: HTMLElement): void {
   });
 
   const layerContainers = createLayerContainers(stage);
-  // A monitor's player gets no reporter at all, so it cannot send an instanceStatus even
-  // by mistake. Leaving the role off the address alone would not be enough: the server
-  // would refuse each report, and every graphic on the monitor would cost a refused command.
-  const reportInstanceStatus = pageRole.isProgramMonitor
-    ? undefined
-    : connection.sendInstanceStatus;
+  // The player of a monitor or of a preview page gets no reporter at all, so it cannot
+  // send an instanceStatus even by mistake. Leaving the role off the address alone would
+  // not be enough: the server would refuse each report, and every graphic on such a page
+  // would cost a refused command.
+  const reportInstanceStatus = pageRole.reportsInstanceStatus
+    ? connection.sendInstanceStatus
+    : undefined;
   const instancePlayer = createInstancePlayer({
     layerContainers,
     graphicLoader: createGraphicLoader(),
     reportInstanceStatus,
   });
-  // What the last delivery said is on air, to compare the next one against.
+  // What the last delivery listed (both outputs), to compare the next one against.
   let instancesOfLastDelivery: Instance[] = [];
 
   connection.onSlices(({ slices, isFullSnapshot }) => {
     layerContainers.showLayers(slices.layers);
-    const change = { previousInstances: instancesOfLastDelivery, nextInstances: slices.instances };
+    // `drawnOutput` is the one setting that tells the preview page from the others: the
+    // reconciler looks only at the instances of that output.
+    const change = {
+      previousInstances: instancesOfLastDelivery,
+      nextInstances: slices.instances,
+      drawnOutput: pageRole.drawnOutput,
+    };
     // A full snapshot (hello) means the page may have missed anything: rebuild the stage
     // without animations. Otherwise only the difference is played, with animations.
     const layerOperations = isFullSnapshot
@@ -55,6 +65,8 @@ function startRenderer(stage: HTMLElement): void {
   });
 
   logRendererEvent('info', 'renderer ready', {
+    drawnOutput: pageRole.drawnOutput,
+    reportsInstanceStatus: pageRole.reportsInstanceStatus,
     stageWidth: stage.offsetWidth,
     stageHeight: stage.offsetHeight,
   });

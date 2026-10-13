@@ -19,6 +19,16 @@ export const InstanceStatusSchema = z.enum(['loading', 'ready', 'on-air', 'stopp
 export type InstanceStatus = z.infer<typeof InstanceStatusSchema>;
 
 /**
+ * Who asked for a preview: `auto` is "Prévia automática" showing the item the cursor
+ * arrived on, `manual` is the operator asking for it (a row's "Prévia", Shift+Space,
+ * "Edição rápida").
+ */
+export const PreviewOriginSchema = z.enum(['auto', 'manual']);
+
+/** One of PreviewOriginSchema's values. */
+export type PreviewOrigin = z.infer<typeof PreviewOriginSchema>;
+
+/**
  * An instance is one graphic taken on one layer of one output, with the resolved data
  * it shows. Graphics only ever receive `resolvedData`; they never fetch anything.
  */
@@ -45,6 +55,27 @@ export const InstanceSchema = z.object({
    * deleted since: an instance stays on air when its item goes away.
    */
   itemId: z.string().min(1).optional(),
+  /**
+   * Only on an instance of the preview output: the fields of `resolvedData` the server
+   * stamped with the moment of the preview (a clock's reference moment). takePreview
+   * writes the moment of the take over exactly these fields, so a previewed clock starts
+   * counting when it goes on air. The server leaves it out when no field was stamped
+   * (an empty list means the same), and the program instance a take creates never
+   * carries it.
+   * What could go wrong: an updateInstanceData that types a value into one of these
+   * fields of a preview does not take the key off this list, so the take stamps over it.
+   */
+  takeTimeFieldKeys: z.array(z.string().min(1)).optional(),
+  /**
+   * Only on an instance of the preview output: who asked for this preview. The server
+   * writes it on every preview it makes. The next previewItem with origin `auto` throws
+   * away every other preview marked `auto`, so following the cursor never piles previews
+   * up, and leaves the ones marked `manual`. The program instance a take creates never
+   * carries it.
+   * What could go wrong: a preview without the mark (none is written today) is not
+   * `auto`, so nothing discards it by itself.
+   */
+  previewOrigin: PreviewOriginSchema.optional(),
 });
 
 /** An instance that has passed InstanceSchema. */
