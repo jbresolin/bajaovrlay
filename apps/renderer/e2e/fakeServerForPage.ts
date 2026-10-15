@@ -99,9 +99,12 @@ export async function startFakeServerForPage(
     layers: layersOfTheFakeServer,
     graphics: [readFakeGraphicFromItsManifest(), sponsorRollWithoutFiles],
     instances: options.instancesOnAir,
-    // The renderer never reads these two; they are here because every hello carries them.
+    // The renderer never reads these five; they are here because every hello carries them.
     rundowns: [],
     items: [],
+    quickFirePanels: [],
+    macros: [],
+    macroRuns: [],
     eventLog: [],
   };
   const connections: WebSocketRoute[] = [];

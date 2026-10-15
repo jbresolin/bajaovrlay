@@ -12,6 +12,10 @@ Browser tests of the control page (Playwright, Chromium). Labels are the clock m
 - `monitorsSideBySide.e2e.ts` — both monitors side by side, equal and 16:9 at three window widths.
 - `itemUpdateOnAir.e2e.ts` ("Atualizar no ar" in place), `clockStoppedOnAir.e2e.ts` (a stopped clock
   keeps its time), `rundownTakeWithSpace.e2e.ts` (Space, Left arrow, reload, "Excluir").
-- `emptyTheServerState.ts` — called before each test; `emptyServerState.e2e.ts` proves it.
+- `quickFireWithNumberKey.e2e.ts` (a panel button fired with 1, cursor unchanged) and
+  `macroTakeWaitClear.e2e.ts` (take, wait 0,5 s, clear: the layer is empty after 0.4–3 s); shared
+  steps in `quickFireTestSteps.ts`.
+- `emptyTheServerState.ts` — called before each test (also deletes items of panels, macros and
+  panels other than "Atalhos", after any running macro ends); `emptyServerState.e2e.ts` proves it.
 
 `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188). Run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`.

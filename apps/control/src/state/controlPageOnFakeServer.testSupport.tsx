@@ -8,6 +8,7 @@ import { vi } from 'vitest';
 
 import { AutoPreviewSettingProvider } from '@/features/autoPreview/AutoPreviewSettingProvider';
 import { createAutoPreviewSettingStore } from '@/features/autoPreview/autoPreviewSettingStore';
+import { ItemEditorTargetProvider } from '@/features/items/ItemEditorTargetProvider';
 
 import { ControlPageStateProvider } from './ControlPageStateProvider';
 import { createFakeServerSocket } from './fakeServerSocket.testSupport';
@@ -71,7 +72,7 @@ export function renderOnControlPageStillWaitingForTheServer(
       sendCommand={serverConnection.sendCommand}
     >
       <AutoPreviewSettingProvider autoPreviewSettingStore={autoPreviewSettingStore}>
-        {pageContent}
+        <ItemEditorTargetProvider>{pageContent}</ItemEditorTargetProvider>
       </AutoPreviewSettingProvider>
     </ControlPageStateProvider>,
   );

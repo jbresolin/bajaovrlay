@@ -86,7 +86,7 @@ describe('buildCreateItemCommand', () => {
 
     // Act: build the command.
     const command = buildCreateItemCommand({
-      rundownId: idOfTheMainSessionRundown,
+      home: { kind: 'rundown', rundownId: idOfTheMainSessionRundown },
       itemFormValues,
       fields: fieldsFromTheGeneratedForm,
     });
@@ -95,7 +95,7 @@ describe('buildCreateItemCommand', () => {
     // exactly as handed in, the reference moment still left for the server to stamp.
     expect(command, 'the command must be exactly what the server expects').toEqual({
       type: 'createItem',
-      rundownId: 'sessao-principal',
+      home: { kind: 'rundown', rundownId: 'sessao-principal' },
       graphicId: 'race-clock',
       layerId: 'clock',
       label: 'Largada do Enduro',
@@ -119,7 +119,7 @@ describe('buildCreateItemCommand', () => {
 
     // Act: build the command.
     const command = buildCreateItemCommand({
-      rundownId: idOfTheMainSessionRundown,
+      home: { kind: 'rundown', rundownId: idOfTheMainSessionRundown },
       itemFormValues,
       fields: buildEnduranceStartClockItem().fields,
     });
@@ -147,7 +147,7 @@ describe('buildCreateItemCommand', () => {
 
     // Act: build the command.
     const command = buildCreateItemCommand({
-      rundownId: idOfTheMainSessionRundown,
+      home: { kind: 'rundown', rundownId: idOfTheMainSessionRundown },
       itemFormValues,
       fields: {},
     });
@@ -155,7 +155,7 @@ describe('buildCreateItemCommand', () => {
     // Assert: the item is created with no field values.
     expect(command, 'an item without data must be created with empty fields').toEqual({
       type: 'createItem',
-      rundownId: 'sessao-principal',
+      home: { kind: 'rundown', rundownId: 'sessao-principal' },
       graphicId: 'logo-da-competicao',
       layerId: 'bug',
       label: 'Logo Baja SAE Brasil',

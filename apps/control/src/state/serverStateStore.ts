@@ -40,6 +40,9 @@ export function createServerStateStore(): ServerStateStore {
     instances: [],
     rundowns: [],
     items: [],
+    quickFirePanels: [],
+    macros: [],
+    macroRuns: [],
     eventLog: [],
     connectionStatus: 'connecting',
     lastCommandError: null,
@@ -51,6 +54,9 @@ export function createServerStateStore(): ServerStateStore {
         instances: slices.instances,
         rundowns: slices.rundowns,
         items: slices.items,
+        quickFirePanels: slices.quickFirePanels,
+        macros: slices.macros,
+        macroRuns: slices.macroRuns,
         eventLog: slices.eventLog,
       });
     },
@@ -74,6 +80,15 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'items':
           set({ items: message.slice });
+          break;
+        case 'quickFirePanels':
+          set({ quickFirePanels: message.slice });
+          break;
+        case 'macros':
+          set({ macros: message.slice });
+          break;
+        case 'macroRuns':
+          set({ macroRuns: message.slice });
           break;
         case 'eventLog':
           set({ eventLog: message.slice });

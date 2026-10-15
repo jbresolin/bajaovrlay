@@ -58,8 +58,9 @@ import {
 import { PreviewedLayersList } from './PreviewedLayersList';
 
 // The item editor has its own tests; a stand-in takes its place where the rundown is drawn.
-vi.mock('@/features/items/ItemEditorPanel', () =>
-  import('@/features/rundown/itemEditorStandIn.testSupport'),
+vi.mock(
+  '@/features/items/ItemEditorPanel',
+  () => import('@/features/rundown/itemEditorStandIn.testSupport'),
 );
 
 // Saturday of the endurance race: the start was previewed at 9:58 and is taken at 10:00.
@@ -96,7 +97,10 @@ function buildSlicesWithTheStartAndTheBandPreviewed(): Slices {
 
 /** The race clock on the program output, taken from the start of the endurance race. */
 function buildStartOnProgram(): Instance {
-  return { ...buildRaceClockInstanceOnTheClockLayer(momentOfTheTake), itemId: enduranceStartItemId };
+  return {
+    ...buildRaceClockInstanceOnTheClockLayer(momentOfTheTake),
+    itemId: enduranceStartItemId,
+  };
 }
 
 /**

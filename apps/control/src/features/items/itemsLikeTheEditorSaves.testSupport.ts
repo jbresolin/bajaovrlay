@@ -46,7 +46,7 @@ export function buildSlicesWithTheRaceClockAndTheLowerThird(): Slices {
 export function buildEnduranceStartClockItem(): Item {
   return {
     id: '0b6f2d1e-8c47-4e39-9a15-3d7c5e2f4a90',
-    rundownId: idOfTheMainSessionRundown,
+    home: { kind: 'rundown', rundownId: idOfTheMainSessionRundown },
     order: 0,
     graphicId: 'race-clock',
     layerId: 'clock',
@@ -100,7 +100,7 @@ export function buildEnduranceStartClockItemSavedWithTheMomentOfTheSave(): Item 
 export function buildInterviewLowerThirdItem(): Item {
   return {
     id: '5e1a9c73-2b64-4f08-b3d1-7a9e0c6d8f25',
-    rundownId: idOfTheMainSessionRundown,
+    home: { kind: 'rundown', rundownId: idOfTheMainSessionRundown },
     order: 1,
     graphicId: 'lower-third-fixture',
     layerId: 'lower-third',

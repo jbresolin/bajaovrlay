@@ -35,7 +35,7 @@ export type RaceClockItemDescription = {
 export function buildRaceClockItem(description: RaceClockItemDescription): Item {
   return {
     id: description.id,
-    rundownId: mainRundownId,
+    home: { kind: 'rundown', rundownId: mainRundownId },
     order: description.order,
     graphicId: 'race-clock',
     layerId: 'clock',

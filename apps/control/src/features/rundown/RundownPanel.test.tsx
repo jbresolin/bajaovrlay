@@ -109,7 +109,7 @@ describe('the rundown panel', () => {
         color: 'highlight',
         flagState: 'finished',
       }),
-      rundownId: 'premiacao',
+      home: { kind: 'rundown', rundownId: 'premiacao' },
     });
 
     // Act: draw the panel.

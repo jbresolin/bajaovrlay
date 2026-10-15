@@ -66,7 +66,7 @@ function buildCompetitionLogoGraphic(): Graphic {
 function buildItemOfAGraphicTheServerNoLongerHas(): Item {
   return {
     id: '9a4d7e21-6c3b-4f5a-8e10-2b7c9d0f1a36',
-    rundownId: 'sessao-principal',
+    home: { kind: 'rundown', rundownId: 'sessao-principal' },
     order: 2,
     graphicId: 'sponsor-board',
     layerId: 'fullscreen',
@@ -139,7 +139,7 @@ describe('the item editor panel for a new item of the interview lower third', ()
     ).toEqual([
       {
         type: 'createItem',
-        rundownId: 'sessao-principal',
+        home: { kind: 'rundown', rundownId: 'sessao-principal' },
         graphicId: 'lower-third-fixture',
         layerId: 'lower-third',
         label: 'Tarja da equipe 42',
@@ -265,7 +265,7 @@ describe('the item editor panel for a graphic whose manifest has no data schema'
     ).toEqual([
       {
         type: 'createItem',
-        rundownId: 'sessao-principal',
+        home: { kind: 'rundown', rundownId: 'sessao-principal' },
         graphicId: 'competition-logo',
         layerId: 'bug',
         label: 'Logo Baja SAE Brasil',

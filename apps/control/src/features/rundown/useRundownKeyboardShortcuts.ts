@@ -1,6 +1,7 @@
 import type { CommandInput, Item, Rundown } from '@bajaovrlay/shared';
 
 import { chooseCommandForOperatorKey } from '@/keyboard/commandForOperatorKey';
+import { keyboardMap } from '@/keyboard/keyboardMap';
 import { type KeyPress, useKeyboardShortcut } from '@/keyboard/useKeyboardShortcut';
 import {
   useIsConnectedToServer,
@@ -10,11 +11,6 @@ import {
 
 import { findItemIdAfterCursor } from './itemAfterCursor';
 import { findItemIdBeforeCursor } from './itemBeforeCursor';
-
-// KeyboardEvent.key for the space bar is one space character, not the word "Space".
-const spaceKey = ' ';
-const rightArrowKey = 'ArrowRight';
-const leftArrowKey = 'ArrowLeft';
 
 /**
  * The keys of the rundown. Space puts the next item on air: the preview itself when it
@@ -38,6 +34,8 @@ const leftArrowKey = 'ArrowLeft';
  * (the drag uses the key first). What could go wrong: with the focus on any button of
  * the page, "Salvar item" included, Space no longer presses it; Enter still does.
  * Shift+Space is the same listener, so every one of these rules holds for it too.
+ * The keys and those rules are read from src/keyboard/keyboardMap.ts (takeNext,
+ * cursorForward, cursorBack), the list the "?" dialog shows.
  */
 export function useRundownKeyboardShortcuts(
   rundown: Rundown | undefined,
@@ -88,12 +86,9 @@ export function useRundownKeyboardShortcuts(
     moveCursorByHand(itemIdBeforeCursor);
   }
 
-  const shortcutOptions = {
-    isEnabled: isConnected && rundown !== undefined,
-    isIgnoredWhileTyping: true,
-    isKeptFromTheBrowser: true,
-  };
-  useKeyboardShortcut(spaceKey, sendWhatSpaceMeans, shortcutOptions);
-  useKeyboardShortcut(rightArrowKey, moveCursorToNextItem, shortcutOptions);
-  useKeyboardShortcut(leftArrowKey, moveCursorToPreviousItem, shortcutOptions);
+  const shortcutOptions = { isEnabled: isConnected && rundown !== undefined };
+  // One listener for Space and Shift+Space: keyboardMap.previewCursorItem has the same key.
+  useKeyboardShortcut(keyboardMap.takeNext, sendWhatSpaceMeans, shortcutOptions);
+  useKeyboardShortcut(keyboardMap.cursorForward, moveCursorToNextItem, shortcutOptions);
+  useKeyboardShortcut(keyboardMap.cursorBack, moveCursorToPreviousItem, shortcutOptions);
 }

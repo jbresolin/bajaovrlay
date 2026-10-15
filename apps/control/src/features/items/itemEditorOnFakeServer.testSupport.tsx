@@ -1,7 +1,7 @@
 // Test support: draws the item editor panel wired as in the browser but talking to a
 // fake server, and presses its buttons the way an operator does. The panel test files
 // use it so they all start from the same page. Nothing here keeps state between calls.
-import type { Instance, Item, Slices } from '@bajaovrlay/shared';
+import type { Instance, Item, ItemHome, Slices } from '@bajaovrlay/shared';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { StrictMode, useState } from 'react';
 import { expect, type Mock, vi } from 'vitest';
@@ -43,16 +43,18 @@ export function renderItemEditorPanelOnFakeServer(
 
 /**
  * Draws the item editor on a connected page holding exactly these slices, for tests that
- * need something on air or another list of graphics.
+ * need something on air or another list of graphics. A new item goes to `homeForNewItem`
+ * unless the operator picks another place; left out, the main session's rundown.
  */
 export function renderItemEditorPanelOnFakeServerWithSlices(
   itemBeingEdited: Item | null,
   slices: Slices,
+  homeForNewItem: ItemHome = { kind: 'rundown', rundownId: idOfTheMainSessionRundown },
 ): ItemEditorOnFakeServer {
   const onClose = vi.fn<() => void>();
   const controlPage = renderOnControlPageConnectedToFakeServer(
     <ItemEditorPanel
-      rundownId={idOfTheMainSessionRundown}
+      homeForNewItem={homeForNewItem}
       itemBeingEdited={itemBeingEdited}
       onClose={onClose}
     />,
@@ -109,7 +111,7 @@ function ItemEditorWithAnotherItemToOpen(props: { itemOpenedFirst: Item; another
         {openAnotherItemButtonText}
       </button>
       <ItemEditorPanel
-        rundownId={idOfTheMainSessionRundown}
+        homeForNewItem={{ kind: 'rundown', rundownId: idOfTheMainSessionRundown }}
         itemBeingEdited={itemBeingEdited}
         onClose={() => undefined}
       />
@@ -163,7 +165,7 @@ function ItemEditorBehindAButton() {
       </button>
       {isEditorOpen && (
         <ItemEditorPanel
-          rundownId={idOfTheMainSessionRundown}
+          homeForNewItem={{ kind: 'rundown', rundownId: idOfTheMainSessionRundown }}
           itemBeingEdited={null}
           onClose={() => undefined}
         />

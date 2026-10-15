@@ -78,6 +78,11 @@ export function buildSlicesWithNothingOnAir(): Slices {
       { id: 'sessao-principal', name: 'Sessão principal', sessionLabel: '', cursorItemId: null },
     ],
     items: [],
+    // The one quick-fire panel the server seeds, "Atalhos", still empty; no macros and
+    // nothing running. Tests that need buttons use quickFireLikeTheServerSends.testSupport.ts.
+    quickFirePanels: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
+    macros: [],
+    macroRuns: [],
   };
 }
 

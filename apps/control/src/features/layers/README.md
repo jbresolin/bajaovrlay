@@ -8,7 +8,7 @@ docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
 - `LayerStatusRow.tsx` — one row: layer (+ chip "em prévia"), graphic, "há 2 min", badge, button.
 - `InstanceStatusBadge.tsx` — green "No ar", grey "Carregando", red "Falhou" + why (tooltip).
 - `useCurrentTime.ts` — redraws the rows every 10 s so the relative times keep up.
-- `ItemLabelOnAir.tsx` — the label of the rundown item that put the graphic on air.
+- `ItemLabelOnAir.tsx` — the colour chip and label of the item (rundown or panel) that put it on air.
 
 Rows describe the program output; a preview only adds the chip (never a badge: nothing reports it).
 A take starts as "Carregando"; a renderer's report makes it "No ar" or (even after "No ar") "Falhou",

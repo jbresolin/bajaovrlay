@@ -1,11 +1,9 @@
-import type { Command, Item, ItemFields } from '@bajaovrlay/shared';
+import type { Command, Item, ItemFields, ItemHome } from '@bajaovrlay/shared';
 import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ActionButton } from '@/features/connection/ActionButton';
-import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
+import { findRundownShownOnPage } from '@/features/rundown/rundownShownOnPage';
 import { ptBR } from '@/i18n/ptBR';
 import {
   useReadServerStateNow,
@@ -18,6 +16,7 @@ import {
   buildUpdateInstanceDataCommandFromChangedFields,
   buildUpdateItemFieldsCommand,
 } from './itemCommandsFromEditor';
+import { ItemEditorButtons } from './ItemEditorButtons';
 import {
   buildItemEditorFormValuesForNewItem,
   buildItemEditorFormValuesFromItem,
@@ -26,6 +25,7 @@ import {
 import { ItemEditorFormFields } from './ItemEditorFormFields';
 import { resolveItemEditorForm } from './itemEditorFormResolver';
 import { ItemGraphicFieldsForm, type ItemGraphicFieldsFormHandle } from './ItemGraphicFieldsForm';
+import { ItemHomeSelect } from './ItemHomeSelect';
 import { findInstanceOfItemOnProgram } from './itemInstanceOnAir';
 import {
   type AnswerToSave,
@@ -38,8 +38,11 @@ import { useAskToBeClosedOnce } from './useAskToBeClosedOnce';
 
 /** What the rundown gives the panel. */
 export type ItemEditorPanelProps = {
-  /** The rundown a new item is added to (at its end). */
-  rundownId: string;
+  /**
+   * Where a new item goes unless the operator picks another place in "Onde": the rundown
+   * on screen after the rundown's "+ Item", a panel after that panel's "+ Atalho".
+   */
+  homeForNewItem: ItemHome;
   /** The stored item to change, or null to prepare a new item. */
   itemBeingEdited: Item | null;
   /** Called after the server accepted the save, and when the operator cancels. */
@@ -57,9 +60,12 @@ type WhatThePressAsksFor = 'saveItem' | 'saveItemAndUpdateOnAir';
  */
 export function ItemEditorPanel(props: ItemEditorPanelProps) {
   // React keeps a component's state for as long as its `key` stays the same. A key per
-  // item is what makes "another item" mean "a new, freshly filled form".
+  // item is what makes "another item" mean "a new, freshly filled form"; for a new item
+  // the key names where it goes, so "+ Atalho" after "+ Item" starts afresh too.
   const keyOfTheFormForThisItem =
-    props.itemBeingEdited === null ? 'new-item' : props.itemBeingEdited.id;
+    props.itemBeingEdited === null
+      ? `new-item-${JSON.stringify(props.homeForNewItem)}`
+      : props.itemBeingEdited.id;
   return <ItemEditorPanelForOneItem key={keyOfTheFormForThisItem} {...props} />;
 }
 
@@ -70,10 +76,11 @@ export function ItemEditorPanel(props: ItemEditorPanelProps) {
  * press of a save button, so every wrong field shows its message at once.
  */
 function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
-  const { rundownId } = props;
   const graphics = useServerState((state) => state.graphics);
   const layers = useServerState((state) => state.layers);
   const instances = useServerState((state) => state.instances);
+  const rundowns = useServerState((state) => state.rundowns);
+  const panels = useServerState((state) => state.quickFirePanels);
   const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
   const { askToBeClosedOnce, hasEditorFinishedWithThisItem } = useAskToBeClosedOnce(props.onClose);
@@ -84,6 +91,8 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // did not touch, is not sent back with its old value.
   const [itemAsItWasWhenOpened] = useState(props.itemBeingEdited);
   const isEditingStoredItem = itemAsItWasWhenOpened !== null;
+  // "Onde" for a new item: where it was opened from until the operator picks another place.
+  const [chosenHomeForNewItem, setChosenHomeForNewItem] = useState(props.homeForNewItem);
   // What the server may store for the item as far as this editor knows: the item as
   // opened plus every save this editor had accepted since, and one more possibility per
   // save the server never answered (itemsTheServerMayStore.ts). A save is compared with
@@ -179,7 +188,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   async function createTheNewItem(): Promise<boolean> {
     const graphicFieldsForm = graphicFieldsFormHandleRef.current;
     const createCommand = buildCreateItemCommand({
-      rundownId,
+      home: chosenHomeForNewItem,
       itemFormValues: itemForm.getValues(),
       fields: graphicFieldsForm === null ? {} : graphicFieldsForm.buildFieldsOfNewItem(),
     });
@@ -325,7 +334,6 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // graphic is gone, so the notice waits for a list that lacks the item's graphic.
   const isGraphicOfStoredItemGone =
     isEditingStoredItem && graphics.length > 0 && chosenGraphic === undefined;
-  const hasSentACommandInThisOpening = commandTypesSentInThisOpening.length > 0;
 
   return (
     <section aria-label={ptBR.itemEditor.panelLabel}>
@@ -341,6 +349,14 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
             is cancelled, as in "Edição rápida": Enter in a text field does nothing. */}
         <form onSubmit={(event) => event.preventDefault()} noValidate className="contents">
           <CardContent className="flex flex-col gap-4">
+            {isEditingStoredItem ? null : (
+              <ItemHomeSelect
+                rundownShown={findRundownShownOnPage(rundowns)}
+                panels={panels}
+                chosenHome={chosenHomeForNewItem}
+                onHomeChosen={setChosenHomeForNewItem}
+              />
+            )}
             <ItemEditorFormFields
               form={itemForm}
               graphics={graphics}
@@ -365,29 +381,14 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
             )}
           </CardContent>
           <CardFooter className="flex flex-wrap items-center gap-3">
-            <ActionButton
-              type="button"
-              disabled={isWaitingForTheServer}
-              onClick={() => runWithSaveButtonsOff('saveItem')}
-            >
-              {ptBR.itemEditor.saveButton}
-            </ActionButton>
-            {isItemOnAir && (
-              <ActionButton
-                type="button"
-                variant="secondary"
-                disabled={isWaitingForTheServer}
-                onClick={() => runWithSaveButtonsOff('saveItemAndUpdateOnAir')}
-              >
-                {ptBR.itemEditor.updateOnAirButton}
-              </ActionButton>
-            )}
-            <Button type="button" variant="outline" onClick={() => askToBeClosedOnce()}>
-              {ptBR.itemEditor.cancelButton}
-            </Button>
-            {hasSentACommandInThisOpening && (
-              <CommandErrorMessage commandTypes={commandTypesSentInThisOpening} />
-            )}
+            <ItemEditorButtons
+              isWaitingForTheServer={isWaitingForTheServer}
+              isItemOnAir={isItemOnAir}
+              commandTypesSentInThisOpening={commandTypesSentInThisOpening}
+              onSavePressed={() => runWithSaveButtonsOff('saveItem')}
+              onUpdateOnAirPressed={() => runWithSaveButtonsOff('saveItemAndUpdateOnAir')}
+              onCancelPressed={() => askToBeClosedOnce()}
+            />
           </CardFooter>
         </form>
       </Card>
