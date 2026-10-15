@@ -21,7 +21,8 @@ const texts = ptBR.quickFire.macros;
 /**
  * One macro: a button painted in its colour that runs it, and a small "Editar" beside it.
  * While the server lists a run of it, the button says "Rodando" and the step the run is
- * on, counted from 1 ("Rodando 2/3"), and is marked busy for a screen reader.
+ * on, counted from 1 ("Rodando 2/3"), and is marked busy for a screen reader. A macro
+ * with no step says "Rodando" alone for the moment its run lasts, never "Rodando 1/0".
  *
  * Deliberate: the button is never switched off by a run, its own or another's. The
  * server refuses a second run (MACRO_RUNNING) with a pt-BR message, and the strip shows
@@ -31,6 +32,7 @@ export function MacroButton(props: MacroButtonProps) {
   const { macro, runOfThisMacro, digitKey } = props;
   const isConnected = useIsConnectedToServer();
   const isRunning = runOfThisMacro !== undefined;
+  const hasSteps = macro.steps.length > 0;
 
   // The button lets go of the focus after a click, as every firing button of the page.
   function runThisMacroAndLetGoOfTheFocus(button: HTMLButtonElement): void {
@@ -57,7 +59,9 @@ export function MacroButton(props: MacroButtonProps) {
         <span className="w-full truncate text-sm font-semibold">{macro.label}</span>
         {isRunning ? (
           <span className="text-xs font-medium">
-            {texts.runningBadge(runOfThisMacro.currentStep + 1, macro.steps.length)}
+            {hasSteps
+              ? texts.runningBadge(runOfThisMacro.currentStep + 1, macro.steps.length)
+              : texts.runningBadgeWithoutSteps}
           </span>
         ) : null}
         {digitKey === null ? null : (

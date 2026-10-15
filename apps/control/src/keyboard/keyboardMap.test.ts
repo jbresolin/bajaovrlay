@@ -9,7 +9,10 @@
  *   screen cannot drift from what the keys do.
  *
  * What these tests prove:
- *   - The map holds exactly the eight shortcuts of M1, in the order the dialog lists them.
+ *   - The map holds exactly the eight shortcuts of M1, in the order the dialog lists them,
+ *     and the dialog's hand-written list holds every entry of the map exactly once.
+ *   - A press is told to be an entry's by the entry's keys and Shift rule, which is how
+ *     Space and Shift+Space are told apart.
  *   - Each shortcut keeps the rules decided for it in earlier tasks (docs/decisions.md):
  *     only Esc works while typing; Space, the arrows and F1–F4 are kept from the browser,
  *     Esc, Backspace and the digits are not.
@@ -24,7 +27,12 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { keyboardMap, listKeyboardShortcutsInDialogOrder } from './keyboardMap';
+import {
+  isPressOfShortcut,
+  keyboardMap,
+  type KeyboardShortcut,
+  listKeyboardShortcutsInDialogOrder,
+} from './keyboardMap';
 
 describe('the keyboard map', () => {
   it('lists the eight shortcuts of M1, in the order the dialog shows them', () => {
@@ -108,6 +116,71 @@ describe('the keyboard map', () => {
       ).toBe(isKept);
     },
   );
+
+  it('lists in the dialog every entry of the map, each exactly once', () => {
+    // Arrange: every entry the map holds, whatever its name.
+    const entriesOfTheMap: KeyboardShortcut[] = Object.values(keyboardMap);
+
+    // Act: read the dialog's hand-written list.
+    const entriesOfTheDialog = listKeyboardShortcutsInDialogOrder();
+
+    // Assert: no entry is left out, none is listed twice, and nothing is listed that the
+    // map does not hold, so a shortcut added to the map cannot be missing from the help.
+    expect(
+      entriesOfTheDialog.length,
+      'the dialog must list as many shortcuts as the map holds',
+    ).toBe(entriesOfTheMap.length);
+    expect(new Set(entriesOfTheDialog).size, 'the dialog must list each shortcut only once').toBe(
+      entriesOfTheDialog.length,
+    );
+    expect(
+      new Set(entriesOfTheDialog),
+      'the dialog must list exactly the entries of the map',
+    ).toEqual(new Set(entriesOfTheMap));
+  });
+
+  const pressScenarios = [
+    // Space alone is the take, not the preview.
+    {
+      name: 'Space alone is not Shift+Space',
+      keyPress: { key: ' ', isShiftHeld: false },
+      shortcut: keyboardMap.previewCursorItem,
+      expected: false,
+    },
+    // Shift with Space is the preview of the cursor item.
+    {
+      name: 'Shift with Space is Shift+Space',
+      keyPress: { key: ' ', isShiftHeld: true },
+      shortcut: keyboardMap.previewCursorItem,
+      expected: true,
+    },
+    // Shift with another key is not Shift+Space: the key must be one of the entry's keys.
+    {
+      name: 'Shift with → is not Shift+Space',
+      keyPress: { key: 'ArrowRight', isShiftHeld: true },
+      shortcut: keyboardMap.previewCursorItem,
+      expected: false,
+    },
+    // An entry that does not need Shift is matched only without it.
+    {
+      name: 'Space alone is Space',
+      keyPress: { key: ' ', isShiftHeld: false },
+      shortcut: keyboardMap.takeNext,
+      expected: true,
+    },
+  ];
+
+  it.each(pressScenarios)('$name', ({ keyPress, shortcut, expected }) => {
+    // Arrange: the press and the map entry of this row.
+
+    // Act: ask whether the press is that entry's.
+    const isThatShortcut = isPressOfShortcut(keyPress, shortcut);
+
+    // Assert: the answer the entry's keys and Shift rule give.
+    expect(isThatShortcut, 'the press must match the entry by its keys and Shift rule').toBe(
+      expected,
+    );
+  });
 
   it('gives every key press to one shortcut only', () => {
     // Arrange: every shortcut of the map.

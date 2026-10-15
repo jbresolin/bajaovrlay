@@ -9,8 +9,9 @@ export const ptBRQuickFire = {
   areaTitle: 'Atalhos e macros',
   tabListLabel: 'Abas de atalhos',
   macrosTab: 'Macros',
-  // The small "F1" written on a tab: the key that opens it (only the first four have one).
-  tabKey: (tabNumber: number) => `F${tabNumber}`,
+  // The small "F1" written on a tab: the key that opens it, as keyboardMap.ts lists it
+  // (only the tabs the map has a key for show one). Function keys keep their name in pt-BR.
+  tabKey: (functionKey: string) => functionKey,
 
   // Making, renaming and deleting panels.
   addPanelButton: '+ Painel',
@@ -42,6 +43,8 @@ export const ptBRQuickFire = {
     // The macro running now: a word and the step it is on, such as "Rodando 2/3".
     runningBadge: (currentStepNumber: number, numberOfSteps: number) =>
       `Rodando ${currentStepNumber}/${numberOfSteps}`,
+    // A macro with no step has no step to count: its run lasts a moment and says only this.
+    runningBadgeWithoutSteps: 'Rodando',
     editMacroButton: (macroLabel: string) => `Editar macro: ${macroLabel}`,
     editMacroSymbol: 'Editar',
   },

@@ -14,6 +14,8 @@
  *   - A chosen tab that has gone (its panel deleted) falls back to the first tab.
  *   - F1 to F4 reach the first four tabs, Macros included when it is among them, and an
  *     F-key past the last tab reaches nothing.
+ *   - The tab a function key opens, and the key each tab shows, follow the order of
+ *     keyboardMap.switchQuickFireTab.keys: the map is the one place the keys are listed.
  *   - On a panel tab, 1 to 9 fire the panel's buttons in their order with `takeItem`; on
  *     the Macros tab they run the macros in the order the server lists them; a digit past
  *     the last button fires nothing.
@@ -25,9 +27,12 @@
 import type { Item, Macro, QuickFirePanel } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import { keyboardMap } from '@/keyboard/keyboardMap';
+
 import {
   chooseCommandForDigitKey,
   chooseTabShown,
+  findFunctionKeyForTabPosition,
   findTabForFunctionKey,
   listQuickFireTabsInOrder,
 } from './quickFireTabs';
@@ -179,6 +184,33 @@ describe('findTabForFunctionKey', () => {
 
     // Assert: the expected tab, or none.
     expect(tab, `${key} must open the expected tab`).toEqual(expected);
+  });
+
+  it('opens, for each key of the keyboard map in turn, the tab at that key’s place in the list', () => {
+    // Arrange: five tabs (four panels and Macros), one more than there are function keys,
+    // and the keys as the keyboard map lists them.
+    const tabs = listQuickFireTabsInOrder([
+      ...buildPanelsListedOutOfOrder(),
+      { id: 'painel-premiacao', name: 'Premiação', order: 3 },
+    ]);
+    const functionKeysOfTheMap = keyboardMap.switchQuickFireTab.keys;
+
+    // Act: for each key of the map, the tab it opens and the key the tab at its place shows.
+    const tabOpenedByEachKey = functionKeysOfTheMap.map((key) => findTabForFunctionKey(tabs, key));
+    const keyShownOnEachTab = tabs.map((_tab, tabPosition) =>
+      findFunctionKeyForTabPosition(tabPosition),
+    );
+
+    // Assert: the n-th key of the map opens the n-th tab and is the key that tab shows;
+    // the tab past the map's last key has no key.
+    expect(
+      tabOpenedByEachKey,
+      'the tab a key opens must be the one at the key’s place in the keyboard map',
+    ).toEqual(tabs.slice(0, functionKeysOfTheMap.length));
+    expect(
+      keyShownOnEachTab,
+      'each tab must show the key the keyboard map lists at its place, and none past the list',
+    ).toEqual([...functionKeysOfTheMap, undefined]);
   });
 });
 

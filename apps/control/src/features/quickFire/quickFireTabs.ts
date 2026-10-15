@@ -6,6 +6,8 @@ import {
   type QuickFirePanel,
 } from '@bajaovrlay/shared';
 
+import { keyboardMap } from '@/keyboard/keyboardMap';
+
 /** One tab of the quick-fire strip: a panel of item buttons, or the macros. */
 export type QuickFireTab = { kind: 'panel'; panelId: string } | { kind: 'macros' };
 
@@ -49,20 +51,32 @@ export function chooseTabShown(tabs: QuickFireTab[], chosenTab: QuickFireTab | n
   return tabs[0] ?? { kind: 'macros' };
 }
 
+// The function keys in the order of the tabs they open, as the keyboard map lists them
+// (F1 to F4). Widened to plain strings so any KeyboardEvent.key can be looked up.
+const functionKeysInTabOrder: readonly string[] = keyboardMap.switchQuickFireTab.keys;
+
 /**
- * The tab F1, F2, F3 or F4 opens: the first, second, third or fourth tab, counting the
- * Macros tab where it is drawn (last). Undefined for a key past the last tab.
+ * The tab a function key opens: the n-th key of keyboardMap.switchQuickFireTab opens the
+ * n-th tab, counting the Macros tab where it is drawn (last). Undefined for a key the
+ * map does not list, or one past the last tab.
  */
 export function findTabForFunctionKey(
   tabs: QuickFireTab[],
   functionKey: string,
 ): QuickFireTab | undefined {
-  const tabPositionForEachKey: Record<string, number> = { F1: 0, F2: 1, F3: 2, F4: 3 };
-  const tabPosition = tabPositionForEachKey[functionKey];
-  if (tabPosition === undefined) {
+  const tabPosition = functionKeysInTabOrder.indexOf(functionKey);
+  if (tabPosition === -1) {
     return undefined;
   }
   return tabs[tabPosition];
+}
+
+/**
+ * The function key that opens the tab at this position (0 is the first tab), from the
+ * same list of the keyboard map; undefined for a tab past the map's last key.
+ */
+export function findFunctionKeyForTabPosition(tabPosition: number): string | undefined {
+  return functionKeysInTabOrder[tabPosition];
 }
 
 /** What chooseCommandForDigitKey needs. */

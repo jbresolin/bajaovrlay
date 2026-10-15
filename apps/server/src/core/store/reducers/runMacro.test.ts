@@ -19,7 +19,8 @@
  *     run is already at, hands back the same slices (answered ok, leaves no trace).
  *
  * What these tests deliberately do not cover:
- *   - The runner itself (order, wait, failure); macroRunner.test.ts covers it.
+ *   - The runner itself (order, wait, failure); macroRunner.test.ts and
+ *     macroRunnerWhenAStepGoesWrong.test.ts cover it.
  *   - That only the runner may send the bookkeeping; the authorisation tests cover it.
  */
 import type { Macro, MacroRun } from '@bajaovrlay/shared';

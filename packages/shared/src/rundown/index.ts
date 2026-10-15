@@ -20,12 +20,12 @@ export {
   type TakeTimeFieldValue,
   TakeTimeFieldValueSchema,
 } from './fieldValue.js';
-// The items of one rundown, or of one quick-fire panel, first to last; the one place
-// that reads the order of a home.
+// The items of one home, a rundown or a quick-fire panel, first to last
+// (itemsOfHomeInOrder.ts); the one place that reads the order of a home.
 export {
   listItemsOfQuickFirePanelInOrder,
   listItemsOfRundownInOrder,
-} from './itemsOfRundownInOrder.js';
+} from './itemsOfHomeInOrder.js';
 // The six named colours of an item, and the one a new item gets.
 export { defaultItemColor, type ItemColor, ItemColorSchema } from './itemColor.js';
 // The auto-out delay of an item, in whole milliseconds above zero.

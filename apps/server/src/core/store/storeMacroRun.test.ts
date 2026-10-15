@@ -19,7 +19,7 @@
  *
  * What these tests deliberately do not cover:
  *   - Each rule of the runner on its own (order, failure, one at a time);
- *     macroRunner.test.ts covers them.
+ *     macroRunner.test.ts and macroRunnerWhenAStepGoesWrong.test.ts cover them.
  *   - startServer's wiring of the runner; the same start and stop are made by hand here.
  */
 import { describe, expect, it, onTestFinished, vi } from 'vitest';

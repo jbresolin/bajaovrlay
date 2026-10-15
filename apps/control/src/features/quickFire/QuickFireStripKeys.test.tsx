@@ -15,6 +15,10 @@
  *   - F1 to F4 are kept from the browser (its help page); a digit is not.
  *   - A digit typed in a text field is a digit: nothing is fired. A held key fires once.
  *   - An F-key past the last tab changes nothing.
+ *   - With a button's "⋯" menu open and the focus in it, the page's keys are left to the
+ *     menu: a digit, Backspace, → and ← send nothing, and the Esc that closes the menu
+ *     does not arm "Limpar tudo" (these rows draw the whole page, so every key has
+ *     something it would otherwise do).
  *
  * What these tests deliberately do not cover:
  *   - The rules every shortcut shares (Ctrl/Alt/Meta, a key used by another control,
@@ -25,13 +29,16 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { App } from '@/App';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
+import { buildRaceClockPreviewOfItem } from '@/state/previewLikeTheServerSends.testSupport';
 import {
   bajaLogoItemId,
   buildSlicesWithShortcutsAndMacros,
   closeTheSessionMacroId,
   redFlagItemId,
 } from '@/state/quickFireLikeTheServerSends.testSupport';
+import { buildMainRundown, yellowFlagItemId } from '@/state/rundownLikeTheServerSends.testSupport';
 
 import { QuickFireStrip } from './QuickFireStrip';
 
@@ -170,5 +177,64 @@ describe('F1 to F4', () => {
       screen.getByRole('tab', { name: 'Box' }),
       'an F-key past the last tab must leave the tab shown as it was',
     ).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+/**
+ * Draws the whole page with the three buttons of "Atalhos", the rundown's cursor on the
+ * yellow flag (so both arrows have somewhere to go) and a clock on the preview output
+ * (so Backspace has a preview to discard): every key below WOULD send a command from the
+ * page itself. Then opens the "⋯" menu of "Logo Baja" and hands back its "Editar".
+ */
+function renderPageWithTheMenuOfLogoBajaOpen() {
+  const slices = buildSlicesWithShortcutsAndMacros();
+  slices.rundowns = [buildMainRundown(yellowFlagItemId)];
+  slices.instances.push(buildRaceClockPreviewOfItem(yellowFlagItemId, '2026-10-17T13:05:00.000Z'));
+  const rendered = renderOnControlPageConnectedToFakeServer(<App />, slices);
+  // Radix opens its menu on a pointer press or on Enter; Enter needs no pointer stand-in.
+  fireEvent.keyDown(screen.getByRole('button', { name: 'Mais ações: Logo Baja' }), {
+    key: 'Enter',
+  });
+  return { ...rendered, editMenuItem: screen.getByRole('menuitem', { name: 'Editar' }) };
+}
+
+describe('the page’s keys while a button’s "⋯" menu has the focus', () => {
+  const keysThatBelongToTheMenu = [
+    // A digit is the menu's type-to-find; it must not take the third button.
+    { name: 'the digit 3 takes nothing', key: '3' },
+    // Backspace must not discard the preview the operator is looking at.
+    { name: 'Backspace discards no preview', key: 'Backspace' },
+    // The arrows move inside a menu; they must not move the rundown's cursor.
+    { name: '→ moves no cursor', key: 'ArrowRight' },
+    { name: '← moves no cursor', key: 'ArrowLeft' },
+  ];
+
+  it.each(keysThatBelongToTheMenu)('$name', ({ key }) => {
+    // Arrange: the page, with the menu of "Logo Baja" open and the focus in it.
+    const { fakeServer, editMenuItem } = renderPageWithTheMenuOfLogoBajaOpen();
+
+    // Act: press the key of this row on the menu's "Editar".
+    fireEvent.keyDown(editMenuItem, { key });
+
+    // Assert: nothing was sent; the operator is choosing in the menu.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'a key pressed inside an open menu must not act on the page',
+    ).toEqual([]);
+  });
+
+  it('closes the menu with Esc without arming "Limpar tudo"', () => {
+    // Arrange: the page, with the menu of "Logo Baja" open and the focus in it.
+    renderPageWithTheMenuOfLogoBajaOpen();
+
+    // Act: press Esc on the menu's "Editar".
+    fireEvent.keyDown(screen.getByRole('menuitem', { name: 'Editar' }), { key: 'Escape' });
+
+    // Assert: the menu is closed and "Limpar tudo" is not waiting for a confirmation.
+    expect(screen.queryByRole('menu'), 'Esc must close the open menu').toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Confirmar: limpar tudo' }),
+      'the Esc that closes a menu must not arm "Limpar tudo"',
+    ).toBeNull();
   });
 });

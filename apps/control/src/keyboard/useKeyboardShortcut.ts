@@ -25,7 +25,8 @@ export type KeyPress = {
 /**
  * Calls `onPressed` when one of the shortcut's keys is pressed anywhere on the page. The
  * shortcut is an entry of keyboardMap.ts, which says which keys fire it and its two
- * rules: `isIgnoredWhileTyping` (leave a key alone in a text field, dropdown or switch)
+ * rules: `isIgnoredWhileTyping` (leave a key alone in a text field, dropdown, open menu
+ * or switch)
  * and `isKeptFromTheBrowser` (tell the browser not to scroll, press the focused button
  * or open its help, both when the shortcut fires and when the key is let go).
  *
@@ -105,8 +106,8 @@ export function useKeyboardShortcut(
 }
 
 /**
- * Whether a key press landed on a form control: somewhere the operator types, picks a
- * value or flips a switch.
+ * Whether a key press landed on a form control or an open menu: somewhere the operator
+ * types, picks a value, chooses an action or flips a switch.
  */
 function isTypingTarget(eventTarget: EventTarget | null): boolean {
   if (!(eventTarget instanceof HTMLElement)) {
@@ -123,6 +124,14 @@ function isTypingTarget(eventTarget: EventTarget | null): boolean {
   // "listbox" with the options inside it. Neither uses Backspace itself, so without
   // this check a Backspace on them would reach the shortcut and discard a preview.
   const isInsideDropdown = eventTarget.closest('[role="combobox"], [role="listbox"]') !== null;
+  // An open Radix menu (a quick-fire button's "⋯") is the same kind of place: the
+  // operator is choosing in it. Radix marks only the keys it uses (Space, Enter, the
+  // up/down arrows, Esc), so a digit, Backspace or ←/→ pressed on a menu item would
+  // otherwise take a button, discard a preview or move the cursor. Esc is not affected:
+  // it is not ignored while typing, and the Esc that closes a menu is marked by Radix.
+  const isInsideMenu = eventTarget.closest('[role="menu"]') !== null;
   const isOnSwitch = eventTarget.closest('[role="switch"]') !== null;
-  return isFormField || eventTarget.isContentEditable || isInsideDropdown || isOnSwitch;
+  return (
+    isFormField || eventTarget.isContentEditable || isInsideDropdown || isInsideMenu || isOnSwitch
+  );
 }

@@ -32,7 +32,7 @@ import { ItemSchema } from './item.js';
 import {
   listItemsOfQuickFirePanelInOrder,
   listItemsOfRundownInOrder,
-} from './itemsOfRundownInOrder.js';
+} from './itemsOfHomeInOrder.js';
 
 /** Builds the race clock item "Largada do enduro" at the given home and position. */
 function buildEnduroStartItemAtHome(home: unknown, order: number) {

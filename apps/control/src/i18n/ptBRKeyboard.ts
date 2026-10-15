@@ -6,7 +6,7 @@
 
 // Most shortcuts share where they are left alone; written once so all of them say it alike.
 const ignoredWhileTyping =
-  'Fora de campos de texto, listas e chaves; sem Ctrl, Alt ou Cmd; não repete se a tecla ficar apertada.';
+  'Fora de campos de texto, listas, menus abertos e chaves; sem Ctrl, Alt ou Cmd; não repete se a tecla ficar apertada.';
 
 export const ptBRKeyboard = {
   // The "?" button in the header and the dialog it opens.

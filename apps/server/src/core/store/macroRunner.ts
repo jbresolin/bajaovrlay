@@ -17,6 +17,13 @@ export type MacroRunnerOptions = {
 /** The running runner; stop() calls off the pending wait and stops watching the store. */
 export type MacroRunner = { stop: () => void };
 
+/**
+ * How long the runner waits before sending endMacroRun again after the store threw on
+ * it. Long enough for a briefly locked database to free itself, short enough that the
+ * operator barely sees the button stay on "Rodando".
+ */
+const delayBeforeTryingTheEndAgainInMilliseconds = 1_000;
+
 /** The run being carried out: which macro, its steps as they were at the press. */
 type RunInProgress = { macroId: string; steps: MacroStep[]; timerHandle: unknown };
 
@@ -35,7 +42,9 @@ type RunInProgress = { macroId: string; steps: MacroStep[]; timerHandle: unknown
  * Deliberate trade-offs:
  * - A refused step stops the macro there, is logged as a warning, and nothing is rolled
  *   back: what earlier steps put on air stays (on-air state is never undone
- *   automatically). A step that throws is logged as an error, never thrown.
+ *   automatically). A step that throws is logged as an error, never thrown. An
+ *   endMacroRun that throws is logged and sent again a second later until it goes
+ *   through, because a run left behind would lock every macro.
  * - The first step is sent from a timer of 0 ms, not from inside the store's listener,
  *   so the runMacro's own broadcast is finished before the first step's starts.
  * - Runs live in memory only, like auto-out waits. stop() (the server closing) calls a
@@ -122,7 +131,7 @@ export function startMacroRunner(options: MacroRunnerOptions): MacroRunner {
         { err: stepError, macro_id: macroId, step_index: stepIndex },
         'macro stopped: a step could not be sent',
       );
-      endRunWithoutThrowing(macroId);
+      endRun(macroId);
     }
   }
 
@@ -134,19 +143,30 @@ export function startMacroRunner(options: MacroRunnerOptions): MacroRunner {
     );
   }
 
-  /** Forgets the run and ends it in the store (endMacroRun). */
+  /**
+   * Ends the run in the store (endMacroRun) and only then forgets it. When the store
+   * throws, the error is logged, never thrown, and the end is tried again a second
+   * later, until it goes through or the runner stops: a run left in `macroRuns` would
+   * refuse every runMacro until the server restarts. The run stays remembered while
+   * the end is pending, so stop() can call the retry off like any wait.
+   */
   function endRun(macroId: string): void {
-    runInProgress = undefined;
-    stateStore.applyCommand({ type: 'endMacroRun', macroId }, buildMacroRunnerActor(macroId));
-  }
-
-  /** endRun, for the catch: a store that throws again is logged, never thrown. */
-  function endRunWithoutThrowing(macroId: string): void {
     try {
-      endRun(macroId);
+      stateStore.applyCommand({ type: 'endMacroRun', macroId }, buildMacroRunnerActor(macroId));
     } catch (endError) {
-      logger.error({ err: endError, macro_id: macroId }, 'macro run could not be ended');
+      logger.error(
+        { err: endError, macro_id: macroId },
+        'macro run could not be ended; trying again',
+      );
+      if (runInProgress !== undefined && !isStopped) {
+        runInProgress.timerHandle = startTimer(
+          () => endRun(macroId),
+          delayBeforeTryingTheEndAgainInMilliseconds,
+        );
+      }
+      return;
     }
+    runInProgress = undefined;
   }
 
   const stopWatchingTheStore = stateStore.subscribeToSliceChanges((changedSliceNames, slices) => {

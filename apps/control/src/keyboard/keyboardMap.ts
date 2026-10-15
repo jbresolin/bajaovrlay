@@ -12,17 +12,26 @@ export type KeyboardShortcut = {
   keys: readonly string[];
   /**
    * true for the one shortcut that needs Shift (Shift+Space). Every other shortcut fires
-   * with or without Shift, as it always did here; only Space gives Shift a meaning.
+   * with or without Shift, as it always did here; only Space gives Shift a meaning, and
+   * the Space listener reads it through isPressOfShortcut.
    */
   isShiftHeld: boolean;
-  /** true leaves the key alone in a text field, a dropdown or a switch (only Esc is false). */
+  /**
+   * true leaves the key alone in a text field, a dropdown, an open menu or a switch (only
+   * Esc is false).
+   */
   isIgnoredWhileTyping: boolean;
   /**
    * true tells the browser not to do its own thing with the key (scroll, press the
    * focused button, open its help), when the shortcut fires and when the key is let go.
    */
   isKeptFromTheBrowser: boolean;
-  /** The commands a press may send; empty for a key that only changes the page (F1–F4). */
+  /**
+   * The commands a press may send; empty for a key that only changes the page (F1–F4).
+   * Descriptive only: no code reads it. It tells the reader where to look; what a key
+   * really sends is decided by the hook that listens to it (commandForOperatorKey.ts,
+   * quickFireTabs.ts, the "Limpar tudo" button).
+   */
   commandTypes: readonly Command['type'][];
   /** The key as the operator reads it in the "?" dialog ("Espaço", "1 a 9"). */
   keyName: string;
@@ -37,7 +46,11 @@ const shortcutTexts = ptBR.keyboard.shortcuts;
 /**
  * Every shortcut of the control page, by name. The rules below are the ones decided task
  * by task (docs/decisions.md, PR #5, #8 and #12 and their gate-2 lines); this file only
- * gathers them, and changing one here changes what the key does.
+ * gathers them, and changing one here changes what the key does: `keys`,
+ * `isIgnoredWhileTyping` and `isKeptFromTheBrowser` drive the listeners, `isShiftHeld`
+ * tells Shift+Space from Space, the order of switchQuickFireTab's keys is the order of
+ * the tabs they open (quickFireTabs.ts), and the texts fill the "?" dialog. Only
+ * `commandTypes` is descriptive.
  *
  * The routing of Space, Shift+Space and Backspace (which command, given what is
  * previewed) is commandForOperatorKey.ts; its three names (`space`, `shiftSpace`,
@@ -113,7 +126,25 @@ export const keyboardMap = {
   },
 } as const satisfies Record<string, KeyboardShortcut>;
 
-/** Every shortcut, in the order the "?" dialog lists them: rundown keys first. */
+/**
+ * Answers whether a press is this shortcut's: one of its keys, with Shift down exactly
+ * when the shortcut needs it. This is how the Space listener tells Shift+Space
+ * (previewCursorItem) from Space (takeNext), both of which share the space bar.
+ */
+export function isPressOfShortcut(
+  keyPress: { key: string; isShiftHeld: boolean },
+  shortcut: Pick<KeyboardShortcut, 'keys' | 'isShiftHeld'>,
+): boolean {
+  const isOneOfItsKeys = shortcut.keys.includes(keyPress.key);
+  const isShiftAsItNeeds = keyPress.isShiftHeld === shortcut.isShiftHeld;
+  return isOneOfItsKeys && isShiftAsItNeeds;
+}
+
+/**
+ * Every shortcut, in the order the "?" dialog lists them: rundown keys first. Written by
+ * hand because the order is a choice; keyboardMap.test.ts checks it holds every entry
+ * of the map exactly once, so a new entry cannot be missing from the help.
+ */
 export function listKeyboardShortcutsInDialogOrder(): KeyboardShortcut[] {
   return [
     keyboardMap.takeNext,

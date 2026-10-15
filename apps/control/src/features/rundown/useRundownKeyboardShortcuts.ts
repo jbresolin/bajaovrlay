@@ -1,7 +1,7 @@
 import type { CommandInput, Item, Rundown } from '@bajaovrlay/shared';
 
 import { chooseCommandForOperatorKey } from '@/keyboard/commandForOperatorKey';
-import { keyboardMap } from '@/keyboard/keyboardMap';
+import { isPressOfShortcut, keyboardMap } from '@/keyboard/keyboardMap';
 import { type KeyPress, useKeyboardShortcut } from '@/keyboard/useKeyboardShortcut';
 import {
   useIsConnectedToServer,
@@ -35,7 +35,8 @@ import { findItemIdBeforeCursor } from './itemBeforeCursor';
  * the page, "Salvar item" included, Space no longer presses it; Enter still does.
  * Shift+Space is the same listener, so every one of these rules holds for it too.
  * The keys and those rules are read from src/keyboard/keyboardMap.ts (takeNext,
- * cursorForward, cursorBack), the list the "?" dialog shows.
+ * previewCursorItem for the Shift rule, cursorForward, cursorBack), the list the "?"
+ * dialog shows.
  */
 export function useRundownKeyboardShortcuts(
   rundown: Rundown | undefined,
@@ -51,7 +52,10 @@ export function useRundownKeyboardShortcuts(
   // Plain Space is sent even when the cursor is empty: the server owns the cursor, so
   // the server is the one to say "there is no next item", and its pt-BR message is shown.
   function sendWhatSpaceMeans(keyPress: KeyPress): void {
-    const operatorKey = keyPress.isShiftHeld ? 'shiftSpace' : 'space';
+    // The map's previewCursorItem entry says which press is Shift+Space; any other press
+    // of the space bar is plain Space.
+    const isShiftSpace = isPressOfShortcut(keyPress, keyboardMap.previewCursorItem);
+    const operatorKey = isShiftSpace ? 'shiftSpace' : 'space';
     const command = chooseCommandForOperatorKey(operatorKey, rundown, instances);
     if (command === null) {
       return;

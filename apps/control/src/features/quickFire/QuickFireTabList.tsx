@@ -3,7 +3,11 @@ import { cn } from 'cn';
 
 import { ptBR } from '@/i18n/ptBR';
 
-import { isSameQuickFireTab, type QuickFireTab } from './quickFireTabs';
+import {
+  findFunctionKeyForTabPosition,
+  isSameQuickFireTab,
+  type QuickFireTab,
+} from './quickFireTabs';
 
 /** What the row of tabs needs. */
 export type QuickFireTabListProps = {
@@ -21,7 +25,8 @@ export function buildQuickFireTabId(tabPosition: number): string {
 
 /**
  * The row of tabs: one per panel and "Macros", each with the F-key that opens it written
- * small beside its name (only the first four have one). A click shows that tab.
+ * small beside its name (only the tabs keyboardMap.ts lists a key for, the first four,
+ * have one; quickFireTabs.ts reads it from there). A click shows that tab.
  *
  * Deliberate: plain buttons with the tab roles, not Radix Tabs. Radix moves between tabs
  * with the arrow keys and uses those presses up, so with the focus on a tab ← and →
@@ -42,7 +47,7 @@ export function QuickFireTabList(props: QuickFireTabListProps) {
     <div role="tablist" aria-label={ptBR.quickFire.tabListLabel} className="flex flex-wrap gap-1">
       {tabs.map((tab, tabPosition) => {
         const isShown = isSameQuickFireTab(tab, tabShown);
-        const isReachedByAFunctionKey = tabPosition < 4;
+        const functionKeyOfThisTab = findFunctionKeyForTabPosition(tabPosition);
         return (
           <button
             key={tab.kind === 'macros' ? 'macros' : tab.panelId}
@@ -58,11 +63,11 @@ export function QuickFireTabList(props: QuickFireTabListProps) {
             )}
           >
             {findTabName(tab)}
-            {isReachedByAFunctionKey ? (
+            {functionKeyOfThisTab === undefined ? null : (
               <kbd aria-hidden="true" className="text-xs text-muted-foreground">
-                {ptBR.quickFire.tabKey(tabPosition + 1)}
+                {ptBR.quickFire.tabKey(functionKeyOfThisTab)}
               </kbd>
-            ) : null}
+            )}
           </button>
         );
       })}

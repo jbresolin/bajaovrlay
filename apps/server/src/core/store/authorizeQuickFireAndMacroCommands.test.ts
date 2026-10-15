@@ -194,6 +194,14 @@ const macroActorScenarios: Array<{
     actor: openTheSessionMacroActor,
     expectedIsAllowed: false,
   },
+  // A macro cannot start a macro, not even another one: a step is never runMacro, and a
+  // macro pressing macros could chain runs nobody pressed.
+  {
+    name: 'refuses runMacro of another macro from a running macro',
+    command: { type: 'runMacro', macroId: 'macro-fechar-sessao' },
+    actor: openTheSessionMacroActor,
+    expectedIsAllowed: false,
+  },
   // Nothing a step cannot be: preparing items is the operator's job.
   {
     name: 'refuses createItem from a running macro',

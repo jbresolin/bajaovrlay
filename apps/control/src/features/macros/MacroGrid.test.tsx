@@ -11,7 +11,8 @@
  * What these tests prove:
  *   - The macros are listed in the server's order, each with its label and colour.
  *   - A click sends `runMacro` for that macro.
- *   - A running macro shows "Rodando" with its step as "step / steps", counted from 1.
+ *   - A running macro shows "Rodando" with its step as "step / steps", counted from 1;
+ *     a macro with no step shows "Rodando" alone.
  *   - While a macro runs, the other buttons still send: the server refuses with
  *     MACRO_RUNNING and its pt-BR message is shown in the strip, so a page that missed
  *     the end of a run never blocks the operator.
@@ -102,6 +103,29 @@ describe('the macros grid', () => {
       findMacroList().getByRole('button', { name: /^Fechar a sessão/ }),
       'a macro that is not running must not say "Rodando"',
     ).not.toHaveTextContent('Rodando');
+  });
+
+  it('shows "Rodando" alone for a macro with no step, never "Rodando 1/0"', () => {
+    // Arrange: "Abrir a sessão" saved before any step was added, and its run listed for
+    // the moment between the press and the runner ending it.
+    const slices = buildSlicesWithShortcutsAndMacros();
+    slices.macros = slices.macros.map((macro) =>
+      macro.id === openTheSessionMacroId ? { ...macro, steps: [] } : macro,
+    );
+    slices.macroRuns = [
+      { macroId: openTheSessionMacroId, startedAt: momentTheMacroStarted, currentStep: 0 },
+    ];
+
+    // Act: draw the grid.
+    renderOnControlPageConnectedToFakeServer(<MacroGrid />, slices);
+
+    // Assert: the badge says "Rodando" and no step count.
+    const runningButton = findMacroList().getByRole('button', { name: /^Abrir a sessão/ });
+    const runningBadge = within(runningButton).getByText(/^Rodando/);
+    expect(
+      runningBadge,
+      'a macro with no step has no step to count, so the badge is the word alone',
+    ).toHaveTextContent(/^Rodando$/);
   });
 
   it('still sends another macro while one runs, and shows the server’s refusal', () => {

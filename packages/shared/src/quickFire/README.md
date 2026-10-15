@@ -4,7 +4,7 @@ Quick-fire panels: named grids of buttons, one per item, for what the operator f
 ad hoc. Start reading at `quickFirePanel.ts` (the `quickFirePanels` slice: id, name,
 order). A panel holds no list of items; an item says it lives in a panel through its
 `home` (`../rundown/itemHome.ts`), and `listItemsOfQuickFirePanelInOrder` in
-`../rundown/itemsOfRundownInOrder.ts` lists a panel's buttons first to last.
+`../rundown/itemsOfHomeInOrder.ts` lists a panel's buttons first to last.
 
 One file per command (`createQuickFirePanel.ts`, `renameQuickFirePanel.ts`,
 `deleteQuickFirePanel.ts`), all in the `Command` union of `../commands/command.ts`;
