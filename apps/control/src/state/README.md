@@ -12,4 +12,4 @@ sending a command. Start reading at `serverConnection.ts`, then `serverStateStor
 - `ControlPageStateProvider.tsx` — `useServerState`, `useSendCommand`, `useReadServerStateNow`.
 - `*.testSupport.*` — the fake server socket and believable slices for tests.
 
-Components never copy server state: they read it with a selector and wait for the next slice (`useReadServerStateNow` is only for a handler that has just awaited the server).
+Components never copy server state: they read it with a selector and wait for the next slice (`useReadServerStateNow` is only for a handler that has just awaited the server). The one browser setting ("Prévia automática") has its own store in `features/autoPreview/`, not here.

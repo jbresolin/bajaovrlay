@@ -78,7 +78,7 @@ function buildRenamedRundownWithCursor(): Rundown {
 function buildEnduroStartItem(): Item {
   return {
     id: 'item-largada-do-enduro',
-    rundownId: 'sessao-principal',
+    home: { kind: 'rundown', rundownId: 'sessao-principal' },
     order: 0,
     graphicId: 'race-clock',
     layerId: 'clock',
@@ -120,11 +120,15 @@ describe('the rundowns and items on the first boot', () => {
 
 describe('the rundowns and items on a database written before they existed (M0)', () => {
   it('boots, seeds the rundown and leaves the layers and instances rows as they were', () => {
-    // Arrange: a database booted once, then stripped of its rundowns and items rows, so
-    // it holds what an M0 server wrote: layers, graphics and instances only.
+    // Arrange: a database booted once, then stripped of its rundowns, items, panels and
+    // macros rows, so it holds what an M0 server wrote: layers, graphics and instances.
     const { database } = openTemporaryDatabase();
     loadSlicesAtBoot(database, firstBootTime);
-    database.$client.prepare("DELETE FROM slices WHERE name IN ('rundowns', 'items')").run();
+    database.$client
+      .prepare(
+        "DELETE FROM slices WHERE name IN ('rundowns', 'items', 'quickFirePanels', 'macros')",
+      )
+      .run();
 
     // Act: boot the new server on it the next morning.
     const slices = loadSlicesAtBoot(database, raceDayBootTime);
@@ -138,13 +142,15 @@ describe('the rundowns and items on a database written before they existed (M0)'
     expect(slices.layers.length, 'the five stored layers must load back').toBe(5);
     expect(
       readUpdatedAtBySliceName(database),
-      'only graphics (refreshed every boot), rundowns and items may be written by this boot',
+      'only graphics (refreshed every boot) and the seeded rows may be written by this boot',
     ).toEqual({
       layers: '2026-10-09T08:00:00.000Z',
       graphics: '2026-10-10T07:30:00.000Z',
       instances: '2026-10-09T08:00:00.000Z',
       rundowns: '2026-10-10T07:30:00.000Z',
       items: '2026-10-10T07:30:00.000Z',
+      quickFirePanels: '2026-10-10T07:30:00.000Z',
+      macros: '2026-10-10T07:30:00.000Z',
     });
   });
 });

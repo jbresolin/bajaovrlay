@@ -37,7 +37,7 @@ const enduroClockItemId = 'b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10';
 function buildCreateItemForTheEnduroClock() {
   return {
     type: 'createItem',
-    rundownId: 'sessao-principal',
+    home: { kind: 'rundown', rundownId: 'sessao-principal' },
     graphicId: 'race-clock',
     layerId: 'clock',
     fields: {

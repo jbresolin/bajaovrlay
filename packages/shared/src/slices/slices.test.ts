@@ -2,10 +2,12 @@
  * State slices (packages/shared)
  *
  * What this module is for:
- *   The server owns all state as six named slices: `layers` (where graphics can go),
+ *   The server owns all state as nine named slices: `layers` (where graphics can go),
  *   `graphics` (what can be shown), `instances` (what is showing now), `rundowns` and
- *   `items` (the planned show) and `eventLog` (the commands that changed something or
- *   were refused, in order). SlicesSchema describes all six; the server checks what it
+ *   `items` (the planned show), `quickFirePanels` (the grids of buttons), `macros` and
+ *   `macroRuns` (one-press sequences and the one running now) and `eventLog` (the
+ *   commands that changed something or were refused, in order). SlicesSchema describes
+ *   all nine; the server checks what it
  *   stores and sends against it, and the control page and renderer check what they
  *   receive.
  *
@@ -18,6 +20,9 @@
  *   - An instance may be `failed` and carry the reason the renderer gave
  *     (`statusDetail`), and that reason must be a text.
  *   - A failed event-log entry must carry the error a person reads.
+ *   - quickFirePanels, macros and macroRuns are required like every other slice, the
+ *     nine slice names come in the server's order, and a slice message's name decides
+ *     what it carries for the new slices too.
  *
  * What these tests deliberately do not cover:
  *   - How the server changes slices; the reducer and store tests in apps/server do.
@@ -26,7 +31,8 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { SlicesSchema } from './slices.js';
+import { SliceMessageSchema } from '../ws/serverMessages.js';
+import { SliceNameSchema, SlicesSchema } from './slices.js';
 
 /** Builds the state of a race day morning: five layers, the clock registered and on air. */
 function buildRaceDayStateWithTheClockOnAir() {
@@ -70,6 +76,19 @@ function buildRaceDayStateWithTheClockOnAir() {
     // No rundown and no prepared item: rundownAndItemSlices.test.ts covers those slices.
     rundowns: [],
     items: [],
+    // The seeded panel "Atalhos", one macro, and that macro running at its first step.
+    quickFirePanels: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
+    macros: [
+      {
+        id: 'macro-abrir-sessao',
+        label: 'Abrir a sessão',
+        color: 'success',
+        steps: [{ kind: 'clearLayer', layerId: 'clock' }],
+      },
+    ],
+    macroRuns: [
+      { macroId: 'macro-abrir-sessao', startedAt: '2026-10-09T13:00:05.000Z', currentStep: 0 },
+    ],
   };
 }
 
@@ -175,5 +194,84 @@ describe('SlicesSchema', () => {
 
     // Assert: it is refused, because a failure without a reason cannot be audited.
     expect(result.success, 'a failed entry must carry its error').toBe(false);
+  });
+
+  const missingSliceScenarios = [
+    // An older server without quick-fire panels: a page must not draw an empty strip.
+    { name: 'refuses a state without the quickFirePanels slice', sliceLeftOut: 'quickFirePanels' },
+    // Without macros the "Macros" tab would claim there are none.
+    { name: 'refuses a state without the macros slice', sliceLeftOut: 'macros' },
+    // Without the runs a running macro's button would look idle.
+    { name: 'refuses a state without the macroRuns slice', sliceLeftOut: 'macroRuns' },
+  ];
+
+  it.each(missingSliceScenarios)('$name', ({ sliceLeftOut }) => {
+    // Arrange: the race day state with this row's slice taken out.
+    const stateWithoutTheSlice: Record<string, unknown> = {
+      ...buildRaceDayStateWithTheClockOnAir(),
+    };
+    delete stateWithoutTheSlice[sliceLeftOut];
+
+    // Act: check it and turn the failure into readable text.
+    const result = SlicesSchema.safeParse(stateWithoutTheSlice);
+    const failureMessage = result.error ? z.prettifyError(result.error) : '';
+
+    // Assert: refused, naming the missing slice.
+    expect(result.success, 'every slice is required, the new ones included').toBe(false);
+    expect(failureMessage, 'the failure must name the missing slice').toContain(sliceLeftOut);
+  });
+});
+
+describe('SliceNameSchema', () => {
+  it('lists every slice in the order the server lists them, the three new ones included', () => {
+    // Arrange: the slice names, quick-fire panels and macros placed after the items.
+    const expectedSliceNames = [
+      'layers',
+      'graphics',
+      'instances',
+      'rundowns',
+      'items',
+      'quickFirePanels',
+      'macros',
+      'macroRuns',
+      'eventLog',
+    ];
+
+    // Act: read every slice name the schema allows.
+    const everySliceName = SliceNameSchema.options;
+
+    // Assert: exactly these, in this order.
+    expect(everySliceName, 'the slice names must be these nine, in this order').toEqual(
+      expectedSliceNames,
+    );
+  });
+});
+
+describe('SliceMessageSchema for the quick-fire panels and macros', () => {
+  it('accepts a macroRuns slice message with no run, the end of every run', () => {
+    // Arrange: what every page gets when a macro has finished.
+    const noRunMessage = { type: 'slice', name: 'macroRuns', slice: [] };
+
+    // Act: check it against the schema.
+    const result = SliceMessageSchema.safeParse(noRunMessage);
+
+    // Assert: accepted unchanged.
+    expect(result.success, 'an empty macroRuns slice message must be accepted').toBe(true);
+    expect(result.data, 'the accepted message must not be altered').toEqual(noRunMessage);
+  });
+
+  it('refuses a message named quickFirePanels that carries a macro instead', () => {
+    // Arrange: a server bug that sends the macros under the panels' name.
+    const macrosSentAsPanels = {
+      type: 'slice',
+      name: 'quickFirePanels',
+      slice: buildRaceDayStateWithTheClockOnAir().macros,
+    };
+
+    // Act: check it against the schema.
+    const result = SliceMessageSchema.safeParse(macrosSentAsPanels);
+
+    // Assert: refused, so a page never stores macros as panels.
+    expect(result.success, 'the name must decide what the slice contains').toBe(false);
   });
 });

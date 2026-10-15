@@ -5,6 +5,7 @@ import { reduceClearLayer } from './clearLayer.js';
 import { reducePreviewGraphic } from './previewGraphic.js';
 import { reducePreviewItem } from './previewItem.js';
 import { reduceItemOrRundownCommand } from './reduceItemOrRundownCommand.js';
+import { reduceQuickFireOrMacroCommand } from './reduceQuickFireOrMacroCommand.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { reduceReportInstanceStatus } from './reportInstanceStatus.js';
 import { reduceStopPreview } from './stopPreview.js';
@@ -50,5 +51,17 @@ export function reduceCommand(
     case 'takeItem':
     case 'takeNext':
       return reduceItemOrRundownCommand(slices, command, context);
+    // Quick-fire panels, moving items between homes, and macros: a switch of their own.
+    case 'createQuickFirePanel':
+    case 'renameQuickFirePanel':
+    case 'deleteQuickFirePanel':
+    case 'moveItemToHome':
+    case 'createMacro':
+    case 'updateMacro':
+    case 'deleteMacro':
+    case 'runMacro':
+    case 'advanceMacroRun':
+    case 'endMacroRun':
+      return reduceQuickFireOrMacroCommand(slices, command, context);
   }
 }

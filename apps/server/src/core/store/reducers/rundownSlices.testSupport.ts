@@ -1,7 +1,16 @@
-// Test support: the slices of a race day with rundowns and prepared items, for the tests
-// of the seven rundown commands. Every function builds fresh objects on each call, so
-// no test can change what another one sees.
-import type { Graphic, Instance, Item, ItemFields, Rundown } from '@bajaovrlay/shared';
+// Test support: the slices of a race day with rundowns, quick-fire panels and prepared
+// items, for the tests of the item, rundown and panel commands. Every function builds
+// fresh objects on each call, so no test can change what another one sees.
+import type {
+  Graphic,
+  Instance,
+  Item,
+  ItemFields,
+  Macro,
+  MacroRun,
+  QuickFirePanel,
+  Rundown,
+} from '@bajaovrlay/shared';
 
 import { raceClockManifestForTests } from '../builtGraphicsFolder.testSupport.js';
 import { seededLayers } from '../seedLayers.js';
@@ -13,10 +22,18 @@ export const mainSessionRundownId = 'sessao-principal';
 /** A second rundown, for the podium ceremony, to prove rundowns do not mix. */
 export const podiumRundownId = 'cerimonia-do-podio';
 
+/** The quick-fire panel the server seeds, "Atalhos". */
+export const shortcutsPanelId = 'atalhos';
+
+/** A second quick-fire panel, for the sponsors' graphics, to prove panels do not mix. */
+export const sponsorsPanelId = 'patrocinadores';
+
 /** The ids and time the store would hand a reducer at 14:32:05 UTC on 9 October 2026. */
 export const contextOfTheRundownCommand: ReducerContext = {
   newInstanceId: '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f',
   newItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
+  newQuickFirePanelId: 'd4b2e8f1-6a3c-4d7e-9b05-1c8f2a6e3d90',
+  newMacroId: '8f3a1c6e-2d4b-4e9a-b7c5-0a1d3e5f7b92',
   now: '2026-10-09T14:32:05.000Z',
 };
 
@@ -72,7 +89,7 @@ export function buildPodiumRundown(cursorItemId: string | null): Rundown {
 export function buildEnduroStartItem(order: number): Item {
   return {
     id: 'item-largada-do-enduro',
-    rundownId: mainSessionRundownId,
+    home: { kind: 'rundown', rundownId: mainSessionRundownId },
     order,
     graphicId: 'race-clock',
     layerId: 'clock',
@@ -87,7 +104,7 @@ export function buildEnduroStartItem(order: number): Item {
 export function buildYellowFlagItem(order: number): Item {
   return {
     id: 'item-bandeira-amarela',
-    rundownId: mainSessionRundownId,
+    home: { kind: 'rundown', rundownId: mainSessionRundownId },
     order,
     graphicId: 'race-clock',
     layerId: 'clock',
@@ -102,7 +119,7 @@ export function buildYellowFlagItem(order: number): Item {
 export function buildEnduroFinishItem(order: number): Item {
   return {
     id: 'item-chegada-do-enduro',
-    rundownId: mainSessionRundownId,
+    home: { kind: 'rundown', rundownId: mainSessionRundownId },
     order,
     graphicId: 'race-clock',
     layerId: 'clock',
@@ -117,7 +134,7 @@ export function buildEnduroFinishItem(order: number): Item {
 export function buildPodiumTeamItem(order: number): Item {
   return {
     id: 'item-podio-baja-ufpr',
-    rundownId: podiumRundownId,
+    home: { kind: 'rundown', rundownId: podiumRundownId },
     order,
     graphicId: 'team-lower-third',
     layerId: 'lower-third',
@@ -127,6 +144,49 @@ export function buildPodiumTeamItem(order: number): Item {
     },
     label: 'Pódio — Baja UFPR',
     color: 'highlight',
+    notes: '',
+  };
+}
+
+/** Builds the panel "Atalhos", first of the tabs. */
+export function buildShortcutsPanel(): QuickFirePanel {
+  return { id: shortcutsPanelId, name: 'Atalhos', order: 0 };
+}
+
+/** Builds the panel "Patrocinadores", second of the tabs. */
+export function buildSponsorsPanel(): QuickFirePanel {
+  return { id: sponsorsPanelId, name: 'Patrocinadores', order: 1 };
+}
+
+/** Builds "Tarja — Baja UFPR": a lower third for team 42, a button of "Atalhos". */
+export function buildTeam42ShortcutItem(order: number): Item {
+  return {
+    id: 'item-atalho-tarja-baja-ufpr',
+    home: { kind: 'quickFire', panelId: shortcutsPanelId },
+    order,
+    graphicId: 'team-lower-third',
+    layerId: 'lower-third',
+    fields: {
+      teamNumber: { kind: 'literal', value: 42 },
+      teamName: { kind: 'literal', value: 'Baja UFPR' },
+    },
+    label: 'Tarja — Baja UFPR',
+    color: 'info',
+    notes: '',
+  };
+}
+
+/** Builds "Relógio — bandeira vermelha": the race clock under red flag, a button of "Atalhos". */
+export function buildRedFlagShortcutItem(order: number): Item {
+  return {
+    id: 'item-atalho-bandeira-vermelha',
+    home: { kind: 'quickFire', panelId: shortcutsPanelId },
+    order,
+    graphicId: 'race-clock',
+    layerId: 'clock',
+    fields: buildEnduroClockFields('red'),
+    label: 'Relógio — bandeira vermelha',
+    color: 'danger',
     notes: '',
   };
 }
@@ -153,20 +213,38 @@ export function readLabelsAndOrdersOfRundown(
   items: Item[] | undefined,
   rundownId: string,
 ): Array<[string, number]> {
-  const itemsOfRundown = (items ?? []).filter((item) => item.rundownId === rundownId);
+  const itemsOfRundown = (items ?? []).filter(
+    (item) => item.home.kind === 'rundown' && item.home.rundownId === rundownId,
+  );
   const itemsByOrder = itemsOfRundown.sort((first, second) => first.order - second.order);
+  return itemsByOrder.map((item) => [item.label, item.order]);
+}
+
+/** Reads a quick-fire panel's buttons the same way: each label with its `order`. */
+export function readLabelsAndOrdersOfQuickFirePanel(
+  items: Item[] | undefined,
+  panelId: string,
+): Array<[string, number]> {
+  const itemsOfPanel = (items ?? []).filter(
+    (item) => item.home.kind === 'quickFire' && item.home.panelId === panelId,
+  );
+  const itemsByOrder = itemsOfPanel.sort((first, second) => first.order - second.order);
   return itemsByOrder.map((item) => [item.label, item.order]);
 }
 
 /**
  * Builds race day slices: the five seeded layers, the race clock and a team lower third
  * as graphics (neither declares a data schema, so any data is accepted), both rundowns
- * unless others are given, and the given items and instances.
+ * and the panel "Atalhos" unless others are given, the given items and instances, and
+ * the given macros and runs (none unless given).
  */
 export function buildRaceDaySlicesWithRundown(parts: {
   rundowns?: Rundown[];
   items: Item[];
   instances?: Instance[];
+  quickFirePanels?: QuickFirePanel[];
+  macros?: Macro[];
+  macroRuns?: MacroRun[];
 }): SlicesChangedByCommands {
   return {
     layers: seededLayers,
@@ -191,6 +269,9 @@ export function buildRaceDaySlicesWithRundown(parts: {
     instances: parts.instances ?? [],
     rundowns: parts.rundowns ?? [buildMainSessionRundown(null), buildPodiumRundown(null)],
     items: parts.items,
+    quickFirePanels: parts.quickFirePanels ?? [buildShortcutsPanel()],
+    macros: parts.macros ?? [],
+    macroRuns: parts.macroRuns ?? [],
   };
 }
 
@@ -203,6 +284,7 @@ export function buildRaceDaySlicesWithTheRaceClockSchema(parts: {
   rundowns?: Rundown[];
   items: Item[];
   instances?: Instance[];
+  quickFirePanels?: QuickFirePanel[];
 }): SlicesChangedByCommands {
   const raceDaySlices = buildRaceDaySlicesWithRundown(parts);
   const raceClockWithItsDataSchema: Graphic = {

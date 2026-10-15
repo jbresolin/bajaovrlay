@@ -64,7 +64,7 @@ const takeRaceClockByHand = {
 function buildCreateClockItemCommand(autoOutAfterMs: number | undefined) {
   const command: Record<string, unknown> = {
     type: 'createItem',
-    rundownId: 'sessao-principal',
+    home: { kind: 'rundown', rundownId: 'sessao-principal' },
     graphicId: 'race-clock',
     layerId: 'clock',
     label: 'Relógio do patrocinador',

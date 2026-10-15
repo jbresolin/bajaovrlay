@@ -22,7 +22,7 @@ const leftArrowKey = 'ArrowLeft';
  * (`takeNext`). Shift+Space shows the item at the cursor on the preview output
  * (`previewItem`). What each of the two sends is decided in one place,
  * src/keyboard/commandForOperatorKey.ts. A take is handed to `sendTakeByThisOperator`
- * (useTakeThenPreviewNextItem.ts: the take, then a preview of the new cursor item while
+ * (features/autoPreview/useTakeThenPreviewNextItem.ts: the take, then a preview of the new cursor item while
  * "Prévia automática" is on, which is what makes Space, Space the operator's loop).
  * The Right and Left arrows move the cursor one
  * item forward or back without putting anything on air; `moveCursorByHand` is what they

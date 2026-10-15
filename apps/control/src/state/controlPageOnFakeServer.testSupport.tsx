@@ -6,6 +6,9 @@ import { act, fireEvent, render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { vi } from 'vitest';
 
+import { AutoPreviewSettingProvider } from '@/features/autoPreview/AutoPreviewSettingProvider';
+import { createAutoPreviewSettingStore } from '@/features/autoPreview/autoPreviewSettingStore';
+
 import { ControlPageStateProvider } from './ControlPageStateProvider';
 import { createFakeServerSocket } from './fakeServerSocket.testSupport';
 import { connectToServer } from './serverConnection';
@@ -58,13 +61,18 @@ export function renderOnControlPageStillWaitingForTheServer(
     logEvent: () => undefined,
   });
   fakeServerSocket.acceptConnection();
+  // A new one for every drawing, as a newly opened page builds one: it reads the browser's
+  // storage now, and no test shares its switch with another.
+  const autoPreviewSettingStore = createAutoPreviewSettingStore();
 
   render(
     <ControlPageStateProvider
       serverStateStore={serverStateStore}
       sendCommand={serverConnection.sendCommand}
     >
-      {pageContent}
+      <AutoPreviewSettingProvider autoPreviewSettingStore={autoPreviewSettingStore}>
+        {pageContent}
+      </AutoPreviewSettingProvider>
     </ControlPageStateProvider>,
   );
 

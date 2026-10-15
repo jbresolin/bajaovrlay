@@ -15,6 +15,8 @@ export const contextOfTheCommand: ReducerContext = {
   newInstanceId: '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f',
   now: '2026-10-09T14:32:05.000Z',
   newItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
+  newQuickFirePanelId: 'd4b2e8f1-6a3c-4d7e-9b05-1c8f2a6e3d90',
+  newMacroId: '8f3a1c6e-2d4b-4e9a-b7c5-0a1d3e5f7b92',
 };
 
 /** Builds complete race clock data: the enduro under green flag, 1:05:00 in, running. */
@@ -70,7 +72,7 @@ export function buildTeam42LowerThirdOnAir(): Instance {
 /**
  * Builds race day slices: the five seeded layers, the race clock (whose manifest has a
  * data schema) and a team lower third (whose manifest has none), and the given instances.
- * No rundown and no items: the commands these slices are for never read them.
+ * No rundown, item, panel or macro: the commands these slices are for never read them.
  */
 export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesChangedByCommands {
   return {
@@ -96,5 +98,8 @@ export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesCh
     instances,
     rundowns: [],
     items: [],
+    quickFirePanels: [],
+    macros: [],
+    macroRuns: [],
   };
 }

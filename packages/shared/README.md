@@ -6,8 +6,10 @@ described here once and validated on both sides.
 
 Start reading at `src/index.ts`, which lists every export. One folder per concept:
 `src/health/`, `src/slices/` (the state the server owns), `src/commands/` (the only way
-state changes), `src/rundown/` (rundowns, items, their commands), `src/preview/` (the
-preview commands), `src/ws/` (the WebSocket protocol), `src/clock/` (clock arithmetic).
+state changes), `src/rundown/` (rundowns, items and their home, their commands),
+`src/quickFire/` (quick-fire panels), `src/macros/` (macros, runs, their commands),
+`src/preview/` (the preview commands), `src/ws/` (the WebSocket protocol), `src/clock/`
+(clock arithmetic).
 
 **How other packages import it.** `package.json` exports the source file under the
 custom condition `@bajaovrlay/source` and the built `dist/` otherwise. Typecheck, Vitest,

@@ -24,11 +24,11 @@
  *     refused, or when the take was of the last item (the cursor is on nothing).
  *
  * What these tests deliberately do not cover:
- *   - The rule itself, row by row: itemToPreviewAfterTake.test.ts.
+ *   - The rule itself, row by row: features/autoPreview/itemToPreviewAfterTake.test.ts.
  *   - What the server discards for origin `auto`: apps/server's previewItemOrigin.test.ts.
  *   - A cursor moved by another operator, and the arrows: RundownPanelPreview.test.tsx.
- *   - "Tomar" under the "Prévia" monitor, which previews nothing afterwards (it is not a
- *     key of the loop; docs/decisions.md, PR #12 gate 2).
+ *   - "Tomar" under the "Prévia" monitor, which since BAJAOVRLAY-16 previews the next item
+ *     the same way: outputMonitors/PreviewedLayersListPreviewAfterTake.test.tsx.
  *   - The real server and the real monitors: e2e/previewKeyboardLoop.e2e.ts.
  */
 import type { Instance } from '@bajaovrlay/shared';

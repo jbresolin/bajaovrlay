@@ -8,6 +8,7 @@ import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { eventLogSliceSize } from '../events/eventLogSlice.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import { discoverBuiltGraphics } from './discoverBuiltGraphics.js';
+import { loadOrSeedQuickFireAndMacroSlices } from './loadQuickFireAndMacroSlices.js';
 import { loadOrSeedRundownSlices } from './loadRundownSlices.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 import { seededLayers } from './seedLayers.js';
@@ -32,7 +33,9 @@ type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'>;
  * graphics slice is rebuilt from the built packages on every boot and saved, because it
  * describes what is on disk, not what the operator did. The event-log slice is the
  * newest entries of the event_log table. Rundowns and items are the operator's too:
- * loaded, or seeded when missing, by loadRundownSlices.ts.
+ * loaded, or seeded when missing, by loadRundownSlices.ts; quick-fire panels and macros
+ * likewise by loadQuickFireAndMacroSlices.ts. The macro runs are never stored: every
+ * boot starts with none, so a macro cut short by a stop is not resumed.
  */
 export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const storedRows = readAllSliceRows(options.database);
@@ -78,8 +81,17 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   // Rundowns and items are loaded, or seeded when their row is missing (a first boot,
   // or a database written before they existed); see loadRundownSlices.ts.
   const rundownSlices = loadOrSeedRundownSlices(storedRows, updatedAt, options.logger);
+  const quickFireAndMacroSlices = loadOrSeedQuickFireAndMacroSlices(
+    storedRows,
+    updatedAt,
+    options.logger,
+  );
   const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
-  writeBootSliceRows(options.database, [...layerAndGraphicRows, ...rundownSlices.seededRows]);
+  writeBootSliceRows(options.database, [
+    ...layerAndGraphicRows,
+    ...rundownSlices.rowsToSaveAtBoot,
+    ...quickFireAndMacroSlices.rowsToSaveAtBoot,
+  ]);
   if (isFirstBoot) {
     options.logger.info('empty database seeded with the fixed layers');
   }
@@ -104,6 +116,9 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     eventLog,
     rundowns: rundownSlices.rundowns,
     items: rundownSlices.items,
+    quickFirePanels: quickFireAndMacroSlices.quickFirePanels,
+    macros: quickFireAndMacroSlices.macros,
+    macroRuns: [],
   };
 }
 

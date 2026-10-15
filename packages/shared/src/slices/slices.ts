@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { MacroSchema } from '../macros/macro.js';
+import { MacroRunSchema } from '../macros/macroRun.js';
+import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
 import { RundownSchema } from '../rundown/rundown.js';
 import { EventLogEntrySchema } from './eventLogEntry.js';
@@ -14,6 +17,9 @@ export const SliceNameSchema = z.enum([
   'instances',
   'rundowns',
   'items',
+  'quickFirePanels',
+  'macros',
+  'macroRuns',
   'eventLog',
 ]);
 
@@ -30,8 +36,20 @@ export const SlicesSchema = z.object({
   instances: z.array(InstanceSchema),
   /** The ordered lists of items, one per session, each with its "next" cursor. */
   rundowns: z.array(RundownSchema),
-  /** Every prepared item of every rundown; `rundownId` and `order` say where each sits. */
+  /**
+   * Every prepared item of every rundown and quick-fire panel; `home` and `order` say
+   * where each sits.
+   */
   items: z.array(ItemSchema),
+  /** The quick-fire panels (named grids of buttons), each with its tab position. */
+  quickFirePanels: z.array(QuickFirePanelSchema),
+  /** The macros, in the order they were created. */
+  macros: z.array(MacroSchema),
+  /**
+   * The macro running now, if any (at most one entry). Kept in the server's memory only,
+   * never saved: after a restart it is empty.
+   */
+  macroRuns: z.array(MacroRunSchema),
   /** The newest entries of the event log only; the database keeps every entry. */
   eventLog: z.array(EventLogEntrySchema),
 });

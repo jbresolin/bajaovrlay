@@ -3,18 +3,24 @@ import { z } from 'zod';
 import { AutoOutDelayMsSchema } from './autoOutDelay.js';
 import { ItemFieldsSchema } from './fieldValue.js';
 import { ItemColorSchema } from './itemColor.js';
+import { ItemHomeSchema } from './itemHome.js';
 
 /**
  * An item is a prepared use of a graphic: which graphic, on which layer, with a value
  * for each field, set up before the session and put on air with one press. It lives in
- * one rundown, at the position `order`.
+ * one home (a rundown or a quick-fire panel), at the position `order` there.
  */
 export const ItemSchema = z.object({
   id: z.string().min(1),
-  rundownId: z.string().min(1),
   /**
-   * The item's position in its rundown, counted from 0. The server keeps the orders of
-   * a rundown's items as 0, 1, 2, ... with no gaps and no repeats.
+   * The rundown or quick-fire panel the item lives in. Items stored before BAJAOVRLAY-16
+   * said `rundownId` instead; the server converts those rows at boot, so no client ever
+   * sees the older shape.
+   */
+  home: ItemHomeSchema,
+  /**
+   * The item's position in its home, counted from 0. The server keeps the orders of the
+   * items of each rundown and of each panel as 0, 1, 2, ... with no gaps and no repeats.
    */
   order: z.number().int().min(0),
   graphicId: z.string().min(1),

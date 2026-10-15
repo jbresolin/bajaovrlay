@@ -3,21 +3,28 @@ import { z } from 'zod';
 import { AutoOutDelayMsSchema } from './autoOutDelay.js';
 import { ItemFieldsSchema } from './fieldValue.js';
 import { defaultItemColor, ItemColorSchema } from './itemColor.js';
+import { ItemHomeSchema } from './itemHome.js';
 
 /**
- * Adds a prepared item to a rundown. The server gives the item its id. Colour, notes
+ * Adds a prepared item to a rundown or a quick-fire panel (`home`). The server gives
+ * the item its id. Colour, notes
  * and auto-out are accepted here, not only in updateItemFields, so that the item
  * editor saves a new item with one command instead of a create followed by an update.
  */
 export const CreateItemCommandSchema = z.object({
   type: z.literal('createItem'),
-  rundownId: z.string().min(1),
+  /**
+   * Where the new item lives. Deliberate: the older field `rundownId` is not accepted
+   * any more, so the command has one shape; a client still sending it is refused,
+   * naming `home`.
+   */
+  home: ItemHomeSchema,
   graphicId: z.string().min(1),
   layerId: z.string().min(1),
   fields: ItemFieldsSchema,
   label: z.string().min(1),
   /**
-   * The position the new item takes, counted from 0; the items from there on move down
+   * The position the new item takes in its home, counted from 0; the items from there on move down
    * by one. Leaving it out puts the item at the end.
    */
   order: z.number().int().min(0).optional(),

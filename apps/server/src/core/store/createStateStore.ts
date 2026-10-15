@@ -17,7 +17,7 @@ import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialS
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
-/** What a store needs. The last four have production defaults; tests replace them. */
+/** What a store needs. The last six have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
   /** The authorisation step; defaults to allowCommandForActorRole (no login yet). */
   isCommandAllowed?: IsCommandAllowed | undefined;
@@ -27,6 +27,10 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
   createInstanceId?: (() => string) | undefined;
   /** Makes the id of each new item (createItem); defaults to a random UUID. */
   createItemId?: (() => string) | undefined;
+  /** Makes the id of each new quick-fire panel; defaults to a random UUID. */
+  createQuickFirePanelId?: (() => string) | undefined;
+  /** Makes the id of each new macro (createMacro); defaults to a random UUID. */
+  createMacroId?: (() => string) | undefined;
 };
 
 /** How applyCommand answers: ok, or the error the operator is shown. */
@@ -55,7 +59,14 @@ const sliceNamesChangedByCommands = [
   'instances',
   'rundowns',
   'items',
+  'quickFirePanels',
+  'macros',
+  'macroRuns',
 ] as const;
+
+// The slices that live in memory only and are never written to the database: a macro
+// run is something happening now, and a restart must not resume it (see macroRunner.ts).
+const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = ['macroRuns'];
 
 /**
  * Creates the store, loading its slices from the database (or seeding an empty one).
@@ -66,6 +77,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   const createInstanceId = options.createInstanceId ?? (() => randomUUID());
   const createItemId = options.createItemId ?? (() => randomUUID());
+  const createQuickFirePanelId = options.createQuickFirePanelId ?? (() => randomUUID());
+  const createMacroId = options.createMacroId ?? (() => randomUUID());
   const listeners = new Set<SliceChangeListener>();
   let currentSlices = loadInitialSlices({ ...options, readCurrentTime });
 
@@ -106,6 +119,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       newInstanceId: createInstanceId(),
       now,
       newItemId: createItemId(),
+      newQuickFirePanelId: createQuickFirePanelId(),
+      newMacroId: createMacroId(),
     });
     if (reducerOutcome.status === 'refused') {
       return recordRefusal({
@@ -169,14 +184,18 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   /**
    * Saves the slices that changed and the event-log row in one transaction, then (only
    * once that succeeded) updates memory and tells listeners. If saving throws, memory
-   * is left as it was, so it never runs ahead of the database.
+   * is left as it was, so it never runs ahead of the database. A slice kept in memory
+   * only (macroRuns) is not saved, but its change is still logged and broadcast.
    */
   function recordOutcome(outcome: {
     nextSlices: SlicesChangedByCommands;
     logEntry: Omit<EventLogEntry, 'id'>;
   }): void {
     const changedSliceNames = findNamesOfChangedSlices(outcome.nextSlices);
-    const changedSliceRows: SliceRow[] = changedSliceNames.map((sliceName) => ({
+    const changedSliceNamesToSave = changedSliceNames.filter(
+      (sliceName) => !sliceNamesKeptInMemoryOnly.includes(sliceName),
+    );
+    const changedSliceRows: SliceRow[] = changedSliceNamesToSave.map((sliceName) => ({
       name: sliceName,
       json: outcome.nextSlices[sliceName],
       updatedAt: outcome.logEntry.ts,
@@ -194,6 +213,9 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       instances: outcome.nextSlices.instances,
       rundowns: outcome.nextSlices.rundowns,
       items: outcome.nextSlices.items,
+      quickFirePanels: outcome.nextSlices.quickFirePanels,
+      macros: outcome.nextSlices.macros,
+      macroRuns: outcome.nextSlices.macroRuns,
       eventLog: appendToEventLogSlice(currentSlices.eventLog, savedLogEntry),
     };
     tellListeners([...changedSliceNames, 'eventLog']);

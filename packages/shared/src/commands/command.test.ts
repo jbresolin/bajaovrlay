@@ -137,8 +137,14 @@ describe('CommandSchema', () => {
 
   it('refuses a command type the server does not know, naming the type field', () => {
     // Arrange: a command from a future version of the control page. (Until BAJAOVRLAY-13
-    // this example was takeItem, which the server now knows; macros are still to come.)
-    const unknownCommand = { type: 'runMacro', macroId: 'abertura-do-enduro' };
+    // this example was takeItem, and until BAJAOVRLAY-16 runMacro; both are known now.
+    // Overrides arrive in M2.)
+    const unknownCommand = {
+      type: 'setOverride',
+      sourceId: 'scoring',
+      path: 'enduro.positions',
+      value: [],
+    };
 
     // Act: check it and turn the failure into readable text.
     const result = CommandSchema.safeParse(unknownCommand);

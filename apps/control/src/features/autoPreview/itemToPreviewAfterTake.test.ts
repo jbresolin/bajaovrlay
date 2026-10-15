@@ -19,7 +19,8 @@
  *
  * What these tests deliberately do not cover:
  *   - Sending the take and the preview, and waiting for the server in between:
- *     RundownPanelPreviewAfterTake.test.tsx, with a fake server.
+ *     RundownPanelPreviewAfterTake.test.tsx (Space, "Disparar") and
+ *     PreviewedLayersListPreviewAfterTake.test.tsx ("Tomar"), with a fake server.
  *   - A take that was refused: the caller never asks then; the same panel test proves it.
  */
 import { describe, expect, it } from 'vitest';

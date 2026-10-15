@@ -75,7 +75,7 @@ describe('startServer', () => {
     stateStore.applyCommand(
       {
         type: 'createItem',
-        rundownId: seededRundown?.id,
+        home: { kind: 'rundown', rundownId: seededRundown?.id },
         graphicId: 'race-clock',
         layerId: 'clock',
         label: 'Relógio do patrocinador',

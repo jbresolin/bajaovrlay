@@ -36,7 +36,7 @@ type RaceClockItemDescription = {
 function buildRaceClockItem(description: RaceClockItemDescription): Item {
   return {
     id: description.id,
-    rundownId: description.rundownId,
+    home: { kind: 'rundown', rundownId: description.rundownId },
     order: description.order,
     graphicId: 'race-clock',
     layerId: 'clock',

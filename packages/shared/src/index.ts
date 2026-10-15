@@ -98,8 +98,15 @@ export {
   InstanceStatusMessageSchema,
 } from './ws/clientMessages.js';
 
-// Rundowns and items: both slices, field values, item colours and the seven item commands.
+// Rundowns and items: both slices, an item's home (rundown or quick-fire panel), field
+// values, item colours and the eight item commands.
 export * from './rundown/index.js';
+
+// Quick-fire panels: the slice and the create, rename and delete commands.
+export * from './quickFire/index.js';
+
+// Macros: steps, the macros and macroRuns slices, and the six macro commands.
+export * from './macros/index.js';
 
 // The preview output: previewItem, previewGraphic, stopPreview and takePreview.
 export * from './preview/index.js';

@@ -56,7 +56,7 @@ const reportRaceClockOnAir: Command = {
 };
 const createYellowFlagItem: Command = {
   type: 'createItem',
-  rundownId: 'sessao-principal',
+  home: { kind: 'rundown', rundownId: 'sessao-principal' },
   graphicId: 'race-clock',
   layerId: 'clock',
   fields: { state: { kind: 'literal', value: 'yellow' } },

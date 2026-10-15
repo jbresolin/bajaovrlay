@@ -17,6 +17,8 @@
  *     and neither lets the error out.
  *
  * What these tests deliberately do not cover:
+ *   - The page's one store that reads and writes through these functions:
+ *     autoPreviewSettingStore.test.ts.
  *   - The switch on the page and what it does to the arrow keys: RundownPanelPreview.test.tsx.
  *   - Two tabs of the same browser: a tab reads the storage once, when it opens, and does
  *     not follow a change made in another tab.
@@ -26,7 +28,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   readIsAutoPreviewOnFromBrowserStorage,
   writeIsAutoPreviewOnToBrowserStorage,
-} from './autoPreviewSetting';
+} from './autoPreviewSettingInBrowserStorage';
 
 // The name the setting is stored under, written out here on purpose: if it changes,
 // every operator's stored choice is lost, and this test is where that gets noticed.

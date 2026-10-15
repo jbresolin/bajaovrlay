@@ -23,7 +23,7 @@
  *   - Whether the typed field values suit the graphic; that is only checked at the take.
  *   - Which field may say takeTime; createItemTakeTimeField.test.ts.
  */
-import type { Command, CreateItemCommand, Item } from '@bajaovrlay/shared';
+import type { Command, CreateItemCommand, Item, ItemHome } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { reduceCommand } from './reduceCommand.js';
@@ -44,7 +44,7 @@ import {
 function buildCreateEnduroFinishCommand(order?: number): CreateItemCommand {
   const command: CreateItemCommand = {
     type: 'createItem',
-    rundownId: mainSessionRundownId,
+    home: { kind: 'rundown', rundownId: mainSessionRundownId },
     graphicId: 'race-clock',
     layerId: 'clock',
     fields: buildEnduroClockFields('checkered'),
@@ -135,7 +135,7 @@ describe('createItem, what the new item holds', () => {
     const slicesBefore = buildRaceDaySlicesWithRundown({ items: [] });
     const createWithEverything: Command = {
       type: 'createItem',
-      rundownId: mainSessionRundownId,
+      home: { kind: 'rundown', rundownId: mainSessionRundownId },
       graphicId: 'race-clock',
       layerId: 'clock',
       fields: buildEnduroClockFields('red'),
@@ -151,7 +151,7 @@ describe('createItem, what the new item holds', () => {
     // Assert: one item, equal to the command plus the id and position 0.
     const expectedItem: Item = {
       id: contextOfTheRundownCommand.newItemId,
-      rundownId: mainSessionRundownId,
+      home: { kind: 'rundown', rundownId: mainSessionRundownId },
       order: 0,
       graphicId: 'race-clock',
       layerId: 'clock',
@@ -262,13 +262,13 @@ describe('createItem and everything it must not touch', () => {
 
 const refusedCreateScenarios: Array<{
   name: string;
-  changedPart: Partial<{ rundownId: string; layerId: string; graphicId: string }>;
+  changedPart: Partial<{ home: ItemHome; layerId: string; graphicId: string }>;
   expectedError: { code: string; message: string };
 }> = [
   // An item in a rundown nobody can open would be lost from the operator's view.
   {
     name: 'refuses an item for a rundown that does not exist',
-    changedPart: { rundownId: 'treino-livre' },
+    changedPart: { home: { kind: 'rundown', rundownId: 'treino-livre' } },
     expectedError: { code: 'RUNDOWN_NOT_FOUND', message: 'O rundown "treino-livre" não existe.' },
   },
   // Better to say so now than when the operator presses Space on air.

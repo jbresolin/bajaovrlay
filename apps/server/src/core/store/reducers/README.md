@@ -9,7 +9,11 @@ slices or a pt-BR refusal out; no I/O, no clock, no random ids. Start reading at
 - Rundown and item commands, chosen by `reduceItemOrRundownCommand.ts`: `createItem.ts`, `updateItemFields.ts`
   (both refuse a takeTime field that is not a wall-clock moment), `deleteItem.ts`, `reorderItems.ts`,
   `moveCursor.ts`, `takeItem.ts`, `takeNext.ts` (calls `takeItem.ts`).
+- Panels, moving items and macros, chosen by `reduceQuickFireOrMacroCommand.ts`: `createQuickFirePanel.ts`,
+  `renameQuickFirePanel.ts`, `deleteQuickFirePanel.ts`, `moveItemToHome.ts`, `createMacro.ts`, `updateMacro.ts`,
+  `deleteMacro.ts`, `runMacro.ts` (records the run only), `macroRunBookkeeping.ts` (the runner's two commands).
 - `putItemOnOutput.ts` — the one path takeItem and previewItem share; every take ends in `takeGraphic.ts`.
-- `itemOrdering.ts` numbers a rundown 0, 1, 2, ...; `rundownCursor.ts` moves "next"; `reducerTypes.ts`.
+- `itemOrdering.ts` numbers each home (rundown or panel) 0, 1, 2, ...; `itemHomeExistence.ts`; `rundownCursor.ts`
+  moves "next" (a panel item never has a cursor); `reducerTypes.ts`.
 - An unchanged slice is handed back as the very same array: how the store knows what to save.
 - Tests: `reduceCommand.test.ts` for the on-air commands, a `<command>.test.ts` for every other one.

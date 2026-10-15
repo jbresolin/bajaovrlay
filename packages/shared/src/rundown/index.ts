@@ -6,6 +6,8 @@
 export { type Rundown, RundownSchema } from './rundown.js';
 // The `items` slice: a prepared use of a graphic (graphic, layer, field values, label).
 export { type Item, ItemSchema } from './item.js';
+// Where an item lives (a rundown or a quick-fire panel), and whether two homes are one.
+export { isSameItemHome, type ItemHome, ItemHomeSchema } from './itemHome.js';
 // How a field of an item gets its value (`literal`, or `takeTime` stamped by the server
 // at the take; bindings arrive in M2), and an item's fields.
 export {
@@ -18,14 +20,18 @@ export {
   type TakeTimeFieldValue,
   TakeTimeFieldValueSchema,
 } from './fieldValue.js';
-// The items of one rundown, first to last; the one place that reads a rundown's order.
-export { listItemsOfRundownInOrder } from './itemsOfRundownInOrder.js';
+// The items of one rundown, or of one quick-fire panel, first to last; the one place
+// that reads the order of a home.
+export {
+  listItemsOfQuickFirePanelInOrder,
+  listItemsOfRundownInOrder,
+} from './itemsOfRundownInOrder.js';
 // The six named colours of an item, and the one a new item gets.
 export { defaultItemColor, type ItemColor, ItemColorSchema } from './itemColor.js';
 // The auto-out delay of an item, in whole milliseconds above zero.
 export { AutoOutDelayMsSchema } from './autoOutDelay.js';
 
-// createItem: add a prepared item to a rundown, at the end or at a position.
+// createItem: add a prepared item to a rundown or a panel, at the end or at a position.
 export { type CreateItemCommand, CreateItemCommandSchema } from './createItem.js';
 // updateItemFields: change some field values, the label, colour, notes or auto-out.
 export { type UpdateItemFieldsCommand, UpdateItemFieldsCommandSchema } from './updateItemFields.js';
@@ -39,3 +45,5 @@ export { type MoveCursorCommand, MoveCursorCommandSchema } from './moveCursor.js
 export { type TakeItemCommand, TakeItemCommandSchema } from './takeItem.js';
 // takeNext: put the item under a rundown's cursor on air.
 export { type TakeNextCommand, TakeNextCommandSchema } from './takeNext.js';
+// moveItemToHome: move an item to a rundown or a panel (or within its own), at a position.
+export { type MoveItemToHomeCommand, MoveItemToHomeCommandSchema } from './moveItemToHome.js';

@@ -21,6 +21,8 @@ export const momentOfThePreviewInMilliseconds = 1_791_556_325_000;
 export const contextOfTheLaterTake: ReducerContext = {
   newInstanceId: 'e2a4c6f8-1b3d-4f5a-8c7e-9d0b1a2c3e4f',
   newItemId: '9c1e7a35-4b2d-4f60-a8e3-5d7f2b1c0a94',
+  newQuickFirePanelId: '3b7d9f1a-5c2e-4a8b-9d6f-0e1c3a5b7d92',
+  newMacroId: '6e2c4a8f-1b3d-4f5e-a7c9-2d4f6b8a0c13',
   now: '2026-10-09T14:47:30.250Z',
 };
 

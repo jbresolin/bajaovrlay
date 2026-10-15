@@ -7,7 +7,14 @@ import type { CommandError, Slices } from '@bajaovrlay/shared';
  */
 export type SlicesChangedByCommands = Pick<
   Slices,
-  'layers' | 'graphics' | 'instances' | 'rundowns' | 'items'
+  | 'layers'
+  | 'graphics'
+  | 'instances'
+  | 'rundowns'
+  | 'items'
+  | 'quickFirePanels'
+  | 'macros'
+  | 'macroRuns'
 >;
 
 /**
@@ -21,6 +28,10 @@ export type ReducerContext = {
   now: string;
   /** The id to give an item the command creates (createItem). */
   newItemId: string;
+  /** The id to give a quick-fire panel the command creates (createQuickFirePanel). */
+  newQuickFirePanelId: string;
+  /** The id to give a macro the command creates (createMacro). */
+  newMacroId: string;
 };
 
 /**

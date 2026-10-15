@@ -1,3 +1,4 @@
+import { useAutoPreviewSetting } from '@/features/autoPreview/AutoPreviewSettingProvider';
 import { useSendCommand } from '@/state/ControlPageStateProvider';
 
 /**
@@ -13,20 +14,19 @@ import { useSendCommand } from '@/state/ControlPageStateProvider';
  * only the item at the cursor in preview. Previews the operator asked for by hand stay.
  *
  * Only this page's own actions preview: a move made at this keyboard (here) and a take
- * sent from this page (useTakeThenPreviewNextItem.ts). A cursor moved by another operator
+ * sent from this page (features/autoPreview/useTakeThenPreviewNextItem.ts). The switch is
+ * read from the page's one store (features/autoPreview/). A cursor moved by another operator
  * previews nothing here, because the page would then send a command nobody at this
  * keyboard caused, and with two control pages open both would send it.
  *
  * The preview waits for the server's "ok" to the move, so a refused move is never
  * followed by a preview, and its refusal stays on screen instead of being wiped by a
- * preview that succeeded. What could go wrong: `isAutoPreviewOn` is the switch as it was
- * at the press, so switching it off in the instant before the server answers is too late.
+ * preview that succeeded. What could go wrong: the switch counts as it was at the press,
+ * so switching it off in the instant before the server answers is too late.
  */
-export function useMoveCursorByHand(
-  rundownId: string | undefined,
-  isAutoPreviewOn: boolean,
-): (itemId: string) => void {
+export function useMoveCursorByHand(rundownId: string | undefined): (itemId: string) => void {
   const sendCommand = useSendCommand();
+  const { isAutoPreviewOn } = useAutoPreviewSetting();
 
   async function moveCursorThenPreviewTheItem(itemId: string): Promise<void> {
     if (rundownId === undefined) {

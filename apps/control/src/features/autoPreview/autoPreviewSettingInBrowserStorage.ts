@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 // Why this is NOT server state, the one exception on this page (CLAUDE.md, architecture
 // rule 1): whether moving the cursor also previews is a habit of the person at this
 // keyboard, not a fact about the show. Two operators on the same server may each want it
@@ -37,24 +35,4 @@ export function writeIsAutoPreviewOnToBrowserStorage(isAutoPreviewOn: boolean): 
   } catch {
     // Deliberate: a browser without storage is not an error the operator can act on.
   }
-}
-
-/**
- * "Prévia automática" for the page that is open: whether it is on, and the function the
- * switch calls. The stored choice is read once, when the page opens; a change is kept
- * in the page and stored at the same time. What could go wrong: another tab of the same
- * browser does not follow the change until it is reloaded.
- */
-export function useAutoPreviewSetting(): {
-  isAutoPreviewOn: boolean;
-  chooseIsAutoPreviewOn: (isAutoPreviewOn: boolean) => void;
-} {
-  const [isAutoPreviewOn, setIsAutoPreviewOn] = useState(readIsAutoPreviewOnFromBrowserStorage);
-
-  function chooseIsAutoPreviewOn(isOnNow: boolean): void {
-    setIsAutoPreviewOn(isOnNow);
-    writeIsAutoPreviewOnToBrowserStorage(isOnNow);
-  }
-
-  return { isAutoPreviewOn, chooseIsAutoPreviewOn };
 }

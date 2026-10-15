@@ -1,12 +1,24 @@
 import { z } from 'zod';
 
+import { CreateMacroCommandSchema } from '../macros/createMacro.js';
+import { DeleteMacroCommandSchema } from '../macros/deleteMacro.js';
+import {
+  AdvanceMacroRunCommandSchema,
+  EndMacroRunCommandSchema,
+} from '../macros/macroRunBookkeeping.js';
+import { RunMacroCommandSchema } from '../macros/runMacro.js';
+import { UpdateMacroCommandSchema } from '../macros/updateMacro.js';
 import { PreviewGraphicCommandSchema } from '../preview/previewGraphic.js';
 import { PreviewItemCommandSchema } from '../preview/previewItem.js';
 import { StopPreviewCommandSchema } from '../preview/stopPreview.js';
 import { TakePreviewCommandSchema } from '../preview/takePreview.js';
+import { CreateQuickFirePanelCommandSchema } from '../quickFire/createQuickFirePanel.js';
+import { DeleteQuickFirePanelCommandSchema } from '../quickFire/deleteQuickFirePanel.js';
+import { RenameQuickFirePanelCommandSchema } from '../quickFire/renameQuickFirePanel.js';
 import { CreateItemCommandSchema } from '../rundown/createItem.js';
 import { DeleteItemCommandSchema } from '../rundown/deleteItem.js';
 import { MoveCursorCommandSchema } from '../rundown/moveCursor.js';
+import { MoveItemToHomeCommandSchema } from '../rundown/moveItemToHome.js';
 import { ReorderItemsCommandSchema } from '../rundown/reorderItems.js';
 import { TakeItemCommandSchema } from '../rundown/takeItem.js';
 import { TakeNextCommandSchema } from '../rundown/takeNext.js';
@@ -19,7 +31,7 @@ import { UpdateInstanceDataCommandSchema } from './updateInstanceData.js';
 
 /**
  * Every command the server accepts, told apart by `type`. A command is the only way
- * state changes. Macro commands arrive later in M1.
+ * state changes.
  */
 export const CommandSchema = z.discriminatedUnion('type', [
   TakeGraphicCommandSchema,
@@ -40,6 +52,20 @@ export const CommandSchema = z.discriminatedUnion('type', [
   PreviewGraphicCommandSchema,
   StopPreviewCommandSchema,
   TakePreviewCommandSchema,
+  // Quick-fire panels and moving an item between homes (BAJAOVRLAY-16); ../quickFire/
+  // and ../rundown/moveItemToHome.ts.
+  CreateQuickFirePanelCommandSchema,
+  RenameQuickFirePanelCommandSchema,
+  DeleteQuickFirePanelCommandSchema,
+  MoveItemToHomeCommandSchema,
+  // Macros (BAJAOVRLAY-16); their schemas live in ../macros/. The last two are sent only
+  // by the server's macro runner.
+  CreateMacroCommandSchema,
+  UpdateMacroCommandSchema,
+  DeleteMacroCommandSchema,
+  RunMacroCommandSchema,
+  AdvanceMacroRunCommandSchema,
+  EndMacroRunCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

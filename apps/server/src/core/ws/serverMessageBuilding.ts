@@ -38,6 +38,12 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'rundowns', slice: slices.rundowns, serverNowMs };
     case 'items':
       return { type: 'slice', name: 'items', slice: slices.items, serverNowMs };
+    case 'quickFirePanels':
+      return { type: 'slice', name: 'quickFirePanels', slice: slices.quickFirePanels, serverNowMs };
+    case 'macros':
+      return { type: 'slice', name: 'macros', slice: slices.macros, serverNowMs };
+    case 'macroRuns':
+      return { type: 'slice', name: 'macroRuns', slice: slices.macroRuns, serverNowMs };
     case 'eventLog':
       return { type: 'slice', name: 'eventLog', slice: slices.eventLog, serverNowMs };
   }
