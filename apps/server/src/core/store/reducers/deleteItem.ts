@@ -1,14 +1,15 @@
-import { type DeleteItemCommand, listItemsOfRundownInOrder } from '@bajaovrlay/shared';
+import type { DeleteItemCommand } from '@bajaovrlay/shared';
 
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
-import { findItemThatFollows, numberItemsByPositionInList } from './itemOrdering.js';
+import { listItemsOfHomeInOrder, numberItemsByPositionInList } from './itemOrdering.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
-import { putRundownCursorOnItem } from './rundownCursor.js';
+import { moveRundownCursorOffLeavingItem } from './rundownCursor.js';
 
 /**
- * deleteItem: removes an item from its rundown and moves the items after it up by one.
- * If the rundown's cursor was on the deleted item, it moves to the item that followed
- * it, or to nothing when the deleted item was the last. Refused if the item does not exist.
+ * deleteItem: removes an item from its home (a rundown or a quick-fire panel) and moves
+ * the items after it up by one. If a rundown's cursor was on the deleted item, it moves
+ * to the item that followed it, or to nothing when the deleted item was the last.
+ * Refused if the item does not exist.
  * A graphic already on air from the item is left on air, on purpose: preparing the
  * rundown must never change what viewers see.
  * What could go wrong: that instance keeps an `itemId` that no longer names any item,
@@ -24,19 +25,10 @@ export function reduceDeleteItem(
   }
 
   // Worked out before the item is removed, while "the item after it" can still be found.
-  const rundown = slices.rundowns.find((candidate) => candidate.id === deletedItem.rundownId);
-  const isCursorOnDeletedItem = rundown?.cursorItemId === deletedItem.id;
-  const itemAfterDeletedOne = findItemThatFollows(slices.items, deletedItem);
-  const rundownsAfter = isCursorOnDeletedItem
-    ? putRundownCursorOnItem(
-        slices.rundowns,
-        deletedItem.rundownId,
-        itemAfterDeletedOne?.id ?? null,
-      )
-    : slices.rundowns;
+  const rundownsAfter = moveRundownCursorOffLeavingItem(slices.rundowns, slices.items, deletedItem);
 
   const itemsKept = slices.items.filter((item) => item.id !== deletedItem.id);
-  const itemIdsLeftInOrder = listItemsOfRundownInOrder(itemsKept, deletedItem.rundownId).map(
+  const itemIdsLeftInOrder = listItemsOfHomeInOrder(itemsKept, deletedItem.home).map(
     (item) => item.id,
   );
   const itemsAfter = numberItemsByPositionInList(itemsKept, itemIdsLeftInOrder);

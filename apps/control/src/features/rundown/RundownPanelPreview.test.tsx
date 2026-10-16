@@ -36,7 +36,9 @@
  *   - Space, Shift+Space and Backspace: RundownPanelPreviewKeys.test.tsx and
  *     src/keyboard/commandForOperatorKey.test.ts. The preview that follows this
  *     operator's own take: RundownPanelPreviewAfterTake.test.tsx.
- *   - The storage functions case by case: autoPreviewSetting.test.ts.
+ *   - The storage functions case by case, and the page's one store for the switch:
+ *     features/autoPreview/autoPreviewSettingInBrowserStorage.test.ts and
+ *     autoPreviewSettingStore.test.ts.
  *   - What the server does with `previewItem`; apps/server's previewItem.test.ts.
  *   - The preview appearing in the "Prévia" monitor; e2e/previewThenTake.e2e.ts.
  */

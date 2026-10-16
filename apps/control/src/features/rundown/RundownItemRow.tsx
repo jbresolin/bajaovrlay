@@ -5,11 +5,11 @@ import { cn } from 'cn';
 
 import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
+import { ItemColorChip } from '@/features/items/ItemColorChip';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
 
 import { DeleteItemButton } from './DeleteItemButton';
-import { ItemColorChip } from './ItemColorChip';
 
 /** What one row needs: its item, the names to show, and what each button does. */
 export type RundownItemRowProps = {

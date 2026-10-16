@@ -1,20 +1,22 @@
-import { type CreateItemCommand, type Item, listItemsOfRundownInOrder } from '@bajaovrlay/shared';
+import type { CreateItemCommand, Item } from '@bajaovrlay/shared';
 
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
 import { findRefusalOfTakeTimeFieldsForGraphic } from '../itemTakeTimeFields.js';
-import { refuseUnknownRundown } from '../rundownCommandRefusals.js';
-import { numberItemsByPositionInList } from './itemOrdering.js';
+import { findRefusalOfUnknownItemHome } from './itemHomeExistence.js';
+import { listItemsOfHomeInOrder, numberItemsByPositionInList } from './itemOrdering.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
-import { putRundownCursorOnItem } from './rundownCursor.js';
+import { giveCursorToFirstItemOfEmptyRundown } from './rundownCursor.js';
 
 /**
- * createItem: adds a prepared item to a rundown, at the end or at the position the
- * command names (the items from there on move down by one; a position past the end
- * means the end). Refused if the rundown, the layer or the graphic does not exist, or if
+ * createItem: adds a prepared item to its home (a rundown or a quick-fire panel), at the
+ * end or at the position the command names (the items from there on move down by one; a
+ * position past the end means the end). Refused if the rundown or panel, the layer or the
+ * graphic does not exist, or if
  * a field says takeTime and the graphic's schema does not mark that field as a
  * wall-clock moment (the check and the message of a take; a graphic without a schema
  * accepts no takeTime field).
- * The first item of an empty rundown also gets the cursor, so "next" works at once.
+ * The first item of an empty rundown also gets the cursor, so "next" works at once; an
+ * item of a panel never gets any cursor.
  * What could go wrong: typed field values are not checked against the graphic here, so
  * an item with a wrong value is only refused when it is taken.
  */
@@ -23,9 +25,9 @@ export function reduceCreateItem(
   command: CreateItemCommand,
   context: ReducerContext,
 ): ReducerOutcome {
-  const rundownExists = slices.rundowns.some((rundown) => rundown.id === command.rundownId);
-  if (!rundownExists) {
-    return { status: 'refused', error: refuseUnknownRundown(command.rundownId) };
+  const refusalOfTheHome = findRefusalOfUnknownItemHome(slices, command.home);
+  if (refusalOfTheHome !== undefined) {
+    return { status: 'refused', error: refusalOfTheHome };
   }
   const layerExists = slices.layers.some((layer) => layer.id === command.layerId);
   if (!layerExists) {
@@ -44,13 +46,13 @@ export function reduceCreateItem(
     return { status: 'refused', error: refusalOfATakeTimeField };
   }
 
-  const itemsAlreadyInRundown = listItemsOfRundownInOrder(slices.items, command.rundownId);
-  const positionAtTheEnd = itemsAlreadyInRundown.length;
+  const itemsAlreadyInHome = listItemsOfHomeInOrder(slices.items, command.home);
+  const positionAtTheEnd = itemsAlreadyInHome.length;
   const positionOfNewItem = Math.min(command.order ?? positionAtTheEnd, positionAtTheEnd);
 
   const newItem: Item = {
     id: context.newItemId,
-    rundownId: command.rundownId,
+    home: command.home,
     order: positionOfNewItem,
     graphicId: command.graphicId,
     layerId: command.layerId,
@@ -64,16 +66,17 @@ export function reduceCreateItem(
     newItem.autoOutAfterMs = command.autoOutAfterMs;
   }
 
-  // The rundown's ids in their new order, with the new item slotted in, give every
-  // item its position; only the items after the new one actually change.
-  const itemIdsInNewOrder = itemsAlreadyInRundown.map((item) => item.id);
+  // The home's ids in their new order, with the new item slotted in, give every item
+  // its position; only the items after the new one actually change.
+  const itemIdsInNewOrder = itemsAlreadyInHome.map((item) => item.id);
   itemIdsInNewOrder.splice(positionOfNewItem, 0, newItem.id);
   const itemsAfter = numberItemsByPositionInList([...slices.items, newItem], itemIdsInNewOrder);
 
-  const isFirstItemOfRundown = itemsAlreadyInRundown.length === 0;
-  const rundownsAfter = isFirstItemOfRundown
-    ? putRundownCursorOnItem(slices.rundowns, command.rundownId, newItem.id)
-    : slices.rundowns;
+  const rundownsAfter = giveCursorToFirstItemOfEmptyRundown(
+    slices.rundowns,
+    itemsAlreadyInHome,
+    newItem,
+  );
 
   return { status: 'applied', slices: { ...slices, items: itemsAfter, rundowns: rundownsAfter } };
 }

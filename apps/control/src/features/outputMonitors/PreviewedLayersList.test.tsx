@@ -32,6 +32,9 @@
  *     clock's moment is stamped again, the cursor moves on); apps/server's
  *     takePreview.test.ts and takePreviewCursor.test.ts.
  *   - Space and Backspace, which send the same two commands: commandForOperatorKey.test.ts.
+ *   - The preview of the next item that follows an accepted "Tomar" while "Prévia
+ *     automática" is on: PreviewedLayersListPreviewAfterTake.test.tsx. (Here the cursor
+ *     never moves, so no "Tomar" is followed by anything.)
  *   - What the monitor above the lines frames: OutputMonitor.test.tsx.
  */
 import type { Instance, Slices } from '@bajaovrlay/shared';

@@ -11,8 +11,9 @@ export type TakeThatWasAccepted = {
 /**
  * Says which item to preview after an accepted take: the item the cursor moved on to,
  * while "Prévia automática" is on. Null means "preview nothing": the switch is off, the
- * take left the cursor where it was (a row that was not the next one was fired), or the
- * cursor is on nothing (the last item was taken).
+ * take left the cursor where it was (a row that was not the next one was fired, or
+ * "Tomar" aired a preview that was not of the cursor item), or the cursor is on nothing
+ * (the last item was taken).
  * João's ruling, gate 2 of BAJAOVRLAY-15: this is what makes Space, Space the loop.
  */
 export function findItemIdToPreviewAfterTake(take: TakeThatWasAccepted): string | null {

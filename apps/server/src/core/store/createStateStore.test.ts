@@ -110,8 +110,8 @@ describe('applyCommand with an invalid command', () => {
     // Arrange: a store, and a command type the server does not know.
     const { store } = createStoreWithRaceClockRegistered();
     const instancesBefore = store.readAllSlices().instances;
-    // (Until BAJAOVRLAY-13 this example was takeItem, which the server now knows.)
-    const unknownCommand = { type: 'runMacro', macroId: 'abertura-do-enduro' };
+    // (It was takeItem until BAJAOVRLAY-13, runMacro until -16; overrides arrive in M2.)
+    const unknownCommand = { type: 'setOverride', sourceId: 'scoring', value: [] };
 
     // Act: apply it as the operator.
     store.applyCommand(unknownCommand, operatorActor);
@@ -123,7 +123,7 @@ describe('applyCommand with an invalid command', () => {
         id: 1,
         ts: '2026-10-09T14:32:05.000Z',
         actor: 'operador:conexao-7',
-        command: 'runMacro',
+        command: 'setOverride',
         payload: unknownCommand,
         result: {
           status: 'failed',

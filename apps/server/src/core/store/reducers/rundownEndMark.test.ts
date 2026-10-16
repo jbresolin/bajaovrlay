@@ -99,7 +99,7 @@ describe('a rundown that was played to its end', () => {
       slicesBefore,
       {
         type: 'createItem',
-        rundownId: mainSessionRundownId,
+        home: { kind: 'rundown', rundownId: mainSessionRundownId },
         graphicId: 'race-clock',
         layerId: 'clock',
         fields: { sessionName: { kind: 'literal', value: 'Enduro de Resistência — Bateria 2' } },

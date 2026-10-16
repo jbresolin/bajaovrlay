@@ -1,5 +1,6 @@
 // Test support: the steps the preview test files share (previewThenTake.e2e.ts,
-// previewKeyboardLoop.e2e.ts and autoPreviewAcrossLayers.e2e.ts): opening the control page, opening an output in a page of
+// previewKeyboardLoop.e2e.ts, previewTakeWithTomar.e2e.ts and
+// autoPreviewAcrossLayers.e2e.ts): opening the control page, opening an output in a page of
 // its own, finding the race clock on an output or in a monitor frame, and preparing an
 // item. Functions only; nothing here remembers anything between calls or between tests.
 import { type BrowserContext, expect, type Locator, type Page } from '@playwright/test';

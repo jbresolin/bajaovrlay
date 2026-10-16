@@ -1,4 +1,5 @@
 import { chooseCommandForOperatorKey } from '@/keyboard/commandForOperatorKey';
+import { keyboardMap } from '@/keyboard/keyboardMap';
 import { useKeyboardShortcut } from '@/keyboard/useKeyboardShortcut';
 import {
   useIsConnectedToServer,
@@ -34,8 +35,8 @@ export function useBackspaceToStopPreview(): void {
     void sendCommand(command);
   }
 
-  useKeyboardShortcut('Backspace', discardTheMostRecentPreview, {
+  // The key and where it is left alone are in src/keyboard/keyboardMap.ts.
+  useKeyboardShortcut(keyboardMap.discardPreview, discardTheMostRecentPreview, {
     isEnabled: isConnected,
-    isIgnoredWhileTyping: true,
   });
 }

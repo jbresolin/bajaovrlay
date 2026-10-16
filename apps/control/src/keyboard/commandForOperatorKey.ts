@@ -1,6 +1,10 @@
 import type { CommandInput, Instance, Rundown } from '@bajaovrlay/shared';
 
-/** The three operator keys whose meaning depends on what is being previewed. */
+/**
+ * The three operator keys whose meaning depends on what is being previewed: the entries
+ * takeNext (`space`), previewCursorItem (`shiftSpace`) and discardPreview (`backspace`)
+ * of keyboardMap.ts, which says which key each one is and where it is listened to.
+ */
 export type OperatorKey = 'space' | 'shiftSpace' | 'backspace';
 
 /**

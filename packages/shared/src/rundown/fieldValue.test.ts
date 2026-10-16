@@ -53,7 +53,7 @@ function buildEnduroClockFieldsStampedAtTheTake() {
 function buildEnduroClockItemWithFields(fields: Record<string, unknown>) {
   return {
     id: enduroClockItemId,
-    rundownId: 'sessao-principal',
+    home: { kind: 'rundown', rundownId: 'sessao-principal' },
     order: 0,
     graphicId: 'race-clock',
     layerId: 'clock',
@@ -68,7 +68,7 @@ function buildEnduroClockItemWithFields(fields: Record<string, unknown>) {
 function buildCreateItemForTheEnduroClockWithFields(fields: Record<string, unknown>) {
   return {
     type: 'createItem',
-    rundownId: 'sessao-principal',
+    home: { kind: 'rundown', rundownId: 'sessao-principal' },
     graphicId: 'race-clock',
     layerId: 'clock',
     fields,

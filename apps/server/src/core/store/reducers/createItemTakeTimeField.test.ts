@@ -40,7 +40,7 @@ import {
 function buildCreateEnduroFinishCommand(fields: ItemFields): CreateItemCommand {
   return {
     type: 'createItem',
-    rundownId: mainSessionRundownId,
+    home: { kind: 'rundown', rundownId: mainSessionRundownId },
     graphicId: 'race-clock',
     layerId: 'clock',
     fields,
@@ -54,7 +54,7 @@ function buildCreateEnduroFinishCommand(fields: ItemFields): CreateItemCommand {
 function buildCreatePodiumTeamCommand(fields: ItemFields): CreateItemCommand {
   return {
     type: 'createItem',
-    rundownId: podiumRundownId,
+    home: { kind: 'rundown', rundownId: podiumRundownId },
     graphicId: 'team-lower-third',
     layerId: 'lower-third',
     fields,

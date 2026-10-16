@@ -124,7 +124,36 @@
   --item-color-highlight: oklch(0.714 0.203 305.504);
 }
 
+/*
+ * The text drawn ON an item colour: a quick-fire or macro button is painted in its
+ * item's colour (BAJAOVRLAY-16), so its label needs a colour that reads on it. Amber
+ * (warning) is light, so it takes dark text; in dark mode every item colour is light.
+ */
+:root {
+  --item-color-neutral-foreground: oklch(0.985 0 0);
+  --item-color-info-foreground: oklch(0.985 0 0);
+  --item-color-success-foreground: oklch(0.985 0 0);
+  --item-color-warning-foreground: oklch(0.205 0 0);
+  --item-color-danger-foreground: oklch(0.985 0 0);
+  --item-color-highlight-foreground: oklch(0.985 0 0);
+}
+
+.dark {
+  --item-color-neutral-foreground: oklch(0.205 0 0);
+  --item-color-info-foreground: oklch(0.205 0 0);
+  --item-color-success-foreground: oklch(0.205 0 0);
+  --item-color-warning-foreground: oklch(0.205 0 0);
+  --item-color-danger-foreground: oklch(0.205 0 0);
+  --item-color-highlight-foreground: oklch(0.205 0 0);
+}
+
 @theme inline {
+  --color-item-neutral-foreground: var(--item-color-neutral-foreground);
+  --color-item-info-foreground: var(--item-color-info-foreground);
+  --color-item-success-foreground: var(--item-color-success-foreground);
+  --color-item-warning-foreground: var(--item-color-warning-foreground);
+  --color-item-danger-foreground: var(--item-color-danger-foreground);
+  --color-item-highlight-foreground: var(--item-color-highlight-foreground);
   --color-item-neutral: var(--item-color-neutral);
   --color-item-info: var(--item-color-info);
   --color-item-success: var(--item-color-success);

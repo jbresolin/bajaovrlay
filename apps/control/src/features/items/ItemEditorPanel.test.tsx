@@ -204,7 +204,7 @@ describe('the item editor panel for a new item', () => {
     ).toEqual([
       {
         type: 'createItem',
-        rundownId: 'sessao-principal',
+        home: { kind: 'rundown', rundownId: 'sessao-principal' },
         graphicId: 'race-clock',
         layerId: 'clock',
         label: 'Largada do Enduro',

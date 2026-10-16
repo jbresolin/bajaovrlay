@@ -117,7 +117,7 @@ const acceptedSaveScenarios: AcceptedSaveScenario[] = [
     },
     expectedItem: {
       id: idOfTheInterviewItem,
-      rundownId: 'sessao-principal',
+      home: { kind: 'rundown', rundownId: 'sessao-principal' },
       order: 1,
       graphicId: 'lower-third-fixture',
       layerId: 'lower-third',

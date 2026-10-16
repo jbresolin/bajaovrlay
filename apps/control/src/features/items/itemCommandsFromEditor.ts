@@ -19,6 +19,7 @@ import type {
   CreateItemCommand,
   Item,
   ItemFields,
+  ItemHome,
   UpdateInstanceDataCommand,
   UpdateItemFieldsCommand,
 } from '@bajaovrlay/shared';
@@ -32,7 +33,8 @@ import {
 
 /** What buildCreateItemCommand needs. */
 export type CreateItemCommandParts = {
-  rundownId: string;
+  /** Where the new item lives: the rundown on screen, or a quick-fire panel ("Onde"). */
+  home: ItemHome;
   itemFormValues: ItemEditorFormValues;
   /**
    * Every field of the graphic as the generated form holds it
@@ -43,14 +45,14 @@ export type CreateItemCommandParts = {
 
 /**
  * Builds the `createItem` command for a new item. No `order` is sent, so the server
- * puts the item at the end of the rundown.
+ * puts the item at the end of its home (the rundown, or the panel's last button).
  */
 export function buildCreateItemCommand(parts: CreateItemCommandParts): CreateItemCommand {
-  const { rundownId, itemFormValues, fields } = parts;
+  const { home, itemFormValues, fields } = parts;
 
   const command: CreateItemCommand = {
     type: 'createItem',
-    rundownId,
+    home,
     graphicId: itemFormValues.graphicId,
     layerId: itemFormValues.layerId,
     label: itemFormValues.label.trim(),

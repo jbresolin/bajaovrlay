@@ -13,6 +13,8 @@
  *     `emptyTheServerState` leaves the clock layer "vazia", nothing in preview and the
  *     rundown without items, as the control page shows it, and the seeded rundown
  *     "Sessão principal" is still there.
+ *   - With a second panel, a button in "Atalhos" and a macro, `emptyTheServerState` leaves
+ *     only the seeded panel "Atalhos", empty, and no macro.
  *   - Called on a server that is already empty, it changes nothing and does not fail.
  *
  * What these tests deliberately do not cover:
@@ -20,6 +22,9 @@
  *     `test.beforeEach` at its top, which is there to be read.
  *   - Layers and graphics: no command changes them, so there is nothing to put back.
  *   - The event log, which keeps its rows; no browser test reads it.
+ *   - A macro still running when the reset starts: the reset waits for it to end, which
+ *     the macro e2e (macroTakeWaitClear.e2e.ts) leaves behind only for half a second.
+ *   - "Atalhos" renamed by a test: no test renames it today; the reset names it back.
  *
  * What it needs: the race clock built (`pnpm build`), because the server only registers
  * built graphics.
@@ -27,6 +32,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { createRaceClockButtonInPanelShown, findQuickFireArea } from './quickFireTestSteps';
 
 /** Opens the control page and waits until it says it is connected to the server. */
 async function openControlPageAndWaitUntilConnected(page: Page): Promise<void> {
@@ -108,6 +114,51 @@ test.describe('emptying the server state', () => {
     await expect(
       rundownArea.getByRole('heading', { name: 'Sessão principal' }),
       'the reset must keep the seeded rundown itself',
+    ).toBeVisible();
+  });
+
+  test('deletes the macros, the panels made since the seed and every button', async ({ page }) => {
+    // Arrange: leave behind a button in "Atalhos", a second panel "Patrocinadores" and a
+    // macro "Fechar a sessão" (one "Limpar tudo" step), all made from the page.
+    await openControlPageAndWaitUntilConnected(page);
+    const quickFireArea = findQuickFireArea(page);
+    await createRaceClockButtonInPanelShown(page, 'Relógio do box', 'Entrevista no box');
+    await quickFireArea.getByRole('button', { name: '+ Painel' }).click();
+    await quickFireArea.getByLabel('Nome do novo painel').fill('Patrocinadores');
+    await quickFireArea.getByRole('button', { name: 'Criar painel' }).click();
+    await expect(
+      quickFireArea.getByRole('tab', { name: 'Patrocinadores' }),
+      'the second panel must exist before the reset',
+    ).toBeVisible();
+    await quickFireArea.getByRole('tab', { name: 'Macros' }).click();
+    await quickFireArea.getByRole('button', { name: '+ Macro' }).click();
+    const macroEditor = page.getByRole('region', { name: 'Editor de macro' });
+    await macroEditor.getByLabel('Rótulo da macro').fill('Fechar a sessão');
+    await macroEditor.getByRole('button', { name: '+ Passo' }).click();
+    await macroEditor.getByRole('combobox', { name: 'Tipo do passo 1' }).click();
+    await page.getByRole('option', { name: 'Limpar tudo', exact: true }).click();
+    await macroEditor.getByRole('button', { name: 'Salvar macro' }).click();
+    await expect(
+      quickFireArea.getByRole('list', { name: 'Macros' }).getByRole('listitem'),
+      'the macro must exist before the reset',
+    ).toHaveCount(1);
+
+    // Act: empty the server.
+    await emptyTheServerState();
+
+    // Assert: no macro, only "Atalhos" (plus the Macros tab), and "Atalhos" is empty.
+    await expect(
+      quickFireArea.getByText('Nenhuma macro. Use "+ Macro" para criar a primeira.'),
+      'after the reset no macro may be left',
+    ).toBeVisible();
+    await expect(
+      quickFireArea.getByRole('tab'),
+      'after the reset only the seeded panel and the Macros tab may be left',
+    ).toHaveText([/^Atalhos/, /^Macros/]);
+    await quickFireArea.getByRole('tab', { name: 'Atalhos' }).click();
+    await expect(
+      quickFireArea.getByText('Crie um item aqui para ter um atalho'),
+      'after the reset the seeded panel must have no button',
     ).toBeVisible();
   });
 

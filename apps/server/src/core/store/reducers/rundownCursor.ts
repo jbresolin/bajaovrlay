@@ -5,16 +5,21 @@ import { findItemThatFollows } from './itemOrdering.js';
 /**
  * The rundowns after `takenItem` went on air (takeItem, takeNext or takePreview). The
  * cursor is the plan ("what Space fires next"), so it moves on only when the plan itself
- * was carried out: the item taken was the cursor item. An item fired ad hoc leaves the
- * plan alone, and the very same rundowns array comes back, so the store neither saves
- * nor broadcasts it.
+ * was carried out: the item taken was the cursor item. An item fired ad hoc (another
+ * row, or any quick-fire panel button, which is ad hoc by definition) leaves the plan
+ * alone, and the very same rundowns array comes back, so the store neither saves nor
+ * broadcasts it.
  */
 export function moveRundownCursorOnIfItWasOnTakenItem(
   rundowns: Rundown[],
   items: Item[],
   takenItem: Item,
 ): Rundown[] {
-  const rundownOfTakenItem = rundowns.find((candidate) => candidate.id === takenItem.rundownId);
+  if (takenItem.home.kind !== 'rundown') {
+    return rundowns;
+  }
+  const rundownIdOfTakenItem = takenItem.home.rundownId;
+  const rundownOfTakenItem = rundowns.find((candidate) => candidate.id === rundownIdOfTakenItem);
   const wasTakenItemTheCursorItem = rundownOfTakenItem?.cursorItemId === takenItem.id;
   if (!wasTakenItemTheCursorItem) {
     return rundowns;
@@ -23,9 +28,55 @@ export function moveRundownCursorOnIfItWasOnTakenItem(
   if (nextItem === undefined) {
     // The plan was carried out to its last item: the cursor is left on nothing and the
     // rundown is marked as played to its end, which the control page says in words.
-    return leaveRundownCursorPastItsLastItem(rundowns, takenItem.rundownId);
+    return leaveRundownCursorPastItsLastItem(rundowns, rundownIdOfTakenItem);
   }
-  return putRundownCursorOnItem(rundowns, takenItem.rundownId, nextItem.id);
+  return putRundownCursorOnItem(rundowns, rundownIdOfTakenItem, nextItem.id);
+}
+
+/**
+ * The rundowns after `leavingItem` left its rundown (deleteItem, or moveItemToHome to
+ * another home), worked out while the item is still in `items`. A cursor on the leaving
+ * item moves to the item that followed it, or to nothing when it was the last; any
+ * other cursor stays, and then the very same rundowns array comes back. An item of a
+ * quick-fire panel has no cursor to move.
+ */
+export function moveRundownCursorOffLeavingItem(
+  rundowns: Rundown[],
+  items: Item[],
+  leavingItem: Item,
+): Rundown[] {
+  if (leavingItem.home.kind !== 'rundown') {
+    return rundowns;
+  }
+  const rundownIdOfLeavingItem = leavingItem.home.rundownId;
+  const rundown = rundowns.find((candidate) => candidate.id === rundownIdOfLeavingItem);
+  const isCursorOnLeavingItem = rundown?.cursorItemId === leavingItem.id;
+  if (!isCursorOnLeavingItem) {
+    return rundowns;
+  }
+  const itemAfterLeavingOne = findItemThatFollows(items, leavingItem);
+  return putRundownCursorOnItem(rundowns, rundownIdOfLeavingItem, itemAfterLeavingOne?.id ?? null);
+}
+
+/**
+ * The rundowns after `arrivingItem` joined its home (createItem, or moveItemToHome from
+ * another home), given the items that were in that home before. The first item of an
+ * empty rundown gets the cursor, so "next" works at once; in every other case, and for
+ * a quick-fire panel, the very same rundowns array comes back.
+ */
+export function giveCursorToFirstItemOfEmptyRundown(
+  rundowns: Rundown[],
+  itemsAlreadyInHome: Item[],
+  arrivingItem: Item,
+): Rundown[] {
+  if (arrivingItem.home.kind !== 'rundown') {
+    return rundowns;
+  }
+  const isFirstItemOfTheRundown = itemsAlreadyInHome.length === 0;
+  if (!isFirstItemOfTheRundown) {
+    return rundowns;
+  }
+  return putRundownCursorOnItem(rundowns, arrivingItem.home.rundownId, arrivingItem.id);
 }
 
 /**

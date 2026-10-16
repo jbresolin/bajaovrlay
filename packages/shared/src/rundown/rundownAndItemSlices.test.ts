@@ -51,7 +51,7 @@ function buildMainSessionRundown() {
 function buildEnduroClockItem() {
   return {
     id: 'b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10',
-    rundownId: 'sessao-principal',
+    home: { kind: 'rundown', rundownId: 'sessao-principal' },
     order: 0,
     graphicId: 'race-clock',
     layerId: 'clock',
@@ -100,6 +100,11 @@ function buildRaceMorningStateWithOnePreparedItem() {
     instances: [],
     rundowns: [buildMainSessionRundown()],
     items: [buildEnduroClockItem()],
+    // The seeded panel, no macro and nothing running: quickFirePanels.test.ts and
+    // macros.test.ts cover those slices.
+    quickFirePanels: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
+    macros: [],
+    macroRuns: [],
     eventLog: [],
   };
 }

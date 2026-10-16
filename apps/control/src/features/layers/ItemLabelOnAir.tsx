@@ -1,3 +1,4 @@
+import { ItemColorChip } from '@/features/items/ItemColorChip';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
 /**
@@ -8,6 +9,8 @@ import { useServerState } from '@/state/ControlPageStateProvider';
  * since been deleted: the row still names the graphic, and an id would help nobody.
  * The label is read from the `items` slice as it is now, so a renamed item shows its
  * new name, even though the graphic on air still carries the data of the old take.
+ * The item's colour chip goes before the label, as on its rundown row and its quick-fire
+ * button, so the operator finds on the layer panel the colour they gave the item.
  */
 export function ItemLabelOnAir(props: { itemId: string | undefined }) {
   const items = useServerState((state) => state.items);
@@ -19,5 +22,10 @@ export function ItemLabelOnAir(props: { itemId: string | undefined }) {
   if (itemOnAir === undefined) {
     return null;
   }
-  return <span className="truncate font-medium">{itemOnAir.label}</span>;
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <ItemColorChip color={itemOnAir.color} />
+      <span className="truncate font-medium">{itemOnAir.label}</span>
+    </span>
+  );
 }

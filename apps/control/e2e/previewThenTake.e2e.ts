@@ -38,7 +38,8 @@
  *   - That the clock taken from a preview starts counting at the take and not at the
  *     preview; apps/server's takePreview.test.ts proves the stamp.
  *   - The Right arrow previewing and Space sending the preview to air;
- *     previewKeyboardLoop.e2e.ts.
+ *     previewKeyboardLoop.e2e.ts. "Tomar" previewing the next item (here there is none,
+ *     the one item was the last); previewTakeWithTomar.e2e.ts.
  *   - "Prévia" of "Edição rápida", Shift+Space, Backspace and the switch turned off; the
  *     component tests (QuickEditPanelPreview, RundownPanelPreviewKeys, App,
  *     RundownPanelPreview) and src/keyboard/commandForOperatorKey.test.ts cover those.

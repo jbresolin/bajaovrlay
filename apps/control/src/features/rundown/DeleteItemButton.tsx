@@ -10,6 +10,11 @@ export const deleteItemConfirmationWindowInMilliseconds = 3_000;
 export type DeleteItemButtonProps = {
   /** Called at the second press, the one that confirms. */
   onDeleteConfirmed: () => void;
+  /**
+   * The two texts, for a button that deletes something other than a rundown item (the
+   * macro editor's "Excluir macro"). Left out: "Excluir" and "Confirmar: excluir".
+   */
+  texts?: { deleteButton: string; confirmButton: string };
 };
 
 /**
@@ -18,7 +23,8 @@ export type DeleteItemButtonProps = {
  * "Confirmar: excluir", and a second press within 3 seconds deletes. It is the same
  * pattern as "Limpar tudo" (features/playout/ClearAllButton.tsx), repeated here on
  * purpose instead of shared: that one also listens to Esc, this one to no key at all.
- * Each row draws its own button, so arming one row never arms another.
+ * Each row draws its own button, so arming one row never arms another. The macro editor
+ * reuses it with its own two texts.
  * No browser `confirm()`: a dialog would freeze the page in the middle of a show.
  */
 export function DeleteItemButton(props: DeleteItemButtonProps) {
@@ -47,15 +53,17 @@ export function DeleteItemButton(props: DeleteItemButtonProps) {
     props.onDeleteConfirmed();
   }
 
+  const texts = props.texts ?? {
+    deleteButton: ptBR.rundown.deleteItemButton,
+    confirmButton: ptBR.rundown.deleteItemConfirmButton,
+  };
   return (
     <ActionButton
       size="xs"
       variant={isAwaitingConfirmation ? 'destructive' : 'ghost'}
       onClick={handlePress}
     >
-      {isAwaitingConfirmation
-        ? ptBR.rundown.deleteItemConfirmButton
-        : ptBR.rundown.deleteItemButton}
+      {isAwaitingConfirmation ? texts.confirmButton : texts.deleteButton}
     </ActionButton>
   );
 }

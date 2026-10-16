@@ -34,7 +34,7 @@ const idOfTheSponsorClockItem = 'item-relogio-do-patrocinador';
 // "Relógio do patrocinador": the enduro clock as an item that leaves by itself after 10 s.
 const createSponsorClockItemThatLeavesAfterTenSeconds = {
   type: 'createItem',
-  rundownId: 'sessao-principal',
+  home: { kind: 'rundown', rundownId: 'sessao-principal' },
   graphicId: 'race-clock',
   layerId: 'clock',
   label: 'Relógio do patrocinador',

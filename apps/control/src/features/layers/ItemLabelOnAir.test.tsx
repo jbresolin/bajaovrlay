@@ -14,6 +14,8 @@
  *   - If the item was deleted after it went on air, the row keeps the graphic's name and
  *     shows no label, instead of an id nobody can read.
  *   - The label follows the server: when the item is renamed, the row shows the new name.
+ *   - The label carries the item's colour chip, the same as on the item's rundown row or
+ *     quick-fire button, and a graphic taken by hand gets no chip.
  *
  * What these tests deliberately do not cover:
  *   - Everything else on the row (time, each status, "Limpar"); LayerStatusPanel.test.tsx does.
@@ -116,5 +118,31 @@ describe('the item label on the layer panel', () => {
       clockRow.getByText('Largada — Bateria 2'),
       'the label on the layer row must follow the item as the server has it now',
     ).toBeInTheDocument();
+  });
+
+  it('shows the item’s colour chip beside its label, and none for a graphic taken by hand', () => {
+    // Arrange: "Largada do enduro" (green, success) on the clock layer, and the race
+    // clock also taken by hand on the lower third, with no item.
+    const slices = buildSlicesWithTheEnduranceStartOnAir(momentTheClockWentOnAir);
+    slices.instances.push({
+      ...buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir),
+      id: 'b2f0c9e4-1a7d-4c3b-8e65-9d4a2f7c1e08',
+      layerId: 'lower-third',
+    });
+
+    // Act: draw the panel.
+    renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
+
+    // Assert: the clock row has a green chip; the lower third has none.
+    const clockRow = screen.getByRole('listitem', { name: 'Relógio' });
+    const lowerThirdRow = screen.getByRole('listitem', { name: 'Tarja' });
+    expect(
+      clockRow.querySelector('[data-item-color]'),
+      'the row of an item on air must carry the item’s colour chip',
+    ).toHaveAttribute('data-item-color', 'success');
+    expect(
+      lowerThirdRow.querySelector('[data-item-color]'),
+      'a graphic taken by hand has no item, so no colour chip',
+    ).toBeNull();
   });
 });

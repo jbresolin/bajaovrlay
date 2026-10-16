@@ -85,6 +85,9 @@ not answer the previous ping.
       }
     ],
     "items": [],
+    "quickFirePanels": [{ "id": "atalhos", "name": "Atalhos", "order": 0 }],
+    "macros": [],
+    "macroRuns": [],
     "eventLog": []
   },
   "serverNowMs": 1791550800000

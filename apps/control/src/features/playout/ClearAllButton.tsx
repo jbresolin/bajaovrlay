@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { ActionButton } from '@/features/connection/ActionButton';
 import { ptBR } from '@/i18n/ptBR';
+import { keyboardMap } from '@/keyboard/keyboardMap';
 import { useKeyboardShortcut } from '@/keyboard/useKeyboardShortcut';
 import { useIsConnectedToServer, useSendCommand } from '@/state/ControlPageStateProvider';
 
@@ -42,11 +43,10 @@ export function ClearAllButton() {
     void sendCommand({ type: 'clearAll' });
   }
 
-  // Esc works from anywhere, even while typing in a field: it is the panic key.
-  useKeyboardShortcut('Escape', handlePress, {
-    isEnabled: isConnected,
-    isIgnoredWhileTyping: false,
-  });
+  // Esc works from anywhere, even while typing in a field: it is the panic key
+  // (src/keyboard/keyboardMap.ts, clearAll). An Esc that closes a dropdown, a menu or a
+  // dialog is used by that control first, and so neither arms nor confirms.
+  useKeyboardShortcut(keyboardMap.clearAll, handlePress, { isEnabled: isConnected });
 
   return (
     <ActionButton variant="destructive" onClick={handlePress}>

@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { useTakeThenPreviewNextItem } from '@/features/autoPreview/useTakeThenPreviewNextItem';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
@@ -11,6 +12,10 @@ import { listPreviewedLayers } from './previewedLayers';
  * layer panel's order, naming the layer and what is previewed on it (previewedLayers.ts),
  * with "Tomar" (`takePreview` for that layer: the preview goes on air as it was seen) and
  * "Descartar" (`stopPreview` for that layer). With nothing previewed it says so.
+ * "Tomar" goes through the same road as Space (features/autoPreview/): while "Prévia
+ * automática" is on, a take that moved the rundown's cursor on is followed by a preview of
+ * the new cursor item, so "Tomar", "Tomar" walks the rundown like Space, Space. A refusal
+ * of that preview is shown in the rundown column, where every `previewItem` refusal is.
  *
  * Several layers can hold a preview at once and the monitor draws them all, so there is
  * one line each rather than one pair of buttons that would have to guess which preview
@@ -26,6 +31,7 @@ export function PreviewedLayersList() {
   const items = useServerState((state) => state.items);
   const instances = useServerState((state) => state.instances);
   const sendCommand = useSendCommand();
+  const sendTakeByThisOperator = useTakeThenPreviewNextItem();
 
   const previewedLayers = listPreviewedLayers({ layers, graphics, items, instances });
 
@@ -53,7 +59,7 @@ export function PreviewedLayersList() {
               <ActionButton
                 size="xs"
                 onClick={() =>
-                  void sendCommand({ type: 'takePreview', layerId: previewedLayer.layerId })
+                  sendTakeByThisOperator({ type: 'takePreview', layerId: previewedLayer.layerId })
                 }
               >
                 {ptBR.outputMonitors.takePreviewButton}

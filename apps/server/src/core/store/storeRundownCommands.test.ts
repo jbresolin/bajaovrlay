@@ -44,7 +44,7 @@ const operatorActor = 'operador:conexao-7';
 function buildCreateClockItemCommand(label: string, flagState: string) {
   return {
     type: 'createItem',
-    rundownId: 'sessao-principal',
+    home: { kind: 'rundown', rundownId: 'sessao-principal' },
     graphicId: 'race-clock',
     layerId: 'clock',
     label,

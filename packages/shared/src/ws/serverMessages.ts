@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
 import { CommandErrorSchema } from '../commands/commandError.js';
+import { MacroSchema } from '../macros/macro.js';
+import { MacroRunSchema } from '../macros/macroRun.js';
+import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
 import { RundownSchema } from '../rundown/rundown.js';
 import { EventLogEntrySchema } from '../slices/eventLogEntry.js';
@@ -62,6 +65,24 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('items'),
     slice: z.array(ItemSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('quickFirePanels'),
+    slice: z.array(QuickFirePanelSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('macros'),
+    slice: z.array(MacroSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('macroRuns'),
+    slice: z.array(MacroRunSchema),
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({

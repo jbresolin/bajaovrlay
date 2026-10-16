@@ -1,11 +1,16 @@
-// Entry point of the control page: builds the one store, opens the one connection to
-// the server, and mounts <App /> into index.html with both made available to it.
+// Entry point of the control page: builds the server-state store and the "Prévia
+// automática" store, opens the one connection to the server, and mounts <App /> into
+// index.html with all of them made available to it, together with the page's record of
+// what the item editor is open for.
 import './index.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
+import { AutoPreviewSettingProvider } from './features/autoPreview/AutoPreviewSettingProvider';
+import { createAutoPreviewSettingStore } from './features/autoPreview/autoPreviewSettingStore';
+import { ItemEditorTargetProvider } from './features/items/ItemEditorTargetProvider';
 import { ptBR } from './i18n/ptBR';
 import { buildWebSocketAddress, openBrowserWebSocket } from './state/browserWebSocket';
 import { ControlPageStateProvider } from './state/ControlPageStateProvider';
@@ -28,6 +33,9 @@ const serverConnection = connectToServer({
   serverStateStore,
   openSocket: openBrowserWebSocket,
 });
+// The one browser setting of the page, read from localStorage once, here, as the page
+// opens. Kept apart from the server-state store, which holds only what the server sent.
+const autoPreviewSettingStore = createAutoPreviewSettingStore();
 
 createRoot(rootElement).render(
   <StrictMode>
@@ -35,7 +43,11 @@ createRoot(rootElement).render(
       serverStateStore={serverStateStore}
       sendCommand={serverConnection.sendCommand}
     >
-      <App />
+      <AutoPreviewSettingProvider autoPreviewSettingStore={autoPreviewSettingStore}>
+        <ItemEditorTargetProvider>
+          <App />
+        </ItemEditorTargetProvider>
+      </AutoPreviewSettingProvider>
     </ControlPageStateProvider>
   </StrictMode>,
 );

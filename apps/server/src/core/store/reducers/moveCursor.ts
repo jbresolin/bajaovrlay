@@ -2,6 +2,7 @@ import type { MoveCursorCommand } from '@bajaovrlay/shared';
 
 import {
   refuseItemOfAnotherRundown,
+  refuseQuickFireButtonAsCursor,
   refuseUnknownItem,
   refuseUnknownRundown,
 } from '../rundownCommandRefusals.js';
@@ -11,8 +12,8 @@ import { putRundownCursorOnItem } from './rundownCursor.js';
 /**
  * moveCursor: puts a rundown's cursor ("next") on one of its items, or on nothing
  * with null, without taking anything. Refused if the rundown or the item does not
- * exist, or if the item belongs to another rundown: "next" would then fire a graphic
- * that is not in the list the operator is looking at.
+ * exist, or if the item belongs to another rundown or is a quick-fire panel button:
+ * "next" would then fire a graphic that is not in the list the operator is looking at.
  * A cursor that is already there hands back the same slices.
  */
 export function reduceMoveCursor(
@@ -29,7 +30,13 @@ export function reduceMoveCursor(
     if (item === undefined) {
       return { status: 'refused', error: refuseUnknownItem(command.itemId) };
     }
-    if (item.rundownId !== rundown.id) {
+    if (item.home.kind === 'quickFire') {
+      return {
+        status: 'refused',
+        error: refuseQuickFireButtonAsCursor(item.label, rundown.name),
+      };
+    }
+    if (item.home.rundownId !== rundown.id) {
       return {
         status: 'refused',
         error: refuseItemOfAnotherRundown(item.label, rundown.name),

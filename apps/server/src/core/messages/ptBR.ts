@@ -61,6 +61,8 @@ export const ptBR = {
   },
   // Name of the one rundown seeded on the first boot, as the operator sees it.
   seededRundownName: 'Sessão principal',
+  // Name of the one quick-fire panel seeded on the first boot, as the operator sees it.
+  seededQuickFirePanelName: 'Atalhos',
   // Refusals of the rundown and item commands; each goes with a stable code, like
   // commandErrors above. A rundown and an item are named by what the
   // operator reads on screen (name, label) whenever the server has it, and by id when
@@ -70,11 +72,32 @@ export const ptBR = {
     rundownNotFound: (rundownId: string) => `O rundown "${rundownId}" não existe.`,
     itemNotInRundown: (itemLabel: string, rundownName: string) =>
       `O item "${itemLabel}" pertence a outro rundown, não a "${rundownName}".`,
+    // moveCursor named a quick-fire panel button: it can never be the rundown's "next".
+    itemIsAQuickFireButton: (itemLabel: string, rundownName: string) =>
+      `O item "${itemLabel}" é um botão do painel de atalhos, não um item do rundown "${rundownName}".`,
     itemsNotAPermutation: (rundownName: string) =>
       `A nova ordem do rundown "${rundownName}" não confere com os itens dele: ela precisa trazer todos os itens do rundown, cada um uma única vez.`,
     rundownCursorEmpty: (rundownName: string) =>
       `O rundown "${rundownName}" não tem próximo item: o cursor não está em nenhum item. Escolha o próximo item antes de colocar no ar.`,
     unsupportedFieldKind: (fieldKey: string, fieldKind: string) =>
       `O campo "${fieldKey}" usa um valor do tipo "${fieldKind}", que o servidor só vai saber resolver no marco M2 (BAJAOVRLAY-20). Por enquanto, preencha o campo com um valor literal.`,
+  },
+  // Refusals of the quick-fire panel commands; each goes with a stable code. A panel is
+  // named by its name when the server has it, and by id when it was not found.
+  quickFirePanelErrors: {
+    panelNotFound: (panelId: string) => `O painel de atalhos "${panelId}" não existe.`,
+    panelNotEmpty: (panelName: string, numberOfItems: number) =>
+      `O painel "${panelName}" ainda tem ${numberOfItems === 1 ? '1 item' : `${numberOfItems} itens`}. Mova ou exclua os itens dele antes de excluir o painel.`,
+    lastPanel: (panelName: string) =>
+      `O painel "${panelName}" é o único painel de atalhos e não pode ser excluído. Crie outro painel antes.`,
+  },
+  // Refusals of the macro commands; each goes with a stable code. A macro is named by
+  // its label when the server has it, and by id when it was not found.
+  macroErrors: {
+    macroNotFound: (macroId: string) => `A macro "${macroId}" não existe.`,
+    anotherMacroRunning: (macroLabel: string, runningMacroLabel: string) =>
+      `A macro "${macroLabel}" não pode começar enquanto a macro "${runningMacroLabel}" está rodando.`,
+    macroIsRunning: (macroLabel: string) =>
+      `A macro "${macroLabel}" está rodando agora. Espere ela terminar para alterá-la ou excluí-la.`,
   },
 } as const;

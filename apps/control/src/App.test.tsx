@@ -16,7 +16,9 @@
  *     on `/render/?target=preview&monitor=1`) to the left of the "Programa" monitor (a
  *     frame on `/render/?monitor=1`, the page OBS loads but marked as a monitor so it
  *     never reports what is on air), with what is previewed listed under "Prévia" and
- *     "Edição rápida" below; and the layer list with "Limpar tudo".
+ *     "Edição rápida" below; and on the right the quick-fire strip ("Atalhos e macros")
+ *     above the layer list with "Limpar tudo".
+ *   - The header has the "?" button that lists the keyboard shortcuts.
  *   - While something is on the preview output, Backspace throws that preview away and
  *     leaves the clock on air, but not while the operator is typing in a field, choosing
  *     in a dropdown (closed or open) or resting on the switch.
@@ -202,6 +204,33 @@ describe('the three areas of the control page', () => {
     expect(
       layersArea.getByRole('button', { name: 'Limpar tudo' }),
       'the clear all button must sit next to the layers',
+    ).toBeInTheDocument();
+  });
+});
+
+describe('the right column and the header of the control page', () => {
+  it('shows the quick-fire strip above the layers, and the "?" in the header', () => {
+    // Arrange: nothing to prepare beyond a connected page; the server's seeded panel,
+    // "Atalhos", has no buttons yet.
+
+    // Act: draw the page.
+    renderControlPageWithTheRaceClockOnAir();
+
+    // Assert: the strip with its first tab, drawn before the layer panel; and "?" in the
+    // header.
+    const quickFireArea = screen.getByRole('region', { name: 'Atalhos e macros' });
+    const layersArea = screen.getByRole('region', { name: 'Camadas' });
+    expect(
+      within(quickFireArea).getByRole('tab', { name: 'Atalhos' }),
+      'the strip must show the seeded panel as its first tab',
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(
+      quickFireArea.compareDocumentPosition(layersArea) & Node.DOCUMENT_POSITION_FOLLOWING,
+      'the strip must come before the layer panel, which puts it above',
+    ).toBeTruthy();
+    expect(
+      within(screen.getByRole('banner')).getByRole('button', { name: 'Atalhos do teclado' }),
+      'the header must offer the "?" button that lists the shortcuts',
     ).toBeInTheDocument();
   });
 });

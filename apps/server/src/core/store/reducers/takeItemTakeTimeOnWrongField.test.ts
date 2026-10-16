@@ -76,7 +76,8 @@ function buildPodiumTeamItemStampingAField(): Item {
  * registered without one, and team 42's lower third already on air.
  */
 function buildRaceDayWithItemUnderTheCursor(item: Item): SlicesChangedByCommands {
-  const isItemOfTheMainSession = item.rundownId === mainSessionRundownId;
+  const isItemOfTheMainSession =
+    item.home.kind === 'rundown' && item.home.rundownId === mainSessionRundownId;
   const cursorOfTheMainSession = isItemOfTheMainSession ? item.id : null;
   const cursorOfThePodiumCeremony = isItemOfTheMainSession ? null : item.id;
   const raceDaySlices = buildRaceDaySlicesWithRundown({

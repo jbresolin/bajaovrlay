@@ -39,7 +39,7 @@ const momentOfTheSecondTakeInMilliseconds = 1_791_557_250_250;
 // "Largada do enduro": a clock at zero that starts counting when the item goes on air.
 const createStartItemThatStartsAtTheTake = {
   type: 'createItem',
-  rundownId: 'sessao-principal',
+  home: { kind: 'rundown', rundownId: 'sessao-principal' },
   graphicId: 'race-clock',
   layerId: 'clock',
   label: 'Largada do enduro',

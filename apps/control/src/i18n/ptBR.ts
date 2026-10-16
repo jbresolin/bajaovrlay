@@ -1,8 +1,16 @@
+import { ptBRKeyboard } from './ptBRKeyboard';
+import { ptBRQuickFire } from './ptBRQuickFire';
+
 /**
  * pt-BR catalog: every string the operator reads on the control page comes from here,
  * never written inline in a component, so the wording can be reviewed in one place.
+ * Two parts live in files of their own to keep this one readable, and are reached
+ * through here like the rest: `ptBR.keyboard` (ptBRKeyboard.ts) and `ptBR.quickFire`
+ * (ptBRQuickFire.ts, the quick-fire panels and the macros).
  */
 export const ptBR = {
+  keyboard: ptBRKeyboard,
+  quickFire: ptBRQuickFire,
   app: {
     title: 'BajaOvrLay',
     rundownAreaTitle: 'Rundown',
@@ -108,6 +116,12 @@ export const ptBR = {
       color: 'Cor',
       notes: 'Observações',
       autoOutAfterSeconds: 'Saída automática (segundos, opcional)',
+      // Where a new item goes: the rundown on screen or one of the quick-fire panels.
+      home: 'Onde',
+    },
+    homeOptions: {
+      rundown: (rundownName: string) => `Rundown: ${rundownName}`,
+      quickFirePanel: (panelName: string) => `Painel de atalhos: ${panelName}`,
     },
     // One name per colour of ItemColorSchema, so a colour is never told by colour alone.
     colorNames: {

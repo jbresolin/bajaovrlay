@@ -27,6 +27,17 @@ export function refuseItemOfAnotherRundown(itemLabel: string, rundownName: strin
   };
 }
 
+/** The refusal for moving a rundown's cursor to a quick-fire panel button. */
+export function refuseQuickFireButtonAsCursor(
+  itemLabel: string,
+  rundownName: string,
+): CommandError {
+  return {
+    code: 'ITEM_NOT_IN_RUNDOWN',
+    message: ptBR.rundownCommandErrors.itemIsAQuickFireButton(itemLabel, rundownName),
+  };
+}
+
 /** The refusal for a new order that is not exactly the rundown's items, once each. */
 export function refuseOrderThatIsNotAPermutation(rundownName: string): CommandError {
   return {

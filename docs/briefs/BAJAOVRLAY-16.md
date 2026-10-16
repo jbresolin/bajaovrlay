@@ -49,7 +49,7 @@ whole M1 operator loop: prepare, preview, take, clear.
 - One file, `features/keyboard/keyboardMap.ts`, is the single source of truth for every
   shortcut: key, condition, command, pt-BR description. The existing hooks read from it.
 - Map: `Space` take (preview or next, per -15), `Shift+Space` preview cursor item,
-  `→`/`←` cursor, `Backspace` stop preview / clear clock layer, `Esc` clear all
+  `→`/`←` cursor, `Backspace` discard the preview (never clears a layer), `Esc` clear all
   (two-press), `1`–`9` fire the first nine buttons of the active quick-fire tab,
   `F1`–`F4` switch quick-fire tabs. All ignored while typing, as today.
 - A "?" button in the header opens a dialog listing the map (generated from the file).

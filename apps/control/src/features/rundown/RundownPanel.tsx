@@ -1,26 +1,19 @@
 import { listItemsOfRundownInOrder } from '@bajaovrlay/shared';
-import { useState } from 'react';
 
+import { useTakeThenPreviewNextItem } from '@/features/autoPreview/useTakeThenPreviewNextItem';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { ItemEditorPanel } from '@/features/items/ItemEditorPanel';
+import { useItemEditorTarget } from '@/features/items/ItemEditorTargetProvider';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
-import { useAutoPreviewSetting } from './autoPreviewSetting';
 import { AutoPreviewToggle } from './AutoPreviewToggle';
 import { chooseEmptyCursorHint } from './emptyCursorHint';
 import { RundownItemList } from './RundownItemList';
+import { findRundownShownOnPage } from './rundownShownOnPage';
 import { useMoveCursorByHand } from './useMoveCursorByHand';
 import { useRundownKeyboardShortcuts } from './useRundownKeyboardShortcuts';
-import { useTakeThenPreviewNextItem } from './useTakeThenPreviewNextItem';
-
-/**
- * What the item editor is on screen for, if at all. This is the one thing the panel
- * remembers by itself; it is about the page (which box is open), not about the show.
- */
-type ItemEditorTarget =
-  { kind: 'closed' } | { kind: 'newItem' } | { kind: 'existingItem'; itemId: string };
 
 /**
  * The rundown column: the items prepared for the session in firing order, the cursor on
@@ -29,8 +22,14 @@ type ItemEditorTarget =
  * button sends one command and the list changes when the server's next slice arrives, not
  * before. The one exception to "one command": while the switch "Prévia automática" is on,
  * moving the cursor by hand (useMoveCursorByHand.ts) and a take that moves the cursor on
- * (useTakeThenPreviewNextItem.ts) each send a second command that previews the item the
- * cursor is on afterwards.
+ * (features/autoPreview/useTakeThenPreviewNextItem.ts) each send a second command that
+ * previews the item the cursor is on afterwards. The switch is the page's, not this
+ * panel's: it is read from the page's one store (features/autoPreview/).
+ *
+ * The page's one item editor is drawn here, at the top of the column, whichever part of
+ * the page opened it: this panel's "+ Item" and "Editar", and the quick-fire strip's
+ * "+ Atalho" and "Editar" (features/quickFire). What it is open for is the page's
+ * (features/items/ItemEditorTargetProvider.tsx), so both can open it.
  */
 export function RundownPanel() {
   const rundowns = useServerState((state) => state.rundowns);
@@ -38,20 +37,15 @@ export function RundownPanel() {
   const graphics = useServerState((state) => state.graphics);
   const layers = useServerState((state) => state.layers);
   const sendCommand = useSendCommand();
-  const [itemEditorTarget, setItemEditorTarget] = useState<ItemEditorTarget>({ kind: 'closed' });
+  const { itemEditorTarget, openItemEditorForNewItem, openItemEditorForItem, closeItemEditor } =
+    useItemEditorTarget();
 
-  // Deliberate: the page shows the first rundown the server lists. The server seeds
-  // exactly one ("Sessão principal") and has no command that makes another, so there is
-  // nothing to choose between yet; its id is read here, never written into the page.
-  const rundown = rundowns[0];
+  // The first rundown the server lists; why, in rundownShownOnPage.ts.
+  const rundown = findRundownShownOnPage(rundowns);
   const itemsInOrder = rundown === undefined ? [] : listItemsOfRundownInOrder(items, rundown.id);
 
-  // The one thing on this page kept in the browser and not on the server; why is said
-  // in autoPreviewSetting.ts. It decides whether the item the cursor arrives on is also
-  // previewed, after a move by hand and after a take sent from this page.
-  const { isAutoPreviewOn, chooseIsAutoPreviewOn } = useAutoPreviewSetting();
-  const moveCursorByHand = useMoveCursorByHand(rundown?.id, isAutoPreviewOn);
-  const sendTakeByThisOperator = useTakeThenPreviewNextItem(rundown?.id, isAutoPreviewOn);
+  const moveCursorByHand = useMoveCursorByHand(rundown?.id);
+  const sendTakeByThisOperator = useTakeThenPreviewNextItem();
   useRundownKeyboardShortcuts(rundown, itemsInOrder, moveCursorByHand, sendTakeByThisOperator);
 
   if (rundown === undefined) {
@@ -59,21 +53,24 @@ export function RundownPanel() {
   }
   const rundownId = rundown.id;
 
-  // The item is looked up in the server's list on every draw. So if someone deletes it
-  // while the editor is open, there is no item to hand the editor and the editor leaves
-  // the screen, instead of saving changes to something that no longer exists.
+  // The item is looked up in the server's list on every draw, among every item (a
+  // quick-fire button is edited here too). So if someone deletes it while the editor is
+  // open, there is no item to hand the editor and the editor leaves the screen, instead
+  // of saving changes to something that no longer exists.
   const itemBeingEdited =
     itemEditorTarget.kind === 'existingItem'
-      ? itemsInOrder.find((item) => item.id === itemEditorTarget.itemId)
+      ? items.find((item) => item.id === itemEditorTarget.itemId)
       : undefined;
   const isItemEditorOnScreen = itemEditorTarget.kind === 'newItem' || itemBeingEdited !== undefined;
+  // Where a new item goes unless the operator picks another place: where "+ Item" or
+  // "+ Atalho" was pressed. For a stored item it is not used.
+  const homeForNewItem =
+    itemEditorTarget.kind === 'newItem'
+      ? itemEditorTarget.home
+      : ({ kind: 'rundown', rundownId } as const);
   // With the cursor on nothing Space has nothing to take, which without a word on screen
   // looks like a keyboard that stopped working. The words depend on why it is on nothing.
   const emptyCursorHint = chooseEmptyCursorHint(rundown, itemsInOrder.length);
-
-  function closeItemEditor(): void {
-    setItemEditorTarget({ kind: 'closed' });
-  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -82,18 +79,18 @@ export function RundownPanel() {
         <ActionButton
           variant="outline"
           size="sm"
-          onClick={() => setItemEditorTarget({ kind: 'newItem' })}
+          onClick={() => openItemEditorForNewItem({ kind: 'rundown', rundownId })}
         >
           {ptBR.rundown.addItemButton}
         </ActionButton>
       </div>
-      <AutoPreviewToggle isAutoPreviewOn={isAutoPreviewOn} onChosen={chooseIsAutoPreviewOn} />
+      <AutoPreviewToggle />
 
       {/* Going from one item to another without closing needs nothing here: the editor
           starts a new form by itself whenever it is handed another item. */}
       {isItemEditorOnScreen ? (
         <ItemEditorPanel
-          rundownId={rundownId}
+          homeForNewItem={homeForNewItem}
           itemBeingEdited={itemBeingEdited ?? null}
           onClose={closeItemEditor}
         />
@@ -115,7 +112,7 @@ export function RundownPanel() {
             void sendCommand({ type: 'previewItem', itemId, origin: 'manual' })
           }
           onSetCursorPressed={moveCursorByHand}
-          onEditPressed={(itemId) => setItemEditorTarget({ kind: 'existingItem', itemId })}
+          onEditPressed={openItemEditorForItem}
           onDeleteConfirmed={(itemId) => void sendCommand({ type: 'deleteItem', itemId })}
           onItemsReordered={(itemIdsInNewOrder) =>
             void sendCommand({

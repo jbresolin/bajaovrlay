@@ -1,5 +1,5 @@
 /**
- * Items of one rundown, in firing order (packages/shared)
+ * Items of one rundown, in firing order (packages/shared, itemsOfHomeInOrder.ts)
  *
  * What this module is for:
  *   The `items` slice holds every item of every rundown in one list, each item saying
@@ -22,7 +22,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Item } from './item.js';
-import { listItemsOfRundownInOrder } from './itemsOfRundownInOrder.js';
+import { listItemsOfRundownInOrder } from './itemsOfHomeInOrder.js';
 
 /** What makes one race clock item different from another in these tests. */
 type RaceClockItemDescription = {
@@ -36,7 +36,7 @@ type RaceClockItemDescription = {
 function buildRaceClockItem(description: RaceClockItemDescription): Item {
   return {
     id: description.id,
-    rundownId: description.rundownId,
+    home: { kind: 'rundown', rundownId: description.rundownId },
     order: description.order,
     graphicId: 'race-clock',
     layerId: 'clock',

@@ -43,6 +43,19 @@ export const CommandErrorCodeSchema = z.enum([
   'UNSUPPORTED_FIELD_KIND',
   /** takePreview named a layer that has nothing on its preview output. */
   'LAYER_PREVIEW_EMPTY',
+  /** The command names a quick-fire panel that does not exist. */
+  'QUICK_FIRE_PANEL_NOT_FOUND',
+  /** deleteQuickFirePanel named a panel that still has items. */
+  'QUICK_FIRE_PANEL_NOT_EMPTY',
+  /** deleteQuickFirePanel named the only panel left; there is always at least one. */
+  'LAST_QUICK_FIRE_PANEL',
+  /** The command names a macro that does not exist. */
+  'MACRO_NOT_FOUND',
+  /**
+   * A macro is running: runMacro while any macro runs (this one included), or
+   * updateMacro / deleteMacro of the macro that is running.
+   */
+  'MACRO_RUNNING',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

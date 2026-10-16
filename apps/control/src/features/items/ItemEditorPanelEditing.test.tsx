@@ -341,7 +341,7 @@ describe('the item editor panel for an existing item', () => {
           sendCommand={sendCommandNeverUsedHere}
         >
           <ItemEditorPanel
-            rundownId={idOfTheMainSessionRundown}
+            homeForNewItem={{ kind: 'rundown', rundownId: idOfTheMainSessionRundown }}
             itemBeingEdited={itemBeingEdited}
             onClose={() => undefined}
           />
