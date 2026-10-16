@@ -5,15 +5,16 @@
  *   The control page and the renderer stay in sync with the server over one WebSocket
  *   at `/ws`, on the same port as HTTP. On connect a client gets `hello` with every
  *   slice. It changes state only by sending `command` messages; every client then gets
- *   a `slice` message for each slice that changed, and the sender gets a
- *   `commandResult`. Anything outside the protocol is answered with an error and
+ *   one message with the slices that changed (`slices`, or `slice` when only one did),
+ *   and the sender gets a `commandResult`. Anything outside the protocol is answered with an error and
  *   logged, and the socket stays open. A client that stops answering pings is dropped.
  *
  * What these tests prove (with a real server on a random port and a real SQLite file):
  *   - A client gets `hello` with every slice, including the seeded layers, on connect.
- *   - A command from client A produces a `slice` message on client B.
- *   - `hello` and every `slice` message carry `serverNowMs`, the time the server's clock
- *     showed when that message was built (the clock is held by the test), and a
+ *   - A take from client A produces one `slices` message on client B, with the new
+ *     instances and the event log.
+ *   - `hello` and the message of each change carry `serverNowMs`, the time the server's
+ *     clock showed when that message was built (the clock is held by the test), and a
  *     `commandResult` does not.
  *   - The sender gets the slices first, then a `commandResult` echoing its requestId.
  *   - A refused command gets an error `commandResult` in pt-BR.
@@ -30,6 +31,8 @@
  *     ten seconds, so none ever sees one.
  *   - The rules of each command (reducers/reduceCommand.test.ts) and the event log
  *     (createStateStore.test.ts); here the store is used as the server uses it.
+ *   - A command changing three slices, and a change of one slice alone (still a `slice`
+ *     message); webSocketHubGroupedSlices.test.ts.
  *   - The answer when saving a command fails; clientMessageAnswers.test.ts covers it
  *     without a real socket, since a real server's database cannot be broken from here.
  */
@@ -95,9 +98,9 @@ async function startServerOnARandomPort(
   return runningServer;
 }
 
-/** True for a `slice` message carrying the instances slice. */
-function isInstancesSliceMessage(message: ServerMessage): boolean {
-  return message.type === 'slice' && message.name === 'instances';
+/** True for a `slices` message carrying the instances slice. */
+function isSlicesMessageWithInstances(message: ServerMessage): boolean {
+  return message.type === 'slices' && message.slices.instances !== undefined;
 }
 
 /** True for any `commandResult` message. */
@@ -129,7 +132,7 @@ describe('connecting to /ws', () => {
 });
 
 describe('a command sent over /ws', () => {
-  it('produces a slice message on another client', async () => {
+  it('produces one slices message on another client, with the instances and the event log', async () => {
     // Arrange: a running server and two clients, the control page (A) and the renderer (B).
     const runningServer = await startServerOnARandomPort();
     const controlPage = await connectWebSocketTestClient(runningServer.port);
@@ -137,26 +140,31 @@ describe('a command sent over /ws', () => {
 
     // Act: the control page takes the race clock.
     controlPage.sendJson({ type: 'command', requestId: 'pedido-1', command: takeRaceClockCommand });
-    const sliceOnRenderer = await renderer.waitForMessage(
-      'instances slice',
-      isInstancesSliceMessage,
+    const slicesOnRenderer = await renderer.waitForMessage(
+      'slices message with the instances',
+      isSlicesMessageWithInstances,
     );
 
-    // Assert: the renderer hears about the new race-clock instance, with the time the
-    // server's clock showed.
-    expect(sliceOnRenderer, 'the renderer must get the new instances slice').toEqual({
-      type: 'slice',
-      name: 'instances',
-      slice: runningServer.stateStore.readAllSlices().instances,
+    // Assert: the renderer hears about the new race-clock instance and the event-log line
+    // of the take in the same message, with the time the server's clock showed.
+    expect(
+      slicesOnRenderer,
+      'the renderer must get the instances and the event log together',
+    ).toEqual({
+      type: 'slices',
+      slices: {
+        instances: runningServer.stateStore.readAllSlices().instances,
+        eventLog: runningServer.stateStore.readAllSlices().eventLog,
+      },
       serverNowMs: momentTheServerClockIsHeldAtInMilliseconds,
     });
     expect(
-      sliceOnRenderer.type === 'slice' ? sliceOnRenderer.slice.length : 0,
+      slicesOnRenderer.type === 'slices' ? slicesOnRenderer.slices.instances?.length : 0,
       'exactly one instance must be on air',
     ).toBe(1);
   });
 
-  it('stamps each slice message with the server clock as it is when that message is built', async () => {
+  it('stamps the message of a change with the server clock as it is when that message is built', async () => {
     // Arrange: a server whose clock the test sets by hand, and a renderer that connected
     // at 14:32:05 and got its hello.
     let momentTheServerClockShows = momentTheServerClockIsHeldAt;
@@ -170,30 +178,23 @@ describe('a command sent over /ws', () => {
     // Act: forty seconds later on the server's clock, the control page takes the race clock.
     momentTheServerClockShows = '2026-10-09T14:32:45.000Z';
     controlPage.sendJson({ type: 'command', requestId: 'pedido-6', command: takeRaceClockCommand });
-    // The event log slice is the last message a take causes, so waiting for it on the
-    // renderer means the instances slice before it has arrived too.
-    await renderer.waitForMessage(
-      'eventLog slice',
-      (message) => message.type === 'slice' && message.name === 'eventLog',
-    );
+    // A take changes the instances and the event log, so it is one slices message.
+    await renderer.waitForMessage('slices message of the take', isSlicesMessageWithInstances);
 
-    // Assert: the hello says 14:32:05, and both slice messages of the take (instances and
-    // event log) say 14:32:45: the clock is read for each message, not once at connect.
-    const serverClockOfEachSliceMessage = renderer
+    // Assert: the hello says 14:32:05, and the one message of the take says 14:32:45:
+    // the clock is read for each message, not once at connect.
+    const serverClockOfEachChangeMessage = renderer
       .readReceivedMessages()
-      .filter((message) => message.type === 'slice')
-      .map((message) => (message.type === 'slice' ? message.serverNowMs : undefined));
+      .filter((message) => message.type === 'slice' || message.type === 'slices')
+      .map((message) => (message.type === 'slices' ? message.serverNowMs : undefined));
     expect(
       hello.type === 'hello' ? hello.serverNowMs : undefined,
       'the hello must carry the server clock of the moment the client connected',
     ).toBe(momentTheServerClockIsHeldAtInMilliseconds);
     expect(
-      serverClockOfEachSliceMessage,
-      'each slice message must carry the server clock of forty seconds later',
-    ).toEqual([
-      momentTheServerClockIsHeldAtInMilliseconds + 40_000,
-      momentTheServerClockIsHeldAtInMilliseconds + 40_000,
-    ]);
+      serverClockOfEachChangeMessage,
+      'the one message of the take must carry the server clock of forty seconds later',
+    ).toEqual([momentTheServerClockIsHeldAtInMilliseconds + 40_000]);
   });
 
   it('answers the sender with the slices first, then a commandResult echoing its requestId', async () => {
@@ -206,7 +207,8 @@ describe('a command sent over /ws', () => {
     controlPage.sendJson({ type: 'command', requestId: 'pedido-2', command: takeRaceClockCommand });
     const commandResult = await controlPage.waitForMessage('commandResult', isCommandResultMessage);
 
-    // Assert: ok with the same requestId, after the instances and eventLog slices.
+    // Assert: ok with the same requestId, after the one message with the instances and
+    // the event log.
     expect(commandResult, 'the answer must be ok and echo the requestId').toEqual({
       type: 'commandResult',
       requestId: 'pedido-2',
@@ -214,11 +216,14 @@ describe('a command sent over /ws', () => {
     });
     const messagesInArrivalOrder = controlPage
       .readReceivedMessages()
-      .map((message) => (message.type === 'slice' ? `slice ${message.name}` : message.type));
+      .map((message) =>
+        message.type === 'slices'
+          ? `slices ${Object.keys(message.slices).join(' ')}`
+          : message.type,
+      );
     expect(messagesInArrivalOrder, 'state must arrive before the ok').toEqual([
       'hello',
-      'slice instances',
-      'slice eventLog',
+      'slices instances eventLog',
       'commandResult',
     ]);
   });

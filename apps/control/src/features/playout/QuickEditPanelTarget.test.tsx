@@ -20,7 +20,8 @@
  *     them is sent to that instance's id and to no other.
  *   - The instance leaving the air, or being replaced, gives one line saying so, a
  *     new-entry heading, no "Atualizar", and the form as it was typed, which "Colocar no
- *     ar" then sends to the same layer.
+ *     ar" then sends to the same layer. (When that line goes, and why its words never
+ *     change: QuickEditPanelLostTargetLine.test.tsx.)
  *   - "Editar prévia" loads the preview: the heading says "Em prévia", "Prévia" replaces
  *     "Atualizar" and re-previews on that layer, and the panel then edits the new preview.
  *   - "Nova entrada" lets go of the instance and keeps the form.
@@ -210,15 +211,18 @@ describe('"Edição rápida" when the loaded instance is gone', () => {
     fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [] });
     const headerAfterTheClear = readQuickEditHeader();
     const isUpdateStillOffered = screen.queryByRole('button', { name: 'Atualizar' }) !== null;
+    const isTheLineShownAfterTheClear =
+      screen.queryByText(
+        'O que você editava na camada Relógio saiu do ar. Os valores continuam no formulário, como nova entrada.',
+      ) !== null;
     await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
 
     // Assert: one line, a new entry, the values kept, and the take on the clock layer.
+    // (Sending the new entry then takes the line away: QuickEditPanelLostTargetLine.test.tsx.)
     expect(
-      screen.getByText(
-        'O que você editava na camada Relógio saiu do ar. Os valores continuam no formulário, como nova entrada.',
-      ),
+      isTheLineShownAfterTheClear,
       'the panel must say in one line that its instance left the air',
-    ).toBeInTheDocument();
+    ).toBe(true);
     expect(headerAfterTheClear, 'the panel must go back to a new entry').toBe(
       'Nova entrada — não altera nenhum item',
     );

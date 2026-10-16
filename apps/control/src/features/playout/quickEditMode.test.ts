@@ -18,6 +18,8 @@
  *     by another instance on the same layer and output gives "replaced", on program and
  *     on preview alike.
  *   - An instance on the OTHER output of the same layer is not a replacement.
+ *   - Once the panel has written down what became of its instance (`lossAsFirstSeen`),
+ *     that is what it says, whatever comes to the layer afterwards.
  *
  * What these tests deliberately do not cover:
  *   - The words of the line and of the header: QuickEditPanelTarget.test.tsx.
@@ -124,6 +126,21 @@ const modeScenarios: Array<{
     expectedMode: {
       kind: 'newTake',
       lostTarget: { layerId: 'clock', output: 'preview', wasReplaced: true },
+    },
+  },
+  // The clock left the air and the panel wrote that down when it first saw it; a take
+  // made later on the same layer did not replace the edited clock, which was gone by
+  // then, so the line must keep saying "left".
+  {
+    name: 'keeps saying "left" as first seen, although another instance came to that layer later',
+    target: {
+      ...buildTargetOfTheClock('program'),
+      lossAsFirstSeen: { layerId: 'clock', output: 'program', wasReplaced: false },
+    },
+    instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'program')],
+    expectedMode: {
+      kind: 'newTake',
+      lostTarget: { layerId: 'clock', output: 'program', wasReplaced: false },
     },
   },
 ];

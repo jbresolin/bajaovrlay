@@ -10,7 +10,8 @@
  * What these tests prove:
  *   - A new store is empty and says the page is still connecting.
  *   - A hello replaces every slice; a slice message replaces exactly that slice, whole,
- *     and leaves the others alone.
+ *     and leaves the others alone; the slices of a `slices` message (one state change)
+ *     are replaced together in ONE store update, so no component sees half of it.
  *   - The connection status moves connecting → connected → reconnecting → connected.
  *   - The last command error is remembered and can be forgotten again.
  *
@@ -111,6 +112,40 @@ describe('slices arriving from the server', () => {
       serverStateStore.getState().instances,
       'an empty slice from the server must empty the slice here',
     ).toEqual([]);
+  });
+});
+
+describe('several slices of one state change arriving together', () => {
+  it('replaces them all in one store update and leaves the other slices alone', () => {
+    // Arrange: a store with nothing on air, and a listener that writes down what it sees
+    // each time the store tells it something changed.
+    const serverStateStore = createServerStateStore();
+    serverStateStore.getState().replaceEverySlice(buildSlicesWithNothingOnAir());
+    const layersBeforeTheMessage = serverStateStore.getState().layers;
+    const whatTheListenerSawEachTime: Array<{ instanceCount: number; markers: string[] }> = [];
+    serverStateStore.subscribe((state) => {
+      whatTheListenerSawEachTime.push({
+        instanceCount: state.instances.length,
+        markers: state.previewClearedLayerIds,
+      });
+    });
+
+    // Act: one state change put the race clock on air and marked the lower-third layer.
+    serverStateStore.getState().replaceSeveralSlices({
+      instances: [buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir)],
+      previewClearedLayerIds: ['lower-third'],
+    });
+
+    // Assert: the listener was told once, and that once it already saw both changes; the
+    // layers are the very same list as before.
+    expect(
+      whatTheListenerSawEachTime,
+      'both slices must change in ONE store update, never one before the other',
+    ).toEqual([{ instanceCount: 1, markers: ['lower-third'] }]);
+    expect(
+      serverStateStore.getState().layers,
+      'a group without the layers must not touch the layers',
+    ).toBe(layersBeforeTheMessage);
   });
 });
 

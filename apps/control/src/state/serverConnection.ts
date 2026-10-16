@@ -133,6 +133,9 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       case 'slice':
         serverStateStore.getState().replaceOneSlice(message);
         break;
+      case 'slices':
+        serverStateStore.getState().replaceSeveralSlices(message.slices);
+        break;
       case 'commandResult':
         settleCommandAwaitingThisResult(message);
         break;
@@ -239,7 +242,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 }
 
 /**
- * Hands the server's time in a hello, slice or time message to the shared server-aligned
+ * Hands the server's time in a hello, slice, slices or time message to the shared server-aligned
  * clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
  * does the same (apps/renderer/src/serverConnection.ts), so the page and the screen
  * count from the same clock. A hello or slice without the time records NOTHING: it is

@@ -1,7 +1,7 @@
 import type { Instance } from '@bajaovrlay/shared';
 import { createContext, type ReactNode, useContext, useState } from 'react';
 
-import type { QuickEditTarget } from './quickEditMode';
+import type { LostQuickEditTarget, QuickEditTarget } from './quickEditMode';
 
 /**
  * What "Edição rápida" was told to work on. It is about the page (what the panel shows),
@@ -28,10 +28,20 @@ export type QuickEditChoiceOnPage = QuickEditChoice & {
   editInstanceInQuickEdit: (instance: Instance) => void;
   /** The graphic dropdown: a new entry of that graphic, on its default layer, fresh form. */
   chooseGraphicForNewEntry: (graphicId: string) => void;
-  /** The layer dropdown of a new entry. */
+  /**
+   * The layer dropdown of a new entry. It also lets go of an instance that is gone, and
+   * so of the line about it: the operator has moved on to another layer.
+   */
   chooseLayerForNewEntry: (layerId: string) => void;
   /** "Nova entrada": let go of the instance and keep the form as it is. */
   stopEditingTheInstance: () => void;
+  /**
+   * The panel saw its instance gone: write down what became of it, once, so the line
+   * keeps those words. Only for the target with that id; a newer target is left alone.
+   */
+  writeDownTheLossOfTheTarget: (instanceId: string, lostTarget: LostQuickEditTarget) => void;
+  /** "Colocar no ar" or "Prévia" from a new entry: let go of an instance that is gone, and its line. */
+  forgetTheLostTarget: () => void;
   /**
    * After the panel's own accepted command made a new instance (its "Colocar no ar", or
    * the "Prévia" of a loaded preview): edit that one, keeping the form on screen.
@@ -83,9 +93,29 @@ export function QuickEditChoiceProvider(props: { children: ReactNode }) {
         target: null,
         formLoadNumber: choiceBefore.formLoadNumber + 1,
       })),
+    // The dropdown is drawn for a new entry only, so the target here is null or gone.
     chooseLayerForNewEntry: (layerId) =>
-      setQuickEditChoice((choiceBefore) => ({ ...choiceBefore, layerIdChosen: layerId })),
+      setQuickEditChoice((choiceBefore) => ({
+        ...choiceBefore,
+        layerIdChosen: layerId,
+        target: null,
+      })),
     stopEditingTheInstance: () =>
+      setQuickEditChoice((choiceBefore) => ({ ...choiceBefore, target: null })),
+    writeDownTheLossOfTheTarget: (instanceId, lostTarget) =>
+      setQuickEditChoice((choiceBefore) => {
+        const targetBefore = choiceBefore.target;
+        const isTheTargetSeenGone = targetBefore?.instanceId === instanceId;
+        if (targetBefore === null || !isTheTargetSeenGone) {
+          return choiceBefore;
+        }
+        if (targetBefore.lossAsFirstSeen !== undefined) {
+          // Already written down. The same object is handed back, so React draws nothing.
+          return choiceBefore;
+        }
+        return { ...choiceBefore, target: { ...targetBefore, lossAsFirstSeen: lostTarget } };
+      }),
+    forgetTheLostTarget: () =>
       setQuickEditChoice((choiceBefore) => ({ ...choiceBefore, target: null })),
     editInstanceMadeByThePanel: (instance) =>
       setQuickEditChoice((choiceBefore) => ({

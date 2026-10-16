@@ -234,8 +234,10 @@ describe('the time message of the hub', () => {
     expect(readTimeMessagesReceivedBy(renderer).length, 'three ticks in thirty seconds').toBe(3);
     expect(stateStore.readAllSlices().eventLog, 'a time message is not a command').toEqual([]);
     expect(
-      renderer.readReceivedMessages().filter((message) => message.type === 'slice'),
-      'a time message must not come with slice messages',
+      renderer
+        .readReceivedMessages()
+        .filter((message) => message.type === 'slice' || message.type === 'slices'),
+      'a time message must not come with slice or slices messages',
     ).toEqual([]);
   });
 });

@@ -75,7 +75,7 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
   const { fieldsTheOperatorChanged } = options;
   const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
-  const { editInstanceMadeByThePanel } = useQuickEditChoice();
+  const { editInstanceMadeByThePanel, forgetTheLostTarget } = useQuickEditChoice();
   const { openItemEditorForNewItem } = useItemEditorTarget();
   const rundowns = useServerState((state) => state.rundowns);
   const panels = useServerState((state) => state.quickFirePanels);
@@ -123,7 +123,18 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
     fillFormFromInstance(instanceMade);
   }
 
+  // A send from a new entry is the operator acting on the line about an instance that is
+  // gone, so the line goes, whatever the server answers. Decided in BAJAOVRLAY-36: a
+  // command from elsewhere on the page leaves it, since only this panel and "Editar"
+  // write what the panel works on.
+  function forgetTheLostTargetWhenSendingANewEntry(): void {
+    if (instanceBeingEdited === undefined) {
+      forgetTheLostTarget();
+    }
+  }
+
   async function sendFormAsTake(formValues: SchemaFormValues): Promise<void> {
+    forgetTheLostTargetWhenSendingANewEntry();
     const takeData = buildTakeDataFromSchemaForm(description, formValues);
     const wasAcceptedByTheServer = await sendCommand({
       type: 'takeGraphic',
@@ -139,6 +150,7 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
   }
 
   async function sendFormAsPreview(formValues: SchemaFormValues): Promise<void> {
+    forgetTheLostTargetWhenSendingANewEntry();
     const previewData = buildTakeDataFromSchemaForm(description, formValues);
     const wasAcceptedByTheServer = await sendCommand({
       type: 'previewGraphic',

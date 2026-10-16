@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
@@ -19,7 +21,8 @@ import { findQuickEditMode, type QuickEditMode } from './quickEditMode';
  *   This is how the page opens.
  * When the loaded instance leaves its output or is replaced, a line says so and the panel
  * makes a new entry with the same form; it never moves to another instance by itself
- * (quickEditMode.ts). A take from the rundown or a shortcut button changes nothing here:
+ * (quickEditMode.ts). The line keeps the words it had when first shown, and goes when the
+ * operator chooses another layer, sends the new entry, or loads something else. A take from the rundown or a shortcut button changes nothing here:
  * only this panel and the "Camadas" rows write what it works on (QuickEditChoiceProvider).
  * This replaces the panel that followed the graphic taken most recently (BAJAOVRLAY-36).
  *
@@ -33,6 +36,20 @@ export function QuickEditPanel() {
   const quickEditChoice = useQuickEditChoice();
 
   const modeFromTheChoice = findQuickEditMode(quickEditChoice.target, instances);
+
+  // The first draw that finds the loaded instance gone writes down what became of it, so
+  // the line keeps those words whatever comes to that layer later. No list of inputs on
+  // purpose: it runs after every draw, and writing down a loss already written changes
+  // nothing (QuickEditChoiceProvider hands back the same choice, so nothing is redrawn).
+  const { writeDownTheLossOfTheTarget } = quickEditChoice;
+  const idOfTheTarget = quickEditChoice.target?.instanceId;
+  const lostTargetSeenNow =
+    modeFromTheChoice.kind === 'newTake' ? modeFromTheChoice.lostTarget : undefined;
+  useEffect(() => {
+    if (idOfTheTarget !== undefined && lostTargetSeenNow !== undefined) {
+      writeDownTheLossOfTheTarget(idOfTheTarget, lostTargetSeenNow);
+    }
+  });
   const graphicIdWanted =
     modeFromTheChoice.kind === 'editingInstance'
       ? modeFromTheChoice.instanceBeingEdited.graphicId

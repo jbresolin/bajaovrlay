@@ -83,13 +83,12 @@ function isCommandResultMessage(message: ServerMessage): boolean {
   return message.type === 'commandResult';
 }
 
-/** True for an instances slice whose only instance is on air. */
+/** True for a slices message whose instances slice holds one instance, on air. */
 function isInstancesSliceWithOneInstanceOnAir(message: ServerMessage): boolean {
   return (
-    message.type === 'slice' &&
-    message.name === 'instances' &&
-    message.slice.length === 1 &&
-    message.slice[0]?.status === 'on-air'
+    message.type === 'slices' &&
+    message.slices.instances?.length === 1 &&
+    message.slices.instances[0]?.status === 'on-air'
   );
 }
 
@@ -166,9 +165,11 @@ describe('an instanceStatus message', () => {
     // Assert: the control page sees the clock on air, and the renderer gets an ok with
     // no requestId, because an instanceStatus message does not carry one.
     expect(sliceOnControlPage, 'the control page must hear the clock is on air').toEqual({
-      type: 'slice',
-      name: 'instances',
-      slice: runningServer.stateStore.readAllSlices().instances,
+      type: 'slices',
+      slices: {
+        instances: runningServer.stateStore.readAllSlices().instances,
+        eventLog: runningServer.stateStore.readAllSlices().eventLog,
+      },
       // The time of the server's clock; webSocketHub.test.ts checks its exact value.
       serverNowMs: expect.any(Number),
     });

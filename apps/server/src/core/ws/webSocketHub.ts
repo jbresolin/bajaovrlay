@@ -11,6 +11,7 @@ import { startHeartbeat } from './heartbeat.js';
 import {
   buildHelloMessage,
   buildSliceMessage,
+  buildSlicesMessage,
   serializeServerMessage,
 } from './serverMessageBuilding.js';
 import { startServerTimeBroadcast } from './serverTimeBroadcast.js';
@@ -20,7 +21,7 @@ export const webSocketPath = '/ws';
 
 /**
  * What the hub needs: the HTTP server to share, the store, a logger, the ping interval,
- * and (for tests) the clock whose time goes into each `hello` and `slice` message.
+ * and (for tests) the clock whose time goes into each `hello`, `slice` and `slices` message.
  */
 export type WebSocketHubOptions = {
   httpServer: Server;
@@ -48,8 +49,9 @@ export type WebSocketHub = { close: () => Promise<void> };
 
 /**
  * Attaches the WebSocket protocol to the HTTP server, on the same port at `/ws`. Each
- * client gets `hello`, then a `slice` message whenever a slice changes (both carrying
- * `serverNowMs`, the server's clock at the moment the message is built), and a
+ * client gets `hello`, then one message per state change: `slice` when one slice changed,
+ * `slices` when several did (each carrying `serverNowMs`, the server's clock at the
+ * moment the message is built), and a
  * `commandResult` for each message it sends (a command, or a renderer's
  * `instanceStatus`). Every ten seconds every client also gets a `time` message, so a
  * page keeps learning the server's clock while nothing changes. A connection to
@@ -120,17 +122,25 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
 
   // Every client hears about every change, the sender included. This runs inside
   // applyCommand, so the slices reach the sender before its commandResult does.
+  // One state change is ONE message: a client that took the slices one by one drew the
+  // moment between them ("Prévia: limpar" on a previewed layer showed the program clock
+  // for a moment before it animated out). The listener is told the command's own slices
+  // and the event log together, so an accepted command always sends `slices`; a refused
+  // one changes the event log alone and sends `slice`, as before `slices` existed.
   const stopListening = stateStore.subscribeToSliceChanges((changedSliceNames, slices) => {
-    for (const sliceName of changedSliceNames) {
-      // The clock is read for each message, as late as possible: a renderer takes the
-      // difference between this time and its own clock at arrival, so every millisecond
-      // between this reading and the send shows up as an error in its sample.
-      const sliceMessage = buildSliceMessage(sliceName, slices, readCurrentTime().getTime());
-      const messageText = serializeServerMessage(sliceMessage);
-      for (const client of webSocketServer.clients) {
-        if (client.readyState === client.OPEN) {
-          client.send(messageText);
-        }
+    // The clock is read as late as possible: a renderer takes the difference between
+    // this time and its own clock at arrival, so every millisecond between this reading
+    // and the send shows up as an error in its sample.
+    const serverNowMs = readCurrentTime().getTime();
+    const onlyChangedSliceName = changedSliceNames.length === 1 ? changedSliceNames[0] : undefined;
+    const changeMessage =
+      onlyChangedSliceName === undefined
+        ? buildSlicesMessage(changedSliceNames, slices, serverNowMs)
+        : buildSliceMessage(onlyChangedSliceName, slices, serverNowMs);
+    const messageText = serializeServerMessage(changeMessage);
+    for (const client of webSocketServer.clients) {
+      if (client.readyState === client.OPEN) {
+        client.send(messageText);
       }
     }
   });

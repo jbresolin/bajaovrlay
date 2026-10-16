@@ -12,5 +12,4 @@ The two monitors of the centre column and what is in preview. Start reading at
   "Descartar" (`stopPreview`); from two lines on `TakeAllAndDiscardAllButtons.tsx` ("Tomar tudo").
 - `useBackspaceToStopPreview.ts` — Backspace discards the most recent preview and nothing else.
 
-`monitor=1` makes the renderer page draw without the renderer role and never report: only OBS (plain
-`/render/`) turns a layer badge to "No ar" or "Falhou". `/render/` is the built renderer (`pnpm build`).
+`monitor=1` pages never report: only OBS (plain `/render/`, built by `pnpm build`) turns a badge to "No ar".

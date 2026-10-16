@@ -5,10 +5,8 @@ The "Macros" tab of the quick-fire strip: a button per macro and the macro edito
 `runMacro`, `previewMacro` or `stopMacro` and shows the `macroRuns` slice.
 
 - `MacroGrid.tsx` — "+ Macro", the editor while open, the grid in the server's order.
-- `MacroButton.tsx` — one macro in its colour; click = run; "⋯" (or right-click) = "Executar", "Prévia"
-  (the end state on the preview output; "Tomar tudo" then applies it without the waits), "Editar";
-  a tooltip says so. "Rodando 2/3" and "Parar" while it runs, "Parando…" once stopped. Never
-  switched off by a run: the server's MACRO_RUNNING refusal is shown instead.
+- `MacroButton.tsx` — one macro in its colour; click = run; "⋯" (or right-click) = "Executar",
+  "Prévia" (its end state on the preview output), "Editar"; "Rodando 2/3" and "Parar" while it runs.
 - `useStopRunningMacroKey.ts` — the key P: stopMacro for the running macro, from any tab.
 - `MacroEditorPanel.tsx` — label, colour, steps; "Salvar macro", two-press "Excluir macro".
 - `MacroStepList.tsx`, `MacroStepRow.tsx`, `macroStepDragAnnouncements.ts` — the steps, dragged

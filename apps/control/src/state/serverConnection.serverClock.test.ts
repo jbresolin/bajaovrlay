@@ -4,7 +4,7 @@
  * What this module is for:
  *   "Edição rápida" shows the time a clock on air shows, worked out on this computer. The
  *   reading on air was stamped with the server's clock, so the page needs "now" on the
- *   server's clock too. Every hello and slice message carries the server's time
+ *   server's clock too. Every hello, slice and slices message carries the server's time
  *   (`serverNowMs`); the connection hands each one to the shared server-aligned clock,
  *   as the renderer does.
  *
@@ -15,6 +15,7 @@
  *     "now" stays this computer's own clock.
  *   - "No sample" is not "offset zero": a correction already learned is left exactly as
  *     it was by hello and slice messages that carry no server time.
+ *   - A `slices` message (several slices of one state change) gives a sample too.
  *   - The `time` message the server sends every ten seconds gives a sample exactly as a
  *     hello does, and the page does nothing else with it: the store is untouched and no
  *     log line is written.
@@ -127,6 +128,33 @@ describe('the server clock samples of the control page', () => {
     expect(
       readServerAlignedTimeMs(),
       'a message without a server time must never count as an offset of zero',
+    ).toBe(serverTimeMs);
+  });
+
+  it('takes a sample from a slices message, on a page whose hello carried no time', () => {
+    // Arrange: this computer 2.3 seconds behind, connected by a hello with no time in it,
+    // so the slices message is the only place the page can learn the server's time.
+    vi.useFakeTimers();
+    vi.setSystemTime(thisComputersTimeMs);
+    const { fakeServerSocket } = connectControlPageToFakeServer();
+    fakeServerSocket.acceptConnection();
+    fakeServerSocket.sendMessage({
+      type: 'hello',
+      slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
+    });
+
+    // Act: the clock layer is cleared; the server sends the instances and the event log
+    // of that clear in one slices message, stamped with its time.
+    fakeServerSocket.sendMessage({
+      type: 'slices',
+      slices: { instances: [], eventLog: [] },
+      serverNowMs: serverTimeMs,
+    });
+
+    // Assert: "now" for the page is the server's time.
+    expect(
+      readServerAlignedTimeMs(),
+      'a slices message must put the shared clock on the time of the server',
     ).toBe(serverTimeMs);
   });
 });

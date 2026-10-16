@@ -14,6 +14,11 @@ export type QuickEditTarget = {
   graphicId: string;
   layerId: string;
   output: Instance['target'];
+  /**
+   * What became of the instance, written down the first time the panel saw it gone
+   * (QuickEditPanel.tsx). Kept, so the line never changes its words afterwards.
+   */
+  lossAsFirstSeen?: LostQuickEditTarget;
 };
 
 /** Why the panel went back to a new entry: where its instance was, and what became of it. */
@@ -33,7 +38,7 @@ export type QuickEditMode =
  * Says what the panel is doing. With a target whose id is still in the slice, it edits
  * the newest copy the server sent of that instance. Otherwise it makes a new entry, and
  * for a target that is gone it says whether its place is empty or taken by another
- * instance.
+ * instance, as it was when the panel first saw it gone (`lossAsFirstSeen`).
  *
  * Deliberate: only the id is looked up. A take or a preview always makes a new instance
  * with a new id, so an instance that replaced the target is never mistaken for it, and
@@ -46,6 +51,12 @@ export function findQuickEditMode(
 ): QuickEditMode {
   if (target === null) {
     return { kind: 'newTake', lostTarget: undefined };
+  }
+  // Already seen gone: say what was seen then. Worked out again from the slice, a take
+  // made later on that layer would turn "left" into "replaced", which never happened to
+  // the instance that was being edited.
+  if (target.lossAsFirstSeen !== undefined) {
+    return { kind: 'newTake', lostTarget: target.lossAsFirstSeen };
   }
 
   const instanceBeingEdited = instances.find((instance) => instance.id === target.instanceId);

@@ -51,6 +51,12 @@ export {
 } from './slices/eventLogEntry.js';
 // Every slice together (GET /api/v1/state, WS hello) and the list of slice names.
 export { type SliceName, SliceNameSchema, type Slices, SlicesSchema } from './slices/slices.js';
+// The slices one state change changed (a part of Slices), and how a client lays them over its own.
+export {
+  type ChangedSlices,
+  ChangedSlicesSchema,
+  mergeChangedSlicesIntoSlices,
+} from './slices/changedSlices.js';
 
 // Why a command was refused: a stable code and a pt-BR message.
 export {
@@ -81,7 +87,7 @@ export { type ClearAllCommand, ClearAllCommandSchema } from './commands/clearAll
 // Every command, told apart by `type`; the only way state changes.
 export { type Command, type CommandInput, CommandSchema } from './commands/command.js';
 
-// WebSocket messages from the server: hello, slice, commandResult and time.
+// WebSocket messages from the server: hello, slice, slices, commandResult and time.
 export {
   type CommandResultMessage,
   CommandResultMessageSchema,
@@ -90,6 +96,8 @@ export {
   ServerMessageSchema,
   type SliceMessage,
   SliceMessageSchema,
+  type SlicesMessage,
+  SlicesMessageSchema,
   type TimeMessage,
   TimeMessageSchema,
 } from './ws/serverMessages.js';

@@ -6,8 +6,8 @@ The page OBS loads as a browser source: a transparent 1920x1080 stage that mirro
 
 - `src/rendererPageRole.ts` — the address decides the role: `/render/` is the program renderer, the only page that reports; `/render/?monitor=1` (program monitor) and `/render/?target=preview` ("Prévia"; framed with `&monitor=1`) dial plain `/ws` and never send `instanceStatus`.
 - `src/previewComposition.ts` — pure: what the preview page draws, the screen after the take: per layer the preview instance, else nothing if the layer is in `previewClearedLayerIds`, else the program instance.
-- `src/serverConnection.ts` — WebSocket to `/ws?role=renderer`; sends `instanceStatus`; records each message's `serverNowMs` so graphics count on the server's clock.
-- `src/layerContainers.ts` — one container per layer; `src/instanceReconciler.ts` — pure:
+- `src/serverConnection.ts` — WebSocket to `/ws?role=renderer`; one delivery per `hello`, `slice` or `slices` message (one state change); sends `instanceStatus`; records each message's `serverNowMs` so graphics count on the server's clock.
+- `src/layerContainers.ts` — one container per layer; `src/operationsPerDelivery.ts` remembers the last delivery and asks `src/instanceReconciler.ts` — pure:
   two deliveries in (program: program instances; preview: the composition), named operations out (preview: every replace is a `cut`).
 - `src/instancePlayer.ts` — runs them, one queue per layer, and reports each instance as
   `on-air` or `failed`. `e2e/` — Playwright in real Chromium, with `test-fixtures/fake-graphic`.
