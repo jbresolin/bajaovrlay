@@ -57,6 +57,7 @@ const sliceNamesChangedByCommands = [
   'layers',
   'graphics',
   'instances',
+  'previewClearedLayerIds',
   'rundowns',
   'items',
   'quickFirePanels',
@@ -65,8 +66,13 @@ const sliceNamesChangedByCommands = [
 ] as const;
 
 // The slices that live in memory only and are never written to the database: a macro
-// run is something happening now, and a restart must not resume it (see macroRunner.ts).
-const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = ['macroRuns'];
+// run is something happening now, and a restart must not resume it (see macroRunner.ts);
+// the "will be cleared" markers are scaffolding of the Prévia monitor, dropped at a
+// restart like the preview instances (see loadInitialSlices.ts).
+const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = [
+  'previewClearedLayerIds',
+  'macroRuns',
+];
 
 /**
  * Creates the store, loading its slices from the database (or seeding an empty one).
@@ -185,7 +191,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
    * Saves the slices that changed and the event-log row in one transaction, then (only
    * once that succeeded) updates memory and tells listeners. If saving throws, memory
    * is left as it was, so it never runs ahead of the database. A slice kept in memory
-   * only (macroRuns) is not saved, but its change is still logged and broadcast.
+   * only (previewClearedLayerIds, macroRuns) is not saved, but its change is still
+   * logged and broadcast.
    */
   function recordOutcome(outcome: {
     nextSlices: SlicesChangedByCommands;
@@ -211,6 +218,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       layers: outcome.nextSlices.layers,
       graphics: outcome.nextSlices.graphics,
       instances: outcome.nextSlices.instances,
+      previewClearedLayerIds: outcome.nextSlices.previewClearedLayerIds,
       rundowns: outcome.nextSlices.rundowns,
       items: outcome.nextSlices.items,
       quickFirePanels: outcome.nextSlices.quickFirePanels,

@@ -34,8 +34,9 @@ type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'>;
  * describes what is on disk, not what the operator did. The event-log slice is the
  * newest entries of the event_log table. Rundowns and items are the operator's too:
  * loaded, or seeded when missing, by loadRundownSlices.ts; quick-fire panels and macros
- * likewise by loadQuickFireAndMacroSlices.ts. The macro runs are never stored: every
- * boot starts with none, so a macro cut short by a stop is not resumed.
+ * likewise by loadQuickFireAndMacroSlices.ts. The macro runs and the "will be cleared"
+ * markers are never stored: every boot starts with none, so a macro cut short by a stop
+ * is not resumed and Prévia starts empty.
  */
 export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const storedRows = readAllSliceRows(options.database);
@@ -113,6 +114,10 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     layers: operatorSlices.layers,
     graphics,
     instances: instancesKeptAcrossTheRestart,
+    // The "will be cleared" markers are never stored, like the macro runs: every boot
+    // starts with none, as it starts with no preview instance. A row of that name in the
+    // database (only a bug could have written one) is not read and is left where it is.
+    previewClearedLayerIds: [],
     eventLog,
     rundowns: rundownSlices.rundowns,
     items: rundownSlices.items,

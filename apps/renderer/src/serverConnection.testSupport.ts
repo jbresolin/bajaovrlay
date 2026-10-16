@@ -73,6 +73,8 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     ],
     instances,
     eventLog: [],
+    // The preview page reads this one; nothing here is marked "will be cleared".
+    previewClearedLayerIds: [],
     // The renderer never reads these five; they are here because every hello carries them.
     rundowns: [],
     items: [],

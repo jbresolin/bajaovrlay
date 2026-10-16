@@ -10,6 +10,7 @@ export type SlicesChangedByCommands = Pick<
   | 'layers'
   | 'graphics'
   | 'instances'
+  | 'previewClearedLayerIds'
   | 'rundowns'
   | 'items'
   | 'quickFirePanels'
@@ -22,7 +23,11 @@ export type SlicesChangedByCommands = Pick<
  * a reducer never reads the clock or generates ids itself.
  */
 export type ReducerContext = {
-  /** The id to give an instance the command creates. */
+  /**
+   * The id to give an instance the command creates. A command that creates one on each
+   * of several layers (takeAllPreviews, previewMacro) derives one id per layer from it;
+   * see instanceIdForEachLayer.ts.
+   */
   newInstanceId: string;
   /** The current time, as an ISO 8601 timestamp. */
   now: string;

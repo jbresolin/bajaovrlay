@@ -109,7 +109,8 @@ function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesChangedBy
       },
     ],
     instances,
-    // No rundown, item, panel or macro: the commands tested here never read or change them.
+    // No marker, rundown, item, panel or macro: the commands tested here never need one.
+    previewClearedLayerIds: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

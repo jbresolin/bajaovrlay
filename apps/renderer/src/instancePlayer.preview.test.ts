@@ -18,6 +18,10 @@
  *     behind the old one, then the old one is stopped and the new one played, both with
  *     the animation skipped. This holds on the clock layer, whose own policy is
  *     out-then-in, and on the lower-third layer, whose policy is cut.
+ *   - The clock on air and a rehearsed lower third on another layer are both drawn, as
+ *     the screen will look after the take.
+ *   - A clock on air that the page shows gets the updateAction updateInstanceData makes on
+ *     air, and is stopped with its out-animation when its layer is marked "will be cleared".
  *   - Nowhere does the player trip over the reporter it was not given.
  *
  * What these tests deliberately do not cover:
@@ -34,6 +38,7 @@ import {
   createEnduroClockInstance,
   createFinalClockInstance,
   createTeamLowerThirdInstance,
+  enduroClockInstanceId,
   feiLowerThirdInstanceId,
   finalClockInstanceId,
   layersOfTheStream,
@@ -53,46 +58,54 @@ function createRehearsalOf(instance: Instance): Instance {
 }
 
 /**
- * Builds the stage of a preview page and a function that delivers an `instances` slice to
- * it the way renderer.ts does: the reconciler, drawing `preview`, decides, and the player
- * with no reporter carries out. The slice delivered last is kept only inside this object.
+ * Builds the stage of a preview page and a function that delivers the `instances` and
+ * `previewClearedLayerIds` slices to it the way renderer.ts does: the reconciler, drawing
+ * `preview`, decides, and the player with no reporter carries out. What was delivered last
+ * is kept only inside this object.
  */
 function createPreviewPageStage() {
   const { stage, instancePlayer, recording, logLines } =
     createStageWithPlayerThatHasNoStatusReporter();
   let instancesOfLastDelivery: Instance[] = [];
+  let previewClearedLayerIdsOfLastDelivery: string[] = [];
 
-  async function deliverInstancesSlice(instances: Instance[]): Promise<void> {
+  async function deliverSlices(
+    instances: Instance[],
+    previewClearedLayerIds: string[],
+  ): Promise<void> {
     const layerOperations = decideLayerOperations({
       previousInstances: instancesOfLastDelivery,
+      previousPreviewClearedLayerIds: previewClearedLayerIdsOfLastDelivery,
       nextInstances: instances,
+      nextPreviewClearedLayerIds: previewClearedLayerIds,
       layers: layersOfTheStream,
       drawnOutput: 'preview',
     });
     instancePlayer.runLayerOperations(layerOperations, graphicsOfTheStream);
     instancesOfLastDelivery = instances;
+    previewClearedLayerIdsOfLastDelivery = previewClearedLayerIds;
     await waitForQueuedOperations();
   }
 
-  return { stage, recording, logLines, deliverInstancesSlice };
+  return { stage, recording, logLines, deliverSlices };
 }
 
 describe('a preview page: the reconciler drawing preview with a player that reports nothing', () => {
   it('puts only the rehearsed clock on the stage when another clock is on air on the same layer', async () => {
     // Arrange: the stage of a preview page with nothing on it.
-    const { stage, recording, logLines, deliverInstancesSlice } = createPreviewPageStage();
+    const { stage, recording, logLines, deliverSlices } = createPreviewPageStage();
 
     // Act: the server lists the enduro clock on air and the final clock being rehearsed.
-    await deliverInstancesSlice([
-      createEnduroClockInstance(),
-      createRehearsalOf(createFinalClockInstance()),
-    ]);
+    await deliverSlices(
+      [createEnduroClockInstance(), createRehearsalOf(createFinalClockInstance())],
+      [],
+    );
 
     // Assert: only the rehearsed final clock was loaded and played, and the player did
     // not stumble where the program page would have reported on-air.
     expect(
       recording.lifecycleCalls,
-      'only the rehearsed clock must be loaded and played; the one on air is not for this page',
+      'only the rehearsed clock must be loaded and played; a previewed layer never shows its clock on air',
     ).toEqual(['Final: load', 'Final: playAction']);
     expect(
       readInstanceIdsOnLayer(stage, 'clock'),
@@ -141,12 +154,12 @@ describe('a preview page: the reconciler drawing preview with a player that repo
 
   it.each(replaceOnPreviewScenarios)('$name', async (scenario) => {
     // Arrange: a preview page already showing the first rehearsal of the row.
-    const { stage, recording, deliverInstancesSlice } = createPreviewPageStage();
-    await deliverInstancesSlice([scenario.firstRehearsal]);
+    const { stage, recording, deliverSlices } = createPreviewPageStage();
+    await deliverSlices([scenario.firstRehearsal], []);
     const numberOfCallsBeforeTheReplace = recording.lifecycleCalls.length;
 
     // Act: the operator previews the next item on the same layer.
-    await deliverInstancesSlice([scenario.secondRehearsal]);
+    await deliverSlices([scenario.secondRehearsal], []);
 
     // Assert: the new graphic was loaded first, then the old one stopped and the new one
     // played, both without animation, and only the new one is left, visible.
@@ -158,5 +171,77 @@ describe('a preview page: the reconciler drawing preview with a player that repo
       readVisibilityOfElementsOnLayer(stage, scenario.layerId),
       'only the new rehearsal may be left on the layer, and it must be visible',
     ).toEqual(scenario.expectedLayerAfterwards);
+  });
+
+  it('draws the clock on air and a rehearsed lower third on another layer', async () => {
+    // Arrange: the stage of a preview page with nothing on it.
+    const { stage, recording, deliverSlices } = createPreviewPageStage();
+
+    // Act: the server lists the enduro clock on air and team 7's lower third in preview.
+    await deliverSlices(
+      [
+        createEnduroClockInstance(),
+        createRehearsalOf(createTeamLowerThirdInstance(feiLowerThirdInstanceId, 7, 'FEI Baja')),
+      ],
+      [],
+    );
+
+    // Assert: both were loaded and played, each on its own layer. The two layers do not
+    // wait for each other, so their calls interleave; only which calls were made counts.
+    expect(
+      [...recording.lifecycleCalls].sort(),
+      'the preview page must draw the clock that stays on air and the lower third to be taken',
+    ).toEqual(['Enduro: load', 'Enduro: playAction', 'FEI: load', 'FEI: playAction']);
+    expect(
+      readInstanceIdsOnLayer(stage, 'clock'),
+      'the clock on air must be on the clock layer of the preview page',
+    ).toEqual([enduroClockInstanceId]);
+    expect(
+      readInstanceIdsOnLayer(stage, 'lower-third'),
+      'the rehearsed lower third must be on the lower-third layer of the preview page',
+    ).toEqual([feiLowerThirdInstanceId]);
+  });
+
+  it('updates the clock on air it shows when the clock is changed on air', async () => {
+    // Arrange: a preview page showing the enduro clock on air, nothing previewed.
+    const { recording, deliverSlices } = createPreviewPageStage();
+    await deliverSlices([createEnduroClockInstance()], []);
+    const numberOfCallsBeforeTheUpdate = recording.lifecycleCalls.length;
+
+    // Act: "Edição rápida" turns the flag yellow on air (updateInstanceData, same id).
+    await deliverSlices(
+      [
+        createEnduroClockInstance({
+          resolvedData: { sessionName: 'Enduro de Resistência', state: 'yellow', running: true },
+        }),
+      ],
+      [],
+    );
+
+    // Assert: the same graphic got an update, and nothing was taken off and on again.
+    expect(
+      recording.lifecycleCalls.slice(numberOfCallsBeforeTheUpdate),
+      'the preview page must update the clock on air it shows, as the program page does',
+    ).toEqual(['Enduro: updateAction']);
+  });
+
+  it('stops the clock on air with its out-animation when its layer is marked', async () => {
+    // Arrange: a preview page showing the enduro clock on air, nothing previewed.
+    const { stage, recording, deliverSlices } = createPreviewPageStage();
+    await deliverSlices([createEnduroClockInstance()], []);
+    const numberOfCallsBeforeTheMarker = recording.lifecycleCalls.length;
+
+    // Act: the operator presses "Prévia: limpar" on the clock layer.
+    await deliverSlices([createEnduroClockInstance()], ['clock']);
+
+    // Assert: the clock animated out and is gone; only a replace skips animation here.
+    expect(
+      recording.lifecycleCalls.slice(numberOfCallsBeforeTheMarker),
+      'a marked layer must empty with the out-animation, as a discarded preview does',
+    ).toEqual(['Enduro: stopAction', 'Enduro: dispose']);
+    expect(
+      readInstanceIdsOnLayer(stage, 'clock'),
+      'the clock layer of the preview page must be empty once it is marked',
+    ).toEqual([]);
   });
 });

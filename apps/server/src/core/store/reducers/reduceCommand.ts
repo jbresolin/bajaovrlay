@@ -2,13 +2,16 @@ import type { Command } from '@bajaovrlay/shared';
 
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
+import { reducePreviewClearLayer } from './previewClearLayer.js';
 import { reducePreviewGraphic } from './previewGraphic.js';
 import { reducePreviewItem } from './previewItem.js';
+import { reducePreviewMacro } from './previewMacro.js';
 import { reduceItemOrRundownCommand } from './reduceItemOrRundownCommand.js';
 import { reduceQuickFireOrMacroCommand } from './reduceQuickFireOrMacroCommand.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { reduceReportInstanceStatus } from './reportInstanceStatus.js';
 import { reduceStopPreview } from './stopPreview.js';
+import { reduceTakeAllPreviews } from './takeAllPreviews.js';
 import { reduceTakeGraphic } from './takeGraphic.js';
 import { reduceTakePreview } from './takePreview.js';
 import { reduceUpdateInstanceData } from './updateInstanceData.js';
@@ -42,6 +45,13 @@ export function reduceCommand(
       return reduceStopPreview(slices, command);
     case 'takePreview':
       return reduceTakePreview(slices, command, context);
+    // Prévia shows the result: the "will be cleared" marker, "Tomar tudo", a macro's Prévia.
+    case 'previewClearLayer':
+      return reducePreviewClearLayer(slices, command);
+    case 'takeAllPreviews':
+      return reduceTakeAllPreviews(slices, context);
+    case 'previewMacro':
+      return reducePreviewMacro(slices, command, context);
     // The item and rundown commands have a switch of their own, one reducer file each.
     case 'createItem':
     case 'updateItemFields':

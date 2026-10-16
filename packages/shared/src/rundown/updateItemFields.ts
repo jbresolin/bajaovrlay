@@ -7,12 +7,22 @@ import { ItemColorSchema } from './itemColor.js';
 /**
  * Changes parts of an existing item. Every part except `itemId` is optional, and a
  * part left out is left as it is on the item.
- * The item's rundown, graphic and layer cannot be changed here, on purpose: a different
- * graphic means different fields, so that is a new item (delete and create).
+ * Deliberate: the name says "fields" although it also changes the label, colour, notes,
+ * auto-out and, since BAJAOVRLAY-36, the layer; it was kept to avoid churn in every
+ * client and in the event log.
+ * The item's graphic cannot be changed here, on purpose: a different graphic means
+ * different fields, so that is a new item. There is no `graphicId` in this schema, and a
+ * `graphicId` sent anyway is dropped at validation, as every unknown key of a command
+ * is. The home is changed by moveItemToHome, not here.
  */
 export const UpdateItemFieldsCommandSchema = z.object({
   type: z.literal('updateItemFields'),
   itemId: z.string().min(1),
+  /**
+   * The layer the item goes to from its next take or preview on. A graphic already on
+   * air from this item stays where it is. Left out keeps the item's layer.
+   */
+  layerId: z.string().min(1).optional(),
   /**
    * Only the field values that change, by field key. The server merges them over the
    * item's fields key by key: a key named here is replaced, a key not named is kept.

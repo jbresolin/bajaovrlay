@@ -4,9 +4,10 @@
 // The renderer decides nothing about what is on air: if the slice says it, it is drawn,
 // and the server is told how that went (on air, or failed and why). The same page framed
 // by the control page as a program monitor (`?monitor=1`) draws the same and tells nothing.
-// Framed as the preview page (`?target=preview`) it draws the instances of the `preview`
-// output instead and tells nothing either. rendererPageRole.ts decides which of the three
-// this page is; everything below is the same code for all of them.
+// Framed as the preview page (`?target=preview`) it draws the screen as it will look after
+// the take instead (the preview instances, over what is on air, minus the layers marked
+// "will be cleared") and tells nothing either. rendererPageRole.ts decides which of the
+// three this page is; everything below is the same code for all of them.
 import type { Instance } from '@bajaovrlay/shared';
 
 import { createGraphicLoader } from './graphicLoader.js';
@@ -43,16 +44,20 @@ function startRenderer(stage: HTMLElement): void {
     graphicLoader: createGraphicLoader(),
     reportInstanceStatus,
   });
-  // What the last delivery listed (both outputs), to compare the next one against.
+  // What the last delivery listed (both outputs, and the layers marked "will be cleared"
+  // in preview), to compare the next one against.
   let instancesOfLastDelivery: Instance[] = [];
+  let previewClearedLayerIdsOfLastDelivery: string[] = [];
 
   connection.onSlices(({ slices, isFullSnapshot }) => {
     layerContainers.showLayers(slices.layers);
     // `drawnOutput` is the one setting that tells the preview page from the others: the
-    // reconciler looks only at the instances of that output.
+    // reconciler draws the program instances, or the preview composition, from these.
     const change = {
       previousInstances: instancesOfLastDelivery,
+      previousPreviewClearedLayerIds: previewClearedLayerIdsOfLastDelivery,
       nextInstances: slices.instances,
+      nextPreviewClearedLayerIds: slices.previewClearedLayerIds,
       drawnOutput: pageRole.drawnOutput,
     };
     // A full snapshot (hello) means the page may have missed anything: rebuild the stage
@@ -62,6 +67,7 @@ function startRenderer(stage: HTMLElement): void {
       : decideLayerOperations({ ...change, layers: slices.layers });
     instancePlayer.runLayerOperations(layerOperations, slices.graphics);
     instancesOfLastDelivery = slices.instances;
+    previewClearedLayerIdsOfLastDelivery = slices.previewClearedLayerIds;
   });
 
   logRendererEvent('info', 'renderer ready', {

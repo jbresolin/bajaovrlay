@@ -38,6 +38,11 @@ export {
   type PreviewOrigin,
   PreviewOriginSchema,
 } from './slices/instance.js';
+// The `previewClearedLayerIds` slice: the layers Prévia shows empty ("vai limpar").
+export {
+  type PreviewClearedLayerIds,
+  PreviewClearedLayerIdsSchema,
+} from './slices/previewClearedLayerIds.js';
 // The `eventLog` slice: one line per command that changed something or was refused.
 export {
   type EventLogEntry,
@@ -108,5 +113,6 @@ export * from './quickFire/index.js';
 // Macros: steps, the macros and macroRuns slices, and the six macro commands.
 export * from './macros/index.js';
 
-// The preview output: previewItem, previewGraphic, stopPreview and takePreview.
+// The preview output: previewItem, previewGraphic, stopPreview, takePreview,
+// previewClearLayer, takeAllPreviews and previewMacro.
 export * from './preview/index.js';

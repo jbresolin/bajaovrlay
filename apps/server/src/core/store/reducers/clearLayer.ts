@@ -1,11 +1,15 @@
 import type { ClearLayerCommand } from '@bajaovrlay/shared';
 
 import { refuseUnknownLayer } from '../commandRefusals.js';
+import { removePreviewClearedMarkerOfLayer } from './previewClearedMarkers.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
- * clearLayer: removes every instance on the layer, on both outputs. Clearing an empty
- * layer is fine; clearing a layer that does not exist is refused.
+ * clearLayer: removes every instance on the layer, on both outputs, and takes the
+ * layer's "will be cleared" marker off: the layer is now as the marker promised, and
+ * Prévia goes back to showing program there. This is also what an auto-out does, since
+ * it sends clearLayer. Clearing an empty layer is fine; clearing a layer that does not
+ * exist is refused.
  */
 export function reduceClearLayer(
   slices: SlicesChangedByCommands,
@@ -21,10 +25,22 @@ export function reduceClearLayer(
   const instancesOnOtherLayers = slices.instances.filter(
     (instance) => instance.layerId !== command.layerId,
   );
-  // Nothing was on the layer: hand back the same array, so nothing is saved or broadcast.
-  const hasRemovedAnything = instancesOnOtherLayers.length !== slices.instances.length;
-  if (!hasRemovedAnything) {
+  const markersAfter = removePreviewClearedMarkerOfLayer(
+    slices.previewClearedLayerIds,
+    command.layerId,
+  );
+  // Nothing was on the layer: hand back the same arrays, so nothing is saved or broadcast.
+  const hasRemovedAnInstance = instancesOnOtherLayers.length !== slices.instances.length;
+  const hasRemovedTheMarker = markersAfter !== slices.previewClearedLayerIds;
+  if (!hasRemovedAnInstance && !hasRemovedTheMarker) {
     return { status: 'applied', slices };
   }
-  return { status: 'applied', slices: { ...slices, instances: instancesOnOtherLayers } };
+  return {
+    status: 'applied',
+    slices: {
+      ...slices,
+      instances: hasRemovedAnInstance ? instancesOnOtherLayers : slices.instances,
+      previewClearedLayerIds: markersAfter,
+    },
+  };
 }

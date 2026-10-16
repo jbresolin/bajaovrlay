@@ -96,6 +96,7 @@ export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesCh
       },
     ],
     instances,
+    previewClearedLayerIds: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

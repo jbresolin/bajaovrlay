@@ -76,6 +76,7 @@ not answer the previous ping.
       }
     ],
     "instances": [],
+    "previewClearedLayerIds": [],
     "rundowns": [
       {
         "id": "sessao-principal",
@@ -182,6 +183,29 @@ discards every other preview that was made with `"auto"`.
   "type": "command",
   "requestId": "pedido-21",
   "command": { "type": "takePreview", "layerId": "clock" }
+}
+```
+
+## command (Prévia shows the result, then Tomar tudo)
+
+`previewClearLayer` marks a layer "will be cleared": Prévia shows it empty, and the
+`previewClearedLayerIds` slice lists it. `previewMacro` shows a macro's end state on the
+preview output. `takeAllPreviews` then takes every preview and clears every marked layer
+in one state change, or is refused with `NOTHING_IN_PREVIEW` when there is nothing to take.
+
+```json
+{
+  "type": "command",
+  "requestId": "pedido-22",
+  "command": { "type": "previewClearLayer", "layerId": "lower-third" }
+}
+```
+
+```json
+{
+  "type": "command",
+  "requestId": "pedido-23",
+  "command": { "type": "takeAllPreviews" }
 }
 ```
 

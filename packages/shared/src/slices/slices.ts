@@ -9,12 +9,14 @@ import { EventLogEntrySchema } from './eventLogEntry.js';
 import { GraphicSchema } from './graphic.js';
 import { InstanceSchema } from './instance.js';
 import { LayerSchema } from './layer.js';
+import { PreviewClearedLayerIdsSchema } from './previewClearedLayerIds.js';
 
 /** The name of every slice, in the order the server lists them. */
 export const SliceNameSchema = z.enum([
   'layers',
   'graphics',
   'instances',
+  'previewClearedLayerIds',
   'rundowns',
   'items',
   'quickFirePanels',
@@ -34,6 +36,11 @@ export const SlicesSchema = z.object({
   layers: z.array(LayerSchema),
   graphics: z.array(GraphicSchema),
   instances: z.array(InstanceSchema),
+  /**
+   * The layers Prévia shows empty because the next take will clear them ("vai limpar").
+   * Kept in the server's memory only, never saved: after a restart it is empty.
+   */
+  previewClearedLayerIds: PreviewClearedLayerIdsSchema,
   /** The ordered lists of items, one per session, each with its "next" cursor. */
   rundowns: z.array(RundownSchema),
   /**

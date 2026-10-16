@@ -32,7 +32,12 @@ export const raceClockManifestForTests = {
   schema: {
     type: 'object',
     properties: {
-      sessionName: { type: 'string', title: 'Nome da sessão', gddType: 'single-line' },
+      sessionName: {
+        type: 'string',
+        title: 'Título',
+        description: 'Texto acima do relógio, ex.: Enduro de Resistência, Classificação',
+        gddType: 'single-line',
+      },
       state: {
         type: 'string',
         title: 'Bandeira',

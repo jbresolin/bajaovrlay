@@ -21,6 +21,8 @@
  *   - The play and stop durations in the manifest are the real animation lengths.
  *   - Every data field has a pt-BR title, and the manifest's data schema accepts and
  *     refuses exactly the same payloads as the graphic's own validation.
+ *   - The text field (key sessionName) is titled "Título" and its description says it is
+ *     the text above the clock, with two examples.
  *
  * What these tests deliberately do not cover:
  *   - That a real renderer can load the module named in "main"; the Playwright test
@@ -208,13 +210,29 @@ describe('race-clock.ograf.json settings', () => {
 
     // Assert: each field has the pt-BR title an operator form will show.
     expect(titlesByField, 'every data field must carry a pt-BR title').toEqual({
-      sessionName: 'Nome da sessão',
+      sessionName: 'Título',
       state: 'Bandeira',
       clockMode: 'Modo do relógio',
       referenceTimeMs: 'Tempo de referência',
       referenceWallClockMs: 'Horário da referência (ms desde 1970)',
       running: 'Relógio correndo',
       lapsCompletedByLeader: 'Voltas completadas pelo líder',
+    });
+  });
+
+  it('says in the form that the text field is the title above the clock, with examples', () => {
+    // Arrange: the field the graphic draws above the clock. Its key stays sessionName so
+    // the items saved before BAJAOVRLAY-36 keep working; only the words the operator
+    // reads changed, because "Nome da sessão" did not say where the text shows.
+    const titleField = raceClockManifest.schema.properties.sessionName;
+
+    // Act: read the title and the description the generated form shows for it.
+    const titleAndDescription = { title: titleField.title, description: titleField.description };
+
+    // Assert: the title is "Título" and the description says where it shows, with examples.
+    expect(titleAndDescription, 'the field must say it is the text above the clock').toEqual({
+      title: 'Título',
+      description: 'Texto acima do relógio, ex.: Enduro de Resistência, Classificação',
     });
   });
 });

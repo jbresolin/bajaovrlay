@@ -12,6 +12,7 @@ import {
 } from '../graphicDataPreparation.js';
 import { findProblemInGraphicData } from '../graphicDataValidation.js';
 import { findTakeTimeFieldKeyGraphicCannotStamp } from '../graphicSchemaProperties.js';
+import { removePreviewClearedMarkerOfLayer } from './previewClearedMarkers.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
@@ -26,7 +27,8 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * runs the manifest's update rule: there is no data on air for it to carry forward.
  * previewGraphic, previewItem and takePreview all end in this reducer, so the preview
  * output follows the same rules; an instance on the preview output also keeps the keys
- * that were stamped and says who asked for it (see below).
+ * that were stamped and says who asked for it, and takes its layer's "will be cleared"
+ * marker off (see below).
  */
 export function reduceTakeGraphic(
   slices: SlicesChangedByCommands,
@@ -108,9 +110,20 @@ export function reduceTakeGraphic(
       instance.layerId === command.layerId && instance.target === command.target;
     return !isOnTheSameLayerAndOutput;
   });
+  // A preview on a layer replaces that layer's "will be cleared" marker: Prévia now shows
+  // this graphic there, not an empty layer. Done here, where every preview ends
+  // (previewGraphic, previewItem, a takeGraphic aimed at preview, a macro's preview), so
+  // no preview path can forget it. A take on program leaves the markers alone.
+  const markersAfter = isPreview
+    ? removePreviewClearedMarkerOfLayer(slices.previewClearedLayerIds, command.layerId)
+    : slices.previewClearedLayerIds;
 
   return {
     status: 'applied',
-    slices: { ...slices, instances: [...instancesKept, newInstance] },
+    slices: {
+      ...slices,
+      instances: [...instancesKept, newInstance],
+      previewClearedLayerIds: markersAfter,
+    },
   };
 }

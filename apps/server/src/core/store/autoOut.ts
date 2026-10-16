@@ -32,7 +32,8 @@ type PendingAutoOut = { layerId: string; timerHandle: unknown };
 
 /**
  * Watches the store and, whenever an item that has `autoOutAfterMs` goes on the program
- * output (takeItem, takeNext, or takePreview of a preview of that item), waits that
+ * output (takeItem, takeNext, or takePreview or takeAllPreviews of a preview of that
+ * item: any new program instance carrying its id), waits that
  * long and then sends a clearLayer for the item's layer through
  * stateStore.applyCommand, the same single path every command takes, so the clear is
  * validated, saved, logged (as `sistema:auto-out`) and broadcast like any other.

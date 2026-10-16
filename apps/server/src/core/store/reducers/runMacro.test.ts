@@ -11,8 +11,9 @@
  *
  * What these tests prove:
  *   - runMacro records { macroId, startedAt: the command's moment, currentStep: 0,
- *     isStopRequested: false } and changes nothing else (nothing goes on air in the
- *     reducer).
+ *     isStopRequested: false } and puts nothing on air in the reducer.
+ *   - Starting a run discards every preview and "will be cleared" marker in the same
+ *     change (BAJAOVRLAY-36), so a macro's "Prévia" and its run never mix; program stays.
  *   - runMacro is refused while any macro is running, the same one included, with
  *     MACRO_RUNNING and a pt-BR message naming both; an unknown macro with MACRO_NOT_FOUND.
  *   - advanceMacroRun sets the current step; endMacroRun removes the entry.
@@ -27,6 +28,11 @@
 import type { Macro, MacroRun } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import {
+  buildGreenFlagClockOnProgram,
+  buildTeam42LowerThirdOnPreview,
+  buildYellowFlagItemOnPreview,
+} from './previewSlices.testSupport.js';
 import { reduceCommand } from './reduceCommand.js';
 import {
   buildRaceDaySlicesWithRundown,
@@ -104,6 +110,38 @@ describe('runMacro', () => {
     expect(slicesAfter?.macros, 'running a macro must not change the macros').toBe(
       slicesBefore.macros,
     );
+  });
+
+  it('discards every preview and marker in the same change, and leaves program alone', () => {
+    // Arrange: the green clock on air, the yellow flag item previewed on the clock layer,
+    // a lower third previewed on its layer and the logo marked "will be cleared", as a
+    // macro's "Prévia" or the operator's own looking may have left them.
+    const slicesBefore = buildRaceDaySlicesWithRundown({
+      items: [],
+      macros: [buildOpenTheSessionMacro(), buildCloseTheSessionMacro()],
+      instances: [
+        buildGreenFlagClockOnProgram(),
+        buildYellowFlagItemOnPreview(),
+        buildTeam42LowerThirdOnPreview(),
+      ],
+      previewClearedLayerIds: ['bug'],
+    });
+
+    // Act: press "Executar" on "Abrir a sessão".
+    const outcome = reduceCommand(
+      slicesBefore,
+      { type: 'runMacro', macroId: 'macro-abrir-sessao' },
+      contextOfTheRundownCommand,
+    );
+
+    // Assert: the run is recorded, Prévia is empty (no preview, no marker), and the
+    // clock is still on air: a run and a preview never mix.
+    const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
+    expect(slicesAfter?.macroRuns.length, 'the run must be recorded').toBe(1);
+    expect(slicesAfter?.instances, 'only the program instance may be left').toEqual([
+      buildGreenFlagClockOnProgram(),
+    ]);
+    expect(slicesAfter?.previewClearedLayerIds, 'no marker may be left').toEqual([]);
   });
 
   const refusedRunScenarios = [

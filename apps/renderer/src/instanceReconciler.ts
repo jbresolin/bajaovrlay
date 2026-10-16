@@ -1,16 +1,20 @@
 /**
- * Decides what the renderer must do so the stage matches the `instances` slice. Pure
- * functions: they compare two lists of instances and answer with named operations, one
- * list per layer. Nothing here touches the page; instancePlayer.ts carries the
- * operations out.
+ * Decides what the renderer must do so the stage matches the server's slices. Pure
+ * functions: they compare two deliveries and answer with named operations, one list per
+ * layer. Nothing here touches the page; instancePlayer.ts carries the operations out.
  *
- * A page draws one output, named by `drawnOutput`: `program` for the page OBS loads and
- * its monitor, `preview` for the page the control page frames as "Prévia". Only instances
- * on that output count; an instance on the other one is invisible to these functions.
- * That, and the way a replace is carried out (see `replacePolicyOnThePreviewOutput`), is
- * all that differs between the two: there is one set of rules, not one per output.
+ * A page draws one output, named by `drawnOutput`. `program` is the page OBS loads and its
+ * monitor: it draws the program instances and nothing else, and never reads the layers
+ * marked "will be cleared" in preview. `preview` is the page the control page frames as
+ * "Prévia": it draws the screen as it will look after the take, the composition of
+ * previewComposition.ts (per layer the preview instance, else nothing on a marked layer,
+ * else the program instance). The way a replace is carried out (see
+ * `replacePolicyOnThePreviewOutput`) is the only other difference: everything after the
+ * choice of instances (the diff, the rebuild) is one set of rules, not one per output.
  */
 import type { Instance, Layer } from '@bajaovrlay/shared';
+
+import { selectInstancesForPreviewComposition } from './previewComposition.js';
 
 /** Put a new graphic on an empty layer: create it, load it, play it. */
 export type LoadAndPlayOperation = {
@@ -75,21 +79,36 @@ const replacePolicyOfUnknownLayers: Layer['replacePolicy'] = 'out-then-in';
 const replacePolicyOnThePreviewOutput: Layer['replacePolicy'] = 'cut';
 
 /**
- * Compares the instances drawn last with the ones that just arrived and answers what to
- * do on each layer that changed, looking only at the instances of `drawnOutput`. Layers
- * with nothing to do are left out of the answer.
+ * What the server listed in one delivery and in the one before, as a page compares them:
+ * both `instances` slices and both `previewClearedLayerIds` slices (the layers marked
+ * "will be cleared" in preview; a page that draws `program` ignores them).
  */
-export function decideLayerOperations(change: {
+type TwoDeliveries = {
   previousInstances: Instance[];
+  previousPreviewClearedLayerIds: string[];
   nextInstances: Instance[];
-  layers: Layer[];
+  nextPreviewClearedLayerIds: string[];
   drawnOutput: Instance['target'];
-}): LayerOperations[] {
-  const previousByLayer = findInstanceOfEachLayerOnOutput(
+};
+
+/**
+ * Compares the instances drawn last with the ones that just arrived and answers what to
+ * do on each layer that changed, looking only at what `drawnOutput` draws. Layers with
+ * nothing to do are left out of the answer.
+ */
+export function decideLayerOperations(
+  change: TwoDeliveries & { layers: Layer[] },
+): LayerOperations[] {
+  const previousByLayer = findInstanceDrawnOnEachLayer(
     change.previousInstances,
+    change.previousPreviewClearedLayerIds,
     change.drawnOutput,
   );
-  const nextByLayer = findInstanceOfEachLayerOnOutput(change.nextInstances, change.drawnOutput);
+  const nextByLayer = findInstanceDrawnOnEachLayer(
+    change.nextInstances,
+    change.nextPreviewClearedLayerIds,
+    change.drawnOutput,
+  );
   const layerIds = listLayerIdsInOrderOfAppearance(previousByLayer, nextByLayer);
 
   const layerOperations: LayerOperations[] = [];
@@ -112,20 +131,21 @@ export function decideLayerOperations(change: {
 
 /**
  * Answers how to rebuild the whole stage after a `hello` (a reconnect, or OBS reloading
- * the page): dispose everything drawn so far at once, then load every instance of
- * `drawnOutput` with its in-animation skipped. Even an unchanged instance is rebuilt,
- * because after a drop the renderer cannot know what it missed.
+ * the page): dispose everything drawn so far at once, then load every instance
+ * `drawnOutput` draws with its in-animation skipped. Even an unchanged instance is
+ * rebuilt, because after a drop the renderer cannot know what it missed.
  */
-export function decideRebuildOperations(change: {
-  previousInstances: Instance[];
-  nextInstances: Instance[];
-  drawnOutput: Instance['target'];
-}): LayerOperations[] {
-  const previousByLayer = findInstanceOfEachLayerOnOutput(
+export function decideRebuildOperations(change: TwoDeliveries): LayerOperations[] {
+  const previousByLayer = findInstanceDrawnOnEachLayer(
     change.previousInstances,
+    change.previousPreviewClearedLayerIds,
     change.drawnOutput,
   );
-  const nextByLayer = findInstanceOfEachLayerOnOutput(change.nextInstances, change.drawnOutput);
+  const nextByLayer = findInstanceDrawnOnEachLayer(
+    change.nextInstances,
+    change.nextPreviewClearedLayerIds,
+    change.drawnOutput,
+  );
   const layerIds = listLayerIdsInOrderOfAppearance(previousByLayer, nextByLayer);
 
   const layerOperations: LayerOperations[] = [];
@@ -181,18 +201,24 @@ function decideOperationForOneLayer(
 }
 
 /**
- * Maps each layer id to its instance on the output this page draws. The server keeps at
- * most one per layer and output; if a slice ever listed two, the later one in the list wins.
+ * Maps each layer id to the instance this page draws there. On a page that draws
+ * `program` that is the layer's program instance, and the markers are not looked at. On a
+ * page that draws `preview` it is the preview composition, where a program instance counts
+ * too. The server keeps at most one per layer and output; if a slice ever listed two, the
+ * later one in the list wins.
  */
-function findInstanceOfEachLayerOnOutput(
+function findInstanceDrawnOnEachLayer(
   instances: Instance[],
+  previewClearedLayerIds: string[],
   drawnOutput: Instance['target'],
 ): Map<string, Instance> {
+  const instancesDrawn =
+    drawnOutput === 'preview'
+      ? selectInstancesForPreviewComposition({ instances, previewClearedLayerIds })
+      : instances.filter((instance) => instance.target === 'program');
   const instanceByLayer = new Map<string, Instance>();
-  for (const instance of instances) {
-    if (instance.target === drawnOutput) {
-      instanceByLayer.set(instance.layerId, instance);
-    }
+  for (const instance of instancesDrawn) {
+    instanceByLayer.set(instance.layerId, instance);
   }
   return instanceByLayer;
 }

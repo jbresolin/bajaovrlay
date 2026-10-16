@@ -10,7 +10,9 @@
  * What these tests prove:
  *   - The state answer passes the shared SlicesSchema and shows the seeded layers.
  *   - A command applied to the store shows up in the next answer.
- *   - The OpenAPI document describes GET /state.
+ *   - The OpenAPI document describes GET /state, and is still generated with the
+ *     `previewClearedLayerIds` slice (BAJAOVRLAY-36) in the state it describes.
+ *   - At boot the state carries that slice, empty.
  *
  * What these tests deliberately do not cover:
  *   - The WebSocket, which pushes the same slices as they change (core/ws tests).
@@ -109,5 +111,34 @@ describe('GET /api/v1/openapi.json', () => {
       document.paths['/state']?.get?.responses['200'],
       'GET /state must be described with its 200 answer',
     ).toBeDefined();
+  });
+
+  it('is still generated with the "will be cleared" markers in the state it describes', async () => {
+    // Arrange: a server app on a seeded store.
+    const { app } = createServerAppWithSeededStore();
+
+    // Act: ask for the OpenAPI document and read it as text.
+    const response = await app.request('/api/v1/openapi.json');
+    const documentText = await response.text();
+
+    // Assert: generated, and the newest slice (BAJAOVRLAY-36) is part of what it describes.
+    expect(response.status, 'the OpenAPI document must answer 200 OK').toBe(200);
+    expect(documentText, 'the state described must list the markers slice').toContain(
+      'previewClearedLayerIds',
+    );
+  });
+});
+
+describe('GET /api/v1/state at boot', () => {
+  it('answers with no "will be cleared" marker', async () => {
+    // Arrange: a server app on a store seeded at its first boot.
+    const { app } = createServerAppWithSeededStore();
+
+    // Act: ask for the state.
+    const response = await app.request('/api/v1/state');
+    const body = SlicesSchema.parse(await response.json());
+
+    // Assert: the markers slice is there and empty: Prévia starts with nothing marked.
+    expect(body.previewClearedLayerIds, 'a boot must start with no marker').toEqual([]);
   });
 });

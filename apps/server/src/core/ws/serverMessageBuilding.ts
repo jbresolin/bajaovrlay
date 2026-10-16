@@ -34,6 +34,13 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'graphics', slice: slices.graphics, serverNowMs };
     case 'instances':
       return { type: 'slice', name: 'instances', slice: slices.instances, serverNowMs };
+    case 'previewClearedLayerIds':
+      return {
+        type: 'slice',
+        name: 'previewClearedLayerIds',
+        slice: slices.previewClearedLayerIds,
+        serverNowMs,
+      };
     case 'rundowns':
       return { type: 'slice', name: 'rundowns', slice: slices.rundowns, serverNowMs };
     case 'items':

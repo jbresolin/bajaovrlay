@@ -235,13 +235,14 @@ export function readLabelsAndOrdersOfQuickFirePanel(
 /**
  * Builds race day slices: the five seeded layers, the race clock and a team lower third
  * as graphics (neither declares a data schema, so any data is accepted), both rundowns
- * and the panel "Atalhos" unless others are given, the given items and instances, and
- * the given macros and runs (none unless given).
+ * and the panel "Atalhos" unless others are given, the given items and instances, the
+ * given "will be cleared" markers, and the given macros and runs (none unless given).
  */
 export function buildRaceDaySlicesWithRundown(parts: {
   rundowns?: Rundown[];
   items: Item[];
   instances?: Instance[];
+  previewClearedLayerIds?: string[];
   quickFirePanels?: QuickFirePanel[];
   macros?: Macro[];
   macroRuns?: MacroRun[];
@@ -267,6 +268,7 @@ export function buildRaceDaySlicesWithRundown(parts: {
       },
     ],
     instances: parts.instances ?? [],
+    previewClearedLayerIds: parts.previewClearedLayerIds ?? [],
     rundowns: parts.rundowns ?? [buildMainSessionRundown(null), buildPodiumRundown(null)],
     items: parts.items,
     quickFirePanels: parts.quickFirePanels ?? [buildShortcutsPanel()],
@@ -284,7 +286,10 @@ export function buildRaceDaySlicesWithTheRaceClockSchema(parts: {
   rundowns?: Rundown[];
   items: Item[];
   instances?: Instance[];
+  previewClearedLayerIds?: string[];
   quickFirePanels?: QuickFirePanel[];
+  macros?: Macro[];
+  macroRuns?: MacroRun[];
 }): SlicesChangedByCommands {
   const raceDaySlices = buildRaceDaySlicesWithRundown(parts);
   const raceClockWithItsDataSchema: Graphic = {

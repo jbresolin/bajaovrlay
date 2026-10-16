@@ -1,13 +1,18 @@
 import type { StopPreviewCommand } from '@bajaovrlay/shared';
 
 import { refuseUnknownLayer } from '../commandRefusals.js';
+import {
+  removeEveryPreviewClearedMarker,
+  removePreviewClearedMarkerOfLayer,
+} from './previewClearedMarkers.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
- * stopPreview: removes what is on the preview output, of the named layer or (with
- * `layerId: null`) of every layer. The program output is never touched. Stopping where
- * nothing is previewed is fine and changes nothing; a layer that does not exist is
- * refused, as clearLayer refuses it.
+ * stopPreview: throws away what Prévia shows, of the named layer or (with
+ * `layerId: null`) of every layer: the preview instances and the "will be cleared"
+ * markers alike ("Descartar", "Descartar tudo"). The program output is never touched.
+ * Stopping where nothing is previewed or marked is fine and changes nothing; a layer
+ * that does not exist is refused, as clearLayer refuses it.
  */
 export function reduceStopPreview(
   slices: SlicesChangedByCommands,
@@ -27,11 +32,23 @@ export function reduceStopPreview(
     const isOnALayerToStop = isForEveryLayer || instance.layerId === layerIdToStop;
     return !(isOnThePreviewOutput && isOnALayerToStop);
   });
-  // Nothing was previewed there: hand back the same slices, so nothing is saved, logged
-  // or broadcast ("Descartar" pressed twice leaves no trace).
-  const hasRemovedAnything = instancesKept.length !== slices.instances.length;
-  if (!hasRemovedAnything) {
+  const markersKept = isForEveryLayer
+    ? removeEveryPreviewClearedMarker(slices.previewClearedLayerIds)
+    : removePreviewClearedMarkerOfLayer(slices.previewClearedLayerIds, layerIdToStop);
+
+  // Nothing was previewed or marked there: hand back the same slices, so nothing is
+  // saved, logged or broadcast ("Descartar" pressed twice leaves no trace).
+  const hasRemovedAnInstance = instancesKept.length !== slices.instances.length;
+  const hasRemovedAMarker = markersKept !== slices.previewClearedLayerIds;
+  if (!hasRemovedAnInstance && !hasRemovedAMarker) {
     return { status: 'applied', slices };
   }
-  return { status: 'applied', slices: { ...slices, instances: instancesKept } };
+  return {
+    status: 'applied',
+    slices: {
+      ...slices,
+      instances: hasRemovedAnInstance ? instancesKept : slices.instances,
+      previewClearedLayerIds: markersKept,
+    },
+  };
 }

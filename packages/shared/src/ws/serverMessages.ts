@@ -10,6 +10,7 @@ import { EventLogEntrySchema } from '../slices/eventLogEntry.js';
 import { GraphicSchema } from '../slices/graphic.js';
 import { InstanceSchema } from '../slices/instance.js';
 import { LayerSchema } from '../slices/layer.js';
+import { PreviewClearedLayerIdsSchema } from '../slices/previewClearedLayerIds.js';
 import { SlicesSchema } from '../slices/slices.js';
 
 /**
@@ -53,6 +54,12 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('instances'),
     slice: z.array(InstanceSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('previewClearedLayerIds'),
+    slice: PreviewClearedLayerIdsSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({
