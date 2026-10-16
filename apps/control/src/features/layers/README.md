@@ -3,9 +3,11 @@
 The layer status panel: what is on every layer, at all times (operator rule 4 in
 docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
 
-- `LayerStatusPanel.tsx` — one row per layer in z-order, read from the `layers`,
-  `graphics` and `instances` slices; "Limpar" sends `clearLayer`.
-- `LayerStatusRow.tsx` — one row: layer (+ chip "em prévia"), graphic, "há 2 min", badge, button.
+- `LayerStatusPanel.tsx` — one row per layer in z-order, read from the `layers`, `graphics`,
+  `instances` and `previewClearedLayerIds` slices; "Limpar" sends `clearLayer`, "Prévia: limpar"
+  `previewClearLayer`, and "Editar" / "Editar prévia" load that instance into "Edição rápida".
+- `LayerStatusRow.tsx` — one row: layer (+ chips "em prévia", "vai limpar"), graphic, "há 2 min",
+  badge, buttons.
 - `InstanceStatusBadge.tsx` — green "No ar", grey "Carregando", red "Falhou" + why (tooltip).
 - `useCurrentTime.ts` — redraws the rows every 10 s so the relative times keep up.
 - `ItemLabelOnAir.tsx` — the colour chip and label of the item (rundown or panel) that put it on air.

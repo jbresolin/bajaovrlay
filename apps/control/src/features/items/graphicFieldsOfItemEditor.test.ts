@@ -6,7 +6,8 @@
  *   moment it starts drawing a graphic, fillGraphicFieldsOfItemEditor decides
  *   three things together: which fields there are, what each opens with, and which
  *   stored values could not be shown. A new item opens with the manifest's defaults; a
- *   stored item opens with what it stores.
+ *   stored item opens with what it stores (and a new item opened with a prefill, with
+ *   the prefill's fields, the same way: ItemEditorPanelPrefill.test.tsx).
  *
  * What these tests prove:
  *   - A new race clock item opens with the manifest's defaults and with its reference
@@ -18,6 +19,8 @@
  *   - A new item of another graphic (the interview lower third) gets that graphic's
  *     fields and defaults, with no code written for it.
  *   - A graphic whose manifest has no data schema has no fields at all.
+ *   - chooseFieldsToShowInGraphicForm: a stored item shows its fields, a prefill shows
+ *     only while its own graphic is chosen, and anything else starts from the defaults.
  *
  * What these tests deliberately do not cover:
  *   - Reading a manifest into fields, and filling them, case by case:
@@ -28,13 +31,17 @@
  *   - An item whose graphic the server no longer has: the panel draws no fields for it
  *     and never calls this function (ItemEditorPanelOtherGraphic.test.tsx).
  */
-import type { Graphic, Item } from '@bajaovrlay/shared';
+import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { buildLowerThirdFixtureGraphic } from '@/state/lowerThirdFixtureGraphic.testSupport';
 import { buildRaceClockGraphic } from '@/state/slicesLikeTheServerSends.testSupport';
 
-import { fillGraphicFieldsOfItemEditor } from './graphicFieldsOfItemEditor';
+import {
+  chooseFieldsToShowInGraphicForm,
+  fillGraphicFieldsOfItemEditor,
+} from './graphicFieldsOfItemEditor';
+import type { ItemEditorPrefill } from './ItemEditorTargetProvider';
 import { buildEnduranceStartClockItem } from './itemsLikeTheEditorSaves.testSupport';
 
 describe('fillGraphicFieldsOfItemEditor', () => {
@@ -86,7 +93,7 @@ describe('fillGraphicFieldsOfItemEditor', () => {
     const storedItem = buildEnduranceStartClockItem();
 
     // Act: generate and fill the fields for that item.
-    const graphicFields = fillGraphicFieldsOfItemEditor(raceClockGraphic, storedItem);
+    const graphicFields = fillGraphicFieldsOfItemEditor(raceClockGraphic, storedItem.fields);
 
     // Assert: the stored values, the time as mm:ss, the reference moment still left to
     // the take, and nothing to warn about.
@@ -126,7 +133,7 @@ describe('fillGraphicFieldsOfItemEditor', () => {
     // Act: generate and fill the fields for that item.
     const graphicFields = fillGraphicFieldsOfItemEditor(
       buildRaceClockGraphic(),
-      itemWithAModeTheFormCannotShow,
+      itemWithAModeTheFormCannotShow.fields,
     );
 
     // Assert: the field shows the manifest's default and is named for the warning.
@@ -180,4 +187,78 @@ describe('fillGraphicFieldsOfItemEditor', () => {
       {},
     );
   });
+});
+
+/** What "Salvar como item" hands over for the qualifying clock: race clock, two fields. */
+function buildPrefillOfTheQualifyingClock(): ItemEditorPrefill {
+  return {
+    graphicId: 'race-clock',
+    layerId: 'lower-third',
+    fields: {
+      sessionName: { kind: 'literal', value: 'Classificação' },
+      referenceWallClockMs: { kind: 'takeTime' },
+    },
+  };
+}
+
+type FieldsToShowScenario = {
+  name: string;
+  chosenGraphicId: string;
+  storedItem: Item | null;
+  prefill: ItemEditorPrefill | null;
+  expectedFields: ItemFields | null;
+};
+
+const fieldsToShowScenarios: FieldsToShowScenario[] = [
+  // A stored item always shows what it stores; its graphic cannot be changed anyway.
+  {
+    name: 'a stored item shows its own fields',
+    chosenGraphicId: 'race-clock',
+    storedItem: buildEnduranceStartClockItem(),
+    prefill: null,
+    expectedFields: buildEnduranceStartClockItem().fields,
+  },
+  // The "Salvar como item" case: the prefilled graphic is the one chosen.
+  {
+    name: 'a prefilled new item shows the prefill while its graphic is chosen',
+    chosenGraphicId: 'race-clock',
+    storedItem: null,
+    prefill: buildPrefillOfTheQualifyingClock(),
+    expectedFields: buildPrefillOfTheQualifyingClock().fields,
+  },
+  // The operator picked another graphic: the clock's values mean nothing to a lower
+  // third, so its fields start from its own defaults.
+  {
+    name: 'a prefilled new item starts from the defaults once another graphic is chosen',
+    chosenGraphicId: 'lower-third-fixture',
+    storedItem: null,
+    prefill: buildPrefillOfTheQualifyingClock(),
+    expectedFields: null,
+  },
+  // "+ Item": nothing to show, so the manifest's defaults.
+  {
+    name: 'a new item without a prefill starts from the defaults',
+    chosenGraphicId: 'race-clock',
+    storedItem: null,
+    prefill: null,
+    expectedFields: null,
+  },
+];
+
+describe('chooseFieldsToShowInGraphicForm', () => {
+  it.each(fieldsToShowScenarios)(
+    '$name',
+    ({ chosenGraphicId, storedItem, prefill, expectedFields }) => {
+      // Arrange: the graphic chosen, the stored item and the prefill of this row.
+
+      // Act: choose what the graphic's form opens with.
+      const fieldsToShow = chooseFieldsToShowInGraphicForm(chosenGraphicId, storedItem, prefill);
+
+      // Assert: the fields of this row, or null for the manifest's defaults.
+      expect(
+        fieldsToShow,
+        'the form must open with the stored or prefilled fields only where they belong',
+      ).toEqual(expectedFields);
+    },
+  );
 });

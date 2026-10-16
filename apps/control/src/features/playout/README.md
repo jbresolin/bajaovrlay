@@ -3,13 +3,14 @@
 Putting graphics on air and taking them off. Start reading at `QuickEditPanel.tsx`. Nothing
 here knows a graphic by name: forms come from each manifest (`features/schemaForm`).
 
-- `QuickEditPanel.tsx` — "Edição rápida": the graphic dropdown and, per graphic, a fresh
-  `QuickEditForm.tsx` with "Colocar no ar" (`takeGraphic`, default layer), "Prévia" (the same
-  form as `previewGraphic`) and "Atualizar" (`updateInstanceData`, changed fields only).
-  `graphicForQuickEdit.ts` chooses the graphic; `instanceOfGraphicToFollow.ts` its instance on air.
-- A clock on air shows the time on screen, live, in its untouched time field; the form still
-  holds the reading on air, so that text is never sent. `clockRolesOfCarryClockForward.ts`
-  (the manifest words, paired with the server rule) → `clockFieldsOfGraphic.ts` (finds the
-  four fields) → `timeOnScreenOfClockOnAir.ts` (shared sum) → `useTimeOnScreenInQuickEdit.ts`.
+- `QuickEditPanel.tsx` — "Edição rápida": edits ONE instance loaded by a "Camadas" row's "Editar"
+  (or "Editar prévia"), or makes a new entry; `QuickEditChoiceProvider.tsx` holds that choice for
+  the page, `quickEditMode.ts` says which of the two it is (and why an instance was let go),
+  `QuickEditHeading.tsx` says it on screen, `QuickEditGraphicAndLayerChoice.tsx` the two dropdowns.
+- `QuickEditForm.tsx` + `QuickEditButtons.tsx` + `useQuickEditCommands.ts` — "Colocar no ar",
+  "Prévia", "Atualizar" (that instance's id only) and "Salvar como item" (`itemSavedFromQuickEdit.ts`).
+- A loaded clock shows the time on screen, live, in its untouched time field (never sent):
+  `clockRolesOfCarryClockForward.ts` → `clockFieldsOfGraphic.ts` → `timeOnScreenOfClockOnAir.ts`
+  → `useTimeOnScreenInQuickEdit.ts`.
 - `ClearAllButton.tsx` (panic button and Esc), `CommandErrorMessage.tsx`;
-  `*.testSupport.*` — the panel on a fake server, for the tests.
+  `*.testSupport.*` — the panel and "Camadas" on a fake server, for the tests.

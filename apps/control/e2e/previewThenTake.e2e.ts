@@ -20,8 +20,8 @@
  *     program stand-in and the "Programa" frame stay empty, the clock layer still says
  *     "vazia" and carries the chip "em prévia", and the item is listed under "Prévia".
  *   - "Tomar" sends it to air: the clock appears in the program stand-in, the layer says
- *     "No ar" within 3 seconds, the preview stand-in empties and the page says "Nada em
- *     prévia.".
+ *     "No ar" within 3 seconds, the page says "Nada em prévia." and the preview stand-in
+ *     shows what is now on air (Prévia is the screen as it will be after a take).
  *   - Reloading the control page keeps the program (the layer still names the item, the
  *     program stand-in still draws it), and the preview that was taken stays gone.
  *   - A preview that was NOT taken survives a reload of the control page, because it is
@@ -150,11 +150,12 @@ test.describe('previewing an item and sending the preview to air', () => {
       clockLayerRow,
       'the layer panel must name the item that went on air from the preview',
     ).toContainText('Largada do enduro');
-    // The preview is empty again, on the output itself and on the control page.
+    // Nothing is previewed any more, and the preview output shows what is on air now:
+    // Prévia is the screen as it will be after a take, and with no preview that is program.
     await expect(
-      findRaceClockInOutputPage(previewOutputPage),
-      'after "Tomar" the preview output must be empty',
-    ).toHaveCount(0);
+      findRaceClockInOutputPage(previewOutputPage).getByTestId('race-clock-session-name'),
+      'after "Tomar" the preview output must show the clock now on air, like program',
+    ).toHaveText('Enduro — Largada');
     await expect(
       centreArea.getByText('Nada em prévia.'),
       'after "Tomar" the page must say nothing is previewed',
@@ -182,9 +183,9 @@ test.describe('previewing an item and sending the preview to air', () => {
       'after a reload the taken preview must still be gone',
     ).toBeVisible();
     await expect(
-      findRaceClockInOutputPage(previewOutputPage),
-      'after a reload the preview output must still be empty',
-    ).toHaveCount(0);
+      findRaceClockInOutputPage(previewOutputPage).getByTestId('race-clock-session-name'),
+      'after a reload the preview output must still show only what is on air',
+    ).toHaveText('Enduro — Largada');
 
     // Tidy up: close the two stand-in pages. The item and the clock are left behind on
     // purpose: the next test, whichever it is, empties the server before it starts.

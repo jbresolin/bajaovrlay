@@ -1,6 +1,7 @@
 import type { Instance, Layer } from '@bajaovrlay/shared';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { ItemLabelOnAir } from '@/features/layers/ItemLabelOnAir';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
@@ -15,10 +16,21 @@ export type LayerStatusRowProps = {
   instanceOnProgram: Instance | undefined;
   /** true while the layer holds something on the preview output, whatever is on air. */
   isHoldingAPreview: boolean;
+  /** true while the next take clears this layer ("vai limpar", previewClearedLayerIds). */
+  isMarkedToBeCleared: boolean;
   /** The on-air graphic's display name; ignored when the layer is empty. */
   graphicName: string;
   currentTime: Date;
   onClearPressed: () => void;
+  /** "Prévia: limpar": mark the layer so Prévia shows it empty. Offered only with something on air. */
+  onPreviewClearPressed: () => void;
+  /**
+   * "Editar": load the instance on air into "Edição rápida". Undefined when there is none,
+   * or when the server no longer lists its graphic, whose form could not be drawn.
+   */
+  onEditProgramInstancePressed: (() => void) | undefined;
+  /** "Editar prévia": load this layer's preview into "Edição rápida"; undefined when there is none. */
+  onEditPreviewInstancePressed: (() => void) | undefined;
 };
 
 /**
@@ -26,8 +38,12 @@ export type LayerStatusRowProps = {
  * status badge, and the "Limpar" button. An empty layer says "vazia". A graphic that
  * failed stays on its row until the operator clears the layer or takes again.
  *
- * A layer that holds a preview gets the chip "em prévia" beside its name, and nothing
- * more: the rest of the row is about the program output only. Deliberate: the preview
+ * A layer that holds a preview gets the chip "em prévia" beside its name, and a layer the
+ * next take clears gets "vai limpar"; the rest of the row is about the program output.
+ * A row with something on air offers "Prévia: limpar", which only marks the layer: the
+ * air changes when that preview is taken (features/outputMonitors). "Editar" loads the
+ * instance on air into "Edição rápida", and "Editar prévia" the layer's preview; that is
+ * the only way an instance gets there (features/playout/QuickEditChoiceProvider.tsx). Deliberate: the preview
  * gets no status badge, because its status stays "loading" for good (the pages that
  * draw previews never report), so a badge would read "Carregando" and mean nothing.
  */
@@ -41,6 +57,9 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           <span className="text-sm font-medium">{layer.name}</span>
           {props.isHoldingAPreview ? (
             <Badge variant="secondary">{ptBR.layers.inPreviewChip}</Badge>
+          ) : null}
+          {props.isMarkedToBeCleared ? (
+            <Badge variant="secondary">{ptBR.layers.willClearChip}</Badge>
           ) : null}
         </span>
         {instanceOnProgram === undefined ? (
@@ -58,6 +77,23 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
             />
           </span>
         )}
+        <span className="flex flex-wrap items-center gap-1">
+          {props.onEditProgramInstancePressed === undefined ? null : (
+            <Button size="xs" variant="ghost" onClick={props.onEditProgramInstancePressed}>
+              {ptBR.layers.editInstanceButton}
+            </Button>
+          )}
+          {props.onEditPreviewInstancePressed === undefined ? null : (
+            <Button size="xs" variant="ghost" onClick={props.onEditPreviewInstancePressed}>
+              {ptBR.layers.editPreviewInstanceButton}
+            </Button>
+          )}
+          {instanceOnProgram === undefined ? null : (
+            <ActionButton size="xs" variant="ghost" onClick={props.onPreviewClearPressed}>
+              {ptBR.layers.previewClearLayerButton}
+            </ActionButton>
+          )}
+        </span>
       </div>
       {/* Always pressable when connected, even on an empty layer: clearing an empty
           layer is harmless, and a panic press must never find a dead button. */}

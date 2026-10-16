@@ -40,8 +40,11 @@ export type ItemGraphicFieldsFormHandle = {
 export type ItemGraphicFieldsFormProps = {
   /** The graphic chosen in the editor, as the server registered it. */
   graphic: Graphic;
-  /** The stored item as it was when the editor opened, or null for a new item. */
-  itemAsItWasWhenOpened: Item | null;
+  /**
+   * What the fields open with (graphicFieldsOfItemEditor.ts): the stored item's fields as
+   * they were when the editor opened, a prefill's fields, or null for the defaults.
+   */
+  fieldsToShow: ItemFields | null;
   /** react-hook-form's `mode`, the same the item's own form uses. */
   whenFieldsAreChecked: 'onChange' | 'onSubmit';
   /** Where the panel receives the handle above while this form is on the page. */
@@ -59,13 +62,11 @@ export type ItemGraphicFieldsFormProps = {
  * belong to two different graphics.
  */
 export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
-  const { graphic, itemAsItWasWhenOpened, whenFieldsAreChecked, handleRef } = props;
+  const { graphic, fieldsToShow, whenFieldsAreChecked, handleRef } = props;
 
   // Decided at the first draw and kept: a newer copy of the graphics slice (a reconnect)
   // must not refill the form over what the operator has typed.
-  const [graphicFields] = useState(() =>
-    fillGraphicFieldsOfItemEditor(graphic, itemAsItWasWhenOpened),
-  );
+  const [graphicFields] = useState(() => fillGraphicFieldsOfItemEditor(graphic, fieldsToShow));
   const form = useForm<SchemaFormValues>({
     defaultValues: graphicFields.formValues,
     resolver: buildSchemaFormResolver(graphicFields.description),

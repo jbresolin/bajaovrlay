@@ -28,8 +28,9 @@
  *     the program monitor, and the clock there is the very same element as before: it
  *     was updated in place and never left the screen (no blink).
  *   - Reloading the page changes nothing: the panel still shows the clock, because the
- *     state lives on the server and not in the page; and the form comes back showing
- *     what is on air instead of the manifest's defaults, the time as mm:ss.
+ *     state lives on the server and not in the page; and once the clock is loaded with
+ *     its row's "Editar", the form shows what is on air instead of the manifest's
+ *     defaults, the time as mm:ss.
  *   - Pressing "Limpar" on that layer brings it back to "vazia".
  *   - With only the control page open (no OBS), the layer stays "Carregando" after the
  *     take even though the clock is plainly visible in the program monitor; it turns to
@@ -94,7 +95,7 @@ async function fillQuickEditForTheEnduranceRace(page: Page): Promise<void> {
     '"Edição rápida" must open on the race clock, the one graphic the server has',
   ).toContainText('Relógio de prova');
   await quickEditArea
-    .getByLabel('Nome da sessão', { exact: true })
+    .getByLabel('Título', { exact: true })
     .fill('Enduro de Resistência — Bateria 1');
   await quickEditArea.getByRole('combobox', { name: 'Bandeira', exact: true }).click();
   await page.getByRole('option', { name: 'Verde' }).click();
@@ -223,11 +224,14 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
       'an update must leave the clock "No ar"; it never goes back to "Carregando"',
     ).toContainText('No ar');
 
-    // Act: reload the page, as an operator does when the browser misbehaves.
+    // Act: reload the page, as an operator does when the browser misbehaves, and load
+    // the clock into "Edição rápida" with "Editar" on its "Camadas" row (a reloaded page
+    // opens as a new entry: nothing is loaded until the operator says which instance).
     await page.reload();
+    await clockLayerRow.getByRole('button', { name: 'Editar', exact: true }).click();
 
-    // Assert: nothing was lost, because the server is the truth; and since the clock is
-    // on air, "Edição rápida" offers "Atualizar" and its form shows what is on air, yellow
+    // Assert: nothing was lost, because the server is the truth; and with the clock
+    // loaded, "Edição rápida" offers "Atualizar" and its form shows what is on air, yellow
     // flag included. The time field shows the time the running clock shows on screen now,
     // which is past the 12:34 it was taken with: several seconds have gone by since the
     // take (the wait for "No ar", the update and the reload), and the clock is running.
@@ -240,7 +244,7 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
       'with the clock on air the form must offer "Atualizar"',
     ).toBeVisible();
     await expect(
-      quickEditArea.getByLabel('Nome da sessão', { exact: true }),
+      quickEditArea.getByLabel('Título', { exact: true }),
       'after a reload the form must show the session name that is on air, not its default',
     ).toHaveValue('Enduro de Resistência — Bateria 1');
     await expect(
@@ -257,7 +261,8 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
     ).toHaveValue(/^12:(3[5-9]|[45]\d)$/);
 
     // Act: clear the clock layer.
-    await clockLayerRow.getByRole('button', { name: 'Limpar' }).click();
+    // `exact`: the row also has "Prévia: limpar", which a part-of-the-name match would find.
+    await clockLayerRow.getByRole('button', { name: 'Limpar', exact: true }).click();
 
     // Assert: the layer is empty again.
     await expect(clockLayerRow, 'after "Limpar" the clock layer must say "vazia"').toContainText(

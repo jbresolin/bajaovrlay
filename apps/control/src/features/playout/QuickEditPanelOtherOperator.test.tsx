@@ -46,6 +46,7 @@ import { buildLowerThirdFixtureInstanceOnProgram } from '@/state/lowerThirdFixtu
 
 import {
   pressButtonAndWaitForCommand,
+  pressEditOnTheLayerRow,
   renderQuickEditPanelWithTheseInstancesOnAir,
 } from './operatingTheQuickEditPanel.testSupport';
 
@@ -69,12 +70,14 @@ function buildLowerThirdInstanceHoldingThisData(lowerThirdData: Record<string, u
 
 /**
  * Draws the panel with the lower third of Ana Souza, captain of Baja UFPR's car 42, on
- * air. It is the only graphic on air, so it is the one the panel opens on.
+ * air, loaded into the panel with "Editar" on its "Camadas" row.
  */
 function renderPanelWithTheLowerThirdOfCar42OnAir() {
-  return renderQuickEditPanelWithTheseInstancesOnAir([
+  const controlPage = renderQuickEditPanelWithTheseInstancesOnAir([
     buildLowerThirdInstanceHoldingThisData(buildLowerThirdDataForCar42()),
   ]);
+  pressEditOnTheLayerRow('Tarja');
+  return controlPage;
 }
 
 /**

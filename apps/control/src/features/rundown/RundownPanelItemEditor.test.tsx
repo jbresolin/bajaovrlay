@@ -4,13 +4,13 @@
  * What this module is for:
  *   Items are prepared in the item editor. The rundown panel decides when the editor is
  *   on screen and what for: "+ Item" opens it for a new item at the end of the rundown,
- *   "Editar" on a row opens it for that row's item, and the editor asks to be closed
+ *   "Editar item" on a row opens it for that row's item, and the editor asks to be closed
  *   when the operator saves or cancels.
  *
  * What these tests prove:
  *   - The editor is not on screen until asked for.
  *   - "+ Item" opens it for a new item, telling it which rundown the item goes into.
- *   - "Editar" opens it for the item of that row.
+ *   - "Editar item" opens it for the item of that row.
  *   - When the editor asks to be closed, it leaves the screen.
  *   - If the item being edited is deleted meanwhile (by another operator), the editor
  *     leaves the screen instead of editing something that no longer exists.
@@ -44,7 +44,7 @@ describe('the item editor in the rundown panel', () => {
     // Assert: there is no editor area.
     expect(
       screen.queryByRole('region', { name: 'Editor de item' }),
-      'the editor must stay off screen until "+ Item" or "Editar" is pressed',
+      'the editor must stay off screen until "+ Item" or "Editar item" is pressed',
     ).toBeNull();
   });
 
@@ -68,14 +68,14 @@ describe('the item editor in the rundown panel', () => {
     ).toEqual([]);
   });
 
-  it('opens for the item of the row whose "Editar" is pressed', () => {
+  it('opens for the item of the row whose "Editar item" is pressed', () => {
     // Arrange: the panel showing the main rundown.
     const slices = buildSlicesWithTheEnduranceRundown('item-largada-do-enduro');
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(<RundownPanel />, slices);
 
-    // Act: press "Editar" on the yellow flag row.
+    // Act: press "Editar item" on the yellow flag row.
     const yellowFlagRow = within(screen.getByRole('listitem', { name: 'Bandeira amarela' }));
-    fireEvent.click(yellowFlagRow.getByRole('button', { name: 'Editar' }));
+    fireEvent.click(yellowFlagRow.getByRole('button', { name: 'Editar item' }));
 
     // Assert: the editor is open for the yellow flag item, and nothing was sent.
     const editorArea = within(screen.getByRole('region', { name: 'Editor de item' }));
@@ -109,16 +109,16 @@ describe('the item editor in the rundown panel', () => {
     ).toHaveLength(3);
   });
 
-  it('switches to the other item when "Editar" is pressed on another row', () => {
+  it('switches to the other item when "Editar item" is pressed on another row', () => {
     // Arrange: the panel with the editor open for the yellow flag.
     const slices = buildSlicesWithTheEnduranceRundown('item-largada-do-enduro');
     renderOnControlPageConnectedToFakeServer(<RundownPanel />, slices);
     const yellowFlagRow = within(screen.getByRole('listitem', { name: 'Bandeira amarela' }));
-    fireEvent.click(yellowFlagRow.getByRole('button', { name: 'Editar' }));
+    fireEvent.click(yellowFlagRow.getByRole('button', { name: 'Editar item' }));
 
-    // Act: press "Editar" on the finish row.
+    // Act: press "Editar item" on the finish row.
     const finishRow = within(screen.getByRole('listitem', { name: 'Chegada do enduro' }));
-    fireEvent.click(finishRow.getByRole('button', { name: 'Editar' }));
+    fireEvent.click(finishRow.getByRole('button', { name: 'Editar item' }));
 
     // Assert: one editor, now for the finish.
     const editorArea = within(screen.getByRole('region', { name: 'Editor de item' }));
@@ -133,7 +133,7 @@ describe('the item editor in the rundown panel', () => {
     const slices = buildSlicesWithTheEnduranceRundown('item-largada-do-enduro');
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(<RundownPanel />, slices);
     const yellowFlagRow = within(screen.getByRole('listitem', { name: 'Bandeira amarela' }));
-    fireEvent.click(yellowFlagRow.getByRole('button', { name: 'Editar' }));
+    fireEvent.click(yellowFlagRow.getByRole('button', { name: 'Editar item' }));
 
     // Act: the server sends the items without the yellow flag (another operator deleted it).
     const itemsWithoutTheYellowFlag = slices.items.filter(

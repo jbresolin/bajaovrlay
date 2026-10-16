@@ -13,6 +13,8 @@
  *     `emptyTheServerState` leaves the clock layer "vazia", nothing in preview and the
  *     rundown without items, as the control page shows it, and the seeded rundown
  *     "Sessão principal" is still there.
+ *   - With the clock layer marked "vai limpar" ("Prévia: limpar"), `emptyTheServerState`
+ *     leaves no mark: its `clearAll` removes the marks with everything else.
  *   - With a second panel, a button in "Atalhos" and a macro, `emptyTheServerState` leaves
  *     only the seeded panel "Atalhos", empty, and no macro.
  *   - Called on a server that is already empty, it changes nothing and does not fail.
@@ -61,7 +63,7 @@ test.describe('emptying the server state', () => {
     const rundownArea = page.getByRole('region', { name: 'Rundown' });
     const quickEditArea = page.getByRole('region', { name: 'Programa e edição rápida' });
     await quickEditArea
-      .getByLabel('Nome da sessão', { exact: true })
+      .getByLabel('Título', { exact: true })
       .fill('Enduro de Resistência — Bateria 1');
     await quickEditArea.getByRole('button', { name: 'Colocar no ar' }).click();
     await expect(clockLayerRow, 'the clock must be on its layer before the reset').toContainText(
@@ -70,7 +72,7 @@ test.describe('emptying the server state', () => {
     await page.getByRole('button', { name: '+ Item' }).click();
     const itemEditor = page.getByRole('region', { name: 'Editor de item' });
     await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
-    await itemEditor.getByLabel('Nome da sessão', { exact: true }).fill('Enduro — Largada');
+    await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro — Largada');
     await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
     await expect(
       rundownArea.getByRole('listitem'),
@@ -114,6 +116,40 @@ test.describe('emptying the server state', () => {
     await expect(
       rundownArea.getByRole('heading', { name: 'Sessão principal' }),
       'the reset must keep the seeded rundown itself',
+    ).toBeVisible();
+  });
+
+  test('removes a "vai limpar" mark', async ({ page }) => {
+    // Arrange: the race clock on air from "Edição rápida", and its layer marked with
+    // "Prévia: limpar" on its "Camadas" row; the mark is server state the next test would see.
+    await openControlPageAndWaitUntilConnected(page);
+    const clockLayerRow = page
+      .getByRole('region', { name: 'Camadas' })
+      .getByRole('listitem', { name: 'Relógio' });
+    const quickEditArea = page.getByRole('region', { name: 'Programa e edição rápida' });
+    await quickEditArea.getByRole('button', { name: 'Colocar no ar' }).click();
+    await expect(clockLayerRow, 'the clock must be on its layer before the mark').toContainText(
+      'Relógio de prova',
+    );
+    await clockLayerRow.getByRole('button', { name: 'Prévia: limpar' }).click();
+    await expect(clockLayerRow, 'the clock layer must be marked before the reset').toContainText(
+      'vai limpar',
+    );
+
+    // Act: empty the server.
+    await emptyTheServerState();
+
+    // Assert: no mark on the row, nothing under "Prévia", and the layer empty.
+    await expect(clockLayerRow, 'after the reset the clock layer must say "vazia"').toContainText(
+      'vazia',
+    );
+    await expect(
+      clockLayerRow,
+      'after the reset no layer may still be marked "vai limpar"',
+    ).not.toContainText('vai limpar');
+    await expect(
+      quickEditArea.getByText('Nada em prévia.'),
+      'after the reset no mark may be listed under the "Prévia" monitor',
     ).toBeVisible();
   });
 

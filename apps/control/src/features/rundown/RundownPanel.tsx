@@ -1,4 +1,4 @@
-import { listItemsOfRundownInOrder } from '@bajaovrlay/shared';
+import { listItemsOfQuickFirePanelInOrder, listItemsOfRundownInOrder } from '@bajaovrlay/shared';
 
 import { useTakeThenPreviewNextItem } from '@/features/autoPreview/useTakeThenPreviewNextItem';
 import { ActionButton } from '@/features/connection/ActionButton';
@@ -10,6 +10,7 @@ import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider
 
 import { AutoPreviewToggle } from './AutoPreviewToggle';
 import { chooseEmptyCursorHint } from './emptyCursorHint';
+import { listMoveToShortcutsChoices } from './moveToShortcutsChoices';
 import { RundownItemList } from './RundownItemList';
 import { findRundownShownOnPage } from './rundownShownOnPage';
 import { useMoveCursorByHand } from './useMoveCursorByHand';
@@ -27,15 +28,22 @@ import { useRundownKeyboardShortcuts } from './useRundownKeyboardShortcuts';
  * panel's: it is read from the page's one store (features/autoPreview/).
  *
  * The page's one item editor is drawn here, at the top of the column, whichever part of
- * the page opened it: this panel's "+ Item" and "Editar", and the quick-fire strip's
- * "+ Atalho" and "Editar" (features/quickFire). What it is open for is the page's
- * (features/items/ItemEditorTargetProvider.tsx), so both can open it.
+ * the page opened it: this panel's "+ Item" and "Editar item", the quick-fire strip's
+ * "+ Atalho" and "Editar" (features/quickFire), and "Salvar como item" of "Edição
+ * rápida" (features/playout). What it is open for is the page's
+ * (features/items/ItemEditorTargetProvider.tsx), so all of them can open it.
+ *
+ * A row's "⋯" menu moves its item to a quick-fire panel ("Mover para atalhos").
+ * Refusals of the commands sent from here are shown at the bottom of the column. A
+ * refused `moveItemToHome` also shows in the quick-fire strip, which lists the same type
+ * for its "Mover para rundown": the page keeps one last refusal per type.
  */
 export function RundownPanel() {
   const rundowns = useServerState((state) => state.rundowns);
   const items = useServerState((state) => state.items);
   const graphics = useServerState((state) => state.graphics);
   const layers = useServerState((state) => state.layers);
+  const quickFirePanels = useServerState((state) => state.quickFirePanels);
   const sendCommand = useSendCommand();
   const { itemEditorTarget, openItemEditorForNewItem, openItemEditorForItem, closeItemEditor } =
     useItemEditorTarget();
@@ -68,9 +76,24 @@ export function RundownPanel() {
     itemEditorTarget.kind === 'newItem'
       ? itemEditorTarget.home
       : ({ kind: 'rundown', rundownId } as const);
+  // "Salvar como item" of "Edição rápida" opens a new item already filled.
+  const prefilledOpening =
+    itemEditorTarget.kind === 'newItem' ? itemEditorTarget.prefilledOpening : null;
   // With the cursor on nothing Space has nothing to take, which without a word on screen
   // looks like a keyboard that stopped working. The words depend on why it is on nothing.
   const emptyCursorHint = chooseEmptyCursorHint(rundown, itemsInOrder.length);
+
+  // "Mover para atalhos" puts the item after the panel's last button, the mirror of the
+  // quick-fire button's "Mover para rundown" (features/quickFire/QuickFirePanelView.tsx).
+  function moveItemToTheEndOfPanel(itemId: string, panelId: string): void {
+    const numberOfButtonsInPanel = listItemsOfQuickFirePanelInOrder(items, panelId).length;
+    void sendCommand({
+      type: 'moveItemToHome',
+      itemId,
+      home: { kind: 'quickFire', panelId },
+      order: numberOfButtonsInPanel,
+    });
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -91,6 +114,7 @@ export function RundownPanel() {
       {isItemEditorOnScreen ? (
         <ItemEditorPanel
           homeForNewItem={homeForNewItem}
+          prefilledOpening={prefilledOpening}
           itemBeingEdited={itemBeingEdited ?? null}
           onClose={closeItemEditor}
         />
@@ -114,6 +138,8 @@ export function RundownPanel() {
           onSetCursorPressed={moveCursorByHand}
           onEditPressed={openItemEditorForItem}
           onDeleteConfirmed={(itemId) => void sendCommand({ type: 'deleteItem', itemId })}
+          moveToShortcutsChoices={listMoveToShortcutsChoices(quickFirePanels)}
+          onMoveToShortcutsChosen={moveItemToTheEndOfPanel}
           onItemsReordered={(itemIdsInNewOrder) =>
             void sendCommand({
               type: 'reorderItems',
@@ -140,6 +166,7 @@ export function RundownPanel() {
           'moveCursor',
           'reorderItems',
           'deleteItem',
+          'moveItemToHome',
         ]}
       />
     </div>

@@ -45,6 +45,7 @@ import {
   letTheServerApplyTheLastUpdate,
   pressButtonAndWaitForCommand,
   pressButtonAndWaitUntilThePressIsOver,
+  pressEditOnTheLayerRow,
   referenceMomentLabel,
   referenceTimeLabel,
   renderQuickEditPanelWithTheseInstancesOnAir,
@@ -74,11 +75,14 @@ function buildFirstHeatInstanceOnAir(): Instance {
 
 /**
  * Draws the panel with the first heat on air since 9:45, on a page whose clock reads
- * 10:00 and stands still there, the same moment the fake server answers at.
+ * 10:00 and stands still there, the same moment the fake server answers at, loaded into
+ * the panel with "Editar" on the clock's row.
  */
 function renderPanelWithTheFirstHeatOnAir() {
   holdThePageClockAt(tenOClock);
-  return renderQuickEditPanelWithTheseInstancesOnAir([buildFirstHeatInstanceOnAir()]);
+  const controlPage = renderQuickEditPanelWithTheseInstancesOnAir([buildFirstHeatInstanceOnAir()]);
+  pressEditOnTheLayerRow('Relógio');
+  return controlPage;
 }
 
 /**

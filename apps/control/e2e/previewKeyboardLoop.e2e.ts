@@ -18,7 +18,8 @@
  *   - A cursor the server placed (on the first item made) previews nothing by itself.
  *   - The Right arrow moves the cursor to the next item, and with no other press that
  *     item appears on the preview output and not on the program output. Space then
- *     sends it to air and the preview output empties (it was the last item).
+ *     sends it to air; nothing is previewed after it (it was the last item), so the
+ *     preview output shows what is on air, as Prévia shows the screen after a take.
  *   - Space, Space, Space on three items: after Shift+Space showed the first, each Space
  *     puts the previewed item on the program output AND shows the next one on the
  *     preview output, so each of the three is seen in preview before it reaches program.
@@ -115,7 +116,7 @@ test.describe('the keyboard loop with "Prévia automática" on', () => {
     await page.keyboard.press('Space');
 
     // Assert: the previewed finish went on air (within the 3 seconds of every take), the
-    // preview emptied, and the cursor moved on past the last item.
+    // preview was used up, and the cursor moved on past the last item.
     await expect(
       clockLayerRow,
       'the layer panel must say "No ar" within 3 seconds of Space, once the program output has reported the clock',
@@ -128,10 +129,11 @@ test.describe('the keyboard loop with "Prévia automática" on', () => {
       clockLayerRow,
       'the layer panel must name the item Space put on air',
     ).toContainText('Chegada do enduro');
+    // With nothing previewed, Prévia shows the screen as it is: the finish now on air.
     await expect(
-      findRaceClockInOutputPage(previewOutputPage),
-      'after Space the preview output must be empty: the preview itself went on air',
-    ).toHaveCount(0);
+      findRaceClockInOutputPage(previewOutputPage).getByTestId('race-clock-session-name'),
+      'after Space the preview output must show what is on air: the preview itself went on air',
+    ).toHaveText('Enduro — Chegada');
     await expect(
       centreArea.getByText('Nada em prévia.'),
       'after Space the page must say nothing is previewed',
@@ -253,9 +255,9 @@ test.describe('the keyboard loop with "Prévia automática" on', () => {
       'after the last item there is no next item, so nothing may be previewed',
     ).toBeVisible();
     await expect(
-      findRaceClockInOutputPage(previewOutputPage),
-      'the preview output must be empty after the last item was taken',
-    ).toHaveCount(0);
+      sessionNameOnPreview,
+      'with nothing previewed, the preview output must show the finish that is on air',
+    ).toHaveText('Enduro — Chegada');
     await expect(
       rundownArea.getByText('Fim do rundown — clique num item para posicionar o cursor'),
       'the finish was the last item, so the rundown has ended',
@@ -293,9 +295,9 @@ test.describe('the keyboard loop with "Prévia automática" on', () => {
       'Backspace with a preview showing must discard that preview',
     ).toBeVisible();
     await expect(
-      findRaceClockInOutputPage(previewOutputPage),
-      'the preview output must be empty after Backspace',
-    ).toHaveCount(0);
+      sessionNameOnPreview,
+      'after Backspace the preview output must show the finish that is on air again',
+    ).toHaveText('Enduro — Chegada');
     await expect(
       sessionNameOnProgram,
       'discarding a preview must leave the program output alone',

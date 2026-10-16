@@ -58,7 +58,7 @@ describe('the race clock form generated from its manifest', () => {
 
     // Assert: the six fields of the deleted hand-written form, with the same defaults.
     expect(
-      screen.getByLabelText('Nome da sessão'),
+      screen.getByLabelText('Título'),
       'the session name must start as the manifest default',
     ).toHaveValue('Enduro de Resistência');
     expect(

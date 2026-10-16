@@ -1,6 +1,8 @@
 import type { Graphic, Instance } from '@bajaovrlay/shared';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
+import { useQuickEditChoice } from '@/features/playout/QuickEditChoiceProvider';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
 import { LayerStatusRow } from './LayerStatusRow';
@@ -13,6 +15,8 @@ const relativeTimeRefreshIntervalInMilliseconds = 10_000;
  * Lists every layer, from the bottom of the screen stack to the top, with what is on
  * air on it, and a chip on a layer that also holds something on the preview output.
  * Always visible: the operator must never have to guess what a layer shows.
+ * A row with something on air also offers "Prévia: limpar" (`previewClearLayer`), and a
+ * marked layer carries the chip "vai limpar".
  * It only repeats the server's slices; pressing "Limpar" sends `clearLayer` and the row
  * changes when the server's next instances slice arrives, not before.
  */
@@ -20,7 +24,9 @@ export function LayerStatusPanel() {
   const layers = useServerState((state) => state.layers);
   const graphics = useServerState((state) => state.graphics);
   const instances = useServerState((state) => state.instances);
+  const previewClearedLayerIds = useServerState((state) => state.previewClearedLayerIds);
   const sendCommand = useSendCommand();
+  const { editInstanceInQuickEdit } = useQuickEditChoice();
   const currentTime = useCurrentTime(relativeTimeRefreshIntervalInMilliseconds);
 
   // Copied before sorting: the list in the store belongs to the store.
@@ -34,19 +40,38 @@ export function LayerStatusPanel() {
         <ul className="flex flex-col divide-y">
           {layersFromBottomToTop.map((layer) => {
             const instanceOnProgram = findInstanceOnProgram(instances, layer.id);
+            const instanceInPreview = findInstanceInPreview(instances, layer.id);
+            const programInstanceToEdit = keepIfItsGraphicIsListed(instanceOnProgram, graphics);
+            const previewInstanceToEdit = keepIfItsGraphicIsListed(instanceInPreview, graphics);
             return (
               <LayerStatusRow
                 key={layer.id}
                 layer={layer}
                 instanceOnProgram={instanceOnProgram}
-                isHoldingAPreview={isLayerHoldingAPreview(instances, layer.id)}
+                isHoldingAPreview={instanceInPreview !== undefined}
+                isMarkedToBeCleared={previewClearedLayerIds.includes(layer.id)}
                 graphicName={findGraphicName(graphics, instanceOnProgram?.graphicId)}
                 currentTime={currentTime}
                 onClearPressed={() => void sendCommand({ type: 'clearLayer', layerId: layer.id })}
+                onPreviewClearPressed={() =>
+                  void sendCommand({ type: 'previewClearLayer', layerId: layer.id })
+                }
+                onEditProgramInstancePressed={
+                  programInstanceToEdit === undefined
+                    ? undefined
+                    : () => editInstanceInQuickEdit(programInstanceToEdit)
+                }
+                onEditPreviewInstancePressed={
+                  previewInstanceToEdit === undefined
+                    ? undefined
+                    : () => editInstanceInQuickEdit(previewInstanceToEdit)
+                }
               />
             );
           })}
         </ul>
+        {/* "Limpar" and "Limpar tudo" show their refusals below the panel (AppShell.tsx). */}
+        <CommandErrorMessage commandTypes={['previewClearLayer']} />
       </CardContent>
     </Card>
   );
@@ -60,14 +85,26 @@ function findInstanceOnProgram(instances: Instance[], layerId: string): Instance
 }
 
 /**
- * Whether a layer holds something on the preview output. The row only marks it with a
- * chip: what is previewed, and the buttons that take or discard it, are under the
- * "Prévia" monitor (features/outputMonitors).
+ * The instance a layer holds on the preview output, if any. The row marks it with a chip
+ * and offers "Editar prévia": what is previewed, and the buttons that take or discard it,
+ * are under the "Prévia" monitor (features/outputMonitors).
  */
-function isLayerHoldingAPreview(instances: Instance[], layerId: string): boolean {
-  return instances.some(
+function findInstanceInPreview(instances: Instance[], layerId: string): Instance | undefined {
+  return instances.find(
     (instance) => instance.layerId === layerId && instance.target === 'preview',
   );
+}
+
+/**
+ * The instance, when "Edição rápida" can draw its form: only for a graphic the server
+ * still lists, because the form is generated from that graphic's manifest.
+ */
+function keepIfItsGraphicIsListed(
+  instance: Instance | undefined,
+  graphics: Graphic[],
+): Instance | undefined {
+  const isItsGraphicListed = graphics.some((graphic) => graphic.id === instance?.graphicId);
+  return isItsGraphicListed ? instance : undefined;
 }
 
 /**

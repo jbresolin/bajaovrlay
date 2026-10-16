@@ -13,7 +13,8 @@
  *   - For a new item the panel opens with the first graphic chosen, that graphic's
  *     default layer, an empty label, the neutral colour and the graphic's fields at the
  *     defaults of its manifest — whether the server's graphics arrive after the panel is
- *     drawn or were already on the page when it opened (the "+ Item" case).
+ *     drawn or were already on the page when it opened (the "+ Item" case). Its header
+ *     does not say "Item salvo", which belongs to a stored item.
  *   - The race clock's reference moment opens as "filled by the server at the take".
  *   - The colour dropdown offers the six fixed colours, each with a name in words.
  *   - "Salvar item" builds the right `createItem` from what was typed and chosen, with
@@ -75,6 +76,10 @@ describe('the item editor panel for a new item', () => {
       'the panel must say it is preparing a new item',
     ).toBeInTheDocument();
     expect(
+      screen.queryByText('Item salvo — vale para os próximos disparos'),
+      'a new item is not saved yet, so its header must not say it is',
+    ).toBeNull();
+    expect(
       screen.getByRole('combobox', { name: 'Gráfico' }),
       'the first graphic of the server must be chosen already',
     ).toHaveTextContent('Relógio de prova');
@@ -103,7 +108,7 @@ describe('the item editor panel for a new item', () => {
     // Assert: the fields the manifest describes, each starting at its default. The
     // reference moment is not typed: it is left for the server to stamp at the take.
     expect(
-      screen.getByLabelText('Nome da sessão'),
+      screen.getByLabelText('Título'),
       'the session name must start as the manifest default',
     ).toHaveValue('Enduro de Resistência');
     expect(
@@ -154,7 +159,7 @@ describe('the item editor panel for a new item', () => {
       "the layer must be the race clock's default layer as soon as the editor opens",
     ).toHaveTextContent('Relógio');
     expect(
-      screen.getByLabelText('Nome da sessão'),
+      screen.getByLabelText('Título'),
       'the fields of the graphic chosen at the start must be on screen, at their defaults',
     ).toHaveValue('Enduro de Resistência');
   });
@@ -185,7 +190,7 @@ describe('the item editor panel for a new item', () => {
     chooseOptionInDropdown('Cor', 'Sucesso');
     typeIntoField('Observações', 'Entrar quando os carros alinharem.');
     typeIntoField('Saída automática (segundos, opcional)', '90');
-    typeIntoField('Nome da sessão', 'Enduro de Resistência — Largada');
+    typeIntoField('Título', 'Enduro de Resistência — Largada');
     chooseOptionInDropdown('Modo do relógio', 'Tempo restante');
     typeIntoField(raceClockReferenceTimeLabel, '240:00');
 
@@ -296,7 +301,7 @@ describe('the item editor panel on the same page as another generated form', () 
     // Arrange: the page as the operator has it: the editor for a new item and, beside
     // it, another form generated from the race clock's manifest (on the real page that
     // is "Edição rápida"; here a plain generated form stands in for it). Both draw a
-    // "Nome da sessão" field.
+    // "Título" field.
     renderItemEditorPanelOnFakeServer(null);
     const raceClockFormDescription = describeSchemaFormFromDataSchema(raceClockManifest.schema);
     renderSchemaFormOnTestPage({
@@ -304,8 +309,8 @@ describe('the item editor panel on the same page as another generated form', () 
       formValues: buildEmptySchemaFormValues(raceClockFormDescription),
     });
     const editorPanel = screen.getByRole('region', { name: 'Editor de item' });
-    const sessionNameFields = screen.getAllByLabelText('Nome da sessão');
-    const sessionNameFieldOfTheEditor = within(editorPanel).getByLabelText('Nome da sessão');
+    const sessionNameFields = screen.getAllByLabelText('Título');
+    const sessionNameFieldOfTheEditor = within(editorPanel).getByLabelText('Título');
 
     // Act: type a session name into the editor's field.
     fireEvent.change(sessionNameFieldOfTheEditor, { target: { value: 'Enduro — Bateria 2' } });

@@ -151,7 +151,11 @@ const previewSliceChangeScenarios = [
       {
         layerId: 'clock',
         operations: [
-          { kind: 'updateData', instanceId: enduroClockInstanceId, changedData: { state: 'yellow' } },
+          {
+            kind: 'updateData',
+            instanceId: enduroClockInstanceId,
+            changedData: { state: 'yellow' },
+          },
         ],
       },
     ],

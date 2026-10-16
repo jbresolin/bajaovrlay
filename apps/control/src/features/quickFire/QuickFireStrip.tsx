@@ -113,6 +113,7 @@ export function QuickFireStrip() {
           'renameQuickFirePanel',
           'deleteQuickFirePanel',
           'runMacro',
+          'previewMacro',
           'stopMacro',
           'createMacro',
           'updateMacro',

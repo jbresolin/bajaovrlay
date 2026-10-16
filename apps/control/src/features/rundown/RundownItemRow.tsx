@@ -2,6 +2,7 @@ import type { Item } from '@bajaovrlay/shared';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from 'cn';
+import { type MouseEvent, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
@@ -10,6 +11,8 @@ import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
 
 import { DeleteItemButton } from './DeleteItemButton';
+import type { MoveToShortcutsChoice } from './moveToShortcutsChoices';
+import { RundownRowMoreActionsMenu } from './RundownRowMoreActionsMenu';
 
 /** What one row needs: its item, the names to show, and what each button does. */
 export type RundownItemRowProps = {
@@ -26,12 +29,17 @@ export type RundownItemRowProps = {
   onEditPressed: () => void;
   /** Called once "Excluir" was pressed twice within 3 seconds. */
   onDeleteConfirmed: () => void;
+  /** The "Mover para atalhos" entries of the row's "⋯" menu, in tab order. */
+  moveToShortcutsChoices: MoveToShortcutsChoice[];
+  /** Called when one of them is chosen, with the panel it names. */
+  onMoveToShortcutsChosen: (panelId: string) => void;
 };
 
 /**
  * One row of the rundown: a handle to drag it by, the item's colour and label, the
- * graphic and the layer it uses, and the buttons "Disparar", "Prévia", "Editar" and
- * "Excluir".
+ * graphic and the layer it uses, the buttons "Disparar", "Prévia", "Editar item" and
+ * "Excluir", and a "⋯" menu ("Mover para atalhos") that a right-click on the row opens
+ * too, as on a quick-fire button.
  * The label is itself a button: a click on it puts the cursor on this row, without
  * taking anything. The row at the cursor is marked for the eye (border and "Próximo")
  * and for a screen reader (`aria-current`). Must be drawn inside RundownItemList, which
@@ -40,6 +48,18 @@ export type RundownItemRowProps = {
 export function RundownItemRow(props: RundownItemRowProps) {
   const { item, isAtCursor, graphicName, layerName, onTakePressed } = props;
   const isConnected = useIsConnectedToServer();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const hasMenuAnythingToOffer = props.moveToShortcutsChoices.length > 0;
+
+  // The browser's own menu would cover the row; ours opens instead. Without a connection
+  // nothing in it could be sent, so the browser's menu is left alone then.
+  function openMenuInsteadOfTheBrowsers(rightClick: MouseEvent): void {
+    if (!isConnected || !hasMenuAnythingToOffer) {
+      return;
+    }
+    rightClick.preventDefault();
+    setIsMenuOpen(true);
+  }
 
   // After a mouse click the focus would stay on "Disparar". Space never presses a button
   // on this page (useRundownKeyboardShortcuts.ts), but Enter does, and an Enter meant for
@@ -77,6 +97,7 @@ export function RundownItemRow(props: RundownItemRowProps) {
       style={shiftWhileDragging}
       aria-label={item.label}
       aria-current={isAtCursor ? 'true' : undefined}
+      onContextMenu={openMenuInsteadOfTheBrowsers}
       className={cn(
         'flex items-start gap-2 rounded-md border bg-card p-2',
         isAtCursor && 'border-primary bg-accent',
@@ -113,6 +134,15 @@ export function RundownItemRow(props: RundownItemRowProps) {
             {item.label}
           </button>
           {isAtCursor ? <Badge>{ptBR.rundown.nextItemBadge}</Badge> : null}
+          {hasMenuAnythingToOffer ? (
+            <RundownRowMoreActionsMenu
+              itemLabel={item.label}
+              isOpen={isMenuOpen}
+              onOpenChange={setIsMenuOpen}
+              moveToShortcutsChoices={props.moveToShortcutsChoices}
+              onMoveToShortcutsChosen={props.onMoveToShortcutsChosen}
+            />
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span className="truncate">{graphicName}</span>

@@ -3,30 +3,31 @@
  *
  * What this module is for:
  *   "Edição rápida" works for every graphic the server lists, with a form generated from
- *   that graphic's manifest. A dropdown says which graphic the form is for. Until the
- *   operator chooses, the panel opens on the graphic taken most recently on the program
- *   output; once the operator chooses, or changes a field, the panel stays put. These
- *   tests use the lower third fixture next to the race clock: a graphic the control page
- *   has no code for.
+ *   that graphic's manifest. A dropdown says which graphic the form is for. The panel
+ *   opens as a new entry of the first graphic listed; it shows another graphic only when
+ *   the operator chooses it in the dropdown or loads an instance of it with "Editar" on a
+ *   "Camadas" row. A take fired elsewhere never moves it (BAJAOVRLAY-36 removed the
+ *   following of the graphic taken most recently). These tests use the lower third
+ *   fixture next to the race clock: a graphic the control page has no code for.
  *
  * What these tests prove:
  *   - The dropdown lists every graphic by the name in its manifest.
- *   - With a lower third taken after the race clock, the panel opens on the lower third,
- *     filled with what is on air, the two properties the form cannot edit shown for reading.
+ *   - The lower third loaded with "Editar" fills the form with what is on air, the two
+ *     properties the form cannot edit shown for reading.
  *   - Choosing the lower third by hand brings a fresh form at that manifest's defaults,
  *     and "Colocar no ar" sends `takeGraphic` for that graphic on its own default layer.
- *   - "Colocar no ar" for a graphic on air passes the properties the form cannot edit
+ *   - "Colocar no ar" for a loaded graphic passes the properties the form cannot edit
  *     through untouched; "Atualizar" never sends them.
- *   - A graphic taken from elsewhere moves an untouched panel to that graphic, and does
- *     not move a panel whose operator chose a graphic or changed a field.
- *   - When the graphic an untouched panel went to leaves the air, the panel stays on it
- *     with the values that were on air, so "Colocar no ar" puts the same thing back; a
- *     take fired after that still moves the panel.
+ *   - A graphic taken from elsewhere moves neither a new entry, nor a graphic chosen in
+ *     the dropdown, nor a panel with an instance loaded.
+ *   - When the loaded lower third leaves the air, the panel keeps its values, so
+ *     "Colocar no ar" puts the same thing back.
  *   - Going to another graphic and back starts from a fresh form: the unsent edit is gone.
  *   - With no graphics on the server the panel says so and draws no form and no buttons.
  *
  * What these tests deliberately do not cover:
- *   - Every case of the choice; graphicForQuickEdit.test.ts.
+ *   - The rule of what the panel works on: quickEditMode.test.ts and
+ *     QuickEditPanelTarget.test.tsx.
  *   - Every control of the lower third's form; features/schemaForm has its own tests.
  */
 import type { Instance } from '@bajaovrlay/shared';
@@ -47,6 +48,8 @@ import {
 
 import {
   pressButtonAndWaitForCommand,
+  pressEditOnTheLayerRow,
+  readQuickEditHeader,
   renderQuickEditPanelWithTheseInstancesOnAir,
 } from './operatingTheQuickEditPanel.testSupport';
 import { QuickEditPanel } from './QuickEditPanel';
@@ -55,7 +58,6 @@ import { QuickEditPanel } from './QuickEditPanel';
 // and the interview's lower third at 10:00.
 const quarterToTen = '2026-10-10T12:45:00.000Z';
 const tenOClock = '2026-10-10T13:00:00.000Z';
-const quarterPastTen = '2026-10-10T13:15:00.000Z';
 
 const graphicDropdownName = 'Gráfico a editar';
 
@@ -98,21 +100,21 @@ describe('the graphic dropdown of "Edição rápida"', () => {
     ).toEqual(['Relógio de prova', 'Tarja de entrevista']);
   });
 
-  it('opens on the graphic taken most recently, filled with what is on air', () => {
+  it('shows the lower third loaded from its row, filled with what is on air', () => {
     // Arrange: the race clock on air since 9:45 and the lower third since 10:00.
-    const instancesOnAir = [
+    renderQuickEditPanelWithTheseInstancesOnAir([
       buildRaceClockInstanceOnTheClockLayer(quarterToTen),
       buildLowerThirdOfCar42OnAirSinceTenOClock(),
-    ];
+    ]);
 
-    // Act: draw the panel.
-    renderQuickEditPanelWithTheseInstancesOnAir(instancesOnAir);
+    // Act: press "Editar" on the "Tarja" row.
+    pressEditOnTheLayerRow('Tarja');
 
     // Assert: the panel is on the lower third, its form holds car 42's data, and the two
     // properties the form cannot edit are there to read.
     expect(
       screen.getByRole('combobox', { name: graphicDropdownName }),
-      'the panel must open on the graphic taken most recently',
+      'the panel must show the graphic of the instance loaded',
     ).toHaveTextContent('Tarja de entrevista');
     expect(screen.getByLabelText('Nome'), 'the name must be the one on air').toHaveValue(
       'Ana Souza',
@@ -131,7 +133,7 @@ describe('the graphic dropdown of "Edição rápida"', () => {
     ).toContain('Oficina do Zé');
     expect(
       screen.getByRole('button', { name: 'Atualizar' }),
-      'the lower third is on air, so "Atualizar" must be offered',
+      'the lower third loaded is on air, so "Atualizar" must be offered',
     ).toBeInTheDocument();
   });
 
@@ -142,7 +144,7 @@ describe('the graphic dropdown of "Edição rápida"', () => {
     // Act: choose the lower third, fill its two required fields that have no default,
     // and press "Colocar no ar".
     chooseOptionInDropdown(graphicDropdownName, 'Tarja de entrevista');
-    const raceClockFieldAfterTheChoice = screen.queryByLabelText('Nome da sessão');
+    const raceClockFieldAfterTheChoice = screen.queryByLabelText('Título');
     const teamShownBeforeTyping = screen.getByRole('combobox', { name: 'Equipe' }).textContent;
     typeIntoField('Nome', 'Ana Souza');
     typeIntoField('Número do carro', '42');
@@ -179,10 +181,12 @@ describe('the graphic dropdown of "Edição rápida"', () => {
 
   it('passes the properties the form cannot edit through a take, and leaves them out of an update', async () => {
     // Arrange: the lower third on air with its sponsors (a list) and social networks (a
-    // nested object), which the form shows for reading only. The operator corrects the name.
+    // nested object), which the form shows for reading only. The operator loads it with
+    // "Editar" and corrects the name.
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
       buildLowerThirdOfCar42OnAirSinceTenOClock(),
     ]);
+    pressEditOnTheLayerRow('Tarja');
     typeIntoField('Nome', 'Ana Souza Lima');
 
     // Act: press "Atualizar"; the server refuses it, so the edit stays pending, and the
@@ -225,14 +229,13 @@ describe('"Edição rápida" when another graphic goes on air', () => {
   const scenariosWhereTheLowerThirdIsFiredFromTheRundown: Array<{
     name: string;
     whatTheOperatorDidBefore: () => void;
-    expectedGraphicShown: string;
+    expectedHeading: string;
   }> = [
-    // Nobody is using the panel: the graphic just taken is the one most likely to need
-    // a quick change, so the panel goes to it.
+    // Nobody is using the panel: it stays a new entry of the first graphic listed.
     {
-      name: 'an untouched panel moves to the graphic just taken',
+      name: 'a new entry stays on the race clock',
       whatTheOperatorDidBefore: () => undefined,
-      expectedGraphicShown: 'Tarja de entrevista',
+      expectedHeading: 'Nova entrada — não altera nenhum item',
     },
     // The operator said which graphic they want: the panel must not second-guess them.
     {
@@ -241,21 +244,21 @@ describe('"Edição rápida" when another graphic goes on air', () => {
         chooseOptionInDropdown(graphicDropdownName, 'Tarja de entrevista');
         chooseOptionInDropdown(graphicDropdownName, 'Relógio de prova');
       },
-      expectedGraphicShown: 'Relógio de prova',
+      expectedHeading: 'Nova entrada — não altera nenhum item',
     },
-    // The operator is half-way through an edit: swapping the form would throw it away.
+    // The operator loaded the race clock to change it: it stays the one being edited.
     {
-      name: 'a panel whose operator changed a field of the race clock stays on it',
-      whatTheOperatorDidBefore: () => typeIntoField('Nome da sessão', 'Enduro — Bateria 2'),
-      expectedGraphicShown: 'Relógio de prova',
+      name: 'a panel with the race clock loaded stays on it',
+      whatTheOperatorDidBefore: () => pressEditOnTheLayerRow('Relógio'),
+      expectedHeading: 'Editando: Relógio · Relógio de prova · No ar',
     },
   ];
 
   it.each(scenariosWhereTheLowerThirdIsFiredFromTheRundown)(
     '$name',
-    ({ whatTheOperatorDidBefore, expectedGraphicShown }) => {
-      // Arrange: the race clock on air since 9:45, the panel on it, and the operator
-      // having done what the scenario says.
+    ({ whatTheOperatorDidBefore, expectedHeading }) => {
+      // Arrange: the race clock on air since 9:45, and the operator having done what the
+      // scenario says.
       const raceClockOnAir = buildRaceClockInstanceOnTheClockLayer(quarterToTen);
       const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([raceClockOnAir]);
       whatTheOperatorDidBefore();
@@ -263,18 +266,21 @@ describe('"Edição rápida" when another graphic goes on air', () => {
       // Act: the lower third is fired from the rundown at 10:00.
       letTheLowerThirdGoOnAirNextToTheseInstances(fakeServer, [raceClockOnAir]);
 
-      // Assert: the panel shows the graphic of this row.
+      // Assert: the panel is still on the race clock, doing what it was doing.
       expect(
         screen.getByRole('combobox', { name: graphicDropdownName }),
-        'the panel must follow the latest take only while its operator has not chosen or typed',
-      ).toHaveTextContent(expectedGraphicShown);
+        'a take fired elsewhere must never move the panel to another graphic',
+      ).toHaveTextContent('Relógio de prova');
+      expect(readQuickEditHeader(), 'a take fired elsewhere must not change what is edited').toBe(
+        expectedHeading,
+      );
     },
   );
 
   it('starts from a fresh form when the operator goes to another graphic and comes back', () => {
     // Arrange: the panel with nothing on air, and a session name typed and not sent.
     renderQuickEditPanelWithTheseInstancesOnAir([]);
-    typeIntoField('Nome da sessão', 'Enduro — Bateria 2');
+    typeIntoField('Título', 'Enduro — Bateria 2');
 
     // Act: choose the lower third, then the race clock again.
     chooseOptionInDropdown(graphicDropdownName, 'Tarja de entrevista');
@@ -283,21 +289,22 @@ describe('"Edição rápida" when another graphic goes on air', () => {
     // Assert: the typed name is gone and the manifest default is back. Each graphic's
     // form lives only while it is the chosen one.
     expect(
-      screen.getByLabelText('Nome da sessão'),
+      screen.getByLabelText('Título'),
       'coming back to a graphic must start its form again from the defaults',
     ).toHaveValue('Enduro de Resistência');
   });
 });
 
-describe('"Edição rápida" when the graphic it went to by itself leaves the air', () => {
-  it('stays on that graphic with the values that were on air, although an earlier take is still on air', async () => {
-    // Arrange: the race clock on air since 9:45 and the lower third since 10:00. The
-    // panel opened on the lower third by itself; the operator has touched nothing.
+describe('"Edição rápida" when the loaded lower third leaves the air', () => {
+  it('keeps the values that were on air, so "Colocar no ar" puts the same thing back', async () => {
+    // Arrange: the race clock on air since 9:45 and the lower third since 10:00; the
+    // operator loaded the lower third and touched nothing.
     const raceClockOnAir = buildRaceClockInstanceOnTheClockLayer(quarterToTen);
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
       raceClockOnAir,
       buildLowerThirdOfCar42OnAirSinceTenOClock(),
     ]);
+    pressEditOnTheLayerRow('Tarja');
 
     // Act: the lower third leaves the air (someone pressed "Limpar" on its layer, or its
     // time ran out); the race clock stays. Then the operator presses "Colocar no ar".
@@ -309,8 +316,7 @@ describe('"Edição rápida" when the graphic it went to by itself leaves the ai
     await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
 
     // Assert: the panel did not jump to the race clock, "Atualizar" is gone, and the take
-    // puts back exactly the lower third that was on air, not a race clock and not the
-    // lower third's defaults.
+    // puts back exactly the lower third that was on air, on its layer.
     expect(
       graphicShownAfterTheLowerThirdLeft,
       'the panel must stay on the graphic that just left the air',
@@ -330,36 +336,6 @@ describe('"Edição rápida" when the graphic it went to by itself leaves the ai
       takeTimeFieldKeys: [],
     });
     fakeServer.acceptLastCommand();
-  });
-
-  it('still moves to a graphic taken after that', () => {
-    // Arrange: only the lower third on air since 10:00, the panel on it and untouched,
-    // and then everything cleared: the panel is still on the lower third.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
-      buildLowerThirdOfCar42OnAirSinceTenOClock(),
-    ]);
-    fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [] });
-    const graphicShownWithNothingOnAir = screen.getByRole('combobox', {
-      name: graphicDropdownName,
-    }).textContent;
-
-    // Act: the race clock is fired from the rundown at 10:15.
-    fakeServer.sendMessage({
-      type: 'slice',
-      name: 'instances',
-      slice: [buildRaceClockInstanceOnTheClockLayer(quarterPastTen)],
-    });
-
-    // Assert: the panel stayed on the lower third while nothing was on air (it did not
-    // jump to the first graphic listed), and followed the new take when it came.
-    expect(
-      graphicShownWithNothingOnAir,
-      'with nothing left on air the panel must stay on the graphic it was showing',
-    ).toBe('Tarja de entrevista');
-    expect(
-      screen.getByRole('combobox', { name: graphicDropdownName }),
-      'an untouched panel must still follow a take fired later',
-    ).toHaveTextContent('Relógio de prova');
   });
 });
 

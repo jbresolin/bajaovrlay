@@ -1,14 +1,16 @@
 // Test support: "Edição rápida" drawn on a page connected to a fake server that lists two
-// graphics (the real race clock and the lower third fixture), the few things an operator
+// graphics (the real race clock and the lower third fixture), next to the "Camadas" panel
+// whose rows' "Editar" load an instance into it, the few things an operator
 // does to the panel, and the three things the server does back. What the server does to
 // the data itself is in graphicDataAsTheServerPreparesIt.testSupport.ts. Written once so
 // the panel's test files read the same. Nothing here keeps state between calls.
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
 import type { Graphic, Instance } from '@bajaovrlay/shared';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { expect, vi } from 'vitest';
 import { z } from 'zod';
 
+import { LayerStatusPanel } from '@/features/layers/LayerStatusPanel';
 import {
   type ControlPageOnFakeServer,
   renderOnControlPageConnectedToFakeServer,
@@ -55,17 +57,47 @@ const UpdateCommandReceivedSchema = z.object({
 });
 
 /**
- * Draws "Edição rápida" on a connected page. The server lists the race clock first and
- * the lower third second, and has these instances on air.
+ * Draws "Edição rápida" and the "Camadas" panel on a connected page. The server lists the
+ * race clock first and the lower third second, and has these instances on air (or in
+ * preview). Nothing is loaded into the panel until a test presses a row's "Editar".
  */
 export function renderQuickEditPanelWithTheseInstancesOnAir(
   instancesOnAir: Instance[],
 ): ControlPageOnFakeServer {
-  return renderOnControlPageConnectedToFakeServer(<QuickEditPanel />, {
-    ...buildSlicesWithNothingOnAir(),
-    graphics: buildGraphicsTheFakeServerLists(),
-    instances: instancesOnAir,
-  });
+  return renderOnControlPageConnectedToFakeServer(
+    <>
+      <QuickEditPanel />
+      <LayerStatusPanel />
+    </>,
+    {
+      ...buildSlicesWithNothingOnAir(),
+      graphics: buildGraphicsTheFakeServerLists(),
+      instances: instancesOnAir,
+    },
+  );
+}
+
+/**
+ * Presses "Editar" on the "Camadas" row of this layer, which loads the instance on air
+ * there into "Edição rápida", as the operator does before changing it in place.
+ */
+export function pressEditOnTheLayerRow(layerName: string): void {
+  const layerRow = within(screen.getByRole('listitem', { name: layerName }));
+  fireEvent.click(layerRow.getByRole('button', { name: 'Editar' }));
+}
+
+/** Presses "Editar prévia" on the "Camadas" row of this layer: loads its preview instead. */
+export function pressEditPreviewOnTheLayerRow(layerName: string): void {
+  const layerRow = within(screen.getByRole('listitem', { name: layerName }));
+  fireEvent.click(layerRow.getByRole('button', { name: 'Editar prévia' }));
+}
+
+/**
+ * The line at the top of "Edição rápida" that says what a press changes: the panel's one
+ * heading under its title ("Nova entrada — …" or "Editando: …").
+ */
+export function readQuickEditHeader(): string | null {
+  return screen.getByRole('heading', { level: 3 }).textContent;
 }
 
 /**

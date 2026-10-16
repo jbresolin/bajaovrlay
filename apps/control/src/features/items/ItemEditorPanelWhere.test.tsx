@@ -49,7 +49,7 @@ function buildSlicesWithTwoPanels(): Slices {
 /** Fills the two fields a new race clock item needs: its label and its session name. */
 function fillTheClockItem(): void {
   typeIntoField('Rótulo', 'Relógio do enduro');
-  typeIntoField('Nome da sessão', 'Enduro de Resistência');
+  typeIntoField('Título', 'Enduro de Resistência');
 }
 
 describe('"Onde" in the item editor', () => {
