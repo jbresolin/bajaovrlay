@@ -12,4 +12,5 @@ Keyboard shortcuts for the operator. Start reading at `keyboardMap.ts`.
 
 The listeners live with their feature: Esc in `features/playout/ClearAllButton.tsx`, Backspace in
 `features/outputMonitors/useBackspaceToStopPreview.ts`, Space, Shift+Space and the arrows in
-`features/rundown/useRundownKeyboardShortcuts.ts`, 1–9 and F1–F4 in `features/quickFire/useQuickFireKeys.ts`.
+`features/rundown/useRundownKeyboardShortcuts.ts`, 1–9 and F1–F4 in `features/quickFire/useQuickFireKeys.ts`, P in
+`features/macros/useStopRunningMacroKey.ts`.

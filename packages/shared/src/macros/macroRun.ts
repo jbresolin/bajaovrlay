@@ -11,6 +11,11 @@ export const MacroRunSchema = z.object({
   startedAt: z.iso.datetime(),
   /** The step running now (a wait included), counted from 0. */
   currentStep: z.number().int().min(0),
+  /**
+   * true once an operator pressed "Parar" (stopMacro): the runner sends no step after
+   * the one in progress and ends the run. Pages show "Parando…" meanwhile.
+   */
+  isStopRequested: z.boolean(),
 });
 
 /** A macro run that has passed MacroRunSchema. */

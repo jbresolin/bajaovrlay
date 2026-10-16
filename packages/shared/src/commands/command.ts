@@ -7,6 +7,7 @@ import {
   EndMacroRunCommandSchema,
 } from '../macros/macroRunBookkeeping.js';
 import { RunMacroCommandSchema } from '../macros/runMacro.js';
+import { StopMacroCommandSchema } from '../macros/stopMacro.js';
 import { UpdateMacroCommandSchema } from '../macros/updateMacro.js';
 import { PreviewGraphicCommandSchema } from '../preview/previewGraphic.js';
 import { PreviewItemCommandSchema } from '../preview/previewItem.js';
@@ -59,11 +60,12 @@ export const CommandSchema = z.discriminatedUnion('type', [
   DeleteQuickFirePanelCommandSchema,
   MoveItemToHomeCommandSchema,
   // Macros (BAJAOVRLAY-16); their schemas live in ../macros/. The last two are sent only
-  // by the server's macro runner.
+  // by the server (the macro runner, and the watchdog for endMacroRun).
   CreateMacroCommandSchema,
   UpdateMacroCommandSchema,
   DeleteMacroCommandSchema,
   RunMacroCommandSchema,
+  StopMacroCommandSchema,
   AdvanceMacroRunCommandSchema,
   EndMacroRunCommandSchema,
 ]);

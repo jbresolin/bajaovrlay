@@ -13,6 +13,9 @@
  *     gone from `macroRuns`.
  *   - The macros are saved and come back after a restart; the runs are never saved:
  *     the slices table has no macroRuns row at any moment of a run.
+ *   - "Parar" (stopMacro) during the wait ends the run without the clear: the clock stays
+ *     on air, the macro is free again, and the event log saved in the database reads
+ *     the stop and then the runner's end.
  *   - A server stopped in the middle of a run (runner stopped, store reopened) starts
  *     with no run, so the macro can be pressed again at once; what the first steps put
  *     on air stays on air, because nothing is undone and nothing is resumed.
@@ -24,6 +27,7 @@
  */
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
+import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
 import type { ServerDatabase } from '../db/openDatabase.js';
 import { readAllSliceRows } from '../db/sliceRowStorage.js';
 import {
@@ -132,6 +136,34 @@ describe('the rehearsal macro, run through the store', () => {
       storedSliceNamesDuringTheRun,
       'the runs live in memory only and must never be saved',
     ).not.toContain('macroRuns');
+  });
+});
+
+describe('the rehearsal macro, stopped by the operator', () => {
+  it('ends the run on "Parar" during the wait, keeps the clock on air and saves the stop', () => {
+    // Arrange: the macro saved, pressed, and 200 ms into its wait.
+    const { store, database } = prepareTheRehearsalMacro();
+    store.applyCommand({ type: 'runMacro', macroId: openTheSessionMacroId }, operatorActor);
+    vi.advanceTimersByTime(200);
+
+    // Act: press "Parar", and let a second pass (more than the rest of the wait).
+    const outcomeOfTheStop = store.applyCommand(
+      { type: 'stopMacro', macroId: openTheSessionMacroId },
+      operatorActor,
+    );
+    vi.advanceTimersByTime(1_000);
+
+    // Assert: accepted; the clear never came; no run left; the saved event log ends with
+    // the operator's stop and the runner's end.
+    expect(outcomeOfTheStop, 'an operator may stop the running macro').toEqual({ ok: true });
+    expect(readLayerIdsOnAir(store), 'the clear after the wait must never be sent').toEqual([
+      'lower-third',
+    ]);
+    expect(store.readAllSlices().macroRuns, 'the stopped run must be gone').toEqual([]);
+    expect(
+      readNewestEventLogRows(database, 2).map((row) => `${row.actor} ${row.command}`),
+      'the database must hold the stop and then the end of the run',
+    ).toEqual([`${operatorActor} stopMacro`, 'sistema:macro:macro-abrir-sessao endMacroRun']);
   });
 });
 

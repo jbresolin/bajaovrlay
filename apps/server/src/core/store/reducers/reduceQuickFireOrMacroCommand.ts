@@ -8,6 +8,7 @@ import type {
   MoveItemToHomeCommand,
   RenameQuickFirePanelCommand,
   RunMacroCommand,
+  StopMacroCommand,
   UpdateMacroCommand,
 } from '@bajaovrlay/shared';
 
@@ -20,9 +21,10 @@ import { reduceMoveItemToHome } from './moveItemToHome.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { reduceRenameQuickFirePanel } from './renameQuickFirePanel.js';
 import { reduceRunMacro } from './runMacro.js';
+import { reduceStopMacro } from './stopMacro.js';
 import { reduceUpdateMacro } from './updateMacro.js';
 
-/** The ten commands of BAJAOVRLAY-16: quick-fire panels, moving items, macros. */
+/** The eleven commands of BAJAOVRLAY-16: quick-fire panels, moving items, macros. */
 export type QuickFireOrMacroCommand =
   | CreateQuickFirePanelCommand
   | RenameQuickFirePanelCommand
@@ -32,13 +34,14 @@ export type QuickFireOrMacroCommand =
   | UpdateMacroCommand
   | DeleteMacroCommand
   | RunMacroCommand
+  | StopMacroCommand
   | AdvanceMacroRunCommand
   | EndMacroRunCommand;
 
 /**
  * Sends a quick-fire panel or macro command to its reducer (one file per command, the
  * runner's two bookkeeping commands sharing one). Pure, like reduceCommand, which calls
- * this for those ten commands; a second switch keeps reduceCommand.ts short.
+ * this for those eleven commands; a second switch keeps reduceCommand.ts short.
  */
 export function reduceQuickFireOrMacroCommand(
   slices: SlicesChangedByCommands,
@@ -62,6 +65,8 @@ export function reduceQuickFireOrMacroCommand(
       return reduceDeleteMacro(slices, command);
     case 'runMacro':
       return reduceRunMacro(slices, command, context);
+    case 'stopMacro':
+      return reduceStopMacro(slices, command);
     case 'advanceMacroRun':
       return reduceAdvanceMacroRun(slices, command);
     case 'endMacroRun':

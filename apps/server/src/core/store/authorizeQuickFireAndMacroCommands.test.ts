@@ -18,6 +18,9 @@
  *     (a macro cannot start a macro), takeGraphic, takeNext, previewItem and
  *     reportInstanceStatus.
  *   - The auto-out may still send clearLayer and nothing a macro may send besides.
+ *   - An operator may send stopMacro ("Parar"); the auto-out and a running macro may not.
+ *   - The watchdog (`sistema:macro-watchdog`) may send endMacroRun of any macro and
+ *     nothing else: no step, no advance, no stopMacro, no runMacro.
  *
  * What these tests deliberately do not cover:
  *   - The rows of the older commands; authorizeCommand.test.ts covers them.
@@ -33,6 +36,8 @@ const rendererActor = 'renderer:b8d4e6f0-1a2c-4e3b-9d5f-6a7c8e9f0b12';
 const autoOutActor = 'sistema:auto-out';
 // The runner of "Abrir a sessão"; no connection has this role.
 const openTheSessionMacroActor = 'sistema:macro:macro-abrir-sessao';
+// The watchdog that ends a run gone on past its time limit; no connection has it either.
+const macroWatchdogActor = 'sistema:macro-watchdog';
 
 const createSponsorsPanel: Command = { type: 'createQuickFirePanel', name: 'Patrocinadores' };
 const renameShortcutsPanel: Command = {
@@ -60,6 +65,7 @@ const renameOpenTheSessionMacro: Command = {
 };
 const deleteOpenTheSessionMacro: Command = { type: 'deleteMacro', macroId: 'macro-abrir-sessao' };
 const runOpenTheSessionMacro: Command = { type: 'runMacro', macroId: 'macro-abrir-sessao' };
+const stopOpenTheSessionMacro: Command = { type: 'stopMacro', macroId: 'macro-abrir-sessao' };
 const advanceOpenTheSessionRun: Command = {
   type: 'advanceMacroRun',
   macroId: 'macro-abrir-sessao',
@@ -96,6 +102,7 @@ const operatorPanelAndMacroCommands: Array<{ commandName: string; command: Comma
   { commandName: 'updateMacro', command: renameOpenTheSessionMacro },
   { commandName: 'deleteMacro', command: deleteOpenTheSessionMacro },
   { commandName: 'runMacro', command: runOpenTheSessionMacro },
+  { commandName: 'stopMacro', command: stopOpenTheSessionMacro },
 ];
 
 describe('the panel and macro commands an operator page sends', () => {
@@ -288,6 +295,55 @@ const macroActorScenarios: Array<{
     name: 'refuses endMacroRun from the auto-out',
     command: endOpenTheSessionRun,
     actor: autoOutActor,
+    expectedIsAllowed: false,
+  },
+  // The watchdog's one job: end a run that went on past its limit.
+  {
+    name: 'allows endMacroRun of "Abrir a sessão" from the watchdog',
+    command: endOpenTheSessionRun,
+    actor: macroWatchdogActor,
+    expectedIsAllowed: true,
+  },
+  // Whichever macro is stuck: the watchdog is not tied to one macro.
+  {
+    name: 'allows endMacroRun of "Fechar a sessão" from the watchdog',
+    command: endCloseTheSessionRun,
+    actor: macroWatchdogActor,
+    expectedIsAllowed: true,
+  },
+  // Moving a run on is the runner's alone.
+  {
+    name: 'refuses advanceMacroRun from the watchdog',
+    command: advanceOpenTheSessionRun,
+    actor: macroWatchdogActor,
+    expectedIsAllowed: false,
+  },
+  // The watchdog ends the run itself; it has no use for the operator's "Parar".
+  {
+    name: 'refuses stopMacro from the watchdog',
+    command: stopOpenTheSessionMacro,
+    actor: macroWatchdogActor,
+    expectedIsAllowed: false,
+  },
+  // Ending a run never needs anything taken off air: nothing is rolled back.
+  {
+    name: 'refuses clearLayer from the watchdog',
+    command: { type: 'clearLayer', layerId: 'lower-third' },
+    actor: macroWatchdogActor,
+    expectedIsAllowed: false,
+  },
+  // Nor put on air: `sistema:macro-watchdog` is not a runner (`sistema:macro:<id>`).
+  {
+    name: 'refuses takeItem from the watchdog',
+    command: { type: 'takeItem', itemId: 'item-largada-do-enduro' },
+    actor: macroWatchdogActor,
+    expectedIsAllowed: false,
+  },
+  // Nor start a macro.
+  {
+    name: 'refuses runMacro from the watchdog',
+    command: runOpenTheSessionMacro,
+    actor: macroWatchdogActor,
     expectedIsAllowed: false,
   },
 ];

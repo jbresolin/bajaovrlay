@@ -19,8 +19,9 @@
  *
  * What these tests deliberately do not cover:
  *   - A macro that goes well, waits, and one run at a time: macroRunner.test.ts.
- *   - A store that throws on endMacroRun for good: the runner keeps trying every second
- *     until it is stopped, which only a restart ends; there is nothing more to see.
+ *   - A store that throws on the runner's endMacroRun for good: the runner keeps trying
+ *     every second until the watchdog ends the run at its limit;
+ *     macroRunnerWatchdog.test.ts covers it.
  */
 import { describe, expect, it, vi } from 'vitest';
 

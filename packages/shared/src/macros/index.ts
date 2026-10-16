@@ -16,6 +16,8 @@ export { type UpdateMacroCommand, UpdateMacroCommandSchema } from './updateMacro
 export { type DeleteMacroCommand, DeleteMacroCommandSchema } from './deleteMacro.js';
 // runMacro: one press of a macro's button.
 export { type RunMacroCommand, RunMacroCommandSchema } from './runMacro.js';
+// stopMacro: the operator's "Parar", ending a run after the step in progress.
+export { type StopMacroCommand, StopMacroCommandSchema } from './stopMacro.js';
 // advanceMacroRun and endMacroRun: the server's runner moving a run on and ending it.
 export {
   type AdvanceMacroRunCommand,

@@ -85,5 +85,10 @@ export function buildSlicesWithShortcutsAndMacros(): Slices {
 
 /** "Abrir a sessão" running, at its second step (the wait), since `startedAt`. */
 export function buildOpenTheSessionRunningAtTheWait(startedAt: string): MacroRun {
-  return { macroId: openTheSessionMacroId, startedAt, currentStep: 1 };
+  return { macroId: openTheSessionMacroId, startedAt, currentStep: 1, isStopRequested: false };
+}
+
+/** "Abrir a sessão" at the wait after an operator pressed "Parar", before the end arrives. */
+export function buildOpenTheSessionBeingStopped(startedAt: string): MacroRun {
+  return { macroId: openTheSessionMacroId, startedAt, currentStep: 1, isStopRequested: true };
 }

@@ -2,12 +2,18 @@
 // two roles a connection can have, and the role is all the authorisation step looks at.
 // The operator role is spelt in pt-BR because the actor is shown to people in the event
 // log. A third role, `sistema:<what>`, is never given to a connection: it signs what the
-// server does by itself (the auto-out, `sistema:auto-out`, and the macro runner,
-// `sistema:macro:<macroId>`).
+// server does by itself (the auto-out, `sistema:auto-out`, the macro runner,
+// `sistema:macro:<macroId>`, and the macro watchdog, `sistema:macro-watchdog`).
 const rendererRolePrefix = 'renderer:';
 const operatorRolePrefix = 'operador:';
 const systemRolePrefix = 'sistema:';
 const macroRunnerRolePrefix = 'sistema:macro:';
+
+/**
+ * The actor name the macro watchdog signs its endMacroRun with. The hyphen keeps it out
+ * of the runner's `sistema:macro:` prefix, so it is never mistaken for a macro's runner.
+ */
+export const macroWatchdogActor = 'sistema:macro-watchdog';
 
 /** The actor name of a renderer page's connection. */
 export function buildRendererActor(connectionId: string): string {

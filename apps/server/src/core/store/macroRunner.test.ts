@@ -26,6 +26,8 @@
  *   - runMacro's own refusals and the bookkeeping reducers; runMacro.test.ts.
  *   - What the authorisation hook allows each actor; the authorisation tests.
  *   - A restart in the middle of a run; storeMacroRun.test.ts covers it.
+ *   - The operator's "Parar" (macroRunnerStop.test.ts) and the watchdog
+ *     (macroRunnerWatchdog.test.ts).
  */
 import type { Slices } from '@bajaovrlay/shared';
 import { describe, expect, it, vi } from 'vitest';

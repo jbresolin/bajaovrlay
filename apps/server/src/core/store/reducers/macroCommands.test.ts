@@ -54,7 +54,12 @@ function buildCloseTheSessionMacro(): Macro {
 
 /** Builds the run of "Abrir a sessão", started at 14:32:00 and waiting at step 1. */
 function buildRunOfOpenTheSession(): MacroRun {
-  return { macroId: 'macro-abrir-sessao', startedAt: '2026-10-09T14:32:00.000Z', currentStep: 1 };
+  return {
+    macroId: 'macro-abrir-sessao',
+    startedAt: '2026-10-09T14:32:00.000Z',
+    currentStep: 1,
+    isStopRequested: false,
+  };
 }
 
 describe('createMacro', () => {

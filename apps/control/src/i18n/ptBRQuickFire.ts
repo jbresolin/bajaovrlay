@@ -45,6 +45,11 @@ export const ptBRQuickFire = {
       `Rodando ${currentStepNumber}/${numberOfSteps}`,
     // A macro with no step has no step to count: its run lasts a moment and says only this.
     runningBadgeWithoutSteps: 'Rodando',
+    // After "Parar" was accepted, until the server's runner ends the run.
+    stoppingBadge: 'Parando…',
+    // "Parar" beside a running macro: named with the macro for a screen reader.
+    stopMacroButton: (macroLabel: string) => `Parar macro: ${macroLabel}`,
+    stopMacroSymbol: 'Parar',
     editMacroButton: (macroLabel: string) => `Editar macro: ${macroLabel}`,
     editMacroSymbol: 'Editar',
   },

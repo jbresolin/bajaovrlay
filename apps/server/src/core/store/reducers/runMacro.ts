@@ -34,6 +34,11 @@ export function reduceRunMacro(
     };
   }
 
-  const newRun: MacroRun = { macroId: macro.id, startedAt: context.now, currentStep: 0 };
+  const newRun: MacroRun = {
+    macroId: macro.id,
+    startedAt: context.now,
+    currentStep: 0,
+    isStopRequested: false,
+  };
   return { status: 'applied', slices: { ...slices, macroRuns: [newRun] } };
 }

@@ -60,6 +60,7 @@ export function reduceCommand(
     case 'updateMacro':
     case 'deleteMacro':
     case 'runMacro':
+    case 'stopMacro':
     case 'advanceMacroRun':
     case 'endMacroRun':
       return reduceQuickFireOrMacroCommand(slices, command, context);

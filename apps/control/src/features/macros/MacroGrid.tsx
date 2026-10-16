@@ -19,7 +19,7 @@ const texts = ptBR.quickFire.macros;
  * and a grid of macro buttons in the order the server lists them (the order they were
  * made, which is also the order of the digits 1–9 on this tab). A click sends `runMacro`;
  * the server's runner does the rest and reports progress in the `macroRuns` slice, which
- * each button reads to show it is running.
+ * each button reads to show it is running; the running macro's "Parar" sends `stopMacro`.
  */
 export function MacroGrid() {
   const macros = useServerState((state) => state.macros);
@@ -76,6 +76,7 @@ export function MacroGrid() {
               runOfThisMacro={macroRuns.find((run) => run.macroId === macro.id)}
               digitKey={digitKeys[position] ?? null}
               onRunPressed={() => void sendCommand({ type: 'runMacro', macroId: macro.id })}
+              onStopPressed={() => void sendCommand({ type: 'stopMacro', macroId: macro.id })}
               onEditPressed={() =>
                 setMacroEditorTarget({ kind: 'existingMacro', macroId: macro.id })
               }

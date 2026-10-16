@@ -9,16 +9,18 @@
  *   screen cannot drift from what the keys do.
  *
  * What these tests prove:
- *   - The map holds exactly the eight shortcuts of M1, in the order the dialog lists them,
+ *   - The map holds exactly the nine shortcuts (M1's eight and P, "Parar" a running
+ *     macro, from PR #13's gate 2), in the order the dialog lists them,
  *     and the dialog's hand-written list holds every entry of the map exactly once.
  *   - A press is told to be an entry's by the entry's keys and Shift rule, which is how
  *     Space and Shift+Space are told apart.
  *   - Each shortcut keeps the rules decided for it in earlier tasks (docs/decisions.md):
  *     only Esc works while typing; Space, the arrows and F1–F4 are kept from the browser,
- *     Esc, Backspace and the digits are not.
+ *     Esc, Backspace, the digits and P are not.
  *   - No key press is claimed by two shortcuts, and every shortcut has words for the
  *     operator.
- *   - 1–9 are the nine digit keys and F1–F4 the first four function keys.
+ *   - 1–9 are the nine digit keys and F1–F4 the first four function keys; P is the
+ *     letter p in either case (Caps Lock sends "P").
  *
  * What these tests deliberately do not cover:
  *   - What each key does on the page: RundownPanelKeyboard*.test.tsx, ClearAllButton.test.tsx,
@@ -35,14 +37,15 @@ import {
 } from './keyboardMap';
 
 describe('the keyboard map', () => {
-  it('lists the eight shortcuts of M1, in the order the dialog shows them', () => {
+  it('lists the nine shortcuts, in the order the dialog shows them', () => {
     // Arrange: nothing to set up; the map is a constant.
 
     // Act: read the names the operator sees, in the dialog's order.
     const keyNames = listKeyboardShortcutsInDialogOrder().map((shortcut) => shortcut.keyName);
 
-    // Assert: the eight shortcuts, the take first and the panic key after the cursor keys.
-    expect(keyNames, 'the dialog must list the eight M1 shortcuts in this order').toEqual([
+    // Assert: the nine shortcuts, the take first, the panic key after the cursor keys, and
+    // the macro's "Parar" after the strip's keys.
+    expect(keyNames, 'the dialog must list the nine shortcuts in this order').toEqual([
       'Espaço',
       'Shift + Espaço',
       '→',
@@ -51,6 +54,7 @@ describe('the keyboard map', () => {
       'Esc',
       '1 a 9',
       'F1 a F4',
+      'P',
     ]);
   });
 
@@ -95,6 +99,14 @@ describe('the keyboard map', () => {
       shortcut: keyboardMap.switchQuickFireTab,
       worksWhileTyping: false,
       isKept: true,
+    },
+    // A p typed into a field is a letter ("Patrocinadores"); on the page the browser does
+    // nothing with it, so there is nothing to keep it from.
+    {
+      name: 'P',
+      shortcut: keyboardMap.stopRunningMacro,
+      worksWhileTyping: false,
+      isKept: false,
     },
   ];
 
@@ -242,5 +254,15 @@ describe('the keyboard map', () => {
       'F3',
       'F4',
     ]);
+  });
+
+  it('stops a running macro with the letter p in either case', () => {
+    // Arrange: nothing to set up.
+
+    // Act: read the keys of the stop shortcut.
+    const stopKeys = keyboardMap.stopRunningMacro.keys;
+
+    // Assert: p and P, so Caps Lock does not switch "Parar" off.
+    expect(stopKeys, '"Parar" must be the letter p, small or capital').toEqual(['p', 'P']);
   });
 });

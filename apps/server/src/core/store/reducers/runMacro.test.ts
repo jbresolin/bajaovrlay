@@ -10,8 +10,9 @@
  *   the slice changes only through commands.
  *
  * What these tests prove:
- *   - runMacro records { macroId, startedAt: the command's moment, currentStep: 0 } and
- *     changes nothing else (nothing goes on air in the reducer).
+ *   - runMacro records { macroId, startedAt: the command's moment, currentStep: 0,
+ *     isStopRequested: false } and changes nothing else (nothing goes on air in the
+ *     reducer).
  *   - runMacro is refused while any macro is running, the same one included, with
  *     MACRO_RUNNING and a pt-BR message naming both; an unknown macro with MACRO_NOT_FOUND.
  *   - advanceMacroRun sets the current step; endMacroRun removes the entry.
@@ -58,7 +59,12 @@ function buildCloseTheSessionMacro(): Macro {
 
 /** Builds the run of "Abrir a sessão", started at 14:32:00, at the given step. */
 function buildRunOfOpenTheSession(currentStep: number): MacroRun {
-  return { macroId: 'macro-abrir-sessao', startedAt: '2026-10-09T14:32:00.000Z', currentStep };
+  return {
+    macroId: 'macro-abrir-sessao',
+    startedAt: '2026-10-09T14:32:00.000Z',
+    currentStep,
+    isStopRequested: false,
+  };
 }
 
 /** Builds the race day with both macros saved and the given runs. */
@@ -85,7 +91,12 @@ describe('runMacro', () => {
     // Assert: one run recorded; nothing on air yet, the macros untouched.
     const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
     expect(slicesAfter?.macroRuns, 'the run must start at step 0, at the command moment').toEqual([
-      { macroId: 'macro-abrir-sessao', startedAt: '2026-10-09T14:32:05.000Z', currentStep: 0 },
+      {
+        macroId: 'macro-abrir-sessao',
+        startedAt: '2026-10-09T14:32:05.000Z',
+        currentStep: 0,
+        isStopRequested: false,
+      },
     ]);
     expect(slicesAfter?.instances, 'the reducer must not run any step itself').toBe(
       slicesBefore.instances,

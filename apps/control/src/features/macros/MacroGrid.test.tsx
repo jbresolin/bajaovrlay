@@ -113,7 +113,12 @@ describe('the macros grid', () => {
       macro.id === openTheSessionMacroId ? { ...macro, steps: [] } : macro,
     );
     slices.macroRuns = [
-      { macroId: openTheSessionMacroId, startedAt: momentTheMacroStarted, currentStep: 0 },
+      {
+        macroId: openTheSessionMacroId,
+        startedAt: momentTheMacroStarted,
+        currentStep: 0,
+        isStopRequested: false,
+      },
     ];
 
     // Act: draw the grid.

@@ -87,7 +87,12 @@ function buildRaceDayStateWithTheClockOnAir() {
       },
     ],
     macroRuns: [
-      { macroId: 'macro-abrir-sessao', startedAt: '2026-10-09T13:00:05.000Z', currentStep: 0 },
+      {
+        macroId: 'macro-abrir-sessao',
+        startedAt: '2026-10-09T13:00:05.000Z',
+        currentStep: 0,
+        isStopRequested: false,
+      },
     ],
   };
 }

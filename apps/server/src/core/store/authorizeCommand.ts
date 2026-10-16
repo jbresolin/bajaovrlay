@@ -1,6 +1,11 @@
 import type { Command } from '@bajaovrlay/shared';
 
-import { isRendererActor, isSystemActor, readMacroIdOfMacroRunnerActor } from './commandActors.js';
+import {
+  isRendererActor,
+  isSystemActor,
+  macroWatchdogActor,
+  readMacroIdOfMacroRunnerActor,
+} from './commandActors.js';
 
 /**
  * The authorisation step of applyCommand: answers whether this actor may run this
@@ -24,10 +29,13 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   (takeItem, clearLayer, clearAll) and the bookkeeping of its own run
  *   (advanceMacroRun, endMacroRun naming that same macro), and nothing else: a macro
  *   cannot start a macro, edit anything, or take a graphic by hand;
+ * - the macro watchdog (`sistema:macro-watchdog`) may only end a run (endMacroRun, of
+ *   any macro): it ends a run gone on past its time limit and undoes nothing;
  * - every other server timer (`sistema:`, today the auto-out) may only clear one layer:
  *   a bug in a timer must never be able to put a graphic on air or empty the screen;
  * - every other actor (an operator) may send everything else, except the runner's
- *   bookkeeping, so no page can fake or end a run the runner is carrying out.
+ *   bookkeeping, so no page can fake or end a run the runner is carrying out; an
+ *   operator stops a run with stopMacro ("Parar"), which the runner then ends.
  * The role comes from the address the connection chose (`/ws?role=renderer`), so this
  * keeps honest pages in their lane; it is not a defence against a hostile client.
  * A new job for the system that needs another command must be added here, or its
@@ -39,6 +47,9 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
     command.type === 'advanceMacroRun' || command.type === 'endMacroRun';
   if (isRendererActor(actor)) {
     return isReportFromTheScreen;
+  }
+  if (actor === macroWatchdogActor) {
+    return command.type === 'endMacroRun';
   }
   const macroIdOfTheRunner = readMacroIdOfMacroRunnerActor(actor);
   if (macroIdOfTheRunner !== undefined) {

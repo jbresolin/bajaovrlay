@@ -14,10 +14,11 @@
  *   - Each of the four kinds of step is accepted unchanged; an unknown kind, or a step
  *     missing what it names, is refused.
  *   - A wait is whole milliseconds from 1 to 10 000 (bounds checked row by row).
- *   - A macro and a run are accepted unchanged; a macro needs a label and a known colour.
+ *   - A macro and a run are accepted unchanged; a macro needs a label and a known colour;
+ *     a run always says whether the operator asked to stop it (isStopRequested).
  *   - createMacro fills in the neutral colour; updateMacro may carry any one part;
- *     deleteMacro and runMacro need the macro; advanceMacroRun and endMacroRun need the
- *     macro, and advanceMacroRun a whole step number from 0.
+ *     deleteMacro, runMacro and stopMacro need the macro; advanceMacroRun and endMacroRun
+ *     need the macro, and advanceMacroRun a whole step number from 0.
  *
  * What these tests deliberately do not cover:
  *   - Whether the item or layer a step names exists: a macro is accepted at save time
@@ -145,6 +146,7 @@ describe('MacroSchema and MacroRunSchema', () => {
       macroId: 'macro-abrir-sessao',
       startedAt: '2026-10-09T14:32:05.000Z',
       currentStep: 1,
+      isStopRequested: false,
     };
 
     // Act: check it.
@@ -153,6 +155,40 @@ describe('MacroSchema and MacroRunSchema', () => {
     // Assert: accepted exactly as written.
     expect(result.success, 'a run at its second step must be accepted').toBe(true);
     expect(result.data, 'the accepted run must not be altered').toEqual(runAtTheWait);
+  });
+
+  it('accepts a run the operator asked to stop, unchanged', () => {
+    // Arrange: the same run, after "Parar" was pressed during the wait.
+    const runBeingStopped = {
+      macroId: 'macro-abrir-sessao',
+      startedAt: '2026-10-09T14:32:05.000Z',
+      currentStep: 1,
+      isStopRequested: true,
+    };
+
+    // Act: check it.
+    const result = MacroRunSchema.safeParse(runBeingStopped);
+
+    // Assert: accepted exactly as written, so a page can show "Parando…".
+    expect(result.success, 'a run being stopped must be accepted').toBe(true);
+    expect(result.data, 'the stop request must be kept as written').toEqual(runBeingStopped);
+  });
+
+  it('refuses a run that does not say whether a stop was asked for', () => {
+    // Arrange: a run written before stopMacro existed.
+    const runWithoutStopRequest = {
+      macroId: 'macro-abrir-sessao',
+      startedAt: '2026-10-09T14:32:05.000Z',
+      currentStep: 1,
+    };
+
+    // Act: check it and turn the failure into readable text.
+    const result = MacroRunSchema.safeParse(runWithoutStopRequest);
+    const failureMessage = result.error ? z.prettifyError(result.error) : '';
+
+    // Assert: refused, naming the missing field.
+    expect(result.success, 'every run must say whether a stop was asked for').toBe(false);
+    expect(failureMessage, 'the failure must name the missing field').toContain('isStopRequested');
   });
 });
 
@@ -211,6 +247,11 @@ describe('the macro commands', () => {
       name: 'accepts endMacroRun with the macro',
       command: { type: 'endMacroRun', macroId: 'macro-abrir-sessao' },
     },
+    // The operator's "Parar": end the run after the step in progress.
+    {
+      name: 'accepts stopMacro with the macro',
+      command: { type: 'stopMacro', macroId: 'macro-abrir-sessao' },
+    },
   ];
 
   it.each(acceptedCommandScenarios)('$name', ({ command }) => {
@@ -241,6 +282,12 @@ describe('the macro commands', () => {
     {
       name: 'refuses runMacro without the macro',
       command: { type: 'runMacro' },
+      fieldNamed: 'macroId',
+    },
+    // Nor which run "Parar" was pressed for.
+    {
+      name: 'refuses stopMacro without the macro',
+      command: { type: 'stopMacro' },
       fieldNamed: 'macroId',
     },
     // Steps count from 0; a negative one is a runner bug.

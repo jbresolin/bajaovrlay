@@ -21,7 +21,7 @@
  *     a second, less than a first load of the clock's package may take; the layer panel
  *     is what the server says, which is what the steps change.
  *   - A failing step, a second run while one runs, and the exact order of the steps: the
- *     server's macroRunner.test.ts, with a fake clock.
+ *     server's macroRunner.test.ts, with a fake clock. "Parar": macroStopDuringWait.e2e.ts.
  *   - Every control of the editor: MacroEditorPanel.test.tsx.
  *
  * What it needs: the race clock and the renderer built (`pnpm build`).
@@ -30,44 +30,21 @@
  *   Before each test the server is emptied, macros included, and the reset waits for a
  *   running macro to end, so this test passes whatever ran before it, in any order.
  */
-import { expect, type Page, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
 import { findClockLayerRow, openControlPageAndWaitUntilConnected } from './previewTestSteps';
-import { createRaceClockButtonInPanelShown, findQuickFireArea } from './quickFireTestSteps';
+import {
+  createRaceClockButtonInPanelShown,
+  createTakeWaitAndClearClockMacro,
+  findQuickFireArea,
+} from './quickFireTestSteps';
 
 // The macro's wait, and the window the clear must fall in after the click: never before
 // the wait has passed (less a margin for the moment of the click itself), and no later
 // than 3 s, the limit every "No ar" check of this folder uses too.
 const earliestClearAfterTheClickInMilliseconds = 400;
 const latestClearAfterTheClickInMilliseconds = 3_000;
-
-/** Opens a dropdown of the macro editor by its name and picks one option. */
-async function chooseInMacroEditor(page: Page, dropdownName: string, optionName: string) {
-  const macroEditor = page.getByRole('region', { name: 'Editor de macro' });
-  await macroEditor.getByRole('combobox', { name: dropdownName }).click();
-  // The list of options is drawn outside the editor, at the end of the page.
-  await page.getByRole('option', { name: optionName, exact: true }).click();
-}
-
-/** Writes and saves "Relógio por meio segundo": take the clock, wait 0,5 s, clear the clock layer. */
-async function createTheHalfSecondClockMacro(page: Page): Promise<void> {
-  const quickFireArea = findQuickFireArea(page);
-  await quickFireArea.getByRole('tab', { name: 'Macros' }).click();
-  await quickFireArea.getByRole('button', { name: '+ Macro' }).click();
-  const macroEditor = page.getByRole('region', { name: 'Editor de macro' });
-  await macroEditor.getByLabel('Rótulo da macro').fill('Relógio por meio segundo');
-  await macroEditor.getByRole('button', { name: '+ Passo' }).click();
-  await chooseInMacroEditor(page, 'Item do passo 1', 'Relógio do box (Atalhos)');
-  await macroEditor.getByRole('button', { name: '+ Passo' }).click();
-  await chooseInMacroEditor(page, 'Tipo do passo 2', 'Esperar');
-  await macroEditor.getByLabel('Espera do passo 2 (segundos)').fill('0,5');
-  await macroEditor.getByRole('button', { name: '+ Passo' }).click();
-  await chooseInMacroEditor(page, 'Tipo do passo 3', 'Limpar camada');
-  await chooseInMacroEditor(page, 'Camada do passo 3', 'Relógio');
-  await macroEditor.getByRole('button', { name: 'Salvar macro' }).click();
-  await expect(macroEditor, 'the editor must close once the server has the macro').toBeHidden();
-}
 
 test.beforeEach(async () => {
   await emptyTheServerState();
@@ -81,7 +58,11 @@ test.describe('a macro of take, wait and clear', () => {
     // the editor and listed on the Macros tab; the clock layer is empty.
     await openControlPageAndWaitUntilConnected(page);
     await createRaceClockButtonInPanelShown(page, 'Relógio do box', 'Entrevista no box');
-    await createTheHalfSecondClockMacro(page);
+    await createTakeWaitAndClearClockMacro(page, {
+      macroLabel: 'Relógio por meio segundo',
+      itemLabel: 'Relógio do box',
+      waitInSecondsAsTyped: '0,5',
+    });
     const macroButton = findQuickFireArea(page)
       .getByRole('list', { name: 'Macros' })
       .getByRole('button', { name: /^Relógio por meio segundo/ });

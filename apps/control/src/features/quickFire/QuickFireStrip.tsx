@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTakeThenPreviewNextItem } from '@/features/autoPreview/useTakeThenPreviewNextItem';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { MacroGrid } from '@/features/macros/MacroGrid';
+import { useStopRunningMacroKey } from '@/features/macros/useStopRunningMacroKey';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
@@ -24,7 +25,8 @@ const texts = ptBR.quickFire;
  * The quick-fire strip, in the right column above the layer panel: a tab per quick-fire
  * panel (in the panels' order) and "Macros"; under the tabs, the panel's grid of item
  * buttons or the grid of macros. The digits 1–9 fire the first nine buttons of the tab
- * shown and F1–F4 show the first four tabs (useQuickFireKeys.ts).
+ * shown and F1–F4 show the first four tabs (useQuickFireKeys.ts); P stops the running
+ * macro from any tab (features/macros/useStopRunningMacroKey.ts).
  *
  * The tab shown is this page's own choice (two operators may look at different tabs);
  * when its panel is deleted the strip falls back to the first tab (quickFireTabs.ts).
@@ -51,6 +53,7 @@ export function QuickFireStrip() {
     tabShown.kind === 'panel' ? panels.find((panel) => panel.id === tabShown.panelId) : undefined;
 
   useQuickFireKeys({ tabs, tabShown, chooseTab: setChosenTab, sendTakeByThisOperator });
+  useStopRunningMacroKey();
 
   function createPanel(panelName: string): void {
     setIsCreatingPanel(false);
@@ -110,6 +113,7 @@ export function QuickFireStrip() {
           'renameQuickFirePanel',
           'deleteQuickFirePanel',
           'runMacro',
+          'stopMacro',
           'createMacro',
           'updateMacro',
           'deleteMacro',

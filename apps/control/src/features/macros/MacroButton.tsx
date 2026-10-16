@@ -13,6 +13,8 @@ export type MacroButtonProps = {
   /** The digit that runs it on this tab ('1' to '9'), or null past the ninth macro. */
   digitKey: string | null;
   onRunPressed: () => void;
+  /** "Parar": drawn only while this macro runs and no stop was asked for yet. */
+  onStopPressed: () => void;
   onEditPressed: () => void;
 };
 
@@ -23,6 +25,8 @@ const texts = ptBR.quickFire.macros;
  * While the server lists a run of it, the button says "Rodando" and the step the run is
  * on, counted from 1 ("Rodando 2/3"), and is marked busy for a screen reader. A macro
  * with no step says "Rodando" alone for the moment its run lasts, never "Rodando 1/0".
+ * A running macro also gets "Parar" (stopMacro); once the server marked the run as being
+ * stopped the badge says "Parando…" until the run ends, and "Parar" is gone.
  *
  * Deliberate: the button is never switched off by a run, its own or another's. The
  * server refuses a second run (MACRO_RUNNING) with a pt-BR message, and the strip shows
@@ -32,7 +36,7 @@ export function MacroButton(props: MacroButtonProps) {
   const { macro, runOfThisMacro, digitKey } = props;
   const isConnected = useIsConnectedToServer();
   const isRunning = runOfThisMacro !== undefined;
-  const hasSteps = macro.steps.length > 0;
+  const isBeingStopped = runOfThisMacro?.isStopRequested === true;
 
   // The button lets go of the focus after a click, as every firing button of the page.
   function runThisMacroAndLetGoOfTheFocus(button: HTMLButtonElement): void {
@@ -59,9 +63,7 @@ export function MacroButton(props: MacroButtonProps) {
         <span className="w-full truncate text-sm font-semibold">{macro.label}</span>
         {isRunning ? (
           <span className="text-xs font-medium">
-            {hasSteps
-              ? texts.runningBadge(runOfThisMacro.currentStep + 1, macro.steps.length)
-              : texts.runningBadgeWithoutSteps}
+            {describeRun(runOfThisMacro, macro.steps.length)}
           </span>
         ) : null}
         {digitKey === null ? null : (
@@ -79,6 +81,28 @@ export function MacroButton(props: MacroButtonProps) {
       >
         {texts.editMacroSymbol}
       </button>
+      {isRunning && !isBeingStopped ? (
+        <button
+          type="button"
+          disabled={!isConnected}
+          aria-label={texts.stopMacroButton(macro.label)}
+          onClick={props.onStopPressed}
+          className="absolute top-6 right-1 rounded-sm bg-background px-1 text-xs font-semibold text-foreground outline-none hover:opacity-80 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed"
+        >
+          {texts.stopMacroSymbol}
+        </button>
+      ) : null}
     </li>
   );
+}
+
+/** The badge of a running macro: "Parando…", "Rodando 2/3", or "Rodando" with no step. */
+function describeRun(run: MacroRun, numberOfSteps: number): string {
+  if (run.isStopRequested) {
+    return texts.stoppingBadge;
+  }
+  if (numberOfSteps === 0) {
+    return texts.runningBadgeWithoutSteps;
+  }
+  return texts.runningBadge(run.currentStep + 1, numberOfSteps);
 }

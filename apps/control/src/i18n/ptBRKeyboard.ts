@@ -67,5 +67,11 @@ export const ptBRKeyboard = {
       description:
         'Abre a 1ª à 4ª aba de atalhos, na ordem em que aparecem; a aba Macros conta como a última.',
     },
+    stopRunningMacro: {
+      keyName: 'P',
+      condition: `${ignoredWhileTyping} Funciona em qualquer aba; sem macro rodando, não faz nada.`,
+      description:
+        'Parar: a macro que está rodando termina o passo em andamento e não envia mais nenhum; uma espera é interrompida. Nada é tirado do ar.',
+    },
   },
 } as const;

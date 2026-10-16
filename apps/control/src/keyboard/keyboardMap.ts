@@ -30,7 +30,7 @@ export type KeyboardShortcut = {
    * The commands a press may send; empty for a key that only changes the page (F1–F4).
    * Descriptive only: no code reads it. It tells the reader where to look; what a key
    * really sends is decided by the hook that listens to it (commandForOperatorKey.ts,
-   * quickFireTabs.ts, the "Limpar tudo" button).
+   * quickFireTabs.ts, the "Limpar tudo" button, useStopRunningMacroKey.ts).
    */
   commandTypes: readonly Command['type'][];
   /** The key as the operator reads it in the "?" dialog ("Espaço", "1 a 9"). */
@@ -45,7 +45,7 @@ const shortcutTexts = ptBR.keyboard.shortcuts;
 
 /**
  * Every shortcut of the control page, by name. The rules below are the ones decided task
- * by task (docs/decisions.md, PR #5, #8 and #12 and their gate-2 lines); this file only
+ * by task (docs/decisions.md, PR #5, #8, #12 and #13 and their gate-2 lines); this file only
  * gathers them, and changing one here changes what the key does: `keys`,
  * `isIgnoredWhileTyping` and `isKeptFromTheBrowser` drive the listeners, `isShiftHeld`
  * tells Shift+Space from Space, the order of switchQuickFireTab's keys is the order of
@@ -124,6 +124,16 @@ export const keyboardMap = {
     commandTypes: [],
     ...shortcutTexts.switchQuickFireTab,
   },
+  // "Parar" (PR #13, gate 2): p in either case, since Caps Lock sends "P". The browser
+  // does nothing with a letter outside a field, so nothing is kept from it.
+  stopRunningMacro: {
+    keys: ['p', 'P'],
+    isShiftHeld: false,
+    isIgnoredWhileTyping: true,
+    isKeptFromTheBrowser: false,
+    commandTypes: ['stopMacro'],
+    ...shortcutTexts.stopRunningMacro,
+  },
 } as const satisfies Record<string, KeyboardShortcut>;
 
 /**
@@ -141,7 +151,8 @@ export function isPressOfShortcut(
 }
 
 /**
- * Every shortcut, in the order the "?" dialog lists them: rundown keys first. Written by
+ * Every shortcut, in the order the "?" dialog lists them: rundown keys first, the macro's
+ * "Parar" last. Written by
  * hand because the order is a choice; keyboardMap.test.ts checks it holds every entry
  * of the map exactly once, so a new entry cannot be missing from the help.
  */
@@ -155,5 +166,6 @@ export function listKeyboardShortcutsInDialogOrder(): KeyboardShortcut[] {
     keyboardMap.clearAll,
     keyboardMap.fireQuickFireButton,
     keyboardMap.switchQuickFireTab,
+    keyboardMap.stopRunningMacro,
   ];
 }
