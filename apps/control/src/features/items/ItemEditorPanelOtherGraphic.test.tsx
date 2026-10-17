@@ -92,7 +92,7 @@ describe('the item editor panel for a new item of the interview lower third', ()
       "the layer must move to the new graphic's default layer",
     ).toHaveTextContent('Tarja');
     expect(
-      screen.queryByLabelText('Nome da sessão'),
+      screen.queryByLabelText('Título'),
       "the race clock's fields must not be offered for another graphic",
     ).toBeNull();
     expect(screen.getByLabelText('Nome'), 'the name has no default and starts empty').toHaveValue(
@@ -189,7 +189,7 @@ describe('the item editor panel for a new item of the interview lower third', ()
   it('starts the fields of a graphic from its defaults again after another graphic was chosen in between', () => {
     // Arrange: a new item on the race clock, with a session name typed.
     renderItemEditorPanelOnFakeServer(null);
-    typeIntoField('Nome da sessão', 'Enduro — Bateria 2');
+    typeIntoField('Título', 'Enduro — Bateria 2');
 
     // Act: choose the lower third, then go back to the race clock.
     chooseOptionInDropdown('Gráfico', 'Tarja de entrevista');
@@ -198,7 +198,7 @@ describe('the item editor panel for a new item of the interview lower third', ()
     // Assert: the clock's fields are back at the manifest's defaults. What was typed for
     // the clock before belongs to a form that was replaced.
     expect(
-      screen.getByLabelText('Nome da sessão'),
+      screen.getByLabelText('Título'),
       'the fields must start from the defaults of the graphic chosen last',
     ).toHaveValue('Enduro de Resistência');
     expect(
@@ -251,7 +251,7 @@ describe('the item editor panel for a graphic whose manifest has no data schema'
 
     // Act: choose the logo and save.
     chooseOptionInDropdown('Gráfico', 'Logo da competição');
-    const isAnyClockFieldStillShown = screen.queryByLabelText('Nome da sessão') !== null;
+    const isAnyClockFieldStillShown = screen.queryByLabelText('Título') !== null;
     await pressSaveAndWaitForCommand(1, fakeServer);
 
     // Assert: nothing of another graphic is left on screen, and the item has no fields.

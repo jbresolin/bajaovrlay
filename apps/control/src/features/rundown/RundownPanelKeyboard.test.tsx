@@ -11,7 +11,7 @@
  * What these tests prove:
  *   - Space sends `takeNext` for the rundown on screen, and stops the browser from also
  *     scrolling the page. With no cursor it still sends: the server decides and explains.
- *   - With the focus on "Disparar", on "Editar" or on "Limpar tudo", Space sends
+ *   - With the focus on "Disparar", on "Editar item" or on "Limpar tudo", Space sends
  *     `takeNext` and nothing else, and the browser is told, at the press and at the
  *     release of the key, not to press that button.
  *   - Space is left alone while the operator types in a text field; on a closed dropdown
@@ -134,10 +134,10 @@ describe('the Space key while the focus is on a button', () => {
       name: '"Disparar" of another row',
       findTheButton: () => findButtonOnTheRowOfItem('Bandeira amarela', 'Disparar'),
     },
-    // Pressed by Space, "Editar" would open the editor in the middle of the show.
+    // Pressed by Space, "Editar item" would open the editor in the middle of the show.
     {
-      name: '"Editar" of a row',
-      findTheButton: () => findButtonOnTheRowOfItem('Bandeira amarela', 'Editar'),
+      name: '"Editar item" of a row',
+      findTheButton: () => findButtonOnTheRowOfItem('Bandeira amarela', 'Editar item'),
     },
     // The dangerous one: two Spaces on the panic button would blank the stream.
     {
@@ -193,7 +193,7 @@ describe('the Space key where it keeps another job', () => {
     const { fakeServer } = renderRundownPanelWithItsNeighbours('item-largada-do-enduro');
 
     // Act: press Space inside the text field, as when typing "Enduro de Resistência".
-    const wasLeftToTheBrowser = fireEvent.keyDown(screen.getByLabelText('Nome da sessão'), {
+    const wasLeftToTheBrowser = fireEvent.keyDown(screen.getByLabelText('Título'), {
       key: ' ',
     });
 

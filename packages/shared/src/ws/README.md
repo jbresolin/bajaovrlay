@@ -8,13 +8,19 @@ checks that every JSON example below passes its schema, so this page cannot drif
 Every message is one JSON object, told apart by its `type` field:
 
 - `hello` (server → client): every slice, sent once right after the client connects.
-- `slice` (server → client): one slice that changed, sent to every client.
-  Both carry `serverNowMs`: the server's wall clock, in whole milliseconds since 1970, when
-  the message was built. A renderer subtracts its own clock from it and keeps the median of
-  the last five differences, so the race clock on air counts on the server's clock
-  (`../clock/serverAlignedTime.ts`). The schema lets a message leave it out (test
-  stand-ins do); the server always sends it. `commandResult` does not carry it. A message
-  without it gives a page no sample at all; it is never read as "the clocks agree".
+- `slice` (server → client): the one slice a state change changed, sent to every client.
+- `slices` (server → client): instead of `slice`, when one state change changed more than
+  one slice: every changed slice by name (a part of `hello`'s `slices`, each checked by
+  its own schema), so a client takes them in ONE step and never shows the moment between
+  them. Every accepted command changes its own slice and `eventLog`, so it sends `slices`;
+  a refused one changes `eventLog` alone and sends `slice`.
+  All three carry `serverNowMs`: the server's wall clock, in whole milliseconds since 1970,
+  when the message was built. A renderer subtracts its own clock from it and keeps the
+  median of the last five differences, so the race clock on air counts on the server's
+  clock (`../clock/serverAlignedTime.ts`). On `hello` and `slice` the schema lets a
+  message leave it out (test stand-ins do); the server always sends it, and `slices`
+  must. `commandResult` does not carry it. A message without it gives a page no sample at
+  all; it is never read as "the clocks agree".
 - `time` (server → every client, every 10 s): `serverNowMs` and nothing else, so a page
   keeps getting samples while no slice changes. Here the field is required. A page
   records the sample and does nothing more with the message.
@@ -28,11 +34,11 @@ Every message is one JSON object, told apart by its `type` field:
   carries no `requestId`, so its `commandResult` comes back with `requestId: null`.
 - `commandResult` (server → the client that sent the command): `ok: true`, or
   `ok: false` with an `error` carrying a stable `code` and a pt-BR `message`. The
-  `slice` messages a command causes are sent before its `commandResult`. An accepted
-  command that changes nothing (a second `instanceStatus` for an instance already on
-  air, a late one for an instance already cleared, a clear of an empty stage) causes no
-  `slice` message at all, not even `eventLog`,
-  and leaves no event-log entry; its sender still gets `ok: true`.
+  `slice` or `slices` message a command causes is sent before its `commandResult`. An
+  accepted command that changes nothing (a second `instanceStatus` for an instance already
+  on air, a late one for an instance already cleared, a clear of an empty stage) causes no
+  `slice` or `slices` message at all, not even for `eventLog`, and leaves no event-log
+  entry; its sender still gets `ok: true`.
 
 A message that is not JSON or not in the protocol is answered with an error
 `commandResult` (code `INVALID_MESSAGE`, `requestId` echoed when it could be read) and
@@ -76,6 +82,7 @@ not answer the previous ping.
       }
     ],
     "instances": [],
+    "previewClearedLayerIds": [],
     "rundowns": [
       {
         "id": "sessao-principal",
@@ -113,6 +120,44 @@ not answer the previous ping.
     }
   ],
   "serverNowMs": 1791550800250
+}
+```
+
+## slices
+
+What "Prévia: limpar" on the clock layer sends while a preview is shown there: the
+preview leaves `instances`, the marker joins `previewClearedLayerIds`, and the event log
+gets its line, all in one message.
+
+```json
+{
+  "type": "slices",
+  "slices": {
+    "instances": [
+      {
+        "id": "7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11",
+        "layerId": "clock",
+        "graphicId": "race-clock",
+        "target": "program",
+        "resolvedData": { "sessionName": "Enduro de Resistência", "state": "green" },
+        "currentStep": 0,
+        "status": "on-air",
+        "takenAt": "2026-10-09T13:00:00.000Z"
+      }
+    ],
+    "previewClearedLayerIds": ["clock"],
+    "eventLog": [
+      {
+        "id": 18,
+        "ts": "2026-10-09T13:05:00.000Z",
+        "actor": "operador:3f2a9c1e",
+        "command": "previewClearLayer",
+        "payload": { "type": "previewClearLayer", "layerId": "clock" },
+        "result": { "status": "ok" }
+      }
+    ]
+  },
+  "serverNowMs": 1791551100000
 }
 ```
 
@@ -182,6 +227,29 @@ discards every other preview that was made with `"auto"`.
   "type": "command",
   "requestId": "pedido-21",
   "command": { "type": "takePreview", "layerId": "clock" }
+}
+```
+
+## command (Prévia shows the result, then Tomar tudo)
+
+`previewClearLayer` marks a layer "will be cleared": Prévia shows it empty, and the
+`previewClearedLayerIds` slice lists it. `previewMacro` shows a macro's end state on the
+preview output. `takeAllPreviews` then takes every preview and clears every marked layer
+in one state change, or is refused with `NOTHING_IN_PREVIEW` when there is nothing to take.
+
+```json
+{
+  "type": "command",
+  "requestId": "pedido-22",
+  "command": { "type": "previewClearLayer", "layerId": "lower-third" }
+}
+```
+
+```json
+{
+  "type": "command",
+  "requestId": "pedido-23",
+  "command": { "type": "takeAllPreviews" }
 }
 ```
 

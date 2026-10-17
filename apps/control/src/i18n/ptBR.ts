@@ -1,12 +1,14 @@
 import { ptBRKeyboard } from './ptBRKeyboard';
+import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
 
 /**
  * pt-BR catalog: every string the operator reads on the control page comes from here,
  * never written inline in a component, so the wording can be reviewed in one place.
- * Two parts live in files of their own to keep this one readable, and are reached
- * through here like the rest: `ptBR.keyboard` (ptBRKeyboard.ts) and `ptBR.quickFire`
- * (ptBRQuickFire.ts, the quick-fire panels and the macros).
+ * Three parts live in files of their own to keep this one readable, and are reached
+ * through here like the rest: `ptBR.keyboard` (ptBRKeyboard.ts), `ptBR.quickFire`
+ * (ptBRQuickFire.ts, the quick-fire panels and the macros) and `ptBR.playout.quickEdit`
+ * (ptBRQuickEdit.ts, "Edição rápida").
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,
@@ -43,7 +45,16 @@ export const ptBR = {
     emptyLayer: 'vazia',
     // The small mark on a layer that holds something on the preview output.
     inPreviewChip: 'em prévia',
+    // The small mark on a layer the next take will clear (previewClearLayer): Prévia
+    // already shows it empty.
+    willClearChip: 'vai limpar',
     clearLayerButton: 'Limpar',
+    // On a layer with something on air: show in Prévia what the screen looks like once
+    // this layer is cleared, without clearing it yet.
+    previewClearLayerButton: 'Prévia: limpar',
+    // Loads that very instance into "Edição rápida": the one on air, or the one in preview.
+    editInstanceButton: 'Editar',
+    editPreviewInstanceButton: 'Editar prévia',
     // The word on each row's status badge. "Carregando" is what the server sets at the
     // take; "No ar" and "Falhou" are what the renderer reports back.
     instanceStatus: {
@@ -58,27 +69,8 @@ export const ptBR = {
   },
   // Putting graphics on air and taking them off (features/playout).
   playout: {
-    // "Edição rápida" (features/playout/QuickEditPanel.tsx): the centre panel that puts
-    // any graphic on air and changes it in place. Field labels come from the manifest.
-    quickEdit: {
-      panelTitle: 'Edição rápida',
-      // Not just "Gráfico": the item editor has a dropdown of that name on the same page.
-      graphicLabel: 'Gráfico a editar',
-      noGraphicsOnServer: 'O servidor não enviou nenhum gráfico.',
-      // Shown above the form while the chosen graphic is on air more than once (on
-      // different layers): which one the form shows and "Atualizar" changes.
-      followingMostRecentInstance: (
-        graphicName: string,
-        numberOfLayersItIsOn: number,
-        layerName: string,
-      ) =>
-        `"${graphicName}" está no ar em ${numberOfLayersItIsOn} camadas. Este painel acompanha a entrada mais recente, na camada ${layerName}.`,
-      // Shown above the form while it could not show everything that is on air. The
-      // server checks the whole result of an "Atualizar", so it refuses one that leaves
-      // a required field missing on air; only "Colocar no ar" gets out of that.
-      fieldsOnAirThatCouldNotBeRead: (fieldLabels: string) =>
-        `Estes campos do que está no ar não puderam ser lidos e aparecem com o valor inicial: ${fieldLabels}. "Atualizar" envia só o que você alterar, e o servidor recusa enquanto faltar um campo obrigatório no ar; "Colocar no ar" envia o formulário inteiro e substitui o que está no ar.`,
-    },
+    // "Edição rápida" (features/playout/QuickEditPanel.tsx), in ptBRQuickEdit.ts.
+    quickEdit: ptBRQuickEdit,
     takeButton: 'Colocar no ar',
     // Shows the form as it stands on the preview output, without touching what is on air.
     previewButton: 'Prévia',
@@ -96,6 +88,12 @@ export const ptBR = {
     // On each line: send that layer's preview to air, or throw it away.
     takePreviewButton: 'Tomar',
     discardPreviewButton: 'Descartar',
+    // What the line of a layer marked "will be cleared" says in place of a graphic.
+    willClearLabel: 'vai limpar',
+    // Shown while more than one layer has a preview or a mark: every line at once, in
+    // one change on the server (takeAllPreviews), or every line thrown away.
+    takeAllPreviewsButton: 'Tomar tudo',
+    discardAllPreviewsButton: 'Descartar tudo',
   },
   // How long ago something happened, as formatRelativeTimePtBR writes it.
   relativeTime: {
@@ -109,6 +107,9 @@ export const ptBR = {
     panelLabel: 'Editor de item',
     newItemTitle: 'Novo item',
     editItemTitle: 'Editar item',
+    // Under the title of a saved item only: a save changes the item, so it shows from the
+    // next take on; what is on air now changes only with "Atualizar no ar".
+    savedItemNote: 'Item salvo — vale para os próximos disparos',
     fields: {
       graphic: 'Gráfico',
       layer: 'Camada',
@@ -140,8 +141,9 @@ export const ptBR = {
       autoOutAfterSecondsInvalid:
         'Informe os segundos como um número inteiro maior que zero ou deixe em branco.',
     },
-    graphicAndLayerCannotChange:
-      'O gráfico e a camada de um item salvo não mudam. Para trocá-los, exclua o item e crie outro.',
+    // Beside the read-only graphic of a saved item: another graphic has other fields, so
+    // it is another item. (The layer of a saved item can be changed.)
+    graphicCannotChange: 'Para outro gráfico, crie um novo item',
     // Shown in place of the graphic's fields when a saved item names a graphic the
     // server no longer has, so there is no manifest to generate the fields from.
     graphicOfItemNotRegistered:
@@ -229,7 +231,16 @@ export const ptBR = {
     // The switch at the top of the rundown: while it is on, moving the cursor by hand
     // (an arrow key or a click on a label) also previews the item the cursor lands on.
     autoPreviewToggle: 'Prévia automática',
-    editItemButton: 'Editar',
+    // "Editar item", not "Editar": it changes the stored item (its next takes), which
+    // "Edição rápida" (one instance on air) does not.
+    editItemButton: 'Editar item',
+    // The "⋯" of each row, and its menu (also opened by a right-click on the row).
+    moreActionsButton: (itemLabel: string) => `Mais ações: ${itemLabel}`,
+    moreActionsSymbol: '⋯',
+    // With one quick-fire panel the entry is the action alone; with several, one entry
+    // per panel, named with it.
+    moveToShortcutsAction: 'Mover para atalhos',
+    moveToShortcutsPanelAction: (panelName: string) => `Mover para atalhos: ${panelName}`,
     deleteItemButton: 'Excluir',
     // What "Excluir" reads for 3 seconds after its first press, while it waits for the second.
     deleteItemConfirmButton: 'Confirmar: excluir',

@@ -1,14 +1,16 @@
 /**
- * The four preview commands: previewItem, previewGraphic, stopPreview, takePreview
- * (packages/shared)
+ * The seven preview commands: previewItem, previewGraphic, stopPreview, takePreview,
+ * previewClearLayer, takeAllPreviews, previewMacro (packages/shared)
  *
  * What this module is for:
- *   Nothing goes to air without being seen first. The operator puts an item
- *   (`previewItem`) or hand-typed data (`previewGraphic`) on the preview output of a
- *   layer, looks at it, and then either sends exactly that to the program output
- *   (`takePreview`) or throws it away (`stopPreview`, for one layer or for all of them).
- *   These schemas say what each command must look like before the server looks at its
- *   state.
+ *   Nothing goes to air without being seen first, and Prévia shows exactly what the
+ *   screen will look like after the take. The operator puts an item (`previewItem`) or
+ *   hand-typed data (`previewGraphic`) on the preview output of a layer, or marks a layer
+ *   "will be cleared" (`previewClearLayer`), or previews the end state of a macro
+ *   (`previewMacro`); then either sends one layer (`takePreview`) or everything at once
+ *   (`takeAllPreviews`) to the program output, or throws it away (`stopPreview`, for one
+ *   layer or for all of them). These schemas say what each command must look like before
+ *   the server looks at its state.
  *
  * What these tests prove:
  *   - Each command is accepted in its real shape. previewGraphic gets an empty
@@ -19,9 +21,12 @@
  *     cursor). Any other word is refused.
  *   - stopPreview says "every layer" with `layerId: null`, written out; a layer that
  *     happens to be called "all" is still one layer.
+ *   - previewClearLayer names one layer, takeAllPreviews names nothing, previewMacro names
+ *     one macro.
  *   - A command with a part missing or empty is refused, and the failure names the part.
- *   - The error code the server answers when nothing is previewed on a layer,
- *     LAYER_PREVIEW_EMPTY, is part of the closed list of codes.
+ *   - The error codes the server answers when nothing is previewed on a layer
+ *     (LAYER_PREVIEW_EMPTY) and when "Tomar tudo" has nothing to take
+ *     (NOTHING_IN_PREVIEW) are part of the closed list of codes.
  *
  * What these tests deliberately do not cover:
  *   - Whether the item, graphic or layer exists, and what each command does to the
@@ -126,6 +131,24 @@ describe('the preview commands in their real shape', () => {
       command: { type: 'takePreview', layerId: 'clock' },
       expectedAfterValidation: { type: 'takePreview', layerId: 'clock' },
     },
+    // "Prévia: limpar" on a Camadas row: the Prévia shows that layer empty, as it will be.
+    {
+      name: 'accepts previewClearLayer for one layer',
+      command: { type: 'previewClearLayer', layerId: 'lower-third' },
+      expectedAfterValidation: { type: 'previewClearLayer', layerId: 'lower-third' },
+    },
+    // "Tomar tudo" names nothing: it takes every preview and applies every marker.
+    {
+      name: 'accepts takeAllPreviews with nothing else in it',
+      command: { type: 'takeAllPreviews' },
+      expectedAfterValidation: { type: 'takeAllPreviews' },
+    },
+    // A macro's "Prévia" in its ⋯ menu.
+    {
+      name: 'accepts previewMacro for one macro',
+      command: { type: 'previewMacro', macroId: 'macro-abrir-sessao' },
+      expectedAfterValidation: { type: 'previewMacro', macroId: 'macro-abrir-sessao' },
+    },
   ];
 
   it.each(acceptedPreviewCommandScenarios)('$name', ({ command, expectedAfterValidation }) => {
@@ -213,11 +236,30 @@ describe('the preview commands with a part missing', () => {
       command: { type: 'stopPreview', layerId: '' },
       fieldNamedInTheFailure: 'layerId',
     },
-    // Only one layer is promoted at a time; there is no "take every preview".
+    // takePreview promotes one layer; every layer at once is takeAllPreviews, its own
+    // command, so a lost layer id can never take every preview to air.
     {
       name: 'refuses a takePreview for every layer, naming layerId',
       command: { type: 'takePreview', layerId: null },
       fieldNamedInTheFailure: 'layerId',
+    },
+    // "Prévia: limpar" is always for one layer; there is no "mark every layer" in one go.
+    {
+      name: 'refuses a previewClearLayer that leaves the layer out, naming layerId',
+      command: { type: 'previewClearLayer' },
+      fieldNamedInTheFailure: 'layerId',
+    },
+    // An empty text names no layer.
+    {
+      name: 'refuses a previewClearLayer with an empty layer id, naming layerId',
+      command: { type: 'previewClearLayer', layerId: '' },
+      fieldNamedInTheFailure: 'layerId',
+    },
+    // A macro's "Prévia" must say which macro.
+    {
+      name: 'refuses a previewMacro without a macro id, naming macroId',
+      command: { type: 'previewMacro' },
+      fieldNamedInTheFailure: 'macroId',
     },
   ];
 
@@ -248,6 +290,22 @@ describe('CommandErrorSchema and the preview error code', () => {
 
     // Assert: it is accepted unchanged, so the control page can show it.
     expect(result.success, 'the preview error code must be part of the closed list').toBe(true);
+    expect(result.data, 'the accepted error must not be altered').toEqual(errorFromTheServer);
+  });
+
+  it('accepts NOTHING_IN_PREVIEW with its pt-BR message', () => {
+    // Arrange: the error the server answers "Tomar tudo" with when there is nothing to take.
+    const errorFromTheServer = {
+      code: 'NOTHING_IN_PREVIEW',
+      message:
+        'Não há nada em prévia para colocar no ar: nenhuma camada tem prévia nem está marcada para limpar.',
+    };
+
+    // Act: check it against the schema.
+    const result = CommandErrorSchema.safeParse(errorFromTheServer);
+
+    // Assert: it is accepted unchanged, so the control page can show it.
+    expect(result.success, 'the new error code must be part of the closed list').toBe(true);
     expect(result.data, 'the accepted error must not be altered').toEqual(errorFromTheServer);
   });
 });

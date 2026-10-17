@@ -23,6 +23,7 @@ import type { Graphic } from '@bajaovrlay/shared';
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { LayerStatusPanel } from '@/features/layers/LayerStatusPanel';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildLowerThirdFixtureInstanceOnProgram } from '@/state/lowerThirdFixtureGraphic.testSupport';
 import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.testSupport';
@@ -30,6 +31,7 @@ import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.te
 import {
   holdAllTimeOnThePageAt,
   letTimePassAndThePageSettle,
+  pressEditOnTheLayerRow,
   renderQuickEditPanelWithTheseInstancesOnAir,
 } from './operatingTheQuickEditPanel.testSupport';
 import { QuickEditPanel } from './QuickEditPanel';
@@ -86,7 +88,7 @@ function buildPitStopStopwatchGraphicWithOneRoleMissing(): Graphic {
 describe('the mm:ss field of a graphic the page cannot follow as a clock', () => {
   it('shows the lower third’s time on air as it is on air, and does not move', async () => {
     // Arrange: 10:00; Ana Souza's lower third went on air at 9:45 for 8 seconds on
-    // screen. The lower third names no update rule: it is not a clock.
+    // screen, loaded with "Editar". The lower third names no update rule: it is not a clock.
     holdAllTimeOnThePageAt(tenOClock);
     renderQuickEditPanelWithTheseInstancesOnAir([
       buildLowerThirdFixtureInstanceOnProgram({
@@ -102,6 +104,7 @@ describe('the mm:ss field of a graphic the page cannot follow as a clock', () =>
         takenAt: quarterToTen,
       }),
     ]);
+    pressEditOnTheLayerRow('Tarja');
     const textAtTenOClock = screen.getByLabelText<HTMLInputElement>('Tempo no ar').value;
 
     // Act: three seconds pass.
@@ -118,30 +121,37 @@ describe('the mm:ss field of a graphic the page cannot follow as a clock', () =>
   it('shows the reading on air for a graphic that names the rule but leaves the running switch unmarked', async () => {
     // Arrange: 10:00; a pit-stop stopwatch on air since 9:45, counting from 12:34. Its
     // manifest names `carryClockForward` but gives the "Contando" switch no role, so
-    // the page cannot tell which field says whether the clock runs.
+    // the page cannot tell which field says whether the clock runs. It is loaded with "Editar".
     holdAllTimeOnThePageAt(tenOClock);
-    renderOnControlPageConnectedToFakeServer(<QuickEditPanel />, {
-      ...buildSlicesWithNothingOnAir(),
-      graphics: [buildPitStopStopwatchGraphicWithOneRoleMissing()],
-      instances: [
-        {
-          id: '5f1d8a30-7c2b-4e69-b4a1-0d9e3c7f2a48',
-          layerId: 'clock',
-          graphicId: 'pit-stop-stopwatch',
-          target: 'program',
-          resolvedData: {
-            equipe: 'Baja UFPR',
-            sentido: 'elapsed',
-            tempoMs: 754_000,
-            momentoDaLeituraMs: Date.parse(quarterToTen),
-            contando: true,
+    renderOnControlPageConnectedToFakeServer(
+      <>
+        <QuickEditPanel />
+        <LayerStatusPanel />
+      </>,
+      {
+        ...buildSlicesWithNothingOnAir(),
+        graphics: [buildPitStopStopwatchGraphicWithOneRoleMissing()],
+        instances: [
+          {
+            id: '5f1d8a30-7c2b-4e69-b4a1-0d9e3c7f2a48',
+            layerId: 'clock',
+            graphicId: 'pit-stop-stopwatch',
+            target: 'program',
+            resolvedData: {
+              equipe: 'Baja UFPR',
+              sentido: 'elapsed',
+              tempoMs: 754_000,
+              momentoDaLeituraMs: Date.parse(quarterToTen),
+              contando: true,
+            },
+            currentStep: 0,
+            status: 'on-air',
+            takenAt: quarterToTen,
           },
-          currentStep: 0,
-          status: 'on-air',
-          takenAt: quarterToTen,
-        },
-      ],
-    });
+        ],
+      },
+    );
+    pressEditOnTheLayerRow('Relógio');
     const textAtTenOClock = screen.getByLabelText<HTMLInputElement>('Tempo de box').value;
 
     // Act: three seconds pass.

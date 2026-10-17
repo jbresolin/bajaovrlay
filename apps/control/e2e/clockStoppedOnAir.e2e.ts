@@ -115,15 +115,15 @@ function findClockLayerRow(page: Page): Locator {
  * is left as the form opens, "Momento da entrada no ar": the server writes it at the take.
  */
 async function fillClockFormRunningFromTwelveThirtyFour(formArea: Locator): Promise<void> {
-  await formArea.getByLabel('Nome da sessão', { exact: true }).fill('Enduro — Bateria 1');
+  await formArea.getByLabel('Título', { exact: true }).fill('Enduro — Bateria 1');
   await formArea.getByRole('switch', { name: 'Relógio correndo' }).click();
   await formArea.getByLabel('Tempo de referência', { exact: true }).fill('12:34');
 }
 
 /**
  * Waits until "Edição rápida" shows a stopped clock, and returns the time its time field
- * then shows. The form follows what the server holds for the clock on air, whoever
- * changed it, so this is the time the server wrote when it stopped the clock.
+ * then shows. With the clock loaded, the form follows what the server holds for it,
+ * whoever changed it, so this is the time the server wrote when it stopped the clock.
  */
 async function readTimeTheServerStoppedTheClockAt(page: Page): Promise<string> {
   const quickEditArea = findProgramAndQuickEditArea(page);
@@ -244,7 +244,7 @@ test.describe('stopping a running race clock that is on air', () => {
     });
 
     // Act: open the item, switch "Relógio correndo" off and press "Atualizar no ar".
-    await enduranceRow.getByRole('button', { name: 'Editar' }).click();
+    await enduranceRow.getByRole('button', { name: 'Editar item', exact: true }).click();
     await itemEditor.getByRole('switch', { name: 'Relógio correndo' }).click();
     await itemEditor.getByRole('button', { name: 'Atualizar no ar' }).click();
 
@@ -254,9 +254,10 @@ test.describe('stopping a running race clock that is on air', () => {
       'the editor must close once the save and the on-air update were both accepted',
     ).toBeHidden();
     // The item editor sent the switch alone, as "Edição rápida" does, and the server
-    // stopped the clock at the time it had reached. "Edição rápida" follows the clock on
-    // air, so the time the server wrote is read there. Had the clock jumped back to what
-    // the item stores, this would read 12:34.
+    // stopped the clock at the time it had reached. The clock is loaded into "Edição
+    // rápida" with "Editar" on its "Camadas" row, and the time the server wrote is read
+    // there. Had the clock jumped back to what the item stores, this would read 12:34.
+    await findClockLayerRow(page).getByRole('button', { name: 'Editar', exact: true }).click();
     const timeTheClockWasStoppedAt = await readTimeTheServerStoppedTheClockAt(page);
     await expect(
       clockTimeInProgramOutput,

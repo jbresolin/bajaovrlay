@@ -109,7 +109,7 @@ async function createRaceClockItemInTheEditor(
     'a new item must start on the race clock, the one graphic the server has',
   ).toContainText('Relógio de prova');
   await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemToPrepare.itemLabel);
-  await itemEditor.getByLabel('Nome da sessão', { exact: true }).fill(itemToPrepare.sessionName);
+  await itemEditor.getByLabel('Título', { exact: true }).fill(itemToPrepare.sessionName);
   if (itemToPrepare.isClockRunning) {
     await itemEditor.getByRole('switch', { name: 'Relógio correndo' }).click();
   }

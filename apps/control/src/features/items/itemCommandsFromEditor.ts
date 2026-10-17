@@ -7,7 +7,7 @@
  *
  * The graphic's own fields arrive here already built by features/schemaForm, which reads
  * them from the generated form; this file knows nothing about any graphic. What it adds
- * is the part every item has: label, colour, notes and auto-out.
+ * is the part every item has: layer, label, colour, notes and auto-out.
  *
  * Sending only the changes is a deliberate choice: the server merges an update part by
  * part, so two operators who change different parts of one item both keep their change.
@@ -85,13 +85,19 @@ export type UpdateItemFieldsCommandParts = {
 /**
  * Builds the `updateItemFields` command for a stored item, carrying only the parts that
  * differ from it. Returns undefined when nothing differs, so the caller sends nothing.
- * The graphic and the layer are never sent: the command cannot change them.
+ * A changed layer travels as `layerId` (it decides the item's next takes; the server
+ * never moves what is on air for it). The graphic is never sent: the command cannot
+ * change it, because another graphic means other fields, which is a new item.
  */
 export function buildUpdateItemFieldsCommand(
   parts: UpdateItemFieldsCommandParts,
 ): UpdateItemFieldsCommand | undefined {
   const { itemBeingEdited, itemFormValues, changedFields } = parts;
   const command: UpdateItemFieldsCommand = { type: 'updateItemFields', itemId: itemBeingEdited.id };
+
+  if (itemFormValues.layerId !== itemBeingEdited.layerId) {
+    command.layerId = itemFormValues.layerId;
+  }
 
   const labelFromTheForm = itemFormValues.label.trim();
   if (labelFromTheForm !== itemBeingEdited.label) {
@@ -118,6 +124,7 @@ export function buildUpdateItemFieldsCommand(
   }
 
   const isAnythingChanged =
+    command.layerId !== undefined ||
     command.label !== undefined ||
     command.color !== undefined ||
     command.notes !== undefined ||

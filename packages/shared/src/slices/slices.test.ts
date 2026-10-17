@@ -2,14 +2,14 @@
  * State slices (packages/shared)
  *
  * What this module is for:
- *   The server owns all state as nine named slices: `layers` (where graphics can go),
- *   `graphics` (what can be shown), `instances` (what is showing now), `rundowns` and
- *   `items` (the planned show), `quickFirePanels` (the grids of buttons), `macros` and
- *   `macroRuns` (one-press sequences and the one running now) and `eventLog` (the
- *   commands that changed something or were refused, in order). SlicesSchema describes
- *   all nine; the server checks what it
- *   stores and sends against it, and the control page and renderer check what they
- *   receive.
+ *   The server owns all state as ten named slices: `layers` (where graphics can go),
+ *   `graphics` (what can be shown), `instances` (what is showing now),
+ *   `previewClearedLayerIds` (the layers Prévia shows empty because a take will clear
+ *   them), `rundowns` and `items` (the planned show), `quickFirePanels` (the grids of
+ *   buttons), `macros` and `macroRuns` (one-press sequences and the one running now) and
+ *   `eventLog` (the commands that changed something or were refused, in order).
+ *   SlicesSchema describes all ten; the server checks what it stores and sends against
+ *   it, and the control page and renderer check what they receive.
  *
  * What these tests prove:
  *   - A realistic race-day state (five layers, the race clock registered and on air,
@@ -20,9 +20,10 @@
  *   - An instance may be `failed` and carry the reason the renderer gave
  *     (`statusDetail`), and that reason must be a text.
  *   - A failed event-log entry must carry the error a person reads.
- *   - quickFirePanels, macros and macroRuns are required like every other slice, the
- *     nine slice names come in the server's order, and a slice message's name decides
- *     what it carries for the new slices too.
+ *   - quickFirePanels, macros, macroRuns and previewClearedLayerIds are required like
+ *     every other slice, the ten slice names come in the server's order, and a slice
+ *     message's name decides what it carries for the new slices too.
+ *   - A "will be cleared" marker is a layer id: a list of texts, none of them empty.
  *
  * What these tests deliberately do not cover:
  *   - How the server changes slices; the reducer and store tests in apps/server do.
@@ -63,6 +64,8 @@ function buildRaceDayStateWithTheClockOnAir() {
         takenAt: '2026-10-09T13:00:00.000Z',
       },
     ],
+    // The operator pressed "Prévia: limpar" on the logo: Prévia shows it gone.
+    previewClearedLayerIds: ['bug'],
     eventLog: [
       {
         id: 1,
@@ -208,6 +211,11 @@ describe('SlicesSchema', () => {
     { name: 'refuses a state without the macros slice', sliceLeftOut: 'macros' },
     // Without the runs a running macro's button would look idle.
     { name: 'refuses a state without the macroRuns slice', sliceLeftOut: 'macroRuns' },
+    // Without the markers the Prévia monitor would show a layer on air that will be cleared.
+    {
+      name: 'refuses a state without the previewClearedLayerIds slice',
+      sliceLeftOut: 'previewClearedLayerIds',
+    },
   ];
 
   it.each(missingSliceScenarios)('$name', ({ sliceLeftOut }) => {
@@ -228,12 +236,14 @@ describe('SlicesSchema', () => {
 });
 
 describe('SliceNameSchema', () => {
-  it('lists every slice in the order the server lists them, the three new ones included', () => {
-    // Arrange: the slice names, quick-fire panels and macros placed after the items.
+  it('lists every slice in the order the server lists them, the newest ones included', () => {
+    // Arrange: the slice names; the "will be cleared" markers right after the instances
+    // they speak about, and quick-fire panels and macros after the items.
     const expectedSliceNames = [
       'layers',
       'graphics',
       'instances',
+      'previewClearedLayerIds',
       'rundowns',
       'items',
       'quickFirePanels',
@@ -246,7 +256,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these nine, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these ten, in this order').toEqual(
       expectedSliceNames,
     );
   });
@@ -278,5 +288,42 @@ describe('SliceMessageSchema for the quick-fire panels and macros', () => {
 
     // Assert: refused, so a page never stores macros as panels.
     expect(result.success, 'the name must decide what the slice contains').toBe(false);
+  });
+});
+
+describe('SliceMessageSchema for the "will be cleared" markers', () => {
+  it('accepts a previewClearedLayerIds slice message naming two layers, unchanged', () => {
+    // Arrange: what every page gets after "Prévia: limpar" on the logo and the lower third.
+    const markersMessage = {
+      type: 'slice',
+      name: 'previewClearedLayerIds',
+      slice: ['bug', 'lower-third'],
+      serverNowMs: 1_791_556_325_000,
+    };
+
+    // Act: check it against the schema.
+    const result = SliceMessageSchema.safeParse(markersMessage);
+
+    // Assert: accepted unchanged, so the preview page can leave those layers empty.
+    expect(result.success, 'a markers slice message must be accepted').toBe(true);
+    expect(result.data, 'the accepted message must not be altered').toEqual(markersMessage);
+  });
+
+  it('refuses a marker that is an empty text, naming the slice', () => {
+    // Arrange: a server bug that marks a layer without an id.
+    const stateWithAnEmptyMarker = {
+      ...buildRaceDayStateWithTheClockOnAir(),
+      previewClearedLayerIds: [''],
+    };
+
+    // Act: check it and turn the failure into readable text.
+    const result = SlicesSchema.safeParse(stateWithAnEmptyMarker);
+    const failureMessage = result.error ? z.prettifyError(result.error) : '';
+
+    // Assert: refused, naming the markers slice.
+    expect(result.success, 'a marker must name a layer').toBe(false);
+    expect(failureMessage, 'the failure must name the markers slice').toContain(
+      'previewClearedLayerIds',
+    );
   });
 });

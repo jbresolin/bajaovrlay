@@ -1,5 +1,5 @@
 // Test support: puts the real server of the Playwright run back to how a new database
-// has it (nothing on air, nothing previewed, no item in the rundown or in any panel, no
+// has it (nothing on air, nothing previewed, no layer marked "vai limpar", no item in the rundown or in any panel, no
 // macro, only the seeded panel "Atalhos"), so every browser test starts from the same
 // place whatever ran before it, in any order. playwright.config.ts starts that server.
 
@@ -110,7 +110,7 @@ async function waitUntilNoMacroIsRunning(): Promise<void> {
 /**
  * Empties the real server. First it waits for a running macro to end. Then `clearAll`
  * takes everything off air and off the preview output (it removes every instance, of
- * both outputs); every item is deleted, rundown and panel alike, which also leaves the
+ * both outputs, and every "vai limpar" mark, so no stopPreview is needed); every item is deleted, rundown and panel alike, which also leaves the
  * cursor on nothing; every macro is deleted; every panel but the seeded "Atalhos" is
  * deleted (each is empty by then), and "Atalhos" gets its seeded name back. The seeded
  * rundown stays. Each test file calls this in a `test.beforeEach`, so a test never

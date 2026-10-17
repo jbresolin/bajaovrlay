@@ -16,6 +16,8 @@ import { z } from 'zod';
 
 import { ptBR } from '@/i18n/ptBR';
 
+import type { ItemEditorPrefill } from './ItemEditorTargetProvider';
+
 /**
  * The form as the operator edits it. `autoOutAfterSeconds` stays text until the save:
  * digits for whole seconds, or empty for "stay on air until cleared".
@@ -59,6 +61,47 @@ export function buildItemEditorFormValuesForNewItem(
     graphicId: firstGraphic.id,
     layerId: firstGraphic.defaultLayerId,
   };
+}
+
+/**
+ * The values the form opens with for a new item opened with a prefill ("Salvar como
+ * item"): the prefill's graphic and layer, and everything else at its start, because
+ * the label, colour, notes and auto-out are the operator's to fill.
+ */
+export function buildItemEditorFormValuesForPrefilledNewItem(
+  prefill: ItemEditorPrefill,
+): ItemEditorFormValues {
+  return {
+    ...defaultItemEditorFormValues,
+    graphicId: prefill.graphicId,
+    layerId: prefill.layerId,
+  };
+}
+
+/** What the editor knows at the moment it opens, for buildItemEditorFormValuesAtOpening. */
+export type ItemEditorOpening = {
+  /** The stored item being changed, or null for a new item. */
+  storedItem: Item | null;
+  /** What a new item was opened with ("Salvar como item"), or null. */
+  prefill: ItemEditorPrefill | null;
+  /** The first graphic the page knows, or undefined while the server has sent none. */
+  firstGraphic: Graphic | undefined;
+};
+
+/**
+ * The values the form opens with: what a stored item stores; for a new item, its
+ * prefill's graphic and layer, or else the first graphic on its default layer.
+ */
+export function buildItemEditorFormValuesAtOpening(
+  opening: ItemEditorOpening,
+): ItemEditorFormValues {
+  if (opening.storedItem !== null) {
+    return buildItemEditorFormValuesFromItem(opening.storedItem);
+  }
+  if (opening.prefill !== null) {
+    return buildItemEditorFormValuesForPrefilledNewItem(opening.prefill);
+  }
+  return buildItemEditorFormValuesForNewItem(opening.firstGraphic);
 }
 
 /** One pt-BR message per field that has a problem; an empty object means "all good". */

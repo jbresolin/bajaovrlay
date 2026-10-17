@@ -31,8 +31,8 @@ export type ItemEditorFormFieldsProps = {
   graphics: Graphic[];
   layers: Layer[];
   /**
-   * True while a stored item is being changed: its graphic and layer are shown but
-   * cannot be chosen, because `updateItemFields` cannot change them.
+   * True while a stored item is being changed: its graphic is shown but cannot be
+   * chosen, because `updateItemFields` cannot change it. Its layer can be chosen.
    */
   isEditingStoredItem: boolean;
 };
@@ -42,6 +42,8 @@ export type ItemEditorFormFieldsProps = {
  * notes and auto-out. Text fields are registered with react-hook-form directly; the
  * dropdowns are shadcn/ui controls with no native input to register, so each sits in a
  * `Controller`. Choosing a graphic also moves the layer to that graphic's default.
+ * For a stored item the graphic is read-only with a note; the layer stays choosable, and
+ * a new layer is saved for the item's next takes (it never moves what is on air).
  */
 export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
   const { form, graphics, layers, isEditingStoredItem } = props;
@@ -114,11 +116,7 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
           control={control}
           name="layerId"
           render={({ field }) => (
-            <Select
-              value={field.value}
-              disabled={isEditingStoredItem}
-              onValueChange={field.onChange}
-            >
+            <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger
                 id={controlIds.layer}
                 className="w-full"
@@ -140,7 +138,7 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
 
       {isEditingStoredItem && (
         <p className="col-span-2 text-sm text-muted-foreground">
-          {ptBR.itemEditor.graphicAndLayerCannotChange}
+          {ptBR.itemEditor.graphicCannotChange}
         </p>
       )}
 

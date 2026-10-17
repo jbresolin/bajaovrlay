@@ -6,9 +6,14 @@ import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
 import { listPreviewedLayers } from './previewedLayers';
+import { TakeAllAndDiscardAllButtons } from './TakeAllAndDiscardAllButtons';
+
+// From this many lines on, the set can be taken or thrown away with one press.
+const numberOfLinesThatMakeASet = 2;
 
 /**
- * What sits under the "Prévia" monitor: one line per layer that holds a preview, in the
+ * What sits under the "Prévia" monitor: one line per layer that holds a preview or is
+ * marked "vai limpar" (the take will clear it, so Prévia shows it empty), in the
  * layer panel's order, naming the layer and what is previewed on it (previewedLayers.ts),
  * with "Tomar" (`takePreview` for that layer: the preview goes on air as it was seen) and
  * "Descartar" (`stopPreview` for that layer). With nothing previewed it says so.
@@ -20,7 +25,8 @@ import { listPreviewedLayers } from './previewedLayers';
  * Several layers can hold a preview at once and the monitor draws them all, so there is
  * one line each rather than one pair of buttons that would have to guess which preview
  * is meant. It only repeats the server's instances: a line leaves when the server's next
- * slice no longer holds that preview, not when a button is pressed.
+ * slice no longer holds that preview, not when a button is pressed. With two or more
+ * lines, "Tomar tudo" and "Descartar tudo" (TakeAllAndDiscardAllButtons.tsx) act on all.
  *
  * Deliberate: a line has no status badge. A preview's status stays "loading" for good,
  * because the pages that draw previews never report to the server.
@@ -30,10 +36,18 @@ export function PreviewedLayersList() {
   const graphics = useServerState((state) => state.graphics);
   const items = useServerState((state) => state.items);
   const instances = useServerState((state) => state.instances);
+  const previewClearedLayerIds = useServerState((state) => state.previewClearedLayerIds);
   const sendCommand = useSendCommand();
   const sendTakeByThisOperator = useTakeThenPreviewNextItem();
 
-  const previewedLayers = listPreviewedLayers({ layers, graphics, items, instances });
+  const previewedLayers = listPreviewedLayers({
+    layers,
+    graphics,
+    items,
+    instances,
+    previewClearedLayerIds,
+  });
+  const isASetToTakeOrDiscard = previewedLayers.length >= numberOfLinesThatMakeASet;
 
   return (
     // The least height is one line's, so the panel below the monitors does not jump down
@@ -48,14 +62,20 @@ export function PreviewedLayersList() {
         >
           {previewedLayers.map((previewedLayer) => (
             <li
-              key={previewedLayer.layerId}
+              key={previewedLayer.lineKey}
               aria-label={previewedLayer.layerName}
               className="flex items-center gap-2"
             >
               <Badge variant="outline">{previewedLayer.layerName}</Badge>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                {previewedLayer.previewLabel}
-              </span>
+              {previewedLayer.isMarkedToBeCleared ? (
+                <span className="min-w-0 flex-1 truncate text-sm italic text-muted-foreground">
+                  {ptBR.outputMonitors.willClearLabel}
+                </span>
+              ) : (
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {previewedLayer.previewLabel}
+                </span>
+              )}
               <ActionButton
                 size="xs"
                 onClick={() =>
@@ -79,7 +99,8 @@ export function PreviewedLayersList() {
           ))}
         </ul>
       )}
-      <CommandErrorMessage commandTypes={['takePreview', 'stopPreview']} />
+      {isASetToTakeOrDiscard ? <TakeAllAndDiscardAllButtons /> : null}
+      <CommandErrorMessage commandTypes={['takePreview', 'stopPreview', 'takeAllPreviews']} />
     </div>
   );
 }

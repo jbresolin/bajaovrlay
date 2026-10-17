@@ -43,6 +43,8 @@ export const CommandErrorCodeSchema = z.enum([
   'UNSUPPORTED_FIELD_KIND',
   /** takePreview named a layer that has nothing on its preview output. */
   'LAYER_PREVIEW_EMPTY',
+  /** takeAllPreviews ("Tomar tudo") found no preview instance and no "will be cleared" marker. */
+  'NOTHING_IN_PREVIEW',
   /** The command names a quick-fire panel that does not exist. */
   'QUICK_FIRE_PANEL_NOT_FOUND',
   /** deleteQuickFirePanel named a panel that still has items. */

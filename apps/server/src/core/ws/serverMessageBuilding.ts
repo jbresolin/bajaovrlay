@@ -1,4 +1,5 @@
 import {
+  type ChangedSlices,
   type CommandError,
   type CommandResultMessage,
   type ServerMessage,
@@ -6,6 +7,7 @@ import {
   type SliceMessage,
   type SliceName,
   type Slices,
+  type SlicesMessage,
   type TimeMessage,
 } from '@bajaovrlay/shared';
 
@@ -34,6 +36,13 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'graphics', slice: slices.graphics, serverNowMs };
     case 'instances':
       return { type: 'slice', name: 'instances', slice: slices.instances, serverNowMs };
+    case 'previewClearedLayerIds':
+      return {
+        type: 'slice',
+        name: 'previewClearedLayerIds',
+        slice: slices.previewClearedLayerIds,
+        serverNowMs,
+      };
     case 'rundowns':
       return { type: 'slice', name: 'rundowns', slice: slices.rundowns, serverNowMs };
     case 'items':
@@ -46,6 +55,62 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'macroRuns', slice: slices.macroRuns, serverNowMs };
     case 'eventLog':
       return { type: 'slice', name: 'eventLog', slice: slices.eventLog, serverNowMs };
+  }
+}
+
+/**
+ * The `slices` message for several slices changed by one state change, read from the
+ * current slices, with `serverNowMs` as in buildSliceMessage. The slices keep the order
+ * of the names given, which is the order the store reports changes in.
+ */
+export function buildSlicesMessage(
+  changedSliceNames: SliceName[],
+  slices: Slices,
+  serverNowMs: number,
+): SlicesMessage {
+  const changedSlices: ChangedSlices = {};
+  for (const sliceName of changedSliceNames) {
+    copyOneSliceByName(sliceName, slices, changedSlices);
+  }
+  return { type: 'slices', slices: changedSlices, serverNowMs };
+}
+
+/**
+ * Copies the slice of that name into the group. One case per name, written out, so the
+ * compiler checks each name gets the kind of list that belongs to it.
+ */
+function copyOneSliceByName(sliceName: SliceName, slices: Slices, group: ChangedSlices): void {
+  switch (sliceName) {
+    case 'layers':
+      group.layers = slices.layers;
+      break;
+    case 'graphics':
+      group.graphics = slices.graphics;
+      break;
+    case 'instances':
+      group.instances = slices.instances;
+      break;
+    case 'previewClearedLayerIds':
+      group.previewClearedLayerIds = slices.previewClearedLayerIds;
+      break;
+    case 'rundowns':
+      group.rundowns = slices.rundowns;
+      break;
+    case 'items':
+      group.items = slices.items;
+      break;
+    case 'quickFirePanels':
+      group.quickFirePanels = slices.quickFirePanels;
+      break;
+    case 'macros':
+      group.macros = slices.macros;
+      break;
+    case 'macroRuns':
+      group.macroRuns = slices.macroRuns;
+      break;
+    case 'eventLog':
+      group.eventLog = slices.eventLog;
+      break;
   }
 }
 

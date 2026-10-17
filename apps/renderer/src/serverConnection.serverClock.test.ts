@@ -3,14 +3,15 @@
  *
  * What this module is for:
  *   A race clock on air counts from a moment the server stamped with ITS clock, while the
- *   graphic runs on the OBS machine with another clock. Every `hello` and `slice` message
- *   says what the server's clock showed (`serverNowMs`). serverConnection hands each of
+ *   graphic runs on the OBS machine with another clock. Every `hello`, `slice` and
+ *   `slices` message says what the server's clock showed (`serverNowMs`). serverConnection hands each of
  *   those to the shared clock module, which keeps the difference between the two clocks;
  *   graphics then ask readServerAlignedTimeMs() for "now" instead of Date.now().
  *
  * What these tests prove (with the machine's clock faked 2.3 s behind the server's):
  *   - Before any message the shared "now" is the machine's own time.
- *   - After the hello it is the server's time; slice messages keep it there as time passes.
+ *   - After the hello it is the server's time; slice messages keep it there as time passes,
+ *     and a `slices` message (several slices of one state change) gives a sample too.
  *   - A program monitor (`?monitor=1`, plain `/ws`) gets the same correction.
  *   - A `time` message, which the server sends every ten seconds, gives a sample exactly
  *     as a hello does, and the renderer does nothing else with it: no delivery, no log line.
@@ -156,6 +157,29 @@ describe('the time of the server clock, learned from its messages', () => {
     // Assert: the shared "now" is still exactly the server's; the slow sample is the odd
     // one out of four and the median leaves it aside.
     expect(timeReadMs, 'one slow message must not move the time read').toBe(readServerClockNowMs());
+  });
+
+  it('takes a sample from a slices message, the one message of a state change', () => {
+    // Arrange: a connection whose hello carried no time, as a stand-in server's may, so
+    // the only time it can learn is the one in the slices message.
+    const connection = startConnectionOnAMachineBehindTheServer();
+    connection
+      .latestSocket()
+      .simulateMessage({ type: 'hello', slices: createSlicesWithInstances([]) });
+
+    // Act: the operator takes the clock; the server sends the instances and the event
+    // log in one slices message saying its clock shows 14:32:05.
+    connection.latestSocket().simulateMessage({
+      type: 'slices',
+      slices: { instances: [createEnduroClockInstance()], eventLog: [] },
+      serverNowMs: serverTimeAtTheHelloMs,
+    });
+
+    // Assert: the shared "now" is the server's time, and the change was still delivered.
+    expect(readServerAlignedTimeMs(), 'a slices message must give a sample').toBe(
+      serverTimeAtTheHelloMs,
+    );
+    expect(connection.deliveries, 'the hello and the slices message').toHaveLength(2);
   });
 
   it('gives a program monitor the same correction', () => {

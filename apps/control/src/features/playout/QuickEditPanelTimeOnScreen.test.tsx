@@ -54,6 +54,7 @@ import {
   idOfTheRaceClockInstanceOnAir,
   letTheServerApplyTheLastUpdate,
   letTimePassAndThePageSettle,
+  pressEditOnTheLayerRow,
   referenceMomentKindSelectorName,
   referenceTimeLabel,
   renderQuickEditPanelWithTheseInstancesOnAir,
@@ -87,10 +88,17 @@ async function pressButtonAndLetThePageSend(buttonName: string): Promise<void> {
   await letTimePassAndThePageSettle(0);
 }
 
-/** Draws the panel at 10:00 with the first heat on air since 9:45, running or held. */
+/**
+ * Draws the panel at 10:00 with the first heat on air since 9:45, running or held, and
+ * loads the clock with "Editar" on its row.
+ */
 function renderPanelAtTenOClockWithTheFirstHeatOnAir(isRunning: boolean) {
   holdAllTimeOnThePageAt(tenOClock);
-  return renderQuickEditPanelWithTheseInstancesOnAir([buildFirstHeatInstanceOnAir(isRunning)]);
+  const controlPage = renderQuickEditPanelWithTheseInstancesOnAir([
+    buildFirstHeatInstanceOnAir(isRunning),
+  ]);
+  pressEditOnTheLayerRow('Relógio');
+  return controlPage;
 }
 
 /** The text in the time field of the race clock's form, as the operator reads it. */

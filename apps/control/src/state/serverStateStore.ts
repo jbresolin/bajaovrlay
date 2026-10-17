@@ -1,4 +1,9 @@
-import type { SliceMessage, Slices } from '@bajaovrlay/shared';
+import {
+  type ChangedSlices,
+  mergeChangedSlicesIntoSlices,
+  type SliceMessage,
+  type Slices,
+} from '@bajaovrlay/shared';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
 import type { LastCommandError } from './commandFailure';
@@ -21,6 +26,11 @@ export type ServerState = Slices & {
   replaceEverySlice: (slices: Slices) => void;
   /** A slice message arrived: that one slice becomes what the server sent. */
   replaceOneSlice: (message: SliceMessage) => void;
+  /**
+   * A slices message arrived (one state change that changed several slices): each of
+   * them becomes what the server sent, all in ONE store update.
+   */
+  replaceSeveralSlices: (changedSlices: ChangedSlices) => void;
   changeConnectionStatus: (connectionStatus: ConnectionStatus) => void;
   rememberCommandError: (commandError: LastCommandError) => void;
   forgetCommandError: () => void;
@@ -38,6 +48,7 @@ export function createServerStateStore(): ServerStateStore {
     layers: [],
     graphics: [],
     instances: [],
+    previewClearedLayerIds: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],
@@ -52,6 +63,7 @@ export function createServerStateStore(): ServerStateStore {
         layers: slices.layers,
         graphics: slices.graphics,
         instances: slices.instances,
+        previewClearedLayerIds: slices.previewClearedLayerIds,
         rundowns: slices.rundowns,
         items: slices.items,
         quickFirePanels: slices.quickFirePanels,
@@ -75,6 +87,9 @@ export function createServerStateStore(): ServerStateStore {
         case 'instances':
           set({ instances: message.slice });
           break;
+        case 'previewClearedLayerIds':
+          set({ previewClearedLayerIds: message.slice });
+          break;
         case 'rundowns':
           set({ rundowns: message.slice });
           break;
@@ -94,6 +109,12 @@ export function createServerStateStore(): ServerStateStore {
           set({ eventLog: message.slice });
           break;
       }
+    },
+
+    // One `set`, so every subscriber is told once and already sees every slice of the
+    // change: told slice by slice, a component would draw the moment between them.
+    replaceSeveralSlices: (changedSlices) => {
+      set((state) => mergeChangedSlicesIntoSlices(state, changedSlices));
     },
 
     changeConnectionStatus: (connectionStatus) => {

@@ -116,7 +116,7 @@ test.describe('changing an item on air from the item editor', () => {
       'a new item must start on the race clock, the one graphic the server has',
     ).toContainText('Relógio de prova');
     await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
-    await itemEditor.getByLabel('Nome da sessão', { exact: true }).fill('Enduro — Largada');
+    await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro — Largada');
     await chooseFlagInItemEditor(page, 'Verde');
     await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
 
@@ -159,7 +159,7 @@ test.describe('changing an item on air from the item editor', () => {
 
     // Act: a yellow flag comes out. Open the item, change only the flag, and press
     // "Atualizar no ar".
-    await startRow.getByRole('button', { name: 'Editar' }).click();
+    await startRow.getByRole('button', { name: 'Editar item', exact: true }).click();
     await expect(
       itemEditor.getByRole('button', { name: 'Atualizar no ar' }),
       'the editor of an item that is on air must offer "Atualizar no ar"',
@@ -202,7 +202,7 @@ test.describe('changing an item on air from the item editor', () => {
     ).toContainText('No ar');
 
     // Act: open the item once more.
-    await startRow.getByRole('button', { name: 'Editar' }).click();
+    await startRow.getByRole('button', { name: 'Editar item', exact: true }).click();
 
     // Assert: the item itself holds the yellow flag, so the next take of it shows what is
     // on air now and not the green flag it was first saved with.

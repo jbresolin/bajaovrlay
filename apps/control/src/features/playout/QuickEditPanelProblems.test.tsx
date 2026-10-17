@@ -45,6 +45,7 @@ import {
 
 import {
   pressButtonAndWaitForCommand,
+  pressEditOnTheLayerRow,
   referenceTimeLabel,
   renderQuickEditPanelWithTheseInstancesOnAir,
   waitUntilButtonIsOnAgain,
@@ -54,11 +55,13 @@ import { QuickEditPanel } from './QuickEditPanel';
 // The clock went on air at 9:45 in Brasília on the Saturday of the endurance race.
 const quarterToTen = '2026-10-10T12:45:00.000Z';
 
-/** Draws the panel with the race clock on air on the clock layer since 9:45. */
+/** Draws the panel with the race clock on air since 9:45, loaded with "Editar". */
 function renderPanelWithTheRaceClockOnAir() {
-  return renderQuickEditPanelWithTheseInstancesOnAir([
+  const controlPage = renderQuickEditPanelWithTheseInstancesOnAir([
     buildRaceClockInstanceOnTheClockLayer(quarterToTen),
   ]);
+  pressEditOnTheLayerRow('Relógio');
+  return controlPage;
 }
 
 /**
@@ -104,24 +107,26 @@ describe('the quick edit panel when something is wrong', () => {
   it('shows the pt-BR message under an empty required field and sends nothing', async () => {
     // Arrange: the panel with the session name erased.
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-    typeIntoField('Nome da sessão', '');
+    typeIntoField('Título', '');
 
     // Act: press "Colocar no ar".
     fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
 
     // Assert: the field explains what is missing, is marked invalid, and nothing was sent.
     expect(
-      await screen.findByText('O campo "Nome da sessão" é obrigatório.'),
+      await screen.findByText('O campo "Título" é obrigatório.'),
       'the message for the missing session name must be on screen',
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText('Nome da sessão'),
+      screen.getByLabelText('Título'),
       'the field must be marked invalid for screen readers',
     ).toBeInvalid();
     expect(
-      screen.getByLabelText('Nome da sessão'),
-      'the field must point at its message for screen readers',
-    ).toHaveAccessibleDescription('O campo "Nome da sessão" é obrigatório.');
+      screen.getByLabelText('Título'),
+      'the field must point at its help text and then its message for screen readers',
+    ).toHaveAccessibleDescription(
+      'Texto acima do relógio, ex.: Enduro de Resistência, Classificação O campo "Título" é obrigatório.',
+    );
     expect(
       fakeServer.listCommandsReceived(),
       'a form with a missing field must not send any command',

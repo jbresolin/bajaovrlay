@@ -1,12 +1,23 @@
 import type { Graphic, Instance, Item, Layer } from '@bajaovrlay/shared';
 
-/** One line under the "Prévia" monitor: a layer that holds a preview, and what it holds. */
+/**
+ * One line under the "Prévia" monitor: a layer that holds a preview, or a layer marked
+ * "will be cleared", and what the take will do to it.
+ */
 export type PreviewedLayer = {
+  /**
+   * The React key of the line: `preview:<layer id>:<instance id>` or `mark:<layer id>`.
+   * The layer id alone would collide if a layer ever had both, which the server never
+   * makes but a page must survive; the instance id makes a new preview a new line.
+   */
+  lineKey: string;
   layerId: string;
   /** The layer's name as the layer panel shows it, or its id when the layer is unknown. */
   layerName: string;
-  /** What is previewed, in the words the operator knows it by. */
+  /** What is previewed, in the words the operator knows it by; empty for a marked layer. */
   previewLabel: string;
+  /** true for a layer the next take clears (previewClearedLayerIds): Prévia shows it empty. */
+  isMarkedToBeCleared: boolean;
 };
 
 /** The slices the lines are read from. */
@@ -15,15 +26,17 @@ export type SlicesForPreviewedLayers = {
   graphics: Graphic[];
   items: Item[];
   instances: Instance[];
+  previewClearedLayerIds: string[];
 };
 
 // Where a preview on a layer the server no longer lists is sorted: after every known layer.
 const zIndexOfUnknownLayer = Number.POSITIVE_INFINITY;
 
 /**
- * Lists the layers that hold a preview, in the layer panel's order (lowest z-index
- * first). The server keeps at most one preview per layer, so there is one line per
- * preview instance.
+ * Lists the layers that hold a preview or are marked to be cleared, in the layer panel's
+ * order (lowest z-index first). The server keeps at most one preview per layer and never
+ * a preview and a mark on the same layer, so there is one line per preview instance and
+ * one per mark.
  *
  * A preview is named by the label of the rundown item it was made from. A preview made
  * by hand in "Edição rápida" has no item, and one whose item was deleted since has an
@@ -41,12 +54,29 @@ export function listPreviewedLayers(slices: SlicesForPreviewedLayers): Previewed
     const graphic = slices.graphics.find((candidate) => candidate.id === previewInstance.graphicId);
     const graphicNameOrItsId = graphic?.manifest.name ?? previewInstance.graphicId;
     const previewedLayer: PreviewedLayer = {
+      lineKey: `preview:${previewInstance.layerId}:${previewInstance.id}`,
       layerId: previewInstance.layerId,
       layerName: layer?.name ?? previewInstance.layerId,
       previewLabel: itemPreviewed?.label ?? graphicNameOrItsId,
+      isMarkedToBeCleared: false,
     };
     return { previewedLayer, zIndex: layer?.zIndex ?? zIndexOfUnknownLayer };
   });
+
+  for (const markedLayerId of slices.previewClearedLayerIds) {
+    const layer = slices.layers.find((candidate) => candidate.id === markedLayerId);
+    const markedLayer: PreviewedLayer = {
+      lineKey: `mark:${markedLayerId}`,
+      layerId: markedLayerId,
+      layerName: layer?.name ?? markedLayerId,
+      previewLabel: '',
+      isMarkedToBeCleared: true,
+    };
+    linesWithTheirZIndex.push({
+      previewedLayer: markedLayer,
+      zIndex: layer?.zIndex ?? zIndexOfUnknownLayer,
+    });
+  }
 
   // `sort` keeps lines of equal z-index in the order the server listed them.
   linesWithTheirZIndex.sort((oneLine, otherLine) => oneLine.zIndex - otherLine.zIndex);

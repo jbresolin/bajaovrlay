@@ -1,15 +1,15 @@
 # packages/shared/src/slices
 
 The state the server owns, one Zod schema per slice. Start reading at `slices.ts`,
-which lists all six slices; four have a file here:
+which lists all ten slices; five have a file here:
 
-- `layer.ts` — the fixed screen slots, bottom to top by `zIndex`.
-- `graphic.ts` — graphics the operator can take (built OGraf packages), with the
-  manifest fields the server reads: the data `schema` and our `v_baja` vendor field
-  (default layer, category, and the name of the rule its updates run through).
-- `instance.ts` — what is on each layer and output, its status (`failed` has the renderer's reason
-  in `statusDetail`), a preview's fields to stamp again at the take and who asked for it (`previewOrigin`).
+- `layer.ts` — the fixed screen slots, bottom to top by `zIndex`; `graphic.ts` — the graphics the operator can take (built OGraf packages), with the
+  manifest fields the server reads (the data `schema`, our `v_baja` vendor field).
+- `instance.ts` — what is on each layer and output, its status and, on a preview, what it carries.
+- `previewClearedLayerIds.ts` — the layers marked "will be cleared"; in the server's memory only.
 - `eventLogEntry.ts` — one line of the append-only command log.
+- `changedSlices.ts` — the slices one state change changed (the WS `slices` message), and
+  `mergeChangedSlicesIntoSlices`, how a client takes them in one step.
 
-The `rundowns` and `items` slices are listed in `slices.ts` too; their schemas live in
-`../rundown/`. Data sources, overrides, entities, theme and macros arrive in M1/M2.
+`rundowns` and `items` live in `../rundown/`, `quickFirePanels` in `../quickFire/`, `macros`
+and `macroRuns` in `../macros/`. Data sources, overrides, entities and theme arrive in M2.

@@ -8,8 +8,8 @@
  *   air. The control page frames `/render/?monitor=1` so the operator can watch the same
  *   picture: that is a monitor, and it must stay silent, because only the program output
  *   is the truth (gate-2 ruling on BAJAOVRLAY-12). The control page also frames
- *   `/render/?target=preview&monitor=1`, which draws what the operator is rehearsing (the
- *   `preview` output) instead of what is on air, and is just as silent. rendererPageRole
+ *   `/render/?target=preview&monitor=1`, which draws the screen as it will look after the
+ *   take (the `preview` output over what stays on air), and is just as silent. rendererPageRole
  *   reads the query of the page's address and answers three things: which output this
  *   page draws, whether it reports to the server, and which WebSocket path it must dial
  *   (`/ws?role=renderer` for the one page that reports, plain `/ws` for the others).
@@ -29,7 +29,7 @@
  *     src/instancePlayer.noReporter.test.ts proves the player part, and
  *     e2e/programMonitor.e2e.ts and e2e/previewPage.e2e.ts prove it with the real page.
  *   - Which instances a page that draws the preview output shows;
- *     src/instanceReconciler.preview.test.ts.
+ *     src/previewComposition.test.ts and src/instanceReconciler.preview.test.ts.
  *   - What the server does with a connection that has no role; the server's own tests.
  */
 import { describe, expect, it } from 'vitest';

@@ -18,7 +18,8 @@
  *     replace policy (and `out-then-in` when the layer is unknown).
  *   - An instance that is gone is stopped and disposed.
  *   - Two layers changing at once get two separate lists, one per layer.
- *   - Instances on the `preview` output are ignored, coming or going.
+ *   - Instances on the `preview` output are ignored, coming or going, and so are the
+ *     layers marked "will be cleared" in preview.
  *
  * What these tests deliberately do not cover:
  *   - A page told to draw the `preview` output instead (`/render/?target=preview`);
@@ -291,7 +292,9 @@ describe('decideLayerOperations', () => {
     // Act: ask what the page that draws the program output must do on each layer.
     const layerOperations = decideLayerOperations({
       previousInstances,
+      previousPreviewClearedLayerIds: [],
       nextInstances,
+      nextPreviewClearedLayerIds: [],
       layers: layersOfTheStream,
       drawnOutput: 'program',
     });
@@ -303,6 +306,28 @@ describe('decideLayerOperations', () => {
     ).toStrictEqual(expectedLayerOperations);
   });
 
+  it('ignores a layer marked "will be cleared" in preview', () => {
+    // Arrange: the enduro clock is on air, and the operator marks the clock layer with
+    // "Prévia: limpar"; the marker is about the preview only.
+    const instancesOnAir = [createEnduroClockInstance()];
+
+    // Act: ask what the page that draws the program output must do when the marker arrives.
+    const layerOperations = decideLayerOperations({
+      previousInstances: instancesOnAir,
+      previousPreviewClearedLayerIds: [],
+      nextInstances: instancesOnAir,
+      nextPreviewClearedLayerIds: ['clock'],
+      layers: layersOfTheStream,
+      drawnOutput: 'program',
+    });
+
+    // Assert: nothing at all; the clock stays on air until the take clears it.
+    expect(
+      layerOperations,
+      'a marker is part of the preview, and /render/ must keep the clock on air',
+    ).toEqual([]);
+  });
+
   it('replaces with out-then-in when the layer is not in the layers slice', () => {
     // Arrange: a replace on the clock layer, but a layers slice that does not list it.
     const layersWithoutTheClock = layersOfTheStream.filter((layer) => layer.id !== 'clock');
@@ -310,7 +335,9 @@ describe('decideLayerOperations', () => {
     // Act: ask what to do.
     const layerOperations = decideLayerOperations({
       previousInstances: [createEnduroClockInstance()],
+      previousPreviewClearedLayerIds: [],
       nextInstances: [createFinalClockInstance()],
+      nextPreviewClearedLayerIds: [],
       layers: layersWithoutTheClock,
       drawnOutput: 'program',
     });

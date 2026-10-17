@@ -5,12 +5,13 @@
  *
  * What the renderer gets out of it is a stream of deliveries: all the slices, either as a
  * full snapshot (after a `hello`, which is the whole truth and makes the renderer rebuild
- * the stage) or with one slice replaced (after a `slice` message).
+ * the stage), with one slice replaced (after a `slice` message) or with several replaced
+ * at once (after a `slices` message: one state change, one delivery).
  *
  * What the renderer says over it is one kind of message, `instanceStatus`: what really
  * happened on screen to an instance. It sends no commands.
  *
- * It also learns the server's clock here: every `hello` and `slice` message, and the
+ * It also learns the server's clock here: every `hello`, `slice` and `slices` message, and the
  * `time` message the server sends every ten seconds, says what the server's clock showed
  * (`serverNowMs`), and each is recorded as one sample for the shared "now" the graphics
  * read (@bajaovrlay/shared/clock). A program monitor does the same, since it runs this
@@ -18,6 +19,7 @@
  */
 import {
   type InstanceStatusMessage,
+  mergeChangedSlicesIntoSlices,
   type ServerMessage,
   ServerMessageSchema,
   type Slices,
@@ -36,7 +38,7 @@ const longestReconnectWaitInMilliseconds = 5000;
 // the state is read over HTTP instead, so the stage is never left waiting on a quiet socket.
 const helloWaitLimitInMilliseconds = 3000;
 
-/** Every slice, and whether they are the whole truth (rebuild) or one slice changed. */
+/** Every slice, and whether they are the whole truth (rebuild) or some slices changed. */
 export type SlicesDelivery = {
   slices: Slices;
   isFullSnapshot: boolean;
@@ -110,7 +112,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 
   const slicesCallbacks: Array<(delivery: SlicesDelivery) => void> = [];
   // The slices as the server last described them. Not state of the renderer's own: it is
-  // only kept so a `slice` message (one slice) can be delivered together with the rest.
+  // only kept so a `slice` or `slices` message can be delivered together with the rest.
   let slicesFromServer: Slices | undefined = undefined;
   let nextReconnectWaitInMilliseconds = firstReconnectWaitInMilliseconds;
   // The socket that is open right now, if there is one: set when a socket opens and
@@ -138,6 +140,12 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: true }));
   }
 
+  /** Remembers the slices after a `slice` or `slices` message and delivers them, not as a rebuild. */
+  function deliverChangedSlices(slices: Slices): void {
+    slicesFromServer = slices;
+    slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: false }));
+  }
+
   /** Acts on one message, and tells the socket whether it was the hello it waits for. */
   function handleMessage(data: unknown): { wasHello: boolean } {
     // Read first, before the message is even parsed: checking a large hello takes a few
@@ -160,9 +168,20 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         });
         return { wasHello: false };
       }
-      const slices: Slices = { ...slicesFromServer, [message.name]: message.slice };
-      slicesFromServer = slices;
-      slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: false }));
+      deliverChangedSlices({ ...slicesFromServer, [message.name]: message.slice });
+      return { wasHello: false };
+    }
+    if (message.type === 'slices') {
+      if (slicesFromServer === undefined) {
+        logEvent('warn', 'slices message ignored: no full snapshot received yet', {
+          sliceNames: Object.keys(message.slices),
+        });
+        return { wasHello: false };
+      }
+      // Every slice of the group in ONE delivery: the reconciler must never see some of
+      // them new and the others old. "Prévia: limpar" on a previewed layer delivered one
+      // at a time showed the program clock on the preview page for a moment.
+      deliverChangedSlices(mergeChangedSlicesIntoSlices(slicesFromServer, message.slices));
       return { wasHello: false };
     }
     if (message.type === 'time') {
@@ -264,7 +283,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 }
 
 /**
- * Records what a `hello`, `slice` or `time` message says the server's clock showed, as
+ * Records what a `hello`, `slice`, `slices` or `time` message says the server's clock showed, as
  * one sample for the shared "now" the graphics read. A `commandResult` carries no clock,
  * and neither does a hello or slice from a stand-in server that leaves `serverNowMs`
  * out. Such a message records NOTHING: it is "no sample", never a sample saying the two

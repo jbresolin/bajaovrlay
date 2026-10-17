@@ -91,6 +91,32 @@ export const ptBR = {
     lastPanel: (panelName: string) =>
       `O painel "${panelName}" é o único painel de atalhos e não pode ser excluído. Crie outro painel antes.`,
   },
+  // Refusals of "Tomar tudo" (takeAllPreviews) and of a macro's "Prévia" (previewMacro).
+  // When one layer or one step cannot be done, the whole command is refused: the message
+  // says so, names the layer or the step, and ends with the reason of that layer or step.
+  previewErrors: {
+    nothingInPreview:
+      'Não há nada em prévia para colocar no ar: nenhuma camada tem prévia nem está marcada para limpar.',
+    takeAllRefusedAtLayer: (layerName: string, reasonOfTheLayer: string) =>
+      `"Tomar tudo" não foi feito e nada mudou: a camada "${layerName}" não pode ir ao ar. ${reasonOfTheLayer}`,
+    previewMacroRefusedAtStep: (
+      macroLabel: string,
+      stepPosition: number,
+      stepDescription: string,
+      reasonOfTheStep: string,
+    ) =>
+      `A prévia da macro "${macroLabel}" não foi feita e nada mudou: o passo ${stepPosition} (${stepDescription}) não pode ser mostrado. ${reasonOfTheStep}`,
+    previewMacroWhileAMacroRuns: (macroLabel: string, runningMacroLabel: string) =>
+      `A prévia da macro "${macroLabel}" não pode ser feita enquanto a macro "${runningMacroLabel}" está rodando.`,
+  },
+  // A macro step in words, for the messages above. An item is named by its label and a
+  // layer by its name when the server has them, by id when not.
+  macroStepDescriptions: {
+    takeItem: (itemLabel: string) => `pôr no ar o item "${itemLabel}"`,
+    clearLayer: (layerName: string) => `limpar a camada "${layerName}"`,
+    clearAll: 'limpar tudo',
+    wait: (milliseconds: number) => `esperar ${milliseconds} ms`,
+  },
   // Refusals of the macro commands; each goes with a stable code. A macro is named by
   // its label when the server has it, and by id when it was not found.
   macroErrors: {

@@ -9,7 +9,8 @@
  *   back afterwards counts as a change and is saved.
  *
  * What these tests prove:
- *   - Each part the save carried (label, colour, notes, auto-out) replaces the item's.
+ *   - Each part the save carried (label, colour, notes, auto-out, layer) replaces the
+ *     item's.
  *   - An auto-out sent as null removes the item's auto-out.
  *   - The fields the save carried replace the same fields of the item, and every other
  *     field stays as it was.
@@ -126,6 +127,18 @@ const acceptedSaveScenarios: AcceptedSaveScenario[] = [
       color: 'info',
       notes: '',
     },
+  },
+  // A save that moved the clock to another layer: the next press must be compared with
+  // the new layer, or putting the clock back on its own layer would send nothing.
+  {
+    name: 'replaces the layer the save carried',
+    storedItem: buildEnduranceStartClockItem(),
+    acceptedSave: {
+      type: 'updateItemFields',
+      itemId: idOfTheEnduranceStartItem,
+      layerId: 'lower-third',
+    },
+    expectedItem: { ...buildEnduranceStartClockItem(), layerId: 'lower-third' },
   },
   // A save of the label alone must not disturb the auto-out or the fields.
   {

@@ -17,6 +17,7 @@ import { useState } from 'react';
 
 import { findGraphicNameOrItsId, findLayerNameOrItsId } from './graphicAndLayerNames';
 import { listItemIdsInOrderAfterDrag } from './itemIdsInOrderAfterDrag';
+import type { MoveToShortcutsChoice } from './moveToShortcutsChoices';
 import {
   buildRundownDragAnnouncements,
   rundownDragInstructionsForScreenReaders,
@@ -44,6 +45,10 @@ export type RundownItemListProps = {
   onEditPressed: (itemId: string) => void;
   /** Called once a row's "Excluir" was pressed twice within 3 seconds. */
   onDeleteConfirmed: (itemId: string) => void;
+  /** The "Mover para atalhos" entries every row's "⋯" menu offers, in tab order. */
+  moveToShortcutsChoices: MoveToShortcutsChoice[];
+  /** Called when a row's "Mover para atalhos" is chosen, with the panel it names. */
+  onMoveToShortcutsChosen: (itemId: string, panelId: string) => void;
   /** Called after a drop that changes the order, with EVERY item id in the new order. */
   onItemsReordered: (itemIdsInNewOrder: string[]) => void;
 };
@@ -127,6 +132,8 @@ export function RundownItemList(props: RundownItemListProps) {
               onSetCursorPressed={() => props.onSetCursorPressed(item.id)}
               onEditPressed={() => props.onEditPressed(item.id)}
               onDeleteConfirmed={() => props.onDeleteConfirmed(item.id)}
+              moveToShortcutsChoices={props.moveToShortcutsChoices}
+              onMoveToShortcutsChosen={(panelId) => props.onMoveToShortcutsChosen(item.id, panelId)}
             />
           ))}
         </ol>

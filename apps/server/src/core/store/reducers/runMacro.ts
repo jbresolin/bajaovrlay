@@ -4,6 +4,7 @@ import {
   refuseRunWhileAnotherMacroRuns,
   refuseUnknownMacro,
 } from '../quickFireAndMacroRefusals.js';
+import { discardEveryPreviewAndMarker } from './previewMarkersAndDiscards.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
@@ -12,6 +13,14 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * one by one by the macro runner (../macroRunner.ts), which watches this slice.
  * Refused if the macro does not exist, or while any macro is running, this one
  * included: two runs at once would interleave their steps on the same layers.
+ *
+ * Starting a run also throws away every preview instance and "will be cleared" marker,
+ * in this same state change. Two behaviours sit side by side and never mix:
+ * - "Executar" (this command) plays the macro on program WITH its timing, one step at a
+ *   time; a preview left beside it would no longer show what the screen will be;
+ * - "Prévia" (previewMacro, previewMacro.ts) shows the macro's END STATE on the preview
+ *   output at once, and "Tomar tudo" then applies it in one cut, WITHOUT the waits.
+ * Program is not touched here.
  */
 export function reduceRunMacro(
   slices: SlicesChangedByCommands,
@@ -40,5 +49,7 @@ export function reduceRunMacro(
     currentStep: 0,
     isStopRequested: false,
   };
-  return { status: 'applied', slices: { ...slices, macroRuns: [newRun] } };
+  // Prévia is emptied in this same change (see the doc comment above).
+  const slicesWithPreviewEmptied = discardEveryPreviewAndMarker(slices);
+  return { status: 'applied', slices: { ...slicesWithPreviewEmptied, macroRuns: [newRun] } };
 }

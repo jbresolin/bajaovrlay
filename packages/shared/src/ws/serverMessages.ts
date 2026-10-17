@@ -6,15 +6,17 @@ import { MacroRunSchema } from '../macros/macroRun.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
 import { RundownSchema } from '../rundown/rundown.js';
+import { ChangedSlicesSchema } from '../slices/changedSlices.js';
 import { EventLogEntrySchema } from '../slices/eventLogEntry.js';
 import { GraphicSchema } from '../slices/graphic.js';
 import { InstanceSchema } from '../slices/instance.js';
 import { LayerSchema } from '../slices/layer.js';
+import { PreviewClearedLayerIdsSchema } from '../slices/previewClearedLayerIds.js';
 import { SlicesSchema } from '../slices/slices.js';
 
 /**
  * The server's wall clock, in whole milliseconds since 1970, at the moment a `hello` or
- * `slice` message was built. A renderer compares it with its own clock, so the race
+ * `slice` message was built (`slices` and `time` carry it too, required there). A renderer compares it with its own clock, so the race
  * clock on air counts on the server's clock (packages/shared/src/clock/serverAlignedTime.ts).
  * Deliberate: optional here although the server always sends it. Thirteen test files of
  * the control page build these messages by hand, and making the field required meant
@@ -53,6 +55,12 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('instances'),
     slice: z.array(InstanceSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('previewClearedLayerIds'),
+    slice: PreviewClearedLayerIdsSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({
@@ -97,6 +105,23 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
 export type SliceMessage = z.infer<typeof SliceMessageSchema>;
 
 /**
+ * Sent to every client instead of `slice` messages when one state change changed more
+ * than one slice (every accepted command changes its own slice and the event log): the
+ * changed slices, each checked by its own schema, so a client takes them in ONE step.
+ * Sent one by one, "Prévia: limpar" on a previewed layer reached the preview page as
+ * "preview gone, no marker yet", and the program clock was cut in for that moment.
+ * `serverNowMs` is required here: this message is newer than every stand-in server.
+ */
+export const SlicesMessageSchema = z.object({
+  type: z.literal('slices'),
+  slices: ChangedSlicesSchema,
+  serverNowMs: z.number().int(),
+});
+
+/** One slices message after validation. */
+export type SlicesMessage = z.infer<typeof SlicesMessageSchema>;
+
+/**
  * Sent to the client that sent a command (or an unreadable message): ok, or an error
  * with a stable code and a pt-BR message. `requestId` echoes the client's, or is null.
  */
@@ -136,6 +161,7 @@ export type TimeMessage = z.infer<typeof TimeMessageSchema>;
 export const ServerMessageSchema = z.discriminatedUnion('type', [
   HelloMessageSchema,
   SliceMessageSchema,
+  SlicesMessageSchema,
   CommandResultMessageSchema,
   TimeMessageSchema,
 ]);

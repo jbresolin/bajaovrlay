@@ -4,15 +4,14 @@
 // The renderer decides nothing about what is on air: if the slice says it, it is drawn,
 // and the server is told how that went (on air, or failed and why). The same page framed
 // by the control page as a program monitor (`?monitor=1`) draws the same and tells nothing.
-// Framed as the preview page (`?target=preview`) it draws the instances of the `preview`
-// output instead and tells nothing either. rendererPageRole.ts decides which of the three
-// this page is; everything below is the same code for all of them.
-import type { Instance } from '@bajaovrlay/shared';
-
+// Framed as the preview page (`?target=preview`) it draws the screen as it will look after
+// the take instead (the preview instances, over what is on air, minus the layers marked
+// "will be cleared") and tells nothing either. rendererPageRole.ts decides which of the
+// three this page is; everything below is the same code for all of them.
 import { createGraphicLoader } from './graphicLoader.js';
 import { createInstancePlayer } from './instancePlayer.js';
-import { decideLayerOperations, decideRebuildOperations } from './instanceReconciler.js';
 import { createLayerContainers } from './layerContainers.js';
+import { createOperationsPerDelivery } from './operationsPerDelivery.js';
 import { logRendererEvent } from './rendererLog.js';
 import { decideRendererPageRole } from './rendererPageRole.js';
 import { connectToServer } from './serverConnection.js';
@@ -43,25 +42,14 @@ function startRenderer(stage: HTMLElement): void {
     graphicLoader: createGraphicLoader(),
     reportInstanceStatus,
   });
-  // What the last delivery listed (both outputs), to compare the next one against.
-  let instancesOfLastDelivery: Instance[] = [];
+  // `drawnOutput` is the one setting that tells the preview page from the others: the
+  // reconciler draws the program instances, or the preview composition, from each delivery.
+  const operationsPerDelivery = createOperationsPerDelivery(pageRole.drawnOutput);
 
-  connection.onSlices(({ slices, isFullSnapshot }) => {
-    layerContainers.showLayers(slices.layers);
-    // `drawnOutput` is the one setting that tells the preview page from the others: the
-    // reconciler looks only at the instances of that output.
-    const change = {
-      previousInstances: instancesOfLastDelivery,
-      nextInstances: slices.instances,
-      drawnOutput: pageRole.drawnOutput,
-    };
-    // A full snapshot (hello) means the page may have missed anything: rebuild the stage
-    // without animations. Otherwise only the difference is played, with animations.
-    const layerOperations = isFullSnapshot
-      ? decideRebuildOperations(change)
-      : decideLayerOperations({ ...change, layers: slices.layers });
-    instancePlayer.runLayerOperations(layerOperations, slices.graphics);
-    instancesOfLastDelivery = slices.instances;
+  connection.onSlices((delivery) => {
+    layerContainers.showLayers(delivery.slices.layers);
+    const layerOperations = operationsPerDelivery.decideOperationsForDelivery(delivery);
+    instancePlayer.runLayerOperations(layerOperations, delivery.slices.graphics);
   });
 
   logRendererEvent('info', 'renderer ready', {

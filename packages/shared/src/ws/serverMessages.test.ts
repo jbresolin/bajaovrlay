@@ -4,8 +4,9 @@
  * What this module is for:
  *   The control page and the renderer talk to the server over one WebSocket at `/ws`.
  *   The server sends `hello` (every slice, on connect), `slice` (one slice that
- *   changed), `commandResult` (ok, or an error with a pt-BR message) and, every ten
- *   seconds, `time` (what its clock shows, and nothing else). Clients check every
+ *   changed), `slices` (several slices one state change changed), `commandResult` (ok,
+ *   or an error with a pt-BR message) and, every ten seconds, `time` (what its clock
+ *   shows, and nothing else). Clients check every
  *   message they receive against ServerMessageSchema.
  *
  * What these tests prove:
@@ -19,6 +20,7 @@
  *   - A message with an unknown `type` is refused.
  *
  * What these tests deliberately do not cover:
+ *   - The `slices` message; serverMessages.slicesMessage.test.ts.
  *   - The JSON examples in README.md; protocolReadmeExamples.test.ts checks those.
  *   - Sending and receiving on a real socket; apps/server's webSocketHub tests do.
  */
@@ -79,6 +81,7 @@ describe('ServerMessageSchema', () => {
           layers: [],
           graphics: [],
           instances: [],
+          previewClearedLayerIds: [],
           rundowns: [],
           items: [],
           quickFirePanels: [],
@@ -100,6 +103,7 @@ describe('ServerMessageSchema', () => {
           layers: [],
           graphics: [],
           instances: [],
+          previewClearedLayerIds: [],
           rundowns: [],
           items: [],
           quickFirePanels: [],
@@ -272,8 +276,9 @@ describe('ServerMessageSchema', () => {
     const result = ServerMessageSchema.safeParse(unknownMessage);
 
     // Assert: it is refused.
-    expect(result.success, 'only hello, slice, commandResult and time come from the server').toBe(
-      false,
-    );
+    expect(
+      result.success,
+      'only hello, slice, slices, commandResult and time come from the server',
+    ).toBe(false);
   });
 });

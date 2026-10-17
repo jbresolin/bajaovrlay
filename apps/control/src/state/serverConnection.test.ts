@@ -9,7 +9,8 @@
  *
  * What these tests prove:
  *   - The page dials the address it was given; a hello fills the store and marks the
- *     page connected; a slice message updates that slice.
+ *     page connected; a slice message updates that slice; a slices message updates every
+ *     slice it carries in one store update.
  *   - A message that is not JSON, or not in the protocol, changes nothing and is logged.
  *   - sendCommand sends the command with a request id, and settles only on the answer
  *     carrying that id: it resolves on ok, rejects with the server's code and pt-BR
@@ -92,6 +93,48 @@ describe('connecting and receiving state', () => {
       serverStateStore.getState().instances,
       'the instances slice must be what the server just sent',
     ).toEqual([buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir)]);
+  });
+});
+
+describe('a slices message, the several slices of one state change', () => {
+  it('updates every slice it carries in one store update', () => {
+    // Arrange: a connected page with nothing on air, and a listener that counts how
+    // often the store tells it something changed.
+    const { serverStateStore, fakeServerSocket } = connectControlPageToFakeServerThatSaidHello();
+    const instanceCountSeenAtEachStoreUpdate: number[] = [];
+    serverStateStore.subscribe((state) => {
+      instanceCountSeenAtEachStoreUpdate.push(state.instances.length);
+    });
+
+    // Act: the operator takes the race clock; the server sends the instances and the
+    // event-log line of that take in one slices message.
+    fakeServerSocket.sendMessage({
+      type: 'slices',
+      slices: {
+        instances: [buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir)],
+        eventLog: [
+          {
+            id: 7,
+            ts: momentTheClockWentOnAir,
+            actor: 'operador:3f2a9c1e',
+            command: 'takeGraphic',
+            payload: { type: 'takeGraphic', graphicId: 'race-clock', layerId: 'clock' },
+            result: { status: 'ok' },
+          },
+        ],
+      },
+      serverNowMs: 1_791_550_800_000,
+    });
+
+    // Assert: one store update, holding the race clock and the event-log line together.
+    expect(
+      instanceCountSeenAtEachStoreUpdate,
+      'the slices of one state change must reach the store in ONE update',
+    ).toEqual([1]);
+    expect(
+      serverStateStore.getState().eventLog.map((entry) => entry.command),
+      'the event-log line must have arrived with the instances',
+    ).toEqual(['takeGraphic']);
   });
 });
 

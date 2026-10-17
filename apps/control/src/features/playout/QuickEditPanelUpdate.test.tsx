@@ -8,9 +8,9 @@
  *   tests follow the race clock's form through the moments where that could go wrong.
  *
  * What these tests prove:
- *   - After a take the server accepted, the form shows what is now on air (the moment
- *     the server wrote included) and counts as untouched again: the next "Atualizar"
- *     does not send the fields typed for the take a second time.
+ *   - After a take the server accepted, the panel edits the instance that take made: the
+ *     form shows what is now on air (the moment the server wrote included) and counts as
+ *     untouched again, so the next "Atualizar" does not send the fields typed for the take.
  *   - After a refusal the operator's edit is still in the form and still goes out on
  *     the next press.
  *   - "Colocar no ar" always sends the form as it stands, every field of it.
@@ -52,6 +52,7 @@ import {
   letTheServerPutTheLastTakeOnAir,
   letTheServerRefuseTheLastUpdateForARequiredFieldMissingOnAir,
   pressButtonAndWaitForCommand,
+  pressEditOnTheLayerRow,
   referenceMomentKindSelectorName,
   referenceMomentLabel,
   referenceTimeLabel,
@@ -83,16 +84,18 @@ function buildFirstHeatInstanceOnAir(): Instance {
 
 /** Draws the panel with the first heat on air since 9:45. */
 function renderPanelWithTheFirstHeatOnAir() {
-  return renderQuickEditPanelWithTheseInstancesOnAir([buildFirstHeatInstanceOnAir()]);
+  const controlPage = renderQuickEditPanelWithTheseInstancesOnAir([buildFirstHeatInstanceOnAir()]);
+  pressEditOnTheLayerRow('Relógio');
+  return controlPage;
 }
 
 describe('the quick edit form following what is on air', () => {
   it('shows what the server put on air after an accepted "Colocar no ar", and a later flag change sends the flag alone', async () => {
     // Arrange: nothing on air. The operator fills the form for the first heat and
     // presses "Colocar no ar"; the server puts it on air at 10:00, writing that moment
-    // as the reference, and accepts.
+    // as the reference, and accepts. The panel then edits the clock it put on air.
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-    typeIntoField('Nome da sessão', 'Enduro de Resistência — Bateria 1');
+    typeIntoField('Título', 'Enduro de Resistência — Bateria 1');
     chooseOptionInDropdown('Bandeira', 'Verde');
     flipSwitch('Relógio correndo');
     typeIntoField(referenceTimeLabel, '12:34');
@@ -228,14 +231,15 @@ describe('the quick edit form following what is on air', () => {
 
   it('shows the field message and sends nothing when the session name on air is empty', async () => {
     // Arrange: a clock on air with an empty session name, which the graphic allows and
-    // the form's rules do not (put there by another tool, say). The operator changes
-    // only the flag.
+    // the form's rules do not (put there by another tool, say). The operator loads it
+    // with "Editar" and changes only the flag.
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
       buildRaceClockInstanceHoldingThisData(
         { ...buildFirstHeatDataOnAir(), sessionName: '' },
         quarterToTen,
       ),
     ]);
+    pressEditOnTheLayerRow('Relógio');
     chooseOptionInDropdown('Bandeira', 'Amarela');
 
     // Act: press "Atualizar".
@@ -244,7 +248,7 @@ describe('the quick edit form following what is on air', () => {
     // Assert: the untouched session name is still checked. Its message is shown, and the
     // yellow flag does not go out until the operator types a name.
     expect(
-      await screen.findByText('O campo "Nome da sessão" é obrigatório.'),
+      await screen.findByText('O campo "Título" é obrigatório.'),
       'the empty session name taken from the air must be explained under its field',
     ).toBeInTheDocument();
     expect(
@@ -255,7 +259,8 @@ describe('the quick edit form following what is on air', () => {
 
   it('names the fields it could not read from the air, shows the refusal of "Atualizar", and "Colocar no ar" sends the whole form', async () => {
     // Arrange: an instance of the race clock whose data has no clock fields at all (an
-    // older version of the graphic, say). The operator changes only the flag.
+    // older version of the graphic, say). The operator loads it with "Editar" and changes
+    // only the flag.
     const instanceWithoutClockFields = buildRaceClockInstanceHoldingThisData(
       { sessionName: 'Enduro de Resistência — Bateria 1', state: 'green' },
       quarterToTen,
@@ -263,6 +268,7 @@ describe('the quick edit form following what is on air', () => {
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
       instanceWithoutClockFields,
     ]);
+    pressEditOnTheLayerRow('Relógio');
     const warningAboveTheForm = screen.getByText(/não puderam ser lidos/).textContent;
     chooseOptionInDropdown('Bandeira', 'Amarela');
 
@@ -280,7 +286,7 @@ describe('the quick edit form following what is on air', () => {
     // Assert: the form showed what it could read and said which four required fields it
     // could not, by their labels, and what each button does about it.
     expect(
-      screen.getByLabelText('Nome da sessão'),
+      screen.getByLabelText('Título'),
       'a field that can be read must be shown although others cannot',
     ).toHaveValue('Enduro de Resistência — Bateria 1');
     expect(

@@ -5,8 +5,8 @@
  *   The last tab of the quick-fire strip lists the macros as buttons painted in their
  *   colour. A click sends `runMacro`; the server's runner then applies the steps one by
  *   one. While a run is listed in the `macroRuns` slice, that macro's button says so and
- *   which step it is on ("Rodando 2/3"). "+ Macro" and each button's "Editar" open the
- *   macro editor.
+ *   which step it is on ("Rodando 2/3"). "+ Macro" and the "Editar" of each button's
+ *   "⋯" menu open the macro editor.
  *
  * What these tests prove:
  *   - The macros are listed in the server's order, each with its label and colour.
@@ -17,9 +17,11 @@
  *     MACRO_RUNNING and its pt-BR message is shown in the strip, so a page that missed
  *     the end of a run never blocks the operator.
  *   - With no macro the tab says how to make the first one.
- *   - "+ Macro" opens the editor for a new macro and "Editar" for that macro.
+ *   - "+ Macro" opens the editor for a new macro and the menu's "Editar" for that macro.
  *
  * What these tests deliberately do not cover:
+ *   - The rest of the "⋯" menu ("Executar", "Prévia") and the tooltip:
+ *     MacroButtonMenu.test.tsx.
  *   - The editor itself: MacroEditorPanel.test.tsx.
  *   - The runner (order, waits, a failing step): the server's macroRunner.test.ts.
  *   - The digits on this tab: QuickFireStripKeys.test.tsx.
@@ -44,6 +46,14 @@ const momentTheMacroStarted = '2026-10-17T13:00:00.000Z';
 /** The list of macro buttons. */
 function findMacroList() {
   return within(screen.getByRole('list', { name: 'Macros' }));
+}
+
+/** Opens the "⋯" menu of one macro, as a keyboard user does (Enter on the "⋯"). */
+function openMoreActionsMenuOfMacro(macroLabel: string): void {
+  // Radix opens its menu on a pointer press or on Enter; Enter needs no pointer stand-in.
+  fireEvent.keyDown(screen.getByRole('button', { name: `Mais ações da macro: ${macroLabel}` }), {
+    key: 'Enter',
+  });
 }
 
 describe('the macros grid', () => {
@@ -189,12 +199,15 @@ describe('the macros grid', () => {
     expect(editor.getByLabelText('Rótulo da macro'), 'a new macro starts unnamed').toHaveValue('');
   });
 
-  it('opens the macro editor for a macro with its "Editar"', () => {
-    // Arrange: the grid.
+  // Rewritten for BAJAOVRLAY-36: "Editar" moved from a link beside the button into the
+  // button's "⋯" menu.
+  it('opens the macro editor for a macro with the "Editar" of its menu', () => {
+    // Arrange: the grid, with the "⋯" menu of "Fechar a sessão" open.
     renderOnControlPageConnectedToFakeServer(<MacroGrid />, buildSlicesWithShortcutsAndMacros());
+    openMoreActionsMenuOfMacro('Fechar a sessão');
 
-    // Act: "Editar" of "Fechar a sessão".
-    fireEvent.click(screen.getByRole('button', { name: 'Editar macro: Fechar a sessão' }));
+    // Act: choose "Editar".
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Editar' }));
 
     // Assert: the editor shows that macro.
     const editor = within(screen.getByRole('region', { name: 'Editor de macro' }));

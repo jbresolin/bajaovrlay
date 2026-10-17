@@ -5,13 +5,17 @@
  *   The renderer holds no state of its own: it draws what the server says. serverConnection
  *   keeps a WebSocket open to `/ws?role=renderer`, checks every message against the shared
  *   protocol and hands the renderer the slices: all of them after a `hello` (a "full
- *   snapshot"), or the same set with one slice replaced after a `slice` message.
+ *   snapshot"), or the same set with one slice replaced after a `slice` message, or with
+ *   several replaced at once after a `slices` message.
  *
  * What these tests prove:
  *   - A `hello` delivers every slice, marked as a full snapshot.
  *   - A `slice` message delivers the slices with that one replaced, not as a full snapshot.
- *   - Anything that is not a protocol message is logged and ignored; so is a `slice` that
- *     arrives before any `hello`. A `commandResult` that says ok is ignored silently.
+ *   - A `slices` message (several slices one command changed) is ONE delivery with all of
+ *     them replaced, so the stage never sees some new and the others old.
+ *   - Anything that is not a protocol message is logged and ignored; so is a `slice` or a
+ *     `slices` that arrives before any `hello`. A `commandResult` that says ok is ignored
+ *     silently.
  *
  * What these tests deliberately do not cover:
  *   - What the renderer sends (the `instanceStatus` message) and a `commandResult` that
@@ -23,9 +27,13 @@
  *     renderer to the real server.
  *   - What the renderer does with the slices; instanceReconciler.test.ts covers that.
  */
+import type { Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { createEnduroClockInstance } from './instancesOnAir.testSupport.js';
+import {
+  createEnduroClockInstance,
+  createFinalClockInstance,
+} from './instancesOnAir.testSupport.js';
 import {
   createSlicesWithInstances,
   serverWebSocketAddress,
@@ -79,6 +87,40 @@ describe('messages from the server', () => {
     expect(connection.deliveries, 'there must be one delivery per message').toHaveLength(2);
   });
 
+  it('delivers a slices message as ONE delivery with every slice of the group replaced', () => {
+    // Arrange: a connection that already received a hello with the final clock previewed
+    // over the enduro clock.
+    const connection = startConnectionForTests();
+    const enduroClockOnAir = createEnduroClockInstance();
+    const rehearsedFinalClock: Instance = { ...createFinalClockInstance(), target: 'preview' };
+    connection.latestSocket().simulateOpen();
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([enduroClockOnAir, rehearsedFinalClock]),
+    });
+
+    // Act: "Prévia: limpar" on the clock layer: the server sends the preview gone and the
+    // layer marked in one slices message.
+    connection.latestSocket().simulateMessage({
+      type: 'slices',
+      slices: { instances: [enduroClockOnAir], previewClearedLayerIds: ['clock'] },
+      serverNowMs: 1_791_556_325_000,
+    });
+
+    // Assert: one more delivery, not two, carrying both new slices and the untouched rest.
+    expect(connection.deliveries, 'a slices message must be one delivery').toHaveLength(2);
+    expect(
+      connection.deliveries.at(-1),
+      'the one delivery must carry every slice of the group, replaced together',
+    ).toEqual({
+      slices: {
+        ...createSlicesWithInstances([enduroClockOnAir]),
+        previewClearedLayerIds: ['clock'],
+      },
+      isFullSnapshot: false,
+    });
+  });
+
   const unusableMessageScenarios = [
     // A proxy or a bug sent plain text: it cannot even be read as JSON.
     { name: 'logs and ignores text that is not JSON', text: 'servidor reiniciando' },
@@ -125,6 +167,25 @@ describe('messages from the server', () => {
     expect(connection.deliveries, 'a slice before the hello must not deliver anything').toEqual([]);
     expect(connection.readWarnings(), 'the early slice must be logged as a warning').toEqual([
       { level: 'warn', message: 'slice message ignored: no full snapshot received yet' },
+    ]);
+  });
+
+  it('logs and ignores a slices message that arrives before any hello', () => {
+    // Arrange: a connection whose socket has just opened, with no hello yet.
+    const connection = startConnectionForTests();
+    connection.latestSocket().simulateOpen();
+
+    // Act: a group of slices arrives first; the other slices are still unknown.
+    connection.latestSocket().simulateMessage({
+      type: 'slices',
+      slices: { instances: [], previewClearedLayerIds: ['clock'] },
+      serverNowMs: 1_791_556_325_000,
+    });
+
+    // Assert: nothing is delivered, because a few slices are not the whole truth.
+    expect(connection.deliveries, 'a slices message before the hello must not deliver').toEqual([]);
+    expect(connection.readWarnings(), 'the early slices message must be logged').toEqual([
+      { level: 'warn', message: 'slices message ignored: no full snapshot received yet' },
     ]);
   });
 

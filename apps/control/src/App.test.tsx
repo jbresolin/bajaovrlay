@@ -266,7 +266,7 @@ describe('the Backspace key while something is on the preview output', () => {
     // Fixing a typo in the session name must never discard the preview being looked at.
     {
       name: 'only erases text while the operator types in a field',
-      findThePlace: () => screen.getByLabelText('Nome da sessão'),
+      findThePlace: () => screen.getByLabelText('Título'),
     },
     // The focus rests on the closed dropdown right after the operator has picked a flag.
     {

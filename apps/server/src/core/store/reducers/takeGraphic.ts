@@ -12,6 +12,7 @@ import {
 } from '../graphicDataPreparation.js';
 import { findProblemInGraphicData } from '../graphicDataValidation.js';
 import { findTakeTimeFieldKeyGraphicCannotStamp } from '../graphicSchemaProperties.js';
+import { removePreviewClearedMarkerOfLayer } from './previewMarkersAndDiscards.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
@@ -26,7 +27,8 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * runs the manifest's update rule: there is no data on air for it to carry forward.
  * previewGraphic, previewItem and takePreview all end in this reducer, so the preview
  * output follows the same rules; an instance on the preview output also keeps the keys
- * that were stamped and says who asked for it (see below).
+ * that were stamped and says who asked for it. A new instance on either output takes its
+ * layer's "will be cleared" marker off (see below).
  */
 export function reduceTakeGraphic(
   slices: SlicesChangedByCommands,
@@ -108,9 +110,24 @@ export function reduceTakeGraphic(
       instance.layerId === command.layerId && instance.target === command.target;
     return !isOnTheSameLayerAndOutput;
   });
+  // Any new instance on a layer takes that layer's "will be cleared" marker off. On
+  // preview: Prévia now shows this graphic there, not an empty layer. On program: the
+  // operator just put something new on air there, so the plan to empty the layer is
+  // stale, as after a clear, and "Tomar tudo" must not clear what was just taken.
+  // Done here, where every take and every preview ends (takeItem, takeNext, previewItem,
+  // previewGraphic, takePreview, a macro step or a macro's preview), so no path can forget
+  // it. An updateInstanceData or a status report is not a new instance and keeps it.
+  const markersAfter = removePreviewClearedMarkerOfLayer(
+    slices.previewClearedLayerIds,
+    command.layerId,
+  );
 
   return {
     status: 'applied',
-    slices: { ...slices, instances: [...instancesKept, newInstance] },
+    slices: {
+      ...slices,
+      instances: [...instancesKept, newInstance],
+      previewClearedLayerIds: markersAfter,
+    },
   };
 }

@@ -32,8 +32,9 @@ type PendingAutoOut = { layerId: string; timerHandle: unknown };
 
 /**
  * Watches the store and, whenever an item that has `autoOutAfterMs` goes on the program
- * output (takeItem, takeNext, or takePreview of a preview of that item), waits that
- * long and then sends a clearLayer for the item's layer through
+ * output (takeItem, takeNext, or takePreview or takeAllPreviews of a preview of that
+ * item: any new program instance carrying its id), waits that
+ * long and then sends a clearLayer of the item's layer, aimed at program, through
  * stateStore.applyCommand, the same single path every command takes, so the clear is
  * validated, saved, logged (as `sistema:auto-out`) and broadcast like any other.
  *
@@ -49,8 +50,10 @@ type PendingAutoOut = { layerId: string; timerHandle: unknown };
  *   that stays too long is a smaller mistake than one that vanishes at a wrong moment.
  * - The delay counts from the moment the server accepted the take, not from the moment
  *   the graphic finished animating in on screen.
- * - clearLayer names only a layer, so the clear also removes whatever is on the same
- *   layer of the preview output at that moment.
+ * - The clear is a clearLayer aimed at program, so a preview the operator prepared on
+ *   that layer stays. It still names only a layer, not the instance, but by then the
+ *   wait's instance is the layer's program instance (another one would have called the
+ *   wait off).
  */
 export function startAutoOutScheduler(options: AutoOutSchedulerOptions): AutoOutScheduler {
   const { stateStore, logger } = options;
@@ -84,8 +87,8 @@ export function startAutoOutScheduler(options: AutoOutSchedulerOptions): AutoOut
    */
   function startWaitIfItemHasAutoOut(newInstance: Instance, slices: Slices): void {
     // An item that is only previewed is not on air: no wait. What could go wrong without
-    // this: the wait of a preview would end in a clearLayer, which empties the layer on
-    // BOTH outputs and so takes off air whatever program shows there. When the preview
+    // this: the wait of a preview would end in a clear of the layer's program, and so
+    // take off air whatever program shows there. When the preview
     // is sent to air (takePreview) a new program instance appears, and its wait starts
     // then, from that take.
     if (newInstance.target !== 'program') {
@@ -118,7 +121,10 @@ export function startAutoOutScheduler(options: AutoOutSchedulerOptions): AutoOut
   function clearLayerWhenTimeIsUp(instanceId: string, layerId: string): void {
     pendingAutoOutByInstanceId.delete(instanceId);
     try {
-      const outcome = stateStore.applyCommand({ type: 'clearLayer', layerId }, autoOutActor);
+      const outcome = stateStore.applyCommand(
+        { type: 'clearLayer', layerId, target: 'program' },
+        autoOutActor,
+      );
       if (!outcome.ok) {
         logger.warn({ layer_id: layerId, error: outcome.error }, 'auto-out clear was refused');
       }

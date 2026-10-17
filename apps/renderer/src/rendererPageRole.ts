@@ -8,22 +8,22 @@
  *     page that is not a renderer, and reports nothing: only the program output is the
  *     truth (gate-2 ruling on BAJAOVRLAY-12).
  *   - Preview page: what the control page frames as "Prévia"
- *     (`/render/?target=preview&monitor=1`). It draws the instances of the `preview`
- *     output, the item the operator is rehearsing, and never the ones on air. It is not
- *     the program output either, so it dials plain `/ws` and reports nothing, with or
- *     without `monitor=1`.
+ *     (`/render/?target=preview&monitor=1`). It draws the screen as it will look after the
+ *     take: per layer the `preview` instance, else what is on air there unless the layer
+ *     is marked "will be cleared" (previewComposition.ts). It is not the program output
+ *     either, so it dials plain `/ws` and reports nothing, with or without `monitor=1`.
  *
  * What could go wrong: the default is the reporting program role, on purpose. OBS must
  * keep drawing the stream and reporting whatever is appended to its address, so only the
  * exact `monitor=1` silences a page and only the exact `target=preview` makes it draw the
- * rehearsal. The price is that an address typed wrong (`monitor=true`, `target=PREVIEW`)
+ * preview composition. The price is that an address typed wrong (`monitor=true`, `target=PREVIEW`)
  * draws the program output and reports like OBS.
  */
 import type { Instance } from '@bajaovrlay/shared';
 
 /** What the page draws, whether it reports, and the WebSocket path it must dial. */
 export type RendererPageRole = {
-  /** The output whose instances this page draws; instances of the other one are ignored. */
+  /** `program`: program instances only. `preview`: the screen after the take (previewComposition.ts). */
   drawnOutput: Instance['target'];
   /** True only for the program renderer: the one page allowed to send `instanceStatus`. */
   reportsInstanceStatus: boolean;

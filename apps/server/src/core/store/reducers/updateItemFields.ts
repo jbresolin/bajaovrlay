@@ -2,7 +2,7 @@ import { isDeepStrictEqual } from 'node:util';
 
 import type { CommandError, Item, UpdateItemFieldsCommand } from '@bajaovrlay/shared';
 
-import { refuseUnknownGraphic } from '../commandRefusals.js';
+import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
 import {
   findRefusalOfTakeTimeFieldsForGraphic,
   listKeysOfTakeTimeFields,
@@ -12,13 +12,17 @@ import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js'
 
 /**
  * updateItemFields: changes the parts of an item the command names (field values,
- * label, colour, notes, auto-out delay) and keeps every other part. Field values are
- * merged key by key over the item's own. Refused if the item does not exist, or if a
+ * label, colour, notes, auto-out delay and, since BAJAOVRLAY-36, the layer) and keeps
+ * every other part. The command keeps its older name, which says "fields", to avoid
+ * churn in every client and in the event log. Field values are merged key by key over
+ * the item's own. The graphic cannot change: the command schema has no graphicId and
+ * drops one sent anyway. Refused if the item or the new layer does not exist, or if a
  * field value in the command says takeTime and the item's graphic does not mark that
  * field as a wall-clock moment (the check and the message of a take).
  * An update that leaves the item exactly as it was hands back the same slices.
- * What could go wrong: a graphic already on air from this item keeps the data it was
- * taken with; the change shows only the next time the item is taken.
+ * What could go wrong: a graphic already on air from this item keeps the data and the
+ * layer it was taken with; the change shows only the next time the item is taken, so
+ * after a layer change the old instance stays on its layer beside the next take.
  */
 export function reduceUpdateItemFields(
   slices: SlicesChangedByCommands,
@@ -27,6 +31,13 @@ export function reduceUpdateItemFields(
   const itemBefore = slices.items.find((item) => item.id === command.itemId);
   if (itemBefore === undefined) {
     return { status: 'refused', error: refuseUnknownItem(command.itemId) };
+  }
+  const newLayerId = command.layerId;
+  if (newLayerId !== undefined) {
+    const newLayerExists = slices.layers.some((layer) => layer.id === newLayerId);
+    if (!newLayerExists) {
+      return { status: 'refused', error: refuseUnknownLayer(newLayerId) };
+    }
   }
   const refusalOfATakeTimeField = findRefusalOfTakeTimeFieldsInCommand(slices, itemBefore, command);
   if (refusalOfATakeTimeField !== undefined) {
@@ -87,6 +98,9 @@ function buildItemWithChangedParts(itemBefore: Item, command: UpdateItemFieldsCo
   }
   if (command.notes !== undefined) {
     itemAfter.notes = command.notes;
+  }
+  if (command.layerId !== undefined) {
+    itemAfter.layerId = command.layerId;
   }
   // Three cases for the delay: left out keeps it, null removes it, a number sets it.
   if (command.autoOutAfterMs === null) {

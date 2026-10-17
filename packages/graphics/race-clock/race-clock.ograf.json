@@ -25,7 +25,8 @@
     "properties": {
       "sessionName": {
         "type": "string",
-        "title": "Nome da sessão",
+        "title": "Título",
+        "description": "Texto acima do relógio, ex.: Enduro de Resistência, Classificação",
         "gddType": "single-line",
         "default": "Enduro de Resistência"
       },

@@ -73,12 +73,10 @@ function isCommandResultMessage(message: ServerMessage): boolean {
   return message.type === 'commandResult';
 }
 
-/** True for an instances slice whose only instance shows the yellow flag. */
+/** True for a slices message whose first instance shows the yellow flag. */
 function isInstancesSliceWithTheYellowFlag(message: ServerMessage): boolean {
   return (
-    message.type === 'slice' &&
-    message.name === 'instances' &&
-    message.slice[0]?.resolvedData.state === 'yellow'
+    message.type === 'slices' && message.slices.instances?.[0]?.resolvedData.state === 'yellow'
   );
 }
 
@@ -173,14 +171,17 @@ describe('an updateInstanceData sent over /ws', () => {
     // Assert: the renderer hears of the same instance (same id, so it updates in place)
     // with the yellow flag and every other field as it was taken.
     expect(sliceOnRenderer, 'the update must keep the id and change only the flag').toEqual({
-      type: 'slice',
-      name: 'instances',
-      slice: [
-        {
-          ...instanceAfterTheTake,
-          resolvedData: { ...raceClockDataUnderGreenFlag, state: 'yellow' },
-        },
-      ],
+      type: 'slices',
+      slices: {
+        instances: [
+          {
+            ...instanceAfterTheTake,
+            resolvedData: { ...raceClockDataUnderGreenFlag, state: 'yellow' },
+          },
+        ],
+        // The update's own line in the event log comes in the same message.
+        eventLog: runningServer.stateStore.readAllSlices().eventLog,
+      },
       // The time of the server's clock; webSocketHub.test.ts checks its exact value.
       serverNowMs: expect.any(Number),
     });

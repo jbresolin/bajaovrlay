@@ -11,7 +11,8 @@
  *
  * What these tests prove (with a real store on a temporary SQLite file, and fake timers):
  *   - A take on the same layer for the preview output does not call the wait off: the
- *     program instance leaves exactly when its delay is over, signed `sistema:auto-out`.
+ *     program instance leaves exactly when its delay is over, signed `sistema:auto-out`,
+ *     and the preview on that layer stays, because the auto-out clears program only.
  *   - clearAll calls the wait off at once: no timer is left, and a graphic taken on that
  *     layer afterwards stays on air.
  *
@@ -115,8 +116,8 @@ describe('auto-out and a take on the preview output of the same layer', () => {
     vi.advanceTimersByTime(1);
 
     // Assert: the preview take was accepted and left the item on program with its wait
-    // still running; at 10 seconds the scheduler sent its clearLayer, which empties the
-    // layer on both outputs because clearLayer names only a layer.
+    // still running; at 10 seconds the scheduler sent its clearLayer aimed at program,
+    // which takes the item off air and leaves the operator's preview where it was.
     expect(outcomeOfPreviewTake, 'the take on preview must be accepted').toEqual({ ok: true });
     expect(
       onAirJustBeforeTheDelayEnds,
@@ -137,8 +138,8 @@ describe('auto-out and a take on the preview output of the same layer', () => {
     ]);
     expect(
       readLayersAndOutputsOnAir(store),
-      'the clear must take the item off program (and, naming only a layer, the preview too)',
-    ).toEqual([]);
+      'the auto-out must take the item off program and keep the preview prepared on that layer',
+    ).toEqual(['clock on preview']);
   });
 });
 

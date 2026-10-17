@@ -27,7 +27,7 @@ export async function createRaceClockButtonInPanelShown(
   // up inside the editor.
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
   await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
-  await itemEditor.getByLabel('Nome da sessão', { exact: true }).fill(sessionName);
+  await itemEditor.getByLabel('Título', { exact: true }).fill(sessionName);
   await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
   await expect(
     itemEditor,

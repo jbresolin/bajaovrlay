@@ -1,84 +1,65 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
-import {
-  chooseGraphicForQuickEdit,
-  findTakeForQuickEditToFollow,
-  type TakeFollowedByQuickEdit,
-} from './graphicForQuickEdit';
+import { useQuickEditChoice } from './QuickEditChoiceProvider';
 import { QuickEditForm } from './QuickEditForm';
-
-// The id that ties the dropdown to its label. It must not start like the ids of the
-// generated fields (QuickEditForm.tsx), or a graphic's own field could end up with it.
-const graphicDropdownId = 'quick-edit-chosen-graphic';
+import { QuickEditGraphicAndLayerChoice } from './QuickEditGraphicAndLayerChoice';
+import { QuickEditHeading } from './QuickEditHeading';
+import { findQuickEditMode, type QuickEditMode } from './quickEditMode';
 
 /**
- * "Edição rápida", the centre panel of the page: a dropdown of every graphic the server
- * lists (by the name in its manifest) and, under it, that graphic's form with "Colocar
- * no ar" and "Atualizar" (QuickEditForm.tsx). Nothing here knows any graphic by name:
- * the form is generated from whatever manifest the chosen graphic has.
+ * "Edição rápida", the centre panel of the page. It works on one of two things, and its
+ * heading says which (QuickEditHeading.tsx):
+ * - ONE instance, loaded by "Editar" (on air) or "Editar prévia" on a "Camadas" row.
+ *   "Atualizar" changes that instance in place, by its id only; "Colocar no ar" and
+ *   "Prévia" go to that instance's layer.
+ * - a new entry, with nothing loaded: a graphic and a layer chosen in the dropdowns
+ *   (QuickEditGraphicAndLayerChoice.tsx), "Colocar no ar" and "Prévia" on that layer.
+ *   This is how the page opens.
+ * When the loaded instance leaves its output or is replaced, or the server no longer
+ * lists its graphic, a line says so and the panel makes a new entry; it never moves to
+ * another instance by itself (quickEditMode.ts). The line keeps the words it had when
+ * first shown, and goes when the operator chooses another layer, sends the new entry, or
+ * loads something else. A take from the rundown or a shortcut button changes nothing
+ * here: only this panel and the "Camadas" rows write what it works on
+ * (QuickEditChoiceProvider). This replaces the panel that followed the graphic taken
+ * most recently (BAJAOVRLAY-36).
  *
- * Until the operator chooses, the panel shows the graphic taken most recently on the
- * program output, or the first one listed when nothing is on air
- * (graphicForQuickEdit.ts). From the moment the operator picks a graphic in the dropdown,
- * or changes a field of the form, the panel stays on that graphic: a take fired from the
- * rundown must not swap the form under the operator's hands.
- *
- * The graphic the panel went to by itself leaving the air is not a reason to move: the
- * panel remembers the take it followed and moves only for a later one, so the form keeps
- * what was on air and "Colocar no ar" puts the same thing back. What could go wrong:
- * that memory lives in this page, so after a reload with that graphic off air the panel
- * chooses afresh from what is on air.
- *
- * Another graphic means a fresh form: the form is drawn with the graphic's id as its
- * React `key`. What could go wrong: an edit not yet sent is lost when the operator picks
- * another graphic in the dropdown, and is not there when they come back.
+ * The form (QuickEditForm.tsx) is drawn with the graphic's id and the choice's
+ * formLoadNumber as its React `key`: "Editar" and choosing a graphic start a fresh form,
+ * while letting go of an instance keeps it. Nothing here knows any graphic by name.
  */
 export function QuickEditPanel() {
   const graphics = useServerState((state) => state.graphics);
   const instances = useServerState((state) => state.instances);
-  const [graphicIdThePanelStaysOn, setGraphicIdThePanelStaysOn] = useState<string | undefined>(
-    undefined,
-  );
-  const [takeThePanelLastFollowed, setTakeThePanelLastFollowed] = useState<
-    TakeFollowedByQuickEdit | undefined
-  >(undefined);
+  const quickEditChoice = useQuickEditChoice();
 
-  const graphicShown = chooseGraphicForQuickEdit({
-    graphics,
-    instances,
-    graphicIdThePanelStaysOn,
-    takeThePanelLastFollowed,
-  });
+  const listedGraphicIds = graphics.map((graphic) => graphic.id);
+  const mode = findQuickEditMode(quickEditChoice.target, instances, listedGraphicIds);
 
-  // The take the panel follows is remembered as soon as it is seen, so the next news
-  // from the server is judged against it. React allows setting state while drawing when
-  // it is guarded like this: it draws again at once with the remembered take, and the
-  // second time the take is no longer new, so it stops there. The two texts of the take
-  // are compared, not the object, which is a new one on every draw.
-  const takeToFollow = findTakeForQuickEditToFollow({
-    graphics,
-    instances,
-    takeThePanelLastFollowed,
+  // The first draw that finds the loaded instance gone writes down what became of it, so
+  // the line keeps those words whatever comes to that layer later. No list of inputs on
+  // purpose: it runs after every draw, and writing down a loss already written changes
+  // nothing (QuickEditChoiceProvider hands back the same choice, so nothing is redrawn).
+  const { writeDownTheLossOfTheTarget } = quickEditChoice;
+  const idOfTheTarget = quickEditChoice.target?.instanceId;
+  const lostTargetSeenNow = mode.kind === 'newTake' ? mode.lostTarget : undefined;
+  useEffect(() => {
+    if (idOfTheTarget !== undefined && lostTargetSeenNow !== undefined) {
+      writeDownTheLossOfTheTarget(idOfTheTarget, lostTargetSeenNow);
+    }
   });
-  const isANewTakeToFollow =
-    takeToFollow !== undefined &&
-    (takeToFollow.graphicId !== takeThePanelLastFollowed?.graphicId ||
-      takeToFollow.takenAt !== takeThePanelLastFollowed?.takenAt);
-  if (isANewTakeToFollow) {
-    setTakeThePanelLastFollowed(takeToFollow);
-  }
+  // An instance being edited always has its graphic listed (findQuickEditMode lets go of
+  // it otherwise), so its form can be drawn. A new entry whose chosen graphic is no
+  // longer listed falls back to the first graphic listed.
+  const graphicIdWanted =
+    mode.kind === 'editingInstance'
+      ? mode.instanceBeingEdited.graphicId
+      : quickEditChoice.graphicIdChosen;
+  const graphicShown = graphics.find((graphic) => graphic.id === graphicIdWanted) ?? graphics[0];
 
   return (
     <Card>
@@ -94,29 +75,61 @@ export function QuickEditPanel() {
           </p>
         </CardContent>
       ) : (
-        <>
-          <CardContent className="flex flex-col gap-2">
-            <Label htmlFor={graphicDropdownId}>{ptBR.playout.quickEdit.graphicLabel}</Label>
-            <Select value={graphicShown.id} onValueChange={setGraphicIdThePanelStaysOn}>
-              <SelectTrigger id={graphicDropdownId} className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {graphics.map((graphic) => (
-                  <SelectItem key={graphic.id} value={graphic.id}>
-                    {graphic.manifest.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-          <QuickEditForm
-            key={graphicShown.id}
-            graphic={graphicShown}
-            onOperatorChangedAFieldOfGraphic={setGraphicIdThePanelStaysOn}
-          />
-        </>
+        <QuickEditPanelWithAGraphic
+          mode={mode}
+          graphicShownId={graphicShown.id}
+          layerIdOfNewEntry={quickEditChoice.layerIdChosen ?? graphicShown.defaultLayerId}
+        />
       )}
     </Card>
+  );
+}
+
+/** The panel once there is a graphic to show: heading, dropdowns and the form. */
+function QuickEditPanelWithAGraphic(props: {
+  mode: QuickEditMode;
+  graphicShownId: string;
+  layerIdOfNewEntry: string;
+}) {
+  const { mode, graphicShownId, layerIdOfNewEntry } = props;
+  const graphics = useServerState((state) => state.graphics);
+  const layers = useServerState((state) => state.layers);
+  const items = useServerState((state) => state.items);
+  const quickEditChoice = useQuickEditChoice();
+  const graphicShown = graphics.find((graphic) => graphic.id === graphicShownId);
+  if (graphicShown === undefined) {
+    return null;
+  }
+
+  const instanceBeingEdited =
+    mode.kind === 'editingInstance' ? mode.instanceBeingEdited : undefined;
+  const layerIdOfTheCommands = instanceBeingEdited?.layerId ?? layerIdOfNewEntry;
+
+  return (
+    <>
+      <CardContent className="flex flex-col gap-3">
+        <QuickEditHeading
+          mode={mode}
+          layers={layers}
+          graphics={graphics}
+          items={items}
+          onStopEditingPressed={quickEditChoice.stopEditingTheInstance}
+        />
+        <QuickEditGraphicAndLayerChoice
+          graphics={graphics}
+          layers={layers}
+          graphicIdShown={graphicShown.id}
+          layerIdOfNewEntry={instanceBeingEdited === undefined ? layerIdOfNewEntry : undefined}
+          onGraphicChosen={quickEditChoice.chooseGraphicForNewEntry}
+          onLayerChosen={quickEditChoice.chooseLayerForNewEntry}
+        />
+      </CardContent>
+      <QuickEditForm
+        key={`${graphicShown.id}#${quickEditChoice.formLoadNumber}`}
+        graphic={graphicShown}
+        instanceBeingEdited={instanceBeingEdited}
+        layerIdOfTheCommands={layerIdOfTheCommands}
+      />
+    </>
   );
 }

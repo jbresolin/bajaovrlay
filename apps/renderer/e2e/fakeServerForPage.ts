@@ -63,6 +63,11 @@ export type FakeServerForPage = {
   /** Sends a new `instances` slice, as the real server does after a take or a clear. */
   sendInstances: (instances: Instance[]) => void;
   /**
+   * Sends a new `previewClearedLayerIds` slice, the layers marked "will be cleared" in
+   * preview, as the real server does after "Prévia: limpar" or a discard.
+   */
+  sendPreviewClearedLayerIds: (previewClearedLayerIds: string[]) => void;
+  /**
    * Drops the WebSocket from the server's side. The page reconnects by itself and is
    * greeted with a hello holding the instances sent last.
    */
@@ -99,6 +104,8 @@ export async function startFakeServerForPage(
     layers: layersOfTheFakeServer,
     graphics: [readFakeGraphicFromItsManifest(), sponsorRollWithoutFiles],
     instances: options.instancesOnAir,
+    // The preview page reads this one; the first hello marks nothing "will be cleared".
+    previewClearedLayerIds: [],
     // The renderer never reads these five; they are here because every hello carries them.
     rundowns: [],
     items: [],
@@ -171,6 +178,17 @@ export async function startFakeServerForPage(
           type: 'slice',
           name: 'instances',
           slice: instances,
+          serverNowMs: Date.now(),
+        }),
+      );
+    },
+    sendPreviewClearedLayerIds: (previewClearedLayerIds) => {
+      slices.previewClearedLayerIds = previewClearedLayerIds;
+      latestConnection().send(
+        JSON.stringify({
+          type: 'slice',
+          name: 'previewClearedLayerIds',
+          slice: previewClearedLayerIds,
           serverNowMs: Date.now(),
         }),
       );

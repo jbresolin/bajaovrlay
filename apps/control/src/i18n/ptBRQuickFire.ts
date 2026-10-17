@@ -50,8 +50,15 @@ export const ptBRQuickFire = {
     // "Parar" beside a running macro: named with the macro for a screen reader.
     stopMacroButton: (macroLabel: string) => `Parar macro: ${macroLabel}`,
     stopMacroSymbol: 'Parar',
-    editMacroButton: (macroLabel: string) => `Editar macro: ${macroLabel}`,
-    editMacroSymbol: 'Editar',
+    // The "⋯" beside each macro, and its menu (also opened by a right-click on the button).
+    moreActionsButton: (macroLabel: string) => `Mais ações da macro: ${macroLabel}`,
+    moreActionsSymbol: '⋯',
+    runAction: 'Executar',
+    previewAction: 'Prévia',
+    editAction: 'Editar',
+    // The tooltip of every macro button: "Prévia" + "Tomar tudo" is the end state in one
+    // cut, while "Executar" plays the macro with its waits.
+    previewAndTakeAllHint: 'Prévia mostra o resultado final; Tomar tudo aplica sem as esperas',
   },
 
   // The macro editor (features/macros/MacroEditorPanel.tsx).

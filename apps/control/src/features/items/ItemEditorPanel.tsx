@@ -1,8 +1,8 @@
 import type { Command, Item, ItemFields, ItemHome } from '@bajaovrlay/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { findRundownShownOnPage } from '@/features/rundown/rundownShownOnPage';
 import { ptBR } from '@/i18n/ptBR';
 import {
@@ -11,19 +11,18 @@ import {
   useServerState,
 } from '@/state/ControlPageStateProvider';
 
+import { chooseFieldsToShowInGraphicForm } from './graphicFieldsOfItemEditor';
 import {
   buildCreateItemCommand,
   buildUpdateInstanceDataCommandFromChangedFields,
   buildUpdateItemFieldsCommand,
 } from './itemCommandsFromEditor';
 import { ItemEditorButtons } from './ItemEditorButtons';
-import {
-  buildItemEditorFormValuesForNewItem,
-  buildItemEditorFormValuesFromItem,
-  type ItemEditorFormValues,
-} from './itemEditorForm';
+import { buildItemEditorFormValuesAtOpening, type ItemEditorFormValues } from './itemEditorForm';
 import { ItemEditorFormFields } from './ItemEditorFormFields';
 import { resolveItemEditorForm } from './itemEditorFormResolver';
+import { ItemEditorHeader } from './ItemEditorHeader';
+import type { PrefilledOpening } from './ItemEditorTargetProvider';
 import { ItemGraphicFieldsForm, type ItemGraphicFieldsFormHandle } from './ItemGraphicFieldsForm';
 import { ItemHomeSelect } from './ItemHomeSelect';
 import { findInstanceOfItemOnProgram } from './itemInstanceOnAir';
@@ -35,6 +34,7 @@ import {
   recordAnswerToSave,
 } from './itemsTheServerMayStore';
 import { useAskToBeClosedOnce } from './useAskToBeClosedOnce';
+import { useFirstGraphicForNewItemOnceKnown } from './useFirstGraphicForNewItemOnceKnown';
 
 /** What the rundown gives the panel. */
 export type ItemEditorPanelProps = {
@@ -43,6 +43,8 @@ export type ItemEditorPanelProps = {
    * on screen after the rundown's "+ Item", a panel after that panel's "+ Atalho".
    */
   homeForNewItem: ItemHome;
+  /** For a new item opened by "Salvar como item": what it opens filled with. */
+  prefilledOpening?: PrefilledOpening | null;
   /** The stored item to change, or null to prepare a new item. */
   itemBeingEdited: Item | null;
   /** Called after the server accepted the save, and when the operator cancels. */
@@ -53,20 +55,30 @@ export type ItemEditorPanelProps = {
 type WhatThePressAsksFor = 'saveItem' | 'saveItemAndUpdateOnAir';
 
 /**
- * The item editor: prepares a new item (`createItem`) or changes a stored one
- * (`updateItemFields`, only what changed). The form is filled once, when the panel is
+ * The item editor: prepares a new item (`createItem`), possibly opened already filled by
+ * "Salvar como item", or changes a stored one (`updateItemFields`, only what changed,
+ * the layer included; never the graphic). The form is filled once, when the panel is
  * given an item, and belongs to that item: handed another item, the panel starts a
  * fresh form instead of keeping what was typed for the first one.
  */
 export function ItemEditorPanel(props: ItemEditorPanelProps) {
   // React keeps a component's state for as long as its `key` stays the same. A key per
   // item is what makes "another item" mean "a new, freshly filled form"; for a new item
-  // the key names where it goes, so "+ Atalho" after "+ Item" starts afresh too.
-  const keyOfTheFormForThisItem =
-    props.itemBeingEdited === null
-      ? `new-item-${JSON.stringify(props.homeForNewItem)}`
-      : props.itemBeingEdited.id;
-  return <ItemEditorPanelForOneItem key={keyOfTheFormForThisItem} {...props} />;
+  // the key names where it goes, so "+ Atalho" after "+ Item" starts afresh too, and a
+  // prefilled opening has a number of its own, so every "Salvar como item" does as well.
+  return <ItemEditorPanelForOneItem key={buildKeyOfTheFormForThisOpening(props)} {...props} />;
+}
+
+/** The React key of the editor's form: one per stored item, home or prefilled opening. */
+function buildKeyOfTheFormForThisOpening(props: ItemEditorPanelProps): string {
+  if (props.itemBeingEdited !== null) {
+    return props.itemBeingEdited.id;
+  }
+  const prefilledOpening = props.prefilledOpening ?? null;
+  if (prefilledOpening !== null) {
+    return `prefilled-new-item-${prefilledOpening.openingNumber}`;
+  }
+  return `new-item-${JSON.stringify(props.homeForNewItem)}`;
 }
 
 /**
@@ -91,6 +103,8 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // did not touch, is not sent back with its old value.
   const [itemAsItWasWhenOpened] = useState(props.itemBeingEdited);
   const isEditingStoredItem = itemAsItWasWhenOpened !== null;
+  // Kept for the same reason: the key (above) gives every prefilled opening its own form.
+  const [prefill] = useState(props.prefilledOpening?.prefill ?? null);
   // "Onde" for a new item: where it was opened from until the operator picks another place.
   const [chosenHomeForNewItem, setChosenHomeForNewItem] = useState(props.homeForNewItem);
   // What the server may store for the item as far as this editor knows: the item as
@@ -115,10 +129,11 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   const whenFieldsAreChecked = hasCheckedTheFormsOnce ? 'onChange' : 'onSubmit';
 
   const itemForm = useForm<ItemEditorFormValues>({
-    defaultValues:
-      itemAsItWasWhenOpened === null
-        ? buildItemEditorFormValuesForNewItem(graphics[0])
-        : buildItemEditorFormValuesFromItem(itemAsItWasWhenOpened),
+    defaultValues: buildItemEditorFormValuesAtOpening({
+      storedItem: itemAsItWasWhenOpened,
+      prefill,
+      firstGraphic: graphics[0],
+    }),
     resolver: resolveItemEditorForm,
     mode: whenFieldsAreChecked,
   });
@@ -146,24 +161,9 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
     setCommandTypesSentInThisOpening((typesSentSoFar) => [...typesSentSoFar, commandType]);
   }
 
-  // A new item starts on the first graphic the server has, on that graphic's default
-  // layer. When the page already knows the graphics (the usual case: "+ Item" pressed
-  // on a connected page) that is the form's starting value, above. This effect is only
-  // for a list of graphics that arrives after the panel is drawn (the page opened
-  // before the server answered). Both are needed: a value set from an effect in the
-  // very draw that creates the form is not shown by the dropdown. It never overrides a
-  // graphic that is already chosen.
-  const getItemFormValues = itemForm.getValues;
-  const setItemFormValue = itemForm.setValue;
-  useEffect(() => {
-    const firstGraphic = graphics[0];
-    const isGraphicStillToBeChosen = getItemFormValues('graphicId') === '';
-    if (isEditingStoredItem || firstGraphic === undefined || !isGraphicStillToBeChosen) {
-      return;
-    }
-    setItemFormValue('graphicId', firstGraphic.id);
-    setItemFormValue('layerId', firstGraphic.defaultLayerId);
-  }, [graphics, isEditingStoredItem, getItemFormValues, setItemFormValue]);
+  // A new item without a prefill starts on the first graphic, also when the list of
+  // graphics arrives after the panel is drawn (why both, in the hook).
+  useFirstGraphicForNewItemOnceKnown(itemForm, graphics, isEditingStoredItem);
 
   // `trigger` checks every field of one form, puts the messages under the wrong ones and
   // answers whether all passed. The item part goes first. Whatever its result, the
@@ -248,9 +248,9 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // as it was when the editor opened: this editor has changed nothing on air yet, so that
   // is still what the air is compared with, whatever has been saved since. Answers false
   // only when the server refused. Nothing is sent, and that counts as done, when no typed
-  // value differs (a new label is not on air) or when the item left the air while the
-  // save was waiting: the instance is looked up at this moment, not as it was when the
-  // button was drawn.
+  // value differs (a new label or layer is not on air: the instance stays on its layer,
+  // and the next take uses the new one) or when the item left the air while the save was
+  // waiting: the instance is looked up at this moment, not as it was when drawn.
   async function updateInstanceOfItemOnAir(itemAsOpened: Item): Promise<boolean> {
     const instanceOnAirNow = findInstanceOfItemOnProgram(
       readServerStateNow().instances,
@@ -338,13 +338,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   return (
     <section aria-label={ptBR.itemEditor.panelLabel}>
       <Card>
-        <CardHeader>
-          <CardTitle>
-            <h2>
-              {isEditingStoredItem ? ptBR.itemEditor.editItemTitle : ptBR.itemEditor.newItemTitle}
-            </h2>
-          </CardTitle>
-        </CardHeader>
+        <ItemEditorHeader isEditingStoredItem={isEditingStoredItem} />
         {/* The buttons are plain buttons, not submit buttons, and the form's own submit
             is cancelled, as in "Edição rápida": Enter in a text field does nothing. */}
         <form onSubmit={(event) => event.preventDefault()} noValidate className="contents">
@@ -374,7 +368,11 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
               <ItemGraphicFieldsForm
                 key={chosenGraphic.id}
                 graphic={chosenGraphic}
-                itemAsItWasWhenOpened={itemAsItWasWhenOpened}
+                fieldsToShow={chooseFieldsToShowInGraphicForm(
+                  chosenGraphic.id,
+                  itemAsItWasWhenOpened,
+                  prefill,
+                )}
                 whenFieldsAreChecked={whenFieldsAreChecked}
                 handleRef={graphicFieldsFormHandleRef}
               />

@@ -9,9 +9,12 @@ import {
 import { RunMacroCommandSchema } from '../macros/runMacro.js';
 import { StopMacroCommandSchema } from '../macros/stopMacro.js';
 import { UpdateMacroCommandSchema } from '../macros/updateMacro.js';
+import { PreviewClearLayerCommandSchema } from '../preview/previewClearLayer.js';
 import { PreviewGraphicCommandSchema } from '../preview/previewGraphic.js';
 import { PreviewItemCommandSchema } from '../preview/previewItem.js';
+import { PreviewMacroCommandSchema } from '../preview/previewMacro.js';
 import { StopPreviewCommandSchema } from '../preview/stopPreview.js';
+import { TakeAllPreviewsCommandSchema } from '../preview/takeAllPreviews.js';
 import { TakePreviewCommandSchema } from '../preview/takePreview.js';
 import { CreateQuickFirePanelCommandSchema } from '../quickFire/createQuickFirePanel.js';
 import { DeleteQuickFirePanelCommandSchema } from '../quickFire/deleteQuickFirePanel.js';
@@ -53,6 +56,11 @@ export const CommandSchema = z.discriminatedUnion('type', [
   PreviewGraphicCommandSchema,
   StopPreviewCommandSchema,
   TakePreviewCommandSchema,
+  // Prévia shows the result: "will be cleared" markers, "Tomar tudo" and a macro's
+  // preview (BAJAOVRLAY-36); their schemas live in ../preview/ too.
+  PreviewClearLayerCommandSchema,
+  TakeAllPreviewsCommandSchema,
+  PreviewMacroCommandSchema,
   // Quick-fire panels and moving an item between homes (BAJAOVRLAY-16); ../quickFire/
   // and ../rundown/moveItemToHome.ts.
   CreateQuickFirePanelCommandSchema,

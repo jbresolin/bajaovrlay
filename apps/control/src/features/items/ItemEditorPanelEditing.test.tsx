@@ -8,10 +8,13 @@
  *   only what the operator changed.
  *
  * What these tests prove:
- *   - The panel is titled "Editar item" and shows what the item stores, the clock's
+ *   - The panel is titled "Editar item", its header says "Item salvo — vale para os
+ *     próximos disparos", and it shows what the item stores, the clock's
  *     time as stored (not moved on by the hours since the save) and each field in the
  *     kind it is stored in.
- *   - The graphic and the layer of a saved item cannot be changed, and the panel says so.
+ *   - The graphic of a saved item cannot be changed, and the panel says how to get
+ *     another one; its layer can be chosen (what a layer change sends:
+ *     ItemEditorPanelLayerChange.test.tsx).
  *   - Changing one thing sends an `updateItemFields` with that one thing, and the panel
  *     asks to be closed once the server accepted it.
  *   - Saving with nothing changed sends nothing and asks to be closed.
@@ -83,6 +86,10 @@ describe('the item editor panel for an existing item', () => {
       screen.getByRole('heading', { name: 'Editar item' }),
       'the panel must say it is changing an existing item',
     ).toBeInTheDocument();
+    expect(
+      screen.getByText('Item salvo — vale para os próximos disparos'),
+      'the header must say a saved item changes the next takes, not what is on air now',
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Rótulo'), 'the label must be the stored one').toHaveValue(
       'Largada do Enduro',
     );
@@ -115,26 +122,27 @@ describe('the item editor panel for an existing item', () => {
     ).toBeNull();
   });
 
-  it('does not let the graphic or the layer of a saved item be changed, and says why', () => {
+  // Rewritten for BAJAOVRLAY-36: before it, the layer was locked too. Now only the graphic
+  // is (a new graphic is a new item), and the layer can be chosen again.
+  it('keeps the graphic of a saved item read-only with a note, and lets the layer be chosen', () => {
     // Arrange: the endurance start item.
     const itemBeingEdited = buildEnduranceStartClockItem();
 
     // Act: open it in the editor.
     renderItemEditorPanelOnFakeServer(itemBeingEdited);
 
-    // Assert: both dropdowns show the stored choice but are off, with an explanation.
+    // Assert: the graphic is shown but off, with the note saying how to get another one;
+    // the layer shows the stored choice and can be changed.
     const graphicDropdown = screen.getByRole('combobox', { name: 'Gráfico' });
     const layerDropdown = screen.getByRole('combobox', { name: 'Camada' });
     expect(graphicDropdown, 'the graphic must be shown').toHaveTextContent('Relógio de prova');
     expect(graphicDropdown, 'the graphic of a saved item cannot be changed').toBeDisabled();
-    expect(layerDropdown, 'the layer must be shown').toHaveTextContent('Relógio');
-    expect(layerDropdown, 'the layer of a saved item cannot be changed').toBeDisabled();
     expect(
-      screen.getByText(
-        'O gráfico e a camada de um item salvo não mudam. Para trocá-los, exclua o item e crie outro.',
-      ),
-      'the panel must say how to get another graphic or layer',
+      screen.getByText('Para outro gráfico, crie um novo item'),
+      'the panel must say how to get another graphic',
     ).toBeInTheDocument();
+    expect(layerDropdown, 'the layer must be shown').toHaveTextContent('Relógio');
+    expect(layerDropdown, 'the layer of a saved item can be changed').toBeEnabled();
   });
 
   it('sends updateItemFields with only what changed and asks to be closed once the server accepts', async () => {
@@ -363,7 +371,7 @@ describe('the item editor panel for an existing item', () => {
       "the delay must be the second item's 8 seconds",
     ).toHaveValue('8');
     expect(
-      screen.queryByLabelText('Nome da sessão'),
+      screen.queryByLabelText('Título'),
       'the race clock fields of the first item must be gone',
     ).toBeNull();
     expect(

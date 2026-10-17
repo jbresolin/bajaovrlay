@@ -14,17 +14,19 @@
  *   - A createItem is refused, with the field named, when the label is empty, the order
  *     is negative or not whole, the colour is not one of the six names, a field is bound
  *     to a data source (M2) or the auto-out is zero.
- *   - An updateItemFields may change any one thing on its own, may remove the auto-out
- *     with null, and adds nothing the editor did not send.
- *   - An updateItemFields without an item id, or with a negative auto-out, is refused.
+ *   - An updateItemFields may change any one thing on its own (its layer included, since
+ *     BAJAOVRLAY-36), may remove the auto-out with null, and adds nothing the editor did
+ *     not send.
+ *   - An updateItemFields without an item id, with a negative auto-out, or with an empty
+ *     label or layer, is refused.
+ *   - A graphic id sent in an updateItemFields is dropped by the schema: an item keeps
+ *     its graphic for life (a different graphic is a new item).
  *   - A deleteItem needs the id of the item.
  *
  * What these tests deliberately do not cover:
  *   - Whether the rundown, graphic, layer or item named exists, where a new item lands
  *     among the others and how the rest are renumbered; that needs the state, so the
  *     reducers in apps/server check it.
- *   - Changing an existing item's graphic or layer: updateItemFields has no such field,
- *     on purpose (delete the item and create it again).
  */
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -161,6 +163,8 @@ describe('updateItemFields', () => {
     { name: 'accepts a new auto-out delay', changes: { autoOutAfterMs: 12_000 } },
     // The operator emptied the auto-out box: null means "stay on air until cleared".
     { name: 'accepts null to remove the auto-out', changes: { autoOutAfterMs: null } },
+    // "Editar item" moved the item to another layer (BAJAOVRLAY-36); the next take uses it.
+    { name: 'accepts a change of the layer alone', changes: { layerId: 'lower-third' } },
     // Saving the editor without touching anything; the server has nothing to change.
     { name: 'accepts an update that changes nothing', changes: {} },
   ];
@@ -202,6 +206,12 @@ describe('updateItemFields', () => {
       command: { type: 'updateItemFields', itemId: enduroClockItemId, label: '' },
       fieldNamedInTheFailure: 'label',
     },
+    // An empty text names no layer; "keep the layer" is said by leaving layerId out.
+    {
+      name: 'refuses a layer changed to an empty text, naming layerId',
+      command: { type: 'updateItemFields', itemId: enduroClockItemId, layerId: '' },
+      fieldNamedInTheFailure: 'layerId',
+    },
   ];
 
   it.each(refusedUpdateScenarios)('$name', ({ command, fieldNamedInTheFailure }) => {
@@ -215,6 +225,29 @@ describe('updateItemFields', () => {
     // Assert: it is refused and the message points at the bad field.
     expect(result.success, 'an update with a bad part must be refused').toBe(false);
     expect(failureMessage, 'the failure must name the bad field').toContain(fieldNamedInTheFailure);
+  });
+
+  it('drops a graphic id from the update, so an item can never change its graphic', () => {
+    // Arrange: an update that tries to turn the enduro clock item into a team lower third,
+    // as an older or confused client might send it.
+    const updateTryingToChangeTheGraphic = {
+      type: 'updateItemFields',
+      itemId: enduroClockItemId,
+      label: 'Relógio do enduro — relargada',
+      graphicId: 'team-lower-third',
+    };
+
+    // Act: check the command.
+    const result = CommandSchema.safeParse(updateTryingToChangeTheGraphic);
+
+    // Assert: accepted for what it may change, and the graphic id is gone: the schema has
+    // no such field and, like every command schema, leaves out a key it does not know.
+    expect(result.success, 'the rest of the update is well formed').toBe(true);
+    expect(result.data, 'the graphic id must not survive validation').toEqual({
+      type: 'updateItemFields',
+      itemId: enduroClockItemId,
+      label: 'Relógio do enduro — relargada',
+    });
   });
 });
 

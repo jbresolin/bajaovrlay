@@ -71,6 +71,8 @@ export function buildSlicesWithNothingOnAir(): Slices {
     layers: buildLayersSeededByTheServer(),
     graphics: [buildRaceClockGraphic()],
     instances: [],
+    // No layer is marked "vai limpar": the server keeps the marks in memory only.
+    previewClearedLayerIds: [],
     eventLog: [],
     // The one rundown the server seeds on its first boot, still empty. Tests that need
     // items in it use rundownLikeTheServerSends.testSupport.ts.

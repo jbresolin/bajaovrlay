@@ -12,7 +12,8 @@
  *   - Everything drawn before is disposed at once (no out-animation), and everything on
  *     air now is loaded with its in-animation skipped, so the viewers see no replay.
  *   - Even an instance that did not change is disposed and loaded again.
- *   - Instances on the `preview` output are left out by the page that draws `program`.
+ *   - Instances on the `preview` output are left out by the page that draws `program`,
+ *     and a layer marked "will be cleared" in preview is rebuilt like any other there.
  *
  * What these tests deliberately do not cover:
  *   - The rebuild of a page that draws the `preview` output;
@@ -46,7 +47,9 @@ describe('decideRebuildOperations', () => {
     // Act: ask how to rebuild the stage.
     const layerOperations = decideRebuildOperations({
       previousInstances: instancesDrawnBeforeTheDrop,
+      previousPreviewClearedLayerIds: [],
       nextInstances: instancesOnAirNow,
+      nextPreviewClearedLayerIds: [],
       drawnOutput: 'program',
     });
 
@@ -82,7 +85,9 @@ describe('decideRebuildOperations', () => {
     // Act: ask how to rebuild the stage.
     const layerOperations = decideRebuildOperations({
       previousInstances: instancesBeforeAndAfter,
+      previousPreviewClearedLayerIds: [],
       nextInstances: instancesBeforeAndAfter,
+      nextPreviewClearedLayerIds: [],
       drawnOutput: 'program',
     });
 
@@ -108,11 +113,41 @@ describe('decideRebuildOperations', () => {
     // Act: ask how to rebuild the stage.
     const layerOperations = decideRebuildOperations({
       previousInstances: [],
+      previousPreviewClearedLayerIds: [],
       nextInstances: rehearsalOnly,
+      nextPreviewClearedLayerIds: [],
       drawnOutput: 'program',
     });
 
     // Assert: nothing to do; /render/ draws the program output only.
     expect(layerOperations, 'a preview instance must never be drawn on /render/').toEqual([]);
+  });
+
+  it('rebuilds a program instance whose layer is marked "will be cleared" in preview', () => {
+    // Arrange: after the drop the server lists the enduro clock on air, on a layer the
+    // operator marked with "Prévia: limpar".
+    const instancesOnAirNow = [createEnduroClockInstance()];
+
+    // Act: ask how to rebuild the stage.
+    const layerOperations = decideRebuildOperations({
+      previousInstances: [],
+      previousPreviewClearedLayerIds: [],
+      nextInstances: instancesOnAirNow,
+      nextPreviewClearedLayerIds: ['clock'],
+      drawnOutput: 'program',
+    });
+
+    // Assert: the clock is drawn; the marker only says what the preview shows.
+    expect(
+      layerOperations,
+      'a marker must never take anything off /render/; only the take clears the layer',
+    ).toEqual([
+      {
+        layerId: 'clock',
+        operations: [
+          { kind: 'loadAndPlay', instance: createEnduroClockInstance(), skipAnimation: true },
+        ],
+      },
+    ]);
   });
 });

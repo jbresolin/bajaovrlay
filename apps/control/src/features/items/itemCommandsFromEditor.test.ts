@@ -18,6 +18,7 @@
  *   - A graphic that takes no data is created with empty fields.
  *   - An update names only the parts that differ from the stored item, and carries the
  *     changed fields exactly as handed in; with no changed field it carries no `fields`.
+ *   - A changed layer travels as `layerId` and nothing else with it.
  *   - Auto-out: a new number sets it, blank over a stored delay sends `null` (remove),
  *     and an untouched delay is not sent.
  *   - An edit that changed nothing builds no command at all.
@@ -243,6 +244,18 @@ describe('buildUpdateItemFieldsCommand', () => {
         itemId: idOfTheEnduranceStartItem,
         label: 'Largada — Enduro de Resistência',
         fields: { referenceTimeMs: { kind: 'literal', value: 5_400_000 } },
+      },
+    },
+    // Since BAJAOVRLAY-36 a stored item's layer can be changed: the clock moved to the
+    // lower-third layer travels as `layerId`, and nothing else does.
+    {
+      name: 'a new layer sends only the layer',
+      changesToTheItemForm: { layerId: 'lower-third' },
+      changedFields: {},
+      expectedCommand: {
+        type: 'updateItemFields',
+        itemId: idOfTheEnduranceStartItem,
+        layerId: 'lower-third',
       },
     },
   ];

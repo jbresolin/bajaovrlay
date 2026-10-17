@@ -28,6 +28,9 @@ export function buildStoredItemAfterAcceptedSave(
 ): Item {
   const itemAfterTheSave: Item = { ...storedItem };
 
+  if (acceptedSave.layerId !== undefined) {
+    itemAfterTheSave.layerId = acceptedSave.layerId;
+  }
   if (acceptedSave.label !== undefined) {
     itemAfterTheSave.label = acceptedSave.label;
   }

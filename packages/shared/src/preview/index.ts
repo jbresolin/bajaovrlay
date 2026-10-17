@@ -10,3 +10,12 @@ export { type PreviewGraphicCommand, PreviewGraphicCommandSchema } from './previ
 export { type StopPreviewCommand, StopPreviewCommandSchema } from './stopPreview.js';
 // takePreview: send what is previewed on one layer to the program output.
 export { type TakePreviewCommand, TakePreviewCommandSchema } from './takePreview.js';
+// previewClearLayer: mark one layer "will be cleared", so Prévia shows it empty.
+export {
+  type PreviewClearLayerCommand,
+  PreviewClearLayerCommandSchema,
+} from './previewClearLayer.js';
+// takeAllPreviews: "Tomar tudo", every preview and every marker to program in one cut.
+export { type TakeAllPreviewsCommand, TakeAllPreviewsCommandSchema } from './takeAllPreviews.js';
+// previewMacro: show a macro's end state on the preview output, program untouched.
+export { type PreviewMacroCommand, PreviewMacroCommandSchema } from './previewMacro.js';
