@@ -13,8 +13,9 @@
  *     slice it carries in one store update.
  *   - A message that is not JSON, or not in the protocol, changes nothing and is logged.
  *   - sendCommand sends the command with a request id, and settles only on the answer
- *     carrying that id: it resolves on ok, rejects with the server's code and pt-BR
- *     message on a refusal, and rejects after 5 seconds of silence.
+ *     carrying that id: it resolves on ok (with the id of the item a createItem made,
+ *     when the server names it), rejects with the server's code and pt-BR message on a
+ *     refusal, and rejects after 5 seconds of silence.
  *   - A command sent while disconnected is refused at once and never leaves the page.
  *   - A failure is left in the store for the page to show; the next success removes it.
  *
@@ -117,8 +118,8 @@ describe('a slices message, the several slices of one state change', () => {
             id: 7,
             ts: momentTheClockWentOnAir,
             actor: 'operador:3f2a9c1e',
-            command: 'takeGraphic',
-            payload: { type: 'takeGraphic', graphicId: 'race-clock', layerId: 'clock' },
+            command: 'takeItem',
+            payload: { type: 'takeItem', itemId: 'item-largada-do-enduro' },
             result: { status: 'ok' },
           },
         ],
@@ -134,7 +135,7 @@ describe('a slices message, the several slices of one state change', () => {
     expect(
       serverStateStore.getState().eventLog.map((entry) => entry.command),
       'the event-log line must have arrived with the instances',
-    ).toEqual(['takeGraphic']);
+    ).toEqual(['takeItem']);
   });
 });
 
@@ -210,6 +211,35 @@ describe('sendCommand', () => {
     });
   });
 
+  it('resolves with the id of the item a createItem made, when the server names it', async () => {
+    // Arrange: a connected page.
+    const { fakeServerSocket, serverConnection } = connectControlPageToFakeServerThatSaidHello();
+
+    // Act: the item editor creates "Largada do enduro", and the server answers ok, naming
+    // the item it made.
+    const sending = serverConnection.sendCommand({
+      type: 'createItem',
+      home: { kind: 'rundown', rundownId: 'sessao-principal' },
+      graphicId: 'race-clock',
+      layerId: 'clock',
+      fields: { sessionName: { kind: 'literal', value: 'Enduro de Resistência' } },
+      label: 'Largada do enduro',
+    });
+    fakeServerSocket.sendMessage({
+      type: 'commandResult',
+      requestId: 'pedido-1',
+      ok: true,
+      createdItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
+    });
+
+    // Assert: the promise carries the id, so "Salvar e disparar" can take that item next.
+    expect(await sending, 'the ok answer must carry the id of the item created').toEqual({
+      ok: true,
+      requestId: 'pedido-1',
+      createdItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
+    });
+  });
+
   it('matches each answer to its own command when two are waiting', async () => {
     // Arrange: a connected page with two commands sent and neither answered.
     const { fakeServerSocket, serverConnection } = connectControlPageToFakeServerThatSaidHello();
@@ -245,12 +275,10 @@ describe('sendCommand', () => {
     const { serverStateStore, fakeServerSocket, serverConnection } =
       connectControlPageToFakeServerThatSaidHello();
 
-    // Act: take a graphic the server does not have, and let the server refuse it.
+    // Act: take an item whose graphic the server no longer has, and let it refuse.
     const sending = serverConnection.sendCommand({
-      type: 'takeGraphic',
-      graphicId: 'placar-geral',
-      layerId: 'fullscreen',
-      data: {},
+      type: 'takeItem',
+      itemId: 'item-placar-geral',
     });
     const whyItFailed = sending.catch((failure: unknown) => failure);
     fakeServerSocket.refuseLastCommand({
@@ -268,7 +296,7 @@ describe('sendCommand', () => {
       serverStateStore.getState().lastCommandError,
       'the store must remember which command failed and why',
     ).toEqual({
-      commandType: 'takeGraphic',
+      commandType: 'takeItem',
       code: 'GRAPHIC_NOT_FOUND',
       message: 'O gráfico "placar-geral" não está registrado.',
     });

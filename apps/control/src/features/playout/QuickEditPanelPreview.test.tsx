@@ -1,54 +1,44 @@
 /**
- * "Edição rápida": the "Prévia" button (apps/control)
+ * "Edição rápida" with a preview loaded: "Atualizar prévia" (apps/control)
  *
  * What this module is for:
- *   "Edição rápida" puts any graphic on air from a form. Its "Prévia" button shows the
- *   same form on the preview output first (`previewGraphic`), so the operator sees the
- *   graphic with the values just typed before anybody else does. The command is built
- *   exactly as "Colocar no ar" builds its own: the graphic's default layer, the whole
- *   form as it stands, a cleared field left out, and a field the server fills with the
- *   moment of the command named in `takeTimeFieldKeys`.
+ *   "Editar prévia" on a Camadas row loads what that layer holds on the preview output.
+ *   Since BAJAOVRLAY-37 the panel changes that preview in place, as it changes an
+ *   instance on air: "Atualizar prévia" sends `updateInstanceData` to the preview
+ *   instance's own id, with only the fields the operator changed. The preview keeps its id
+ *   and its item, so "Tomar" sends to air exactly what was seen. Nothing in the panel
+ *   makes a new preview any more.
  *
  * What these tests prove:
- *   - "Prévia" sends one `previewGraphic` for the graphic's default layer with what was
- *     typed and chosen; a blank optional field is left out, and the reference moment is
- *     asked of the server, not sent.
- *   - Except for its `type`, the command is the very one "Colocar no ar" sends for the
- *     same form.
- *   - With the graphic on air, "Prévia" still sends the whole form (not only the changed
- *     fields, as "Atualizar" does), and after the server accepts it the operator's edit
- *     is still an unsent edit: "Atualizar" then sends the changed field.
- *   - A field that fails its rule blocks the preview with the message under the field.
- *   - A refused preview is explained next to the buttons, in the server's words.
- *   - While the connection is down the button is disabled.
- *   - With a loaded preview whose data lacks fields, the line naming them is the preview
- *     variant: it speaks of "Prévia" and "Colocar no ar", never of "Atualizar".
+ *   - With a preview loaded the panel offers "Atualizar prévia" and no other send: no
+ *     "Prévia", no "Colocar no ar", no "Atualizar".
+ *   - "Atualizar prévia" sends one `updateInstanceData` naming the preview's id, with only
+ *     the field changed.
+ *   - Once the server applied it, the form shows the preview as it is now and counts as
+ *     untouched: a second press sends nothing.
+ *   - A refused "Atualizar prévia" is explained next to the button, in the server's words.
+ *   - With a loaded preview whose data lacks fields, the line naming them speaks of
+ *     "Atualizar prévia".
  *
  * What these tests deliberately do not cover:
- *   - The preview appearing on the page: the lines under the "Prévia" monitor
- *     (features/outputMonitors/PreviewedLayersList.test.tsx) and the monitor itself.
- *   - "Tomar", which sends that preview to air: the same test file.
- *   - What the server does with `previewGraphic` (it remembers the stamped fields so a
- *     take stamps them again); apps/server's previewGraphic.test.ts and takePreview.test.ts.
- *   - "Colocar no ar" and "Atualizar" themselves: QuickEditPanel.test.tsx.
+ *   - "Tomar", which sends the preview to air: features/outputMonitors' tests, and the
+ *     server's updatePreviewInstanceData.test.ts for what it promotes.
+ *   - "Atualizar" of an instance on air: QuickEditPanel.test.tsx and its siblings.
  */
-import { screen, waitFor } from '@testing-library/react';
+import type { Instance } from '@bajaovrlay/shared';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { chooseOptionInDropdown } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 import {
-  chooseOptionInDropdown,
-  flipSwitch,
-  typeIntoField,
-} from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
+  buildRaceClockPreviewOfItem,
+  idOfTheRaceClockPreview,
+} from '@/state/previewLikeTheServerSends.testSupport';
 
 import {
-  buildRaceClockInstanceHoldingThisData,
-  holdThePageClockAt,
-  idOfTheRaceClockInstanceOnAir,
-  lapsLabel,
+  letTheServerApplyTheLastUpdate,
   pressButtonAndWaitForCommand,
   pressButtonAndWaitUntilThePressIsOver,
-  pressEditOnTheLayerRow,
   pressEditPreviewOnTheLayerRow,
   referenceMomentLabel,
   referenceTimeLabel,
@@ -56,214 +46,141 @@ import {
   waitUntilButtonIsOnAgain,
 } from './operatingTheQuickEditPanel.testSupport';
 
-// The clock went on air at 9:45 in Brasília on the Saturday of the endurance race, and
-// the operator is at the page at 10:00.
-const momentTheClockWentOnAir = '2026-10-10T12:45:00.000Z';
-const momentTheOperatorIsAtThePage = '2026-10-10T13:00:00.000Z';
+// The operator previewed the start of the endurance race at 9:58 in Brasília, and
+// changes the preview at 10:00.
+const momentTheStartWasPreviewed = '2026-10-10T12:58:00.000Z';
+const momentOfTheUpdate = '2026-10-10T13:00:00.000Z';
 
-/** The first heat on air since 9:45 under the green flag, stopped at 12:34. */
-function buildFirstHeatOnAirStoppedAtTwelveThirtyFour() {
-  return buildRaceClockInstanceHoldingThisData(
-    {
-      sessionName: 'Enduro de Resistência — Bateria 1',
-      state: 'green',
-      clockMode: 'elapsed',
-      referenceTimeMs: 754_000,
-      referenceWallClockMs: Date.parse(momentTheClockWentOnAir),
-      running: false,
-    },
-    momentTheClockWentOnAir,
-  );
+/** "Largada do enduro" on the preview output of the clock layer, as previewItem left it. */
+function buildEnduranceStartInPreview(): Instance {
+  return buildRaceClockPreviewOfItem('item-largada-do-enduro', momentTheStartWasPreviewed);
 }
 
-describe('the "Prévia" button of "Edição rápida" with nothing on air', () => {
-  it('sends previewGraphic with what was typed and chosen, for the default layer of the graphic', async () => {
-    // Arrange: the panel filled for the endurance race, 12 min 34 s in, under green.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-    typeIntoField('Título', 'Enduro de Resistência — Bateria 1');
-    chooseOptionInDropdown('Bandeira', 'Verde');
-    flipSwitch('Relógio correndo');
-    typeIntoField(referenceTimeLabel, '12:34');
+/** The "Edição rápida" panel's own area, so the Camadas buttons are not counted. */
+function findQuickEditArea() {
+  return within(screen.getByRole('region', { name: 'Edição rápida' }));
+}
 
-    // Act: press "Prévia".
-    await pressButtonAndWaitForCommand('Prévia', 1, fakeServer);
+describe('"Edição rápida" with a preview loaded', () => {
+  it('offers "Atualizar prévia" and no other way to send', () => {
+    // Arrange: the start of the race in preview on the clock layer.
+    renderQuickEditPanelWithTheseInstancesOnAir([buildEnduranceStartInPreview()]);
 
-    // Assert: one previewGraphic for the clock layer (the race clock's default layer).
-    // The laps, left blank, are not in the data; the reference moment is not in it
-    // either: the server is asked to write the moment of the command there.
-    expect(
-      fakeServer.listCommandsReceived(),
-      '"Prévia" must send exactly one previewGraphic with the form as it stands',
-    ).toEqual([
-      {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: {
-          sessionName: 'Enduro de Resistência — Bateria 1',
-          state: 'green',
-          clockMode: 'elapsed',
-          referenceTimeMs: 754_000,
-          running: true,
-        },
-        takeTimeFieldKeys: ['referenceWallClockMs'],
-      },
-    ]);
-    // (Then the server answers, so no command is left waiting for its 5-second timeout.)
-    fakeServer.acceptLastCommand();
+    // Act: load the preview with "Editar prévia".
+    pressEditPreviewOnTheLayerRow('Relógio');
+
+    // Assert: the one send is "Atualizar prévia"; nothing makes a new preview or a take.
+    const buttonNames = findQuickEditArea()
+      .getAllByRole('button')
+      .map((button) => button.textContent);
+    expect(buttonNames, 'a loaded preview must be changed in place only').toContain(
+      'Atualizar prévia',
+    );
+    for (const sendThatIsGone of ['Prévia', 'Colocar no ar', 'Atualizar', 'Salvar como item']) {
+      expect(buttonNames, `"${sendThatIsGone}" must not be offered for a preview`).not.toContain(
+        sendThatIsGone,
+      );
+    }
   });
 
-  it('sends the very command "Colocar no ar" sends for the same form, under another type', async () => {
-    // Arrange: the panel with a session name, a time and the leader's laps typed.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-    typeIntoField('Título', 'Enduro de Resistência — Bateria 2');
-    typeIntoField(referenceTimeLabel, '45:00');
-    typeIntoField(lapsLabel, '31');
-
-    // Act: press "Prévia", let the server accept it, then press "Colocar no ar".
-    await pressButtonAndWaitForCommand('Prévia', 1, fakeServer);
-    fakeServer.acceptLastCommand();
-    await waitUntilButtonIsOnAgain('Colocar no ar');
-    await pressButtonAndWaitForCommand('Colocar no ar', 2, fakeServer);
-
-    // Assert: apart from the type, the two commands are the same, field by field.
-    const [previewCommand, takeCommand] = fakeServer.listCommandsReceived();
-    expect(
-      { ...(previewCommand as object), type: 'takeGraphic' },
-      'what is previewed must be exactly what "Colocar no ar" would put on air',
-    ).toEqual(takeCommand);
-    fakeServer.acceptLastCommand();
-  });
-
-  it('sends nothing and shows the message under the field when a required field is empty', async () => {
-    // Arrange: the panel with the session name, a required field, erased.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-    typeIntoField('Título', '');
-
-    // Act: press "Prévia" and wait until the press is over.
-    await pressButtonAndWaitUntilThePressIsOver('Prévia');
-
-    // Assert: the form's own message is on screen and no command left the page.
-    expect(
-      await screen.findByText('O campo "Título" é obrigatório.'),
-      'a form that fails its rules must say which field is wrong',
-    ).toBeInTheDocument();
-    expect(
-      fakeServer.listCommandsReceived(),
-      'a form that fails its rules must not be previewed',
-    ).toEqual([]);
-  });
-
-  it("shows the server's pt-BR message next to the buttons when the preview is refused", async () => {
-    // Arrange: "Prévia" was pressed with the form as it opens.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-    await pressButtonAndWaitForCommand('Prévia', 1, fakeServer);
-
-    // Act: the server refuses: the layer was removed from its configuration.
-    fakeServer.refuseLastCommand({
-      code: 'LAYER_NOT_FOUND',
-      message: 'A camada "clock" não existe.',
-    });
-
-    // Assert: the reason is on screen, and the button can be pressed again.
-    expect(
-      await screen.findByRole('alert'),
-      'a refused preview must be explained next to the buttons, in the words of the server',
-    ).toHaveTextContent('A camada "clock" não existe.');
-    await waitUntilButtonIsOnAgain('Prévia');
-  });
-
-  it('is disabled while the connection is down', () => {
-    // Arrange: the panel on a connected page.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-
-    // Act: the line drops.
-    fakeServer.dropConnection();
-
-    // Assert: nothing can be previewed without a connection.
-    expect(
-      screen.getByRole('button', { name: 'Prévia' }),
-      '"Prévia" cannot be pressed while the page cannot reach the server',
-    ).toBeDisabled();
-  });
-});
-
-describe('the "Prévia" button of "Edição rápida" with the graphic on air', () => {
-  it('previews the whole form, and leaves the edit unsent so "Atualizar" still sends it', async () => {
-    // Arrange: the first heat is on air, stopped at 12:34, loaded with "Editar", and the
-    // operator changes only the flag to yellow.
-    holdThePageClockAt(momentTheOperatorIsAtThePage);
+  it('sends updateInstanceData to the preview itself, with only the field changed', async () => {
+    // Arrange: the preview loaded, and the flag changed to yellow.
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
-      buildFirstHeatOnAirStoppedAtTwelveThirtyFour(),
+      buildEnduranceStartInPreview(),
     ]);
-    pressEditOnTheLayerRow('Relógio');
+    pressEditPreviewOnTheLayerRow('Relógio');
     chooseOptionInDropdown('Bandeira', 'Amarela');
 
-    // Act: press "Prévia", let the server accept it, then press "Atualizar".
-    await pressButtonAndWaitForCommand('Prévia', 1, fakeServer);
-    fakeServer.acceptLastCommand();
-    await waitUntilButtonIsOnAgain('Atualizar');
-    await pressButtonAndWaitForCommand('Atualizar', 2, fakeServer);
+    // Act: press "Atualizar prévia".
+    await pressButtonAndWaitForCommand('Atualizar prévia', 1, fakeServer);
 
-    // Assert: the preview carried every field of the form (the graphic has to be drawn
-    // whole), the reference moment as the number that is on air; and the update that
-    // followed still carried the flag, because a preview changes nothing on air and so
-    // must not make the form forget the edit.
+    // Assert: one update, naming the preview's id, holding the flag alone.
+    expect(
+      fakeServer.listCommandsReceived(),
+      '"Atualizar prévia" must change the preview in place, by its id',
+    ).toEqual([
+      {
+        type: 'updateInstanceData',
+        instanceId: idOfTheRaceClockPreview,
+        data: { state: 'yellow' },
+        takeTimeFieldKeys: [],
+      },
+    ]);
+    fakeServer.acceptLastCommand();
+  });
+
+  it('counts as untouched once the server applied it, so a second press sends nothing', async () => {
+    // Arrange: the flag of the preview changed to yellow, sent, and applied by the server.
+    const previewBeforeTheUpdate = buildEnduranceStartInPreview();
+    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([previewBeforeTheUpdate]);
+    pressEditPreviewOnTheLayerRow('Relógio');
+    chooseOptionInDropdown('Bandeira', 'Amarela');
+    await pressButtonAndWaitForCommand('Atualizar prévia', 1, fakeServer);
+    letTheServerApplyTheLastUpdate(fakeServer, previewBeforeTheUpdate, momentOfTheUpdate);
+    await waitUntilButtonIsOnAgain('Atualizar prévia');
+
+    // Act: press "Atualizar prévia" again without touching anything.
+    await pressButtonAndWaitUntilThePressIsOver('Atualizar prévia');
+
+    // Assert: still one command; the form shows yellow and the panel still edits the preview.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'an untouched form must send nothing',
+    ).toHaveLength(1);
+    expect(
+      screen.getByRole('combobox', { name: 'Bandeira' }),
+      'the form must show the preview as the server now holds it',
+    ).toHaveTextContent('Amarela');
+    expect(
+      screen.getByRole('heading', { level: 3 }).textContent,
+      'the panel must still be editing the same preview',
+    ).toContain('Em prévia');
+  });
+
+  it('explains a refused "Atualizar prévia" next to the button, in the server\'s words', async () => {
+    // Arrange: the preview loaded, the flag changed, and the update sent.
+    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
+      buildEnduranceStartInPreview(),
+    ]);
+    pressEditPreviewOnTheLayerRow('Relógio');
+    chooseOptionInDropdown('Bandeira', 'Amarela');
+    await pressButtonAndWaitForCommand('Atualizar prévia', 1, fakeServer);
+
+    // Act: another operator discarded the preview first, and the server refuses.
+    fakeServer.refuseLastCommand({
+      code: 'INSTANCE_NOT_FOUND',
+      message: 'O gráfico que você tentou atualizar não está mais no ar.',
+    });
+
+    // Assert: the refusal is shown in the panel.
     await waitFor(() => {
       expect(
-        fakeServer.listCommandsReceived(),
-        'the preview must carry the whole form and the update only the changed flag',
-      ).toEqual([
-        {
-          type: 'previewGraphic',
-          graphicId: 'race-clock',
-          layerId: 'clock',
-          data: {
-            sessionName: 'Enduro de Resistência — Bateria 1',
-            state: 'yellow',
-            clockMode: 'elapsed',
-            referenceTimeMs: 754_000,
-            referenceWallClockMs: Date.parse(momentTheClockWentOnAir),
-            running: false,
-          },
-          takeTimeFieldKeys: [],
-        },
-        {
-          type: 'updateInstanceData',
-          instanceId: idOfTheRaceClockInstanceOnAir,
-          data: { state: 'yellow' },
-          takeTimeFieldKeys: [],
-        },
-      ]);
+        findQuickEditArea().getByText('O gráfico que você tentou atualizar não está mais no ar.'),
+        'the server’s refusal must be shown where the operator pressed',
+      ).toBeVisible();
     });
-    fakeServer.acceptLastCommand();
   });
 });
 
 describe('"Edição rápida" with a loaded preview whose fields could not all be read', () => {
-  it('names those fields and says what "Prévia" and "Colocar no ar" do, with no word of "Atualizar"', () => {
+  it('names those fields and says what "Atualizar prévia" sends', () => {
     // Arrange: a race clock previewed on the clock layer whose data has no clock fields
     // at all (made by an older version of the graphic, say).
-    const previewWithoutClockFields = {
-      ...buildRaceClockInstanceHoldingThisData(
-        { sessionName: 'Enduro de Resistência — Bateria 1', state: 'green' },
-        momentTheClockWentOnAir,
-      ),
-      target: 'preview' as const,
-      status: 'loading' as const,
+    const previewWithoutClockFields: Instance = {
+      ...buildEnduranceStartInPreview(),
+      resolvedData: { sessionName: 'Enduro de Resistência', state: 'green' },
     };
     renderQuickEditPanelWithTheseInstancesOnAir([previewWithoutClockFields]);
 
     // Act: load the preview with "Editar prévia".
     pressEditPreviewOnTheLayerRow('Relógio');
 
-    // Assert: the line names the four fields and speaks of the two buttons a loaded
-    // preview has; "Atualizar" is not offered, so the line must not mention it.
+    // Assert: the line names the four fields and speaks of the one button a preview has.
     expect(
       screen.getByText(/não puderam ser lidos/).textContent,
-      'the line for a loaded preview must say what its own buttons do',
+      'the line for a loaded preview must say what its own button does',
     ).toBe(
-      `Estes campos da prévia não puderam ser lidos e aparecem com o valor inicial: Modo do relógio, ${referenceTimeLabel}, ${referenceMomentLabel}, Relógio correndo. "Prévia" envia o formulário inteiro e substitui a prévia; "Colocar no ar" envia o formulário inteiro ao ar.`,
+      `Estes campos da prévia não puderam ser lidos e aparecem com o valor inicial: Modo do relógio, ${referenceTimeLabel}, ${referenceMomentLabel}, Relógio correndo. "Atualizar prévia" envia só o que você alterar; preencha estes campos para enviá-los.`,
     );
   });
 });
