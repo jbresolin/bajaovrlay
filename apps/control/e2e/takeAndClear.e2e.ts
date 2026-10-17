@@ -7,9 +7,11 @@
  *   server as the only owner of the state. These tests walk that path in a real Chromium
  *   against the real server, the real renderer page and a real SQLite file.
  *
- *   The form they fill is "Edição rápida", in the centre of the page. Nothing in the page
- *   is written for the race clock: the fields are generated from the clock's manifest, so
- *   their labels here are the manifest's titles.
+ *   Since BAJAOVRLAY-37 everything on air comes from an item: the clock is made with
+ *   "Novo gráfico…" of "Edição rápida", which opens the item editor, and put on air with
+ *   "Salvar e disparar"; it is then changed in "Edição rápida" after "Editar" on its
+ *   Camadas row. Nothing in the page is written for the race clock: the fields are
+ *   generated from the clock's manifest, so their labels here are the manifest's titles.
  *
  *   Two renderer pages take part, and they are not equals. The program output is the
  *   page OBS loads, `/render/`; here a second browser page opened at that address stands
@@ -20,7 +22,7 @@
  *   draws and says nothing.
  *
  * What these tests prove:
- *   - With OBS (its stand-in) connected, pressing "Colocar no ar" makes the layer panel
+ *   - With OBS (its stand-in) connected, "Salvar e disparar" makes the layer panel
  *     say "No ar" within 3 seconds and show the clock on the "Relógio" layer, and the
  *     program monitor contains the race clock element, counting on from the typed time
  *     (the server stamps the moment of the take; the page sends no clock of its own).
@@ -64,6 +66,7 @@
 import { type BrowserContext, expect, type Locator, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { openItemEditorWithNewGraphic, saveAndTakeTheItemInTheEditor } from './previewTestSteps';
 
 /** Opens the control page and waits until it says it is connected to the server. */
 async function openControlPageAndWaitUntilConnected(page: Page): Promise<void> {
@@ -84,23 +87,18 @@ function findProgramAndQuickEditArea(page: Page): Locator {
 }
 
 /**
- * Fills "Edição rápida" for the endurance race, 12 min 34 s in, under the green flag,
- * with the clock running. It does not press "Colocar no ar". The moment the time refers
- * to is left as the form opens, "Momento da entrada no ar": the server writes it at the take.
+ * Makes the endurance race clock with "Novo gráfico…" and puts it on air with "Salvar e
+ * disparar": 12 min 34 s in, under the green flag, running. The moment the time refers
+ * to is left as the editor opens, "Momento da entrada no ar": the server writes it at the take.
  */
-async function fillQuickEditForTheEnduranceRace(page: Page): Promise<void> {
-  const quickEditArea = findProgramAndQuickEditArea(page);
-  await expect(
-    quickEditArea.getByRole('combobox', { name: 'Gráfico a editar' }),
-    '"Edição rápida" must open on the race clock, the one graphic the server has',
-  ).toContainText('Relógio de prova');
-  await quickEditArea
-    .getByLabel('Título', { exact: true })
-    .fill('Enduro de Resistência — Bateria 1');
-  await quickEditArea.getByRole('combobox', { name: 'Bandeira', exact: true }).click();
+async function makeAndTakeTheEnduranceRaceClock(page: Page): Promise<void> {
+  const itemEditor = await openItemEditorWithNewGraphic(page, 'Relógio — Bateria 1');
+  await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro de Resistência — Bateria 1');
+  await itemEditor.getByRole('combobox', { name: 'Bandeira', exact: true }).click();
   await page.getByRole('option', { name: 'Verde' }).click();
-  await quickEditArea.getByRole('switch', { name: 'Relógio correndo' }).click();
-  await quickEditArea.getByLabel('Tempo de referência', { exact: true }).fill('12:34');
+  await itemEditor.getByRole('switch', { name: 'Relógio correndo' }).click();
+  await itemEditor.getByLabel('Tempo de referência', { exact: true }).fill('12:34');
+  await saveAndTakeTheItemInTheEditor(itemEditor);
 }
 
 /**
@@ -146,15 +144,14 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
     context,
   }) => {
     // Arrange: OBS is already showing the program output (a second page at /render/
-    // stands in for it), the control page is open and connected, and the form is filled.
+    // stands in for it), and the control page is open and connected.
     const programOutputPage = await openProgramOutputAsObsDoes(context);
     await openControlPageAndWaitUntilConnected(page);
     const clockLayerRow = findClockLayerRow(page);
     await expect(clockLayerRow, 'the clock layer must start empty').toContainText('vazia');
-    await fillQuickEditForTheEnduranceRace(page);
 
-    // Act: put the clock on air.
-    await page.getByRole('button', { name: 'Colocar no ar' }).click();
+    // Act: make the clock as an item and put it on air.
+    await makeAndTakeTheEnduranceRaceClock(page);
 
     // Assert: the layer panel comes to say the clock is "No ar". That word only appears
     // after the program output (the OBS stand-in, never the monitor) has played the
@@ -197,8 +194,10 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
     // is. A handle points at that one element; it is not found again later.
     const raceClockElementBeforeTheUpdate = await raceClockInProgramMonitor.elementHandle();
 
-    // Act: a yellow flag comes out. Change only the flag and press "Atualizar".
+    // Act: a yellow flag comes out. Load the clock with its row's "Editar", change only the
+    // flag and press "Atualizar".
     const quickEditArea = findProgramAndQuickEditArea(page);
+    await clockLayerRow.getByRole('button', { name: 'Editar', exact: true }).click();
     await quickEditArea.getByRole('combobox', { name: 'Bandeira', exact: true }).click();
     await page.getByRole('option', { name: 'Amarela' }).click();
     await quickEditArea.getByRole('button', { name: 'Atualizar', exact: true }).click();
@@ -226,7 +225,7 @@ test.describe('taking, updating and clearing the race clock with OBS connected',
 
     // Act: reload the page, as an operator does when the browser misbehaves, and load
     // the clock into "Edição rápida" with "Editar" on its "Camadas" row (a reloaded page
-    // opens as a new entry: nothing is loaded until the operator says which instance).
+    // opens with nothing loaded until the operator says which instance).
     await page.reload();
     await clockLayerRow.getByRole('button', { name: 'Editar', exact: true }).click();
 
@@ -280,14 +279,13 @@ test.describe('taking the race clock with no OBS connected', () => {
     context,
   }) => {
     // Arrange: only the control page is open, as when the operator starts before OBS
-    // does. Its program monitor is the one renderer page there is. The form is filled.
+    // does. Its program monitor is the one renderer page there is.
     await openControlPageAndWaitUntilConnected(page);
     const clockLayerRow = findClockLayerRow(page);
     await expect(clockLayerRow, 'the clock layer must start empty').toContainText('vazia');
-    await fillQuickEditForTheEnduranceRace(page);
 
-    // Act: put the clock on air.
-    await page.getByRole('button', { name: 'Colocar no ar' }).click();
+    // Act: make the clock as an item and put it on air.
+    await makeAndTakeTheEnduranceRaceClock(page);
 
     // Assert: the clock is drawn in the program monitor, yet the layer says "Carregando".
     await expect(

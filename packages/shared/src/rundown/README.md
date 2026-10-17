@@ -10,6 +10,7 @@ quick-fire panel (`itemHome.ts`; panels are in `../quickFire/`). Start reading a
 panel's items first to last.
 
 One file per command (`createItem.ts`, `updateItemFields.ts`, `deleteItem.ts`,
-`reorderItems.ts`, `moveCursor.ts`, `takeItem.ts`, `takeNext.ts`, `moveItemToHome.ts`),
+`reorderItems.ts`, `moveCursor.ts`, `takeItem.ts`, `takeNext.ts`, `moveItemToHome.ts`,
+`saveOnAirChangesIntoItem.ts`: "Salvar no item", writing what was changed on air into the item),
 all in the `Command` union of `../commands/command.ts`; their rules live in the server's
 reducers. `index.ts` lists every export; the package's `src/index.ts` re-exports it.

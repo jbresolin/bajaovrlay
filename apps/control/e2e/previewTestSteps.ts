@@ -98,3 +98,30 @@ export function findCentreArea(page: Page): Locator {
 export function findClockLayerRow(page: Page): Locator {
   return page.getByRole('region', { name: 'Camadas' }).getByRole('listitem', { name: 'Relógio' });
 }
+
+/**
+ * Opens the item editor for a new graphic from "Edição rápida" ("Novo gráfico…"), the way
+ * an operator puts up something not prepared in the rundown, gives it the label, and
+ * returns the editor so the test can fill the rest of the form.
+ */
+export async function openItemEditorWithNewGraphic(
+  page: Page,
+  itemLabel: string,
+): Promise<Locator> {
+  await findCentreArea(page).getByRole('button', { name: 'Novo gráfico…' }).click();
+  const itemEditor = page.getByRole('region', { name: 'Editor de item' });
+  await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
+  return itemEditor;
+}
+
+/**
+ * Presses "Salvar e disparar" in the item editor and waits for the editor to close, which
+ * it does once the server has accepted both the save and the take.
+ */
+export async function saveAndTakeTheItemInTheEditor(itemEditor: Locator): Promise<void> {
+  await itemEditor.getByRole('button', { name: 'Salvar e disparar' }).click();
+  await expect(
+    itemEditor,
+    'the editor must close once the server has accepted the save and the take',
+  ).toBeHidden();
+}
