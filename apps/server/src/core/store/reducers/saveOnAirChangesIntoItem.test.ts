@@ -187,6 +187,43 @@ function buildTeam42LowerThirdWithNothingChangedOnAir(): Instance {
   return instance;
 }
 
+describe('saveOnAirChangesIntoItem and a live preview of the same item', () => {
+  it('takes the saved fields off the list of that preview too', () => {
+    // Arrange: team 42's lower third changed on air (name and number), and a preview of
+    // the same item with its name changed too.
+    const previewOfTheSameItem: Instance = {
+      ...buildTeam42LowerThirdChangedOnAir(),
+      id: 'f3d1b8a6-4c2e-4e9f-a7b5-0d6c2e8f1a39',
+      target: 'preview',
+      status: 'loading',
+      previewOrigin: 'manual',
+      fieldsChangedOnAir: ['teamName'],
+    };
+    const slices = buildRaceDaySlicesWithTheRaceClockSchema({
+      items: [buildTeam42ShortcutItem(0)],
+      instances: [buildTeam42LowerThirdChangedOnAir(), previewOfTheSameItem],
+    });
+
+    // Act: "Salvar no item" on the program row.
+    const outcome = reduceCommand(
+      slices,
+      buildSaveIntoItem(lowerThirdInstanceId, 'keepMoment'),
+      contextOfTheRundownCommand,
+    );
+
+    // Assert: the item now gives the name, so the preview no longer differs on it.
+    const previewAfter =
+      outcome.status === 'applied'
+        ? outcome.slices.instances.find((instance) => instance.id === previewOfTheSameItem.id)
+        : undefined;
+    expect(previewAfter, 'the preview must still be there').toBeDefined();
+    expect(
+      previewAfter?.fieldsChangedOnAir,
+      'a field saved into the item must leave the list of its live preview too',
+    ).toBeUndefined();
+  });
+});
+
 describe('saveOnAirChangesIntoItem refused', () => {
   const refusalScenarios = [
     // Another operator cleared the layer before the press reached the server.

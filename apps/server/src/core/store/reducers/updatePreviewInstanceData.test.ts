@@ -15,6 +15,10 @@
  *     listed as changed on air. The program output is left alone.
  *   - "Tomar" after it promotes the edited data, with the item's id and the list of
  *     changed fields, so the chip "alterado no ar" shows on program at once.
+ *   - A moment typed into a field the preview had stamped survives "Tomar": the field
+ *     leaves the preview's list of fields to stamp again (gate 2 of PR #15).
+ *   - An automatic preview the operator edited becomes one asked for by hand, so the next
+ *     automatic preview does not throw the edit away (gate 2 of PR #15).
  *   - takeItem of an item whose instance was changed on air puts up a new instance with
  *     the item's own data and no list at all.
  *
@@ -28,11 +32,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildGreenFlagClockOnProgram,
+  buildStartItemOnPreviewWithItsMomentStamped,
   contextOfTheLaterTake,
 } from './previewSlices.testSupport.js';
 import { reduceCommand } from './reduceCommand.js';
 import {
+  buildEnduroStartItem,
   buildRaceDaySlicesWithRundown,
+  buildRaceDaySlicesWithTheRaceClockSchema,
   buildTeam42ShortcutItem,
   contextOfTheRundownCommand,
 } from './rundownSlices.testSupport.js';
@@ -126,6 +133,93 @@ describe('"Atualizar prévia": updateInstanceData of a preview instance', () => 
         },
       ],
     );
+  });
+});
+
+describe('"Atualizar prévia" on fields the preview stamped, and on an automatic preview', () => {
+  it('keeps a moment typed into a stamped field when "Tomar" sends the preview to air', () => {
+    // Arrange: "Largada do enduro" in preview, its reference moment stamped at 14:32:05
+    // and remembered as a field to stamp again at the take. The operator types the
+    // official start, 14:00:00, into that field with "Atualizar prévia".
+    const officialStartInMilliseconds = Date.parse('2026-10-09T14:00:00.000Z');
+    let slices = buildRaceDaySlicesWithTheRaceClockSchema({
+      items: [buildEnduroStartItem(0)],
+      instances: [buildStartItemOnPreviewWithItsMomentStamped()],
+    });
+    const update = reduceCommand(
+      slices,
+      {
+        type: 'updateInstanceData',
+        instanceId: buildStartItemOnPreviewWithItsMomentStamped().id,
+        data: { referenceWallClockMs: officialStartInMilliseconds },
+        takeTimeFieldKeys: [],
+      },
+      contextOfTheRundownCommand,
+    );
+    slices = update.status === 'applied' ? update.slices : slices;
+
+    // Act: "Tomar" on the clock's line under Prévia, fifteen minutes later.
+    const outcome = reduceCommand(
+      slices,
+      { type: 'takePreview', layerId: 'clock' },
+      contextOfTheLaterTake,
+    );
+
+    // Assert: program holds the typed moment, not the moment of the take.
+    expect(outcome.status, 'the edited preview must be taken').toBe('applied');
+    const programClock =
+      outcome.status === 'applied'
+        ? outcome.slices.instances.find((instance) => instance.target === 'program')
+        : undefined;
+    expect(
+      programClock?.resolvedData.referenceWallClockMs,
+      'a moment the operator typed must not be stamped over at the take',
+    ).toBe(officialStartInMilliseconds);
+  });
+
+  it('turns an edited automatic preview into one asked for by hand, which the next automatic preview keeps', () => {
+    // Arrange: team 42's lower third previewed automatically ("Prévia automática"), and
+    // its name changed with "Atualizar prévia".
+    const automaticPreview: Instance = {
+      ...buildTeam42LowerThirdItemOnPreview(),
+      previewOrigin: 'auto',
+    };
+    let slices = buildRaceDaySlicesWithRundown({
+      items: [buildTeam42ShortcutItem(0), buildEnduroStartItem(0)],
+      instances: [automaticPreview],
+    });
+    const update = reduceCommand(
+      slices,
+      {
+        type: 'updateInstanceData',
+        instanceId: previewInstanceId,
+        data: { teamName: 'Baja UFPR Racing' },
+        takeTimeFieldKeys: [],
+      },
+      contextOfTheRundownCommand,
+    );
+    slices = update.status === 'applied' ? update.slices : slices;
+    const originAfterTheEdit = slices.instances.find(
+      (instance) => instance.id === previewInstanceId,
+    )?.previewOrigin;
+
+    // Act: the cursor moves on and "Prévia automática" previews the start of the enduro.
+    const outcome = reduceCommand(
+      slices,
+      { type: 'previewItem', itemId: 'item-largada-do-enduro', origin: 'auto' },
+      contextOfTheLaterTake,
+    );
+
+    // Assert: the edited preview was marked manual, and it is still there with its edit.
+    expect(originAfterTheEdit, 'an edited automatic preview must become manual').toBe('manual');
+    const editedPreviewAfter =
+      outcome.status === 'applied'
+        ? outcome.slices.instances.find((instance) => instance.id === previewInstanceId)
+        : undefined;
+    expect(
+      editedPreviewAfter?.resolvedData.teamName,
+      'the next automatic preview must not throw the operator’s edit away',
+    ).toBe('Baja UFPR Racing');
   });
 });
 
