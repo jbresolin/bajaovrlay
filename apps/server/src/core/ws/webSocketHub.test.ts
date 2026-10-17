@@ -16,7 +16,8 @@
  *   - `hello` and the message of each change carry `serverNowMs`, the time the server's
  *     clock showed when that message was built (the clock is held by the test), and a
  *     `commandResult` does not.
- *   - The sender gets the slices first, then a `commandResult` echoing its requestId.
+ *   - The sender gets the slices first, then a `commandResult` echoing its requestId; the
+ *     one of a createItem also names the item the server made.
  *   - A refused command gets an error `commandResult` in pt-BR.
  *   - A message that is not JSON, or not in the protocol, or a binary frame, gets an
  *     error and a warning in the log, and the socket stays open: a valid command sent
@@ -229,6 +230,39 @@ describe('a command sent over /ws', () => {
       'slices instances eventLog',
       'commandResult',
     ]);
+  });
+
+  it('names the item a createItem made in its commandResult', async () => {
+    // Arrange: a running server and the control page connected.
+    const runningServer = await startServerOnARandomPort();
+    const controlPage = await connectWebSocketTestClient(runningServer.port);
+    await controlPage.waitForMessage('hello', (message) => message.type === 'hello');
+
+    // Act: the item editor creates "Largada do enduro" and waits for the answer.
+    controlPage.sendJson({
+      type: 'command',
+      requestId: 'pedido-3',
+      command: {
+        type: 'createItem',
+        home: { kind: 'rundown', rundownId: 'sessao-principal' },
+        graphicId: 'race-clock',
+        layerId: 'clock',
+        fields: { sessionName: { kind: 'literal', value: 'Enduro de Resistência' } },
+        label: 'Largada do enduro',
+      },
+    });
+    const commandResult = await controlPage.waitForMessage('commandResult', isCommandResultMessage);
+
+    // Assert: ok, naming the id of the item the store now holds, so "Salvar e disparar"
+    // can take that very item next.
+    const itemIdsInTheStore = runningServer.stateStore.readAllSlices().items.map((item) => item.id);
+    expect(itemIdsInTheStore.length, 'exactly one item must have been created').toBe(1);
+    expect(commandResult, 'the answer must name the item the server made').toEqual({
+      type: 'commandResult',
+      requestId: 'pedido-3',
+      ok: true,
+      createdItemId: itemIdsInTheStore[0],
+    });
   });
 
   it('answers a refused command with an error commandResult in pt-BR', async () => {

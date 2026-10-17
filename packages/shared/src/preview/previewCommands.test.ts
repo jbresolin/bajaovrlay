@@ -1,21 +1,20 @@
 /**
- * The seven preview commands: previewItem, previewGraphic, stopPreview, takePreview,
- * previewClearLayer, takeAllPreviews, previewMacro (packages/shared)
+ * The six preview commands: previewItem, stopPreview, takePreview, previewClearLayer,
+ * takeAllPreviews, previewMacro (packages/shared)
  *
  * What this module is for:
  *   Nothing goes to air without being seen first, and Prévia shows exactly what the
- *   screen will look like after the take. The operator puts an item (`previewItem`) or
- *   hand-typed data (`previewGraphic`) on the preview output of a layer, or marks a layer
- *   "will be cleared" (`previewClearLayer`), or previews the end state of a macro
- *   (`previewMacro`); then either sends one layer (`takePreview`) or everything at once
+ *   screen will look like after the take. The operator puts an item (`previewItem`) on
+ *   the preview output of its layer, or marks a layer "will be cleared"
+ *   (`previewClearLayer`), or previews the end state of a macro (`previewMacro`); then either sends one layer (`takePreview`) or everything at once
  *   (`takeAllPreviews`) to the program output, or throws it away (`stopPreview`, for one
  *   layer or for all of them). These schemas say what each command must look like before
  *   the server looks at its state.
  *
  * What these tests prove:
- *   - Each command is accepted in its real shape. previewGraphic gets an empty
- *     `takeTimeFieldKeys` list when it names no field for the server to stamp, and carries
- *     no `target`: it always goes to the preview output.
+ *   - Each command is accepted in its real shape. (previewGraphic, the preview of
+ *     hand-typed data, left the list in BAJAOVRLAY-37; ../commands/command.test.ts proves
+ *     it is refused.)
  *   - previewItem says who asked for the preview in `origin`: 'manual' (a button or
  *     Shift+Space; filled in when left out) or 'auto' ("Prévia automática" following the
  *     cursor). Any other word is refused.
@@ -29,7 +28,7 @@
  *     (NOTHING_IN_PREVIEW) are part of the closed list of codes.
  *
  * What these tests deliberately do not cover:
- *   - Whether the item, graphic or layer exists, and what each command does to the
+ *   - Whether the item or layer exists, and what each command does to the
  *     state; the reducers in apps/server check those.
  *   - The `takeTimeFieldKeys` and the `previewOrigin` an instance on the preview output
  *     remembers; those are fields of the instance, covered in ../slices/instance.test.ts.
@@ -70,42 +69,6 @@ describe('the preview commands in their real shape', () => {
       name: 'accepts previewItem that says it was made by Prévia automática',
       command: { type: 'previewItem', itemId: yellowFlagItemId, origin: 'auto' },
       expectedAfterValidation: { type: 'previewItem', itemId: yellowFlagItemId, origin: 'auto' },
-    },
-    // The "Prévia" button of "Edição rápida", with every field typed by the operator.
-    {
-      name: 'accepts previewGraphic and fills in an empty stamp list',
-      command: {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: { sessionName: 'Enduro de Resistência', state: 'yellow' },
-      },
-      expectedAfterValidation: {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: { sessionName: 'Enduro de Resistência', state: 'yellow' },
-        takeTimeFieldKeys: [],
-      },
-    },
-    // A clock previewed from "Edição rápida" leaves its reference moment to the server,
-    // exactly as a takeGraphic does, and may carry a cleared field as null.
-    {
-      name: 'accepts previewGraphic naming a field the server stamps and a cleared field',
-      command: {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: { sessionName: 'Enduro de Resistência', lapsCompletedByLeader: null },
-        takeTimeFieldKeys: ['referenceWallClockMs'],
-      },
-      expectedAfterValidation: {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: { sessionName: 'Enduro de Resistência', lapsCompletedByLeader: null },
-        takeTimeFieldKeys: ['referenceWallClockMs'],
-      },
     },
     // "Descartar" under the Prévia monitor: the preview of one layer goes away.
     {
@@ -165,29 +128,6 @@ describe('the preview commands in their real shape', () => {
     );
   });
 
-  it('does not let a previewGraphic choose its output', () => {
-    // Arrange: a previewGraphic that asks for the program output, as a confused client might.
-    const previewAskingForProgram = {
-      type: 'previewGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: { sessionName: 'Enduro de Resistência' },
-      target: 'program',
-    };
-
-    // Act: check the command.
-    const result = CommandSchema.safeParse(previewAskingForProgram);
-
-    // Assert: it is accepted, but the `target` is gone: a preview can never go on air.
-    expect(result.success, 'the command itself is well formed').toBe(true);
-    expect(result.data, 'a previewGraphic must not carry a target after validation').toEqual({
-      type: 'previewGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: { sessionName: 'Enduro de Resistência' },
-      takeTimeFieldKeys: [],
-    });
-  });
 });
 
 describe('the preview commands with a part missing', () => {
@@ -204,24 +144,6 @@ describe('the preview commands with a part missing', () => {
       name: 'refuses a previewItem with an origin that is neither auto nor manual, naming origin',
       command: { type: 'previewItem', itemId: yellowFlagItemId, origin: 'automatica' },
       fieldNamedInTheFailure: 'origin',
-    },
-    // A graphic is previewed on a layer, so the command must say which.
-    {
-      name: 'refuses a previewGraphic without a layer, naming layerId',
-      command: { type: 'previewGraphic', graphicId: 'race-clock', data: {} },
-      fieldNamedInTheFailure: 'layerId',
-    },
-    // An empty key names no field: a form that lost a field name must not pass silently.
-    {
-      name: 'refuses a previewGraphic whose stamp list holds an empty key',
-      command: {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: {},
-        takeTimeFieldKeys: [''],
-      },
-      fieldNamedInTheFailure: 'takeTimeFieldKeys',
     },
     // "Every layer" must be said with null; a missing layer is more likely a bug, and a
     // bug must not throw every preview away.

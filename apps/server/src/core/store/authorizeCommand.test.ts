@@ -11,10 +11,13 @@
  *   id>`) may do everything except pretend to be a renderer.
  *
  * What these tests prove:
- *   - The system may send clearLayer and is refused a take, the panic clear, a rundown
- *     take, a screen report and each of the four preview commands.
+ *   - The system may send clearLayer and is refused the panic clear, a rundown take, a
+ *     screen report and each of the three preview commands listed here.
  *   - An operator may send every command that changes what is on air, each of the
- *     seven item and rundown commands and each of the four preview commands.
+ *     seven item and rundown commands, each of the three preview commands listed here,
+ *     and saveOnAirChangesIntoItem ("Salvar no item"), which no renderer, server timer or
+ *     macro runner may send. (takeGraphic and previewGraphic left the command set in
+ *     BAJAOVRLAY-37, so they have no row: the command schema refuses them first.)
  *   - `reportInstanceStatus` is allowed from a renderer and not from an operator.
  *   - A renderer may send no other command: a page that only draws must never be able
  *     to put a graphic on air or take one off, to change the rundown or its items, nor
@@ -35,14 +38,6 @@ const rendererActor = 'renderer:b8d4e6f0-1a2c-4e3b-9d5f-6a7c8e9f0b12';
 // The name the auto-out scheduler signs its clears with; no connection has this role.
 const systemActor = 'sistema:auto-out';
 
-const takeRaceClock: Command = {
-  type: 'takeGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  data: { sessionName: 'Enduro de Resistência' },
-  target: 'program',
-  takeTimeFieldKeys: [],
-};
 const changeFlagToYellow: Command = {
   type: 'updateInstanceData',
   instanceId: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
@@ -85,13 +80,13 @@ const previewYellowFlagItem: Command = {
   itemId: 'item-bandeira-amarela',
   origin: 'manual',
 };
-const previewRaceClock: Command = {
-  type: 'previewGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  data: { sessionName: 'Enduro de Resistência' },
-  takeTimeFieldKeys: [],
+const saveYellowFlagChangesIntoItem: Command = {
+  type: 'saveOnAirChangesIntoItem',
+  instanceId: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
+  wallClockFields: 'keepMoment',
 };
+// The name the runner of one macro signs that macro's steps with.
+const macroRunnerActor = 'sistema:macro:macro-abertura';
 
 const authorisationScenarios: Array<{
   name: string;
@@ -99,13 +94,6 @@ const authorisationScenarios: Array<{
   actor: string;
   expectedIsAllowed: boolean;
 }> = [
-  // The command that puts graphics on air.
-  {
-    name: 'allows takeGraphic from an operator',
-    command: takeRaceClock,
-    actor: operatorActor,
-    expectedIsAllowed: true,
-  },
   // Changing a graphic in place is an operator's job too.
   {
     name: 'allows updateInstanceData from an operator',
@@ -139,13 +127,6 @@ const authorisationScenarios: Array<{
     name: 'refuses reportInstanceStatus from an operator',
     command: reportRaceClockOnAir,
     actor: operatorActor,
-    expectedIsAllowed: false,
-  },
-  // A page that only draws must not be able to put a graphic on air.
-  {
-    name: 'refuses takeGraphic from a renderer',
-    command: takeRaceClock,
-    actor: rendererActor,
     expectedIsAllowed: false,
   },
   // Nor to change what a graphic shows.
@@ -267,13 +248,6 @@ const authorisationScenarios: Array<{
     actor: systemActor,
     expectedIsAllowed: true,
   },
-  // Nothing in the server may put a graphic on air without an operator asking.
-  {
-    name: 'refuses takeGraphic from the system',
-    command: takeRaceClock,
-    actor: systemActor,
-    expectedIsAllowed: false,
-  },
   // The panic button clears every layer; the system only ever clears the one it timed.
   {
     name: 'refuses clearAll from the system',
@@ -302,13 +276,6 @@ const authorisationScenarios: Array<{
     actor: operatorActor,
     expectedIsAllowed: true,
   },
-  // The "Prévia" button of "Edição rápida".
-  {
-    name: 'allows previewGraphic from an operator',
-    command: previewRaceClock,
-    actor: operatorActor,
-    expectedIsAllowed: true,
-  },
   // "Descartar" under the Prévia monitor.
   {
     name: 'allows stopPreview from an operator',
@@ -327,13 +294,6 @@ const authorisationScenarios: Array<{
   {
     name: 'refuses previewItem from a renderer',
     command: previewYellowFlagItem,
-    actor: rendererActor,
-    expectedIsAllowed: false,
-  },
-  // Nor with data of its own.
-  {
-    name: 'refuses previewGraphic from a renderer',
-    command: previewRaceClock,
     actor: rendererActor,
     expectedIsAllowed: false,
   },
@@ -358,13 +318,6 @@ const authorisationScenarios: Array<{
     actor: systemActor,
     expectedIsAllowed: false,
   },
-  // Not with hand-made data either.
-  {
-    name: 'refuses previewGraphic from the system',
-    command: previewRaceClock,
-    actor: systemActor,
-    expectedIsAllowed: false,
-  },
   // An auto-out clears with clearLayer; it never needs to stop a preview by itself.
   {
     name: 'refuses stopPreview from the system',
@@ -377,6 +330,34 @@ const authorisationScenarios: Array<{
     name: 'refuses takePreview from the system',
     command: { type: 'takePreview', layerId: 'clock' },
     actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // "Salvar no item" on a Camadas row is the operator's decision to keep a change.
+  {
+    name: 'allows saveOnAirChangesIntoItem from an operator',
+    command: saveYellowFlagChangesIntoItem,
+    actor: operatorActor,
+    expectedIsAllowed: true,
+  },
+  // A page that only draws must never change what an item stores.
+  {
+    name: 'refuses saveOnAirChangesIntoItem from a renderer',
+    command: saveYellowFlagChangesIntoItem,
+    actor: rendererActor,
+    expectedIsAllowed: false,
+  },
+  // Nor may a server timer: the auto-out only ever clears a layer.
+  {
+    name: 'refuses saveOnAirChangesIntoItem from the system',
+    command: saveYellowFlagChangesIntoItem,
+    actor: systemActor,
+    expectedIsAllowed: false,
+  },
+  // A macro step is a take, a clear or a wait; editing an item is not among them.
+  {
+    name: 'refuses saveOnAirChangesIntoItem from a macro runner',
+    command: saveYellowFlagChangesIntoItem,
+    actor: macroRunnerActor,
     expectedIsAllowed: false,
   },
 ];
