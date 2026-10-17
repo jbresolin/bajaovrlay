@@ -1,7 +1,7 @@
 import type { PreviewClearLayerCommand } from '@bajaovrlay/shared';
 
 import { refuseUnknownLayer } from '../commandRefusals.js';
-import { addPreviewClearedMarker } from './previewClearedMarkers.js';
+import { addPreviewClearedMarker } from './previewMarkersAndDiscards.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**

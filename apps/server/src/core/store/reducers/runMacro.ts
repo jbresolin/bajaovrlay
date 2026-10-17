@@ -4,7 +4,7 @@ import {
   refuseRunWhileAnotherMacroRuns,
   refuseUnknownMacro,
 } from '../quickFireAndMacroRefusals.js';
-import { discardEveryPreviewAndMarker } from './previewClearedMarkers.js';
+import { discardEveryPreviewAndMarker } from './previewMarkersAndDiscards.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**

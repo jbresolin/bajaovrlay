@@ -1,5 +1,5 @@
 import type { Instance } from '@bajaovrlay/shared';
-import { createContext, type ReactNode, useContext, useState } from 'react';
+import { createContext, type ReactNode, useContext, useRef, useState } from 'react';
 
 import type { LostQuickEditTarget, QuickEditTarget } from './quickEditMode';
 
@@ -43,10 +43,29 @@ export type QuickEditChoiceOnPage = QuickEditChoice & {
   /** "Colocar no ar" or "Prévia" from a new entry: let go of an instance that is gone, and its line. */
   forgetTheLostTarget: () => void;
   /**
-   * After the panel's own accepted command made a new instance (its "Colocar no ar", or
-   * the "Prévia" of a loaded preview): edit that one, keeping the form on screen.
+   * What the panel works on at this very moment, for a command to note as it is sent.
+   * Read at the call, not from the last draw, so a change made in the same press counts.
    */
-  editInstanceMadeByThePanel: (instance: Instance) => void;
+  readChoiceAsSentNow: () => QuickEditChoiceAsSent;
+  /**
+   * After the panel's own accepted command made a new instance (its "Colocar no ar", or
+   * the "Prévia" of a loaded preview): edit that one, keeping the form on screen, but only
+   * if the panel still works on what it worked on when the command was sent. Answers
+   * whether it did, so the caller refills the form only then.
+   */
+  editInstanceMadeByThePanel: (instance: Instance, choiceAsSent: QuickEditChoiceAsSent) => boolean;
+};
+
+/**
+ * What a command of the panel notes when it is sent: the form it came from, the instance
+ * loaded then (null for a new entry) and the new-entry layer chosen then. If any of the
+ * three differs when the reply comes, the operator has moved on (another "Editar", a
+ * graphic or layer chosen, "Nova entrada") and the reply must not move the panel.
+ */
+export type QuickEditChoiceAsSent = {
+  formLoadNumber: number;
+  targetInstanceId: string | null;
+  layerIdChosen: string | undefined;
 };
 
 const QuickEditChoiceContext = createContext<QuickEditChoiceOnPage | null>(null);
@@ -70,12 +89,58 @@ function buildTargetOfInstance(instance: Instance): QuickEditTarget {
  * shortcut button never changes what the panel edits.
  */
 export function QuickEditChoiceProvider(props: { children: ReactNode }) {
-  const [quickEditChoice, setQuickEditChoice] = useState<QuickEditChoice>({
+  const choiceAtPageLoad: QuickEditChoice = {
     graphicIdChosen: undefined,
     layerIdChosen: undefined,
     target: null,
     formLoadNumber: 0,
-  });
+  };
+  const [quickEditChoice, setQuickEditChoiceOnScreen] = useState<QuickEditChoice>(choiceAtPageLoad);
+  // The newest choice, also before React draws it, so a command's reply can compare
+  // against what the operator did a moment ago (editInstanceMadeByThePanel). Every change
+  // goes through setQuickEditChoice below, which keeps the two the same.
+  const newestChoice = useRef<QuickEditChoice>(choiceAtPageLoad);
+
+  /** Works out the next choice from the newest one, and shows it. */
+  function setQuickEditChoice(buildNextChoice: (choiceBefore: QuickEditChoice) => QuickEditChoice) {
+    const choiceBefore = newestChoice.current;
+    const nextChoice = buildNextChoice(choiceBefore);
+    if (nextChoice === choiceBefore) {
+      return;
+    }
+    newestChoice.current = nextChoice;
+    setQuickEditChoiceOnScreen(nextChoice);
+  }
+
+  function readChoiceAsSentNow(): QuickEditChoiceAsSent {
+    const choiceNow = newestChoice.current;
+    return {
+      formLoadNumber: choiceNow.formLoadNumber,
+      targetInstanceId: choiceNow.target?.instanceId ?? null,
+      layerIdChosen: choiceNow.layerIdChosen,
+    };
+  }
+
+  // Compare-and-set: the reply moves the panel only if nothing changed since the send.
+  function editInstanceMadeByThePanel(
+    instance: Instance,
+    choiceAsSent: QuickEditChoiceAsSent,
+  ): boolean {
+    const choiceAsItIsNow = readChoiceAsSentNow();
+    const isStillWhatTheCommandWasSentFrom =
+      choiceAsItIsNow.formLoadNumber === choiceAsSent.formLoadNumber &&
+      choiceAsItIsNow.targetInstanceId === choiceAsSent.targetInstanceId &&
+      choiceAsItIsNow.layerIdChosen === choiceAsSent.layerIdChosen;
+    if (!isStillWhatTheCommandWasSentFrom) {
+      return false;
+    }
+    setQuickEditChoice((choiceBefore) => ({
+      ...choiceBefore,
+      layerIdChosen: instance.layerId,
+      target: buildTargetOfInstance(instance),
+    }));
+    return true;
+  }
 
   const quickEditChoiceOnPage: QuickEditChoiceOnPage = {
     ...quickEditChoice,
@@ -117,12 +182,8 @@ export function QuickEditChoiceProvider(props: { children: ReactNode }) {
       }),
     forgetTheLostTarget: () =>
       setQuickEditChoice((choiceBefore) => ({ ...choiceBefore, target: null })),
-    editInstanceMadeByThePanel: (instance) =>
-      setQuickEditChoice((choiceBefore) => ({
-        ...choiceBefore,
-        layerIdChosen: instance.layerId,
-        target: buildTargetOfInstance(instance),
-      })),
+    readChoiceAsSentNow,
+    editInstanceMadeByThePanel,
   };
   return (
     <QuickEditChoiceContext.Provider value={quickEditChoiceOnPage}>

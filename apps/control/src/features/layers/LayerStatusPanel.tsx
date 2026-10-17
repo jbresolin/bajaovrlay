@@ -15,8 +15,8 @@ const relativeTimeRefreshIntervalInMilliseconds = 10_000;
  * Lists every layer, from the bottom of the screen stack to the top, with what is on
  * air on it, and a chip on a layer that also holds something on the preview output.
  * Always visible: the operator must never have to guess what a layer shows.
- * A row with something on air also offers "Prévia: limpar" (`previewClearLayer`), and a
- * marked layer carries the chip "vai limpar".
+ * A row with something on air also offers "Prévia: limpar" (`previewClearLayer`) until
+ * it is marked; a marked layer carries the chip "vai limpar" instead.
  * It only repeats the server's slices; pressing "Limpar" sends `clearLayer` and the row
  * changes when the server's next instances slice arrives, not before.
  */

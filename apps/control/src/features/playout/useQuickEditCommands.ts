@@ -17,7 +17,7 @@ import {
 } from '@/state/ControlPageStateProvider';
 
 import { buildItemSavedFromQuickEdit } from './itemSavedFromQuickEdit';
-import { useQuickEditChoice } from './QuickEditChoiceProvider';
+import { type QuickEditChoiceAsSent, useQuickEditChoice } from './QuickEditChoiceProvider';
 
 /** What the commands of "Edição rápida" are built from. */
 export type QuickEditCommandsOptions = {
@@ -63,7 +63,10 @@ export type QuickEditCommands = {
  *   from that instance again, so every field counts as untouched.
  *
  * After an accepted command the instance is read from the store at that moment: the
- * server sends the changed instances before its "ok" (webSocketHub.ts).
+ * server sends the changed instances before its "ok" (webSocketHub.ts). The move to the
+ * new instance is a compare-and-set against what the panel worked on when the command
+ * was sent (form load number, loaded instance id, new-entry layer): if the operator has
+ * moved on since, for instance with "Editar" on another row, the reply changes nothing.
  *
  * A refusal is shown under these buttons only while it is the one this form's own last
  * command got: the item editor sends `updateInstanceData` too, and the page keeps one
@@ -75,7 +78,8 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
   const { fieldsTheOperatorChanged } = options;
   const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
-  const { editInstanceMadeByThePanel, forgetTheLostTarget } = useQuickEditChoice();
+  const { editInstanceMadeByThePanel, forgetTheLostTarget, readChoiceAsSentNow } =
+    useQuickEditChoice();
   const { openItemEditorForNewItem } = useItemEditorTarget();
   const rundowns = useServerState((state) => state.rundowns);
   const panels = useServerState((state) => state.quickFirePanels);
@@ -113,14 +117,21 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
     );
   }
 
-  // The panel goes on with the instance its own command made, and the form shows it.
-  function editTheInstanceTheCommandMade(output: Instance['target']): void {
+  // The panel goes on with the instance its own command made, and the form shows it,
+  // unless the operator moved on while the reply was on its way (choiceAsSent no longer
+  // matches): then neither the panel nor the form changes.
+  function editTheInstanceTheCommandMade(
+    output: Instance['target'],
+    choiceAsSent: QuickEditChoiceAsSent,
+  ): void {
     const instanceMade = findInstanceTheCommandMade(output);
     if (instanceMade === undefined) {
       return;
     }
-    editInstanceMadeByThePanel(instanceMade);
-    fillFormFromInstance(instanceMade);
+    const isEditingTheInstanceMade = editInstanceMadeByThePanel(instanceMade, choiceAsSent);
+    if (isEditingTheInstanceMade) {
+      fillFormFromInstance(instanceMade);
+    }
   }
 
   // A send from a new entry is the operator acting on the line about an instance that is
@@ -135,6 +146,7 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
 
   async function sendFormAsTake(formValues: SchemaFormValues): Promise<void> {
     forgetTheLostTargetWhenSendingANewEntry();
+    const choiceAsSent = readChoiceAsSentNow();
     const takeData = buildTakeDataFromSchemaForm(description, formValues);
     const wasAcceptedByTheServer = await sendCommand({
       type: 'takeGraphic',
@@ -145,12 +157,13 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
     });
     rememberHowTheCommandEnded(wasAcceptedByTheServer);
     if (wasAcceptedByTheServer) {
-      editTheInstanceTheCommandMade('program');
+      editTheInstanceTheCommandMade('program', choiceAsSent);
     }
   }
 
   async function sendFormAsPreview(formValues: SchemaFormValues): Promise<void> {
     forgetTheLostTargetWhenSendingANewEntry();
+    const choiceAsSent = readChoiceAsSentNow();
     const previewData = buildTakeDataFromSchemaForm(description, formValues);
     const wasAcceptedByTheServer = await sendCommand({
       type: 'previewGraphic',
@@ -162,7 +175,7 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
     rememberHowTheCommandEnded(wasAcceptedByTheServer);
     const wasEditingAPreview = instanceBeingEdited?.target === 'preview';
     if (wasAcceptedByTheServer && wasEditingAPreview) {
-      editTheInstanceTheCommandMade('preview');
+      editTheInstanceTheCommandMade('preview', choiceAsSent);
     }
   }
 

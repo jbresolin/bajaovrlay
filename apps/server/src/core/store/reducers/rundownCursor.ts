@@ -34,6 +34,57 @@ export function moveRundownCursorOnIfItWasOnTakenItem(
 }
 
 /**
+ * The rundowns after ONE command put the items `takenItemIds` on air from Prévia
+ * (takePreview takes one, takeAllPreviews several). For each rundown whose cursor item is
+ * among them, the cursor moves to the following item, and on again while that one was
+ * taken too; past the last item it is left on nothing with the "played to its end" mark.
+ * With one item this is exactly takeItem's rule above; with several it gives what takeItem
+ * of each, in rundown order, would give, whatever order the layers were taken in.
+ * A rundown whose cursor item was not taken comes back as it was, and with no such
+ * rundown the very same array comes back.
+ */
+export function moveRundownCursorsPastItemsTakenTogether(
+  rundowns: Rundown[],
+  items: Item[],
+  takenItemIds: string[],
+): Rundown[] {
+  let rundownsSoFar = rundowns;
+  for (const rundown of rundowns) {
+    rundownsSoFar = moveOneRundownCursorPastItemsTakenTogether(
+      rundownsSoFar,
+      rundown,
+      items,
+      takenItemIds,
+    );
+  }
+  return rundownsSoFar;
+}
+
+/** The step of moveRundownCursorsPastItemsTakenTogether for one rundown. */
+function moveOneRundownCursorPastItemsTakenTogether(
+  rundowns: Rundown[],
+  rundown: Rundown,
+  items: Item[],
+  takenItemIds: string[],
+): Rundown[] {
+  let itemUnderCursor = items.find((candidate) => candidate.id === rundown.cursorItemId);
+  const wasCursorItemTaken =
+    itemUnderCursor !== undefined && takenItemIds.includes(itemUnderCursor.id);
+  if (!wasCursorItemTaken) {
+    return rundowns;
+  }
+  // Walk forward over the items just taken. It ends: each step goes one item further in
+  // a rundown that has a last item.
+  while (itemUnderCursor !== undefined && takenItemIds.includes(itemUnderCursor.id)) {
+    itemUnderCursor = findItemThatFollows(items, itemUnderCursor);
+  }
+  if (itemUnderCursor === undefined) {
+    return leaveRundownCursorPastItsLastItem(rundowns, rundown.id);
+  }
+  return putRundownCursorOnItem(rundowns, rundown.id, itemUnderCursor.id);
+}
+
+/**
  * The rundowns after `leavingItem` left its rundown (deleteItem, or moveItemToHome to
  * another home), worked out while the item is still in `items`. A cursor on the leaving
  * item moves to the item that followed it, or to nothing when it was the last; any

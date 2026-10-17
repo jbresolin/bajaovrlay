@@ -10,7 +10,8 @@
  *
  * What these tests prove:
  *   - A row with something on air offers "Prévia: limpar", which sends previewClearLayer
- *     for that layer and nothing else; an empty row does not offer it.
+ *     for that layer and nothing else; an empty row, and a row already marked, do not
+ *     offer it.
  *   - A marked layer carries the chip "vai limpar" and still names what is on air.
  *   - A refused previewClearLayer is shown under the rows, in the server's words.
  *
@@ -81,6 +82,21 @@ describe('"Prévia: limpar" on the rows of the layer status panel', () => {
     expect(
       lowerThirdRow.queryByRole('button', { name: 'Prévia: limpar' }),
       'an empty layer has nothing a take could clear',
+    ).toBeNull();
+  });
+
+  it('is not offered on a row that is already marked, where pressing it again would do nothing', () => {
+    // Arrange: the clock is on air and its layer is already marked "vai limpar".
+    const slices = buildSlicesWithTheClockOnAirAndTheseMarks(['clock']);
+
+    // Act: draw the panel.
+    renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
+
+    // Assert: the marked row has no "Prévia: limpar".
+    const clockRow = within(screen.getByRole('listitem', { name: 'Relógio' }));
+    expect(
+      clockRow.queryByRole('button', { name: 'Prévia: limpar' }),
+      'a layer already marked must not offer to mark it again',
     ).toBeNull();
   });
 

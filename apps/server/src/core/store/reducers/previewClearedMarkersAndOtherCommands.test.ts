@@ -14,7 +14,9 @@
  *     it sends clearLayer);
  *   - takePreview of a marked layer clears that layer's program output, as clearLayer
  *     would on program, and takes the marker off;
- *   - a take on the program output leaves the marker alone: the take still clears it.
+ *   - a take on the program output of a marked layer (takeGraphic, takeItem, takeNext)
+ *     takes that layer's marker off: something new is on air there, so the plan to
+ *     empty it is stale, and "Tomar tudo" must not clear what was just taken.
  *
  * What these tests prove:
  *   - Each command of the table leaves exactly the markers and instances its row says.
@@ -38,6 +40,8 @@ import {
 } from './previewSlices.testSupport.js';
 import { reduceCommand } from './reduceCommand.js';
 import {
+  buildMainSessionRundown,
+  buildPodiumRundown,
   buildRaceDaySlicesWithRundown,
   buildTeam42LowerThirdTakenByHand,
   buildYellowFlagItem,
@@ -45,10 +49,12 @@ import {
 
 /**
  * Builds the stage of these tests: the green clock and the lower third of team 42 on
- * air, nothing previewed, and both layers marked "will be cleared".
+ * air, nothing previewed, both layers marked "will be cleared", and the main session's
+ * cursor on its one item, "Bandeira amarela" (clock layer).
  */
 function buildStageWithBothLayersOnAirAndMarked() {
   return buildRaceDaySlicesWithRundown({
+    rundowns: [buildMainSessionRundown('item-bandeira-amarela'), buildPodiumRundown(null)],
     items: [buildYellowFlagItem(0)],
     instances: [buildGreenFlagClockOnProgram(), buildTeam42LowerThirdTakenByHand()],
     previewClearedLayerIds: ['clock', 'lower-third'],
@@ -101,17 +107,33 @@ const markerScenarios: Array<{
       'lower-third on preview',
     ],
   },
-  // A take on program does not change what the next take will do to the layer.
+  // A take on program puts something new on the layer the operator planned to empty:
+  // the plan is stale, as after a clear, so "Tomar tudo" must not clear what was just
+  // taken (João, gate 2 of BAJAOVRLAY-36).
   {
-    name: 'a takeGraphic on the program output leaves the marker of its layer',
+    name: 'a takeGraphic on the program output takes the marker off its own layer only',
     command: {
       type: 'takeGraphic',
       graphicId: 'team-lower-third',
       layerId: 'lower-third',
       data: { teamNumber: 7, teamName: 'Mangue Baja' },
     },
-    expectedMarkers: ['clock', 'lower-third'],
+    expectedMarkers: ['clock'],
     expectedLayersAndOutputs: ['clock on program', 'lower-third on program'],
+  },
+  // A rundown row's "No ar" on the clock layer ends in the same take, so it does the same.
+  {
+    name: 'takeItem takes the marker off its own layer only',
+    command: { type: 'takeItem', itemId: 'item-bandeira-amarela' },
+    expectedMarkers: ['lower-third'],
+    expectedLayersAndOutputs: ['lower-third on program', 'clock on program'],
+  },
+  // Space on the main session, whose cursor is on "Bandeira amarela" in this stage.
+  {
+    name: 'takeNext takes the marker off the layer of the item it takes',
+    command: { type: 'takeNext', rundownId: 'sessao-principal' },
+    expectedMarkers: ['lower-third'],
+    expectedLayersAndOutputs: ['lower-third on program', 'clock on program'],
   },
   // "Descartar" on the clock line under Prévia: the marker is what is discarded.
   {

@@ -55,10 +55,11 @@ import {
 import { PreviewedLayersList } from './PreviewedLayersList';
 
 // Saturday of the endurance race: the clock went on air at 9:30, the start was
-// previewed at 9:58 and the interview band at 9:59.
+// previewed at 9:58, the interview band at 9:59, and "Tomar tudo" is pressed at 10:00.
 const momentTheClockWentOnAir = '2026-10-10T12:30:00.000Z';
 const momentTheStartWasPreviewed = '2026-10-10T12:58:00.000Z';
 const momentTheBandWasPreviewed = '2026-10-10T12:59:00.000Z';
+const momentOfTakeAll = '2026-10-10T13:00:00.000Z';
 
 /**
  * What the server sends for these tests: its five layers, the race clock and the lower
@@ -94,6 +95,27 @@ function buildSlicesWithTheClockMarkedAndTheBandPreviewed(): Slices {
     ],
     ['clock'],
   );
+}
+
+/**
+ * What the server makes of a preview at "Tomar tudo": a new program instance with the
+ * preview's graphic, layer, data and item, taken at 10:00, with no preview-only field.
+ */
+function buildProgramInstanceTakenFromPreview(preview: Instance, newInstanceId: string): Instance {
+  const programInstance: Instance = {
+    id: newInstanceId,
+    layerId: preview.layerId,
+    graphicId: preview.graphicId,
+    target: 'program',
+    resolvedData: preview.resolvedData,
+    currentStep: 0,
+    status: 'loading',
+    takenAt: momentOfTakeAll,
+  };
+  if (preview.itemId !== undefined) {
+    programInstance.itemId = preview.itemId;
+  }
+  return programInstance;
 }
 
 /** Reads the layer names of the lines on screen, top line first. */
@@ -245,12 +267,35 @@ describe('"Tomar tudo" and "Descartar tudo" under the "Prévia" monitor', () => 
     );
 
     // Act: press "Tomar tudo"; the server takes both, moves the cursor on to the yellow
-    // flag, sends its slices and answers ok.
+    // flag, sends the one slices message of that change, as the real one does, and
+    // answers ok.
     fireEvent.click(screen.getByRole('button', { name: 'Tomar tudo' }));
     fakeServer.sendMessage({
-      type: 'slice',
-      name: 'rundowns',
-      slice: [buildMainRundown(yellowFlagItemId)],
+      type: 'slices',
+      slices: {
+        instances: [
+          buildProgramInstanceTakenFromPreview(
+            buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed),
+            '0d6f3b2e-8a41-4c97-b5e2-1f9a7c3d6e50-lower-third',
+          ),
+          buildProgramInstanceTakenFromPreview(
+            buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed),
+            '0d6f3b2e-8a41-4c97-b5e2-1f9a7c3d6e50-clock',
+          ),
+        ],
+        rundowns: [buildMainRundown(yellowFlagItemId)],
+        eventLog: [
+          {
+            id: 12,
+            ts: momentOfTakeAll,
+            actor: 'operador:3f2a9c1e',
+            command: 'takeAllPreviews',
+            payload: { type: 'takeAllPreviews' },
+            result: { status: 'ok' },
+          },
+        ],
+      },
+      serverNowMs: Date.parse(momentOfTakeAll),
     });
     fakeServer.acceptLastCommand();
     await letThePageFinishWhatItStarted();

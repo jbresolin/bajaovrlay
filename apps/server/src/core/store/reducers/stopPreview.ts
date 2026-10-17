@@ -4,7 +4,7 @@ import { refuseUnknownLayer } from '../commandRefusals.js';
 import {
   removeEveryPreviewClearedMarker,
   removePreviewClearedMarkerOfLayer,
-} from './previewClearedMarkers.js';
+} from './previewMarkersAndDiscards.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**

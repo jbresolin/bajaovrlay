@@ -25,8 +25,12 @@ export type QuickEditTarget = {
 export type LostQuickEditTarget = {
   layerId: string;
   output: Instance['target'];
-  /** true when another instance now sits on that layer and output; false when it is empty. */
-  wasReplaced: boolean;
+  /**
+   * 'left': gone, and nothing on that layer and output now; 'replaced': gone, and another
+   * instance sits there; 'graphicNoLongerListed': still there, but the server no longer
+   * lists its graphic, whose manifest the form is made from.
+   */
+  whatHappened: 'left' | 'replaced' | 'graphicNoLongerListed';
 };
 
 /** The two things the panel can be doing. */
@@ -35,10 +39,11 @@ export type QuickEditMode =
   | { kind: 'newTake'; lostTarget: LostQuickEditTarget | undefined };
 
 /**
- * Says what the panel is doing. With a target whose id is still in the slice, it edits
- * the newest copy the server sent of that instance. Otherwise it makes a new entry, and
- * for a target that is gone it says whether its place is empty or taken by another
- * instance, as it was when the panel first saw it gone (`lossAsFirstSeen`).
+ * Says what the panel is doing. With a target whose id is still in the slice and whose
+ * graphic is still listed, it edits the newest copy the server sent of that instance.
+ * Otherwise it makes a new entry and says why: the graphic is no longer listed, or the
+ * instance is gone and its place is empty or taken by another instance, as it was when
+ * the panel first saw it (`lossAsFirstSeen`).
  *
  * Deliberate: only the id is looked up. A take or a preview always makes a new instance
  * with a new id, so an instance that replaced the target is never mistaken for it, and
@@ -48,6 +53,7 @@ export type QuickEditMode =
 export function findQuickEditMode(
   target: QuickEditTarget | null,
   instances: Instance[],
+  listedGraphicIds: string[],
 ): QuickEditMode {
   if (target === null) {
     return { kind: 'newTake', lostTarget: undefined };
@@ -61,7 +67,20 @@ export function findQuickEditMode(
 
   const instanceBeingEdited = instances.find((instance) => instance.id === target.instanceId);
   if (instanceBeingEdited !== undefined) {
-    return { kind: 'editingInstance', instanceBeingEdited };
+    const isItsGraphicListed = listedGraphicIds.includes(instanceBeingEdited.graphicId);
+    if (isItsGraphicListed) {
+      return { kind: 'editingInstance', instanceBeingEdited };
+    }
+    // Written down like any loss, so the panel does not go back to the instance by
+    // itself if the graphic is listed again.
+    return {
+      kind: 'newTake',
+      lostTarget: {
+        layerId: target.layerId,
+        output: target.output,
+        whatHappened: 'graphicNoLongerListed',
+      },
+    };
   }
 
   const isAnotherInstanceInItsPlace = instances.some(
@@ -72,7 +91,7 @@ export function findQuickEditMode(
     lostTarget: {
       layerId: target.layerId,
       output: target.output,
-      wasReplaced: isAnotherInstanceInItsPlace,
+      whatHappened: isAnotherInstanceInItsPlace ? 'replaced' : 'left',
     },
   };
 }

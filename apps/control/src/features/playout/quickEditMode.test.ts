@@ -18,6 +18,8 @@
  *     by another instance on the same layer and output gives "replaced", on program and
  *     on preview alike.
  *   - An instance on the OTHER output of the same layer is not a replacement.
+ *   - A loaded instance whose graphic the server no longer lists gives a new entry with
+ *     "graphic no longer listed": the form is made from that graphic's manifest.
  *   - Once the panel has written down what became of its instance (`lossAsFirstSeen`),
  *     that is what it says, whatever comes to the layer afterwards.
  *
@@ -58,6 +60,7 @@ const modeScenarios: Array<{
   name: string;
   target: QuickEditTarget | null;
   instances: Instance[];
+  graphicsListed: string[];
   expectedMode: QuickEditMode;
 }> = [
   // The page has just opened, or the operator pressed "Nova entrada": nothing is loaded.
@@ -65,6 +68,7 @@ const modeScenarios: Array<{
     name: 'makes a new entry with nothing to report when nothing is loaded',
     target: null,
     instances: [buildRaceClockInstance(idOfTheClockOnAir, 'program')],
+    graphicsListed: ['race-clock'],
     expectedMode: { kind: 'newTake', lostTarget: undefined },
   },
   // The everyday case: the clock loaded from its row is still on air.
@@ -72,6 +76,7 @@ const modeScenarios: Array<{
     name: 'edits the loaded instance while it is still on its output',
     target: buildTargetOfTheClock('program'),
     instances: [buildRaceClockInstance(idOfTheClockOnAir, 'program')],
+    graphicsListed: ['race-clock'],
     expectedMode: {
       kind: 'editingInstance',
       instanceBeingEdited: buildRaceClockInstance(idOfTheClockOnAir, 'program'),
@@ -82,9 +87,10 @@ const modeScenarios: Array<{
     name: 'goes back to a new entry, "left", when the loaded instance left the air',
     target: buildTargetOfTheClock('program'),
     instances: [],
+    graphicsListed: ['race-clock'],
     expectedMode: {
       kind: 'newTake',
-      lostTarget: { layerId: 'clock', output: 'program', wasReplaced: false },
+      lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'left' },
     },
   },
   // A take from the rundown put another clock on the same layer: a new id, so a new
@@ -93,9 +99,10 @@ const modeScenarios: Array<{
     name: 'goes back to a new entry, "replaced", when another instance took its place on air',
     target: buildTargetOfTheClock('program'),
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'program')],
+    graphicsListed: ['race-clock'],
     expectedMode: {
       kind: 'newTake',
-      lostTarget: { layerId: 'clock', output: 'program', wasReplaced: true },
+      lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'replaced' },
     },
   },
   // A preview on the same layer is not on air, so it does not replace what was on air.
@@ -103,9 +110,10 @@ const modeScenarios: Array<{
     name: 'says "left", not "replaced", when only a preview is on that layer now',
     target: buildTargetOfTheClock('program'),
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'preview')],
+    graphicsListed: ['race-clock'],
     expectedMode: {
       kind: 'newTake',
-      lostTarget: { layerId: 'clock', output: 'program', wasReplaced: false },
+      lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'left' },
     },
   },
   // The previewed clock was taken or discarded: the preview output of the layer is empty.
@@ -113,9 +121,10 @@ const modeScenarios: Array<{
     name: 'goes back to a new entry, "left", when the loaded preview left the preview output',
     target: buildTargetOfTheClock('preview'),
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'program')],
+    graphicsListed: ['race-clock'],
     expectedMode: {
       kind: 'newTake',
-      lostTarget: { layerId: 'clock', output: 'preview', wasReplaced: false },
+      lostTarget: { layerId: 'clock', output: 'preview', whatHappened: 'left' },
     },
   },
   // Someone previewed another item on the same layer: a new preview took its place.
@@ -123,9 +132,10 @@ const modeScenarios: Array<{
     name: 'goes back to a new entry, "replaced", when another preview took its place',
     target: buildTargetOfTheClock('preview'),
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'preview')],
+    graphicsListed: ['race-clock'],
     expectedMode: {
       kind: 'newTake',
-      lostTarget: { layerId: 'clock', output: 'preview', wasReplaced: true },
+      lostTarget: { layerId: 'clock', output: 'preview', whatHappened: 'replaced' },
     },
   },
   // The clock left the air and the panel wrote that down when it first saw it; a take
@@ -135,22 +145,37 @@ const modeScenarios: Array<{
     name: 'keeps saying "left" as first seen, although another instance came to that layer later',
     target: {
       ...buildTargetOfTheClock('program'),
-      lossAsFirstSeen: { layerId: 'clock', output: 'program', wasReplaced: false },
+      lossAsFirstSeen: { layerId: 'clock', output: 'program', whatHappened: 'left' },
     },
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'program')],
+    graphicsListed: ['race-clock'],
     expectedMode: {
       kind: 'newTake',
-      lostTarget: { layerId: 'clock', output: 'program', wasReplaced: false },
+      lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'left' },
+    },
+  },
+  // The server stopped listing the race clock (its package was removed and the server
+  // restarted): its form cannot be drawn, so the panel lets go of the clock and says why,
+  // although the clock is still on air.
+  {
+    name: 'goes back to a new entry, "graphic no longer listed", when its graphic is gone',
+    target: buildTargetOfTheClock('program'),
+    instances: [buildRaceClockInstance(idOfTheClockOnAir, 'program')],
+    graphicsListed: ['team-lower-third'],
+    expectedMode: {
+      kind: 'newTake',
+      lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'graphicNoLongerListed' },
     },
   },
 ];
 
 describe('what "Edição rápida" is doing', () => {
-  it.each(modeScenarios)('$name', ({ target, instances, expectedMode }) => {
-    // Arrange: what the panel remembers and what the server lists (the row's data).
+  it.each(modeScenarios)('$name', ({ target, instances, graphicsListed, expectedMode }) => {
+    // Arrange: what the panel remembers, the instances and the graphic ids the server
+    // lists (the row's data).
 
     // Act: work out the mode.
-    const mode = findQuickEditMode(target, instances);
+    const mode = findQuickEditMode(target, instances, graphicsListed);
 
     // Assert: the panel edits the instance, or makes a new entry and says why.
     expect(mode, 'the mode must follow the loaded instance, and only that one').toEqual(
@@ -166,9 +191,11 @@ describe('what "Edição rápida" is doing', () => {
     };
 
     // Act: work out the mode from the newer slice.
-    const mode = findQuickEditMode(buildTargetOfTheClock('program'), [
-      clockAfterTheOtherOperatorsChange,
-    ]);
+    const mode = findQuickEditMode(
+      buildTargetOfTheClock('program'),
+      [clockAfterTheOtherOperatorsChange],
+      ['race-clock'],
+    );
 
     // Assert: the panel works on the copy holding the yellow flag.
     expect(mode, 'the panel must edit what is on air now, not what was loaded').toEqual({

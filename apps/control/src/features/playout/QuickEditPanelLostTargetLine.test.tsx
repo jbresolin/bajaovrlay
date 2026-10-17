@@ -19,6 +19,9 @@
  *     takes the line away: the operator has acted on it.
  *   - Decided here: a command sent from elsewhere on the page ("Limpar" on a "Camadas"
  *     row) leaves the line, because only the panel and "Editar" write what it works on.
+ *   - When the server stops listing the edited instance's graphic, the panel lets go of
+ *     the instance with its own line (its form comes from that graphic's manifest), and
+ *     stays a new entry when the graphic is listed again (gate 2 of BAJAOVRLAY-36).
  *
  * What these tests deliberately do not cover:
  *   - How the line first appears, and its words on program and in preview:
@@ -30,11 +33,14 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { chooseOptionInDropdown } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
+import { buildLowerThirdFixtureGraphic } from '@/state/lowerThirdFixtureGraphic.testSupport';
+import { buildRaceClockGraphic } from '@/state/slicesLikeTheServerSends.testSupport';
 
 import {
   buildRaceClockInstanceHoldingThisData,
   pressButtonAndWaitForCommand,
   pressEditOnTheLayerRow,
+  readQuickEditHeader,
   renderQuickEditPanelWithTheseInstancesOnAir,
   waitUntilButtonIsOnAgain,
 } from './operatingTheQuickEditPanel.testSupport';
@@ -189,5 +195,45 @@ describe('the line about an edited instance that is gone', () => {
       screen.getByText(lineSayingTheClockLeftTheAir),
       'only the panel itself and "Editar" may change what the panel says',
     ).toBeInTheDocument();
+  });
+});
+
+describe("the line when the edited instance's graphic is no longer listed", () => {
+  it('lets go of the clock and says why, and stays a new entry when the clock is listed again', () => {
+    // Arrange: the endurance clock on air and loaded with "Editar".
+    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
+      buildEnduranceClockOnTheClockLayer(),
+    ]);
+    pressEditOnTheLayerRow('Relógio');
+
+    // Act: the server stops listing the race clock (only the lower third is left), then
+    // lists it again.
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'graphics',
+      slice: [buildLowerThirdFixtureGraphic()],
+    });
+    const headerWhileTheClockIsNotListed = readQuickEditHeader();
+    const lineWhileTheClockIsNotListed = screen.queryByText(
+      'O gráfico do que você editava na camada Relógio não está mais na lista do servidor. O painel voltou a ser uma nova entrada.',
+    );
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'graphics',
+      slice: [buildRaceClockGraphic(), buildLowerThirdFixtureGraphic()],
+    });
+
+    // Assert: a new entry with a line saying why, and still a new entry afterwards.
+    expect(headerWhileTheClockIsNotListed, 'without its graphic the clock cannot be edited').toBe(
+      'Nova entrada — não altera nenhum item',
+    );
+    expect(
+      lineWhileTheClockIsNotListed,
+      'the panel must say in one line why it let go of the clock',
+    ).not.toBeNull();
+    expect(
+      readQuickEditHeader(),
+      'once let go, the clock is not edited again by itself when its graphic comes back',
+    ).toBe('Nova entrada — não altera nenhum item');
   });
 });

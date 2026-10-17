@@ -79,12 +79,16 @@ function nameInstance(instance: Instance, graphics: Graphic[], items: Item[]): s
 
 /** The one line that says what became of the instance the panel was editing. */
 function describeLostTarget(lostTarget: LostQuickEditTarget, layerName: string): string {
+  if (lostTarget.whatHappened === 'graphicNoLongerListed') {
+    return texts.targetGraphicNoLongerListed(layerName);
+  }
+  const wasReplaced = lostTarget.whatHappened === 'replaced';
   if (lostTarget.output === 'program') {
-    return lostTarget.wasReplaced
+    return wasReplaced
       ? texts.targetReplacedOnProgram(layerName)
       : texts.targetLeftProgram(layerName);
   }
-  return lostTarget.wasReplaced
+  return wasReplaced
     ? texts.targetReplacedInPreview(layerName)
     : texts.targetLeftPreview(layerName);
 }

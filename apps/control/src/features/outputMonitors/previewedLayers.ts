@@ -5,6 +5,12 @@ import type { Graphic, Instance, Item, Layer } from '@bajaovrlay/shared';
  * "will be cleared", and what the take will do to it.
  */
 export type PreviewedLayer = {
+  /**
+   * The React key of the line: `preview:<layer id>:<instance id>` or `mark:<layer id>`.
+   * The layer id alone would collide if a layer ever had both, which the server never
+   * makes but a page must survive; the instance id makes a new preview a new line.
+   */
+  lineKey: string;
   layerId: string;
   /** The layer's name as the layer panel shows it, or its id when the layer is unknown. */
   layerName: string;
@@ -48,6 +54,7 @@ export function listPreviewedLayers(slices: SlicesForPreviewedLayers): Previewed
     const graphic = slices.graphics.find((candidate) => candidate.id === previewInstance.graphicId);
     const graphicNameOrItsId = graphic?.manifest.name ?? previewInstance.graphicId;
     const previewedLayer: PreviewedLayer = {
+      lineKey: `preview:${previewInstance.layerId}:${previewInstance.id}`,
       layerId: previewInstance.layerId,
       layerName: layer?.name ?? previewInstance.layerId,
       previewLabel: itemPreviewed?.label ?? graphicNameOrItsId,
@@ -59,6 +66,7 @@ export function listPreviewedLayers(slices: SlicesForPreviewedLayers): Previewed
   for (const markedLayerId of slices.previewClearedLayerIds) {
     const layer = slices.layers.find((candidate) => candidate.id === markedLayerId);
     const markedLayer: PreviewedLayer = {
+      lineKey: `mark:${markedLayerId}`,
       layerId: markedLayerId,
       layerName: layer?.name ?? markedLayerId,
       previewLabel: '',

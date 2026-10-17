@@ -4,14 +4,15 @@
  * What this module is for:
  *   An item may carry `autoOutAfterMs`, for graphics that should not stay up, such as a
  *   lower third. When such an item is taken, the scheduler waits that long and then
- *   sends an ordinary clearLayer for the item's layer through the store, signed
+ *   sends a clearLayer of the item's layer, aimed at program, through the store, signed
  *   `sistema:auto-out`, so it is validated, saved, logged and broadcast like any other
  *   command. If the graphic leaves its layer first (another take there, a clear), the
  *   wait is called off.
  *
  * What these tests prove (with a real store on a temporary SQLite file, and fake timers):
  *   - The layer is cleared exactly when the delay is over, not before, and the event
- *     log names `sistema:auto-out` as the one who cleared it.
+ *     log names `sistema:auto-out` as the one who cleared it, with a clear of program
+ *     only (autoOutPreviewAndClearAll.test.ts proves a preview there stays).
  *   - A take on the same layer, or a clear, calls the wait off: what the operator put
  *     there afterwards stays on air.
  *   - Taking the same item again starts the wait again from zero.
@@ -143,8 +144,12 @@ describe('auto-out of an item taken with a delay', () => {
     const newestLogEntry = store.readAllSlices().eventLog.at(-1);
     expect(
       [newestLogEntry?.actor, newestLogEntry?.command, newestLogEntry?.payload],
-      'the clear must be an ordinary clearLayer in the event log, signed sistema:auto-out',
-    ).toEqual(['sistema:auto-out', 'clearLayer', { type: 'clearLayer', layerId: 'clock' }]);
+      'the clear must be a clearLayer of program in the event log, signed sistema:auto-out',
+    ).toEqual([
+      'sistema:auto-out',
+      'clearLayer',
+      { type: 'clearLayer', layerId: 'clock', target: 'program' },
+    ]);
   });
 
   it('is called off by a take on the same layer, which then stays on air', () => {

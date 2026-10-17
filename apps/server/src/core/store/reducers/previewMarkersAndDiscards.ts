@@ -2,8 +2,8 @@ import type { Instance } from '@bajaovrlay/shared';
 
 import type { SlicesChangedByCommands } from './reducerTypes.js';
 
-// The small steps every command uses on the "will be cleared" markers
-// (`previewClearedLayerIds`) and on the preview output as a whole. Each one hands back
+// Adding and removing "will be cleared" markers (`previewClearedLayerIds`), and
+// discarding previews: the small steps every command uses on what Prévia shows. Each one hands back
 // the very same array when it changes nothing, so the store saves, logs and broadcasts
 // nothing for a command that leaves the markers or the instances as they were.
 

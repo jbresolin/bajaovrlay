@@ -11,5 +11,5 @@ slices or a pt-BR refusal out; no I/O, no clock, no random ids. Start reading at
 - Panels, moves and macros, via `reduceQuickFireOrMacroCommand.ts`: the panel commands, `moveItemToHome.ts`, the macro
   commands, `runMacro.ts` (records the run only) and `macroRunBookkeeping.ts` (the runner's two commands).
 - Shared: `putItemOnOutput.ts` (takeItem and previewItem), `previewPromotion.ts` (preview or marker to program),
-  `previewClearedMarkers.ts`, `instanceIdForEachLayer.ts`, `itemOrdering.ts`, `itemHomeExistence.ts`, `rundownCursor.ts`.
+  `previewMarkersAndDiscards.ts` (add or remove "vai limpar" marks, empty Prévia), `instanceIdForEachLayer.ts`, `itemOrdering.ts`, `itemHomeExistence.ts`, `rundownCursor.ts`.
 - An unchanged slice comes back as the very same array (how the store knows what to save). Tests: `reduceCommand.test.ts` (on air), a `<command>.test.ts` for every other one.

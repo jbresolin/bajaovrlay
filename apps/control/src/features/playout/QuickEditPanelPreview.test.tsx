@@ -21,6 +21,8 @@
  *   - A field that fails its rule blocks the preview with the message under the field.
  *   - A refused preview is explained next to the buttons, in the server's words.
  *   - While the connection is down the button is disabled.
+ *   - With a loaded preview whose data lacks fields, the line naming them is the preview
+ *     variant: it speaks of "Prévia" and "Colocar no ar", never of "Atualizar".
  *
  * What these tests deliberately do not cover:
  *   - The preview appearing on the page: the lines under the "Prévia" monitor
@@ -47,6 +49,8 @@ import {
   pressButtonAndWaitForCommand,
   pressButtonAndWaitUntilThePressIsOver,
   pressEditOnTheLayerRow,
+  pressEditPreviewOnTheLayerRow,
+  referenceMomentLabel,
   referenceTimeLabel,
   renderQuickEditPanelWithTheseInstancesOnAir,
   waitUntilButtonIsOnAgain,
@@ -233,5 +237,33 @@ describe('the "Prévia" button of "Edição rápida" with the graphic on air', (
       ]);
     });
     fakeServer.acceptLastCommand();
+  });
+});
+
+describe('"Edição rápida" with a loaded preview whose fields could not all be read', () => {
+  it('names those fields and says what "Prévia" and "Colocar no ar" do, with no word of "Atualizar"', () => {
+    // Arrange: a race clock previewed on the clock layer whose data has no clock fields
+    // at all (made by an older version of the graphic, say).
+    const previewWithoutClockFields = {
+      ...buildRaceClockInstanceHoldingThisData(
+        { sessionName: 'Enduro de Resistência — Bateria 1', state: 'green' },
+        momentTheClockWentOnAir,
+      ),
+      target: 'preview' as const,
+      status: 'loading' as const,
+    };
+    renderQuickEditPanelWithTheseInstancesOnAir([previewWithoutClockFields]);
+
+    // Act: load the preview with "Editar prévia".
+    pressEditPreviewOnTheLayerRow('Relógio');
+
+    // Assert: the line names the four fields and speaks of the two buttons a loaded
+    // preview has; "Atualizar" is not offered, so the line must not mention it.
+    expect(
+      screen.getByText(/não puderam ser lidos/).textContent,
+      'the line for a loaded preview must say what its own buttons do',
+    ).toBe(
+      `Estes campos da prévia não puderam ser lidos e aparecem com o valor inicial: Modo do relógio, ${referenceTimeLabel}, ${referenceMomentLabel}, Relógio correndo. "Prévia" envia o formulário inteiro e substitui a prévia; "Colocar no ar" envia o formulário inteiro ao ar.`,
+    );
   });
 });

@@ -7,11 +7,11 @@ import { refusePreviewMacroAtStep, refusePreviewMacroWhileAMacroRuns } from '../
 import { refuseUnknownMacro } from '../quickFireAndMacroRefusals.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import { buildContextForInstanceOnLayer } from './instanceIdForEachLayer.js';
+import { reducePreviewClearLayer } from './previewClearLayer.js';
 import {
   discardEveryPreviewAndMarker,
   removeEveryPreviewInstance,
-} from './previewClearedMarkers.js';
-import { reducePreviewClearLayer } from './previewClearLayer.js';
+} from './previewMarkersAndDiscards.js';
 import { putItemOnOutput } from './putItemOnOutput.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 

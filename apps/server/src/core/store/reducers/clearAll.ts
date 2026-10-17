@@ -1,4 +1,4 @@
-import { removeEveryPreviewClearedMarker } from './previewClearedMarkers.js';
+import { removeEveryPreviewClearedMarker } from './previewMarkersAndDiscards.js';
 import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**

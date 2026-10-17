@@ -62,7 +62,7 @@ export function PreviewedLayersList() {
         >
           {previewedLayers.map((previewedLayer) => (
             <li
-              key={previewedLayer.layerId}
+              key={previewedLayer.lineKey}
               aria-label={previewedLayer.layerName}
               className="flex items-center gap-2"
             >

@@ -190,7 +190,8 @@ export function QuickEditForm(props: QuickEditFormProps) {
       <CardContent className="flex flex-col gap-3">
         {labelsOfFieldsOnAirThatCouldNotBeRead.length > 0 && (
           <p role="status" className="text-sm text-muted-foreground">
-            {ptBR.playout.quickEdit.fieldsOnAirThatCouldNotBeRead(
+            {describeFieldsThatCouldNotBeRead(
+              instanceBeingEdited?.target,
               labelsOfFieldsOnAirThatCouldNotBeRead.join(', '),
             )}
           </p>
@@ -215,4 +216,19 @@ export function QuickEditForm(props: QuickEditFormProps) {
       </CardFooter>
     </form>
   );
+}
+
+/**
+ * The line naming the fields the form could not read from the loaded instance, in the
+ * words of the buttons that instance has: a loaded preview has "Prévia" in place of
+ * "Atualizar", so its line must not promise what "Atualizar" does.
+ */
+function describeFieldsThatCouldNotBeRead(
+  outputOfTheInstance: Instance['target'] | undefined,
+  fieldLabels: string,
+): string {
+  if (outputOfTheInstance === 'preview') {
+    return ptBR.playout.quickEdit.fieldsInPreviewThatCouldNotBeRead(fieldLabels);
+  }
+  return ptBR.playout.quickEdit.fieldsOnAirThatCouldNotBeRead(fieldLabels);
 }

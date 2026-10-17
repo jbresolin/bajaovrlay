@@ -1,9 +1,10 @@
 import { refuseUnknownLayer } from '../commandRefusals.js';
 import { refuseTakeAllAtLayer, refuseTakeAllWithNothingInPreview } from '../previewRefusals.js';
 import { buildContextForInstanceOnLayer } from './instanceIdForEachLayer.js';
-import { removeEveryPreviewClearedMarker } from './previewClearedMarkers.js';
+import { removeEveryPreviewClearedMarker } from './previewMarkersAndDiscards.js';
 import { clearProgramOfMarkedLayer, takePreviewInstanceToProgram } from './previewPromotion.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
+import { moveRundownCursorsPastItemsTakenTogether } from './rundownCursor.js';
 
 /**
  * takeAllPreviews ("Tomar tudo"): makes program what Prévia shows, in one reducer call,
@@ -11,15 +12,20 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * half-taken set. For each layer, lowest z-index first:
  * - a preview instance there is taken exactly as takePreview takes it (the data as seen,
  *   its stamped fields stamped again with this command's moment through the wall-clock
- *   check, the item's id kept, the rundown cursor rule of takeItem);
+ *   check, the item's id kept);
  * - otherwise a "will be cleared" marker there clears that layer's program output.
- * Then no preview and no marker is left.
+ * Then no preview and no marker is left, and the rundown cursors are settled once: a
+ * cursor on an item taken here moves on past every item taken here
+ * (moveRundownCursorsPastItemsTakenTogether), so it is never left on an item just put on
+ * air, and the same set gives the same cursor whatever the layers' z-order.
  *
  * Deliberate: the layers go in z-order, lowest first (layers with the same z-index in
  * the order the layers slice lists them), so the result does not depend on the order the
- * instances happen to sit in. It matters for the cursor: with two previewed items of one
- * rundown, each take judges the cursor as the take before left it, so the cursor moves on
- * once per item taken at the cursor and ends after the last of them in z-order.
+ * instances happen to sit in.
+ * What could go wrong: after macro "Prévia", this ends with the cursor where "Executar"
+ * (runMacro) leaves it only when the macro takes its items in rundown order, each on its
+ * own layer. Executar judges the cursor at each step, so a macro that takes a later item
+ * before the cursor item, or two items on one layer, can leave it elsewhere there.
  * Each new program instance gets the store's new instance id followed by its layer id
  * (instanceIdForEachLayer.ts).
  *
@@ -61,6 +67,7 @@ export function reduceTakeAllPreviews(
     (lowerLayer, higherLayer) => lowerLayer.zIndex - higherLayer.zIndex,
   );
   let slicesSoFar = slices;
+  const takenItemIds: string[] = [];
   for (const layer of layersLowestFirst) {
     const previewInstanceOnLayer = slicesSoFar.instances.find(
       (instance) => instance.layerId === layer.id && instance.target === 'preview',
@@ -77,6 +84,9 @@ export function reduceTakeAllPreviews(
         return { status: 'refused', error: refuseTakeAllAtLayer(layer.name, promotion.error) };
       }
       slicesSoFar = promotion.slices;
+      if (previewInstanceOnLayer.itemId !== undefined) {
+        takenItemIds.push(previewInstanceOnLayer.itemId);
+      }
     } else if (isLayerMarkedToBeCleared) {
       slicesSoFar = clearProgramOfMarkedLayer(slicesSoFar, layer.id);
     }
@@ -85,5 +95,13 @@ export function reduceTakeAllPreviews(
   // Every marker was carried out above; this also drops one that sat beside a preview on
   // the same layer, which no command makes, so that "nothing is left" holds regardless.
   const markersAfter = removeEveryPreviewClearedMarker(slicesSoFar.previewClearedLayerIds);
-  return { status: 'applied', slices: { ...slicesSoFar, previewClearedLayerIds: markersAfter } };
+  const rundownsAfter = moveRundownCursorsPastItemsTakenTogether(
+    slicesSoFar.rundowns,
+    slicesSoFar.items,
+    takenItemIds,
+  );
+  return {
+    status: 'applied',
+    slices: { ...slicesSoFar, previewClearedLayerIds: markersAfter, rundowns: rundownsAfter },
+  };
 }

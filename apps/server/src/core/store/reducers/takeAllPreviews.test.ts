@@ -5,10 +5,11 @@
  *   Prévia shows the screen as it will be after the take. "Tomar tudo" makes program
  *   equal to that in one state change: every preview instance is taken exactly as
  *   takePreview takes it (the data as seen, a stamped field stamped again with this
- *   command's moment, the item's id kept, the rundown cursor rule per item) and every
- *   layer marked "will be cleared" has its program output emptied; then no preview and
- *   no marker is left. The layers are handled one by one in z-order, lowest first, so the
- *   result never depends on the order instances happen to sit in the slice.
+ *   command's moment, the item's id kept) and every layer marked "will be cleared" has
+ *   its program output emptied; then no preview and no marker is left. The layers are
+ *   handled one by one in z-order, lowest first, so the result never depends on the
+ *   order instances happen to sit in the slice. The rundown cursors are settled once,
+ *   after all the takes, so they do not depend on that order either.
  *   A command that makes several instances cannot use the store's one new instance id
  *   for all of them, so each new program instance gets that id followed by a hyphen and
  *   its layer id; one command makes at most one instance per layer and output.
@@ -19,9 +20,11 @@
  *     moment of "Tomar tudo"), the marked layer's program is empty, other layers stay,
  *     and no preview or marker is left.
  *   - With only markers, the marked layers are emptied on program and the rest stays.
- *   - Two previewed items of one rundown, the first at the cursor: the clock (z 30) is
- *     taken before the lower third (z 40), so the cursor moves on twice and ends on the
- *     item after the second.
+ *   - The rundown cursor does not depend on the z-order: after every take, a cursor on
+ *     an item this command took moves on to the following item until it rests on one
+ *     that was not taken (or on nothing, played to the end, past the last item). Rows:
+ *     the cursor item on the upper or the lower layer, the other item taken earlier in
+ *     the rundown, the cursor item not taken, and the last two items taken.
  *   - With no preview and no marker the command is refused with NOTHING_IN_PREVIEW.
  *   - When one layer cannot be taken (its data no longer fits the graphic's schema, or
  *     the layer is no longer listed), the whole command is refused, the message names
@@ -160,34 +163,108 @@ describe('takeAllPreviews that takes the whole set', () => {
 });
 
 describe('takeAllPreviews and the rundown cursor', () => {
-  it('takes the layers lowest first, so two items of one rundown move the cursor on twice', () => {
-    // Arrange: the main session holds "Largada do enduro" (clock), "Pódio — Baja UFPR"
-    // (lower third) and "Bandeira amarela" (clock), the cursor on the first; the first two
-    // are previewed. Taken in z-order, the clock (30) goes before the lower third (40):
-    // the cursor moves from the first item to the second, then from the second to the
-    // third. Taken the other way round it would end on the second, which is why the
-    // order is fixed rather than left to the order of the instances slice.
-    const podiumItemPreviewed = {
-      ...buildTeam42LowerThirdOnPreview(),
-      itemId: 'item-podio-baja-ufpr',
-    };
-    const slicesBefore = buildRaceDaySlicesWithTheRaceClockSchema({
-      rundowns: [buildMainSessionRundown('item-largada-do-enduro'), buildPodiumRundown(null)],
-      items: [buildEnduroStartItem(0), buildPodiumItemInTheMainSession(1), buildYellowFlagItem(2)],
-      // The lower third sits first in the slice on purpose: the slice order must not count.
-      instances: [podiumItemPreviewed, buildStartItemOnPreviewWithItsMomentStamped()],
-    });
+  // "Pódio — Baja UFPR" previewed from its item on the lower third (z 40), and "Largada
+  // do enduro" previewed on the clock (z 30): the lower third is the upper layer.
+  const podiumItemPreviewed = {
+    ...buildTeam42LowerThirdOnPreview(),
+    itemId: 'item-podio-baja-ufpr',
+  };
+  const bothItemsPreviewed = [podiumItemPreviewed, buildStartItemOnPreviewWithItsMomentStamped()];
 
-    // Act: press "Tomar tudo".
-    const outcome = reduceCommand(slicesBefore, { type: 'takeAllPreviews' }, contextOfTheLaterTake);
+  const cursorScenarios = [
+    // The ruling's case: the cursor item is on the upper layer and the next item, also
+    // taken, on the lower one. Promoted lowest first, the old per-item rule left the
+    // cursor on "Largada do enduro", which was already on air.
+    {
+      name: 'moves past both when the cursor item is on the upper layer and the next one taken is lower',
+      itemsOfTheMainSession: [
+        buildPodiumItemInTheMainSession(0),
+        buildEnduroStartItem(1),
+        buildYellowFlagItem(2),
+      ],
+      cursorItemIdBefore: 'item-podio-baja-ufpr',
+      expectedCursor: { cursorItemId: 'item-bandeira-amarela', wasLastItemTakenAtCursor: false },
+    },
+    // The same two items the other way round in z-order: the answer must be the same,
+    // because the cursor no longer depends on the order the layers are promoted in.
+    {
+      name: 'moves past both when the cursor item is on the lower layer and the next one taken is upper',
+      itemsOfTheMainSession: [
+        buildEnduroStartItem(0),
+        buildPodiumItemInTheMainSession(1),
+        buildYellowFlagItem(2),
+      ],
+      cursorItemIdBefore: 'item-largada-do-enduro',
+      expectedCursor: { cursorItemId: 'item-bandeira-amarela', wasLastItemTakenAtCursor: false },
+    },
+    // The lower-layer item sits earlier in the rundown than the cursor: only the cursor
+    // item counts, so the cursor goes to the item after it, as takeItem would.
+    {
+      name: 'moves only past the cursor item when the other item taken is earlier in the rundown',
+      itemsOfTheMainSession: [
+        buildEnduroStartItem(0),
+        buildPodiumItemInTheMainSession(1),
+        buildYellowFlagItem(2),
+      ],
+      cursorItemIdBefore: 'item-podio-baja-ufpr',
+      expectedCursor: { cursorItemId: 'item-bandeira-amarela', wasLastItemTakenAtCursor: false },
+    },
+    // Neither item taken is the plan's next item: both were fired ad hoc, so the cursor
+    // stays where the operator left it.
+    {
+      name: 'leaves the cursor alone when its item is not among those taken',
+      itemsOfTheMainSession: [
+        buildEnduroStartItem(0),
+        buildPodiumItemInTheMainSession(1),
+        buildYellowFlagItem(2),
+      ],
+      cursorItemIdBefore: 'item-bandeira-amarela',
+      expectedCursor: { cursorItemId: 'item-bandeira-amarela', wasLastItemTakenAtCursor: false },
+    },
+    // The two items taken are the last two of the rundown: the cursor runs past the end
+    // and the rundown is marked as played to its end, exactly as takeItem of the last
+    // item at the cursor marks it.
+    {
+      name: 'leaves the cursor on nothing, played to the end, when the last items are taken',
+      itemsOfTheMainSession: [buildPodiumItemInTheMainSession(0), buildEnduroStartItem(1)],
+      cursorItemIdBefore: 'item-podio-baja-ufpr',
+      expectedCursor: { cursorItemId: null, wasLastItemTakenAtCursor: true },
+    },
+  ];
 
-    // Assert: the cursor ends on "Bandeira amarela", the item after the second one taken.
-    const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
-    expect(
-      slicesAfter?.rundowns.find((rundown) => rundown.id === mainSessionRundownId)?.cursorItemId,
-      'the cursor must move on once per item taken at the cursor, lowest layer first',
-    ).toBe('item-bandeira-amarela');
-  });
+  it.each(cursorScenarios)(
+    '$name',
+    ({ itemsOfTheMainSession, cursorItemIdBefore, expectedCursor }) => {
+      // Arrange: the main session with the row's items and cursor, and both items in
+      // Prévia. The lower third sits first in the slice on purpose: the slice order must
+      // not count either.
+      const slicesBefore = buildRaceDaySlicesWithTheRaceClockSchema({
+        rundowns: [buildMainSessionRundown(cursorItemIdBefore), buildPodiumRundown(null)],
+        items: itemsOfTheMainSession,
+        instances: bothItemsPreviewed,
+      });
+
+      // Act: press "Tomar tudo".
+      const outcome = reduceCommand(
+        slicesBefore,
+        { type: 'takeAllPreviews' },
+        contextOfTheLaterTake,
+      );
+
+      // Assert: the cursor is on the first item at or after it that was not just taken.
+      const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
+      const mainSessionAfter = slicesAfter?.rundowns.find(
+        (rundown) => rundown.id === mainSessionRundownId,
+      );
+      expect(
+        {
+          cursorItemId: mainSessionAfter?.cursorItemId,
+          wasLastItemTakenAtCursor: mainSessionAfter?.wasLastItemTakenAtCursor ?? false,
+        },
+        'the cursor must never be left on an item this "Tomar tudo" just put on air',
+      ).toEqual(expectedCursor);
+    },
+  );
 });
 
 describe('takeAllPreviews that must be refused', () => {

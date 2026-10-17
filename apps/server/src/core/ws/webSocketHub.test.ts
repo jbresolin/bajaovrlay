@@ -181,20 +181,23 @@ describe('a command sent over /ws', () => {
     // A take changes the instances and the event log, so it is one slices message.
     await renderer.waitForMessage('slices message of the take', isSlicesMessageWithInstances);
 
-    // Assert: the hello says 14:32:05, and the one message of the take says 14:32:45:
-    // the clock is read for each message, not once at connect.
-    const serverClockOfEachChangeMessage = renderer
-      .readReceivedMessages()
-      .filter((message) => message.type === 'slice' || message.type === 'slices')
-      .map((message) => (message.type === 'slices' ? message.serverNowMs : undefined));
+    // Assert: the hello says 14:32:05, and the one message of the take, the whole slices
+    // message, says 14:32:45: the clock is read for each message, not once at connect.
+    const { instances, eventLog } = runningServer.stateStore.readAllSlices();
     expect(
       hello.type === 'hello' ? hello.serverNowMs : undefined,
       'the hello must carry the server clock of the moment the client connected',
     ).toBe(momentTheServerClockIsHeldAtInMilliseconds);
     expect(
-      serverClockOfEachChangeMessage,
+      renderer.readReceivedMessages().filter((message) => message.type.startsWith('slice')),
       'the one message of the take must carry the server clock of forty seconds later',
-    ).toEqual([momentTheServerClockIsHeldAtInMilliseconds + 40_000]);
+    ).toEqual([
+      {
+        type: 'slices',
+        slices: { instances, eventLog },
+        serverNowMs: momentTheServerClockIsHeldAtInMilliseconds + 40_000,
+      },
+    ]);
   });
 
   it('answers the sender with the slices first, then a commandResult echoing its requestId', async () => {

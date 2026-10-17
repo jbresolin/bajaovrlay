@@ -22,7 +22,10 @@ export type LayerStatusRowProps = {
   graphicName: string;
   currentTime: Date;
   onClearPressed: () => void;
-  /** "Prévia: limpar": mark the layer so Prévia shows it empty. Offered only with something on air. */
+  /**
+   * "Prévia: limpar": mark the layer so Prévia shows it empty. Offered only with something
+   * on air and while the layer is not marked yet.
+   */
   onPreviewClearPressed: () => void;
   /**
    * "Editar": load the instance on air into "Edição rápida". Undefined when there is none,
@@ -40,12 +43,14 @@ export type LayerStatusRowProps = {
  *
  * A layer that holds a preview gets the chip "em prévia" beside its name, and a layer the
  * next take clears gets "vai limpar"; the rest of the row is about the program output.
- * A row with something on air offers "Prévia: limpar", which only marks the layer: the
- * air changes when that preview is taken (features/outputMonitors). "Editar" loads the
- * instance on air into "Edição rápida", and "Editar prévia" the layer's preview; that is
- * the only way an instance gets there (features/playout/QuickEditChoiceProvider.tsx). Deliberate: the preview
- * gets no status badge, because its status stays "loading" for good (the pages that
- * draw previews never report), so a badge would read "Carregando" and mean nothing.
+ * A row with something on air and no mark yet offers "Prévia: limpar", which only marks
+ * the layer: the air changes when that preview is taken (features/outputMonitors).
+ * "Editar" loads the instance on air into "Edição rápida", and "Editar prévia" the
+ * layer's preview; that is the only way an instance gets there
+ * (features/playout/QuickEditChoiceProvider.tsx).
+ * Deliberate: the preview gets no status badge, because its status stays "loading" for
+ * good (the pages that draw previews never report), so a badge would read "Carregando"
+ * and mean nothing.
  */
 export function LayerStatusRow(props: LayerStatusRowProps) {
   const { layer, instanceOnProgram, graphicName, currentTime, onClearPressed } = props;
@@ -88,7 +93,7 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
               {ptBR.layers.editPreviewInstanceButton}
             </Button>
           )}
-          {instanceOnProgram === undefined ? null : (
+          {instanceOnProgram === undefined || props.isMarkedToBeCleared ? null : (
             <ActionButton size="xs" variant="ghost" onClick={props.onPreviewClearPressed}>
               {ptBR.layers.previewClearLayerButton}
             </ActionButton>

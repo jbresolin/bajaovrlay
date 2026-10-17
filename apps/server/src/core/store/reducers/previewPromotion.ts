@@ -1,8 +1,7 @@
 import type { Instance, TakeGraphicCommand } from '@bajaovrlay/shared';
 
-import { removePreviewClearedMarkerOfLayer } from './previewClearedMarkers.js';
+import { removePreviewClearedMarkerOfLayer } from './previewMarkersAndDiscards.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
-import { moveRundownCursorOnIfItWasOnTakenItem } from './rundownCursor.js';
 import { reduceTakeGraphic } from './takeGraphic.js';
 
 /**
@@ -23,11 +22,9 @@ import { reduceTakeGraphic } from './takeGraphic.js';
  * wall-clock moment, and the data must still fit the schema registered now. Checking
  * again cannot put anything on air that was not seen (it can only refuse).
  *
- * The cursor follows takeItem's rule, with takeItem's code: it moves on only if the
- * previewed item is the cursor item in the slices handed in. A preview made by hand, or
- * one whose item was deleted since, leaves the cursor alone.
- *
- * The "will be cleared" markers are not touched here; each caller decides.
+ * Neither the rundown cursors nor the "will be cleared" markers are touched here; each
+ * caller settles them once it has taken everything it takes (takePreview one instance,
+ * takeAllPreviews several), with moveRundownCursorsPastItemsTakenTogether.
  */
 export function takePreviewInstanceToProgram(
   slices: SlicesChangedByCommands,
@@ -64,17 +61,7 @@ export function takePreviewInstanceToProgram(
             : instance,
         );
 
-  // Undefined for a preview made by hand, and for one whose item was deleted since.
-  const previewedItem = slices.items.find((candidate) => candidate.id === previewedItemId);
-  const rundownsAfter =
-    previewedItem === undefined
-      ? slices.rundowns
-      : moveRundownCursorOnIfItWasOnTakenItem(slices.rundowns, slices.items, previewedItem);
-
-  return {
-    status: 'applied',
-    slices: { ...takeOutcome.slices, instances: instancesAfter, rundowns: rundownsAfter },
-  };
+  return { status: 'applied', slices: { ...takeOutcome.slices, instances: instancesAfter } };
 }
 
 /**

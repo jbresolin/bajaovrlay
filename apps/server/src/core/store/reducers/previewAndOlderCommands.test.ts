@@ -4,13 +4,14 @@
  * What this module is for:
  *   clearLayer, clearAll, updateInstanceData and reportInstanceStatus were written when
  *   nothing created preview instances yet. Now previewItem and previewGraphic do, so this
- *   file writes down what each of the four older commands does when it meets one. None
- *   of the four was changed for the preview; these tests keep it that way.
+ *   file writes down what each of the four older commands does when it meets one. Only
+ *   clearLayer was changed since, to give the auto-out a clear of program alone.
  *
  * What these tests prove:
  *   - clearLayer removes what is on a layer on BOTH outputs, the preview included, and
  *     clearAll removes every instance on both outputs (the panic button empties the
- *     Prévia monitor too).
+ *     Prévia monitor too). A clearLayer aimed at program (what the auto-out sends)
+ *     removes only the program instance and keeps the preview.
  *   - updateInstanceData may be sent for a preview instance: the data changes in place,
  *     and the instance stays on the preview output with its id and its list of stamped
  *     fields.
@@ -49,6 +50,18 @@ describe('the clear commands and the preview output', () => {
       command: { type: 'clearLayer' as const, layerId: 'clock' },
       expectedLayersAndOutputs: ['lower-third on program', 'lower-third on preview'],
     },
+    // The auto-out's clear (target 'program', sent only by sistema:auto-out): the item
+    // leaves the air, and the operator's prepared preview on that layer stays, so a set
+    // made ready in Prévia is not silently broken (João, gate 2 of BAJAOVRLAY-36).
+    {
+      name: 'clearLayer aimed at program removes the program instance and keeps the preview',
+      command: { type: 'clearLayer' as const, layerId: 'clock', target: 'program' as const },
+      expectedLayersAndOutputs: [
+        'clock on preview',
+        'lower-third on program',
+        'lower-third on preview',
+      ],
+    },
     // The panic button: nothing stays anywhere, the Prévia monitor included.
     {
       name: 'clearAll removes every instance on both outputs',
@@ -76,7 +89,7 @@ describe('the clear commands and the preview output', () => {
     const instancesAfter = outcome.status === 'applied' ? outcome.slices.instances : undefined;
     expect(
       readLayerAndOutputOfEachInstance(instancesAfter),
-      'a clear must remove previews as well as what is on air',
+      'a clear must remove exactly the instances its row says, on the outputs it names',
     ).toEqual(expectedLayersAndOutputs);
   });
 });

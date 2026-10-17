@@ -14,7 +14,9 @@
  *   - A takeGraphic may name the fields the server stamps with the moment of the take
  *     and may carry a cleared field as null; a field key that is empty or not a text is
  *     refused, naming `takeTimeFieldKeys`.
- *   - clearLayer and clearAll are accepted in their real shape.
+ *   - clearLayer and clearAll are accepted in their real shape, clearLayer also aimed at
+ *     program (the auto-out's clear); a clearLayer aimed at preview is refused, naming
+ *     `target`, because stopPreview is the command for emptying a preview.
  *   - A command type the server does not know is refused, naming `type`.
  *   - A takeGraphic without a layer is refused, naming `layerId`.
  *
@@ -119,6 +121,11 @@ describe('CommandSchema', () => {
       name: 'accepts clearLayer for the lower third',
       command: { type: 'clearLayer', layerId: 'lower-third' },
     },
+    // The auto-out's clear: the program output of one layer only, the preview kept.
+    {
+      name: 'accepts clearLayer aimed at the program output',
+      command: { type: 'clearLayer', layerId: 'lower-third', target: 'program' },
+    },
     // The panic button: everything off air at once.
     { name: 'accepts clearAll with no other field', command: { type: 'clearAll' } },
   ];
@@ -133,6 +140,19 @@ describe('CommandSchema', () => {
     // Assert: it is accepted unchanged.
     expect(result.success, 'a valid clear command must be accepted').toBe(true);
     expect(result.data, 'a clear command has no defaults to fill in').toEqual(command);
+  });
+
+  it('refuses a clearLayer aimed at the preview output, naming target', () => {
+    // Arrange: a clear of the lower third's preview only, which stopPreview already does.
+    const clearOfThePreviewOnly = { type: 'clearLayer', layerId: 'lower-third', target: 'preview' };
+
+    // Act: check it and turn the failure into readable text.
+    const result = CommandSchema.safeParse(clearOfThePreviewOnly);
+    const failureMessage = result.error ? z.prettifyError(result.error) : '';
+
+    // Assert: it is refused and the message points at target.
+    expect(result.success, 'clearLayer may be aimed at program only').toBe(false);
+    expect(failureMessage, 'the failure must name the target field').toContain('target');
   });
 
   it('refuses a command type the server does not know, naming the type field', () => {

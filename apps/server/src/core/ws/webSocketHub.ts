@@ -49,14 +49,13 @@ export type WebSocketHub = { close: () => Promise<void> };
 
 /**
  * Attaches the WebSocket protocol to the HTTP server, on the same port at `/ws`. Each
- * client gets `hello`, then one message per state change: `slice` when one slice changed,
- * `slices` when several did (each carrying `serverNowMs`, the server's clock at the
- * moment the message is built), and a
- * `commandResult` for each message it sends (a command, or a renderer's
- * `instanceStatus`). Every ten seconds every client also gets a `time` message, so a
- * page keeps learning the server's clock while nothing changes. A connection to
- * `/ws?role=renderer` acts as a renderer, any other as an operator. Any other upgrade
- * path is refused.
+ * client gets `hello`, then one message per state change: `slice` when one slice
+ * changed, `slices` when several did (each carrying `serverNowMs`, the server's clock at
+ * the moment the message is built), and a `commandResult` for each message it sends (a
+ * command, or a renderer's `instanceStatus`). Every ten seconds every client also gets a
+ * `time` message, so a page keeps learning the server's clock while nothing changes. A
+ * connection to `/ws?role=renderer` acts as a renderer, any other as an operator. Any
+ * other upgrade path is refused.
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;

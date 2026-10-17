@@ -36,10 +36,17 @@ export const ptBRQuickEdit = {
     `A prévia que você editava na camada ${layerName} saiu. Os valores continuam no formulário, como nova entrada.`,
   targetReplacedInPreview: (layerName: string) =>
     `A prévia que você editava na camada ${layerName} foi substituída. Os valores continuam no formulário, como nova entrada.`,
+  // The instance is still there, but its graphic is no longer listed, so its form
+  // cannot be drawn; the form becomes a new entry of another graphic.
+  targetGraphicNoLongerListed: (layerName: string) =>
+    `O gráfico do que você editava na camada ${layerName} não está mais na lista do servidor. O painel voltou a ser uma nova entrada.`,
 
   // Shown above the form while it could not show everything the instance holds. The
   // server checks the whole result of an "Atualizar", so it refuses one that leaves a
   // required field missing; only "Colocar no ar" gets out of that.
   fieldsOnAirThatCouldNotBeRead: (fieldLabels: string) =>
     `Estes campos do que está no ar não puderam ser lidos e aparecem com o valor inicial: ${fieldLabels}. "Atualizar" envia só o que você alterar, e o servidor recusa enquanto faltar um campo obrigatório no ar; "Colocar no ar" envia o formulário inteiro e substitui o que está no ar.`,
+  // The same, for a loaded preview, whose buttons are "Prévia" and "Colocar no ar".
+  fieldsInPreviewThatCouldNotBeRead: (fieldLabels: string) =>
+    `Estes campos da prévia não puderam ser lidos e aparecem com o valor inicial: ${fieldLabels}. "Prévia" envia o formulário inteiro e substitui a prévia; "Colocar no ar" envia o formulário inteiro ao ar.`,
 } as const;
