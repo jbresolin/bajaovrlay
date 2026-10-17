@@ -62,8 +62,8 @@ const ItemEditorTargetContext = createContext<ItemEditorTargetOnPage | null>(nul
  * Holds what the item editor is open for, for the whole page. The editor is drawn in the
  * rundown column, but the quick-fire strip on the right opens it too ("+ Atalho" and a
  * button's "Editar"), and so do "Edição rápida" ("Novo gráfico…") and the Camadas rows
- * ("Salvar como item"), so the choice cannot live in any of them alone. main.tsx wraps the page in it once; tests do it
- * through controlPageOnFakeServer.testSupport.tsx.
+ * ("Salvar como item"), so the choice cannot live in any of them alone. main.tsx wraps
+ * the page in it once; tests do it through controlPageOnFakeServer.testSupport.tsx.
  */
 export function ItemEditorTargetProvider(props: { children: ReactNode }) {
   const [itemEditorTarget, setItemEditorTarget] = useState<ItemEditorTarget>({ kind: 'closed' });

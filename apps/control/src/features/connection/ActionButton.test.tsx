@@ -3,7 +3,7 @@
  *
  * What this module is for:
  *   The control page only works while it can talk to the server. ActionButton is the
- *   button every command uses ("Colocar no ar", "Limpar", "Limpar tudo"): while the
+ *   button every command uses ("Disparar", "Limpar", "Limpar tudo"): while the
  *   connection is down it disables itself and explains why in a tooltip, so the
  *   operator never presses something that silently does nothing.
  *
@@ -49,12 +49,12 @@ describe('an action button', () => {
     // Arrange: a button that notes each press, on a connected page.
     const notePress = vi.fn();
     renderOnControlPageConnectedToFakeServer(
-      <ActionButton onClick={notePress}>Colocar no ar</ActionButton>,
+      <ActionButton onClick={notePress}>Disparar</ActionButton>,
       buildSlicesWithNothingOnAir(),
     );
 
     // Act: press it.
-    fireEvent.click(screen.getByRole('button', { name: 'Colocar no ar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Disparar' }));
 
     // Assert: the press went through, and no tooltip is shown.
     expect(notePress, 'a connected page must let the press through').toHaveBeenCalledTimes(1);
@@ -79,11 +79,11 @@ describe('an action button', () => {
     async ({ renderOnDisconnectedPage }) => {
       // Arrange: a button that notes each press, on a page in the scenario's state.
       const notePress = vi.fn();
-      renderOnDisconnectedPage(<ActionButton onClick={notePress}>Colocar no ar</ActionButton>);
+      renderOnDisconnectedPage(<ActionButton onClick={notePress}>Disparar</ActionButton>);
 
       // Act: the operator tries to press the button, then rests on it to see why it
       // did nothing (in that order: a click on a tooltip's owner closes the tooltip).
-      const button = screen.getByRole('button', { name: 'Colocar no ar' });
+      const button = screen.getByRole('button', { name: 'Disparar' });
       fireEvent.click(button);
       focusAreaAroundDisabledButton(button);
 
@@ -100,7 +100,7 @@ describe('an action button', () => {
   it('stays disabled on a connected page when its owner disabled it', () => {
     // Arrange: a button its owner switched off (for example, while a form is being sent).
     renderOnControlPageConnectedToFakeServer(
-      <ActionButton disabled>Colocar no ar</ActionButton>,
+      <ActionButton disabled>Disparar</ActionButton>,
       buildSlicesWithNothingOnAir(),
     );
 
@@ -108,7 +108,7 @@ describe('an action button', () => {
 
     // Assert: being connected does not switch it back on.
     expect(
-      screen.getByRole('button', { name: 'Colocar no ar' }),
+      screen.getByRole('button', { name: 'Disparar' }),
       'the connection must never enable a button its owner disabled',
     ).toBeDisabled();
   });

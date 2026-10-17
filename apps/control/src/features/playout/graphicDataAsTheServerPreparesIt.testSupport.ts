@@ -2,9 +2,10 @@
 // so the fake server of the panel tests answers as the real one would. The steps and
 // their order are the server's (apps/server/src/core/store/reducers/
 // updateInstanceData.ts): refuse a field that may not be stamped, take out the fields
-// sent as null, stamp, and run the update rule the graphic's manifest names. The control page may not import server code, so the steps are written
-// again here; the clock's sum and rounding are the one copy in packages/shared. Left out
-// on purpose: the check of the result against the graphic's schema. Nothing keeps state.
+// sent as null, stamp, and run the update rule the graphic's manifest names. The control
+// page may not import server code, so the steps are written again here; the clock's sum and
+// rounding are the one copy in packages/shared. Left out on purpose: the check of the
+// result against the graphic's schema. Nothing keeps state.
 import {
   type ClockReading,
   computeClockTimeMsAtWallClock,

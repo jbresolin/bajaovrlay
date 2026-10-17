@@ -20,8 +20,9 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * preview instance remembers in `takeTimeFieldKeys`): they get the moment of THIS
  * command, so a previewed clock starts counting at the take.
  *
- * The take itself is handed to putGraphicOnOutput, so it is checked like every take: the stamp only goes into a field the graphic's schema marks as a
- * wall-clock moment, and the data must still fit the schema registered now. Checking
+ * The take itself is handed to putGraphicOnOutput, so it is checked like every take: the
+ * stamp only goes into a field the graphic's schema marks as a wall-clock moment, and the
+ * data must still fit the schema registered now. Checking
  * again cannot put anything on air that was not seen (it can only refuse).
  *
  * A preview with no item is refused (INSTANCE_WITHOUT_ITEM): everything on air comes from

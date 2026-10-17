@@ -157,10 +157,11 @@ export function buildSchemaFormValuesFromDataOnAir(
 
   // Deliberate: a key on air that no field describes is kept like an unsupported value,
   // so the form holds everything on air and nothing is taken off air unseen ("Atualizar"
-  // sends only what the operator changed, so it never sends such a key). The server accepts such keys whenever the schema does
-  // not say `additionalProperties: false` (a take sent through the API can carry them).
-  // They are drawn nowhere and are not listed as problems. When the whole schema is
-  // unsupported there are no fields, so this keeps every key of the data.
+  // sends only what the operator changed, so it never sends such a key). The server accepts
+  // such keys whenever the schema does not say `additionalProperties: false` (an item's
+  // typed fields can carry them). They are drawn nowhere and are not listed as problems.
+  // When the whole schema is unsupported there are no fields, so this keeps every key of
+  // the data.
   const keysTheFieldsDescribe = description.fields.map((field) => field.key);
   for (const [key, value] of Object.entries(dataOnAir)) {
     if (!keysTheFieldsDescribe.includes(key)) {

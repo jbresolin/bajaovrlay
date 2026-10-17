@@ -6,10 +6,11 @@
  *   Nothing goes to air without being seen first, and Prévia shows exactly what the
  *   screen will look like after the take. The operator puts an item (`previewItem`) on
  *   the preview output of its layer, or marks a layer "will be cleared"
- *   (`previewClearLayer`), or previews the end state of a macro (`previewMacro`); then either sends one layer (`takePreview`) or everything at once
- *   (`takeAllPreviews`) to the program output, or throws it away (`stopPreview`, for one
- *   layer or for all of them). These schemas say what each command must look like before
- *   the server looks at its state.
+ *   (`previewClearLayer`), or previews the end state of a macro (`previewMacro`); then
+ *   either sends one layer (`takePreview`) or everything at once (`takeAllPreviews`) to the
+ *   program output, or throws it away (`stopPreview`, for one layer or for all of them).
+ *   These schemas say what each command must look like before the server looks at its
+ *   state.
  *
  * What these tests prove:
  *   - Each command is accepted in its real shape. (previewGraphic, the preview of

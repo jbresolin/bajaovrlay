@@ -249,7 +249,7 @@ describe('error messages of a generated form', () => {
     typeIntoField('Nome', '');
     typeIntoField('Tempo no ar', '0:8');
 
-    // Act: check the form, as a press on "Colocar no ar" does.
+    // Act: check the form, as a press on "Atualizar" does.
     const isValid = await formOnPage.checkTheForm();
 
     // Assert: both fields are marked and each message is read out with its control.

@@ -34,9 +34,10 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * it is on air hands back the same slices. It works the same on a preview instance
  * ("Atualizar prévia" of "Edição rápida"), which keeps its id and its item, so "Tomar"
  * sends exactly what was seen: a moment typed into a field the preview had stamped is no
- * longer stamped again at the take, and an edited automatic preview becomes `manual`. On an instance of an item, the fields the operator sent
- * that now differ from what the item gives join the instance's `fieldsChangedOnAir`
- * (fieldsChangedOnAir.ts), which Camadas shows as "alterado no ar".
+ * longer stamped again at the take, and an edited automatic preview becomes `manual`. On an
+ * instance of an item, the fields the operator sent that now differ from what the item
+ * gives join the instance's `fieldsChangedOnAir` (fieldsChangedOnAir.ts), which Camadas
+ * shows as "alterado no ar".
  */
 export function reduceUpdateInstanceData(
   slices: SlicesChangedByCommands,
