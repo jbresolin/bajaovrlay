@@ -4,10 +4,20 @@ import { ptBR } from '@/i18n/ptBR';
 
 /**
  * The chip "alterado no ar" on a Camadas row whose instance no longer shows what its
- * item gives (`fieldsChangedOnAir`), with a tooltip naming those fields by their titles.
- * It can be reached with the Tab key, so the tooltip opens from the keyboard too.
+ * item gives (`fieldsChangedOnAir`), with a tooltip naming those fields by their titles:
+ * "Alterado no ar: …" for the instance on program, "Alterado na prévia: …" for the
+ * layer's preview. It can be reached with the Tab key, so the tooltip opens from the
+ * keyboard too.
  */
-export function ChangedOnAirChip(props: { changedFieldTitles: string[] }) {
+export function ChangedOnAirChip(props: {
+  changedFieldTitles: string[];
+  output: 'program' | 'preview';
+}) {
+  const fieldTitles = props.changedFieldTitles.join(', ');
+  const tooltipText =
+    props.output === 'program'
+      ? ptBR.layers.changedOnAirTooltip(fieldTitles)
+      : ptBR.layers.changedInPreviewTooltip(fieldTitles);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -15,9 +25,7 @@ export function ChangedOnAirChip(props: { changedFieldTitles: string[] }) {
           {ptBR.layers.changedOnAirChip}
         </Badge>
       </TooltipTrigger>
-      <TooltipContent>
-        {ptBR.layers.changedOnAirTooltip(props.changedFieldTitles.join(', '))}
-      </TooltipContent>
+      <TooltipContent>{tooltipText}</TooltipContent>
     </Tooltip>
   );
 }

@@ -6,6 +6,7 @@ import { useQuickEditChoice } from '@/features/playout/QuickEditChoiceProvider';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
 import { nameFieldsByTheirTitles } from './fieldsOfInstanceOnAir';
+import { chooseHomeOfItemSavedFromCamadas } from './itemSavedFromInstanceWithoutItem';
 import { LayerStatusRow } from './LayerStatusRow';
 import { useCurrentTime } from './useCurrentTime';
 import { useSavesFromCamadas } from './useSavesFromCamadas';
@@ -31,11 +32,15 @@ export function LayerStatusPanel() {
   const graphics = useServerState((state) => state.graphics);
   const instances = useServerState((state) => state.instances);
   const items = useServerState((state) => state.items);
+  const rundowns = useServerState((state) => state.rundowns);
+  const panels = useServerState((state) => state.quickFirePanels);
   const previewClearedLayerIds = useServerState((state) => state.previewClearedLayerIds);
   const sendCommand = useSendCommand();
   const { editInstanceInQuickEdit } = useQuickEditChoice();
   const currentTime = useCurrentTime(relativeTimeRefreshIntervalInMilliseconds);
   const saves = useSavesFromCamadas(graphics);
+  // Where "Salvar como item" puts a new item; with no rundown and no panel it is not offered.
+  const homeOfItemSavedFromCamadas = chooseHomeOfItemSavedFromCamadas(rundowns, panels);
 
   // Copied before sorting: the list in the store belongs to the store.
   const layersFromBottomToTop = [...layers].sort(
@@ -55,6 +60,10 @@ export function LayerStatusPanel() {
               (graphic) => graphic.id === instanceOnProgram?.graphicId,
             );
             const keysChangedOnAir = instanceOnProgram?.fieldsChangedOnAir ?? [];
+            const graphicInPreview = graphics.find(
+              (graphic) => graphic.id === instanceInPreview?.graphicId,
+            );
+            const keysChangedInPreview = instanceInPreview?.fieldsChangedOnAir ?? [];
             const isItemOnProgramStored = items.some(
               (item) => item.id === instanceOnProgram?.itemId,
             );
@@ -82,6 +91,13 @@ export function LayerStatusPanel() {
                     : () => editInstanceInQuickEdit(previewInstanceToEdit)
                 }
                 changedFieldTitles={nameFieldsByTheirTitles(graphicOnProgram, keysChangedOnAir)}
+                changedInPreviewFieldTitles={nameFieldsByTheirTitles(
+                  graphicInPreview,
+                  keysChangedInPreview,
+                )}
+                isSaveIntoItemWaiting={
+                  instanceOnProgram !== undefined && saves.isSavingIntoItem(instanceOnProgram.id)
+                }
                 onSaveIntoItemPressed={
                   instanceOnProgram === undefined ||
                   keysChangedOnAir.length === 0 ||
@@ -90,9 +106,11 @@ export function LayerStatusPanel() {
                     : () => saves.pressSaveIntoItem(instanceOnProgram)
                 }
                 onSaveAsItemPressed={
-                  instanceOnProgram === undefined || instanceOnProgram.itemId !== undefined
+                  instanceOnProgram === undefined ||
+                  instanceOnProgram.itemId !== undefined ||
+                  homeOfItemSavedFromCamadas === undefined
                     ? undefined
-                    : () => saves.pressSaveAsItem(instanceOnProgram)
+                    : () => saves.pressSaveAsItem(instanceOnProgram, homeOfItemSavedFromCamadas)
                 }
               />
             );

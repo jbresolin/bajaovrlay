@@ -38,6 +38,8 @@ export const ptBRLayers = {
   // and its tooltip naming the fields by their titles.
   changedOnAirChip: 'alterado no ar',
   changedOnAirTooltip: (fieldTitles: string) => `Alterado no ar: ${fieldTitles}`,
+  // The same chip beside "em prévia", for a preview changed with "Atualizar prévia".
+  changedInPreviewTooltip: (fieldTitles: string) => `Alterado na prévia: ${fieldTitles}`,
   // Keeps the change on air for the next takes of the item.
   saveIntoItemButton: 'Salvar no item',
   // For an instance with no item: opens the item editor filled with what is on air.

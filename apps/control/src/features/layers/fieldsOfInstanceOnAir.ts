@@ -42,3 +42,24 @@ export function listWallClockFieldKeysOfGraphic(graphic: Graphic | undefined): s
   const wallClockFields = describeFieldsOfGraphic(graphic).filter((field) => field.offersTakeTime);
   return wallClockFields.map((field) => field.key);
 }
+
+// The four parts of a clock, as a manifest marks them with `v_baja.role` (the words the
+// server's carryClockForward reads).
+const clockRoles: ReadonlyArray<string | undefined> = [
+  'clockTime',
+  'wallClock',
+  'clockRunning',
+  'clockMode',
+];
+
+/**
+ * The keys of the graphic's clock fields: every field whose `v_baja.role` is clockTime,
+ * wallClock, clockRunning or clockMode. "Salvar no item" saves a clock whole when any of
+ * them changed on air, its moment included, so the clock question is asked then.
+ */
+export function listClockFieldKeysOfGraphic(graphic: Graphic | undefined): string[] {
+  const clockFields = describeFieldsOfGraphic(graphic).filter((field) =>
+    clockRoles.includes(field.role),
+  );
+  return clockFields.map((field) => field.key);
+}

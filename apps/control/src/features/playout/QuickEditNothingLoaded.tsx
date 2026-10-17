@@ -33,11 +33,16 @@ export function QuickEditNothingLoaded(props: { lostTarget: LostQuickEditTarget 
   const { chosenTab } = useQuickFireTabChoice();
   const { stopEditingTheInstance } = useQuickEditChoice();
 
+  // With no panel listed there is nowhere to put the new item, so the button is off.
+  const tabs = listQuickFireTabsInOrder(panels);
+  const panelIdOfTheNewItem = findPanelIdForNewShortcut(tabs, chooseTabShown(tabs, chosenTab));
+
   function openItemEditorOnThePanelShown(): void {
-    const tabs = listQuickFireTabsInOrder(panels);
-    const panelId = findPanelIdForNewShortcut(tabs, chooseTabShown(tabs, chosenTab));
+    if (panelIdOfTheNewItem === undefined) {
+      return;
+    }
     stopEditingTheInstance();
-    openItemEditorForNewItem({ kind: 'quickFire', panelId });
+    openItemEditorForNewItem({ kind: 'quickFire', panelId: panelIdOfTheNewItem });
   }
 
   const { lostTarget } = props;
@@ -49,7 +54,12 @@ export function QuickEditNothingLoaded(props: { lostTarget: LostQuickEditTarget 
         </p>
       )}
       <p className="text-sm text-muted-foreground">{texts.nothingLoadedHint}</p>
-      <Button type="button" variant="outline" onClick={openItemEditorOnThePanelShown}>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={panelIdOfTheNewItem === undefined}
+        onClick={openItemEditorOnThePanelShown}
+      >
         {texts.newGraphicButton}
       </Button>
     </CardContent>
