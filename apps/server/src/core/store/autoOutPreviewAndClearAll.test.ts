@@ -10,11 +10,12 @@
  *   on; a clearAll removes it, so the wait is called off.
  *
  * What these tests prove (with a real store on a temporary SQLite file, and fake timers):
- *   - A take on the same layer for the preview output does not call the wait off: the
- *     program instance leaves exactly when its delay is over, signed `sistema:auto-out`,
- *     and the preview on that layer stays, because the auto-out clears program only.
- *   - clearAll calls the wait off at once: no timer is left, and a graphic taken on that
- *     layer afterwards stays on air.
+ *   - A preview of another item on the same layer (previewItem) does not call the wait
+ *     off: the program instance leaves exactly when its delay is over, signed
+ *     `sistema:auto-out`, and the preview on that layer stays, because the auto-out
+ *     clears program only.
+ *   - clearAll calls the wait off at once: no timer is left, and an item with no delay
+ *     taken on that layer afterwards stays on air.
  *
  * What these tests deliberately do not cover:
  *   - Every other way a wait starts, ends or is called off; autoOut.test.ts covers them.
@@ -27,19 +28,9 @@ import { createLogger } from '../logger/createLogger.js';
 import { startAutoOutScheduler } from './autoOut.js';
 import { createGraphicsFolderWithBuiltRaceClock } from './builtGraphicsFolder.testSupport.js';
 import { createStateStore, type StateStore } from './createStateStore.js';
+import { createRaceClockItemOnTheStore } from './raceClockItemOnTheStore.testSupport.js';
 
 const operatorActor = 'operador:conexao-7';
-const idOfTheSponsorClockItem = 'item-relogio-do-patrocinador';
-
-// The enduro under green flag, 1:05:00 in and running: all six fields the race clock needs.
-const greenFlagEnduroData = {
-  sessionName: 'Enduro de Resistência',
-  state: 'green',
-  clockMode: 'elapsed',
-  referenceTimeMs: 3_900_000,
-  referenceWallClockMs: 1_791_550_800_000,
-  running: true,
-};
 
 // "Relógio do patrocinador": the same clock as an item that leaves by itself after 10 s.
 const createSponsorClockItemThatLeavesAfterTenSeconds = {
@@ -61,10 +52,14 @@ const createSponsorClockItemThatLeavesAfterTenSeconds = {
 
 /**
  * Builds what both tests start from: fake timers (put back after the test), a store on
- * a fresh database, a running scheduler, and the 10 second sponsor clock item already
- * taken on the program output.
+ * a fresh database, a running scheduler, "Relógio do enduro" (a clock item with no
+ * delay) prepared, and the 10 second sponsor clock item already taken on the program
+ * output. Returns the store and the id of the item with no delay.
  */
-function startStoreAndSchedulerWithTheSponsorClockOnAir(): StateStore {
+function startStoreAndSchedulerWithTheSponsorClockOnAir(): {
+  store: StateStore;
+  clockItemWithoutDelayId: string;
+} {
   vi.useFakeTimers();
   onTestFinished(() => {
     vi.useRealTimers();
@@ -73,16 +68,25 @@ function startStoreAndSchedulerWithTheSponsorClockOnAir(): StateStore {
     database: openTemporaryDatabase().database,
     logger: createLogger({ level: 'silent' }),
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
-    createItemId: () => idOfTheSponsorClockItem,
   });
   const scheduler = startAutoOutScheduler({
     stateStore: store,
     logger: createLogger({ level: 'silent' }),
   });
   onTestFinished(() => scheduler.stop());
-  store.applyCommand(createSponsorClockItemThatLeavesAfterTenSeconds, operatorActor);
-  store.applyCommand({ type: 'takeItem', itemId: idOfTheSponsorClockItem }, operatorActor);
-  return store;
+  const clockItemWithoutDelayId = createRaceClockItemOnTheStore(store);
+  const outcomeOfTheSponsorItem = store.applyCommand(
+    createSponsorClockItemThatLeavesAfterTenSeconds,
+    operatorActor,
+  );
+  if (!outcomeOfTheSponsorItem.ok || outcomeOfTheSponsorItem.createdItemId === undefined) {
+    throw new Error('The sponsor clock item was not created, so no test here can run.');
+  }
+  store.applyCommand(
+    { type: 'takeItem', itemId: outcomeOfTheSponsorItem.createdItemId },
+    operatorActor,
+  );
+  return { store, clockItemWithoutDelayId };
 }
 
 /** Reads the layer and output of everything on air, as `layer on output` words. */
@@ -95,17 +99,11 @@ function readLayersAndOutputsOnAir(store: StateStore): string[] {
 describe('auto-out and a take on the preview output of the same layer', () => {
   it('is not called off: the program instance leaves exactly when its delay is over', () => {
     // Arrange: the 10 second item on program, and 4 seconds later the operator checks
-    // another clock on the PREVIEW output of the same layer.
-    const store = startStoreAndSchedulerWithTheSponsorClockOnAir();
+    // the clock item with no delay on the PREVIEW output of the same layer.
+    const { store, clockItemWithoutDelayId } = startStoreAndSchedulerWithTheSponsorClockOnAir();
     vi.advanceTimersByTime(4_000);
     const outcomeOfPreviewTake = store.applyCommand(
-      {
-        type: 'takeGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: greenFlagEnduroData,
-        target: 'preview',
-      },
+      { type: 'previewItem', itemId: clockItemWithoutDelayId },
       operatorActor,
     );
 
@@ -115,25 +113,26 @@ describe('auto-out and a take on the preview output of the same layer', () => {
     const numberOfWaitsJustBeforeTheDelayEnds = vi.getTimerCount();
     vi.advanceTimersByTime(1);
 
-    // Assert: the preview take was accepted and left the item on program with its wait
+    // Assert: the preview was accepted and left the item on program with its wait
     // still running; at 10 seconds the scheduler sent its clearLayer aimed at program,
     // which takes the item off air and leaves the operator's preview where it was.
-    expect(outcomeOfPreviewTake, 'the take on preview must be accepted').toEqual({ ok: true });
+    expect(outcomeOfPreviewTake, 'the preview must be accepted').toEqual({ ok: true });
     expect(
       onAirJustBeforeTheDelayEnds,
-      'the item must still be on program beside the preview take until its delay is over',
+      'the item must still be on program beside the preview until its delay is over',
     ).toEqual(['clock on program', 'clock on preview']);
     expect(
       numberOfWaitsJustBeforeTheDelayEnds,
-      'the wait of the program instance must still be running after the preview take',
+      'the wait of the program instance must still be running after the preview',
     ).toBe(1);
     expect(
       store.readAllSlices().eventLog.map((entry) => [entry.actor, entry.command]),
       'the auto-out must still fire, as a clearLayer signed sistema:auto-out',
     ).toEqual([
       [operatorActor, 'createItem'],
+      [operatorActor, 'createItem'],
       [operatorActor, 'takeItem'],
-      [operatorActor, 'takeGraphic'],
+      [operatorActor, 'previewItem'],
       ['sistema:auto-out', 'clearLayer'],
     ]);
     expect(
@@ -146,22 +145,19 @@ describe('auto-out and a take on the preview output of the same layer', () => {
 describe('auto-out and the panic clear', () => {
   it('is called off by clearAll, so a graphic taken afterwards stays on air', () => {
     // Arrange: the 10 second item on program; after 4 seconds the operator presses the
-    // panic button, and 2 seconds later takes a clock by hand on the same layer.
-    const store = startStoreAndSchedulerWithTheSponsorClockOnAir();
+    // panic button, and 2 seconds later takes the clock item with no delay on that layer.
+    const { store, clockItemWithoutDelayId } = startStoreAndSchedulerWithTheSponsorClockOnAir();
     vi.advanceTimersByTime(4_000);
     store.applyCommand({ type: 'clearAll' }, operatorActor);
     const numberOfWaitsRightAfterClearAll = vi.getTimerCount();
     vi.advanceTimersByTime(2_000);
-    store.applyCommand(
-      { type: 'takeGraphic', graphicId: 'race-clock', layerId: 'clock', data: greenFlagEnduroData },
-      operatorActor,
-    );
+    store.applyCommand({ type: 'takeItem', itemId: clockItemWithoutDelayId }, operatorActor);
 
     // Act: let a whole minute pass, far beyond the 10 seconds of the old wait.
     vi.advanceTimersByTime(60_000);
 
     // Assert: the wait was called off at the clearAll, nobody sent a clearLayer, and the
-    // clock taken by hand is still on air.
+    // clock with no delay is still on air.
     expect(
       numberOfWaitsRightAfterClearAll,
       'clearAll must call the pending auto-out off at once',
@@ -169,7 +165,7 @@ describe('auto-out and the panic clear', () => {
     expect(
       store.readAllSlices().eventLog.map((entry) => entry.command),
       'no clearLayer may be sent once clearAll called the wait off',
-    ).toEqual(['createItem', 'takeItem', 'clearAll', 'takeGraphic']);
+    ).toEqual(['createItem', 'createItem', 'takeItem', 'clearAll', 'takeItem']);
     expect(
       readLayersAndOutputsOnAir(store),
       'the clock taken after the clearAll must not be cleared by the old wait',

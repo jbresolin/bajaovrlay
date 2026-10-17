@@ -36,26 +36,15 @@ import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
+import type { StateStore } from '../store/createStateStore.js';
+import {
+  createRaceClockItemOnTheStore,
+  shortcutsPanelHome,
+} from '../store/raceClockItemOnTheStore.testSupport.js';
 import {
   connectWebSocketTestClient,
   type WebSocketTestClient,
 } from './webSocketTestClient.testSupport.js';
-
-const takeRaceClockCommand = {
-  type: 'takeGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  // All six fields the race clock's manifest schema requires: the enduro under green
-  // flag, 1:05:00 in and running.
-  data: {
-    sessionName: 'Enduro de Resistência',
-    state: 'green',
-    clockMode: 'elapsed',
-    referenceTimeMs: 3_900_000,
-    referenceWallClockMs: 1_791_550_800_000,
-    running: true,
-  },
-};
 
 // A random UUID as node:crypto writes it, which is what the hub uses as connection id.
 const uuidPattern = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
@@ -92,34 +81,52 @@ function isInstancesSliceWithOneInstanceOnAir(message: ServerMessage): boolean {
   );
 }
 
-/** Takes the race clock from the control page and waits until the server has answered. */
-async function takeRaceClockFromControlPage(controlPage: WebSocketTestClient): Promise<void> {
-  controlPage.sendJson({ type: 'command', requestId: 'pedido-1', command: takeRaceClockCommand });
+/**
+ * Prepares the race clock as a button of "Atalhos" straight on the server's store, and
+ * returns the take of it ("No ar"). Called before any client connects, so no client
+ * hears of the createItem. It is the first event-log entry of every test here.
+ */
+function prepareTheTakeOfTheRaceClockItem(stateStore: StateStore) {
+  const raceClockItemId = createRaceClockItemOnTheStore(stateStore, {
+    home: shortcutsPanelHome,
+  });
+  return { type: 'takeItem', itemId: raceClockItemId };
+}
+
+/** Takes the race clock item from the control page and waits until the server has answered. */
+async function takeRaceClockFromControlPage(
+  controlPage: WebSocketTestClient,
+  takeOfTheRaceClockItem: Record<string, unknown>,
+): Promise<void> {
+  controlPage.sendJson({ type: 'command', requestId: 'pedido-1', command: takeOfTheRaceClockItem });
   await controlPage.waitForMessage('take result', isCommandResultMessage);
 }
 
 describe('the actor of a connection', () => {
   it('is operador:<connection id> for a connection to /ws with no role', async () => {
-    // Arrange: a running server and the control page connected to plain /ws.
+    // Arrange: a running server with the race clock item prepared, and the control page
+    // connected to plain /ws.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheRaceClockItem = prepareTheTakeOfTheRaceClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
 
-    // Act: the control page takes the race clock.
-    await takeRaceClockFromControlPage(controlPage);
+    // Act: the control page takes the race clock item.
+    await takeRaceClockFromControlPage(controlPage, takeOfTheRaceClockItem);
 
     // Assert: the event log names an operator with a connection id of its own.
-    const actorOfTheTake = runningServer.stateStore.readAllSlices().eventLog[0]?.actor;
+    const actorOfTheTake = runningServer.stateStore.readAllSlices().eventLog.at(-1)?.actor;
     expect(actorOfTheTake, 'a connection without a role must act as an operator').toMatch(
       new RegExp(`^operador:${uuidPattern}$`),
     );
   });
 
   it('is renderer:<connection id> for a connection to /ws?role=renderer', async () => {
-    // Arrange: a running server with the race clock taken, and a renderer connected.
+    // Arrange: a running server with the race clock item taken, and a renderer connected.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheRaceClockItem = prepareTheTakeOfTheRaceClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     const renderer = await connectWebSocketTestClient(runningServer.port, { role: 'renderer' });
-    await takeRaceClockFromControlPage(controlPage);
+    await takeRaceClockFromControlPage(controlPage, takeOfTheRaceClockItem);
     const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
 
     // Act: the renderer reports the clock on air and waits for the answer.
@@ -131,7 +138,7 @@ describe('the actor of a connection', () => {
     await renderer.waitForMessage('report result', isCommandResultMessage);
 
     // Assert: the report is in the event log under a renderer with its own connection id.
-    const entryOfTheReport = runningServer.stateStore.readAllSlices().eventLog[1];
+    const entryOfTheReport = runningServer.stateStore.readAllSlices().eventLog.at(-1);
     expect(entryOfTheReport?.command, 'the message must run as reportInstanceStatus').toBe(
       'reportInstanceStatus',
     );
@@ -143,11 +150,12 @@ describe('the actor of a connection', () => {
 
 describe('an instanceStatus message', () => {
   it('from a renderer puts the instance on air for every client and is answered ok', async () => {
-    // Arrange: a running server with the race clock taken, and a renderer connected.
+    // Arrange: a running server with the race clock item taken, and a renderer connected.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheRaceClockItem = prepareTheTakeOfTheRaceClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     const renderer = await connectWebSocketTestClient(runningServer.port, { role: 'renderer' });
-    await takeRaceClockFromControlPage(controlPage);
+    await takeRaceClockFromControlPage(controlPage, takeOfTheRaceClockItem);
     const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
 
     // Act: the renderer reports that the clock's play finished.
@@ -181,12 +189,13 @@ describe('an instanceStatus message', () => {
   });
 
   it('from any connection that says ?role=renderer is applied, because nothing proves the role', async () => {
-    // Arrange: a running server with the race clock taken, and no renderer page at all:
+    // Arrange: a running server with the race clock item taken, and no renderer page at all:
     // no OBS is open. A script on someone's laptop in the paddock connects to /ws and
     // simply writes role=renderer in the address, as anyone on the network can.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheRaceClockItem = prepareTheTakeOfTheRaceClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
-    await takeRaceClockFromControlPage(controlPage);
+    await takeRaceClockFromControlPage(controlPage, takeOfTheRaceClockItem);
     const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
     const scriptClaimingToBeRenderer = await connectWebSocketTestClient(runningServer.port, {
       role: 'renderer',
@@ -216,12 +225,13 @@ describe('an instanceStatus message', () => {
   });
 
   it('from a renderer about an instance already cleared is answered ok and leaves no event-log entry', async () => {
-    // Arrange: a running server and a renderer; the operator takes the race clock and
+    // Arrange: a running server and a renderer; the operator takes the race clock item and
     // clears its layer straight away, before the clock's play animation has finished.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheRaceClockItem = prepareTheTakeOfTheRaceClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     const renderer = await connectWebSocketTestClient(runningServer.port, { role: 'renderer' });
-    await takeRaceClockFromControlPage(controlPage);
+    await takeRaceClockFromControlPage(controlPage, takeOfTheRaceClockItem);
     const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
     controlPage.sendJson({
       type: 'command',
@@ -241,7 +251,8 @@ describe('an instanceStatus message', () => {
     });
     const result = await renderer.waitForMessage('report result', isCommandResultMessage);
 
-    // Assert: answered ok, and the event log holds only what the operator did.
+    // Assert: answered ok, and the event log holds only the item prepared and what the
+    // operator did.
     expect(result, 'a late report is normal and must not come back as an error').toEqual({
       type: 'commandResult',
       requestId: null,
@@ -250,7 +261,7 @@ describe('an instanceStatus message', () => {
     expect(
       runningServer.stateStore.readAllSlices().eventLog.map((entry) => entry.command),
       'a quick clear must not leave a failed reportInstanceStatus in the event log',
-    ).toEqual(['takeGraphic', 'clearLayer']);
+    ).toEqual(['createItem', 'takeItem', 'clearLayer']);
     expect(
       runningServer.stateStore.readAllSlices().instances,
       'the cleared clock must not come back',
@@ -258,10 +269,11 @@ describe('an instanceStatus message', () => {
   });
 
   it('from an operator connection is answered NOT_ALLOWED in pt-BR', async () => {
-    // Arrange: a running server with the race clock taken by the control page.
+    // Arrange: a running server with the race clock item taken by the control page.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheRaceClockItem = prepareTheTakeOfTheRaceClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
-    await takeRaceClockFromControlPage(controlPage);
+    await takeRaceClockFromControlPage(controlPage, takeOfTheRaceClockItem);
     const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
 
     // Act: the control page's own connection claims the clock is on air.

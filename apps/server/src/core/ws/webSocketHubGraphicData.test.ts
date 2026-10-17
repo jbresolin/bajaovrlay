@@ -3,24 +3,27 @@
  * place when it does (apps/server)
  *
  * What this module is for:
- *   The control page puts the race clock on air with `takeGraphic` and changes it while
- *   it is on air with `updateInstanceData`. The server checks the data of both against
- *   the schema in the graphic's manifest before anything changes, so a wrong payload is
- *   answered to its sender in pt-BR, naming the field, and never reaches the screen.
+ *   The control page puts the race clock on air with `takeItem` (of an item prepared
+ *   earlier) and changes it while it is on air with `updateInstanceData`. The server
+ *   checks the data of both against the schema in the graphic's manifest before anything
+ *   changes, so wrong data is answered to its sender in pt-BR, naming the field, and
+ *   never reaches the screen.
  *
  * What these tests prove (with a real server on a random port and a real SQLite file):
- *   - A take whose data misses a required field, carries a field the graphic does not
- *     have, or carries a value the graphic does not accept is answered
- *     INVALID_GRAPHIC_DATA with a pt-BR message naming that field, and nothing goes on air.
+ *   - A take of an item whose stored fields miss a required field, carry a field the
+ *     graphic does not have, or carry a value the graphic does not accept is answered
+ *     INVALID_GRAPHIC_DATA with a pt-BR message naming that field, and nothing goes on
+ *     air. (createItem does not check field values against the graphic, so such an item
+ *     can be stored; the take is where the check happens.)
  *   - An `updateInstanceData` carrying only the flag reaches another client as an
- *     instances slice in which the instance has the same id, the new flag and every
- *     other field as it was taken.
+ *     instances slice in which the instance has the same id, the new flag, every other
+ *     field as it was taken, and the flag listed as changed on air.
  *   - An update whose value the graphic does not accept is refused the same way, and the
  *     data on air stays as it was.
  *
  * What these tests deliberately do not cover:
  *   - Every rule of the check itself (graphicDataValidation.test.ts) and of the two
- *     reducers (reducers/takeGraphicData.test.ts, reducers/updateInstanceData.test.ts).
+ *     reducers (reducers/putGraphicOnOutputData.test.ts, reducers/updateInstanceData.test.ts).
  *   - The rest of the hub (webSocketHub.test.ts) and who may send what
  *     (webSocketHubRoles.test.ts).
  */
@@ -32,6 +35,12 @@ import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
+import type { StateStore } from '../store/createStateStore.js';
+import {
+  buildLiteralItemFieldsFromData,
+  createRaceClockItemOnTheStore,
+  shortcutsPanelHome,
+} from '../store/raceClockItemOnTheStore.testSupport.js';
 import { connectWebSocketTestClient } from './webSocketTestClient.testSupport.js';
 
 // All six fields the race clock's manifest schema requires: the enduro under green flag,
@@ -63,9 +72,17 @@ async function startServerOnARandomPort() {
   return runningServer;
 }
 
-/** The takeGraphic command that puts the race clock on the clock layer with this data. */
-function buildTakeRaceClockCommand(data: Record<string, unknown>) {
-  return { type: 'takeGraphic', graphicId: 'race-clock', layerId: 'clock', data };
+/**
+ * Prepares a race clock item holding this data (every field typed in) as a button of
+ * "Atalhos", straight on the server's store, and returns the take of it for a client to
+ * send. Called before any client connects, so no client hears of the createItem.
+ */
+function prepareTheTakeOfAClockItemHolding(stateStore: StateStore, data: Record<string, unknown>) {
+  const clockItemId = createRaceClockItemOnTheStore(stateStore, {
+    fields: buildLiteralItemFieldsFromData(data),
+    home: shortcutsPanelHome,
+  });
+  return { type: 'takeItem', itemId: clockItemId };
 }
 
 /** True for any `commandResult` message. */
@@ -81,7 +98,7 @@ function isInstancesSliceWithTheYellowFlag(message: ServerMessage): boolean {
 }
 
 const invalidTakeScenarios = [
-  // The operator's page (or a script) forgot the flag: the graphic cannot draw its band.
+  // The item was saved without the flag: the graphic cannot draw its band.
   {
     name: 'refuses a take that misses a required field, naming the field',
     data: {
@@ -94,7 +111,7 @@ const invalidTakeScenarios = [
     expectedMessage:
       'Dados inválidos para o gráfico "race-clock": o campo "state" é obrigatório e não foi enviado.',
   },
-  // A typo in a field name must not go on air silently ignored.
+  // A typo in a field name of the item must not go on air silently ignored.
   {
     name: 'refuses a take with a field the graphic does not have, naming the field',
     data: { ...raceClockDataUnderGreenFlag, voltasDoLider: 12 },
@@ -110,17 +127,22 @@ const invalidTakeScenarios = [
   },
 ];
 
-describe('a takeGraphic with invalid data sent over /ws', () => {
+describe('a takeItem of an item with invalid data sent over /ws', () => {
   it.each(invalidTakeScenarios)('$name', async ({ data, expectedMessage }) => {
-    // Arrange: a running server and the control page connected.
+    // Arrange: a running server holding a clock item with the wrong data, and the control
+    // page connected.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheWrongClockItem = prepareTheTakeOfAClockItemHolding(
+      runningServer.stateStore,
+      data,
+    );
     const controlPage = await connectWebSocketTestClient(runningServer.port);
 
-    // Act: take the race clock with the wrong data and wait for the answer.
+    // Act: take the clock item and wait for the answer.
     controlPage.sendJson({
       type: 'command',
       requestId: 'pedido-1',
-      command: buildTakeRaceClockCommand(data),
+      command: takeOfTheWrongClockItem,
     });
     const commandResult = await controlPage.waitForMessage('commandResult', isCommandResultMessage);
 
@@ -141,14 +163,18 @@ describe('a takeGraphic with invalid data sent over /ws', () => {
 describe('an updateInstanceData sent over /ws', () => {
   it('changes only the flag for every client and keeps the instance id', async () => {
     // Arrange: a running server, the control page and a second client (the renderer),
-    // with the race clock taken under the green flag.
+    // with the race clock item taken under the green flag.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheGreenFlagClock = prepareTheTakeOfAClockItemHolding(
+      runningServer.stateStore,
+      raceClockDataUnderGreenFlag,
+    );
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     const renderer = await connectWebSocketTestClient(runningServer.port, { role: 'renderer' });
     controlPage.sendJson({
       type: 'command',
       requestId: 'pedido-1',
-      command: buildTakeRaceClockCommand(raceClockDataUnderGreenFlag),
+      command: takeOfTheGreenFlagClock,
     });
     await controlPage.waitForMessage('take result', isCommandResultMessage);
     const instanceAfterTheTake = runningServer.stateStore.readAllSlices().instances[0];
@@ -169,7 +195,8 @@ describe('an updateInstanceData sent over /ws', () => {
     );
 
     // Assert: the renderer hears of the same instance (same id, so it updates in place)
-    // with the yellow flag and every other field as it was taken.
+    // with the yellow flag, every other field as it was taken, and the flag listed as
+    // differing from the item (the chip "alterado no ar").
     expect(sliceOnRenderer, 'the update must keep the id and change only the flag').toEqual({
       type: 'slices',
       slices: {
@@ -177,6 +204,7 @@ describe('an updateInstanceData sent over /ws', () => {
           {
             ...instanceAfterTheTake,
             resolvedData: { ...raceClockDataUnderGreenFlag, state: 'yellow' },
+            fieldsChangedOnAir: ['state'],
           },
         ],
         // The update's own line in the event log comes in the same message.
@@ -188,13 +216,17 @@ describe('an updateInstanceData sent over /ws', () => {
   });
 
   it('refuses a value the graphic does not accept, naming the field, and keeps what is on air', async () => {
-    // Arrange: a running server with the race clock taken under the green flag.
+    // Arrange: a running server with the race clock item taken under the green flag.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheGreenFlagClock = prepareTheTakeOfAClockItemHolding(
+      runningServer.stateStore,
+      raceClockDataUnderGreenFlag,
+    );
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     controlPage.sendJson({
       type: 'command',
       requestId: 'pedido-1',
-      command: buildTakeRaceClockCommand(raceClockDataUnderGreenFlag),
+      command: takeOfTheGreenFlagClock,
     });
     await controlPage.waitForMessage('take result', isCommandResultMessage);
     const instanceAfterTheTake = runningServer.stateStore.readAllSlices().instances[0];

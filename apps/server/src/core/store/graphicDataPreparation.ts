@@ -41,7 +41,7 @@ export function separateClearedFieldsFromData(
  * not there). `momentOfTheCommand` is the reducer context's `now` (ISO 8601 text), the
  * same moment the instance's `takenAt` and the event log say, and it is converted
  * exactly as resolveItemFieldsIntoGraphicData converts it for an item's `takeTime`
- * field, so a take by hand and a take of an item stamp the same number.
+ * field, so an update on air and a take of an item stamp the same number.
  * Pure: it reads no clock and does not change `data`.
  * What could go wrong: a moment that is not a date gives NaN, which a schema asking for
  * a whole number then refuses; the store always writes the moment with toISOString.

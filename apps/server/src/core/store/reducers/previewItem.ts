@@ -30,7 +30,7 @@ export function reducePreviewItem(
   if (previewOutcome.status === 'refused') {
     return previewOutcome;
   }
-  // The new preview is already marked `manual` (reduceTakeGraphic marks every preview).
+  // The new preview is already marked `manual` (putGraphicOnOutput marks every preview).
   // Written as "not auto" so that only the exact word `auto` can ever discard a preview.
   if (command.origin !== 'auto') {
     return { status: 'applied', slices: previewOutcome.slices };

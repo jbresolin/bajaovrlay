@@ -11,8 +11,9 @@
  *
  * What these tests prove (with a real server on a random port and a real SQLite file):
  *   - A client gets `hello` with every slice, including the seeded layers, on connect.
- *   - A take from client A produces one `slices` message on client B, with the new
- *     instances and the event log.
+ *   - A take of an item (a button of "Atalhos", prepared before any client connects)
+ *     from client A produces one `slices` message on client B, with the new instances
+ *     and the event log.
  *   - `hello` and the message of each change carry `serverNowMs`, the time the server's
  *     clock showed when that message was built (the clock is held by the test), and a
  *     `commandResult` does not.
@@ -46,27 +47,16 @@ import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
+import type { StateStore } from '../store/createStateStore.js';
+import {
+  createRaceClockItemOnTheStore,
+  shortcutsPanelHome,
+} from '../store/raceClockItemOnTheStore.testSupport.js';
 import {
   connectWebSocketTestClient,
   sendRawUpgradeRequest,
   tryWebSocketOnPath,
 } from './webSocketTestClient.testSupport.js';
-
-const takeRaceClockCommand = {
-  type: 'takeGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  // All six fields the race clock's manifest schema requires: the enduro under green
-  // flag, 1:05:00 in and running.
-  data: {
-    sessionName: 'Enduro de Resistência',
-    state: 'green',
-    clockMode: 'elapsed',
-    referenceTimeMs: 3_900_000,
-    referenceWallClockMs: 1_791_550_800_000,
-    running: true,
-  },
-};
 
 // The server's clock is held at 14:32:05 UTC on 9 October 2026 unless a test moves it,
 // so the `serverNowMs` of every message can be compared exactly.
@@ -97,6 +87,18 @@ async function startServerOnARandomPort(
   });
   onTestFinished(() => runningServer.close());
   return runningServer;
+}
+
+/**
+ * Prepares the race clock as a button of "Atalhos" on the server's store (before any
+ * client connects, so none hears of it) and returns the take of it for a client to send.
+ * A quick-fire item moves no cursor: its take changes only the instances and event log.
+ */
+function prepareTheTakeOfTheClockItem(stateStore: StateStore) {
+  const raceClockItemId = createRaceClockItemOnTheStore(stateStore, {
+    home: shortcutsPanelHome,
+  });
+  return { type: 'takeItem', itemId: raceClockItemId };
 }
 
 /** True for a `slices` message carrying the instances slice. */
@@ -134,13 +136,14 @@ describe('connecting to /ws', () => {
 
 describe('a command sent over /ws', () => {
   it('produces one slices message on another client, with the instances and the event log', async () => {
-    // Arrange: a running server and two clients, the control page (A) and the renderer (B).
+    // Arrange: a server with the clock item, and the control page (A) and renderer (B).
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheClockItem = prepareTheTakeOfTheClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     const renderer = await connectWebSocketTestClient(runningServer.port);
 
-    // Act: the control page takes the race clock.
-    controlPage.sendJson({ type: 'command', requestId: 'pedido-1', command: takeRaceClockCommand });
+    // Act: the control page takes the race clock item.
+    controlPage.sendJson({ type: 'command', requestId: 'pedido-1', command: takeOfTheClockItem });
     const slicesOnRenderer = await renderer.waitForMessage(
       'slices message with the instances',
       isSlicesMessageWithInstances,
@@ -166,19 +169,20 @@ describe('a command sent over /ws', () => {
   });
 
   it('stamps the message of a change with the server clock as it is when that message is built', async () => {
-    // Arrange: a server whose clock the test sets by hand, and a renderer that connected
-    // at 14:32:05 and got its hello.
+    // Arrange: a server whose clock the test sets by hand, with the clock item, and a
+    // renderer that connected at 14:32:05 and got its hello.
     let momentTheServerClockShows = momentTheServerClockIsHeldAt;
     const runningServer = await startServerOnARandomPort({
       readCurrentTime: () => new Date(momentTheServerClockShows),
     });
+    const takeOfTheClockItem = prepareTheTakeOfTheClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     const renderer = await connectWebSocketTestClient(runningServer.port);
     const hello = await renderer.waitForMessage('hello', (message) => message.type === 'hello');
 
-    // Act: forty seconds later on the server's clock, the control page takes the race clock.
+    // Act: forty seconds later on the server's clock, the control page takes the clock item.
     momentTheServerClockShows = '2026-10-09T14:32:45.000Z';
-    controlPage.sendJson({ type: 'command', requestId: 'pedido-6', command: takeRaceClockCommand });
+    controlPage.sendJson({ type: 'command', requestId: 'pedido-6', command: takeOfTheClockItem });
     // A take changes the instances and the event log, so it is one slices message.
     await renderer.waitForMessage('slices message of the take', isSlicesMessageWithInstances);
 
@@ -202,13 +206,14 @@ describe('a command sent over /ws', () => {
   });
 
   it('answers the sender with the slices first, then a commandResult echoing its requestId', async () => {
-    // Arrange: a running server and the control page connected.
+    // Arrange: a running server with the race clock item, and the control page connected.
     const runningServer = await startServerOnARandomPort();
+    const takeOfTheClockItem = prepareTheTakeOfTheClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     await controlPage.waitForMessage('hello', (message) => message.type === 'hello');
 
-    // Act: take the race clock with requestId pedido-2 and wait for the answer.
-    controlPage.sendJson({ type: 'command', requestId: 'pedido-2', command: takeRaceClockCommand });
+    // Act: take the race clock item with requestId pedido-2 and wait for the answer.
+    controlPage.sendJson({ type: 'command', requestId: 'pedido-2', command: takeOfTheClockItem });
     const commandResult = await controlPage.waitForMessage('commandResult', isCommandResultMessage);
 
     // Assert: ok with the same requestId, after the one message with the instances and
@@ -290,15 +295,16 @@ describe('a command sent over /ws', () => {
 
 describe('a message outside the protocol', () => {
   it('gets an error for text that is not JSON, and the socket stays open for the next command', async () => {
-    // Arrange: a running server that records its log, and the control page connected.
+    // Arrange: a server that records its log, with the clock item, and the control page.
     const { logger, readRecordedLines } = createRecordingLogger();
     const runningServer = await startServerOnARandomPort({ logger });
+    const takeOfTheClockItem = prepareTheTakeOfTheClockItem(runningServer.stateStore);
     const controlPage = await connectWebSocketTestClient(runningServer.port);
 
     // Act: send text that is not JSON, then a valid command.
     controlPage.sendText('isto não é json');
     const errorResult = await controlPage.waitForMessage('error result', isCommandResultMessage);
-    controlPage.sendJson({ type: 'command', requestId: 'pedido-4', command: takeRaceClockCommand });
+    controlPage.sendJson({ type: 'command', requestId: 'pedido-4', command: takeOfTheClockItem });
     const okResult = await controlPage.waitForMessage('ok result', isCommandResultMessage);
 
     // Assert: an INVALID_MESSAGE error in pt-BR, then an ok on the same socket.

@@ -3,7 +3,7 @@
  *
  * What this module is for:
  *   clearLayer, clearAll, updateInstanceData and reportInstanceStatus were written when
- *   nothing created preview instances yet. Now previewItem and previewGraphic do, so this
+ *   nothing created preview instances yet. Now previewItem and previewMacro do, so this
  *   file writes down what each of the four older commands does when it meets one. Only
  *   clearLayer was changed since, to give the auto-out a clear of program alone.
  *
@@ -14,7 +14,7 @@
  *     removes only the program instance and keeps the preview.
  *   - updateInstanceData may be sent for a preview instance: the data changes in place,
  *     and the instance stays on the preview output with its id and its list of stamped
- *     fields.
+ *     fields, and now also lists the field that differs from its item as changed on air.
  *   - reportInstanceStatus about a preview instance is applied like any other report. A
  *     renderer page in preview mode never sends one, so this happens only if some other
  *     renderer does; the reducer does not tell the two outputs apart.
@@ -116,10 +116,14 @@ describe('updateInstanceData for a preview instance', () => {
     );
 
     // Assert: the same instance with the new flag; still a preview, still remembering
-    // which field the take must stamp.
+    // which field the take must stamp, and now saying the flag differs from its item.
     const instancesAfter = outcome.status === 'applied' ? outcome.slices.instances : undefined;
     expect(instancesAfter, 'only the flag of the preview may change').toEqual([
-      { ...previewBefore, resolvedData: { ...previewBefore.resolvedData, state: 'yellow' } },
+      {
+        ...previewBefore,
+        resolvedData: { ...previewBefore.resolvedData, state: 'yellow' },
+        fieldsChangedOnAir: ['state'],
+      },
     ]);
   });
 });

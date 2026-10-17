@@ -27,8 +27,8 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { CommandErrorSchema } from '../commands/commandError.js';
 import { CommandSchema } from '../commands/command.js';
+import { CommandErrorSchema } from '../commands/commandError.js';
 
 const openingLowerThirdInstanceId = '3f9b2d71-8c4e-4a06-b5d2-7e1a0c9f8b34';
 

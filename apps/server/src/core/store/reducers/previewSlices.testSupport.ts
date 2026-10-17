@@ -1,5 +1,5 @@
 // Test support: instances on the preview and program outputs of a race day, and the
-// moment of a later take, for the tests of the four preview commands. It builds on
+// moment of a later take, for the tests of the preview commands. It builds on
 // rundownSlices.testSupport.ts (the rundowns, items and slices). Every function builds
 // fresh objects on each call, so no test can change what another one sees.
 import type { Instance } from '@bajaovrlay/shared';
@@ -29,7 +29,10 @@ export const contextOfTheLaterTake: ReducerContext = {
 /** The moment contextOfTheLaterTake names, in milliseconds. */
 export const momentOfTheLaterTakeInMilliseconds = 1_791_557_250_250;
 
-/** Builds the green flag clock on air on the program output, taken by hand an hour earlier. */
+/**
+ * Builds the green flag clock on air on the program output, taken by hand an hour
+ * earlier, before BAJAOVRLAY-37, so it names no item (as an older database may hold).
+ */
 export function buildGreenFlagClockOnProgram(): Instance {
   return {
     id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
@@ -88,7 +91,10 @@ export function buildStartItemOnPreviewWithItsMomentStamped(): Instance {
   };
 }
 
-/** Builds a lower third for team 42 on the preview output, previewed by hand (no item). */
+/**
+ * Builds the lower third for team 42 on the preview output, previewed by hand from the
+ * "Atalhos" button "Tarja — Baja UFPR" (buildTeam42ShortcutItem in rundownSlices).
+ */
 export function buildTeam42LowerThirdOnPreview(): Instance {
   return {
     id: 'a7c35e19-8d2b-4f46-9c01-6e3b5d7f2a80',
@@ -100,6 +106,7 @@ export function buildTeam42LowerThirdOnPreview(): Instance {
     status: 'loading',
     takenAt: '2026-10-09T14:20:00.000Z',
     previewOrigin: 'manual',
+    itemId: 'item-atalho-tarja-baja-ufpr',
   };
 }
 

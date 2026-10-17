@@ -26,7 +26,10 @@
 import type { Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { buildGreenFlagClockOnProgram, contextOfTheLaterTake } from './previewSlices.testSupport.js';
+import {
+  buildGreenFlagClockOnProgram,
+  contextOfTheLaterTake,
+} from './previewSlices.testSupport.js';
 import { reduceCommand } from './reduceCommand.js';
 import {
   buildRaceDaySlicesWithRundown,

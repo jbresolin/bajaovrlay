@@ -7,7 +7,8 @@
  *   out". And a field such as the race clock's reference moment is not sent at all:
  *   the command names it in `takeTimeFieldKeys` and the server writes the moment of the
  *   command into it, so no browser clock decides when a race clock started. The two
- *   functions here do those two jobs for the takeGraphic and updateInstanceData reducers.
+ *   functions here do those two jobs for the take step (putGraphicOnOutput) and the
+ *   updateInstanceData reducer.
  *
  * What these tests prove:
  *   - Fields sent as null are listed as cleared and every other field is kept as sent;
@@ -19,7 +20,7 @@
  *
  * What these tests deliberately do not cover:
  *   - What the reducers do with the result (delete from what is on air, check against
- *     the manifest schema); takeGraphicClearedAndStampedFields.test.ts and
+ *     the manifest schema); putGraphicOnOutputClearedAndStampedFields.test.ts and
  *     updateInstanceDataClearedAndStampedFields.test.ts cover that.
  */
 import { describe, expect, it } from 'vitest';

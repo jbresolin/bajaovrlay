@@ -20,7 +20,7 @@
  *     event-log row, no subscriber told, nothing written to the database.
  *
  * What these tests deliberately do not cover:
- *   - Every rule of each command; the reducer tests (previewItem, previewGraphic,
+ *   - Every rule of each command; the reducer tests (previewItem, putGraphicOnOutputPreview,
  *     stopPreview, takePreview, takePreviewCursor) cover them one by one.
  *   - Who may send these commands; authorizeCommand.test.ts.
  *   - A restart, which drops previews; storeRestartDropsPreviews.test.ts.

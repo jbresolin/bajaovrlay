@@ -127,7 +127,6 @@ describe('the preview commands in their real shape', () => {
       expectedAfterValidation,
     );
   });
-
 });
 
 describe('the preview commands with a part missing', () => {

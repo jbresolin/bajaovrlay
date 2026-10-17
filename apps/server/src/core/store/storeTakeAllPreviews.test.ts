@@ -38,7 +38,11 @@ import {
 import { createLogger } from '../logger/createLogger.js';
 import { startAutoOutScheduler } from './autoOut.js';
 import { createGraphicsFolderWithBuiltRaceClock } from './builtGraphicsFolder.testSupport.js';
-import { createStateStore } from './createStateStore.js';
+import { createStateStore, type StateStore } from './createStateStore.js';
+import {
+  buildLiteralItemFieldsFromData,
+  createRaceClockItemOnTheStore,
+} from './raceClockItemOnTheStore.testSupport.js';
 
 const operatorActor = 'operador:conexao-7';
 const momentOfTheCommands = '2026-10-09T14:32:05.000Z';
@@ -55,15 +59,30 @@ function buildEnduroClockDataWithFlag(flagState: string) {
   };
 }
 
-/** The race clock under the given flag, taken by hand on the given layer and output. */
-function buildTakeOfTheClock(layerId: string, flagState: string, target: 'program' | 'preview') {
-  return {
-    type: 'takeGraphic',
-    graphicId: 'race-clock',
+// The flag names as the operator reads them on an item's label.
+const flagNamesInPortuguese: Record<string, string> = {
+  green: 'verde',
+  yellow: 'amarela',
+  red: 'vermelha',
+};
+
+/**
+ * Prepares a race clock item under the given flag on the given layer, then puts it on
+ * the given output: takeItem for program, previewItem for preview.
+ */
+function putAClockItemOnTheOutput(
+  store: StateStore,
+  layerId: string,
+  flagState: string,
+  target: 'program' | 'preview',
+) {
+  const clockItemId = createRaceClockItemOnTheStore(store, {
+    label: `Bandeira ${flagNamesInPortuguese[flagState] ?? flagState} (${layerId})`,
     layerId,
-    data: buildEnduroClockDataWithFlag(flagState),
-    target,
-  };
+    fields: buildLiteralItemFieldsFromData(buildEnduroClockDataWithFlag(flagState)),
+  });
+  const commandType = target === 'program' ? 'takeItem' : 'previewItem';
+  store.applyCommand({ type: commandType, itemId: clockItemId }, operatorActor);
 }
 
 /** Opens a store on the given database, at 14:32:05, with the built race clock. */
@@ -78,15 +97,15 @@ function openStoreOnDatabase(database: ServerDatabase, graphicPackagesFolder: st
 
 describe('takeAllPreviews through the store', () => {
   it('writes one event-log row and tells subscribers once for the whole set', () => {
-    // Arrange: the green clock on air on "Relógio" and a red one on "Tela cheia"; in
-    // Prévia, a yellow clock on "Relógio" and a green one on "Letreiro", and "Tela cheia"
-    // marked "will be cleared".
+    // Arrange: the green clock item on air on "Relógio" and a red one on "Tela cheia"; in
+    // Prévia, a yellow clock item on "Relógio" and a green one on "Letreiro", and "Tela
+    // cheia" marked "will be cleared"; and only then a list of what subscribers are told.
     const { database } = openTemporaryDatabase();
     const store = openStoreOnDatabase(database, createGraphicsFolderWithBuiltRaceClock());
-    store.applyCommand(buildTakeOfTheClock('clock', 'green', 'program'), operatorActor);
-    store.applyCommand(buildTakeOfTheClock('fullscreen', 'red', 'program'), operatorActor);
-    store.applyCommand(buildTakeOfTheClock('clock', 'yellow', 'preview'), operatorActor);
-    store.applyCommand(buildTakeOfTheClock('ticker', 'green', 'preview'), operatorActor);
+    putAClockItemOnTheOutput(store, 'clock', 'green', 'program');
+    putAClockItemOnTheOutput(store, 'fullscreen', 'red', 'program');
+    putAClockItemOnTheOutput(store, 'clock', 'yellow', 'preview');
+    putAClockItemOnTheOutput(store, 'ticker', 'green', 'preview');
     store.applyCommand({ type: 'previewClearLayer', layerId: 'fullscreen' }, operatorActor);
     const eventLogRowsBefore = countEventLogRows(database);
     const sliceNamesToldToSubscribers: SliceName[][] = [];
@@ -131,10 +150,10 @@ describe('takeAllPreviews through the store', () => {
 
 describe('the markers are never saved', () => {
   it('logs and broadcasts previewClearLayer but writes no row for the markers', () => {
-    // Arrange: the green clock on air, and a list of what subscribers are told.
+    // Arrange: the green clock item on air, and a list of what subscribers are told.
     const { database } = openTemporaryDatabase();
     const store = openStoreOnDatabase(database, createGraphicsFolderWithBuiltRaceClock());
-    store.applyCommand(buildTakeOfTheClock('clock', 'green', 'program'), operatorActor);
+    putAClockItemOnTheOutput(store, 'clock', 'green', 'program');
     const sliceNamesToldToSubscribers: SliceName[][] = [];
     store.subscribeToSliceChanges((changedSliceNames) => {
       sliceNamesToldToSubscribers.push(changedSliceNames);
@@ -167,10 +186,7 @@ describe('the markers are never saved', () => {
     const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const firstDatabase = openDatabaseForTests(databasePath);
     const storeBeforeRestart = openStoreOnDatabase(firstDatabase, graphicPackagesFolder);
-    storeBeforeRestart.applyCommand(
-      buildTakeOfTheClock('clock', 'green', 'program'),
-      operatorActor,
-    );
+    putAClockItemOnTheOutput(storeBeforeRestart, 'clock', 'green', 'program');
     storeBeforeRestart.applyCommand({ type: 'previewClearLayer', layerId: 'clock' }, operatorActor);
     writeSliceRows(firstDatabase, [
       { name: 'previewClearedLayerIds', json: ['clock'], updatedAt: momentOfTheCommands },

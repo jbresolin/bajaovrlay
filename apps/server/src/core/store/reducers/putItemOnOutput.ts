@@ -3,8 +3,8 @@ import type { CommandError, InstanceTarget, Item } from '@bajaovrlay/shared';
 import { listKeysOfTakeTimeFields } from '../itemTakeTimeFields.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
-import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
 import { type GraphicOnOutputRequest, putGraphicOnOutput } from './putGraphicOnOutput.js';
+import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
  * What putting an item on an output gives: the new slices and the item that was put

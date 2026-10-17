@@ -31,7 +31,7 @@ import { moveRundownCursorsPastItemsTakenTogether } from './rundownCursor.js';
  *
  * Refused, with nothing changed, when there is no preview and no marker
  * (NOTHING_IN_PREVIEW), or when any one layer cannot be taken: a preview or marker on a
- * layer the server does not list, or a take that takeGraphic refuses (the graphic gone,
+ * layer the server does not list, or a take that putGraphicOnOutput refuses (the graphic gone,
  * the data or a stamp no longer fitting its schema). Deliberate: one refused layer
  * refuses the whole set, with a message naming that layer and carrying its reason,
  * because a half-taken set on air is worse than none.

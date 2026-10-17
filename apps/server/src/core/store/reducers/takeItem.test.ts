@@ -3,38 +3,40 @@
  *
  * What this module is for:
  *   takeItem puts a prepared item on air with one press. It turns the item's field
- *   values into the data the graphic receives, hands that to the very same takeGraphic
- *   reducer a take by hand uses, stamps the new instance with the item's id (so the
- *   layer panel can name the item on air) and, when the item taken was the one the
- *   rundown's cursor was on, moves the cursor to the item after it.
+ *   values into the data the graphic receives, hands that, with the item's id, to the
+ *   internal take step putGraphicOnOutput every take and preview ends in (which writes
+ *   the id on the new instance, so the layer panel can name the item on air) and, when
+ *   the item taken was the one the rundown's cursor was on, moves the cursor to the item
+ *   after it.
  *
  * What these tests prove:
- *   - The instance is exactly what a direct takeGraphic with the same data gives, plus
- *     `itemId`; it replaces what was on the same layer and leaves other layers alone.
+ *   - The instance is exactly what putGraphicOnOutput gives for the same data and the
+ *     item's id; it replaces what was on the same layer and leaves other layers alone.
  *   - Taking the cursor item moves the cursor to the item after it, and to nothing after
  *     the last item of the rundown, which is then marked as played to its end
  *     (wasLastItemTakenAtCursor). No other take sets that mark.
  *   - Taking any other item (a row fired ad hoc) leaves the cursor exactly where it was,
  *     an empty cursor included, and hands back the very same rundowns array.
  *   - The items slice, and the other rundown, are untouched.
- *   - An item that does not exist is refused; a refusal of takeGraphic itself (the
+ *   - An item that does not exist is refused; a refusal of the take step itself (the
  *     item's graphic or layer is gone) comes back unchanged; an item with a field value
  *     the server cannot resolve yet is refused. Each has a pt-BR reason.
  *   - An item whose stored fields the graphic's data schema does not accept is refused
- *     at the take with INVALID_GRAPHIC_DATA (takeGraphic's own check, inherited), and
+ *     at the take with INVALID_GRAPHIC_DATA (the take step's own check, inherited), and
  *     what was on air and the cursor stay as they were.
  *
  * What these tests deliberately do not cover:
  *   - The auto-out that may follow the take; autoOut.test.ts covers it.
  *   - Every detail of resolving field values; resolveItemFields.test.ts covers it. A field
  *     stamped at the take: takeItemTakeTime.test.ts. A cleared one: takeItemClearedField.test.ts.
- *   - Every way data can break a graphic's schema; takeGraphicData.test.ts and
+ *   - Every way data can break a graphic's schema; putGraphicOnOutputData.test.ts and
  *     graphicDataValidation.test.ts cover them. One case here shows items inherit it.
  */
 import type { Graphic, Instance, Item, ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { raceClockManifestForTests } from '../builtGraphicsFolder.testSupport.js';
+import { putGraphicOnOutput } from './putGraphicOnOutput.js';
 import { reduceCommand } from './reduceCommand.js';
 import {
   buildEnduroClockData,
@@ -53,7 +55,7 @@ function buildThreeEnduroItems(): Item[] {
   return [buildEnduroStartItem(0), buildYellowFlagItem(1), buildEnduroFinishItem(2)];
 }
 
-/** Builds the green flag clock already on program, taken by hand an hour earlier. */
+/** Builds the green flag clock already on program, put on air an hour earlier. */
 function buildGreenFlagClockTakenByHand(): Instance {
   return {
     id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
@@ -68,27 +70,27 @@ function buildGreenFlagClockTakenByHand(): Instance {
 }
 
 describe('takeItem, the instance it puts on air', () => {
-  it('gives the same instance as a direct takeGraphic with the same data, plus itemId', () => {
+  it('gives the same instance as the take step given the same data and the item id', () => {
     // Arrange: the main session with three items, the green clock and a lower third on
-    // air; and what a take by hand of the yellow flag clock gives on those same slices.
+    // air; and what the take step gives for the yellow flag clock on those same slices.
     const slicesBefore = buildRaceDaySlicesWithRundown({
       items: buildThreeEnduroItems(),
       instances: [buildGreenFlagClockTakenByHand(), buildTeam42LowerThirdTakenByHand()],
     });
-    const outcomeOfTakeByHand = reduceCommand(
+    const outcomeOfTheTakeStep = putGraphicOnOutput(
       slicesBefore,
       {
-        type: 'takeGraphic',
         graphicId: 'race-clock',
         layerId: 'clock',
         data: buildEnduroClockData('yellow'),
         target: 'program',
         takeTimeFieldKeys: [],
+        itemId: 'item-bandeira-amarela',
       },
       contextOfTheRundownCommand,
     );
-    const instancesOfTakeByHand =
-      outcomeOfTakeByHand.status === 'applied' ? outcomeOfTakeByHand.slices.instances : [];
+    const instancesOfTheTakeStep =
+      outcomeOfTheTakeStep.status === 'applied' ? outcomeOfTheTakeStep.slices.instances : [];
 
     // Act: take the yellow flag item.
     const outcome = reduceCommand(
@@ -97,17 +99,14 @@ describe('takeItem, the instance it puts on air', () => {
       contextOfTheRundownCommand,
     );
 
-    // Assert: the same instances as the take by hand, the new one also carrying itemId.
+    // Assert: the same instances as the take step gives, the new one carrying itemId.
     expect(outcome.status, 'the item must be taken').toBe('applied');
     const instancesAfter = outcome.status === 'applied' ? outcome.slices.instances : undefined;
-    expect(instancesOfTakeByHand.length, 'the take by hand must leave two instances').toBe(2);
+    expect(instancesOfTheTakeStep.length, 'the take step must leave two instances').toBe(2);
     expect(
       instancesAfter,
-      'takeItem must give what takeGraphic gives, plus the item id on the new instance',
-    ).toEqual([
-      buildTeam42LowerThirdTakenByHand(),
-      { ...instancesOfTakeByHand[1], itemId: 'item-bandeira-amarela' },
-    ]);
+      'takeItem must give what the take step gives, the item id on the new instance',
+    ).toEqual(instancesOfTheTakeStep);
   });
 
   it('puts the item on the program output with its resolved field values', () => {
@@ -284,7 +283,7 @@ describe('takeItem, when it must be refused', () => {
     });
   });
 
-  it('hands back the refusal of takeGraphic when the item graphic is no longer registered', () => {
+  it('hands back the refusal of the take step when the item graphic is no longer registered', () => {
     // Arrange: an item prepared for a standings table whose package was since removed.
     const standingsItem: Item = {
       ...buildEnduroStartItem(0),
@@ -302,8 +301,8 @@ describe('takeItem, when it must be refused', () => {
       contextOfTheRundownCommand,
     );
 
-    // Assert: the very refusal a take by hand of that graphic gets.
-    expect(outcome, 'the refusal must be the one takeGraphic gives').toEqual({
+    // Assert: the very refusal the take step gives for that graphic.
+    expect(outcome, 'the refusal must be the one the take step gives').toEqual({
       status: 'refused',
       error: {
         code: 'GRAPHIC_NOT_FOUND',
@@ -349,7 +348,7 @@ describe('takeItem, when it must be refused', () => {
       contextOfTheRundownCommand,
     );
 
-    // Assert: the very refusal a take by hand with that data gets, naming the field, and
+    // Assert: the very refusal the take step gives for that data, naming the field, and
     // nothing changed: the green clock is still on air and the cursor is still on the item.
     expect(outcome, 'an item with data the graphic refuses must be refused at the take').toEqual({
       status: 'refused',

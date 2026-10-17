@@ -34,16 +34,17 @@ const raceClockInstances = [
     currentStep: 0,
     status: 'loading',
     takenAt: savedAt,
+    itemId: 'item-largada-do-enduro',
   },
 ];
 
-/** Builds the event-log row of a successful race-clock take by the operator. */
+/** Builds the event-log row of a successful take of the race clock item by the operator. */
 function buildRaceClockTakeRow() {
   return {
     ts: savedAt,
     actor: 'operador:conexao-7',
-    command: 'takeGraphic',
-    payload: { type: 'takeGraphic', graphicId: 'race-clock', layerId: 'clock' },
+    command: 'takeItem',
+    payload: { type: 'takeItem', itemId: 'item-largada-do-enduro' },
     result: { status: 'ok' },
   };
 }

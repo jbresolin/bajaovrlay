@@ -15,7 +15,7 @@
  *   - A renderer and the auto-out are refused every panel and macro command.
  *   - The macro actor may send takeItem, clearLayer, clearAll and the bookkeeping of its
  *     own macro, and is refused the bookkeeping of another macro, createItem, runMacro
- *     (a macro cannot start a macro), takeGraphic, takeNext, previewItem and
+ *     (a macro cannot start a macro), updateInstanceData, takeNext, previewItem and
  *     reportInstanceStatus.
  *   - The auto-out may still send clearLayer and nothing a macro may send besides.
  *   - An operator may send stopMacro ("Parar"); the auto-out and a running macro may not.
@@ -73,12 +73,10 @@ const advanceOpenTheSessionRun: Command = {
 };
 const endOpenTheSessionRun: Command = { type: 'endMacroRun', macroId: 'macro-abrir-sessao' };
 const endCloseTheSessionRun: Command = { type: 'endMacroRun', macroId: 'macro-fechar-sessao' };
-const takeRaceClockByHand: Command = {
-  type: 'takeGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  data: { sessionName: 'Enduro de Resistência' },
-  target: 'program',
+const changeTheFlagOnAirByHand: Command = {
+  type: 'updateInstanceData',
+  instanceId: '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f',
+  data: { state: 'yellow' },
   takeTimeFieldKeys: [],
 };
 const createYellowFlagItem: Command = {
@@ -216,10 +214,11 @@ const macroActorScenarios: Array<{
     actor: openTheSessionMacroActor,
     expectedIsAllowed: false,
   },
-  // A take by hand is not a step; steps take prepared items only.
+  // Changing what is on air by hand ("Atualizar") is not a step; steps take prepared
+  // items only. (Until BAJAOVRLAY-37 this row was a takeGraphic, a take by hand.)
   {
-    name: 'refuses takeGraphic from a running macro',
-    command: takeRaceClockByHand,
+    name: 'refuses updateInstanceData from a running macro',
+    command: changeTheFlagOnAirByHand,
     actor: openTheSessionMacroActor,
     expectedIsAllowed: false,
   },

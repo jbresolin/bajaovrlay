@@ -191,7 +191,10 @@ export function buildRedFlagShortcutItem(order: number): Item {
   };
 }
 
-/** Builds a lower third for team 42 already on the program output, taken by hand. */
+/**
+ * Builds a lower third for team 42 already on the program output, taken by hand before
+ * BAJAOVRLAY-37, so it names no item (as an older database may hold).
+ */
 export function buildTeam42LowerThirdTakenByHand(): Instance {
   return {
     id: 'c41f0e9a-2b7d-4e3c-8a65-1d2e3f4a5b6c',

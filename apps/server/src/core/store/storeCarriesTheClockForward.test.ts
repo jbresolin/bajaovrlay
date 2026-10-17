@@ -14,7 +14,8 @@
  *     10:00 as its reference moment, in memory and in the database; the instance keeps
  *     its id; the event log keeps the command as it was sent (one field), not the
  *     fields the server added.
- *   - A graphic whose manifest names a rule the server does not know can be taken, but
+ *   - A graphic whose manifest names a rule the server does not know can be taken (as
+ *     an item), but
  *     an update of it is refused in pt-BR, written to the event log as failed, and
  *     leaves the data on air and in the database as it was.
  *
@@ -33,6 +34,10 @@ import {
   createGraphicsFolderWithBuiltScoreboard,
 } from './builtGraphicsFolder.testSupport.js';
 import { createStateStore } from './createStateStore.js';
+import {
+  createItemOnTheStore,
+  createRaceClockItemOnTheStore,
+} from './raceClockItemOnTheStore.testSupport.js';
 
 const operatorActor = 'operador:conexao-7';
 const idOfTheInstanceOnAir = '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f';
@@ -65,28 +70,24 @@ function createStoreWithAClockTheTestSets(graphicPackagesFolder: string) {
 
 describe('stopping the race clock on air, through the store', () => {
   it('holds the time the screen showed at the press, in memory and in the database', () => {
-    // Arrange: the first heat taken at 9:45, running from 12:34 (754 000 ms) with the
-    // reference moment left to the server; then the store's clock moved on to 10:00,
+    // Arrange: the first heat's item taken at 9:45, running from 12:34 (754 000 ms) with
+    // the reference moment left to the take; then the store's clock moved on to 10:00,
     // when the screen shows 27:34 (1 654 000 ms).
     const { store, database, setTheClockTo } = createStoreWithAClockTheTestSets(
       createGraphicsFolderWithBuiltRaceClock(),
     );
-    store.applyCommand(
-      {
-        type: 'takeGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: {
-          sessionName: 'Enduro de Resistência — Bateria 1',
-          state: 'green',
-          clockMode: 'elapsed',
-          referenceTimeMs: 754_000,
-          running: true,
-        },
-        takeTimeFieldKeys: ['referenceWallClockMs'],
+    const firstHeatItemId = createRaceClockItemOnTheStore(store, {
+      label: 'Bateria 1',
+      fields: {
+        sessionName: { kind: 'literal', value: 'Enduro de Resistência — Bateria 1' },
+        state: { kind: 'literal', value: 'green' },
+        clockMode: { kind: 'literal', value: 'elapsed' },
+        referenceTimeMs: { kind: 'literal', value: 754_000 },
+        referenceWallClockMs: { kind: 'takeTime' },
+        running: { kind: 'literal', value: true },
       },
-      operatorActor,
-    );
+    });
+    store.applyCommand({ type: 'takeItem', itemId: firstHeatItemId }, operatorActor);
     setTheClockTo(tenOClock);
     const stopTheClock = {
       type: 'updateInstanceData',
@@ -132,8 +133,8 @@ describe('stopping the race clock on air, through the store', () => {
 
 describe('updating a graphic whose manifest names an unknown update rule, through the store', () => {
   it('lets it be taken, then refuses the update and leaves the air as it was', () => {
-    // Arrange: a built scoreboard whose manifest mistypes the rule name ("Foward"),
-    // taken at 9:45 showing team 42 in the lead; then the clock moved on to 10:00.
+    // Arrange: a built scoreboard whose manifest mistypes the rule name ("Foward"), and
+    // its item taken at 9:45 showing team 42 in the lead; then the clock moved on to 10:00.
     const { store, database, setTheClockTo } = createStoreWithAClockTheTestSets(
       createGraphicsFolderWithBuiltScoreboard({
         id: 'baja-scoreboard',
@@ -150,13 +151,19 @@ describe('updating a graphic whose manifest names an unknown update rule, throug
         },
       }),
     );
-    const takeOutcome = store.applyCommand(
-      {
-        type: 'takeGraphic',
-        graphicId: 'scoreboard',
-        layerId: 'fullscreen',
-        data: { leaderTeamNumber: 42, leaderName: 'Baja UFPR' },
+    const scoreboardItemId = createItemOnTheStore(store, {
+      type: 'createItem',
+      home: { kind: 'rundown', rundownId: 'sessao-principal' },
+      graphicId: 'scoreboard',
+      layerId: 'fullscreen',
+      label: 'Placar — líder',
+      fields: {
+        leaderTeamNumber: { kind: 'literal', value: 42 },
+        leaderName: { kind: 'literal', value: 'Baja UFPR' },
       },
+    });
+    const takeOutcome = store.applyCommand(
+      { type: 'takeItem', itemId: scoreboardItemId },
       operatorActor,
     );
     setTheClockTo(tenOClock);

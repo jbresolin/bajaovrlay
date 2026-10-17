@@ -9,11 +9,11 @@ import {
   refuseUnknownInstance,
   refuseUnusableUpdateRule,
 } from '../commandRefusals.js';
+import { listFieldsChangedOnAirAfterUpdate } from '../fieldsChangedOnAir.js';
 import {
   separateClearedFieldsFromData,
   stampFieldsWithMomentOfTheCommand,
 } from '../graphicDataPreparation.js';
-import { listFieldsChangedOnAirAfterUpdate } from '../fieldsChangedOnAir.js';
 import { findProblemInGraphicData } from '../graphicDataValidation.js';
 import { findTakeTimeFieldKeyGraphicCannotStamp } from '../graphicSchemaProperties.js';
 import { chooseUpdateRuleOfGraphic } from '../updateRules/index.js';

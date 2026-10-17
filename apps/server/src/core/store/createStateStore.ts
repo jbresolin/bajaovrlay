@@ -39,8 +39,7 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
  * preview that item next ("Salvar e disparar", BAJAOVRLAY-37).
  */
 export type CommandOutcome =
-  | { ok: true; createdItemId?: string }
-  | { ok: false; error: CommandError };
+  { ok: true; createdItemId?: string } | { ok: false; error: CommandError };
 
 /**
  * Called after every command that changed a slice or was refused (so the event log

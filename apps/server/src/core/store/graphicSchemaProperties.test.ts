@@ -20,7 +20,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The refusal a reducer builds from the reported key, and its pt-BR wording; the
- *     reducer tests (takeGraphicClearedAndStampedFields.test.ts,
+ *     reducer tests (putGraphicOnOutputClearedAndStampedFields.test.ts,
  *     updateInstanceDataClearedAndStampedFields.test.ts) cover those.
  */
 import type { Graphic } from '@bajaovrlay/shared';

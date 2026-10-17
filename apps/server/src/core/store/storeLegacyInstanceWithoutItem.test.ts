@@ -87,9 +87,9 @@ describe('an instance taken by hand before items were required', () => {
     const store = bootUpgradedStoreOnDatabaseWithClockTakenByHand();
 
     // Assert: the clock is on program exactly as stored.
-    expect(store.readAllSlices().instances, 'the upgrade must not take anything off air').toEqual(
-      [buildClockTakenByHandBeforeItemsWereRequired()],
-    );
+    expect(store.readAllSlices().instances, 'the upgrade must not take anything off air').toEqual([
+      buildClockTakenByHandBeforeItemsWereRequired(),
+    ]);
   });
 
   it('can still be changed in place, without a list of changed fields', () => {
@@ -109,9 +109,7 @@ describe('an instance taken by hand before items were required', () => {
     expect(outcome, 'an update of an instance without an item must be accepted').toEqual({
       ok: true,
     });
-    expect(instanceAfter?.resolvedData.state, 'the flag on air must be the new one').toBe(
-      'yellow',
-    );
+    expect(instanceAfter?.resolvedData.state, 'the flag on air must be the new one').toBe('yellow');
     expect(instanceAfter?.fieldsChangedOnAir, 'no list may be written without an item').toBe(
       undefined,
     );
@@ -122,7 +120,10 @@ describe('an instance taken by hand before items were required', () => {
     const store = bootUpgradedStoreOnDatabaseWithClockTakenByHand();
 
     // Act: the operator presses "Limpar" on the clock's row.
-    const outcome = store.applyCommand({ type: 'clearLayer', layerId: 'clock' }, 'operador:conexao-3');
+    const outcome = store.applyCommand(
+      { type: 'clearLayer', layerId: 'clock' },
+      'operador:conexao-3',
+    );
 
     // Assert: accepted, and nothing is left on air.
     expect(outcome, 'clearing an instance without an item must be accepted').toEqual({ ok: true });
