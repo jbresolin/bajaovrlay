@@ -91,3 +91,38 @@ function doesValueOnAirDifferFromTheItem(
   }
   return !isDeepStrictEqual(dataAfterUpdate[fieldKey], valueTheItemGives);
 }
+
+/**
+ * The instances with these keys taken off the list of changed fields of every live
+ * instance of this item, on program and in preview; a list left empty is removed. Used
+ * when the item has just been given the newest value of those fields ("Salvar no item",
+ * or the item editor's save), so the air no longer differs from the item on them and a
+ * later "Salvar no item" cannot write an older value over a newer one.
+ * The same array comes back when no list changed, so nothing is saved or broadcast.
+ */
+export function removeKeysFromFieldsChangedOnAirOfItem(
+  instances: Instance[],
+  itemId: string,
+  keysTheItemNowGives: string[],
+): Instance[] {
+  let isAnyListChanged = false;
+  const instancesAfter = instances.map((instance) => {
+    const listBefore = instance.fieldsChangedOnAir;
+    if (instance.itemId !== itemId || listBefore === undefined) {
+      return instance;
+    }
+    const listAfter = listBefore.filter((fieldKey) => !keysTheItemNowGives.includes(fieldKey));
+    if (listAfter.length === listBefore.length) {
+      return instance;
+    }
+    isAnyListChanged = true;
+    const instanceAfter: Instance = { ...instance };
+    if (listAfter.length === 0) {
+      delete instanceAfter.fieldsChangedOnAir;
+    } else {
+      instanceAfter.fieldsChangedOnAir = listAfter;
+    }
+    return instanceAfter;
+  });
+  return isAnyListChanged ? instancesAfter : instances;
+}
