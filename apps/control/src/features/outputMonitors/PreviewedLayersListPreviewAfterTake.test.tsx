@@ -41,7 +41,7 @@ import {
 } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildLowerThirdFixtureGraphic } from '@/state/lowerThirdFixtureGraphic.testSupport';
 import {
-  buildLowerThirdPreviewMadeByHand,
+  buildLowerThirdPreviewWhoseItemIsGone,
   buildRaceClockPreviewOfItem,
 } from '@/state/previewLikeTheServerSends.testSupport';
 import {
@@ -90,7 +90,7 @@ function buildSlicesWithTheStartAndTheBandPreviewed(): Slices {
     graphics: [buildRaceClockGraphic(), buildLowerThirdFixtureGraphic()],
     instances: [
       buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed),
-      buildLowerThirdPreviewMadeByHand(momentTheStartWasPreviewed),
+      buildLowerThirdPreviewWhoseItemIsGone(momentTheStartWasPreviewed),
     ],
   };
 }

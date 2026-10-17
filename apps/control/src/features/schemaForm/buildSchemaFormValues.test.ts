@@ -24,7 +24,7 @@
  * What these tests deliberately do not cover:
  *   - A form filled from a stored item: buildSchemaFormValuesFromItemFields.test.ts.
  *   - How one value is shown in its control: fieldValueConversion.test.ts.
- *   - What the filled form sends back: takeDataFromSchemaForm.test.ts,
+ *   - What the filled form sends back: instanceUpdateFromSchemaForm.test.ts,
  *     instanceUpdateFromSchemaForm.test.ts and itemFieldsFromSchemaForm.test.ts.
  */
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';

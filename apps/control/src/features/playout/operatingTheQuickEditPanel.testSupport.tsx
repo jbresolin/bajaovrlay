@@ -1,7 +1,7 @@
 // Test support: "Edição rápida" drawn on a page connected to a fake server that lists two
 // graphics (the real race clock and the lower third fixture), next to the "Camadas" panel
 // whose rows' "Editar" load an instance into it, the few things an operator
-// does to the panel, and the three things the server does back. What the server does to
+// does to the panel, and the two things the server does back. What the server does to
 // the data itself is in graphicDataAsTheServerPreparesIt.testSupport.ts. Written once so
 // the panel's test files read the same. Nothing here keeps state between calls.
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
@@ -21,10 +21,7 @@ import {
   buildSlicesWithNothingOnAir,
 } from '@/state/slicesLikeTheServerSends.testSupport';
 
-import {
-  prepareDataOfTakeAsTheServerDoes,
-  prepareDataOfUpdateAsTheServerDoes,
-} from './graphicDataAsTheServerPreparesIt.testSupport';
+import { prepareDataOfUpdateAsTheServerDoes } from './graphicDataAsTheServerPreparesIt.testSupport';
 import { QuickEditPanel } from './QuickEditPanel';
 
 type FakeServer = ControlPageOnFakeServer['fakeServer'];
@@ -39,15 +36,6 @@ export const referenceMomentLabel = raceClockManifest.schema.properties.referenc
 export const lapsLabel = raceClockManifest.schema.properties.lapsCompletedByLeader.title;
 /** The accessible name of the small dropdown that says who fills the reference moment. */
 export const referenceMomentKindSelectorName = `Como preencher ${referenceMomentLabel}`;
-
-// What the fake server needs from a take it received.
-const TakeCommandReceivedSchema = z.object({
-  type: z.literal('takeGraphic'),
-  graphicId: z.string(),
-  layerId: z.string(),
-  data: z.record(z.string(), z.unknown()),
-  takeTimeFieldKeys: z.array(z.string()),
-});
 
 // What the fake server needs from an update it received.
 const UpdateCommandReceivedSchema = z.object({
@@ -94,7 +82,7 @@ export function pressEditPreviewOnTheLayerRow(layerName: string): void {
 
 /**
  * The line at the top of "Edição rápida" that says what a press changes: the panel's one
- * heading under its title ("Nova entrada — …" or "Editando: …").
+ * heading under its title ("Editando: …"), drawn only while an instance is loaded.
  */
 export function readQuickEditHeader(): string | null {
   return screen.getByRole('heading', { level: 3 }).textContent;
@@ -202,48 +190,6 @@ function findGraphicTheFakeServerLists(graphicId: string): Graphic {
     throw new Error(`the fake server lists no graphic "${graphicId}"`);
   }
   return graphic;
-}
-
-/**
- * The fake server does what the real one does with a take: it prepares the data of the
- * newest command as the real one does (graphicDataAsTheServerPreparesIt.testSupport.ts)
- * and refuses, in the real server's words, a take that asks for a stamp in a field the
- * graphic's schema does not mark as a moment. Otherwise it puts the data on the layer the
- * command names, tells the page so, and only then answers "ok". The real server sends in
- * that same order (webSocketHub.ts), which is why the page may read the new instance as
- * soon as it hears "ok".
- */
-export function letTheServerPutTheLastTakeOnAir(
-  fakeServer: FakeServer,
-  idOfTheNewInstance: string,
-  takenAt: string,
-): void {
-  const takeCommand = TakeCommandReceivedSchema.parse(fakeServer.listCommandsReceived().at(-1));
-  const outcome = prepareDataOfTakeAsTheServerDoes(
-    findGraphicTheFakeServerLists(takeCommand.graphicId),
-    {
-      data: takeCommand.data,
-      takeTimeFieldKeys: takeCommand.takeTimeFieldKeys,
-      momentOfTheCommand: takenAt,
-    },
-  );
-  if (!outcome.wasAccepted) {
-    fakeServer.refuseLastCommand(outcome.refusal);
-    return;
-  }
-  const instanceTheTakeCreates: Instance = {
-    id: idOfTheNewInstance,
-    layerId: takeCommand.layerId,
-    graphicId: takeCommand.graphicId,
-    target: 'program',
-    resolvedData: outcome.dataLeftOnAir,
-    currentStep: 0,
-    status: 'on-air',
-    takenAt,
-  };
-
-  fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [instanceTheTakeCreates] });
-  fakeServer.acceptLastCommand();
 }
 
 /**

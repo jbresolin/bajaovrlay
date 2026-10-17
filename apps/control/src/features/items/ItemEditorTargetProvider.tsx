@@ -1,10 +1,11 @@
-import type { ItemFields, ItemHome } from '@bajaovrlay/shared';
+import type { Command, ItemFields, ItemHome } from '@bajaovrlay/shared';
 import { createContext, type ReactNode, useContext, useState } from 'react';
 
 /**
- * What a new item can be opened with already filled ("Salvar como item" of "Edição
- * rápida"): its graphic, its layer, and the graphic's fields, each in the kind it is to
- * be stored in (literal or takeTime). The label and "Onde" are left to the operator.
+ * What a new item can be opened with already filled ("Salvar como item" on a Camadas row
+ * holding an instance with no item): its graphic, its layer, and the graphic's fields,
+ * each in the kind it is to be stored in (literal or takeTime). The label and "Onde" are
+ * left to the operator.
  */
 export type ItemEditorPrefill = {
   graphicId: string;
@@ -31,14 +32,27 @@ export type PrefilledOpening = {
 export type ItemEditorTarget =
   | { kind: 'closed' }
   | { kind: 'newItem'; home: ItemHome; prefilledOpening: PrefilledOpening | null }
-  | { kind: 'existingItem'; itemId: string };
+  | {
+      kind: 'existingItem';
+      itemId: string;
+      /**
+       * The command types whose refusal the editor shows from the start: the take (or
+       * preview) of "Salvar e disparar" refused right after a new item was saved, which
+       * reopens the editor on the item just saved. Empty for every other opening.
+       */
+      refusalsToShowAtOpening: Command['type'][];
+    };
 
 /** The editor's target and the four ways to change it. */
 export type ItemEditorTargetOnPage = {
   itemEditorTarget: ItemEditorTarget;
   /** Opens the editor for a new item going to `home`, filled from `prefill` when given. */
   openItemEditorForNewItem: (home: ItemHome, prefill?: ItemEditorPrefill) => void;
-  openItemEditorForItem: (itemId: string) => void;
+  /**
+   * Opens the editor on a stored item; `refusalsToShowAtOpening` names the commands whose
+   * refusal it shows from the start (left out: none).
+   */
+  openItemEditorForItem: (itemId: string, refusalsToShowAtOpening?: Command['type'][]) => void;
   closeItemEditor: () => void;
 };
 
@@ -47,8 +61,8 @@ const ItemEditorTargetContext = createContext<ItemEditorTargetOnPage | null>(nul
 /**
  * Holds what the item editor is open for, for the whole page. The editor is drawn in the
  * rundown column, but the quick-fire strip on the right opens it too ("+ Atalho" and a
- * button's "Editar"), and so does "Edição rápida" ("Salvar como item"), so the choice
- * cannot live in any of them alone. main.tsx wraps the page in it once; tests do it
+ * button's "Editar"), and so do "Edição rápida" ("Novo gráfico…") and the Camadas rows
+ * ("Salvar como item"), so the choice cannot live in any of them alone. main.tsx wraps the page in it once; tests do it
  * through controlPageOnFakeServer.testSupport.tsx.
  */
 export function ItemEditorTargetProvider(props: { children: ReactNode }) {
@@ -68,7 +82,8 @@ export function ItemEditorTargetProvider(props: { children: ReactNode }) {
   const itemEditorTargetOnPage: ItemEditorTargetOnPage = {
     itemEditorTarget,
     openItemEditorForNewItem,
-    openItemEditorForItem: (itemId) => setItemEditorTarget({ kind: 'existingItem', itemId }),
+    openItemEditorForItem: (itemId, refusalsToShowAtOpening = []) =>
+      setItemEditorTarget({ kind: 'existingItem', itemId, refusalsToShowAtOpening }),
     closeItemEditor: () => setItemEditorTarget({ kind: 'closed' }),
   };
   return (

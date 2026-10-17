@@ -10,8 +10,8 @@
  *
  * What these tests prove:
  *   - After "Disparar" on a rundown row, a click on a row's label, or a click on a
- *     shortcut button, with the server putting the item on air, the panel still makes a
- *     new entry, offers no "Atualizar", and its form was not refilled from the air.
+ *     shortcut button, with the server putting the item on air, the panel still has
+ *     nothing loaded: no form and no "Atualizar".
  *
  * What these tests deliberately do not cover:
  *   - What those presses send: features/rundown and features/quickFire tests.
@@ -113,19 +113,19 @@ describe('"Edição rápida" while items are fired elsewhere on the page', () =>
       fakeServer.acceptLastCommand();
       await letThePageFinishWhatItStarted();
 
-      // Assert: the panel is still a new entry, with its defaults and no "Atualizar".
+      // Assert: the panel still has nothing loaded: its hint, no form, no "Atualizar".
       expect(
-        screen.getByRole('heading', { level: 3 }),
+        screen.getByText('Use Editar numa camada para alterar o que está no ar'),
         'a take or a cursor move elsewhere must not load anything into the panel',
-      ).toHaveTextContent('Nova entrada — não altera nenhum item');
+      ).toBeVisible();
       expect(
         screen.queryByRole('button', { name: 'Atualizar' }),
         'with nothing loaded there is nothing to update',
       ).toBeNull();
       expect(
-        screen.getByRole('combobox', { name: 'Bandeira' }),
-        'the form must not be refilled from what went on air',
-      ).toHaveTextContent('Pré-largada');
+        screen.queryByRole('combobox', { name: 'Bandeira' }),
+        'no form may be filled from what went on air',
+      ).toBeNull();
     },
   );
 });

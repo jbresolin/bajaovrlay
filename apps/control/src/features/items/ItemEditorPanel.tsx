@@ -1,4 +1,4 @@
-import type { Item, ItemHome } from '@bajaovrlay/shared';
+import type { Command, Item, ItemHome } from '@bajaovrlay/shared';
 import { useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
@@ -29,6 +29,12 @@ export type ItemEditorPanelProps = {
   homeForNewItem: ItemHome;
   /** For a new item opened by "Salvar como item": what it opens filled with. */
   prefilledOpening?: PrefilledOpening | null;
+  /**
+   * The commands whose refusal the editor shows from the start: the take of "Salvar e
+   * disparar" refused right after the new item was saved, which reopens the editor on
+   * that item. Left out: none.
+   */
+  refusalsToShowAtOpening?: Command['type'][];
   /** The stored item to change, or null to prepare a new item. */
   itemBeingEdited: Item | null;
   /** Called after the server accepted the save, and when the operator cancels. */
@@ -145,6 +151,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
     graphicFieldsFormHandleRef,
     checkBothForms,
     onClose: props.onClose,
+    refusalsToShowAtOpening: props.refusalsToShowAtOpening ?? [],
   });
 
   const isItemOnAir =
@@ -204,6 +211,8 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
               isItemOnAir={isItemOnAir}
               commandTypesSentInThisOpening={saves.commandTypesSentInThisOpening}
               onSavePressed={() => saves.pressSaveButton('saveItem')}
+              onSaveAndTakePressed={() => saves.pressSaveButton('saveItemAndTake')}
+              onSaveAndPreviewPressed={() => saves.pressSaveButton('saveItemAndPreview')}
               onUpdateOnAirPressed={() => saves.pressSaveButton('saveItemAndUpdateOnAir')}
               onCancelPressed={saves.cancel}
             />

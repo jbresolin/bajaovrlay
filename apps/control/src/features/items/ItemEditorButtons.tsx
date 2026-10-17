@@ -14,15 +14,18 @@ export type ItemEditorButtonsProps = {
   /** The command types this opening of the editor sent; their refusals are shown here. */
   commandTypesSentInThisOpening: Command['type'][];
   onSavePressed: () => void;
+  onSaveAndTakePressed: () => void;
+  onSaveAndPreviewPressed: () => void;
   onUpdateOnAirPressed: () => void;
   onCancelPressed: () => void;
 };
 
 /**
- * The bottom row of the item editor: "Salvar item", "Atualizar no ar" (only while the
- * item is on air), "Cancelar", and the refusal of a command this opening sent. Drawing
- * only; what each press does is ItemEditorPanel.tsx. "Cancelar" stays on during a press,
- * so the operator can always leave.
+ * The bottom row of the item editor: "Salvar item", "Salvar e disparar" and "Salvar e
+ * prévia" (save, then take or preview this item: everything on air comes from an item),
+ * "Atualizar no ar" (only while the item is on air), "Cancelar", and the refusal of a
+ * command this opening sent. Drawing only; what each press does is useItemEditorSaves.ts.
+ * "Cancelar" stays on during a press, so the operator can always leave.
  */
 export function ItemEditorButtons(props: ItemEditorButtonsProps) {
   const hasSentACommandInThisOpening = props.commandTypesSentInThisOpening.length > 0;
@@ -34,6 +37,22 @@ export function ItemEditorButtons(props: ItemEditorButtonsProps) {
         onClick={props.onSavePressed}
       >
         {ptBR.itemEditor.saveButton}
+      </ActionButton>
+      <ActionButton
+        type="button"
+        variant="secondary"
+        disabled={props.isWaitingForTheServer}
+        onClick={props.onSaveAndTakePressed}
+      >
+        {ptBR.itemEditor.saveAndTakeButton}
+      </ActionButton>
+      <ActionButton
+        type="button"
+        variant="outline"
+        disabled={props.isWaitingForTheServer}
+        onClick={props.onSaveAndPreviewPressed}
+      >
+        {ptBR.itemEditor.saveAndPreviewButton}
       </ActionButton>
       {props.isItemOnAir && (
         <ActionButton

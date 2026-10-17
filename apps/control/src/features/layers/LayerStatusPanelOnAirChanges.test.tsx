@@ -176,9 +176,7 @@ describe('"Salvar no item"', () => {
     const commandsBeforeTheAnswer = fakeServer.listCommandsReceived().length;
 
     // Act: answer the question about the clock.
-    fireEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: answer }),
-    );
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: answer }));
 
     // Assert: nothing was sent before the answer; then one command carrying the choice.
     expect(commandsBeforeTheAnswer, 'nothing may be saved before the operator chose').toBe(0);

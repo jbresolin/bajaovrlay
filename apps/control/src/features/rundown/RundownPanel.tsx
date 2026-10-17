@@ -76,9 +76,13 @@ export function RundownPanel() {
     itemEditorTarget.kind === 'newItem'
       ? itemEditorTarget.home
       : ({ kind: 'rundown', rundownId } as const);
-  // "Salvar como item" of "Edição rápida" opens a new item already filled.
+  // "Salvar como item" on a Camadas row opens a new item already filled.
   const prefilledOpening =
     itemEditorTarget.kind === 'newItem' ? itemEditorTarget.prefilledOpening : null;
+  // A take refused right after "Salvar e disparar" saved a new item reopens the editor on
+  // that item, showing the refusal.
+  const refusalsToShowAtOpening =
+    itemEditorTarget.kind === 'existingItem' ? itemEditorTarget.refusalsToShowAtOpening : [];
   // With the cursor on nothing Space has nothing to take, which without a word on screen
   // looks like a keyboard that stopped working. The words depend on why it is on nothing.
   const emptyCursorHint = chooseEmptyCursorHint(rundown, itemsInOrder.length);
@@ -115,6 +119,7 @@ export function RundownPanel() {
         <ItemEditorPanel
           homeForNewItem={homeForNewItem}
           prefilledOpening={prefilledOpening}
+          refusalsToShowAtOpening={refusalsToShowAtOpening}
           itemBeingEdited={itemBeingEdited ?? null}
           onClose={closeItemEditor}
         />

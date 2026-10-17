@@ -10,13 +10,9 @@ import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider
 
 import { PanelNameForm } from './PanelNameForm';
 import { QuickFirePanelView } from './QuickFirePanelView';
+import { useQuickFireTabChoice } from './QuickFireTabChoiceProvider';
 import { buildQuickFireTabId, QuickFireTabList, quickFireTabPanelId } from './QuickFireTabList';
-import {
-  chooseTabShown,
-  isSameQuickFireTab,
-  listQuickFireTabsInOrder,
-  type QuickFireTab,
-} from './quickFireTabs';
+import { chooseTabShown, isSameQuickFireTab, listQuickFireTabsInOrder } from './quickFireTabs';
 import { useQuickFireKeys } from './useQuickFireKeys';
 
 const texts = ptBR.quickFire;
@@ -28,7 +24,8 @@ const texts = ptBR.quickFire;
  * shown and F1–F4 show the first four tabs (useQuickFireKeys.ts); P stops the running
  * macro from any tab (features/macros/useStopRunningMacroKey.ts).
  *
- * The tab shown is this page's own choice (two operators may look at different tabs);
+ * The tab shown is this page's own choice (two operators may look at different tabs),
+ * kept for the whole page by QuickFireTabChoiceProvider so "Edição rápida" can read it;
  * when its panel is deleted the strip falls back to the first tab (quickFireTabs.ts).
  * A button's take goes through the page's one take path (features/autoPreview), the same
  * as Space and "Disparar"; since a panel item never moves the rundown's cursor (the
@@ -43,7 +40,7 @@ export function QuickFireStrip() {
   const panels = useServerState((state) => state.quickFirePanels);
   const sendCommand = useSendCommand();
   const sendTakeByThisOperator = useTakeThenPreviewNextItem();
-  const [chosenTab, setChosenTab] = useState<QuickFireTab | null>(null);
+  const { chosenTab, chooseTab: setChosenTab } = useQuickFireTabChoice();
   const [isCreatingPanel, setIsCreatingPanel] = useState(false);
 
   const tabs = listQuickFireTabsInOrder(panels);

@@ -21,7 +21,7 @@
  * What these tests deliberately do not cover:
  *   - Every rule and message: checkSchemaFormValues.test.ts and
  *     zodSchemaFromDataSchema.test.ts.
- *   - The commands built from the form: takeAndUpdateFromSchemaForm.test.ts and
+ *   - The commands built from the form: instanceUpdateFromSchemaForm.test.ts and
  *     itemFieldsFromSchemaForm.test.ts.
  *   - A real browser's number input, which hands over an empty text while the typing is
  *     not a number; that limit is written next to the control's code.

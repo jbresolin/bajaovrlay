@@ -1,4 +1,5 @@
 import { ptBRKeyboard } from './ptBRKeyboard';
+import { ptBRLayers } from './ptBRLayers';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
 
@@ -41,39 +42,13 @@ export const ptBR = {
     timedOut:
       'O servidor não respondeu em 5 segundos. Confira nas camadas se o comando foi aplicado.',
   },
-  layers: {
-    emptyLayer: 'vazia',
-    // The small mark on a layer that holds something on the preview output.
-    inPreviewChip: 'em prévia',
-    // The small mark on a layer the next take will clear (previewClearLayer): Prévia
-    // already shows it empty.
-    willClearChip: 'vai limpar',
-    clearLayerButton: 'Limpar',
-    // On a layer with something on air: show in Prévia what the screen looks like once
-    // this layer is cleared, without clearing it yet.
-    previewClearLayerButton: 'Prévia: limpar',
-    // Loads that very instance into "Edição rápida": the one on air, or the one in preview.
-    editInstanceButton: 'Editar',
-    editPreviewInstanceButton: 'Editar prévia',
-    // The word on each row's status badge. "Carregando" is what the server sets at the
-    // take; "No ar" and "Falhou" are what the renderer reports back.
-    instanceStatus: {
-      loading: 'Carregando',
-      ready: 'Pronto',
-      'on-air': 'No ar',
-      stopping: 'Saindo',
-      failed: 'Falhou',
-    },
-    // The tooltip on a "Falhou" badge when the renderer gave no detail of its own.
-    failedWithoutDetail: 'O renderizador não informou o motivo da falha.',
-  },
+  // The layer panel, "Camadas" (features/layers), in ptBRLayers.ts.
+  layers: ptBRLayers,
   // Putting graphics on air and taking them off (features/playout).
   playout: {
     // "Edição rápida" (features/playout/QuickEditPanel.tsx), in ptBRQuickEdit.ts.
     quickEdit: ptBRQuickEdit,
-    takeButton: 'Colocar no ar',
-    // Shows the form as it stands on the preview output, without touching what is on air.
-    previewButton: 'Prévia',
+    // Changes the instance on air that "Edição rápida" has loaded, in place.
     updateButton: 'Atualizar',
     clearAllButton: 'Limpar tudo',
     clearAllConfirmButton: 'Confirmar: limpar tudo',
@@ -151,6 +126,10 @@ export const ptBR = {
     fieldsThatCouldNotBeRead: (fieldLabels: string) =>
       `Estes campos do item não puderam ser lidos e aparecem com o valor padrão; salvar grava o que está no formulário: ${fieldLabels}.`,
     saveButton: 'Salvar item',
+    // Save the item, then put it on air (takeItem) or in preview (previewItem): the way a
+    // graphic made on the spot goes up, since everything on air comes from an item.
+    saveAndTakeButton: 'Salvar e disparar',
+    saveAndPreviewButton: 'Salvar e prévia',
     // Offered only while the saved item being edited is on air: saves the item and
     // changes its instance on the program output without a new take.
     updateOnAirButton: 'Atualizar no ar',

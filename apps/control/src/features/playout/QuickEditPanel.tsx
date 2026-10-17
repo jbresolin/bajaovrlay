@@ -6,35 +6,34 @@ import { useServerState } from '@/state/ControlPageStateProvider';
 
 import { useQuickEditChoice } from './QuickEditChoiceProvider';
 import { QuickEditForm } from './QuickEditForm';
-import { QuickEditGraphicAndLayerChoice } from './QuickEditGraphicAndLayerChoice';
 import { QuickEditHeading } from './QuickEditHeading';
-import { findQuickEditMode, type QuickEditMode } from './quickEditMode';
+import { findQuickEditMode } from './quickEditMode';
+import { QuickEditNothingLoaded } from './QuickEditNothingLoaded';
 
 /**
- * "Edição rápida", the centre panel of the page. It works on one of two things, and its
- * heading says which (QuickEditHeading.tsx):
- * - ONE instance, loaded by "Editar" (on air) or "Editar prévia" on a "Camadas" row.
- *   "Atualizar" changes that instance in place, by its id only; "Colocar no ar" and
- *   "Prévia" go to that instance's layer.
- * - a new entry, with nothing loaded: a graphic and a layer chosen in the dropdowns
- *   (QuickEditGraphicAndLayerChoice.tsx), "Colocar no ar" and "Prévia" on that layer.
- *   This is how the page opens.
- * When the loaded instance leaves its output or is replaced, or the server no longer
- * lists its graphic, a line says so and the panel makes a new entry; it never moves to
- * another instance by itself (quickEditMode.ts). The line keeps the words it had when
- * first shown, and goes when the operator chooses another layer, sends the new entry, or
- * loads something else. A take from the rundown or a shortcut button changes nothing
- * here: only this panel and the "Camadas" rows write what it works on
- * (QuickEditChoiceProvider). This replaces the panel that followed the graphic taken
- * most recently (BAJAOVRLAY-36).
+ * "Edição rápida", the centre panel of the page. Since BAJAOVRLAY-37 it only changes what
+ * is already up: ONE instance, loaded by "Editar" (on air) or "Editar prévia" on a
+ * "Camadas" row. "Atualizar" (or "Atualizar prévia") changes that instance in place, by
+ * its id only; nothing here puts a new graphic up, because everything on air comes from
+ * an item. With nothing loaded the panel says how to load something and offers "Novo
+ * gráfico…", which opens the item editor (QuickEditNothingLoaded.tsx).
  *
- * The form (QuickEditForm.tsx) is drawn with the graphic's id and the choice's
- * formLoadNumber as its React `key`: "Editar" and choosing a graphic start a fresh form,
- * while letting go of an instance keeps it. Nothing here knows any graphic by name.
+ * When the loaded instance leaves its output or is replaced, or the server no longer
+ * lists its graphic, a line says so and the panel has nothing loaded; the values typed
+ * are dropped, since there is no other form to keep them in. It never moves to another
+ * instance by itself (quickEditMode.ts), and the line keeps the words it had when first
+ * shown. A take from the rundown or a shortcut button changes nothing here: only the
+ * "Camadas" rows and this panel write what it works on (QuickEditChoiceProvider).
+ *
+ * The form (QuickEditForm.tsx) is drawn with the instance's id and the choice's
+ * formLoadNumber as its React `key`, so every "Editar" starts a fresh form. Nothing here
+ * knows any graphic by name.
  */
 export function QuickEditPanel() {
   const graphics = useServerState((state) => state.graphics);
   const instances = useServerState((state) => state.instances);
+  const layers = useServerState((state) => state.layers);
+  const items = useServerState((state) => state.items);
   const quickEditChoice = useQuickEditChoice();
 
   const listedGraphicIds = graphics.map((graphic) => graphic.id);
@@ -46,90 +45,52 @@ export function QuickEditPanel() {
   // nothing (QuickEditChoiceProvider hands back the same choice, so nothing is redrawn).
   const { writeDownTheLossOfTheTarget } = quickEditChoice;
   const idOfTheTarget = quickEditChoice.target?.instanceId;
-  const lostTargetSeenNow = mode.kind === 'newTake' ? mode.lostTarget : undefined;
+  const lostTargetSeenNow = mode.kind === 'nothingLoaded' ? mode.lostTarget : undefined;
   useEffect(() => {
     if (idOfTheTarget !== undefined && lostTargetSeenNow !== undefined) {
       writeDownTheLossOfTheTarget(idOfTheTarget, lostTargetSeenNow);
     }
   });
+
   // An instance being edited always has its graphic listed (findQuickEditMode lets go of
-  // it otherwise), so its form can be drawn. A new entry whose chosen graphic is no
-  // longer listed falls back to the first graphic listed.
-  const graphicIdWanted =
-    mode.kind === 'editingInstance'
-      ? mode.instanceBeingEdited.graphicId
-      : quickEditChoice.graphicIdChosen;
-  const graphicShown = graphics.find((graphic) => graphic.id === graphicIdWanted) ?? graphics[0];
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h2>{ptBR.playout.quickEdit.panelTitle}</h2>
-        </CardTitle>
-      </CardHeader>
-      {graphicShown === undefined ? (
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {ptBR.playout.quickEdit.noGraphicsOnServer}
-          </p>
-        </CardContent>
-      ) : (
-        <QuickEditPanelWithAGraphic
-          mode={mode}
-          graphicShownId={graphicShown.id}
-          layerIdOfNewEntry={quickEditChoice.layerIdChosen ?? graphicShown.defaultLayerId}
-        />
-      )}
-    </Card>
-  );
-}
-
-/** The panel once there is a graphic to show: heading, dropdowns and the form. */
-function QuickEditPanelWithAGraphic(props: {
-  mode: QuickEditMode;
-  graphicShownId: string;
-  layerIdOfNewEntry: string;
-}) {
-  const { mode, graphicShownId, layerIdOfNewEntry } = props;
-  const graphics = useServerState((state) => state.graphics);
-  const layers = useServerState((state) => state.layers);
-  const items = useServerState((state) => state.items);
-  const quickEditChoice = useQuickEditChoice();
-  const graphicShown = graphics.find((graphic) => graphic.id === graphicShownId);
-  if (graphicShown === undefined) {
-    return null;
-  }
-
+  // it otherwise), so its form can be drawn.
   const instanceBeingEdited =
     mode.kind === 'editingInstance' ? mode.instanceBeingEdited : undefined;
-  const layerIdOfTheCommands = instanceBeingEdited?.layerId ?? layerIdOfNewEntry;
+  const graphicOfTheInstance = graphics.find(
+    (graphic) => graphic.id === instanceBeingEdited?.graphicId,
+  );
 
   return (
-    <>
-      <CardContent className="flex flex-col gap-3">
-        <QuickEditHeading
-          mode={mode}
-          layers={layers}
-          graphics={graphics}
-          items={items}
-          onStopEditingPressed={quickEditChoice.stopEditingTheInstance}
-        />
-        <QuickEditGraphicAndLayerChoice
-          graphics={graphics}
-          layers={layers}
-          graphicIdShown={graphicShown.id}
-          layerIdOfNewEntry={instanceBeingEdited === undefined ? layerIdOfNewEntry : undefined}
-          onGraphicChosen={quickEditChoice.chooseGraphicForNewEntry}
-          onLayerChosen={quickEditChoice.chooseLayerForNewEntry}
-        />
-      </CardContent>
-      <QuickEditForm
-        key={`${graphicShown.id}#${quickEditChoice.formLoadNumber}`}
-        graphic={graphicShown}
-        instanceBeingEdited={instanceBeingEdited}
-        layerIdOfTheCommands={layerIdOfTheCommands}
-      />
-    </>
+    <section aria-label={ptBR.playout.quickEdit.panelTitle}>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>{ptBR.playout.quickEdit.panelTitle}</h2>
+          </CardTitle>
+        </CardHeader>
+        {instanceBeingEdited === undefined || graphicOfTheInstance === undefined ? (
+          <QuickEditNothingLoaded
+            lostTarget={mode.kind === 'nothingLoaded' ? mode.lostTarget : undefined}
+          />
+        ) : (
+          <>
+            <CardContent>
+              <QuickEditHeading
+                instanceBeingEdited={instanceBeingEdited}
+                layers={layers}
+                graphics={graphics}
+                items={items}
+                onStopEditingPressed={quickEditChoice.stopEditingTheInstance}
+              />
+            </CardContent>
+            <QuickEditForm
+              key={`${instanceBeingEdited.id}#${quickEditChoice.formLoadNumber}`}
+              graphic={graphicOfTheInstance}
+              instanceBeingEdited={instanceBeingEdited}
+            />
+          </>
+        )}
+      </Card>
+    </section>
   );
 }

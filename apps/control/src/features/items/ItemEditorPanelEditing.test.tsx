@@ -57,6 +57,7 @@ import {
   renderItemEditorPanelOnFakeServer,
 } from './itemEditorOnFakeServer.testSupport';
 import { ItemEditorPanel } from './ItemEditorPanel';
+import { ItemEditorTargetProvider } from './ItemEditorTargetProvider';
 import {
   buildEnduranceStartClockItem,
   buildEnduranceStartClockItemSavedWithTheMomentOfTheSave,
@@ -348,11 +349,13 @@ describe('the item editor panel for an existing item', () => {
           serverStateStore={serverStateStore}
           sendCommand={sendCommandNeverUsedHere}
         >
-          <ItemEditorPanel
-            homeForNewItem={{ kind: 'rundown', rundownId: idOfTheMainSessionRundown }}
-            itemBeingEdited={itemBeingEdited}
-            onClose={() => undefined}
-          />
+          <ItemEditorTargetProvider>
+            <ItemEditorPanel
+              homeForNewItem={{ kind: 'rundown', rundownId: idOfTheMainSessionRundown }}
+              itemBeingEdited={itemBeingEdited}
+              onClose={() => undefined}
+            />
+          </ItemEditorTargetProvider>
         </ControlPageStateProvider>
       );
     }

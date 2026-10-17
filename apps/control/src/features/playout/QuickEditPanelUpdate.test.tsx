@@ -8,20 +8,19 @@
  *   tests follow the race clock's form through the moments where that could go wrong.
  *
  * What these tests prove:
- *   - After a take the server accepted, the panel edits the instance that take made: the
- *     form shows what is now on air (the moment the server wrote included) and counts as
- *     untouched again, so the next "Atualizar" does not send the fields typed for the take.
+ *   - After an "Atualizar" the server accepted, the form shows what is now on air and
+ *     counts as untouched again, so the next "Atualizar" does not send the fields sent
+ *     before.
  *   - After a refusal the operator's edit is still in the form and still goes out on
  *     the next press.
- *   - "Colocar no ar" always sends the form as it stands, every field of it.
  *   - A time typed and then put back to what the field showed counts as untouched.
  *   - A value on air that the form's rules refuse (an empty session name) blocks
  *     "Atualizar" with the field's message until it is corrected.
- *   - On-air data the form cannot show is not a dead end: the fields that could not be
- *     read are named above the form, with what each button does. "Atualizar" sends only
- *     what was changed, which the server refuses while a required field is missing on
- *     air; the refusal is shown, the edit is kept, and "Colocar no ar" then sends the
- *     whole form, which is complete.
+ *   - On-air data the form cannot show is named above the form, with what "Atualizar"
+ *     does. "Atualizar" sends only what was changed, which the server refuses while a
+ *     required field is missing on air; the refusal is shown and the edit is kept.
+ *     (Until BAJAOVRLAY-37 "Colocar no ar" then sent the whole form; the panel puts
+ *     nothing new up any more, so such an instance is cleared and its item taken again.)
  *
  * What these tests deliberately do not cover:
  *   - "Atualizar" after a reload and the form as the page loads: QuickEditPanel.test.tsx.
@@ -42,18 +41,16 @@ import { describe, expect, it } from 'vitest';
 
 import {
   chooseOptionInDropdown,
-  flipSwitch,
   typeIntoField,
 } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 
 import {
   buildRaceClockInstanceHoldingThisData,
   idOfTheRaceClockInstanceOnAir,
-  letTheServerPutTheLastTakeOnAir,
+  letTheServerApplyTheLastUpdate,
   letTheServerRefuseTheLastUpdateForARequiredFieldMissingOnAir,
   pressButtonAndWaitForCommand,
   pressEditOnTheLayerRow,
-  referenceMomentKindSelectorName,
   referenceMomentLabel,
   referenceTimeLabel,
   renderQuickEditPanelWithTheseInstancesOnAir,
@@ -90,43 +87,28 @@ function renderPanelWithTheFirstHeatOnAir() {
 }
 
 describe('the quick edit form following what is on air', () => {
-  it('shows what the server put on air after an accepted "Colocar no ar", and a later flag change sends the flag alone', async () => {
-    // Arrange: nothing on air. The operator fills the form for the first heat and
-    // presses "Colocar no ar"; the server puts it on air at 10:00, writing that moment
-    // as the reference, and accepts. The panel then edits the clock it put on air.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-    typeIntoField('Título', 'Enduro de Resistência — Bateria 1');
-    chooseOptionInDropdown('Bandeira', 'Verde');
-    flipSwitch('Relógio correndo');
-    typeIntoField(referenceTimeLabel, '12:34');
-    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
-    letTheServerPutTheLastTakeOnAir(fakeServer, idOfTheRaceClockInstanceOnAir, tenOClock);
-    await screen.findByRole('button', { name: 'Atualizar' });
+  it('counts as untouched after an accepted "Atualizar", so a later flag change sends the flag alone', async () => {
+    // Arrange: the first heat on air and loaded. The operator retypes the title and
+    // presses "Atualizar"; the server applies it at 10:00 and accepts.
+    const { fakeServer } = renderPanelWithTheFirstHeatOnAir();
+    typeIntoField('Título', 'Enduro de Resistência — Bateria 1 (reinício)');
+    await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
+    letTheServerApplyTheLastUpdate(fakeServer, buildFirstHeatInstanceOnAir(), tenOClock);
     await waitUntilButtonIsOnAgain('Atualizar');
-    const kindOfTheReferenceMomentAfterTheTake = screen.getByRole('combobox', {
-      name: referenceMomentKindSelectorName,
-    }).textContent;
-    const referenceMomentShownAfterTheTake =
-      screen.getByLabelText<HTMLInputElement>(referenceMomentLabel).value;
 
     // Act: a yellow flag comes out; the operator changes only the flag and presses "Atualizar".
     chooseOptionInDropdown('Bandeira', 'Amarela');
     await pressButtonAndWaitForCommand('Atualizar', 2, fakeServer);
 
-    // Assert: the form took the moment the server wrote, as a typed value. And the
-    // update holds only the flag: the session name, the switch and the 12:34 typed for
-    // the take were sent once and are not pending changes any more.
+    // Assert: the form shows the title now on air, and the second update holds only the
+    // flag: the title was sent once and is not a pending change any more.
     expect(
-      kindOfTheReferenceMomentAfterTheTake,
-      'after the take the reference moment is a number on air, so it must show as a typed value',
-    ).toBe('Valor digitado');
-    expect(
-      referenceMomentShownAfterTheTake,
-      'the form must show the moment the server wrote at the take',
-    ).toBe(String(Date.parse(tenOClock)));
+      screen.getByLabelText('Título'),
+      'the form must show what the server now holds',
+    ).toHaveValue('Enduro de Resistência — Bateria 1 (reinício)');
     expect(
       fakeServer.listCommandsReceived()[1],
-      'after a take the fields typed for it must not be sent again by "Atualizar"',
+      'after an accepted update the fields it carried must not be sent again',
     ).toEqual({
       type: 'updateInstanceData',
       instanceId: idOfTheRaceClockInstanceOnAir,
@@ -164,39 +146,6 @@ describe('the quick edit form following what is on air', () => {
       type: 'updateInstanceData',
       instanceId: idOfTheRaceClockInstanceOnAir,
       data: { state: 'yellow' },
-      takeTimeFieldKeys: [],
-    });
-    fakeServer.acceptLastCommand();
-  });
-
-  it('"Colocar no ar" sends the whole form as it stands while the clock is on air', async () => {
-    // Arrange: the first heat on air, and 20:00 typed in the form.
-    const { fakeServer } = renderPanelWithTheFirstHeatOnAir();
-    typeIntoField(referenceTimeLabel, '20:00');
-
-    // Act: press "Colocar no ar", not "Atualizar".
-    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
-
-    // Assert: the take is the form, which was filled from what is on air, with the typed
-    // 20:00 (1 200 000 ms). What could surprise: the reference moment is the 9:45 the
-    // form took from the air, as a typed number, so a running clock would count 20:00
-    // from 9:45. To restart it from the press the operator chooses "Momento da entrada
-    // no ar" for that field first.
-    expect(
-      fakeServer.listCommandsReceived()[0],
-      '"Colocar no ar" must send every field as the form shows it',
-    ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'green',
-        clockMode: 'elapsed',
-        referenceTimeMs: 1_200_000,
-        referenceWallClockMs: Date.parse(quarterToTen),
-        running: true,
-      },
       takeTimeFieldKeys: [],
     });
     fakeServer.acceptLastCommand();
@@ -257,7 +206,7 @@ describe('the quick edit form following what is on air', () => {
     ).toEqual([]);
   });
 
-  it('names the fields it could not read from the air, shows the refusal of "Atualizar", and "Colocar no ar" sends the whole form', async () => {
+  it('names the fields it could not read from the air, shows the refusal of "Atualizar", and keeps the edit', async () => {
     // Arrange: an instance of the race clock whose data has no clock fields at all (an
     // older version of the graphic, say). The operator loads it with "Editar" and changes
     // only the flag.
@@ -273,66 +222,48 @@ describe('the quick edit form following what is on air', () => {
     chooseOptionInDropdown('Bandeira', 'Amarela');
 
     // Act: press "Atualizar". The server lays the flag over what is on air, finds the
-    // clock mode still missing and refuses, as the real one does. Then press "Colocar no ar".
+    // clock mode still missing and refuses, as the real one does.
     await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
     letTheServerRefuseTheLastUpdateForARequiredFieldMissingOnAir(
       fakeServer,
       instanceWithoutClockFields,
     );
-    const refusalNextToTheButtons = (await screen.findByRole('alert')).textContent;
-    await waitUntilButtonIsOnAgain('Colocar no ar');
-    await pressButtonAndWaitForCommand('Colocar no ar', 2, fakeServer);
+    const refusalNextToTheButton = (await screen.findByRole('alert')).textContent;
 
     // Assert: the form showed what it could read and said which four required fields it
-    // could not, by their labels, and what each button does about it.
+    // could not, by their labels, and what "Atualizar" does about it.
     expect(
       screen.getByLabelText('Título'),
       'a field that can be read must be shown although others cannot',
     ).toHaveValue('Enduro de Resistência — Bateria 1');
     expect(
       warningAboveTheForm,
-      'the panel must name the fields it could not read and say truthfully what the two buttons do',
+      'the panel must name the fields it could not read and say truthfully what "Atualizar" does',
     ).toBe(
-      `Estes campos do que está no ar não puderam ser lidos e aparecem com o valor inicial: Modo do relógio, ${referenceTimeLabel}, ${referenceMomentLabel}, Relógio correndo. "Atualizar" envia só o que você alterar, e o servidor recusa enquanto faltar um campo obrigatório no ar; "Colocar no ar" envia o formulário inteiro e substitui o que está no ar.`,
+      `Estes campos do que está no ar não puderam ser lidos e aparecem com o valor inicial: Modo do relógio, ${referenceTimeLabel}, ${referenceMomentLabel}, Relógio correndo. "Atualizar" envia só o que você alterar; preencha estes campos para enviá-los.`,
     );
     // The update carried the flag alone: the server is never sent a value the operator
     // has not seen and changed. That is why it was refused, and the operator is told so.
     expect(
-      fakeServer.listCommandsReceived()[0],
+      fakeServer.listCommandsReceived(),
       'a field that could not be read and was not touched must not be sent by "Atualizar"',
-    ).toEqual({
-      type: 'updateInstanceData',
-      instanceId: idOfTheRaceClockInstanceOnAir,
-      data: { state: 'yellow' },
-      takeTimeFieldKeys: [],
-    });
+    ).toEqual([
+      {
+        type: 'updateInstanceData',
+        instanceId: idOfTheRaceClockInstanceOnAir,
+        data: { state: 'yellow' },
+        takeTimeFieldKeys: [],
+      },
+    ]);
     expect(
-      refusalNextToTheButtons,
-      "the server's refusal of the incomplete result must be shown next to the buttons",
+      refusalNextToTheButton,
+      "the server's refusal of the incomplete result must be shown next to the button",
     ).toBe(
       'Dados inválidos para o gráfico "race-clock": o campo "clockMode" é obrigatório e não foi enviado.',
     );
-    // The way out: the take carries every field, the yellow flag the operator chose and
-    // the starting values of the fields that could not be read, so nothing is missing
-    // and the real server accepts it. The reference moment starts as in an empty form,
-    // "Momento da entrada no ar", so the server writes the moment of this take: the
-    // page never sends the manifest's default 0 as the moment a clock counts from.
     expect(
-      fakeServer.listCommandsReceived()[1],
-      '"Colocar no ar" must send the whole form, with the edit the refused update kept',
-    ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        state: 'yellow',
-        clockMode: 'elapsed',
-        referenceTimeMs: 0,
-        running: false,
-      },
-      takeTimeFieldKeys: ['referenceWallClockMs'],
-    });
-    fakeServer.acceptLastCommand();
+      screen.getByRole('combobox', { name: 'Bandeira' }),
+      'the edit the refused update carried must still be in the form',
+    ).toHaveTextContent('Amarela');
   });
 });

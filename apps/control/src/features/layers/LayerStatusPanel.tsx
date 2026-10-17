@@ -5,8 +5,11 @@ import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { useQuickEditChoice } from '@/features/playout/QuickEditChoiceProvider';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
+import { nameFieldsByTheirTitles } from './fieldsOfInstanceOnAir';
 import { LayerStatusRow } from './LayerStatusRow';
 import { useCurrentTime } from './useCurrentTime';
+import { useSavesFromCamadas } from './useSavesFromCamadas';
+import { WallClockChoiceDialog } from './WallClockChoiceDialog';
 
 // "há 2 min" changes once a minute; refreshing every 10 s keeps it at most 10 s late.
 const relativeTimeRefreshIntervalInMilliseconds = 10_000;
@@ -19,15 +22,20 @@ const relativeTimeRefreshIntervalInMilliseconds = 10_000;
  * it is marked; a marked layer carries the chip "vai limpar" instead.
  * It only repeats the server's slices; pressing "Limpar" sends `clearLayer` and the row
  * changes when the server's next instances slice arrives, not before.
+ * A row whose instance was changed on air offers "Salvar no item" and one with no item
+ * "Salvar como item" (useSavesFromCamadas.ts); either may first ask about a clock's
+ * moment (WallClockChoiceDialog.tsx).
  */
 export function LayerStatusPanel() {
   const layers = useServerState((state) => state.layers);
   const graphics = useServerState((state) => state.graphics);
   const instances = useServerState((state) => state.instances);
+  const items = useServerState((state) => state.items);
   const previewClearedLayerIds = useServerState((state) => state.previewClearedLayerIds);
   const sendCommand = useSendCommand();
   const { editInstanceInQuickEdit } = useQuickEditChoice();
   const currentTime = useCurrentTime(relativeTimeRefreshIntervalInMilliseconds);
+  const saves = useSavesFromCamadas(graphics);
 
   // Copied before sorting: the list in the store belongs to the store.
   const layersFromBottomToTop = [...layers].sort(
@@ -43,6 +51,13 @@ export function LayerStatusPanel() {
             const instanceInPreview = findInstanceInPreview(instances, layer.id);
             const programInstanceToEdit = keepIfItsGraphicIsListed(instanceOnProgram, graphics);
             const previewInstanceToEdit = keepIfItsGraphicIsListed(instanceInPreview, graphics);
+            const graphicOnProgram = graphics.find(
+              (graphic) => graphic.id === instanceOnProgram?.graphicId,
+            );
+            const keysChangedOnAir = instanceOnProgram?.fieldsChangedOnAir ?? [];
+            const isItemOnProgramStored = items.some(
+              (item) => item.id === instanceOnProgram?.itemId,
+            );
             return (
               <LayerStatusRow
                 key={layer.id}
@@ -66,12 +81,30 @@ export function LayerStatusPanel() {
                     ? undefined
                     : () => editInstanceInQuickEdit(previewInstanceToEdit)
                 }
+                changedFieldTitles={nameFieldsByTheirTitles(graphicOnProgram, keysChangedOnAir)}
+                onSaveIntoItemPressed={
+                  instanceOnProgram === undefined ||
+                  keysChangedOnAir.length === 0 ||
+                  !isItemOnProgramStored
+                    ? undefined
+                    : () => saves.pressSaveIntoItem(instanceOnProgram)
+                }
+                onSaveAsItemPressed={
+                  instanceOnProgram === undefined || instanceOnProgram.itemId !== undefined
+                    ? undefined
+                    : () => saves.pressSaveAsItem(instanceOnProgram)
+                }
               />
             );
           })}
         </ul>
         {/* "Limpar" and "Limpar tudo" show their refusals below the panel (AppShell.tsx). */}
-        <CommandErrorMessage commandTypes={['previewClearLayer']} />
+        <CommandErrorMessage commandTypes={['previewClearLayer', 'saveOnAirChangesIntoItem']} />
+        <WallClockChoiceDialog
+          isOpen={saves.isAskingAboutTheClock}
+          onChosen={saves.answerTheClockQuestion}
+          onCancelled={saves.cancelTheClockQuestion}
+        />
       </CardContent>
     </Card>
   );

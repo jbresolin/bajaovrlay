@@ -10,6 +10,6 @@ Start reading at `index.ts` (the public surface), then `describeSchemaFormFromDa
   turns a value between data and control (`minutesAndSeconds.ts`, `localDateAndTimeText.ts`).
 - `checkSchemaFormValues.ts` checks the form with `zodSchemaFromDataSchema.ts` (pt-BR messages;
   the server stays the authority); `schemaFormResolver.ts` hands it to react-hook-form.
-- `takeDataFromSchemaForm.ts`, `instanceUpdateFromSchemaForm.ts`, `itemFieldsFromSchemaForm.ts`
+- `instanceUpdateFromSchemaForm.ts`, `itemFieldsFromSchemaForm.ts`
   build each command's data. `SchemaFormFields.tsx` draws it (`SchemaFormFieldRow.tsx`, `SchemaFormValueControl.tsx`,
   `UnsupportedValueBox.tsx`; `textShownInUntouchedField.ts`: a panel's text in an untouched field).

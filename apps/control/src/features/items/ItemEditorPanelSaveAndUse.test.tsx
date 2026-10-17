@@ -179,13 +179,16 @@ describe('"Salvar e disparar" and "Salvar e prévia" for a new item', () => {
     });
 
     // Assert: the editor now edits the stored item and shows the refusal; nothing deleted.
-    const editorArea = within(screen.getByRole('region', { name: 'Editor de item' }));
+    // (The editor of the stored item is a new one, so its area is looked up afresh.)
     await waitFor(() => {
       expect(
-        editorArea.getByRole('heading', { name: 'Editar item' }),
+        within(screen.getByRole('region', { name: 'Editor de item' })).getByRole('heading', {
+          name: 'Editar item',
+        }),
         'the editor must now be the editor of the item just saved',
       ).toBeVisible();
     });
+    const editorArea = within(screen.getByRole('region', { name: 'Editor de item' }));
     expect(
       editorArea.getByText('Item salvo — vale para os próximos disparos'),
       'the operator must see that the item is saved',

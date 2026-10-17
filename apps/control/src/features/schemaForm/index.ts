@@ -60,10 +60,6 @@ export { buildSchemaFormResolver } from './schemaFormResolver';
 // Builds the Zod schema of a graphic's data from its JSON Schema, with pt-BR messages.
 export { buildZodSchemaFromDataSchema } from './zodSchemaFromDataSchema';
 
-// The two parts of a takeGraphic that come from a form: `data` and `takeTimeFieldKeys`.
-export type { TakeDataFromSchemaForm } from './takeDataFromSchemaForm';
-// Builds a take from a checked form: the whole form, cleared fields left out.
-export { buildTakeDataFromSchemaForm } from './takeDataFromSchemaForm';
 // The parts of an updateInstanceData that come from a form, and "is there nothing to send?".
 export type { InstanceUpdateFromSchemaForm } from './instanceUpdateFromSchemaForm';
 // Builds an on-air update from a checked form: only the changed fields, null for a cleared one.

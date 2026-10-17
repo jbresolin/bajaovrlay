@@ -51,6 +51,24 @@ export function chooseTabShown(tabs: QuickFireTab[], chosenTab: QuickFireTab | n
   return tabs[0] ?? { kind: 'macros' };
 }
 
+/**
+ * The panel a new shortcut made from elsewhere on the page goes to ("Novo gráfico…" of
+ * "Edição rápida"): the panel of the tab shown, or the first panel when the "Macros" tab
+ * is shown, since a macro tab holds no items. With no panel at all (the server always
+ * seeds one, so never in practice) the seeded panel's id is named, and the server
+ * refuses it with its own message.
+ */
+export function findPanelIdForNewShortcut(tabs: QuickFireTab[], tabShown: QuickFireTab): string {
+  if (tabShown.kind === 'panel') {
+    return tabShown.panelId;
+  }
+  const firstPanelTab = tabs.find((tab) => tab.kind === 'panel');
+  if (firstPanelTab?.kind === 'panel') {
+    return firstPanelTab.panelId;
+  }
+  return 'atalhos';
+}
+
 // The function keys in the order of the tabs they open, as the keyboard map lists them
 // (F1 to F4). Widened to plain strings so any KeyboardEvent.key can be looked up.
 const functionKeysInTabOrder: readonly string[] = keyboardMap.switchQuickFireTab.keys;

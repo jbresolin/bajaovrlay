@@ -2,7 +2,11 @@ import type { Command, Item, ItemFields, ItemHome } from '@bajaovrlay/shared';
 import { type RefObject, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
-import { useReadServerStateNow, useSendCommand } from '@/state/ControlPageStateProvider';
+import {
+  useReadServerStateNow,
+  useSendCommand,
+  useSendCommandAndReadItsAnswer,
+} from '@/state/ControlPageStateProvider';
 
 import {
   buildCreateItemCommand,
@@ -10,6 +14,7 @@ import {
   buildUpdateItemFieldsCommand,
 } from './itemCommandsFromEditor';
 import type { ItemEditorFormValues } from './itemEditorForm';
+import { useItemEditorTarget } from './ItemEditorTargetProvider';
 import type { ItemGraphicFieldsFormHandle } from './ItemGraphicFieldsForm';
 import { findInstanceOfItemOnProgram } from './itemInstanceOnAir';
 import {
@@ -21,8 +26,12 @@ import {
 } from './itemsTheServerMayStore';
 import { useAskToBeClosedOnce } from './useAskToBeClosedOnce';
 
-/** What a press asks for: "Salvar item", or "Atualizar no ar" (save, then change the air). */
-export type WhatThePressAsksFor = 'saveItem' | 'saveItemAndUpdateOnAir';
+/**
+ * What a press asks for: "Salvar item"; "Salvar e disparar" or "Salvar e prévia" (save,
+ * then take or preview this item); or "Atualizar no ar" (save, then change the air).
+ */
+export type WhatThePressAsksFor =
+  'saveItem' | 'saveItemAndTake' | 'saveItemAndPreview' | 'saveItemAndUpdateOnAir';
 
 /** What the saves are built from: the editor's two forms and what it was opened for. */
 export type ItemEditorSavesOptions = {
@@ -37,6 +46,8 @@ export type ItemEditorSavesOptions = {
   checkBothForms: () => Promise<boolean>;
   /** Called after the server accepted everything a press sent, and on "Cancelar". */
   onClose: () => void;
+  /** The command types whose refusal the buttons show from the start (usually none). */
+  refusalsToShowAtOpening: Command['type'][];
 };
 
 /** What the editor's buttons need from the saves. */
@@ -54,14 +65,17 @@ export type ItemEditorSaves = {
 /**
  * The commands a press of the item editor sends, and what the editor does with each
  * answer: `createItem` for a new item, `updateItemFields` with only what changed for a
- * stored one, and for "Atualizar no ar" then `updateInstanceData` for the item's
- * instance on air. The editor's two forms and its drawing stay in ItemEditorPanel.tsx;
- * this hook only reads them at the press.
+ * stored one; then, for "Salvar e disparar" and "Salvar e prévia", `takeItem` or
+ * `previewItem` (origin manual) for that item, and for "Atualizar no ar"
+ * `updateInstanceData` for the item's instance on air. The editor's two forms and its
+ * drawing stay in ItemEditorPanel.tsx; this hook only reads them at the press.
  */
 export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorSaves {
   const { itemAsItWasWhenOpened, itemForm, graphicFieldsFormHandleRef } = options;
   const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
+  const sendCommandAndReadItsAnswer = useSendCommandAndReadItsAnswer();
+  const { openItemEditorForItem } = useItemEditorTarget();
   const { askToBeClosedOnce, hasEditorFinishedWithThisItem } = useAskToBeClosedOnce(
     options.onClose,
   );
@@ -87,14 +101,17 @@ export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorS
   // would appear here although this editor never sent an on-air update.
   const [commandTypesSentInThisOpening, setCommandTypesSentInThisOpening] = useState<
     Command['type'][]
-  >([]);
+  >(options.refusalsToShowAtOpening);
   function rememberCommandTypeWasSent(commandType: Command['type']): void {
     setCommandTypesSentInThisOpening((typesSentSoFar) => [...typesSentSoFar, commandType]);
   }
 
-  // Sends the whole of a new item. Answers whether the server accepted it. The moment of
-  // the save plays no part: a wall-clock field is stamped by the server at the take.
-  async function createTheNewItem(): Promise<boolean> {
+  // Sends the whole of a new item. Answers whether the server accepted it and, when it
+  // did, the id it gave the item (a server that names none answers `undefined`). The
+  // moment of the save plays no part: a wall-clock field is stamped by the server at the take.
+  async function createTheNewItem(): Promise<
+    { wasAccepted: false } | { wasAccepted: true; createdItemId: string | undefined }
+  > {
     const graphicFieldsForm = graphicFieldsFormHandleRef.current;
     const createCommand = buildCreateItemCommand({
       home: options.chosenHomeForNewItem,
@@ -102,7 +119,57 @@ export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorS
       fields: graphicFieldsForm === null ? {} : graphicFieldsForm.buildFieldsOfNewItem(),
     });
     rememberCommandTypeWasSent('createItem');
-    return sendCommand(createCommand);
+    const answer = await sendCommandAndReadItsAnswer(createCommand);
+    if (answer === null) {
+      return { wasAccepted: false };
+    }
+    return { wasAccepted: true, createdItemId: answer.createdItemId };
+  }
+
+  // "Salvar e disparar" takes the item, "Salvar e prévia" previews it, asked for by hand.
+  // Answers whether the server accepted. Deliberate: the take is sent as it is, without
+  // the automatic preview of the next cursor item that "Disparar" on a rundown row
+  // brings, because the editor needs the answer to decide whether to close.
+  async function takeOrPreviewTheSavedItem(
+    itemId: string,
+    whatThePressAsksFor: 'saveItemAndTake' | 'saveItemAndPreview',
+  ): Promise<boolean> {
+    if (whatThePressAsksFor === 'saveItemAndTake') {
+      rememberCommandTypeWasSent('takeItem');
+      return sendCommand({ type: 'takeItem', itemId });
+    }
+    rememberCommandTypeWasSent('previewItem');
+    return sendCommand({ type: 'previewItem', itemId, origin: 'manual' });
+  }
+
+  // A new item, start to finish. After a refused take of an item just created, the item
+  // stays saved (a save is never rolled back) and the editor turns into the editor of
+  // that stored item, showing the refusal: pressed again, it would otherwise create a
+  // second item.
+  async function createTheNewItemThenUseIt(whatThePressAsksFor: WhatThePressAsksFor) {
+    const creation = await createTheNewItem();
+    if (!creation.wasAccepted || hasEditorFinishedWithThisItem()) {
+      return;
+    }
+    const isUseAskedFor =
+      whatThePressAsksFor === 'saveItemAndTake' || whatThePressAsksFor === 'saveItemAndPreview';
+    if (!isUseAskedFor || creation.createdItemId === undefined) {
+      askToBeClosedOnce();
+      return;
+    }
+    const wasUseAccepted = await takeOrPreviewTheSavedItem(
+      creation.createdItemId,
+      whatThePressAsksFor,
+    );
+    if (wasUseAccepted) {
+      askToBeClosedOnce();
+      return;
+    }
+    if (!hasEditorFinishedWithThisItem()) {
+      const refusedCommandType =
+        whatThePressAsksFor === 'saveItemAndTake' ? 'takeItem' : 'previewItem';
+      openItemEditorForItem(creation.createdItemId, [refusedCommandType]);
+    }
   }
 
   // The fields of the graphic in which the form differs from what `comparedItem` stores.
@@ -203,10 +270,7 @@ export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorS
 
     const itemsTheServerMayStore = itemsTheServerMayStoreRef.current;
     if (itemAsItWasWhenOpened === null || itemsTheServerMayStore === null) {
-      const wasNewItemAccepted = await createTheNewItem();
-      if (wasNewItemAccepted) {
-        askToBeClosedOnce();
-      }
+      await createTheNewItemThenUseIt(whatThePressAsksFor);
       return;
     }
 
@@ -218,6 +282,17 @@ export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorS
       const wasOnAirUpdateAcceptedOrNotNeeded =
         await updateInstanceOfItemOnAir(itemAsItWasWhenOpened);
       if (!wasOnAirUpdateAcceptedOrNotNeeded) {
+        return;
+      }
+    }
+    // A refused take or preview leaves the editor open with the server's message; the
+    // save it followed stays accepted, and the next press compares with what was saved.
+    if (whatThePressAsksFor === 'saveItemAndTake' || whatThePressAsksFor === 'saveItemAndPreview') {
+      const wasUseAccepted = await takeOrPreviewTheSavedItem(
+        itemAsItWasWhenOpened.id,
+        whatThePressAsksFor,
+      );
+      if (!wasUseAccepted) {
         return;
       }
     }

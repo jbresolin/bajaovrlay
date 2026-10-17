@@ -1,9 +1,8 @@
-// Test support: what the real server does to the data of a take or an update before it
-// answers, so the fake server of the panel tests answers as the real one would. The
-// steps and their order are the server's (apps/server/src/core/store/reducers/
-// takeGraphic.ts and updateInstanceData.ts): refuse a field that may not be stamped, take
-// out the fields sent as null, stamp, and for an update run the update rule the graphic's
-// manifest names. The control page may not import server code, so the steps are written
+// Test support: what the real server does to the data of an update before it answers,
+// so the fake server of the panel tests answers as the real one would. The steps and
+// their order are the server's (apps/server/src/core/store/reducers/
+// updateInstanceData.ts): refuse a field that may not be stamped, take out the fields
+// sent as null, stamp, and run the update rule the graphic's manifest names. The control page may not import server code, so the steps are written
 // again here; the clock's sum and rounding are the one copy in packages/shared. Left out
 // on purpose: the check of the result against the graphic's schema. Nothing keeps state.
 import {
@@ -165,30 +164,6 @@ function carryClockForwardAsTheServerDoes(
     ...fieldsSentAndStamped,
     [referenceTimeKey]: referenceTimeToWrite,
     [referenceMomentKey]: nowMs,
-  };
-}
-
-/**
- * What the real server leaves on air for a take of this graphic: the data sent, without
- * the fields sent as null, with the moment of the take in every field named for
- * stamping. Refused, as by the real server, when a field named for stamping is not a
- * wall-clock moment in the graphic's schema. A take runs no update rule.
- */
-export function prepareDataOfTakeAsTheServerDoes(
-  graphic: Graphic,
-  takeSent: CommandDataSentToFakeServer,
-): GraphicDataOutcomeOnFakeServer {
-  const keyThatCannotBeStamped = takeSent.takeTimeFieldKeys.find(
-    (fieldKey) => !isFieldAWallClockMomentOfGraphic(graphic, fieldKey),
-  );
-  if (keyThatCannotBeStamped !== undefined) {
-    return refuseFieldGraphicCannotStamp(graphic, keyThatCannotBeStamped);
-  }
-
-  const { fieldsWithAValue } = separateClearedFieldsFromData(takeSent.data);
-  return {
-    wasAccepted: true,
-    dataLeftOnAir: stampFieldsWithMomentOfTheCommand(fieldsWithAValue, takeSent),
   };
 }
 

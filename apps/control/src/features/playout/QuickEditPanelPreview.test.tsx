@@ -123,10 +123,9 @@ describe('"Edição rápida" with a preview loaded', () => {
     await pressButtonAndWaitUntilThePressIsOver('Atualizar prévia');
 
     // Assert: still one command; the form shows yellow and the panel still edits the preview.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'an untouched form must send nothing',
-    ).toHaveLength(1);
+    expect(fakeServer.listCommandsReceived(), 'an untouched form must send nothing').toHaveLength(
+      1,
+    );
     expect(
       screen.getByRole('combobox', { name: 'Bandeira' }),
       'the form must show the preview as the server now holds it',

@@ -39,7 +39,7 @@ import type { CommandInput, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
-  buildLowerThirdPreviewMadeByHand,
+  buildLowerThirdPreviewWhoseItemIsGone,
   buildRaceClockPreviewOfItem,
 } from '@/state/previewLikeTheServerSends.testSupport';
 import {
@@ -113,7 +113,7 @@ const operatorKeyScenarios: Array<{
     operatorKey: 'space',
     cursorItemId: enduranceStartItemId,
     isRundownOnScreen: true,
-    instances: [buildLowerThirdPreviewMadeByHand(momentTheStartWasPreviewed)],
+    instances: [buildLowerThirdPreviewWhoseItemIsGone(momentTheStartWasPreviewed)],
     expectedCommand: takeNextOfTheMainRundown,
   },
   // The cursor item is on air already (the Left arrow brought the cursor back to it) and
@@ -134,7 +134,7 @@ const operatorKeyScenarios: Array<{
     cursorItemId: enduranceStartItemId,
     isRundownOnScreen: true,
     instances: [
-      buildLowerThirdPreviewMadeByHand(oneMinuteLater),
+      buildLowerThirdPreviewWhoseItemIsGone(oneMinuteLater),
       buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed),
     ],
     expectedCommand: { type: 'takePreview', layerId: 'clock' },
@@ -213,7 +213,7 @@ const operatorKeyScenarios: Array<{
     cursorItemId: enduranceStartItemId,
     isRundownOnScreen: true,
     instances: [
-      buildLowerThirdPreviewMadeByHand(oneMinuteLater),
+      buildLowerThirdPreviewWhoseItemIsGone(oneMinuteLater),
       buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed),
     ],
     expectedCommand: { type: 'stopPreview', layerId: 'lower-third' },
@@ -226,7 +226,7 @@ const operatorKeyScenarios: Array<{
     cursorItemId: enduranceStartItemId,
     isRundownOnScreen: true,
     instances: [
-      buildLowerThirdPreviewMadeByHand(momentTheStartWasPreviewed),
+      buildLowerThirdPreviewWhoseItemIsGone(momentTheStartWasPreviewed),
       buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed),
     ],
     expectedCommand: { type: 'stopPreview', layerId: 'clock' },
@@ -268,7 +268,7 @@ const operatorKeyScenarios: Array<{
     operatorKey: 'backspace',
     cursorItemId: null,
     isRundownOnScreen: false,
-    instances: [buildLowerThirdPreviewMadeByHand(momentTheStartWasPreviewed)],
+    instances: [buildLowerThirdPreviewWhoseItemIsGone(momentTheStartWasPreviewed)],
     expectedCommand: { type: 'stopPreview', layerId: 'lower-third' },
   },
 ];

@@ -4,19 +4,19 @@
  * What this module is for:
  *   The panel tests talk to a fake server. It is only worth anything if it answers as the
  *   real one does, so graphicDataAsTheServerPreparesIt.testSupport.ts copies the real
- *   server's steps for the data of a take and of an update. These tests pin the two
- *   steps where a dishonest fake would let a wrong control page pass.
+ *   server's steps for the data of an update ("Atualizar", the one command "Edição
+ *   rápida" sends since BAJAOVRLAY-37). These tests pin the two steps where a dishonest
+ *   fake would let a wrong control page pass.
  *
  * What these tests prove:
  *   - The fake stamps the moment of the command only into a field the graphic's schema
  *     declares as an integer with `v_baja.role: "wallClock"`. Any other field named for
- *     stamping is refused in the real server's words, for a take and for an update, and
- *     a graphic without a schema accepts no stamp at all.
+ *     stamping is refused in the real server's words, and a graphic without a schema
+ *     accepts no stamp at all.
  *   - For an update of the race clock the fake carries the clock forward as the real
  *     server's `carryClockForward` rule does: a stopped clock keeps the time the screen
  *     showed, a flag change leaves the clock's fields alone, a stamp asked for by the
  *     sender is obeyed as it came, and a clock turned around keeps the whole second on screen.
- *   - A take runs no such rule.
  *
  * What these tests deliberately do not cover:
  *   - The real server. Its own tests are the proof of these rules
@@ -30,10 +30,7 @@ import { describe, expect, it } from 'vitest';
 import { buildLowerThirdFixtureGraphic } from '@/state/lowerThirdFixtureGraphic.testSupport';
 import { buildRaceClockGraphic } from '@/state/slicesLikeTheServerSends.testSupport';
 
-import {
-  prepareDataOfTakeAsTheServerDoes,
-  prepareDataOfUpdateAsTheServerDoes,
-} from './graphicDataAsTheServerPreparesIt.testSupport';
+import { prepareDataOfUpdateAsTheServerDoes } from './graphicDataAsTheServerPreparesIt.testSupport';
 
 // The Saturday of the endurance race, in Brasília time: the clock went on air at 9:45
 // and the command arrives at 10:00, fifteen minutes later.
@@ -53,23 +50,22 @@ function buildFirstHeatDataOnAir(): Record<string, unknown> {
 }
 
 describe('the fake server stamping the moment of a command', () => {
-  it('writes the moment of the take into the race clock field its schema marks as a moment', () => {
-    // Arrange: a take of the race clock that leaves the reference moment to the server.
+  it('writes the moment of the update into the race clock field its schema marks as a moment', () => {
+    // Arrange: the first heat on air, and an update that asks the server for a new moment.
     const raceClock = buildRaceClockGraphic();
 
-    // Act: the fake server prepares the data of that take, received at 10:00.
-    const outcome = prepareDataOfTakeAsTheServerDoes(raceClock, {
-      data: { sessionName: 'Enduro de Resistência — Bateria 1', referenceTimeMs: 754_000 },
+    // Act: the fake server prepares the data of that update, received at 10:00.
+    const outcome = prepareDataOfUpdateAsTheServerDoes(raceClock, buildFirstHeatDataOnAir(), {
+      data: {},
       takeTimeFieldKeys: ['referenceWallClockMs'],
       momentOfTheCommand: tenOClock,
     });
 
     // Assert: accepted, with 10:00 in milliseconds as the reference moment.
-    expect(outcome, 'a wall-clock field must be stamped with the moment of the take').toEqual({
+    expect(outcome, 'a wall-clock field must be stamped with the moment of the update').toEqual({
       wasAccepted: true,
       dataLeftOnAir: {
-        sessionName: 'Enduro de Resistência — Bateria 1',
-        referenceTimeMs: 754_000,
+        ...buildFirstHeatDataOnAir(),
         referenceWallClockMs: Date.parse(tenOClock),
       },
     });
@@ -101,7 +97,7 @@ describe('the fake server stamping the moment of a command', () => {
   ];
 
   it.each(stampsTheRealServerRefuses)(
-    'refuses a take and an update that ask for a stamp in $name',
+    'refuses an update that asks for a stamp in $name',
     ({ graphicId, fieldKey }) => {
       // Arrange: the graphic of the row, and a command that names the field for stamping.
       const graphicsListed = [buildRaceClockGraphic(), buildLowerThirdFixtureGraphic()];
@@ -115,15 +111,14 @@ describe('the fake server stamping the moment of a command', () => {
         momentOfTheCommand: tenOClock,
       };
 
-      // Act: the fake server prepares the command as a take and as an update.
-      const outcomeOfTheTake = prepareDataOfTakeAsTheServerDoes(graphic, commandAskingForTheStamp);
+      // Act: the fake server prepares the command as an update.
       const outcomeOfTheUpdate = prepareDataOfUpdateAsTheServerDoes(
         graphic,
         {},
         commandAskingForTheStamp,
       );
 
-      // Assert: both are refused, in the words the real server uses.
+      // Assert: refused, in the words the real server uses.
       const refusalInTheServersWords = {
         wasAccepted: false,
         refusal: {
@@ -131,9 +126,6 @@ describe('the fake server stamping the moment of a command', () => {
           message: `O gráfico "${graphicId}" não aceita que o servidor preencha o campo "${fieldKey}" com o momento do comando: o manifesto do gráfico não marca esse campo como um horário (número inteiro com v_baja.role "wallClock").`,
         },
       };
-      expect(outcomeOfTheTake, 'the take must be refused as the real server refuses it').toEqual(
-        refusalInTheServersWords,
-      );
       expect(
         outcomeOfTheUpdate,
         'the update must be refused as the real server refuses it',
@@ -149,12 +141,16 @@ describe('the fake server stamping the moment of a command', () => {
       manifest: { ...raceClock.manifest, schema: undefined },
     };
 
-    // Act: a take asks for the stamp the real race clock accepts.
-    const outcome = prepareDataOfTakeAsTheServerDoes(raceClockWithoutSchema, {
-      data: {},
-      takeTimeFieldKeys: ['referenceWallClockMs'],
-      momentOfTheCommand: tenOClock,
-    });
+    // Act: an update asks for the stamp the real race clock accepts.
+    const outcome = prepareDataOfUpdateAsTheServerDoes(
+      raceClockWithoutSchema,
+      {},
+      {
+        data: {},
+        takeTimeFieldKeys: ['referenceWallClockMs'],
+        momentOfTheCommand: tenOClock,
+      },
+    );
 
     // Assert: refused. With no schema nothing says that field is a moment.
     expect(
@@ -271,24 +267,6 @@ describe('the fake server carrying the race clock forward on an update', () => {
         referenceTimeMs: 1_654_000,
         referenceWallClockMs: Date.parse(halfASecondPastTen),
       },
-    });
-  });
-
-  it('runs no rule for a take: the data goes on air as it was sent', () => {
-    // Arrange: a take of the race clock stopped at 12:34, with a typed reference moment.
-    const dataOfTheTake = { ...buildFirstHeatDataOnAir(), running: false };
-
-    // Act: the fake server prepares that take, received at 10:00.
-    const outcome = prepareDataOfTakeAsTheServerDoes(buildRaceClockGraphic(), {
-      data: dataOfTheTake,
-      takeTimeFieldKeys: [],
-      momentOfTheCommand: tenOClock,
-    });
-
-    // Assert: exactly the data sent. Carrying forward is for updates only.
-    expect(outcome, 'a take must put on air exactly what was sent').toEqual({
-      wasAccepted: true,
-      dataLeftOnAir: dataOfTheTake,
     });
   });
 });

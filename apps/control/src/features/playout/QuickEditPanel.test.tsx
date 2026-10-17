@@ -2,20 +2,14 @@
  * "Edição rápida" with the race clock (apps/control)
  *
  * What this module is for:
- *   The centre panel where the operator fills a graphic's data and puts it on air with
- *   "Colocar no ar". While an instance on air is loaded into it (a "Camadas" row's
- *   "Editar"), a second button, "Atualizar", sends only what the operator touched, as an
- *   `updateInstanceData` for that instance. The
- *   graphic changes in place, so a flag change in the middle of a race never takes the
- *   clock off the screen. The form is generated from the graphic's manifest; these tests
- *   use the real race clock manifest.
+ *   The centre panel where the operator changes what is on air. With an instance loaded
+ *   into it (a "Camadas" row's "Editar"), "Atualizar" sends only what the operator
+ *   touched, as an `updateInstanceData` for that instance. The graphic changes in place,
+ *   so a flag change in the middle of a race never takes the clock off the screen. The
+ *   form is generated from the graphic's manifest; these tests use the real race clock
+ *   manifest. Since BAJAOVRLAY-37 the panel puts nothing new on air.
  *
  * What these tests prove:
- *   - With nothing on air the form opens with the manifest's defaults, the reference
- *     moment set to "filled by the server", and no "Atualizar".
- *   - "Colocar no ar" sends one `takeGraphic` for the graphic's default layer, built from
- *     what was typed and chosen. The reference moment is not in the data: it is named in
- *     `takeTimeFieldKeys` for the server to fill. A blank optional field is left out.
  *   - Pressing Enter in a field sends nothing.
  *   - When the page loads with the clock already on air (a reload in the middle of a
  *     race) and the clock is loaded with "Editar", the form shows what is on air as the
@@ -26,14 +20,14 @@
  *   - "Atualizar" with nothing changed sends nothing.
  *
  * What these tests deliberately do not cover:
- *   - The third button, "Prévia", which shows the form on the preview output:
- *     QuickEditPanelPreview.test.tsx.
+ *   - The panel with nothing loaded: QuickEditPanelEmptyState.test.tsx; a loaded
+ *     preview ("Atualizar prévia"): QuickEditPanelPreview.test.tsx.
  *   - The form after a command the server accepted, and on-air data the form cannot show
  *     or refuses: QuickEditPanelUpdate.test.tsx.
  *   - Someone else changing the graphic on air: QuickEditPanelOtherOperator.test.tsx.
  *   - Field messages, refusals and a dropped connection: QuickEditPanelProblems.test.tsx.
- *   - Another graphic: QuickEditPanelChoosingTheGraphic.test.tsx; what is loaded into the
- *     panel and when it lets go: QuickEditPanelTarget.test.tsx.
+ *   - Another graphic: QuickEditPanelLowerThird.test.tsx; what is loaded into the panel and
+ *     when it lets go: QuickEditPanelTarget.test.tsx.
  *   - Every control and every rule of a generated form: features/schemaForm has its own tests.
  *   - The time field following the screen second by second, and what the cursor and
  *     typing do to it: QuickEditPanelTimeOnScreen.test.tsx.
@@ -61,7 +55,6 @@ import {
   holdThePageClockAt,
   idOfTheRaceClockInstanceOnAir,
   lapsLabel,
-  pressButtonAndWaitForCommand,
   pressButtonAndWaitUntilThePressIsOver,
   pressEditOnTheLayerRow,
   referenceMomentKindSelectorName,
@@ -98,129 +91,10 @@ function renderPanelAfterAReloadWithTheFirstHeatOnAir() {
   return controlPage;
 }
 
-describe('"Edição rápida" with the race clock and nothing on air', () => {
-  it('opens on the race clock with the manifest defaults, "Colocar no ar" and no "Atualizar"', () => {
-    // Arrange: nothing on air; the race clock is the first graphic the server lists.
-
-    // Act: draw the panel.
-    renderQuickEditPanelWithTheseInstancesOnAir([]);
-
-    // Assert: the panel is titled, shows the race clock, each field shows the default
-    // its manifest declares, and there is nothing to update yet.
-    expect(
-      screen.getByRole('heading', { name: 'Edição rápida' }),
-      'the panel must be titled "Edição rápida"',
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('combobox', { name: 'Gráfico a editar' }),
-      'the graphic dropdown must show the race clock by the name in its manifest',
-    ).toHaveTextContent('Relógio de prova');
-    expect(
-      screen.getByLabelText('Título'),
-      'the session name must start as the manifest default',
-    ).toHaveValue('Enduro de Resistência');
-    expect(
-      screen.getByRole('combobox', { name: 'Bandeira' }),
-      'the flag must start as "Pré-largada"',
-    ).toHaveTextContent('Pré-largada');
-    expect(
-      screen.getByRole('combobox', { name: 'Modo do relógio' }),
-      'the clock mode must start as "Tempo decorrido"',
-    ).toHaveTextContent('Tempo decorrido');
-    expect(
-      screen.getByRole('switch', { name: 'Relógio correndo' }),
-      'the clock must start stopped',
-    ).not.toBeChecked();
-    expect(
-      screen.getByLabelText(referenceTimeLabel),
-      'the reference time must start at zero, typed as mm:ss',
-    ).toHaveValue('0:00');
-    expect(
-      screen.getByRole('combobox', { name: referenceMomentKindSelectorName }),
-      'the reference moment must start as "filled by the server at the take"',
-    ).toHaveTextContent('Momento da entrada no ar');
-    expect(screen.getByLabelText(lapsLabel), 'the laps must start blank').toHaveValue(null);
-    expect(
-      screen.getByRole('button', { name: 'Colocar no ar' }),
-      'the take button must be there',
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Atualizar' }),
-      'there is nothing to update while the clock is off air',
-    ).toBeNull();
-  });
-
-  it('sends takeGraphic with what was typed and chosen, and asks the server for the reference moment', async () => {
-    // Arrange: the panel filled for the endurance race, 12 min 34 s in, under green.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-    typeIntoField('Título', 'Enduro de Resistência — Bateria 1');
-    chooseOptionInDropdown('Bandeira', 'Verde');
-    chooseOptionInDropdown('Modo do relógio', 'Tempo restante');
-    flipSwitch('Relógio correndo');
-    typeIntoField(referenceTimeLabel, '12:34');
-    typeIntoField(lapsLabel, '7');
-
-    // Act: press "Colocar no ar".
-    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
-
-    // Assert: one takeGraphic for the clock layer (the race clock's default layer). The
-    // data holds what the form holds, and the reference moment is not in it: the server
-    // is asked to write the moment of the take there, so this page reads no clock.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'the press must send exactly one takeGraphic with the form data',
-    ).toEqual([
-      {
-        type: 'takeGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: {
-          sessionName: 'Enduro de Resistência — Bateria 1',
-          state: 'green',
-          clockMode: 'remaining',
-          referenceTimeMs: 754_000,
-          running: true,
-          lapsCompletedByLeader: 7,
-        },
-        takeTimeFieldKeys: ['referenceWallClockMs'],
-      },
-    ]);
-    // (Then the server answers, so no command is left waiting for its 5-second timeout
-    // once the test is over.)
-    fakeServer.acceptLastCommand();
-  });
-
-  it('leaves a blank optional field out of the take', async () => {
-    // Arrange: the panel as it opens; the laps, the one optional field, are blank.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
-
-    // Act: press "Colocar no ar".
-    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
-
-    // Assert: the defaults go out and the laps are not in the data at all, neither as
-    // null nor as zero, so the graphic shows no lap count.
-    expect(
-      fakeServer.listCommandsReceived()[0],
-      'a field with no value must be left out of the take',
-    ).toEqual({
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: {
-        sessionName: 'Enduro de Resistência',
-        state: 'pre',
-        clockMode: 'elapsed',
-        referenceTimeMs: 0,
-        running: false,
-      },
-      takeTimeFieldKeys: ['referenceWallClockMs'],
-    });
-    fakeServer.acceptLastCommand();
-  });
-
+describe('"Edição rápida" after a reload with the race clock on air', () => {
   it('sends nothing when Enter is pressed in a field', () => {
-    // Arrange: the panel as it opens.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
+    // Arrange: the first heat on air, loaded into the panel.
+    const { fakeServer } = renderPanelAfterAReloadWithTheFirstHeatOnAir();
     const formAroundTheFields = screen.getByLabelText('Título').closest('form');
     if (formAroundTheFields === null) {
       throw new Error('the session name field is not inside a form');
@@ -234,12 +108,10 @@ describe('"Edição rápida" with the race clock and nothing on air', () => {
     expect(wasLeftToTheBrowser, 'the page must cancel the form submit').toBe(false);
     expect(
       fakeServer.listCommandsReceived(),
-      'Enter in a field must never put a graphic on air',
+      'Enter in a field must never change what is on air',
     ).toEqual([]);
   });
-});
 
-describe('"Edição rápida" after a reload with the race clock on air', () => {
   it('shows what is on air as the server holds it, and in the time field the time on screen', () => {
     // Arrange: the first heat on air since 9:45, running from 12:34 (see the factory).
     // The page's clock reads 10:00.

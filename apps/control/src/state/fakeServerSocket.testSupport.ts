@@ -43,6 +43,8 @@ export type FakeServerSocket = {
   readLastCommandMessageReceived: () => CommandMessageReceivedByFakeServer;
   /** The server answers the newest command with `ok: true`. */
   acceptLastCommand: () => void;
+  /** The server answers the newest command (a createItem) with `ok: true`, naming the item. */
+  acceptLastCommandNamingTheItemItCreated: (createdItemId: string) => void;
   /** The server answers the newest command with `ok: false` and this error. */
   refuseLastCommand: (error: CommandError) => void;
 };
@@ -105,6 +107,10 @@ export function createFakeServerSocket(): FakeServerSocket {
     acceptLastCommand: () => {
       const requestId = readLastCommandMessageReceived().requestId;
       sendMessage({ type: 'commandResult', requestId, ok: true });
+    },
+    acceptLastCommandNamingTheItemItCreated: (createdItemId) => {
+      const requestId = readLastCommandMessageReceived().requestId;
+      sendMessage({ type: 'commandResult', requestId, ok: true, createdItemId });
     },
     refuseLastCommand: (error) => {
       const requestId = readLastCommandMessageReceived().requestId;
