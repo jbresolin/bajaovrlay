@@ -29,8 +29,9 @@ import { useRundownKeyboardShortcuts } from './useRundownKeyboardShortcuts';
  *
  * The page's one item editor is drawn here, at the top of the column, whichever part of
  * the page opened it: this panel's "+ Item" and "Editar item", the quick-fire strip's
- * "+ Atalho" and "Editar" (features/quickFire), and "Salvar como item" of "Edição
- * rápida" (features/playout). What it is open for is the page's
+ * "+ Atalho" and "Editar" (features/quickFire), "Novo gráfico…" of "Edição rápida"
+ * (features/playout) and "Salvar como item" on a Camadas row (features/layers). What it
+ * is open for is the page's
  * (features/items/ItemEditorTargetProvider.tsx), so all of them can open it.
  *
  * A row's "⋯" menu moves its item to a quick-fire panel ("Mover para atalhos").
