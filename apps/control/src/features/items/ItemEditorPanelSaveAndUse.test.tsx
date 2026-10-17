@@ -13,8 +13,8 @@
  *   - A new item: createItem first, then, after the answer naming the new item,
  *     takeItem (or previewItem with origin manual) for that id; the editor asks to be
  *     closed once both were accepted.
- *   - A stored item: updateItemFields with what changed, then takeItem for the item's
- *     own id; untouched, only takeItem is sent.
+ *   - A stored item: updateItemFields with what changed, then takeItem (or previewItem with
+ *     origin manual) for the item's own id; untouched, only takeItem is sent.
  *   - A refused save sends no take.
  *   - A refused take never undoes the save: for a stored item the editor stays open with
  *     the server's message; for a new item the editor turns into the editor of the item
@@ -225,6 +225,32 @@ describe('"Salvar e disparar" for a stored item', () => {
     expect(fakeServer.listCommandsReceived(), 'the save must go before the take').toEqual([
       { type: 'updateItemFields', itemId: storedItem.id, label: 'Largada do enduro — 10h' },
       { type: 'takeItem', itemId: storedItem.id },
+    ]);
+    await waitFor(() => {
+      expect(onClose, 'the editor must close once both were accepted').toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('"Salvar e prévia" saves what changed, then previews the item by hand', async () => {
+    // Arrange: the editor on the stored start item, its label changed.
+    const storedItem = buildEnduranceStartClockItem();
+    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServerWithSlices(
+      storedItem,
+      buildSlicesWithTheStoredStartItem(),
+    );
+    typeIntoField('Rótulo', 'Largada do enduro — 10h');
+
+    // Act: "Salvar e prévia"; the server accepts the save, then the preview.
+    pressEditorButton('Salvar e prévia');
+    await waitForCommandsReceived(1, fakeServer);
+    fakeServer.acceptLastCommand();
+    await waitForCommandsReceived(2, fakeServer);
+    fakeServer.acceptLastCommand();
+
+    // Assert: the save of the label, then a preview of the item asked for by hand.
+    expect(fakeServer.listCommandsReceived(), 'the save must go before the preview').toEqual([
+      { type: 'updateItemFields', itemId: storedItem.id, label: 'Largada do enduro — 10h' },
+      { type: 'previewItem', itemId: storedItem.id, origin: 'manual' },
     ]);
     await waitFor(() => {
       expect(onClose, 'the editor must close once both were accepted').toHaveBeenCalledTimes(1);

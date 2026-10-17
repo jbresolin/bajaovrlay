@@ -19,12 +19,15 @@
  *     "Atualizar"; the panel does not start editing the instance that replaced it.
  *   - "Editar prévia" loads the preview, with "Em prévia" in the heading.
  *   - "Parar de editar" lets go of the instance; "Editar" again starts a fresh form.
+ *   - An "Atualizar" answered after the operator loaded another row leaves that row's
+ *     form alone.
  * */
 import type { Instance } from '@bajaovrlay/shared';
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { typeIntoField } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
+import { letThePageFinishWhatItStarted } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildRaceClockPreviewOfItem } from '@/state/previewLikeTheServerSends.testSupport';
 
 import {
@@ -180,6 +183,47 @@ describe('"Editar" on a "Camadas" row', () => {
         takeTimeFieldKeys: [],
       },
     ]);
+  });
+});
+
+describe('an "Atualizar" answered after the operator moved on', () => {
+  it('leaves the form of the row loaded since alone', async () => {
+    // Arrange: two race clocks on air. The operator loads the endurance clock, changes its
+    // title and presses "Atualizar"; before the answer, they press "Editar" on "Tarja".
+    const enduranceClock = buildEnduranceClockOnTheClockLayer();
+    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
+      enduranceClock,
+      buildQualifyingClockOnTheLowerThirdLayer(),
+    ]);
+    pressEditOnTheLayerRow('Relógio');
+    typeIntoField('Título', 'Enduro — Relargada');
+    await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
+    pressEditOnTheLayerRow('Tarja');
+
+    // Act: the server applies the endurance clock's update (both clocks stay on air) and
+    // answers ok.
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [
+        {
+          ...enduranceClock,
+          resolvedData: { ...enduranceClock.resolvedData, sessionName: 'Enduro — Relargada' },
+        },
+        buildQualifyingClockOnTheLowerThirdLayer(),
+      ],
+    });
+    fakeServer.acceptLastCommand();
+    await letThePageFinishWhatItStarted();
+
+    // Assert: the panel still edits the qualifying clock, its form showing what it holds.
+    expect(readQuickEditHeader(), 'the late answer must not move the panel').toBe(
+      'Editando: Tarja · Relógio de prova · No ar',
+    );
+    expect(
+      screen.getByLabelText('Título'),
+      'the late answer must not fill the new form with the other clock',
+    ).toHaveValue('Classificação');
   });
 });
 

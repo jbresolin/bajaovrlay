@@ -19,7 +19,8 @@
  *     `commandResult` does not.
  *   - The sender gets the slices first, then a `commandResult` echoing its requestId; the
  *     one of a createItem also names the item the server made.
- *   - A refused command gets an error `commandResult` in pt-BR.
+ *   - A refused command gets an error `commandResult` in pt-BR; a `takeGraphic` (removed
+ *     in BAJAOVRLAY-37) is refused as unknown and changes nothing.
  *
  * What these tests deliberately do not cover:
  *   - A message outside the protocol: webSocketHubBadMessages.test.ts. The heartbeat and
@@ -225,5 +226,41 @@ describe('a command sent over /ws', () => {
       ok: false,
       error: { code: 'LAYER_NOT_FOUND', message: 'A camada "placar" não existe.' },
     });
+  });
+
+  it('refuses a takeGraphic, the take by hand removed in BAJAOVRLAY-37, and changes nothing', async () => {
+    // Arrange: a running server and a page written before BAJAOVRLAY-37 connected.
+    const runningServer = await startServerOnARandomPort();
+    const olderControlPage = await connectWebSocketTestClient(runningServer.port);
+    await olderControlPage.waitForMessage('hello', (message) => message.type === 'hello');
+    const instancesBefore = runningServer.stateStore.readAllSlices().instances;
+
+    // Act: that page puts the race clock up by hand, with no item.
+    olderControlPage.sendJson({
+      type: 'command',
+      requestId: 'pedido-4',
+      command: {
+        type: 'takeGraphic',
+        graphicId: 'race-clock',
+        layerId: 'clock',
+        data: { sessionName: 'Enduro de Resistência', state: 'green' },
+      },
+    });
+    const commandResult = await olderControlPage.waitForMessage(
+      'commandResult',
+      isCommandResultMessage,
+    );
+
+    // Assert: refused as an unknown command, and nothing went on air.
+    expect(commandResult, 'the take by hand must be refused as an unknown command').toMatchObject({
+      type: 'commandResult',
+      requestId: 'pedido-4',
+      ok: false,
+      error: { code: 'INVALID_COMMAND' },
+    });
+    expect(
+      runningServer.stateStore.readAllSlices().instances,
+      'nothing may reach the air except through an item',
+    ).toBe(instancesBefore);
   });
 });
