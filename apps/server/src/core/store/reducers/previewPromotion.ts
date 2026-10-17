@@ -1,15 +1,18 @@
-import type { Instance, TakeGraphicCommand } from '@bajaovrlay/shared';
+import type { Instance } from '@bajaovrlay/shared';
 
+import { refusePreviewWithoutItem } from '../onAirChangeRefusals.js';
 import { removePreviewClearedMarkerOfLayer } from './previewMarkersAndDiscards.js';
+import { type GraphicOnOutputRequest, putGraphicOnOutput } from './putGraphicOnOutput.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
-import { reduceTakeGraphic } from './takeGraphic.js';
 
 /**
  * Sends one preview instance to the program output: the one path takePreview and
  * takeAllPreviews share, so "Tomar" and "Tomar tudo" take a preview the same way.
  * A new program instance is made (the context's new id, its moment as `takenAt`, status
  * `loading`) with the preview instance's graphic, item id and data, replacing what was
- * on program on that layer; the preview instance is removed.
+ * on program on that layer; the preview instance is removed. The list of fields changed
+ * on air ("Atualizar prévia") comes along too: the data on program differs from the item
+ * exactly as the preview's did, so the chip "alterado no ar" must say so at once.
  *
  * The data is the preview instance's own: the item is NOT resolved again, so what was
  * seen is what goes on air, even if the item was edited or deleted meanwhile. The one
@@ -17,10 +20,13 @@ import { reduceTakeGraphic } from './takeGraphic.js';
  * preview instance remembers in `takeTimeFieldKeys`): they get the moment of THIS
  * command, so a previewed clock starts counting at the take.
  *
- * The take itself is handed to reduceTakeGraphic, so it is checked like
- * every take: the stamp only goes into a field the graphic's schema marks as a
+ * The take itself is handed to putGraphicOnOutput, so it is checked like every take: the stamp only goes into a field the graphic's schema marks as a
  * wall-clock moment, and the data must still fit the schema registered now. Checking
  * again cannot put anything on air that was not seen (it can only refuse).
+ *
+ * A preview with no item is refused (INSTANCE_WITHOUT_ITEM): everything on air comes from
+ * an item. No command makes such a preview since BAJAOVRLAY-37, and previews are dropped
+ * at every boot, so this is a guard and not a case the operator meets.
  *
  * Neither the rundown cursors nor the "will be cleared" markers are touched here; each
  * caller settles them once it has taken everything it takes (takePreview one instance,
@@ -31,35 +37,38 @@ export function takePreviewInstanceToProgram(
   previewInstance: Instance,
   context: ReducerContext,
 ): ReducerOutcome {
-  const takeOfWhatWasPreviewed: TakeGraphicCommand = {
-    type: 'takeGraphic',
+  const previewedItemId = previewInstance.itemId;
+  if (previewedItemId === undefined) {
+    const layerName =
+      slices.layers.find((layer) => layer.id === previewInstance.layerId)?.name ??
+      previewInstance.layerId;
+    return { status: 'refused', error: refusePreviewWithoutItem(layerName) };
+  }
+  const takeOfWhatWasPreviewed: GraphicOnOutputRequest = {
     graphicId: previewInstance.graphicId,
     layerId: previewInstance.layerId,
     data: previewInstance.resolvedData,
     target: 'program',
-    // The one thing that is not carried over as it was seen: takeGraphic writes this
+    // The one thing that is not carried over as it was seen: the take step writes this
     // command's moment over these fields. A preview that stamped nothing has no list.
     takeTimeFieldKeys: previewInstance.takeTimeFieldKeys ?? [],
+    itemId: previewedItemId,
   };
-  const takeOutcome = reduceTakeGraphic(slices, takeOfWhatWasPreviewed, context);
+  const takeOutcome = putGraphicOnOutput(slices, takeOfWhatWasPreviewed, context);
   if (takeOutcome.status === 'refused') {
     return takeOutcome;
   }
 
-  const instancesWithoutThePreview = takeOutcome.slices.instances.filter(
-    (instance) => instance.id !== previewInstance.id,
-  );
-  // The instance takeGraphic just made is the one carrying the id the context handed in.
-  // It gets the preview's item id, when the preview came from an item.
-  const previewedItemId = previewInstance.itemId;
-  const instancesAfter =
-    previewedItemId === undefined
-      ? instancesWithoutThePreview
-      : instancesWithoutThePreview.map((instance) =>
-          instance.id === context.newInstanceId
-            ? { ...instance, itemId: previewedItemId }
-            : instance,
-        );
+  // The instance the take step just made is the one carrying the id the context handed
+  // in. It gets the preview's list of fields changed on air, when there is one.
+  const fieldsChangedInPreview = previewInstance.fieldsChangedOnAir;
+  const instancesAfter = takeOutcome.slices.instances
+    .filter((instance) => instance.id !== previewInstance.id)
+    .map((instance) =>
+      instance.id === context.newInstanceId && fieldsChangedInPreview !== undefined
+        ? { ...instance, fieldsChangedOnAir: fieldsChangedInPreview }
+        : instance,
+    );
 
   return { status: 'applied', slices: { ...takeOutcome.slices, instances: instancesAfter } };
 }

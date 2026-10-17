@@ -105,7 +105,7 @@ function applyCommandAndBuildCommandResult(options: {
   try {
     const outcome = stateStore.applyCommand(commandInput, actor);
     if (outcome.ok) {
-      return buildOkCommandResult(requestId);
+      return buildOkCommandResult(requestId, outcome.createdItemId);
     }
     return buildErrorCommandResult(requestId, outcome.error);
   } catch (commandError) {

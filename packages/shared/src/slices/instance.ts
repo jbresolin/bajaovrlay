@@ -50,9 +50,12 @@ export const InstanceSchema = z.object({
   /** When the take happened, as an ISO 8601 timestamp. */
   takenAt: z.iso.datetime(),
   /**
-   * The item this instance was taken from, so the layer panel can show the item's
-   * label. Left out for a take made by hand (takeGraphic). The item may have been
-   * deleted since: an instance stays on air when its item goes away.
+   * The item this instance was taken from, so the layer panel can name it. Since
+   * BAJAOVRLAY-37 every instance the server makes carries it: everything on air or in
+   * preview comes from an item. It stays optional for one reason: an instance put on air
+   * by hand before that (takeGraphic, now removed) may still be in the database, and the
+   * boot keeps it on air; Camadas shows it as "sem item". The item may also have been
+   * deleted since: an instance stays on air when its item goes away ("item excluído").
    */
   itemId: z.string().min(1).optional(),
   /**
@@ -76,6 +79,17 @@ export const InstanceSchema = z.object({
    * `auto`, so nothing discards it by itself.
    */
   previewOrigin: PreviewOriginSchema.optional(),
+  /**
+   * The top-level fields of `resolvedData` the operator changed with updateInstanceData
+   * so that they now differ from what the item gives, added up over every update since
+   * the take (a field is never taken off the list, even when updated back). Camadas shows
+   * the chip "alterado no ar" for it, and saveOnAirChangesIntoItem writes these fields
+   * into the item and removes the list. Left out means nothing changed: a new take
+   * carries none, and neither does an instance with no item (there is nothing to differ
+   * from). takePreview carries a preview's list to the program instance it makes, since
+   * what goes on air is what was seen.
+   */
+  fieldsChangedOnAir: z.array(z.string().min(1)).optional(),
 });
 
 /** An instance that has passed InstanceSchema. */

@@ -3,6 +3,7 @@ import type {
   DeleteItemCommand,
   MoveCursorCommand,
   ReorderItemsCommand,
+  SaveOnAirChangesIntoItemCommand,
   TakeItemCommand,
   TakeNextCommand,
   UpdateItemFieldsCommand,
@@ -13,11 +14,15 @@ import { reduceDeleteItem } from './deleteItem.js';
 import { reduceMoveCursor } from './moveCursor.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 import { reduceReorderItems } from './reorderItems.js';
+import { reduceSaveOnAirChangesIntoItem } from './saveOnAirChangesIntoItem.js';
 import { reduceTakeItem } from './takeItem.js';
 import { reduceTakeNext } from './takeNext.js';
 import { reduceUpdateItemFields } from './updateItemFields.js';
 
-/** The seven commands that prepare, order and fire the items of a rundown. */
+/**
+ * The commands that prepare, order and fire the items of a rundown, and the one that
+ * saves into an item what was changed on air (BAJAOVRLAY-37).
+ */
 export type ItemOrRundownCommand =
   | CreateItemCommand
   | UpdateItemFieldsCommand
@@ -25,11 +30,12 @@ export type ItemOrRundownCommand =
   | ReorderItemsCommand
   | MoveCursorCommand
   | TakeItemCommand
-  | TakeNextCommand;
+  | TakeNextCommand
+  | SaveOnAirChangesIntoItemCommand;
 
 /**
  * Sends an item or rundown command to its reducer (one file per command). Pure, like
- * reduceCommand, which calls this for those seven commands.
+ * reduceCommand, which calls this for those eight commands.
  * Deliberate: these cases are a second switch in a file of their own, and not seven more
  * lines in reduceCommand.ts, so that file gains a single import while another task
  * (BAJAOVRLAY-12) is adding its own imports and cases to it.
@@ -54,5 +60,7 @@ export function reduceItemOrRundownCommand(
       return reduceTakeItem(slices, command, context);
     case 'takeNext':
       return reduceTakeNext(slices, command, context);
+    case 'saveOnAirChangesIntoItem':
+      return reduceSaveOnAirChangesIntoItem(slices, command);
   }
 }

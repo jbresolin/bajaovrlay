@@ -122,9 +122,18 @@ export function buildTimeMessage(serverNowMs: number): TimeMessage {
   return { type: 'time', serverNowMs };
 }
 
-/** The ok `commandResult`, echoing the client's requestId (or null). */
-export function buildOkCommandResult(requestId: string | null): CommandResultMessage {
-  return { type: 'commandResult', requestId, ok: true };
+/**
+ * The ok `commandResult`, echoing the client's requestId (or null), and naming the item an
+ * accepted createItem made when there is one.
+ */
+export function buildOkCommandResult(
+  requestId: string | null,
+  createdItemId?: string,
+): CommandResultMessage {
+  if (createdItemId === undefined) {
+    return { type: 'commandResult', requestId, ok: true };
+  }
+  return { type: 'commandResult', requestId, ok: true, createdItemId };
 }
 
 /** The error `commandResult`, echoing the client's requestId (or null). */

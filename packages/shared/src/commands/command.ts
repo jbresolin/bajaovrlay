@@ -10,7 +10,6 @@ import { RunMacroCommandSchema } from '../macros/runMacro.js';
 import { StopMacroCommandSchema } from '../macros/stopMacro.js';
 import { UpdateMacroCommandSchema } from '../macros/updateMacro.js';
 import { PreviewClearLayerCommandSchema } from '../preview/previewClearLayer.js';
-import { PreviewGraphicCommandSchema } from '../preview/previewGraphic.js';
 import { PreviewItemCommandSchema } from '../preview/previewItem.js';
 import { PreviewMacroCommandSchema } from '../preview/previewMacro.js';
 import { StopPreviewCommandSchema } from '../preview/stopPreview.js';
@@ -24,21 +23,23 @@ import { DeleteItemCommandSchema } from '../rundown/deleteItem.js';
 import { MoveCursorCommandSchema } from '../rundown/moveCursor.js';
 import { MoveItemToHomeCommandSchema } from '../rundown/moveItemToHome.js';
 import { ReorderItemsCommandSchema } from '../rundown/reorderItems.js';
+import { SaveOnAirChangesIntoItemCommandSchema } from '../rundown/saveOnAirChangesIntoItem.js';
 import { TakeItemCommandSchema } from '../rundown/takeItem.js';
 import { TakeNextCommandSchema } from '../rundown/takeNext.js';
 import { UpdateItemFieldsCommandSchema } from '../rundown/updateItemFields.js';
 import { ClearAllCommandSchema } from './clearAll.js';
 import { ClearLayerCommandSchema } from './clearLayer.js';
 import { ReportInstanceStatusCommandSchema } from './reportInstanceStatus.js';
-import { TakeGraphicCommandSchema } from './takeGraphic.js';
 import { UpdateInstanceDataCommandSchema } from './updateInstanceData.js';
 
 /**
  * Every command the server accepts, told apart by `type`. A command is the only way
- * state changes.
+ * state changes. Deliberate: no command puts a graphic on an output by itself. Since
+ * BAJAOVRLAY-37 everything on air or in preview comes from an item (takeItem, takeNext,
+ * previewItem, a macro); takeGraphic and previewGraphic, which did it with hand-typed
+ * data, were removed, and the server's internal take step is not a command.
  */
 export const CommandSchema = z.discriminatedUnion('type', [
-  TakeGraphicCommandSchema,
   UpdateInstanceDataCommandSchema,
   ReportInstanceStatusCommandSchema,
   ClearLayerCommandSchema,
@@ -53,7 +54,6 @@ export const CommandSchema = z.discriminatedUnion('type', [
   TakeNextCommandSchema,
   // The preview commands (BAJAOVRLAY-15); their schemas live in ../preview/.
   PreviewItemCommandSchema,
-  PreviewGraphicCommandSchema,
   StopPreviewCommandSchema,
   TakePreviewCommandSchema,
   // Prévia shows the result: "will be cleared" markers, "Tomar tudo" and a macro's
@@ -67,6 +67,8 @@ export const CommandSchema = z.discriminatedUnion('type', [
   RenameQuickFirePanelCommandSchema,
   DeleteQuickFirePanelCommandSchema,
   MoveItemToHomeCommandSchema,
+  // Saving what was changed on air into the item (BAJAOVRLAY-37); ../rundown/.
+  SaveOnAirChangesIntoItemCommandSchema,
   // Macros (BAJAOVRLAY-16); their schemas live in ../macros/. The last two are sent only
   // by the server (the macro runner, and the watchdog for endMacroRun).
   CreateMacroCommandSchema,
@@ -81,5 +83,5 @@ export const CommandSchema = z.discriminatedUnion('type', [
 /** A command after validation, with defaults filled in. */
 export type Command = z.infer<typeof CommandSchema>;
 
-/** A command as a client writes it, before defaults (takeGraphic's target may be left out). */
+/** A command as a client writes it, before defaults (previewItem's origin may be left out). */
 export type CommandInput = z.input<typeof CommandSchema>;

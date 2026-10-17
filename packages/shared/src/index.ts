@@ -65,8 +65,6 @@ export {
   CommandErrorCodeSchema,
   CommandErrorSchema,
 } from './commands/commandError.js';
-// takeGraphic: put a graphic on a layer with its data.
-export { type TakeGraphicCommand, TakeGraphicCommandSchema } from './commands/takeGraphic.js';
 // updateInstanceData: change some of the data an instance shows, keeping it on its layer.
 export {
   type UpdateInstanceDataCommand,
@@ -121,6 +119,6 @@ export * from './quickFire/index.js';
 // Macros: steps, the macros and macroRuns slices, and the six macro commands.
 export * from './macros/index.js';
 
-// The preview output: previewItem, previewGraphic, stopPreview, takePreview,
+// The preview output: previewItem, stopPreview, takePreview,
 // previewClearLayer, takeAllPreviews and previewMacro.
 export * from './preview/index.js';

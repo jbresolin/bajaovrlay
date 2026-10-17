@@ -13,6 +13,7 @@ import {
   separateClearedFieldsFromData,
   stampFieldsWithMomentOfTheCommand,
 } from '../graphicDataPreparation.js';
+import { listFieldsChangedOnAirAfterUpdate } from '../fieldsChangedOnAir.js';
 import { findProblemInGraphicData } from '../graphicDataValidation.js';
 import { findTakeTimeFieldKeyGraphicCannotStamp } from '../graphicSchemaProperties.js';
 import { chooseUpdateRuleOfGraphic } from '../updateRules/index.js';
@@ -30,7 +31,11 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * Refused if the instance is not there, if a field may not be stamped, if the manifest's
  * update rule cannot be run, or if the resulting data breaks the graphic's manifest
  * schema (taking off a required field does). An update that leaves the data exactly as
- * it is on air hands back the same slices.
+ * it is on air hands back the same slices. It works the same on a preview instance
+ * ("Atualizar prévia" of "Edição rápida"), which keeps its id and its item, so "Tomar"
+ * sends exactly what was seen. On an instance of an item, the fields the operator sent
+ * that now differ from what the item gives join the instance's `fieldsChangedOnAir`
+ * (fieldsChangedOnAir.ts), which Camadas shows as "alterado no ar".
  */
 export function reduceUpdateInstanceData(
   slices: SlicesChangedByCommands,
@@ -157,6 +162,19 @@ export function reduceUpdateInstanceData(
       (stampedKey) => !keysRememberedSoFar.includes(stampedKey),
     );
     updatedInstance.takeTimeFieldKeys = [...keysRememberedSoFar, ...keysStampedForTheFirstTime];
+  }
+
+  // Only the keys the operator sent can be listed: a field the update rule rewrote by
+  // itself (the clock's time and moment, when the clock was stopped) is the same clock
+  // carried forward, not a change the operator made.
+  const fieldsChangedOnAirAfter = listFieldsChangedOnAirAfterUpdate({
+    instanceBefore: instanceToUpdate,
+    itemOfTheInstance: slices.items.find((item) => item.id === instanceToUpdate.itemId),
+    keysSentByTheOperator: [...Object.keys(command.data), ...command.takeTimeFieldKeys],
+    dataAfterUpdate,
+  });
+  if (fieldsChangedOnAirAfter !== undefined) {
+    updatedInstance.fieldsChangedOnAir = fieldsChangedOnAirAfter;
   }
 
   const instancesAfterUpdate = slices.instances.map((instance) =>
