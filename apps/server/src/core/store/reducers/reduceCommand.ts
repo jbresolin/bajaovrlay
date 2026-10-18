@@ -77,6 +77,7 @@ export function reduceCommand(
     case 'deleteDataSource':
     case 'setDataSourceEnabled':
     case 'pollDataSourceNow':
+    case 'restartSimulatedRace':
     case 'startRecording':
     case 'stopRecording':
     case 'recordDataSourcePoll':

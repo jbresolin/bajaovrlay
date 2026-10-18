@@ -26,11 +26,19 @@ export function refuseInvalidDataSourceConfig(
   };
 }
 
-/** The refusal for "Atualizar agora" or "Gravar" on a source that is off. */
+/** The refusal for "Atualizar agora", "Reiniciar corrida" or "Gravar" on a source that is off. */
 export function refuseDisabledDataSource(sourceLabel: string): CommandError {
   return {
     code: 'DATA_SOURCE_DISABLED',
     message: ptBR.dataSourceErrors.dataSourceDisabled(sourceLabel),
+  };
+}
+
+/** The refusal for "Reiniciar corrida" on a source that has no race of its own: a replay. */
+export function refuseDataSourceThatIsNotASimulator(sourceLabel: string): CommandError {
+  return {
+    code: 'DATA_SOURCE_NOT_A_SIMULATOR',
+    message: ptBR.dataSourceErrors.dataSourceNotASimulator(sourceLabel),
   };
 }
 

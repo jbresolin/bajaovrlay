@@ -6,33 +6,48 @@ import { ptBR } from '@/i18n/ptBR';
 /**
  * How a source is doing, in one word, as the page shows it:
  * - `off`: the source is turned off ("Desligada");
- * - `error`: it is failing and never had good data, so there is nothing to show ("Erro");
- * - `stale`: its data is late — the last poll failed or nothing new came — but the last
- *   good data is still there and shown ("Atrasada"); also a source the server marked
- *   late with no error yet, as every source that is on is right after a restart;
+ * - `error`: it is failing and either never had good data, or has failed for a minute
+ *   or more since its last good data ("Erro", red); its last data, if any, stays shown;
+ * - `stale`: its data is late — failing for under a minute, or marked late by the server
+ *   with no error yet, as every source that is on is right after a restart — and the
+ *   last good data is still there and shown ("Atrasada", amber);
  * - `ok`: on and fresh ("Ok").
  */
 export type DataSourceHealth = 'ok' | 'stale' | 'error' | 'off';
 
+// João's ruling 4 at gate 2 of PR #16: amber "Atrasada" says "keep an eye on it"; after
+// a minute of failing, the operator must act (or take the data off air), so it is red.
+// Counted from `lastOkAtMs`. What could go wrong: the server does not rewrite lastOkAtMs
+// on a poll that repeats the stored data (D7), so a source whose data stood still for
+// minutes before it began to fail reads red at its first failure.
+const failingTimeBeforeAStaleSourceIsInErrorMs = 60_000;
+
 /**
- * Sums a source's status up. The server owns the truth: lateness is `status.isStale` as
- * the server sent it, never worked out here from the clock. A failing source that had
- * data reads "Atrasada" (its data stays on screen, rule 4), with the reason in a tooltip;
- * "Erro" is kept for a source with a reason to show and nothing else: no good data
- * ever, and an error from the server. A source just turned on, before its first poll
- * answers, reads "Ok" for that moment; after a restart the server marks it late until
- * then, so it reads "Atrasada" with no reason rather than a red "Erro" with none.
+ * Sums a source's status up at `nowMs`, a moment on the server's clock (as `lastOkAtMs`
+ * is). The server owns staleness: `status.isStale` is as the server sent it. The page
+ * adds only the minute rule: a late source with an error from the server reads "Erro"
+ * once a minute has passed since its last good data, or at once if it never had any. A
+ * late source with no error yet (after a restart, or just turned on again) is waiting for
+ * a poll, not failing, so it reads "Atrasada" with no reason rather than a red "Erro"
+ * with none; the poller gives it a reason if that poll does not come.
  */
-export function findHealthOfDataSource(source: DataSource): DataSourceHealth {
+export function findHealthOfDataSource(source: DataSource, nowMs: number): DataSourceHealth {
   if (!source.isEnabled) {
     return 'off';
   }
   if (!source.status.isStale) {
     return 'ok';
   }
-  const hasEverHadGoodData = source.status.lastOkAtMs !== undefined;
   const hasAnErrorToShow = source.status.lastError !== null;
-  if (!hasEverHadGoodData && hasAnErrorToShow) {
+  if (!hasAnErrorToShow) {
+    return 'stale';
+  }
+  const lastOkAtMs = source.status.lastOkAtMs;
+  if (lastOkAtMs === undefined) {
+    return 'error';
+  }
+  const millisecondsSinceTheLastGoodData = nowMs - lastOkAtMs;
+  if (millisecondsSinceTheLastGoodData >= failingTimeBeforeAStaleSourceIsInErrorMs) {
     return 'error';
   }
   return 'stale';
@@ -45,11 +60,17 @@ export type DataSourceHealthCounts = {
   errorCount: number;
 };
 
-/** Counts the sources that are on by health, for the header chip; sources that are off are left out. */
-export function countEnabledDataSourcesByHealth(sources: DataSource[]): DataSourceHealthCounts {
+/**
+ * Counts the sources that are on by health at `nowMs` (server clock), for the header
+ * chip, by the same rule as each row's chip; sources that are off are left out.
+ */
+export function countEnabledDataSourcesByHealth(
+  sources: DataSource[],
+  nowMs: number,
+): DataSourceHealthCounts {
   const counts: DataSourceHealthCounts = { okCount: 0, staleCount: 0, errorCount: 0 };
   for (const source of sources) {
-    const health = findHealthOfDataSource(source);
+    const health = findHealthOfDataSource(source, nowMs);
     if (health === 'ok') {
       counts.okCount += 1;
     } else if (health === 'stale') {

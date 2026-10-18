@@ -3,21 +3,27 @@
  *
  * What this module is for:
  *   On the console, the operator must notice a late feed without opening the "Fontes"
- *   page. The header carries a small chip, "Fontes: 2 ok · 1 atrasada", that links to
- *   that page. It counts only the sources that are on, and is not there at all when
- *   none is on (the seeded simulator is off until someone turns it on).
+ *   page. The header carries a small chip, "Fontes: 2 ok · 1 atrasada · 1 com erro",
+ *   that opens that page in a new tab, so the console stays where it is (João's ruling 2
+ *   at gate 2 of PR #16). It counts only the sources that are on, by the same rule as each
+ *   row's chip (a source failing for a minute is "com erro"), and is not there at all
+ *   when none is on (the seeded simulator is off until someone turns it on).
  *
  * What these tests prove:
- *   - The chip counts ok, late and failing sources that are on, leaving out counts of 0.
- *   - It links to the "Fontes" page.
+ *   - The chip counts ok, late and failing sources that are on, leaving out counts of 0,
+ *     and a screen reader hears the counts in its name, not only "Saúde das fontes".
+ *   - It opens the "Fontes" page in a new tab.
+ *   - A late source moves from "atrasada" to "com erro" once it has failed for a minute,
+ *     as time passes, with nothing new from the server.
  *   - It is hidden when no source is on, and appears when one is turned on.
  *
  * What these tests deliberately do not cover:
  *   - Which status counts as what: dataSourceHealth.test.ts.
- *   - Its place in the header and the navigation: src/AppPages.test.tsx.
+ *   - Its place in the header, and the console staying put: src/AppPages.test.tsx.
+ *   - The chip's colour, a badge variant: jsdom draws nothing.
  */
-import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import {
@@ -27,18 +33,31 @@ import {
   buildSimulatorThatIsStale,
   buildSimulatorThatNeverHadData,
   buildSlicesWithDataSources,
+  momentOfTheSamplesMs,
 } from '@/state/dataSourcesLikeTheServerSends.testSupport';
 
 import { DataSourcesHealthChip } from './DataSourcesHealthChip';
 
+/**
+ * Makes time stand still this long after the samples' last good poll, so "late" and "in
+ * error" do not depend on the day the tests run.
+ */
+function holdThePageClockAfterTheLastGoodPoll(millisecondsAfter: number): void {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(momentOfTheSamplesMs + millisecondsAfter));
+}
+
 describe('the data sources chip', () => {
-  it('counts the sources that are on by health and links to the "Fontes" page', () => {
-    // Arrange: two healthy sources, one late and one off.
+  it('counts the sources that are on by health, in its text and in its accessible name', () => {
+    // Arrange: 40 s after the last good poll, two healthy sources, one late, one that
+    // never had data and one off.
+    holdThePageClockAfterTheLastGoodPoll(40_000);
     const slices = buildSlicesWithDataSources({
       dataSources: [
         buildSimulatorThatIsOk(),
         buildRehearsalReplayThatIsOk(),
         { ...buildSimulatorThatIsStale(), id: 'simulador-falhando', label: 'Simulador falhando' },
+        { ...buildSimulatorThatNeverHadData(), id: 'simulador-sem-dados', label: 'Sem dados' },
         { ...buildSeededSimulatorThatIsOff(), id: 'simulador-desligado', label: 'Desligado' },
       ],
     });
@@ -46,15 +65,33 @@ describe('the data sources chip', () => {
     // Act: draw the chip.
     renderOnControlPageConnectedToFakeServer(<DataSourcesHealthChip />, slices);
 
-    // Assert: "2 ok · 1 atrasada"; the source that is off is in no count.
+    // Assert: "2 ok · 1 atrasada · 1 com erro", read aloud with the counts too.
     expect(
-      screen.getByRole('status', { name: 'Saúde das fontes de dados' }),
-      'the chip must count the sources that are on',
-    ).toHaveTextContent('Fontes: 2 ok · 1 atrasada');
-    expect(
-      screen.getByRole('link', { name: 'Fontes: 2 ok · 1 atrasada' }),
-      'the chip must take the operator to the "Fontes" page',
-    ).toHaveAttribute('href', '#/fontes');
+      screen.getByRole('status', {
+        name: 'Saúde das fontes de dados: 2 ok · 1 atrasada · 1 com erro',
+      }),
+      'a screen reader must hear the counts, not only what the chip is about',
+    ).toHaveTextContent('Fontes: 2 ok · 1 atrasada · 1 com erro');
+  });
+
+  it('opens the "Fontes" page in a new tab, so the console stays where it is', () => {
+    // Arrange: the simulator on and healthy.
+    const slices = buildSlicesWithDataSources({ dataSources: [buildSimulatorThatIsOk()] });
+
+    // Act: draw the chip.
+    renderOnControlPageConnectedToFakeServer(<DataSourcesHealthChip />, slices);
+
+    // Assert: a link to "#/fontes", opened in a new tab without access back to this one.
+    const chipLink = screen.getByRole('link', { name: 'Fontes: 1 ok' });
+    expect(chipLink, 'the chip must lead to the "Fontes" page').toHaveAttribute('href', '#/fontes');
+    expect(chipLink, 'the "Fontes" page must open in a new tab').toHaveAttribute(
+      'target',
+      '_blank',
+    );
+    expect(chipLink, 'the new tab must not reach back into the console').toHaveAttribute(
+      'rel',
+      'noopener',
+    );
   });
 
   it('names failing sources and leaves out the counts of zero', () => {
@@ -66,8 +103,30 @@ describe('the data sources chip', () => {
 
     // Assert: only the failing count.
     expect(
-      screen.getByRole('status', { name: 'Saúde das fontes de dados' }),
+      screen.getByRole('status', { name: 'Saúde das fontes de dados: 1 com erro' }),
       'a count of zero says nothing and is left out',
+    ).toHaveTextContent(/^Fontes: 1 com erro$/);
+  });
+
+  it('moves a late source to "com erro" once it has failed for a minute', () => {
+    // Arrange: the failing simulator, 59 s after its last good poll: late.
+    holdThePageClockAfterTheLastGoodPoll(59_000);
+    renderOnControlPageConnectedToFakeServer(
+      <DataSourcesHealthChip />,
+      buildSlicesWithDataSources({ dataSources: [buildSimulatorThatIsStale()] }),
+    );
+    const textAt59Seconds = screen.getByRole('status').textContent;
+
+    // Act: one more second passes, with nothing new from the server.
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+
+    // Assert: "1 atrasada" before, "1 com erro" now.
+    expect(textAt59Seconds, 'under a minute the source counts as late').toBe('Fontes: 1 atrasada');
+    expect(
+      screen.getByRole('status', { name: 'Saúde das fontes de dados: 1 com erro' }),
+      'after a minute the header must count it as in error, as its row chip reads',
     ).toHaveTextContent(/^Fontes: 1 com erro$/);
   });
 
@@ -91,7 +150,7 @@ describe('the data sources chip', () => {
       false,
     );
     expect(
-      screen.getByRole('status', { name: 'Saúde das fontes de dados' }),
+      screen.getByRole('status', { name: 'Saúde das fontes de dados: 1 ok' }),
       'once a source is on, the chip reports it',
     ).toHaveTextContent('Fontes: 1 ok');
   });

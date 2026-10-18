@@ -125,7 +125,7 @@ export * from './macros/index.js';
 export * from './preview/index.js';
 
 // Data sources: the dataSources, dataSnapshots and recordings slices, each kind's config,
-// and the nine data-source commands (the last two, recordDataSourcePoll and
+// and the ten data-source commands (the last two, recordDataSourcePoll and
 // recordRecordingProgress, server only).
 export * from './dataSources/index.js';
 

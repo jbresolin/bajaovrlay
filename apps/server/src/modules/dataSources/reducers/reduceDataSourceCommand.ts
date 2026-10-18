@@ -4,6 +4,7 @@ import type {
   PollDataSourceNowCommand,
   RecordDataSourcePollCommand,
   RecordRecordingProgressCommand,
+  RestartSimulatedRaceCommand,
   SetDataSourceEnabledCommand,
   StartRecordingCommand,
   StopRecordingCommand,
@@ -20,14 +21,15 @@ import { reduceDeleteDataSource } from './deleteDataSource.js';
 import { reducePollDataSourceNow } from './pollDataSourceNow.js';
 import { reduceRecordDataSourcePoll } from './recordDataSourcePoll.js';
 import { reduceRecordRecordingProgress } from './recordRecordingProgress.js';
+import { reduceRestartSimulatedRace } from './restartSimulatedRace.js';
 import { reduceSetDataSourceEnabled } from './setDataSourceEnabled.js';
 import { reduceStartRecording } from './startRecording.js';
 import { reduceStopRecording } from './stopRecording.js';
 import { reduceUpdateDataSource } from './updateDataSource.js';
 
 /**
- * The nine commands of BAJAOVRLAY-17: seven from the "Fontes" page, one from the poller
- * and one from the recorder.
+ * The ten commands of BAJAOVRLAY-17: eight from the "Fontes" page (restartSimulatedRace
+ * came with gate 2 of PR #16), one from the poller and one from the recorder.
  */
 export type DataSourceCommand =
   | CreateDataSourceCommand
@@ -35,6 +37,7 @@ export type DataSourceCommand =
   | DeleteDataSourceCommand
   | SetDataSourceEnabledCommand
   | PollDataSourceNowCommand
+  | RestartSimulatedRaceCommand
   | StartRecordingCommand
   | StopRecordingCommand
   | RecordDataSourcePollCommand
@@ -42,7 +45,7 @@ export type DataSourceCommand =
 
 /**
  * Sends a data-source command to its reducer (one file per command). Pure, like core's
- * reduceCommand, which calls this for those nine commands (decision D6: the reducers
+ * reduceCommand, which calls this for those ten commands (decision D6: the reducers
  * live in the module, next to the rest of what data sources are).
  */
 export function reduceDataSourceCommand(
@@ -61,6 +64,8 @@ export function reduceDataSourceCommand(
       return reduceSetDataSourceEnabled(slices, command, context);
     case 'pollDataSourceNow':
       return reducePollDataSourceNow(slices, command, context);
+    case 'restartSimulatedRace':
+      return reduceRestartSimulatedRace(slices, command, context);
     case 'startRecording':
       return reduceStartRecording(slices, command, context);
     case 'stopRecording':

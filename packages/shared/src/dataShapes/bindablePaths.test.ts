@@ -11,8 +11,9 @@
  *   - The session list is fixed, label by label.
  *   - Positions offer the whole list plus the 1st to 10th places, each with the same
  *     eleven fields; the 1st place is fixed label by label, the 10th checked as the last.
- *   - Standings offer the scope, the whole list plus the 1st to 10th places with four
- *     fields each; brackets (a draft) offer only their rounds.
+ *   - Standings offer the scope, the whole list plus the 1st to 10th rows with four
+ *     fields each, labelled "1ª linha", not "1º colocado": tied teams share a rank, so
+ *     the row's index is not its place; brackets (a draft) offer only their rounds.
  *   - No path appears twice within a shape.
  *
  * What these tests deliberately do not cover:
@@ -95,22 +96,28 @@ describe('listBindablePathsOfShape', () => {
     });
   });
 
-  it('lists the standings scope, the whole list and the first ten places', () => {
+  it('lists the standings scope, the whole list and the first ten rows, named as rows', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
     // Act: ask for the standings paths.
     const standingsPaths = listBindablePathsOfShape('standings');
 
-    // Assert: scope and list first, then the leader's four fields, 2 + 10 × 4 in all.
+    // Assert: scope and list first, then the first row's four fields, 2 + 10 × 4 in all.
+    // A row, not a place: two teams tied on points share a rank, so the 2nd row may be
+    // a 1st place (gate 2 on PR #16).
     expect(standingsPaths.slice(0, 6), 'the standings leader paths must be fixed').toEqual([
       { path: 'scope', label: 'Pontuação › Abrangência' },
       { path: 'entries', label: 'Pontuação › Lista completa' },
-      { path: 'entries.0.carNumber', label: 'Pontuação › 1º colocado › Carro' },
-      { path: 'entries.0.teamName', label: 'Pontuação › 1º colocado › Equipe' },
-      { path: 'entries.0.schoolName', label: 'Pontuação › 1º colocado › Escola' },
-      { path: 'entries.0.points', label: 'Pontuação › 1º colocado › Pontos' },
+      { path: 'entries.0.carNumber', label: 'Pontuação › 1ª linha › Carro' },
+      { path: 'entries.0.teamName', label: 'Pontuação › 1ª linha › Equipe' },
+      { path: 'entries.0.schoolName', label: 'Pontuação › 1ª linha › Escola' },
+      { path: 'entries.0.points', label: 'Pontuação › 1ª linha › Pontos' },
     ]);
     expect(standingsPaths, 'standings must offer 2 + 10 × 4 paths').toHaveLength(42);
+    expect(standingsPaths.at(-1), 'the last path must be the 10th row points').toEqual({
+      path: 'entries.9.points',
+      label: 'Pontuação › 10ª linha › Pontos',
+    });
   });
 
   it('offers only the rounds of the draft brackets shape', () => {

@@ -139,6 +139,7 @@ export function DataSourcesPage() {
           commandTypes={[
             'setDataSourceEnabled',
             'pollDataSourceNow',
+            'restartSimulatedRace',
             'startRecording',
             'stopRecording',
             'deleteDataSource',

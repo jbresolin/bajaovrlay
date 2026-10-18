@@ -13,12 +13,13 @@
  *   message: only the recorder says why a recording failed (gate 2 on PR #16).
  *
  * What these tests prove:
- *   - An operator may send each of the seven operator commands and is refused
- *     recordDataSourcePoll, recordRecordingProgress, and a stopRecording that carries a
- *     failure message.
+ *   - An operator may send each of the eight operator commands ("Reiniciar corrida"
+ *     among them) and is refused recordDataSourcePoll, recordRecordingProgress, and a
+ *     stopRecording that carries a failure message.
  *   - The poller of a source may send recordDataSourcePoll for that source, and is
  *     refused a poll of another source and every other command (pollDataSourceNow,
- *     setDataSourceEnabled, stopRecording, recordRecordingProgress, clearLayer).
+ *     restartSimulatedRace, setDataSourceEnabled, stopRecording, recordRecordingProgress,
+ *     clearLayer).
  *   - The recorder may send stopRecording (with its failure message) and
  *     recordRecordingProgress, and is refused a poll and startRecording.
  *   - A renderer and the auto-out are refused every data-source command.
@@ -66,6 +67,11 @@ const turnOnEnduroSimulator: Command = {
   isEnabled: true,
 };
 const pollEnduroSimulatorNow: Command = { type: 'pollDataSourceNow', sourceId: 'simulador-enduro' };
+// "Reiniciar corrida" on the simulator's row (gate 2, João).
+const restartEnduroSimulatorRace: Command = {
+  type: 'restartSimulatedRace',
+  sourceId: 'simulador-enduro',
+};
 const startRecordingEnduroSimulator: Command = {
   type: 'startRecording',
   sourceId: 'simulador-enduro',
@@ -94,7 +100,7 @@ const authorisationScenarios: Array<{
   actor: string;
   expectedIsAllowed: boolean;
 }> = [
-  // The seven commands of the "Fontes" page.
+  // The eight commands of the "Fontes" page.
   // "+ Fonte": an operator adds a training simulator.
   {
     name: 'allows an operator to create a source',
@@ -127,6 +133,13 @@ const authorisationScenarios: Array<{
   {
     name: 'allows an operator to ask for a poll now',
     command: pollEnduroSimulatorNow,
+    actor: operatorActor,
+    expectedIsAllowed: true,
+  },
+  // "Reiniciar corrida": the operator decides when the simulated race starts again.
+  {
+    name: "allows an operator to restart a simulator's race",
+    command: restartEnduroSimulatorRace,
     actor: operatorActor,
     expectedIsAllowed: true,
   },
@@ -184,6 +197,13 @@ const authorisationScenarios: Array<{
   {
     name: 'refuses the poller a poll-now request',
     command: pollEnduroSimulatorNow,
+    actor: enduroSimulatorPollerActor,
+    expectedIsAllowed: false,
+  },
+  // A poller must not move its own race; restarting it is the operator's button.
+  {
+    name: "refuses the poller restarting its simulator's race",
+    command: restartEnduroSimulatorRace,
     actor: enduroSimulatorPollerActor,
     expectedIsAllowed: false,
   },
@@ -257,6 +277,13 @@ const authorisationScenarios: Array<{
   {
     name: 'refuses a renderer turning a source on',
     command: turnOnEnduroSimulator,
+    actor: rendererActor,
+    expectedIsAllowed: false,
+  },
+  // A renderer shows data; it never restarts the race behind it.
+  {
+    name: "refuses a renderer restarting a simulator's race",
+    command: restartEnduroSimulatorRace,
     actor: rendererActor,
     expectedIsAllowed: false,
   },

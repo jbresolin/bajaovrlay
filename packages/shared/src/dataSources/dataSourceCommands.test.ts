@@ -2,13 +2,15 @@
  * The data-source commands (packages/shared)
  *
  * What this module is for:
- *   Operators create, change, delete, turn on and off, poll and record data sources from
- *   the "Fontes" page; the server's poller reports every poll with recordDataSourcePoll.
+ *   Operators create, change, delete, turn on and off, poll and record data sources, and
+ *   restart a simulator's race, from the "Fontes" page; the server's poller reports every
+ *   poll with recordDataSourcePoll.
  *   These schemas decide what shape each command must have before the server looks at it.
  *
  * What these tests prove:
- *   - Every operator command is accepted in its realistic form; the poll interval is
- *     bounded to 500–60 000 ms and the kind is one of the two the server knows.
+ *   - Every operator command is accepted in its realistic form, "Reiniciar corrida"
+ *     (restartSimulatedRace) among them, which is refused without a source; the poll
+ *     interval is bounded to 500–60 000 ms and the kind is one of the two the server knows.
  *   - recordDataSourcePoll carries either a good result (shapes left unchecked here) or
  *     a failure with its error (even an empty one), never something in between.
  *   - recordRecordingProgress (the recorder's count of the lines it wrote) names a
@@ -55,6 +57,11 @@ describe('the data source commands', () => {
     {
       name: 'accepts pollDataSourceNow',
       command: { type: 'pollDataSourceNow', sourceId: 'simulador-enduro' },
+    },
+    // "Reiniciar corrida": the simulated race starts again from its green flag (gate 2, João).
+    {
+      name: 'accepts restartSimulatedRace',
+      command: { type: 'restartSimulatedRace', sourceId: 'simulador-enduro' },
     },
     // "Gravar".
     {
@@ -170,6 +177,12 @@ describe('the data source commands', () => {
         result: { ok: false, attemptedAtMs: 1_805_568_240_948 },
       },
       badField: 'result',
+    },
+    // "Reiniciar corrida" must name the simulator it restarts.
+    {
+      name: 'refuses restartSimulatedRace with no source',
+      command: { type: 'restartSimulatedRace', sourceId: '' },
+      badField: 'sourceId',
     },
     // The recorder counts whole lines written; a negative count is a bug, not a recording.
     {

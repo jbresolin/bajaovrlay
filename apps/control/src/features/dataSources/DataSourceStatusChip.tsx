@@ -18,7 +18,8 @@ const badgeVariantForEachHealth = {
   off: 'secondary',
 } as const satisfies Record<DataSourceHealth, string>;
 
-// "Atrasada (há 40 s)" counts seconds, so the chip is drawn again once a second.
+// "Atrasada (há 40 s)" counts seconds, and the chip turns red "Erro" once a minute has
+// passed, so the chip is drawn again once a second.
 const millisecondsBetweenDraws = 1_000;
 
 /** Writes the chip's word; a late source adds how long ago its last good data came. */
@@ -33,8 +34,9 @@ function writeStatusChipText(health: DataSourceHealth, source: DataSource, nowMs
 
 /**
  * The status chip of one source: green "Ok", amber "Atrasada (há 40 s)", red "Erro" or
- * grey "Desligada" (dataSourceHealth.ts says which). A late or failing source carries the
- * server's reason (`status.lastError`) in a tooltip.
+ * grey "Desligada" (dataSourceHealth.ts says which, a late source turning red after a
+ * minute of failing). A late or failing source carries the server's reason
+ * (`status.lastError`) in a tooltip.
  */
 export function DataSourceStatusChip(props: { source: DataSource }) {
   const { source } = props;
@@ -44,7 +46,7 @@ export function DataSourceStatusChip(props: { source: DataSource }) {
   // Ties the reason to the chip for screen readers; unused when there is no reason.
   const failureReasonId = useId();
 
-  const health = findHealthOfDataSource(source);
+  const health = findHealthOfDataSource(source, nowMs);
   const chipText = writeStatusChipText(health, source, nowMs);
   const isFailing = health === 'stale' || health === 'error';
   const failureReason = isFailing ? source.status.lastError : null;

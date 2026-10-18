@@ -5,6 +5,7 @@ import { DeleteDataSourceCommandSchema } from '../dataSources/deleteDataSource.j
 import { PollDataSourceNowCommandSchema } from '../dataSources/pollDataSourceNow.js';
 import { RecordDataSourcePollCommandSchema } from '../dataSources/recordDataSourcePoll.js';
 import { RecordRecordingProgressCommandSchema } from '../dataSources/recordRecordingProgress.js';
+import { RestartSimulatedRaceCommandSchema } from '../dataSources/restartSimulatedRace.js';
 import { SetDataSourceEnabledCommandSchema } from '../dataSources/setDataSourceEnabled.js';
 import { StartRecordingCommandSchema } from '../dataSources/startRecording.js';
 import { StopRecordingCommandSchema } from '../dataSources/stopRecording.js';
@@ -95,6 +96,7 @@ export const CommandSchema = z.discriminatedUnion('type', [
   DeleteDataSourceCommandSchema,
   SetDataSourceEnabledCommandSchema,
   PollDataSourceNowCommandSchema,
+  RestartSimulatedRaceCommandSchema,
   StartRecordingCommandSchema,
   StopRecordingCommandSchema,
   RecordDataSourcePollCommandSchema,

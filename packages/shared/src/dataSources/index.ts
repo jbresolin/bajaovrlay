@@ -46,6 +46,11 @@ export {
   type PollDataSourceNowCommand,
   PollDataSourceNowCommandSchema,
 } from './pollDataSourceNow.js';
+// restartSimulatedRace: "Reiniciar corrida" on a simulator's row.
+export {
+  type RestartSimulatedRaceCommand,
+  RestartSimulatedRaceCommandSchema,
+} from './restartSimulatedRace.js';
 // startRecording: "Gravar".
 export { type StartRecordingCommand, StartRecordingCommandSchema } from './startRecording.js';
 // stopRecording: "Parar gravação", or the recorder after a failed write or at a cap.

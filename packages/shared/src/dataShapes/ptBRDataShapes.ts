@@ -16,8 +16,14 @@ export const ptBRDataShapes = {
     brackets: 'Chaves',
   },
 
-  /** "1º colocado", "10º colocado". */
+  /** "1º colocado", "10º colocado": positions, where every car has a place of its own. */
   placeLabel: (placeNumber: number) => `${placeNumber}º colocado`,
+
+  /**
+   * "1ª linha", "10ª linha": standings, where tied teams share a rank, so the 2nd row may
+   * be a 1st place and "2º colocado" would be wrong (gate 2 on PR #16).
+   */
+  rowLabel: (rowNumber: number) => `${rowNumber}ª linha`,
 
   /** "Lista completa": a path that points at a whole list (the tower takes it all). */
   wholeListLabel: 'Lista completa',

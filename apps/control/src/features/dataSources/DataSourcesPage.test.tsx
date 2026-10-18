@@ -13,6 +13,9 @@
  *     keeps old data while it fails, with the reason on hover or focus; "Erro" with the
  *     reason for a source that failed before it ever had data; "Desligada" for a source
  *     that is off.
+ *   - The chip of a failing source turns red "Erro" by itself once a minute has passed
+ *     since its last good data (João's ruling 4 at gate 2 of PR #16), its reason still in
+ *     the tooltip and its last data still on screen.
  *   - "há 40 s" counts on the server's clock, so a tablet whose clock is off by half a
  *     minute still shows the true lateness.
  *   - The row says when the last good data came and how often the source is read, or
@@ -31,7 +34,7 @@
  *     seconds are checked.
  */
 import { recordServerClockSample } from '@bajaovrlay/shared/clock';
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
@@ -147,6 +150,44 @@ describe('the status chip of a source', () => {
       simulatorRow.getByRole('tooltip'),
       'the reason of the failure must be in the tooltip, in the server words',
     ).toHaveTextContent('Falha simulada.');
+  });
+
+  it('turns red "Erro" once the source has failed for a minute, keeping its reason and its data', () => {
+    // Arrange: 59 s after its last good poll, the simulator with "Falha simulada" on.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(momentOfTheSamplesMs + 59_000));
+    const slices = buildSlicesWithDataSources({
+      dataSources: [buildSimulatorThatIsStale()],
+      dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
+    });
+    renderOnControlPageConnectedToFakeServer(<DataSourcesPage />, slices);
+    const simulatorRow = findRowOfSource('Simulador — Enduro');
+    const isAmberAt59Seconds = simulatorRow.queryByText('Atrasada (há 59 s)') !== null;
+
+    // Act: one more second passes, with nothing new from the server.
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+
+    // Assert: amber before, red "Erro" now, the reason still in the tooltip, and the last
+    // data still on screen under its banner (rule 4).
+    expect(isAmberAt59Seconds, 'under a minute the source must still read "Atrasada"').toBe(true);
+    expect(
+      simulatorRow.getByText('Erro'),
+      'after failing for a minute the chip must turn red "Erro" without a word from the server',
+    ).toBeInTheDocument();
+    expect(
+      simulatorRow.getByRole('tooltip'),
+      'the reason of the failure must stay in the tooltip',
+    ).toHaveTextContent('Falha simulada.');
+    expect(
+      screen.getByText(/^Dados de \d{2}:44:00 — fonte atrasada$/),
+      'the last data must stay on screen, marked as old',
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table', { name: 'Posições' })).getAllByRole('row'),
+      'the positions must stay on screen in full',
+    ).toHaveLength(61);
   });
 
   it("counts the time since the last good data on the server's clock, not the tablet's", () => {

@@ -6,7 +6,8 @@ import type { z } from 'zod';
 
 /**
  * What the poller hands an adapter for one poll: the server's clock (so tests and a
- * replay can hold or move time) and the signal that fires when the poll took too long.
+ * replay can hold or move time) and the signal that fires when the poll took too long,
+ * which every adapter that waits on anything must pass on (see DataSourceAdapter).
  */
 export type DataSourcePollContext = {
   readCurrentTime: () => Date;
@@ -28,9 +29,16 @@ export type PolledShapes = {
  * - `listProducedShapes` says which shapes a source with this config answers, for the
  *   page's binding picker.
  * - `pollOnce` reads the source once and resolves with its shapes, or throws an Error
- *   whose message (pt-BR) the operator reads as the source's error. It should stop when
- *   `context.signal` fires; one that does not stays in flight, and the poller's stale
- *   watch marks the source late meanwhile.
+ *   whose message (pt-BR) the operator reads as the source's error. It must honour
+ *   `context.signal`: an adapter that waits on anything (a network read, a file) passes
+ *   the signal on, `fetch(url, { signal: context.signal })`, and stops when it fires.
+ *   What goes wrong otherwise: the poll stays in flight past its timeout, the poller
+ *   starts no next poll of that source until it settles (never two in flight), and only
+ *   the stale watch marks the source late meanwhile. An adapter may leave the signal
+ *   unwatched only with a reason written beside its pollOnce: the simulator has nothing to
+ *   wait on (a few ms of arithmetic), and the replay lets a slow first load of a large
+ *   recording finish into memory so the next poll can answer. A network source (the flex
+ *   source is next) has no such reason.
  */
 export type DataSourceAdapter<Config> = {
   kind: DataSourceKind;

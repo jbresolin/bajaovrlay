@@ -31,9 +31,10 @@ export type DataSourceRowProps = {
  * One source in the list: its label (a button that shows its data beside the list), its
  * kind, its status chip, a "Gravando" badge while recording, when its last good data
  * came and how often it is read, why a recording stopped on its own, and its commands —
- * the on/off switch, "Atualizar agora", "Gravar" / "Parar gravação", "Editar" and
- * "Excluir" (two presses, the rundown's DeleteItemButton). Polling now and recording are
- * offered only while the source is on, since the server refuses them otherwise.
+ * the on/off switch, "Atualizar agora", "Reiniciar corrida" (simulators only), "Gravar" /
+ * "Parar gravação", "Editar" and "Excluir" (two presses, the rundown's DeleteItemButton).
+ * Polling now, restarting the race and recording are offered only while the source is
+ * on, since the server refuses them otherwise.
  * Refusals are shown under the list (DataSourcesPage.tsx).
  */
 export function DataSourceRow(props: DataSourceRowProps) {
@@ -95,6 +96,16 @@ export function DataSourceRow(props: DataSourceRowProps) {
         >
           {texts.row.pollNowButton}
         </ActionButton>
+        {source.kind === 'simulator' && (
+          <ActionButton
+            size="xs"
+            variant="outline"
+            disabled={!source.isEnabled}
+            onClick={() => void sendCommand({ type: 'restartSimulatedRace', sourceId: source.id })}
+          >
+            {texts.row.restartRaceButton}
+          </ActionButton>
+        )}
         {source.isRecording ? (
           <ActionButton
             size="xs"

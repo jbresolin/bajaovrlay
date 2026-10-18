@@ -149,6 +149,8 @@ export const ptBR = {
       `A configuração da fonte é inválida: o campo "${fieldPath}" está ausente ou tem um valor errado.`,
     dataSourceDisabled: (sourceLabel: string) =>
       `A fonte de dados "${sourceLabel}" está desligada. Ligue-a antes.`,
+    dataSourceNotASimulator: (sourceLabel: string) =>
+      `A fonte de dados "${sourceLabel}" não é um simulador; só um simulador tem corrida para reiniciar.`,
     recordingNotFound: (recordingId: string) =>
       `A gravação "${recordingId}" não existe ou ainda está sendo gravada.`,
     // A poll answered a shape name that is none of the four canonical shapes: a bug in

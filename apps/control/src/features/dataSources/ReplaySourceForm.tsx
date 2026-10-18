@@ -17,6 +17,7 @@ import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
 import { DataSourceFormCard } from './DataSourceFormCard';
+import { listRecordingsOfferedForReplay } from './recordingsOfferedForReplay';
 import {
   buildReplaySourceFormValues,
   readReplaySourceForm,
@@ -38,10 +39,11 @@ export type ReplaySourceFormProps = {
 
 /**
  * The replay's form ("Reprodução"), written by hand for this kind. The recording is
- * picked from the `recordings` slice, and only among recordings that have ended: one
- * still being written cannot be replayed (the server refuses it). The speed is picked
- * from the fixed list; "Começar em" is optional seconds into the recording. "Salvar
- * fonte" reads the form (replaySourceForm.ts, the shared ReplayConfigSchema).
+ * picked from the `recordings` slice, and only among recordings that have ended, newest
+ * first (recordingsOfferedForReplay.ts): one still being written cannot be replayed (the
+ * server refuses it). The speed is picked from the fixed list; "Começar em" is optional
+ * seconds into the recording. "Salvar fonte" reads the form (replaySourceForm.ts, the
+ * shared ReplayConfigSchema).
  */
 export function ReplaySourceForm(props: ReplaySourceFormProps) {
   const recordings = useServerState((state) => state.recordings);
@@ -57,7 +59,7 @@ export function ReplaySourceForm(props: ReplaySourceFormProps) {
   });
   const errors = form.formState.errors;
   const controlIdPrefix = `fonte-reproducao-${sourceAsOpened?.id ?? 'nova'}`;
-  const endedRecordings = recordings.filter((recording) => recording.endedAtMs !== null);
+  const endedRecordings = listRecordingsOfferedForReplay(recordings);
 
   const save = form.handleSubmit(async (values) => {
     const reading = readReplaySourceForm(values);

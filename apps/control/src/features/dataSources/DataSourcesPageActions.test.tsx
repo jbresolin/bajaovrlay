@@ -3,12 +3,15 @@
  *
  * What this module is for:
  *   Each row of the "Fontes" page has the commands an operator gives a source: the
- *   on/off switch, "Atualizar agora", "Gravar" / "Parar gravação" and "Excluir". The page
- *   only sends commands; the server changes the source and sends the new slice back.
+ *   on/off switch, "Atualizar agora", "Reiniciar corrida" (simulators only), "Gravar" /
+ *   "Parar gravação" and "Excluir". The page only sends commands; the server changes the
+ *   source and sends the new slice back.
  *
  * What these tests prove:
  *   - The switch sends setDataSourceEnabled.
  *   - "Atualizar agora" sends pollDataSourceNow; it and "Gravar" are off while the source is.
+ *   - "Reiniciar corrida" sends restartSimulatedRace; it is on simulator rows only, and off
+ *     while the simulator is; a refused restart is shown too.
  *   - "Gravar" sends startRecording; a recording source shows "Gravando" and "Parar
  *     gravação", which sends stopRecording; a recording that stopped on its own shows why.
  *   - "Excluir" asks twice: the first press sends nothing, the second deleteDataSource.
@@ -25,6 +28,7 @@ import { describe, expect, it } from 'vitest';
 
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import {
+  buildRehearsalReplayThatIsOk,
   buildSeededSimulatorThatIsOff,
   buildSimulatorThatIsOk,
   buildSimulatorThatIsRecording,
@@ -125,6 +129,64 @@ describe('"Atualizar agora"', () => {
       screen.getByRole('alert'),
       'the refusal must be shown in the server pt-BR words',
     ).toHaveTextContent('A fonte de dados "Simulador — Enduro" está desligada. Ligue-a antes.');
+  });
+});
+
+describe('"Reiniciar corrida"', () => {
+  it("restarts the simulator's race with restartSimulatedRace", () => {
+    // Arrange: the simulator on, its race running.
+    const { fakeServer } = renderPageWithTheSimulator(buildSimulatorThatIsOk);
+
+    // Act: press "Reiniciar corrida".
+    fireEvent.click(findRowOfTheSimulator().getByRole('button', { name: 'Reiniciar corrida' }));
+
+    // Assert: restartSimulatedRace for that source.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'the press must ask the server to restart the race',
+    ).toEqual([{ type: 'restartSimulatedRace', sourceId: 'simulador-enduro' }]);
+  });
+
+  it("shows the server's refusal under the list", () => {
+    // Arrange: the simulator on, "Reiniciar corrida" pressed.
+    const { fakeServer } = renderPageWithTheSimulator(buildSimulatorThatIsOk);
+    fireEvent.click(findRowOfTheSimulator().getByRole('button', { name: 'Reiniciar corrida' }));
+
+    // Act: the server refuses: another tablet turned the simulator off before the slice came.
+    fakeServer.refuseLastCommand({
+      code: 'DATA_SOURCE_DISABLED',
+      message: 'A fonte de dados "Simulador — Enduro" está desligada. Ligue-a antes.',
+    });
+
+    // Assert: the server's words, on the page, so the press is never silently lost.
+    expect(
+      screen.getByRole('alert'),
+      'a refused restart must be shown in the server pt-BR words',
+    ).toHaveTextContent('A fonte de dados "Simulador — Enduro" está desligada. Ligue-a antes.');
+  });
+
+  it('is offered on simulator rows only, and cannot be pressed while the simulator is off', () => {
+    // Arrange: the seeded simulator, off, and the rehearsal replay, on.
+    renderOnControlPageConnectedToFakeServer(
+      <DataSourcesPage />,
+      buildSlicesWithDataSources({
+        dataSources: [buildSeededSimulatorThatIsOff(), buildRehearsalReplayThatIsOk()],
+      }),
+    );
+
+    // Act: nothing; look at both rows.
+    const sourceList = within(screen.getByRole('list', { name: 'Fontes de dados' }));
+    const replayRow = within(sourceList.getByRole('listitem', { name: 'Ensaio de sexta' }));
+
+    // Assert: the simulator has the button (off with it); the replay has none.
+    expect(
+      findRowOfTheSimulator().getByRole('button', { name: 'Reiniciar corrida' }),
+      'a simulator that is off cannot restart its race, as the server would refuse it',
+    ).toBeDisabled();
+    expect(
+      replayRow.queryByRole('button', { name: 'Reiniciar corrida' }),
+      'a replay has no race of its own to restart',
+    ).not.toBeInTheDocument();
   });
 });
 

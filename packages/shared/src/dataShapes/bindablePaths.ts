@@ -10,11 +10,12 @@ export type BindablePath = {
 };
 
 /**
- * How many places of positions and standings get paths of their own. Ten covers a
- * top-ten graphic and a team card for the podium; a graphic that needs more takes the
- * whole list ("Lista completa").
+ * How many of the first entries of positions and standings get paths of their own (places
+ * for positions, rows for standings, where tied teams share a rank). Ten covers a top-ten
+ * graphic and a team card for the podium; a graphic that needs more takes the whole list
+ * ("Lista completa").
  */
-const placesWithTheirOwnPaths = 10;
+const firstEntriesWithTheirOwnPaths = 10;
 
 /**
  * Lists the paths a binding may point at in one shape, with their pt-BR labels, in the
@@ -98,7 +99,7 @@ function listPositionsPaths(): BindablePath[] {
   const paths: BindablePath[] = [
     { path: 'entries', label: joinLabelParts([shapeName, ptBRDataShapes.wholeListLabel]) },
   ];
-  for (let index = 0; index < placesWithTheirOwnPaths; index += 1) {
+  for (let index = 0; index < firstEntriesWithTheirOwnPaths; index += 1) {
     const placeLabel = ptBRDataShapes.placeLabel(index + 1);
     for (const fieldName of positionsEntryFieldsPerPlace) {
       const fieldLabel = ptBRDataShapes.positionsEntryFieldLabels[fieldName];
@@ -111,10 +112,14 @@ function listPositionsPaths(): BindablePath[] {
   return paths;
 }
 
-/** The fields of one team the picker offers per place, in the order it shows them. */
-const standingsEntryFieldsPerPlace = ['carNumber', 'teamName', 'schoolName', 'points'] as const;
+/** The fields of one team the picker offers per row, in the order it shows them. */
+const standingsEntryFieldsPerRow = ['carNumber', 'teamName', 'schoolName', 'points'] as const;
 
-/** The scope, the whole list, then each of the first ten places field by field. */
+/**
+ * The scope, the whole list, then each of the first ten rows field by field. Labelled by
+ * row ("1ª linha"), not by place: tied teams share a rank, so a row's index is not its
+ * place. Picking a team by its car number is BAJAOVRLAY-20's to add.
+ */
 function listStandingsPaths(): BindablePath[] {
   const shapeName = ptBRDataShapes.shapeNames.standings;
   const paths: BindablePath[] = [
@@ -124,13 +129,13 @@ function listStandingsPaths(): BindablePath[] {
     },
     { path: 'entries', label: joinLabelParts([shapeName, ptBRDataShapes.wholeListLabel]) },
   ];
-  for (let index = 0; index < placesWithTheirOwnPaths; index += 1) {
-    const placeLabel = ptBRDataShapes.placeLabel(index + 1);
-    for (const fieldName of standingsEntryFieldsPerPlace) {
+  for (let index = 0; index < firstEntriesWithTheirOwnPaths; index += 1) {
+    const rowLabel = ptBRDataShapes.rowLabel(index + 1);
+    for (const fieldName of standingsEntryFieldsPerRow) {
       const fieldLabel = ptBRDataShapes.standingsEntryFieldLabels[fieldName];
       paths.push({
         path: `entries.${index}.${fieldName}`,
-        label: joinLabelParts([shapeName, placeLabel, fieldLabel]),
+        label: joinLabelParts([shapeName, rowLabel, fieldLabel]),
       });
     }
   }

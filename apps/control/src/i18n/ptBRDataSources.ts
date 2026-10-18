@@ -29,10 +29,12 @@ export const ptBRDataSources = {
   // Under a minute the general "agora" says too little about a late source.
   secondsAgo: (seconds: number) => `há ${seconds} s`,
 
-  // The chip in the header: "Fontes: 2 ok · 1 atrasada" (DataSourcesHealthChip.tsx).
+  // The chip in the header: "Fontes: 2 ok · 1 atrasada · 1 com erro"
+  // (DataSourcesHealthChip.tsx). Its name for screen readers carries the counts too.
   healthChip: {
-    label: 'Saúde das fontes de dados',
-    text: (countTexts: string[]) => `Fontes: ${countTexts.join(' · ')}`,
+    label: (countsText: string) => `Saúde das fontes de dados: ${countsText}`,
+    countsText: (countTexts: string[]) => countTexts.join(' · '),
+    text: (countsText: string) => `Fontes: ${countsText}`,
     okCount: (count: number) => `${count} ok`,
     staleCount: (count: number) => (count === 1 ? '1 atrasada' : `${count} atrasadas`),
     errorCount: (count: number) => `${count} com erro`,
@@ -46,6 +48,8 @@ export const ptBRDataSources = {
     pollInterval: (seconds: string) => `Leitura a cada ${seconds} s`,
     enabledSwitch: 'Ligada',
     pollNowButton: 'Atualizar agora',
+    // Simulators only: the simulated race starts again from its green flag.
+    restartRaceButton: 'Reiniciar corrida',
     startRecordingButton: 'Gravar',
     stopRecordingButton: 'Parar gravação',
     recordingBadge: 'Gravando',
