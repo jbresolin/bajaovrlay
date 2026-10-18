@@ -1,11 +1,14 @@
-import type { DataSource, UpdateDataSourceCommand } from '@bajaovrlay/shared';
+import {
+  areJsonValuesEqual,
+  type DataSource,
+  type UpdateDataSourceCommand,
+} from '@bajaovrlay/shared';
 
 import type {
   ReducerContext,
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
-import { areJsonValuesEqual } from '../areJsonValuesEqual.js';
 import { computeStaleAfterMs } from '../dataSourceHealth.js';
 import { findDataSource, replaceDataSource } from '../dataSourceListing.js';
 import { refuseUnknownDataSource } from '../dataSourceRefusals.js';

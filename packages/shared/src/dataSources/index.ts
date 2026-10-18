@@ -26,6 +26,9 @@ export {
 export { type HttpJsonSampleAnswer, HttpJsonSampleAnswerSchema } from './httpJsonSampleAnswer.js';
 // The pt-BR reasons a flex source's config is refused, shared with the control page's form.
 export { ptBRHttpJsonConfig } from './ptBRHttpJsonConfig.js';
+// Whether two configs or snapshots hold the same JSON, whatever their key order: the
+// server's no-op checks and the control page's "did this edit change the config?".
+export { areJsonValuesEqual } from './areJsonValuesEqual.js';
 // How often a source may be polled: 500 to 60 000 ms.
 export { PollIntervalMsSchema } from './pollInterval.js';
 // The `dataSources` slice: each source, its config by kind, and its health (status).

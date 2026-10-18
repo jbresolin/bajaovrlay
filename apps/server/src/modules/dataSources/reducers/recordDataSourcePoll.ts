@@ -1,8 +1,9 @@
-import type {
-  DataSnapshot,
-  DataSnapshotShapes,
-  DataSource,
-  RecordDataSourcePollCommand,
+import {
+  areJsonValuesEqual,
+  type DataSnapshot,
+  type DataSnapshotShapes,
+  type DataSource,
+  type RecordDataSourcePollCommand,
 } from '@bajaovrlay/shared';
 
 import { ptBR } from '../../../core/messages/ptBR.js';
@@ -10,7 +11,6 @@ import type {
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
-import { areJsonValuesEqual } from '../areJsonValuesEqual.js';
 import { isSourceHealthy, removeFailingSinceFromStatus } from '../dataSourceHealth.js';
 import { findDataSource, replaceDataSource } from '../dataSourceListing.js';
 import { validatePolledShapes } from '../polledShapesValidation.js';

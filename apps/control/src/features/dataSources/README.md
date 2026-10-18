@@ -12,7 +12,8 @@ the slices it is sent. Nothing here reaches the air.
   plus one page rule: failing for 60 s since the server's `failingSinceMs` is red "Erro"
   (pure, table test).
 - `SimulatorSourceForm.tsx`, `ReplaySourceForm.tsx` — the per-kind forms, read by
-  `simulatorSourceForm.ts` / `replaySourceForm.ts` with the shared config schemas;
+  `simulatorSourceForm.ts` / `replaySourceForm.ts` with the shared config schemas; the flex
+  HTTP/JSON form, its "Testar" panel and import / export are in `flexSource/` (its README);
   `dataSourceCommandsFromForm.ts` builds create / update-with-only-changes (pure);
   `recordingsOfferedForReplay.ts` lists the ended recordings newest first.
 - `DataSourceDetail.tsx` — the selected source's data: `SessionCard.tsx` (`useSessionClockText.ts`,

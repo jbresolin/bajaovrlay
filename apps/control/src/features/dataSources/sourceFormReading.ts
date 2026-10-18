@@ -5,7 +5,7 @@ import { ptBR } from '@/i18n/ptBR';
 import { readNumberFromFieldText } from './numberFieldText';
 
 /**
- * What both source forms (simulator and replay) have in common: a label and a poll
+ * What every source form (simulator, replay, flex HTTP/JSON) has in common: a label and a poll
  * interval in seconds, and the answer of reading a form — either a source ready to send,
  * or a pt-BR message per wrong field. The kind's own fields are read in
  * simulatorSourceForm.ts and replaySourceForm.ts.

@@ -1,7 +1,10 @@
+import { ptBRFlexSourceForm } from './ptBRFlexSourceForm';
+
 /**
  * pt-BR catalog, data sources part: the "Fontes de dados" page (features/dataSources) and
  * the health chip beside the connection badge. Kept in a file of its own so ptBR.ts stays
  * readable; ptBR.ts makes it `ptBR.dataSources`.
+ * The flex HTTP/JSON form has its own file, ptBRFlexSourceForm.ts (`ptBR.dataSources.flexForm`).
  * The flag and car status words are the page's own, in sentence case; the race clock
  * writes its flags on air in capitals from its own catalog, which the page never imports.
  */
@@ -168,4 +171,7 @@ export const ptBRDataSources = {
         'Informe os segundos como um número maior ou igual a zero, ou deixe em branco.',
     },
   },
+
+  // The flex HTTP/JSON source's form, in ptBRFlexSourceForm.ts.
+  flexForm: ptBRFlexSourceForm,
 } as const;

@@ -21,7 +21,7 @@ export type DataSourceFormCardProps = {
 };
 
 /**
- * The frame both source forms share: the title, the fields, the server's refusal of this
+ * The frame every source form shares: the title, the fields, the server's refusal of this
  * form's save in its pt-BR words, "Salvar fonte" and "Cancelar". Enter in a field does nothing,
  * as in every form of the page: only the button sends.
  */

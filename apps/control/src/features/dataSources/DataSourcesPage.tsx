@@ -1,6 +1,7 @@
 import type {
   DataSource,
   DataSourceKind,
+  HttpJsonDataSource,
   ReplayDataSource,
   SimulatorDataSource,
 } from '@bajaovrlay/shared';
@@ -13,6 +14,7 @@ import { useServerState } from '@/state/ControlPageStateProvider';
 
 import { DataSourceDetail } from './DataSourceDetail';
 import { DataSourceRow } from './DataSourceRow';
+import { FlexSourceForm } from './flexSource/FlexSourceForm';
 import { ReplaySourceForm } from './ReplaySourceForm';
 import { SimulatorSourceForm } from './SimulatorSourceForm';
 
@@ -21,20 +23,33 @@ const texts = ptBR.dataSources;
 /** The form open on the page, if any: a kind's form, new (null) or on a stored source. */
 type OpenSourceForm =
   | { kind: 'simulator'; sourceBeingEdited: SimulatorDataSource | null }
-  | { kind: 'replay'; sourceBeingEdited: ReplayDataSource | null };
+  | { kind: 'replay'; sourceBeingEdited: ReplayDataSource | null }
+  | { kind: 'httpJson'; sourceBeingEdited: HttpJsonDataSource | null };
 
-/**
- * The form "Editar" opens for a stored source: the form of its kind. A flex HTTP/JSON
- * source has no form yet (it comes later in BAJAOVRLAY-40), so "Editar" opens none.
- */
-function buildEditFormOfSource(source: DataSource): OpenSourceForm | null {
+// The kinds "+ Fonte" offers, in the order of its buttons.
+const kindsOfferedForANewSource: readonly DataSourceKind[] = ['simulator', 'replay', 'httpJson'];
+
+/** The form "Editar" opens for a stored source: the form of its kind. */
+function buildEditFormOfSource(source: DataSource): OpenSourceForm {
   switch (source.kind) {
     case 'simulator':
       return { kind: 'simulator', sourceBeingEdited: source };
     case 'replay':
       return { kind: 'replay', sourceBeingEdited: source };
     case 'httpJson':
-      return null;
+      return { kind: 'httpJson', sourceBeingEdited: source };
+  }
+}
+
+/** The form "+ Fonte" opens for a kind: that kind's form, empty. */
+function buildNewSourceFormOfKind(kind: DataSourceKind): OpenSourceForm {
+  switch (kind) {
+    case 'simulator':
+      return { kind: 'simulator', sourceBeingEdited: null };
+    case 'replay':
+      return { kind: 'replay', sourceBeingEdited: null };
+    case 'httpJson':
+      return { kind: 'httpJson', sourceBeingEdited: null };
   }
 }
 
@@ -44,7 +59,9 @@ function buildEditFormOfSource(source: DataSource): OpenSourceForm | null {
  * data of the selected source (DataSourceDetail.tsx) — the first one until the operator
  * picks another by its label. On a tablet the two columns stack, list first; they sit
  * side by side from the `lg` width up. "+ Fonte" asks the kind first, then opens that
- * kind's form above the list, where "Editar" opens it too; one form at a time.
+ * kind's form above the list, where "Editar" opens it too; one form at a time. The flex
+ * HTTP/JSON form, with its "Testar" panel, is too wide for the list's column, so it opens
+ * across the page's whole width, above both columns.
  * Which source is selected and which form is open are this page's own state: they are
  * not server state, and a refresh may forget them.
  */
@@ -68,11 +85,7 @@ export function DataSourcesPage() {
 
   function openTheNewSourceForm(kind: DataSourceKind): void {
     setIsChoosingTheKind(false);
-    setOpenForm(
-      kind === 'simulator'
-        ? { kind: 'simulator', sourceBeingEdited: null }
-        : { kind: 'replay', sourceBeingEdited: null },
-    );
+    setOpenForm(buildNewSourceFormOfKind(kind));
   }
 
   function closeTheForm(): void {
@@ -86,6 +99,15 @@ export function DataSourcesPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] lg:items-start">
+      {formShown?.kind === 'httpJson' && (
+        <div className="min-w-0 lg:col-span-2">
+          <FlexSourceForm
+            key={openFormKey}
+            sourceBeingEdited={formShown.sourceBeingEdited}
+            onClose={closeTheForm}
+          />
+        </div>
+      )}
       <section aria-labelledby="titulo-fontes-de-dados" className="flex min-w-0 flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <h2 id="titulo-fontes-de-dados" className="text-xl font-semibold">
@@ -103,12 +125,16 @@ export function DataSourcesPage() {
             className="flex flex-wrap items-center gap-2"
           >
             <span className="text-sm text-muted-foreground">{texts.newSourceKindQuestion}</span>
-            <Button size="sm" variant="outline" onClick={() => openTheNewSourceForm('simulator')}>
-              {texts.kinds.simulator}
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => openTheNewSourceForm('replay')}>
-              {texts.kinds.replay}
-            </Button>
+            {kindsOfferedForANewSource.map((kind) => (
+              <Button
+                key={kind}
+                size="sm"
+                variant="outline"
+                onClick={() => openTheNewSourceForm(kind)}
+              >
+                {texts.kinds[kind]}
+              </Button>
+            ))}
           </div>
         )}
 
