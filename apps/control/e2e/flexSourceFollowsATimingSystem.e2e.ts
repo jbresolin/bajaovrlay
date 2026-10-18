@@ -15,7 +15,8 @@
  *   - When the timing system's answer changes (car 6 takes the lead), the table follows.
  *   - When the timing system answers 500, the chip reads "Atrasada", the server keeps the
  *     reason, and the table keeps the last good data over several failed polls.
- *   - When it answers 200 again, the chip is back to "Ok" with the 20 cars.
+ *   - When it answers 200 again (Acauã Baja back in the lead), the chip is back to "Ok"
+ *     and the table shows that fresh answer, not the kept data.
  *
  * What these tests deliberately do not cover:
  *   - Every mapping rule and problem line: applyFlexMapping.test.ts (packages/shared).
@@ -28,10 +29,10 @@
  *
  * Sharing the server with the other tests:
  *   Before each test the server is emptied, which deletes every source but the seeded
- *   simulator, so the flex source made here is gone before the next test. The timing
- *   system is started before each test and stopped after it.
+ *   simulator, so the flex source made here is gone before the next test. Each test gets
+ *   its own timing system through the `timingSystem` fixture, stopped when the test ends.
  */
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, test as base } from '@playwright/test';
 
 import {
   readDataSourceFromTheRealServer,
@@ -69,9 +70,23 @@ const waitForTheNextPollsInMilliseconds = 5_000;
 // about two seconds of failing, far under the minute that turns the chip red.
 const failedPollsBeforeTheDataIsChecked = 4;
 
-// The imaginary timing system of the test running now: started before each test, stopped
-// after it, so no test ever sees another's answers.
-let timingSystem: TimingSystemTestServer;
+/**
+ * Each test asks for `timingSystem` and gets its own imaginary timing system, answering
+ * with the example response: started before the test, stopped after it, so no test ever
+ * sees another's answers and nothing is shared between tests.
+ */
+const test = base.extend<{ timingSystem: TimingSystemTestServer }>({
+  // Playwright reads which fixtures a fixture needs from its first argument, which must be
+  // an object pattern; this one needs none, hence the empty one.
+  // eslint-disable-next-line no-empty-pattern
+  timingSystem: async ({}, use) => {
+    const timingSystemOfThisTest = await startTimingSystemTestServer(
+      readExampleTimingSystemResponse(),
+    );
+    await use(timingSystemOfThisTest);
+    await timingSystemOfThisTest.stop();
+  },
+});
 
 /**
  * Builds the example response a few minutes later: car 6 (Sabiá Baja, second) has passed
@@ -98,15 +113,15 @@ function buildResponseWhereSabiaBajaTakesTheLead(): ExampleTimingSystemResponse 
 
 /**
  * Makes the flex source as the operator does: "+ Fonte" → "HTTP/JSON (flexível)", the
- * example config imported (its URL already pointed at the test's timing system), a name
- * and the 0,5 s interval typed. Returns the form, still open and not saved.
+ * example config imported with its URL pointed at `classificacaoAddress`, a name and the
+ * 0,5 s interval typed. Returns the form, still open and not saved.
  */
-async function openNewFlexFormWithTheExampleImported(page: Page) {
+async function openNewFlexFormWithTheExampleImported(page: Page, classificacaoAddress: string) {
   const flexForm = await openNewSourceFormOfKind(page, 'HTTP/JSON (flexível)');
   await flexForm.getByRole('button', { name: 'Importar configuração' }).click();
   await flexForm
     .getByLabel('Configuração para importar (JSON)')
-    .fill(writeExampleConfigPointedAt(timingSystem.classificacaoAddress));
+    .fill(writeExampleConfigPointedAt(classificacaoAddress));
   await flexForm.getByRole('button', { name: 'Importar', exact: true }).click();
   await expect(
     flexForm.getByText('Configuração importada. Confira e salve a fonte.'),
@@ -119,19 +134,17 @@ async function openNewFlexFormWithTheExampleImported(page: Page) {
 
 test.beforeEach(async () => {
   await emptyTheServerState();
-  timingSystem = await startTimingSystemTestServer(readExampleTimingSystemResponse());
-});
-
-test.afterEach(async () => {
-  await timingSystem.stop();
 });
 
 test.describe('a flex source made from the example preset', () => {
-  test('shows the 20 cars in "Testar" before anything is saved', async ({ page }) => {
+  test('shows the 20 cars in "Testar" before anything is saved', async ({ page, timingSystem }) => {
     // Arrange: the new flex form with the example config imported, pointed at the test's
     // timing system.
     await openDataSourcesPageAndWaitUntilConnected(page);
-    const flexForm = await openNewFlexFormWithTheExampleImported(page);
+    const flexForm = await openNewFlexFormWithTheExampleImported(
+      page,
+      timingSystem.classificacaoAddress,
+    );
     const testPanel = flexForm.getByRole('region', { name: 'Testar' });
 
     // Act: fetch the sample through the server with "Buscar da fonte", then press "Testar".
@@ -158,10 +171,14 @@ test.describe('a flex source made from the example preset', () => {
 
   test('follows the timing system once on, keeps its data on a 500, and recovers', async ({
     page,
+    timingSystem,
   }) => {
     // Arrange: the flex source saved, turned on and shown, with its 20 cars and "Ok".
     await openDataSourcesPageAndWaitUntilConnected(page);
-    const flexForm = await openNewFlexFormWithTheExampleImported(page);
+    const flexForm = await openNewFlexFormWithTheExampleImported(
+      page,
+      timingSystem.classificacaoAddress,
+    );
     await flexForm.getByRole('button', { name: 'Salvar fonte' }).click();
     await expect(flexForm, 'the form must close once the server has the source').toBeHidden();
     await turnSourceOnWithItsSwitch(page, flexSourceLabel);
@@ -220,10 +237,11 @@ test.describe('a flex source made from the example preset', () => {
       'failed polls must neither blank nor change the last good data',
     ).toEqual(changedData);
 
-    // Act (3): the timing system is mended and answers 200 again.
-    timingSystem.answerWithResponse(buildResponseWhereSabiaBajaTakesTheLead());
+    // Act (3): the timing system is mended and answers 200 again, with an answer unlike the
+    // kept data (Acauã Baja back in the lead), so fresh data can be told from the stale.
+    timingSystem.answerWithResponse(readExampleTimingSystemResponse());
 
-    // Assert (3): "Ok" again, the late banner gone, and the 20 cars listed.
+    // Assert (3): "Ok" again, the late banner gone, and the table showing the new answer.
     await expect(
       findStatusChipOfSourceRow(flexRow),
       'a timing system answering again must read "Ok"',
@@ -232,6 +250,16 @@ test.describe('a flex source made from the example preset', () => {
       page.getByText(/fonte atrasada$/),
       'a recovered source must lose the "fonte atrasada" banner',
     ).toBeHidden();
+    const recoveredData = await waitUntilFirstRowsOfPositionsTableDiffer(page, {
+      sourceLabel: flexSourceLabel,
+      rowCount: carsInTheExample,
+      earlierRead: changedData,
+      failureMessage: 'the recovered source must show the fresh answer, not the kept data',
+      timeoutInMilliseconds: waitForTheNextPollsInMilliseconds,
+    });
+    expect(recoveredData[0], 'Acauã Baja must lead again in the fresh data').toContain(
+      'Acauã Baja',
+    );
     await expect(
       findCarRowsOfPositionsTable(positionsTable),
       'the recovered source must show its 20 cars',
