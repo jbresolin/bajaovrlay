@@ -28,10 +28,17 @@ const wholeNumberPartPattern = /^\d+$/;
  * 278 292.999… in floating point.
  */
 function convertSecondsToMs(value: unknown): TransformResult {
+  const quotedValue = quoteValueForReason(value);
   if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return refuseTransformValue(ptBRTransforms.reasons.notANumber(quoteValueForReason(value)));
+    return refuseTransformValue(ptBRTransforms.reasons.notANumber(quotedValue));
   }
-  return giveTransformedValue(Math.round(value * msPerSecond));
+  // A huge number of seconds turns into Infinity (not JSON) or an integer past 2^53 that
+  // has lost digits; both are refused, as textToInteger refuses them.
+  const durationMs = Math.round(value * msPerSecond);
+  if (!Number.isSafeInteger(durationMs)) {
+    return refuseTransformValue(ptBRTransforms.reasons.integerTooLarge(quotedValue));
+  }
+  return giveTransformedValue(durationMs);
 }
 
 /**
@@ -107,8 +114,14 @@ function readLapTimeTextAsMs(value: unknown): TransformResult {
     hours = Number(hoursPart);
   }
 
+  // A seconds or hours part with very many digits would lose digits past 2^53 (or become
+  // Infinity), so a total that is not a safe integer is refused rather than given.
   const totalWholeSeconds = (hours * minutesPerHour + minutes) * secondsPerMinute + seconds;
-  return giveTransformedValue(totalWholeSeconds * msPerSecond + fractionMs);
+  const lapTimeMs = totalWholeSeconds * msPerSecond + fractionMs;
+  if (!Number.isSafeInteger(lapTimeMs)) {
+    return refuseTransformValue(ptBRTransforms.reasons.integerTooLarge(quotedValue));
+  }
+  return giveTransformedValue(lapTimeMs);
 }
 
 /** 278.293 (seconds, a number) becomes 278 293 ms. */

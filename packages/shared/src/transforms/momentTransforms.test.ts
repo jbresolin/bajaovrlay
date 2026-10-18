@@ -9,8 +9,9 @@
  * What these tests prove:
  *   - isoDateTextToMs reads a moment with a zone (Z or an offset like -03:00) and its
  *     fraction, and refuses a moment with no zone, since guessing the zone is how a clock
- *     ends up three hours off; it also refuses a date that does not exist.
- *   - unixSecondsToMs turns seconds into ms and refuses text.
+ *     ends up three hours off; it also refuses a date or an offset that does not exist.
+ *   - unixSecondsToMs turns seconds into ms and refuses text and numbers too large to
+ *     keep every digit.
  *
  * What these tests deliberately do not cover:
  *   - The server's own clock: neither transform reads it. A source that sends no moment
@@ -62,6 +63,12 @@ describe('isoDateTextToMs', () => {
       value: '2027-02-30T14:30:00-03:00',
       expected: { ok: false, reason: '"2027-02-30T14:30:00-03:00" não existe no calendário' },
     },
+    // Offset minutes past 59 would silently read as +04:15, a quarter hour off.
+    {
+      name: 'refuses the offset +03:75, whose minutes are past 59',
+      value: '2027-08-14T14:30:00+03:75',
+      expected: { ok: false, reason: '"2027-08-14T14:30:00+03:75" não existe no calendário' },
+    },
     // A Brazilian date with slashes is no ISO moment.
     {
       name: 'refuses "14/08/2027 14:30", which is not ISO 8601',
@@ -105,6 +112,12 @@ describe('unixSecondsToMs', () => {
       name: 'keeps the half second of 1818264600.5',
       value: 1_818_264_600.5,
       expected: { ok: true, value: enduroStartAtMs + 500 },
+    },
+    // So many seconds that the ms would be Infinity, which no JSON can hold.
+    {
+      name: 'refuses 1e306 s, too large to keep every digit',
+      value: 1e306,
+      expected: { ok: false, reason: '1e+306 é grande demais para ser lido sem perder dígitos' },
     },
     // Text is refused rather than read, so a source that changed format is noticed.
     {

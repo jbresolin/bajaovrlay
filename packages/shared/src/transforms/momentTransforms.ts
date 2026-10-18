@@ -32,6 +32,10 @@ type IsoMomentParts = {
   minute: number;
   second: number;
   fractionMs: number;
+  /** The offset's hours and minutes as written, each checked on its own like the time. */
+  offsetHours: number;
+  offsetMinutesPart: number;
+  /** The whole offset east of UTC in minutes, signed: -03:00 is -180. */
   offsetMinutes: number;
 };
 
@@ -53,6 +57,8 @@ function readIsoMomentParts(match: RegExpExecArray): IsoMomentParts {
     minute: Number(match[5]),
     second: Number(match[6]),
     fractionMs: Number(fractionDigits),
+    offsetHours,
+    offsetMinutesPart,
     offsetMinutes,
   };
 }
@@ -68,7 +74,8 @@ function isMomentInCalendar(parts: IsoMomentParts, utcMsBeforeOffset: number): b
     builtDate.getUTCMonth() + 1 === parts.month &&
     builtDate.getUTCDate() === parts.day;
   const isTimeOfDayValid = parts.hour <= 23 && parts.minute <= 59 && parts.second <= 59;
-  const isOffsetValid = Math.abs(parts.offsetMinutes) <= 23 * 60 + 59;
+  // Checking only the total would let "+03:75" through as +04:15, a quarter hour off.
+  const isOffsetValid = parts.offsetHours <= 23 && parts.offsetMinutesPart <= 59;
   return isDateTheSame && isTimeOfDayValid && isOffsetValid;
 }
 
@@ -116,10 +123,17 @@ function readIsoMomentTextAsMs(value: unknown): TransformResult {
  * time; one written as text is refused, since a rule has one transform and no chain.
  */
 function convertUnixSecondsToMs(value: unknown): TransformResult {
+  const quotedValue = quoteValueForReason(value);
   if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return refuseTransformValue(ptBRTransforms.reasons.notANumber(quoteValueForReason(value)));
+    return refuseTransformValue(ptBRTransforms.reasons.notANumber(quotedValue));
   }
-  return giveTransformedValue(Math.round(value * msPerSecond));
+  // A huge number of seconds turns into Infinity or an integer past 2^53 that has lost
+  // digits; both are refused, as textToInteger refuses them.
+  const msSince1970 = Math.round(value * msPerSecond);
+  if (!Number.isSafeInteger(msSince1970)) {
+    return refuseTransformValue(ptBRTransforms.reasons.integerTooLarge(quotedValue));
+  }
+  return giveTransformedValue(msSince1970);
 }
 
 /** "2027-08-14T14:30:00-03:00" becomes ms since 1970; a moment with no zone is refused. */

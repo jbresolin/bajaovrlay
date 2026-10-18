@@ -8,9 +8,10 @@
  *
  * What these tests prove:
  *   - secondsToMs rounds to the nearest millisecond, so floating point does not turn
- *     278.293 s into 278 292 ms, and refuses anything that is not a number.
+ *     278.293 s into 278 292 ms, and refuses anything that is not a number or is too
+ *     large to keep every digit.
  *   - lapTimeTextToMs reads seconds, minutes and hours, with a comma or a point before the
- *     fraction, and refuses text that is not a lap time, quoting it.
+ *     fraction, and refuses text that is not a lap time or is too large, quoting it.
  *
  * What these tests deliberately do not cover:
  *   - Showing a duration on screen (gaps to the tenth, lap times); that is the control
@@ -38,6 +39,12 @@ describe('secondsToMs', () => {
       name: 'rounds 1.2345 s to the nearest ms, 1 235',
       value: 1.2345,
       expected: { ok: true, value: 1_235 },
+    },
+    // So many seconds that the ms would be Infinity, which no JSON can hold.
+    {
+      name: 'refuses 1e306 s, too large to keep every digit',
+      value: 1e306,
+      expected: { ok: false, reason: '1e+306 é grande demais para ser lido sem perder dígitos' },
     },
     // Lap-time text needs lapTimeTextToMs; saying so finds the wrong transform.
     {
@@ -111,6 +118,15 @@ describe('lapTimeTextToMs', () => {
       expected: {
         ok: false,
         reason: '"1:02:03:04" não é um tempo de volta como 4:38.293, 278.293 ou 1:02:03.4',
+      },
+    },
+    // Twenty digits of seconds would lose digits past 2^53 once in ms.
+    {
+      name: 'refuses "12345678901234567890.5", too large to keep every digit',
+      value: '12345678901234567890.5',
+      expected: {
+        ok: false,
+        reason: '"12345678901234567890.5" é grande demais para ser lido sem perder dígitos',
       },
     },
     // A number of seconds needs secondsToMs.
