@@ -150,7 +150,7 @@ describe('the three areas of the control page', () => {
     // Assert: the centre holds two frames on the renderer page, both marked as monitors:
     // "Prévia" first (it comes first in the page, so it is drawn on the left) on the
     // preview output, then "Programa"; the note that nothing is previewed; and the
-    // "Edição rápida" panel with its take button.
+    // "Edição rápida" panel, with nothing loaded, offering "Novo gráfico…".
     const centreArea = within(screen.getByRole('region', { name: 'Programa e edição rápida' }));
     const previewFrame = centreArea.getByTitle('Prévia');
     const programFrame = centreArea.getByTitle('Programa');
@@ -187,8 +187,8 @@ describe('the three areas of the control page', () => {
       'the quick edit panel must be in the centre area',
     ).toBeInTheDocument();
     expect(
-      centreArea.getByRole('button', { name: 'Colocar no ar' }),
-      'the quick edit panel must offer its take button',
+      centreArea.getByRole('button', { name: 'Novo gráfico…' }),
+      'the quick edit panel must offer to make a new graphic, as an item',
     ).toBeInTheDocument();
   });
 
@@ -290,8 +290,12 @@ describe('the Backspace key while something is on the preview output', () => {
 
   it.each(placesWhereBackspaceBelongsToTheForm)('$name', ({ findThePlace }) => {
     // Arrange: the clock is on air and another clock is previewed, so a Backspace that
-    // reached the shortcut WOULD send stopPreview; the focus is on the place of this row.
+    // reached the shortcut WOULD send stopPreview; the clock on air is loaded into "Edição
+    // rápida" with its row's "Editar", and the focus is on the place of this row.
     const { fakeServer } = renderControlPageWithTheClockOnAirAndAPreview();
+    const layersArea = within(screen.getByRole('region', { name: 'Camadas' }));
+    const clockLayerRow = within(layersArea.getByRole('listitem', { name: 'Relógio' }));
+    fireEvent.click(clockLayerRow.getByRole('button', { name: 'Editar' }));
     const placeWithTheFocus = findThePlace();
 
     // Act: press Backspace there.

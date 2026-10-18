@@ -19,6 +19,8 @@
  *   - On a panel tab, 1 to 9 fire the panel's buttons in their order with `takeItem`; on
  *     the Macros tab they run the macros in the order the server lists them; a digit past
  *     the last button fires nothing.
+ *   - "Novo gráfico…" of "Edição rápida" puts its item in the panel shown, in the first
+ *     panel while "Macros" is shown, and nowhere when the server lists no panel.
  *
  * What these tests deliberately do not cover:
  *   - The keys being listened to (typing, held keys, connection): QuickFireStripKeys.test.tsx.
@@ -33,6 +35,7 @@ import {
   chooseCommandForDigitKey,
   chooseTabShown,
   findFunctionKeyForTabPosition,
+  findPanelIdForNewShortcut,
   findTabForFunctionKey,
   listQuickFireTabsInOrder,
 } from './quickFireTabs';
@@ -270,5 +273,45 @@ describe('chooseCommandForDigitKey', () => {
 
     // Assert: the expected command, or nothing.
     expect(command, `the digit ${digit} must send the expected command`).toEqual(expected);
+  });
+});
+
+describe('findPanelIdForNewShortcut', () => {
+  const scenarios = [
+    // The operator is on "Box": a graphic made on the spot becomes a button there.
+    {
+      name: 'answers the panel of the tab shown',
+      panels: buildPanelsListedOutOfOrder(),
+      tabShown: { kind: 'panel', panelId: 'painel-box' } as const,
+      expectedPanelId: 'painel-box',
+    },
+    // A macro tab holds no items, so the first panel in tab order stands in for it.
+    {
+      name: 'answers the first panel in tab order while the Macros tab is shown',
+      panels: buildPanelsListedOutOfOrder(),
+      tabShown: { kind: 'macros' } as const,
+      expectedPanelId: 'atalhos',
+    },
+    // No panel at all (the server always seeds one): no panel is named, so the page
+    // never sends one the server does not know, and "Novo gráfico…" is off.
+    {
+      name: 'answers nothing when the server lists no panel',
+      panels: [],
+      tabShown: { kind: 'macros' } as const,
+      expectedPanelId: undefined,
+    },
+  ];
+
+  it.each(scenarios)('$name', ({ panels, tabShown, expectedPanelId }) => {
+    // Arrange: the tabs of this row's panels.
+    const tabs = listQuickFireTabsInOrder(panels);
+
+    // Act: ask where a new shortcut goes with this row's tab shown.
+    const panelId = findPanelIdForNewShortcut(tabs, tabShown);
+
+    // Assert: the panel this row expects, or none.
+    expect(panelId, 'a new shortcut must go to the panel the operator is looking at').toBe(
+      expectedPanelId,
+    );
   });
 });

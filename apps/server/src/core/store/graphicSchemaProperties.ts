@@ -63,3 +63,30 @@ export function findTakeTimeFieldKeyGraphicCannotStamp(
 ): string | undefined {
   return takeTimeFieldKeys.find((fieldKey) => !isFieldAWallClockMomentOfGraphic(graphic, fieldKey));
 }
+
+// The four parts of a clock, as the race clock's manifest marks them with `v_baja.role`
+// (the same words carryClockForward reads): the time read, the moment it was read,
+// whether it runs, which way it counts.
+const clockRoles: readonly string[] = ['clockTime', 'wallClock', 'clockRunning', 'clockMode'];
+
+/**
+ * The keys of the graphic's data fields that are part of a clock: every top-level field
+ * whose `v_baja.role` is one of clockTime, wallClock, clockRunning or clockMode. None for a
+ * graphic without a data schema. These fields only mean something together, which is why
+ * "Salvar no item" saves them as one (saveOnAirChangesIntoItem.ts).
+ */
+export function listClockFieldKeysOfGraphic(graphic: Graphic): string[] {
+  const schemaProperties = graphic.manifest.schema?.properties;
+  if (!isPlainObject(schemaProperties)) {
+    return [];
+  }
+  const clockFieldKeys: string[] = [];
+  for (const fieldKey of Object.keys(schemaProperties)) {
+    const vendorHints = readSchemaPropertyOfGraphic(graphic, fieldKey)?.v_baja;
+    const role = isPlainObject(vendorHints) ? vendorHints.role : undefined;
+    if (typeof role === 'string' && clockRoles.includes(role)) {
+      clockFieldKeys.push(fieldKey);
+    }
+  }
+  return clockFieldKeys;
+}

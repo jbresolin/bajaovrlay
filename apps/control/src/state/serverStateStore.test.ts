@@ -196,7 +196,7 @@ describe('the last command error', () => {
     // Arrange: a store, and the refusal the server gives for a graphic it does not know.
     const serverStateStore = createServerStateStore();
     const refusalForUnknownGraphic = {
-      commandType: 'takeGraphic',
+      commandType: 'takeItem',
       code: 'GRAPHIC_NOT_FOUND',
       message: 'O gráfico "race-clock" não está registrado.',
     } as const;

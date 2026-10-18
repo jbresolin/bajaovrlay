@@ -16,13 +16,13 @@
  *     naming the missing fields.
  *   - Even an update that re-sends the values already on air is refused: the rule
  *     runs before "nothing changed" is decided, and it cannot be run.
- *   - A take of the same graphic is accepted: a take runs no update rule.
+ *   - A take of an item of the same graphic is accepted: a take runs no update rule.
  *
  * What these tests deliberately do not cover:
  *   - The boot warning for such a manifest; ../loadInitialSlicesUnusableUpdateRule.test.ts.
  *   - How a manifest's rule is read; ../updateRules/updateRuleOfGraphic.test.ts.
  */
-import type { Command, Graphic, Instance } from '@bajaovrlay/shared';
+import type { Command, Graphic, Instance, Item } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { raceClockManifestForTests } from '../builtGraphicsFolder.testSupport.js';
@@ -200,35 +200,53 @@ describe('updateInstanceData, when the update rule of the graphic cannot be run'
   });
 });
 
-describe('takeGraphic, when the update rule of the graphic cannot be run', () => {
+/** Builds the "Atalhos" button "Box — equipe 42": the pit clock, every field typed in. */
+function buildPitStopItem(): Item {
+  const pitStopData = buildPitStopClockData();
+  return {
+    id: 'item-box-equipe-42',
+    home: { kind: 'quickFire', panelId: 'atalhos' },
+    order: 0,
+    graphicId: 'pit-clock',
+    layerId: 'clock',
+    fields: {
+      sessionName: { kind: 'literal', value: pitStopData.sessionName },
+      state: { kind: 'literal', value: pitStopData.state },
+      clockMode: { kind: 'literal', value: pitStopData.clockMode },
+      referenceTimeMs: { kind: 'literal', value: pitStopData.referenceTimeMs },
+      referenceWallClockMs: { kind: 'literal', value: pitStopData.referenceWallClockMs },
+      running: { kind: 'literal', value: pitStopData.running },
+    },
+    label: 'Box — equipe 42',
+    color: 'warning',
+    notes: '',
+  };
+}
+
+describe('takeItem, when the update rule of the graphic cannot be run', () => {
   it('puts the graphic on air all the same, because a take runs no update rule', () => {
-    // Arrange: the pit clock registered with the mistyped rule, and nothing on air.
+    // Arrange: the pit clock registered with the mistyped rule, its item prepared, and
+    // nothing on air.
     const raceDaySlices = buildRaceDaySlicesWithInstances([]);
     const slicesBefore = {
       ...raceDaySlices,
       graphics: [...raceDaySlices.graphics, buildPitClockWithMistypedRule()],
+      items: [buildPitStopItem()],
     };
 
-    // Act: take the pit clock for team 42's stop.
+    // Act: take the pit clock item for team 42's stop.
     const outcome = reduceCommand(
       slicesBefore,
-      {
-        type: 'takeGraphic',
-        graphicId: 'pit-clock',
-        layerId: 'clock',
-        data: buildPitStopClockData(),
-        target: 'program',
-        takeTimeFieldKeys: [],
-      },
+      { type: 'takeItem', itemId: 'item-box-equipe-42' },
       contextOfTheCommand,
     );
 
-    // Assert: applied, with the data as sent. Refusing takes too would take a graphic
+    // Assert: applied, with the data the item gives. Refusing takes too would take a graphic
     // off the list for a mistake that only matters once it is updated.
     expect(outcome.status, 'the take must be applied').toBe('applied');
     expect(
       outcome.status === 'applied' ? outcome.slices.instances[0]?.resolvedData : undefined,
-      'the pit clock must go on air with the data sent',
+      'the pit clock must go on air with the data the item gives',
     ).toEqual(buildPitStopClockData());
   });
 });

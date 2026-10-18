@@ -29,8 +29,9 @@ import { useRundownKeyboardShortcuts } from './useRundownKeyboardShortcuts';
  *
  * The page's one item editor is drawn here, at the top of the column, whichever part of
  * the page opened it: this panel's "+ Item" and "Editar item", the quick-fire strip's
- * "+ Atalho" and "Editar" (features/quickFire), and "Salvar como item" of "Edição
- * rápida" (features/playout). What it is open for is the page's
+ * "+ Atalho" and "Editar" (features/quickFire), "Novo gráfico…" of "Edição rápida"
+ * (features/playout) and "Salvar como item" on a Camadas row (features/layers). What it
+ * is open for is the page's
  * (features/items/ItemEditorTargetProvider.tsx), so all of them can open it.
  *
  * A row's "⋯" menu moves its item to a quick-fire panel ("Mover para atalhos").
@@ -76,9 +77,13 @@ export function RundownPanel() {
     itemEditorTarget.kind === 'newItem'
       ? itemEditorTarget.home
       : ({ kind: 'rundown', rundownId } as const);
-  // "Salvar como item" of "Edição rápida" opens a new item already filled.
+  // "Salvar como item" on a Camadas row opens a new item already filled.
   const prefilledOpening =
     itemEditorTarget.kind === 'newItem' ? itemEditorTarget.prefilledOpening : null;
+  // A take refused right after "Salvar e disparar" saved a new item reopens the editor on
+  // that item, showing the refusal.
+  const refusalsToShowAtOpening =
+    itemEditorTarget.kind === 'existingItem' ? itemEditorTarget.refusalsToShowAtOpening : [];
   // With the cursor on nothing Space has nothing to take, which without a word on screen
   // looks like a keyboard that stopped working. The words depend on why it is on nothing.
   const emptyCursorHint = chooseEmptyCursorHint(rundown, itemsInOrder.length);
@@ -115,6 +120,7 @@ export function RundownPanel() {
         <ItemEditorPanel
           homeForNewItem={homeForNewItem}
           prefilledOpening={prefilledOpening}
+          refusalsToShowAtOpening={refusalsToShowAtOpening}
           itemBeingEdited={itemBeingEdited ?? null}
           onClose={closeItemEditor}
         />

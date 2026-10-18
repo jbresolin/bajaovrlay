@@ -24,7 +24,8 @@
  * What these tests deliberately do not cover:
  *   - Everything else previewItem does (the data, the cursor, the stamps, each refusal);
  *     previewItem.test.ts covers it.
- *   - previewGraphic, which is always asked for by hand; previewGraphic.test.ts.
+ *   - The mark the internal take step writes on every preview it makes (`manual`);
+ *     putGraphicOnOutputPreview.test.ts.
  *   - WHEN a page sends origin `auto`; that is the control page's decision, proven in
  *     apps/control (RundownPanelPreview.test.tsx and RundownPanelPreviewAfterTake.test.tsx).
  */

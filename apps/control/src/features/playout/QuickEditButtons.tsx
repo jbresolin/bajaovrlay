@@ -1,69 +1,41 @@
-import { Button } from '@/components/ui/button';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { ptBR } from '@/i18n/ptBR';
 
 import { CommandErrorMessage } from './CommandErrorMessage';
 
-/** What the buttons need: whether a press is under way, what to offer, what each does. */
+/** What the button needs: whether a press is under way, which output, what it does. */
 export type QuickEditButtonsProps = {
-  /** true while a press is being checked and its command waits: every button is off. */
+  /** true while a press is being checked and its command waits: the button is off. */
   isWaitingForTheServer: boolean;
-  /** true while an instance ON AIR is loaded: only then is "Atualizar" offered. */
-  isUpdateOffered: boolean;
+  /** The output of the loaded instance: it decides the button's words. */
+  outputOfTheInstance: 'program' | 'preview';
   /** true while the page's last error is the one this form's own last command left. */
   isTheErrorOfThePageFromThisForm: boolean;
-  onTakePressed: () => void;
-  onPreviewPressed: () => void;
   onUpdatePressed: () => void;
-  onSaveAsItemPressed: () => void;
 };
 
 /**
- * The buttons under the form of "Edição rápida": "Colocar no ar" and "Prévia" always,
- * and "Atualizar" only while an instance on air is loaded. For a loaded preview there is
- * no "Atualizar": the preview is changed by previewing again, which "Prévia" does on the
- * same layer. "Salvar como item" sends nothing (it opens the item editor), so it is a
- * plain button that works without a connection. A refusal of this form's own command is
- * shown beside them.
+ * The one button under the form of "Edição rápida": "Atualizar" for an instance on air,
+ * "Atualizar prévia" for a loaded preview. Both change the loaded instance in place.
+ * Since BAJAOVRLAY-37 there is no "Colocar no ar", "Prévia" or "Salvar como item" here:
+ * a new graphic is a new item. A refusal of this form's own command is shown beside it.
  */
 export function QuickEditButtons(props: QuickEditButtonsProps) {
-  const { isWaitingForTheServer } = props;
-
+  const buttonWords =
+    props.outputOfTheInstance === 'program'
+      ? ptBR.playout.updateButton
+      : ptBR.playout.quickEdit.updatePreviewButton;
   return (
     <>
-      <ActionButton type="button" disabled={isWaitingForTheServer} onClick={props.onTakePressed}>
-        {ptBR.playout.takeButton}
-      </ActionButton>
       <ActionButton
         type="button"
-        variant="outline"
-        disabled={isWaitingForTheServer}
-        onClick={props.onPreviewPressed}
+        disabled={props.isWaitingForTheServer}
+        onClick={props.onUpdatePressed}
       >
-        {ptBR.playout.previewButton}
+        {buttonWords}
       </ActionButton>
-      {props.isUpdateOffered && (
-        <ActionButton
-          type="button"
-          variant="secondary"
-          disabled={isWaitingForTheServer}
-          onClick={props.onUpdatePressed}
-        >
-          {ptBR.playout.updateButton}
-        </ActionButton>
-      )}
-      <Button
-        type="button"
-        variant="ghost"
-        disabled={isWaitingForTheServer}
-        onClick={props.onSaveAsItemPressed}
-      >
-        {ptBR.playout.quickEdit.saveAsItemButton}
-      </Button>
       {props.isTheErrorOfThePageFromThisForm && (
-        <CommandErrorMessage
-          commandTypes={['takeGraphic', 'previewGraphic', 'updateInstanceData']}
-        />
+        <CommandErrorMessage commandTypes={['updateInstanceData']} />
       )}
     </>
   );

@@ -6,16 +6,16 @@
  *   is drawn empty on the Prévia monitor until something else is decided for it. These
  *   tests pin down what every older command does to a marker, so Prévia keeps showing
  *   exactly what the take will do:
- *   - a preview on the layer (previewItem, previewGraphic, a takeGraphic aimed at the
- *     preview output) replaces the marker, because the layer will then show that preview;
+ *   - a preview on the layer (previewItem, of a rundown row or of a quick-fire button)
+ *     replaces the marker, because the layer will then show that preview;
  *   - stopPreview throws the marker away with the preview, for one layer or for all;
  *   - clearLayer and clearAll take the marker off the layers they empty, because those
  *     layers are now as the marker promised (this is also what an auto-out does, since
  *     it sends clearLayer);
  *   - takePreview of a marked layer clears that layer's program output, as clearLayer
  *     would on program, and takes the marker off;
- *   - a take on the program output of a marked layer (takeGraphic, takeItem, takeNext)
- *     takes that layer's marker off: something new is on air there, so the plan to
+ *   - a take on the program output of a marked layer (takeItem, takeNext) takes that
+ *     layer's marker off: something new is on air there, so the plan to
  *     empty it is stale, and "Tomar tudo" must not clear what was just taken.
  *
  * What these tests prove:
@@ -28,6 +28,9 @@
  * What these tests deliberately do not cover:
  *   - previewClearLayer itself; previewClearLayer.test.ts covers it.
  *   - takeAllPreviews and previewMacro; their own test files cover them.
+ *   - The rows that sent takeGraphic and previewGraphic ("Edição rápida") are gone with
+ *     those commands (BAJAOVRLAY-37); the same rule for the internal take step every
+ *     preview ends in is proven in putGraphicOnOutputPreview.test.ts.
  */
 import type { CommandInput } from '@bajaovrlay/shared';
 import { CommandSchema } from '@bajaovrlay/shared';
@@ -44,18 +47,20 @@ import {
   buildPodiumRundown,
   buildRaceDaySlicesWithRundown,
   buildTeam42LowerThirdTakenByHand,
+  buildTeam42ShortcutItem,
   buildYellowFlagItem,
 } from './rundownSlices.testSupport.js';
 
 /**
  * Builds the stage of these tests: the green clock and the lower third of team 42 on
- * air, nothing previewed, both layers marked "will be cleared", and the main session's
- * cursor on its one item, "Bandeira amarela" (clock layer).
+ * air, nothing previewed, both layers marked "will be cleared", the main session's
+ * cursor on its one item, "Bandeira amarela" (clock layer), and the "Atalhos" button
+ * "Tarja — Baja UFPR" (lower third layer).
  */
 function buildStageWithBothLayersOnAirAndMarked() {
   return buildRaceDaySlicesWithRundown({
     rundowns: [buildMainSessionRundown('item-bandeira-amarela'), buildPodiumRundown(null)],
-    items: [buildYellowFlagItem(0)],
+    items: [buildYellowFlagItem(0), buildTeam42ShortcutItem(0)],
     instances: [buildGreenFlagClockOnProgram(), buildTeam42LowerThirdTakenByHand()],
     previewClearedLayerIds: ['clock', 'lower-third'],
   });
@@ -74,32 +79,11 @@ const markerScenarios: Array<{
     expectedMarkers: ['lower-third'],
     expectedLayersAndOutputs: ['clock on program', 'lower-third on program', 'clock on preview'],
   },
-  // "Prévia" in "Edição rápida" on the lower third layer.
+  // "Prévia" on a button of "Atalhos" on the lower third layer: an item of no rundown
+  // ends in the same preview, so it does the same.
   {
-    name: 'previewGraphic takes the marker off its own layer only',
-    command: {
-      type: 'previewGraphic',
-      graphicId: 'team-lower-third',
-      layerId: 'lower-third',
-      data: { teamNumber: 7, teamName: 'Mangue Baja' },
-    },
-    expectedMarkers: ['clock'],
-    expectedLayersAndOutputs: [
-      'clock on program',
-      'lower-third on program',
-      'lower-third on preview',
-    ],
-  },
-  // The older way of previewing by hand ends in the same place, so it does the same.
-  {
-    name: 'a takeGraphic aimed at the preview output takes the marker off its layer',
-    command: {
-      type: 'takeGraphic',
-      graphicId: 'team-lower-third',
-      layerId: 'lower-third',
-      data: { teamNumber: 7, teamName: 'Mangue Baja' },
-      target: 'preview',
-    },
+    name: 'previewItem of a quick-fire button takes the marker off its own layer only',
+    command: { type: 'previewItem', itemId: 'item-atalho-tarja-baja-ufpr' },
     expectedMarkers: ['clock'],
     expectedLayersAndOutputs: [
       'clock on program',
@@ -111,13 +95,8 @@ const markerScenarios: Array<{
   // the plan is stale, as after a clear, so "Tomar tudo" must not clear what was just
   // taken (João, gate 2 of BAJAOVRLAY-36).
   {
-    name: 'a takeGraphic on the program output takes the marker off its own layer only',
-    command: {
-      type: 'takeGraphic',
-      graphicId: 'team-lower-third',
-      layerId: 'lower-third',
-      data: { teamNumber: 7, teamName: 'Mangue Baja' },
-    },
+    name: 'takeItem of a quick-fire button takes the marker off its own layer only',
+    command: { type: 'takeItem', itemId: 'item-atalho-tarja-baja-ufpr' },
     expectedMarkers: ['clock'],
     expectedLayersAndOutputs: ['clock on program', 'lower-third on program'],
   },

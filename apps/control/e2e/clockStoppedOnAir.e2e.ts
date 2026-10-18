@@ -15,7 +15,8 @@
  *   is the program output, the truth about what the viewers see.
  *
  * What these tests prove:
- *   - From "Edição rápida": a clock taken running at 12:34 and stopped with "Atualizar"
+ *   - From "Edição rápida": a clock made with "Novo gráfico…", taken running at 12:34 with
+ *     "Salvar e disparar", loaded with its row's "Editar" and stopped with "Atualizar"
  *     once it shows 12:38 shows, on the program output, the time it had reached (12:38 or
  *     later), not 12:34. It is still showing that same time a second and a half later,
  *     and after a flag change with "Atualizar".
@@ -45,6 +46,7 @@
 import { type BrowserContext, expect, type Locator, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { openItemEditorWithNewGraphic, saveAndTakeTheItemInTheEditor } from './previewTestSteps';
 
 // The clock is taken at 12:34 and left running until the program output shows 12:38 or
 // later; only then is it stopped. So a clock that "stopped where it was" shows 12:38 or
@@ -149,12 +151,14 @@ test.describe('stopping a running race clock that is on air', () => {
     context,
   }) => {
     // Arrange: OBS is showing the program output (a second page at /render/ stands in
-    // for it). The clock is taken running at 12:34 from "Edição rápida" and is "No ar".
+    // for it). The clock is made with "Novo gráfico…", taken running at 12:34 with
+    // "Salvar e disparar", and is "No ar".
     const programOutputPage = await openProgramOutputAsObsDoes(context);
     await openControlPageAndWaitUntilConnected(page);
     const quickEditArea = findProgramAndQuickEditArea(page);
-    await fillClockFormRunningFromTwelveThirtyFour(quickEditArea);
-    await quickEditArea.getByRole('button', { name: 'Colocar no ar' }).click();
+    const itemEditor = await openItemEditorWithNewGraphic(page, 'Relógio — Bateria 1');
+    await fillClockFormRunningFromTwelveThirtyFour(itemEditor);
+    await saveAndTakeTheItemInTheEditor(itemEditor);
     await expect(
       findClockLayerRow(page),
       'the layer panel must say "No ar" within 3 seconds of the take, once the program output has reported the clock',
@@ -169,7 +173,9 @@ test.describe('stopping a running race clock that is on air', () => {
       timeout: timeAllowedForTheClockToRunInMilliseconds,
     });
 
-    // Act: switch "Relógio correndo" off, changing nothing else, and press "Atualizar".
+    // Act: load the clock with its row's "Editar", switch "Relógio correndo" off, changing
+    // nothing else, and press "Atualizar".
+    await findClockLayerRow(page).getByRole('button', { name: 'Editar', exact: true }).click();
     await quickEditArea.getByRole('switch', { name: 'Relógio correndo' }).click();
     await quickEditArea.getByRole('button', { name: 'Atualizar', exact: true }).click();
 

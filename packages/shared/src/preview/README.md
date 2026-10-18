@@ -1,10 +1,11 @@
 # packages/shared/src/preview
 
-The seven commands of the preview output, where the operator sees the screen as it will
+The six commands of the preview output, where the operator sees the screen as it will
 be after the take. One file per command, all in the `Command` union of `../commands/command.ts`:
 
 - `previewItem.ts` — an item on the preview output of its layer (`origin: 'auto'` also
-  discards every other `auto` preview); `previewGraphic.ts` — the same for hand-typed data.
+  discards every other `auto` preview). (`previewGraphic`, the same for hand-typed data, was
+  removed in BAJAOVRLAY-37: a preview is changed in place with `updateInstanceData`.)
 - `stopPreview.ts` — throw the preview of one layer away, or of every layer (`layerId: null`).
 - `takePreview.ts` — send what is previewed on a layer to program, exactly as it was seen.
 - `previewClearLayer.ts` — mark a layer "will be cleared" (`previewClearedLayerIds` slice).

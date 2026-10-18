@@ -4,8 +4,7 @@
  * What this module is for:
  *   A rundown item can put a graphic on any layer: the race clock on the logo layer, for
  *   example. "Editar" on that layer's "Camadas" row loads that very instance into
- *   "Edição rápida": the form shows what it holds, "Atualizar" goes to its id, and
- *   "Colocar no ar" replaces it on ITS layer, because the panel works on that instance.
+ *   "Edição rápida": the form shows what it holds and "Atualizar" goes to its id.
  *   With the same graphic on air on two layers, the panel works on the one loaded, never
  *   on the one taken most recently (that following was removed by BAJAOVRLAY-36).
  *
@@ -14,8 +13,6 @@
  *     form holds the on-air session name, flag and time.
  *   - "Atualizar" then sends `updateInstanceData` for that instance, with only the field
  *     the operator changed.
- *   - "Colocar no ar" sends `takeGraphic` for the logo layer, the layer of the instance
- *     loaded, and not for the race clock's default layer.
  *   - With two race clocks on air, the one loaded (taken earlier) is shown and updated,
  *     not the one taken later.
  *
@@ -142,26 +139,6 @@ describe('the quick edit panel with the race clock on the logo layer loaded', ()
     fakeServer.acceptLastCommand();
   });
 
-  it('sends "Colocar no ar" to the logo layer, where the loaded clock is', async () => {
-    // Arrange: the first heat's clock on the logo layer, loaded; the form left as filled.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
-      buildFirstHeatClockOnTheLogoLayer(),
-    ]);
-    pressEditOnTheLayerRow('Logo');
-
-    // Act: press "Colocar no ar".
-    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
-
-    // Assert: a take for the layer of the loaded instance, which it replaces.
-    expect(
-      fakeServer.listCommandsReceived()[0],
-      '"Colocar no ar" must go to the layer of the instance loaded, not to the default layer',
-    ).toMatchObject({ type: 'takeGraphic', graphicId: 'race-clock', layerId: 'bug' });
-    fakeServer.acceptLastCommand();
-  });
-});
-
-describe('the quick edit panel with two race clocks on air', () => {
   it('works on the one loaded, not on the one taken most recently', async () => {
     // Arrange: the qualifying clock on the clock layer since 9:45, and the first heat's
     // clock put on the logo layer later, at 9:55. The operator loads the qualifying one.

@@ -30,7 +30,7 @@ import { describe, expect, it } from 'vitest';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildLowerThirdFixtureGraphic } from '@/state/lowerThirdFixtureGraphic.testSupport';
 import {
-  buildLowerThirdPreviewMadeByHand,
+  buildLowerThirdPreviewWhoseItemIsGone,
   buildRaceClockPreviewOfItem,
 } from '@/state/previewLikeTheServerSends.testSupport';
 import {
@@ -72,7 +72,7 @@ describe('the "em prévia" chip of the layer status panel', () => {
   it('marks a layer that holds a preview and nothing on air, which still says "vazia"', () => {
     // Arrange: an interview band is previewed on the "Tarja" layer; nothing is on air.
     const slices = buildSlicesWithTheseInstances([
-      buildLowerThirdPreviewMadeByHand(momentTheYellowFlagWasPreviewed),
+      buildLowerThirdPreviewWhoseItemIsGone(momentTheYellowFlagWasPreviewed),
     ]);
 
     // Act: draw the panel.
@@ -150,7 +150,7 @@ describe('the "em prévia" chip of the layer status panel', () => {
   it('puts the chip only on the layer that holds the preview', () => {
     // Arrange: one preview, on the "Tarja" layer.
     const slices = buildSlicesWithTheseInstances([
-      buildLowerThirdPreviewMadeByHand(momentTheYellowFlagWasPreviewed),
+      buildLowerThirdPreviewWhoseItemIsGone(momentTheYellowFlagWasPreviewed),
     ]);
 
     // Act: draw the panel.
@@ -166,7 +166,7 @@ describe('the "em prévia" chip of the layer status panel', () => {
   it('takes the chip off when the server says the preview is gone', () => {
     // Arrange: the panel with a band previewed on the "Tarja" layer.
     const slices = buildSlicesWithTheseInstances([
-      buildLowerThirdPreviewMadeByHand(momentTheYellowFlagWasPreviewed),
+      buildLowerThirdPreviewWhoseItemIsGone(momentTheYellowFlagWasPreviewed),
     ]);
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
 

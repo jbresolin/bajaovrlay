@@ -44,7 +44,7 @@ import { describe, expect, it } from 'vitest';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildLowerThirdFixtureGraphic } from '@/state/lowerThirdFixtureGraphic.testSupport';
 import {
-  buildLowerThirdPreviewMadeByHand,
+  buildLowerThirdPreviewWhoseItemIsGone,
   buildRaceClockPreviewOfItem,
 } from '@/state/previewLikeTheServerSends.testSupport';
 import {
@@ -84,7 +84,7 @@ function buildSlicesWithTheStartPreviewed(): Slices {
 /** The state with two previews: the interview band (listed first) and the start. */
 function buildSlicesWithTheBandAndTheStartPreviewed(): Slices {
   return buildSlicesWithTheseInstances([
-    buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed),
+    buildLowerThirdPreviewWhoseItemIsGone(momentTheBandWasPreviewed),
     buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed),
   ]);
 }
@@ -163,7 +163,7 @@ describe('the lines under the "Prévia" monitor', () => {
       name: 'names a preview made by hand by the name of its graphic',
       buildSlices: () =>
         buildSlicesWithTheseInstances([
-          buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed),
+          buildLowerThirdPreviewWhoseItemIsGone(momentTheBandWasPreviewed),
         ]),
       layerName: 'Tarja',
       expectedLabel: 'Tarja de entrevista',
@@ -186,7 +186,7 @@ describe('the lines under the "Prévia" monitor', () => {
       name: 'names a preview made by hand by its graphic id when the graphic is not listed',
       buildSlices: () => {
         const slices = buildSlicesWithTheseInstances([
-          buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed),
+          buildLowerThirdPreviewWhoseItemIsGone(momentTheBandWasPreviewed),
         ]);
         slices.graphics = [buildRaceClockGraphic()];
         return slices;

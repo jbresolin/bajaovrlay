@@ -1,26 +1,31 @@
 /**
- * The previewGraphic reducer (apps/server)
+ * putGraphicOnOutput aimed at the preview output (apps/server)
  *
  * What this module is for:
- *   "Edição rápida" lets the operator type a graphic's data by hand. previewGraphic shows
- *   that graphic on the PREVIEW output of a layer before anything goes on air. It is a
- *   takeGraphic that can only go to the preview output: the same data, the same checks,
- *   run by the same code.
+ *   putGraphicOnOutput is the internal take step every take and every preview of an item
+ *   ends in (previewItem, previewMacro, takeItem, takePreview...). Aimed at the PREVIEW
+ *   output, it shows a graphic on the Prévia monitor before anything goes on air, with
+ *   the same data and the same checks as a take on program, run by the same code. Until
+ *   BAJAOVRLAY-37 the public command previewGraphic ("Edição rápida") was a thin wrapper
+ *   around it; that command is gone, and these are the rules it used to prove.
  *
  * What these tests prove:
- *   - The outcome is exactly the outcome of a takeGraphic with `target: 'preview'`, and
- *     the preview instance is marked as asked for by hand (`previewOrigin: 'manual'`).
+ *   - The preview instance carries the request's item and is marked as asked for by
+ *     hand (`previewOrigin: 'manual'`); the clock on program stays.
  *   - It replaces the preview of that layer only: the program output and the previews of
  *     other layers stay.
  *   - A field named in `takeTimeFieldKeys` is stamped with the moment of the preview and
- *     its key is remembered on the instance; with no such field the instance carries no
- *     list. A field sent as null is left out of the data.
+ *     its key is remembered on the instance. A field sent as null is left out of the data.
+ *   - A new preview takes its layer's "will be cleared" marker off, and leaves the
+ *     markers of other layers alone.
  *   - It is refused, as a take is, for an unknown layer or graphic, for data the graphic
  *     does not accept and for a stamp on a field that is not a moment.
  *
  * What these tests deliberately do not cover:
- *   - Every way data can break a graphic's schema; takeGraphicData.test.ts and
- *     graphicDataValidation.test.ts cover them, and this reducer runs the same check.
+ *   - Every way data can break a graphic's schema; putGraphicOnOutputData.test.ts and
+ *     graphicDataValidation.test.ts cover them, and this step runs the same check.
+ *   - How previewItem turns an item into this request, and the `auto` origin of
+ *     "Prévia automática"; previewItem.test.ts and previewItemOrigin.test.ts cover them.
  *   - Sending the preview to air; takePreview.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';
@@ -32,52 +37,45 @@ import {
   momentOfThePreviewInMilliseconds,
   readLayerAndOutputOfEachInstance,
 } from './previewSlices.testSupport.js';
-import { reduceCommand } from './reduceCommand.js';
+import { type GraphicOnOutputRequest, putGraphicOnOutput } from './putGraphicOnOutput.js';
 import {
   buildEnduroClockData,
   buildRaceDaySlicesWithTheRaceClockSchema,
   contextOfTheRundownCommand,
 } from './rundownSlices.testSupport.js';
 
-describe('previewGraphic, the instance it puts on the preview output', () => {
-  it('gives exactly what a takeGraphic aimed at the preview output gives', () => {
-    // Arrange: the green clock on air, and what a takeGraphic with target preview gives
-    // for the red flag clock on those slices.
+/**
+ * Builds the request to preview the red flag clock of the shortcut "Relógio — bandeira
+ * vermelha" on the clock layer, with nothing to stamp.
+ */
+function buildRequestToPreviewTheRedFlagClock(): GraphicOnOutputRequest {
+  return {
+    graphicId: 'race-clock',
+    layerId: 'clock',
+    data: buildEnduroClockData('red'),
+    target: 'preview',
+    takeTimeFieldKeys: [],
+    itemId: 'item-atalho-bandeira-vermelha',
+  };
+}
+
+describe('putGraphicOnOutput on the preview output, the instance it makes', () => {
+  it('puts the item beside the clock on air, marked as asked for by hand', () => {
+    // Arrange: the green clock on air, and nothing on preview.
     const slicesBefore = buildRaceDaySlicesWithTheRaceClockSchema({
       items: [],
       instances: [buildGreenFlagClockOnProgram()],
     });
-    const outcomeOfTakeOnPreview = reduceCommand(
+
+    // Act: preview the red flag clock of the shortcut item.
+    const outcome = putGraphicOnOutput(
       slicesBefore,
-      {
-        type: 'takeGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: buildEnduroClockData('red'),
-        target: 'preview',
-        takeTimeFieldKeys: [],
-      },
+      buildRequestToPreviewTheRedFlagClock(),
       contextOfTheRundownCommand,
     );
 
-    // Act: preview the same clock with previewGraphic.
-    const outcome = reduceCommand(
-      slicesBefore,
-      {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: buildEnduroClockData('red'),
-        takeTimeFieldKeys: [],
-      },
-      contextOfTheRundownCommand,
-    );
-
-    // Assert: the two outcomes are equal, and the red flag is beside the clock on air,
-    // marked as asked for by hand: "Edição rápida" is never "Prévia automática".
-    expect(outcome, 'previewGraphic must be a takeGraphic on the preview output').toEqual(
-      outcomeOfTakeOnPreview,
-    );
+    // Assert: the red flag is beside the clock on air, names its item, and is marked as
+    // asked for by hand: only previewItem may change the mark to `auto`.
     const instancesAfter = outcome.status === 'applied' ? outcome.slices.instances : undefined;
     expect(instancesAfter, 'program must stay, with the red flag beside it on preview').toEqual([
       buildGreenFlagClockOnProgram(),
@@ -91,6 +89,7 @@ describe('previewGraphic, the instance it puts on the preview output', () => {
         status: 'loading',
         takenAt: '2026-10-09T14:32:05.000Z',
         previewOrigin: 'manual',
+        itemId: 'item-atalho-bandeira-vermelha',
       },
     ]);
   });
@@ -106,18 +105,11 @@ describe('previewGraphic, the instance it puts on the preview output', () => {
       ],
     });
 
-    // Act: preview the red flag clock by hand on the clock layer.
-    const outcome = reduceCommand(
-      slicesBefore,
-      {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: buildEnduroClockData('red'),
-        takeTimeFieldKeys: [],
-      },
-      { ...contextOfTheRundownCommand, newInstanceId: 'd4b8a2f6-0c1e-4a3d-9f57-8e6c4b2a1d09' },
-    );
+    // Act: preview the red flag clock on the clock layer.
+    const outcome = putGraphicOnOutput(slicesBefore, buildRequestToPreviewTheRedFlagClock(), {
+      ...contextOfTheRundownCommand,
+      newInstanceId: 'd4b8a2f6-0c1e-4a3d-9f57-8e6c4b2a1d09',
+    });
 
     // Assert: the yellow flag preview gave way; the lower third preview and program stayed.
     const instancesAfter = outcome.status === 'applied' ? outcome.slices.instances : undefined;
@@ -131,28 +123,30 @@ describe('previewGraphic, the instance it puts on the preview output', () => {
     ).toBe('red');
   });
 
-  it('stamps the field the page left to the server, remembers it, and leaves a cleared field out', () => {
-    // Arrange: a race day with nothing on any output. The page sends a clock at zero, the
-    // laps cleared (null), and names the reference moment for the server to stamp.
+  it('stamps the field left to the server, remembers it, and leaves a cleared field out', () => {
+    // Arrange: a race day with nothing on any output, and the request "Largada do enduro"
+    // makes: a clock at zero, the laps cleared (null), the reference moment to be stamped.
     const slicesBefore = buildRaceDaySlicesWithTheRaceClockSchema({ items: [] });
+    const requestWithAStampAndAClearedField: GraphicOnOutputRequest = {
+      graphicId: 'race-clock',
+      layerId: 'clock',
+      data: {
+        sessionName: 'Enduro de Resistência',
+        state: 'green',
+        clockMode: 'elapsed',
+        referenceTimeMs: 0,
+        running: true,
+        lapsCompletedByLeader: null,
+      },
+      target: 'preview',
+      takeTimeFieldKeys: ['referenceWallClockMs'],
+      itemId: 'item-largada-do-enduro',
+    };
 
     // Act: preview it at 14:32:05.
-    const outcome = reduceCommand(
+    const outcome = putGraphicOnOutput(
       slicesBefore,
-      {
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: {
-          sessionName: 'Enduro de Resistência',
-          state: 'green',
-          clockMode: 'elapsed',
-          referenceTimeMs: 0,
-          running: true,
-          lapsCompletedByLeader: null,
-        },
-        takeTimeFieldKeys: ['referenceWallClockMs'],
-      },
+      requestWithAStampAndAClearedField,
       contextOfTheRundownCommand,
     );
 
@@ -175,9 +169,30 @@ describe('previewGraphic, the instance it puts on the preview output', () => {
       'the preview must remember which field was stamped',
     ).toEqual(['referenceWallClockMs']);
   });
+
+  it('takes the marker off its own layer and leaves the marker of another layer', () => {
+    // Arrange: "Prévia: limpar" pressed on the clock and the lower third layers.
+    const slicesBefore = buildRaceDaySlicesWithTheRaceClockSchema({
+      items: [],
+      previewClearedLayerIds: ['clock', 'lower-third'],
+    });
+
+    // Act: preview the red flag clock on the clock layer.
+    const outcome = putGraphicOnOutput(
+      slicesBefore,
+      buildRequestToPreviewTheRedFlagClock(),
+      contextOfTheRundownCommand,
+    );
+
+    // Assert: Prévia now shows a clock there, so only the lower third still says "will be cleared".
+    expect(
+      outcome.status === 'applied' ? outcome.slices.previewClearedLayerIds : undefined,
+      'a new preview must take the marker off its own layer only',
+    ).toEqual(['lower-third']);
+  });
 });
 
-describe('previewGraphic that must be refused', () => {
+describe('putGraphicOnOutput on the preview output, when it must be refused', () => {
   const refusedPreviewScenarios = [
     // A layer that is not on the stage cannot show a preview either.
     {
@@ -237,10 +252,17 @@ describe('previewGraphic that must be refused', () => {
         instances: [buildYellowFlagItemOnPreview()],
       });
 
-      // Act: send the previewGraphic of this row.
-      const outcome = reduceCommand(
+      // Act: ask the take step for the preview of this row.
+      const outcome = putGraphicOnOutput(
         slicesBefore,
-        { type: 'previewGraphic', graphicId, layerId, data, takeTimeFieldKeys },
+        {
+          graphicId,
+          layerId,
+          data,
+          target: 'preview',
+          takeTimeFieldKeys,
+          itemId: 'item-atalho-bandeira-vermelha',
+        },
         contextOfTheRundownCommand,
       );
 

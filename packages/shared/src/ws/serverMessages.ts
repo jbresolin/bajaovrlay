@@ -130,6 +130,12 @@ export const CommandResultMessageSchema = z.discriminatedUnion('ok', [
     type: z.literal('commandResult'),
     requestId: z.string().nullable(),
     ok: z.literal(true),
+    /**
+     * Only in the answer to an accepted createItem: the id the server gave the new item,
+     * so the item editor's "Salvar e disparar" and "Salvar e prévia" can take or preview
+     * that very item next (BAJAOVRLAY-37). Left out of every other answer.
+     */
+    createdItemId: z.string().min(1).optional(),
   }),
   z.object({
     type: z.literal('commandResult'),

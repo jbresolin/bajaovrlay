@@ -41,10 +41,11 @@ export function buildRaceClockPreviewOfItem(itemId: string, previewedAt: string)
 }
 
 /**
- * A lower third on the PREVIEW output of the "Tarja" layer, made by hand from "Edição
- * rápida" (`previewGraphic`): it carries no item id.
+ * A lower third on the PREVIEW output of the "Tarja" layer, previewed from an item that
+ * was deleted since (the page holds no item of that id), so the page names it by its
+ * graphic. (Until BAJAOVRLAY-37 this stood for a preview made by hand, with no item.)
  */
-export function buildLowerThirdPreviewMadeByHand(previewedAt: string): Instance {
+export function buildLowerThirdPreviewWhoseItemIsGone(previewedAt: string): Instance {
   return {
     id: idOfTheLowerThirdPreview,
     layerId: 'lower-third',
@@ -62,5 +63,6 @@ export function buildLowerThirdPreviewMadeByHand(previewedAt: string): Instance 
     status: 'loading',
     takenAt: previewedAt,
     previewOrigin: 'manual',
+    itemId: 'item-tarja-excluida',
   };
 }

@@ -14,7 +14,7 @@
  *   - A null or absent command is refused the same way and still reaches the event
  *     log, in memory and on disk.
  *   - A successful command is in the event log with its actor and timestamp, in memory
- *     and in the database.
+ *     and in the database. A take is a takeItem of an item created first (BAJAOVRLAY-37).
  *   - A command refused by its reducer or by the authorisation hook is written to the
  *     event log as failed, and leaves the slices alone.
  *   - An accepted command that changes nothing (a second OBS machine reporting the same
@@ -41,28 +41,18 @@ import { createLogger } from '../logger/createLogger.js';
 import type { IsCommandAllowed } from './authorizeCommand.js';
 import { createGraphicsFolderWithBuiltRaceClock } from './builtGraphicsFolder.testSupport.js';
 import { createStateStore } from './createStateStore.js';
+import {
+  buildGreenFlagEnduroClockData,
+  createRaceClockItemOnTheStore,
+} from './raceClockItemOnTheStore.testSupport.js';
 
 const timeOfEveryCommand = new Date('2026-10-09T14:32:05.000Z');
 const idOfEveryNewInstance = '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f';
+const idOfTheRaceClockItem = 'item-relogio-do-enduro';
 const operatorActor = 'operador:conexao-7';
 
-// The enduro under green flag, 1:05:00 in and running: all six fields the race clock's
-// manifest schema requires, because the server now refuses a take that leaves one out.
-const greenFlagEnduroData = {
-  sessionName: 'Enduro de Resistência',
-  state: 'green',
-  clockMode: 'elapsed',
-  referenceTimeMs: 3_900_000,
-  referenceWallClockMs: 1_791_550_800_000,
-  running: true,
-};
-
-const takeRaceClockOnTheClockLayer = {
-  type: 'takeGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  data: greenFlagEnduroData,
-};
+// "No ar" on the race clock item: the take every test below sends, once the item exists.
+const takeOfTheRaceClockItem = { type: 'takeItem', itemId: idOfTheRaceClockItem };
 
 /**
  * Builds a store on a fresh temporary database, seeded with the five layers and the
@@ -78,6 +68,7 @@ function createStoreWithRaceClockRegistered(
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     readCurrentTime: () => timeOfEveryCommand,
     createInstanceId: () => idOfEveryNewInstance,
+    createItemId: () => idOfTheRaceClockItem,
     isCommandAllowed: options.isCommandAllowed,
   });
   return { store, database };
@@ -85,23 +76,19 @@ function createStoreWithRaceClockRegistered(
 
 describe('applyCommand with an invalid command', () => {
   it('refuses it with the missing field named in a pt-BR message', () => {
-    // Arrange: a store, and a take that forgot to say which layer.
+    // Arrange: a store, and a take that forgot to say which item.
     const { store } = createStoreWithRaceClockRegistered();
-    const takeWithoutLayer = {
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      data: greenFlagEnduroData,
-    };
+    const takeWithoutItem = { type: 'takeItem' };
 
     // Act: apply it as the operator.
-    const outcome = store.applyCommand(takeWithoutLayer, operatorActor);
+    const outcome = store.applyCommand(takeWithoutItem, operatorActor);
 
-    // Assert: refused with a stable code and a message naming layerId.
+    // Assert: refused with a stable code and a message naming itemId.
     expect(outcome, 'the refusal must name the missing field in pt-BR').toEqual({
       ok: false,
       error: {
         code: 'INVALID_COMMAND',
-        message: 'Comando inválido: o campo "layerId" está ausente ou tem um valor errado.',
+        message: 'Comando inválido: o campo "itemId" está ausente ou tem um valor errado.',
       },
     });
   });
@@ -188,48 +175,51 @@ describe('applyCommand when no command was sent', () => {
 
 describe('applyCommand with a valid command', () => {
   it('answers ok and puts the new instance in memory', () => {
-    // Arrange: a store with the race clock registered and nothing on air.
+    // Arrange: a store with the race clock registered, its item prepared, nothing on air.
     const { store } = createStoreWithRaceClockRegistered();
+    createRaceClockItemOnTheStore(store);
 
-    // Act: take the race clock as the operator.
-    const outcome = store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
+    // Act: take the race clock item as the operator.
+    const outcome = store.applyCommand(takeOfTheRaceClockItem, operatorActor);
 
     // Assert: ok, and the clock instance is now in the instances slice.
-    expect(outcome, 'a valid take must answer ok').toEqual({ ok: true });
+    expect(outcome, 'a valid take must answer ok, naming no item').toEqual({ ok: true });
     expect(store.readAllSlices().instances, 'the clock must be the one instance').toEqual([
       {
         id: idOfEveryNewInstance,
         layerId: 'clock',
         graphicId: 'race-clock',
         target: 'program',
-        resolvedData: greenFlagEnduroData,
+        resolvedData: buildGreenFlagEnduroClockData(),
         currentStep: 0,
         status: 'loading',
         takenAt: '2026-10-09T14:32:05.000Z',
+        itemId: idOfTheRaceClockItem,
       },
     ]);
   });
 
   it('writes it to the event log with its actor and timestamp, in memory and in the database', () => {
-    // Arrange: a store with the race clock registered.
+    // Arrange: a store with the race clock registered and its item prepared (entry 1).
     const { store, database } = createStoreWithRaceClockRegistered();
+    createRaceClockItemOnTheStore(store);
 
-    // Act: take the race clock as the operator.
-    store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
+    // Act: take the race clock item as the operator.
+    store.applyCommand(takeOfTheRaceClockItem, operatorActor);
 
-    // Assert: the same ok entry (the command with its two defaults) is in slice and table.
+    // Assert: the ok entry of the take, right after the createItem, is newest in both.
     const expectedEntry = {
-      id: 1,
+      id: 2,
       ts: '2026-10-09T14:32:05.000Z',
       actor: 'operador:conexao-7',
-      command: 'takeGraphic',
-      payload: { ...takeRaceClockOnTheClockLayer, target: 'program', takeTimeFieldKeys: [] },
+      command: 'takeItem',
+      payload: takeOfTheRaceClockItem,
       result: { status: 'ok' },
     };
-    expect(store.readAllSlices().eventLog, 'the slice must hold the ok entry').toEqual([
+    expect(store.readAllSlices().eventLog.at(-1), 'the slice must hold the ok entry').toEqual(
       expectedEntry,
-    ]);
-    expect(readNewestEventLogRows(database, 10), 'the database must hold the same entry').toEqual([
+    );
+    expect(readNewestEventLogRows(database, 1), 'the database must hold the same entry').toEqual([
       expectedEntry,
     ]);
   });
@@ -237,15 +227,16 @@ describe('applyCommand with a valid command', () => {
 
 describe('applyCommand with an accepted command that changes nothing', () => {
   it('answers ok, writes no event-log row and tells no subscriber', () => {
-    // Arrange: the race clock taken and already reported on air by the main OBS machine,
-    // and a subscriber that starts writing down what it hears only now.
+    // Arrange: the race clock item taken and already reported on air by the main OBS
+    // machine, and a subscriber that starts writing down what it hears only now.
     const { store, database } = createStoreWithRaceClockRegistered();
     const reportRaceClockOnAir = {
       type: 'reportInstanceStatus',
       instanceId: idOfEveryNewInstance,
       status: 'on-air',
     };
-    store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
+    createRaceClockItemOnTheStore(store);
+    store.applyCommand(takeOfTheRaceClockItem, operatorActor);
     store.applyCommand(reportRaceClockOnAir, 'renderer:conexao-obs');
     const slicesBefore = store.readAllSlices();
     const changedSliceNamesHeard: SliceName[][] = [];
@@ -257,19 +248,20 @@ describe('applyCommand with an accepted command that changes nothing', () => {
     const outcome = store.applyCommand(reportRaceClockOnAir, 'renderer:conexao-obs-reserva');
 
     // Assert: the sender is told ok and nothing else happened: the event log still holds
-    // only the take and the first report, memory is untouched and no subscriber heard.
+    // only the item, the take and the first report; memory is untouched; no one heard.
     expect(outcome, 'a command that changes nothing is still accepted').toEqual({ ok: true });
     expect(
       store.readAllSlices().eventLog.map((entry) => [entry.actor, entry.command]),
-      'the event-log slice must hold only the take and the first report',
+      'the event-log slice must hold only the item, the take and the first report',
     ).toEqual([
-      ['operador:conexao-7', 'takeGraphic'],
+      ['operador:conexao-7', 'createItem'],
+      ['operador:conexao-7', 'takeItem'],
       ['renderer:conexao-obs', 'reportInstanceStatus'],
     ]);
     expect(
       readNewestEventLogRows(database, 10),
       'the event_log table must not gain a row for a command that changed nothing',
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(
       store.readAllSlices(),
       'memory must be left exactly as it was, the very same slices',
@@ -282,17 +274,19 @@ describe('applyCommand with an accepted command that changes nothing', () => {
 });
 
 describe('applyCommand with a command that must be refused', () => {
-  it('writes a take on a missing layer to the event log as failed and leaves the slices alone', () => {
-    // Arrange: a store, and a take aimed at a layer that does not exist.
+  it('writes a take of a missing item to the event log as failed and leaves the slices alone', () => {
+    // Arrange: a store with no item at all, so the race clock item does not exist.
     const { store } = createStoreWithRaceClockRegistered();
     const instancesBefore = store.readAllSlices().instances;
-    const takeOnMissingLayer = { ...takeRaceClockOnTheClockLayer, layerId: 'placar' };
 
-    // Act: apply it as the operator.
-    const outcome = store.applyCommand(takeOnMissingLayer, operatorActor);
+    // Act: take the race clock item as the operator.
+    const outcome = store.applyCommand(takeOfTheRaceClockItem, operatorActor);
 
     // Assert: refused, logged as failed with the same error, instances untouched.
-    const expectedError = { code: 'LAYER_NOT_FOUND', message: 'A camada "placar" não existe.' };
+    const expectedError = {
+      code: 'ITEM_NOT_FOUND',
+      message: 'O item "item-relogio-do-enduro" não existe; ele pode ter sido excluído.',
+    };
     const slicesAfter = store.readAllSlices();
     expect(outcome, 'the refusal must carry the reducer reason').toEqual({
       ok: false,
@@ -308,13 +302,15 @@ describe('applyCommand with a command that must be refused', () => {
   });
 
   it('refuses a command the authorisation hook rejects, and writes it as failed', () => {
-    // Arrange: a store whose hook rejects every command from a viewer-only actor.
+    // Arrange: a store whose hook rejects every command from a viewer-only actor, and
+    // the race clock item the operator prepared.
     const { store } = createStoreWithRaceClockRegistered({
       isCommandAllowed: (command, actor) => actor !== 'convidado:conexao-9',
     });
+    createRaceClockItemOnTheStore(store);
 
-    // Act: the viewer tries to take the race clock.
-    const outcome = store.applyCommand(takeRaceClockOnTheClockLayer, 'convidado:conexao-9');
+    // Act: the viewer tries to take the race clock item.
+    const outcome = store.applyCommand(takeOfTheRaceClockItem, 'convidado:conexao-9');
 
     // Assert: refused in pt-BR, logged as failed, and nothing went on air.
     const expectedError = {
@@ -326,7 +322,7 @@ describe('applyCommand with a command that must be refused', () => {
       ok: false,
       error: expectedError,
     });
-    expect(slicesAfter.eventLog[0]?.result, 'the rejection must be logged').toEqual({
+    expect(slicesAfter.eventLog.at(-1)?.result, 'the rejection must be logged').toEqual({
       status: 'failed',
       error: expectedError,
     });
@@ -336,19 +332,22 @@ describe('applyCommand with a command that must be refused', () => {
 
 describe('subscribers of the store', () => {
   it('hear about exactly the slices a take changed', () => {
-    // Arrange: a store and a subscriber that writes down every change it hears about.
+    // Arrange: a store with the race clock item prepared, and only then a subscriber
+    // that writes down every change it hears about.
     const { store } = createStoreWithRaceClockRegistered();
+    createRaceClockItemOnTheStore(store);
     const changedSliceNamesHeard: SliceName[][] = [];
     store.subscribeToSliceChanges((changedSliceNames) => {
       changedSliceNamesHeard.push(changedSliceNames);
     });
 
-    // Act: take the race clock.
-    store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
+    // Act: take the race clock item.
+    store.applyCommand(takeOfTheRaceClockItem, operatorActor);
 
-    // Assert: one notification naming instances and the event log, nothing else.
-    expect(changedSliceNamesHeard, 'a take changes instances and the event log').toEqual([
-      ['instances', 'eventLog'],
+    // Assert: one notification for the instances, the rundowns (the cursor moved past the
+    // item) and the event log, nothing else.
+    expect(changedSliceNamesHeard, 'a take of the cursor item changes three slices').toEqual([
+      ['instances', 'rundowns', 'eventLog'],
     ]);
   });
 
@@ -372,15 +371,16 @@ describe('subscribers of the store', () => {
 
 describe('applyCommand when saving to the database fails', () => {
   it('throws and leaves memory exactly as it was, matching the database', () => {
-    // Arrange: a store whose event_log table has vanished, as a damaged file might.
+    // Arrange: the clock item prepared, then the event_log table gone, as a damaged file might.
     // The copy is a deep one: readAllSlices hands out the live object, so comparing
     // against it would also pass if memory were changed in place before the throw.
     const { store, database } = createStoreWithRaceClockRegistered();
+    createRaceClockItemOnTheStore(store);
     const copyOfSlicesBefore = structuredClone(store.readAllSlices());
     database.$client.exec('DROP TABLE event_log');
 
-    // Act: try to take the race clock.
-    const applyTheTake = () => store.applyCommand(takeRaceClockOnTheClockLayer, operatorActor);
+    // Act: try to take the race clock item.
+    const applyTheTake = () => store.applyCommand(takeOfTheRaceClockItem, operatorActor);
 
     // Assert: the error surfaces, memory still holds the slices from before, and the
     // instances row in the database is still the seeded empty list, like memory.

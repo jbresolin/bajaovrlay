@@ -3,22 +3,23 @@
  *
  * What this module is for:
  *   "Edição rápida" either edits ONE instance, loaded by a "Camadas" row's "Editar" (or
- *   "Editar prévia"), or makes a new entry that changes no instance and no item. The panel
+ *   "Editar prévia"), or has nothing loaded (since BAJAOVRLAY-37 it makes no new entry:
+ *   a new graphic is a new item). The panel
  *   remembers the instance it was told to edit (its id, graphic, layer and output); this
  *   pure function looks that id up in the server's instances slice and says which of the
- *   two the panel is doing. When the instance is no longer there, the panel goes back to
- *   making a new entry and says why in one line: the instance left its output, or another
+ *   two the panel is doing. When the instance is no longer there, the panel has nothing
+ *   loaded and says why in one line: the instance left its output, or another
  *   instance replaced it on the same layer and output. It never moves to that other
  *   instance by itself.
  *
  * What these tests prove:
- *   - With nothing loaded the panel makes a new entry and has nothing to report.
+ *   - With nothing loaded the panel has nothing loaded and nothing to report.
  *   - A loaded instance still in the slice is edited, in its newest copy from the server.
- *   - A loaded instance that left its output gives a new entry with "left"; one replaced
+ *   - A loaded instance that left its output gives "nothing loaded" with "left"; one replaced
  *     by another instance on the same layer and output gives "replaced", on program and
  *     on preview alike.
  *   - An instance on the OTHER output of the same layer is not a replacement.
- *   - A loaded instance whose graphic the server no longer lists gives a new entry with
+ *   - A loaded instance whose graphic the server no longer lists gives "nothing loaded" with
  *     "graphic no longer listed": the form is made from that graphic's manifest.
  *   - Once the panel has written down what became of its instance (`lossAsFirstSeen`),
  *     that is what it says, whatever comes to the layer afterwards.
@@ -65,11 +66,11 @@ const modeScenarios: Array<{
 }> = [
   // The page has just opened, or the operator pressed "Nova entrada": nothing is loaded.
   {
-    name: 'makes a new entry with nothing to report when nothing is loaded',
+    name: 'has nothing loaded and nothing to report when no instance was loaded',
     target: null,
     instances: [buildRaceClockInstance(idOfTheClockOnAir, 'program')],
     graphicsListed: ['race-clock'],
-    expectedMode: { kind: 'newTake', lostTarget: undefined },
+    expectedMode: { kind: 'nothingLoaded', lostTarget: undefined },
   },
   // The everyday case: the clock loaded from its row is still on air.
   {
@@ -84,24 +85,24 @@ const modeScenarios: Array<{
   },
   // Someone pressed "Limpar" on the clock layer: the clock left the air.
   {
-    name: 'goes back to a new entry, "left", when the loaded instance left the air',
+    name: 'lets go of it, "left", when the loaded instance left the air',
     target: buildTargetOfTheClock('program'),
     instances: [],
     graphicsListed: ['race-clock'],
     expectedMode: {
-      kind: 'newTake',
+      kind: 'nothingLoaded',
       lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'left' },
     },
   },
   // A take from the rundown put another clock on the same layer: a new id, so a new
   // instance, which the panel must not start editing on its own.
   {
-    name: 'goes back to a new entry, "replaced", when another instance took its place on air',
+    name: 'lets go of it, "replaced", when another instance took its place on air',
     target: buildTargetOfTheClock('program'),
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'program')],
     graphicsListed: ['race-clock'],
     expectedMode: {
-      kind: 'newTake',
+      kind: 'nothingLoaded',
       lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'replaced' },
     },
   },
@@ -112,29 +113,29 @@ const modeScenarios: Array<{
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'preview')],
     graphicsListed: ['race-clock'],
     expectedMode: {
-      kind: 'newTake',
+      kind: 'nothingLoaded',
       lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'left' },
     },
   },
   // The previewed clock was taken or discarded: the preview output of the layer is empty.
   {
-    name: 'goes back to a new entry, "left", when the loaded preview left the preview output',
+    name: 'lets go of it, "left", when the loaded preview left the preview output',
     target: buildTargetOfTheClock('preview'),
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'program')],
     graphicsListed: ['race-clock'],
     expectedMode: {
-      kind: 'newTake',
+      kind: 'nothingLoaded',
       lostTarget: { layerId: 'clock', output: 'preview', whatHappened: 'left' },
     },
   },
   // Someone previewed another item on the same layer: a new preview took its place.
   {
-    name: 'goes back to a new entry, "replaced", when another preview took its place',
+    name: 'lets go of it, "replaced", when another preview took its place',
     target: buildTargetOfTheClock('preview'),
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'preview')],
     graphicsListed: ['race-clock'],
     expectedMode: {
-      kind: 'newTake',
+      kind: 'nothingLoaded',
       lostTarget: { layerId: 'clock', output: 'preview', whatHappened: 'replaced' },
     },
   },
@@ -150,7 +151,7 @@ const modeScenarios: Array<{
     instances: [buildRaceClockInstance(idOfTheClockThatReplacedIt, 'program')],
     graphicsListed: ['race-clock'],
     expectedMode: {
-      kind: 'newTake',
+      kind: 'nothingLoaded',
       lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'left' },
     },
   },
@@ -158,12 +159,12 @@ const modeScenarios: Array<{
   // restarted): its form cannot be drawn, so the panel lets go of the clock and says why,
   // although the clock is still on air.
   {
-    name: 'goes back to a new entry, "graphic no longer listed", when its graphic is gone',
+    name: 'lets go of it, "graphic no longer listed", when its graphic is gone',
     target: buildTargetOfTheClock('program'),
     instances: [buildRaceClockInstance(idOfTheClockOnAir, 'program')],
     graphicsListed: ['team-lower-third'],
     expectedMode: {
-      kind: 'newTake',
+      kind: 'nothingLoaded',
       lostTarget: { layerId: 'clock', output: 'program', whatHappened: 'graphicNoLongerListed' },
     },
   },
@@ -177,7 +178,7 @@ describe('what "Edição rápida" is doing', () => {
     // Act: work out the mode.
     const mode = findQuickEditMode(target, instances, graphicsListed);
 
-    // Assert: the panel edits the instance, or makes a new entry and says why.
+    // Assert: the panel edits the instance, or has nothing loaded and says why.
     expect(mode, 'the mode must follow the loaded instance, and only that one').toEqual(
       expectedMode,
     );

@@ -1,12 +1,10 @@
-import type { Graphic, Instance } from '@bajaovrlay/shared';
+import type { Instance } from '@bajaovrlay/shared';
 import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
-import { useItemEditorTarget } from '@/features/items/ItemEditorTargetProvider';
 import {
   buildInstanceUpdateFromDirtySchemaFormFields,
   buildSchemaFormValuesFromDataOnAir,
-  buildTakeDataFromSchemaForm,
   type SchemaFormDescription,
   type SchemaFormValues,
 } from '@/features/schemaForm';
@@ -16,18 +14,12 @@ import {
   useServerState,
 } from '@/state/ControlPageStateProvider';
 
-import { buildItemSavedFromQuickEdit } from './itemSavedFromQuickEdit';
-import { type QuickEditChoiceAsSent, useQuickEditChoice } from './QuickEditChoiceProvider';
-
-/** What the commands of "Edição rápida" are built from. */
+/** What the command of "Edição rápida" is built from. */
 export type QuickEditCommandsOptions = {
-  graphic: Graphic;
   description: SchemaFormDescription;
   form: UseFormReturn<SchemaFormValues>;
-  /** The loaded instance, in its newest copy, or undefined for a new entry. */
-  instanceBeingEdited: Instance | undefined;
-  /** The loaded instance's layer, or the layer chosen for a new entry. */
-  layerIdOfTheCommands: string;
+  /** The loaded instance, in its newest copy: on air, or in preview. */
+  instanceBeingEdited: Instance;
   /**
    * react-hook-form's `dirtyFields` as read while the form was drawn. Read there and not
    * at the press: react-hook-form keeps up to date only the parts of `formState` a
@@ -36,53 +28,30 @@ export type QuickEditCommandsOptions = {
   fieldsTheOperatorChanged: UseFormReturn<SchemaFormValues>['formState']['dirtyFields'];
 };
 
-/** The three sends, and whether the page's last error is one this form's command left. */
+/** The one send, and whether the page's last error is one this form's command left. */
 export type QuickEditCommands = {
-  sendFormAsTake: (formValues: SchemaFormValues) => Promise<void>;
-  sendFormAsPreview: (formValues: SchemaFormValues) => Promise<void>;
   sendChangedFieldsAsUpdate: (formValues: SchemaFormValues) => Promise<void>;
-  /** "Salvar como item": opens the item editor prefilled; sends nothing itself. */
-  openItemEditorWithTheForm: (formValues: SchemaFormValues) => void;
   isTheErrorOfThePageFromThisForm: boolean;
 };
 
 /**
- * The commands of "Edição rápida", and what the form does once each is answered.
+ * The command of "Edição rápida", and what the form does once it is answered: "Atualizar"
+ * (or "Atualizar prévia" for a loaded preview) sends `updateInstanceData` for the loaded
+ * instance's id only, with the fields the operator changed (react-hook-form's
+ * dirtyFields). Accepted, the form is filled from that instance again, read from the
+ * store at that moment (the server sends the changed instances before its "ok",
+ * webSocketHub.ts), so every field counts as untouched. Since BAJAOVRLAY-37 this is the
+ * panel's only command: it never takes or previews anything new.
  *
- * - "Colocar no ar": `takeGraphic` of the whole form on the layer of the commands. Once
- *   accepted, the panel edits the program instance that take made on that layer: it is
- *   the operator's own press, so this is not a silent move.
- * - "Prévia": `previewGraphic` of the same data on the same layer. Accepted, it changes
- *   nothing on air, so the form is NOT refilled and an unsent edit stays unsent. While a
- *   preview is loaded the new preview replaced it, so the panel edits the new one.
- * - "Salvar como item": no command. It opens the page's item editor prefilled with the
- *   graphic, the layer of the commands and the form (itemSavedFromQuickEdit.ts); the
- *   operator gives the label and "Onde" there and the editor sends createItem.
- * - "Atualizar": `updateInstanceData` for the loaded instance's id only, with the fields
- *   the operator changed (react-hook-form's dirtyFields). Accepted, the form is filled
- *   from that instance again, so every field counts as untouched.
- *
- * After an accepted command the instance is read from the store at that moment: the
- * server sends the changed instances before its "ok" (webSocketHub.ts). The move to the
- * new instance is a compare-and-set against what the panel worked on when the command
- * was sent (form load number, loaded instance id, new-entry layer): if the operator has
- * moved on since, for instance with "Editar" on another row, the reply changes nothing.
- *
- * A refusal is shown under these buttons only while it is the one this form's own last
+ * A refusal is shown under the button only while it is the one this form's own last
  * command got: the item editor sends `updateInstanceData` too, and the page keeps one
  * "last command error" for everybody. What could go wrong: when another part of the page
  * is refused afterwards, this form's message goes away although nothing here succeeded.
  */
 export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEditCommands {
-  const { graphic, description, form, instanceBeingEdited, layerIdOfTheCommands } = options;
-  const { fieldsTheOperatorChanged } = options;
+  const { description, form, instanceBeingEdited, fieldsTheOperatorChanged } = options;
   const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
-  const { editInstanceMadeByThePanel, forgetTheLostTarget, readChoiceAsSentNow } =
-    useQuickEditChoice();
-  const { openItemEditorForNewItem } = useItemEditorTarget();
-  const rundowns = useServerState((state) => state.rundowns);
-  const panels = useServerState((state) => state.quickFirePanels);
 
   const lastCommandErrorOfThePage = useServerState((state) => state.lastCommandError);
   const [errorOfTheLastCommandFromThisForm, setErrorOfTheLastCommandFromThisForm] =
@@ -101,91 +70,7 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
     setErrorOfTheLastCommandFromThisForm(errorLeftByThisCommand);
   }
 
-  // Fills every field from what an instance holds, so none counts as changed.
-  function fillFormFromInstance(instance: Instance): void {
-    const formValues = buildSchemaFormValuesFromDataOnAir(description, instance.resolvedData);
-    form.reset(formValues.formValues);
-  }
-
-  // The instance this panel's accepted command has just put on that layer and output.
-  function findInstanceTheCommandMade(output: Instance['target']): Instance | undefined {
-    return readServerStateNow().instances.find(
-      (instance) =>
-        instance.layerId === layerIdOfTheCommands &&
-        instance.target === output &&
-        instance.graphicId === graphic.id,
-    );
-  }
-
-  // The panel goes on with the instance its own command made, and the form shows it,
-  // unless the operator moved on while the reply was on its way (choiceAsSent no longer
-  // matches): then neither the panel nor the form changes.
-  function editTheInstanceTheCommandMade(
-    output: Instance['target'],
-    choiceAsSent: QuickEditChoiceAsSent,
-  ): void {
-    const instanceMade = findInstanceTheCommandMade(output);
-    if (instanceMade === undefined) {
-      return;
-    }
-    const isEditingTheInstanceMade = editInstanceMadeByThePanel(instanceMade, choiceAsSent);
-    if (isEditingTheInstanceMade) {
-      fillFormFromInstance(instanceMade);
-    }
-  }
-
-  // A send from a new entry is the operator acting on the line about an instance that is
-  // gone, so the line goes, whatever the server answers. Decided in BAJAOVRLAY-36: a
-  // command from elsewhere on the page leaves it, since only this panel and "Editar"
-  // write what the panel works on.
-  function forgetTheLostTargetWhenSendingANewEntry(): void {
-    if (instanceBeingEdited === undefined) {
-      forgetTheLostTarget();
-    }
-  }
-
-  async function sendFormAsTake(formValues: SchemaFormValues): Promise<void> {
-    forgetTheLostTargetWhenSendingANewEntry();
-    const choiceAsSent = readChoiceAsSentNow();
-    const takeData = buildTakeDataFromSchemaForm(description, formValues);
-    const wasAcceptedByTheServer = await sendCommand({
-      type: 'takeGraphic',
-      graphicId: graphic.id,
-      layerId: layerIdOfTheCommands,
-      data: takeData.data,
-      takeTimeFieldKeys: takeData.takeTimeFieldKeys,
-    });
-    rememberHowTheCommandEnded(wasAcceptedByTheServer);
-    if (wasAcceptedByTheServer) {
-      editTheInstanceTheCommandMade('program', choiceAsSent);
-    }
-  }
-
-  async function sendFormAsPreview(formValues: SchemaFormValues): Promise<void> {
-    forgetTheLostTargetWhenSendingANewEntry();
-    const choiceAsSent = readChoiceAsSentNow();
-    const previewData = buildTakeDataFromSchemaForm(description, formValues);
-    const wasAcceptedByTheServer = await sendCommand({
-      type: 'previewGraphic',
-      graphicId: graphic.id,
-      layerId: layerIdOfTheCommands,
-      data: previewData.data,
-      takeTimeFieldKeys: previewData.takeTimeFieldKeys,
-    });
-    rememberHowTheCommandEnded(wasAcceptedByTheServer);
-    const wasEditingAPreview = instanceBeingEdited?.target === 'preview';
-    if (wasAcceptedByTheServer && wasEditingAPreview) {
-      editTheInstanceTheCommandMade('preview', choiceAsSent);
-    }
-  }
-
   async function sendChangedFieldsAsUpdate(formValues: SchemaFormValues): Promise<void> {
-    // "Atualizar" is drawn only while an instance is loaded, so a press always finds it.
-    // A press that races another operator's "Limpar" still names that id; the server then
-    // refuses with its "not found" message, shown next to the buttons.
-    if (instanceBeingEdited === undefined) {
-      return;
-    }
     const update = buildInstanceUpdateFromDirtySchemaFormFields(
       description,
       formValues,
@@ -195,6 +80,8 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
     if (update.hasNothingToSend) {
       return;
     }
+    // A press that races another operator's "Limpar" still names that id; the server then
+    // refuses with its "not found" message, shown next to the button.
     const wasAcceptedByTheServer = await sendCommand({
       type: 'updateInstanceData',
       instanceId: instanceBeingEdited.id,
@@ -206,24 +93,13 @@ export function useQuickEditCommands(options: QuickEditCommandsOptions): QuickEd
       (instance) => instance.id === instanceBeingEdited.id,
     );
     if (wasAcceptedByTheServer && instanceNow !== undefined) {
-      fillFormFromInstance(instanceNow);
+      const formValuesOfTheInstance = buildSchemaFormValuesFromDataOnAir(
+        description,
+        instanceNow.resolvedData,
+      );
+      form.reset(formValuesOfTheInstance.formValues);
     }
   }
 
-  function openItemEditorWithTheForm(formValues: SchemaFormValues): void {
-    const itemSaved = buildItemSavedFromQuickEdit(
-      { description, graphicId: graphic.id, layerId: layerIdOfTheCommands, formValues },
-      rundowns,
-      panels,
-    );
-    openItemEditorForNewItem(itemSaved.home, itemSaved.prefill);
-  }
-
-  return {
-    sendFormAsTake,
-    openItemEditorWithTheForm,
-    sendFormAsPreview,
-    sendChangedFieldsAsUpdate,
-    isTheErrorOfThePageFromThisForm,
-  };
+  return { sendChangedFieldsAsUpdate, isTheErrorOfThePageFromThisForm };
 }

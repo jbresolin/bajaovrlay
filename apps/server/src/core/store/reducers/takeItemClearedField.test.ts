@@ -5,8 +5,8 @@
  *   `updateItemFields` can change a stored field but cannot remove one. So when the
  *   operator clears an optional field of a saved item (the leader's laps of a race
  *   clock, say), the item editor stores it as `{ kind: 'literal', value: null }`. At
- *   the take that null must not reach the graphic: takeItem hands its data to the same
- *   takeGraphic reducer a take by hand uses, which leaves a null field out.
+ *   the take that null must not reach the graphic: takeItem hands its data to the
+ *   internal take step putGraphicOnOutput every take ends in, which leaves a null field out.
  *
  * What these tests prove (with the race clock registered with its real data schema):
  *   - An item whose optional field is a literal null goes on air without that field,
@@ -109,7 +109,7 @@ describe('takeItem of an item whose required field was cleared', () => {
       contextOfTheRundownCommand,
     );
 
-    // Assert: the refusal a take by hand without the session name gets; nothing on air,
+    // Assert: the refusal the take step gives for data without the session name; nothing on air,
     // and the cursor still on the item.
     expect(outcome, 'an item missing a required field must be refused at the take').toEqual({
       status: 'refused',

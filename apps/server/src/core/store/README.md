@@ -12,4 +12,4 @@ the event → tells listeners. A command that changes nothing is not saved, logg
 - `loadRundownSlices.ts` — loads or seeds rundowns and items (`seedRundowns.ts`), converting older items to their `home` first (`itemHomeMigration.ts`); `loadQuickFireAndMacroSlices.ts` — panels (`seedQuickFirePanels.ts`) and macros; `macroRuns` and `previewClearedLayerIds` are memory only (empty at boot).
 - `macroRunner.ts` — sends a running macro's steps through `applyCommand`, signed `sistema:macro:<id>`, and ends a run on "Parar" (stopMacro); `macroRunWatchdog.ts` ends a run still listed at its waits + 30 s; `autoOut.ts` clears
   an item's layer after its delay on air (a preview starts no wait); `resolveItemFields.ts` builds graphic data at the take; `itemTakeTimeFields.ts` refuses a takeTime on a field that is not a wall-clock moment.
-- `*.testSupport.ts` — stand-in graphics folders, race-day slices and a store with a macro runner, for tests.
+- `*.testSupport.ts` — stand-in graphics folders, race-day slices, a store with a macro runner and a race clock item created on a store (`raceClockItemOnTheStore.testSupport.ts`, for a take through the store), for tests.

@@ -14,8 +14,12 @@ export const realServerDatabasePath = 'apps/renderer/.e2e-data/renderer-e2e.sqli
 // Long enough for a slow CI machine, short enough to fail with a clear message first.
 const waitLimitInMilliseconds = 5000;
 
-/** What the server answered to a command: ok, or the error's stable code. */
-export type CommandAnswer = { ok: true } | { ok: false; errorCode: string };
+/**
+ * What the server answered to a command: ok, or the error's stable code. The ok of an
+ * accepted createItem also names the item the server made (`createdItemId`), so a test
+ * can take that very item next.
+ */
+export type CommandAnswer = { ok: true; createdItemId?: string } | { ok: false; errorCode: string };
 
 /**
  * Sends one command to the real server over a WebSocket of its own and resolves with the
@@ -39,6 +43,7 @@ export function sendCommandToRealServer(command: Record<string, unknown>): Promi
         type: string;
         requestId?: string | null;
         ok?: boolean;
+        createdItemId?: string;
         error?: { code: string };
       };
       const isTheAnswerToThisCommand =
@@ -48,7 +53,9 @@ export function sendCommandToRealServer(command: Record<string, unknown>): Promi
       }
       clearTimeout(giveUpTimer);
       socket.close();
-      if (message.ok === true) {
+      if (message.ok === true && message.createdItemId !== undefined) {
+        resolve({ ok: true, createdItemId: message.createdItemId });
+      } else if (message.ok === true) {
         resolve({ ok: true });
       } else {
         resolve({ ok: false, errorCode: message.error?.code ?? 'UNKNOWN' });

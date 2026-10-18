@@ -22,7 +22,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The pt-BR wording of each refusal; the reducer tests (updateInstanceData.test.ts,
- *     takeGraphicData.test.ts) check the full messages.
+ *     putGraphicOnOutputData.test.ts) check the full messages.
  *   - How much time keeping the compiled schema saves; only that it never gives a
  *     wrong answer is checked.
  */

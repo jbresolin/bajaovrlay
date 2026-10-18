@@ -1,7 +1,8 @@
 // Entry point of the control page: builds the server-state store and the "Prévia
 // automática" store, opens the one connection to the server, and mounts <App /> into
 // index.html with all of them made available to it, together with the page's records of
-// what the item editor is open for and of what "Edição rápida" works on.
+// what the item editor is open for, of what "Edição rápida" works on and of the
+// quick-fire tab shown.
 import './index.css';
 
 import { StrictMode } from 'react';
@@ -12,6 +13,7 @@ import { AutoPreviewSettingProvider } from './features/autoPreview/AutoPreviewSe
 import { createAutoPreviewSettingStore } from './features/autoPreview/autoPreviewSettingStore';
 import { ItemEditorTargetProvider } from './features/items/ItemEditorTargetProvider';
 import { QuickEditChoiceProvider } from './features/playout/QuickEditChoiceProvider';
+import { QuickFireTabChoiceProvider } from './features/quickFire/QuickFireTabChoiceProvider';
 import { ptBR } from './i18n/ptBR';
 import { buildWebSocketAddress, openBrowserWebSocket } from './state/browserWebSocket';
 import { ControlPageStateProvider } from './state/ControlPageStateProvider';
@@ -47,7 +49,9 @@ createRoot(rootElement).render(
       <AutoPreviewSettingProvider autoPreviewSettingStore={autoPreviewSettingStore}>
         <ItemEditorTargetProvider>
           <QuickEditChoiceProvider>
-            <App />
+            <QuickFireTabChoiceProvider>
+              <App />
+            </QuickFireTabChoiceProvider>
           </QuickEditChoiceProvider>
         </ItemEditorTargetProvider>
       </AutoPreviewSettingProvider>

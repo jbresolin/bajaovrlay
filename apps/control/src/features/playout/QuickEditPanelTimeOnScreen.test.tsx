@@ -21,8 +21,6 @@
  *   - Retyping the very time the field was showing is a correction like any other: it
  *     is sent.
  *   - With the time untouched, "Atualizar" after a flag change sends the flag alone.
- *   - With the time untouched, "Colocar no ar" sends the reading that is on air (12:34
- *     at 9:45), not the 27:34 shown: the two together are the same clock, with no jump.
  *   - Choosing "Momento da entrada no ar" for the reference moment brings the reference
  *     time back into the field, because the operator is now editing the reading itself.
  *
@@ -178,38 +176,6 @@ describe('the time field of a clock on air, untouched', () => {
         type: 'updateInstanceData',
         instanceId: idOfTheRaceClockInstanceOnAir,
         data: { state: 'yellow' },
-        takeTimeFieldKeys: [],
-      },
-    ]);
-    fakeServer.acceptLastCommand();
-  });
-
-  it('sends the reading that is on air on "Colocar no ar", so the same clock goes back on screen', async () => {
-    // Arrange: 10:00; the first heat running; the field shows 27:34.
-    const { fakeServer } = renderPanelAtTenOClockWithTheFirstHeatOnAir(true);
-
-    // Act: the operator presses "Colocar no ar" without touching anything.
-    await pressButtonAndLetThePageSend('Colocar no ar');
-
-    // Assert: the take carries 12:34 (754 000 ms) at 9:45, the reading on air, and not
-    // the 27:34 the field shows. 12:34 at 9:45 IS 27:34 at 10:00: the clock does not
-    // jump. 27:34 sent with the moment 9:45 would have put 42:34 on screen.
-    expect(
-      fakeServer.listCommandsReceived(),
-      'an untouched clock must be taken with the reading that is on air, time and moment together',
-    ).toEqual([
-      {
-        type: 'takeGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: {
-          sessionName: 'Enduro de Resistência — Bateria 1',
-          state: 'green',
-          clockMode: 'elapsed',
-          referenceTimeMs: 754_000,
-          referenceWallClockMs: Date.parse(quarterToTen),
-          running: true,
-        },
         takeTimeFieldKeys: [],
       },
     ]);

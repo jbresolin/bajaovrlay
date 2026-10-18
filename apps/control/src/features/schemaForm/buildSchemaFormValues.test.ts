@@ -24,7 +24,7 @@
  * What these tests deliberately do not cover:
  *   - A form filled from a stored item: buildSchemaFormValuesFromItemFields.test.ts.
  *   - How one value is shown in its control: fieldValueConversion.test.ts.
- *   - What the filled form sends back: takeDataFromSchemaForm.test.ts,
+ *   - What the filled form sends back: instanceUpdateFromSchemaForm.test.ts,
  *     instanceUpdateFromSchemaForm.test.ts and itemFieldsFromSchemaForm.test.ts.
  */
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
@@ -322,9 +322,9 @@ describe('buildSchemaFormValuesFromDataOnAir', () => {
       // Act: fill the form from it.
       const formRead = buildSchemaFormValuesFromDataOnAir(description, dataOnAir);
 
-      // Assert: the field starts as in an empty form, so "Colocar no ar" lets the server
-      // write the moment of the take instead of sending the default 0 (1 January 1970),
-      // from which a running clock would count more than fifty years.
+      // Assert: the field starts as in an empty form, so the form never offers the default
+      // 0 (1 January 1970) as a moment, from which a running clock would count more than
+      // fifty years; a field left so is filled by the server.
       expect(
         formRead.formValues.kinds.referenceWallClockMs,
         'a reference moment that cannot be read must start as in an empty form',

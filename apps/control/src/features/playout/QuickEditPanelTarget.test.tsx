@@ -1,49 +1,37 @@
 /**
- * "Edição rápida" edits the one instance loaded from "Camadas" (apps/control)
+ * What "Edição rápida" works on, and when it lets go (apps/control)
  *
  * What this module is for:
- *   João's walk showed the operator could not tell what "Edição rápida" would change. So
- *   the panel now changes exactly ONE instance, the one loaded by "Editar" on its
- *   "Camadas" row (or "Editar prévia" for the preview on that layer), and its heading
- *   names it: "Editando: Relógio · Relógio de prova · No ar". "Atualizar" goes to that
- *   instance's id only. With nothing loaded the panel makes a new entry ("Nova entrada —
- *   não altera nenhum item"). When the loaded instance leaves its output or is replaced,
- *   one line says so and the panel goes back to a new entry with the same values; it
- *   never moves to another instance by itself.
+ *   "Edição rápida" changes ONE instance: the one loaded by "Editar" (on air) or "Editar
+ *   prévia" on a "Camadas" row, named in its heading. It never moves to another instance
+ *   by itself. Since BAJAOVRLAY-37 it puts nothing new on air, so with nothing loaded it
+ *   has no form at all; when the loaded instance goes, the panel says so in one line and
+ *   drops the values typed, because there is no other form to keep them in.
  *
  * What these tests prove:
- *   - At page load the panel makes a new entry on the first graphic, from the manifest's
- *     defaults, even with a clock on air, and offers no "Atualizar".
+ *   - At page load nothing is loaded, even with a clock on air: no form, no "Atualizar".
  *   - "Editar" on a row loads that instance: the heading names its layer, its graphic (or
  *     the item it came from) and "No ar", and the form shows what that instance holds.
  *   - With the same graphic on air on two layers, "Atualizar" after "Editar" on one of
  *     them is sent to that instance's id and to no other.
- *   - The instance leaving the air, or being replaced, gives one line saying so, a
- *     new-entry heading, no "Atualizar", and the form as it was typed, which "Colocar no
- *     ar" then sends to the same layer. (When that line goes, and why its words never
- *     change: QuickEditPanelLostTargetLine.test.tsx.)
- *   - "Editar prévia" loads the preview: the heading says "Em prévia", "Prévia" replaces
- *     "Atualizar" and re-previews on that layer, and the panel then edits the new preview.
- *   - "Nova entrada" lets go of the instance and keeps the form.
- *   - An accepted "Colocar no ar" from a new entry makes the panel edit what it put on air.
- *
- * What these tests deliberately do not cover:
- *   - The rule that says which of the two the panel is doing: quickEditMode.test.ts.
- *   - Takes from the rundown and the shortcut buttons, which load nothing:
- *     QuickEditPanelNothingLoadedByTakes.test.tsx.
- *   - The layer dropdown of a new entry: QuickEditPanelNewTakeLayer.test.tsx.
- *   - What the fields send, field by field: QuickEditPanel.test.tsx and its neighbours.
- */
+ *   - The instance leaving the air, or being replaced, gives one line saying so, the
+ *     panel with nothing loaded (its hint and "Novo gráfico…"), no form and no
+ *     "Atualizar"; the panel does not start editing the instance that replaced it.
+ *   - "Editar prévia" loads the preview, with "Em prévia" in the heading.
+ *   - "Parar de editar" lets go of the instance; "Editar" again starts a fresh form.
+ *   - An "Atualizar" answered after the operator loaded another row leaves that row's
+ *     form alone.
+ * */
 import type { Instance } from '@bajaovrlay/shared';
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { typeIntoField } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
+import { letThePageFinishWhatItStarted } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildRaceClockPreviewOfItem } from '@/state/previewLikeTheServerSends.testSupport';
 
 import {
   buildRaceClockInstanceHoldingThisData,
-  letTheServerPutTheLastTakeOnAir,
   pressButtonAndWaitForCommand,
   pressEditOnTheLayerRow,
   pressEditPreviewOnTheLayerRow,
@@ -57,6 +45,8 @@ const momentTheMainClockWentOnAir = '2026-10-10T13:00:00.000Z';
 const momentTheQualifyingClockWentOnAir = '2026-10-10T13:05:00.000Z';
 const idOfTheQualifyingClock = '5e8b0d24-7a19-4c3f-96e2-0b1d8f4a7c55';
 const idOfTheClockThatReplacedIt = 'a90c2e61-1f4b-4d7e-b3a8-6c5d4e3f2a10';
+
+const hintOfThePanelWithNothingLoaded = 'Use Editar numa camada para alterar o que está no ar';
 
 /** The endurance clock on the "Relógio" layer under green, running from 12:34. */
 function buildEnduranceClockOnTheClockLayer(): Instance {
@@ -93,24 +83,22 @@ function buildQualifyingClockOnTheLowerThirdLayer(): Instance {
 }
 
 describe('"Edição rápida" when the page opens', () => {
-  it('makes a new entry on the first graphic with its defaults, although a clock is on air', () => {
+  it('has nothing loaded, although a clock is on air', () => {
     // Arrange: the endurance clock is on air when the page opens.
     const instancesOnAir = [buildEnduranceClockOnTheClockLayer()];
 
     // Act: open the page.
     renderQuickEditPanelWithTheseInstancesOnAir(instancesOnAir);
 
-    // Assert: nothing is loaded: a new entry, from the manifest, with no "Atualizar".
-    expect(readQuickEditHeader(), 'with nothing loaded the panel must say it is a new entry').toBe(
-      'Nova entrada — não altera nenhum item',
-    );
+    // Assert: the hint, no form and nothing to update.
     expect(
-      screen.getByRole('combobox', { name: 'Bandeira' }),
-      'the form must start from the manifest default, not from what is on air',
-    ).toHaveTextContent('Pré-largada');
+      screen.getByText(hintOfThePanelWithNothingLoaded),
+      'with nothing loaded the panel must say how to load something',
+    ).toBeVisible();
+    expect(screen.queryByLabelText('Título'), 'with nothing loaded there is no form').toBeNull();
     expect(
       screen.queryByRole('button', { name: 'Atualizar' }),
-      'a new entry has no instance to update',
+      'with nothing loaded there is no instance to update',
     ).toBeNull();
   });
 });
@@ -198,8 +186,49 @@ describe('"Editar" on a "Camadas" row', () => {
   });
 });
 
+describe('an "Atualizar" answered after the operator moved on', () => {
+  it('leaves the form of the row loaded since alone', async () => {
+    // Arrange: two race clocks on air. The operator loads the endurance clock, changes its
+    // title and presses "Atualizar"; before the answer, they press "Editar" on "Tarja".
+    const enduranceClock = buildEnduranceClockOnTheClockLayer();
+    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
+      enduranceClock,
+      buildQualifyingClockOnTheLowerThirdLayer(),
+    ]);
+    pressEditOnTheLayerRow('Relógio');
+    typeIntoField('Título', 'Enduro — Relargada');
+    await pressButtonAndWaitForCommand('Atualizar', 1, fakeServer);
+    pressEditOnTheLayerRow('Tarja');
+
+    // Act: the server applies the endurance clock's update (both clocks stay on air) and
+    // answers ok.
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [
+        {
+          ...enduranceClock,
+          resolvedData: { ...enduranceClock.resolvedData, sessionName: 'Enduro — Relargada' },
+        },
+        buildQualifyingClockOnTheLowerThirdLayer(),
+      ],
+    });
+    fakeServer.acceptLastCommand();
+    await letThePageFinishWhatItStarted();
+
+    // Assert: the panel still edits the qualifying clock, its form showing what it holds.
+    expect(readQuickEditHeader(), 'the late answer must not move the panel').toBe(
+      'Editando: Tarja · Relógio de prova · No ar',
+    );
+    expect(
+      screen.getByLabelText('Título'),
+      'the late answer must not fill the new form with the other clock',
+    ).toHaveValue('Classificação');
+  });
+});
+
 describe('"Edição rápida" when the loaded instance is gone', () => {
-  it('says the instance left the air, keeps the typed values, and "Colocar no ar" uses the same layer', async () => {
+  it('says the instance left the air and has nothing loaded, the typed values dropped', () => {
     // Arrange: the clock loaded and its title changed, not yet sent.
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
       buildEnduranceClockOnTheClockLayer(),
@@ -207,37 +236,30 @@ describe('"Edição rápida" when the loaded instance is gone', () => {
     pressEditOnTheLayerRow('Relógio');
     typeIntoField('Título', 'Enduro — Bateria 2');
 
-    // Act: someone clears the clock layer; then the operator presses "Colocar no ar".
+    // Act: someone clears the clock layer.
     fakeServer.sendMessage({ type: 'slice', name: 'instances', slice: [] });
-    const headerAfterTheClear = readQuickEditHeader();
-    const isUpdateStillOffered = screen.queryByRole('button', { name: 'Atualizar' }) !== null;
-    const isTheLineShownAfterTheClear =
-      screen.queryByText(
-        'O que você editava na camada Relógio saiu do ar. Os valores continuam no formulário, como nova entrada.',
-      ) !== null;
-    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
 
-    // Assert: one line, a new entry, the values kept, and the take on the clock layer.
-    // (Sending the new entry then takes the line away: QuickEditPanelLostTargetLine.test.tsx.)
+    // Assert: one line, the hint and "Novo gráfico…", and no form any more.
     expect(
-      isTheLineShownAfterTheClear,
+      screen.getByText('O que você editava na camada Relógio saiu do ar.'),
       'the panel must say in one line that its instance left the air',
-    ).toBe(true);
-    expect(headerAfterTheClear, 'the panel must go back to a new entry').toBe(
-      'Nova entrada — não altera nenhum item',
-    );
-    expect(isUpdateStillOffered, 'with the instance gone there is nothing to update').toBe(false);
+    ).toBeVisible();
     expect(
-      fakeServer.listCommandsReceived(),
-      'the new entry must carry what was typed, on the layer the instance was on',
-    ).toEqual([
-      expect.objectContaining({
-        type: 'takeGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: expect.objectContaining({ sessionName: 'Enduro — Bateria 2', state: 'green' }),
-      }),
-    ]);
+      screen.getByText(hintOfThePanelWithNothingLoaded),
+      'the panel must go back to having nothing loaded',
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Novo gráfico…' }),
+      'the way to put a new graphic up must be offered',
+    ).toBeVisible();
+    expect(
+      screen.queryByLabelText('Título'),
+      'there is no form left to keep the typed values in',
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Atualizar' }),
+      'with the instance gone there is nothing to update',
+    ).toBeNull();
   });
 
   it('says the instance was replaced, and does not start editing the one that replaced it', () => {
@@ -261,126 +283,70 @@ describe('"Edição rápida" when the loaded instance is gone', () => {
       ],
     });
 
-    // Assert: one line, a new entry, and the form still as the operator left it.
+    // Assert: one line, nothing loaded, and no form showing the clock that replaced it.
     expect(
-      screen.getByText(
-        'O que você editava na camada Relógio foi substituído no ar. Os valores continuam no formulário, como nova entrada.',
-      ),
+      screen.getByText('O que você editava na camada Relógio foi substituído no ar.'),
       'the panel must say in one line that its instance was replaced',
-    ).toBeInTheDocument();
-    expect(readQuickEditHeader(), 'the panel must not edit the new instance by itself').toBe(
-      'Nova entrada — não altera nenhum item',
-    );
-    expect(screen.getByLabelText('Título'), 'the typed title must stay in the form').toHaveValue(
-      'Enduro — Bateria 2',
-    );
+    ).toBeVisible();
     expect(
-      screen.getByRole('combobox', { name: 'Bandeira' }),
-      'the form must not take the flag of the clock that replaced it',
-    ).toHaveTextContent('Verde');
+      screen.queryByRole('heading', { level: 3 }),
+      'the panel must not edit the new instance by itself',
+    ).toBeNull();
+    expect(screen.queryByLabelText('Título'), 'no form may show the new clock').toBeNull();
   });
 });
 
 describe('"Editar prévia" on a "Camadas" row', () => {
-  it('loads the preview: "Em prévia", and "Prévia" in place of "Atualizar" re-previews that layer', async () => {
+  it('loads the preview, with "Em prévia" in the heading', () => {
     // Arrange: the start of the endurance race is previewed on the clock layer.
-    const previewOfTheStart = buildRaceClockPreviewOfItem(
-      'item-largada-do-enduro',
-      momentTheMainClockWentOnAir,
-    );
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([previewOfTheStart]);
+    renderQuickEditPanelWithTheseInstancesOnAir([
+      buildRaceClockPreviewOfItem('item-largada-do-enduro', momentTheMainClockWentOnAir),
+    ]);
+
+    // Act: press "Editar prévia" on the clock's row.
     pressEditPreviewOnTheLayerRow('Relógio');
-    const headerOfThePreview = readQuickEditHeader();
-    const isUpdateOffered = screen.queryByRole('button', { name: 'Atualizar' }) !== null;
-    typeIntoField('Título', 'Enduro — Largada');
 
-    // Act: press "Prévia"; the server replaces the preview by a new one and answers ok.
-    await pressButtonAndWaitForCommand('Prévia', 1, fakeServer);
-    fakeServer.sendMessage({
-      type: 'slice',
-      name: 'instances',
-      slice: [{ ...previewOfTheStart, id: idOfTheClockThatReplacedIt, itemId: undefined }],
-    });
-    fakeServer.acceptLastCommand();
-
-    // Assert: a preview heading, no "Atualizar", the preview on the same layer, and the
-    // panel still editing the preview it has just made.
-    expect(headerOfThePreview, 'the heading must say the instance is in preview').toBe(
+    // Assert: the heading says the instance is in preview, and its one button says so too.
+    expect(readQuickEditHeader(), 'the heading must say the instance is in preview').toBe(
       'Editando: Relógio · Relógio de prova · Em prévia',
     );
-    expect(isUpdateOffered, 'a preview is changed by previewing it again').toBe(false);
     expect(
-      fakeServer.listCommandsReceived(),
-      '"Prévia" must preview the form on the layer of the loaded preview',
-    ).toEqual([
-      expect.objectContaining({
-        type: 'previewGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: expect.objectContaining({ sessionName: 'Enduro — Largada' }),
-      }),
-    ]);
-    expect(
-      await screen.findByRole('heading', {
-        level: 3,
-        name: 'Editando: Relógio · Relógio de prova · Em prévia',
-      }),
-      'its own preview replaced the old one, so the panel edits the new preview',
+      screen.getByRole('button', { name: 'Atualizar prévia' }),
+      'a loaded preview is changed in place with "Atualizar prévia"',
     ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/foi substituída/),
-      'a preview the panel made itself is not reported as a replacement',
-    ).toBeNull();
   });
 });
 
-describe('leaving and making instances from "Edição rápida"', () => {
-  it('"Nova entrada" lets go of the instance and keeps the form', () => {
+describe('letting go of an instance and loading it again', () => {
+  it('"Parar de editar" lets go of the instance', () => {
     // Arrange: the clock loaded and its title changed.
     renderQuickEditPanelWithTheseInstancesOnAir([buildEnduranceClockOnTheClockLayer()]);
     pressEditOnTheLayerRow('Relógio');
     typeIntoField('Título', 'Enduro — Bateria 2');
 
-    // Act: press "Nova entrada".
-    fireEvent.click(screen.getByRole('button', { name: 'Nova entrada' }));
+    // Act: press "Parar de editar".
+    fireEvent.click(screen.getByRole('button', { name: 'Parar de editar' }));
 
-    // Assert: a new entry with the typed title, and no "Atualizar".
+    // Assert: nothing loaded: the hint, and no form.
     expect(
-      screen.getByRole('heading', { level: 3 }),
-      'the panel must go back to a new entry',
-    ).toHaveTextContent('Nova entrada — não altera nenhum item');
-    expect(screen.getByLabelText('Título'), 'the form must keep what was typed').toHaveValue(
-      'Enduro — Bateria 2',
-    );
-    expect(
-      screen.queryByRole('button', { name: 'Atualizar' }),
-      'a new entry has no instance to update',
-    ).toBeNull();
+      screen.getByText(hintOfThePanelWithNothingLoaded),
+      'the panel must have nothing loaded',
+    ).toBeVisible();
+    expect(screen.queryByLabelText('Título'), 'the form must be gone').toBeNull();
   });
 
-  it('edits the instance its own accepted "Colocar no ar" put on air', async () => {
-    // Arrange: nothing on air; the new entry is the race clock on its default layer.
-    const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([]);
+  it('starts a fresh form when "Editar" is pressed again, the unsent edit gone', () => {
+    // Arrange: the clock loaded and its title changed, not yet sent.
+    renderQuickEditPanelWithTheseInstancesOnAir([buildEnduranceClockOnTheClockLayer()]);
+    pressEditOnTheLayerRow('Relógio');
+    typeIntoField('Título', 'Enduro — Bateria 2');
 
-    // Act: press "Colocar no ar"; the server puts the clock on air and answers ok.
-    await pressButtonAndWaitForCommand('Colocar no ar', 1, fakeServer);
-    letTheServerPutTheLastTakeOnAir(
-      fakeServer,
-      idOfTheClockThatReplacedIt,
-      momentTheMainClockWentOnAir,
+    // Act: press "Editar" on the same row again.
+    pressEditOnTheLayerRow('Relógio');
+
+    // Assert: the form shows what is on air again.
+    expect(screen.getByLabelText('Título'), 'a new "Editar" must show what is on air').toHaveValue(
+      'Enduro de Resistência',
     );
-
-    // Assert: the panel now edits that very clock, named in the heading.
-    expect(
-      await screen.findByRole('heading', {
-        level: 3,
-        name: 'Editando: Relógio · Relógio de prova · No ar',
-      }),
-      'after its own take the panel must edit what it put on air',
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Atualizar' }),
-      'the clock just taken can be changed in place',
-    ).toBeInTheDocument();
   });
 });

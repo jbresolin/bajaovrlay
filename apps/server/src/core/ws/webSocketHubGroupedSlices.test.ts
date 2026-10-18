@@ -31,26 +31,15 @@ import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
+import {
+  createRaceClockItemOnTheStore,
+  shortcutsPanelHome,
+} from '../store/raceClockItemOnTheStore.testSupport.js';
 import { connectWebSocketTestClient } from './webSocketTestClient.testSupport.js';
 
 // The server's clock is held at 14:32:05 UTC on 9 October 2026.
 const momentTheServerClockIsHeldAt = '2026-10-09T14:32:05.000Z';
 const momentTheServerClockIsHeldAtInMilliseconds = 1_791_556_325_000;
-
-// "Edição rápida" previewing the enduro clock: all six fields the race clock requires.
-const previewRaceClockCommand = {
-  type: 'previewGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  data: {
-    sessionName: 'Enduro de Resistência',
-    state: 'green',
-    clockMode: 'elapsed',
-    referenceTimeMs: 3_900_000,
-    referenceWallClockMs: 1_791_550_800_000,
-    running: true,
-  },
-};
 
 /**
  * Starts the whole server, silent, on a random free port with a fresh temporary
@@ -86,14 +75,17 @@ function describeEachMessage(messages: ServerMessage[]): string[] {
 
 describe('a command that changes several slices', () => {
   it('sends the instances, the markers and the event log of "Prévia: limpar" as one slices message', async () => {
-    // Arrange: a running server and the control page, with the enduro clock previewed on
-    // the clock layer.
+    // Arrange: a running server holding the enduro clock as a button of "Atalhos", and
+    // the control page, with that clock item previewed on the clock layer.
     const runningServer = await startServerOnARandomPort();
+    const enduroClockItemId = createRaceClockItemOnTheStore(runningServer.stateStore, {
+      home: shortcutsPanelHome,
+    });
     const controlPage = await connectWebSocketTestClient(runningServer.port);
     controlPage.sendJson({
       type: 'command',
       requestId: 'pedido-1',
-      command: previewRaceClockCommand,
+      command: { type: 'previewItem', itemId: enduroClockItemId },
     });
     await controlPage.waitForMessage('preview result', isCommandResultFor('pedido-1'));
     const numberOfMessagesBeforeTheClear = controlPage.readReceivedMessages().length;

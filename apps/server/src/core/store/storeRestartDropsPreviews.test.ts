@@ -32,7 +32,11 @@ import {
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from './builtGraphicsFolder.testSupport.js';
-import { createStateStore } from './createStateStore.js';
+import { createStateStore, type StateStore } from './createStateStore.js';
+import {
+  buildLiteralItemFieldsFromData,
+  createRaceClockItemOnTheStore,
+} from './raceClockItemOnTheStore.testSupport.js';
 
 const operatorActor = 'operador:conexao-7';
 
@@ -52,24 +56,31 @@ function buildEnduroClockDataWithFlag(flagState: string) {
   };
 }
 
-const takeGreenFlagClockOnProgram = {
-  type: 'takeGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  data: buildEnduroClockDataWithFlag('green'),
-};
-const previewYellowFlagClockOnTheClockLayer = {
-  type: 'previewGraphic',
-  graphicId: 'race-clock',
-  layerId: 'clock',
-  data: buildEnduroClockDataWithFlag('yellow'),
-};
-const previewRedFlagClockOnTheFullscreenLayer = {
-  type: 'previewGraphic',
-  graphicId: 'race-clock',
-  layerId: 'fullscreen',
-  data: buildEnduroClockDataWithFlag('red'),
-};
+/**
+ * Prepares three clock items on the store: the green flag and the yellow flag on the
+ * clock layer, the red flag on the fullscreen layer. Returns the command that puts each
+ * where these tests want it: the green one on air, the other two in Prévia.
+ */
+function prepareTheThreeFlagClockItems(store: StateStore) {
+  const greenFlagItemId = createRaceClockItemOnTheStore(store, {
+    label: 'Bandeira verde',
+    fields: buildLiteralItemFieldsFromData(buildEnduroClockDataWithFlag('green')),
+  });
+  const yellowFlagItemId = createRaceClockItemOnTheStore(store, {
+    label: 'Bandeira amarela',
+    fields: buildLiteralItemFieldsFromData(buildEnduroClockDataWithFlag('yellow')),
+  });
+  const redFlagItemId = createRaceClockItemOnTheStore(store, {
+    label: 'Bandeira vermelha — tela cheia',
+    layerId: 'fullscreen',
+    fields: buildLiteralItemFieldsFromData(buildEnduroClockDataWithFlag('red')),
+  });
+  return {
+    takeGreenFlagClockOnProgram: { type: 'takeItem', itemId: greenFlagItemId },
+    previewYellowFlagClockOnTheClockLayer: { type: 'previewItem', itemId: yellowFlagItemId },
+    previewRedFlagClockOnTheFullscreenLayer: { type: 'previewItem', itemId: redFlagItemId },
+  };
+}
 
 /** Opens a store on the given database whose clock shows the given moment. */
 function openStoreOnDatabaseAt(
@@ -99,8 +110,8 @@ function readStoredInstancesRow(database: ServerDatabase) {
 
 describe('a store opened on the file of a store that had previews', () => {
   it('holds what was on air and none of the previews, and rewrites the database row to match', () => {
-    // Arrange: a store with the green clock on air, the yellow one previewed on the same
-    // layer and the red one previewed on the fullscreen layer.
+    // Arrange: a store with the green clock item on air, the yellow one previewed on the
+    // same layer and the red one previewed on the fullscreen layer.
     const databasePath = createTemporaryDatabasePath();
     const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const firstDatabase = openDatabaseForTests(databasePath);
@@ -109,9 +120,16 @@ describe('a store opened on the file of a store that had previews', () => {
       graphicPackagesFolder,
       momentOfTheCommands,
     );
-    storeBeforeRestart.applyCommand(takeGreenFlagClockOnProgram, operatorActor);
-    storeBeforeRestart.applyCommand(previewYellowFlagClockOnTheClockLayer, operatorActor);
-    storeBeforeRestart.applyCommand(previewRedFlagClockOnTheFullscreenLayer, operatorActor);
+    const flagClockCommands = prepareTheThreeFlagClockItems(storeBeforeRestart);
+    storeBeforeRestart.applyCommand(flagClockCommands.takeGreenFlagClockOnProgram, operatorActor);
+    storeBeforeRestart.applyCommand(
+      flagClockCommands.previewYellowFlagClockOnTheClockLayer,
+      operatorActor,
+    );
+    storeBeforeRestart.applyCommand(
+      flagClockCommands.previewRedFlagClockOnTheFullscreenLayer,
+      operatorActor,
+    );
     const instancesBeforeRestart = storeBeforeRestart.readAllSlices().instances;
     const clockOnAirBeforeRestart = instancesBeforeRestart.filter(
       (instance) => instance.target === 'program',
@@ -150,7 +168,7 @@ describe('a store opened on the file of a store that had previews', () => {
   });
 
   it('does not rewrite the instances row when nothing was previewed', () => {
-    // Arrange: a store with only the green clock on air.
+    // Arrange: a store with the three flag items prepared and only the green clock on air.
     const databasePath = createTemporaryDatabasePath();
     const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const firstDatabase = openDatabaseForTests(databasePath);
@@ -159,7 +177,8 @@ describe('a store opened on the file of a store that had previews', () => {
       graphicPackagesFolder,
       momentOfTheCommands,
     );
-    storeBeforeRestart.applyCommand(takeGreenFlagClockOnProgram, operatorActor);
+    const flagClockCommands = prepareTheThreeFlagClockItems(storeBeforeRestart);
+    storeBeforeRestart.applyCommand(flagClockCommands.takeGreenFlagClockOnProgram, operatorActor);
     const instancesBeforeRestart = storeBeforeRestart.readAllSlices().instances;
 
     // Act: restart at 15:10.

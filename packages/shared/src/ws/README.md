@@ -32,8 +32,9 @@ Every message is one JSON object, told apart by its `type` field:
   `reportInstanceStatus` command, which only a renderer may send: a connection is a
   renderer when it connects to `/ws?role=renderer`, and an operator otherwise. It
   carries no `requestId`, so its `commandResult` comes back with `requestId: null`.
-- `commandResult` (server → the client that sent the command): `ok: true`, or
-  `ok: false` with an `error` carrying a stable `code` and a pt-BR `message`. The
+- `commandResult` (server → the client that sent the command): `ok: true` (with
+  `createdItemId` after a `createItem`), or `ok: false` with an `error` carrying a stable
+  `code` and a pt-BR `message`. The
   `slice` or `slices` message a command causes is sent before its `commandResult`. An
   accepted command that changes nothing (a second `instanceStatus` for an instance already
   on air, a late one for an instance already cleared, a clear of an empty stage) causes no
@@ -174,21 +175,27 @@ gets its line, all in one message.
   "type": "command",
   "requestId": "pedido-17",
   "command": {
-    "type": "takeGraphic",
-    "graphicId": "race-clock",
-    "layerId": "clock",
-    "data": { "sessionName": "Enduro de Resistência", "state": "green" }
+    "type": "takeItem",
+    "itemId": "b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10"
   }
 }
 ```
 
+Everything on air or in preview comes from an item (`takeItem`, `takeNext`, `previewItem`,
+a macro). The commands that took or previewed a graphic with hand-typed data,
+`takeGraphic` and `previewGraphic`, were removed in BAJAOVRLAY-37 and are refused as
+unknown (`INVALID_COMMAND`, naming `type`).
+
 ## command (update in place)
 
 `data` carries only the fields that change; the instance keeps its id, so the graphic
-stays on screen. A field sent as `null` is taken off air. Both this command and
-`takeGraphic` accept an optional `takeTimeFieldKeys` (a list of field names, such as
-`["referenceWallClockMs"]`): the server writes the command's own moment, in wall-clock
-milliseconds, into each of them, so a client never sends its own clock.
+stays on screen. It works on a preview instance as well ("Atualizar prévia"). A field sent
+as `null` is taken off air. The command accepts an optional `takeTimeFieldKeys` (a list of
+field names, such as `["referenceWallClockMs"]`): the server writes the command's own
+moment, in wall-clock milliseconds, into each of them, so a client never sends its own
+clock. On an instance of an item, the fields sent that now differ from the item are listed
+in the instance's `fieldsChangedOnAir`; `saveOnAirChangesIntoItem` (`instanceId`,
+`wallClockFields`: `"keepMoment"` or `"atTake"`) writes them into the item.
 
 ```json
 {
@@ -204,8 +211,8 @@ milliseconds, into each of them, so a client never sends its own clock.
 
 ## command (preview, then take)
 
-`previewItem` shows an item on the preview output of its layer (`previewGraphic` does
-the same for hand-typed data); `takePreview` then sends exactly what was previewed on
+`previewItem` shows an item on the preview output of its layer; `takePreview` then sends
+exactly what was previewed on
 that layer to program, and `stopPreview` throws it away (`"layerId": null` for every layer).
 `"origin"` is optional: `"manual"` when left out; `"auto"` ("Prévia automática") also
 discards every other preview that was made with `"auto"`.
@@ -278,6 +285,20 @@ in one state change, or is refused with `NOTHING_IN_PREVIEW` when there is nothi
 
 ```json
 { "type": "commandResult", "requestId": "pedido-17", "ok": true }
+```
+
+## commandResult (ok, after a createItem)
+
+The answer to an accepted `createItem` names the item the server made, so the page can
+take or preview it next ("Salvar e disparar", "Salvar e prévia").
+
+```json
+{
+  "type": "commandResult",
+  "requestId": "pedido-22",
+  "ok": true,
+  "createdItemId": "5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c"
+}
 ```
 
 ## commandResult (error)

@@ -34,6 +34,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { openItemEditorWithNewGraphic, saveAndTakeTheItemInTheEditor } from './previewTestSteps';
 import { createRaceClockButtonInPanelShown, findQuickFireArea } from './quickFireTestSteps';
 
 /** Opens the control page and waits until it says it is connected to the server. */
@@ -53,27 +54,23 @@ test.describe('emptying the server state', () => {
   test('takes the clock off air and every item out of the rundown, and keeps the rundown itself', async ({
     page,
   }) => {
-    // Arrange: leave behind what a test that stopped halfway would: the race clock on
-    // air (taken from "Edição rápida" with its form as it opens, only the session name
-    // typed), one item prepared in the rundown, and that item on the preview output.
+    // Arrange: leave behind what a test that stopped halfway would: one item prepared in
+    // the rundown, the race clock on air from it ("Salvar e disparar" in the item
+    // editor), and the same item on the preview output.
     await openControlPageAndWaitUntilConnected(page);
     const clockLayerRow = page
       .getByRole('region', { name: 'Camadas' })
       .getByRole('listitem', { name: 'Relógio' });
     const rundownArea = page.getByRole('region', { name: 'Rundown' });
     const quickEditArea = page.getByRole('region', { name: 'Programa e edição rápida' });
-    await quickEditArea
-      .getByLabel('Título', { exact: true })
-      .fill('Enduro de Resistência — Bateria 1');
-    await quickEditArea.getByRole('button', { name: 'Colocar no ar' }).click();
-    await expect(clockLayerRow, 'the clock must be on its layer before the reset').toContainText(
-      'Relógio de prova',
-    );
     await page.getByRole('button', { name: '+ Item' }).click();
     const itemEditor = page.getByRole('region', { name: 'Editor de item' });
     await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
     await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro — Largada');
-    await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
+    await saveAndTakeTheItemInTheEditor(itemEditor);
+    await expect(clockLayerRow, 'the clock must be on its layer before the reset').toContainText(
+      'Relógio de prova',
+    );
     await expect(
       rundownArea.getByRole('listitem'),
       'the rundown must hold the one item before the reset',
@@ -120,14 +117,17 @@ test.describe('emptying the server state', () => {
   });
 
   test('removes a "vai limpar" mark', async ({ page }) => {
-    // Arrange: the race clock on air from "Edição rápida", and its layer marked with
-    // "Prévia: limpar" on its "Camadas" row; the mark is server state the next test would see.
+    // Arrange: the race clock on air from a new graphic ("Novo gráfico…", "Salvar e
+    // disparar"), and its layer marked with "Prévia: limpar" on its "Camadas" row; the mark
+    // is server state the next test would see.
     await openControlPageAndWaitUntilConnected(page);
     const clockLayerRow = page
       .getByRole('region', { name: 'Camadas' })
       .getByRole('listitem', { name: 'Relógio' });
     const quickEditArea = page.getByRole('region', { name: 'Programa e edição rápida' });
-    await quickEditArea.getByRole('button', { name: 'Colocar no ar' }).click();
+    const itemEditor = await openItemEditorWithNewGraphic(page, 'Relógio da sessão');
+    await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro de Resistência');
+    await saveAndTakeTheItemInTheEditor(itemEditor);
     await expect(clockLayerRow, 'the clock must be on its layer before the mark').toContainText(
       'Relógio de prova',
     );

@@ -26,6 +26,7 @@ import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger } from '../../core/logger/createLogger.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { createStateStore } from '../../core/store/createStateStore.js';
+import { createRaceClockItemOnTheStore } from '../../core/store/raceClockItemOnTheStore.testSupport.js';
 
 /** Builds the server app on a freshly seeded store, without opening a port. */
 function createServerAppWithSeededStore() {
@@ -59,36 +60,20 @@ describe('GET /api/v1/state', () => {
   });
 
   it('shows the instance a command just put on air', async () => {
-    // Arrange: a server app whose store has just taken the race clock.
+    // Arrange: a server app whose store has just taken the race clock item.
     const { app, stateStore } = createServerAppWithSeededStore();
-    stateStore.applyCommand(
-      {
-        type: 'takeGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        // All six fields the race clock's manifest schema requires: the enduro under
-        // green flag, 1:05:00 in and running.
-        data: {
-          sessionName: 'Enduro de Resistência',
-          state: 'green',
-          clockMode: 'elapsed',
-          referenceTimeMs: 3_900_000,
-          referenceWallClockMs: 1_791_550_800_000,
-          running: true,
-        },
-      },
-      'operador:conexao-7',
-    );
+    const raceClockItemId = createRaceClockItemOnTheStore(stateStore);
+    stateStore.applyCommand({ type: 'takeItem', itemId: raceClockItemId }, 'operador:conexao-7');
 
     // Act: ask for the state.
     const response = await app.request('/api/v1/state');
     const body = SlicesSchema.parse(await response.json());
 
-    // Assert: the race clock instance is in the answer.
+    // Assert: the race clock instance is in the answer, naming its item.
     expect(
-      body.instances.map((instance) => [instance.graphicId, instance.layerId]),
-      'the race clock must be on the clock layer',
-    ).toEqual([['race-clock', 'clock']]);
+      body.instances.map((instance) => [instance.graphicId, instance.layerId, instance.itemId]),
+      'the race clock of the item must be on the clock layer',
+    ).toEqual([['race-clock', 'clock', raceClockItemId]]);
   });
 });
 

@@ -58,6 +58,13 @@ export const CommandErrorCodeSchema = z.enum([
    * updateMacro / deleteMacro of the macro that is running.
    */
   'MACRO_RUNNING',
+  /**
+   * saveOnAirChangesIntoItem named an instance with no item behind it: one put on air by
+   * hand before BAJAOVRLAY-37 ("sem item" in Camadas, which offers "Salvar como item").
+   */
+  'INSTANCE_WITHOUT_ITEM',
+  /** saveOnAirChangesIntoItem named an instance with nothing changed on air since its take. */
+  'NOTHING_CHANGED_ON_AIR',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

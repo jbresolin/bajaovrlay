@@ -22,7 +22,7 @@
  *
  * What these tests deliberately do not cover:
  *   - Who writes the list and the origin and who reads them; the previewItem,
- *     previewGraphic and takePreview reducer tests in apps/server do.
+ *     takePreview and putGraphicOnOutputPreview tests in apps/server do.
  *   - That an instance on the program output never carries either: the schema allows it,
  *     and takePreview.test.ts proves the server never writes it.
  *   - The other fields of an instance; slices.test.ts covers status and statusDetail.

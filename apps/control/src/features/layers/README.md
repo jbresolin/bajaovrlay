@@ -9,7 +9,12 @@ docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
 - `LayerStatusRow.tsx` — one row: layer (+ chips "em prévia", "vai limpar"), graphic, "há 2 min", badge, buttons.
 - `InstanceStatusBadge.tsx` — green "No ar", grey "Carregando", red "Falhou" + why (tooltip).
 - `useCurrentTime.ts` — redraws the rows every 10 s so the relative times keep up.
-- `ItemLabelOnAir.tsx` — the colour chip and label of the item (rundown or panel) that put it on air.
+- `ItemLabelOnAir.tsx` — the colour chip and label of the item that put it on air, or "sem item" /
+  "item excluído".
+- `ChangedOnAirChip.tsx` — "alterado no ar", its tooltip naming the fields (`fieldsOfInstanceOnAir.ts`).
+- `useSavesFromCamadas.ts` — "Salvar no item" (`saveOnAirChangesIntoItem`) and, for an instance with
+  no item, "Salvar como item" (`itemSavedFromInstanceWithoutItem.ts`); `WallClockChoiceDialog.tsx`
+  asks first when a clock's moment would be saved.
 
 Rows describe the program output; a preview only adds the chip. A take starts "Carregando"; a renderer's
 report makes it "No ar" or "Falhou" (kept until cleared). With no OBS it stays "Carregando".

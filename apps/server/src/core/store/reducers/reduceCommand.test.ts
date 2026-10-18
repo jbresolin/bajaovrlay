@@ -8,12 +8,15 @@
  *   reason. It does no I/O, so the same input always gives the same output.
  *
  * What these tests prove:
- *   - takeGraphic puts an instance on an empty layer, replaces what was on the same
- *     layer and output, and leaves every other layer and output alone.
- *   - takeGraphic is refused for a layer or a graphic that does not exist.
+ *   - takeItem puts an item's instance on an empty layer, replaces what was on the same
+ *     layer and output, and leaves every other layer and output alone; previewItem
+ *     does the same on the preview output and leaves program alone.
+ *   - takeItem is refused for an item that does not exist.
  *   - clearLayer empties one layer on both outputs, program and preview; clearAll
  *     empties every layer, persistent ones such as the clock included.
  *   - clearLayer is refused for a layer that does not exist.
+ *   - saveOnAirChangesIntoItem is routed to its reducer: the field changed on air is
+ *     written into the item.
  *   - A reducer never changes the slices it was given, and a command that changes
  *     nothing (clearing an empty layer, clearAll with nothing on air) hands back the
  *     very same instances array, so the store saves and broadcasts nothing.
@@ -22,21 +25,31 @@
  *   - Checking the command's shape, authorising it, saving or broadcasting the result;
  *     the store (createStateStore.test.ts) does those around the reducer.
  *   - updateInstanceData and reportInstanceStatus, which have a test file each next to
- *     their reducer, and takeGraphic's check of the data against the graphic's manifest
- *     schema (takeGraphicData.test.ts). The two graphics here declare no data schema,
- *     so any data is accepted.
- *   - The seven item and rundown commands (createItem, updateItemFields, deleteItem,
- *     reorderItems, moveCursor, takeItem, takeNext), which have a test file each too.
- *   - The four preview commands (previewItem, previewGraphic, stopPreview, takePreview),
- *     which have a test file each, and what the clears do to a preview made by them
+ *     their reducer, and the take step's check of the data against the graphic's
+ *     manifest schema (putGraphicOnOutputData.test.ts). The two graphics here declare
+ *     no data schema, so any data is accepted.
+ *   - The rules of the take step itself for an unknown layer or graphic;
+ *     putGraphicOnOutputPreview.test.ts covers them.
+ *   - The other item and rundown commands (createItem, updateItemFields, deleteItem,
+ *     reorderItems, moveCursor, takeNext), the rundown cursor and every refusal of
+ *     saveOnAirChangesIntoItem, which have a test file each too.
+ *   - The other preview commands (stopPreview, takePreview, takeAllPreviews), which have
+ *     a test file each, and what the clears do to a preview made by them
  *     (previewAndOlderCommands.test.ts).
+ *   - Graphics put up with no item: since BAJAOVRLAY-37 no command does that (the old
+ *     takeGraphic and previewGraphic are gone), so everything here starts from an item.
  */
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { seededLayers } from '../seedLayers.js';
 import { reduceCommand } from './reduceCommand.js';
 import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
+import {
+  buildEnduroClockData,
+  buildRaceDaySlicesWithRundown,
+  buildTeam42ShortcutItem,
+  buildYellowFlagItem,
+} from './rundownSlices.testSupport.js';
 
 const contextOfTheTake: ReducerContext = {
   newInstanceId: '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f',
@@ -46,17 +59,16 @@ const contextOfTheTake: ReducerContext = {
   newMacroId: '8f3a1c6e-2d4b-4e9a-b7c5-0a1d3e5f7b92',
 };
 
-const raceClockData = { sessionName: 'Enduro de Resistência', state: 'green' };
 const teamLowerThirdData = { teamNumber: 42, teamName: 'Baja UFPR' };
 
-/** Builds the race clock instance already on the program output, on the clock layer. */
+/** Builds the race clock instance already on the program output, under green flag. */
 function buildRaceClockOnAir(): Instance {
   return {
     id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
     layerId: 'clock',
     graphicId: 'race-clock',
     target: 'program',
-    resolvedData: raceClockData,
+    resolvedData: buildEnduroClockData('green'),
     currentStep: 0,
     status: 'on-air',
     takenAt: '2026-10-09T13:00:00.000Z',
@@ -86,52 +98,36 @@ function buildTeam42LowerThirdOnAir(): Instance {
   };
 }
 
-/** Builds the slices of a race day: the five seeded layers, two graphics, given instances. */
+/**
+ * Builds the slices of a race day with the given instances and two prepared items: the
+ * rundown row "Bandeira amarela" (race clock) and the "Atalhos" button "Tarja — Baja
+ * UFPR" (team lower third). Neither graphic declares a data schema.
+ */
 function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesChangedByCommands {
-  return {
-    layers: seededLayers,
-    graphics: [
-      {
-        id: 'race-clock',
-        manifest: { id: 'baja-race-clock', name: 'Relógio de prova', main: 'race-clock.js' },
-        defaultLayerId: 'clock',
-        category: 'clock',
-        thumbnailUrl: null,
-        defaultFields: {},
-      },
-      {
-        id: 'team-lower-third',
-        manifest: { id: 'baja-team-lower-third', name: 'Tarja de equipe', main: 'tarja.js' },
-        defaultLayerId: 'lower-third',
-        category: 'lower-third',
-        thumbnailUrl: null,
-        defaultFields: {},
-      },
-    ],
+  return buildRaceDaySlicesWithRundown({
+    items: [buildYellowFlagItem(0), buildTeam42ShortcutItem(0)],
     instances,
-    // No marker, rundown, item, panel or macro: the commands tested here never need one.
-    previewClearedLayerIds: [],
-    rundowns: [],
-    items: [],
-    quickFirePanels: [],
-    macros: [],
-    macroRuns: [],
-  };
+  });
 }
 
-/** Builds the instance a takeGraphic is expected to create with contextOfTheTake. */
+/** Builds the instance a take of one of those items is expected to create with contextOfTheTake. */
 function buildExpectedNewInstance(fields: {
   layerId: string;
   graphicId: string;
   target: 'program' | 'preview';
   resolvedData: Record<string, unknown>;
+  itemId: string;
 }): Instance {
   return {
     id: contextOfTheTake.newInstanceId,
-    ...fields,
+    layerId: fields.layerId,
+    graphicId: fields.graphicId,
+    target: fields.target,
+    resolvedData: fields.resolvedData,
     currentStep: 0,
     status: 'loading',
     takenAt: contextOfTheTake.now,
+    itemId: fields.itemId,
   };
 }
 
@@ -143,60 +139,41 @@ const appliedCommandScenarios: Array<{
   /** True when nothing changes, so the reducer must hand back the very same array. */
   isInstancesSliceUnchanged?: boolean;
 }> = [
-  // The basic take: nothing on the clock layer, the race clock goes on.
+  // The basic take: nothing on the clock layer, the yellow flag clock goes on.
   {
-    name: 'takeGraphic puts the race clock on an empty clock layer',
+    name: 'takeItem puts the race clock on an empty clock layer',
     instancesBefore: [],
-    command: {
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: raceClockData,
-      target: 'program',
-      takeTimeFieldKeys: [],
-    },
+    command: { type: 'takeItem', itemId: 'item-bandeira-amarela' },
     expectedInstancesAfter: [
       buildExpectedNewInstance({
         layerId: 'clock',
         graphicId: 'race-clock',
         target: 'program',
-        resolvedData: raceClockData,
+        resolvedData: buildEnduroClockData('yellow'),
+        itemId: 'item-bandeira-amarela',
       }),
     ],
   },
   // One layer shows one graphic per output: a new take replaces the old instance.
   {
-    name: 'takeGraphic replaces the instance already on the same layer',
+    name: 'takeItem replaces the instance already on the same layer',
     instancesBefore: [buildRaceClockOnAir()],
-    command: {
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: { ...raceClockData, state: 'yellow' },
-      target: 'program',
-      takeTimeFieldKeys: [],
-    },
+    command: { type: 'takeItem', itemId: 'item-bandeira-amarela' },
     expectedInstancesAfter: [
       buildExpectedNewInstance({
         layerId: 'clock',
         graphicId: 'race-clock',
         target: 'program',
-        resolvedData: { ...raceClockData, state: 'yellow' },
+        resolvedData: buildEnduroClockData('yellow'),
+        itemId: 'item-bandeira-amarela',
       }),
     ],
   },
   // Layers are independent: a lower third must not knock the clock off air.
   {
-    name: 'takeGraphic on the lower third leaves the clock layer alone',
+    name: 'takeItem on the lower third leaves the clock layer alone',
     instancesBefore: [buildRaceClockOnAir()],
-    command: {
-      type: 'takeGraphic',
-      graphicId: 'team-lower-third',
-      layerId: 'lower-third',
-      data: teamLowerThirdData,
-      target: 'program',
-      takeTimeFieldKeys: [],
-    },
+    command: { type: 'takeItem', itemId: 'item-atalho-tarja-baja-ufpr' },
     expectedInstancesAfter: [
       buildRaceClockOnAir(),
       buildExpectedNewInstance({
@@ -204,22 +181,16 @@ const appliedCommandScenarios: Array<{
         graphicId: 'team-lower-third',
         target: 'program',
         resolvedData: teamLowerThirdData,
+        itemId: 'item-atalho-tarja-baja-ufpr',
       }),
     ],
   },
   // Preview is a separate output: rehearsing a take must not touch what is on air.
   {
-    name: 'takeGraphic on preview leaves the program instance on the same layer alone',
+    name: 'previewItem leaves the program instance on the same layer alone',
     instancesBefore: [buildRaceClockOnAir()],
-    command: {
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'clock',
-      data: raceClockData,
-      target: 'preview',
-      takeTimeFieldKeys: [],
-    },
-    // Every preview says who asked for it; one made by a takeGraphic was asked for by hand.
+    command: { type: 'previewItem', itemId: 'item-bandeira-amarela', origin: 'manual' },
+    // Every preview says who asked for it; this one was asked for by hand.
     expectedInstancesAfter: [
       buildRaceClockOnAir(),
       {
@@ -227,7 +198,8 @@ const appliedCommandScenarios: Array<{
           layerId: 'clock',
           graphicId: 'race-clock',
           target: 'preview',
-          resolvedData: raceClockData,
+          resolvedData: buildEnduroClockData('yellow'),
+          itemId: 'item-bandeira-amarela',
         }),
         previewOrigin: 'manual',
       },
@@ -313,33 +285,13 @@ const refusedCommandScenarios: Array<{
   command: Command;
   expectedError: { code: string; message: string };
 }> = [
-  // A typo in the layer id must not create an instance nobody can see.
+  // A row deleted on another control page while this one still showed it.
   {
-    name: 'refuses takeGraphic on a layer that does not exist',
-    command: {
-      type: 'takeGraphic',
-      graphicId: 'race-clock',
-      layerId: 'placar',
-      data: raceClockData,
-      target: 'program',
-      takeTimeFieldKeys: [],
-    },
-    expectedError: { code: 'LAYER_NOT_FOUND', message: 'A camada "placar" não existe.' },
-  },
-  // A graphic that is not registered has no package the renderer could load.
-  {
-    name: 'refuses takeGraphic of a graphic that is not registered',
-    command: {
-      type: 'takeGraphic',
-      graphicId: 'classificacao-geral',
-      layerId: 'fullscreen',
-      data: {},
-      target: 'program',
-      takeTimeFieldKeys: [],
-    },
+    name: 'refuses takeItem of an item that does not exist',
+    command: { type: 'takeItem', itemId: 'item-chegada-do-enduro' },
     expectedError: {
-      code: 'GRAPHIC_NOT_FOUND',
-      message: 'O gráfico "classificacao-geral" não está registrado.',
+      code: 'ITEM_NOT_FOUND',
+      message: 'O item "item-chegada-do-enduro" não existe; ele pode ter sido excluído.',
     },
   },
   // Clearing a layer that does not exist is a mistake worth telling the operator about.
@@ -366,6 +318,44 @@ describe('reduceCommand, when the command must be refused', () => {
   });
 });
 
+describe('reduceCommand and saveOnAirChangesIntoItem', () => {
+  it('routes the command to its reducer, which writes the field changed on air into the item', () => {
+    // Arrange: the yellow flag item on air, its flag changed to red on air ("Atualizar").
+    const yellowFlagChangedToRedOnAir: Instance = {
+      ...buildExpectedNewInstance({
+        layerId: 'clock',
+        graphicId: 'race-clock',
+        target: 'program',
+        resolvedData: buildEnduroClockData('red'),
+        itemId: 'item-bandeira-amarela',
+      }),
+      fieldsChangedOnAir: ['state'],
+    };
+    const slicesBefore = buildRaceDaySlicesWithInstances([yellowFlagChangedToRedOnAir]);
+
+    // Act: press "Salvar no item" on the clock row.
+    const outcome = reduceCommand(
+      slicesBefore,
+      {
+        type: 'saveOnAirChangesIntoItem',
+        instanceId: yellowFlagChangedToRedOnAir.id,
+        wallClockFields: 'keepMoment',
+      },
+      contextOfTheTake,
+    );
+
+    // Assert: the item now gives the red flag, as the air shows.
+    const itemAfter =
+      outcome.status === 'applied'
+        ? outcome.slices.items.find((item) => item.id === 'item-bandeira-amarela')
+        : undefined;
+    expect(
+      itemAfter?.fields.state,
+      'the flag changed on air must be saved into the item as a typed value',
+    ).toEqual({ kind: 'literal', value: 'red' });
+  });
+});
+
 describe('reduceCommand purity', () => {
   it('never changes the slices it was given', () => {
     // Arrange: slices with two instances, frozen so any change in place would throw.
@@ -376,17 +366,10 @@ describe('reduceCommand purity', () => {
     const snapshotBefore = structuredClone(slicesBefore);
     Object.freeze(slicesBefore.instances);
 
-    // Act: take a new clock, which replaces one instance and keeps the other.
+    // Act: take the yellow flag item, which replaces one instance and keeps the other.
     reduceCommand(
       slicesBefore,
-      {
-        type: 'takeGraphic',
-        graphicId: 'race-clock',
-        layerId: 'clock',
-        data: raceClockData,
-        target: 'program',
-        takeTimeFieldKeys: [],
-      },
+      { type: 'takeItem', itemId: 'item-bandeira-amarela' },
       contextOfTheTake,
     );
 

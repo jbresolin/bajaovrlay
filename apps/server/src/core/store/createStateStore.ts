@@ -33,8 +33,13 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
   createMacroId?: (() => string) | undefined;
 };
 
-/** How applyCommand answers: ok, or the error the operator is shown. */
-export type CommandOutcome = { ok: true } | { ok: false; error: CommandError };
+/**
+ * How applyCommand answers: ok, or the error the operator is shown. An accepted
+ * createItem also names the item it made (`createdItemId`), so the page can take or
+ * preview that item next ("Salvar e disparar", BAJAOVRLAY-37).
+ */
+export type CommandOutcome =
+  { ok: true; createdItemId?: string } | { ok: false; error: CommandError };
 
 /**
  * Called after every command that changed a slice or was refused (so the event log
@@ -121,13 +126,14 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     }
 
     // Step 3, apply: the pure reducer, given the id and time it may need.
-    const reducerOutcome = reduceCommand(currentSlices, command, {
+    const reducerContext = {
       newInstanceId: createInstanceId(),
       now,
       newItemId: createItemId(),
       newQuickFirePanelId: createQuickFirePanelId(),
       newMacroId: createMacroId(),
-    });
+    };
+    const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);
     if (reducerOutcome.status === 'refused') {
       return recordRefusal({
         now,
@@ -160,6 +166,10 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         result: { status: 'ok' },
       },
     });
+    // A createItem that was applied made exactly one item, with the id it was handed.
+    if (command.type === 'createItem') {
+      return { ok: true, createdItemId: reducerContext.newItemId };
+    }
     return { ok: true };
   }
 

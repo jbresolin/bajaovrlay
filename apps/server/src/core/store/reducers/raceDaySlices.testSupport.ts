@@ -1,6 +1,7 @@
 // Test support: the slices of a race day whose race clock declares its data schema, for
-// the reducer tests that depend on that schema (updateInstanceData, takeGraphic's data
-// check, reportInstanceStatus). Every function builds fresh objects on each call.
+// the reducer tests that depend on that schema (updateInstanceData, the take step's data
+// check in putGraphicOnOutput, reportInstanceStatus). Every function builds fresh objects
+// on each call.
 import type { Instance } from '@bajaovrlay/shared';
 
 import { raceClockManifestForTests } from '../builtGraphicsFolder.testSupport.js';

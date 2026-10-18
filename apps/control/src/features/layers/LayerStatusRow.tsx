@@ -7,6 +7,7 @@ import { ItemLabelOnAir } from '@/features/layers/ItemLabelOnAir';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
 
+import { ChangedOnAirChip } from './ChangedOnAirChip';
 import { InstanceStatusBadge } from './InstanceStatusBadge';
 
 /** What one row needs: its layer, what is on it (if anything), and how to clear it. */
@@ -34,6 +35,25 @@ export type LayerStatusRowProps = {
   onEditProgramInstancePressed: (() => void) | undefined;
   /** "Editar prévia": load this layer's preview into "Edição rápida"; undefined when there is none. */
   onEditPreviewInstancePressed: (() => void) | undefined;
+  /**
+   * The titles of the fields changed on air on the instance on program; empty when
+   * nothing was, and then no chip "alterado no ar" is drawn.
+   */
+  changedFieldTitles: string[];
+  /**
+   * The titles of the fields changed with "Atualizar prévia" on the layer's preview; the
+   * chip beside "em prévia" only informs (the list goes to program with "Tomar").
+   */
+  changedInPreviewFieldTitles: string[];
+  /** true while this row's "Salvar no item" waits for the server: the button is off. */
+  isSaveIntoItemWaiting: boolean;
+  /**
+   * "Salvar no item": keep the change on air in the item. Undefined when nothing was
+   * changed, or when the item was deleted ("item excluído": there is nothing to save into).
+   */
+  onSaveIntoItemPressed: (() => void) | undefined;
+  /** "Salvar como item": only for an instance on program with no item ("sem item"). */
+  onSaveAsItemPressed: (() => void) | undefined;
 };
 
 /**
@@ -48,6 +68,10 @@ export type LayerStatusRowProps = {
  * "Editar" loads the instance on air into "Edição rápida", and "Editar prévia" the
  * layer's preview; that is the only way an instance gets there
  * (features/playout/QuickEditChoiceProvider.tsx).
+ * Every row with something on air names its item (ItemLabelOnAir.tsx). One changed on
+ * air carries the chip "alterado no ar" and offers "Salvar no item"; one with no item
+ * offers "Salvar como item" (BAJAOVRLAY-37). A preview changed with "Atualizar prévia"
+ * carries the chip beside "em prévia", for information only.
  * Deliberate: the preview gets no status badge, because its status stays "loading" for
  * good (the pages that draw previews never report), so a badge would read "Carregando"
  * and mean nothing.
@@ -63,6 +87,12 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           {props.isHoldingAPreview ? (
             <Badge variant="secondary">{ptBR.layers.inPreviewChip}</Badge>
           ) : null}
+          {props.changedInPreviewFieldTitles.length === 0 ? null : (
+            <ChangedOnAirChip
+              changedFieldTitles={props.changedInPreviewFieldTitles}
+              output="preview"
+            />
+          )}
           {props.isMarkedToBeCleared ? (
             <Badge variant="secondary">{ptBR.layers.willClearChip}</Badge>
           ) : null}
@@ -73,6 +103,9 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           <span className="flex flex-wrap items-center gap-2 text-sm">
             <ItemLabelOnAir itemId={instanceOnProgram.itemId} />
             <span className="truncate">{graphicName}</span>
+            {props.changedFieldTitles.length === 0 ? null : (
+              <ChangedOnAirChip changedFieldTitles={props.changedFieldTitles} output="program" />
+            )}
             <span className="text-muted-foreground">
               {formatRelativeTimePtBR(new Date(instanceOnProgram.takenAt), currentTime)}
             </span>
@@ -97,6 +130,21 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
             <ActionButton size="xs" variant="ghost" onClick={props.onPreviewClearPressed}>
               {ptBR.layers.previewClearLayerButton}
             </ActionButton>
+          )}
+          {props.onSaveIntoItemPressed === undefined ? null : (
+            <ActionButton
+              size="xs"
+              variant="ghost"
+              disabled={props.isSaveIntoItemWaiting}
+              onClick={props.onSaveIntoItemPressed}
+            >
+              {ptBR.layers.saveIntoItemButton}
+            </ActionButton>
+          )}
+          {props.onSaveAsItemPressed === undefined ? null : (
+            <Button size="xs" variant="ghost" onClick={props.onSaveAsItemPressed}>
+              {ptBR.layers.saveAsItemButton}
+            </Button>
           )}
         </span>
       </div>

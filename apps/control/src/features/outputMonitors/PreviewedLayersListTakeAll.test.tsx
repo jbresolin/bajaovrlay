@@ -38,7 +38,7 @@ import {
 } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildLowerThirdFixtureGraphic } from '@/state/lowerThirdFixtureGraphic.testSupport';
 import {
-  buildLowerThirdPreviewMadeByHand,
+  buildLowerThirdPreviewWhoseItemIsGone,
   buildRaceClockPreviewOfItem,
 } from '@/state/previewLikeTheServerSends.testSupport';
 import {
@@ -90,7 +90,7 @@ function buildSlicesWithTheClockOnAirMarkedToBeCleared(): Slices {
 function buildSlicesWithTheClockMarkedAndTheBandPreviewed(): Slices {
   return buildSlicesWithTheseInstancesAndMarks(
     [
-      buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed),
+      buildLowerThirdPreviewWhoseItemIsGone(momentTheBandWasPreviewed),
       buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir),
     ],
     ['clock'],
@@ -200,7 +200,7 @@ describe('"Tomar tudo" and "Descartar tudo" under the "Prévia" monitor', () => 
       name: 'are hidden with one preview',
       buildSlices: () =>
         buildSlicesWithTheseInstancesAndMarks(
-          [buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed)],
+          [buildLowerThirdPreviewWhoseItemIsGone(momentTheBandWasPreviewed)],
           [],
         ),
       areTheButtonsExpected: false,
@@ -217,7 +217,7 @@ describe('"Tomar tudo" and "Descartar tudo" under the "Prévia" monitor', () => 
       buildSlices: () =>
         buildSlicesWithTheseInstancesAndMarks(
           [
-            buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed),
+            buildLowerThirdPreviewWhoseItemIsGone(momentTheBandWasPreviewed),
             buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed),
           ],
           [],
@@ -260,7 +260,7 @@ describe('"Tomar tudo" and "Descartar tudo" under the "Prévia" monitor', () => 
       buildSlicesWithTheseInstancesAndMarks(
         [
           buildRaceClockPreviewOfItem(enduranceStartItemId, momentTheStartWasPreviewed),
-          buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed),
+          buildLowerThirdPreviewWhoseItemIsGone(momentTheBandWasPreviewed),
         ],
         [],
       ),
@@ -275,7 +275,7 @@ describe('"Tomar tudo" and "Descartar tudo" under the "Prévia" monitor', () => 
       slices: {
         instances: [
           buildProgramInstanceTakenFromPreview(
-            buildLowerThirdPreviewMadeByHand(momentTheBandWasPreviewed),
+            buildLowerThirdPreviewWhoseItemIsGone(momentTheBandWasPreviewed),
             '0d6f3b2e-8a41-4c97-b5e2-1f9a7c3d6e50-lower-third',
           ),
           buildProgramInstanceTakenFromPreview(

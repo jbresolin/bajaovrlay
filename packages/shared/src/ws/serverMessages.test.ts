@@ -15,8 +15,9 @@
  *     whole milliseconds; it survives validation, and a wrong kind of value is refused.
  *   - A `time` message must carry `serverNowMs` as a whole number: the time is all it
  *     has to say, so one without it, or with text or a fraction, is refused.
- *   - An ok `commandResult` echoes the requestId; an error one must carry a code from
- *     the closed list and a pt-BR message.
+ *   - An ok `commandResult` echoes the requestId, and after a createItem it may name the
+ *     item the server made (`createdItemId`); an error one must carry a code from the
+ *     closed list and a pt-BR message.
  *   - A message with an unknown `type` is refused.
  *
  * What these tests deliberately do not cover:
@@ -224,6 +225,24 @@ describe('ServerMessageSchema', () => {
       name: 'accepts an ok result echoing the requestId',
       message: { type: 'commandResult', requestId: 'pedido-17', ok: true },
       isAccepted: true,
+    },
+    // An accepted createItem names the item the server made, so the item editor's "Salvar
+    // e disparar" can take that item next (BAJAOVRLAY-37).
+    {
+      name: 'accepts an ok result naming the item a createItem made',
+      message: {
+        type: 'commandResult',
+        requestId: 'pedido-18',
+        ok: true,
+        createdItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
+      },
+      isAccepted: true,
+    },
+    // An empty id names no item, and a take of it could only be refused.
+    {
+      name: 'refuses an ok result naming an empty created item id',
+      message: { type: 'commandResult', requestId: 'pedido-18', ok: true, createdItemId: '' },
+      isAccepted: false,
     },
     // A refusal must tell the operator why, in pt-BR, with a stable code.
     {

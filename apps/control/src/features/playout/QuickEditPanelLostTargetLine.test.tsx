@@ -1,56 +1,46 @@
 /**
- * The line that says the edited instance is gone, in "Edição rápida" (apps/control)
+ * The line about an instance "Edição rápida" was editing, once it is gone (apps/control)
  *
  * What this module is for:
- *   When the instance loaded into "Edição rápida" leaves its output or is replaced, the
- *   panel goes back to a new entry and one line says what became of it ("… saiu do ar" or
- *   "… foi substituído no ar"). The review of BAJAOVRLAY-36 found that line never went
- *   away, and that its words could change after the fact: worked out again from the
- *   server's instances on every draw, a take made later on the old layer turned "saiu do
- *   ar" into "foi substituído", which never happened to the edited instance. So the panel
- *   writes the words down when it first sees the loss, and lets go of the line when the
- *   operator moves on from it in the panel.
+ *   When the instance loaded into "Edição rápida" leaves its output, is replaced, or the
+ *   server stops listing its graphic, the panel lets go of it and says so in one line,
+ *   above its hint and "Novo gráfico…". The line says what became of THAT instance, as the
+ *   panel first saw it, so the operator is never told something that did not happen.
  *
  * What these tests prove:
  *   - After "saiu do ar", a later take on that layer leaves the words as they were.
- *   - Choosing another layer for the new entry takes the line away, and "Prévia" then
- *     goes to that layer with no line naming the old one.
- *   - Sending the new entry ("Prévia" accepted, or "Colocar no ar" even when refused)
- *     takes the line away: the operator has acted on it.
- *   - Decided here: a command sent from elsewhere on the page ("Limpar" on a "Camadas"
- *     row) leaves the line, because only the panel and "Editar" write what it works on.
+ *   - The line goes when the operator moves on: "Novo gráfico…", or "Editar" on a row.
+ *   - Decided in BAJAOVRLAY-36: a command sent from elsewhere on the page ("Limpar" on a
+ *     "Camadas" row) leaves the line, because only the panel and "Editar" write what it
+ *     works on.
  *   - When the server stops listing the edited instance's graphic, the panel lets go of
  *     the instance with its own line (its form comes from that graphic's manifest), and
- *     stays a new entry when the graphic is listed again (gate 2 of BAJAOVRLAY-36).
+ *     still has nothing loaded when the graphic is listed again (gate 2 of BAJAOVRLAY-36).
  *
  * What these tests deliberately do not cover:
  *   - How the line first appears, and its words on program and in preview:
  *     QuickEditPanelTarget.test.tsx and quickEditMode.test.ts.
- *   - The layer dropdown itself: QuickEditPanelNewTakeLayer.test.tsx.
+ *   - Where "Novo gráfico…" opens the item editor: QuickEditPanelEmptyState.test.tsx.
  */
 import type { Instance } from '@bajaovrlay/shared';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { chooseOptionInDropdown } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 import { buildLowerThirdFixtureGraphic } from '@/state/lowerThirdFixtureGraphic.testSupport';
 import { buildRaceClockGraphic } from '@/state/slicesLikeTheServerSends.testSupport';
 
 import {
   buildRaceClockInstanceHoldingThisData,
-  pressButtonAndWaitForCommand,
   pressEditOnTheLayerRow,
   readQuickEditHeader,
   renderQuickEditPanelWithTheseInstancesOnAir,
-  waitUntilButtonIsOnAgain,
 } from './operatingTheQuickEditPanel.testSupport';
 
 // Saturday of the endurance race: the main clock went on air at 10:00.
 const momentTheMainClockWentOnAir = '2026-10-10T13:00:00.000Z';
 const idOfTheClockTakenLater = 'a90c2e61-1f4b-4d7e-b3a8-6c5d4e3f2a10';
 
-const lineSayingTheClockLeftTheAir =
-  'O que você editava na camada Relógio saiu do ar. Os valores continuam no formulário, como nova entrada.';
+const lineSayingTheClockLeftTheAir = 'O que você editava na camada Relógio saiu do ar.';
 
 /** The endurance clock on the "Relógio" layer under green, running from 12:34. */
 function buildEnduranceClockOnTheClockLayer(): Instance {
@@ -108,73 +98,42 @@ describe('the line about an edited instance that is gone', () => {
     ).toBeNull();
   });
 
-  it('goes away when the operator chooses another layer, and "Prévia" goes to that layer', async () => {
+  it('goes away when the operator presses "Novo gráfico…"', () => {
     // Arrange: the edited clock was cleared, and the panel says so.
-    const { fakeServer } = openThePanelWithTheEditedClockJustCleared();
+    openThePanelWithTheEditedClockJustCleared();
+    const isTheLineShownAfterTheClear = isALineAboutTheLostInstanceShown();
 
-    // Act: choose the "Tarja" layer for the new entry, then press "Prévia".
-    chooseOptionInDropdown('Camada da nova entrada', 'Tarja');
-    const isTheLineShownAfterChoosingTheLayer = isALineAboutTheLostInstanceShown();
-    await pressButtonAndWaitForCommand('Prévia', 1, fakeServer);
-    fakeServer.acceptLastCommand();
-    await waitUntilButtonIsOnAgain('Prévia');
+    // Act: press "Novo gráfico…" (it opens the item editor elsewhere on the page).
+    fireEvent.click(screen.getByRole('button', { name: 'Novo gráfico…' }));
 
-    // Assert: no line about the clock layer once another layer was chosen, and the
-    // preview went to the layer chosen.
-    expect(
-      isTheLineShownAfterChoosingTheLayer,
-      'choosing another layer moves on from the lost clock, so its line must go',
-    ).toBe(false);
-    expect(
-      fakeServer.listCommandsReceived(),
-      '"Prévia" must go to the layer chosen, not to the old one',
-    ).toEqual([expect.objectContaining({ type: 'previewGraphic', layerId: 'lower-third' })]);
+    // Assert: the operator has moved on, so the line about the old clock is gone.
+    expect(isTheLineShownAfterTheClear, 'the clear must first be reported').toBe(true);
     expect(
       isALineAboutTheLostInstanceShown(),
-      'after the preview no line may name the old layer',
+      'after "Novo gráfico…" the line about the lost clock must be gone',
     ).toBe(false);
   });
 
-  const sendScenarios = [
-    // The operator previews what was typed, on the same layer: the server accepts it.
-    {
-      name: 'goes away when the new entry is sent as "Prévia"',
-      buttonName: 'Prévia',
-      isAccepted: true,
-    },
-    // Refused or not, the operator has acted on the line; it would only mislead from now on.
-    {
-      name: 'goes away when the new entry is sent as "Colocar no ar", even when it is refused',
-      buttonName: 'Colocar no ar',
-      isAccepted: false,
-    },
-  ];
-
-  it.each(sendScenarios)('$name', async ({ buttonName, isAccepted }) => {
-    // Arrange: the edited clock was cleared, and the panel says so.
+  it('goes away when "Editar" loads another instance', () => {
+    // Arrange: the edited clock was cleared, and another clock was taken on that layer.
     const { fakeServer } = openThePanelWithTheEditedClockJustCleared();
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [{ ...buildEnduranceClockOnTheClockLayer(), id: idOfTheClockTakenLater }],
+    });
 
-    // Act: press the button; the server answers ok, or refuses.
-    await pressButtonAndWaitForCommand(buttonName, 1, fakeServer);
-    if (isAccepted) {
-      fakeServer.acceptLastCommand();
-    } else {
-      fakeServer.refuseLastCommand({
-        code: 'INVALID_GRAPHIC_DATA',
-        message: 'Os dados do gráfico "race-clock" não são válidos.',
-      });
-    }
-    await waitUntilButtonIsOnAgain(buttonName);
+    // Act: press "Editar" on the clock's row, which loads the clock taken later.
+    pressEditOnTheLayerRow('Relógio');
 
-    // Assert: the line is gone, and the panel is still a new entry.
+    // Assert: the panel edits that clock, and the line about the old one is gone.
+    expect(readQuickEditHeader(), 'the panel must edit the clock loaded now').toBe(
+      'Editando: Relógio · Relógio de prova · No ar',
+    );
     expect(
       isALineAboutTheLostInstanceShown(),
-      `after "${buttonName}" from the new entry the line about the lost clock must be gone`,
+      'a new "Editar" must take the line about the lost clock away',
     ).toBe(false);
-    expect(
-      screen.getByRole('heading', { level: 3 }),
-      'the panel stays a new entry',
-    ).toHaveTextContent('Nova entrada — não altera nenhum item');
   });
 
   it('stays when a command is sent from elsewhere on the page', () => {
@@ -199,7 +158,7 @@ describe('the line about an edited instance that is gone', () => {
 });
 
 describe("the line when the edited instance's graphic is no longer listed", () => {
-  it('lets go of the clock and says why, and stays a new entry when the clock is listed again', () => {
+  it('lets go of the clock and says why, and still has nothing loaded when the clock is listed again', () => {
     // Arrange: the endurance clock on air and loaded with "Editar".
     const { fakeServer } = renderQuickEditPanelWithTheseInstancesOnAir([
       buildEnduranceClockOnTheClockLayer(),
@@ -213,9 +172,10 @@ describe("the line when the edited instance's graphic is no longer listed", () =
       name: 'graphics',
       slice: [buildLowerThirdFixtureGraphic()],
     });
-    const headerWhileTheClockIsNotListed = readQuickEditHeader();
+    const isAHeadingShownWhileTheClockIsNotListed =
+      screen.queryByRole('heading', { level: 3 }) !== null;
     const lineWhileTheClockIsNotListed = screen.queryByText(
-      'O gráfico do que você editava na camada Relógio não está mais na lista do servidor. O painel voltou a ser uma nova entrada.',
+      'O gráfico do que você editava na camada Relógio não está mais na lista do servidor.',
     );
     fakeServer.sendMessage({
       type: 'slice',
@@ -223,17 +183,18 @@ describe("the line when the edited instance's graphic is no longer listed", () =
       slice: [buildRaceClockGraphic(), buildLowerThirdFixtureGraphic()],
     });
 
-    // Assert: a new entry with a line saying why, and still a new entry afterwards.
-    expect(headerWhileTheClockIsNotListed, 'without its graphic the clock cannot be edited').toBe(
-      'Nova entrada — não altera nenhum item',
-    );
+    // Assert: nothing loaded, with a line saying why, and still nothing loaded afterwards.
+    expect(
+      isAHeadingShownWhileTheClockIsNotListed,
+      'without its graphic the clock cannot be edited',
+    ).toBe(false);
     expect(
       lineWhileTheClockIsNotListed,
       'the panel must say in one line why it let go of the clock',
     ).not.toBeNull();
     expect(
-      readQuickEditHeader(),
+      screen.queryByRole('heading', { level: 3 }),
       'once let go, the clock is not edited again by itself when its graphic comes back',
-    ).toBe('Nova entrada — não altera nenhum item');
+    ).toBeNull();
   });
 });

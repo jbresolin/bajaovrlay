@@ -3,13 +3,11 @@ import type { Graphic, Instance, Item, Layer } from '@bajaovrlay/shared';
 import { Button } from '@/components/ui/button';
 import { ptBR } from '@/i18n/ptBR';
 
-import type { LostQuickEditTarget, QuickEditMode } from './quickEditMode';
-
 const texts = ptBR.playout.quickEdit;
 
-/** What the heading needs: the panel's mode and the slices that name things. */
+/** What the heading needs: the instance loaded, and the slices that name things. */
 export type QuickEditHeadingProps = {
-  mode: QuickEditMode;
+  instanceBeingEdited: Instance;
   layers: Layer[];
   graphics: Graphic[];
   items: Item[];
@@ -17,43 +15,27 @@ export type QuickEditHeadingProps = {
 };
 
 /**
- * The top of "Edição rápida", saying what a press of its buttons will change:
- * "Nova entrada — não altera nenhum item", or "Editando: Relógio · Largada do enduro ·
- * No ar" with a "Nova entrada" button to let go of that instance. When the instance
- * being edited is gone, one line under the heading says whether it left or was replaced.
- * The heading is an h3 so a screen reader (and a test) finds it as the panel's one
- * sub-heading under "Edição rápida".
+ * The top of "Edição rápida" while an instance is loaded, saying what a press of its
+ * button changes: "Editando: Relógio · Largada do enduro · No ar", with "Parar de editar"
+ * to let go of that instance. The heading is an h3 so a screen reader (and a test) finds
+ * it as the panel's one sub-heading under "Edição rápida".
  */
 export function QuickEditHeading(props: QuickEditHeadingProps) {
-  const { mode, layers, graphics, items } = props;
-
-  if (mode.kind === 'editingInstance') {
-    const instance = mode.instanceBeingEdited;
-    const outputWord = instance.target === 'program' ? texts.onProgramWord : texts.inPreviewWord;
-    return (
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">
-          {texts.editingHeader(
-            nameLayer(layers, instance.layerId),
-            nameInstance(instance, graphics, items),
-            outputWord,
-          )}
-        </h3>
-        <Button type="button" size="xs" variant="outline" onClick={props.onStopEditingPressed}>
-          {texts.stopEditingButton}
-        </Button>
-      </div>
-    );
-  }
-
+  const { instanceBeingEdited, layers, graphics, items } = props;
+  const outputWord =
+    instanceBeingEdited.target === 'program' ? texts.onProgramWord : texts.inPreviewWord;
   return (
-    <div className="flex flex-col gap-1">
-      <h3 className="text-sm font-medium">{texts.newTakeHeader}</h3>
-      {mode.lostTarget === undefined ? null : (
-        <p role="status" className="text-sm text-muted-foreground">
-          {describeLostTarget(mode.lostTarget, nameLayer(layers, mode.lostTarget.layerId))}
-        </p>
-      )}
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h3 className="text-sm font-medium">
+        {texts.editingHeader(
+          nameLayer(layers, instanceBeingEdited.layerId),
+          nameInstance(instanceBeingEdited, graphics, items),
+          outputWord,
+        )}
+      </h3>
+      <Button type="button" size="xs" variant="outline" onClick={props.onStopEditingPressed}>
+        {texts.stopEditingButton}
+      </Button>
     </div>
   );
 }
@@ -65,8 +47,8 @@ function nameLayer(layers: Layer[], layerId: string): string {
 
 /**
  * An instance in the words the operator knows it by: the label of the item it was taken
- * from, or the graphic's name for one taken by hand (or whose item was deleted since),
- * as the lines under the Prévia monitor name a preview.
+ * from, or the graphic's name for one with no item (taken by hand before BAJAOVRLAY-37,
+ * or whose item was deleted since), as the lines under the Prévia monitor name a preview.
  */
 function nameInstance(instance: Instance, graphics: Graphic[], items: Item[]): string {
   const itemTaken = items.find((item) => item.id === instance.itemId);
@@ -75,20 +57,4 @@ function nameInstance(instance: Instance, graphics: Graphic[], items: Item[]): s
   }
   const graphic = graphics.find((candidate) => candidate.id === instance.graphicId);
   return graphic?.manifest.name ?? instance.graphicId;
-}
-
-/** The one line that says what became of the instance the panel was editing. */
-function describeLostTarget(lostTarget: LostQuickEditTarget, layerName: string): string {
-  if (lostTarget.whatHappened === 'graphicNoLongerListed') {
-    return texts.targetGraphicNoLongerListed(layerName);
-  }
-  const wasReplaced = lostTarget.whatHappened === 'replaced';
-  if (lostTarget.output === 'program') {
-    return wasReplaced
-      ? texts.targetReplacedOnProgram(layerName)
-      : texts.targetLeftProgram(layerName);
-  }
-  return wasReplaced
-    ? texts.targetReplacedInPreview(layerName)
-    : texts.targetLeftPreview(layerName);
 }

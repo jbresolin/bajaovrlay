@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import type { CommandError, Item, UpdateItemFieldsCommand } from '@bajaovrlay/shared';
 
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
+import { removeKeysFromFieldsChangedOnAirOfItem } from '../fieldsChangedOnAir.js';
 import {
   findRefusalOfTakeTimeFieldsForGraphic,
   listKeysOfTakeTimeFields,
@@ -19,7 +20,9 @@ import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js'
  * drops one sent anyway. Refused if the item or the new layer does not exist, or if a
  * field value in the command says takeTime and the item's graphic does not mark that
  * field as a wall-clock moment (the check and the message of a take).
- * An update that leaves the item exactly as it was hands back the same slices.
+ * An update that leaves the item exactly as it was hands back the same slices. A field
+ * whose stored value changed leaves the list of fields changed on air of the item's live
+ * instances, on program and in preview.
  * What could go wrong: a graphic already on air from this item keeps the data and the
  * layer it was taken with; the change shows only the next time the item is taken, so
  * after a layer change the old instance stays on its layer beside the next take.
@@ -51,7 +54,18 @@ export function reduceUpdateItemFields(
     return { status: 'applied', slices };
   }
   const itemsAfter = slices.items.map((item) => (item.id === itemBefore.id ? itemAfter : item));
-  return { status: 'applied', slices: { ...slices, items: itemsAfter } };
+  // A field whose stored value this save changed is the item's newest word on it: it
+  // leaves the "alterado no ar" list of the item's live instances, so a later "Salvar no
+  // item" cannot write the older value from the air over it (gate 2 of PR #15).
+  const keysOfFieldsChanged = Object.keys(itemAfter.fields).filter(
+    (fieldKey) => !isDeepStrictEqual(itemAfter.fields[fieldKey], itemBefore.fields[fieldKey]),
+  );
+  const instancesAfter = removeKeysFromFieldsChangedOnAirOfItem(
+    slices.instances,
+    itemBefore.id,
+    keysOfFieldsChanged,
+  );
+  return { status: 'applied', slices: { ...slices, items: itemsAfter, instances: instancesAfter } };
 }
 
 /**

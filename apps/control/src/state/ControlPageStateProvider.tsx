@@ -2,7 +2,7 @@ import type { CommandInput } from '@bajaovrlay/shared';
 import { createContext, type ReactNode, useContext } from 'react';
 import { useStore } from 'zustand';
 
-import type { SendCommand } from './serverConnection';
+import type { CommandResult, SendCommand } from './serverConnection';
 import type { ServerState, ServerStateStore } from './serverStateStore';
 
 /** What every component under the provider can reach: the store and the way to send. */
@@ -69,6 +69,26 @@ export function useReadServerStateNow(): () => ServerState {
 /** Whether the page can send commands right now (it holds a hello from the server). */
 export function useIsConnectedToServer(): boolean {
   return useServerState((state) => state.connectionStatus === 'connected');
+}
+
+/**
+ * Returns a function that sends a command and resolves to the server's ok answer, or to
+ * null when the command was not accepted (refused, unanswered, no connection). For a
+ * press that needs what the answer says: the item editor's "Salvar e disparar" reads the
+ * id of the item a createItem made. It never rejects, for the reason useSendCommand
+ * gives below.
+ */
+export function useSendCommandAndReadItsAnswer(): (
+  command: CommandInput,
+) => Promise<CommandResult | null> {
+  const { sendCommand } = useControlPageState();
+  return async (command) => {
+    try {
+      return await sendCommand(command);
+    } catch {
+      return null;
+    }
+  };
 }
 
 /**

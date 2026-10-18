@@ -82,6 +82,16 @@ export const ptBR = {
     unsupportedFieldKind: (fieldKey: string, fieldKind: string) =>
       `O campo "${fieldKey}" usa um valor do tipo "${fieldKind}", que o servidor só vai saber resolver no marco M2 (BAJAOVRLAY-20). Por enquanto, preencha o campo com um valor literal.`,
   },
+  // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
+  // each goes with a stable code. The layer is named as the operator reads it.
+  onAirChangeErrors: {
+    instanceWithoutItem: (layerName: string) =>
+      `O que está na camada ${layerName} não veio de um item. Use "Salvar como item".`,
+    previewWithoutItem: (layerName: string) =>
+      `A prévia da camada ${layerName} não veio de um item e não pode ir ao ar. Descarte-a e use um item.`,
+    nothingChangedOnAir: (itemLabel: string) =>
+      `Nada foi alterado no ar desde que o item "${itemLabel}" entrou; não há o que salvar.`,
+  },
   // Refusals of the quick-fire panel commands; each goes with a stable code. A panel is
   // named by its name when the server has it, and by id when it was not found.
   quickFirePanelErrors: {

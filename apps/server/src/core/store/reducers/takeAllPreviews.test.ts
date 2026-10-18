@@ -64,7 +64,7 @@ import {
   mainSessionRundownId,
 } from './rundownSlices.testSupport.js';
 
-/** Builds the lower third of team 42 previewed by hand on the ticker layer instead. */
+/** Builds the lower third of team 42, previewed by hand from its shortcut, on the ticker layer instead. */
 function buildTeam42LowerThirdPreviewedOnTheTicker() {
   return { ...buildTeam42LowerThirdOnPreview(), layerId: 'ticker' };
 }
@@ -121,6 +121,7 @@ describe('takeAllPreviews that takes the whole set', () => {
         currentStep: 0,
         status: 'loading',
         takenAt: '2026-10-09T14:47:30.250Z',
+        itemId: 'item-atalho-tarja-baja-ufpr',
       },
       {
         id: `${contextOfTheLaterTake.newInstanceId}-clock`,

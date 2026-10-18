@@ -87,11 +87,12 @@ describe('an item whose clock starts at the take, through the store', () => {
 
     // Assert: both commands accepted (the take passed the race clock's own schema); the
     // instance carries 14:32:05 in milliseconds, the moment its takenAt and the event log
-    // say; the database holds the same instance; the item still says takeTime.
+    // say; the database holds the same instance; the item still says takeTime. The
+    // answer to the createItem names the item it made.
     expect(
       [outcomeOfCreate, outcomeOfTake],
       'creating and taking a takeTime item must be accepted',
-    ).toEqual([{ ok: true }, { ok: true }]);
+    ).toEqual([{ ok: true, createdItemId: idOfTheStartItem }, { ok: true }]);
     const slicesAfter = store.readAllSlices();
     const instanceOnAir = slicesAfter.instances[0];
     expect(

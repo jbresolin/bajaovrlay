@@ -21,7 +21,7 @@ export type SchemaFormOnTestPage = {
   readFormValues: () => SchemaFormValues;
   /** Which fields react-hook-form counts as changed since the form was filled. */
   readDirtyFields: () => SchemaFormDirtyFields;
-  /** Checks the whole form, as a press on "Colocar no ar" does; answers "is it valid?". */
+  /** Checks the whole form, as a press of a save or send button does; answers "is it valid?". */
   checkTheForm: () => Promise<boolean>;
 };
 

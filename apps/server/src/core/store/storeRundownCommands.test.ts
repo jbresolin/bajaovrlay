@@ -87,7 +87,7 @@ function createStoreOnFreshDatabase() {
 }
 
 describe('createItem through the store', () => {
-  it('answers ok and keeps the item in memory and in the database, with the id the store made', () => {
+  it('answers ok naming the new item, and keeps it in memory and in the database', () => {
     // Arrange: a freshly booted store, with the seeded rundown and no items.
     const { store, database } = createStoreOnFreshDatabase();
 
@@ -97,9 +97,13 @@ describe('createItem through the store', () => {
       operatorActor,
     );
 
-    // Assert: ok; one item with the store's id at position 0, neutral and without notes
+    // Assert: ok, naming the id the store made (the item editor's "Salvar e disparar"
+    // takes it next); one item with that id at position 0, neutral and without notes
     // because the command left those out; and the database holds the same list.
-    expect(outcome, 'a valid createItem must answer ok').toEqual({ ok: true });
+    expect(outcome, 'a valid createItem must answer ok with the new item id').toEqual({
+      ok: true,
+      createdItemId: 'item-1',
+    });
     const itemsInMemory = store.readAllSlices().items;
     expect(
       itemsInMemory.map((item) => [item.id, item.label, item.order, item.color, item.notes]),
@@ -109,6 +113,21 @@ describe('createItem through the store', () => {
     expect(storedItemsRow?.json, 'the database must hold the same items as memory').toEqual(
       itemsInMemory,
     );
+  });
+
+  it('names no item in the answer to a command that creates none', () => {
+    // Arrange: a store holding "Largada do enduro".
+    const { store } = createStoreOnFreshDatabase();
+    store.applyCommand(buildCreateClockItemCommand('Largada do enduro', 'green'), operatorActor);
+
+    // Act: rename that item, which creates nothing.
+    const outcome = store.applyCommand(
+      { type: 'updateItemFields', itemId: 'item-1', label: 'Largada do enduro — 10h' },
+      operatorActor,
+    );
+
+    // Assert: a plain ok; only a createItem names an item.
+    expect(outcome, 'an answer may name an item only when one was created').toEqual({ ok: true });
   });
 
   it('gives two items different ids when no id maker is given', () => {

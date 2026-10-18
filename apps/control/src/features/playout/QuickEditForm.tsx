@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 
 import { CardContent, CardFooter } from '@/components/ui/card';
 import {
-  buildEmptySchemaFormValues,
   buildSchemaFormResolver,
   buildSchemaFormValuesFromDataOnAir,
   describeSchemaFormFromDataSchema,
@@ -22,27 +21,24 @@ import { useTimeOnScreenInQuickEdit } from './useTimeOnScreenInQuickEdit';
 // the same page, and with equal ids its labels would point at this panel's controls.
 const controlIdPrefixOfQuickEdit = 'quick-edit-field';
 
-/** What the form needs: its graphic, the instance loaded (if any) and where to send. */
+/** What the form needs: its graphic and the instance loaded. */
 export type QuickEditFormProps = {
   graphic: Graphic;
-  /** The instance loaded from "Camadas", in its newest copy, or undefined for a new entry. */
-  instanceBeingEdited: Instance | undefined;
-  /** The loaded instance's layer, or the layer chosen for a new entry. */
-  layerIdOfTheCommands: string;
+  /** The instance loaded from "Camadas", in its newest copy: on air, or in preview. */
+  instanceBeingEdited: Instance;
 };
 
 /**
  * The form of one graphic in "Edição rápida", generated from the graphic's manifest
- * (features/schemaForm), with its buttons (QuickEditButtons.tsx) and their commands
- * (useQuickEditCommands.ts). "Colocar no ar" and "Prévia" send the form as it stands to
- * the layer of the commands. "Atualizar", drawn only while an instance on air is loaded,
- * sends `updateInstanceData` for THAT instance's id with only the fields the operator
- * changed; the server keeps the instance, so the graphic changes in place.
+ * (features/schemaForm), with its button (QuickEditButtons.tsx) and its command
+ * (useQuickEditCommands.ts). "Atualizar" ("Atualizar prévia" for a preview) sends
+ * `updateInstanceData` for THAT instance's id with only the fields the operator changed;
+ * the server keeps the instance, so the graphic changes in place.
  *
  * "Changed" is react-hook-form's `dirtyFields`: a field that differs from the value the
  * form was last filled with. So while an instance is loaded the form is filled from it
- * whenever it changes, and again after every command the server accepts. A new entry is
- * never filled from the air. A field the server fills with the moment of the command
+ * whenever it changes, and again after every command the server accepts. A field the
+ * server fills with the moment of the command
  * ("Momento da entrada no ar") is named in the command's `takeTimeFieldKeys`; this page
  * never reads its own clock to build data.
  *
@@ -50,17 +46,15 @@ export type QuickEditFormProps = {
  * describes a clock (clockFieldsOfGraphic.ts), the untouched time field of a loaded clock
  * shows the time on screen right now (useTimeOnScreenInQuickEdit.ts) while the form goes
  * on holding the reading of the instance. So that field stays "unchanged": "Atualizar"
- * does not send it, and "Colocar no ar" sends the reading as it is, time and moment
- * together, which puts the same clock on screen without a jump.
+ * does not send it.
  *
- * The panel draws this component with a React `key` that changes at every "Editar" and
- * every graphic chosen, so those start a fresh form. When the loaded instance goes, the
- * key stays and so does everything typed. What could go wrong: a graphic whose package
- * is rebuilt with another schema while the page is open keeps the values of the old form
- * until the page is reloaded.
+ * The panel draws this component with a React `key` that changes at every "Editar", so
+ * each press starts a fresh form; when the loaded instance goes, the panel draws no form
+ * at all. What could go wrong: a graphic whose package is rebuilt with another schema
+ * while the page is open keeps the values of the old form until the next "Editar".
  */
 export function QuickEditForm(props: QuickEditFormProps) {
-  const { graphic, instanceBeingEdited, layerIdOfTheCommands } = props;
+  const { graphic, instanceBeingEdited } = props;
 
   // Reading the manifest's schema gives a new description every time, and the effect
   // further down refills the form whenever its inputs change. `useMemo` keeps the
@@ -72,25 +66,23 @@ export function QuickEditForm(props: QuickEditFormProps) {
     [dataSchemaOfTheGraphic],
   );
 
-  // What the form shows of the loaded instance, or undefined for a new entry. Worked out
-  // on every draw (it is a handful of fields) for the line that names the fields that
-  // could not be read, and for the values the form starts with.
-  const formValuesReadFromTheInstance =
-    instanceBeingEdited === undefined
-      ? undefined
-      : buildSchemaFormValuesFromDataOnAir(description, instanceBeingEdited.resolvedData);
+  // What the form shows of the loaded instance. Worked out on every draw (it is a handful
+  // of fields) for the line that names the fields that could not be read, and for the
+  // values the form starts with.
+  const formValuesReadFromTheInstance = buildSchemaFormValuesFromDataOnAir(
+    description,
+    instanceBeingEdited.resolvedData,
+  );
   const labelsOfFieldsOnAirThatCouldNotBeRead =
-    formValuesReadFromTheInstance?.labelsOfFieldsThatCouldNotBeRead ?? [];
+    formValuesReadFromTheInstance.labelsOfFieldsThatCouldNotBeRead;
 
-  // The form starts with what the loaded instance holds ("Editar" draws a fresh form),
-  // and with the manifest's defaults for a new entry. `useState` keeps the instance the
-  // first draw read, so the effect below can tell "this is what the form already started
-  // with" from news that arrived later.
+  // The form starts with what the loaded instance holds ("Editar" draws a fresh form).
+  // `useState` keeps the instance the first draw read, so the effect below can tell "this
+  // is what the form already started with" from news that arrived later.
   const [instanceAtFirstDraw] = useState(instanceBeingEdited);
   const form = useForm<SchemaFormValues>({
     // react-hook-form uses these at the first draw only.
-    defaultValues:
-      formValuesReadFromTheInstance?.formValues ?? buildEmptySchemaFormValues(description),
+    defaultValues: formValuesReadFromTheInstance.formValues,
     resolver: buildSchemaFormResolver(description),
   });
   const resetForm = form.reset;
@@ -105,24 +97,22 @@ export function QuickEditForm(props: QuickEditFormProps) {
   void form.formState.isDirty;
 
   // The time on screen for the time field of a loaded clock; undefined for every other
-  // graphic, for a new entry, and once the operator changed the clock's time or moment.
+  // graphic, and once the operator changed the clock's time or moment.
   const timeOnScreenForTheTimeField = useTimeOnScreenInQuickEdit({
     clockFieldKeys: findClockFieldKeysOfGraphic(graphic.manifest.v_baja?.updateRule, description),
-    dataOnAir: instanceBeingEdited?.resolvedData,
+    dataOnAir: instanceBeingEdited.resolvedData,
     fieldsTheOperatorChanged,
   });
 
   const commands = useQuickEditCommands({
-    graphic,
     description,
     form,
     instanceBeingEdited,
-    layerIdOfTheCommands,
     fieldsTheOperatorChanged,
   });
 
-  // While a press is being checked and its command waits for the server's answer every
-  // button is off, so an impatient second click cannot send the graphic to air twice.
+  // While a press is being checked and its command waits for the server's answer the
+  // button is off, so an impatient second click cannot send the same change twice.
   // The form keeps this flag itself instead of reading react-hook-form's `isSubmitting`:
   // every `reset` switches that one off, and the form is reset whenever news about the
   // graphic arrives, which can be in the middle of the wait.
@@ -131,10 +121,9 @@ export function QuickEditForm(props: QuickEditFormProps) {
   // Whenever the loaded instance changes (another operator changed it, or this form's own
   // command was accepted) the form follows it. `keepDirtyValues` is what protects an edit
   // the operator has not sent yet: changed fields keep their value, untouched fields take
-  // the instance's value. With no instance loaded (a new entry, or the loaded one gone)
-  // the form is left as it is, so "Colocar no ar" puts the same thing back. `keepErrors`
-  // keeps the message under a badly typed field next to its text, and `keepIsSubmitted` keeps the
-  // form checking that field again as the operator corrects it. What could go wrong:
+  // the instance's value. `keepErrors` keeps the message under a badly typed field next
+  // to its text, and `keepIsSubmitted` keeps the form checking that field again as the
+  // operator corrects it. What could go wrong:
   // react-hook-form works out again which fields differ from the air only at the
   // operator's next change to any field, not when the news arrives. Until then a field
   // counts as changed even if the air has come to hold the very value the operator
@@ -150,7 +139,7 @@ export function QuickEditForm(props: QuickEditFormProps) {
   // same between messages, so the form is not refilled on every draw.
   useEffect(() => {
     const isWhatTheFormStartedWith = instanceBeingEdited === instanceAtFirstDraw;
-    if (instanceBeingEdited === undefined || isWhatTheFormStartedWith) {
+    if (isWhatTheFormStartedWith) {
       return;
     }
     const formValuesOfTheInstance = buildSchemaFormValuesFromDataOnAir(
@@ -164,17 +153,14 @@ export function QuickEditForm(props: QuickEditFormProps) {
     });
   }, [instanceBeingEdited, instanceAtFirstDraw, description, resetForm]);
 
-  // Each runs its command only when every field passed its rule; otherwise
-  // react-hook-form puts the messages under the fields and sends nothing.
-  const checkFormThenTake = form.handleSubmit(commands.sendFormAsTake);
-  const checkFormThenPreview = form.handleSubmit(commands.sendFormAsPreview);
+  // It runs its command only when every field passed its rule; otherwise react-hook-form
+  // puts the messages under the fields and sends nothing.
   const checkFormThenUpdate = form.handleSubmit(commands.sendChangedFieldsAsUpdate);
-  const checkFormThenOpenItemEditor = form.handleSubmit(commands.openItemEditorWithTheForm);
 
-  // What a press on any of the buttons does: all of them go off, the form is checked
-  // and, if it passes, sent; the buttons come back whatever the outcome (accepted,
-  // refused, no answer within 5 s, or a field that failed its rule).
-  async function runWithEveryButtonOff(checkFormThenSend: () => Promise<void>): Promise<void> {
+  // What a press does: the button goes off, the form is checked and, if it passes, sent;
+  // the button comes back whatever the outcome (accepted, refused, no answer within 5 s,
+  // or a field that failed its rule).
+  async function runWithTheButtonOff(checkFormThenSend: () => Promise<void>): Promise<void> {
     setIsWaitingForTheServer(true);
     try {
       await checkFormThenSend();
@@ -184,14 +170,14 @@ export function QuickEditForm(props: QuickEditFormProps) {
   }
 
   return (
-    // The buttons are plain buttons, not submit buttons, and the form's own submit is
-    // cancelled: pressing Enter in a text field must never put a graphic on air.
+    // The button is a plain button, not a submit button, and the form's own submit is
+    // cancelled: pressing Enter in a text field must never change what is on air.
     <form onSubmit={(event) => event.preventDefault()} noValidate className="contents">
       <CardContent className="flex flex-col gap-3">
         {labelsOfFieldsOnAirThatCouldNotBeRead.length > 0 && (
           <p role="status" className="text-sm text-muted-foreground">
             {describeFieldsThatCouldNotBeRead(
-              instanceBeingEdited?.target,
+              instanceBeingEdited.target,
               labelsOfFieldsOnAirThatCouldNotBeRead.join(', '),
             )}
           </p>
@@ -206,12 +192,9 @@ export function QuickEditForm(props: QuickEditFormProps) {
       <CardFooter className="flex flex-wrap items-center gap-3">
         <QuickEditButtons
           isWaitingForTheServer={isWaitingForTheServer}
-          isUpdateOffered={instanceBeingEdited?.target === 'program'}
+          outputOfTheInstance={instanceBeingEdited.target}
           isTheErrorOfThePageFromThisForm={commands.isTheErrorOfThePageFromThisForm}
-          onTakePressed={() => runWithEveryButtonOff(checkFormThenTake)}
-          onPreviewPressed={() => runWithEveryButtonOff(checkFormThenPreview)}
-          onUpdatePressed={() => runWithEveryButtonOff(checkFormThenUpdate)}
-          onSaveAsItemPressed={() => void checkFormThenOpenItemEditor()}
+          onUpdatePressed={() => runWithTheButtonOff(checkFormThenUpdate)}
         />
       </CardFooter>
     </form>
@@ -220,11 +203,10 @@ export function QuickEditForm(props: QuickEditFormProps) {
 
 /**
  * The line naming the fields the form could not read from the loaded instance, in the
- * words of the buttons that instance has: a loaded preview has "Prévia" in place of
- * "Atualizar", so its line must not promise what "Atualizar" does.
+ * words of the button that instance has: "Atualizar", or "Atualizar prévia".
  */
 function describeFieldsThatCouldNotBeRead(
-  outputOfTheInstance: Instance['target'] | undefined,
+  outputOfTheInstance: Instance['target'],
   fieldLabels: string,
 ): string {
   if (outputOfTheInstance === 'preview') {

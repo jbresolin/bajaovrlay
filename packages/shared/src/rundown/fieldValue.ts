@@ -9,7 +9,7 @@ function isValuePresent(value: unknown): boolean {
  * A field value typed by the operator and used exactly as typed. `value` may be
  * anything JSON can hold (text, number, boolean, null, list, object) but must be there:
  * a literal with no value would reach the graphic as a missing field.
- * `value` is `unknown`, like `data` in takeGraphic, and not Zod's recursive JSON type,
+ * `value` is `unknown`, like `data` in updateInstanceData, and not Zod's recursive JSON type,
  * because the OpenAPI generator behind GET /api/v1/openapi.json cannot describe that one.
  * What could go wrong: this schema does not know the graphic, so a text where the
  * graphic wants a number passes here and is only refused by the server at the take.

@@ -21,6 +21,8 @@
  *     as the operator reads it. An unknown layer is refused too.
  *   - The take goes through the checks of every take: if the graphic is no longer
  *     registered, or its schema no longer accepts the data or the stamp, it is refused.
+ *   - A preview with no item (which no command makes since BAJAOVRLAY-37, so only a
+ *     damaged state holds one) is refused with INSTANCE_WITHOUT_ITEM, and nothing changes.
  *
  * What these tests deliberately do not cover:
  *   - What the take does to the rundown's cursor; takePreviewCursor.test.ts covers it.
@@ -298,5 +300,41 @@ describe('takePreview that must be refused', () => {
       status: 'refused',
       error: expectedError,
     });
+  });
+});
+
+describe('takePreview of a preview that came from no item', () => {
+  it('is refused with INSTANCE_WITHOUT_ITEM, naming the layer, and changes nothing', () => {
+    // Arrange: the green clock on air, and on the clock preview a red flag clock that
+    // names no item, as only a damaged state could hold now.
+    const previewWithoutItem: Instance = {
+      ...buildYellowFlagItemOnPreview(),
+      resolvedData: buildEnduroClockData('red'),
+    };
+    delete previewWithoutItem.itemId;
+    const slicesBefore = buildRaceDayWithInstances([
+      buildGreenFlagClockOnProgram(),
+      previewWithoutItem,
+    ]);
+    const copyOfSlicesBefore = structuredClone(slicesBefore);
+
+    // Act: press "Tomar" for the clock layer.
+    const outcome = reduceCommand(
+      slicesBefore,
+      { type: 'takePreview', layerId: 'clock' },
+      contextOfTheLaterTake,
+    );
+
+    // Assert: refused in pt-BR, naming the layer as the operator reads it, and the clock
+    // on air and the preview are exactly as they were.
+    expect(outcome, 'a preview with no item must never go on air').toEqual({
+      status: 'refused',
+      error: {
+        code: 'INSTANCE_WITHOUT_ITEM',
+        message:
+          'A prévia da camada Relógio não veio de um item e não pode ir ao ar. Descarte-a e use um item.',
+      },
+    });
+    expect(slicesBefore, 'a refused take must change nothing').toEqual(copyOfSlicesBefore);
   });
 });

@@ -35,6 +35,13 @@ export { AutoOutDelayMsSchema } from './autoOutDelay.js';
 export { type CreateItemCommand, CreateItemCommandSchema } from './createItem.js';
 // updateItemFields: change some field values, the label, colour, notes or auto-out.
 export { type UpdateItemFieldsCommand, UpdateItemFieldsCommandSchema } from './updateItemFields.js';
+// saveOnAirChangesIntoItem: "Salvar no item", writing what was changed on air into the item.
+export {
+  type SaveOnAirChangesIntoItemCommand,
+  SaveOnAirChangesIntoItemCommandSchema,
+  type WallClockFieldsChoice,
+  WallClockFieldsChoiceSchema,
+} from './saveOnAirChangesIntoItem.js';
 // deleteItem: remove an item from its rundown.
 export { type DeleteItemCommand, DeleteItemCommandSchema } from './deleteItem.js';
 // reorderItems: put a rundown's items in a new order, given as the full list of ids.

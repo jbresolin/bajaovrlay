@@ -30,8 +30,11 @@ export type OpenServerSocket = (
   handlers: ServerSocketHandlers,
 ) => OpenedServerSocket;
 
-/** The server accepted the command. A refused command never gets here: sendCommand rejects. */
-export type CommandResult = { ok: true; requestId: string };
+/**
+ * The server accepted the command. A refused command never gets here: sendCommand
+ * rejects. After a createItem the server names the item it made (`createdItemId`).
+ */
+export type CommandResult = { ok: true; requestId: string; createdItemId?: string };
 
 /** Sends one command and waits for the server's answer to it. */
 export type SendCommand = (command: CommandInput) => Promise<CommandResult>;
@@ -170,7 +173,11 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       if (serverStateStore.getState().lastCommandError !== null) {
         serverStateStore.getState().forgetCommandError();
       }
-      commandAwaitingThisResult.resolve({ ok: true, requestId });
+      const commandResult: CommandResult =
+        message.createdItemId === undefined
+          ? { ok: true, requestId }
+          : { ok: true, requestId, createdItemId: message.createdItemId };
+      commandAwaitingThisResult.resolve(commandResult);
       return;
     }
     commandAwaitingThisResult.reject(

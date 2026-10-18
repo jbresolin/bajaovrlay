@@ -18,8 +18,9 @@ import { moveRundownCursorsPastItemsTakenTogether } from './rundownCursor.js';
  * Either way the layer's marker is gone afterwards.
  *
  * Refused if the layer does not exist, if it has neither a preview nor a marker
- * (LAYER_PREVIEW_EMPTY), or for any reason takeGraphic refuses; nothing changes then,
- * and the preview stays.
+ * (LAYER_PREVIEW_EMPTY), if the preview came from no item (INSTANCE_WITHOUT_ITEM), or
+ * for any reason the take step putGraphicOnOutput refuses; nothing changes then, and
+ * the preview stays.
  */
 export function reduceTakePreview(
   slices: SlicesChangedByCommands,

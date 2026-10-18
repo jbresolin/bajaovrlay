@@ -211,8 +211,8 @@ describe('previewItem and the rundown cursor', () => {
 
 describe('previewItem on a layer that already has a preview', () => {
   it('replaces the preview of the same layer and leaves the preview of another layer', () => {
-    // Arrange: the yellow flag previewed on the clock layer, a lower third previewed by
-    // hand on its own layer, and the green clock on air.
+    // Arrange: the yellow flag previewed on the clock layer, the lower third of the
+    // "Atalhos" button previewed on its own layer, and the green clock on air.
     const slicesBefore = buildRaceDaySlicesWithRundown({
       items: buildThreeEnduroItems(),
       instances: [
@@ -239,7 +239,7 @@ describe('previewItem on a layer that already has a preview', () => {
     expect(
       instancesAfter?.map((instance) => instance.itemId),
       'the preview of the clock layer must now be the finish item',
-    ).toEqual([undefined, undefined, 'item-chegada-do-enduro']);
+    ).toEqual([undefined, 'item-atalho-tarja-baja-ufpr', 'item-chegada-do-enduro']);
   });
 });
 
@@ -255,7 +255,7 @@ describe('previewItem that must be refused', () => {
         message: 'O item "item-que-foi-excluido" não existe; ele pode ter sido excluído.',
       },
     },
-    // The item's graphic package was removed: takeGraphic's own refusal comes back.
+    // The item's graphic package was removed: the take step's own refusal comes back.
     {
       name: 'refuses an item whose graphic is not registered, as a take does',
       itemId: 'item-podio-baja-ufpr',

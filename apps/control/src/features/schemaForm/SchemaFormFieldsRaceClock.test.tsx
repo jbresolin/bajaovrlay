@@ -17,7 +17,7 @@
  *   - The flag and clock mode dropdowns offer the manifest's pt-BR labels.
  *
  * What these tests deliberately do not cover:
- *   - The commands built from this form: takeAndUpdateFromSchemaForm.test.ts and
+ *   - The commands built from this form: instanceUpdateFromSchemaForm.test.ts and
  *     itemFieldsFromSchemaForm.test.ts.
  *   - The panels that put the form on the page ("Edição rápida", the item editor).
  *   - The wording of the manifest's titles: the labels of the three number fields are

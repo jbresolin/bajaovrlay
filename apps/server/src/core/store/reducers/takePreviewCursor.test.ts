@@ -13,8 +13,9 @@
  *     nothing after the last item, which also marks the rundown as played to its end.
  *   - Taking the preview of any other item, or with the cursor on nothing, hands back the
  *     very same rundowns array.
- *   - A preview made by hand (no item), and a preview whose item was deleted meanwhile,
- *     leave the cursor alone; the instance on air still carries the deleted item's id.
+ *   - A preview of a quick-fire button (an item of no rundown), and a preview whose item
+ *     was deleted meanwhile, leave the cursor alone; the instance on air still carries
+ *     the item's id, even the deleted one's.
  *
  * What these tests deliberately do not cover:
  *   - The instance and the data that go on air; takePreview.test.ts covers them.
@@ -35,6 +36,7 @@ import {
   buildMainSessionRundown,
   buildPodiumRundown,
   buildRaceDaySlicesWithRundown,
+  buildTeam42ShortcutItem,
   buildYellowFlagItem,
 } from './rundownSlices.testSupport.js';
 
@@ -104,7 +106,7 @@ describe('takePreview that leaves the cursor alone', () => {
     items: Item[];
     previewInstance: Instance;
     layerId: string;
-    expectedItemIdOnAir: string | undefined;
+    expectedItemIdOnAir: string;
   }> = [
     // A row previewed ad hoc with its "Prévia" button while the plan points elsewhere.
     {
@@ -134,14 +136,15 @@ describe('takePreview that leaves the cursor alone', () => {
       layerId: 'clock',
       expectedItemIdOnAir: 'item-bandeira-amarela',
     },
-    // A preview made from "Edição rápida" belongs to no item, so no plan was carried out.
+    // A button of "Atalhos" previewed by hand belongs to a panel, not to the rundown, so
+    // no plan was carried out.
     {
-      name: 'does not move the cursor for a preview made by hand',
+      name: 'does not move the cursor for a preview of a quick-fire button',
       cursorItemId: 'item-bandeira-amarela',
-      items: buildThreeEnduroItems(),
+      items: [...buildThreeEnduroItems(), buildTeam42ShortcutItem(0)],
       previewInstance: buildTeam42LowerThirdOnPreview(),
       layerId: 'lower-third',
-      expectedItemIdOnAir: undefined,
+      expectedItemIdOnAir: 'item-atalho-tarja-baja-ufpr',
     },
   ];
 

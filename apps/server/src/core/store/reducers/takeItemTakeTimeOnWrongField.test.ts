@@ -5,11 +5,11 @@
  *   An item field may say `{ kind: 'takeTime' }`: "the server fills this with the moment
  *   the item goes on air". The server writes its own moment only into a field the
  *   graphic's schema declares as a whole number marked `v_baja.role: "wallClock"`. That
- *   rule holds for a take by hand (`takeTimeFieldKeys`) and must hold for an item as
+ *   rule holds for an update on air (`takeTimeFieldKeys`) and must hold for an item as
  *   well: otherwise an item could have today's date in milliseconds written into the
  *   race clock's reference TIME, and the clock on air would show about fifty-six years.
- *   takeItem hands the keys of its take-time fields to the same takeGraphic reducer a
- *   take by hand uses, so one check covers both.
+ *   takeItem hands the keys of its take-time fields to the internal take step
+ *   putGraphicOnOutput every take and preview ends in, so one check covers them all.
  *
  * What these tests prove:
  *   - An item whose take-time field is a whole number without the wall-clock mark, a
@@ -21,7 +21,7 @@
  * What these tests deliberately do not cover:
  *   - A take-time field on the race clock's reference moment, which is accepted;
  *     takeItemTakeTime.test.ts covers it.
- *   - The same check for a take by hand; takeGraphicClearedAndStampedFields.test.ts.
+ *   - The same check on the take step itself; putGraphicOnOutputClearedAndStampedFields.test.ts.
  *   - Saving such an item: createItem and updateItemFields refuse it too
  *     (createItemTakeTimeField.test.ts, updateItemFieldsTakeTimeField.test.ts). The take
  *     still checks, because an item may have been saved before that rule or before its

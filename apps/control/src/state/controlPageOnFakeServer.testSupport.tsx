@@ -10,6 +10,7 @@ import { AutoPreviewSettingProvider } from '@/features/autoPreview/AutoPreviewSe
 import { createAutoPreviewSettingStore } from '@/features/autoPreview/autoPreviewSettingStore';
 import { ItemEditorTargetProvider } from '@/features/items/ItemEditorTargetProvider';
 import { QuickEditChoiceProvider } from '@/features/playout/QuickEditChoiceProvider';
+import { QuickFireTabChoiceProvider } from '@/features/quickFire/QuickFireTabChoiceProvider';
 
 import { ControlPageStateProvider } from './ControlPageStateProvider';
 import { createFakeServerSocket } from './fakeServerSocket.testSupport';
@@ -24,6 +25,8 @@ export type ControlPageOnFakeServer = {
     listCommandsReceived: () => unknown[];
     /** The server answers the newest command with `ok: true`. */
     acceptLastCommand: () => void;
+    /** The server answers the newest command (a createItem) with `ok: true`, naming the item. */
+    acceptLastCommandNamingTheItemItCreated: (createdItemId: string) => void;
     /** The server answers the newest command with `ok: false` and this error. */
     refuseLastCommand: (error: CommandError) => void;
     /** The server sends one protocol message, for example a changed slice. */
@@ -74,7 +77,9 @@ export function renderOnControlPageStillWaitingForTheServer(
     >
       <AutoPreviewSettingProvider autoPreviewSettingStore={autoPreviewSettingStore}>
         <ItemEditorTargetProvider>
-          <QuickEditChoiceProvider>{pageContent}</QuickEditChoiceProvider>
+          <QuickEditChoiceProvider>
+            <QuickFireTabChoiceProvider>{pageContent}</QuickFireTabChoiceProvider>
+          </QuickEditChoiceProvider>
         </ItemEditorTargetProvider>
       </AutoPreviewSettingProvider>
     </ControlPageStateProvider>,
@@ -88,6 +93,8 @@ export function renderOnControlPageStillWaitingForTheServer(
       listCommandsReceived: () =>
         fakeServerSocket.listCommandMessagesReceived().map((message) => message.command),
       acceptLastCommand: () => act(() => fakeServerSocket.acceptLastCommand()),
+      acceptLastCommandNamingTheItemItCreated: (createdItemId) =>
+        act(() => fakeServerSocket.acceptLastCommandNamingTheItemItCreated(createdItemId)),
       refuseLastCommand: (error) => act(() => fakeServerSocket.refuseLastCommand(error)),
       sendMessage: (message) => act(() => fakeServerSocket.sendMessage(message)),
       dropConnection: () => act(() => fakeServerSocket.dropConnection()),

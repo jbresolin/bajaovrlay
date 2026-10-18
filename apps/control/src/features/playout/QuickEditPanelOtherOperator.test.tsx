@@ -16,8 +16,8 @@
  *   - A field this operator cleared, followed by someone else's data that has no such
  *     field either, is no longer a pending change once the operator changes something
  *     else: "Atualizar" sends the other change and no null for the cleared field.
- *   - When someone else takes the graphic off air, the form is left exactly as it is.
- *   - While a command waits for the server's answer both buttons stay off, even if news
+ *   - When someone else takes the graphic off air, the panel says so and the form goes.
+ *   - While a command waits for the server's answer the button stays off, even if news
  *     from someone else arrives in between, so nothing can be sent twice.
  *   - A message under a badly typed field stays there when news from someone else arrives.
  *
@@ -186,7 +186,7 @@ describe('the quick edit panel when someone else changes the graphic on air', ()
     fakeServer.acceptLastCommand();
   });
 
-  it('leaves the form as it is when someone else takes the graphic off air', () => {
+  it('says so and drops the half-typed edit when someone else takes the graphic off air', () => {
     // Arrange: the lower third on air, and the operator half-way through correcting the
     // name (typed, not sent).
     const { fakeServer } = renderPanelWithTheLowerThirdOfCar42OnAir();
@@ -195,37 +195,20 @@ describe('the quick edit panel when someone else changes the graphic on air', ()
     // Act: a second operator presses "Limpar" on the "Tarja" layer.
     letASecondOperatorTakeTheLowerThirdOffAir(fakeServer);
 
-    // Assert: nothing in the form moved. The panel is still on the lower third, the edit
-    // is still there, the untouched fields still show what was on air (not the
-    // defaults), and "Atualizar" is gone, so the operator can put the same lower third
-    // back with "Colocar no ar".
+    // Assert: one line saying so, and no form left: there is nothing on air to change,
+    // and since BAJAOVRLAY-37 the panel puts nothing new up.
     expect(
-      screen.getByRole('combobox', { name: 'Gráfico a editar' }),
-      'the panel must stay on the graphic the operator was editing',
-    ).toHaveTextContent('Tarja de entrevista');
-    expect(
-      screen.getByLabelText('Nome'),
-      'an edit the operator has not sent yet must survive the graphic leaving the air',
-    ).toHaveValue('Ana Souza Lima');
-    expect(
-      screen.getByLabelText('Cargo'),
-      'the role must stay as it was, not go back to blank',
-    ).toHaveValue('Capitã');
-    expect(
-      screen.getByRole('switch', { name: 'Destaque' }),
-      'the switch must stay as it was, not go back to the default',
-    ).toBeChecked();
-    expect(
-      screen.getByLabelText('Número do carro'),
-      'the car number must stay as it was, not go back to blank',
-    ).toHaveValue(42);
+      screen.getByText('O que você editava na camada Tarja saiu do ar.'),
+      'the panel must say the lower third left the air',
+    ).toBeVisible();
+    expect(screen.queryByLabelText('Nome'), 'no form may be left to send').toBeNull();
     expect(
       screen.queryByRole('button', { name: 'Atualizar' }),
       'there is nothing to update once the graphic is off air',
     ).toBeNull();
   });
 
-  it('keeps both buttons off while a command waits for its answer, even when news from someone else arrives', async () => {
+  it('keeps the button off while a command waits for its answer, even when news from someone else arrives', async () => {
     // Arrange: the lower third on air. The operator picks FEI Baja as the team and
     // presses "Atualizar"; the server has the command and has not answered yet.
     const { fakeServer } = renderPanelWithTheLowerThirdOfCar42OnAir();
@@ -235,15 +218,11 @@ describe('the quick edit panel when someone else changes the graphic on air', ()
     // Act: before the answer, the page hears that a second operator changed the lower third.
     letASecondOperatorCorrectTheTeamAndTurnTheHighlightOff(fakeServer);
 
-    // Assert: both buttons are still off, so an impatient second click cannot send the
-    // graphic to air twice.
+    // Assert: the button is still off, so an impatient second click cannot send the same
+    // change twice.
     expect(
       screen.getByRole('button', { name: 'Atualizar' }),
       '"Atualizar" must stay off until the server answers the command already sent',
-    ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Colocar no ar' }),
-      '"Colocar no ar" must stay off until the server answers the command already sent',
     ).toBeDisabled();
     // (Then the server answers, so no command is left waiting for its 5-second timeout
     // once the test is over.)
