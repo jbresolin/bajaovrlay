@@ -12,6 +12,6 @@ timeout, stale watch; preparing a source in `sourcePreparation.ts`), then `recor
 written; caps in `recordingCaps.ts`) and `recordingsFromFolder.ts` (the list at boot,
 from each file's two ends). `adapters/` holds the simulator, the replay and httpJson
 (start at `adapters/httpJson/README.md` for a flex source); `service.ts` starts poller and
-recorder; `api.ts` is the snapshot route; one reducer file per command
+recorder; `api.ts` holds the snapshot route and the flex sample route ("Buscar da fonte"); one reducer file per command
 in `reducers/` (its README says where to start). `loadDataSourceSlices.ts` loads and
 seeds at boot. Refusals are in `dataSourceRefusals.ts`; `index.ts` lists what core may use.

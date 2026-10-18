@@ -22,6 +22,8 @@ export {
   mostRequestsPerHttpJsonSource,
   sourceEnvironmentVariablePrefix,
 } from './httpJsonConfig.js';
+// The answer of the sample route ("Buscar da fonte"): the parsed body, or the pt-BR error.
+export { type HttpJsonSampleAnswer, HttpJsonSampleAnswerSchema } from './httpJsonSampleAnswer.js';
 // The pt-BR reasons a flex source's config is refused, shared with the control page's form.
 export { ptBRHttpJsonConfig } from './ptBRHttpJsonConfig.js';
 // How often a source may be polled: 500 to 60 000 ms.

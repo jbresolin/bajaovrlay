@@ -6,7 +6,8 @@ mapping its config lists (`HttpJsonConfigSchema` in packages/shared, mapping in
 their JSON with the shared `applyFlexMapping`. One request failing fails the poll.
 
 Start at `httpJsonAdapter.ts`, then `fetchHttpJsonRequest.ts` (one GET with the poll's
-signal, no redirects, the pt-BR errors; the sample route reuses it),
+signal, no redirects, the pt-BR errors; `fetchSampleOfHttpJsonRequest.ts` reuses it for
+the sample route with a 10 s timeout),
 `httpJsonRequestAddress.ts` (query and headers, `BAJAOVRLAY_SOURCE_` variables read at
 poll time) and `responseBodyWithinCap.ts` (the body streamed, dropped past 5 MB).
 Secrets never enter state or logs: no error or log line quotes a header value or the query.

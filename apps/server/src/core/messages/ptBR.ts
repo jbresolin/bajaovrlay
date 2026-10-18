@@ -9,6 +9,9 @@ export const ptBR = {
     unexpectedServerError:
       'Erro inesperado no servidor. Procure no log do servidor o request_id desta resposta.',
     invalidStateRole: 'O parâmetro "role" aceita apenas "renderer" ou "monitor".',
+    // A sample request ("Buscar da fonte") the config schema refused without a sentence of
+    // its own; the schema's own pt-BR reason is sent whenever it has one.
+    invalidSampleRequest: 'A requisição de exemplo é inválida.',
   },
   // Answers to commands and WebSocket messages; each goes with a stable code
   // (CommandErrorCodeSchema in @bajaovrlay/shared).
@@ -212,6 +215,9 @@ export const ptBR = {
     // The poll's signal fired. The poller records its own "Tempo esgotado" sentence, with
     // the seconds, in place of this one; this one is what a caller without it reads.
     requestTimedOut: (requestId: string) => `Tempo esgotado: ${requestId} não respondeu a tempo.`,
+    // The sample route ("Buscar da fonte") gave up after its own timeout (10 s).
+    sampleRequestTimedOut: (requestId: string, timeoutSeconds: number) =>
+      `Tempo esgotado: ${requestId} não respondeu em ${timeoutSeconds.toLocaleString('pt-BR')} s.`,
     statusOutside2xx: (status: number, statusName: string, requestId: string) =>
       statusName === ''
         ? `A fonte respondeu ${String(status)} em ${requestId}`

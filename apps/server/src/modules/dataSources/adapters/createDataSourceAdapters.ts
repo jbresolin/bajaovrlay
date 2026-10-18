@@ -10,7 +10,10 @@ import type {
   PolledShapes,
 } from './dataSourceAdapter.js';
 import { createHttpJsonAdapter } from './httpJson/httpJsonAdapter.js';
-import type { ReadEnvironmentVariable } from './httpJson/httpJsonRequestAddress.js';
+import {
+  type ReadEnvironmentVariable,
+  readServerEnvironmentVariable,
+} from './httpJson/httpJsonRequestAddress.js';
 import { createReplayAdapter } from './replay/replayAdapter.js';
 import { createSimulatorAdapter } from './simulator/simulatorAdapter.js';
 
@@ -43,14 +46,10 @@ export function createDataSourceAdapters(options: DataSourceAdaptersOptions): Da
     replay: createReplayAdapter({ recordingsFolder: options.recordingsFolder }),
     httpJson: createHttpJsonAdapter({
       logger: options.logger,
-      readEnvironmentVariable: options.readSourceEnvironmentVariable ?? readProcessEnvironment,
+      readEnvironmentVariable:
+        options.readSourceEnvironmentVariable ?? readServerEnvironmentVariable,
     }),
   };
-}
-
-/** Reads one variable of the server's environment as it is now. */
-function readProcessEnvironment(variableName: string): string | undefined {
-  return process.env[variableName];
 }
 
 /**

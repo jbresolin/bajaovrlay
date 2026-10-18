@@ -8,6 +8,7 @@ recorded feeds, rebuilt from disk at boot). Each kind's config schema lives here
 (`simulatorConfig.ts`, `replayConfig.ts`, and `httpJsonConfig.ts` for the flex HTTP/JSON
 source, whose mapping is `../flexMapping/` and whose refusals are `ptBRHttpJsonConfig.ts`)
 so the control page's forms and the server's adapters check the same thing.
+`httpJsonSampleAnswer.ts` is what the sample route ("Buscar da fonte") answers.
 
 One file per command, named after it; `recordDataSourcePoll.ts` is the one only the
 server's poller sends, `recordRecordingProgress.ts` the one only the recorder sends. All are in the `Command` union of `../commands/command.ts`; their

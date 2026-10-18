@@ -11,6 +11,11 @@ import { ptBR } from '../../../../core/messages/ptBR.js';
  */
 export type ReadEnvironmentVariable = (variableName: string) => string | undefined;
 
+/** Reads one variable of the server's own environment (process.env) as it is now. */
+export function readServerEnvironmentVariable(variableName: string): string | undefined {
+  return process.env[variableName];
+}
+
 /**
  * The address and headers to send, or why the request cannot be sent. The address and
  * headers may hold secrets: they go to fetch and nowhere else (never a log, never an error).

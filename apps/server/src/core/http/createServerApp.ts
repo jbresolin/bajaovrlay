@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { requestId } from 'hono/request-id';
 
 import { createApiV1Routes } from '../../api/v1/createApiV1Routes.js';
+import type { ReadEnvironmentVariable } from '../../modules/dataSources/index.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
@@ -24,6 +25,10 @@ export type ServerAppOptions = {
   stateStore?: StateStore | undefined;
   /** Absolute path of packages/graphics, served at /graphics/<package>/ from each dist. */
   graphicPackagesFolder?: string | undefined;
+  /** How the flex sample route reads BAJAOVRLAY_SOURCE_ variables; process.env when left out. */
+  readSourceEnvironmentVariable?: ReadEnvironmentVariable | undefined;
+  /** The flex sample route's timeout; 10 s when left out (tests shorten it). */
+  sampleRequestTimeoutInMilliseconds?: number | undefined;
 };
 
 /**
@@ -43,7 +48,12 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
   if (options.stateStore !== undefined) {
     app.route(
       '/api/v1',
-      createApiV1Routes({ stateStore: options.stateStore, version: options.version }),
+      createApiV1Routes({
+        stateStore: options.stateStore,
+        version: options.version,
+        readSourceEnvironmentVariable: options.readSourceEnvironmentVariable,
+        sampleRequestTimeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
+      }),
     );
   }
   if (options.graphicPackagesFolder !== undefined) {
