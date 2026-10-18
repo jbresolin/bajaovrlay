@@ -32,6 +32,7 @@ import type { ServerMessage } from '@bajaovrlay/shared';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { startServer } from '../boot/startServer.js';
+import { createTemporaryDataFolder } from '../boot/temporaryDataFolder.testSupport.js';
 import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
@@ -62,6 +63,7 @@ async function startServerOnARandomPort() {
     databasePath: createTemporaryDatabasePath(),
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
+    dataFolder: createTemporaryDataFolder(),
   });
   onTestFinished(() => runningServer.close());
   return runningServer;

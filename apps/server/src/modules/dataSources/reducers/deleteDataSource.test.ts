@@ -12,7 +12,7 @@
  *   - An unknown source is refused with DATA_SOURCE_NOT_FOUND.
  *
  * What these tests deliberately do not cover:
- *   - The poller stopping its loop on delete; poller tests (commit 4).
+ *   - The poller stopping its loop on delete; pollerLifecycle.test.ts covers it.
  *   - A late poll of the deleted source; recordDataSourcePoll.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';

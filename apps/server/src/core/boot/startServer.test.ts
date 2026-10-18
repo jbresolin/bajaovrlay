@@ -10,13 +10,20 @@
  *   - A booted server answers GET /api/v1/state over real HTTP with the seeded layers.
  *   - A booted server has the seeded rundown and a running auto-out scheduler: an item
  *     taken with a delay leaves the air by itself (in real time, with a 40 ms delay).
+ *   - A booted server runs the data-source service: a source turned on is polled.
+ *   - close() stops the data-source poller first: no poll timer fires at the closed
+ *     database (no error is logged). That a poll answering late is dropped is proved in
+ *     modules/dataSources/pollerLifecycle.test.ts.
  *   - A migration failure makes the boot reject, so main.ts can exit non-zero.
+ *   - A boot that fails on a port already in use stops the poller it started, so a
+ *     source left on sends nothing to the closed database.
  *   - After close() the port no longer answers.
  *
  * What these tests deliberately do not cover:
  *   - main.ts itself (reading the environment, exiting on failure); it only wires
  *     these pieces together and is checked by booting it with `pnpm dev`.
  */
+import type { DataSource } from '@bajaovrlay/shared';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { committedMigrationsFolder } from '../db/openDatabase.js';
@@ -25,13 +32,21 @@ import {
   writeBrokenMigrationsFolder,
 } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
+import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
 import {
   createGraphicsFolderWithBuiltRaceClock,
   missingGraphicsFolderPath,
 } from '../store/builtGraphicsFolder.testSupport.js';
+import type { StateStore } from '../store/createStateStore.js';
 import { startServer } from './startServer.js';
+import { createTemporaryDataFolder } from './temporaryDataFolder.testSupport.js';
 
-/** The options production uses, on a random port, a temporary file and a silent logger. */
+const operatorActor = 'operador:conexao-7';
+
+/**
+ * The options production uses, on a random port, a temporary database file and data
+ * folder, and a silent logger.
+ */
 function buildBootOptions(migrationsFolder: string) {
   return {
     logger: createLogger({ level: 'silent' }),
@@ -41,7 +56,18 @@ function buildBootOptions(migrationsFolder: string) {
     databasePath: createTemporaryDatabasePath(),
     migrationsFolder,
     graphicPackagesFolder: missingGraphicsFolderPath,
+    dataFolder: createTemporaryDataFolder(),
   };
+}
+
+/** Reads the seeded "Simulador — Enduro" as the store holds it now. */
+function readTheSeededSimulator(stateStore: StateStore): DataSource | undefined {
+  return stateStore.readAllSlices().dataSources.find((source) => source.id === 'simulador-enduro');
+}
+
+/** Lets real time pass, for the few tests that watch timers of a booted server. */
+function waitInRealTime(durationInMilliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, durationInMilliseconds));
 }
 
 describe('startServer', () => {
@@ -116,6 +142,62 @@ describe('startServer', () => {
     ).toBe('sistema:auto-out');
   });
 
+  it('polls a data source turned on, through the data-source service', async () => {
+    // Arrange: a booted server, with the seeded "Simulador — Enduro" off.
+    const runningServer = await startServer(buildBootOptions(committedMigrationsFolder));
+    onTestFinished(() => runningServer.close());
+    const { stateStore } = runningServer;
+
+    // Act: the operator turns the simulator on.
+    stateStore.applyCommand(
+      { type: 'setDataSourceEnabled', sourceId: 'simulador-enduro', isEnabled: true },
+      operatorActor,
+    );
+
+    // Assert: soon a poll has been attempted (good or failed), so the poller is running.
+    await vi.waitFor(() => {
+      expect(
+        readTheSeededSimulator(stateStore)?.status.lastAttemptAtMs,
+        'the booted server must poll a source turned on',
+      ).toBeDefined();
+    });
+  });
+
+  it('stops the poller before closing the database, so no poll timer fires at it', async () => {
+    // Arrange: a booted server logging into memory, the simulator polled every half a
+    // second and polled at least once.
+    const { logger, readRecordedLines } = createRecordingLogger();
+    const runningServer = await startServer({
+      ...buildBootOptions(committedMigrationsFolder),
+      logger,
+    });
+    const { stateStore } = runningServer;
+    stateStore.applyCommand(
+      { type: 'updateDataSource', sourceId: 'simulador-enduro', pollIntervalMs: 500 },
+      operatorActor,
+    );
+    stateStore.applyCommand(
+      { type: 'setDataSourceEnabled', sourceId: 'simulador-enduro', isEnabled: true },
+      operatorActor,
+    );
+    await vi.waitFor(() => {
+      expect(
+        readTheSeededSimulator(stateStore)?.status.lastAttemptAtMs,
+        'the first poll must happen',
+      ).toBeDefined();
+    });
+
+    // Act: shut the server down, then let more than a poll interval go by.
+    await runningServer.close();
+    await waitInRealTime(700);
+
+    // Assert: nothing was logged as an error: no poll result met the closed database.
+    expect(
+      readRecordedLines().filter((line) => line.level === 'error'),
+      'no poll may be sent to a closed database',
+    ).toEqual([]);
+  });
+
   it('rejects when a migration fails, so the boot stops', async () => {
     // Arrange: boot options pointing at a migrations folder with broken SQL.
     const bootOptions = buildBootOptions(writeBrokenMigrationsFolder());
@@ -127,6 +209,42 @@ describe('startServer', () => {
     await expect(boot, 'a failed migration must stop the boot').rejects.toThrow(
       'database migration failed',
     );
+  });
+
+  it('stops the poller it started when the port is already in use', async () => {
+    // Arrange: a first boot on a database file leaves the simulator on, polled every half
+    // a second, and closes; a second server holds a port.
+    const firstBootOptions = buildBootOptions(committedMigrationsFolder);
+    const firstBoot = await startServer(firstBootOptions);
+    firstBoot.stateStore.applyCommand(
+      { type: 'updateDataSource', sourceId: 'simulador-enduro', pollIntervalMs: 500 },
+      operatorActor,
+    );
+    firstBoot.stateStore.applyCommand(
+      { type: 'setDataSourceEnabled', sourceId: 'simulador-enduro', isEnabled: true },
+      operatorActor,
+    );
+    await firstBoot.close();
+    const serverHoldingThePort = await startServer(buildBootOptions(committedMigrationsFolder));
+    onTestFinished(() => serverHoldingThePort.close());
+    const { logger, readRecordedLines } = createRecordingLogger();
+
+    // Act: boot again on that database file and on the taken port, then let more than a
+    // poll interval go by.
+    const bootError: unknown = await startServer({
+      ...firstBootOptions,
+      logger,
+      port: serverHoldingThePort.port,
+    }).catch((error: unknown) => error);
+    await waitInRealTime(700);
+
+    // Assert: the boot failed, and nothing was logged as an error since: no poll result
+    // met the closed database.
+    expect(bootError, 'a port already in use must stop the boot').toBeInstanceOf(Error);
+    expect(
+      readRecordedLines().filter((line) => line.level === 'error'),
+      'a failed boot must leave no poll running against its closed database',
+    ).toEqual([]);
   });
 
   it('stops answering on its port after close()', async () => {

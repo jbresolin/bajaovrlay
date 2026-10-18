@@ -1,5 +1,6 @@
 // The module's side of the data-source schemas: checking a config sent by the page
-// against the schema of its kind. The schemas themselves live in @bajaovrlay/shared
+// against the schema of its kind, and the Zod schemas of the module's REST route. The
+// slice and command schemas themselves live in @bajaovrlay/shared
 // (SimulatorConfigSchema, ReplayConfigSchema), so the control page's forms and the
 // adapters check exactly the same thing (decision D4).
 import {
@@ -11,6 +12,7 @@ import {
   type SimulatorConfig,
   SimulatorConfigSchema,
 } from '@bajaovrlay/shared';
+import { z } from 'zod';
 
 import { refuseInvalidDataSourceConfig, refuseUnknownRecording } from './dataSourceRefusals.js';
 
@@ -69,3 +71,8 @@ export function checkDataSourceConfig(
     }
   }
 }
+
+/** The path parameters of GET /api/v1/data-sources/{sourceId}/snapshot. */
+export const DataSnapshotRouteParamsSchema = z.object({
+  sourceId: z.string().min(1),
+});

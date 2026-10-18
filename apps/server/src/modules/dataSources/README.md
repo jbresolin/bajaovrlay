@@ -1,14 +1,15 @@
 # apps/server/src/modules/dataSources
 
 Data sources: what the server polls for race data (the simulator, a replay of a
-recording), the last good snapshot of each, and recordings. The slices and commands are
+recording), the last good snapshot of each, and recordings. Slices and commands are
 declared in `packages/shared/src/dataSources/`; this module holds their rules.
 
-Start reading at `reducers/recordDataSourcePoll.ts` (the heart: a poll result, good or
-failed, the no-op poll, and which polls stay out of the event log), then the other
-reducers, one file per command, dispatched by `reducers/reduceDataSourceCommand.ts`.
-`schema.ts` checks a config against its kind's schema; `dataSourceTimeline.ts` starts a
-source's timeline when it is turned on and carries it through an edit; `recordingBookkeeping.ts` keeps the `recordings`
-slice; `loadDataSourceSlices.ts` loads the slices at boot and seeds the simulator
-(`seedDataSources.ts`). Refusals are in `dataSourceRefusals.ts`, their pt-BR texts in
-`core/messages/ptBR.ts`. `index.ts` lists what core may use.
+Start reading at `reducers/recordDataSourcePoll.ts` (a poll result, the no-op poll, and
+which polls stay out of the event log), then `poller.ts` (one loop per source that is
+on: rhythm, timeout, stale watch, late answers dropped; `pollResultRecording.ts` turns
+an answer into a result and logs it). `adapters/` holds the adapters. `service.ts`
+starts the poller with the server; `api.ts` is the snapshot REST route. The other
+reducers are one file per command (`reducers/reduceDataSourceCommand.ts`); `schema.ts`
+checks configs; `loadDataSourceSlices.ts` loads and seeds at boot. Refusals are in
+`dataSourceRefusals.ts`, pt-BR texts in `core/messages/ptBR.ts`. `index.ts` lists what
+core may use.

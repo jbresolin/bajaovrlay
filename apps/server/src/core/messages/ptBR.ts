@@ -159,5 +159,16 @@ export const ptBR = {
     noShapesInPoll: 'A fonte respondeu sem nenhum dado.',
     // A failed poll whose adapter gave no reason (an Error with no message).
     failedPollWithoutReason: 'A leitura da fonte falhou sem dizer o motivo.',
+    // The poller called a poll off: the source took longer than min(interval, 10 s).
+    pollTimedOut: (timeoutSeconds: number) =>
+      `Tempo esgotado: a fonte não respondeu em ${timeoutSeconds.toLocaleString('pt-BR')} s.`,
+    // The poller's stale watch: no good poll for longer than staleAfterMs, typically
+    // because a poll hangs and ignores the timeout.
+    noNewDataFor: (seconds: number) => `Sem dados novos há ${String(seconds)} s.`,
+    // A source of a kind the server has no adapter for (a bug, or a kind not built yet).
+    noAdapterForKind: (kind: string) => `O servidor ainda não sabe ler fontes do tipo "${kind}".`,
+    // GET /api/v1/data-sources/{sourceId}/snapshot on a source that never polled well.
+    dataSnapshotNotFound: (sourceLabel: string) =>
+      `A fonte de dados "${sourceLabel}" ainda não tem dados.`,
   },
 } as const;

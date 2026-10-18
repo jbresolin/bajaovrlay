@@ -1,19 +1,26 @@
 import { defineConfig, devices } from '@playwright/test';
 
-import { realServerDatabasePath, realServerPort, rendererPagePort } from './e2e/realServer.js';
+import {
+  realServerDatabasePath,
+  realServerDataFolder,
+  realServerPort,
+  rendererPagePort,
+} from './e2e/realServer.js';
 
 const rendererPageAddress = `http://127.0.0.1:${rendererPagePort}`;
 const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 const isRunningInCI = Boolean(process.env.CI);
 
 // Both web servers read these: the real server listens there, and the renderer's Vite dev
-// server forwards /ws, /api and /graphics there (see vite.config.ts). The ports and the
-// database are the test run's own, so a `pnpm dev` left running and its data are untouched.
+// server forwards /ws, /api and /graphics there (see vite.config.ts). The ports, the
+// database and the data folder are the test run's own, so a `pnpm dev` left running and
+// its data are untouched.
 const realServerEnvironment = {
   PORT: String(realServerPort),
   HOST: '127.0.0.1',
   LOG_LEVEL: 'warn',
   DATABASE_PATH: realServerDatabasePath,
+  DATA_DIR: realServerDataFolder,
 };
 
 export default defineConfig({

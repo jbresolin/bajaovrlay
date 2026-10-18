@@ -2,6 +2,7 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import { findDataSnapshotAnswer, getDataSnapshotRoute } from '../../modules/dataSources/index.js';
 import { getStateRoute } from './stateRoute.js';
 
 /**
@@ -17,6 +18,15 @@ export function createApiV1Routes(options: {
   apiRoutes.openapi(getStateRoute, (context) =>
     context.json(options.stateStore.readAllSlices(), 200),
   );
+
+  apiRoutes.openapi(getDataSnapshotRoute, (context) => {
+    const { sourceId } = context.req.valid('param');
+    const answer = findDataSnapshotAnswer(options.stateStore.readAllSlices(), sourceId);
+    if (!answer.isFound) {
+      return context.json(answer.errorBody, 404);
+    }
+    return context.json(answer.snapshot, 200);
+  });
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

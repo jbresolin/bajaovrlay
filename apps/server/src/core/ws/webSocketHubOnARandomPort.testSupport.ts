@@ -6,6 +6,7 @@ import type { ServerMessage } from '@bajaovrlay/shared';
 import { onTestFinished } from 'vitest';
 
 import { startServer } from '../boot/startServer.js';
+import { createTemporaryDataFolder } from '../boot/temporaryDataFolder.testSupport.js';
 import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
@@ -40,6 +41,7 @@ export async function startServerOnARandomPort(
     databasePath: createTemporaryDatabasePath(),
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
+    dataFolder: createTemporaryDataFolder(),
     heartbeatIntervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
     readCurrentTime: options.readCurrentTime ?? (() => new Date(momentTheServerClockIsHeldAt)),
   });

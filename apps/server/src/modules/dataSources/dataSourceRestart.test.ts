@@ -15,7 +15,7 @@
  *
  * What these tests deliberately do not cover:
  *   - Each rule of the boot loader; loadDataSourceSlices.test.ts covers them.
- *   - The poller starting again after the restart; poller tests (commit 4).
+ *   - The poller starting again after the restart; pollerLifecycle.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';
 

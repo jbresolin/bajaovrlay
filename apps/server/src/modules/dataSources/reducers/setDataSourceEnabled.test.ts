@@ -19,7 +19,7 @@
  *     source is refused with DATA_SOURCE_NOT_FOUND.
  *
  * What these tests deliberately do not cover:
- *   - The poller starting and stopping its loop; poller.test.ts covers it (commit 4).
+ *   - The poller starting and stopping its loop; pollerLifecycle.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';
 

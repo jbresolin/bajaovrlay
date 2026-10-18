@@ -12,7 +12,7 @@
  *     with DATA_SOURCE_NOT_FOUND, each with its pt-BR message.
  *
  * What these tests deliberately do not cover:
- *   - The poller noticing the stamp and polling; poller.test.ts covers it (commit 4).
+ *   - The poller noticing the stamp and polling; poller.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';
 

@@ -1,13 +1,20 @@
 import type { ErrorHandler, NotFoundHandler } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { z } from 'zod';
 
 import { ptBR } from '../messages/ptBR.js';
 import type { ServerAppEnvironment } from './httpContextVariables.js';
 
-/** The JSON body of every error answer: a stable code for code, a pt-BR message for people. */
-export type ErrorAnswerBody = {
-  error: { code: string; message: string };
-};
+/**
+ * The JSON body of every error answer: a stable code for code, a pt-BR message for people.
+ * A Zod schema so a route's OpenAPI description can name it; the type is derived from it.
+ */
+export const ErrorAnswerBodySchema = z.object({
+  error: z.object({ code: z.string(), message: z.string() }),
+});
+
+/** The JSON body of every error answer, as a TypeScript type. */
+export type ErrorAnswerBody = z.infer<typeof ErrorAnswerBodySchema>;
 
 /**
  * Answers an unknown address with a 404 in JSON, never Hono's default plain text or an
