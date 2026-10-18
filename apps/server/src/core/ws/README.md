@@ -5,6 +5,7 @@ The WebSocket hub at `/ws`, on the same port as HTTP. Start reading at
 message per state change (`slices`, or `slice` when one slice changed), answers each client message.
 
 - `connectionActor.ts` — `/ws?role=renderer` is `renderer:<connection id>`, else `operador:<id>`.
+- `slicesHiddenFromRenderers.ts` — renderers never get `dataSnapshots` (`[]` in hello, left out of changes).
 - `clientMessageAnswers.ts` — checks a client message and runs its command (a renderer's `instanceStatus`
   becomes `reportInstanceStatus`); one `commandResult` each; outside the protocol: INVALID_MESSAGE, socket kept.
 - `serverMessageBuilding.ts` — builds and validates every outgoing message; `hello`, `slice`,

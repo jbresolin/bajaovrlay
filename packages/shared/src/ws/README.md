@@ -41,6 +41,13 @@ Every message is one JSON object, told apart by its `type` field:
   `slice` or `slices` message at all, not even for `eventLog`, and leaves no event-log
   entry; its sender still gets `ok: true`.
 
+A renderer connection (`/ws?role=renderer`) gets `dataSnapshots: []` in its `hello` and
+never a message carrying `dataSnapshots`: that slice is left out of its `slices`, a
+change of `dataSources` and `dataSnapshots` reaches it as a `slice` of `dataSources`, and a
+change of `dataSnapshots` alone sends it nothing. Graphics get resolved data only, and a
+60-car snapshot every 2 s is a frame-drop risk in OBS. Every other connection, the
+control page's monitors included, gets every slice.
+
 A message that is not JSON or not in the protocol is answered with an error
 `commandResult` (code `INVALID_MESSAGE`, `requestId` echoed when it could be read) and
 logged; the socket stays open. The server pings every 15 s and drops a socket that did
