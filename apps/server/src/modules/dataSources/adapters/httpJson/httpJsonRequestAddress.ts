@@ -24,12 +24,18 @@ type ResolvedValue = { ok: true; value: string } | { ok: false; error: string };
 // A line break or NUL in a header value would let one value write a second header.
 const lineBreakOrNulPattern = /[\r\n\0]/;
 
+// What Node's fetch lets into a header value: tab, the visible ASCII and space, and the
+// rest of Latin-1 (the same rule the config schema applies to a typed value). Anything
+// else makes fetch throw before sending, which would read as a network failure.
+const headerValueCharactersPattern = /^[\t\x20-\x7e\x80-\xff]*$/;
+
 /**
  * Builds the address (the config's URL with its query parameters added) and the headers
  * of one request, reading every BAJAOVRLAY_SOURCE_ variable it names at this moment, so a
  * token changed on the server is sent from the next poll on. A variable that is not set,
- * or set to nothing, stops the request with a pt-BR error naming it; a header value with
- * a line break is refused by name. Neither error quotes a value.
+ * or set to nothing, stops the request with a pt-BR error naming it; a header value from
+ * a variable with a line break, or with a character fetch refuses (an emoji), is refused
+ * by the variable's name. No error quotes a value.
  */
 export function buildHttpJsonRequestToSend(
   request: HttpJsonRequest,
@@ -50,13 +56,12 @@ export function buildHttpJsonRequestToSend(
     if (!resolved.ok) {
       return resolved;
     }
-    const isFromAVariable = header.valueFromEnvironment !== undefined;
-    if (isFromAVariable && lineBreakOrNulPattern.test(resolved.value)) {
-      const variableName = header.valueFromEnvironment ?? '';
-      return {
-        ok: false,
-        error: ptBR.httpJsonErrors.environmentVariableWithLineBreak(variableName),
-      };
+    const variableName = header.valueFromEnvironment;
+    if (variableName !== undefined) {
+      const variableProblem = findWhyAVariableCannotGoInAHeader(variableName, resolved.value);
+      if (variableProblem !== undefined) {
+        return { ok: false, error: variableProblem };
+      }
     }
     headers.push([header.name, resolved.value]);
   }
@@ -80,4 +85,22 @@ function resolveValue(
     return { ok: false, error: ptBR.httpJsonErrors.environmentVariableNotSet(variableName) };
   }
   return { ok: true, value: valueOfTheVariable };
+}
+
+/**
+ * The pt-BR reason a variable's value cannot be sent as a header, or undefined when it
+ * can. The schema checked a typed value when the config was saved; a variable's value is
+ * only known now. The reason names the variable, never its value.
+ */
+function findWhyAVariableCannotGoInAHeader(
+  variableName: string,
+  valueOfTheVariable: string,
+): string | undefined {
+  if (lineBreakOrNulPattern.test(valueOfTheVariable)) {
+    return ptBR.httpJsonErrors.environmentVariableWithLineBreak(variableName);
+  }
+  if (!headerValueCharactersPattern.test(valueOfTheVariable)) {
+    return ptBR.httpJsonErrors.environmentVariableWithCharacterHttpRefuses(variableName);
+  }
+  return undefined;
 }

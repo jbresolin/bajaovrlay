@@ -104,7 +104,7 @@ export async function fetchHttpJsonRequest(
     {
       ...whereItWasSent,
       status: response.status,
-      body_bytes: Buffer.byteLength(bodyReading.text, 'utf8'),
+      body_bytes: bodyReading.bytesRead,
     },
     'flex source request answered',
   );
@@ -117,14 +117,14 @@ async function readTheBody(
   signal: AbortSignal,
   host: string,
   requestId: string,
-): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; text: string; bytesRead: number } | { ok: false; error: string }> {
   try {
     const reading = await readResponseBodyWithinCap(response.body, largestResponseBodyInBytes);
     if (!reading.isWithinCap) {
       const capInMegabytes = largestResponseBodyInBytes / 1_000_000;
       return { ok: false, error: ptBR.httpJsonErrors.bodyOverCap(requestId, capInMegabytes) };
     }
-    return { ok: true, text: reading.text };
+    return { ok: true, text: reading.text, bytesRead: reading.bytesRead };
   } catch (streamError) {
     return {
       ok: false,

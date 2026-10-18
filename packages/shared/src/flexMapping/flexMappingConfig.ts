@@ -79,7 +79,7 @@ export type FlexShapeMapping = z.infer<typeof FlexShapeMappingSchema>;
  * once, at least one in all. The httpJson config embeds it and checks its requestIds.
  */
 export const FlexMappingConfigSchema = z
-  .array(FlexShapeMappingSchema)
+  .array(FlexShapeMappingSchema, { error: ptBRFlexMapping.configReasons.mappingsNotAList })
   .superRefine((mappings, context) => {
     checkMappingsAcrossShapes(mappings, context);
   });

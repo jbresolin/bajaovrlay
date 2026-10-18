@@ -35,6 +35,8 @@ export const ptBRFlexMapping = {
   /** Why a mapping config was refused. */
   configReasons: {
     mappingListIsEmpty: 'Mapeie pelo menos um formato: Sessão, Posições ou Pontuação.',
+    // "mappings" missing, misspelt, or holding something other than a list.
+    mappingsNotAList: 'Os mapeamentos ("mappings") precisam ser uma lista, um por formato.',
     unknownKeysInRule: (keys: string[]) => `A regra tem ${describeUnknownKeys(keys)}.`,
     unknownKeysInMapping: (keys: string[]) => `O mapeamento tem ${describeUnknownKeys(keys)}.`,
     shapeMappedTwice: (shapeName: string) =>

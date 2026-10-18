@@ -15,12 +15,11 @@
  *   - listProducedShapes answers the mappings' shape keys.
  *   - Two requests are both fetched in one poll, each shape reading its own; one of them
  *     failing fails the whole poll.
- *   - A header and a query parameter named by an environment variable are sent with the
- *     variable's value, read at poll time (a change shows at the next poll), and that
- *     value is in no log line; the variable not being set fails the poll, in pt-BR.
+ *   - A response that starts with a byte-order mark is read as the same JSON.
  *   - A response that does not map fails the poll with the mapping's summary.
  *
  * What these tests deliberately do not cover:
+ *   - Values read from environment variables: httpJsonAdapterEnvironmentVariables.test.ts.
  *   - The failures of a single request (status, bad JSON, the 5 MB cap, connection
  *     refused, a timeout, a redirect): httpJsonAdapterFailures.test.ts.
  *   - The rules of the config and of the mapping: packages/shared covers them.
@@ -31,7 +30,6 @@ import { validateDataShape } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { createLogger } from '../../../../core/logger/createLogger.js';
-import { createRecordingLogger } from '../../../../core/logger/recordingLogger.testSupport.js';
 import { createHttpJsonAdapter } from './httpJsonAdapter.js';
 import {
   readExampleConfigPointedAt,
@@ -101,6 +99,29 @@ describe('a good poll', () => {
       'entries.0',
       expect.objectContaining({ position: 1, carNumber: 17, teamName: 'Acauã Baja' }),
     );
+  });
+
+  it('reads a response that starts with a byte-order mark', async () => {
+    // Arrange: timing software written for Windows, which starts its JSON with a byte-order mark.
+    const timingSystem = await startTimingSystemTestServer();
+    timingSystem.answer('/cronometragem/classificacao', {
+      kind: 'text',
+      text: `\uFEFF${JSON.stringify(readExampleTimingSystemResponse())}`,
+      contentType: 'application/json; charset=utf-8',
+    });
+    const config = readExampleConfigPointedAt(
+      `${timingSystem.baseUrl}/cronometragem/classificacao`,
+    );
+    const adapter = createAdapterReading({});
+
+    // Act: poll once.
+    const answer = await adapter.pollOnce(config, buildPollContextThatNeverTimesOut());
+
+    // Assert: the mark is dropped and the 20 cars are read, as without it.
+    expect(
+      answer.shapes.positions,
+      'a body with a byte-order mark must still be read',
+    ).toHaveProperty('entries.length', 20);
   });
 
   it('says the shapes it produces are the shape keys of its mappings', () => {
@@ -217,143 +238,6 @@ describe('two requests', () => {
     // Assert: no shape at all, and the error names the request that failed.
     expect(error, 'the poll must fail with the failing request named').toBe(
       'A fonte respondeu 503 (Service Unavailable) em direcao_de_prova',
-    );
-  });
-});
-
-describe('values from environment variables', () => {
-  /** The example preset, sending a token header and a key in the query from variables. */
-  function buildConfigWithSecrets(baseUrl: string) {
-    const exampleConfig = readExampleConfigPointedAt(`${baseUrl}/cronometragem/classificacao`);
-    const requests = exampleConfig.requests.map((request) => ({
-      ...request,
-      headers: [
-        { name: 'Accept', value: 'application/json' },
-        { name: 'Authorization', valueFromEnvironment: 'BAJAOVRLAY_SOURCE_BAJA_TOKEN' },
-      ],
-      queryParameters: [
-        { name: 'etapa', value: 'nacional 2027' },
-        { name: 'chave', valueFromEnvironment: 'BAJAOVRLAY_SOURCE_BAJA_CHAVE' },
-      ],
-    }));
-    return { ...exampleConfig, requests };
-  }
-
-  it('sends the variable values and writes them in no log line', async () => {
-    // Arrange: the timing system answering, two secrets in the environment, a logger that keeps every line.
-    const timingSystem = await startTimingSystemTestServer();
-    timingSystem.answer('/cronometragem/classificacao', {
-      kind: 'json',
-      body: readExampleTimingSystemResponse(),
-    });
-    const { logger, readRecordedLines } = createRecordingLogger();
-    const adapter = createHttpJsonAdapter({
-      logger,
-      readEnvironmentVariable: (name) =>
-        ({
-          BAJAOVRLAY_SOURCE_BAJA_TOKEN: 'Bearer token-secreto-da-baja-9f2c',
-          BAJAOVRLAY_SOURCE_BAJA_CHAVE: 'chave-secreta-7d41',
-        })[name],
-    });
-
-    // Act: poll once.
-    await adapter.pollOnce(
-      buildConfigWithSecrets(timingSystem.baseUrl),
-      buildPollContextThatNeverTimesOut(),
-    );
-
-    // Assert: the server received both values, and no log line holds either of them.
-    const [requestReceived] = timingSystem.readRequestsReceived();
-    const everyLogLineAsText = JSON.stringify(readRecordedLines());
-    expect(requestReceived?.headers.authorization, 'the token must be sent as the header').toBe(
-      'Bearer token-secreto-da-baja-9f2c',
-    );
-    expect(requestReceived?.headers.accept, 'a typed value must be sent as written').toBe(
-      'application/json',
-    );
-    expect(requestReceived?.pathWithQuery, 'the query must carry both parameters').toBe(
-      '/cronometragem/classificacao?etapa=nacional+2027&chave=chave-secreta-7d41',
-    );
-    expect(readRecordedLines().length, 'the poll must have logged its request').toBeGreaterThan(0);
-    expect(everyLogLineAsText, 'no log line may hold the token').not.toContain('token-secreto');
-    expect(everyLogLineAsText, 'no log line may hold the query key').not.toContain('chave-secreta');
-  });
-
-  it('reads the variable at every poll, so a new token is sent from the next poll on', async () => {
-    // Arrange: the timing system answering, and an environment the test changes between polls.
-    const timingSystem = await startTimingSystemTestServer();
-    timingSystem.answer('/cronometragem/classificacao', {
-      kind: 'json',
-      body: readExampleTimingSystemResponse(),
-    });
-    const environment: Record<string, string> = {
-      BAJAOVRLAY_SOURCE_BAJA_TOKEN: 'Bearer token-de-sexta',
-      BAJAOVRLAY_SOURCE_BAJA_CHAVE: 'chave-de-sexta',
-    };
-    const adapter = createAdapterReading(environment);
-    const config = buildConfigWithSecrets(timingSystem.baseUrl);
-
-    // Act: poll, change the token, poll again.
-    await adapter.pollOnce(config, buildPollContextThatNeverTimesOut());
-    environment.BAJAOVRLAY_SOURCE_BAJA_TOKEN = 'Bearer token-de-sabado';
-    await adapter.pollOnce(config, buildPollContextThatNeverTimesOut());
-
-    // Assert: each poll sent the token of its moment.
-    const tokensSent = timingSystem
-      .readRequestsReceived()
-      .map((request) => request.headers.authorization);
-    expect(tokensSent, 'each poll must send the value the variable had then').toEqual([
-      'Bearer token-de-sexta',
-      'Bearer token-de-sabado',
-    ]);
-  });
-
-  it('fails the poll in pt-BR when the variable is not set, and fetches nothing', async () => {
-    // Arrange: the timing system answering, and the query key set but not the token.
-    const timingSystem = await startTimingSystemTestServer();
-    timingSystem.answer('/cronometragem/classificacao', {
-      kind: 'json',
-      body: readExampleTimingSystemResponse(),
-    });
-    const adapter = createAdapterReading({ BAJAOVRLAY_SOURCE_BAJA_CHAVE: 'chave-de-sexta' });
-
-    // Act: poll once.
-    const error = await captureThePollError(
-      adapter.pollOnce(
-        buildConfigWithSecrets(timingSystem.baseUrl),
-        buildPollContextThatNeverTimesOut(),
-      ),
-    );
-
-    // Assert: the operator reads which variable is missing, and nothing was sent without it.
-    expect(error, 'the error must name the variable that is not set').toBe(
-      'A variável de ambiente BAJAOVRLAY_SOURCE_BAJA_TOKEN não está definida no servidor.',
-    );
-    expect(
-      timingSystem.readRequestsReceived(),
-      'a request missing its token must not be sent',
-    ).toEqual([]);
-  });
-
-  it('fails the poll when the variable holds a line break, without quoting its value', async () => {
-    // Arrange: a token pasted with a line break and a second header after it.
-    const timingSystem = await startTimingSystemTestServer();
-    const adapter = createAdapterReading({
-      BAJAOVRLAY_SOURCE_BAJA_TOKEN: 'Bearer token-secreto\r\nX-Outro: 1',
-      BAJAOVRLAY_SOURCE_BAJA_CHAVE: 'chave-de-sexta',
-    });
-
-    // Act: poll once.
-    const error = await captureThePollError(
-      adapter.pollOnce(
-        buildConfigWithSecrets(timingSystem.baseUrl),
-        buildPollContextThatNeverTimesOut(),
-      ),
-    );
-
-    // Assert: refused by name, the value nowhere in the message.
-    expect(error, 'the error must name the variable and not its value').toBe(
-      'A variável de ambiente BAJAOVRLAY_SOURCE_BAJA_TOKEN tem uma quebra de linha e não pode ir num cabeçalho.',
     );
   });
 });

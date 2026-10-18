@@ -225,6 +225,8 @@ export const ptBR = {
       `A variável de ambiente ${variableName} não está definida no servidor.`,
     environmentVariableWithLineBreak: (variableName: string) =>
       `A variável de ambiente ${variableName} tem uma quebra de linha e não pode ir num cabeçalho.`,
+    environmentVariableWithCharacterHttpRefuses: (variableName: string) =>
+      `A variável de ambiente ${variableName} tem um caractere que um cabeçalho HTTP não aceita, como um emoji ou uma letra fora do Latin-1.`,
     // The <reason> of couldNotConnect, by the code Node gives the network error.
     networkReasonsByCode: {
       ECONNREFUSED: 'conexão recusada',

@@ -20,13 +20,16 @@
  *     not exist, an unknown transform, a bad mapValues table, an environment variable
  *     without the prefix (in a header and in a query parameter), a header with both a
  *     value and a variable or with neither, a header name with a space, a header value
- *     with a line break, an address that is not http or https or not an address at all,
- *     a method key (GET only), a shape mapped twice, and brackets (not built yet).
+ *     with a line break or with a character outside Latin-1 (fetch refuses it), an empty
+ *     query parameter name, an address that is not http or https or not an address at
+ *     all, an address with a user and password in it (a secret, not quoted back), a
+ *     method key (GET only), a shape mapped twice, and brackets (not built yet).
  *
  * What these tests deliberately do not cover:
  *   - Every rule of the mapping itself (paths, targets, sources of a rule):
  *     flexMappingConfig.test.ts in flexMapping/ covers them; here a few rows prove they
  *     are reached through this schema, at the right place.
+ *   - Misspelt keys and fields of the wrong type: httpJsonConfigWrongKeysAndTypes.test.ts.
  *   - Reading the variables and fetching: the server's httpJson adapter does both at poll
  *     time (apps/server/src/modules/dataSources/adapters/httpJson/).
  */
@@ -35,6 +38,14 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { HttpJsonConfigSchema } from './httpJsonConfig.js';
+import {
+  buildClassificationConfig,
+  buildClassificationRequest,
+  buildConfigWithExtraCarRule,
+  buildConfigWithRequestChanges,
+  buildPositionsMappingFrom,
+  findFirstIssue,
+} from './httpJsonConfigExamples.testSupport.js';
 
 /** Reads the example preset's whole config, exactly as the file has it. */
 function readExampleConfig(): unknown {
@@ -43,71 +54,6 @@ function readExampleConfig(): unknown {
     import.meta.url,
   );
   return JSON.parse(readFileSync(configUrl, 'utf8'));
-}
-
-/** The request of an imaginary timing system's classification, with no header or query. */
-function buildClassificationRequest(): Record<string, unknown> {
-  return {
-    requestId: 'classificacao',
-    url: 'http://cronometragem.local:8080/api/classificacao',
-  };
-}
-
-/** A positions mapping that reads the cars under "classificacao", from request `requestId`. */
-function buildPositionsMappingFrom(requestId: string): Record<string, unknown> {
-  return {
-    shapeKey: 'positions',
-    requestId,
-    entriesPath: 'classificacao',
-    fields: [
-      { targetField: 'sessionId', fromPath: 'prova.id' },
-      { targetField: 'updatedAtMs', fromPollMoment: true },
-    ],
-    entryFields: [
-      { targetField: 'position', fromListOrder: true },
-      { targetField: 'carNumber', fromPath: 'carro', transformId: 'textToInteger' },
-      { targetField: 'teamName', fromPath: 'equipe' },
-      { targetField: 'schoolName', fromPath: 'escola' },
-      { targetField: 'laps', fromPath: 'voltas' },
-    ],
-  };
-}
-
-/** A whole config: the classification request, its positions mapping, and `changes` on top. */
-function buildClassificationConfig(changes: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    requests: [buildClassificationRequest()],
-    mappings: [buildPositionsMappingFrom('classificacao')],
-    ...changes,
-  };
-}
-
-/** The classification config whose one request has `requestChanges` on top. */
-function buildConfigWithRequestChanges(
-  requestChanges: Record<string, unknown>,
-): Record<string, unknown> {
-  return buildClassificationConfig({
-    requests: [{ ...buildClassificationRequest(), ...requestChanges }],
-  });
-}
-
-/** The classification config whose positions mapping has this one extra car rule. */
-function buildConfigWithExtraCarRule(rule: Record<string, unknown>): Record<string, unknown> {
-  const positionsMapping = buildPositionsMappingFrom('classificacao');
-  const entryFields = positionsMapping.entryFields as unknown[];
-  return buildClassificationConfig({
-    mappings: [{ ...positionsMapping, entryFields: [...entryFields, rule] }],
-  });
-}
-
-/** The first problem the schema found: where, and the sentence it gave. */
-function findFirstIssue(config: unknown): { path: string; message: string } | undefined {
-  const parsing = HttpJsonConfigSchema.safeParse(config);
-  const firstIssue = parsing.error?.issues[0];
-  if (firstIssue === undefined) {
-    return undefined;
-  }
-  return { path: firstIssue.path.map(String).join('.'), message: firstIssue.message };
 }
 
 describe('HttpJsonConfigSchema', () => {
@@ -300,13 +246,22 @@ describe('HttpJsonConfigSchema', () => {
       expectedMessage:
         '"Authorization" precisa de exatamente um valor: um valor digitado ou uma variável de ambiente.',
     },
-    // A header with no value at all is almost always a row left half-filled.
+    // A query parameter with no value at all is almost always a row left half-filled.
     {
       name: 'refuses a query parameter with neither a value nor a variable',
       config: buildConfigWithRequestChanges({ queryParameters: [{ name: 'etapa' }] }),
       expectedPath: 'requests.0.queryParameters.0',
       expectedMessage:
         '"etapa" precisa de exatamente um valor: um valor digitado ou uma variável de ambiente.',
+    },
+    // A query parameter row whose name was never typed would send "=nacional-2027".
+    {
+      name: 'refuses a query parameter with an empty name',
+      config: buildConfigWithRequestChanges({
+        queryParameters: [{ name: '', value: 'nacional-2027' }],
+      }),
+      expectedPath: 'requests.0.queryParameters.0.name',
+      expectedMessage: 'O nome do parâmetro está vazio.',
     },
     // fetch refuses such a name at poll time; refusing it here says so before the race.
     {
@@ -326,6 +281,26 @@ describe('HttpJsonConfigSchema', () => {
       }),
       expectedPath: 'requests.0.headers.0.value',
       expectedMessage: 'O valor do cabeçalho "Accept" não pode ter quebra de linha.',
+    },
+    // fetch throws on an emoji in a header before sending, which would read as a network failure.
+    {
+      name: 'refuses a typed header value with a character outside Latin-1',
+      config: buildConfigWithRequestChanges({
+        headers: [{ name: 'X-Equipe', value: 'Baja UFPR 🏁' }],
+      }),
+      expectedPath: 'requests.0.headers.0.value',
+      expectedMessage:
+        'O valor do cabeçalho "X-Equipe" tem um caractere que um cabeçalho HTTP não aceita, como um emoji ou uma letra fora do Latin-1.',
+    },
+    // A password in the address would sit in state, the event log and every browser; it is not quoted back.
+    {
+      name: 'refuses an address with a user and password in it, without quoting it',
+      config: buildConfigWithRequestChanges({
+        url: 'http://usuario:senha-da-cronometragem@cronometragem.local:8080/api/classificacao',
+      }),
+      expectedPath: 'requests.0.url',
+      expectedMessage:
+        'O endereço tem usuário ou senha escritos nele: credenciais vão num cabeçalho, com o valor lido de uma variável BAJAOVRLAY_SOURCE_.',
     },
     // The adapter speaks HTTP only; a file or FTP address would read something else entirely.
     {
