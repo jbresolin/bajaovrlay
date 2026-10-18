@@ -7,8 +7,8 @@ and clock field names (`clockMode`…) so a binding feeds the clock with no tran
 
 Conventions: times are integer milliseconds (durations like `lastLapMs`, moments like
 `updatedAtMs` on the server's clock); every entry repeats `carNumber`, `teamName` and
-`schoolName`; optional means "the source does not know", never a placeholder.
-**`bracketsShape.ts` is a draft** until BAJAOVRLAY-25 checks it against the Baja app.
+`schoolName`; optional means "the source does not know", never a placeholder. Positions take
+what a source gives (gate 2 of PR #16). **`bracketsShape.ts` is a draft** until BAJAOVRLAY-25.
 
 `validateDataShape.ts` checks a payload (pt-BR error naming the path); `bindablePaths.ts`
 hand-lists the paths a binding may point at; `ptBRDataShapes.ts` holds the pt-BR texts;

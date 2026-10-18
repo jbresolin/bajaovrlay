@@ -93,19 +93,18 @@ export const ptBRDataShapes = {
       `as posições devem vir em ordem, 1, 2, 3...; aqui era esperada a posição ${expectedPosition}`,
     carListedTwice: (carNumber: number) => `o carro ${carNumber} aparece mais de uma vez`,
     leaderWithGap: 'o líder não tem diferença para si mesmo',
-    gapBeforeFirstLap: 'antes de o líder completar uma volta, ninguém tem diferença',
-    gapMissingOrDoubled:
-      'cada carro atrás do líder tem exatamente uma diferença, em tempo ou em voltas',
+    gapInBothMsAndLaps: 'um carro tem no máximo uma diferença para o líder, em tempo ou em voltas',
     gapInLapsOnLeaderLap:
       'um carro na mesma volta do líder tem a diferença em tempo, não em voltas',
     gapInMsWhenLapped:
       'um carro com menos voltas que o líder tem a diferença em voltas, não em tempo',
     gapInLapsNotMatchingLaps: (lapsBehindLeader: number) =>
       `a diferença em voltas deve ser igual às voltas atrás do líder, aqui ${lapsBehindLeader}`,
-    moreLapsThanCarAhead: (lapsOfCarAhead: number) =>
-      `um carro não pode ter mais voltas que o carro à frente, que tem ${lapsOfCarAhead}`,
+    gapOnCarWithMoreLapsThanLeader:
+      'um carro com mais voltas que o líder não tem diferença para ele',
+    moreLapsThanRacingCarAhead: (lapsOfRacingCarAhead: number) =>
+      `um carro em prova não pode ter mais voltas que o carro em prova à frente dele, que tem ${lapsOfRacingCarAhead}`,
     leaderWithInterval: 'o líder não tem intervalo, porque não há carro à frente',
-    intervalBeforeFirstLap: 'antes de completar uma volta, um carro não tem intervalo',
     firstRankNotOne: 'a pontuação começa pela posição 1',
     rankOutOfOrder: (rankAbove: number) =>
       `a pontuação deve vir em ordem de classificação; o colocado acima tem a posição ${rankAbove}`,

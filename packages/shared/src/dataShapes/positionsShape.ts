@@ -28,13 +28,15 @@ export const PositionEntrySchema = z.object({
   schoolName: z.string().min(1),
   /** Laps completed. */
   laps: z.number().int().min(0),
-  lastLapMs: z.number().int().min(0).optional(),
-  bestLapMs: z.number().int().min(0).optional(),
-  /** Time behind the leader, when on the leader's lap. Never together with gapToLeaderLaps. */
+  /** Above zero: no lap takes no time, so a 0 would be a placeholder for "unknown". */
+  lastLapMs: z.number().int().positive().optional(),
+  /** Above zero, like lastLapMs. */
+  bestLapMs: z.number().int().positive().optional(),
+  /** Time behind the leader, only for a car on the leader's lap. Never with gapToLeaderLaps. */
   gapToLeaderMs: z.number().int().min(0).optional(),
-  /** Laps behind the leader, when lapped. Never together with gapToLeaderMs. */
+  /** Laps behind the leader, only for a lapped car. Never with gapToLeaderMs. */
   gapToLeaderLaps: z.number().int().min(1).optional(),
-  /** Time behind the car one place ahead, measured at this car's last completed lap. */
+  /** Time behind the car one place ahead, as the source measures it. */
   intervalMs: z.number().int().min(0).optional(),
   pitStops: z.number().int().min(0).optional(),
   status: PositionStatusSchema,
@@ -44,17 +46,44 @@ export const PositionEntrySchema = z.object({
 export type PositionEntry = z.infer<typeof PositionEntrySchema>;
 
 /**
- * Checks the rules no single field can say (decision D2 of BAJAOVRLAY-17):
+ * The statuses of a car out of the race. A timing system lists such a car wherever it
+ * likes (often at the bottom, whatever its laps), so it is left out of the lap order
+ * (gate 2 of PR #16, João's ruling).
+ */
+const statusesOutOfLapOrder: ReadonlySet<PositionStatus> = new Set([
+  'retired',
+  'disqualified',
+  'notStarted',
+]);
+
+/** True for a car still in the race: running, in the pit or stopped for a repair. */
+function isCarInLapOrder(entry: PositionEntry): boolean {
+  return !statusesOutOfLapOrder.has(entry.status);
+}
+
+/**
+ * Checks the rules no single field can say (gate 2 of PR #16 replaces decision D2 of
+ * BAJAOVRLAY-17; the shape accepts what a source gives, as long as it is not wrong):
  * - entries come in order, positions 1, 2, 3... with no gap or repeat;
  * - a car appears once;
- * - a car never has more laps than the car ahead of it;
- * - the gaps follow findBrokenGapRule and the intervals follow findBrokenIntervalRule.
+ * - a car in the race never has more laps than the nearest car in the race ahead of it;
+ * - the gaps follow findBrokenGapRule, measured from the leader, which is position 1
+ *   whatever its status;
+ * - the leader carries no interval (no car is ahead of it).
  * Each broken rule is reported at the entry (or field) it is about.
  */
 function checkRulesAcrossPositionEntries(entries: PositionEntry[], context: z.RefinementCtx) {
   const reasons = ptBRDataShapes.shapeRuleReasons;
   const carNumbersSeen = new Set<number>();
+  // The leader is position 1 whatever its status, because a timing system (our simulator
+  // included) ranks a retired car with the most laps first and measures every gap from it.
+  // What could go wrong: a source listing a car out of the race first with FEWER laps than
+  // the cars below gets their gaps refused (gapOnCarWithMoreLapsThanLeader); it should then
+  // leave the gaps out.
   const leader = entries[0];
+  // The last car in the race seen so far, walking down the list: the one a car in the
+  // race is compared with. Cars out of the race are skipped, never compared.
+  let nearestCarInLapOrderAhead: PositionEntry | undefined;
 
   entries.forEach((entry, index) => {
     const expectedPosition = index + 1;
@@ -75,40 +104,46 @@ function checkRulesAcrossPositionEntries(entries: PositionEntry[], context: z.Re
     }
     carNumbersSeen.add(entry.carNumber);
 
-    // The order is by laps first, so a car with more laps than the one ahead is out of
-    // place; the gap rules below rely on this (a leader on 0 laps means nobody has a lap).
-    const carAhead = entries[index - 1];
-    if (carAhead !== undefined && entry.laps > carAhead.laps) {
-      context.addIssue({
-        code: 'custom',
-        path: ['entries', index, 'laps'],
-        message: reasons.moreLapsThanCarAhead(carAhead.laps),
-      });
+    // The order of the cars in the race is by laps first, so one with more laps than the
+    // car in the race ahead of it is out of place. A retired, disqualified or not-started
+    // car may sit anywhere, so it neither breaks this rule nor sets the laps to beat.
+    if (isCarInLapOrder(entry)) {
+      const lapsOfCarAhead = nearestCarInLapOrderAhead?.laps;
+      if (lapsOfCarAhead !== undefined && entry.laps > lapsOfCarAhead) {
+        context.addIssue({
+          code: 'custom',
+          path: ['entries', index, 'laps'],
+          message: reasons.moreLapsThanRacingCarAhead(lapsOfCarAhead),
+        });
+      }
+      nearestCarInLapOrderAhead = entry;
     }
 
     if (leader === undefined) {
       return;
     }
-    const brokenGapRuleReason = findBrokenGapRule(entry, leader, index === 0);
+    const isLeader = index === 0;
+    const brokenGapRuleReason = findBrokenGapRule(entry, leader, isLeader);
     if (brokenGapRuleReason !== null) {
       context.addIssue({ code: 'custom', path: ['entries', index], message: brokenGapRuleReason });
     }
-    const brokenIntervalRuleReason = findBrokenIntervalRule(entry, index === 0);
-    if (brokenIntervalRuleReason !== null) {
+    // Any other car may carry an interval, even before its first lap: the source measures it.
+    if (isLeader && entry.intervalMs !== undefined) {
       context.addIssue({
         code: 'custom',
         path: ['entries', index, 'intervalMs'],
-        message: brokenIntervalRuleReason,
+        message: reasons.leaderWithInterval,
       });
     }
   });
 }
 
 /**
- * Returns the pt-BR reason when one car's gaps break D2, or null when they are right:
- * the leader carries none; before the leader's first lap nobody does; after it, a car on
- * the leader's lap carries gapToLeaderMs and any other car carries gapToLeaderLaps equal
- * to the laps it is behind (the rule the simulator follows too).
+ * Returns the pt-BR reason when one car's gap is of the wrong kind, or null when it is
+ * right or absent (a gap is optional: the source may not know it). The leader (position 1,
+ * whatever its status) carries none; a car never carries both; gapToLeaderMs only on the
+ * leader's lap; gapToLeaderLaps only when lapped, equal to the laps behind; and a car with
+ * more laps than the leader carries none.
  */
 function findBrokenGapRule(
   entry: PositionEntry,
@@ -119,21 +154,23 @@ function findBrokenGapRule(
   const hasGapInMs = entry.gapToLeaderMs !== undefined;
   const hasGapInLaps = entry.gapToLeaderLaps !== undefined;
   const hasAnyGap = hasGapInMs || hasGapInLaps;
-  const hasExactlyOneGap = hasGapInMs !== hasGapInLaps;
-  const hasLeaderCompletedALap = leader.laps >= 1;
 
+  if (!hasAnyGap) {
+    return null;
+  }
   if (isLeader) {
-    return hasAnyGap ? reasons.leaderWithGap : null;
+    return reasons.leaderWithGap;
   }
-  if (!hasLeaderCompletedALap) {
-    return hasAnyGap ? reasons.gapBeforeFirstLap : null;
-  }
-  if (!hasExactlyOneGap) {
-    return reasons.gapMissingOrDoubled;
+  if (hasGapInMs && hasGapInLaps) {
+    return reasons.gapInBothMsAndLaps;
   }
 
   const lapsBehindLeader = leader.laps - entry.laps;
   const isOnLeaderLap = lapsBehindLeader === 0;
+  const hasMoreLapsThanLeader = lapsBehindLeader < 0;
+  if (hasMoreLapsThanLeader) {
+    return reasons.gapOnCarWithMoreLapsThanLeader;
+  }
   if (isOnLeaderLap) {
     return hasGapInMs ? null : reasons.gapInLapsOnLeaderLap;
   }
@@ -143,22 +180,6 @@ function findBrokenGapRule(
   return entry.gapToLeaderLaps === lapsBehindLeader
     ? null
     : reasons.gapInLapsNotMatchingLaps(lapsBehindLeader);
-}
-
-/**
- * Returns the pt-BR reason when one car's interval cannot be right, or null. The leader
- * has no car ahead, and a car with no lap has no lap at which to measure one. A car with
- * laps may leave it out (unknown), even when lapped: it is measured at its own last lap.
- */
-function findBrokenIntervalRule(entry: PositionEntry, isLeader: boolean): string | null {
-  const reasons = ptBRDataShapes.shapeRuleReasons;
-  if (entry.intervalMs === undefined) {
-    return null;
-  }
-  if (isLeader) {
-    return reasons.leaderWithInterval;
-  }
-  return entry.laps >= 1 ? null : reasons.intervalBeforeFirstLap;
 }
 
 /**
