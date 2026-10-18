@@ -5,10 +5,9 @@ import type { SliceName, Slices } from '@bajaovrlay/shared';
 import { type WebSocket, WebSocketServer } from 'ws';
 
 import type { ServerLogger } from '../logger/createLogger.js';
-import { isRendererActor } from '../store/commandActors.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
-import { buildActorForConnection } from './connectionActor.js';
+import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
 import { startHeartbeat } from './heartbeat.js';
 import {
   buildHelloMessage,
@@ -18,9 +17,9 @@ import {
 } from './serverMessageBuilding.js';
 import { startServerTimeBroadcast } from './serverTimeBroadcast.js';
 import {
-  buildSlicesForARendererHello,
-  removeSliceNamesRenderersNeverReceive,
-} from './slicesHiddenFromRenderers.js';
+  buildSlicesForAScreen,
+  removeSliceNamesScreensNeverReceive,
+} from './slicesHiddenFromScreens.js';
 
 /** The only path that upgrades to a WebSocket (the control page's dev proxy forwards it). */
 export const webSocketPath = '/ws';
@@ -60,10 +59,11 @@ export type WebSocketHub = { close: () => Promise<void> };
  * the moment the message is built), and a `commandResult` for each message it sends (a
  * command, or a renderer's `instanceStatus`). Every ten seconds every client also gets a
  * `time` message, so a page keeps learning the server's clock while nothing changes. A
- * connection to `/ws?role=renderer` acts as a renderer, any other as an operator; a
- * renderer is never sent the `dataSnapshots` slice (empty in its hello, left out of
- * every change, and no message at all for a change of that slice alone). Any other
- * upgrade path is refused.
+ * connection to `/ws?role=renderer` acts as a renderer, one to `/ws?role=monitor` as a
+ * monitor, any other as an operator. A screen (a renderer or a monitor) is never sent
+ * the `dataSnapshots` and `eventLog` slices (empty in its hello, left out of every
+ * change, and no message at all for a change of those slices alone). Any other upgrade
+ * path is refused.
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
@@ -81,9 +81,9 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     startRepeatingTimer: options.startRepeatingTimer,
     cancelRepeatingTimer: options.cancelRepeatingTimer,
   });
-  // The open connections that came in as `/ws?role=renderer`; each leaves on close.
-  // They are sent every slice except the ones in slicesHiddenFromRenderers.ts.
-  const rendererClients = new Set<WebSocket>();
+  // The open screen connections (`/ws?role=renderer` or `/ws?role=monitor`); each leaves
+  // on close. They are sent every slice except the ones in slicesHiddenFromScreens.ts.
+  const screenClients = new Set<WebSocket>();
 
   httpServer.on('upgrade', (request, socket, head) => {
     const requestPath = readUpgradeRequestPath(request.url);
@@ -104,20 +104,20 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   });
 
   webSocketServer.on('connection', (client: WebSocket, request: IncomingMessage) => {
-    // No login yet: a connection is a renderer or an operator by the address it chose,
-    // and is told apart by its own id so the event log can say which one sent what.
+    // No login yet: a connection is a renderer, a monitor or an operator by the address it
+    // chose, and is told apart by its own id so the event log can say which one sent what.
     const connectionId = randomUUID();
     const actor = buildActorForConnection(request.url, connectionId);
     const connectionLogger = logger.child({ connection_id: connectionId, actor });
     connectionLogger.info('websocket client connected');
 
     heartbeat.trackClient(client);
-    const isRenderer = isRendererActor(actor);
-    if (isRenderer) {
-      rendererClients.add(client);
+    const isScreen = isScreenConnectionActor(actor);
+    if (isScreen) {
+      screenClients.add(client);
     }
     const allSlices = stateStore.readAllSlices();
-    const slicesForThisClient = isRenderer ? buildSlicesForARendererHello(allSlices) : allSlices;
+    const slicesForThisClient = isScreen ? buildSlicesForAScreen(allSlices) : allSlices;
     const helloMessage = buildHelloMessage(slicesForThisClient, readCurrentTime().getTime());
     client.send(serializeServerMessage(helloMessage));
 
@@ -134,7 +134,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       connectionLogger.warn({ err: socketError }, 'websocket client error');
     });
     client.on('close', () => {
-      rendererClients.delete(client);
+      screenClients.delete(client);
       connectionLogger.info('websocket client disconnected');
     });
   });
@@ -154,22 +154,23 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     // Each text is built once per change and audience, not once per client: a routine
     // poll of 60 cars would otherwise be serialised again for every page connected.
     const textForOperators = serializeChangeOfSlices(changedSliceNames, slices, serverNowMs);
-    const sliceNamesForRenderers = removeSliceNamesRenderersNeverReceive(changedSliceNames);
-    // undefined when the change was only slices renderers never receive: they get nothing,
-    // because an empty `slices` group is not a valid message.
-    const textForRenderers =
-      sliceNamesForRenderers.length === 0
+    const sliceNamesForScreens = removeSliceNamesScreensNeverReceive(changedSliceNames);
+    // undefined when the change was only slices screens never receive (a refused command
+    // changes the event log alone): they get nothing, because an empty `slices` group is
+    // not a valid message.
+    const textForScreens =
+      sliceNamesForScreens.length === 0
         ? undefined
-        : serializeChangeOfSlices(sliceNamesForRenderers, slices, serverNowMs);
+        : serializeChangeOfSlices(sliceNamesForScreens, slices, serverNowMs);
     for (const client of webSocketServer.clients) {
       if (client.readyState !== client.OPEN) {
         continue;
       }
-      const isRenderer = rendererClients.has(client);
-      if (!isRenderer) {
+      const isScreen = screenClients.has(client);
+      if (!isScreen) {
         client.send(textForOperators);
-      } else if (textForRenderers !== undefined) {
-        client.send(textForRenderers);
+      } else if (textForScreens !== undefined) {
+        client.send(textForScreens);
       }
     }
   });

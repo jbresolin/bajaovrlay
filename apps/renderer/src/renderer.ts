@@ -21,17 +21,19 @@ function startRenderer(stage: HTMLElement): void {
   // The page is served by the server (or by the dev server that forwards to it), so the
   // WebSocket and the API live on the page's own host. `role=renderer` is how the server
   // tells the program output from every other page: only it may report what is on screen.
-  // The copies the control page frames (`?monitor=1`, `?target=preview`) dial without it.
+  // The copies the control page frames (`?monitor=1`, `?target=preview`) dial
+  // `role=monitor`. Both roles are left out of the race data and the event log, on the
+  // WebSocket and on the state read alike.
   const pageRole = decideRendererPageRole(location.search);
   const webSocketScheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const connection = connectToServer({
     webSocketAddress: `${webSocketScheme}//${location.host}${pageRole.webSocketPath}`,
-    stateAddress: `${location.origin}/api/v1/state`,
+    stateAddress: `${location.origin}${pageRole.stateReadingPath}`,
   });
 
   const layerContainers = createLayerContainers(stage);
   // The player of a monitor or of a preview page gets no reporter at all, so it cannot
-  // send an instanceStatus even by mistake. Leaving the role off the address alone would
+  // send an instanceStatus even by mistake. The monitor role in the address alone would
   // not be enough: the server would refuse each report, and every graphic on such a page
   // would cost a refused command.
   const reportInstanceStatus = pageRole.reportsInstanceStatus

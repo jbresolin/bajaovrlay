@@ -7,11 +7,20 @@
  *   /api/v1 are declared with their Zod schemas, from which the OpenAPI document at
  *   `/api/v1/openapi.json` is generated.
  *
+ *   A renderer page whose hello is late calls it with its own role (`?role=renderer` for
+ *   the page OBS loads, `?role=monitor` for the control page's frames), and then gets
+ *   the same slices the WebSocket hub gives that role: no `dataSnapshots` and no
+ *   `eventLog`, because graphics receive resolved data only.
+ *
  * What these tests prove:
  *   - The state answer passes the shared SlicesSchema and shows the seeded layers.
+ *   - With no role it carries the stored snapshot and the event log; with
+ *     `?role=renderer` or `?role=monitor` both are empty lists and every other slice is
+ *     the same; an unknown role is answered 400 with a pt-BR message.
  *   - A command applied to the store shows up in the next answer.
- *   - The OpenAPI document describes GET /state, and is still generated with the
- *     `previewClearedLayerIds` slice (BAJAOVRLAY-36) in the state it describes.
+ *   - The OpenAPI document describes GET /state with its `role` query parameter, and
+ *     is still generated with the `previewClearedLayerIds` slice (BAJAOVRLAY-36) in the
+ *     state it describes.
  *   - At boot the state carries that slice, empty.
  *
  * What these tests deliberately do not cover:
@@ -27,6 +36,11 @@ import { createLogger } from '../../core/logger/createLogger.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { createStateStore } from '../../core/store/createStateStore.js';
 import { createRaceClockItemOnTheStore } from '../../core/store/raceClockItemOnTheStore.testSupport.js';
+import {
+  buildGoodPollOfTheSimulator,
+  firstPollAtMs,
+  recordPollsOfTheSimulatorByHand,
+} from '../../core/ws/simulatorPolledByHand.testSupport.js';
 
 /** Builds the server app on a freshly seeded store, without opening a port. */
 function createServerAppWithSeededStore() {
@@ -77,6 +91,69 @@ describe('GET /api/v1/state', () => {
   });
 });
 
+const roleScenarios = [
+  // Anyone else (a curl while debugging, a future tool) still sees everything.
+  {
+    name: 'answers the snapshot and the event log when no role is given',
+    address: '/api/v1/state',
+    isHiddenFromThisCaller: false,
+  },
+  // The page OBS loads, reading the state because its hello is late.
+  {
+    name: 'answers empty snapshots and event log to ?role=renderer',
+    address: '/api/v1/state?role=renderer',
+    isHiddenFromThisCaller: true,
+  },
+  // The control page's "Programa" and "Prévia" frames, in the same situation.
+  {
+    name: 'answers empty snapshots and event log to ?role=monitor',
+    address: '/api/v1/state?role=monitor',
+    isHiddenFromThisCaller: true,
+  },
+];
+
+describe('GET /api/v1/state with a role', () => {
+  it.each(roleScenarios)('$name', async ({ address, isHiddenFromThisCaller }) => {
+    // Arrange: a server app whose simulator was turned on, polled once by hand (this store
+    // has no poller) and turned off, so it holds a snapshot and event-log rows.
+    const { app, stateStore } = createServerAppWithSeededStore();
+    recordPollsOfTheSimulatorByHand(stateStore, [buildGoodPollOfTheSimulator(6, firstPollAtMs)]);
+    const slicesOnTheServer = stateStore.readAllSlices();
+
+    // Act: ask for the state at the address of the row.
+    const response = await app.request(address);
+    const body = SlicesSchema.parse(await response.json());
+
+    // Assert: 200, and the two slices are there or empty as the role decides.
+    const expectedBody = isHiddenFromThisCaller
+      ? { ...slicesOnTheServer, dataSnapshots: [], eventLog: [] }
+      : slicesOnTheServer;
+    expect(slicesOnTheServer.dataSnapshots, 'the poll must have stored a snapshot').toHaveLength(1);
+    expect(response.status, 'the state must answer 200 OK').toBe(200);
+    expect(body, 'a screen gets no snapshot and no history; anyone else gets all').toEqual(
+      expectedBody,
+    );
+  });
+
+  it('answers 400 with a pt-BR message to a role it does not know', async () => {
+    // Arrange: a server app on a seeded store.
+    const { app } = createServerAppWithSeededStore();
+
+    // Act: ask for the state with a role that is neither renderer nor monitor.
+    const response = await app.request('/api/v1/state?role=narrador');
+    const body: unknown = await response.json();
+
+    // Assert: 400, with a stable code and the two roles named in pt-BR.
+    expect(response.status, 'an unknown role must be refused, not answered').toBe(400);
+    expect(body, 'the refusal must say which roles exist').toEqual({
+      error: {
+        code: 'INVALID_STATE_ROLE',
+        message: 'O parâmetro "role" aceita apenas "renderer" ou "monitor".',
+      },
+    });
+  });
+});
+
 describe('GET /api/v1/openapi.json', () => {
   it('describes GET /state with its 200 answer', async () => {
     // Arrange: a server app on a seeded store.
@@ -86,7 +163,10 @@ describe('GET /api/v1/openapi.json', () => {
     const response = await app.request('/api/v1/openapi.json');
     const document = (await response.json()) as {
       openapi: string;
-      paths: Record<string, Record<string, { responses: Record<string, unknown> }>>;
+      paths: Record<
+        string,
+        Record<string, { responses: Record<string, unknown>; parameters?: { name: string }[] }>
+      >;
     };
 
     // Assert: an OpenAPI 3.1 document listing GET /state with a 200 answer.
@@ -96,6 +176,10 @@ describe('GET /api/v1/openapi.json', () => {
       document.paths['/state']?.get?.responses['200'],
       'GET /state must be described with its 200 answer',
     ).toBeDefined();
+    expect(
+      document.paths['/state']?.get?.parameters?.map((parameter) => parameter.name),
+      'GET /state must describe its role query parameter',
+    ).toEqual(['role']);
   });
 
   it('is still generated with the "will be cleared" markers in the state it describes', async () => {

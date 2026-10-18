@@ -4,8 +4,10 @@ The WebSocket hub at `/ws`, on the same port as HTTP. Start reading at
 `webSocketHub.ts`: it takes over the HTTP server's upgrades, sends `hello`, broadcasts one
 message per state change (`slices`, or `slice` when one slice changed), answers each client message.
 
-- `connectionActor.ts` — `/ws?role=renderer` is `renderer:<connection id>`, else `operador:<id>`.
-- `slicesHiddenFromRenderers.ts` — renderers never get `dataSnapshots` (`[]` in hello, left out of changes).
+- `connectionActor.ts` — `/ws?role=renderer` is `renderer:<connection id>`, `/ws?role=monitor`
+  is `monitor:<id>` (the control page's frames, which may send nothing), else `operador:<id>`.
+- `slicesHiddenFromScreens.ts` — renderers and monitors never get `dataSnapshots` or `eventLog`
+  (`[]` in hello, left out of changes); GET /api/v1/state?role= uses the same filter.
 - `clientMessageAnswers.ts` — checks a client message and runs its command (a renderer's `instanceStatus`
   becomes `reportInstanceStatus`); one `commandResult` each; outside the protocol: INVALID_MESSAGE, socket kept.
 - `serverMessageBuilding.ts` — builds and validates every outgoing message; `hello`, `slice`,

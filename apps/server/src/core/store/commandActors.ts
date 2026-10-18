@@ -1,11 +1,13 @@
 // The actor of a command is `<role>:<connection id>`. Until operators log in there are
-// two roles a connection can have, and the role is all the authorisation step looks at.
-// The operator role is spelt in pt-BR because the actor is shown to people in the event
-// log. A third role, `sistema:<what>`, is never given to a connection: it signs what the
+// three roles a connection can have (renderer, monitor, operator), and the role is all
+// the authorisation step looks at. The operator role is spelt in pt-BR because the actor
+// is shown to people in the event log; `monitor` is the same word in both languages. A
+// fourth role, `sistema:<what>`, is never given to a connection: it signs what the
 // server does by itself (the auto-out, `sistema:auto-out`, the macro runner,
 // `sistema:macro:<macroId>`, the macro watchdog, `sistema:macro-watchdog`, the poller of
 // each data source, `sistema:fonte:<sourceId>`, and the recorder, `sistema:gravador`).
 const rendererRolePrefix = 'renderer:';
+const monitorRolePrefix = 'monitor:';
 const operatorRolePrefix = 'operador:';
 const systemRolePrefix = 'sistema:';
 const macroRunnerRolePrefix = 'sistema:macro:';
@@ -28,7 +30,15 @@ export function buildRendererActor(connectionId: string): string {
   return `${rendererRolePrefix}${connectionId}`;
 }
 
-/** The actor name of an operator's connection (every connection that is not a renderer). */
+/**
+ * The actor name of a monitor's connection: a copy of the renderer page that the control
+ * page frames ("Programa", "Prévia"). It only draws, so it may send nothing.
+ */
+export function buildMonitorActor(connectionId: string): string {
+  return `${monitorRolePrefix}${connectionId}`;
+}
+
+/** The actor name of an operator's connection (every connection that is not a screen). */
 export function buildOperatorActor(connectionId: string): string {
   return `${operatorRolePrefix}${connectionId}`;
 }
@@ -36,6 +46,11 @@ export function buildOperatorActor(connectionId: string): string {
 /** Whether an actor name belongs to a renderer page. */
 export function isRendererActor(actor: string): boolean {
   return actor.startsWith(rendererRolePrefix);
+}
+
+/** Whether an actor name belongs to a monitor frame on the control page. */
+export function isMonitorActor(actor: string): boolean {
+  return actor.startsWith(monitorRolePrefix);
 }
 
 /** Whether an actor name belongs to the server itself, such as the auto-out scheduler. */

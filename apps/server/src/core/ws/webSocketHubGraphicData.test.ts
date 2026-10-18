@@ -15,9 +15,10 @@
  *     INVALID_GRAPHIC_DATA with a pt-BR message naming that field, and nothing goes on
  *     air. (createItem does not check field values against the graphic, so such an item
  *     can be stored; the take is where the check happens.)
- *   - An `updateInstanceData` carrying only the flag reaches another client as an
- *     instances slice in which the instance has the same id, the new flag, every other
- *     field as it was taken, and the flag listed as changed on air.
+ *   - An `updateInstanceData` carrying only the flag reaches the renderer as an
+ *     instances slice (alone: a renderer is never sent the event log) in which the
+ *     instance has the same id, the new flag, every other field as it was taken, and the
+ *     flag listed as changed on air.
  *   - An update whose value the graphic does not accept is refused the same way, and the
  *     data on air stays as it was.
  *
@@ -92,8 +93,15 @@ function isCommandResultMessage(message: ServerMessage): boolean {
   return message.type === 'commandResult';
 }
 
-/** True for a slices message whose first instance shows the yellow flag. */
+/**
+ * True for a message whose first instance shows the yellow flag: a `slices` message to
+ * an operator, or a `slice` of instances alone to a renderer, which is never sent the
+ * event log that changes with it.
+ */
 function isInstancesSliceWithTheYellowFlag(message: ServerMessage): boolean {
+  if (message.type === 'slice' && message.name === 'instances') {
+    return message.slice[0]?.resolvedData.state === 'yellow';
+  }
   return (
     message.type === 'slices' && message.slices.instances?.[0]?.resolvedData.state === 'yellow'
   );
@@ -199,19 +207,17 @@ describe('an updateInstanceData sent over /ws', () => {
     // Assert: the renderer hears of the same instance (same id, so it updates in place)
     // with the yellow flag, every other field as it was taken, and the flag listed as
     // differing from the item (the chip "alterado no ar").
+    // The update's own line in the event log is not in it: a renderer never gets that slice.
     expect(sliceOnRenderer, 'the update must keep the id and change only the flag').toEqual({
-      type: 'slices',
-      slices: {
-        instances: [
-          {
-            ...instanceAfterTheTake,
-            resolvedData: { ...raceClockDataUnderGreenFlag, state: 'yellow' },
-            fieldsChangedOnAir: ['state'],
-          },
-        ],
-        // The update's own line in the event log comes in the same message.
-        eventLog: runningServer.stateStore.readAllSlices().eventLog,
-      },
+      type: 'slice',
+      name: 'instances',
+      slice: [
+        {
+          ...instanceAfterTheTake,
+          resolvedData: { ...raceClockDataUnderGreenFlag, state: 'yellow' },
+          fieldsChangedOnAir: ['state'],
+        },
+      ],
       // The time of the server's clock; webSocketHub.test.ts checks its exact value.
       serverNowMs: expect.any(Number),
     });

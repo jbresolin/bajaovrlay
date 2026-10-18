@@ -1,7 +1,7 @@
 // Test support: a stand-in for the server, living inside one Playwright page. It answers
 // the page's WebSocket at /ws?role=renderer like the real server (a hello with every slice,
-// then slice messages; a program monitor or a preview page is answered at plain /ws), keeps every message
-// the page sends, and serves the fake graphic's
+// then slice messages; a program monitor or a preview page is answered at
+// /ws?role=monitor), keeps every message the page sends, and serves the fake graphic's
 // files at /graphics/fake-graphic/. Nothing leaves the browser, so a test decides exactly
 // what the renderer hears and when, and reads back exactly what it said.
 import { readFileSync } from 'node:fs';
@@ -93,12 +93,12 @@ export type FakeServerForPage = {
 /**
  * Installs the stand-in server on a page. Call it before `page.goto`, so the page's very
  * first connection is already answered. `instancesOnAir` is what the first hello holds.
- * `pageMustDialWithoutTheRendererRole` is for the two pages that report nothing, the one
+ * `pageMustDialAsAMonitor` is for the two pages that report nothing, the one
  * opened with `?monitor=1` and the one opened with `?target=preview` (see the comment below).
  */
 export async function startFakeServerForPage(
   page: Page,
-  options: { instancesOnAir: Instance[]; pageMustDialWithoutTheRendererRole?: boolean },
+  options: { instancesOnAir: Instance[]; pageMustDialAsAMonitor?: boolean },
 ): Promise<FakeServerForPage> {
   const slices: Slices = {
     layers: layersOfTheFakeServer,
@@ -123,17 +123,18 @@ export async function startFakeServerForPage(
   let isSponsorRollPackageBuilt = false;
 
   // Only a socket that says it is the renderer is answered, as the real server tells a
-  // renderer from an operator by this address. A page that dialled plain /ws would get no
-  // hello here and every test would fail. Vite's own dev socket has another address.
+  // renderer from a monitor and an operator by this address. A page that dialled any
+  // other address would get no hello here and every test would fail. Vite's own dev
+  // socket has another address.
   //
   // For a test of the program monitor or of the preview page it is the other way round:
-  // such a page must dial plain /ws. There both addresses are answered, so that a page
+  // such a page must dial /ws?role=monitor. There both roles are answered, so that a page
   // wrongly dialling as a renderer is caught here, with its address and its messages
   // written down for the test to read, instead of slipping past to the real server behind
   // the dev server.
   const addressesThisServerAnswers =
-    options.pageMustDialWithoutTheRendererRole === true
-      ? /\/ws(\?role=renderer)?$/
+    options.pageMustDialAsAMonitor === true
+      ? /\/ws\?role=(renderer|monitor)$/
       : /\/ws\?role=renderer$/;
   await page.routeWebSocket(addressesThisServerAnswers, (connection) => {
     connections.push(connection);

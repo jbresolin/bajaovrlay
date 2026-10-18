@@ -12,7 +12,7 @@
  *   - Before any message the shared "now" is the machine's own time.
  *   - After the hello it is the server's time; slice messages keep it there as time passes,
  *     and a `slices` message (several slices of one state change) gives a sample too.
- *   - A program monitor (`?monitor=1`, plain `/ws`) gets the same correction.
+ *   - A program monitor (`?monitor=1`, `/ws?role=monitor`) gets the same correction.
  *   - A `time` message, which the server sends every ten seconds, gives a sample exactly
  *     as a hello does, and the renderer does nothing else with it: no delivery, no log line.
  *   - A message without `serverNowMs`, a `commandResult` and the state read over HTTP
@@ -184,7 +184,7 @@ describe('the time of the server clock, learned from its messages', () => {
 
   it('gives a program monitor the same correction', () => {
     // Arrange: the copy of the renderer page the control page frames. It differs from
-    // the program renderer only in the address it dials (no role) and in sending nothing.
+    // the program renderer only in the address it dials (role=monitor) and in sending nothing.
     const connection = startConnectionOnAMachineBehindTheServer();
 
     // Act: the monitor's hello arrives.

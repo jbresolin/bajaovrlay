@@ -2,6 +2,7 @@ import type { Command } from '@bajaovrlay/shared';
 
 import {
   dataSourceRecorderActor,
+  isMonitorActor,
   isRendererActor,
   isSystemActor,
   macroWatchdogActor,
@@ -27,6 +28,9 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  * alone:
  * - a renderer may only report what is on screen (reportInstanceStatus), and nobody
  *   else may send that report;
+ * - a monitor (`monitor:<connection id>`, the control page's "Programa" and "Prévia"
+ *   frames) may send nothing at all: it only draws, and the renderer page gives a
+ *   monitor no reporter and sends no command, so anything from it is a mistake;
  * - the macro runner (`sistema:macro:<macroId>`) may send what a macro step becomes
  *   (takeItem, clearLayer, clearAll) and the bookkeeping of its own run
  *   (advanceMacroRun, endMacroRun naming that same macro), and nothing else: a macro
@@ -44,8 +48,9 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   bookkeeping, so no page can fake or end a run the runner is carrying out (an
  *   operator stops a run with stopMacro, "Parar", which the runner then ends), and
  *   except poll results, so no page can fake race data.
- * The role comes from the address the connection chose (`/ws?role=renderer`), so this
- * keeps honest pages in their lane; it is not a defence against a hostile client.
+ * The role comes from the address the connection chose (`/ws?role=renderer`,
+ * `/ws?role=monitor`), so this keeps honest pages in their lane; it is not a defence
+ * against a hostile client.
  * A new job for the system that needs another command must be added here, or its
  * commands are refused with NOT_ALLOWED.
  */
@@ -56,6 +61,9 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   const isPollResult = command.type === 'recordDataSourcePoll';
   if (isRendererActor(actor)) {
     return isReportFromTheScreen;
+  }
+  if (isMonitorActor(actor)) {
+    return false;
   }
   if (actor === macroWatchdogActor) {
     return command.type === 'endMacroRun';

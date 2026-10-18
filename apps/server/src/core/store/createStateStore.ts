@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  type Command,
   type CommandError,
   CommandSchema,
   type EventLogEntry,
@@ -8,6 +9,10 @@ import {
   type Slices,
 } from '@bajaovrlay/shared';
 
+import {
+  trimInvalidPollForTheEventLog,
+  trimPollCommandForTheEventLog,
+} from '../../modules/dataSources/index.js';
 import { saveCommandOutcome } from '../db/commandOutcomeStorage.js';
 import { saveSliceRowsWithoutEventLogRow } from '../db/sliceRowStorage.js';
 import type { SliceRow } from '../db/tables.js';
@@ -131,7 +136,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         now,
         actor,
         commandName: command.type,
-        payload: command,
+        payload: buildEventLogPayloadOfCommand(command),
         error: refuseCommandNotAllowed(),
       });
     }
@@ -151,7 +156,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         now,
         actor,
         commandName: command.type,
-        payload: command,
+        payload: buildEventLogPayloadOfCommand(command),
         error: reducerOutcome.error,
       });
     }
@@ -185,7 +190,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         ts: now,
         actor,
         command: command.type,
-        payload: command,
+        payload: buildEventLogPayloadOfCommand(command),
         result: { status: 'ok' },
       },
     });
@@ -346,12 +351,32 @@ function buildAllSlices(
  * What the event log stores as the payload of an invalid command: what was sent, or a
  * marker when nothing was. event_log.payload is NOT NULL and Drizzle writes a JS null as
  * SQL NULL, so storing null or undefined would make the save throw and lose the row.
+ * An invalid data-source poll keeps only its type and sourceId, so a malformed one
+ * carrying 60 cars of shapes does not land in the eventLog slice (gate 2 on PR #16).
  */
 function describePayloadAsReceived(commandInput: unknown): unknown {
   if (commandInput === null || commandInput === undefined) {
     return { commandWasMissing: true };
   }
+  const isObject = typeof commandInput === 'object';
+  const isPoll = readCommandNameAsSent(commandInput) === 'recordDataSourcePoll';
+  if (isObject && isPoll) {
+    return trimInvalidPollForTheEventLog(commandInput as Record<string, unknown>);
+  }
   return commandInput;
+}
+
+/**
+ * The payload of a validated command's event-log row: the command itself, except for a
+ * data-source poll, whose row names its shapes instead of carrying them (gate 2 on
+ * PR #16). A logged poll row is rare (decision D11), but each one with a 60-car snapshot
+ * was tens of kilobytes in the eventLog slice that every operator page is sent again.
+ */
+function buildEventLogPayloadOfCommand(command: Command): unknown {
+  if (command.type === 'recordDataSourcePoll') {
+    return trimPollCommandForTheEventLog(command);
+  }
+  return command;
 }
 
 /** The `type` of whatever was sent, for the event log; `unknown` when it had none. */

@@ -12,8 +12,9 @@ Every message is one JSON object, told apart by its `type` field:
 - `slices` (server → client): instead of `slice`, when one state change changed more than
   one slice: every changed slice by name (a part of `hello`'s `slices`, each checked by
   its own schema), so a client takes them in ONE step and never shows the moment between
-  them. Every accepted command changes its own slice and `eventLog`, so it sends `slices`;
-  a refused one changes `eventLog` alone and sends `slice`.
+  them. Every accepted command changes its own slice and `eventLog`, so it sends `slices`
+  to an operator; a refused one changes `eventLog` alone and sends `slice`. A screen is
+  never sent `eventLog` (below), so it gets fewer slices of the same change.
   All three carry `serverNowMs`: the server's wall clock, in whole milliseconds since 1970,
   when the message was built. A renderer subtracts its own clock from it and keeps the
   median of the last five differences, so the race clock on air counts on the server's
@@ -30,8 +31,10 @@ Every message is one JSON object, told apart by its `type` field:
   `on-air` after its play finished or `failed` (with an optional `detail`) after an
   import, load or play that did not work. The server turns it into the
   `reportInstanceStatus` command, which only a renderer may send: a connection is a
-  renderer when it connects to `/ws?role=renderer`, and an operator otherwise. It
-  carries no `requestId`, so its `commandResult` comes back with `requestId: null`.
+  renderer when it connects to `/ws?role=renderer`, a monitor when it connects to
+  `/ws?role=monitor` (the control page's "Programa" and "Prévia" frames, which may send
+  nothing), and an operator otherwise. It carries no `requestId`, so its `commandResult`
+  comes back with `requestId: null`.
 - `commandResult` (server → the client that sent the command): `ok: true` (with
   `createdItemId` after a `createItem`), or `ok: false` with an `error` carrying a stable
   `code` and a pt-BR `message`. The
@@ -41,12 +44,16 @@ Every message is one JSON object, told apart by its `type` field:
   `slice` or `slices` message at all, not even for `eventLog`, and leaves no event-log
   entry; its sender still gets `ok: true`.
 
-A renderer connection (`/ws?role=renderer`) gets `dataSnapshots: []` in its `hello` and
-never a message carrying `dataSnapshots`: that slice is left out of its `slices`, a
-change of `dataSources` and `dataSnapshots` reaches it as a `slice` of `dataSources`, and a
-change of `dataSnapshots` alone sends it nothing. Graphics get resolved data only, and a
-60-car snapshot every 2 s is a frame-drop risk in OBS. Every other connection, the
-control page's monitors included, gets every slice.
+A screen connection, renderer (`/ws?role=renderer`) or monitor (`/ws?role=monitor`), gets
+`dataSnapshots: []` and `eventLog: []` in its `hello` and never a message carrying either:
+both are left out of every change it is sent. An accepted command usually changes its own
+slice and `eventLog`; a screen gets only the command's own slice, so that arrives as a
+single `slice` message (a routine poll arrives as a `slice` of `dataSources`). A change of
+those two slices alone (a refused command, which changes `eventLog` alone) sends a screen
+nothing. Graphics get resolved data only, and a 60-car snapshot every 2 s is a frame-drop
+risk in OBS. `GET /api/v1/state?role=renderer` (or `monitor`) answers the same copy, for a
+page whose `hello` is late. Every other connection, the control page itself, gets every
+slice.
 
 A message that is not JSON or not in the protocol is answered with an error
 `commandResult` (code `INVALID_MESSAGE`, `requestId` echoed when it could be read) and

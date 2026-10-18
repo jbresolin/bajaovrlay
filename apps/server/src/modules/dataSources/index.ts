@@ -18,3 +18,10 @@ export {
 } from './service.js';
 // The REST route GET /api/v1/data-sources/{sourceId}/snapshot and the lookup it answers with.
 export { findDataSnapshotAnswer, getDataSnapshotRoute } from './api.js';
+// The payload of a logged poll row: the source, ok, the moment, the error and the shape names.
+export { type PollEventLogPayload, trimPollCommandForTheEventLog } from './pollEventLogPayload.js';
+// The payload of the failed row of a poll that did not pass validation: type and sourceId only.
+export {
+  type InvalidPollEventLogPayload,
+  trimInvalidPollForTheEventLog,
+} from './pollEventLogPayload.js';

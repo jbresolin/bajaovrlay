@@ -1,7 +1,8 @@
 /**
- * The renderer's connection to the server: a WebSocket to `/ws?role=renderer` (plain
- * `/ws` for a program monitor, see rendererPageRole.ts) that is kept open for as long as
- * the page lives. Every message is checked against the shared protocol before it is believed.
+ * The renderer's connection to the server: a WebSocket to `/ws?role=renderer`
+ * (`/ws?role=monitor` for a monitor or a preview page, see rendererPageRole.ts) that is
+ * kept open for as long as the page lives. Every message is checked against the shared
+ * protocol before it is believed.
  *
  * What the renderer gets out of it is a stream of deliveries: all the slices, either as a
  * full snapshot (after a `hello`, which is the whole truth and makes the renderer rebuild
@@ -61,7 +62,7 @@ export type ServerSocket = {
 export type ServerConnectionOptions = {
   /** For example `ws://192.168.0.10:3000/ws?role=renderer`. */
   webSocketAddress: string;
-  /** For example `http://192.168.0.10:3000/api/v1/state`. */
+  /** For example `http://192.168.0.10:3000/api/v1/state?role=renderer`. */
   stateAddress: string;
   openSocket?: (address: string) => ServerSocket;
   fetchJson?: (address: string) => Promise<unknown>;

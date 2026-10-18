@@ -8,6 +8,7 @@ export const ptBR = {
     routeNotFound: 'Endereço não encontrado no servidor.',
     unexpectedServerError:
       'Erro inesperado no servidor. Procure no log do servidor o request_id desta resposta.',
+    invalidStateRole: 'O parâmetro "role" aceita apenas "renderer" ou "monitor".',
   },
   // Answers to commands and WebSocket messages; each goes with a stable code
   // (CommandErrorCodeSchema in @bajaovrlay/shared).
