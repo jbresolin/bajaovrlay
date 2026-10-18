@@ -13,7 +13,7 @@ type DataSourceAsTheTestsReadIt = {
   id: string;
   label: string;
   config: { simulatedStartAtMs?: number };
-  status: { consecutiveFailures: number; lastOkAtMs?: number };
+  status: { consecutiveFailures: number; lastOkAtMs?: number; lastError: string | null };
 };
 
 /** The parts of a recording the tests read from GET /api/v1/state. */

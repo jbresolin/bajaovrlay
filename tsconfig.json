@@ -1,10 +1,13 @@
 {
-  // Typechecks the config files at the repository root. Each package has its own
-  // tsconfig.json, checked by that package's `typecheck` script.
+  // Typechecks the config files and the plain-Node scripts at the repository root (the
+  // scripts are JavaScript, checked as strictly as the TypeScript). Each package has its
+  // own tsconfig.json, checked by that package's `typecheck` script.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": true
   },
-  "include": ["vitest.config.ts"]
+  "include": ["vitest.config.ts", "scripts"]
 }
