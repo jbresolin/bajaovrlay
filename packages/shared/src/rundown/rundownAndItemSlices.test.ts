@@ -106,6 +106,9 @@ function buildRaceMorningStateWithOnePreparedItem() {
     quickFirePanels: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
     macros: [],
     macroRuns: [],
+    dataSources: [],
+    dataSnapshots: [],
+    recordings: [],
     eventLog: [],
   };
 }

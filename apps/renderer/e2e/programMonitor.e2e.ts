@@ -6,11 +6,11 @@
  *   at `/render/?monitor=1`. It is the same page OBS loads and it draws the same graphics,
  *   but it is not what goes to the stream. Only the program output is the truth about
  *   what is on air (gate-2 ruling on BAJAOVRLAY-12), so a monitor connects to the server
- *   as an ordinary page (`/ws`, no `role=renderer`) and never sends `instanceStatus`. It
- *   does not try and get refused: it has nothing to send with.
+ *   as a monitor (`/ws?role=monitor`, not `role=renderer`) and never sends
+ *   `instanceStatus`. It does not try and get refused: it has nothing to send with.
  *
  * What these tests prove, with the real page in Chromium opened at `/render/?monitor=1`:
- *   - The page dials `/ws` with no role.
+ *   - The page dials `/ws?role=monitor`.
  *   - It still draws: a taken graphic is loaded and played.
  *   - After a graphic was played, the server has heard nothing from the page.
  *   - After a graphic failed to load, the server has heard nothing from the page either.
@@ -26,7 +26,7 @@
  *     e2e/instanceStatus.e2e.ts.
  *   - Every spelling of the address and what it decides; src/rendererPageRole.test.ts.
  *   - The control page framing this address; the control page's own tests.
- *   - What the real server does with a connection that has no role; the server's tests.
+ *   - What the real server does with a monitor connection; the server's tests.
  */
 import { expect, type Page, test } from '@playwright/test';
 
@@ -54,13 +54,13 @@ async function waitUntilTheFakeGraphicWroteDown(page: Page, sentence: string): P
 }
 
 test.describe('a renderer page opened as a program monitor (?monitor=1)', () => {
-  test('dials /ws with no role, plays the graphic and sends the server nothing', async ({
+  test('dials /ws?role=monitor, plays the graphic and sends the server nothing', async ({
     page,
   }) => {
     // Arrange: a monitor connected to a server with nothing on air.
     const fakeServer = await startFakeServerForPage(page, {
       instancesOnAir: [],
-      pageMustDialWithoutTheRendererRole: true,
+      pageMustDialAsAMonitor: true,
     });
     await openProgramMonitorAndWaitForItsLayers(page);
 
@@ -71,11 +71,11 @@ test.describe('a renderer page opened as a program monitor (?monitor=1)', () => 
     fakeServer.sendInstances([]);
     await waitUntilTheFakeGraphicWroteDown(page, 'Enduro: dispose finished');
 
-    // Assert: one connection, to plain /ws, and not one message from the page.
+    // Assert: one connection, as a monitor, and not one message from the page.
     expect(
       fakeServer.readConnectionAddresses(),
-      'a monitor must connect to /ws with no role, so the server does not take it for a renderer',
-    ).toEqual([expect.stringMatching(/\/ws$/)]);
+      'a monitor must connect to /ws?role=monitor, so the server does not take it for a renderer',
+    ).toEqual([expect.stringMatching(/\/ws\?role=monitor$/)]);
     expect(
       fakeServer.readMessagesFromThePage(),
       'a monitor must send no instanceStatus (or anything else) after playing a graphic',
@@ -86,7 +86,7 @@ test.describe('a renderer page opened as a program monitor (?monitor=1)', () => 
     // Arrange: a monitor connected to a server with nothing on air.
     const fakeServer = await startFakeServerForPage(page, {
       instancesOnAir: [],
-      pageMustDialWithoutTheRendererRole: true,
+      pageMustDialAsAMonitor: true,
     });
     await openProgramMonitorAndWaitForItsLayers(page);
     const lowerThirdOfUfprWhoseLoadRejects = createInstance(

@@ -19,7 +19,7 @@
  *   - A countdown that ran out gives a negative number: no clamp happens here.
  *
  * What these tests deliberately do not cover:
- *   - Turning the result into text, which the race clock's clockFormatting.test.ts
+ *   - Turning the result into text, which the clockFormatting.test.ts beside it
  *     covers (including what a countdown that went past zero looks like).
  *   - What the server writes after an update; apps/server's carryClockForward.test.ts.
  *   - Clock drift between the server's and the OBS machine's wall clocks; the graphic

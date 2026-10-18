@@ -11,6 +11,9 @@ export const rendererPagePort = 5184;
 /** The SQLite file of the Playwright run's server, from the repository root (gitignored). */
 export const realServerDatabasePath = 'apps/renderer/.e2e-data/renderer-e2e.sqlite';
 
+/** The data folder (DATA_DIR) of the Playwright run's server, next to its database (gitignored). */
+export const realServerDataFolder = 'apps/renderer/.e2e-data';
+
 // Long enough for a slow CI machine, short enough to fail with a clear message first.
 const waitLimitInMilliseconds = 5000;
 

@@ -8,6 +8,7 @@ export const ptBR = {
     routeNotFound: 'Endereço não encontrado no servidor.',
     unexpectedServerError:
       'Erro inesperado no servidor. Procure no log do servidor o request_id desta resposta.',
+    invalidStateRole: 'O parâmetro "role" aceita apenas "renderer" ou "monitor".',
   },
   // Answers to commands and WebSocket messages; each goes with a stable code
   // (CommandErrorCodeSchema in @bajaovrlay/shared).
@@ -135,5 +136,79 @@ export const ptBR = {
       `A macro "${macroLabel}" não pode começar enquanto a macro "${runningMacroLabel}" está rodando.`,
     macroIsRunning: (macroLabel: string) =>
       `A macro "${macroLabel}" está rodando agora. Espere ela terminar para alterá-la ou excluí-la.`,
+  },
+  // Name of the one data source seeded on a database with none, as the operator sees it.
+  seededDataSourceLabel: 'Simulador — Enduro',
+  // Refusals of the data-source commands, each with a stable code, and the errors a poll
+  // can leave on a source. A source is named by its label when the server has it, and by
+  // id when it was not found.
+  dataSourceErrors: {
+    dataSourceNotFound: (sourceId: string) =>
+      `A fonte de dados "${sourceId}" não existe; ela pode ter sido excluída.`,
+    invalidConfigField: (fieldPath: string) =>
+      `A configuração da fonte é inválida: o campo "${fieldPath}" está ausente ou tem um valor errado.`,
+    dataSourceDisabled: (sourceLabel: string) =>
+      `A fonte de dados "${sourceLabel}" está desligada. Ligue-a antes.`,
+    dataSourceNotASimulator: (sourceLabel: string) =>
+      `A fonte de dados "${sourceLabel}" não é um simulador; só um simulador tem corrida para reiniciar.`,
+    recordingNotFound: (recordingId: string) =>
+      `A gravação "${recordingId}" não existe ou ainda está sendo gravada.`,
+    // A poll answered a shape name that is none of the four canonical shapes: a bug in
+    // the adapter. Worded like the shape validator's errors, naming the path.
+    unknownShapeKey: (shapeKey: string) =>
+      `Dados inválidos em "${shapeKey}": este formato de dados não existe (os formatos são session, positions, standings e brackets).`,
+    // A "good" poll that carried no shape at all: an adapter that answered nothing. Kept
+    // as a failure so the last good data stays on air (rule 4).
+    noShapesInPoll: 'A fonte respondeu sem nenhum dado.',
+    // A failed poll whose adapter gave no reason (an Error with no message).
+    failedPollWithoutReason: 'A leitura da fonte falhou sem dizer o motivo.',
+    // The poller called a poll off: the source took longer than min(interval, 10 s).
+    pollTimedOut: (timeoutSeconds: number) =>
+      `Tempo esgotado: a fonte não respondeu em ${timeoutSeconds.toLocaleString('pt-BR')} s.`,
+    // The poller's stale watch: no good poll for longer than staleAfterMs, typically
+    // because a poll hangs and ignores the timeout.
+    noNewDataFor: (seconds: number) => `Sem dados novos há ${String(seconds)} s.`,
+    // A source of a kind the server has no adapter for (a bug, or a kind not built yet).
+    noAdapterForKind: (kind: string) => `O servidor ainda não sabe ler fontes do tipo "${kind}".`,
+    // GET /api/v1/data-sources/{sourceId}/snapshot on a source that never polled well.
+    dataSnapshotNotFound: (sourceLabel: string) =>
+      `A fonte de dados "${sourceLabel}" ainda não tem dados.`,
+    // The recorder could not append a line (disk full, folder without permission): the
+    // recording stops with this reason on the source, which keeps polling (D9).
+    recordingWriteFailed:
+      'A gravação parou: o servidor não conseguiu escrever o arquivo (disco cheio ou sem permissão).',
+    // A recording reached its duration cap (6 h) and stopped itself, so a recording left
+    // running overnight cannot fill the disk (gate 2 on PR #16).
+    recordingDurationCapReached: (hours: number) =>
+      `A gravação parou sozinha: chegou a ${hours.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} h, o limite de duração de uma gravação.`,
+    // A recording's next line would have taken its file past the size cap (300 MB).
+    recordingSizeCapReached: (megabytes: number) =>
+      `A gravação parou sozinha: chegou a ${megabytes.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} MB, o limite de tamanho de uma gravação.`,
+    // A replay reached a recorded line whose shapes fail today's schema (hand-edited, or
+    // recorded before a rule got stricter): that poll fails, naming the first problem.
+    recordedLineInvalid: (recordingId: string, reason: string) =>
+      `Uma linha da gravação "${recordingId}" é inválida: ${reason}`,
+    // A replay whose recording file is gone from the recordings folder (deleted by hand).
+    recordingFileNotFound: (recordingId: string) =>
+      `O arquivo da gravação "${recordingId}" não foi encontrado.`,
+    // A replay whose recording file exists but could not be read (permissions, a folder).
+    recordingFileUnreadable: (recordingId: string) =>
+      `O arquivo da gravação "${recordingId}" não pôde ser lido.`,
+    // A replay poll called off (its timeout) while the recording is still being read into
+    // memory: the read carries on and the next poll answers (gate 2 re-check on PR #16).
+    recordingStillLoading: 'Carregando a gravação…',
+    // A replay whose recording holds no line that can be replayed (stopped before the
+    // first poll, or every line damaged).
+    recordingHasNoData: (recordingId: string) =>
+      `A gravação "${recordingId}" não tem nenhum dado para reproduzir.`,
+    // A simulator source with "falha simulada" switched on: every poll fails on purpose,
+    // so the operator can rehearse a late source.
+    simulatedFailure: 'Falha simulada.',
+  },
+  // The names the race simulator gives its event and session. They can reach the air
+  // through a binding, so they say plainly that the race is simulated.
+  simulatorSession: {
+    eventName: 'Baja SAE Brasil — Simulação',
+    sessionName: 'Enduro de Resistência (simulado)',
   },
 } as const;

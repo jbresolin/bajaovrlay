@@ -10,19 +10,24 @@
  *   is the truth (gate-2 ruling on BAJAOVRLAY-12). The control page also frames
  *   `/render/?target=preview&monitor=1`, which draws the screen as it will look after the
  *   take (the `preview` output over what stays on air), and is just as silent. rendererPageRole
- *   reads the query of the page's address and answers three things: which output this
- *   page draws, whether it reports to the server, and which WebSocket path it must dial
- *   (`/ws?role=renderer` for the one page that reports, plain `/ws` for the others).
+ *   reads the query of the page's address and answers four things: which output this
+ *   page draws, whether it reports to the server, which WebSocket path it must dial
+ *   (`/ws?role=renderer` for the one page that reports, `/ws?role=monitor` for the
+ *   others), and which address it reads the state from when its hello is late
+ *   (`/api/v1/state` with the same role, so the server leaves out the race data and the
+ *   event log the page never reads).
  *
  * What these tests prove:
  *   - `monitor=1` in the address, alone or among other parameters, makes the page a
- *     monitor of the program output that dials `/ws` with no role and does not report.
+ *     monitor of the program output that dials `/ws?role=monitor`, reads
+ *     `/api/v1/state?role=monitor` and does not report.
  *   - `target=preview`, alone, with `monitor=1` in either order or among other parameters,
- *     makes the page draw the preview output, dial `/ws` with no role and not report.
+ *     makes the page draw the preview output, dial `/ws?role=monitor`, read
+ *     `/api/v1/state?role=monitor` and not report.
  *   - Every other address (no query, `monitor=0`, `monitor` with no value or another
  *     value, `target=program`, `target=PREVIEW`, `target` with no value, a different
- *     parameter) is the program renderer: it draws program, reports, and dials
- *     `/ws?role=renderer`.
+ *     parameter) is the program renderer: it draws program, reports, dials
+ *     `/ws?role=renderer` and reads `/api/v1/state?role=renderer`.
  *
  * What these tests deliberately do not cover:
  *   - That a monitor or a preview page really sends nothing;
@@ -30,7 +35,8 @@
  *     e2e/programMonitor.e2e.ts and e2e/previewPage.e2e.ts prove it with the real page.
  *   - Which instances a page that draws the preview output shows;
  *     src/previewComposition.test.ts and src/instanceReconciler.preview.test.ts.
- *   - What the server does with a connection that has no role; the server's own tests.
+ *   - What the server does with each role; the server's own tests (core/ws and
+ *     api/v1/stateRoute.test.ts).
  */
 import { describe, expect, it } from 'vitest';
 
@@ -40,16 +46,19 @@ const programRenderer = {
   drawnOutput: 'program',
   reportsInstanceStatus: true,
   webSocketPath: '/ws?role=renderer',
+  stateReadingPath: '/api/v1/state?role=renderer',
 };
 const programMonitor = {
   drawnOutput: 'program',
   reportsInstanceStatus: false,
-  webSocketPath: '/ws',
+  webSocketPath: '/ws?role=monitor',
+  stateReadingPath: '/api/v1/state?role=monitor',
 };
 const previewPage = {
   drawnOutput: 'preview',
   reportsInstanceStatus: false,
-  webSocketPath: '/ws',
+  webSocketPath: '/ws?role=monitor',
+  stateReadingPath: '/api/v1/state?role=monitor',
 };
 
 const pageAddressScenarios = [
@@ -160,7 +169,7 @@ describe('decideRendererPageRole', () => {
     // Act: ask which role a page at that address has.
     const role = decideRendererPageRole(pageAddressSearch);
 
-    // Assert: the output drawn, the reporting and the WebSocket path are the row's.
+    // Assert: the output drawn, the reporting and the two server paths are the row's.
     expect(
       role,
       'only target=preview draws preview and only monitor=1 or target=preview silences a page; anything else is the reporting program renderer',

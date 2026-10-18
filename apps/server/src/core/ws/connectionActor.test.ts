@@ -4,14 +4,16 @@
  * What this module is for:
  *   Every command runs under an actor name, and the authorisation step decides by the
  *   role at the start of that name. Until operators log in, a connection says what it
- *   is with the address it connects to: `/ws?role=renderer` is a renderer page, and
- *   anything else is an operator. The connection's own id follows the role, so the
- *   event log can tell two renderers (or two operators) apart.
+ *   is with the address it connects to: `/ws?role=renderer` is the renderer page OBS
+ *   loads, `/ws?role=monitor` is a copy of it framed by the control page ("Programa" or
+ *   "Prévia"), and anything else is an operator. The connection's own id follows the
+ *   role, so the event log can tell two renderers (or two operators) apart.
  *
  * What these tests prove:
- *   - `/ws?role=renderer` gives `renderer:<connection id>`.
+ *   - `/ws?role=renderer` gives `renderer:<connection id>`, and `/ws?role=monitor` gives
+ *     `monitor:<connection id>`.
  *   - `/ws` with no role, with another role, or with a role spelt differently gives
- *     `operador:<connection id>`: only the exact word `renderer` makes a renderer.
+ *     `operador:<connection id>`: only the exact words `renderer` and `monitor` count.
  *
  * What these tests deliberately do not cover:
  *   - That the hub really uses this name for a connection's commands;
@@ -54,6 +56,18 @@ const connectionAddressScenarios = [
     name: 'gives a renderer actor when the role sits beside another query field',
     requestTarget: '/ws?output=program&role=renderer',
     expectedActor: `renderer:${connectionId}`,
+  },
+  // The control page's "Programa" and "Prévia" frames connect like this.
+  {
+    name: 'gives a monitor actor to /ws?role=monitor',
+    requestTarget: '/ws?role=monitor',
+    expectedActor: `monitor:${connectionId}`,
+  },
+  // Same rule as for the renderer: a monitor role in capitals is not the agreed word.
+  {
+    name: 'gives an operator actor to the monitor role spelt in capitals',
+    requestTarget: '/ws?role=MONITOR',
+    expectedActor: `operador:${connectionId}`,
   },
   // Node may hand over no request target at all; that is an ordinary connection.
   {

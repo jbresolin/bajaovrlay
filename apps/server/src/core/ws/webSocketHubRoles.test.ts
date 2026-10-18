@@ -9,12 +9,15 @@
  *   connection without that role is an operator, `operador:<connection id>`.
  *
  * What these tests prove (with a real server on a random port and a real SQLite file):
- *   - A connection to `/ws` acts as `operador:<its own id>`, and one to
- *     `/ws?role=renderer` as `renderer:<its own id>`, as the event log shows.
+ *   - A connection to `/ws` acts as `operador:<its own id>`, one to
+ *     `/ws?role=renderer` as `renderer:<its own id>`, and one to `/ws?role=monitor` as
+ *     `monitor:<its own id>`, as the event log shows.
  *   - A renderer's `instanceStatus` moves the instance to on-air, every client gets the
  *     new instances slice, and the renderer gets an ok `commandResult` whose requestId
  *     is null (the message carries none).
- *   - The same message from an operator connection is answered NOT_ALLOWED in pt-BR.
+ *   - The same message from an operator connection, or from a monitor connection (the
+ *     control page's "Programa" and "Prévia" frames, which only draw), is answered
+ *     NOT_ALLOWED in pt-BR and leaves the instance loading.
  *   - ANY connection that says `?role=renderer` is taken at its word: a client that is
  *     not a renderer page at all can report an instance on air and the report is
  *     applied. Nothing proves the role today. This spoof is accepted on purpose until
@@ -23,8 +26,7 @@
  *     the clear) is answered ok and leaves no event-log entry.
  *
  * What these tests deliberately do not cover:
- *   - The control page's program monitor: it connects with no role, so to the server it
- *     is an ordinary non-renderer connection, like the control page in these tests.
+ *   - Which slices a renderer or a monitor is sent; webSocketHubScreenSlices.test.ts.
  *   - The status rules themselves; reducers/reportInstanceStatus.test.ts covers them.
  *   - Everything else the hub does; webSocketHub.test.ts covers it.
  */
@@ -32,6 +34,7 @@ import type { ServerMessage } from '@bajaovrlay/shared';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { startServer } from '../boot/startServer.js';
+import { createTemporaryDataFolder } from '../boot/temporaryDataFolder.testSupport.js';
 import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
@@ -62,6 +65,7 @@ async function startServerOnARandomPort() {
     databasePath: createTemporaryDatabasePath(),
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
+    dataFolder: createTemporaryDataFolder(),
   });
   onTestFinished(() => runningServer.close());
   return runningServer;
@@ -144,6 +148,31 @@ describe('the actor of a connection', () => {
     );
     expect(entryOfTheReport?.actor, 'a ?role=renderer connection must act as a renderer').toMatch(
       new RegExp(`^renderer:${uuidPattern}$`),
+    );
+  });
+
+  it('is monitor:<connection id> for a connection to /ws?role=monitor', async () => {
+    // Arrange: a running server with the race clock item taken, and the "Programa"
+    // monitor frame connected.
+    const runningServer = await startServerOnARandomPort();
+    const takeOfTheRaceClockItem = prepareTheTakeOfTheRaceClockItem(runningServer.stateStore);
+    const controlPage = await connectWebSocketTestClient(runningServer.port);
+    const monitor = await connectWebSocketTestClient(runningServer.port, { role: 'monitor' });
+    await takeRaceClockFromControlPage(controlPage, takeOfTheRaceClockItem);
+    const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
+
+    // Act: the monitor sends a report it should never send, and waits for the answer.
+    monitor.sendJson({
+      type: 'instanceStatus',
+      instanceId: idOfTheRaceClockInstance,
+      status: 'on-air',
+    });
+    await monitor.waitForMessage('report result', isCommandResultMessage);
+
+    // Assert: the refusal row names a monitor with its own connection id.
+    const entryOfTheReport = runningServer.stateStore.readAllSlices().eventLog.at(-1);
+    expect(entryOfTheReport?.actor, 'a ?role=monitor connection must act as a monitor').toMatch(
+      new RegExp(`^monitor:${uuidPattern}$`),
     );
   });
 });
@@ -297,6 +326,40 @@ describe('an instanceStatus message', () => {
     expect(
       runningServer.stateStore.readAllSlices().instances[0]?.status,
       'the instance must still be waiting for a real renderer',
+    ).toBe('loading');
+  });
+
+  it('from a monitor connection is answered NOT_ALLOWED in pt-BR', async () => {
+    // Arrange: a running server with the race clock item taken by the control page, and
+    // the "Prévia" monitor frame connected.
+    const runningServer = await startServerOnARandomPort();
+    const takeOfTheRaceClockItem = prepareTheTakeOfTheRaceClockItem(runningServer.stateStore);
+    const controlPage = await connectWebSocketTestClient(runningServer.port);
+    const monitor = await connectWebSocketTestClient(runningServer.port, { role: 'monitor' });
+    await takeRaceClockFromControlPage(controlPage, takeOfTheRaceClockItem);
+    const idOfTheRaceClockInstance = runningServer.stateStore.readAllSlices().instances[0]?.id;
+
+    // Act: the monitor claims the clock is on air.
+    monitor.sendJson({
+      type: 'instanceStatus',
+      instanceId: idOfTheRaceClockInstance,
+      status: 'on-air',
+    });
+    const result = await monitor.waitForMessage('report result', isCommandResultMessage);
+
+    // Assert: refused in pt-BR, and the instance is still loading: only OBS says "on air".
+    expect(result, 'a monitor only draws and may report nothing').toEqual({
+      type: 'commandResult',
+      requestId: null,
+      ok: false,
+      error: {
+        code: 'NOT_ALLOWED',
+        message: 'Você não tem permissão para executar este comando.',
+      },
+    });
+    expect(
+      runningServer.stateStore.readAllSlices().instances[0]?.status,
+      'the instance must still be waiting for the program renderer',
     ).toBe('loading');
   });
 });

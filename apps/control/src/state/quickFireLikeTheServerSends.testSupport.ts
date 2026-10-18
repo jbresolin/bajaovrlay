@@ -80,6 +80,9 @@ export function buildSlicesWithShortcutsAndMacros(): Slices {
     ],
     macros: buildTwoMacros(),
     macroRuns: [],
+    dataSources: [],
+    dataSnapshots: [],
+    recordings: [],
   };
 }
 

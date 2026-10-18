@@ -21,7 +21,7 @@
  * What these tests deliberately do not cover:
  *   - The rule at whole-second moments and its other branches; carryClockForward.test.ts.
  *   - The rounding itself; packages/shared's clockWholeSeconds.test.ts covers it.
- *   - Turning the seconds into the text on air; the race clock's clockFormatting.test.ts.
+ *   - Turning the seconds into the text on air; packages/shared/src/clock/clockFormatting.test.ts.
  */
 import {
   type ClockReading,

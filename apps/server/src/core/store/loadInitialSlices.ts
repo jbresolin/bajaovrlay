@@ -1,5 +1,9 @@
 import { type Slices, SlicesSchema } from '@bajaovrlay/shared';
 
+import {
+  loadOrSeedDataSourceSlices,
+  readRecordingsFromFolder,
+} from '../../modules/dataSources/index.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
 import type { ServerDatabase } from '../db/openDatabase.js';
 import { readAllSliceRows, writeBootSliceRows } from '../db/sliceRowStorage.js';
@@ -21,6 +25,12 @@ export type LoadInitialSlicesOptions = {
   graphicPackagesFolder: string;
   /** The clock that stamps the rows written at boot. */
   readCurrentTime: () => Date;
+  /**
+   * `<DATA_DIR>/recordings`: the `recordings` slice is rebuilt from it. The server always
+   * passes it; a test that has nothing to do with recordings leaves it out and starts
+   * with no recording.
+   */
+  recordingsFolder?: string | undefined;
 };
 
 /** The layers and instances the operator built up; graphics come from the filesystem. */
@@ -36,7 +46,9 @@ type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'>;
  * loaded, or seeded when missing, by loadRundownSlices.ts; quick-fire panels and macros
  * likewise by loadQuickFireAndMacroSlices.ts. The macro runs and the "will be cleared"
  * markers are never stored: every boot starts with none, so a macro cut short by a stop
- * is not resumed and Prévia starts empty.
+ * is not resumed and Prévia starts empty. Data sources and their snapshots are loaded,
+ * or the simulator seeded, by modules/dataSources (loadOrSeedDataSourceSlices); the
+ * recordings are listed from the recordings folder (readRecordingsFromFolder).
  */
 export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const storedRows = readAllSliceRows(options.database);
@@ -87,11 +99,15 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     options.logger,
   );
+  // Data sources and their snapshots are loaded, the simulator seeded when there is no
+  // source, and every source that was on comes back stale (modules/dataSources).
+  const dataSourceSlices = loadOrSeedDataSourceSlices(storedRows, updatedAt, options.logger);
   const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
   writeBootSliceRows(options.database, [
     ...layerAndGraphicRows,
     ...rundownSlices.rowsToSaveAtBoot,
     ...quickFireAndMacroSlices.rowsToSaveAtBoot,
+    ...dataSourceSlices.rowsToSaveAtBoot,
   ]);
   if (isFirstBoot) {
     options.logger.info('empty database seeded with the fixed layers');
@@ -124,7 +140,23 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     quickFirePanels: quickFireAndMacroSlices.quickFirePanels,
     macros: quickFireAndMacroSlices.macros,
     macroRuns: [],
+    dataSources: dataSourceSlices.dataSources,
+    dataSnapshots: dataSourceSlices.dataSnapshots,
+    // Rebuilt from the recordings folder at every boot, every recording closed (D13);
+    // never saved in the database: the files are the truth.
+    recordings: readRecordingsAtBoot(options, dataSourceSlices.dataSources),
   };
+}
+
+/** The recordings in the recordings folder, or none when no folder was given (tests). */
+function readRecordingsAtBoot(
+  options: LoadInitialSlicesOptions,
+  dataSources: Slices['dataSources'],
+): Slices['recordings'] {
+  if (options.recordingsFolder === undefined) {
+    return [];
+  }
+  return readRecordingsFromFolder(options.recordingsFolder, dataSources, options.logger);
 }
 
 /** The first-boot layers and instances: the fixed layers, nothing on air. */

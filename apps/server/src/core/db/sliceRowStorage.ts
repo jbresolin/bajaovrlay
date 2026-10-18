@@ -37,3 +37,18 @@ export function writeBootSliceRows(database: ServerDatabase, bootRows: SliceRow[
   const writeAllBootRows = database.$client.transaction(() => writeSliceRows(database, bootRows));
   writeAllBootRows();
 }
+
+/**
+ * Saves the slices one command changed, in one transaction, with no event-log row: the
+ * one exception to "every command is logged", for a routine data-source poll (decision
+ * D11; see createStateStore.ts). Every other command saves through saveCommandOutcome.
+ */
+export function saveSliceRowsWithoutEventLogRow(
+  database: ServerDatabase,
+  changedSliceRows: SliceRow[],
+): void {
+  const writeAllChangedRows = database.$client.transaction(() =>
+    writeSliceRows(database, changedSliceRows),
+  );
+  writeAllChangedRows();
+}

@@ -53,6 +53,12 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'macros', slice: slices.macros, serverNowMs };
     case 'macroRuns':
       return { type: 'slice', name: 'macroRuns', slice: slices.macroRuns, serverNowMs };
+    case 'dataSources':
+      return { type: 'slice', name: 'dataSources', slice: slices.dataSources, serverNowMs };
+    case 'dataSnapshots':
+      return { type: 'slice', name: 'dataSnapshots', slice: slices.dataSnapshots, serverNowMs };
+    case 'recordings':
+      return { type: 'slice', name: 'recordings', slice: slices.recordings, serverNowMs };
     case 'eventLog':
       return { type: 'slice', name: 'eventLog', slice: slices.eventLog, serverNowMs };
   }
@@ -107,6 +113,15 @@ function copyOneSliceByName(sliceName: SliceName, slices: Slices, group: Changed
       break;
     case 'macroRuns':
       group.macroRuns = slices.macroRuns;
+      break;
+    case 'dataSources':
+      group.dataSources = slices.dataSources;
+      break;
+    case 'dataSnapshots':
+      group.dataSnapshots = slices.dataSnapshots;
+      break;
+    case 'recordings':
+      group.recordings = slices.recordings;
       break;
     case 'eventLog':
       group.eventLog = slices.eventLog;

@@ -9,6 +9,9 @@ const ServerEnvironmentSchema = z.object({
   LOG_LEVEL: z.enum(serverLogLevels).default('info'),
   // Relative paths are read from the repository root (see resolveDatabasePath.ts).
   DATABASE_PATH: z.string().min(1).default('apps/server/data/bajaovrlay.sqlite'),
+  // The server's other files (data-source recordings); relative paths as above (see
+  // resolveDataFolder.ts). DATABASE_PATH stays its own setting, not derived from this.
+  DATA_DIR: z.string().min(1).default('apps/server/data'),
 });
 
 /** The server's settings after validation, with defaults filled in. */

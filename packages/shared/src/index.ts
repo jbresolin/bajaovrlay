@@ -4,12 +4,13 @@
 export { type HealthResponse, HealthResponseSchema } from './health/healthResponse.js';
 
 // The race clock's arithmetic: one reading in, the time the clock shows at a moment out,
-// and the whole second it shows for that time. Graphics import the same three from
-// `@bajaovrlay/shared/clock`, which carries no Zod.
+// the whole second it shows for that time, and that time as H:MM:SS text. Graphics import
+// the same from `@bajaovrlay/shared/clock`, which carries no Zod.
 export {
   type ClockReading,
   computeClockTimeMsAtWallClock,
   countWholeSecondsClockShows,
+  formatClockTimeAsHoursMinutesSeconds,
 } from './clock/index.js';
 
 // The `layers` slice: fixed screen slots, and how a layer swaps one graphic for the next.
@@ -122,3 +123,12 @@ export * from './macros/index.js';
 // The preview output: previewItem, stopPreview, takePreview,
 // previewClearLayer, takeAllPreviews and previewMacro.
 export * from './preview/index.js';
+
+// Data sources: the dataSources, dataSnapshots and recordings slices, each kind's config,
+// and the ten data-source commands (the last two, recordDataSourcePoll and
+// recordRecordingProgress, server only).
+export * from './dataSources/index.js';
+
+// Canonical data shapes: session, positions, standings and brackets as every data source
+// produces them, their validator and the paths a binding may point at.
+export * from './dataShapes/index.js';

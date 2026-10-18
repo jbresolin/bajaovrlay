@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  type Command,
   type CommandError,
   CommandSchema,
   type EventLogEntry,
@@ -8,7 +9,12 @@ import {
   type Slices,
 } from '@bajaovrlay/shared';
 
+import {
+  trimInvalidPollForTheEventLog,
+  trimPollCommandForTheEventLog,
+} from '../../modules/dataSources/index.js';
 import { saveCommandOutcome } from '../db/commandOutcomeStorage.js';
+import { saveSliceRowsWithoutEventLogRow } from '../db/sliceRowStorage.js';
 import type { SliceRow } from '../db/tables.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
 import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
@@ -17,7 +23,7 @@ import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialS
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
-/** What a store needs. The last six have production defaults; tests replace them. */
+/** What a store needs. The last seven have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
   /** The authorisation step; defaults to allowCommandForActorRole (no login yet). */
   isCommandAllowed?: IsCommandAllowed | undefined;
@@ -31,6 +37,8 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
   createQuickFirePanelId?: (() => string) | undefined;
   /** Makes the id of each new macro (createMacro); defaults to a random UUID. */
   createMacroId?: (() => string) | undefined;
+  /** Makes the id of each new data source (createDataSource); defaults to a random UUID. */
+  createDataSourceId?: (() => string) | undefined;
 };
 
 /**
@@ -42,8 +50,9 @@ export type CommandOutcome =
   { ok: true; createdItemId?: string } | { ok: false; error: CommandError };
 
 /**
- * Called after every command that changed a slice or was refused (so the event log
- * changed), with the names of the slices that changed, and all slices.
+ * Called after every command that changed a slice or was refused, with the names of the
+ * slices that changed (the event log among them, except after a routine data-source
+ * poll or a recording's progress, which are left out of it), and all slices.
  */
 export type SliceChangeListener = (changedSliceNames: SliceName[], slices: Slices) => void;
 
@@ -68,15 +77,20 @@ const sliceNamesChangedByCommands = [
   'quickFirePanels',
   'macros',
   'macroRuns',
+  'dataSources',
+  'dataSnapshots',
+  'recordings',
 ] as const;
 
 // The slices that live in memory only and are never written to the database: a macro
 // run is something happening now, and a restart must not resume it (see macroRunner.ts);
 // the "will be cleared" markers are scaffolding of the Prévia monitor, dropped at a
-// restart like the preview instances (see loadInitialSlices.ts).
+// restart like the preview instances (see loadInitialSlices.ts); the recordings are
+// files on disk, and their list is rebuilt from the recordings folder at boot.
 const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = [
   'previewClearedLayerIds',
   'macroRuns',
+  'recordings',
 ];
 
 /**
@@ -90,13 +104,16 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const createItemId = options.createItemId ?? (() => randomUUID());
   const createQuickFirePanelId = options.createQuickFirePanelId ?? (() => randomUUID());
   const createMacroId = options.createMacroId ?? (() => randomUUID());
+  const createDataSourceId = options.createDataSourceId ?? (() => randomUUID());
   const listeners = new Set<SliceChangeListener>();
   let currentSlices = loadInitialSlices({ ...options, readCurrentTime });
 
   // Always in this order: validate → authorise → apply the pure reducer → save the
   // changed slices and the event-log row (one transaction) → update memory → tell
   // listeners what changed. A command that fails any step is still logged, as failed.
-  // An accepted command that changes nothing skips the save, the log and the listeners.
+  // An accepted command that changes nothing skips the save, the log and the listeners;
+  // a routine data-source poll and a recording's progress skip only the log (see the
+  // exception below).
   function applyCommand(commandInput: unknown, actor: string): CommandOutcome {
     const now = readCurrentTime().toISOString();
 
@@ -120,7 +137,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         now,
         actor,
         commandName: command.type,
-        payload: command,
+        payload: buildEventLogPayloadOfCommand(command),
         error: refuseCommandNotAllowed(),
       });
     }
@@ -132,6 +149,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       newItemId: createItemId(),
       newQuickFirePanelId: createQuickFirePanelId(),
       newMacroId: createMacroId(),
+      newDataSourceId: createDataSourceId(),
     };
     const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);
     if (reducerOutcome.status === 'refused') {
@@ -139,7 +157,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         now,
         actor,
         commandName: command.type,
-        payload: command,
+        payload: buildEventLogPayloadOfCommand(command),
         error: reducerOutcome.error,
       });
     }
@@ -155,6 +173,19 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       return { ok: true };
     }
 
+    // The one exception to "every command is logged" (decision D11): a data-source poll
+    // that left its source's health as it was (the reducer says so) is saved and
+    // broadcast, but writes no event-log row. A poll arrives every two seconds per
+    // source; logging each would bury the operator's history under thousands of rows a
+    // day. What could go wrong: the log cannot say when each routine poll happened; the
+    // source's status (lastOkAtMs) and the server's own log lines carry that instead.
+    // The recorder's count of written lines (recordRecordingProgress) follows each poll
+    // of a recording source, so it is left out the same way (gate 2 on PR #16).
+    if (reducerOutcome.isLeftOutOfTheEventLog === true) {
+      recordOutcomeWithoutEventLogRow(reducerOutcome.slices, now);
+      return { ok: true };
+    }
+
     // Steps 4 to 6: save, append to the event log, tell listeners.
     recordOutcome({
       nextSlices: reducerOutcome.slices,
@@ -162,7 +193,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         ts: now,
         actor,
         command: command.type,
-        payload: command,
+        payload: buildEventLogPayloadOfCommand(command),
         result: { status: 'ok' },
       },
     });
@@ -201,7 +232,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
    * Saves the slices that changed and the event-log row in one transaction, then (only
    * once that succeeded) updates memory and tells listeners. If saving throws, memory
    * is left as it was, so it never runs ahead of the database. A slice kept in memory
-   * only (previewClearedLayerIds, macroRuns) is not saved, but its change is still
+   * only (previewClearedLayerIds, macroRuns, recordings) is not saved, but its change is still
    * logged and broadcast.
    */
   function recordOutcome(outcome: {
@@ -209,14 +240,11 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     logEntry: Omit<EventLogEntry, 'id'>;
   }): void {
     const changedSliceNames = findNamesOfChangedSlices(outcome.nextSlices);
-    const changedSliceNamesToSave = changedSliceNames.filter(
-      (sliceName) => !sliceNamesKeptInMemoryOnly.includes(sliceName),
+    const changedSliceRows = buildRowsOfChangedSlicesToSave(
+      outcome.nextSlices,
+      changedSliceNames,
+      outcome.logEntry.ts,
     );
-    const changedSliceRows: SliceRow[] = changedSliceNamesToSave.map((sliceName) => ({
-      name: sliceName,
-      json: outcome.nextSlices[sliceName],
-      updatedAt: outcome.logEntry.ts,
-    }));
 
     const eventLogId = saveCommandOutcome(options.database, {
       changedSliceRows,
@@ -224,19 +252,23 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     });
 
     const savedLogEntry: EventLogEntry = { id: eventLogId, ...outcome.logEntry };
-    currentSlices = {
-      layers: outcome.nextSlices.layers,
-      graphics: outcome.nextSlices.graphics,
-      instances: outcome.nextSlices.instances,
-      previewClearedLayerIds: outcome.nextSlices.previewClearedLayerIds,
-      rundowns: outcome.nextSlices.rundowns,
-      items: outcome.nextSlices.items,
-      quickFirePanels: outcome.nextSlices.quickFirePanels,
-      macros: outcome.nextSlices.macros,
-      macroRuns: outcome.nextSlices.macroRuns,
-      eventLog: appendToEventLogSlice(currentSlices.eventLog, savedLogEntry),
-    };
+    const eventLog = appendToEventLogSlice(currentSlices.eventLog, savedLogEntry);
+    currentSlices = buildAllSlices(outcome.nextSlices, eventLog);
     tellListeners([...changedSliceNames, 'eventLog']);
+  }
+
+  /**
+   * Like recordOutcome, for a routine data-source poll or a recording's progress: saves
+   * the changed slices (none for a progress: `recordings` is kept in memory only) in one
+   * transaction with no event-log row, then (only once that succeeded) updates memory and
+   * tells listeners, without 'eventLog' because it did not change.
+   */
+  function recordOutcomeWithoutEventLogRow(nextSlices: SlicesChangedByCommands, now: string): void {
+    const changedSliceNames = findNamesOfChangedSlices(nextSlices);
+    const changedSliceRows = buildRowsOfChangedSlicesToSave(nextSlices, changedSliceNames, now);
+    saveSliceRowsWithoutEventLogRow(options.database, changedSliceRows);
+    currentSlices = buildAllSlices(nextSlices, currentSlices.eventLog);
+    tellListeners(changedSliceNames);
   }
 
   /**
@@ -277,15 +309,78 @@ export function createStateStore(options: StateStoreOptions): StateStore {
 }
 
 /**
+ * The database rows of the changed slices, leaving out the slices kept in memory only.
+ */
+function buildRowsOfChangedSlicesToSave(
+  nextSlices: SlicesChangedByCommands,
+  changedSliceNames: Array<keyof SlicesChangedByCommands>,
+  updatedAt: string,
+): SliceRow[] {
+  const changedSliceNamesToSave = changedSliceNames.filter(
+    (sliceName) => !sliceNamesKeptInMemoryOnly.includes(sliceName),
+  );
+  return changedSliceNamesToSave.map((sliceName) => ({
+    name: sliceName,
+    json: nextSlices[sliceName],
+    updatedAt,
+  }));
+}
+
+/**
+ * Every slice: those a command may change, plus the event log. Written out one slice per
+ * line on purpose: the compiler checks each name, and a new slice cannot be forgotten.
+ */
+function buildAllSlices(
+  slicesOfCommands: SlicesChangedByCommands,
+  eventLog: Slices['eventLog'],
+): Slices {
+  return {
+    layers: slicesOfCommands.layers,
+    graphics: slicesOfCommands.graphics,
+    instances: slicesOfCommands.instances,
+    previewClearedLayerIds: slicesOfCommands.previewClearedLayerIds,
+    rundowns: slicesOfCommands.rundowns,
+    items: slicesOfCommands.items,
+    quickFirePanels: slicesOfCommands.quickFirePanels,
+    macros: slicesOfCommands.macros,
+    macroRuns: slicesOfCommands.macroRuns,
+    dataSources: slicesOfCommands.dataSources,
+    dataSnapshots: slicesOfCommands.dataSnapshots,
+    recordings: slicesOfCommands.recordings,
+    eventLog,
+  };
+}
+
+/**
  * What the event log stores as the payload of an invalid command: what was sent, or a
  * marker when nothing was. event_log.payload is NOT NULL and Drizzle writes a JS null as
  * SQL NULL, so storing null or undefined would make the save throw and lose the row.
+ * An invalid data-source poll keeps only its type and sourceId, so a malformed one
+ * carrying 60 cars of shapes does not land in the eventLog slice (gate 2 on PR #16).
  */
 function describePayloadAsReceived(commandInput: unknown): unknown {
   if (commandInput === null || commandInput === undefined) {
     return { commandWasMissing: true };
   }
+  const isObject = typeof commandInput === 'object';
+  const isPoll = readCommandNameAsSent(commandInput) === 'recordDataSourcePoll';
+  if (isObject && isPoll) {
+    return trimInvalidPollForTheEventLog(commandInput as Record<string, unknown>);
+  }
   return commandInput;
+}
+
+/**
+ * The payload of a validated command's event-log row: the command itself, except for a
+ * data-source poll, whose row names its shapes instead of carrying them (gate 2 on
+ * PR #16). A logged poll row is rare (decision D11), but each one with a 60-car snapshot
+ * was tens of kilobytes in the eventLog slice that every operator page is sent again.
+ */
+function buildEventLogPayloadOfCommand(command: Command): unknown {
+  if (command.type === 'recordDataSourcePoll') {
+    return trimPollCommandForTheEventLog(command);
+  }
+  return command;
 }
 
 /** The `type` of whatever was sent, for the event log; `unknown` when it had none. */

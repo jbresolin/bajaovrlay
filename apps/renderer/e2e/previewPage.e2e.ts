@@ -9,16 +9,16 @@
  *   shows exactly what the screen will look like when the operator takes. So per layer it
  *   draws the preview instance, else nothing on a layer marked "will be cleared"
  *   (`previewClearedLayerIds`), else what is on air there. It is the same page OBS loads
- *   with one setting changed. It is not the program output, so it connects as an ordinary
- *   page (`/ws`, no `role=renderer`) and never sends `instanceStatus`. And because it is
- *   for looking at the next graphic, not for reviewing animations, a second rehearsal on
- *   a layer swaps in at once, whatever that layer's replace policy is on air.
+ *   with one setting changed. It is not the program output, so it connects as a monitor
+ *   (`/ws?role=monitor`, not `role=renderer`) and never sends `instanceStatus`. And
+ *   because it is for looking at the next graphic, not for reviewing animations, a second
+ *   rehearsal on a layer swaps in at once, whatever that layer's replace policy is on air.
  *
  * What these tests prove, with the real page in Chromium:
  *   - Opened at `/render/?target=preview`, and at the address the control page frames
  *     (`/render/?target=preview&monitor=1`): of a clock on air and another clock being
- *     rehearsed on the same layer, the page draws only the rehearsed one; it dials `/ws`
- *     with no role; the server hears nothing from it.
+ *     rehearsed on the same layer, the page draws only the rehearsed one; it dials
+ *     `/ws?role=monitor`; the server hears nothing from it.
  *   - The preview page draws the clock on air together with a lower third rehearsed on
  *     another layer.
  *   - A layer marked "will be cleared" is emptied on the preview page while the page OBS
@@ -100,7 +100,7 @@ test.describe('a renderer page opened as a preview page (?target=preview)', () =
       // nothing on air and nothing rehearsed.
       const fakeServer = await startFakeServerForPage(page, {
         instancesOnAir: [],
-        pageMustDialWithoutTheRendererRole: true,
+        pageMustDialAsAMonitor: true,
       });
       await openPreviewPageAndWaitForItsLayers(page, pageAddress);
 
@@ -116,7 +116,7 @@ test.describe('a renderer page opened as a preview page (?target=preview)', () =
       fakeServer.sendInstances([]);
       await waitUntilTheFakeGraphicWroteDown(page, 'Final: dispose finished');
 
-      // Assert: only the rehearsed clock was ever touched; one connection, to plain /ws;
+      // Assert: only the rehearsed clock was ever touched; one connection, as a monitor;
       // not one message from the page.
       expect(
         await readFakeGraphicCallsAsSentences(page, instanceNames),
@@ -133,8 +133,8 @@ test.describe('a renderer page opened as a preview page (?target=preview)', () =
       ]);
       expect(
         fakeServer.readConnectionAddresses(),
-        'a preview page must connect to /ws with no role, so the server does not take it for a renderer',
-      ).toEqual([expect.stringMatching(/\/ws$/)]);
+        'a preview page must connect to /ws?role=monitor, so the server does not take it for a renderer',
+      ).toEqual([expect.stringMatching(/\/ws\?role=monitor$/)]);
       expect(
         fakeServer.readMessagesFromThePage(),
         'a preview page must send no instanceStatus (or anything else) after playing a graphic',
@@ -152,7 +152,7 @@ test.describe('a renderer page opened as a preview page (?target=preview)', () =
     await watchWhatEachLayerShows(page);
     const fakeServer = await startFakeServerForPage(page, {
       instancesOnAir: [],
-      pageMustDialWithoutTheRendererRole: true,
+      pageMustDialAsAMonitor: true,
     });
     await openPreviewPageAndWaitForItsLayers(page, '/render/?target=preview&monitor=1');
     fakeServer.sendInstances([createRehearsalOf(createEnduroInstance('green'))]);
@@ -207,7 +207,7 @@ test.describe('the preview page draws the screen as it will look after the take'
     // Arrange: the preview page as the control page frames it, nothing on air yet.
     const fakeServer = await startFakeServerForPage(page, {
       instancesOnAir: [],
-      pageMustDialWithoutTheRendererRole: true,
+      pageMustDialAsAMonitor: true,
     });
     await openPreviewPageAndWaitForItsLayers(page, '/render/?target=preview&monitor=1');
 
@@ -245,7 +245,7 @@ test.describe('the preview page draws the screen as it will look after the take'
     const programPage = await context.newPage();
     const serverOfThePreviewPage = await startFakeServerForPage(previewPage, {
       instancesOnAir: [],
-      pageMustDialWithoutTheRendererRole: true,
+      pageMustDialAsAMonitor: true,
     });
     const serverOfTheProgramPage = await startFakeServerForPage(programPage, {
       instancesOnAir: [],

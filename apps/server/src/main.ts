@@ -6,6 +6,7 @@ import { startServer } from './core/boot/startServer.js';
 import { committedMigrationsFolder } from './core/db/openDatabase.js';
 import { readServerEnvironment } from './core/env/readServerEnvironment.js';
 import { resolveDatabasePath } from './core/env/resolveDatabasePath.js';
+import { resolveDataFolder } from './core/env/resolveDataFolder.js';
 import { findBuiltPageFolder } from './core/http/builtPageFolders.js';
 import { createLogger } from './core/logger/createLogger.js';
 import { readServerVersion } from './readServerVersion.js';
@@ -21,6 +22,7 @@ const graphicPackagesFolder = fileURLToPath(
   new URL('../../../packages/graphics/', import.meta.url),
 );
 const databasePath = resolveDatabasePath(environment.DATABASE_PATH, repositoryRootFolder);
+const dataFolder = resolveDataFolder(environment.DATA_DIR, repositoryRootFolder);
 
 // The built pages are looked up once, at boot. Building them later needs a restart.
 const controlPageFolder = findBuiltPageFolder(new URL('../../control/dist/', import.meta.url));
@@ -41,11 +43,18 @@ try {
     databasePath,
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder,
+    dataFolder,
     controlPageFolder,
     rendererPageFolder,
   });
   logger.info(
-    { host: environment.HOST, port: runningServer.port, version, database_path: databasePath },
+    {
+      host: environment.HOST,
+      port: runningServer.port,
+      version,
+      database_path: databasePath,
+      data_folder: dataFolder,
+    },
     'server listening',
   );
 

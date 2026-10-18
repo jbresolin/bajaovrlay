@@ -12,4 +12,5 @@ which lists all ten slices; five have a file here:
   `mergeChangedSlicesIntoSlices`, how a client takes them in one step.
 
 `rundowns` and `items` live in `../rundown/`, `quickFirePanels` in `../quickFire/`, `macros`
-and `macroRuns` in `../macros/`. Data sources, overrides, entities and theme arrive in M2.
+and `macroRuns` in `../macros/`, `dataSources`, `dataSnapshots` and `recordings` in
+`../dataSources/`. Overrides, entities and theme arrive later in M2.

@@ -6,7 +6,8 @@ described here once and validated on both sides.
 
 Start reading at `src/index.ts`, which lists every export. One folder per concept, most
 with a README of their own: `health/`, `slices/` (the state the server owns), `commands/`
-(the only way state changes), `rundown/`, `quickFire/`, `macros/`, `preview/`, `ws/`, `clock/`.
+(the only way state changes), `rundown/`, `quickFire/`, `macros/`, `preview/`, `ws/`,
+`clock/`, `dataShapes/` (the canonical shapes), `dataSources/` (polled sources, recordings).
 
 **How other packages import it.** `package.json` exports the source file under the
 custom condition `@bajaovrlay/source` and the built `dist/` otherwise. Typecheck, Vitest,

@@ -35,6 +35,9 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     quickFirePanels: changedSlices.quickFirePanels ?? slices.quickFirePanels,
     macros: changedSlices.macros ?? slices.macros,
     macroRuns: changedSlices.macroRuns ?? slices.macroRuns,
+    dataSources: changedSlices.dataSources ?? slices.dataSources,
+    dataSnapshots: changedSlices.dataSnapshots ?? slices.dataSnapshots,
+    recordings: changedSlices.recordings ?? slices.recordings,
     eventLog: changedSlices.eventLog ?? slices.eventLog,
   };
 }

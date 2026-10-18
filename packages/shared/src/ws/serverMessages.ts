@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
 import { CommandErrorSchema } from '../commands/commandError.js';
+import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
+import { DataSourceSchema } from '../dataSources/dataSource.js';
+import { RecordingSchema } from '../dataSources/recording.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
@@ -95,6 +98,24 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
   }),
   z.object({
     type: z.literal('slice'),
+    name: z.literal('dataSources'),
+    slice: z.array(DataSourceSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('dataSnapshots'),
+    slice: z.array(DataSnapshotSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('recordings'),
+    slice: z.array(RecordingSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
     name: z.literal('eventLog'),
     slice: z.array(EventLogEntrySchema),
     serverNowMs: ServerNowMsSchema,
@@ -106,7 +127,8 @@ export type SliceMessage = z.infer<typeof SliceMessageSchema>;
 
 /**
  * Sent to every client instead of `slice` messages when one state change changed more
- * than one slice (every accepted command changes its own slice and the event log): the
+ * than one slice (an accepted command changes its own slice and the event log; a routine
+ * data-source poll, which is left out of the event log, its source and snapshot): the
  * changed slices, each checked by its own schema, so a client takes them in ONE step.
  * Sent one by one, "Prévia: limpar" on a previewed layer reached the preview page as
  * "preview gone, no marker yet", and the program clock was cut in for that moment.

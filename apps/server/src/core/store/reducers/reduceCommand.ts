@@ -1,5 +1,6 @@
 import type { Command } from '@bajaovrlay/shared';
 
+import { reduceDataSourceCommand } from '../../../modules/dataSources/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
 import { reducePreviewClearLayer } from './previewClearLayer.js';
@@ -69,5 +70,18 @@ export function reduceCommand(
     case 'advanceMacroRun':
     case 'endMacroRun':
       return reduceQuickFireOrMacroCommand(slices, command, context);
+    // Data sources: their reducers live in the module modules/dataSources (decision D6),
+    // the first module core reaches, always through the module's index.ts.
+    case 'createDataSource':
+    case 'updateDataSource':
+    case 'deleteDataSource':
+    case 'setDataSourceEnabled':
+    case 'pollDataSourceNow':
+    case 'restartSimulatedRace':
+    case 'startRecording':
+    case 'stopRecording':
+    case 'recordDataSourcePoll':
+    case 'recordRecordingProgress':
+      return reduceDataSourceCommand(slices, command, context);
   }
 }

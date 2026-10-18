@@ -5,6 +5,8 @@ Browser tests of the renderer page (Playwright, Chromium). Start at `lifecycle.e
 - `lifecycle`, `replaceWithCut`, `brokenGraphic`, `instanceStatus`, `retryAfterFailedImport`,
   `programMonitor`, `previewPage` (`/render/?target=preview`: the screen after the take, with a second page for `/render/` when both must be compared), `stage` — a stand-in server inside the page
   (`fakeServerForPage.ts`) and the graphic in `../test-fixtures/fake-graphic`, whose calls `fakeGraphicCalls.ts` reads back.
+- `lateHelloStateRead` — a silent stand-in socket, so each page falls back to
+  `/api/v1/state` and must name its own role there.
 - `raceClockOnAir.e2e.ts` — the one file on the REAL server (`realServer.ts`, port 5185) and
   the built race clock; it holds the screenshot baseline.
 

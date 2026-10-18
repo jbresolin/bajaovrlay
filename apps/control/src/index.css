@@ -2,9 +2,11 @@
  * Control page styles: Tailwind v4 plus the shadcn/ui semantic design tokens.
  * Components use only the token names (bg-primary, text-muted-foreground, ...), never raw
  * colours, so a theme change happens here and nowhere else.
- * Token values are shadcn's "neutral" base colour, plus one token of our own, `success`
- * (green): shadcn has a colour for "something is wrong" (destructive) but none for
- * "this is live and well", which the layer panel needs for a graphic that is on air.
+ * Token values are shadcn's "neutral" base colour, plus two tokens of our own: `success`
+ * (green), because shadcn has a colour for "something is wrong" (destructive) but none for
+ * "this is live and well", which the layer panel needs for a graphic that is on air; and
+ * `warning` (amber), for "this still works but is late", which the "Fontes" page needs
+ * for a data source whose data is old ("Atrasada") and the yellow flag of a session.
  */
 @import 'tailwindcss';
 
@@ -30,6 +32,8 @@
   --destructive-foreground: oklch(0.985 0 0);
   --success: oklch(0.527 0.154 150.069);
   --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.769 0.188 70.08);
+  --warning-foreground: oklch(0.205 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -54,6 +58,8 @@
   --destructive-foreground: oklch(0.985 0 0);
   --success: oklch(0.723 0.219 149.579);
   --success-foreground: oklch(0.145 0 0);
+  --warning: oklch(0.828 0.189 84.429);
+  --warning-foreground: oklch(0.205 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
@@ -83,6 +89,8 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

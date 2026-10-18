@@ -3,6 +3,10 @@ import type { AddressInfo } from 'node:net';
 
 import { serve } from '@hono/node-server';
 
+import {
+  buildRecordingsFolderPath,
+  startDataSourceService,
+} from '../../modules/dataSources/index.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
 import type { ServerLogger } from '../logger/createLogger.js';
@@ -23,6 +27,11 @@ export type StartServerOptions = {
   migrationsFolder: string;
   /** packages/graphics: registered as graphics at boot and served under /graphics/. */
   graphicPackagesFolder: string;
+  /**
+   * DATA_DIR, absolute: the server's files other than the database. Recordings are
+   * written to, and listed at boot from, its `recordings` folder.
+   */
+  dataFolder: string;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /** Defaults to 15 s; tests use a few milliseconds. */
@@ -40,16 +49,18 @@ export type RunningServer = {
   port: number;
   stateStore: StateStore;
   /**
-   * Calls off pending auto-outs and a macro's pending wait, drops WebSocket clients, stops listening and closes
-   * the database. Safe to call twice.
+   * Stops polling data sources (calling off every poll in flight), calls off pending
+   * auto-outs and a macro's pending wait, drops WebSocket clients, stops listening and
+   * closes the database. Safe to call twice.
    */
   close: () => Promise<void>;
 };
 
 /**
  * Boots the whole server, in order: open the database and apply migrations (throws if
- * one fails, so the boot stops), load or seed the slices, build the HTTP app, listen,
- * and attach the WebSocket hub to the same port. Rejects if any step fails.
+ * one fails, so the boot stops), load or seed the slices, start the server's own actors
+ * (auto-out, macro runner, data-source poller), build the HTTP app, listen, and attach
+ * the WebSocket hub to the same port. Rejects if any step fails.
  */
 export async function startServer(options: StartServerOptions): Promise<RunningServer> {
   const database = openDatabase({
@@ -74,6 +85,7 @@ async function startServingFromDatabase(
     database,
     logger: options.logger,
     graphicPackagesFolder: options.graphicPackagesFolder,
+    recordingsFolder: buildRecordingsFolderPath(options.dataFolder),
     readCurrentTime: options.readCurrentTime,
   });
   // Started before anything can send a command, so no take of an item with an
@@ -81,33 +93,57 @@ async function startServingFromDatabase(
   const autoOutScheduler = startAutoOutScheduler({ stateStore, logger: options.logger });
   // Started before anything can send a command too, so no runMacro is missed.
   const macroRunner = startMacroRunner({ stateStore, logger: options.logger });
-  const app = createServerApp({
-    logger: options.logger,
-    version: options.version,
-    stateStore,
-    graphicPackagesFolder: options.graphicPackagesFolder,
-    controlPageFolder: options.controlPageFolder,
-    rendererPageFolder: options.rendererPageFolder,
-  });
-  const httpServer = await listen({
-    fetch: app.fetch,
-    hostname: options.host,
-    port: options.port,
-  });
-  const webSocketHub = attachWebSocketHub({
-    httpServer,
+  // Sources left on before a restart start polling again at once; unlike a macro, a
+  // source that is on is meant to keep running.
+  const dataSourceService = startDataSourceService({
     stateStore,
     logger: options.logger,
-    heartbeatIntervalInMilliseconds:
-      options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
-    readCurrentTime: options.readCurrentTime,
+    dataFolder: options.dataFolder,
   });
-
-  async function closeEverything(): Promise<void> {
-    // First, so no auto-out or macro timer fires a command at a store whose database is
-    // closing. A macro stopped mid-run is not resumed at the next boot.
+  /** Stops the server's own actors; used by close() and by a boot that fails from here. */
+  function stopTheServerActors(): void {
+    dataSourceService.stop();
     autoOutScheduler.stop();
     macroRunner.stop();
+  }
+
+  let httpServer: Server;
+  let webSocketHub: ReturnType<typeof attachWebSocketHub>;
+  try {
+    const app = createServerApp({
+      logger: options.logger,
+      version: options.version,
+      stateStore,
+      graphicPackagesFolder: options.graphicPackagesFolder,
+      controlPageFolder: options.controlPageFolder,
+      rendererPageFolder: options.rendererPageFolder,
+    });
+    httpServer = await listen({
+      fetch: app.fetch,
+      hostname: options.host,
+      port: options.port,
+    });
+    webSocketHub = attachWebSocketHub({
+      httpServer,
+      stateStore,
+      logger: options.logger,
+      heartbeatIntervalInMilliseconds:
+        options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
+      readCurrentTime: options.readCurrentTime,
+    });
+  } catch (bootError) {
+    // The poller already armed a poll and a stale watch for every source left on: left
+    // running, they would keep the process alive and send commands to the database that
+    // startServer is about to close (for example when the port is already in use).
+    stopTheServerActors();
+    throw bootError;
+  }
+
+  async function closeEverything(): Promise<void> {
+    // First, so no poll, auto-out or macro timer sends a command to a store whose
+    // database is closing; a poll answering after this is dropped by the poller. A macro
+    // stopped mid-run is not resumed at the next boot.
+    stopTheServerActors();
     await webSocketHub.close();
     await new Promise<void>((resolve) => {
       httpServer.close(() => resolve());

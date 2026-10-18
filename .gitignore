@@ -11,10 +11,12 @@ playwright-report/
 *.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm
-# Default home of the server database (DATABASE_PATH in .env.example)
+# Default home of the server database and data folder (DATABASE_PATH, DATA_DIR)
 apps/server/data/
 # Database of the control page's browser tests, made anew on every run
 apps/control/e2e-data/
+# Database and data folder (DATA_DIR) of the renderer's browser tests
+apps/renderer/.e2e-data/
 .env
 .env.*
 !.env.example

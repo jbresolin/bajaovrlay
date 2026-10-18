@@ -65,6 +65,16 @@ export const CommandErrorCodeSchema = z.enum([
   'INSTANCE_WITHOUT_ITEM',
   /** saveOnAirChangesIntoItem named an instance with nothing changed on air since its take. */
   'NOTHING_CHANGED_ON_AIR',
+  /** The command names a data source that does not exist (never created, or deleted). */
+  'DATA_SOURCE_NOT_FOUND',
+  /** A source's config does not fit the schema of its kind; the message names `config.<field>`. */
+  'INVALID_DATA_SOURCE_CONFIG',
+  /** pollDataSourceNow, restartSimulatedRace or startRecording named a source that is off. */
+  'DATA_SOURCE_DISABLED',
+  /** restartSimulatedRace named a source that is not a simulator (a replay has no race). */
+  'DATA_SOURCE_NOT_A_SIMULATOR',
+  /** A replay names a recording that does not exist or is still being recorded. */
+  'RECORDING_NOT_FOUND',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

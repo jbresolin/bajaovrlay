@@ -16,6 +16,8 @@ const isRunningInCI = Boolean(process.env.CI);
 // A relative DATABASE_PATH is read from the repository root. The folder is gitignored
 // and deleted before every start, so each run begins on an empty, newly seeded database.
 const temporaryDatabasePath = 'apps/control/e2e-data/takeAndClear.sqlite';
+// The server's data folder (DATA_DIR: recordings) lives in the same throwaway folder.
+const temporaryDataFolder = 'apps/control/e2e-data';
 
 export default defineConfig({
   testDir: './e2e',
@@ -48,6 +50,7 @@ export default defineConfig({
         HOST: '127.0.0.1',
         LOG_LEVEL: 'warn',
         DATABASE_PATH: temporaryDatabasePath,
+        DATA_DIR: temporaryDataFolder,
       },
       url: `${realServerAddress}/health`,
       reuseExistingServer: !isRunningInCI,

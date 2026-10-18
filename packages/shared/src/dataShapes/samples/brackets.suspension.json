@@ -1,0 +1,130 @@
+{
+  "sessionId": "suspensao-2027-nacional",
+  "updatedAtMs": 1805485330000,
+  "rounds": [
+    {
+      "name": "Quartas de final",
+      "matches": [
+        {
+          "matchId": "quartas-1",
+          "carA": {
+            "carNumber": 98,
+            "teamName": "Carcará Baja",
+            "schoolName": "UFPR",
+            "timeMs": 71340
+          },
+          "carB": {
+            "carNumber": 64,
+            "teamName": "Siriema Baja",
+            "schoolName": "UFMT",
+            "timeMs": 74910
+          },
+          "winnerCarNumber": 98
+        },
+        {
+          "matchId": "quartas-2",
+          "carA": {
+            "carNumber": 41,
+            "teamName": "Mandacaru Baja",
+            "schoolName": "UFCG",
+            "timeMs": 73005
+          },
+          "carB": {
+            "carNumber": 35,
+            "teamName": "Jaguatirica Off-Road",
+            "schoolName": "UFSC",
+            "timeMs": 72480
+          },
+          "winnerCarNumber": 35
+        },
+        {
+          "matchId": "quartas-3",
+          "carA": {
+            "carNumber": 52,
+            "teamName": "Pequi Off-Road",
+            "schoolName": "UFG",
+            "timeMs": 70870
+          },
+          "carB": {
+            "carNumber": 81,
+            "teamName": "Sucuri Racing",
+            "schoolName": "UFMS",
+            "timeMs": 76220
+          },
+          "winnerCarNumber": 52
+        },
+        {
+          "matchId": "quartas-4",
+          "carA": {
+            "carNumber": 20,
+            "teamName": "Tatu-Bola Racing",
+            "schoolName": "UFBA",
+            "timeMs": 75610
+          },
+          "carB": {
+            "carNumber": 44,
+            "teamName": "Ipê Amarelo Baja",
+            "schoolName": "UnB",
+            "timeMs": 74150
+          },
+          "winnerCarNumber": 44
+        }
+      ]
+    },
+    {
+      "name": "Semifinal",
+      "matches": [
+        {
+          "matchId": "semi-1",
+          "carA": {
+            "carNumber": 98,
+            "teamName": "Carcará Baja",
+            "schoolName": "UFPR",
+            "timeMs": 70920
+          },
+          "carB": {
+            "carNumber": 35,
+            "teamName": "Jaguatirica Off-Road",
+            "schoolName": "UFSC",
+            "timeMs": 71655
+          },
+          "winnerCarNumber": 98
+        },
+        {
+          "matchId": "semi-2",
+          "carA": {
+            "carNumber": 52,
+            "teamName": "Pequi Off-Road",
+            "schoolName": "UFG",
+            "timeMs": 70410
+          },
+          "carB": {
+            "carNumber": 44,
+            "teamName": "Ipê Amarelo Baja",
+            "schoolName": "UnB",
+            "timeMs": 72030
+          },
+          "winnerCarNumber": 52
+        }
+      ]
+    },
+    {
+      "name": "Final",
+      "matches": [
+        {
+          "matchId": "final",
+          "carA": {
+            "carNumber": 98,
+            "teamName": "Carcará Baja",
+            "schoolName": "UFPR"
+          },
+          "carB": {
+            "carNumber": 52,
+            "teamName": "Pequi Off-Road",
+            "schoolName": "UFG"
+          }
+        }
+      ]
+    }
+  ]
+}

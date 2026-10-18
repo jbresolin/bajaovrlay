@@ -3,7 +3,8 @@ import type { CommandError, Slices } from '@bajaovrlay/shared';
 /**
  * The slices a command may change. The event log is not among them: the store appends
  * to it itself, after a command that changed one of these slices or was refused. A
- * command that is accepted and changes nothing leaves no entry.
+ * command that is accepted and changes nothing leaves no entry, and neither does a
+ * routine data-source poll (see isLeftOutOfTheEventLog below).
  */
 export type SlicesChangedByCommands = Pick<
   Slices,
@@ -16,6 +17,9 @@ export type SlicesChangedByCommands = Pick<
   | 'quickFirePanels'
   | 'macros'
   | 'macroRuns'
+  | 'dataSources'
+  | 'dataSnapshots'
+  | 'recordings'
 >;
 
 /**
@@ -37,12 +41,18 @@ export type ReducerContext = {
   newQuickFirePanelId: string;
   /** The id to give a macro the command creates (createMacro). */
   newMacroId: string;
+  /** The id to give a data source the command creates (createDataSource). */
+  newDataSourceId: string;
 };
 
 /**
  * What a reducer decides: the new slices (a slice it did not change is returned as the
  * very same array, so the store can tell what changed), or a refusal with its reason.
+ * `isLeftOutOfTheEventLog` is set by two reducers only: recordDataSourcePoll, for a poll
+ * that left its source's health as it was, and recordRecordingProgress, the recorder's
+ * count of written lines. The store then saves and broadcasts the change but writes no
+ * event-log row (decision D11; see createStateStore.ts).
  */
 export type ReducerOutcome =
-  | { status: 'applied'; slices: SlicesChangedByCommands }
+  | { status: 'applied'; slices: SlicesChangedByCommands; isLeftOutOfTheEventLog?: true }
   | { status: 'refused'; error: CommandError };

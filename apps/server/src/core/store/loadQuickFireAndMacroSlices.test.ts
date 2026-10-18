@@ -133,6 +133,8 @@ describe('the quick-fire panels and macros on a database written before they exi
       items: '2026-10-09T08:00:00.000Z',
       quickFirePanels: '2026-10-16T07:30:00.000Z',
       macros: '2026-10-16T07:30:00.000Z',
+      // Seeded at the first boot (BAJAOVRLAY-17), off, so a later boot leaves it alone.
+      dataSources: '2026-10-09T08:00:00.000Z',
     });
   });
 });
