@@ -132,3 +132,7 @@ export * from './dataSources/index.js';
 // Canonical data shapes: session, positions, standings and brackets as every data source
 // produces them, their validator and the paths a binding may point at.
 export * from './dataShapes/index.js';
+
+// The transform registry: the named pure functions a flex source's mapping applies to a
+// value (textToNumber, lapTimeTextToMs, mapValues…), and the check a config runs on them.
+export * from './transforms/index.js';
