@@ -66,6 +66,13 @@ export type FieldRuleFormValues = {
   transformId: string;
   /** The table of mapValues; unused by the other transforms. */
   valueTableRows: ValueTableRowFormValues[];
+  /**
+   * The rule's place in its list (fields or entryFields) of the config the form was
+   * filled from, or null for a row that had no rule there. Not shown: it keeps the rules
+   * in the order they were written, so "Editar" with only a rename sends no config and
+   * "Exportar" right after "Importar" gives back the same text.
+   */
+  placeInConfig: number | null;
 };
 
 /** One mapping block: one shape, the request it reads, and a row per mappable field. */
@@ -157,14 +164,23 @@ function buildNameAndValueFormValues(nameAndValue: HttpJsonHeader): NameAndValue
   return { name: nameAndValue.name, valueKind: 'value', valueText: nameAndValue.value ?? '' };
 }
 
-/** A mapping block from the config: every mappable field's row, filled where a rule names it. */
+/**
+ * A mapping block from the config: every mappable field's row, in the form's order,
+ * filled where a rule names it and noting that rule's place in the config.
+ */
 function buildMappingFormValues(mapping: FlexShapeMapping): FlexMappingFormValues {
   // The schema refused brackets before the config got here; filtered out above too.
   const shapeKey = mapping.shapeKey as MappableShapeKey;
   const fieldRules = listMappableFieldsOfShape(shapeKey).map((field) => {
     const rulesOfLevel = field.level === 'entry' ? (mapping.entryFields ?? []) : mapping.fields;
-    const rule = rulesOfLevel.find((candidate) => candidate.targetField === field.targetField);
-    return buildFieldRuleFormValues(field.targetField, field.level, rule);
+    const placeOfRule = rulesOfLevel.findIndex(
+      (candidate) => candidate.targetField === field.targetField,
+    );
+    if (placeOfRule === -1) {
+      return buildFieldRuleFormValues(field.targetField, field.level, undefined);
+    }
+    const row = buildFieldRuleFormValues(field.targetField, field.level, rulesOfLevel[placeOfRule]);
+    return { ...row, placeInConfig: placeOfRule };
   });
   return {
     shapeKey,
@@ -187,6 +203,7 @@ function buildFieldRuleFormValues(
     pathOrConstantText: '',
     transformId: noTransformId,
     valueTableRows: [],
+    placeInConfig: null,
   };
   if (rule === undefined) {
     return emptyRow;

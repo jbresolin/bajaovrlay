@@ -19,6 +19,22 @@ export function readExampleTimingSystemConfig(): HttpJsonConfig {
   return HttpJsonConfigSchema.parse(structuredClone(exampleConfigFile));
 }
 
+/**
+ * The example config with every mapping's rules listed last to first, as someone might
+ * write them by hand or through REST: the same config, in another order than the form's.
+ */
+export function readExampleTimingSystemConfigWithRulesReversed(): HttpJsonConfig {
+  const config = readExampleTimingSystemConfig();
+  for (const mapping of config.mappings) {
+    mapping.fields.reverse();
+    // The session mapping has no item rules; only positions and standings do.
+    if (mapping.entryFields !== undefined) {
+      mapping.entryFields.reverse();
+    }
+  }
+  return config;
+}
+
 /** The example config as text, as an operator pastes it into "Importar configuração". */
 export function readExampleTimingSystemConfigText(): string {
   return JSON.stringify(exampleConfigFile, null, 2);
@@ -36,13 +52,18 @@ export function readExampleTimingSystemResponseText(): string {
   return JSON.stringify(exampleResponseFile, null, 2);
 }
 
-/** The flex source made from the example, off, as the server sends it in `dataSources`. */
-export function buildTimingSystemSourceThatIsOff(): HttpJsonDataSource {
+/**
+ * The flex source made from the example, off, as the server sends it in `dataSources`;
+ * its config is the example's unless a test gives another.
+ */
+export function buildTimingSystemSourceThatIsOff(
+  config: HttpJsonConfig = readExampleTimingSystemConfig(),
+): HttpJsonDataSource {
   return {
     id: timingSystemSourceId,
     label: 'Cronometragem — exemplo',
     kind: 'httpJson',
-    config: readExampleTimingSystemConfig(),
+    config,
     pollIntervalMs: 2_000,
     isEnabled: false,
     isRecording: false,

@@ -27,25 +27,37 @@ type TestOutcome =
  * "Testar", which runs the shared mapping and shape validation here in the browser
  * (flexSampleTesting.ts) and shows the canonical result in the source detail's own
  * tables, or the problems. Nothing here is saved or sent as a command.
- * What could go wrong: the samples are kept by the request's place in the list, so
- * removing a request above another moves that one's sample up with it only by place.
+ * Each sample is kept under its request's field id (from the form's field array), not
+ * its place in the list nor its name: removing the request above, or renaming this one,
+ * must leave a request with its own sample, or "Testar" would read the wrong response.
+ * An import rebuilds the requests with new ids, so it starts every sample empty.
  */
 export function FlexTestPanel(props: {
   form: UseFormReturn<FlexSourceFormValues>;
+  /** The field id of each request block, in the form's order. */
+  requestFieldIds: string[];
   controlIdPrefix: string;
 }) {
   const { form } = props;
   const requestValues = useWatch({ control: form.control, name: 'requests' });
-  const [sampleTextByRequestIndex, setSampleTextByRequestIndex] = useState<Record<number, string>>(
-    {},
-  );
+  const [sampleTextByRequestFieldId, setSampleTextByRequestFieldId] = useState<
+    Record<string, string>
+  >({});
   const [testOutcome, setTestOutcome] = useState<TestOutcome>({ kind: 'notTestedYet' });
 
-  function changeSampleText(requestIndex: number, sampleText: string): void {
-    setSampleTextByRequestIndex((previousTexts) => ({
+  function changeSampleText(requestFieldId: string, sampleText: string): void {
+    setSampleTextByRequestFieldId((previousTexts) => ({
       ...previousTexts,
-      [requestIndex]: sampleText,
+      [requestFieldId]: sampleText,
     }));
+  }
+
+  function readSampleText(requestIndex: number): string {
+    const requestFieldId = props.requestFieldIds[requestIndex];
+    if (requestFieldId === undefined) {
+      return '';
+    }
+    return sampleTextByRequestFieldId[requestFieldId] ?? '';
   }
 
   function testTheMapping(): void {
@@ -62,7 +74,7 @@ export function FlexTestPanel(props: {
     }
     const sampleTextByRequestId: Record<string, string> = {};
     configReading.config.requests.forEach((request, requestIndex) => {
-      sampleTextByRequestId[request.requestId] = sampleTextByRequestIndex[requestIndex] ?? '';
+      sampleTextByRequestId[request.requestId] = readSampleText(requestIndex);
     });
     const result = testFlexMappingOnSamples(
       configReading.config.mappings,
@@ -82,18 +94,22 @@ export function FlexTestPanel(props: {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-xs text-muted-foreground">{texts.nothingIsSaved}</p>
-          {requestValues.map((requestFormValues, requestIndex) => {
+          {props.requestFieldIds.map((requestFieldId, requestIndex) => {
+            const requestFormValues = requestValues[requestIndex];
+            if (requestFormValues === undefined) {
+              return null;
+            }
             const typedName = requestFormValues.requestId.trim();
             const requestName =
               typedName === '' ? texts.unnamedRequest(requestIndex + 1) : typedName;
             return (
               <FlexSampleBox
-                // The place in the list: see "What could go wrong" above.
-                key={requestIndex}
+                // The field id, so a box (and its "Buscar da fonte" note) stays with its request.
+                key={requestFieldId}
                 requestName={requestName}
-                controlId={`${props.controlIdPrefix}-sample-${requestIndex}`}
-                sampleText={sampleTextByRequestIndex[requestIndex] ?? ''}
-                onSampleTextChange={(sampleText) => changeSampleText(requestIndex, sampleText)}
+                controlId={`${props.controlIdPrefix}-sample-${requestFieldId}`}
+                sampleText={sampleTextByRequestFieldId[requestFieldId] ?? ''}
+                onSampleTextChange={(sampleText) => changeSampleText(requestFieldId, sampleText)}
                 buildRequestToFetch={() => buildRequestFromFormValues(requestFormValues)}
               />
             );

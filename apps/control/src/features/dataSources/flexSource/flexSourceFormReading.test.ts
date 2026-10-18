@@ -12,6 +12,8 @@
  *   - A form filled from the example preset reads back as exactly that config.
  *   - A form filled by hand reads into the rules it shows: list order, a transform, and a
  *     value table whose right column is read as JSON (true) or text (inPit).
+ *   - A form filled from a config gives its rules back in that config's order, whatever
+ *     the order of the rows, with a rule mapped since after them.
  *   - Each kind of refusal lands under its own field: the name, the address, a header's
  *     variable, a row's path, a fixed value of the wrong kind, an empty value table, the
  *     request a mapping reads; one with no field (nothing mapped) goes in the general list.
@@ -149,6 +151,48 @@ describe('readFlexSourceForm, on a valid form', () => {
           },
         ],
       },
+    ]);
+  });
+
+  it("keeps an imported config's rule order, putting a rule mapped since after them", () => {
+    // Arrange: a config whose item rules name the car before the place (the form shows
+    // the place first), and then the laps mapped by hand in the form.
+    const formValues = buildFlexConfigFormValues({
+      requests: [
+        {
+          requestId: 'classificacao',
+          url: 'http://192.168.0.20:8080/classificacao',
+          headers: [],
+          queryParameters: [],
+        },
+      ],
+      mappings: [
+        {
+          shapeKey: 'positions',
+          requestId: 'classificacao',
+          entriesPath: 'classificacao',
+          fields: [{ targetField: 'updatedAtMs', fromPollMoment: true }],
+          entryFields: [
+            { targetField: 'carNumber', fromPath: 'carro', transformId: 'textToInteger' },
+            { targetField: 'position', fromListOrder: true },
+          ],
+        },
+      ],
+    });
+    const positions = formValues.mappings[0]!;
+    fillFieldRow(positions, 'laps', { sourceKind: 'path', pathOrConstantText: 'voltas' });
+
+    // Act: read the form.
+    const reading = readFlexConfigFormValues(formValues);
+
+    // Assert: the car, then the place, as written; then the laps, mapped since.
+    expect(
+      reading.isValid ? reading.config.mappings[0]?.entryFields : undefined,
+      "the config's own order must survive the form, a new rule coming last",
+    ).toEqual([
+      { targetField: 'carNumber', fromPath: 'carro', transformId: 'textToInteger' },
+      { targetField: 'position', fromListOrder: true },
+      { targetField: 'laps', fromPath: 'voltas' },
     ]);
   });
 });

@@ -11,7 +11,8 @@
  *   - Importing the example preset fills the request's address, the positions block and
  *     its rows, and keeps the name already typed.
  *   - Broken JSON, and a config the schema refuses, say why and leave the form as it was.
- *   - Exporting right after importing gives back the very config imported.
+ *   - Exporting right after importing gives back the very config imported, its rules in
+ *     the order they were written even when that is not the order of the form's rows.
  *
  * What these tests deliberately do not cover:
  *   - Every refusal of the schema: packages/shared/src/dataSources/httpJsonConfig.test.ts.
@@ -31,6 +32,7 @@ import {
 import {
   readExampleTimingSystemConfig,
   readExampleTimingSystemConfigText,
+  readExampleTimingSystemConfigWithRulesReversed,
 } from './timingSystemExample.testSupport';
 
 describe('"Importar configuração"', () => {
@@ -125,6 +127,24 @@ describe('"Exportar configuração"', () => {
     ).value;
     expect(JSON.parse(exportedText), 'an export must round-trip the import exactly').toEqual(
       readExampleTimingSystemConfig(),
+    );
+  });
+
+  it('gives back the rules in the order they were imported, not in the order of the rows', () => {
+    // Arrange: the new flex form with a preset whose rules are listed last to first.
+    renderPageWithSources();
+    openTheNewFlexForm();
+    importConfigText(JSON.stringify(readExampleTimingSystemConfigWithRulesReversed(), null, 2));
+
+    // Act: export it.
+    pressButton('Exportar configuração');
+
+    // Assert: the same config, its rules still last to first.
+    const exportedText = (
+      screen.getByLabelText('Configuração (JSON para copiar)') as HTMLTextAreaElement
+    ).value;
+    expect(JSON.parse(exportedText), "an export must keep the imported rules' order").toEqual(
+      readExampleTimingSystemConfigWithRulesReversed(),
     );
   });
 

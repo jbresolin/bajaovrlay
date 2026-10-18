@@ -68,7 +68,11 @@ export function FlexSampleBox(props: {
         spellCheck={false}
         className="field-sizing-fixed max-h-80 font-mono text-xs"
         value={props.sampleText}
-        onChange={(event) => props.onSampleTextChange(event.target.value)}
+        onChange={(event) => {
+          // The status note was about what the source sent; edited text is no longer that.
+          setFetchNote({ kind: 'none' });
+          props.onSampleTextChange(event.target.value);
+        }}
       />
       {fetchNote.kind === 'fetched' && (
         <p className="text-xs text-muted-foreground">{texts.fetchedStatus(fetchNote.status)}</p>

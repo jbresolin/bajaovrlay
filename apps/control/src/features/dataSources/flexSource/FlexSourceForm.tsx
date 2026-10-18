@@ -1,6 +1,6 @@
 import type { HttpJsonDataSource } from '@bajaovrlay/shared';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 
 import { Input } from '@/components/ui/input';
 import { buildErrorAttributesForControl, FormFieldRow } from '@/features/items/FormFieldRow';
@@ -40,6 +40,10 @@ export function FlexSourceForm(props: FlexSourceFormProps) {
     defaultValues: buildFlexSourceFormValues(sourceAsOpened),
     resolver: resolveFlexSourceForm,
   });
+  // One field array for the requests, shared by the requests section and "Testar": the
+  // panel keeps each sample under its request's field id, which only this array knows.
+  const requests = useFieldArray({ control: form.control, name: 'requests' });
+  const requestFieldIds = requests.fields.map((requestField) => requestField.id);
   const { saveFormReading, isWaitingForTheServer, wasLastSaveRefused } = useSaveDataSource({
     kind: 'httpJson',
     sourceAsOpened,
@@ -105,10 +109,14 @@ export function FlexSourceForm(props: FlexSourceFormProps) {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start">
         <div className="flex min-w-0 flex-col gap-6">
-          <FlexRequestsSection form={form} controlIdPrefix={controlIdPrefix} />
+          <FlexRequestsSection form={form} requests={requests} controlIdPrefix={controlIdPrefix} />
           <FlexMappingsSection form={form} controlIdPrefix={controlIdPrefix} />
         </div>
-        <FlexTestPanel form={form} controlIdPrefix={controlIdPrefix} />
+        <FlexTestPanel
+          form={form}
+          requestFieldIds={requestFieldIds}
+          controlIdPrefix={controlIdPrefix}
+        />
       </div>
 
       {generalProblems !== undefined && (

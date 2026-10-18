@@ -12,8 +12,10 @@
  *   - The example preset tested on the pasted example response shows the 20 cars in the
  *     positions table and the session card, and sends no command.
  *   - A pasted response with one unreadable lap time shows that problem, naming the car.
+ *   - Each sample stays with its own request when a request above it is removed.
  *   - "Buscar da fonte" posts the form's request to the sample route and fills the box
- *     with the body the server fetched; a failure shows the server's pt-BR reason.
+ *     with the body the server fetched; a failure shows the server's pt-BR reason; the
+ *     "A fonte respondeu 200." note goes away once the operator edits the text.
  *
  * What these tests deliberately do not cover:
  *   - The sample route itself (the server's fetch, the variables, the 10 s timeout):
@@ -46,6 +48,18 @@ function findSampleBoxOfClassificacao() {
 /** Pastes a response into the sample box of the example's one request. */
 function pasteSampleOfClassificacao(sampleText: string): void {
   fireEvent.change(findSampleBoxOfClassificacao(), { target: { value: sampleText } });
+}
+
+/** Adds a second request, "sessao", on the timing system's session address. */
+function addTheSessaoRequest(): void {
+  pressButton('+ Requisição');
+  const secondRequest = within(screen.getByRole('region', { name: 'Requisição 2' }));
+  fireEvent.change(secondRequest.getByLabelText('Nome da requisição'), {
+    target: { value: 'sessao' },
+  });
+  fireEvent.change(secondRequest.getByLabelText('Endereço (URL)'), {
+    target: { value: 'http://localhost:4790/cronometragem/sessao' },
+  });
 }
 
 /** Builds a stand-in for `fetch` that answers like the sample route, with this answer. */
@@ -105,6 +119,37 @@ describe('"Testar" with a pasted sample', () => {
       screen.queryByRole('table', { name: 'Posições' }),
       'a failing test must show no table',
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('the sample boxes', () => {
+  it('keep each sample with its own request when a request above it is removed', () => {
+    // Arrange: the example preset with a second request "sessao", each with its own
+    // pasted sample.
+    renderPageWithSources();
+    openTheNewFlexForm();
+    importTheExamplePreset();
+    addTheSessaoRequest();
+    const testPanel = within(screen.getByRole('region', { name: 'Testar' }));
+    const sessaoSampleText = '{ "prova": { "id": "enduro-2027", "bandeira": "VERDE" } }';
+    pasteSampleOfClassificacao(readExampleTimingSystemResponseText());
+    fireEvent.change(testPanel.getByLabelText('Resposta de exemplo de sessao (JSON)'), {
+      target: { value: sessaoSampleText },
+    });
+
+    // Act: remove the first request, "classificacao".
+    const firstRequest = within(screen.getByRole('region', { name: 'Requisição 1' }));
+    fireEvent.click(firstRequest.getByRole('button', { name: 'Remover requisição' }));
+
+    // Assert: one box left, for "sessao", still holding the sample pasted for "sessao".
+    expect(
+      testPanel.getAllByLabelText(/^Resposta de exemplo de /),
+      'only the remaining request must have a sample box',
+    ).toHaveLength(1);
+    expect(
+      testPanel.getByLabelText('Resposta de exemplo de sessao (JSON)'),
+      'the remaining request must keep its own sample, never the removed one',
+    ).toHaveValue(sessaoSampleText);
   });
 });
 
@@ -168,5 +213,31 @@ describe('"Buscar da fonte"', () => {
     expect(findSampleBoxOfClassificacao(), 'a failed fetch must leave the box alone').toHaveValue(
       '',
     );
+  });
+
+  it('drops the "A fonte respondeu 200." note once the operator edits the text', async () => {
+    // Arrange: the example preset imported, and its sample fetched from the source.
+    vi.stubGlobal(
+      'fetch',
+      createFetchAnsweringLikeTheSampleRoute({
+        ok: true,
+        status: 200,
+        body: readExampleTimingSystemResponse(),
+      }),
+    );
+    renderPageWithSources();
+    openTheNewFlexForm();
+    importTheExamplePreset();
+    pressButton('Buscar da fonte');
+    await screen.findByText('A fonte respondeu 200.');
+
+    // Act: paste another response over the fetched one.
+    pasteSampleOfClassificacao('{ "classificacao": [] }');
+
+    // Assert: the note is gone, since the box no longer holds what the source sent.
+    expect(
+      screen.queryByText('A fonte respondeu 200.'),
+      'the note must not describe text the operator changed',
+    ).not.toBeInTheDocument();
   });
 });

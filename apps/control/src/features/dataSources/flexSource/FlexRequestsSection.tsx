@@ -1,5 +1,5 @@
 import { mostRequestsPerHttpJsonSource } from '@bajaovrlay/shared';
-import { useFieldArray, type UseFormReturn } from 'react-hook-form';
+import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,10 +20,15 @@ type FlexRequestsProps = {
 
 /**
  * The requests of the flex form: one block per GET the source makes at every poll (1 to
- * 5), each with its name, its address, and its headers and query parameters.
+ * 5), each with its name, its address, and its headers and query parameters. The field
+ * array comes from FlexSourceForm, which shares its ids with the "Testar" panel.
  */
-export function FlexRequestsSection(props: FlexRequestsProps) {
-  const requests = useFieldArray({ control: props.form.control, name: 'requests' });
+export function FlexRequestsSection(
+  props: FlexRequestsProps & {
+    requests: UseFieldArrayReturn<FlexSourceFormValues, 'requests'>;
+  },
+) {
+  const { requests, ...blockProps } = props;
   const isAtTheMostRequests = requests.fields.length >= mostRequestsPerHttpJsonSource;
 
   return (
@@ -32,7 +37,7 @@ export function FlexRequestsSection(props: FlexRequestsProps) {
       {requests.fields.map((requestField, requestIndex) => (
         <FlexRequestBlock
           key={requestField.id}
-          {...props}
+          {...blockProps}
           requestIndex={requestIndex}
           isTheOnlyRequest={requests.fields.length === 1}
           onRemove={() => requests.remove(requestIndex)}

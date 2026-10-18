@@ -66,28 +66,39 @@ function buildNameAndValue(row: NameAndValueFormValues) {
   return { name, value: row.valueText };
 }
 
-/** Builds one shape's mapping, and the form row of each of its rules. */
+/** A rule built from one row, with the row it came from and its place in the config. */
+type RuleOfRow = { rule: unknown; rowIndex: number; placeInConfig: number | null };
+
+/**
+ * Builds one shape's mapping, and the form row of each of its rules. The rules keep the
+ * order of the config the form was filled from; a rule mapped since comes after them.
+ */
 function buildMappingFromFormValues(mappingValues: FlexMappingFormValues): {
   mapping: unknown;
   formRows: { fields: number[]; entryFields: number[] };
 } {
-  const fields: unknown[] = [];
-  const entryFields: unknown[] = [];
-  const formRows = { fields: [] as number[], entryFields: [] as number[] };
-
+  const sessionLevelRules: RuleOfRow[] = [];
+  const entryLevelRules: RuleOfRow[] = [];
   mappingValues.fieldRules.forEach((row, rowIndex) => {
     const rule = buildRuleFromFormValues(row);
     if (rule === undefined) {
       return;
     }
+    const ruleOfRow = { rule, rowIndex, placeInConfig: row.placeInConfig };
     if (row.level === 'entry') {
-      entryFields.push(rule);
-      formRows.entryFields.push(rowIndex);
+      entryLevelRules.push(ruleOfRow);
     } else {
-      fields.push(rule);
-      formRows.fields.push(rowIndex);
+      sessionLevelRules.push(ruleOfRow);
     }
   });
+  const fieldsInOrder = putRulesInConfigOrder(sessionLevelRules);
+  const entryFieldsInOrder = putRulesInConfigOrder(entryLevelRules);
+  const fields = fieldsInOrder.map((ruleOfRow) => ruleOfRow.rule);
+  const entryFields = entryFieldsInOrder.map((ruleOfRow) => ruleOfRow.rule);
+  const formRows = {
+    fields: fieldsInOrder.map((ruleOfRow) => ruleOfRow.rowIndex),
+    entryFields: entryFieldsInOrder.map((ruleOfRow) => ruleOfRow.rowIndex),
+  };
 
   const requestId = mappingValues.requestId;
   if (mappingValues.shapeKey === 'session') {
@@ -103,6 +114,19 @@ function buildMappingFromFormValues(mappingValues: FlexMappingFormValues): {
   }
   const mapping = { shapeKey: mappingValues.shapeKey, requestId, entriesPath, fields, entryFields };
   return { mapping, formRows };
+}
+
+/**
+ * Sorts one level's rules into the config's order: rules that were in the config by their
+ * place there, then rules with no place (mapped in the form) in the form's row order.
+ */
+function putRulesInConfigOrder(rulesOfLevel: RuleOfRow[]): RuleOfRow[] {
+  const rulesFromTheConfig = rulesOfLevel.filter((ruleOfRow) => ruleOfRow.placeInConfig !== null);
+  const rulesMappedInTheForm = rulesOfLevel.filter((ruleOfRow) => ruleOfRow.placeInConfig === null);
+  const sortedRulesFromTheConfig = [...rulesFromTheConfig].sort(
+    (first, second) => (first.placeInConfig ?? 0) - (second.placeInConfig ?? 0),
+  );
+  return [...sortedRulesFromTheConfig, ...rulesMappedInTheForm];
 }
 
 /** Builds the rule of one row, or undefined for a row left "Não mapeado". */

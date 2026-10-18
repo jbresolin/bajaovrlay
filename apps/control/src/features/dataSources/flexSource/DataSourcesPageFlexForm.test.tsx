@@ -15,7 +15,8 @@
  *   - A header variable without the BAJAOVRLAY_SOURCE_ prefix is refused under its row
  *     and nothing is sent.
  *   - "Editar" on a flex source sends updateDataSource with only the new name, its
- *     unchanged config (lists in lists) not counting as a change.
+ *     unchanged config (lists in lists) not counting as a change, even when its rules
+ *     were written in another order than the form shows its rows.
  *
  * What these tests deliberately do not cover:
  *   - Every placement of a refusal: flexSourceFormReading.test.ts.
@@ -37,6 +38,7 @@ import {
 import {
   buildTimingSystemSourceThatIsOff,
   readExampleTimingSystemConfig,
+  readExampleTimingSystemConfigWithRulesReversed,
 } from './timingSystemExample.testSupport';
 
 describe('a new flex source', () => {
@@ -197,6 +199,38 @@ describe('"Editar" on a flex source', () => {
     // Assert: only the name; the config the form rebuilt is the stored one.
     await waitFor(() => {
       expect(fakeServer.listCommandsReceived(), 'an unchanged config must not be sent').toEqual([
+        {
+          type: 'updateDataSource',
+          sourceId: 'cronometragem-exemplo',
+          label: 'Cronometragem oficial',
+        },
+      ]);
+    });
+  });
+
+  it('sends only the new name for a source whose rules were written in another order', async () => {
+    // Arrange: a stored flex source whose rules are listed last to first (written through
+    // REST, say), its form opened with "Editar" and renamed.
+    const storedConfig = readExampleTimingSystemConfigWithRulesReversed();
+    const { fakeServer } = renderPageWithSources([buildTimingSystemSourceThatIsOff(storedConfig)]);
+    const sourceList = within(screen.getByRole('list', { name: 'Fontes de dados' }));
+    fireEvent.click(sourceList.getByRole('button', { name: 'Editar' }));
+    const editForm = within(
+      screen.getByRole('region', { name: 'Editar fonte: Cronometragem — exemplo' }),
+    );
+    fireEvent.change(editForm.getByLabelText('Nome da fonte'), {
+      target: { value: 'Cronometragem oficial' },
+    });
+
+    // Act: press "Salvar fonte".
+    pressButton('Salvar fonte');
+
+    // Assert: only the name; the rules' order is the stored one, so the config is unchanged.
+    await waitFor(() => {
+      expect(
+        fakeServer.listCommandsReceived(),
+        "the rules' written order must not count as a config change",
+      ).toEqual([
         {
           type: 'updateDataSource',
           sourceId: 'cronometragem-exemplo',
