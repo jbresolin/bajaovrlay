@@ -23,7 +23,7 @@ function formatLapTimeOrUnknown(lapTimeMs: number | undefined): string {
 /**
  * The positions of the selected source, one row per car in the order the source gave:
  * place, car, team, school, laps, last and best lap (m:ss.mmm), the gap to the leader
- * ("+12,345 s" or "+2 voltas") and what the car is doing. The table scrolls sideways in
+ * ("+12,3 s" or "+2 voltas") and what the car is doing. The table scrolls sideways in
  * its own box on a narrow screen (components/ui/table.tsx).
  */
 export function SnapshotPositionsTable(props: { positions: PositionsShape }) {

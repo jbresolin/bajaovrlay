@@ -44,7 +44,9 @@ export const ptBRDataSources = {
 
   // One row of the list (DataSourceRow.tsx).
   row: {
-    // The label is a button that shows the source's data beside the list.
+    // A click anywhere on the card, or this button (for the keyboard), shows the
+    // source's data beside the list.
+    viewButton: 'Ver',
     lastGoodData: (time: string) => `Último dado: ${time}`,
     noGoodDataYet: 'Ainda sem dados',
     pollInterval: (seconds: string) => `Leitura a cada ${seconds} s`,

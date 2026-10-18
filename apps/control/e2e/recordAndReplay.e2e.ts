@@ -128,7 +128,7 @@ test.describe('recording the simulator and replaying it', () => {
     await replayForm.getByRole('button', { name: 'Salvar fonte' }).click();
     await expect(replayForm, 'the form must close once the server has the replay').toBeHidden();
     await turnSourceOnWithItsSwitch(page, replayLabel);
-    await findDataSourceRow(page, replayLabel).getByRole('button', { name: replayLabel }).click();
+    await findDataSourceRow(page, replayLabel).getByRole('button', { name: 'Ver' }).click();
 
     // Assert: the replay shows 60 cars from the recording, and its first places change
     // twice from its own earlier read: the first change may only be this run's data
