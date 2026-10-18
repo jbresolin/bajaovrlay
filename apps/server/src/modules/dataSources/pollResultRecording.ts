@@ -12,6 +12,7 @@ import {
   type DataSourceAdapters,
   pollDataSourceWithTheAdapterOfItsKind,
 } from './adapters/createDataSourceAdapters.js';
+import { StillPreparingForPollingError } from './adapters/dataSourceAdapter.js';
 
 /** The result of one poll, exactly as recordDataSourcePoll carries it. */
 export type PollResult = RecordDataSourcePollCommand['result'];
@@ -30,7 +31,9 @@ export type PollTheSourceOptions = {
 /**
  * Asks the adapter of the source's kind for its shapes and turns the answer into a
  * poll result. A poll is dated when it started. A signalled poll is a timeout, even
- * when the adapter answered anyway after the signal.
+ * when the adapter answered anyway after the signal, except when the adapter rejected
+ * with StillPreparingForPollingError: its message ("Carregando a gravação…") is recorded,
+ * because the operator should read that the source is getting ready, not that it is slow.
  */
 export async function pollTheSourceIntoAPollResult(
   options: PollTheSourceOptions,
@@ -52,6 +55,9 @@ export async function pollTheSourceIntoAPollResult(
     }
     return { ok: true, shapes: polledShapes.shapes, receivedAtMs: attemptedAtMs };
   } catch (pollError) {
+    if (pollError instanceof StillPreparingForPollingError) {
+      return { ok: false, error: pollError.message, attemptedAtMs };
+    }
     if (signal.aborted) {
       return timeoutFailure;
     }

@@ -11,14 +11,15 @@
  * What these tests prove (real files in a temporary folder, a fake clock in the context):
  *   - A line that is read but fails its shapes fails the poll that answers it, with a
  *     pt-BR reason naming the recording.
- *   - A recording of 2 000 lines of 60 cars (about 50 MB) loads in under
- *     largestLoadTimeMs, and the server's event loop is never held meanwhile for more
- *     than a third of what the old way (reading and parsing the whole file in one go)
- *     holds it on the same machine.
+ *   - A recording of 2 000 lines of 60 cars (about 50 MB), prepared as the poller
+ *     prepares a replay turned on and then polled, loads in under largestLoadTimeMs, and
+ *     the server's event loop is never held meanwhile for more than a third of what the
+ *     old way (reading and parsing the whole file in one go) holds it on the same machine.
  *
  * What these tests deliberately do not cover:
  *   - Answering the right line as the clock moves, and the memory bound;
- *     replayAdapter.test.ts covers them.
+ *     replayAdapter.test.ts covers them. What a poll does while the read is still going
+ *     (its signal firing, "Carregando a gravação…"); replayAdapterAbortSignal.test.ts.
  *   - A whole 4-hour enduro (7 200 lines, 180 MB): writing it would cost the test itself
  *     seconds; loading time grows with the file, a line at a time.
  */
@@ -128,8 +129,10 @@ describe('the replay adapter, checking lines and loading large recordings', () =
       lastTickAtMs = nowMs;
     }, 10);
 
-    // Act: the first poll, which loads the file, timed.
+    // Act: the replay prepared, as the poller does when it is turned on, which starts
+    // reading the file, and the first poll, which waits for that read; timed together.
     const startedAtMs = performance.now();
+    replayAdapter.prepareForPolling?.(config);
     const answer = await replayAdapter.pollOnce(config, buildPollContextAt(replayTurnedOnAtMs));
     const loadTimeMs = performance.now() - startedAtMs;
     clearInterval(ticker);

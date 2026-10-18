@@ -6,10 +6,10 @@ the last good snapshot of each, and recordings. Slices and commands are declared
 
 Start at `reducers/recordDataSourcePoll.ts` (a poll result, the no-op poll, which polls
 stay out of the event log), then `poller.ts` (one loop per source that is on: rhythm,
-timeout, stale watch), then `recorder.ts` (good polls appended as numbered lines of
-`recordingLine.ts`, the count reported once written; caps in `recordingCaps.ts`) and
-`recordingsFromFolder.ts` (the list at boot, from each file's two ends). `adapters/` holds
-the simulator and the replay; `service.ts` starts poller and recorder; `api.ts` is the
-snapshot route; one reducer file per command in `reducers/` (its README says where to
-start). `loadDataSourceSlices.ts` loads and seeds at boot. Refusals are in
-`dataSourceRefusals.ts`; `index.ts` lists what core may use.
+timeout, stale watch; preparing a source in `sourcePreparation.ts`), then `recorder.ts`
+(good polls appended as numbered lines of `recordingLine.ts`, the count reported once
+written; caps in `recordingCaps.ts`) and `recordingsFromFolder.ts` (the list at boot,
+from each file's two ends). `adapters/` holds the simulator and the replay; `service.ts`
+starts poller and recorder; `api.ts` is the snapshot route; one reducer file per command
+in `reducers/` (its README says where to start). `loadDataSourceSlices.ts` loads and
+seeds at boot. Refusals are in `dataSourceRefusals.ts`; `index.ts` lists what core may use.

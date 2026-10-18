@@ -10,6 +10,10 @@ import {
   readSourceFromTheStore,
   recordPollResultOnTheStore,
 } from './pollResultRecording.js';
+import {
+  hasTheConfigChangedSinceItWasPrepared,
+  prepareSourceForPollingAndLogACrash,
+} from './sourcePreparation.js';
 
 /** What the poller needs; the clock and the two timer functions default to Node's own. */
 export type DataSourcePollerOptions = {
@@ -54,6 +58,8 @@ type PollingLoop = {
   lastSeenPollNowRequestedAtMs: number | undefined;
   /** The interval the loop's waits were armed with, so an edited interval is noticed. */
   lastSeenPollIntervalMs: number;
+  /** The config the source was last prepared with, so an edited config is noticed. */
+  lastPreparedConfig: DataSource['config'];
 };
 
 /**
@@ -66,12 +72,18 @@ type PollingLoop = {
  *   answer dropped. Each poll reads the source from the store, so an edited config
  *   applies from the next poll on. An edited interval restarts the rhythm at once (see
  *   restartTheRhythmWithANewInterval).
+ * - The adapter prepares the source (prepareForPolling, such as a replay starting to read
+ *   its recording) when the loop starts and whenever the source's config changes, so slow
+ *   preparation runs beside the polls instead of inside one poll's timeout (see
+ *   sourcePreparation.ts).
  * - Polls never overlap: the next one is armed pollIntervalMs after a poll settles (a
  *   fixed wait, no backoff). "Atualizar agora" (a new pollNowRequestedAtMs) polls at once,
  *   unless a poll is in flight.
  * - A poll is called off after min(pollIntervalMs, 10 s) through the AbortSignal, and
- *   recorded as "Tempo esgotado". The poller does not race the adapter's promise: one
- *   that ignores the signal stays in flight, and the stale watch catches it.
+ *   recorded as "Tempo esgotado", or with the adapter's own message when it says it is
+ *   still preparing ("Carregando a gravação…", see pollResultRecording.ts). The poller
+ *   does not race the adapter's promise: one that ignores the signal stays in flight,
+ *   and the stale watch catches it.
  * - The stale watch: every poll interval, a source whose last good answer is older than
  *   staleAfterMs gets a failure "Sem dados novos há N s", unless it is already stale with
  *   a reason the operator can read. The last good answer is kept here in memory, not
@@ -111,6 +123,11 @@ export function startDataSourcePoller(options: DataSourcePollerOptions): DataSou
         stopLoop(loop);
         continue;
       }
+      const hasANewConfig = hasTheConfigChangedSinceItWasPrepared(source, loop.lastPreparedConfig);
+      if (hasANewConfig) {
+        loop.lastPreparedConfig = source.config;
+        prepareSourceForPollingAndLogACrash(source, adapters, logger);
+      }
       const hasANewPollInterval = source.pollIntervalMs !== loop.lastSeenPollIntervalMs;
       if (hasANewPollInterval) {
         loop.lastSeenPollIntervalMs = source.pollIntervalMs;
@@ -141,8 +158,10 @@ export function startDataSourcePoller(options: DataSourcePollerOptions): DataSou
       lastSuccessfulPollAtMs: readCurrentTime().getTime(),
       lastSeenPollNowRequestedAtMs: source.pollNowRequestedAtMs,
       lastSeenPollIntervalMs: source.pollIntervalMs,
+      lastPreparedConfig: source.config,
     };
     loopsBySourceId.set(source.id, loop);
+    prepareSourceForPollingAndLogACrash(source, adapters, logger);
     armTheNextPoll(loop, 0);
     armTheStaleWatch(loop, source.pollIntervalMs);
   }

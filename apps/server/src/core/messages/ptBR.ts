@@ -194,6 +194,9 @@ export const ptBR = {
     // A replay whose recording file exists but could not be read (permissions, a folder).
     recordingFileUnreadable: (recordingId: string) =>
       `O arquivo da gravação "${recordingId}" não pôde ser lido.`,
+    // A replay poll called off (its timeout) while the recording is still being read into
+    // memory: the read carries on and the next poll answers (gate 2 re-check on PR #16).
+    recordingStillLoading: 'Carregando a gravação…',
     // A replay whose recording holds no line that can be replayed (stopped before the
     // first poll, or every line damaged).
     recordingHasNoData: (recordingId: string) =>

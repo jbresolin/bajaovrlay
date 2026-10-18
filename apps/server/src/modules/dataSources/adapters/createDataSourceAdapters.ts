@@ -66,3 +66,24 @@ export function pollDataSourceWithTheAdapterOfItsKind(
 function rejectForAKindWithNoAdapter(kind: DataSource['kind']): Promise<PolledShapes> {
   return Promise.reject(new Error(ptBR.dataSourceErrors.noAdapterForKind(kind)));
 }
+
+/**
+ * Starts the preparation of a source with the adapter of its kind (prepareForPolling),
+ * when that adapter has one. A kind with no adapter, or an adapter with nothing to
+ * prepare, does nothing: its polls say what is wrong. Returns at once.
+ */
+export function prepareDataSourceWithTheAdapterOfItsKind(
+  source: DataSource,
+  adapters: DataSourceAdapters,
+): void {
+  switch (source.kind) {
+    case 'simulator': {
+      adapters.simulator?.prepareForPolling?.(source.config);
+      return;
+    }
+    case 'replay': {
+      adapters.replay?.prepareForPolling?.(source.config);
+      return;
+    }
+  }
+}

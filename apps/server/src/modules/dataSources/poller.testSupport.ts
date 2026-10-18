@@ -256,3 +256,34 @@ export function createSimulatorAdapterThatGivesUpWhenSignalled() {
     readAbortMomentsMs: () => [...abortMomentsMs],
   };
 }
+
+/**
+ * A simulator adapter that answers at once and has a prepareForPolling, noting every call
+ * in the order it came ("preparou a semente 2027", "leu a fonte"), so a test can see what
+ * was prepared, with which config, and whether that came before the poll. Once broken, its
+ * prepareForPolling throws the given error (a buggy adapter: the interface says it must not).
+ */
+export function createSimulatorAdapterThatNotesItsPreparations() {
+  const callsInOrder: string[] = [];
+  let errorWhilePreparing: string | undefined;
+  const pollOnce: DataSourceAdapter<SimulatorConfig>['pollOnce'] = (_config, context) => {
+    callsInOrder.push('leu a fonte');
+    return Promise.resolve(answerTheGreenFlagSessionAt(context.readCurrentTime().getTime()));
+  };
+  const adapter: DataSourceAdapter<SimulatorConfig> = {
+    ...buildFakeSimulatorAdapter(pollOnce),
+    prepareForPolling: (config) => {
+      callsInOrder.push(`preparou a semente ${String(config.seed)}`);
+      if (errorWhilePreparing !== undefined) {
+        throw new Error(errorWhilePreparing);
+      }
+    },
+  };
+  return {
+    adapter,
+    readCallsInOrder: () => [...callsInOrder],
+    makeItsPreparationThrow: (error: string) => {
+      errorWhilePreparing = error;
+    },
+  };
+}

@@ -6,12 +6,10 @@ Its config is the shared `ReplayConfigSchema` (`recordingId`, `speed`, `isLoopin
 `startOffsetMs`, and `replayStartedAtMs`, which the server sets when the source is
 turned on).
 
-Start reading at `replayTimeline.ts`: which recorded line answers now (offset, speed,
-loop or hold the last line), and how its shapes move onto today's timeline
-(`updatedAtMs` and the session clock, stopped once a plain replay has ended). Then
-`replayAdapter.ts`: reading a recording once as a stream, parsing each line without
-checking its shapes (so a large recording never stalls the server), keeping parsed
-recordings in memory up to 300 MB of file, least recently polled let go first, checking
-only the line a poll answers, and the pt-BR errors for a missing, empty or bad file.
-`fridayTraining.testSupport.ts` is the recording the tests replay;
-`replayAdapterLoading.test.ts` loads a 50 MB one (`../../largeRecording.testSupport.ts`).
+Start reading at `replayTimeline.ts`: which recorded line answers now, and how its
+shapes move onto today's timeline. Then `replayAdapter.ts`. It reads each recording
+once, as a stream, starting when the source is turned on or edited
+(`prepareForPolling`). A poll called off mid-read answers "Carregando a gravação…", and
+a failed read gives its pt-BR reason until the next prepare. Recordings stay parsed up
+to 300 MB of file. Tests replay `fridayTraining.testSupport.ts`; each
+`replayAdapter*.test.ts` file names what it covers in its header.
