@@ -1,10 +1,11 @@
 /**
- * Clock text formatting (packages/graphics/race-clock)
+ * Clock text formatting (packages/shared/src/clock)
  *
  * What this module is for:
  *   The race clock shows a time on air as H:MM:SS, dropping the hours while they are
  *   zero (so twelve minutes reads "12:00", not "0:12:00"). This file turns a number of
  *   milliseconds into that text, for a clock counting up (elapsed) or down (remaining).
+ *   The graphic and the control page's session card ("Fontes") both write it this way.
  *
  * What these tests prove:
  *   - The edge cases the brief names: 0 s, 59 s, 59:59, exactly one hour, and a
@@ -16,12 +17,14 @@
  *
  * What these tests deliberately do not cover:
  *   - That the text keeps the same width on air (tabular numerals); that is a font
- *     question, checked in a real browser by e2e/raceClockOnAir.e2e.ts.
+ *     question, checked in a real browser by the race clock's e2e/raceClockOnAir.e2e.ts.
  */
 import { describe, expect, it } from 'vitest';
 
+import type { ClockReading } from './clockExtrapolation.js';
 import { formatClockTimeAsHoursMinutesSeconds } from './clockFormatting.js';
-import type { ClockMode } from './raceClockModel.js';
+
+type ClockMode = ClockReading['clockMode'];
 
 const clockTextScenarios: {
   name: string;

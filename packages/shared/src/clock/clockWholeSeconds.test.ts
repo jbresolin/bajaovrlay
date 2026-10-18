@@ -17,7 +17,7 @@
  *
  * What these tests deliberately do not cover:
  *   - Turning the seconds into H:MM:SS text, and clamping a negative time to zero; the
- *     race clock's clockFormatting.test.ts covers both.
+ *     clockFormatting.test.ts beside it covers both.
  *   - What the server writes when a clock is turned around; apps/server's
  *     carryClockForward.test.ts.
  */

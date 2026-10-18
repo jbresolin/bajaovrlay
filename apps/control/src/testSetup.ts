@@ -2,6 +2,7 @@
 // Adds DOM matchers such as `toBeInTheDocument()` to `expect`.
 import '@testing-library/jest-dom/vitest';
 
+import { forgetServerClockSamples } from '@bajaovrlay/shared/clock';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
@@ -16,6 +17,12 @@ afterEach(() => {
   // A test that switched "Prévia automática" off (the one thing the page keeps in the
   // browser's own storage) must not leave the next test with it off.
   window.localStorage.clear();
+  // A test that followed the header's "Fontes" link must not leave the next test's page
+  // on "Fontes": jsdom keeps the address between the tests of a file (src/app/currentPage.ts).
+  window.location.hash = '';
+  // A test that set the server's clock apart from the page's must not leave the next
+  // test reading "now" with that offset (packages/shared/src/clock/serverAlignedTime.ts).
+  forgetServerClockSamples();
 });
 
 // The tests run in jsdom, a browser stand-in that draws nothing and so lacks the three

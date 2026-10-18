@@ -3,12 +3,15 @@
  * change only text and data-flag-state attributes in place. Nothing here rebuilds
  * elements, so an update or a clock frame touches only what really changed.
  */
-// The clock's sum is shared with the server, which must find the same time on screen.
+// The clock's sum is shared with the server, which must find the same time on screen,
+// and its text with the control page's session card ("Fontes"), which must read the same.
 // Only the `/clock` entry is imported: it carries no Zod and nothing else of shared.
-import { computeClockTimeMsAtWallClock } from '@bajaovrlay/shared/clock';
+import {
+  computeClockTimeMsAtWallClock,
+  formatClockTimeAsHoursMinutesSeconds,
+} from '@bajaovrlay/shared/clock';
 import { html, type TemplateResult } from 'lit';
 
-import { formatClockTimeAsHoursMinutesSeconds } from './clockFormatting.js';
 import { ptBR } from './ptBR.js';
 import { hideIncomingFlagLayer, type RaceClockAnimatedElements } from './raceClockAnimations.js';
 import type { FlagState, RaceClockData } from './raceClockModel.js';

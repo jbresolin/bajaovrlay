@@ -34,6 +34,7 @@
  *   - What the rundown does (rows, drag, Space, Right arrow): features/rundown/ has
  *     tests of its own. What "Edição rápida" sends: features/playout/ has tests of its own.
  *   - Styling and the three-column layout; those are checked by eye in the browser.
+ *   - The header's "Fontes" link and the page it opens: AppPages.test.tsx.
  */
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';

@@ -1,3 +1,4 @@
+import { ptBRDataSources } from './ptBRDataSources';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
@@ -6,10 +7,11 @@ import { ptBRQuickFire } from './ptBRQuickFire';
 /**
  * pt-BR catalog: every string the operator reads on the control page comes from here,
  * never written inline in a component, so the wording can be reviewed in one place.
- * Three parts live in files of their own to keep this one readable, and are reached
+ * Some parts live in files of their own to keep this one readable, and are reached
  * through here like the rest: `ptBR.keyboard` (ptBRKeyboard.ts), `ptBR.quickFire`
- * (ptBRQuickFire.ts, the quick-fire panels and the macros) and `ptBR.playout.quickEdit`
- * (ptBRQuickEdit.ts, "Edição rápida").
+ * (ptBRQuickFire.ts, the quick-fire panels and the macros), `ptBR.layers`
+ * (ptBRLayers.ts), `ptBR.playout.quickEdit` (ptBRQuickEdit.ts, "Edição rápida") and
+ * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page).
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,
@@ -19,6 +21,12 @@ export const ptBR = {
     rundownAreaTitle: 'Rundown',
     playoutAreaTitle: 'Programa e edição rápida',
     layersAreaTitle: 'Camadas',
+    // The two pages of the control page, linked from the header (src/app/currentPage.ts).
+    pageLinks: {
+      navigationLabel: 'Páginas do controle',
+      console: 'Console',
+      dataSources: 'Fontes',
+    },
   },
   serverHealth: {
     checkButton: 'Verificar servidor',
@@ -44,6 +52,8 @@ export const ptBR = {
   },
   // The layer panel, "Camadas" (features/layers), in ptBRLayers.ts.
   layers: ptBRLayers,
+  // The "Fontes de dados" page and the header chip (features/dataSources), in ptBRDataSources.ts.
+  dataSources: ptBRDataSources,
   // Putting graphics on air and taking them off (features/playout).
   playout: {
     // "Edição rápida" (features/playout/QuickEditPanel.tsx), in ptBRQuickEdit.ts.

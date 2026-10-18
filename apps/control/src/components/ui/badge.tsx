@@ -1,8 +1,10 @@
 // shadcn/ui component "badge" (style new-york-v4), written in by hand and kept close to
 // the original so later shadcn updates diff cleanly. Local changes: `cn` comes from the
 // cn package, the destructive variant uses the semantic `text-destructive-foreground`
-// token instead of `text-white` (the same change as in button.tsx), and there is one
-// extra variant, `success`, for "this is live and well" (tokens in index.css).
+// token instead of `text-white` (the same change as in button.tsx), and there are two
+// extra variants: `success`, for "this is live and well", and `warning` (amber), for
+// "this still works but is late", such as a data source whose data is old ("Atrasada").
+// Their tokens are in index.css.
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from 'cn';
 import { Slot } from 'radix-ui';
@@ -20,6 +22,7 @@ const badgeVariants = cva(
           'border-transparent bg-destructive text-destructive-foreground focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90',
         outline: 'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         success: 'border-transparent bg-success text-success-foreground [a&]:hover:bg-success/90',
+        warning: 'border-transparent bg-warning text-warning-foreground [a&]:hover:bg-warning/90',
       },
     },
     defaultVariants: {
