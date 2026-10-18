@@ -13,5 +13,10 @@ Browser tests of the control page (Playwright, Chromium). Labels are the clock m
 - Quick fire (steps in `quickFireTestSteps.ts`): `quickFireWithNumberKey.e2e.ts` (1 fires a button), `macroTakeWaitClear.e2e.ts`
   (take, wait 0,5 s, clear: empty after 0.4–3 s), `macroStopDuringWait.e2e.ts` ("Parar" in a 5 s wait: the clock stays).
 
-`emptyTheServerState.ts` empties the server before each test, panels, macros and "vai limpar" marks included (`emptyServerState.e2e.ts` proves it). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`.
+- Data sources, on the "Fontes de dados" page `#/fontes` (steps in `dataSourcesTestSteps.ts`): `simulatorRaceMoves.e2e.ts` (the seeded
+  simulator at speed 60: 60 cars, the table changes, nothing goes on air), `simulatorFailureKeepsTheData.e2e.ts` ("Falha simulada":
+  "Atrasada" with the last data kept, then "Ok" again), `recordAndReplay.e2e.ts` ("Gravar" ~20 s, a looping "Reprodução" at 10× read every 0,5 s). A restart
+  keeps the last data, marked stale: the harness cannot restart its server, so `apps/server/src/core/boot/startServerRestart.test.ts` proves it.
+
+`emptyTheServerState.ts` empties the server before each test, panels, macros and "vai limpar" marks included, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database, and its simulated race may be past the checkered flag).
 `clockStoppedOnAir.e2e.ts` fails locally when the WSL clock steps (a time sync moves the wall clock); the fix is syncing the Windows clock (Settings → Time & language → Date & time → Sync now), then running `wsl --shutdown` in PowerShell and reopening the terminal, not quarantine.

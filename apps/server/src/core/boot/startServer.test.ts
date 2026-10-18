@@ -22,48 +22,20 @@
  * What these tests deliberately do not cover:
  *   - main.ts itself (reading the environment, exiting on failure); it only wires
  *     these pieces together and is checked by booting it with `pnpm dev`.
+ *   - A restart keeping the last good data: startServerRestart.test.ts.
  */
-import type { DataSource } from '@bajaovrlay/shared';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { committedMigrationsFolder } from '../db/openDatabase.js';
-import {
-  createTemporaryDatabasePath,
-  writeBrokenMigrationsFolder,
-} from '../db/temporaryDatabase.testSupport.js';
-import { createLogger } from '../logger/createLogger.js';
+import { writeBrokenMigrationsFolder } from '../db/temporaryDatabase.testSupport.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
+import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
 import {
-  createGraphicsFolderWithBuiltRaceClock,
-  missingGraphicsFolderPath,
-} from '../store/builtGraphicsFolder.testSupport.js';
-import type { StateStore } from '../store/createStateStore.js';
+  buildBootOptions,
+  operatorActor,
+  readTheSeededSimulator,
+} from './bootedServer.testSupport.js';
 import { startServer } from './startServer.js';
-import { createTemporaryDataFolder } from './temporaryDataFolder.testSupport.js';
-
-const operatorActor = 'operador:conexao-7';
-
-/**
- * The options production uses, on a random port, a temporary database file and data
- * folder, and a silent logger.
- */
-function buildBootOptions(migrationsFolder: string) {
-  return {
-    logger: createLogger({ level: 'silent' }),
-    version: '0.3.1',
-    host: '127.0.0.1',
-    port: 0,
-    databasePath: createTemporaryDatabasePath(),
-    migrationsFolder,
-    graphicPackagesFolder: missingGraphicsFolderPath,
-    dataFolder: createTemporaryDataFolder(),
-  };
-}
-
-/** Reads the seeded "Simulador — Enduro" as the store holds it now. */
-function readTheSeededSimulator(stateStore: StateStore): DataSource | undefined {
-  return stateStore.readAllSlices().dataSources.find((source) => source.id === 'simulador-enduro');
-}
 
 /** Lets real time pass, for the few tests that watch timers of a booted server. */
 function waitInRealTime(durationInMilliseconds: number): Promise<void> {

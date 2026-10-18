@@ -1,7 +1,8 @@
 // Test support: puts the real server of the Playwright run back to how a new database
 // has it (nothing on air, nothing previewed, no layer marked "vai limpar", no item in the rundown or in any panel, no
-// macro, only the seeded panel "Atalhos"), so every browser test starts from the same
-// place whatever ran before it, in any order. playwright.config.ts starts that server.
+// macro, only the seeded panel "Atalhos", only the seeded simulator, off and with its
+// default settings), so every browser test starts from the same place whatever ran
+// before it, in any order. playwright.config.ts starts that server.
 
 /** The real server's port in a Playwright run; far from 3000 so it never meets `pnpm dev`. */
 export const realServerPort = 5187;
@@ -21,12 +22,23 @@ const seededPanelName = 'Atalhos';
 const longestWaitForARunningMacroInMilliseconds = 30_000;
 const timeBetweenLooksInMilliseconds = 100;
 
+// The seeded data source, "Simulador — Enduro", as a new database has it: off, read every
+// 2 s, and with the default config (an empty config is completed with the defaults by
+// the server: speed 1, 60 cars, 4 h, "Falha simulada" off). Its race start is kept by the
+// server on every edit, so its race carries on where it was.
+const seededSimulatorId = 'simulador-enduro';
+/** The seeded source's label, as every new database has it (shared with the data source steps). */
+export const seededSimulatorLabel = 'Simulador — Enduro';
+const seededSimulatorPollIntervalMs = 2_000;
+const emptyConfigTheServerCompletesWithDefaults = {};
+
 /** The parts of GET /api/v1/state the reset reads. */
 type StateTheResetReads = {
   items: { id: string }[];
   quickFirePanels: { id: string; name: string }[];
   macros: { id: string }[];
   macroRuns: { macroId: string }[];
+  dataSources: { id: string; isEnabled: boolean; isRecording: boolean }[];
 };
 
 /** A command the reset sends: its type and the one or two fields it carries. */
@@ -36,6 +48,11 @@ type ResetCommand = {
   macroId?: string;
   panelId?: string;
   name?: string;
+  sourceId?: string;
+  isEnabled?: boolean;
+  label?: string;
+  pollIntervalMs?: number;
+  config?: object;
 };
 
 /**
@@ -87,6 +104,9 @@ function sendCommandToRealServer(command: ResetCommand): Promise<void> {
 /** Asks the real server for its state, as GET /api/v1/state answers it. */
 async function readStateFromRealServer(): Promise<StateTheResetReads> {
   const response = await fetch(`${realServerAddress}/api/v1/state`);
+  if (!response.ok) {
+    throw new Error(`GET /api/v1/state answered ${response.status} on the real server`);
+  }
   return (await response.json()) as StateTheResetReads;
 }
 
@@ -108,12 +128,56 @@ async function waitUntilNoMacroIsRunning(): Promise<void> {
 }
 
 /**
+ * Puts the data sources back to how a new database has them: every recording stopped
+ * (so its file is closed and listed as ended), every source but the seeded simulator
+ * deleted, and the seeded simulator off, with its seeded label, interval and default
+ * config. A simulator left at speed 60 or failing on purpose would otherwise run on into
+ * the next test. Its last data stays: no command deletes a snapshot. If a test deleted
+ * the seeded simulator, nothing can bring it back short of a restart, so it is skipped.
+ */
+async function putTheDataSourcesBackToTheSeed(state: StateTheResetReads): Promise<void> {
+  // A recording may stop by itself (a failed write) after the state was read; the server
+  // accepts a stop of a source that is not recording as a no-op, so this cannot fail then.
+  for (const source of state.dataSources) {
+    if (source.isRecording) {
+      await sendCommandToRealServer({ type: 'stopRecording', sourceId: source.id });
+    }
+  }
+  for (const source of state.dataSources) {
+    if (source.id !== seededSimulatorId) {
+      await sendCommandToRealServer({ type: 'deleteDataSource', sourceId: source.id });
+    }
+  }
+  const seededSimulator = state.dataSources.find((source) => source.id === seededSimulatorId);
+  if (seededSimulator === undefined) {
+    return;
+  }
+  if (seededSimulator.isEnabled) {
+    await sendCommandToRealServer({
+      type: 'setDataSourceEnabled',
+      sourceId: seededSimulatorId,
+      isEnabled: false,
+    });
+  }
+  // Accepted with no change when the simulator already has these settings.
+  await sendCommandToRealServer({
+    type: 'updateDataSource',
+    sourceId: seededSimulatorId,
+    label: seededSimulatorLabel,
+    pollIntervalMs: seededSimulatorPollIntervalMs,
+    config: emptyConfigTheServerCompletesWithDefaults,
+  });
+}
+
+/**
  * Empties the real server. First it waits for a running macro to end. Then `clearAll`
  * takes everything off air and off the preview output (it removes every instance, of
  * both outputs, and every "vai limpar" mark, so no stopPreview is needed); every item is deleted, rundown and panel alike, which also leaves the
  * cursor on nothing; every macro is deleted; every panel but the seeded "Atalhos" is
  * deleted (each is empty by then), and "Atalhos" gets its seeded name back. The seeded
- * rundown stays. Each test file calls this in a `test.beforeEach`, so a test never
+ * rundown stays. The data sources go back to the seeded simulator alone, off, not
+ * recording and with its default settings (putTheDataSourcesBackToTheSeed); recordings
+ * stay listed. Each test file calls this in a `test.beforeEach`, so a test never
  * depends on the one before it.
  * What could go wrong: it deletes whatever the server holds, so it must only ever be
  * pointed at the Playwright run's own server and SQLite file, which the port guarantees.
@@ -141,4 +205,5 @@ export async function emptyTheServerState(): Promise<void> {
       name: seededPanelName,
     });
   }
+  await putTheDataSourcesBackToTheSeed(state);
 }
