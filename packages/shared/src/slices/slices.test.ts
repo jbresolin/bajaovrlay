@@ -2,14 +2,16 @@
  * State slices (packages/shared)
  *
  * What this module is for:
- *   The server owns all state as ten named slices: `layers` (where graphics can go),
+ *   The server owns all state as thirteen named slices: `layers` (where graphics can go),
  *   `graphics` (what can be shown), `instances` (what is showing now),
  *   `previewClearedLayerIds` (the layers Prévia shows empty because a take will clear
  *   them), `rundowns` and `items` (the planned show), `quickFirePanels` (the grids of
- *   buttons), `macros` and `macroRuns` (one-press sequences and the one running now) and
- *   `eventLog` (the commands that changed something or were refused, in order).
- *   SlicesSchema describes all ten; the server checks what it stores and sends against
- *   it, and the control page and renderer check what they receive.
+ *   buttons), `macros` and `macroRuns` (one-press sequences and the one running now),
+ *   `dataSources`, `dataSnapshots` and `recordings` (the race data feeds, their last good
+ *   data and the recorded feeds) and `eventLog` (the commands that changed something or
+ *   were refused, in order). SlicesSchema describes all thirteen; the server checks what
+ *   it stores and sends against it, and the control page and renderer check what they
+ *   receive.
  *
  * What these tests prove:
  *   - A realistic race-day state (five layers, the race clock registered and on air,
@@ -20,8 +22,9 @@
  *   - An instance may be `failed` and carry the reason the renderer gave
  *     (`statusDetail`), and that reason must be a text.
  *   - A failed event-log entry must carry the error a person reads.
- *   - quickFirePanels, macros, macroRuns and previewClearedLayerIds are required like
- *     every other slice, the ten slice names come in the server's order, and a slice
+ *   - quickFirePanels, macros, macroRuns, previewClearedLayerIds, dataSources,
+ *     dataSnapshots and recordings are required like every other slice, the thirteen
+ *     slice names come in the server's order, and a slice
  *     message's name decides what it carries for the new slices too.
  *   - A "will be cleared" marker is a layer id: a list of texts, none of them empty.
  *
@@ -97,6 +100,10 @@ function buildRaceDayStateWithTheClockOnAir() {
         isStopRequested: false,
       },
     ],
+    // No data source, snapshot or recording: dataSources.test.ts covers those slices.
+    dataSources: [],
+    dataSnapshots: [],
+    recordings: [],
   };
 }
 
@@ -211,6 +218,12 @@ describe('SlicesSchema', () => {
     { name: 'refuses a state without the macros slice', sliceLeftOut: 'macros' },
     // Without the runs a running macro's button would look idle.
     { name: 'refuses a state without the macroRuns slice', sliceLeftOut: 'macroRuns' },
+    // Without the sources the "Fontes" page would claim there are none.
+    { name: 'refuses a state without the dataSources slice', sliceLeftOut: 'dataSources' },
+    // Without the snapshots the source detail would show no data at all.
+    { name: 'refuses a state without the dataSnapshots slice', sliceLeftOut: 'dataSnapshots' },
+    // Without the recordings the replay form would have nothing to offer.
+    { name: 'refuses a state without the recordings slice', sliceLeftOut: 'recordings' },
     // Without the markers the Prévia monitor would show a layer on air that will be cleared.
     {
       name: 'refuses a state without the previewClearedLayerIds slice',
@@ -238,7 +251,8 @@ describe('SlicesSchema', () => {
 describe('SliceNameSchema', () => {
   it('lists every slice in the order the server lists them, the newest ones included', () => {
     // Arrange: the slice names; the "will be cleared" markers right after the instances
-    // they speak about, and quick-fire panels and macros after the items.
+    // they speak about, quick-fire panels and macros after the items, and the data
+    // sources, their snapshots and recordings just before the event log.
     const expectedSliceNames = [
       'layers',
       'graphics',
@@ -249,6 +263,9 @@ describe('SliceNameSchema', () => {
       'quickFirePanels',
       'macros',
       'macroRuns',
+      'dataSources',
+      'dataSnapshots',
+      'recordings',
       'eventLog',
     ];
 
@@ -256,7 +273,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these ten, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these thirteen, in this order').toEqual(
       expectedSliceNames,
     );
   });

@@ -81,6 +81,9 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    dataSources: [],
+    dataSnapshots: [],
+    recordings: [],
   };
 }
 

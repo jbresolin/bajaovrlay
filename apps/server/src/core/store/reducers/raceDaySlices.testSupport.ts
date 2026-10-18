@@ -18,6 +18,7 @@ export const contextOfTheCommand: ReducerContext = {
   newItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
   newQuickFirePanelId: 'd4b2e8f1-6a3c-4d7e-9b05-1c8f2a6e3d90',
   newMacroId: '8f3a1c6e-2d4b-4e9a-b7c5-0a1d3e5f7b92',
+  newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
 };
 
 /** Builds complete race clock data: the enduro under green flag, 1:05:00 in, running. */
@@ -103,5 +104,8 @@ export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesCh
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    dataSources: [],
+    dataSnapshots: [],
+    recordings: [],
   };
 }

@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+import { CreateDataSourceCommandSchema } from '../dataSources/createDataSource.js';
+import { DeleteDataSourceCommandSchema } from '../dataSources/deleteDataSource.js';
+import { PollDataSourceNowCommandSchema } from '../dataSources/pollDataSourceNow.js';
+import { RecordDataSourcePollCommandSchema } from '../dataSources/recordDataSourcePoll.js';
+import { SetDataSourceEnabledCommandSchema } from '../dataSources/setDataSourceEnabled.js';
+import { StartRecordingCommandSchema } from '../dataSources/startRecording.js';
+import { StopRecordingCommandSchema } from '../dataSources/stopRecording.js';
+import { UpdateDataSourceCommandSchema } from '../dataSources/updateDataSource.js';
 import { CreateMacroCommandSchema } from '../macros/createMacro.js';
 import { DeleteMacroCommandSchema } from '../macros/deleteMacro.js';
 import {
@@ -78,6 +86,16 @@ export const CommandSchema = z.discriminatedUnion('type', [
   StopMacroCommandSchema,
   AdvanceMacroRunCommandSchema,
   EndMacroRunCommandSchema,
+  // Data sources (BAJAOVRLAY-17); their schemas live in ../dataSources/. The last one is
+  // sent only by the server's poller (sistema:fonte:<sourceId>).
+  CreateDataSourceCommandSchema,
+  UpdateDataSourceCommandSchema,
+  DeleteDataSourceCommandSchema,
+  SetDataSourceEnabledCommandSchema,
+  PollDataSourceNowCommandSchema,
+  StartRecordingCommandSchema,
+  StopRecordingCommandSchema,
+  RecordDataSourcePollCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

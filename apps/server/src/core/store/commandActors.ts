@@ -3,11 +3,19 @@
 // The operator role is spelt in pt-BR because the actor is shown to people in the event
 // log. A third role, `sistema:<what>`, is never given to a connection: it signs what the
 // server does by itself (the auto-out, `sistema:auto-out`, the macro runner,
-// `sistema:macro:<macroId>`, and the macro watchdog, `sistema:macro-watchdog`).
+// `sistema:macro:<macroId>`, the macro watchdog, `sistema:macro-watchdog`, the poller of
+// each data source, `sistema:fonte:<sourceId>`, and the recorder, `sistema:gravador`).
 const rendererRolePrefix = 'renderer:';
 const operatorRolePrefix = 'operador:';
 const systemRolePrefix = 'sistema:';
 const macroRunnerRolePrefix = 'sistema:macro:';
+const dataSourcePollerRolePrefix = 'sistema:fonte:';
+
+/**
+ * The actor name the recorder signs its stopRecording with, when a write to a recording
+ * failed (decision D9). It may send nothing else.
+ */
+export const dataSourceRecorderActor = 'sistema:gravador';
 
 /**
  * The actor name the macro watchdog signs its endMacroRun with. The hyphen keeps it out
@@ -49,4 +57,20 @@ export function readMacroIdOfMacroRunnerActor(actor: string): string | undefined
     return undefined;
   }
   return actor.slice(macroRunnerRolePrefix.length);
+}
+
+/** The actor name the poller of one data source signs its poll results with. */
+export function buildDataSourcePollerActor(sourceId: string): string {
+  return `${dataSourcePollerRolePrefix}${sourceId}`;
+}
+
+/**
+ * The data source whose poller sent a command, read from the actor name, or undefined
+ * when the actor is not a data-source poller.
+ */
+export function readSourceIdOfDataSourcePollerActor(actor: string): string | undefined {
+  if (!actor.startsWith(dataSourcePollerRolePrefix)) {
+    return undefined;
+  }
+  return actor.slice(dataSourcePollerRolePrefix.length);
 }

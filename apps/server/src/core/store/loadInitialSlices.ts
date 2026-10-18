@@ -1,5 +1,6 @@
 import { type Slices, SlicesSchema } from '@bajaovrlay/shared';
 
+import { loadOrSeedDataSourceSlices } from '../../modules/dataSources/index.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
 import type { ServerDatabase } from '../db/openDatabase.js';
 import { readAllSliceRows, writeBootSliceRows } from '../db/sliceRowStorage.js';
@@ -36,7 +37,8 @@ type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'>;
  * loaded, or seeded when missing, by loadRundownSlices.ts; quick-fire panels and macros
  * likewise by loadQuickFireAndMacroSlices.ts. The macro runs and the "will be cleared"
  * markers are never stored: every boot starts with none, so a macro cut short by a stop
- * is not resumed and Prévia starts empty.
+ * is not resumed and Prévia starts empty. Data sources and their snapshots are loaded,
+ * or the simulator seeded, by modules/dataSources (loadOrSeedDataSourceSlices).
  */
 export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const storedRows = readAllSliceRows(options.database);
@@ -87,11 +89,15 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     options.logger,
   );
+  // Data sources and their snapshots are loaded, the simulator seeded when there is no
+  // source, and every source that was on comes back stale (modules/dataSources).
+  const dataSourceSlices = loadOrSeedDataSourceSlices(storedRows, updatedAt, options.logger);
   const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
   writeBootSliceRows(options.database, [
     ...layerAndGraphicRows,
     ...rundownSlices.rowsToSaveAtBoot,
     ...quickFireAndMacroSlices.rowsToSaveAtBoot,
+    ...dataSourceSlices.rowsToSaveAtBoot,
   ]);
   if (isFirstBoot) {
     options.logger.info('empty database seeded with the fixed layers');
@@ -124,6 +130,11 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     quickFirePanels: quickFireAndMacroSlices.quickFirePanels,
     macros: quickFireAndMacroSlices.macros,
     macroRuns: [],
+    dataSources: dataSourceSlices.dataSources,
+    dataSnapshots: dataSourceSlices.dataSnapshots,
+    // Rebuilt from the recordings folder at boot once the recorder exists (BAJAOVRLAY-17,
+    // commit 5); never saved in the database.
+    recordings: [],
   };
 }
 

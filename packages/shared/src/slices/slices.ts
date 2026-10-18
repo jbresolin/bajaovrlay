@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
+import { DataSourceSchema } from '../dataSources/dataSource.js';
+import { RecordingSchema } from '../dataSources/recording.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
@@ -22,6 +25,9 @@ export const SliceNameSchema = z.enum([
   'quickFirePanels',
   'macros',
   'macroRuns',
+  'dataSources',
+  'dataSnapshots',
+  'recordings',
   'eventLog',
 ]);
 
@@ -57,6 +63,18 @@ export const SlicesSchema = z.object({
    * never saved: after a restart it is empty.
    */
   macroRuns: z.array(MacroRunSchema),
+  /** The data sources the server polls for race data, with their config and health. */
+  dataSources: z.array(DataSourceSchema),
+  /**
+   * The last good data of each source. Saved, so a restart keeps it (stale until the
+   * next good poll). Renderer connections never receive it: graphics get resolved data.
+   */
+  dataSnapshots: z.array(DataSnapshotSchema),
+  /**
+   * The recorded feeds a replay can play. Kept in the server's memory only and rebuilt
+   * from the recordings folder at boot.
+   */
+  recordings: z.array(RecordingSchema),
   /** The newest entries of the event log only; the database keeps every entry. */
   eventLog: z.array(EventLogEntrySchema),
 });

@@ -64,6 +64,9 @@ function createSlicesWithClockLayerAndInstances(instances: Slices['instances']):
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    dataSources: [],
+    dataSnapshots: [],
+    recordings: [],
     eventLog: [],
   };
 }

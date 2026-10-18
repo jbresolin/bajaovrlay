@@ -23,6 +23,7 @@ export const contextOfTheLaterTake: ReducerContext = {
   newItemId: '9c1e7a35-4b2d-4f60-a8e3-5d7f2b1c0a94',
   newQuickFirePanelId: '3b7d9f1a-5c2e-4a8b-9d6f-0e1c3a5b7d92',
   newMacroId: '6e2c4a8f-1b3d-4f5e-a7c9-2d4f6b8a0c13',
+  newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
   now: '2026-10-09T14:47:30.250Z',
 };
 

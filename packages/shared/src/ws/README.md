@@ -96,6 +96,9 @@ not answer the previous ping.
     "quickFirePanels": [{ "id": "atalhos", "name": "Atalhos", "order": 0 }],
     "macros": [],
     "macroRuns": [],
+    "dataSources": [],
+    "dataSnapshots": [],
+    "recordings": [],
     "eventLog": []
   },
   "serverNowMs": 1791550800000

@@ -112,6 +112,9 @@ export async function startFakeServerForPage(
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    dataSources: [],
+    dataSnapshots: [],
+    recordings: [],
     eventLog: [],
   };
   const connections: WebSocketRoute[] = [];

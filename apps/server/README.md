@@ -12,7 +12,7 @@ Start reading at `src/main.ts` (environment and paths), then
 - `src/core/` — the server's building blocks, one folder per concept (see its README).
 - `src/api/v1/` — thin REST routes and the generated OpenAPI document.
 - `drizzle/` — committed SQL migrations, applied at boot.
-- `src/modules/` — feature modules (from M1).
+- `src/modules/` — feature modules; the first is `dataSources/` (BAJAOVRLAY-17).
 
 Run it with `pnpm dev` from the repository root, or `pnpm build` then `pnpm start`.
 Settings come from environment variables documented in `/.env.example`.

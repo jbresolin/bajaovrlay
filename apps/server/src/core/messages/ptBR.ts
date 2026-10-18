@@ -136,4 +136,28 @@ export const ptBR = {
     macroIsRunning: (macroLabel: string) =>
       `A macro "${macroLabel}" está rodando agora. Espere ela terminar para alterá-la ou excluí-la.`,
   },
+  // Name of the one data source seeded on a database with none, as the operator sees it.
+  seededDataSourceLabel: 'Simulador — Enduro',
+  // Refusals of the data-source commands, each with a stable code, and the errors a poll
+  // can leave on a source. A source is named by its label when the server has it, and by
+  // id when it was not found.
+  dataSourceErrors: {
+    dataSourceNotFound: (sourceId: string) =>
+      `A fonte de dados "${sourceId}" não existe; ela pode ter sido excluída.`,
+    invalidConfigField: (fieldPath: string) =>
+      `A configuração da fonte é inválida: o campo "${fieldPath}" está ausente ou tem um valor errado.`,
+    dataSourceDisabled: (sourceLabel: string) =>
+      `A fonte de dados "${sourceLabel}" está desligada. Ligue-a antes.`,
+    recordingNotFound: (recordingId: string) =>
+      `A gravação "${recordingId}" não existe ou ainda está sendo gravada.`,
+    // A poll answered a shape name that is none of the four canonical shapes: a bug in
+    // the adapter. Worded like the shape validator's errors, naming the path.
+    unknownShapeKey: (shapeKey: string) =>
+      `Dados inválidos em "${shapeKey}": este formato de dados não existe (os formatos são session, positions, standings e brackets).`,
+    // A "good" poll that carried no shape at all: an adapter that answered nothing. Kept
+    // as a failure so the last good data stays on air (rule 4).
+    noShapesInPoll: 'A fonte respondeu sem nenhum dado.',
+    // A failed poll whose adapter gave no reason (an Error with no message).
+    failedPollWithoutReason: 'A leitura da fonte falhou sem dizer o motivo.',
+  },
 } as const;

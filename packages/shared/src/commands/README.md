@@ -16,3 +16,5 @@ The rules each command follows live in the server's reducers, one file per comma
 The item and rundown commands (`createItem`, `takeItem`, `saveOnAirChangesIntoItem`, ...)
 and the preview commands
 (`previewItem`, `takePreview`, ...) are in the same union; their schemas live in `../rundown/` and `../preview/`.
+The data-source commands (`createDataSource`, `recordDataSourcePoll`, ...) are in the
+union too; their schemas live in `../dataSources/`.

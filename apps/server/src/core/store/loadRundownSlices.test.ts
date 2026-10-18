@@ -151,6 +151,8 @@ describe('the rundowns and items on a database written before they existed (M0)'
       items: '2026-10-10T07:30:00.000Z',
       quickFirePanels: '2026-10-10T07:30:00.000Z',
       macros: '2026-10-10T07:30:00.000Z',
+      // Seeded at the first boot (BAJAOVRLAY-17), off, so a later boot leaves it alone.
+      dataSources: '2026-10-09T08:00:00.000Z',
     });
   });
 });

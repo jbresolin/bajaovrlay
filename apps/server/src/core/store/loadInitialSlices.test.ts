@@ -149,6 +149,8 @@ describe('loadInitialSlices on an empty database', () => {
       // Seeded too since BAJAOVRLAY-16; loadQuickFireAndMacroSlices.test.ts covers them.
       ['quickFirePanels', '2026-10-09T08:00:00.000Z'],
       ['macros', '2026-10-09T08:00:00.000Z'],
+      // The seeded simulator since BAJAOVRLAY-17; modules/dataSources covers it.
+      ['dataSources', '2026-10-09T08:00:00.000Z'],
     ]);
     expect(slices.instances, 'nothing is on air on the first boot').toEqual([]);
   });

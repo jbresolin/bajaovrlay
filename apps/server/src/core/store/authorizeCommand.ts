@@ -1,10 +1,12 @@
 import type { Command } from '@bajaovrlay/shared';
 
 import {
+  dataSourceRecorderActor,
   isRendererActor,
   isSystemActor,
   macroWatchdogActor,
   readMacroIdOfMacroRunnerActor,
+  readSourceIdOfDataSourcePollerActor,
 } from './commandActors.js';
 
 /**
@@ -31,11 +33,17 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   cannot start a macro, edit anything, or take a graphic by hand;
  * - the macro watchdog (`sistema:macro-watchdog`) may only end a run (endMacroRun, of
  *   any macro): it ends a run gone on past its time limit and undoes nothing;
+ * - the poller of a data source (`sistema:fonte:<sourceId>`) may only report polls of
+ *   that same source (recordDataSourcePoll): a bug in one loop must not overwrite
+ *   another source's data, and a poller reports, it never decides;
+ * - the recorder (`sistema:gravador`) may only stop a recording (stopRecording), which it
+ *   does when a write to the file failed;
  * - every other server timer (`sistema:`, today the auto-out) may only clear one layer:
  *   a bug in a timer must never be able to put a graphic on air or empty the screen;
  * - every other actor (an operator) may send everything else, except the runner's
- *   bookkeeping, so no page can fake or end a run the runner is carrying out; an
- *   operator stops a run with stopMacro ("Parar"), which the runner then ends.
+ *   bookkeeping, so no page can fake or end a run the runner is carrying out (an
+ *   operator stops a run with stopMacro, "Parar", which the runner then ends), and
+ *   except poll results, so no page can fake race data.
  * The role comes from the address the connection chose (`/ws?role=renderer`), so this
  * keeps honest pages in their lane; it is not a defence against a hostile client.
  * A new job for the system that needs another command must be added here, or its
@@ -45,6 +53,7 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   const isReportFromTheScreen = command.type === 'reportInstanceStatus';
   const isMacroRunBookkeeping =
     command.type === 'advanceMacroRun' || command.type === 'endMacroRun';
+  const isPollResult = command.type === 'recordDataSourcePoll';
   if (isRendererActor(actor)) {
     return isReportFromTheScreen;
   }
@@ -55,10 +64,17 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   if (macroIdOfTheRunner !== undefined) {
     return isAllowedForTheRunnerOfMacro(command, macroIdOfTheRunner);
   }
+  const sourceIdOfThePoller = readSourceIdOfDataSourcePollerActor(actor);
+  if (sourceIdOfThePoller !== undefined) {
+    return isPollResult && command.sourceId === sourceIdOfThePoller;
+  }
+  if (actor === dataSourceRecorderActor) {
+    return command.type === 'stopRecording';
+  }
   if (isSystemActor(actor)) {
     return command.type === 'clearLayer';
   }
-  return !isReportFromTheScreen && !isMacroRunBookkeeping;
+  return !isReportFromTheScreen && !isMacroRunBookkeeping && !isPollResult;
 };
 
 /** What the runner of one macro may send: a step's command, or its own run's bookkeeping. */
