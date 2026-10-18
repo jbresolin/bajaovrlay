@@ -8,6 +8,13 @@
       "when": 1791516600619,
       "tag": "0000_create_slices_and_event_log",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792361429580,
+      "tag": "0001_create_data_snapshots",
+      "breakpoints": true
     }
   ]
 }

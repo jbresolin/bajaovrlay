@@ -14,7 +14,9 @@ Every message is one JSON object, told apart by its `type` field:
   its own schema), so a client takes them in ONE step and never shows the moment between
   them. Every accepted command changes its own slice and `eventLog`, so it sends `slices`
   to an operator; a refused one changes `eventLog` alone and sends `slice`. A screen is
-  never sent `eventLog` (below), so it gets fewer slices of the same change.
+  never sent `eventLog` (below), so it gets fewer slices of the same change. Neither
+  `slice` nor `slices` ever carries `dataSnapshots`: after the hello, snapshots travel
+  source by source in `dataSnapshot`.
   All three carry `serverNowMs`: the server's wall clock, in whole milliseconds since 1970,
   when the message was built. A renderer subtracts its own clock from it and keeps the
   median of the last five differences, so the race clock on air counts on the server's
@@ -22,6 +24,15 @@ Every message is one JSON object, told apart by its `type` field:
   message leave it out (test stand-ins do); the server always sends it, and `slices`
   must. `commandResult` does not carry it. A message without it gives a page no sample at
   all; it is never read as "the clocks agree".
+- `dataSnapshot` (server → every operator connection): one source's last good data changed.
+  It carries `sourceId`, `snapshot` (the source's new snapshot, or `null` when the source
+  was deleted and has none any more) and `serverNowMs` (required). The page replaces that
+  source's entry in its `dataSnapshots` list, adds it when it is new, or removes it on
+  `null`. Each source whose snapshot changed gets its own message, sent just before the
+  `slice` or `slices` of the same change, so a 60-car poll of one source never resends
+  another source's data. A poll that changes nothing (the same data on a healthy source)
+  sends no message at all, and a failed poll sends the source's new health but no
+  `dataSnapshot`: the last good data stays (rule 4).
 - `time` (server → every client, every 10 s): `serverNowMs` and nothing else, so a page
   keeps getting samples while no slice changes. Here the field is required. A page
   records the sample and does nothing more with the message.
@@ -46,9 +57,10 @@ Every message is one JSON object, told apart by its `type` field:
 
 A screen connection, renderer (`/ws?role=renderer`) or monitor (`/ws?role=monitor`), gets
 `dataSnapshots: []` and `eventLog: []` in its `hello` and never a message carrying either:
-both are left out of every change it is sent. An accepted command usually changes its own
+both are left out of every change it is sent, and it is never sent a `dataSnapshot`. An accepted command usually changes its own
 slice and `eventLog`; a screen gets only the command's own slice, so that arrives as a
-single `slice` message (a routine poll arrives as a `slice` of `dataSources`). A change of
+single `slice` message (a routine poll arrives as a `slice` of `dataSources`, where an
+operator gets the source's `dataSnapshot` and then that same `slice`). A change of
 those two slices alone (a refused command, which changes `eventLog` alone) sends a screen
 nothing. Graphics get resolved data only, and a 60-car snapshot every 2 s is a frame-drop
 risk in OBS. `GET /api/v1/state?role=renderer` (or `monitor`) answers the same copy, for a
@@ -176,6 +188,50 @@ gets its line, all in one message.
     ]
   },
   "serverNowMs": 1791551100000
+}
+```
+
+## dataSnapshot
+
+What a good poll of the seeded simulator sends the control page: its new data alone.
+
+```json
+{
+  "type": "dataSnapshot",
+  "sourceId": "simulador-enduro",
+  "snapshot": {
+    "sourceId": "simulador-enduro",
+    "receivedAtMs": 1791550802000,
+    "shapes": {
+      "session": {
+        "sessionId": "enduro-2026-nacional",
+        "eventName": "Baja SAE Brasil 2026 — Etapa Nacional",
+        "sessionName": "Enduro de Resistência",
+        "sessionKind": "enduro",
+        "state": "green",
+        "clock": {
+          "clockMode": "remaining",
+          "referenceTimeMs": 12475000,
+          "referenceWallClockMs": 1791550802000,
+          "running": true
+        },
+        "lapsCompletedByLeader": 6,
+        "updatedAtMs": 1791550802000
+      }
+    }
+  },
+  "serverNowMs": 1791550802004
+}
+```
+
+## dataSnapshot (source deleted)
+
+```json
+{
+  "type": "dataSnapshot",
+  "sourceId": "simulador-enduro",
+  "snapshot": null,
+  "serverNowMs": 1791551400000
 }
 ```
 

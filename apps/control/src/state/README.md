@@ -6,7 +6,8 @@ sending a command. Start reading at `serverConnection.ts`, then `serverStateStor
 - `serverConnection.ts` — the WebSocket client: checks every message against the shared
   schema, fills the store, redials with growing waits, and `sendCommand` (settles on the
   matching `commandResult`, gives up after 5 s).
-- `serverStateStore.ts` — Zustand store: every slice, connection status, last error.
+- `serverStateStore.ts` — Zustand store: every slice, connection status, last error; a
+  `dataSnapshot` message is merged into `dataSnapshots` by `sourceId` (null removes).
 - `commandFailure.ts` — the codes and the error a failed command carries.
 - `browserWebSocket.ts` — the few lines that touch the browser's WebSocket API.
 - `ControlPageStateProvider.tsx` — `useServerState`, `useSendCommand`, `useReadServerStateNow`.

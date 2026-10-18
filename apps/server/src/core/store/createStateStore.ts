@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
 import {
-  type Command,
   type CommandError,
   CommandSchema,
   type EventLogEntry,
@@ -10,15 +9,23 @@ import {
 } from '@bajaovrlay/shared';
 
 import {
-  trimInvalidPollForTheEventLog,
-  trimPollCommandForTheEventLog,
-} from '../../modules/dataSources/index.js';
-import { saveCommandOutcome } from '../db/commandOutcomeStorage.js';
-import { saveSliceRowsWithoutEventLogRow } from '../db/sliceRowStorage.js';
+  saveCommandOutcome,
+  saveCommandOutcomeWithoutEventLogRow,
+} from '../db/commandOutcomeStorage.js';
 import type { SliceRow } from '../db/tables.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
 import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
+import {
+  buildEventLogPayloadOfCommand,
+  describePayloadAsReceived,
+  readCommandNameAsSent,
+} from './commandEventLogPayload.js';
 import { refuseCommandNotAllowed, refuseInvalidCommand } from './commandRefusals.js';
+import {
+  buildRowChangesOfDataSnapshots,
+  type DataSnapshotChange,
+  findChangedDataSnapshots,
+} from './dataSnapshotChanges.js';
 import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialSlices.js';
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
@@ -52,9 +59,15 @@ export type CommandOutcome =
 /**
  * Called after every command that changed a slice or was refused, with the names of the
  * slices that changed (the event log among them, except after a routine data-source
- * poll or a recording's progress, which are left out of it), and all slices.
+ * poll or a recording's progress, which are left out of it), all slices, and, source by
+ * source, the snapshots that changed (empty unless `dataSnapshots` is among the names).
+ * The hub sends each of those as its own `dataSnapshot` message (BAJAOVRLAY-40).
  */
-export type SliceChangeListener = (changedSliceNames: SliceName[], slices: Slices) => void;
+export type SliceChangeListener = (
+  changedSliceNames: SliceName[],
+  slices: Slices,
+  changedDataSnapshots: DataSnapshotChange[],
+) => void;
 
 /** The store: the only holder of state and the only way to change it. */
 export type StateStore = {
@@ -81,6 +94,10 @@ const sliceNamesChangedByCommands = [
   'dataSnapshots',
   'recordings',
 ] as const;
+
+// The slice saved one row per source in its own table (data_snapshots) instead of as one
+// row of the slices table: a poll of one source must not rewrite every source's data.
+const sliceNameSavedOneRowPerSource: keyof SlicesChangedByCommands = 'dataSnapshots';
 
 // The slices that live in memory only and are never written to the database: a macro
 // run is something happening now, and a restart must not resume it (see macroRunner.ts);
@@ -229,11 +246,11 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   }
 
   /**
-   * Saves the slices that changed and the event-log row in one transaction, then (only
-   * once that succeeded) updates memory and tells listeners. If saving throws, memory
-   * is left as it was, so it never runs ahead of the database. A slice kept in memory
-   * only (previewClearedLayerIds, macroRuns, recordings) is not saved, but its change is still
-   * logged and broadcast.
+   * Saves the slices that changed, the rows of the snapshots that changed and the
+   * event-log row in one transaction, then (only once that succeeded) updates memory and
+   * tells listeners. If saving throws, memory is left as it was, so it never runs ahead
+   * of the database. A slice kept in memory only (previewClearedLayerIds, macroRuns,
+   * recordings) is not saved, but its change is still logged and broadcast.
    */
   function recordOutcome(outcome: {
     nextSlices: SlicesChangedByCommands;
@@ -245,16 +262,24 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       changedSliceNames,
       outcome.logEntry.ts,
     );
+    const changedDataSnapshots = findChangedDataSnapshots(
+      currentSlices.dataSnapshots,
+      outcome.nextSlices.dataSnapshots,
+    );
 
     const eventLogId = saveCommandOutcome(options.database, {
       changedSliceRows,
+      dataSnapshotRowChanges: buildRowChangesOfDataSnapshots(
+        changedDataSnapshots,
+        outcome.logEntry.ts,
+      ),
       eventLogRow: outcome.logEntry,
     });
 
     const savedLogEntry: EventLogEntry = { id: eventLogId, ...outcome.logEntry };
     const eventLog = appendToEventLogSlice(currentSlices.eventLog, savedLogEntry);
     currentSlices = buildAllSlices(outcome.nextSlices, eventLog);
-    tellListeners([...changedSliceNames, 'eventLog']);
+    tellListeners([...changedSliceNames, 'eventLog'], changedDataSnapshots);
   }
 
   /**
@@ -266,9 +291,16 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   function recordOutcomeWithoutEventLogRow(nextSlices: SlicesChangedByCommands, now: string): void {
     const changedSliceNames = findNamesOfChangedSlices(nextSlices);
     const changedSliceRows = buildRowsOfChangedSlicesToSave(nextSlices, changedSliceNames, now);
-    saveSliceRowsWithoutEventLogRow(options.database, changedSliceRows);
+    const changedDataSnapshots = findChangedDataSnapshots(
+      currentSlices.dataSnapshots,
+      nextSlices.dataSnapshots,
+    );
+    saveCommandOutcomeWithoutEventLogRow(options.database, {
+      changedSliceRows,
+      dataSnapshotRowChanges: buildRowChangesOfDataSnapshots(changedDataSnapshots, now),
+    });
     currentSlices = buildAllSlices(nextSlices, currentSlices.eventLog);
-    tellListeners(changedSliceNames);
+    tellListeners(changedSliceNames, changedDataSnapshots);
   }
 
   /**
@@ -288,10 +320,13 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   }
 
   /** Calls every listener; one that throws is logged and does not stop the others. */
-  function tellListeners(changedSliceNames: SliceName[]): void {
+  function tellListeners(
+    changedSliceNames: SliceName[],
+    changedDataSnapshots: DataSnapshotChange[],
+  ): void {
     for (const listener of listeners) {
       try {
-        listener(changedSliceNames, currentSlices);
+        listener(changedSliceNames, currentSlices, changedDataSnapshots);
       } catch (listenerError) {
         options.logger.error({ err: listenerError }, 'a slice change listener failed');
       }
@@ -309,16 +344,19 @@ export function createStateStore(options: StateStoreOptions): StateStore {
 }
 
 /**
- * The database rows of the changed slices, leaving out the slices kept in memory only.
+ * The slices-table rows of the changed slices, leaving out the slices kept in memory only
+ * and the snapshots, which are saved one row per source (buildRowChangesOfDataSnapshots).
  */
 function buildRowsOfChangedSlicesToSave(
   nextSlices: SlicesChangedByCommands,
   changedSliceNames: Array<keyof SlicesChangedByCommands>,
   updatedAt: string,
 ): SliceRow[] {
-  const changedSliceNamesToSave = changedSliceNames.filter(
-    (sliceName) => !sliceNamesKeptInMemoryOnly.includes(sliceName),
-  );
+  const changedSliceNamesToSave = changedSliceNames.filter((sliceName) => {
+    const isKeptInMemoryOnly = sliceNamesKeptInMemoryOnly.includes(sliceName);
+    const isSavedOneRowPerSource = sliceName === sliceNameSavedOneRowPerSource;
+    return !isKeptInMemoryOnly && !isSavedOneRowPerSource;
+  });
   return changedSliceNamesToSave.map((sliceName) => ({
     name: sliceName,
     json: nextSlices[sliceName],
@@ -349,46 +387,4 @@ function buildAllSlices(
     recordings: slicesOfCommands.recordings,
     eventLog,
   };
-}
-
-/**
- * What the event log stores as the payload of an invalid command: what was sent, or a
- * marker when nothing was. event_log.payload is NOT NULL and Drizzle writes a JS null as
- * SQL NULL, so storing null or undefined would make the save throw and lose the row.
- * An invalid data-source poll keeps only its type and sourceId, so a malformed one
- * carrying 60 cars of shapes does not land in the eventLog slice (gate 2 on PR #16).
- */
-function describePayloadAsReceived(commandInput: unknown): unknown {
-  if (commandInput === null || commandInput === undefined) {
-    return { commandWasMissing: true };
-  }
-  const isObject = typeof commandInput === 'object';
-  const isPoll = readCommandNameAsSent(commandInput) === 'recordDataSourcePoll';
-  if (isObject && isPoll) {
-    return trimInvalidPollForTheEventLog(commandInput as Record<string, unknown>);
-  }
-  return commandInput;
-}
-
-/**
- * The payload of a validated command's event-log row: the command itself, except for a
- * data-source poll, whose row names its shapes instead of carrying them (gate 2 on
- * PR #16). A logged poll row is rare (decision D11), but each one with a 60-car snapshot
- * was tens of kilobytes in the eventLog slice that every operator page is sent again.
- */
-function buildEventLogPayloadOfCommand(command: Command): unknown {
-  if (command.type === 'recordDataSourcePoll') {
-    return trimPollCommandForTheEventLog(command);
-  }
-  return command;
-}
-
-/** The `type` of whatever was sent, for the event log; `unknown` when it had none. */
-function readCommandNameAsSent(commandInput: unknown): string {
-  const isObjectWithType =
-    typeof commandInput === 'object' && commandInput !== null && 'type' in commandInput;
-  if (isObjectWithType && typeof commandInput.type === 'string' && commandInput.type !== '') {
-    return commandInput.type;
-  }
-  return 'unknown';
 }

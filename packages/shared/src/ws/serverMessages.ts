@@ -39,7 +39,8 @@ export const HelloMessageSchema = z.object({
 /**
  * Sent to every client when one slice changes. The `name` decides what `slice` must
  * contain, so a client can never store layers as instances. Each one carries the
- * server's clock time, as `hello` does.
+ * server's clock time, as `hello` does. There is no `dataSnapshots` case: a snapshot
+ * changes source by source, in the `dataSnapshot` message below.
  */
 export const SliceMessageSchema = z.discriminatedUnion('name', [
   z.object({
@@ -104,12 +105,6 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
   }),
   z.object({
     type: z.literal('slice'),
-    name: z.literal('dataSnapshots'),
-    slice: z.array(DataSnapshotSchema),
-    serverNowMs: ServerNowMsSchema,
-  }),
-  z.object({
-    type: z.literal('slice'),
     name: z.literal('recordings'),
     slice: z.array(RecordingSchema),
     serverNowMs: ServerNowMsSchema,
@@ -142,6 +137,32 @@ export const SlicesMessageSchema = z.object({
 
 /** One slices message after validation. */
 export type SlicesMessage = z.infer<typeof SlicesMessageSchema>;
+
+/**
+ * Sent to every operator connection when one source's snapshot changed: the source's new
+ * last good data, or `null` when the source no longer has any (it was deleted). Only that
+ * source is sent, so a 60-car poll of one source does not resend every other source's
+ * snapshot (BAJAOVRLAY-40); the page merges it into its list by `sourceId`. Screen
+ * connections never get it (graphics receive resolved data only). `serverNowMs` is
+ * required, as on `slices`: this message is newer than every stand-in server.
+ */
+export const DataSnapshotMessageSchema = z
+  .object({
+    type: z.literal('dataSnapshot'),
+    sourceId: z.string().min(1),
+    snapshot: DataSnapshotSchema.nullable(),
+    serverNowMs: z.number().int(),
+  })
+  .refine(
+    (message) => message.snapshot === null || message.snapshot.sourceId === message.sourceId,
+    {
+      message: 'the snapshot must belong to the source the message names',
+      path: ['snapshot', 'sourceId'],
+    },
+  );
+
+/** One dataSnapshot message after validation. */
+export type DataSnapshotMessage = z.infer<typeof DataSnapshotMessageSchema>;
 
 /**
  * Sent to the client that sent a command (or an unreadable message): ok, or an error
@@ -190,6 +211,7 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   HelloMessageSchema,
   SliceMessageSchema,
   SlicesMessageSchema,
+  DataSnapshotMessageSchema,
   CommandResultMessageSchema,
   TimeMessageSchema,
 ]);

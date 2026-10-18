@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { inArray, sql } from 'drizzle-orm';
 
 import type { ServerDatabase } from './openDatabase.js';
 import { type SliceRow, sliceRows } from './tables.js';
@@ -30,25 +30,13 @@ export function writeSliceRows(database: ServerDatabase, rowsToWrite: SliceRow[]
 }
 
 /**
- * Writes the rows a boot produces (the first-boot seed, the refreshed graphics) in one
- * transaction: all of them or none.
+ * Deletes the slice rows of the given names, inside the caller's transaction (or on its
+ * own if there is none). Only the boot uses it, to remove a row whose slice moved to its
+ * own table (the legacy `dataSnapshots` row, BAJAOVRLAY-40).
  */
-export function writeBootSliceRows(database: ServerDatabase, bootRows: SliceRow[]): void {
-  const writeAllBootRows = database.$client.transaction(() => writeSliceRows(database, bootRows));
-  writeAllBootRows();
-}
-
-/**
- * Saves the slices one command changed, in one transaction, with no event-log row: the
- * one exception to "every command is logged", for a routine data-source poll (decision
- * D11; see createStateStore.ts). Every other command saves through saveCommandOutcome.
- */
-export function saveSliceRowsWithoutEventLogRow(
-  database: ServerDatabase,
-  changedSliceRows: SliceRow[],
-): void {
-  const writeAllChangedRows = database.$client.transaction(() =>
-    writeSliceRows(database, changedSliceRows),
-  );
-  writeAllChangedRows();
+export function deleteSliceRows(database: ServerDatabase, sliceNames: string[]): void {
+  if (sliceNames.length === 0) {
+    return;
+  }
+  database.delete(sliceRows).where(inArray(sliceRows.name, sliceNames)).run();
 }

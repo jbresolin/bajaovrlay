@@ -4,9 +4,11 @@ import {
   loadOrSeedDataSourceSlices,
   readRecordingsFromFolder,
 } from '../../modules/dataSources/index.js';
+import { writeBootRows } from '../db/bootRowStorage.js';
+import { readAllDataSnapshotRows } from '../db/dataSnapshotRowStorage.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
 import type { ServerDatabase } from '../db/openDatabase.js';
-import { readAllSliceRows, writeBootSliceRows } from '../db/sliceRowStorage.js';
+import { readAllSliceRows } from '../db/sliceRowStorage.js';
 import type { SliceRow } from '../db/tables.js';
 import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { eventLogSliceSize } from '../events/eventLogSlice.js';
@@ -100,15 +102,26 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     options.logger,
   );
   // Data sources and their snapshots are loaded, the simulator seeded when there is no
-  // source, and every source that was on comes back stale (modules/dataSources).
-  const dataSourceSlices = loadOrSeedDataSourceSlices(storedRows, updatedAt, options.logger);
+  // source, and every source that was on comes back stale (modules/dataSources). The
+  // snapshots come one row per source from their own table; a legacy single row of them
+  // is split there, once.
+  const dataSourceSlices = loadOrSeedDataSourceSlices(
+    storedRows,
+    readAllDataSnapshotRows(options.database),
+    updatedAt,
+    options.logger,
+  );
   const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
-  writeBootSliceRows(options.database, [
-    ...layerAndGraphicRows,
-    ...rundownSlices.rowsToSaveAtBoot,
-    ...quickFireAndMacroSlices.rowsToSaveAtBoot,
-    ...dataSourceSlices.rowsToSaveAtBoot,
-  ]);
+  writeBootRows(options.database, {
+    sliceRowsToWrite: [
+      ...layerAndGraphicRows,
+      ...rundownSlices.rowsToSaveAtBoot,
+      ...quickFireAndMacroSlices.rowsToSaveAtBoot,
+      ...dataSourceSlices.rowsToSaveAtBoot,
+    ],
+    sliceRowNamesToDelete: dataSourceSlices.sliceRowNamesToDeleteAtBoot,
+    dataSnapshotRowChanges: dataSourceSlices.dataSnapshotRowChangesAtBoot,
+  });
   if (isFirstBoot) {
     options.logger.info('empty database seeded with the fixed layers');
   }

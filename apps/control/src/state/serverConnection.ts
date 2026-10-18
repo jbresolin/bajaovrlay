@@ -139,6 +139,9 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       case 'slices':
         serverStateStore.getState().replaceSeveralSlices(message.slices);
         break;
+      case 'dataSnapshot':
+        serverStateStore.getState().mergeOneDataSnapshot(message);
+        break;
       case 'commandResult':
         settleCommandAwaitingThisResult(message);
         break;

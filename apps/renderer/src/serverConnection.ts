@@ -191,6 +191,12 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       // line every ten seconds would bury the lines that matter in the OBS console.
       return { wasHello: false };
     }
+    if (message.type === 'dataSnapshot') {
+      // One source's raw data, which the server sends operator connections only: graphics
+      // receive resolved data (rule 3). A renderer that got one anyway draws nothing new
+      // from it, so it is dropped without a log line.
+      return { wasHello: false };
+    }
     // A commandResult. The renderer never waits for one, but the server may answer an
     // instanceStatus with it. An ok needs nothing (a late report about an
     // instance already cleared is answered ok too). A refusal (this connection is not

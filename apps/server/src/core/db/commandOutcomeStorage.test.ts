@@ -2,14 +2,15 @@
  * Saving a command's outcome in one transaction (apps/server)
  *
  * What this module is for:
- *   After a command, the store saves the slices it changed and its event-log row. Both
- *   are written in one SQLite transaction, so a crash or a failed write can never leave
- *   the slices saying one thing and the event log another.
+ *   After a command, the store saves the slices it changed, the rows of the data
+ *   snapshots it changed (one per source) and its event-log row. All are written in one
+ *   SQLite transaction, so a crash or a failed write can never leave the slices saying
+ *   one thing and the event log another.
  *
  * What these tests prove (with a real SQLite file in a temporary folder):
- *   - The changed slices and the event-log row are both saved, and the row's id is
- *     returned.
- *   - When the event-log write fails, the slices are not saved either.
+ *   - The changed slices, a source's snapshot row and the event-log row are all saved,
+ *     and the row's id is returned.
+ *   - When the event-log write fails, neither the slices nor the snapshot row is saved.
  *   - Each new event-log row gets a larger id than the one before, so ids give the order.
  *
  * What these tests deliberately do not cover:
@@ -18,6 +19,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { saveCommandOutcome } from './commandOutcomeStorage.js';
+import {
+  buildNoDataSnapshotRowChanges,
+  readAllDataSnapshotRows,
+} from './dataSnapshotRowStorage.js';
 import { readNewestEventLogRows } from './eventLogRowStorage.js';
 import { readAllSliceRows } from './sliceRowStorage.js';
 import { openTemporaryDatabase } from './temporaryDatabase.testSupport.js';
@@ -38,6 +43,35 @@ const raceClockInstances = [
   },
 ];
 
+/** Builds the snapshot row of the seeded simulator after one good poll of the enduro. */
+function buildEnduroSimulatorSnapshotRow() {
+  const receivedAtMs = Date.parse(savedAt);
+  return {
+    sourceId: 'simulador-enduro',
+    json: {
+      sourceId: 'simulador-enduro',
+      receivedAtMs,
+      shapes: {
+        session: {
+          sessionId: 'enduro-2027-nacional',
+          eventName: 'Baja SAE Brasil 2027 — Etapa Nacional',
+          sessionName: 'Enduro de Resistência',
+          sessionKind: 'enduro',
+          state: 'green',
+          clock: {
+            clockMode: 'remaining',
+            referenceTimeMs: 12_475_000,
+            referenceWallClockMs: receivedAtMs,
+            running: true,
+          },
+          updatedAtMs: receivedAtMs,
+        },
+      },
+    },
+    updatedAt: savedAt,
+  };
+}
+
 /** Builds the event-log row of a successful take of the race clock item by the operator. */
 function buildRaceClockTakeRow() {
   return {
@@ -50,27 +84,35 @@ function buildRaceClockTakeRow() {
 }
 
 describe('saveCommandOutcome', () => {
-  it('saves the changed slices and the event-log row, and returns the row id', () => {
+  it('saves the changed slices, the snapshot row and the event-log row, and returns the row id', () => {
     // Arrange: an empty database.
     const { database } = openTemporaryDatabase();
 
-    // Act: save a take that changed the instances slice.
+    // Act: save an outcome that changed the instances slice and the simulator's snapshot
+    // (no single command does both today; the storage does not care which command it was).
     const eventLogId = saveCommandOutcome(database, {
       changedSliceRows: [{ name: 'instances', json: raceClockInstances, updatedAt: savedAt }],
+      dataSnapshotRowChanges: {
+        rowsToWrite: [buildEnduroSimulatorSnapshotRow()],
+        sourceIdsToDelete: [],
+      },
       eventLogRow: buildRaceClockTakeRow(),
     });
 
-    // Assert: both are in the database, and the first row has id 1.
+    // Assert: all three are in the database, and the first row has id 1.
     expect(eventLogId, 'the first event-log row must have id 1').toBe(1);
     expect(readAllSliceRows(database), 'the instances slice must be saved').toEqual([
       { name: 'instances', json: raceClockInstances, updatedAt: savedAt },
     ]);
+    expect(readAllDataSnapshotRows(database), "the simulator's snapshot row must be saved").toEqual(
+      [buildEnduroSimulatorSnapshotRow()],
+    );
     expect(readNewestEventLogRows(database, 10), 'the event-log row must be saved').toEqual([
       { id: 1, ...buildRaceClockTakeRow() },
     ]);
   });
 
-  it('saves neither the slices nor the row when the event-log write fails', () => {
+  it('saves neither the slices, the snapshot row nor the event-log row when the event-log write fails', () => {
     // Arrange: a database whose event_log table has vanished, as a damaged file might.
     const { database } = openTemporaryDatabase();
     database.$client.exec('DROP TABLE event_log');
@@ -79,14 +121,22 @@ describe('saveCommandOutcome', () => {
     const saveTheTake = () =>
       saveCommandOutcome(database, {
         changedSliceRows: [{ name: 'instances', json: raceClockInstances, updatedAt: savedAt }],
+        dataSnapshotRowChanges: {
+          rowsToWrite: [buildEnduroSimulatorSnapshotRow()],
+          sourceIdsToDelete: [],
+        },
         eventLogRow: buildRaceClockTakeRow(),
       });
 
-    // Assert: the save throws and the instances slice was rolled back.
+    // Assert: the save throws and the instances slice and the snapshot row were rolled back.
     expect(saveTheTake, 'a failed event-log write must fail the whole save').toThrow();
     expect(readAllSliceRows(database), 'the slices must not be saved without their row').toEqual(
       [],
     );
+    expect(
+      readAllDataSnapshotRows(database),
+      'the snapshot row must not be saved without its event-log row',
+    ).toEqual([]);
   });
 
   it('gives each new event-log row a larger id than the one before', () => {
@@ -95,7 +145,11 @@ describe('saveCommandOutcome', () => {
 
     // Act: save three outcomes one after the other.
     const savedIds = [1, 2, 3].map(() =>
-      saveCommandOutcome(database, { changedSliceRows: [], eventLogRow: buildRaceClockTakeRow() }),
+      saveCommandOutcome(database, {
+        changedSliceRows: [],
+        dataSnapshotRowChanges: buildNoDataSnapshotRowChanges(),
+        eventLogRow: buildRaceClockTakeRow(),
+      }),
     );
 
     // Assert: the ids go up, so they give the order the commands ran in.

@@ -9,23 +9,26 @@
  *   seconds per source) or the operator's history (the `eventLog` slice): graphics
  *   receive resolved data only (architecture rule 3), and parsing either on every change
  *   is a frame-drop risk in OBS. So the hub keeps both slices from every screen
- *   connection, while operator connections (the control page itself) receive them as
- *   before.
+ *   connection, and the `dataSnapshot` message (one source's change, BAJAOVRLAY-40) as
+ *   well, while operator connections (the control page itself) receive them all.
  *
  * What these tests prove (with a real server on a random port and a real SQLite file):
  *   - An operator's hello carries the stored snapshot and the event log; the hello of a
  *     renderer and of a monitor carries both as empty lists, on purpose, not because
  *     there is no data.
- *   - Polls recorded while all three are connected reach the operator with
- *     `dataSnapshots`, and no message the renderer or the monitor receives carries
- *     `dataSnapshots` or `eventLog` at all, while both still hear the source change.
- *   - A routine poll (it changes the source and its snapshot, not the event log) sends a
+ *   - Polls recorded while all three are connected reach the operator as `dataSnapshot`
+ *     messages, and no message the renderer or the monitor receives is a `dataSnapshot`
+ *     or carries `dataSnapshots` or `eventLog` at all, while both still hear the source
+ *     change.
+ *   - A routine poll (it changes the source and its snapshot, not the event log) sends
+ *     the operator the source's `dataSnapshot` and then the `dataSources` slice, and a
  *     renderer and a monitor the `dataSources` slice alone, as a single `slice` message.
  *   - A refused command (it changes the event log alone) sends a renderer and a monitor
  *     nothing, while the operator gets the `eventLog` slice.
- *   - A change of `dataSnapshots` alone sends a renderer and a monitor nothing, not an
- *     empty group (with a real hub and store, the change handed to the hub by the test,
- *     because no command changes that slice alone today).
+ *   - A change of `dataSnapshots` alone sends the operator the one `dataSnapshot` message
+ *     and a renderer and a monitor nothing, not an empty group (with a real hub and
+ *     store, the change handed to the hub by the test, because no command changes that
+ *     slice alone today).
  *
  * What these tests deliberately do not cover:
  *   - GET /api/v1/state, the renderer's fallback for a hello, which applies the same
@@ -54,16 +57,23 @@ import {
 } from './webSocketHubWithAnnouncedChanges.testSupport.js';
 import type { WebSocketTestClient } from './webSocketTestClient.testSupport.js';
 
-/** True for any message that carries the named slice, in whatever form. */
+/**
+ * True for any message that carries the named slice, in whatever form: a `dataSnapshot`
+ * message carries part of `dataSnapshots`. A `slices` group is checked by its keys, so a
+ * `dataSnapshots` key would be caught even though the schema no longer has one.
+ */
 function carriesSlice(message: ServerMessage, sliceName: 'dataSnapshots' | 'eventLog'): boolean {
   if (message.type === 'hello') {
     return message.slices[sliceName].length > 0;
   }
   if (message.type === 'slices') {
-    return message.slices[sliceName] !== undefined;
+    return Object.keys(message.slices).includes(sliceName);
   }
   if (message.type === 'slice') {
     return message.name === sliceName;
+  }
+  if (message.type === 'dataSnapshot') {
+    return sliceName === 'dataSnapshots';
   }
   return false;
 }
@@ -129,7 +139,7 @@ describe('the hello of a connection', () => {
 });
 
 describe('polls recorded while an operator, a renderer and a monitor are connected', () => {
-  it('reach the operator with dataSnapshots and never put dataSnapshots or eventLog in a screen message', async () => {
+  it('reach the operator as dataSnapshot messages and never put snapshots or eventLog in a screen message', async () => {
     // Arrange: a running server, the control page, the renderer and the monitor connected.
     const runningServer = await startServerOnARandomPort();
     const { client: controlPage } = await connectAndWaitForHello(runningServer.port);
@@ -149,8 +159,7 @@ describe('polls recorded while an operator, a renderer and a monitor are connect
     const lastSnapshotOnTheControlPage = await controlPage.waitForMessage(
       'the snapshot of the third poll',
       (message) =>
-        message.type === 'slices' &&
-        message.slices.dataSnapshots?.[0]?.receivedAtMs === thirdPollAtMs,
+        message.type === 'dataSnapshot' && message.snapshot?.receivedAtMs === thirdPollAtMs,
     );
     await waitUntilTheScreenHasEverythingSentSoFar(renderer);
     await waitUntilTheScreenHasEverythingSentSoFar(monitor);
@@ -160,9 +169,11 @@ describe('polls recorded while an operator, a renderer and a monitor are connect
     expect(
       lastSnapshotOnTheControlPage,
       'the operator must receive the snapshot the store holds after the third poll',
-    ).toMatchObject({
-      type: 'slices',
-      slices: { dataSnapshots: runningServer.stateStore.readAllSlices().dataSnapshots },
+    ).toEqual({
+      type: 'dataSnapshot',
+      sourceId: 'simulador-enduro',
+      snapshot: runningServer.stateStore.readAllSlices().dataSnapshots[0],
+      serverNowMs: expect.any(Number),
     });
     expect(
       findMessagesWithHiddenSlices(renderer),
@@ -221,17 +232,23 @@ describe('polls recorded while an operator, a renderer and a monitor are connect
       routinePollChange?.names,
       'the second poll must be routine: the source and its snapshot, no event-log row',
     ).toEqual(['dataSources', 'dataSnapshots']);
+    const messagesOfTheControlPage = controlPage.readReceivedMessages();
+    const routineSnapshotPlace = messagesOfTheControlPage.findIndex(
+      (message) =>
+        message.type === 'dataSnapshot' && message.snapshot?.receivedAtMs === secondPollAtMs,
+    );
     expect(
-      controlPage.readReceivedMessages(),
-      'the operator must get the routine poll as the source and the snapshot together',
-    ).toContainEqual({
-      type: 'slices',
-      slices: {
-        dataSources: routinePollChange?.dataSources,
-        dataSnapshots: runningServer.stateStore.readAllSlices().dataSnapshots,
+      messagesOfTheControlPage.slice(routineSnapshotPlace, routineSnapshotPlace + 2),
+      "the operator must get the routine poll as the source's snapshot, then the source",
+    ).toEqual([
+      {
+        type: 'dataSnapshot',
+        sourceId: 'simulador-enduro',
+        snapshot: runningServer.stateStore.readAllSlices().dataSnapshots[0],
+        serverNowMs: expect.any(Number),
       },
-      serverNowMs: expect.any(Number),
-    });
+      routinePollAsASliceOfTheSource,
+    ]);
     expect(
       renderer.readReceivedMessages(),
       'the renderer must get the routine poll as the dataSources slice alone',
@@ -299,7 +316,7 @@ describe('a refused command, which changes the event log alone', () => {
 });
 
 describe('a change of the dataSnapshots slice alone', () => {
-  it('sends a renderer and a monitor nothing at all, while the operator gets the slice', async () => {
+  it("sends a renderer and a monitor nothing at all, while the operator gets the source's dataSnapshot", async () => {
     // Arrange: a hub whose changes the test can announce, a snapshot stored, and the
     // control page, the renderer and the monitor connected.
     const { port, realStateStore, listenersTheHubRegistered } =
@@ -313,25 +330,40 @@ describe('a change of the dataSnapshots slice alone', () => {
     const messagesOfTheRendererBefore = renderer.readReceivedMessages().length;
     const messagesOfTheMonitorBefore = monitor.readReceivedMessages().length;
 
-    // Act: the hub is told that only the snapshots changed.
+    // Act: the hub is told that only the simulator's snapshot changed.
+    const storedSnapshot = realStateStore.readAllSlices().dataSnapshots[0] ?? null;
+    const messagesOfTheControlPageBefore = controlPage.readReceivedMessages().length;
     for (const listener of listenersTheHubRegistered) {
-      listener(['dataSnapshots'], realStateStore.readAllSlices());
+      listener(['dataSnapshots'], realStateStore.readAllSlices(), [
+        { sourceId: 'simulador-enduro', snapshot: storedSnapshot },
+      ]);
     }
-    const sliceOnTheControlPage = await controlPage.waitForMessage(
-      'the dataSnapshots slice',
-      (message) => message.type === 'slice' && message.name === 'dataSnapshots',
+    await controlPage.waitForMessage(
+      "the simulator's dataSnapshot",
+      (message) => message.type === 'dataSnapshot',
     );
     await waitUntilTheScreenHasEverythingSentSoFar(renderer);
     await waitUntilTheScreenHasEverythingSentSoFar(monitor);
 
-    // Assert: the operator got the slice; each screen got only the answer to its report
-    // (ok for the renderer; NOT_ALLOWED for the monitor, which may report nothing).
-    expect(sliceOnTheControlPage, 'the operator must get the snapshots the store holds').toEqual({
-      type: 'slice',
-      name: 'dataSnapshots',
-      slice: realStateStore.readAllSlices().dataSnapshots,
-      serverNowMs: expect.any(Number),
-    });
+    // Assert: the operator got that one message and no slice; each screen got only the
+    // answer to its report (ok for the renderer; NOT_ALLOWED for the monitor, which may
+    // report nothing).
+    // The monitor's refused report adds an eventLog slice for the operator; it is left out.
+    const messagesOfTheChangeOnTheControlPage = controlPage
+      .readReceivedMessages()
+      .slice(messagesOfTheControlPageBefore)
+      .filter((message) => !(message.type === 'slice' && message.name === 'eventLog'));
+    expect(
+      messagesOfTheChangeOnTheControlPage,
+      "the operator must get the simulator's snapshot alone, with no slice and no empty group",
+    ).toEqual([
+      {
+        type: 'dataSnapshot',
+        sourceId: 'simulador-enduro',
+        snapshot: storedSnapshot,
+        serverNowMs: expect.any(Number),
+      },
+    ]);
     expect(
       renderer.readReceivedMessages().slice(messagesOfTheRendererBefore),
       'the renderer must get no message for the change, not even an empty group',

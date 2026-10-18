@@ -15,6 +15,24 @@ export const sliceRows = sqliteTable('slices', {
 export type SliceRow = typeof sliceRows.$inferSelect;
 
 /**
+ * One row per data source holding that source's last good snapshot as JSON (the whole
+ * DataSnapshot, sourceId included). The in-memory `dataSnapshots` slice is saved here,
+ * not in `slices`, so a poll of one source rewrites only that source's row and deleting
+ * a source deletes only its row (BAJAOVRLAY-40). A database written before this table
+ * existed kept every snapshot in one `dataSnapshots` row of `slices`; the boot splits
+ * that row into these rows once and removes it (modules/dataSources).
+ */
+export const dataSnapshotRows = sqliteTable('data_snapshots', {
+  sourceId: text('sourceId').primaryKey(),
+  json: text('json', { mode: 'json' }).$type<unknown>().notNull(),
+  /** When the snapshot row was last written, as an ISO 8601 timestamp. */
+  updatedAt: text('updatedAt').notNull(),
+});
+
+/** A row of the data_snapshots table as read back. */
+export type DataSnapshotRow = typeof dataSnapshotRows.$inferSelect;
+
+/**
  * The append-only event log: one row per command that changed something (ok) or was
  * refused (failed). The autoincrement id gives the order commands ran in; ids are never reused, even after a row is deleted.
  */
