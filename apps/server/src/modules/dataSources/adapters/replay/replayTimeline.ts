@@ -32,9 +32,10 @@ export type ReplayMoment = {
  * Chooses the line to answer at `nowMs`, for `lines` in recorded order (at least one):
  * 1. Wall time since the replay was turned on (replayStartedAtMs; never before it).
  * 2. How far into the recording that is: startOffsetMs + wall time × speed.
- * 3. Past the end: a looping replay starts again (that distance modulo the recording's
- *    length), a plain one stays at the end. A recording of one line has no length and
- *    always answers that line.
+ * 3. Past the end: a looping replay starts again (that distance modulo one lap), a plain
+ *    one stays at the end. A lap is the recording's length plus the gap before its last
+ *    line, so the last line is shown for as long as the one before it, every lap. A
+ *    recording of one line has no length and always answers that line.
  * 4. The target is the first line's moment plus that distance; the answer is the latest
  *    line recorded at or before it, so nothing is shown before it happened.
  */
@@ -53,17 +54,22 @@ export function chooseRecordedLineToReplay(
   const replayStartedAtMs = config.replayStartedAtMs ?? nowMs;
   const wallTimeSinceTurnedOnMs = Math.max(0, nowMs - replayStartedAtMs);
   const recordingLengthMs = lastLine.atMs - firstLine.atMs;
+  // Without its own share, a lap of exactly recordingLengthMs would reach the last line
+  // only at the single instant it wraps round, so a looping replay would never show it.
+  const lineBeforeTheLast = lines.at(-2) ?? lastLine;
+  const lastLineShareMs = lastLine.atMs - lineBeforeTheLast.atMs;
+  const loopLapLengthMs = recordingLengthMs + lastLineShareMs;
 
   // How far in the replay would be on a recording with no end.
   const distanceIgnoringTheEndMs =
     (config.startOffsetMs ?? 0) + wallTimeSinceTurnedOnMs * config.speed;
-  const isPastTheEnd = distanceIgnoringTheEndMs > recordingLengthMs;
   const canLoop = config.isLooping && recordingLengthMs > 0;
+  const isPastTheEnd = distanceIgnoringTheEndMs > recordingLengthMs;
   const isHeldAtTheEnd = isPastTheEnd && !canLoop;
   // The same distance brought back inside the recording: looped round, or held at the end.
   let distanceAfterLoopOrHoldMs = distanceIgnoringTheEndMs;
-  if (isPastTheEnd && canLoop) {
-    distanceAfterLoopOrHoldMs = distanceIgnoringTheEndMs % recordingLengthMs;
+  if (canLoop) {
+    distanceAfterLoopOrHoldMs = distanceIgnoringTheEndMs % loopLapLengthMs;
   }
   if (isHeldAtTheEnd) {
     distanceAfterLoopOrHoldMs = recordingLengthMs;
@@ -85,7 +91,9 @@ export function chooseRecordedLineToReplay(
  * - the session clock shows at now what it showed at the replayed moment
  *   (computeClockTimeMsAtWallClock): its referenceWallClockMs moves by (now − targetAtMs);
  * - once a plain replay has ended, the clock is stopped at its last recorded value, so it
- *   does not count on between polls and jump back at each one.
+ *   does not count on between polls and jump back at each one; a countdown that would read
+ *   below zero by then (a stale snapshot written at "Gravar") stops at 0:00, because the
+ *   session shape takes no negative time and every held poll would otherwise fail.
  * What could go wrong: a ClockReading has no speed, so between two polls a running clock
  * counts at 1× and is set again at the next poll; at 10× it jumps forward at every poll.
  * Rehearsal-only, and as accurate as the poll interval.
@@ -124,9 +132,10 @@ function moveClockOntoTheCurrentTimeline(
   moment: ReplayMoment,
 ): ClockReading {
   if (moment.isHeldAtTheEnd) {
+    const clockTimeMsAtTheEnd = computeClockTimeMsAtWallClock(recordedClock, moment.targetAtMs);
     return {
       ...recordedClock,
-      referenceTimeMs: computeClockTimeMsAtWallClock(recordedClock, moment.targetAtMs),
+      referenceTimeMs: Math.max(0, clockTimeMsAtTheEnd),
       referenceWallClockMs: moment.nowMs,
       running: false,
     };

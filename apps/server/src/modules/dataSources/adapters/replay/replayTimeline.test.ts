@@ -16,23 +16,31 @@
  *   - The right line at 1× and at 10×, on a line's own moment and between two lines.
  *   - startOffsetMs starts that far into the recording.
  *   - Past the end, a looping replay starts again and a plain one keeps the last line.
+ *   - A looping lap includes the last line's share (the gap before it), so the last line is
+ *     shown every lap, and a two-line recording shows each line half of the time.
  *   - A recording of one line is always that line.
  *   - The rewrite sets every shape's `updatedAtMs` to now, and the session clock shows at
  *     now exactly what it showed at the replayed moment; the recorded line is untouched.
  *   - Once a plain replay has ended, it says so, and its clock stops at the last recorded
- *     value instead of counting on between polls.
+ *     value instead of counting on between polls; a countdown that would have gone below
+ *     zero by then stops at 0:00, so the session still passes its shape's check.
  *
  * What these tests deliberately do not cover:
  *   - Reading the file; replayAdapter.test.ts covers it.
  *   - The clock between two polls: it runs at 1× from the moment of each poll (a
  *     ClockReading has no speed), so at 10× it jumps forward at every poll.
  */
-import { computeClockTimeMsAtWallClock, type ReplayConfig } from '@bajaovrlay/shared';
+import {
+  computeClockTimeMsAtWallClock,
+  type ReplayConfig,
+  validateDataShape,
+} from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
   buildFridayLineAt,
   buildFridayRecordingLines,
+  buildFridaySessionAt,
   enduroDurationMs,
   fridayAt1300Ms,
   fridayAt1301Ms,
@@ -106,21 +114,30 @@ describe('chooseRecordedLineToReplay', () => {
       expectedTargetAtMs: fridayAt1301Ms,
       expectedLineAtMs: fridayAt1301Ms,
     },
-    // Past the end of a looping replay: 65 s into a 60 s recording is 5 s into it again.
+    // A looping lap is the recording's 60 s plus the 2 s the last line is shown for, so
+    // the last line gets its turn: 61 s in is still on it.
+    {
+      name: 'shows the last line for its own share of each lap when looping',
+      settings: { isLooping: true },
+      wallTimeSinceTurnedOnMs: 61_000,
+      expectedTargetAtMs: fridayAt1301Ms + 1_000,
+      expectedLineAtMs: fridayAt1301Ms,
+    },
+    // Past the end of a looping replay: 65 s into a 62 s lap is 3 s into it again.
     {
       name: 'starts again from the top past the end when looping',
       settings: { isLooping: true },
       wallTimeSinceTurnedOnMs: 65_000,
-      expectedTargetAtMs: fridayAt1300Ms + 5_000,
-      expectedLineAtMs: fridayAt1300Ms + 4_000,
+      expectedTargetAtMs: fridayAt1300Ms + 3_000,
+      expectedLineAtMs: fridayAt1300Ms + 2_000,
     },
-    // Looping at 10×: 13 s of wall time is 130 s, two laps of the recording plus 10 s.
+    // Looping at 10×: 13 s of wall time is 130 s, two 62 s laps plus 6 s.
     {
       name: 'loops as many times as needed at 10×',
       settings: { isLooping: true, speed: 10 as const },
       wallTimeSinceTurnedOnMs: 13_000,
-      expectedTargetAtMs: fridayAt1300Ms + 10_000,
-      expectedLineAtMs: fridayAt1300Ms + 10_000,
+      expectedTargetAtMs: fridayAt1300Ms + 6_000,
+      expectedLineAtMs: fridayAt1300Ms + 6_000,
     },
   ];
 
@@ -157,6 +174,35 @@ describe('chooseRecordedLineToReplay', () => {
     // Assert: the one line, at its own moment (a recording that lasts no time cannot loop).
     expect(chosen.line.atMs, 'the only line must be answered').toBe(fridayAt1300Ms);
     expect(chosen.targetAtMs, 'the replayed moment stays on that line').toBe(fridayAt1300Ms);
+  });
+
+  it('answers both lines of a looping two-line recording, each for half of every lap', () => {
+    // Arrange: a recording of two lines two seconds apart (13:00:00 and 13:00:02), looped,
+    // so each lap lasts four seconds: two on the first line, two on the second.
+    const lines = [buildFridayLineAt(fridayAt1300Ms), buildFridayLineAt(fridayAt1300Ms + 2_000)];
+    const config = buildReplayConfig({ isLooping: true });
+
+    // Act: choose the line at each second of the second and third laps.
+    const answeredLineMoments = [4_000, 5_000, 6_000, 7_000, 8_000, 9_000, 10_000, 11_000].map(
+      (wallTimeSinceTurnedOnMs) =>
+        chooseRecordedLineToReplay(lines, config, replayTurnedOnAtMs + wallTimeSinceTurnedOnMs).line
+          .atMs,
+    );
+
+    // Assert: the first line in the first half of each lap, the second line in the second.
+    expect(
+      answeredLineMoments,
+      'the last line must be shown for its share of every lap, not skipped',
+    ).toEqual([
+      fridayAt1300Ms,
+      fridayAt1300Ms,
+      fridayAt1300Ms + 2_000,
+      fridayAt1300Ms + 2_000,
+      fridayAt1300Ms,
+      fridayAt1300Ms,
+      fridayAt1300Ms + 2_000,
+      fridayAt1300Ms + 2_000,
+    ]);
   });
 });
 
@@ -260,5 +306,40 @@ describe('rewriteShapesOntoTheCurrentTimeline', () => {
       ],
       'the clock must stay at 3:59:00 left, the last recorded value',
     ).toEqual([enduroDurationMs - 60_000, enduroDurationMs - 60_000]);
+  });
+
+  it('stops a held clock at 0:00, never below, when the recording ends after its countdown would', () => {
+    // Arrange: a one-line recording whose only line was written ten minutes after its
+    // snapshot was read with five minutes left (a stale source when "Gravar" was pressed),
+    // so at the line's moment the running countdown would read five minutes below zero.
+    const snapshotReadAtMs = fridayAt1300Ms;
+    const lineWrittenAtMs = snapshotReadAtMs + 600_000;
+    const staleSession = buildFridaySessionAt(snapshotReadAtMs);
+    staleSession.clock = {
+      clockMode: 'remaining',
+      referenceTimeMs: 300_000,
+      referenceWallClockMs: snapshotReadAtMs,
+      running: true,
+    };
+    const lines = [{ atMs: lineWrittenAtMs, shapes: { session: staleSession } }];
+    const nowMs = replayTurnedOnAtMs + 5_000;
+
+    // Act: a plain replay of it, polled five seconds after it was turned on (already held).
+    const replayed = chooseRecordedLineToReplay(lines, buildReplayConfig({}), nowMs);
+    const rewritten = rewriteShapesOntoTheCurrentTimeline(replayed.line.shapes, {
+      targetAtMs: replayed.targetAtMs,
+      nowMs,
+      isHeldAtTheEnd: replayed.isHeldAtTheEnd,
+    });
+
+    // Assert: the clock is stopped at 0:00, and the session still passes the shape's
+    // check (a negative clock would make every held poll a failed one).
+    expect(replayed.isHeldAtTheEnd, 'a one-line plain replay is held at once').toBe(true);
+    expect(rewritten.session?.clock.referenceTimeMs, 'the time left must stop at 0:00').toBe(0);
+    expect(rewritten.session?.clock.running, 'the held clock must be stopped').toBe(false);
+    expect(
+      validateDataShape('session', rewritten.session),
+      'the held session must still be a valid session shape',
+    ).toEqual({ isValid: true, shape: rewritten.session });
   });
 });
