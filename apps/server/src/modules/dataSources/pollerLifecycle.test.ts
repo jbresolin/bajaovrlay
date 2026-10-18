@@ -269,16 +269,18 @@ describe('the stale watch', () => {
     turnTheSimulatorOn(stateStore);
     await vi.advanceTimersByTimeAsync(1_000);
 
-    // Act: at 14:00:01 the operator sets 500 ms ("Editar"), which makes staleAfterMs
-    // 1.5 s, and a minute goes by, past the moment the old 60 s waits were armed for.
-    setTheSimulatorPollInterval(stateStore, 500);
+    // Act: at 14:00:01 the operator sets 5 s ("Editar"), which makes staleAfterMs 15 s,
+    // and a minute goes by, past the moment the old 60 s waits were armed for. (5 s
+    // rather than 0.5 s: a minute of half-second polls, each saved to SQLite, once
+    // took this test past its 5 s limit on a busy machine.)
+    setTheSimulatorPollInterval(stateStore, 5_000);
     await vi.advanceTimersByTimeAsync(60_000);
 
     // Assert: the new rhythm started at the edit, and the source never went stale.
     expect(
       toSecondsAfterTwoPm(fakeSimulator.readPollMomentsMs().slice(0, 4)),
-      'the edit polls at once, then every half a second',
-    ).toEqual([0, 1, 1.5, 2]);
+      'the edit polls at once, then every five seconds',
+    ).toEqual([0, 1, 6, 11]);
     expect(
       readRecordedLines().filter((line) => line.level === 'warn'),
       'a healthy source must never be marked as failing',
