@@ -1,5 +1,6 @@
 // The `recordings` slice as the reducers keep it (decision D10): a recording opens on
-// startRecording, counts a snapshot per good poll, and closes on stop, disable or delete.
+// startRecording (counting the data already there as its first snapshot), counts a
+// snapshot per good poll, and closes on stop, disable or delete.
 // The recorder only mirrors this to disk; nothing here touches a file.
 import type { DataSource, Recording } from '@bajaovrlay/shared';
 
@@ -10,6 +11,26 @@ import type { DataSource, Recording } from '@bajaovrlay/shared';
 export function buildRecordingFileName(startedAtMs: number): string {
   const startedAtIso = new Date(startedAtMs).toISOString();
   return `${startedAtIso.replaceAll(':', '-')}.jsonl`;
+}
+
+/**
+ * The start moment written in a recording's file name (the reverse of
+ * buildRecordingFileName), or undefined for a name that is not exactly such a moment
+ * (a file renamed by hand). Checked by building the name again from the moment found.
+ */
+export function readStartMomentFromRecordingFileName(fileName: string): number | undefined {
+  const nameWithoutExtension = fileName.replace(/\.jsonl$/, '');
+  const [datePart, timePart] = nameWithoutExtension.split('T');
+  if (datePart === undefined || timePart === undefined) {
+    return undefined;
+  }
+  const startedAtIso = `${datePart}T${timePart.replaceAll('-', ':')}`;
+  const startedAtMs = Date.parse(startedAtIso);
+  if (Number.isNaN(startedAtMs)) {
+    return undefined;
+  }
+  const isTheNameExactlyThatMoment = buildRecordingFileName(startedAtMs) === fileName;
+  return isTheNameExactlyThatMoment ? startedAtMs : undefined;
 }
 
 /** The entry of a recording of this source starting now, still open and empty. */

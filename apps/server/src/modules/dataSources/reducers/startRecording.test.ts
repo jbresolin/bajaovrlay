@@ -10,6 +10,8 @@
  *   - The new recording is named after its moment (':' made '-', D10), carries the
  *     source's label and starts empty; the source is marked recording and a past
  *     recording error is cleared.
+ *   - A source that already has data starts its recording with that one snapshot
+ *     counted (the recorder writes it as the first line).
  *   - A second start of a source already recording is an accepted no-op.
  *   - A source that is off is refused with DATA_SOURCE_DISABLED.
  *
@@ -21,10 +23,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildEnduroSimulatorTurnedOff,
+  buildFridayRecording,
   buildHealthyEnduroSimulator,
   buildRaceDaySlicesWithDataSources,
   buildRecordingOpenSince1430,
-  buildSaturdayRecording,
+  buildSimulatorSnapshotReceivedAt,
   contextOfTheDataSourceCommand,
   momentOfTheCommandMs,
 } from './dataSourceSlices.testSupport.js';
@@ -39,7 +42,7 @@ describe('startRecording', () => {
     };
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [simulatorWithRecordingError],
-      recordings: [buildSaturdayRecording()],
+      recordings: [buildFridayRecording()],
     });
 
     // Act: press "Gravar" at 14:32:05.
@@ -49,10 +52,10 @@ describe('startRecording', () => {
       contextOfTheDataSourceCommand,
     );
 
-    // Assert: a new open recording after Saturday's; the source recording, error cleared.
+    // Assert: a new open recording after Friday's; the source recording, error cleared.
     const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
     expect(slicesAfter?.recordings, 'a new open recording must be listed').toEqual([
-      buildSaturdayRecording(),
+      buildFridayRecording(),
       {
         id: 'simulador-enduro/2027-08-14T14-32-05.000Z.jsonl',
         sourceId: 'simulador-enduro',
@@ -68,6 +71,28 @@ describe('startRecording', () => {
       slicesAfter?.dataSources[0]?.status.recordingError,
       'a new recording starts with no error',
     ).toBeNull();
+  });
+
+  it('counts the data the source already has as the first snapshot of the recording', () => {
+    // Arrange: the simulator on, with the data of its poll at 14:32:04.
+    const slicesBefore = buildRaceDaySlicesWithDataSources({
+      dataSources: [buildHealthyEnduroSimulator()],
+      dataSnapshots: [buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs - 1_000)],
+    });
+
+    // Act: press "Gravar" at 14:32:05.
+    const outcome = reduceDataSourceCommand(
+      slicesBefore,
+      { type: 'startRecording', sourceId: 'simulador-enduro' },
+      contextOfTheDataSourceCommand,
+    );
+
+    // Assert: the new recording holds one snapshot, the line the recorder writes at once.
+    const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
+    expect(
+      slicesAfter?.recordings.map((recording) => recording.snapshotCount),
+      'the data on screen when "Gravar" is pressed is the first line, so it must be counted',
+    ).toEqual([1]);
   });
 
   it('changes nothing when the source is already recording', () => {

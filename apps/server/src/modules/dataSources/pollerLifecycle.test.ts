@@ -34,18 +34,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import {
+  enduroSimulatorId,
+  operatorActor,
+  readTheSimulator,
+  startOfTheEnduroMs,
+  turnTheSimulatorOff,
+  turnTheSimulatorOn,
+} from './enduroSimulatorCommands.testSupport.js';
+import {
   countPollResults,
   createSimulatorAdapterAnsweredByHand,
   createSimulatorAdapterAnsweringAtOnce,
   createSimulatorAdapterThatNeverAnswers,
-  enduroSimulatorId,
-  operatorActor,
-  readTheSimulator,
   setTheSimulatorPollInterval,
-  startOfTheEnduroMs,
   startPollerWatchingTheStore,
-  turnTheSimulatorOff,
-  turnTheSimulatorOn,
 } from './poller.testSupport.js';
 
 describe('starting a loop', () => {

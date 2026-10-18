@@ -33,11 +33,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildEnduroSimulatorTurnedOff,
+  buildFridayRecording,
   buildGreenFlagSessionAt,
   buildHealthyEnduroSimulator,
   buildRaceDaySlicesWithDataSources,
   buildRecordingOpenSince1430,
-  buildSaturdayRecording,
   buildSimulatorSnapshotReceivedAt,
   buildStaleEnduroSimulator,
   contextOfTheDataSourceCommand,
@@ -106,7 +106,7 @@ describe('recordDataSourcePoll, a good poll', () => {
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [{ ...buildHealthyEnduroSimulator(), isRecording: true }],
       dataSnapshots: [buildSimulatorSnapshotReceivedAt(momentOfThePollMs - 2_000)],
-      recordings: [buildSaturdayRecording(), buildRecordingOpenSince1430()],
+      recordings: [buildFridayRecording(), buildRecordingOpenSince1430()],
     });
 
     // Act: record a good poll with new data.
@@ -116,10 +116,10 @@ describe('recordDataSourcePoll, a good poll', () => {
       contextOfTheDataSourceCommand,
     );
 
-    // Assert: 63 snapshots in today's recording; Saturday's untouched.
+    // Assert: 63 snapshots in today's recording; Friday's untouched.
     const recordingsAfter = outcome.status === 'applied' ? outcome.slices.recordings : [];
     expect(recordingsAfter, 'the open recording must count the new snapshot').toEqual([
-      buildSaturdayRecording(),
+      buildFridayRecording(),
       buildRecordingOpenSince1430(63),
     ]);
   });

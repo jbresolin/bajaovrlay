@@ -12,10 +12,13 @@
  *   - After a good poll and a restart, the snapshot is identical and the source is on,
  *     stale; the first good poll after the restart recovers it.
  *   - Deleting every source and restarting brings the seeded simulator back (D12).
+ *   - A recording left open lists again from its file, closed at its last line, and the
+ *     source comes back not recording (D13).
  *
  * What these tests deliberately do not cover:
  *   - Each rule of the boot loader; loadDataSourceSlices.test.ts covers them.
  *   - The poller starting again after the restart; pollerLifecycle.test.ts covers it.
+ *   - Reading the recordings folder line by line; recordingsFromFolder.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -29,13 +32,24 @@ import { missingGraphicsFolderPath } from '../../core/store/builtGraphicsFolder.
 import { buildDataSourcePollerActor } from '../../core/store/commandActors.js';
 import { createStateStore } from '../../core/store/createStateStore.js';
 import {
+  operatorActor,
+  readTheSimulator,
+  startOfTheEnduroMs,
+  turnTheSimulatorOn,
+} from './enduroSimulatorCommands.testSupport.js';
+import {
+  fileNameOfTheRecordingStartedAt1400,
+  openStoreOnTheDatabaseAndFolder,
+  pressRecordOnTheSimulator,
+  sendAGoodSimulatorPollAt,
+  startRecorderWatchingAStore,
+} from './recorder.testSupport.js';
+import {
   buildEnduroSimulatorTurnedOff,
   buildGreenFlagSessionAt,
 } from './reducers/dataSourceSlices.testSupport.js';
 
-const operatorActor = 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81';
 const enduroSimulatorPollerActor = buildDataSourcePollerActor('simulador-enduro');
-const startOfTheEnduroMs = Date.parse('2027-08-14T14:00:00.000Z');
 
 /** Opens a store on the given database at 14:00 on the enduro day, as the server does at boot. */
 function openStoreOnDatabase(database: ServerDatabase) {
@@ -133,5 +147,43 @@ describe('data sources across a restart', () => {
       storeAfterRestart.readAllSlices().dataSources,
       'a database with no source gets the simulator again',
     ).toEqual([buildEnduroSimulatorTurnedOff()]);
+  });
+});
+
+describe('the recordings across a restart', () => {
+  it('are listed again from the folder, closed at their last line, with the source not recording', () => {
+    // Arrange: the simulator on and recording, two good polls written, never stopped.
+    const { stateStore, recordingsFolder, database } = startRecorderWatchingAStore();
+    turnTheSimulatorOn(stateStore);
+    pressRecordOnTheSimulator(stateStore);
+    sendAGoodSimulatorPollAt(stateStore, startOfTheEnduroMs + 2_000);
+    sendAGoodSimulatorPollAt(stateStore, startOfTheEnduroMs + 4_000);
+
+    // Act: the server restarts at 14:05: a new store opens the same database and folder.
+    const storeAfterTheRestart = openStoreOnTheDatabaseAndFolder(
+      database,
+      recordingsFolder,
+      () => startOfTheEnduroMs + 300_000,
+    );
+
+    // Assert: the recording is back, closed at its last line, and nothing records.
+    expect(
+      storeAfterTheRestart.readAllSlices().recordings,
+      'the recording must be rebuilt from its file, closed at its last line (D13)',
+    ).toEqual([
+      {
+        id: `simulador-enduro/${fileNameOfTheRecordingStartedAt1400}`,
+        sourceId: 'simulador-enduro',
+        sourceLabel: 'Simulador — Enduro',
+        fileName: fileNameOfTheRecordingStartedAt1400,
+        startedAtMs: startOfTheEnduroMs,
+        endedAtMs: startOfTheEnduroMs + 4_000,
+        snapshotCount: 2,
+      },
+    ]);
+    expect(
+      readTheSimulator(storeAfterTheRestart).isRecording,
+      'a restart closes the recordings, so the source must not be recording',
+    ).toBe(false);
   });
 });

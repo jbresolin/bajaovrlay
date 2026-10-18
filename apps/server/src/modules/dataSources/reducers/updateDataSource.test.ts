@@ -26,22 +26,22 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildEnduroSimulatorTurnedOff,
+  buildFridayRecording,
+  buildFridayReplayTurnedOff,
   buildHealthyEnduroSimulator,
   buildRaceDaySlicesWithDataSources,
-  buildSaturdayRecording,
-  buildSaturdayReplayTurnedOff,
   contextOfTheDataSourceCommand,
+  fridayRecordingId,
   momentOfTheCommandMs,
-  saturdayRecordingId,
 } from './dataSourceSlices.testSupport.js';
 import { reduceDataSourceCommand } from './reduceDataSourceCommand.js';
 
 /** The moment the replay in these tests was turned on: 14:20, twelve minutes before the edit. */
 const replayTurnedOnAtMs = Date.parse('2027-08-14T14:20:00.000Z');
 
-/** Builds the replay of Saturday's recording, on since 14:20. */
-function buildSaturdayReplayOnSince1420() {
-  const replayTurnedOff = buildSaturdayReplayTurnedOff();
+/** Builds the replay of Friday's recording, on since 14:20. */
+function buildFridayReplayOnSince1420() {
+  const replayTurnedOff = buildFridayReplayTurnedOff();
   return {
     ...replayTurnedOff,
     config: { ...replayTurnedOff.config, replayStartedAtMs: replayTurnedOnAtMs },
@@ -49,10 +49,10 @@ function buildSaturdayReplayOnSince1420() {
   };
 }
 
-/** Builds Friday's recording of the simulator, closed: a second recording to switch to. */
-function buildFridayRecording() {
+/** Builds Thursday's recording of the simulator, closed: a second recording to switch to. */
+function buildThursdayRecording() {
   return {
-    ...buildSaturdayRecording(),
+    ...buildFridayRecording(),
     id: 'simulador-enduro/2027-08-12T15-00-00.000Z.jsonl',
     fileName: '2027-08-12T15-00-00.000Z.jsonl',
     startedAtMs: Date.parse('2027-08-12T15:00:00.000Z'),
@@ -153,7 +153,7 @@ describe('updateDataSource', () => {
   });
 
   const replayTimelineScenarios = [
-    // Keeping the old start would jump Friday's half-hour to "12 min × 10" = past its end.
+    // Keeping the old start would jump Thursday's half-hour to "12 min × 10" = past its end.
     {
       name: 'starts a replay that is on again from the top when it switches recording',
       config: { recordingId: 'simulador-enduro/2027-08-12T15-00-00.000Z.jsonl', speed: 10 },
@@ -162,28 +162,28 @@ describe('updateDataSource', () => {
     // A new speed moves the playback point as much as a new recording does.
     {
       name: 'starts a replay that is on again from the top when its speed changes',
-      config: { recordingId: saturdayRecordingId, speed: 30 },
+      config: { recordingId: fridayRecordingId, speed: 30 },
       expectedReplayStartedAtMs: momentOfTheCommandMs,
     },
     // Looping only matters past the end; the playback point stays where it is.
     {
       name: 'keeps the start of a replay edited without touching its playback',
-      config: { recordingId: saturdayRecordingId, speed: 10, isLooping: true },
+      config: { recordingId: fridayRecordingId, speed: 10, isLooping: true },
       expectedReplayStartedAtMs: replayTurnedOnAtMs,
     },
   ];
 
   it.each(replayTimelineScenarios)('$name', ({ config, expectedReplayStartedAtMs }) => {
-    // Arrange: Saturday's replay at 10×, on since 14:20; Friday's recording also closed.
+    // Arrange: Friday's replay at 10×, on since 14:20; Thursday's recording also closed.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
-      dataSources: [buildSaturdayReplayOnSince1420()],
-      recordings: [buildFridayRecording(), buildSaturdayRecording()],
+      dataSources: [buildFridayReplayOnSince1420()],
+      recordings: [buildThursdayRecording(), buildFridayRecording()],
     });
 
     // Act: save the edit form with this row's config at 14:32:05.
     const outcome = reduceDataSourceCommand(
       slicesBefore,
-      { type: 'updateDataSource', sourceId: 'reproducao-sabado', config },
+      { type: 'updateDataSource', sourceId: 'reproducao-sexta', config },
       contextOfTheDataSourceCommand,
     );
 

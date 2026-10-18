@@ -29,8 +29,8 @@ export const contextOfTheDataSourceCommand: ReducerContext = {
   newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
 };
 
-/** The id of the recording of Saturday's training session, closed, ready to replay. */
-export const saturdayRecordingId = 'simulador-enduro/2027-08-13T13-00-00.000Z.jsonl';
+/** The id of the recording of Friday's training session, closed, ready to replay. */
+export const fridayRecordingId = 'simulador-enduro/2027-08-13T13-00-00.000Z.jsonl';
 
 /** Builds the seeded "Simulador — Enduro": default config, 2 s interval, off. */
 export function buildEnduroSimulatorTurnedOff(): SimulatorDataSource {
@@ -96,13 +96,13 @@ export function buildStaleEnduroSimulator(): SimulatorDataSource {
   };
 }
 
-/** Builds a replay of Saturday's recording at 10×, off. */
-export function buildSaturdayReplayTurnedOff(): ReplayDataSource {
+/** Builds a replay of Friday's recording at 10×, off. */
+export function buildFridayReplayTurnedOff(): ReplayDataSource {
   return {
-    id: 'reproducao-sabado',
-    label: 'Reprodução — Treino de sábado',
+    id: 'reproducao-sexta',
+    label: 'Reprodução — Treino de sexta',
     kind: 'replay',
-    config: { recordingId: saturdayRecordingId, speed: 10, isLooping: false },
+    config: { recordingId: fridayRecordingId, speed: 10, isLooping: false },
     pollIntervalMs: 1_000,
     isEnabled: false,
     isRecording: false,
@@ -116,10 +116,10 @@ export function buildSaturdayReplayTurnedOff(): ReplayDataSource {
   };
 }
 
-/** Builds Saturday's recording of the simulator: an hour, 1 800 snapshots, closed. */
-export function buildSaturdayRecording(): Recording {
+/** Builds Friday's recording of the simulator: an hour, 1 800 snapshots, closed. */
+export function buildFridayRecording(): Recording {
   return {
-    id: saturdayRecordingId,
+    id: fridayRecordingId,
     sourceId: 'simulador-enduro',
     sourceLabel: 'Simulador — Enduro',
     fileName: '2027-08-13T13-00-00.000Z.jsonl',
@@ -135,7 +135,7 @@ export function buildSaturdayRecording(): Recording {
  */
 export function buildRecordingOpenSince1430(snapshotCount = 62): Recording {
   return {
-    ...buildSaturdayRecording(),
+    ...buildFridayRecording(),
     id: 'simulador-enduro/2027-08-14T14-30-00.000Z.jsonl',
     fileName: '2027-08-14T14-30-00.000Z.jsonl',
     startedAtMs: Date.parse('2027-08-14T14:30:00.000Z'),

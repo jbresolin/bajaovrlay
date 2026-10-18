@@ -24,10 +24,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildEnduroSimulatorTurnedOff,
+  buildFridayRecording,
   buildRaceDaySlicesWithDataSources,
-  buildSaturdayRecording,
   contextOfTheDataSourceCommand,
-  saturdayRecordingId,
+  fridayRecordingId,
 } from './dataSourceSlices.testSupport.js';
 import { reduceDataSourceCommand } from './reduceDataSourceCommand.js';
 
@@ -82,10 +82,10 @@ describe('createDataSource', () => {
   });
 
   it('adds a replay of a closed recording', () => {
-    // Arrange: the simulator and its recording of Saturday.
+    // Arrange: the simulator and its recording of Friday.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [buildEnduroSimulatorTurnedOff()],
-      recordings: [buildSaturdayRecording()],
+      recordings: [buildFridayRecording()],
     });
 
     // Act: create a replay of it at 10×.
@@ -93,9 +93,9 @@ describe('createDataSource', () => {
       slicesBefore,
       {
         type: 'createDataSource',
-        label: 'Reprodução — Treino de sábado',
+        label: 'Reprodução — Treino de sexta',
         kind: 'replay',
-        config: { recordingId: saturdayRecordingId, speed: 10 },
+        config: { recordingId: fridayRecordingId, speed: 10 },
         pollIntervalMs: 1_000,
       },
       contextOfTheDataSourceCommand,
@@ -104,7 +104,7 @@ describe('createDataSource', () => {
     // Assert: the replay is there, its config completed.
     const newSource = outcome.status === 'applied' ? outcome.slices.dataSources[1] : undefined;
     expect(newSource?.config, 'the replay config must be completed with its defaults').toEqual({
-      recordingId: saturdayRecordingId,
+      recordingId: fridayRecordingId,
       speed: 10,
       isLooping: false,
     });
@@ -151,7 +151,7 @@ describe('createDataSource', () => {
     {
       name: 'refuses a replay at 3×, naming config.speed',
       kind: 'replay' as const,
-      config: { recordingId: saturdayRecordingId, speed: 3 },
+      config: { recordingId: fridayRecordingId, speed: 3 },
       expectedCode: 'INVALID_DATA_SOURCE_CONFIG',
       expectedMessage:
         'A configuração da fonte é inválida: o campo "config.speed" está ausente ou tem um valor errado.',
@@ -186,13 +186,13 @@ describe('createDataSource', () => {
   ];
 
   it.each(refusedCreateScenarios)('$name', ({ kind, config, expectedCode, expectedMessage }) => {
-    // Arrange: Saturday's closed recording and today's, still open.
+    // Arrange: Friday's closed recording and today's, still open.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [buildEnduroSimulatorTurnedOff()],
       recordings: [
-        buildSaturdayRecording(),
+        buildFridayRecording(),
         {
-          ...buildSaturdayRecording(),
+          ...buildFridayRecording(),
           id: 'simulador-enduro/2027-08-14T14-00-00.000Z.jsonl',
           fileName: '2027-08-14T14-00-00.000Z.jsonl',
           startedAtMs: Date.parse('2027-08-14T14:00:00.000Z'),

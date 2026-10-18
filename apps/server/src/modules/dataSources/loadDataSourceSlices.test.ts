@@ -18,7 +18,8 @@
  *
  * What these tests deliberately do not cover:
  *   - The real restart on a SQLite file; dataSourceRestart.test.ts covers it.
- *   - The `recordings` slice, rebuilt from the recordings folder (commit 5).
+ *   - The `recordings` slice, rebuilt from the recordings folder; recordingsFromFolder.test.ts
+ *     covers it.
  */
 import { describe, expect, it } from 'vitest';
 

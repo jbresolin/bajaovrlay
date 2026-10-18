@@ -1,9 +1,11 @@
 // Test support for the poller tests: a real store on a temporary SQLite file (so the
 // seeded "Simulador — Enduro" is there, off), fake timers and a fake clock that start at
 // 14:00 on the enduro day, a poller watching the store, and hand-written fake simulator
-// adapters, each named for what it does. Every call builds new objects and its own
-// database, so no test can change what another test sees.
-import { type DataSource, type SimulatorConfig, SimulatorConfigSchema } from '@bajaovrlay/shared';
+// adapters, each named for what it does. The simulator's id, the operator and the
+// commands shared with the recorder tests live in enduroSimulatorCommands.testSupport.ts.
+// Every call builds new objects and its own database, so no test can change what another
+// test sees.
+import { type SimulatorConfig, SimulatorConfigSchema } from '@bajaovrlay/shared';
 import { onTestFinished, vi } from 'vitest';
 
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
@@ -12,13 +14,14 @@ import { missingGraphicsFolderPath } from '../../core/store/builtGraphicsFolder.
 import { createStateStore, type StateStore } from '../../core/store/createStateStore.js';
 import type { DataSourceAdapters } from './adapters/createDataSourceAdapters.js';
 import type { DataSourceAdapter, PolledShapes } from './adapters/dataSourceAdapter.js';
+import {
+  enduroSimulatorId,
+  operatorActor,
+  startOfTheEnduroMs,
+  turnTheSimulatorOn,
+} from './enduroSimulatorCommands.testSupport.js';
 import { startDataSourcePoller } from './poller.js';
 import { buildGreenFlagSessionAt } from './reducers/dataSourceSlices.testSupport.js';
-
-export const operatorActor = 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81';
-export const enduroSimulatorId = 'simulador-enduro';
-/** 14:00 UTC on 14 August 2027: the moment every poller test starts at. */
-export const startOfTheEnduroMs = Date.parse('2027-08-14T14:00:00.000Z');
 
 /** One command the poller handed the store, and the actor it signed it with. */
 export type CommandSentByThePoller = { command: unknown; actor: string };
@@ -82,22 +85,6 @@ export function startPollerWatchingTheStore(options: {
   };
 }
 
-/** The operator turns "Simulador — Enduro" on. */
-export function turnTheSimulatorOn(stateStore: StateStore): void {
-  stateStore.applyCommand(
-    { type: 'setDataSourceEnabled', sourceId: enduroSimulatorId, isEnabled: true },
-    operatorActor,
-  );
-}
-
-/** The operator turns "Simulador — Enduro" off. */
-export function turnTheSimulatorOff(stateStore: StateStore): void {
-  stateStore.applyCommand(
-    { type: 'setDataSourceEnabled', sourceId: enduroSimulatorId, isEnabled: false },
-    operatorActor,
-  );
-}
-
 /** The operator changes how often the simulator is polled ("Editar"). */
 export function setTheSimulatorPollInterval(stateStore: StateStore, pollIntervalMs: number): void {
   stateStore.applyCommand(
@@ -112,17 +99,6 @@ export function pressPollNowOnTheSimulator(stateStore: StateStore): void {
     { type: 'pollDataSourceNow', sourceId: enduroSimulatorId },
     operatorActor,
   );
-}
-
-/** Reads "Simulador — Enduro" as the store holds it now; fails the test if it is gone. */
-export function readTheSimulator(stateStore: StateStore): DataSource {
-  const simulator = stateStore
-    .readAllSlices()
-    .dataSources.find((source) => source.id === enduroSimulatorId);
-  if (simulator === undefined) {
-    throw new Error('the seeded simulator is missing from the store');
-  }
-  return simulator;
 }
 
 /** Counts the poll results (recordDataSourcePoll) among the commands the poller sent. */

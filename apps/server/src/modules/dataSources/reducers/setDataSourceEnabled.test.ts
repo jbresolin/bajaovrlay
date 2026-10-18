@@ -25,11 +25,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildEnduroSimulatorTurnedOff,
+  buildFridayRecording,
+  buildFridayReplayTurnedOff,
   buildHealthyEnduroSimulator,
   buildRaceDaySlicesWithDataSources,
   buildRecordingOpenSince1430,
-  buildSaturdayRecording,
-  buildSaturdayReplayTurnedOff,
   buildSimulatorSnapshotReceivedAt,
   buildStaleEnduroSimulator,
   contextOfTheDataSourceCommand,
@@ -58,14 +58,14 @@ describe('setDataSourceEnabled, turning a source on', () => {
     {
       name: 'starts the replay again from now, every time',
       sourceBefore: {
-        ...buildSaturdayReplayTurnedOff(),
+        ...buildFridayReplayTurnedOff(),
         config: {
-          ...buildSaturdayReplayTurnedOff().config,
+          ...buildFridayReplayTurnedOff().config,
           replayStartedAtMs: Date.parse('2027-08-14T09:00:00.000Z'),
         },
       },
       expectedConfig: {
-        ...buildSaturdayReplayTurnedOff().config,
+        ...buildFridayReplayTurnedOff().config,
         replayStartedAtMs: momentOfTheCommandMs,
       },
     },
@@ -75,7 +75,7 @@ describe('setDataSourceEnabled, turning a source on', () => {
     // Arrange: the source of this row, off.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [sourceBefore],
-      recordings: [buildSaturdayRecording()],
+      recordings: [buildFridayRecording()],
     });
 
     // Act: turn it on.
@@ -141,7 +141,7 @@ describe('setDataSourceEnabled, turning a source off', () => {
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [{ ...buildStaleEnduroSimulator(), isRecording: true }],
       dataSnapshots: [buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs - 8_000)],
-      recordings: [buildSaturdayRecording(), buildRecordingOpenSince1430()],
+      recordings: [buildFridayRecording(), buildRecordingOpenSince1430()],
     });
 
     // Act: turn it off.
@@ -161,7 +161,7 @@ describe('setDataSourceEnabled, turning a source off', () => {
       slicesBefore.dataSnapshots,
     );
     expect(slicesAfter?.recordings, 'the open recording ends at that moment').toEqual([
-      buildSaturdayRecording(),
+      buildFridayRecording(),
       { ...buildRecordingOpenSince1430(), endedAtMs: momentOfTheCommandMs },
     ]);
   });

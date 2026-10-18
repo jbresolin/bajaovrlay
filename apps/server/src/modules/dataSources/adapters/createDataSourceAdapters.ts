@@ -8,6 +8,7 @@ import type {
   DataSourcePollContext,
   PolledShapes,
 } from './dataSourceAdapter.js';
+import { createReplayAdapter } from './replay/replayAdapter.js';
 
 /**
  * The adapter of each kind. A kind may be missing (none is registered yet, or a test
@@ -18,13 +19,19 @@ export type DataSourceAdapters = {
   replay?: DataSourceAdapter<ReplayConfig> | undefined;
 };
 
+/** What the adapters need from the server: where the recordings are, for the replay. */
+export type DataSourceAdaptersOptions = {
+  /** `<DATA_DIR>/recordings`, which the replay adapter reads recordings from. */
+  recordingsFolder: string;
+};
+
 /**
- * Builds the adapters the running server uses. No adapter is registered yet; the replay
- * and simulator adapters are added here, and until then an enabled source fails its
- * polls with noAdapterForKind ("O servidor ainda não sabe ler fontes do tipo …").
+ * Builds the adapters the running server uses: the replay. The simulator adapter is
+ * added here next; until then an enabled simulator fails its polls with
+ * noAdapterForKind ("O servidor ainda não sabe ler fontes do tipo …").
  */
-export function createDataSourceAdapters(): DataSourceAdapters {
-  return {};
+export function createDataSourceAdapters(options: DataSourceAdaptersOptions): DataSourceAdapters {
+  return { replay: createReplayAdapter({ recordingsFolder: options.recordingsFolder }) };
 }
 
 /**

@@ -12,7 +12,8 @@ import { buildRecordingStartingNow } from '../recordingBookkeeping.js';
 /**
  * startRecording ("Gravar"): opens a recording of the source named after this moment,
  * marks the source recording and clears the reason a past recording stopped. The recorder
- * appends each good poll to the file from then on (decision D10). A second start while
+ * writes the data the source already has as the first line, then appends each good poll
+ * (decision D10), so a source that has data starts its recording with one snapshot. A second start while
  * recording changes nothing (two tablets pressing at once); refused for an unknown
  * source, and for a source that is off: nothing would ever be written.
  */
@@ -32,7 +33,12 @@ export function reduceStartRecording(
     return { status: 'applied', slices };
   }
 
-  const newRecording = buildRecordingStartingNow(source, Date.parse(context.now));
+  // The recorder writes the data already there as the first line; count it the same way.
+  const hasDataAlready = slices.dataSnapshots.some((snapshot) => snapshot.sourceId === source.id);
+  const newRecording = {
+    ...buildRecordingStartingNow(source, Date.parse(context.now)),
+    snapshotCount: hasDataAlready ? 1 : 0,
+  };
   const recordingSource: DataSource = {
     ...source,
     isRecording: true,

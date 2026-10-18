@@ -170,5 +170,19 @@ export const ptBR = {
     // GET /api/v1/data-sources/{sourceId}/snapshot on a source that never polled well.
     dataSnapshotNotFound: (sourceLabel: string) =>
       `A fonte de dados "${sourceLabel}" ainda não tem dados.`,
+    // The recorder could not append a line (disk full, folder without permission): the
+    // recording stops with this reason on the source, which keeps polling (D9).
+    recordingWriteFailed:
+      'A gravação parou: o servidor não conseguiu escrever o arquivo (disco cheio ou sem permissão).',
+    // A replay whose recording file is gone from the recordings folder (deleted by hand).
+    recordingFileNotFound: (recordingId: string) =>
+      `O arquivo da gravação "${recordingId}" não foi encontrado.`,
+    // A replay whose recording file exists but could not be read (permissions, a folder).
+    recordingFileUnreadable: (recordingId: string) =>
+      `O arquivo da gravação "${recordingId}" não pôde ser lido.`,
+    // A replay whose recording holds no line that can be replayed (stopped before the
+    // first poll, or every line damaged).
+    recordingHasNoData: (recordingId: string) =>
+      `A gravação "${recordingId}" não tem nenhum dado para reproduzir.`,
   },
 } as const;

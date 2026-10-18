@@ -17,16 +17,16 @@
  *
  * What these tests deliberately do not cover:
  *   - Who may send the command; authorizeDataSourceCommands.test.ts in core/store.
- *   - The recorder noticing the failed write; recorder.test.ts covers it (commit 5).
+ *   - The recorder noticing the failed write; recorderWhenAWriteFails.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';
 
 import {
   buildEnduroSimulatorTurnedOff,
+  buildFridayRecording,
   buildHealthyEnduroSimulator,
   buildRaceDaySlicesWithDataSources,
   buildRecordingOpenSince1430,
-  buildSaturdayRecording,
   contextOfTheDataSourceCommand,
   momentOfTheCommandMs,
 } from './dataSourceSlices.testSupport.js';
@@ -91,7 +91,7 @@ describe('stopRecording', () => {
     // Arrange: the simulator on, not recording.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [buildHealthyEnduroSimulator()],
-      recordings: [buildSaturdayRecording()],
+      recordings: [buildFridayRecording()],
     });
 
     // Act: press "Parar gravação" from a page that had not caught up.
@@ -129,10 +129,10 @@ describe('stopRecording', () => {
   });
 
   it("leaves no trace when the recorder's stop arrives after the source was deleted", () => {
-    // Arrange: the simulator was deleted while recording; Saturday's recording remains.
+    // Arrange: the simulator was deleted while recording; Friday's recording remains.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [],
-      recordings: [buildSaturdayRecording()],
+      recordings: [buildFridayRecording()],
     });
 
     // Act: the recorder's stop, sent from its 0 ms timer, arrives after the delete.

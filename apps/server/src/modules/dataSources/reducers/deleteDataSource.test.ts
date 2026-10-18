@@ -19,10 +19,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildEnduroSimulatorTurnedOff,
+  buildFridayRecording,
   buildHealthyEnduroSimulator,
   buildRaceDaySlicesWithDataSources,
   buildRecordingOpenSince1430,
-  buildSaturdayRecording,
   buildSimulatorSnapshotReceivedAt,
   contextOfTheDataSourceCommand,
   momentOfTheCommandMs,
@@ -31,11 +31,11 @@ import { reduceDataSourceCommand } from './reduceDataSourceCommand.js';
 
 describe('deleteDataSource', () => {
   it('removes the source and its snapshot and keeps its recordings listed', () => {
-    // Arrange: the simulator on, with a snapshot and Saturday's recording.
+    // Arrange: the simulator on, with a snapshot and Friday's recording.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [buildHealthyEnduroSimulator()],
       dataSnapshots: [buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs - 2_000)],
-      recordings: [buildSaturdayRecording()],
+      recordings: [buildFridayRecording()],
     });
 
     // Act: delete it.

@@ -29,17 +29,19 @@ import { describe, expect, it, vi } from 'vitest';
 import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import {
+  readTheSimulator,
+  startOfTheEnduroMs,
+  turnTheSimulatorOn,
+} from './enduroSimulatorCommands.testSupport.js';
+import {
   createSimulatorAdapterAnsweredByHand,
   createSimulatorAdapterAnsweringAfter,
   createSimulatorAdapterAnsweringAtOnce,
   createSimulatorAdapterThatGivesUpWhenSignalled,
   isPollResultCommand,
   pressPollNowOnTheSimulator,
-  readTheSimulator,
   setTheSimulatorPollInterval,
-  startOfTheEnduroMs,
   startPollerWatchingTheStore,
-  turnTheSimulatorOn,
 } from './poller.testSupport.js';
 
 /** Turns moments into seconds after 14:00, so expectations read like a stopwatch. */

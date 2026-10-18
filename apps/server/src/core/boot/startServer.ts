@@ -3,7 +3,10 @@ import type { AddressInfo } from 'node:net';
 
 import { serve } from '@hono/node-server';
 
-import { startDataSourceService } from '../../modules/dataSources/index.js';
+import {
+  buildRecordingsFolderPath,
+  startDataSourceService,
+} from '../../modules/dataSources/index.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
 import type { ServerLogger } from '../logger/createLogger.js';
@@ -24,7 +27,10 @@ export type StartServerOptions = {
   migrationsFolder: string;
   /** packages/graphics: registered as graphics at boot and served under /graphics/. */
   graphicPackagesFolder: string;
-  /** DATA_DIR, absolute: the server's files other than the database (recordings). */
+  /**
+   * DATA_DIR, absolute: the server's files other than the database. Recordings are
+   * written to, and listed at boot from, its `recordings` folder.
+   */
   dataFolder: string;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
@@ -79,6 +85,7 @@ async function startServingFromDatabase(
     database,
     logger: options.logger,
     graphicPackagesFolder: options.graphicPackagesFolder,
+    recordingsFolder: buildRecordingsFolderPath(options.dataFolder),
     readCurrentTime: options.readCurrentTime,
   });
   // Started before anything can send a command, so no take of an item with an

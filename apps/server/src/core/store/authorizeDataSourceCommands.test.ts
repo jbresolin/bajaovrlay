@@ -33,7 +33,7 @@ const rendererActor = 'renderer:b8d4e6f0-1a2c-4e3b-9d5f-6a7c8e9f0b12';
 const autoOutActor = 'sistema:auto-out';
 // The poller of the seeded simulator, and of a replay; no connection has these roles.
 const enduroSimulatorPollerActor = buildDataSourcePollerActor('simulador-enduro');
-const saturdayReplayPollerActor = buildDataSourcePollerActor('reproducao-sabado');
+const fridayReplayPollerActor = buildDataSourcePollerActor('reproducao-sexta');
 // The recorder, which stops a recording it could not write.
 const recorderActor = dataSourceRecorderActor;
 
@@ -146,7 +146,7 @@ const authorisationScenarios: Array<{
   {
     name: 'refuses the poller of one source a poll of another source',
     command: pollOfTheEnduroSimulator,
-    actor: saturdayReplayPollerActor,
+    actor: fridayReplayPollerActor,
     expectedIsAllowed: false,
   },
   // The poller sending anything else: it reports, it never decides.

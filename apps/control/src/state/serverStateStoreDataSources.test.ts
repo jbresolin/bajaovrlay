@@ -87,7 +87,7 @@ function buildDataSnapshotsMessage(): SliceMessage {
   };
 }
 
-/** Builds the slice message of Saturday's closed recording. */
+/** Builds the slice message of Friday's closed recording. */
 function buildRecordingsMessage(): SliceMessage {
   return {
     type: 'slice',

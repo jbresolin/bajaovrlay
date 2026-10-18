@@ -8,7 +8,9 @@ export {
 } from './reducers/reduceDataSourceCommand.js';
 // Loads the dataSources and dataSnapshots slices at boot, seeding the simulator when none.
 export { type DataSourceSlicesAtBoot, loadOrSeedDataSourceSlices } from './loadDataSourceSlices.js';
-// Starts polling (and later recording) with the server; stop() when it closes.
+// Lists the recordings in the recordings folder at boot, and where that folder is in DATA_DIR.
+export { buildRecordingsFolderPath, readRecordingsFromFolder } from './recordingsFromFolder.js';
+// Starts polling and recording with the server; stop() when it closes.
 export {
   type DataSourceService,
   type DataSourceServiceOptions,
