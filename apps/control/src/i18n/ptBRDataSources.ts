@@ -15,6 +15,7 @@ export const ptBRDataSources = {
   kinds: {
     simulator: 'Simulador',
     replay: 'Reprodução',
+    httpJson: 'HTTP/JSON (flexível)',
   },
 
   // The status chip of each source (DataSourceStatusChip.tsx).

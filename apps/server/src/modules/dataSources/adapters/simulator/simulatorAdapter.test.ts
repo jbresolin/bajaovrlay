@@ -23,6 +23,7 @@
 import { type SimulatorConfig, SimulatorConfigSchema, validateDataShape } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import { createLogger } from '../../../../core/logger/createLogger.js';
 import { createDataSourceAdapters } from '../createDataSourceAdapters.js';
 import type { DataSourcePollContext } from '../dataSourceAdapter.js';
 import { convertWallTimeToSimulatedElapsedMs, createSimulatorAdapter } from './simulatorAdapter.js';
@@ -164,7 +165,10 @@ describe('the adapters the server registers', () => {
     const recordingsFolder = 'apps/server/data/recordings';
 
     // Act: build the server's adapters.
-    const adapters = createDataSourceAdapters({ recordingsFolder });
+    const adapters = createDataSourceAdapters({
+      recordingsFolder,
+      logger: createLogger({ level: 'silent' }),
+    });
 
     // Assert: a simulator adapter is registered with the shared config schema.
     expect(adapters.simulator?.kind, 'the simulator kind must have an adapter').toBe('simulator');

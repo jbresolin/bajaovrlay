@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { HttpJsonConfigSchema } from './httpJsonConfig.js';
 import { PollIntervalMsSchema } from './pollInterval.js';
 import { ReplayConfigSchema } from './replayConfig.js';
 import { SimulatorConfigSchema } from './simulatorConfig.js';
@@ -76,6 +77,15 @@ export const ReplayDataSourceSchema = DataSourceFieldsOfEveryKindSchema.extend({
 /** A replay source that has passed ReplayDataSourceSchema. */
 export type ReplayDataSource = z.infer<typeof ReplayDataSourceSchema>;
 
+/** A source of kind `httpJson`: a flex source, with its requests and mapping. */
+export const HttpJsonDataSourceSchema = DataSourceFieldsOfEveryKindSchema.extend({
+  kind: z.literal('httpJson'),
+  config: HttpJsonConfigSchema,
+});
+
+/** A flex HTTP/JSON source that has passed HttpJsonDataSourceSchema. */
+export type HttpJsonDataSource = z.infer<typeof HttpJsonDataSourceSchema>;
+
 /**
  * One entry of the `dataSources` slice: a source the server polls for race data, told
  * apart by `kind`, so its config is always the one of its kind.
@@ -83,6 +93,7 @@ export type ReplayDataSource = z.infer<typeof ReplayDataSourceSchema>;
 export const DataSourceSchema = z.discriminatedUnion('kind', [
   SimulatorDataSourceSchema,
   ReplayDataSourceSchema,
+  HttpJsonDataSourceSchema,
 ]);
 
 /** A data source that has passed DataSourceSchema. */

@@ -205,6 +205,42 @@ export const ptBR = {
     // so the operator can rehearse a late source.
     simulatedFailure: 'Falha simulada.',
   },
+  // Why a request of a flex HTTP/JSON source failed (adapters/httpJson). Each names the
+  // request by its id, and a host at most: never the whole address, whose query may carry
+  // a value read from a BAJAOVRLAY_SOURCE_ variable, and never a header value.
+  httpJsonErrors: {
+    // The poll's signal fired. The poller records its own "Tempo esgotado" sentence, with
+    // the seconds, in place of this one; this one is what a caller without it reads.
+    requestTimedOut: (requestId: string) => `Tempo esgotado: ${requestId} não respondeu a tempo.`,
+    statusOutside2xx: (status: number, statusName: string, requestId: string) =>
+      statusName === ''
+        ? `A fonte respondeu ${String(status)} em ${requestId}`
+        : `A fonte respondeu ${String(status)} (${statusName}) em ${requestId}`,
+    notValidJson: (requestId: string) => `A resposta de ${requestId} não é JSON válido`,
+    bodyOverCap: (requestId: string, megabytes: number) =>
+      `A resposta de ${requestId} passou de ${megabytes.toLocaleString('pt-BR')} MB`,
+    couldNotConnect: (host: string, requestId: string, reason: string) =>
+      `Não consegui conectar a ${host} (${requestId}): ${reason}`,
+    environmentVariableNotSet: (variableName: string) =>
+      `A variável de ambiente ${variableName} não está definida no servidor.`,
+    environmentVariableWithLineBreak: (variableName: string) =>
+      `A variável de ambiente ${variableName} tem uma quebra de linha e não pode ir num cabeçalho.`,
+    // The <reason> of couldNotConnect, by the code Node gives the network error.
+    networkReasonsByCode: {
+      ECONNREFUSED: 'conexão recusada',
+      ECONNRESET: 'a conexão caiu',
+      ENOTFOUND: 'endereço não encontrado',
+      EAI_AGAIN: 'o nome do endereço não pôde ser resolvido agora',
+      EHOSTUNREACH: 'a máquina não pode ser alcançada',
+      ENETUNREACH: 'a rede não pode ser alcançada',
+      ETIMEDOUT: 'a rede não respondeu',
+      UND_ERR_SOCKET: 'a conexão caiu',
+      UND_ERR_CONNECT_TIMEOUT: 'a conexão demorou demais para abrir',
+    } as Record<string, string | undefined>,
+    // A network error with a code not listed above, or with none.
+    networkReasonWithCode: (code: string) => `falha de rede (${code})`,
+    networkReasonWithoutCode: 'falha de rede sem detalhe',
+  },
   // The names the race simulator gives its event and session. They can reach the air
   // through a binding, so they say plainly that the race is simulated.
   simulatorSession: {

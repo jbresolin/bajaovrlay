@@ -23,12 +23,19 @@ type OpenSourceForm =
   | { kind: 'simulator'; sourceBeingEdited: SimulatorDataSource | null }
   | { kind: 'replay'; sourceBeingEdited: ReplayDataSource | null };
 
-/** The form "Editar" opens for a stored source: the form of its kind. */
-function buildEditFormOfSource(source: DataSource): OpenSourceForm {
-  if (source.kind === 'simulator') {
-    return { kind: 'simulator', sourceBeingEdited: source };
+/**
+ * The form "Editar" opens for a stored source: the form of its kind. A flex HTTP/JSON
+ * source has no form yet (it comes later in BAJAOVRLAY-40), so "Editar" opens none.
+ */
+function buildEditFormOfSource(source: DataSource): OpenSourceForm | null {
+  switch (source.kind) {
+    case 'simulator':
+      return { kind: 'simulator', sourceBeingEdited: source };
+    case 'replay':
+      return { kind: 'replay', sourceBeingEdited: source };
+    case 'httpJson':
+      return null;
   }
-  return { kind: 'replay', sourceBeingEdited: source };
 }
 
 /**

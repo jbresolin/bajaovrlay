@@ -1,11 +1,13 @@
 // The module's side of the data-source schemas: checking a config sent by the page
 // against the schema of its kind, and the Zod schemas of the module's REST route. The
 // slice and command schemas themselves live in @bajaovrlay/shared
-// (SimulatorConfigSchema, ReplayConfigSchema), so the control page's forms and the
+// (SimulatorConfigSchema, ReplayConfigSchema, HttpJsonConfigSchema), so the control page's forms and the
 // adapters check exactly the same thing (decision D4).
 import {
   type CommandError,
   type DataSourceKind,
+  type HttpJsonConfig,
+  HttpJsonConfigSchema,
   type Recording,
   type ReplayConfig,
   ReplayConfigSchema,
@@ -18,7 +20,9 @@ import { refuseInvalidDataSourceConfig, refuseUnknownRecording } from './dataSou
 
 /** A kind with a config of that kind, ready to be spread into a DataSource. */
 export type DataSourceKindAndConfig =
-  { kind: 'simulator'; config: SimulatorConfig } | { kind: 'replay'; config: ReplayConfig };
+  | { kind: 'simulator'; config: SimulatorConfig }
+  | { kind: 'replay'; config: ReplayConfig }
+  | { kind: 'httpJson'; config: HttpJsonConfig };
 
 /** The answer of checkDataSourceConfig: the parsed config, or the refusal to send. */
 export type DataSourceConfigCheck =
@@ -68,6 +72,16 @@ export function checkDataSourceConfig(
       const configSetByTheOperator = { ...parsedConfig.data };
       delete configSetByTheOperator.replayStartedAtMs;
       return { isValid: true, kindAndConfig: { kind: 'replay', config: configSetByTheOperator } };
+    }
+    case 'httpJson': {
+      // A flex source has no timeline of its own and nothing the server sets: the
+      // config is stored exactly as parsed (its header and query lists filled in).
+      const parsedConfig = HttpJsonConfigSchema.safeParse(rawConfig);
+      if (!parsedConfig.success) {
+        const badFieldPath = parsedConfig.error.issues[0]?.path ?? [];
+        return { isValid: false, error: refuseInvalidDataSourceConfig(badFieldPath) };
+      }
+      return { isValid: true, kindAndConfig: { kind: 'httpJson', config: parsedConfig.data } };
     }
   }
 }

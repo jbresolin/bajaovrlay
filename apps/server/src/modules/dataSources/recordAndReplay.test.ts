@@ -20,6 +20,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { createLogger } from '../../core/logger/createLogger.js';
 import { buildDataSourcePollerActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import { createDataSourceAdapters } from './adapters/createDataSourceAdapters.js';
@@ -92,7 +93,10 @@ describe('a recording replayed through the store', () => {
       { type: 'setDataSourceEnabled', sourceId: replaySource.id, isEnabled: true },
       operatorActor,
     );
-    const replayAdapter = createDataSourceAdapters({ recordingsFolder }).replay;
+    const replayAdapter = createDataSourceAdapters({
+      recordingsFolder,
+      logger: createLogger({ level: 'silent' }),
+    }).replay;
     const replayTurnedOn = stateStore
       .readAllSlices()
       .dataSources.find((source) => source.id === replaySource.id);

@@ -1,13 +1,16 @@
 // The adapters the server knows, one per kind of source, and the one function that
 // polls a source with the adapter of its kind.
-import type { DataSource, ReplayConfig, SimulatorConfig } from '@bajaovrlay/shared';
+import type { DataSource, HttpJsonConfig, ReplayConfig, SimulatorConfig } from '@bajaovrlay/shared';
 
+import type { ServerLogger } from '../../../core/logger/createLogger.js';
 import { ptBR } from '../../../core/messages/ptBR.js';
 import type {
   DataSourceAdapter,
   DataSourcePollContext,
   PolledShapes,
 } from './dataSourceAdapter.js';
+import { createHttpJsonAdapter } from './httpJson/httpJsonAdapter.js';
+import type { ReadEnvironmentVariable } from './httpJson/httpJsonRequestAddress.js';
 import { createReplayAdapter } from './replay/replayAdapter.js';
 import { createSimulatorAdapter } from './simulator/simulatorAdapter.js';
 
@@ -18,20 +21,36 @@ import { createSimulatorAdapter } from './simulator/simulatorAdapter.js';
 export type DataSourceAdapters = {
   simulator?: DataSourceAdapter<SimulatorConfig> | undefined;
   replay?: DataSourceAdapter<ReplayConfig> | undefined;
+  httpJson?: DataSourceAdapter<HttpJsonConfig> | undefined;
 };
 
-/** What the adapters need from the server: where the recordings are, for the replay. */
+/**
+ * What the adapters need from the server: where the recordings are (the replay), the
+ * logger and the environment variables (the flex HTTP/JSON source).
+ */
 export type DataSourceAdaptersOptions = {
   /** `<DATA_DIR>/recordings`, which the replay adapter reads recordings from. */
   recordingsFolder: string;
+  logger: ServerLogger;
+  /** Tests hand in a table; the server's own process.env, read at each poll, otherwise. */
+  readSourceEnvironmentVariable?: ReadEnvironmentVariable | undefined;
 };
 
-/** Builds the adapters the running server uses: the race simulator and the replay. */
+/** Builds the adapters the running server uses: the race simulator, the replay and httpJson. */
 export function createDataSourceAdapters(options: DataSourceAdaptersOptions): DataSourceAdapters {
   return {
     simulator: createSimulatorAdapter(),
     replay: createReplayAdapter({ recordingsFolder: options.recordingsFolder }),
+    httpJson: createHttpJsonAdapter({
+      logger: options.logger,
+      readEnvironmentVariable: options.readSourceEnvironmentVariable ?? readProcessEnvironment,
+    }),
   };
+}
+
+/** Reads one variable of the server's environment as it is now. */
+function readProcessEnvironment(variableName: string): string | undefined {
+  return process.env[variableName];
 }
 
 /**
@@ -54,6 +73,13 @@ export function pollDataSourceWithTheAdapterOfItsKind(
     }
     case 'replay': {
       const adapter = adapters.replay;
+      if (adapter === undefined) {
+        return rejectForAKindWithNoAdapter(source.kind);
+      }
+      return adapter.pollOnce(source.config, context);
+    }
+    case 'httpJson': {
+      const adapter = adapters.httpJson;
       if (adapter === undefined) {
         return rejectForAKindWithNoAdapter(source.kind);
       }
@@ -83,6 +109,10 @@ export function prepareDataSourceWithTheAdapterOfItsKind(
     }
     case 'replay': {
       adapters.replay?.prepareForPolling?.(source.config);
+      return;
+    }
+    case 'httpJson': {
+      adapters.httpJson?.prepareForPolling?.(source.config);
       return;
     }
   }

@@ -33,7 +33,7 @@ export function startDataSourceService(options: DataSourceServiceOptions): DataS
   const poller = startDataSourcePoller({
     stateStore,
     logger,
-    adapters: createDataSourceAdapters({ recordingsFolder }),
+    adapters: createDataSourceAdapters({ recordingsFolder, logger }),
   });
   logger.info({ data_folder: dataFolder }, 'data source service started');
 

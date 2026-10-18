@@ -2,12 +2,28 @@
 // index.ts re-exports this file with one line; other packages import from
 // '@bajaovrlay/shared', never from here.
 
-// The two kinds of source: the race simulator and a replay of a recording.
+// The three kinds of source: the race simulator, a replay of a recording, a flex HTTP/JSON source.
 export { type DataSourceKind, DataSourceKindSchema } from './dataSourceKind.js';
 // The simulator's config: seed, cars, duration, lap length, speed, start, failing switch.
 export { type SimulatorConfig, SimulatorConfigSchema } from './simulatorConfig.js';
 // The replay's config: recording, speed (one of replaySpeeds), loop, offset, start.
 export { type ReplayConfig, ReplayConfigSchema, replaySpeeds } from './replayConfig.js';
+// The flex source's config: its GET requests (headers and query parameters, a value or a
+// BAJAOVRLAY_SOURCE_ variable) and the flex mapping of their responses.
+export {
+  type HttpJsonConfig,
+  HttpJsonConfigSchema,
+  type HttpJsonHeader,
+  HttpJsonHeaderSchema,
+  type HttpJsonQueryParameter,
+  HttpJsonQueryParameterSchema,
+  type HttpJsonRequest,
+  HttpJsonRequestSchema,
+  mostRequestsPerHttpJsonSource,
+  sourceEnvironmentVariablePrefix,
+} from './httpJsonConfig.js';
+// The pt-BR reasons a flex source's config is refused, shared with the control page's form.
+export { ptBRHttpJsonConfig } from './ptBRHttpJsonConfig.js';
 // How often a source may be polled: 500 to 60 000 ms.
 export { PollIntervalMsSchema } from './pollInterval.js';
 // The `dataSources` slice: each source, its config by kind, and its health (status).
@@ -16,6 +32,8 @@ export {
   DataSourceSchema,
   type DataSourceStatus,
   DataSourceStatusSchema,
+  type HttpJsonDataSource,
+  HttpJsonDataSourceSchema,
   type ReplayDataSource,
   ReplayDataSourceSchema,
   type SimulatorDataSource,
