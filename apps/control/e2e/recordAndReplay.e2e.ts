@@ -13,7 +13,7 @@
  *     and "Parar gravação", once the server counts 40 lines in the file (about 20 s),
  *     takes it away.
  *   - "+ Fonte" → "Reprodução" makes a replay of that recording at 10×, starting again
- *     at the end, read every 0,5 s; turned on and picked by its label, it shows a
+ *     at the end, read every 0,5 s; turned on and picked with Enter on its "Ver", it shows a
  *     positions table of 60 cars that comes from the recording, and it moves through the
  *     recording: its first places change from one of its own reads to a later one, twice,
  *     so a replay stuck on one recorded line fails.
@@ -108,8 +108,8 @@ test.describe('recording the simulator and replaying it', () => {
     ).toBeHidden();
 
     // Act: "+ Fonte" → "Reprodução", named, read every 0,5 s, on the newest recording of
-    // the simulator, at 10×, starting again at the end; saved, turned on, and picked by
-    // its label to show its data.
+    // the simulator, at 10×, starting again at the end; saved, turned on, and picked with
+    // Enter on its "Ver" to show its data.
     const replayForm = await openNewSourceFormOfKind(page, 'Reprodução');
     await replayForm.getByLabel('Nome da fonte').fill(replayLabel);
     // The replay is read every 0,5 s too (the shortest interval allowed), so at 10× each
@@ -128,7 +128,20 @@ test.describe('recording the simulator and replaying it', () => {
     await replayForm.getByRole('button', { name: 'Salvar fonte' }).click();
     await expect(replayForm, 'the form must close once the server has the replay').toBeHidden();
     await turnSourceOnWithItsSwitch(page, replayLabel);
-    await findDataSourceRow(page, replayLabel).getByRole('button', { name: 'Ver' }).click();
+    // Picked from the keyboard, as brief E1 asks "Ver" to be: focused, then Enter.
+    const replayViewButton = findDataSourceRow(page, replayLabel).getByRole('button', {
+      name: 'Ver',
+    });
+    await replayViewButton.focus();
+    await page.keyboard.press('Enter');
+    await expect(
+      page.getByRole('region', { name: `Dados de ${replayLabel}` }),
+      'Enter on the focused "Ver" must show the replay\'s data',
+    ).toBeVisible();
+    await expect(
+      replayViewButton,
+      '"Ver" must say its card is the one shown once Enter has picked it',
+    ).toHaveAttribute('aria-pressed', 'true');
 
     // Assert: the replay shows 60 cars from the recording, and its first places change
     // twice from its own earlier read: the first change may only be this run's data

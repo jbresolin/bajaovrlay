@@ -15,9 +15,11 @@
  *     picks its source.
  *
  * What these tests deliberately do not cover:
- *   - A real browser turning Enter on the focused "Ver" into a press. The test browser
- *     (jsdom) never does that by itself, so here the proof is that "Ver" is a real
- *     button that takes the focus, and the press itself is a click on it.
+ *   - A real browser turning Enter on the focused "Ver" into a press, and a click on a
+ *     greyed-out (disabled) control, which a real browser hands to the card under it.
+ *     The test browser (jsdom) does neither, so here the proof is that "Ver" is a real
+ *     button that takes the focus and the press is a click on it; Tab, Enter and the
+ *     disabled click are in dataSourceCardPicking.e2e.ts, in a real browser.
  *   - What the shown data looks like: DataSourcesPageDetail.test.tsx.
  */
 import { fireEvent, screen, within } from '@testing-library/react';
@@ -86,13 +88,21 @@ describe('a click on a source card', () => {
   });
 
   it('does not change the source shown when the click is on the "Ligada" switch', () => {
-    // Arrange: the simulator's data shown first, the replay beside it in the list.
-    renderPageWithTheSimulatorAndTheRehearsalReplay();
+    // Arrange: the simulator's data shown first, the replay (on) beside it in the list.
+    const { fakeServer } = renderPageWithTheSimulatorAndTheRehearsalReplay();
 
-    // Act: flip the replay's switch.
+    // Act: flip the replay's switch, to turn it off.
     fireEvent.click(within(findCardOfTheRehearsalReplay()).getByRole('switch', { name: 'Ligada' }));
 
-    // Assert: the simulator's data is still the one shown.
+    // Assert: the server was asked to turn the replay off, and the simulator's data is
+    // still the one shown.
+    expect(fakeServer.listCommandsReceived(), 'the switch must still do its own job').toEqual([
+      {
+        type: 'setDataSourceEnabled',
+        sourceId: buildRehearsalReplayThatIsOk().id,
+        isEnabled: false,
+      },
+    ]);
     expect(
       screen.getByRole('region', { name: 'Dados de Simulador — Enduro' }),
       "a card's switch must not pick the source as a side effect",

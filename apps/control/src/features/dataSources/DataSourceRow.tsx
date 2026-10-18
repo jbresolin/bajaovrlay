@@ -19,9 +19,13 @@ const millisecondsPerSecond = 1_000;
 /**
  * What on a card does its own job, so a click on it must not also pick the source: every
  * button (the commands and "Ver" itself), the switch, the switch's label (a click there
- * flips the switch) and links. Anything new added to the card that is clickable belongs here.
+ * flips the switch), links, and the whole commands area (marked data-card-controls).
+ * The area is there because a disabled button or switch has pointer-events: none (shadcn),
+ * so a real browser hands its click to what is under it, the area, and without the area
+ * in this list a press on a greyed-out "Atualizar agora" would pick the source.
+ * Anything new added to the card that is clickable belongs here.
  */
-const cardControlsSelector = 'button, a, input, label, [role="switch"]';
+const cardControlsSelector = 'button, a, input, label, [role="switch"], [data-card-controls]';
 
 /** Whether a click on the card landed on one of its controls rather than on its empty space. */
 function isClickOnACardControl(event: MouseEvent<HTMLElement>): boolean {
@@ -101,7 +105,7 @@ export function DataSourceRow(props: DataSourceRowProps) {
         <p className="text-sm text-destructive">{source.status.recordingError}</p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div data-card-controls className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2">
           <Switch
             id={enabledSwitchId}
