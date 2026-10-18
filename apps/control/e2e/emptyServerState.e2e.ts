@@ -17,10 +17,12 @@
  *     leaves no mark: its `clearAll` removes the marks with everything else.
  *   - With a second panel, a button in "Atalhos" and a macro, `emptyTheServerState` leaves
  *     only the seeded panel "Atalhos", empty, and no macro.
- *   - With the seeded simulator set to speed 60 with "Falha simulada" on, turned on and
- *     recording, and a second simulator "Simulador — Treino livre", `emptyTheServerState`
- *     leaves only the seeded simulator, off ("Desligada"), not recording, and with its
- *     default settings back (speed 1, "Falha simulada" off).
+ *   - With the seeded simulator set to speed 60, read every 0,5 s, with "Falha simulada"
+ *     on, turned on and recording, and a second simulator "Simulador — Treino livre",
+ *     `emptyTheServerState` leaves only the seeded simulator, off ("Desligada"), not
+ *     recording, and with its default settings back (read every 2 s, speed 1, "Falha
+ *     simulada" off). Its race start is not put back: no command can while it is off,
+ *     so each data source test restarts the race itself ("Reiniciar corrida").
  *   - Called on a server that is already empty, it changes nothing and does not fail.
  *
  * What these tests deliberately do not cover:
@@ -48,6 +50,7 @@ import {
   findStatusChipOfSourceRow,
   openDataSourcesPageAndWaitUntilConnected,
   openNewSourceFormOfKind,
+  pollIntervalOfTheTestsAsTyped,
   seededSimulatorLabel,
   turnSourceOnWithItsSwitch,
 } from './dataSourcesTestSteps';
@@ -220,10 +223,12 @@ test.describe('emptying the server state', () => {
     page,
   }) => {
     // Arrange: on the "Fontes de dados" page, leave behind what a data source test that
-    // stopped halfway would: the seeded simulator at speed 60, failing on purpose, on and
-    // recording; and a second simulator, "Simulador — Treino livre", made with "+ Fonte".
+    // stopped halfway would: the seeded simulator at speed 60, read every 0,5 s, failing
+    // on purpose, on and recording; and a second simulator, "Simulador — Treino livre",
+    // made with "+ Fonte".
     await openDataSourcesPageAndWaitUntilConnected(page);
     await changeSimulatorInItsEditForm(page, seededSimulatorLabel, {
+      pollIntervalAsTyped: pollIntervalOfTheTestsAsTyped,
       speedAsTyped: '60',
       isFailing: true,
     });
@@ -246,7 +251,8 @@ test.describe('emptying the server state', () => {
     await emptyTheServerState();
 
     // Assert: only the seeded simulator is listed, off and not recording, and its
-    // "Editar" form shows the default speed 1 with "Falha simulada" off.
+    // "Editar" form shows the seeded read every 2 s, the default speed 1 and "Falha
+    // simulada" off.
     await expect(
       page.getByRole('list', { name: 'Fontes de dados' }).getByRole('listitem'),
       'after the reset only the seeded simulator may be listed',
@@ -261,6 +267,10 @@ test.describe('emptying the server state', () => {
     ).toBeHidden();
     await seededSimulatorRow.getByRole('button', { name: 'Editar' }).click();
     const editForm = page.getByRole('region', { name: `Editar fonte: ${seededSimulatorLabel}` });
+    await expect(
+      editForm.getByLabel('Intervalo de leitura (segundos)'),
+      'after the reset the seeded simulator must be read every 2 s again',
+    ).toHaveValue('2');
     await expect(
       editForm.getByLabel('Velocidade (vezes o tempo real)'),
       'after the reset the seeded simulator must run at its default speed 1',

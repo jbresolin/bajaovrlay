@@ -9,8 +9,9 @@
  *   server, a real SQLite file and a real recordings folder.
  *
  * What these tests prove:
- *   - "Gravar" on the running simulator shows the "Gravando" badge, and "Parar gravação"
- *     about 20 s later takes it away.
+ *   - "Gravar" on the running simulator (read every 0,5 s) shows the "Gravando" badge,
+ *     and "Parar gravação", once the server counts 40 lines in the file (about 20 s),
+ *     takes it away.
  *   - "+ Fonte" → "Reprodução" makes a replay of that recording at 10×, starting again
  *     at the end, read every 0,5 s; turned on and picked by its label, it shows a
  *     positions table of 60 cars that comes from the recording, and it moves through the
@@ -34,42 +35,44 @@
  *   Before each test the server is emptied: every source but the seeded simulator is
  *   deleted, and the simulator is off, not recording, with its default settings back.
  *   Recordings of earlier tests stay listed (their files stay replayable), so the replay
- *   form picks this test's recording, the newest one of the simulator.
+ *   form picks this test's recording, the newest one of the simulator, which the form
+ *   lists first.
  */
 import { expect, test } from '@playwright/test';
 
+import { waitUntilTheOpenRecordingHasSnapshots } from './dataSourceStateOnTheRealServer';
 import {
   carsInTheSeededRace,
-  changeSimulatorInItsEditForm,
   findCarRowsOfPositionsTable,
   findDataSourceRow,
   findPositionsTableOfSource,
   openDataSourcesPageAndWaitUntilConnected,
   openNewSourceFormOfKind,
+  pollIntervalOfTheTestsAsTyped,
   readFirstRowsOfPositionsTable,
   seededSimulatorLabel,
+  startTheSeededSimulatorFastFromTheGreenFlag,
   turnSourceOnWithItsSwitch,
   waitUntilFirstRowsOfPositionsTableDiffer,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
 
-// About 20 s of recording, as the brief asks: ten polls of the simulator at 2 s each.
-const recordingTimeInMilliseconds = 20_000;
+// About 20 s of recording, as the brief asks: 40 polls of the simulator at 0,5 s each. The
+// test waits for the server to count them in the file, not for a fixed time.
+const recordedSnapshotsWanted = 40;
+// 40 polls at 0,5 s take 20 s; the rest is room for a slow machine.
+const waitForTheRecordingInMilliseconds = 30_000;
 // The whole test usually takes about 30 s (20 s of recording, plus starting the simulator
 // and the replay); Playwright's default of 30 s would stop it halfway, so it gets 90 s,
 // room for every wait below to run to its limit on a slow machine.
 const longestThisTestMayTakeInMilliseconds = 90_000;
-// A poll comes every 2 s; a few polls cover a slow machine.
+// A poll comes every 0,5 s; a few seconds cover a slow machine.
 const waitForTheNextPollsInMilliseconds = 10_000;
 // The first ten places are compared: at 60× the leaders cross the line every 4 to 7 real
-// seconds, so in a recording of ten polls the first ten places change within a few lines.
+// seconds, so in a recording of 20 s the first ten places change within a few lines.
 const placesCompared = 10;
+// The name the operator gives the replay source, as it would read in the list.
 const replayLabel = 'Ensaio do enduro';
-// The replay is read every 0,5 s (the shortest interval allowed), so at 10× each read is
-// 5 recorded seconds on, two or three lines apart. At the default 2 s each read would
-// jump 20 recorded seconds, about the whole recording, and a replay starting again at
-// the end could land on almost the same line every time.
-const replayPollIntervalAsTyped = '0,5';
 
 test.beforeEach(async () => {
   await emptyTheServerState();
@@ -81,22 +84,23 @@ test.describe('recording the simulator and replaying it', () => {
   }) => {
     test.setTimeout(longestThisTestMayTakeInMilliseconds);
 
-    // Arrange: the simulator on at speed 60 with its 60 cars shown; "Gravar"; about 20 s
-    // later, "Parar gravação".
+    // Arrange: the simulator on at speed 60, read every 0,5 s from the green flag, with
+    // its 60 cars shown; "Gravar"; once the server counts 40 lines in the file (about
+    // 20 s), "Parar gravação".
     await openDataSourcesPageAndWaitUntilConnected(page);
-    await changeSimulatorInItsEditForm(page, seededSimulatorLabel, { speedAsTyped: '60' });
-    await turnSourceOnWithItsSwitch(page, seededSimulatorLabel);
+    await startTheSeededSimulatorFastFromTheGreenFlag(page);
     const simulatorRow = findDataSourceRow(page, seededSimulatorLabel);
-    await expect(
-      findCarRowsOfPositionsTable(findPositionsTableOfSource(page, seededSimulatorLabel)),
-      'the simulator must show its 60 cars before the recording',
-    ).toHaveCount(carsInTheSeededRace, { timeout: waitForTheNextPollsInMilliseconds });
     await simulatorRow.getByRole('button', { name: 'Gravar' }).click();
     await expect(
       simulatorRow.getByText('Gravando'),
       'a recording source must carry the "Gravando" badge',
     ).toBeVisible();
-    await page.waitForTimeout(recordingTimeInMilliseconds);
+    await waitUntilTheOpenRecordingHasSnapshots({
+      sourceLabel: seededSimulatorLabel,
+      snapshotCount: recordedSnapshotsWanted,
+      failureMessage: 'a recording of a simulator read every 0,5 s must reach 40 lines in 30 s',
+      timeoutInMilliseconds: waitForTheRecordingInMilliseconds,
+    });
     await simulatorRow.getByRole('button', { name: 'Parar gravação' }).click();
     await expect(
       simulatorRow.getByText('Gravando'),
@@ -108,10 +112,16 @@ test.describe('recording the simulator and replaying it', () => {
     // its label to show its data.
     const replayForm = await openNewSourceFormOfKind(page, 'Reprodução');
     await replayForm.getByLabel('Nome da fonte').fill(replayLabel);
-    await replayForm.getByLabel('Intervalo de leitura (segundos)').fill(replayPollIntervalAsTyped);
+    // The replay is read every 0,5 s too (the shortest interval allowed), so at 10× each
+    // read is 5 recorded seconds on, ten lines apart. At the default 2 s each read would
+    // jump 20 recorded seconds, the whole recording, and a replay starting again at the
+    // end could land on almost the same line every time.
+    await replayForm
+      .getByLabel('Intervalo de leitura (segundos)')
+      .fill(pollIntervalOfTheTestsAsTyped);
     await replayForm.getByRole('combobox', { name: 'Gravação' }).click();
-    // The list is drawn outside the form, at the end of the page; oldest first.
-    await page.getByRole('option').filter({ hasText: seededSimulatorLabel }).last().click();
+    // The list is drawn outside the form, at the end of the page; newest first.
+    await page.getByRole('option').filter({ hasText: seededSimulatorLabel }).first().click();
     await replayForm.getByRole('combobox', { name: 'Velocidade da reprodução' }).click();
     await page.getByRole('option', { name: '10×', exact: true }).click();
     await replayForm.getByRole('switch', { name: 'Recomeçar ao chegar ao fim' }).click();

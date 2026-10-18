@@ -25,7 +25,9 @@ const timeBetweenLooksInMilliseconds = 100;
 // The seeded data source, "Simulador — Enduro", as a new database has it: off, read every
 // 2 s, and with the default config (an empty config is completed with the defaults by
 // the server: speed 1, 60 cars, 4 h, "Falha simulada" off). Its race start is kept by the
-// server on every edit, so its race carries on where it was.
+// server on every edit, so its race carries on where it was; the reset cannot move it
+// (restartSimulatedRace is refused while the source is off), so each data source test
+// presses "Reiniciar corrida" after turning it on (João's ruling 3 at gate 2 of PR #16).
 const seededSimulatorId = 'simulador-enduro';
 /** The seeded source's label, as every new database has it (shared with the data source steps). */
 export const seededSimulatorLabel = 'Simulador — Enduro';
