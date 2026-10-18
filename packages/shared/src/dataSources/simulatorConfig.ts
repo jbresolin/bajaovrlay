@@ -16,7 +16,7 @@ export const SimulatorConfigSchema = z.object({
    * through the whole session, so a session of months would block the server on each poll.
    */
   sessionDurationMs: z.number().int().positive().max(86_400_000).default(14_400_000),
-  /** The length of one lap, used only to keep lap times plausible. */
+  /** The length of one lap. Accepted but not read yet: lap times are written for the default 2 km track. */
   lapLengthKm: z.number().positive().default(2),
   /** How many times faster than real time the simulated race runs, from 1 to 60. */
   speed: z.number().int().min(1).max(60).default(1),
