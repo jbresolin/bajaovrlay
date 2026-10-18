@@ -1,0 +1,294 @@
+{
+  "aviso": "Dados fictícios de um sistema de cronometragem imaginário, para o exemplo de fonte HTTP/JSON do BajaOvrLay. Equipes inventadas; nunca mostrar como resultado real.",
+  "sistema": "Cronometragem Exemplo 3.2",
+  "gerado_em": "2027-03-20T14:24:00.948-03:00",
+  "prova": {
+    "id": "enduro-2027-nacional",
+    "evento": "Baja SAE Brasil 2027 — Etapa Nacional",
+    "nome": "Enduro de Resistência",
+    "bandeira": "VERDE",
+    "duracao_s": 14400,
+    "voltas_lider": "34",
+    "relogio": {
+      "modo": "REGRESSIVO",
+      "restante_s": 4559.052,
+      "estado": "RUN"
+    }
+  },
+  "classificacao": [
+    {
+      "carro": "17",
+      "equipe": "Acauã Baja",
+      "escola": "Mauá",
+      "voltas": 34,
+      "ultima_volta": "4:38.293",
+      "melhor_volta": "4:38.291",
+      "diferenca": null,
+      "intervalo_s": null,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "6",
+      "equipe": "Sabiá Baja",
+      "escola": "UFMG",
+      "voltas": 34,
+      "ultima_volta": "4:43.550",
+      "melhor_volta": "4:39.596",
+      "diferenca": {
+        "tempo": "19,087"
+      },
+      "intervalo_s": 19.087,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "11",
+      "equipe": "Gralha Azul Baja",
+      "escola": "PUCPR",
+      "voltas": 34,
+      "ultima_volta": "4:44.337",
+      "melhor_volta": "4:40.063",
+      "diferenca": {
+        "tempo": "41,372"
+      },
+      "intervalo_s": 22.285,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "3",
+      "equipe": "Maré Baja",
+      "escola": "UFRN",
+      "voltas": 34,
+      "ultima_volta": "4:41.908",
+      "melhor_volta": "4:40.877",
+      "diferenca": {
+        "tempo": "1:02,904"
+      },
+      "intervalo_s": 21.532,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "8",
+      "equipe": "Jacarandá Baja",
+      "escola": "UNICAMP",
+      "voltas": 34,
+      "ultima_volta": "4:46.120",
+      "melhor_volta": "4:41.452",
+      "diferenca": {
+        "tempo": "1:35,118"
+      },
+      "intervalo_s": 32.214,
+      "paradas": 3,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "1",
+      "equipe": "Cascavel Off-Road",
+      "escola": "UNIOESTE",
+      "voltas": 34,
+      "ultima_volta": "4:49.731",
+      "melhor_volta": "4:42.015",
+      "diferenca": {
+        "tempo": "2:10,640"
+      },
+      "intervalo_s": 35.522,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "14",
+      "equipe": "Cajueiro Off-Road",
+      "escola": "UFPI",
+      "voltas": 33,
+      "ultima_volta": "4:47.002",
+      "melhor_volta": "4:43.390",
+      "diferenca": {
+        "voltas": 1
+      },
+      "intervalo_s": 48.019,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "20",
+      "equipe": "Gavião Off-Road",
+      "escola": "UNESP",
+      "voltas": 33,
+      "ultima_volta": "4:45.861",
+      "melhor_volta": "4:44.218",
+      "diferenca": {
+        "voltas": 1
+      },
+      "intervalo_s": 12.377,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "9",
+      "equipe": "Maracajá Off-Road",
+      "escola": "UFF",
+      "voltas": 33,
+      "ultima_volta": "4:52.447",
+      "melhor_volta": "4:44.906",
+      "diferenca": {
+        "voltas": 1
+      },
+      "intervalo_s": 30.002,
+      "paradas": 3,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "5",
+      "equipe": "Uirapuru Racing",
+      "escola": "UFRR",
+      "voltas": 33,
+      "ultima_volta": "6:12.004",
+      "melhor_volta": "4:45.533",
+      "diferenca": {
+        "voltas": 1
+      },
+      "intervalo_s": 41.87,
+      "paradas": 3,
+      "situacao": "BOX"
+    },
+    {
+      "carro": "12",
+      "equipe": "Tatu-Bola Racing",
+      "escola": "UFBA",
+      "voltas": 33,
+      "ultima_volta": "4:50.385",
+      "melhor_volta": "4:46.071",
+      "diferenca": {
+        "voltas": 1
+      },
+      "intervalo_s": 9.411,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "2",
+      "equipe": "Biguá Off-Road",
+      "escola": "FURG",
+      "voltas": 33,
+      "ultima_volta": "4:55.219",
+      "melhor_volta": "4:46.702",
+      "diferenca": {
+        "voltas": 1
+      },
+      "intervalo_s": 55.106,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "18",
+      "equipe": "Irara Racing",
+      "escola": "UFSJ",
+      "voltas": 32,
+      "ultima_volta": "4:58.640",
+      "melhor_volta": "4:47.315",
+      "diferenca": {
+        "voltas": 2
+      },
+      "intervalo_s": 20.93,
+      "paradas": 3,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "15",
+      "equipe": "Bem-te-vi Off-Road",
+      "escola": "UFES",
+      "voltas": 32,
+      "ultima_volta": "4:53.077",
+      "melhor_volta": "4:48.009",
+      "diferenca": {
+        "voltas": 2
+      },
+      "intervalo_s": 38.644,
+      "paradas": 2,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "7",
+      "equipe": "Juriti Off-Road",
+      "escola": "UDESC",
+      "voltas": 32,
+      "ultima_volta": "5:41.288",
+      "melhor_volta": "4:48.660",
+      "diferenca": {
+        "voltas": 2
+      },
+      "intervalo_s": 62.311,
+      "paradas": 2,
+      "situacao": "PARADO"
+    },
+    {
+      "carro": "10",
+      "equipe": "Mutum Off-Road",
+      "escola": "UEL",
+      "voltas": 32,
+      "ultima_volta": "4:56.513",
+      "melhor_volta": "4:49.234",
+      "diferenca": {
+        "voltas": 2
+      },
+      "intervalo_s": 4.208,
+      "paradas": 3,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "4",
+      "equipe": "Paca Racing",
+      "escola": "IFSC",
+      "voltas": 31,
+      "ultima_volta": "7:03.915",
+      "melhor_volta": "4:50.108",
+      "diferenca": {
+        "voltas": 3
+      },
+      "intervalo_s": 71.552,
+      "paradas": 4,
+      "situacao": "BOX"
+    },
+    {
+      "carro": "19",
+      "equipe": "Cuíca Off-Road",
+      "escola": "UFRJ",
+      "voltas": 30,
+      "ultima_volta": "5:02.476",
+      "melhor_volta": "4:51.880",
+      "diferenca": {
+        "voltas": 4
+      },
+      "intervalo_s": 15.833,
+      "paradas": 3,
+      "situacao": "PISTA"
+    },
+    {
+      "carro": "13",
+      "equipe": "Jabuti Racing",
+      "escola": "UFAL",
+      "voltas": 12,
+      "ultima_volta": "5:12.840",
+      "melhor_volta": "4:52.391",
+      "diferenca": null,
+      "intervalo_s": null,
+      "paradas": 1,
+      "situacao": "ABAND"
+    },
+    {
+      "carro": "16",
+      "equipe": "Pampa Baja",
+      "escola": "UFSM",
+      "voltas": 5,
+      "ultima_volta": null,
+      "melhor_volta": "4:59.127",
+      "diferenca": null,
+      "intervalo_s": null,
+      "paradas": 0,
+      "situacao": "ABAND"
+    }
+  ]
+}

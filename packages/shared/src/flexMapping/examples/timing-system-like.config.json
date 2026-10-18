@@ -1,0 +1,115 @@
+{
+  "requests": [
+    {
+      "requestId": "classificacao",
+      "url": "http://localhost:4790/cronometragem/classificacao",
+      "headers": [],
+      "queryParameters": []
+    }
+  ],
+  "mappings": [
+    {
+      "shapeKey": "positions",
+      "requestId": "classificacao",
+      "entriesPath": "classificacao",
+      "fields": [
+        { "targetField": "sessionId", "fromPath": "prova.id" },
+        { "targetField": "updatedAtMs", "fromPollMoment": true }
+      ],
+      "entryFields": [
+        { "targetField": "position", "fromListOrder": true },
+        { "targetField": "carNumber", "fromPath": "carro", "transformId": "textToInteger" },
+        { "targetField": "teamName", "fromPath": "equipe", "transformId": "trimText" },
+        { "targetField": "schoolName", "fromPath": "escola", "transformId": "trimText" },
+        { "targetField": "laps", "fromPath": "voltas" },
+        {
+          "targetField": "status",
+          "fromPath": "situacao",
+          "transformId": "mapValues",
+          "transformParameters": {
+            "PISTA": "running",
+            "BOX": "inPit",
+            "PARADO": "stopped",
+            "ABAND": "retired",
+            "DESCL": "disqualified",
+            "NL": "notStarted"
+          }
+        },
+        {
+          "targetField": "lastLapMs",
+          "fromPath": "ultima_volta",
+          "transformId": "lapTimeTextToMs"
+        },
+        {
+          "targetField": "bestLapMs",
+          "fromPath": "melhor_volta",
+          "transformId": "lapTimeTextToMs"
+        },
+        {
+          "targetField": "gapToLeaderMs",
+          "fromPath": "diferenca.tempo",
+          "transformId": "lapTimeTextToMs"
+        },
+        { "targetField": "gapToLeaderLaps", "fromPath": "diferenca.voltas" },
+        { "targetField": "intervalMs", "fromPath": "intervalo_s", "transformId": "secondsToMs" },
+        { "targetField": "pitStops", "fromPath": "paradas" }
+      ]
+    },
+    {
+      "shapeKey": "session",
+      "requestId": "classificacao",
+      "fields": [
+        { "targetField": "sessionId", "fromPath": "prova.id" },
+        { "targetField": "eventName", "fromPath": "prova.evento" },
+        { "targetField": "sessionName", "fromPath": "prova.nome" },
+        { "targetField": "sessionKind", "constantValue": "enduro" },
+        {
+          "targetField": "state",
+          "fromPath": "prova.bandeira",
+          "transformId": "mapValues",
+          "transformParameters": {
+            "AGUARDANDO": "pre",
+            "VERDE": "green",
+            "AMARELA": "yellow",
+            "VERMELHA": "red",
+            "QUADRICULADA": "checkered",
+            "ENCERRADA": "finished"
+          }
+        },
+        {
+          "targetField": "clock.clockMode",
+          "fromPath": "prova.relogio.modo",
+          "transformId": "mapValues",
+          "transformParameters": { "REGRESSIVO": "remaining", "PROGRESSIVO": "elapsed" }
+        },
+        {
+          "targetField": "clock.referenceTimeMs",
+          "fromPath": "prova.relogio.restante_s",
+          "transformId": "secondsToMs"
+        },
+        {
+          "targetField": "clock.referenceWallClockMs",
+          "fromPath": "gerado_em",
+          "transformId": "isoDateTextToMs"
+        },
+        {
+          "targetField": "clock.running",
+          "fromPath": "prova.relogio.estado",
+          "transformId": "mapValues",
+          "transformParameters": { "RUN": true, "STOP": false }
+        },
+        { "targetField": "updatedAtMs", "fromPath": "gerado_em", "transformId": "isoDateTextToMs" },
+        {
+          "targetField": "scheduledDurationMs",
+          "fromPath": "prova.duracao_s",
+          "transformId": "secondsToMs"
+        },
+        {
+          "targetField": "lapsCompletedByLeader",
+          "fromPath": "prova.voltas_lider",
+          "transformId": "textToInteger"
+        }
+      ]
+    }
+  ]
+}
