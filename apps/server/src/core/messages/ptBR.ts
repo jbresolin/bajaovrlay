@@ -12,6 +12,8 @@ export const ptBR = {
     // A sample request ("Buscar da fonte") the config schema refused without a sentence of
     // its own; the schema's own pt-BR reason is sent whenever it has one.
     invalidSampleRequest: 'A requisição de exemplo é inválida.',
+    // A body sent as JSON that cannot be parsed at all (cut off, or not JSON).
+    malformedJsonBody: 'O corpo da requisição não é JSON válido.',
   },
   // Answers to commands and WebSocket messages; each goes with a stable code
   // (CommandErrorCodeSchema in @bajaovrlay/shared).

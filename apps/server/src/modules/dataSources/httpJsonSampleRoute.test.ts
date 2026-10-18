@@ -20,6 +20,7 @@
  *     any log line.
  *   - Nothing is written: no event-log row, the slices as they were.
  *   - A request the config schema refuses answers 400 with that schema's pt-BR reason.
+ *   - A body that is not JSON at all answers 400 in JSON with a pt-BR message.
  *   - The OpenAPI document describes the route.
  *
  * What these tests deliberately do not cover:
@@ -280,6 +281,33 @@ describe('POST /api/v1/data-sources/http-json/sample-request', () => {
         code: 'INVALID_SAMPLE_REQUEST',
         message:
           'O endereço "ftp://cronometragem.local/classificacao.json" precisa começar com http:// ou https://.',
+      },
+    });
+  });
+
+  it('answers 400 in JSON with a pt-BR message for a body that is not valid JSON', async () => {
+    // Arrange: a server app, and a body cut off in the middle, as a page bug could send.
+    const { app } = createServerAppForSampleRequests();
+    const bodyCutOffInTheMiddle = '{"requestId": "classificacao",';
+
+    // Act: post that body, saying it is JSON.
+    const response = await app.request(sampleRoutePath, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: bodyCutOffInTheMiddle,
+    });
+    const body: unknown = await response.json();
+
+    // Assert: 400 with a stable code and a pt-BR message, not Hono's plain English line.
+    expect(response.status, 'a body that is not JSON must answer 400').toBe(400);
+    expect(
+      response.headers.get('content-type'),
+      'the refusal must be JSON so the control page can parse it',
+    ).toContain('application/json');
+    expect(body, 'the refusal must carry a stable code and a pt-BR message').toEqual({
+      error: {
+        code: 'MALFORMED_JSON_BODY',
+        message: 'O corpo da requisição não é JSON válido.',
       },
     });
   });

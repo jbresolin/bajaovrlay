@@ -7,7 +7,8 @@ commands are declared in `packages/shared/src/dataSources/`; this module holds t
 
 Start at `reducers/recordDataSourcePoll.ts` (a poll result, the no-op poll, which polls
 stay out of the event log), then `poller.ts` (one loop per source that is on: rhythm,
-timeout, stale watch; preparing a source in `sourcePreparation.ts`), then `recorder.ts`
+timeout, stale watch; preparing a source in `sourcePreparation.ts`; the 10 s ceiling it
+shares with the sample route in `pollTimeouts.ts`), then `recorder.ts`
 (good polls appended as numbered lines of `recordingLine.ts`, the count reported once
 written; caps in `recordingCaps.ts`) and `recordingsFromFolder.ts` (the list at boot,
 from each file's two ends). `adapters/` holds the simulator, the replay and httpJson

@@ -4,14 +4,15 @@ import type { HttpJsonRequest, HttpJsonSampleAnswer } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../../../../core/logger/createLogger.js';
 import { ptBR } from '../../../../core/messages/ptBR.js';
+import { longestPollTimeoutInMilliseconds } from '../../pollTimeouts.js';
 import { fetchHttpJsonRequest } from './fetchHttpJsonRequest.js';
 import type { ReadEnvironmentVariable } from './httpJsonRequestAddress.js';
 
 /**
- * How long a sample may take: the poll's own ceiling (the poller's 10 s), so a source
+ * How long a sample may take: the poll's own ceiling, the same constant, so a source
  * that answers the form's "Buscar da fonte" also answers its polls.
  */
-export const sampleRequestTimeoutInMilliseconds = 10_000;
+export const sampleRequestTimeoutInMilliseconds = longestPollTimeoutInMilliseconds;
 
 /** What fetching a sample needs. */
 export type FetchSampleOptions = {
