@@ -10,12 +10,14 @@ import { refuseDisabledDataSource, refuseUnknownDataSource } from '../dataSource
 import { buildRecordingStartingNow } from '../recordingBookkeeping.js';
 
 /**
- * startRecording ("Gravar"): opens a recording of the source named after this moment,
- * marks the source recording and clears the reason a past recording stopped. The recorder
- * writes the data the source already has as the first line, then appends each good poll
- * (decision D10), so a source that has data starts its recording with one snapshot. A second start while
- * recording changes nothing (two tablets pressing at once); refused for an unknown
- * source, and for a source that is off: nothing would ever be written.
+ * startRecording ("Gravar"): opens a recording of the source named after this moment
+ * (with a number after it when the source already has a recording of that millisecond),
+ * marks the source recording and clears the reason a past recording stopped. The
+ * recording starts empty: the recorder writes the data the source already has as the
+ * first line, then appends each good poll (decision D10), and reports the count once
+ * each line is in the file (gate 2 on PR #16). A second start while recording changes
+ * nothing (two tablets pressing at once); refused for an unknown source, and for a
+ * source that is off: nothing would ever be written.
  */
 export function reduceStartRecording(
   slices: SlicesChangedByCommands,
@@ -33,12 +35,11 @@ export function reduceStartRecording(
     return { status: 'applied', slices };
   }
 
-  // The recorder writes the data already there as the first line; count it the same way.
-  const hasDataAlready = slices.dataSnapshots.some((snapshot) => snapshot.sourceId === source.id);
-  const newRecording = {
-    ...buildRecordingStartingNow(source, Date.parse(context.now)),
-    snapshotCount: hasDataAlready ? 1 : 0,
-  };
+  const newRecording = buildRecordingStartingNow(
+    source,
+    Date.parse(context.now),
+    slices.recordings,
+  );
   const recordingSource: DataSource = {
     ...source,
     isRecording: true,

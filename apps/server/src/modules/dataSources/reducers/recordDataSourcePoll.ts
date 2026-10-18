@@ -14,15 +14,15 @@ import { areJsonValuesEqual } from '../areJsonValuesEqual.js';
 import { isSourceHealthy } from '../dataSourceHealth.js';
 import { findDataSource, replaceDataSource } from '../dataSourceListing.js';
 import { validatePolledShapes } from '../polledShapesValidation.js';
-import { countSnapshotInOpenRecording } from '../recordingBookkeeping.js';
 
 /**
  * recordDataSourcePoll (sent only by the source's poller): records one poll.
  * - A source deleted or turned off a moment ago: nothing changes and nothing is refused,
  *   because the poller can lose that race and must not fill the log with refusals (D8,
  *   like a late reportInstanceStatus).
- * - A good poll whose shapes all validate: the new snapshot, and a healthy status.
- *   A recording source counts the snapshot in its open recording.
+ * - A good poll whose shapes all validate: the new snapshot, and a healthy status. The
+ *   recording's count is not touched: the recorder reports it once the line is in the
+ *   file (recordRecordingProgress, gate 2 on PR #16).
  * - A failed poll, or a good one with a bad shape or no shape at all (a poll never
  *   half-succeeds): the last good snapshot and lastOkAtMs stay (rule 4), the source is
  *   stale, the error is kept (a pt-BR fallback when the adapter gave none) and the
@@ -93,14 +93,10 @@ function recordGoodPoll(
       isStale: false,
     },
   };
-  const recordings = source.isRecording
-    ? countSnapshotInOpenRecording(slices.recordings, source.id)
-    : slices.recordings;
   const nextSlices = {
     ...slices,
     dataSources: replaceDataSource(slices.dataSources, healthySource),
     dataSnapshots,
-    recordings,
   };
   return buildPollOutcome(nextSlices, source, healthySource);
 }

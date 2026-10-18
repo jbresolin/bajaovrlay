@@ -10,10 +10,12 @@ import { refuseUnknownDataSource } from '../dataSourceRefusals.js';
 import { closeOpenRecordingOfSource } from '../recordingBookkeeping.js';
 
 /**
- * stopRecording ("Parar gravação", or the recorder after a failed write): closes the
- * source's open recording at this moment and marks it not recording. The recorder's
- * stop carries a pt-BR failure message, which the source shows (status.recordingError)
- * until the next recording starts; the source keeps polling either way (decision D9).
+ * stopRecording ("Parar gravação", or the recorder after a failed write or at its 6 h or
+ * 300 MB cap): closes the source's open recording at this moment and marks it not
+ * recording. The recorder's stop carries a pt-BR failure message, which the source shows
+ * (status.recordingError) until the next recording starts; the source keeps polling
+ * either way (decision D9). The authorize step refuses a failure message from anyone but
+ * the recorder (gate 2 on PR #16), so here its presence marks the recorder's stop.
  * A stop of a source that is not recording changes nothing. An unknown source is refused
  * for the operator's button, but the recorder's stop of a source deleted a moment ago is
  * an accepted no-op: the recorder sends it from a 0 ms timer and can lose that race, like
@@ -26,7 +28,8 @@ export function reduceStopRecording(
 ): ReducerOutcome {
   const source = findDataSource(slices.dataSources, command.sourceId);
   if (source === undefined) {
-    // Only the recorder sends a failure message, so its presence marks the recorder's stop.
+    // Only the recorder may send a failure message (authorizeCommand.ts), so its
+    // presence marks the recorder's stop.
     const isTheRecordersStop = command.failureMessage !== undefined;
     if (isTheRecordersStop) {
       return { status: 'applied', slices };

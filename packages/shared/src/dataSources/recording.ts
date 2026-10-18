@@ -11,12 +11,16 @@ export const RecordingSchema = z.object({
   sourceId: z.string().min(1),
   /** The source's label when the recording started; kept after the source is deleted. */
   sourceLabel: z.string().min(1),
-  /** The start moment in ISO 8601 with ':' made '-' (file systems refuse ':'), `.jsonl`. */
+  /**
+   * The start moment in ISO 8601 with ':' made '-' (file systems refuse ':'), `.jsonl`;
+   * a second recording of the same source in the same millisecond adds `-2`, `-3`, ...
+   * after the moment, so two recordings never share a file.
+   */
   fileName: z.string().min(1),
   startedAtMs: z.number().int(),
   /** When the recording stopped; null while it is still recording. */
   endedAtMs: z.number().int().nullable(),
-  /** How many snapshots (lines) it holds. */
+  /** How many snapshots (lines) are in its file: counted once each line is written. */
   snapshotCount: z.number().int().min(0),
 });
 

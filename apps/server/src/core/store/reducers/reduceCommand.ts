@@ -80,6 +80,7 @@ export function reduceCommand(
     case 'startRecording':
     case 'stopRecording':
     case 'recordDataSourcePoll':
+    case 'recordRecordingProgress':
       return reduceDataSourceCommand(slices, command, context);
   }
 }

@@ -5,17 +5,22 @@
  *   `allowCommandForActorRole` decides by the role at the start of the actor name.
  *   BAJAOVRLAY-17 adds two jobs for the server itself: the poller of each source, which
  *   signs its results `sistema:fonte:<sourceId>`, and the recorder, `sistema:gravador`,
- *   which stops a recording it could not write. A poller may only report polls of its
- *   own source; the recorder may only stop recordings. Operators send every other
- *   data-source command but never a poll result: a page must not fake race data.
+ *   which counts the lines it wrote and stops a recording it could not write or that
+ *   reached its cap. A poller may only report polls of its own source; the recorder may
+ *   only stop recordings and report their progress. Operators send every other
+ *   data-source command but never a poll result nor a recording's progress (a page must
+ *   not fake race data or a count), and their "Parar gravação" never carries a failure
+ *   message: only the recorder says why a recording failed (gate 2 on PR #16).
  *
  * What these tests prove:
  *   - An operator may send each of the seven operator commands and is refused
- *     recordDataSourcePoll.
+ *     recordDataSourcePoll, recordRecordingProgress, and a stopRecording that carries a
+ *     failure message.
  *   - The poller of a source may send recordDataSourcePoll for that source, and is
  *     refused a poll of another source and every other command (pollDataSourceNow,
- *     setDataSourceEnabled, stopRecording, clearLayer).
- *   - The recorder may send stopRecording and is refused a poll and startRecording.
+ *     setDataSourceEnabled, stopRecording, recordRecordingProgress, clearLayer).
+ *   - The recorder may send stopRecording (with its failure message) and
+ *     recordRecordingProgress, and is refused a poll and startRecording.
  *   - A renderer and the auto-out are refused every data-source command.
  *
  * What these tests deliberately do not cover:
@@ -68,7 +73,18 @@ const startRecordingEnduroSimulator: Command = {
 const stopRecordingEnduroSimulator: Command = {
   type: 'stopRecording',
   sourceId: 'simulador-enduro',
+};
+// The recorder's stop after a failed write, carrying the reason the operator reads.
+const stopFailedRecordingOfEnduroSimulator: Command = {
+  type: 'stopRecording',
+  sourceId: 'simulador-enduro',
   failureMessage: 'A gravação parou: não foi possível escrever no disco.',
+};
+// The recorder has written the 63rd line of today's recording.
+const progressOfTodaysRecording: Command = {
+  type: 'recordRecordingProgress',
+  recordingId: 'simulador-enduro/2027-08-14T14-30-00.000Z.jsonl',
+  snapshotCount: 63,
 };
 const clearTheClockLayer: Command = { type: 'clearLayer', layerId: 'clock' };
 
@@ -135,6 +151,21 @@ const authorisationScenarios: Array<{
     actor: operatorActor,
     expectedIsAllowed: false,
   },
+  // Only the recorder knows why a recording failed; a page must not fake that reason
+  // (gate 2 on PR #16).
+  {
+    name: 'refuses an operator a stop that carries a failure message',
+    command: stopFailedRecordingOfEnduroSimulator,
+    actor: operatorActor,
+    expectedIsAllowed: false,
+  },
+  // Only the recorder knows how many lines reached the disk; a page must not fake it.
+  {
+    name: "refuses an operator a recording's progress",
+    command: progressOfTodaysRecording,
+    actor: operatorActor,
+    expectedIsAllowed: false,
+  },
   // The poller reports its own source's polls.
   {
     name: 'allows the poller of a source a poll of that source',
@@ -177,13 +208,28 @@ const authorisationScenarios: Array<{
     actor: enduroSimulatorPollerActor,
     expectedIsAllowed: false,
   },
-  // The recorder stops a recording it could not write, and does nothing else.
+  // The recorder stops a recording it could not write or that reached its cap, and
+  // reports the lines it wrote; it does nothing else.
   // A failed write: the recorder stops the recording and says why (decision D9).
   {
-    name: 'allows the recorder to stop a recording',
-    command: stopRecordingEnduroSimulator,
+    name: 'allows the recorder to stop a recording, saying why',
+    command: stopFailedRecordingOfEnduroSimulator,
     actor: recorderActor,
     expectedIsAllowed: true,
+  },
+  // A line reached the disk: the recorder counts it in the list (gate 2 on PR #16).
+  {
+    name: "allows the recorder to report a recording's progress",
+    command: progressOfTodaysRecording,
+    actor: recorderActor,
+    expectedIsAllowed: true,
+  },
+  // The poller reports polls; the count of written lines is the recorder's alone.
+  {
+    name: "refuses the poller a recording's progress",
+    command: progressOfTodaysRecording,
+    actor: enduroSimulatorPollerActor,
+    expectedIsAllowed: false,
   },
   // The recorder writes files; it must never fake race data either.
   {

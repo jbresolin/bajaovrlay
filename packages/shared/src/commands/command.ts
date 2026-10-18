@@ -4,6 +4,7 @@ import { CreateDataSourceCommandSchema } from '../dataSources/createDataSource.j
 import { DeleteDataSourceCommandSchema } from '../dataSources/deleteDataSource.js';
 import { PollDataSourceNowCommandSchema } from '../dataSources/pollDataSourceNow.js';
 import { RecordDataSourcePollCommandSchema } from '../dataSources/recordDataSourcePoll.js';
+import { RecordRecordingProgressCommandSchema } from '../dataSources/recordRecordingProgress.js';
 import { SetDataSourceEnabledCommandSchema } from '../dataSources/setDataSourceEnabled.js';
 import { StartRecordingCommandSchema } from '../dataSources/startRecording.js';
 import { StopRecordingCommandSchema } from '../dataSources/stopRecording.js';
@@ -86,8 +87,9 @@ export const CommandSchema = z.discriminatedUnion('type', [
   StopMacroCommandSchema,
   AdvanceMacroRunCommandSchema,
   EndMacroRunCommandSchema,
-  // Data sources (BAJAOVRLAY-17); their schemas live in ../dataSources/. The last one is
-  // sent only by the server's poller (sistema:fonte:<sourceId>).
+  // Data sources (BAJAOVRLAY-17); their schemas live in ../dataSources/. The last two are
+  // sent only by the server: the poller (sistema:fonte:<sourceId>) and the recorder
+  // (sistema:gravador).
   CreateDataSourceCommandSchema,
   UpdateDataSourceCommandSchema,
   DeleteDataSourceCommandSchema,
@@ -96,6 +98,7 @@ export const CommandSchema = z.discriminatedUnion('type', [
   StartRecordingCommandSchema,
   StopRecordingCommandSchema,
   RecordDataSourcePollCommandSchema,
+  RecordRecordingProgressCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

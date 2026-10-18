@@ -23,6 +23,7 @@ import {
   startOfTheEnduroMs,
 } from './enduroSimulatorCommands.testSupport.js';
 import { type AppendLineToFile, startDataSourceRecorder } from './recorder.js';
+import type { RecordingCaps } from './recordingCaps.js';
 import { buildGreenFlagSessionAt } from './reducers/dataSourceSlices.testSupport.js';
 
 /** The file a recording started at 14:00 is written to (decision D10: ':' made '-'). */
@@ -36,30 +37,63 @@ export function createTemporaryRecordingsFolder(): string {
 }
 
 /**
- * Timers that only run when the test says so, like the store's listener deferring its
- * work with a 0 ms timer. `runEveryPendingTimer` runs them in the order they were started.
+ * Timers that only run when the test says so. The recorder starts two kinds: 0 ms timers
+ * that defer its commands out of the store's listener (a stop, a progress report), and
+ * the long wait of a recording's duration cap. `runEveryDeferredTimer` runs the 0 ms
+ * ones, in the order they were started (and any they start in turn, which wait for the
+ * next call); `runEveryTimerOfDelay` runs the ones started with that delay.
  */
 export function createTimersRunByHand() {
-  const pendingTimers = new Map<number, () => void>();
+  const pendingTimers = new Map<number, { onTimeIsUp: () => void; delayInMilliseconds: number }>();
   let nextTimerHandle = 1;
+
+  /** Runs the pending timers started with this delay, taking them off the list first. */
+  function runEveryTimerOfDelay(delayInMilliseconds: number): void {
+    const timersToRun = [...pendingTimers.entries()].filter(
+      ([, timer]) => timer.delayInMilliseconds === delayInMilliseconds,
+    );
+    for (const [timerHandle] of timersToRun) {
+      pendingTimers.delete(timerHandle);
+    }
+    for (const [, timer] of timersToRun) {
+      timer.onTimeIsUp();
+    }
+  }
+
   return {
-    startTimer: (onTimeIsUp: () => void): unknown => {
+    startTimer: (onTimeIsUp: () => void, delayInMilliseconds: number): unknown => {
       const timerHandle = nextTimerHandle;
       nextTimerHandle += 1;
-      pendingTimers.set(timerHandle, onTimeIsUp);
+      pendingTimers.set(timerHandle, { onTimeIsUp, delayInMilliseconds });
       return timerHandle;
     },
     cancelTimer: (timerHandle: unknown): void => {
       pendingTimers.delete(timerHandle as number);
     },
     countPendingTimers: () => pendingTimers.size,
-    runEveryPendingTimer: () => {
-      const timersToRun = [...pendingTimers.values()];
-      pendingTimers.clear();
-      for (const onTimeIsUp of timersToRun) {
-        onTimeIsUp();
+    countPendingTimersOfDelay: (delayInMilliseconds: number) =>
+      [...pendingTimers.values()].filter(
+        (timer) => timer.delayInMilliseconds === delayInMilliseconds,
+      ).length,
+    runEveryDeferredTimer: () => runEveryTimerOfDelay(0),
+    runEveryTimerOfDelay,
+  };
+}
+
+/**
+ * A file writer that takes the first lines it is given and then fails as a full disk
+ * does, for every line after them. Counts how often it was called.
+ */
+export function createDiskThatFillsAfterLines(lineCountThatFits: number) {
+  let numberOfWriteAttempts = 0;
+  return {
+    appendLine: (): void => {
+      numberOfWriteAttempts += 1;
+      if (numberOfWriteAttempts > lineCountThatFits) {
+        throw new Error('ENOSPC: no space left on device, write');
       }
     },
+    countWriteAttempts: () => numberOfWriteAttempts,
   };
 }
 
@@ -67,10 +101,15 @@ export function createTimersRunByHand() {
  * Starts what every recorder test needs: a recordings folder, a store on a fresh database
  * at 14:00 (the test moves the clock with `moveClockTo`), and a recorder watching it with
  * timers run by hand. `appendLine` replaces the recorder's file writing, to make it fail;
- * `logger` replaces the silent logger, to read what was logged.
+ * `logger` replaces the silent logger, to read what was logged; `recordingCaps` replaces
+ * the 6 h and 300 MB caps with small ones.
  */
 export function startRecorderWatchingAStore(
-  options: { appendLine?: AppendLineToFile; logger?: ServerLogger } = {},
+  options: {
+    appendLine?: AppendLineToFile;
+    logger?: ServerLogger;
+    recordingCaps?: RecordingCaps;
+  } = {},
 ) {
   const recordingsFolder = createTemporaryRecordingsFolder();
   const { database } = openTemporaryDatabase();
@@ -85,6 +124,7 @@ export function startRecorderWatchingAStore(
     startTimer: timers.startTimer,
     cancelTimer: timers.cancelTimer,
     appendLine: options.appendLine,
+    recordingCaps: options.recordingCaps,
   });
   onTestFinished(() => recorder.stop());
   return {

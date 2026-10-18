@@ -1,7 +1,7 @@
 // Public surface of the data-source module. Core and other modules import from here,
 // never from the files inside.
 
-// Sends each of the eight data-source commands to its reducer (core's reduceCommand calls it).
+// Sends each of the nine data-source commands to its reducer (core's reduceCommand calls it).
 export {
   type DataSourceCommand,
   reduceDataSourceCommand,

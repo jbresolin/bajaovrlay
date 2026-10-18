@@ -52,7 +52,7 @@ export type CommandOutcome =
 /**
  * Called after every command that changed a slice or was refused, with the names of the
  * slices that changed (the event log among them, except after a routine data-source
- * poll, which is left out of it), and all slices.
+ * poll or a recording's progress, which are left out of it), and all slices.
  */
 export type SliceChangeListener = (changedSliceNames: SliceName[], slices: Slices) => void;
 
@@ -112,7 +112,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   // changed slices and the event-log row (one transaction) → update memory → tell
   // listeners what changed. A command that fails any step is still logged, as failed.
   // An accepted command that changes nothing skips the save, the log and the listeners;
-  // a routine data-source poll skips only the log (see the exception below).
+  // a routine data-source poll and a recording's progress skip only the log (see the
+  // exception below).
   function applyCommand(commandInput: unknown, actor: string): CommandOutcome {
     const now = readCurrentTime().toISOString();
 
@@ -178,6 +179,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     // source; logging each would bury the operator's history under thousands of rows a
     // day. What could go wrong: the log cannot say when each routine poll happened; the
     // source's status (lastOkAtMs) and the server's own log lines carry that instead.
+    // The recorder's count of written lines (recordRecordingProgress) follows each poll
+    // of a recording source, so it is left out the same way (gate 2 on PR #16).
     if (reducerOutcome.isLeftOutOfTheEventLog === true) {
       recordOutcomeWithoutEventLogRow(reducerOutcome.slices, now);
       return { ok: true };
@@ -255,7 +258,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   }
 
   /**
-   * Like recordOutcome, for a routine data-source poll: saves the changed slices in one
+   * Like recordOutcome, for a routine data-source poll or a recording's progress: saves
+   * the changed slices (none for a progress: `recordings` is kept in memory only) in one
    * transaction with no event-log row, then (only once that succeeded) updates memory and
    * tells listeners, without 'eventLog' because it did not change.
    */

@@ -175,6 +175,17 @@ export const ptBR = {
     // recording stops with this reason on the source, which keeps polling (D9).
     recordingWriteFailed:
       'A gravação parou: o servidor não conseguiu escrever o arquivo (disco cheio ou sem permissão).',
+    // A recording reached its duration cap (6 h) and stopped itself, so a recording left
+    // running overnight cannot fill the disk (gate 2 on PR #16).
+    recordingDurationCapReached: (hours: number) =>
+      `A gravação parou sozinha: chegou a ${hours.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} h, o limite de duração de uma gravação.`,
+    // A recording's next line would have taken its file past the size cap (300 MB).
+    recordingSizeCapReached: (megabytes: number) =>
+      `A gravação parou sozinha: chegou a ${megabytes.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} MB, o limite de tamanho de uma gravação.`,
+    // A replay reached a recorded line whose shapes fail today's schema (hand-edited, or
+    // recorded before a rule got stricter): that poll fails, naming the first problem.
+    recordedLineInvalid: (recordingId: string, reason: string) =>
+      `Uma linha da gravação "${recordingId}" é inválida: ${reason}`,
     // A replay whose recording file is gone from the recordings folder (deleted by hand).
     recordingFileNotFound: (recordingId: string) =>
       `O arquivo da gravação "${recordingId}" não foi encontrado.`,

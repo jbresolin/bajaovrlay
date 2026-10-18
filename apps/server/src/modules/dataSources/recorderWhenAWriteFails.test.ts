@@ -13,7 +13,9 @@
  *     by the recorder, from a timer, and the source keeps polling, with nothing more
  *     written.
  *   - However many polls fail to be written before that stop runs, one stop is sent.
- *   - stop() ends the watching, and calls off a stop still waiting to be sent.
+ *   - The list keeps counting only the lines that reached the file (gate 2 on PR #16).
+ *   - stop() ends the watching, and calls off a stop still waiting to be sent and the
+ *     wait of the duration cap.
  *
  * What these tests deliberately do not cover:
  *   - What is written while all goes well; recorder.test.ts covers it.
@@ -31,6 +33,7 @@ import {
   turnTheSimulatorOn,
 } from './enduroSimulatorCommands.testSupport.js';
 import {
+  createDiskThatFillsAfterLines,
   fileNameOfTheRecordingStartedAt1400,
   pressRecordOnTheSimulator,
   readRecordedMomentsMs,
@@ -44,16 +47,9 @@ const fourSecondsIn = startOfTheEnduroMs + 4_000;
 const eightSecondsIn = startOfTheEnduroMs + 8_000;
 
 describe('the recorder, when a line cannot be written', () => {
-  /** A file writer that fails as a full disk does. Counts how often it was called. */
+  /** A file writer that fails as a full disk does, from the very first line. */
   function createAFullDisk() {
-    let numberOfWriteAttempts = 0;
-    return {
-      appendLine: () => {
-        numberOfWriteAttempts += 1;
-        throw new Error('ENOSPC: no space left on device, write');
-      },
-      countWriteAttempts: () => numberOfWriteAttempts,
-    };
+    return createDiskThatFillsAfterLines(0);
   }
 
   it('logs an error and stops the recording with a pt-BR reason, signed by the recorder', () => {
@@ -71,7 +67,7 @@ describe('the recorder, when a line cannot be written', () => {
     sendAGoodSimulatorPollAt(stateStore, twoSecondsIn);
     const isRecordingBeforeTheTimerRuns = readTheSimulator(stateStore).isRecording;
     moveClockTo(startOfTheEnduroMs + 3_000);
-    timers.runEveryPendingTimer();
+    timers.runEveryDeferredTimer();
 
     // Assert: an error was logged; the stop waited for its timer, then closed the
     // recording with the reason the operator reads; the event log names the recorder.
@@ -112,7 +108,7 @@ describe('the recorder, when a line cannot be written', () => {
     turnTheSimulatorOn(stateStore);
     pressRecordOnTheSimulator(stateStore);
     sendAGoodSimulatorPollAt(stateStore, twoSecondsIn);
-    timers.runEveryPendingTimer();
+    timers.runEveryDeferredTimer();
 
     // Act: the next good poll arrives.
     sendAGoodSimulatorPollAt(stateStore, fourSecondsIn);
@@ -139,7 +135,29 @@ describe('the recorder, when a line cannot be written', () => {
 
     // Assert: one write tried, and one stop waiting.
     expect(fullDisk.countWriteAttempts(), 'a recording that failed is not written again').toBe(1);
-    expect(timers.countPendingTimers(), 'one stop must be on its way, not two').toBe(1);
+    expect(timers.countPendingTimersOfDelay(0), 'one stop must be on its way, not two').toBe(1);
+  });
+
+  it('keeps counting only the lines that reached the file', () => {
+    // Arrange: a disk that takes the first line and is full for the second; the
+    // simulator on and recording.
+    const diskWithRoomForOneLine = createDiskThatFillsAfterLines(1);
+    const { stateStore, timers } = startRecorderWatchingAStore({
+      appendLine: diskWithRoomForOneLine.appendLine,
+    });
+    turnTheSimulatorOn(stateStore);
+    pressRecordOnTheSimulator(stateStore);
+
+    // Act: two good polls; the first is written, the second fails; the recorder's
+    // report and stop are sent.
+    sendAGoodSimulatorPollAt(stateStore, twoSecondsIn);
+    sendAGoodSimulatorPollAt(stateStore, fourSecondsIn);
+    timers.runEveryDeferredTimer();
+
+    // Assert: one snapshot counted, the one in the file; the recording closed.
+    const recording = readTheOnlyRecording(stateStore);
+    expect(recording.snapshotCount, 'the poll whose write failed must not be counted').toBe(1);
+    expect(recording.endedAtMs, 'the failed write must have closed the recording').not.toBe(null);
   });
 });
 
@@ -175,12 +193,12 @@ describe('stopping the recorder', () => {
     turnTheSimulatorOn(stateStore);
     pressRecordOnTheSimulator(stateStore);
     sendAGoodSimulatorPollAt(stateStore, twoSecondsIn);
-    const pendingTimersBeforeTheStop = timers.countPendingTimers();
+    const pendingTimersBeforeTheStop = timers.countPendingTimersOfDelay(0);
 
     // Act: the server closes, stopping the recorder.
     recorder.stop();
 
-    // Assert: the stop was waiting, and is no longer.
+    // Assert: the stop was waiting, and is no longer; neither is the duration cap's wait.
     expect(pendingTimersBeforeTheStop, 'the failed write must have armed a stop').toBe(1);
     expect(
       timers.countPendingTimers(),

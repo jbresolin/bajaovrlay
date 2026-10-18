@@ -19,7 +19,8 @@
  *   - A good poll after failures clears stale (the recovery).
  *   - A good poll repeating the stored shapes on a healthy source hands back the very
  *     same slices (no trace); the same shapes on a stale source still recover it.
- *   - A good poll of a recording source counts one more snapshot in its recording.
+ *   - A good poll of a recording source leaves its recording's count alone: the count
+ *     goes up only once the recorder has written the line (recordRecordingProgress).
  *   - A poll of a source deleted or turned off a moment ago changes nothing.
  *   - The event-log flag, row by row: left out while the health (stale, error text) holds,
  *     kept when the source goes stale, recovers, or its error changes.
@@ -101,7 +102,7 @@ describe('recordDataSourcePoll, a good poll', () => {
     });
   });
 
-  it('counts one more snapshot in the open recording of a recording source', () => {
+  it("leaves the recording's count to the recorder, which counts only written lines", () => {
     // Arrange: the simulator healthy and recording since 14:30 (62 snapshots so far).
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [{ ...buildHealthyEnduroSimulator(), isRecording: true }],
@@ -116,12 +117,12 @@ describe('recordDataSourcePoll, a good poll', () => {
       contextOfTheDataSourceCommand,
     );
 
-    // Assert: 63 snapshots in today's recording; Friday's untouched.
+    // Assert: the very same recordings list: the line is not written yet, so it is not
+    // counted yet (gate 2 on PR #16).
     const recordingsAfter = outcome.status === 'applied' ? outcome.slices.recordings : [];
-    expect(recordingsAfter, 'the open recording must count the new snapshot').toEqual([
-      buildFridayRecording(),
-      buildRecordingOpenSince1430(63),
-    ]);
+    expect(recordingsAfter, 'a poll must not count a line the recorder has not written').toBe(
+      slicesBefore.recordings,
+    );
   });
 
   it('hands back the very same slices when a healthy source repeats its stored shapes', () => {

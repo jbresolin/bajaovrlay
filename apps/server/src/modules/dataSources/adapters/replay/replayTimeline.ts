@@ -7,11 +7,13 @@ import {
   type ReplayConfig,
 } from '@bajaovrlay/shared';
 
-import type { RecordingLine } from '../../recordingLine.js';
-
-/** The line a replay answers now, and the recorded moment it was chosen for. */
-export type ReplayedLine = {
-  line: RecordingLine;
+/**
+ * The line a replay answers now, and the recorded moment it was chosen for. `Line` is
+ * the caller's own line type (the replay's lightly read lines, the tests' typed ones):
+ * the timeline only reads each line's moment and hands back the one it chose.
+ */
+export type ReplayedLine<Line extends { atMs: number }> = {
+  line: Line;
   /** The moment on the recording's timeline that corresponds to now. */
   targetAtMs: number;
   /** Whether a plain (not looping) replay has run past the end and keeps its last line. */
@@ -39,11 +41,11 @@ export type ReplayMoment = {
  * 4. The target is the first line's moment plus that distance; the answer is the latest
  *    line recorded at or before it, so nothing is shown before it happened.
  */
-export function chooseRecordedLineToReplay(
-  lines: RecordingLine[],
+export function chooseRecordedLineToReplay<Line extends { atMs: number }>(
+  lines: Line[],
   config: ReplayConfig,
   nowMs: number,
-): ReplayedLine {
+): ReplayedLine<Line> {
   const firstLine = lines[0];
   const lastLine = lines.at(-1);
   if (firstLine === undefined || lastLine === undefined) {

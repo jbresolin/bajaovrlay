@@ -5,34 +5,39 @@
  *   A source of kind `replay` reads a recording file (one JSON line per good poll, as
  *   the recorder writes it) and, at every poll, answers the line of the moment on the
  *   replay's timeline (replayTimeline.ts), with its shapes moved onto today's timeline.
- *   It reads each recording once and keeps the two most recently polled: only closed
- *   recordings can be replayed, so the file never changes afterwards, and a long
- *   recording parsed is large, so the ones no longer polled are let go.
+ *   It reads each recording once and keeps the most recently polled ones in memory, up
+ *   to a total size: only closed recordings can be replayed, so the file never changes
+ *   afterwards, and a long recording parsed is large, so the ones no longer polled are
+ *   let go. Loading a recording must never stall the server: it is read as a stream, a
+ *   line at a time; the lines were checked when they were written, so loading only
+ *   parses them, and only the line a poll answers is checked against the shapes (gate 2
+ *   on PR #16).
  *
  * What these tests prove (real files in a temporary folder, a fake clock in the context):
  *   - Polls follow the clock: at 1× and at 10×, each poll answers the line of its moment,
  *     dated now, with the session clock shifted onto today.
  *   - The file is read once: deleting it after the first poll changes nothing.
- *   - Only the two most recently polled recordings stay in memory.
+ *   - Recordings stay in memory up to the size bound; the least recently polled goes
+ *     first, and the one just polled always stays, even alone above the bound.
  *   - A missing file, or one with no readable line, fails the poll with a pt-BR reason;
- *     a line that is not a recorded snapshot is skipped.
+ *     a line that is not a recorded snapshot (cut off, no shapes) is skipped.
  *   - The adapter says it may produce all four shapes, and checks configs with the
  *     shared ReplayConfigSchema.
  *
  * What these tests deliberately do not cover:
  *   - Every case of the timeline (offset, loop, hold); replayTimeline.test.ts covers them.
+ *   - A bad line answered, and loading a large recording; replayAdapterLoading.test.ts.
  *   - The poller calling the adapter; recordAndReplay.test.ts runs a recording through
  *     a real store and back.
  */
-import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { type ReplayConfig, ReplayConfigSchema } from '@bajaovrlay/shared';
+import { ReplayConfigSchema } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { createTemporaryRecordingsFolder } from '../../recorder.testSupport.js';
 import { buildRecordingLineText } from '../../recordingLine.js';
-import type { DataSourcePollContext } from '../dataSourceAdapter.js';
 import {
   buildFridayLineAt,
   buildFridayPositionsAt,
@@ -41,40 +46,14 @@ import {
   fridayAt1300Ms,
 } from './fridayTraining.testSupport.js';
 import { createReplayAdapter } from './replayAdapter.js';
-
-const fridayRecordingId = 'simulador-enduro/2027-08-13T13-00-00.000Z.jsonl';
-/** 15:00:00 UTC on 14 August 2027, the enduro day: the moment the replay was turned on. */
-const replayTurnedOnAtMs = Date.parse('2027-08-14T15:00:00.000Z');
-
-/** Writes the given line texts as Friday's recording file into a new recordings folder. */
-function writeRecordingLineTextsIntoAFolder(lineTexts: string[]): string {
-  const recordingsFolder = createTemporaryRecordingsFolder();
-  mkdirSync(join(recordingsFolder, 'simulador-enduro'));
-  writeFileSync(join(recordingsFolder, fridayRecordingId), lineTexts.join(''));
-  return recordingsFolder;
-}
-
-/** Writes Friday's whole recording, as the recorder would, into a new recordings folder. */
-function writeFridayRecordingIntoAFolder(): string {
-  const lines = buildFridayRecordingLines();
-  const lineTexts = lines.map((line) => buildRecordingLineText(line.atMs, line.shapes));
-  return writeRecordingLineTextsIntoAFolder(lineTexts);
-}
-
-/** A replay of Friday's recording turned on at 15:00, at the given speed. */
-function buildFridayReplayConfig(speed: ReplayConfig['speed']): ReplayConfig {
-  return {
-    recordingId: fridayRecordingId,
-    speed,
-    isLooping: false,
-    replayStartedAtMs: replayTurnedOnAtMs,
-  };
-}
-
-/** The context of a poll made at a moment, with a signal that never fires. */
-function buildPollContextAt(nowMs: number): DataSourcePollContext {
-  return { readCurrentTime: () => new Date(nowMs), signal: new AbortController().signal };
-}
+import {
+  buildFridayReplayConfig,
+  buildPollContextAt,
+  fridayRecordingId,
+  replayTurnedOnAtMs,
+  writeFridayRecordingIntoAFolder,
+  writeRecordingLineTextsIntoAFolder,
+} from './replayAdapter.testSupport.js';
 
 describe('the replay adapter, polled as the clock moves', () => {
   const speedScenarios = [
@@ -173,17 +152,21 @@ describe('the replay adapter, reading recordings', () => {
     );
   });
 
-  it('keeps only the two most recently polled recordings in memory', async () => {
+  it('keeps recordings in memory up to the size bound, dropping the least recently polled', async () => {
     // Arrange: Friday's 13:00 recording and two more sessions of that afternoon (15:00
-    // and 17:00, copies of the same lines), each replayed once, oldest first; then all
-    // three files are deleted.
+    // and 17:00, copies of the same lines), with room in memory for two of them; each is
+    // replayed once, oldest first; then all three files are deleted.
     const recordingsFolder = writeFridayRecordingIntoAFolder();
     const fridayAt1500RecordingId = 'simulador-enduro/2027-08-13T15-00-00.000Z.jsonl';
     const fridayAt1700RecordingId = 'simulador-enduro/2027-08-13T17-00-00.000Z.jsonl';
     for (const recordingId of [fridayAt1500RecordingId, fridayAt1700RecordingId]) {
       copyFileSync(join(recordingsFolder, fridayRecordingId), join(recordingsFolder, recordingId));
     }
-    const replayAdapter = createReplayAdapter({ recordingsFolder });
+    const sizeOfOneRecordingInBytes = statSync(join(recordingsFolder, fridayRecordingId)).size;
+    const replayAdapter = createReplayAdapter({
+      recordingsFolder,
+      largestTotalBytesKeptInMemory: 2 * sizeOfOneRecordingInBytes,
+    });
     const recordingIdsInPollOrder = [
       fridayRecordingId,
       fridayAt1500RecordingId,
@@ -209,7 +192,7 @@ describe('the replay adapter, reading recordings', () => {
     // read again, and it is gone.
     expect(
       [answerOfThe1700Replay.shapes.positions, answerOfThe1500Replay.shapes.positions],
-      'the two most recently polled recordings must answer from memory',
+      'the two most recently polled recordings fit within the bound and answer from memory',
     ).toEqual([
       {
         ...buildFridayPositionsAt(fridayAt1300Ms + 2_000),
@@ -226,6 +209,31 @@ describe('the replay adapter, reading recordings', () => {
     ).rejects.toThrow(
       'O arquivo da gravação "simulador-enduro/2027-08-13T13-00-00.000Z.jsonl" não foi encontrado.',
     );
+  });
+
+  it('keeps the recording just polled even when it alone is larger than the bound', async () => {
+    // Arrange: Friday's recording, a bound of one byte (far smaller than the file), and a
+    // first poll; then the file is deleted.
+    const recordingsFolder = writeFridayRecordingIntoAFolder();
+    const replayAdapter = createReplayAdapter({
+      recordingsFolder,
+      largestTotalBytesKeptInMemory: 1,
+    });
+    const config = buildFridayReplayConfig(1);
+    await replayAdapter.pollOnce(config, buildPollContextAt(replayTurnedOnAtMs));
+    rmSync(join(recordingsFolder, fridayRecordingId));
+
+    // Act: poll again two seconds later.
+    const answer = await replayAdapter.pollOnce(
+      config,
+      buildPollContextAt(replayTurnedOnAtMs + 2_000),
+    );
+
+    // Assert: it answered from memory, so a recording above the bound still plays.
+    expect(answer.shapes.positions, 'the recording in use must never be let go').toEqual({
+      ...buildFridayPositionsAt(fridayAt1300Ms + 2_000),
+      updatedAtMs: replayTurnedOnAtMs + 2_000,
+    });
   });
 
   it('fails with a pt-BR reason when the recording file is missing', async () => {
@@ -265,16 +273,26 @@ describe('the replay adapter, reading recordings', () => {
   });
 
   it('skips a line that is not a recorded snapshot', async () => {
-    // Arrange: Friday's first two lines with a cut-off line between them.
+    // Arrange: Friday's first two lines with a cut-off line and a line with no shapes
+    // between them.
     const [firstLine, secondLine] = buildFridayRecordingLines();
     if (firstLine === undefined || secondLine === undefined) {
       throw new Error("Friday's recording must have two lines");
     }
     const replayAdapter = createReplayAdapter({
       recordingsFolder: writeRecordingLineTextsIntoAFolder([
-        buildRecordingLineText(firstLine.atMs, firstLine.shapes),
+        buildRecordingLineText({
+          atMs: firstLine.atMs,
+          snapshotNumber: 1,
+          shapes: firstLine.shapes,
+        }),
         '{"atMs":1805\n',
-        buildRecordingLineText(secondLine.atMs, secondLine.shapes),
+        '{"atMs":1786626001000,"snapshotNumber":3}\n',
+        buildRecordingLineText({
+          atMs: secondLine.atMs,
+          snapshotNumber: 4,
+          shapes: secondLine.shapes,
+        }),
       ]),
     });
 

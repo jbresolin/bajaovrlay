@@ -125,7 +125,8 @@ export * from './macros/index.js';
 export * from './preview/index.js';
 
 // Data sources: the dataSources, dataSnapshots and recordings slices, each kind's config,
-// and the eight data-source commands (the last, recordDataSourcePoll, server only).
+// and the nine data-source commands (the last two, recordDataSourcePoll and
+// recordRecordingProgress, server only).
 export * from './dataSources/index.js';
 
 // Canonical data shapes: session, positions, standings and brackets as every data source

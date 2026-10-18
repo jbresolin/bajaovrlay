@@ -3,15 +3,19 @@
  *
  * What this module is for:
  *   While a source records ("Gravar"), every poll the store accepts is appended as one
- *   JSON line `{ atMs, shapes }` to `<recordings folder>/<sourceId>/<start moment>.jsonl`,
- *   so the race can be replayed later (rehearsal mode). The data already on screen when
- *   "Gravar" is pressed is the first line. The store keeps the `recordings` list itself
- *   (decision D10); the recorder only mirrors the data to disk.
+ *   JSON line `{ atMs, snapshotNumber, shapes }` to
+ *   `<recordings folder>/<sourceId>/<start moment>.jsonl`, so the race can be replayed
+ *   later (rehearsal mode). The data already on screen when "Gravar" is pressed is the
+ *   first line. The store keeps the `recordings` list (decision D10); the recorder writes
+ *   the lines and, once a line is in the file, reports how many there are, so the list
+ *   never counts a snapshot the disk does not hold (gate 2 on PR #16).
  *
  * What these tests prove (real store on a temporary SQLite file, real temporary folder):
  *   - The data the source already had is the first line, dated at "Gravar"; then one
- *     line per accepted poll, with the poll's moment and shapes; the file and the list
- *     count the same snapshots.
+ *     line per accepted poll, with the poll's moment, its number and its shapes; the file
+ *     and the list count the same snapshots.
+ *   - The list counts a snapshot only after its line was written: the recorder reports
+ *     the count from a 0 ms timer, never from inside the store's listener.
  *   - Data that never changes after "Gravar" is still recorded (its one line).
  *   - Two accepted polls dated at the same moment are two lines.
  *   - A poll that started before "Gravar" and answered after it is dated at "Gravar",
@@ -19,12 +23,14 @@
  *   - No line for a poll that repeated the data, a failed poll, or another source's poll.
  *   - No line after the recording is closed: by "Parar gravação", by turning the source
  *     off (even once it is on again), or by deleting it.
+ *   - Two recordings started in the same millisecond are two files.
  *
  * What these tests deliberately do not cover:
  *   - A write that fails, and stopping the recorder; recorderWhenAWriteFails.test.ts.
+ *   - The 6 h and 300 MB caps; recorderCaps.test.ts.
  *   - The recordings listed again after a restart; dataSourceRestart.test.ts.
  *   - The rules of the recordings slice (opened, counted, closed); the reducer tests
- *     startRecording, stopRecording and recordDataSourcePoll cover them.
+ *     startRecording, stopRecording and recordRecordingProgress cover them.
  *   - The poller: these tests hand the store the poll results the poller would.
  */
 import { join } from 'node:path';
@@ -68,15 +74,16 @@ function pathOfTheRecordingStartedAt1400(recordingsFolder: string): string {
 describe('the recorder, while a source records', () => {
   it('writes the data already there at "Gravar", then one line per accepted poll', () => {
     // Arrange: the simulator on, with the data of its poll at 13:59:58; "Gravar" at 14:00.
-    const { stateStore, recordingsFolder } = startRecorderWatchingAStore();
+    const { stateStore, recordingsFolder, timers } = startRecorderWatchingAStore();
     turnTheSimulatorOn(stateStore);
     sendAGoodSimulatorPollAt(stateStore, twoSecondsBefore);
     pressRecordOnTheSimulator(stateStore);
 
-    // Act: three good polls, two seconds apart.
+    // Act: three good polls, two seconds apart; the recorder's reports are sent.
     sendAGoodSimulatorPollAt(stateStore, twoSecondsIn);
     sendAGoodSimulatorPollAt(stateStore, fourSecondsIn);
     sendAGoodSimulatorPollAt(stateStore, sixSecondsIn);
+    timers.runEveryDeferredTimer();
 
     // Assert: four lines in the file named after 14:00: the data of 13:59:58 dated at
     // "Gravar", then each poll as accepted; the store counts the same four snapshots.
@@ -89,10 +96,26 @@ describe('the recorder, while a source records', () => {
       readRecordedLines(recordingPath),
       'the data on screen at "Gravar" must come first, then each accepted poll',
     ).toEqual([
-      { atMs: startOfTheEnduroMs, shapes: { session: buildGreenFlagSessionAt(twoSecondsBefore) } },
-      { atMs: twoSecondsIn, shapes: { session: buildGreenFlagSessionAt(twoSecondsIn) } },
-      { atMs: fourSecondsIn, shapes: { session: buildGreenFlagSessionAt(fourSecondsIn) } },
-      { atMs: sixSecondsIn, shapes: { session: buildGreenFlagSessionAt(sixSecondsIn) } },
+      {
+        atMs: startOfTheEnduroMs,
+        snapshotNumber: 1,
+        shapes: { session: buildGreenFlagSessionAt(twoSecondsBefore) },
+      },
+      {
+        atMs: twoSecondsIn,
+        snapshotNumber: 2,
+        shapes: { session: buildGreenFlagSessionAt(twoSecondsIn) },
+      },
+      {
+        atMs: fourSecondsIn,
+        snapshotNumber: 3,
+        shapes: { session: buildGreenFlagSessionAt(fourSecondsIn) },
+      },
+      {
+        atMs: sixSecondsIn,
+        snapshotNumber: 4,
+        shapes: { session: buildGreenFlagSessionAt(sixSecondsIn) },
+      },
     ]);
     expect(
       readTheOnlyRecording(stateStore).snapshotCount,
@@ -102,15 +125,17 @@ describe('the recorder, while a source records', () => {
 
   it('records data that never changes after "Gravar"', () => {
     // Arrange: the simulator on, with the data of its poll at 13:59:58.
-    const { stateStore, recordingsFolder, moveClockTo } = startRecorderWatchingAStore();
+    const { stateStore, recordingsFolder, moveClockTo, timers } = startRecorderWatchingAStore();
     turnTheSimulatorOn(stateStore);
     sendAGoodSimulatorPollAt(stateStore, twoSecondsBefore);
 
-    // Act: "Gravar" at 14:00; the same data comes back at 14:00:02; "Parar" at 14:00:05.
+    // Act: "Gravar" at 14:00; the same data comes back at 14:00:02; "Parar" at 14:00:05;
+    // the recorder's report is sent.
     pressRecordOnTheSimulator(stateStore);
     sendASimulatorPollOfTheSessionOf(stateStore, twoSecondsBefore, twoSecondsIn);
     moveClockTo(startOfTheEnduroMs + 5_000);
     pressStopRecordingOnTheSimulator(stateStore);
+    timers.runEveryDeferredTimer();
 
     // Assert: the file holds the one line written at "Gravar", so the recording can be
     // replayed and survives a restart.
@@ -123,14 +148,15 @@ describe('the recorder, while a source records', () => {
 
   it('writes two lines for two accepted polls dated at the same moment', () => {
     // Arrange: the simulator on and recording, with no data before "Gravar".
-    const { stateStore, recordingsFolder } = startRecorderWatchingAStore();
+    const { stateStore, recordingsFolder, timers } = startRecorderWatchingAStore();
     turnTheSimulatorOn(stateStore);
     pressRecordOnTheSimulator(stateStore);
 
     // Act: two good polls, both dated 14:00:02 (a server clock that did not move between
-    // them), with different data.
+    // them), with different data; the recorder's report is sent.
     sendASimulatorPollOfTheSessionOf(stateStore, twoSecondsIn, twoSecondsIn);
     sendASimulatorPollOfTheSessionOf(stateStore, fourSecondsIn, twoSecondsIn);
+    timers.runEveryDeferredTimer();
 
     // Assert: two lines, as the store counts two snapshots.
     expect(
@@ -229,6 +255,58 @@ describe('the recorder, while a source records', () => {
       listRecordingFilesOfSource(recordingsFolder, trainingSource.id),
       'a source that is not recording must leave no file',
     ).toEqual([]);
+  });
+});
+
+describe('the recorder, counting what it wrote', () => {
+  it('counts a snapshot in the list only once its line is in the file', () => {
+    // Arrange: the simulator on and recording, with no data before "Gravar".
+    const { stateStore, recordingsFolder, timers } = startRecorderWatchingAStore();
+    turnTheSimulatorOn(stateStore);
+    pressRecordOnTheSimulator(stateStore);
+
+    // Act: a good poll arrives; the count is read before and after the recorder's
+    // deferred report is sent.
+    sendAGoodSimulatorPollAt(stateStore, twoSecondsIn);
+    const countBeforeTheReport = readTheOnlyRecording(stateStore).snapshotCount;
+    timers.runEveryDeferredTimer();
+    const countAfterTheReport = readTheOnlyRecording(stateStore).snapshotCount;
+
+    // Assert: the line was written at once; the list counted it only with the report,
+    // which is never sent from inside the store's listener.
+    expect(
+      readRecordedMomentsMs(pathOfTheRecordingStartedAt1400(recordingsFolder)),
+      'the line must be in the file',
+    ).toEqual([twoSecondsIn]);
+    expect(
+      [countBeforeTheReport, countAfterTheReport],
+      'the list must count the line only once the recorder reports it written',
+    ).toEqual([0, 1]);
+  });
+
+  it('writes two recordings started in the same millisecond to two files', () => {
+    // Arrange: the simulator on, with data; the clock does not move from 14:00:00.000.
+    const { stateStore, recordingsFolder } = startRecorderWatchingAStore();
+    turnTheSimulatorOn(stateStore);
+    sendAGoodSimulatorPollAt(stateStore, twoSecondsBefore);
+
+    // Act: "Gravar", "Parar gravação" and "Gravar" again, all in the same millisecond.
+    pressRecordOnTheSimulator(stateStore);
+    pressStopRecordingOnTheSimulator(stateStore);
+    pressRecordOnTheSimulator(stateStore);
+
+    // Assert: two files, each holding its own first line.
+    const fileNames = listRecordingFilesOfSource(recordingsFolder, enduroSimulatorId);
+    expect(fileNames, "the second recording must not append to the first one's file").toEqual([
+      '2027-08-14T14-00-00.000Z-2.jsonl',
+      fileNameOfTheRecordingStartedAt1400,
+    ]);
+    expect(
+      fileNames.map(
+        (fileName) => readRecordedLines(join(recordingsFolder, enduroSimulatorId, fileName)).length,
+      ),
+      'each recording must hold exactly the line written when it opened',
+    ).toEqual([1, 1]);
   });
 });
 

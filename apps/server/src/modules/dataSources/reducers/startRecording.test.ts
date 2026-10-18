@@ -10,14 +10,17 @@
  *   - The new recording is named after its moment (':' made '-', D10), carries the
  *     source's label and starts empty; the source is marked recording and a past
  *     recording error is cleared.
- *   - A source that already has data starts its recording with that one snapshot
- *     counted (the recorder writes it as the first line).
+ *   - A source that already has data still starts its recording at no snapshot: the
+ *     recorder writes that data as the first line and only then counts it (gate 2).
+ *   - A recording started in the same millisecond as an earlier one of the same source
+ *     (start, stop, start) gets its own file name, so it never appends to the earlier
+ *     file (gate 2 on PR #16).
  *   - A second start of a source already recording is an accepted no-op.
  *   - A source that is off is refused with DATA_SOURCE_DISABLED.
  *
  * What these tests deliberately do not cover:
- *   - Counting the snapshots of a recording; recordDataSourcePoll.test.ts covers it.
- *   - Writing the file; recorder.test.ts covers it (commit 5).
+ *   - Counting the snapshots of a recording; recordRecordingProgress.test.ts covers it.
+ *   - Writing the file; recorder.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -73,7 +76,7 @@ describe('startRecording', () => {
     ).toBeNull();
   });
 
-  it('counts the data the source already has as the first snapshot of the recording', () => {
+  it('starts at no snapshot even when the source already has data', () => {
     // Arrange: the simulator on, with the data of its poll at 14:32:04.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [buildHealthyEnduroSimulator()],
@@ -87,12 +90,60 @@ describe('startRecording', () => {
       contextOfTheDataSourceCommand,
     );
 
-    // Assert: the new recording holds one snapshot, the line the recorder writes at once.
+    // Assert: no snapshot counted yet. The recorder writes the data on screen as the
+    // first line and reports it once it is in the file.
     const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
     expect(
       slicesAfter?.recordings.map((recording) => recording.snapshotCount),
-      'the data on screen when "Gravar" is pressed is the first line, so it must be counted',
-    ).toEqual([1]);
+      'a snapshot is counted only once it is written',
+    ).toEqual([0]);
+  });
+
+  const sameMillisecondScenarios = [
+    // Start, stop and start again within one millisecond (two tablets, a fast script):
+    // the second recording must not append to the first one's file.
+    {
+      name: 'names a second recording of the same millisecond apart from the first',
+      earlierFileNames: ['2027-08-14T14-32-05.000Z.jsonl'],
+      expectedFileName: '2027-08-14T14-32-05.000Z-2.jsonl',
+    },
+    // A third one in that millisecond takes the next free number.
+    {
+      name: 'names a third recording of the same millisecond with the next number',
+      earlierFileNames: ['2027-08-14T14-32-05.000Z.jsonl', '2027-08-14T14-32-05.000Z-2.jsonl'],
+      expectedFileName: '2027-08-14T14-32-05.000Z-3.jsonl',
+    },
+  ];
+
+  it.each(sameMillisecondScenarios)('$name', ({ earlierFileNames, expectedFileName }) => {
+    // Arrange: the simulator on, with this row's recordings already closed at 14:32:05.
+    const earlierRecordings = earlierFileNames.map((fileName) => ({
+      ...buildFridayRecording(),
+      id: `simulador-enduro/${fileName}`,
+      fileName,
+      startedAtMs: momentOfTheCommandMs,
+      endedAtMs: momentOfTheCommandMs,
+      snapshotCount: 0,
+    }));
+    const slicesBefore = buildRaceDaySlicesWithDataSources({
+      dataSources: [buildHealthyEnduroSimulator()],
+      recordings: earlierRecordings,
+    });
+
+    // Act: press "Gravar" again, still at 14:32:05.000.
+    const outcome = reduceDataSourceCommand(
+      slicesBefore,
+      { type: 'startRecording', sourceId: 'simulador-enduro' },
+      contextOfTheDataSourceCommand,
+    );
+
+    // Assert: the new recording has a file name, and an id, of its own.
+    const newRecording =
+      outcome.status === 'applied' ? outcome.slices.recordings.at(-1) : undefined;
+    expect(
+      [newRecording?.fileName, newRecording?.id],
+      'two recordings must never share a file',
+    ).toEqual([expectedFileName, `simulador-enduro/${expectedFileName}`]);
   });
 
   it('changes nothing when the source is already recording', () => {

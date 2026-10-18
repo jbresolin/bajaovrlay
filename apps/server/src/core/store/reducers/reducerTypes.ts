@@ -48,9 +48,10 @@ export type ReducerContext = {
 /**
  * What a reducer decides: the new slices (a slice it did not change is returned as the
  * very same array, so the store can tell what changed), or a refusal with its reason.
- * `isLeftOutOfTheEventLog` is set by one reducer only, recordDataSourcePoll, for a poll
- * that left its source's health as it was: the store then saves and broadcasts the
- * change but writes no event-log row (decision D11; see createStateStore.ts).
+ * `isLeftOutOfTheEventLog` is set by two reducers only: recordDataSourcePoll, for a poll
+ * that left its source's health as it was, and recordRecordingProgress, the recorder's
+ * count of written lines. The store then saves and broadcasts the change but writes no
+ * event-log row (decision D11; see createStateStore.ts).
  */
 export type ReducerOutcome =
   | { status: 'applied'; slices: SlicesChangedByCommands; isLeftOutOfTheEventLog?: true }

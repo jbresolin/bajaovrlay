@@ -48,10 +48,15 @@ export {
 } from './pollDataSourceNow.js';
 // startRecording: "Gravar".
 export { type StartRecordingCommand, StartRecordingCommandSchema } from './startRecording.js';
-// stopRecording: "Parar gravação", or the recorder after a failed write.
+// stopRecording: "Parar gravação", or the recorder after a failed write or at a cap.
 export { type StopRecordingCommand, StopRecordingCommandSchema } from './stopRecording.js';
 // recordDataSourcePoll: the poller's result of one poll (server only).
 export {
   type RecordDataSourcePollCommand,
   RecordDataSourcePollCommandSchema,
 } from './recordDataSourcePoll.js';
+// recordRecordingProgress: the recorder's count of the lines it wrote (server only).
+export {
+  type RecordRecordingProgressCommand,
+  RecordRecordingProgressCommandSchema,
+} from './recordRecordingProgress.js';

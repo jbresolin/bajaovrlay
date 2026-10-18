@@ -3,9 +3,10 @@
 // session (clock counting down from four hours) and the positions of two cars whose gap
 // grows by one second per line, so a test can tell the lines apart by the gap. Every
 // call builds new objects.
-import type { PositionsShape, SessionShape } from '@bajaovrlay/shared';
+import type { DataSnapshotShapes, PositionsShape, SessionShape } from '@bajaovrlay/shared';
 
-import type { RecordingLine } from '../../recordingLine.js';
+/** One line of Friday's recording: its moment and its shapes, typed. */
+export type FridayLine = { atMs: number; shapes: DataSnapshotShapes };
 
 /** 13:00:00 UTC on Friday 13 August 2027: the first line of the recording. */
 export const fridayAt1300Ms = Date.parse('2027-08-13T13:00:00.000Z');
@@ -79,7 +80,7 @@ export function buildTwoCarPositions(parts: {
 }
 
 /** One line of Friday's recording: the session and the positions at that moment. */
-export function buildFridayLineAt(atMs: number): RecordingLine {
+export function buildFridayLineAt(atMs: number): FridayLine {
   return {
     atMs,
     shapes: { session: buildFridaySessionAt(atMs), positions: buildFridayPositionsAt(atMs) },
@@ -87,8 +88,8 @@ export function buildFridayLineAt(atMs: number): RecordingLine {
 }
 
 /** Every line of Friday's recording: 31 lines, 13:00:00 to 13:01:00, two seconds apart. */
-export function buildFridayRecordingLines(): RecordingLine[] {
-  const lines: RecordingLine[] = [];
+export function buildFridayRecordingLines(): FridayLine[] {
+  const lines: FridayLine[] = [];
   for (let atMs = fridayAt1300Ms; atMs <= fridayAt1301Ms; atMs += 2_000) {
     lines.push(buildFridayLineAt(atMs));
   }

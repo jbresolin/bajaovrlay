@@ -14,7 +14,11 @@
  *     the default config and a 2 s interval, and ask for the row to be saved.
  *   - Stored sources and snapshots come back; a source that was on comes back stale and
  *     not recording, and its row is saved again; a source that was off is untouched.
- *   - A stored row that fails its schema throws, which stops the boot.
+ *   - A stored source that fails its schema throws, which stops the boot.
+ *   - A stored snapshot that fails today's schema (written before a rule got stricter)
+ *     is dropped with a warning naming its source, the other snapshots and every source
+ *     stay, and the cleaned row is saved (gate 2 on PR #16: snapshots can be thrown
+ *     away, a source cannot).
  *
  * What these tests deliberately do not cover:
  *   - The real restart on a SQLite file; dataSourceRestart.test.ts covers it.
@@ -25,9 +29,11 @@ import { describe, expect, it } from 'vitest';
 
 import type { SliceRow } from '../../core/db/tables.js';
 import { createLogger } from '../../core/logger/createLogger.js';
+import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
 import { loadOrSeedDataSourceSlices } from './loadDataSourceSlices.js';
 import {
   buildEnduroSimulatorTurnedOff,
+  buildFridayReplayTurnedOff,
   buildHealthyEnduroSimulator,
   buildSimulatorSnapshotReceivedAt,
   momentOfTheCommandMs,
@@ -138,5 +144,72 @@ describe('loadOrSeedDataSourceSlices, on a database with sources', () => {
       () => loadOrSeedDataSourceSlices(storedRows, momentOfTheBoot, silentLogger),
       'a damaged row must stop the boot, not be replaced silently',
     ).toThrow();
+  });
+
+  it("drops, with a warning, a stored snapshot that fails today's schema, and keeps the rest", () => {
+    // Arrange: two sources, both off. The simulator's snapshot is good; the replay's was
+    // stored before lap times had to be positive (car 42's last lap reads 0 ms).
+    const replaySnapshotWithAZeroLap = {
+      sourceId: 'reproducao-sexta',
+      receivedAtMs: momentOfTheCommandMs,
+      shapes: {
+        positions: {
+          sessionId: 'treino-2027-sexta',
+          updatedAtMs: momentOfTheCommandMs,
+          entries: [
+            {
+              position: 1,
+              carNumber: 42,
+              teamName: 'Baja UFPR',
+              schoolName: 'UFPR',
+              laps: 3,
+              lastLapMs: 0,
+              status: 'running',
+            },
+          ],
+        },
+      },
+    };
+    const storedRows: SliceRow[] = [
+      {
+        name: 'dataSources',
+        json: [buildEnduroSimulatorTurnedOff(), buildFridayReplayTurnedOff()],
+        updatedAt: '2027-08-14T14:32:05.000Z',
+      },
+      {
+        name: 'dataSnapshots',
+        json: [buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs), replaySnapshotWithAZeroLap],
+        updatedAt: '2027-08-14T14:32:05.000Z',
+      },
+    ];
+    const { logger, readRecordedLines } = createRecordingLogger();
+
+    // Act: load at boot.
+    const loaded = loadOrSeedDataSourceSlices(storedRows, momentOfTheBoot, logger);
+
+    // Assert: both sources back, the good snapshot kept, the bad one dropped with a
+    // warning naming its source, and the cleaned snapshots row to save.
+    expect(
+      loaded.dataSources.map((source) => source.id),
+      'a bad snapshot must never cost its source',
+    ).toEqual(['simulador-enduro', 'reproducao-sexta']);
+    expect(loaded.dataSnapshots, "only the snapshot that passes today's schema stays").toEqual([
+      buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs),
+    ]);
+    const warnings = readRecordedLines().filter((line) => line.level === 'warn');
+    expect(
+      warnings.map((line) => [line.message, line.source_id]),
+      'the dropped snapshot must leave a warning naming its source',
+    ).toEqual([['stored data snapshot dropped: it fails the current schema', 'reproducao-sexta']]);
+    expect(
+      loaded.rowsToSaveAtBoot,
+      'the database must hold what memory holds, without the dropped snapshot',
+    ).toEqual([
+      {
+        name: 'dataSnapshots',
+        json: [buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs)],
+        updatedAt: momentOfTheBoot,
+      },
+    ]);
   });
 });

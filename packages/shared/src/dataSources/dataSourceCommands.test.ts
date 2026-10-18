@@ -11,6 +11,8 @@
  *     bounded to 500–60 000 ms and the kind is one of the two the server knows.
  *   - recordDataSourcePoll carries either a good result (shapes left unchecked here) or
  *     a failure with its error (even an empty one), never something in between.
+ *   - recordRecordingProgress (the recorder's count of the lines it wrote) names a
+ *     recording and a whole, non-negative count.
  *
  * What these tests deliberately do not cover:
  *   - The config, which is checked by the server against its kind's schema, and the
@@ -96,6 +98,15 @@ describe('the data source commands', () => {
         result: { ok: false, error: '', attemptedAtMs: 1_805_568_240_948 },
       },
     },
+    // The recorder wrote its 63rd line of today's recording (gate 2 on PR #16).
+    {
+      name: 'accepts recordRecordingProgress',
+      command: {
+        type: 'recordRecordingProgress',
+        recordingId: 'simulador-enduro/2027-08-14T14-30-00.000Z.jsonl',
+        snapshotCount: 63,
+      },
+    },
   ];
 
   it.each(acceptedCommandScenarios)('$name', ({ command }) => {
@@ -159,6 +170,16 @@ describe('the data source commands', () => {
         result: { ok: false, attemptedAtMs: 1_805_568_240_948 },
       },
       badField: 'result',
+    },
+    // The recorder counts whole lines written; a negative count is a bug, not a recording.
+    {
+      name: 'refuses recordRecordingProgress with a negative count',
+      command: {
+        type: 'recordRecordingProgress',
+        recordingId: 'simulador-enduro/2027-08-14T14-30-00.000Z.jsonl',
+        snapshotCount: -1,
+      },
+      badField: 'snapshotCount',
     },
   ];
 

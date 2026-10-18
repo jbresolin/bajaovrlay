@@ -3,6 +3,7 @@ import type {
   DeleteDataSourceCommand,
   PollDataSourceNowCommand,
   RecordDataSourcePollCommand,
+  RecordRecordingProgressCommand,
   SetDataSourceEnabledCommand,
   StartRecordingCommand,
   StopRecordingCommand,
@@ -18,12 +19,16 @@ import { reduceCreateDataSource } from './createDataSource.js';
 import { reduceDeleteDataSource } from './deleteDataSource.js';
 import { reducePollDataSourceNow } from './pollDataSourceNow.js';
 import { reduceRecordDataSourcePoll } from './recordDataSourcePoll.js';
+import { reduceRecordRecordingProgress } from './recordRecordingProgress.js';
 import { reduceSetDataSourceEnabled } from './setDataSourceEnabled.js';
 import { reduceStartRecording } from './startRecording.js';
 import { reduceStopRecording } from './stopRecording.js';
 import { reduceUpdateDataSource } from './updateDataSource.js';
 
-/** The eight commands of BAJAOVRLAY-17: seven from the "Fontes" page, one from the poller. */
+/**
+ * The nine commands of BAJAOVRLAY-17: seven from the "Fontes" page, one from the poller
+ * and one from the recorder.
+ */
 export type DataSourceCommand =
   | CreateDataSourceCommand
   | UpdateDataSourceCommand
@@ -32,11 +37,12 @@ export type DataSourceCommand =
   | PollDataSourceNowCommand
   | StartRecordingCommand
   | StopRecordingCommand
-  | RecordDataSourcePollCommand;
+  | RecordDataSourcePollCommand
+  | RecordRecordingProgressCommand;
 
 /**
  * Sends a data-source command to its reducer (one file per command). Pure, like core's
- * reduceCommand, which calls this for those eight commands (decision D6: the reducers
+ * reduceCommand, which calls this for those nine commands (decision D6: the reducers
  * live in the module, next to the rest of what data sources are).
  */
 export function reduceDataSourceCommand(
@@ -61,5 +67,7 @@ export function reduceDataSourceCommand(
       return reduceStopRecording(slices, command, context);
     case 'recordDataSourcePoll':
       return reduceRecordDataSourcePoll(slices, command);
+    case 'recordRecordingProgress':
+      return reduceRecordRecordingProgress(slices, command);
   }
 }

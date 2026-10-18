@@ -9,5 +9,5 @@ recorded feeds, rebuilt from disk at boot). Each kind's config schema lives here
 adapters check the same thing.
 
 One file per command, named after it; `recordDataSourcePoll.ts` is the one only the
-server's poller sends. All are in the `Command` union of `../commands/command.ts`; their
+server's poller sends, `recordRecordingProgress.ts` the one only the recorder sends. All are in the `Command` union of `../commands/command.ts`; their
 rules live in apps/server/src/modules/dataSources/reducers/. `index.ts` lists every export.

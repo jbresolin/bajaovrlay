@@ -14,8 +14,9 @@ const macroRunnerRolePrefix = 'sistema:macro:';
 const dataSourcePollerRolePrefix = 'sistema:fonte:';
 
 /**
- * The actor name the recorder signs its stopRecording with, when a write to a recording
- * failed (decision D9). It may send nothing else.
+ * The actor name the recorder signs its commands with: stopRecording when a write to a
+ * recording failed (decision D9) or a recording reached its cap, and
+ * recordRecordingProgress once lines are in a recording's file. It may send nothing else.
  */
 export const dataSourceRecorderActor = 'sistema:gravador';
 
