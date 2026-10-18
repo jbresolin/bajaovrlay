@@ -12,9 +12,10 @@
  *   - On: the simulator's race start is set to now when missing and kept when present;
  *     the replay's start is set to now every time.
  *   - On: a source with a snapshot from before is stale until its next good poll; one
- *     with no snapshot is not; the error and failure count start again.
- *   - Off: not stale (a source that is off is off, not late), the snapshot kept, an
- *     open recording closed at that moment.
+ *     with no snapshot is not; the error, the failure count and failingSinceMs start
+ *     again.
+ *   - Off: not stale and not failing (a source that is off is off, not late), the
+ *     snapshot kept, an open recording closed at that moment.
  *   - Sending the state the source already has hands back the same slices; an unknown
  *     source is refused with DATA_SOURCE_NOT_FOUND.
  *
@@ -93,7 +94,7 @@ describe('setDataSourceEnabled, turning a source on', () => {
     );
   });
 
-  it('marks the old snapshot stale until the next good poll, and forgets the old error', () => {
+  it('marks the old snapshot stale until the next good poll, and forgets the old failing', () => {
     // Arrange: the simulator turned off while it was failing, its last data kept.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [{ ...buildStaleEnduroSimulator(), isEnabled: false }],
@@ -113,6 +114,10 @@ describe('setDataSourceEnabled, turning a source on', () => {
     expect(statusAfter?.isStale, 'data from before must read as late').toBe(true);
     expect(statusAfter?.lastError, 'the old error must not be shown again').toBeNull();
     expect(statusAfter?.consecutiveFailures, 'failures count from the new start').toBe(0);
+    expect(
+      statusAfter !== undefined && 'failingSinceMs' in statusAfter,
+      'a source turned on again is not failing until a poll fails',
+    ).toBe(false);
   });
 
   it('does not mark a source with no data at all as stale', () => {
@@ -136,7 +141,7 @@ describe('setDataSourceEnabled, turning a source on', () => {
 });
 
 describe('setDataSourceEnabled, turning a source off', () => {
-  it('clears stale, keeps the snapshot and closes the open recording', () => {
+  it('clears stale and the failing moment, keeps the snapshot and closes the open recording', () => {
     // Arrange: the simulator failing, recording since 14:30, with its last good data.
     const slicesBefore = buildRaceDaySlicesWithDataSources({
       dataSources: [{ ...buildStaleEnduroSimulator(), isRecording: true }],
@@ -156,6 +161,10 @@ describe('setDataSourceEnabled, turning a source off', () => {
     const sourceAfter = slicesAfter?.dataSources[0];
     expect(sourceAfter?.isEnabled, 'the source must be off').toBe(false);
     expect(sourceAfter?.status.isStale, 'a source that is off is off, not late').toBe(false);
+    expect(
+      sourceAfter !== undefined && 'failingSinceMs' in sourceAfter.status,
+      'a source that is off is not failing, so it carries no failingSinceMs',
+    ).toBe(false);
     expect(sourceAfter?.isRecording, 'turning off stops the recording').toBe(false);
     expect(slicesAfter?.dataSnapshots, 'the last good data stays (rule 4)').toBe(
       slicesBefore.dataSnapshots,

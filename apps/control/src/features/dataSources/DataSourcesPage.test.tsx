@@ -10,12 +10,15 @@
  * What these tests prove:
  *   - A row for every source, named by its label, with its kind.
  *   - The chip reads "Ok" for a healthy source; "Atrasada (há 40 s)" for a source that
- *     keeps old data while it fails, with the reason on hover or focus; "Erro" with the
- *     reason for a source that failed before it ever had data; "Desligada" for a source
- *     that is off.
- *   - The chip of a failing source turns red "Erro" by itself once a minute has passed
- *     since its last good data (João's ruling 4 at gate 2 of PR #16), its reason still in
- *     the tooltip and its last data still on screen.
+ *     keeps old data while it fails, counted from when it started failing, with the
+ *     reason on hover or focus; "Erro" with the reason for a source that failed before it
+ *     ever had data; "Desligada" for a source that is off.
+ *   - The chip of a failing source turns red "Erro" by itself once it has failed for a
+ *     minute (João's ruling 4 at gate 2 of PR #16), its reason still in the tooltip and
+ *     its last data still on screen; a source whose data stood still for ten minutes
+ *     before it failed reads "Atrasada" first and "Erro" a minute later (his re-check).
+ *   - Right after a restart, a source with no error reads "Atrasada" with the age of its
+ *     data, however old.
  *   - "há 40 s" counts on the server's clock, so a tablet whose clock is off by half a
  *     minute still shows the true lateness.
  *   - The row says when the last good data came and how often the source is read, or
@@ -42,11 +45,14 @@ import {
   buildEnduroSnapshotAtLap34,
   buildRehearsalReplayThatIsOk,
   buildSeededSimulatorThatIsOff,
+  buildSimulatorFailingAfterItsDataStoodStillForTenMinutes,
+  buildSimulatorMarkedLateByARestart,
   buildSimulatorThatIsOk,
   buildSimulatorThatIsStale,
   buildSimulatorThatNeverHadData,
   buildSlicesWithDataSources,
   momentOfTheSamplesMs,
+  momentTheSimulatorStartedFailingMs,
   seededSimulatorId,
 } from '@/state/dataSourcesLikeTheServerSends.testSupport';
 
@@ -58,10 +64,10 @@ function findRowOfSource(sourceLabel: string) {
   return within(within(sourceList).getByRole('listitem', { name: sourceLabel }));
 }
 
-/** Makes time stand still 40 seconds after the samples' last good poll. */
-function holdThePageClockFortySecondsAfterTheLastGoodPoll(): void {
+/** Makes time stand still 40 seconds after the failing simulator's first failed poll. */
+function holdThePageClockFortySecondsAfterTheFailingStarted(): void {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date(momentOfTheSamplesMs + 40_000));
+  vi.setSystemTime(new Date(momentTheSimulatorStartedFailingMs + 40_000));
 }
 
 describe('the list of sources', () => {
@@ -129,9 +135,9 @@ describe('the status chip of a source', () => {
     ).toBeInTheDocument();
   });
 
-  it('reads "Atrasada" with the time since the last good data for a failing source, the reason on hover', () => {
-    // Arrange: 40 s after its last good poll, the simulator with "Falha simulada" on.
-    holdThePageClockFortySecondsAfterTheLastGoodPoll();
+  it('reads "Atrasada" with the time since the failing started, the reason on hover', () => {
+    // Arrange: 40 s after its first failed poll, the simulator with "Falha simulada" on.
+    holdThePageClockFortySecondsAfterTheFailingStarted();
     const slices = buildSlicesWithDataSources({
       dataSources: [buildSimulatorThatIsStale()],
       dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
@@ -144,7 +150,7 @@ describe('the status chip of a source', () => {
     const simulatorRow = findRowOfSource('Simulador — Enduro');
     expect(
       simulatorRow.getByText('Atrasada (há 40 s)'),
-      'a failing source that keeps its data must read "Atrasada" with how long ago the data came',
+      'a failing source that keeps its data must read "Atrasada" with how long it has failed',
     ).toBeInTheDocument();
     expect(
       simulatorRow.getByRole('tooltip'),
@@ -153,9 +159,9 @@ describe('the status chip of a source', () => {
   });
 
   it('turns red "Erro" once the source has failed for a minute, keeping its reason and its data', () => {
-    // Arrange: 59 s after its last good poll, the simulator with "Falha simulada" on.
+    // Arrange: 59 s after its first failed poll, the simulator with "Falha simulada" on.
     vi.useFakeTimers();
-    vi.setSystemTime(new Date(momentOfTheSamplesMs + 59_000));
+    vi.setSystemTime(new Date(momentTheSimulatorStartedFailingMs + 59_000));
     const slices = buildSlicesWithDataSources({
       dataSources: [buildSimulatorThatIsStale()],
       dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
@@ -190,11 +196,14 @@ describe('the status chip of a source', () => {
     ).toHaveLength(61);
   });
 
-  it("counts the time since the last good data on the server's clock, not the tablet's", () => {
-    // Arrange: the tablet's clock 30 s ahead of the server's: 40 s after the last good
+  it("counts the time since the failing started on the server's clock, not the tablet's", () => {
+    // Arrange: the tablet's clock 30 s ahead of the server's: 40 s after the first failed
     // poll on the tablet, only 10 s on the server.
-    holdThePageClockFortySecondsAfterTheLastGoodPoll();
-    recordServerClockSample(momentOfTheSamplesMs + 10_000, momentOfTheSamplesMs + 40_000);
+    holdThePageClockFortySecondsAfterTheFailingStarted();
+    recordServerClockSample(
+      momentTheSimulatorStartedFailingMs + 10_000,
+      momentTheSimulatorStartedFailingMs + 40_000,
+    );
     const slices = buildSlicesWithDataSources({
       dataSources: [buildSimulatorThatIsStale()],
       dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
@@ -206,7 +215,69 @@ describe('the status chip of a source', () => {
     // Assert: 10 s late, as the server counts it.
     expect(
       findRowOfSource('Simulador — Enduro').getByText('Atrasada (há 10 s)'),
-      'the lateness must be counted on the server clock, which stamped the last good data',
+      'the lateness must be counted on the server clock, which stamped the first failure',
+    ).toBeInTheDocument();
+  });
+
+  it('reads "Atrasada (há 1 s)" at the first failure when the data had stood still for 10 min', () => {
+    // Arrange: a second after the first failed poll of a simulator whose data had stood
+    // still for ten minutes (a finished session repeats the same data).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(momentTheSimulatorStartedFailingMs + 1_000));
+    const slices = buildSlicesWithDataSources({
+      dataSources: [buildSimulatorFailingAfterItsDataStoodStillForTenMinutes()],
+      dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
+    });
+
+    // Act: draw the page.
+    renderOnControlPageConnectedToFakeServer(<DataSourcesPage />, slices);
+
+    // Assert: amber for the one second it has failed, not red for the ten minutes of old data.
+    expect(
+      findRowOfSource('Simulador — Enduro').getByText('Atrasada (há 1 s)'),
+      'the first failure must read "Atrasada", counted from the failure, not from the old data',
+    ).toBeInTheDocument();
+  });
+
+  it('turns red "Erro" a minute after the first failure when the data had stood still for 10 min', () => {
+    // Arrange: the same simulator on the page, a second after its first failed poll.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(momentTheSimulatorStartedFailingMs + 1_000));
+    const slices = buildSlicesWithDataSources({
+      dataSources: [buildSimulatorFailingAfterItsDataStoodStillForTenMinutes()],
+      dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
+    });
+    renderOnControlPageConnectedToFakeServer(<DataSourcesPage />, slices);
+
+    // Act: 59 more seconds pass, with nothing new from the server.
+    act(() => {
+      vi.advanceTimersByTime(59_000);
+    });
+
+    // Assert: a minute of failing is up, so the chip is red.
+    expect(
+      findRowOfSource('Simulador — Enduro').getByText('Erro'),
+      'a minute after the first failure the chip must turn red "Erro"',
+    ).toBeInTheDocument();
+  });
+
+  it('reads "Atrasada" with the age of its data right after a restart, however old', () => {
+    // Arrange: five minutes after the last good data, the simulator marked late by a
+    // restart, with no error yet.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(momentOfTheSamplesMs + 300_000));
+    const slices = buildSlicesWithDataSources({
+      dataSources: [buildSimulatorMarkedLateByARestart()],
+      dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
+    });
+
+    // Act: draw the page.
+    renderOnControlPageConnectedToFakeServer(<DataSourcesPage />, slices);
+
+    // Assert: amber, with how old the data on screen is; not failing, so not red.
+    expect(
+      findRowOfSource('Simulador — Enduro').getByText('Atrasada (há 5 min)'),
+      'a source waiting for its first poll after a restart must read "Atrasada" with the age of its data',
     ).toBeInTheDocument();
   });
 

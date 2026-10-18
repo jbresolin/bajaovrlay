@@ -21,8 +21,9 @@ export const ptBRDataSources = {
   statusChip: {
     ok: 'Ok',
     stale: 'Atrasada',
-    // `timeSinceLastGoodData` is "há 40 s", "há 3 min"...
-    staleSince: (timeSinceLastGoodData: string) => `Atrasada (${timeSinceLastGoodData})`,
+    // `timeLate` is "há 40 s", "há 3 min"...: since the failing started, or the age of
+    // the data when the source is late without failing (right after a restart).
+    staleSince: (timeLate: string) => `Atrasada (${timeLate})`,
     error: 'Erro',
     off: 'Desligada',
   },

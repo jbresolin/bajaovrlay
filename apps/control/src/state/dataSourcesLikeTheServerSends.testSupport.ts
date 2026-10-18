@@ -32,6 +32,12 @@ export const rehearsalReplayId = 'reproducao-ensaio';
  */
 export const momentOfTheSamplesMs = 1_805_568_240_948;
 
+/**
+ * When the failing simulators below started failing: their first failed poll, one poll
+ * interval (2 s) after the moment of the samples. "Erro" counts its minute from here.
+ */
+export const momentTheSimulatorStartedFailingMs = momentOfTheSamplesMs + 2_000;
+
 /** The simulator's config as the server stores it after parsing `{}`: every default. */
 function buildDefaultSimulatorConfigAsStored(): SimulatorDataSource['config'] {
   return {
@@ -89,7 +95,8 @@ export function buildSimulatorThatIsOk(): SimulatorDataSource {
 
 /**
  * The simulator with "Falha simulada" switched on: three polls failed after the last good
- * one, so it is late ("atrasada") and keeps its last data.
+ * one, the first at momentTheSimulatorStartedFailingMs, so it is late ("atrasada") and
+ * keeps its last data.
  */
 export function buildSimulatorThatIsStale(): SimulatorDataSource {
   const simulatorThatIsOk = buildSimulatorThatIsOk();
@@ -102,7 +109,41 @@ export function buildSimulatorThatIsStale(): SimulatorDataSource {
       lastError: 'Falha simulada.',
       consecutiveFailures: 3,
       isStale: true,
+      failingSinceMs: momentTheSimulatorStartedFailingMs,
     },
+  };
+}
+
+/**
+ * The simulator whose data stood still for ten minutes (a finished session repeats the
+ * same data, so the server kept lastOkAtMs ten minutes back) and whose first poll failed
+ * at momentTheSimulatorStartedFailingMs: João's case at the gate 2 re-check of PR #16.
+ */
+export function buildSimulatorFailingAfterItsDataStoodStillForTenMinutes(): SimulatorDataSource {
+  const simulatorThatIsOk = buildSimulatorThatIsOk();
+  return {
+    ...simulatorThatIsOk,
+    status: {
+      ...simulatorThatIsOk.status,
+      lastAttemptAtMs: momentTheSimulatorStartedFailingMs,
+      lastOkAtMs: momentTheSimulatorStartedFailingMs - 600_000,
+      lastError: 'Falha simulada.',
+      consecutiveFailures: 1,
+      isStale: true,
+      failingSinceMs: momentTheSimulatorStartedFailingMs,
+    },
+  };
+}
+
+/**
+ * The healthy simulator right after a restart: its old data kept, marked late by the
+ * restart, with no error and not failing, waiting for its first poll.
+ */
+export function buildSimulatorMarkedLateByARestart(): SimulatorDataSource {
+  const simulatorThatIsOk = buildSimulatorThatIsOk();
+  return {
+    ...simulatorThatIsOk,
+    status: { ...simulatorThatIsOk.status, isStale: true },
   };
 }
 
@@ -120,6 +161,7 @@ export function buildSimulatorThatNeverHadData(): SimulatorDataSource {
       isStale: true,
       staleAfterMs: 6_000,
       recordingError: null,
+      failingSinceMs: momentOfTheSamplesMs - 6_000,
     },
   };
 }

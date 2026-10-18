@@ -5,23 +5,30 @@
  *   The "Fontes" page and the header chip sum a source's status up in one word: "Ok",
  *   "Atrasada" (amber: late, the data shown is old), "Erro" (red: failing for a minute or
  *   more, or never had data) or "Desligada". The server owns staleness
- *   (`status.isStale`); the page only adds the minute rule of João's ruling 4 at gate 2
- *   of PR #16, counted on the server's clock from the last good data (`lastOkAtMs`). It
- *   also counts the sources that are on, for "Fontes: 2 ok · 1 atrasada · 1 com erro",
- *   and writes how long ago the last good data came.
+ *   (`status.isStale`) and records when the failing started (`status.failingSinceMs`);
+ *   the page only adds the minute rule, counted on the server's clock from
+ *   failingSinceMs (João's ruling 4 at gate 2 of PR #16, and his re-check: not from the
+ *   last good data, which stands still while a source repeats the same data). It also
+ *   counts the sources that are on, for "Fontes: 2 ok · 1 atrasada · 1 com erro", and
+ *   writes how long a source has been late.
  *
  * What these tests prove:
- *   - The word for each kind of status: a failing source with old data reads "Atrasada"
- *     up to 59 s after its last good data and "Erro" from 60 s on; one failing before it
- *     ever had data reads "Erro"; one marked late by a restart, with no error yet, reads
- *     "Atrasada" however old its data, because it is waiting for its first poll, not
- *     failing; a source that is off reads "Desligada" whatever its status.
+ *   - The word for each kind of status: a failing source reads "Atrasada" up to 59 s
+ *     after it started failing and "Erro" from 60 s on, also when its data had stood
+ *     still for ten minutes before; one failing before it ever had data reads "Erro";
+ *     one marked late by a restart, with no error yet, reads "Atrasada" however old its
+ *     data, because it is waiting for its first poll, not failing; a source that is off
+ *     reads "Desligada" whatever its status; one failing with no failingSinceMs (a
+ *     database written before the field) stays "Atrasada" until a failed poll sets it.
  *   - The header counts follow the same rule and leave the sources that are off out.
- *   - "há 40 s" under a minute, then the page's usual "há 3 min".
+ *   - The amber text counts from when the failing started, or, after a restart, from the
+ *     last good data; "há 40 s" under a minute, then the page's usual "há 3 min".
  *
  * What these tests deliberately do not cover:
  *   - The chip on the page, its colour, its tooltip and turning red as time passes:
  *     DataSourcesPage.test.tsx and DataSourcesHealthChip.test.tsx.
+ *   - The server setting and clearing failingSinceMs: recordDataSourcePollFailingSince.test.ts
+ *     in apps/server.
  */
 import type { DataSource } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
@@ -29,17 +36,21 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRehearsalReplayThatIsOk,
   buildSeededSimulatorThatIsOff,
+  buildSimulatorFailingAfterItsDataStoodStillForTenMinutes,
+  buildSimulatorMarkedLateByARestart,
   buildSimulatorThatIsOk,
   buildSimulatorThatIsStale,
   buildSimulatorThatNeverHadData,
   momentOfTheSamplesMs,
+  momentTheSimulatorStartedFailingMs,
 } from '@/state/dataSourcesLikeTheServerSends.testSupport';
 
 import {
   countEnabledDataSourcesByHealth,
   type DataSourceHealth,
-  describeTimeSinceLastGoodData,
+  describeTimeSinceMoment,
   findHealthOfDataSource,
+  findMomentTheLatenessCountsFrom,
 } from './dataSourceHealth';
 
 /** The simulator right after a restart: on, marked late, never polled, no error yet. */
@@ -57,56 +68,74 @@ function buildSimulatorMarkedLateByARestartBeforeItsFirstPoll(): DataSource {
   };
 }
 
-/** The healthy simulator after a restart: its old data kept, marked late, no error yet. */
-function buildSimulatorWithOldDataMarkedLateByARestart(): DataSource {
-  const source = buildSimulatorThatIsOk();
-  return {
-    ...source,
-    status: { ...source.status, isStale: true, lastError: null, consecutiveFailures: 0 },
-  };
+/**
+ * The failing simulator as a database written before failingSinceMs existed hands it
+ * back: late, with an error and its last good data, but no moment the failing started.
+ */
+function buildSimulatorFailingWithNoFailingSinceFromAnOlderDatabase(): DataSource {
+  const source = buildSimulatorThatIsStale();
+  const statusAsAnOlderDatabaseStoredIt = { ...source.status };
+  delete statusAsAnOlderDatabaseStoredIt.failingSinceMs;
+  return { ...source, status: statusAsAnOlderDatabaseStoredIt };
 }
 
-// The stale samples had their last good data at the moment of the samples; each row reads
-// "now" this many milliseconds later, on the server's clock.
+// Every row reads "now" this many milliseconds after one fixed moment on the server's
+// clock: momentTheSimulatorStartedFailingMs, when the failing simulators had their first
+// failed poll (their last good data came two seconds before that). Rows whose source is
+// not failing use that moment only as the clock; their why-comment says how old the data is.
 const healthScenarios: {
   name: string;
   source: DataSource;
-  millisecondsAfterTheLastGoodData: number;
+  millisecondsAfterTheSimulatorStartedFailing: number;
   expected: DataSourceHealth;
 }[] = [
   // The everyday case: on, and the last poll was good.
   {
     name: 'a healthy source is ok',
     source: buildSimulatorThatIsOk(),
-    millisecondsAfterTheLastGoodData: 2_000,
+    millisecondsAfterTheSimulatorStartedFailing: 0,
     expected: 'ok',
   },
   // "Falha simulada" on for under a minute: the last good data stays, amber.
   {
-    name: 'a source failing for 59 s after its last good data is stale',
+    name: 'a source failing for 59 s is stale',
     source: buildSimulatorThatIsStale(),
-    millisecondsAfterTheLastGoodData: 59_000,
+    millisecondsAfterTheSimulatorStartedFailing: 59_000,
     expected: 'stale',
   },
   // The minute is up: the same source turns red, its data still on screen.
   {
-    name: 'a source failing for 60 s after its last good data is in error',
+    name: 'a source failing for 60 s is in error',
     source: buildSimulatorThatIsStale(),
-    millisecondsAfterTheLastGoodData: 60_000,
+    millisecondsAfterTheSimulatorStartedFailing: 60_000,
     expected: 'error',
   },
   // Long past the minute: still red, never back to amber on its own.
   {
-    name: 'a source failing for 10 min after its last good data is in error',
+    name: 'a source failing for 10 min is in error',
     source: buildSimulatorThatIsStale(),
-    millisecondsAfterTheLastGoodData: 600_000,
+    millisecondsAfterTheSimulatorStartedFailing: 600_000,
+    expected: 'error',
+  },
+  // João's re-check: data that stood still for ten minutes is not ten minutes of failing.
+  {
+    name: 'a source whose data stood still for 10 min reads stale at its first failure',
+    source: buildSimulatorFailingAfterItsDataStoodStillForTenMinutes(),
+    millisecondsAfterTheSimulatorStartedFailing: 1_000,
+    expected: 'stale',
+  },
+  // The same source a minute after it started failing: now it is red.
+  {
+    name: 'a source whose data stood still for 10 min is in error a minute after it failed',
+    source: buildSimulatorFailingAfterItsDataStoodStillForTenMinutes(),
+    millisecondsAfterTheSimulatorStartedFailing: 60_000,
     expected: 'error',
   },
   // Failing since it was turned on: there is no data to be late, only the error.
   {
     name: 'a failing source that never had data is in error',
     source: buildSimulatorThatNeverHadData(),
-    millisecondsAfterTheLastGoodData: 0,
+    millisecondsAfterTheSimulatorStartedFailing: 0,
     expected: 'error',
   },
   // Right after a restart the server marks every source that is on as late; one that
@@ -114,50 +143,64 @@ const healthScenarios: {
   {
     name: 'a source marked late with no data and no error yet is stale, not in error',
     source: buildSimulatorMarkedLateByARestartBeforeItsFirstPoll(),
-    millisecondsAfterTheLastGoodData: 0,
+    millisecondsAfterTheSimulatorStartedFailing: 0,
     expected: 'stale',
   },
-  // The same after a restart with data from minutes ago: not failing yet, so not red; the
-  // poller gives it a reason ("Sem dados novos…") if its first polls fail.
+  // The same after a restart with data 5 min 2 s old (its last good poll came 2 s before
+  // the fixed moment): not failing yet, so not red; the poller gives it a reason ("Sem
+  // dados novos…") and a failingSinceMs if its polls fail.
   {
     name: 'a source marked late by a restart with no error yet stays stale past a minute',
-    source: buildSimulatorWithOldDataMarkedLateByARestart(),
-    millisecondsAfterTheLastGoodData: 300_000,
+    source: buildSimulatorMarkedLateByARestart(),
+    millisecondsAfterTheSimulatorStartedFailing: 300_000,
     expected: 'stale',
   },
   // The seeded simulator before anyone turns it on.
   {
     name: 'a source that is off is off',
     source: buildSeededSimulatorThatIsOff(),
-    millisecondsAfterTheLastGoodData: 0,
+    millisecondsAfterTheSimulatorStartedFailing: 0,
     expected: 'off',
   },
   // Off wins over everything else: a source failing for minutes, turned off, is off.
   {
     name: 'a failing source turned off is off, however long it failed',
     source: { ...buildSimulatorThatIsStale(), isEnabled: false },
-    millisecondsAfterTheLastGoodData: 600_000,
+    millisecondsAfterTheSimulatorStartedFailing: 600_000,
     expected: 'off',
+  },
+  // A database written before failingSinceMs existed: an error but no moment the failing
+  // started, so the page cannot count the minute and keeps it amber until the next failed
+  // poll sets the moment, however long it has really failed.
+  {
+    name: 'a failing source with no failingSinceMs (an older database) stays stale',
+    source: buildSimulatorFailingWithNoFailingSinceFromAnOlderDatabase(),
+    millisecondsAfterTheSimulatorStartedFailing: 600_000,
+    expected: 'stale',
   },
 ];
 
 describe('findHealthOfDataSource', () => {
-  it.each(healthScenarios)('$name', ({ source, millisecondsAfterTheLastGoodData, expected }) => {
-    // Arrange: "now" on the server's clock, the row's time after the last good data.
-    const nowMs = momentOfTheSamplesMs + millisecondsAfterTheLastGoodData;
+  it.each(healthScenarios)(
+    '$name',
+    ({ source, millisecondsAfterTheSimulatorStartedFailing, expected }) => {
+      // Arrange: "now" on the server's clock, the row's time after the fixed moment.
+      const nowMs =
+        momentTheSimulatorStartedFailingMs + millisecondsAfterTheSimulatorStartedFailing;
 
-    // Act: sum its status up.
-    const health = findHealthOfDataSource(source, nowMs);
+      // Act: sum its status up.
+      const health = findHealthOfDataSource(source, nowMs);
 
-    // Assert: the word the row expects.
-    expect(health, `"${source.label}" must read as ${expected}`).toBe(expected);
-  });
+      // Assert: the word the row expects.
+      expect(health, `"${source.label}" must read as ${expected}`).toBe(expected);
+    },
+  );
 });
 
 describe('countEnabledDataSourcesByHealth', () => {
   it('counts the sources that are on by the same rule and leaves the ones that are off out', () => {
     // Arrange: two healthy sources, one failing for 40 s, one that never had data and
-    // one off, read 40 s after the last good data.
+    // one off, read 40 s after the failing started.
     const sources: DataSource[] = [
       buildSimulatorThatIsOk(),
       buildRehearsalReplayThatIsOk(),
@@ -165,7 +208,7 @@ describe('countEnabledDataSourcesByHealth', () => {
       { ...buildSimulatorThatNeverHadData(), id: 'simulador-sem-dados', label: 'Sem dados' },
       { ...buildSeededSimulatorThatIsOff(), id: 'simulador-desligado', label: 'Desligado' },
     ];
-    const nowMs = momentOfTheSamplesMs + 40_000;
+    const nowMs = momentTheSimulatorStartedFailingMs + 40_000;
 
     // Act: count them.
     const counts = countEnabledDataSourcesByHealth(sources, nowMs);
@@ -179,9 +222,9 @@ describe('countEnabledDataSourcesByHealth', () => {
   });
 
   it('counts a source failing for a minute as in error, not late', () => {
-    // Arrange: the failing simulator, read 60 s after its last good data.
+    // Arrange: the failing simulator, read 60 s after it started failing.
     const sources: DataSource[] = [buildSimulatorThatIsStale()];
-    const nowMs = momentOfTheSamplesMs + 60_000;
+    const nowMs = momentTheSimulatorStartedFailingMs + 60_000;
 
     // Act: count it.
     const counts = countEnabledDataSourcesByHealth(sources, nowMs);
@@ -192,6 +235,70 @@ describe('countEnabledDataSourcesByHealth', () => {
       staleCount: 0,
       errorCount: 1,
     });
+  });
+
+  it('counts a source whose data stood still for 10 min as late at its first failure', () => {
+    // Arrange: the simulator whose data stood still for ten minutes, read a second after
+    // its first failed poll.
+    const sources: DataSource[] = [buildSimulatorFailingAfterItsDataStoodStillForTenMinutes()];
+    const nowMs = momentTheSimulatorStartedFailingMs + 1_000;
+
+    // Act: count it.
+    const counts = countEnabledDataSourcesByHealth(sources, nowMs);
+
+    // Assert: late, not in error: it has failed for a second, not for ten minutes.
+    expect(counts, 'the header must count the minute from the first failure').toEqual({
+      okCount: 0,
+      staleCount: 1,
+      errorCount: 0,
+    });
+  });
+});
+
+const latenessStartScenarios: {
+  name: string;
+  source: DataSource;
+  expectedMomentMs: number | undefined;
+}[] = [
+  // Failing: late since the first failed poll, whatever the age of the data.
+  {
+    name: 'counts a failing source from when it started failing',
+    source: buildSimulatorFailingAfterItsDataStoodStillForTenMinutes(),
+    expectedMomentMs: momentTheSimulatorStartedFailingMs,
+  },
+  // After a restart nothing is failing yet: the data on screen is as old as its last
+  // good poll, so that is what the amber text tells.
+  {
+    name: 'counts a source marked late by a restart from its last good data',
+    source: buildSimulatorMarkedLateByARestart(),
+    expectedMomentMs: momentOfTheSamplesMs,
+  },
+  // Healthy: the function still hands back its last good data; the chip never shows it,
+  // because it asks only when the source reads "Atrasada".
+  {
+    name: 'counts a healthy source from its last good data',
+    source: buildSimulatorThatIsOk(),
+    expectedMomentMs: momentOfTheSamplesMs,
+  },
+  // Never polled and not failing: there is no moment to count from.
+  {
+    name: 'has no moment for a source that was never polled and is not failing',
+    source: buildSeededSimulatorThatIsOff(),
+    expectedMomentMs: undefined,
+  },
+];
+
+describe('findMomentTheLatenessCountsFrom', () => {
+  it.each(latenessStartScenarios)('$name', ({ source, expectedMomentMs }) => {
+    // Arrange: the row's source (built above).
+
+    // Act: find the moment its amber text counts from.
+    const momentMs = findMomentTheLatenessCountsFrom(source.status);
+
+    // Assert: the moment the row expects.
+    expect(momentMs, `"${source.label}" must count its lateness from this moment`).toBe(
+      expectedMomentMs,
+    );
   });
 });
 
@@ -204,15 +311,15 @@ const timeSinceScenarios = [
   { name: 'writes minutes from a minute on', elapsedMs: 185_000, expected: 'há 3 min' },
 ];
 
-describe('describeTimeSinceLastGoodData', () => {
+describe('describeTimeSinceMoment', () => {
   it.each(timeSinceScenarios)('$name', ({ elapsedMs, expected }) => {
-    // Arrange: "now" is the row's time after the last good data.
-    const nowMs = momentOfTheSamplesMs + elapsedMs;
+    // Arrange: "now" is the row's time after the moment the lateness counts from.
+    const nowMs = momentTheSimulatorStartedFailingMs + elapsedMs;
 
-    // Act: write the time since the last good data.
-    const text = describeTimeSinceLastGoodData(momentOfTheSamplesMs, nowMs);
+    // Act: write the time since that moment.
+    const text = describeTimeSinceMoment(momentTheSimulatorStartedFailingMs, nowMs);
 
     // Assert: the text the row expects.
-    expect(text, `${elapsedMs} ms after the last good data must read "${expected}"`).toBe(expected);
+    expect(text, `${elapsedMs} ms after that moment must read "${expected}"`).toBe(expected);
   });
 });

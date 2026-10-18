@@ -80,7 +80,10 @@ export function buildHealthyEnduroSimulator(): SimulatorDataSource {
   };
 }
 
-/** Builds the healthy simulator after three failed polls of "Falha simulada.": stale. */
+/**
+ * Builds the healthy simulator after three failed polls of "Falha simulada.": stale,
+ * failing since the first of them, six seconds before the command.
+ */
 export function buildStaleEnduroSimulator(): SimulatorDataSource {
   const healthySimulator = buildHealthyEnduroSimulator();
   return {
@@ -92,6 +95,7 @@ export function buildStaleEnduroSimulator(): SimulatorDataSource {
       lastError: 'Falha simulada.',
       consecutiveFailures: 3,
       isStale: true,
+      failingSinceMs: momentOfTheCommandMs - 6_000,
     },
   };
 }

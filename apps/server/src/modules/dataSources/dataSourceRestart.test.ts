@@ -11,6 +11,8 @@
  *   - A new database shows the seeded simulator, off, and nothing else.
  *   - After a good poll and a restart, the snapshot is identical and the source is on,
  *     stale; the first good poll after the restart recovers it.
+ *   - A source failing before the restart keeps the moment it started failing
+ *     (failingSinceMs), so its chip does not start the minute to red "Erro" again.
  *   - Deleting every source and restarting brings the seeded simulator back (D12).
  *   - A recording left open lists again from its file, closed at its last line, and the
  *     source comes back not recording (D13).
@@ -76,6 +78,15 @@ function buildGoodSessionPollAt(receivedAtMs: number) {
   };
 }
 
+/** Builds the poller's failed poll of the simulator, "Falha simulada.", at a moment. */
+function buildFailedPollAt(attemptedAtMs: number) {
+  return {
+    type: 'recordDataSourcePoll',
+    sourceId: 'simulador-enduro',
+    result: { ok: false, error: 'Falha simulada.', attemptedAtMs },
+  };
+}
+
 describe('data sources on a new database', () => {
   it('show the seeded simulator, off, and no data', () => {
     // Arrange: a new SQLite file.
@@ -128,6 +139,43 @@ describe('data sources across a restart', () => {
       storeAfterRestart.readAllSlices().dataSources[0]?.status.isStale,
       'the first good poll must recover it',
     ).toBe(false);
+  });
+
+  it('keep the moment a failing source started failing', () => {
+    // Arrange: the simulator turned on, polled well at 14:00:02, then failing from
+    // 14:00:04 on, before the restart.
+    const databasePath = createTemporaryDatabasePath();
+    const firstDatabase = openDatabaseForTests(databasePath);
+    const storeBeforeRestart = openStoreOnDatabase(firstDatabase);
+    storeBeforeRestart.applyCommand(
+      { type: 'setDataSourceEnabled', sourceId: 'simulador-enduro', isEnabled: true },
+      operatorActor,
+    );
+    storeBeforeRestart.applyCommand(
+      buildGoodSessionPollAt(startOfTheEnduroMs + 2_000),
+      enduroSimulatorPollerActor,
+    );
+    storeBeforeRestart.applyCommand(
+      buildFailedPollAt(startOfTheEnduroMs + 4_000),
+      enduroSimulatorPollerActor,
+    );
+    storeBeforeRestart.applyCommand(
+      buildFailedPollAt(startOfTheEnduroMs + 6_000),
+      enduroSimulatorPollerActor,
+    );
+
+    // Act: restart.
+    const storeAfterRestart = openStoreOnDatabase(reopenDatabase(firstDatabase, databasePath));
+
+    // Assert: still failing since its first failed poll, with its reason.
+    const statusAfterRestart = storeAfterRestart.readAllSlices().dataSources[0]?.status;
+    expect(
+      statusAfterRestart?.failingSinceMs,
+      'the moment the failing started must survive the restart',
+    ).toBe(startOfTheEnduroMs + 4_000);
+    expect(statusAfterRestart?.lastError, 'the reason must survive the restart too').toBe(
+      'Falha simulada.',
+    );
   });
 
   it('bring the seeded simulator back after every source was deleted', () => {

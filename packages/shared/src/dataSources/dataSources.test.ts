@@ -13,8 +13,9 @@
  *   - Each kind's config fills its defaults (the seeded simulator is `{}` plus defaults)
  *     and refuses values out of range, naming the field; the simulator's seed is a
  *     whole number from 0 to 2^32 − 1, the values its generator tells apart.
- *   - A simulator source, a replay source, a snapshot and a recording are accepted
- *     unchanged; a source whose config belongs to the other kind is refused.
+ *   - A simulator source, a replay source (its status with failingSinceMs included), a
+ *     snapshot and a recording are accepted unchanged; a source whose config belongs to
+ *     the other kind is refused.
  *
  * What these tests deliberately do not cover:
  *   - The commands; dataSourceCommands.test.ts covers them.
@@ -84,6 +85,8 @@ function buildStaleReplaySource() {
       isStale: true,
       staleAfterMs: 3_000,
       recordingError: null,
+      // Failing since its first failed poll, two seconds after its last good one.
+      failingSinceMs: 1_805_568_238_000,
     },
   };
 }
@@ -221,7 +224,7 @@ describe('DataSourceSchema, DataSnapshotSchema and RecordingSchema', () => {
   const acceptedSourceScenarios = [
     // The seeded simulator, on and healthy.
     { name: 'accepts a healthy simulator source', source: buildHealthyEnduroSimulatorSource() },
-    // A replay that failed twice, with a pending "Atualizar agora".
+    // A replay that failed twice (failingSinceMs kept), with a pending "Atualizar agora".
     { name: 'accepts a stale replay source', source: buildStaleReplaySource() },
   ];
 

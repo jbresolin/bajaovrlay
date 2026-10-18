@@ -11,7 +11,7 @@ import type {
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
 import { areJsonValuesEqual } from '../areJsonValuesEqual.js';
-import { isSourceHealthy } from '../dataSourceHealth.js';
+import { isSourceHealthy, removeFailingSinceFromStatus } from '../dataSourceHealth.js';
 import { findDataSource, replaceDataSource } from '../dataSourceListing.js';
 import { validatePolledShapes } from '../polledShapesValidation.js';
 
@@ -20,13 +20,15 @@ import { validatePolledShapes } from '../polledShapesValidation.js';
  * - A source deleted or turned off a moment ago: nothing changes and nothing is refused,
  *   because the poller can lose that race and must not fill the log with refusals (D8,
  *   like a late reportInstanceStatus).
- * - A good poll whose shapes all validate: the new snapshot, and a healthy status. The
- *   recording's count is not touched: the recorder reports it once the line is in the
- *   file (recordRecordingProgress, gate 2 on PR #16).
+ * - A good poll whose shapes all validate: the new snapshot, and a healthy status with
+ *   no failingSinceMs. The recording's count is not touched: the recorder reports it
+ *   once the line is in the file (recordRecordingProgress, gate 2 on PR #16).
  * - A failed poll, or a good one with a bad shape or no shape at all (a poll never
  *   half-succeeds): the last good snapshot and lastOkAtMs stay (rule 4), the source is
  *   stale, the error is kept (a pt-BR fallback when the adapter gave none) and the
- *   failure counted.
+ *   failure counted. The first failure sets failingSinceMs to its moment and later ones
+ *   keep it, so the page's minute to red "Erro" counts from when the failing started
+ *   (João's gate 2 re-check on PR #16).
  * - A good poll that repeats the stored shapes on a healthy source changes nothing: the
  *   same slices come back, so nothing is saved, logged or broadcast (D7). Its timestamps
  *   are therefore not written either: the poller judges freshness by time from its own
@@ -82,17 +84,15 @@ function recordGoodPoll(
       : slices.dataSnapshots.map((snapshot) =>
           snapshot.sourceId === source.id ? newSnapshot : snapshot,
         );
-  const healthySource: DataSource = {
-    ...source,
-    status: {
-      ...source.status,
-      lastAttemptAtMs: receivedAtMs,
-      lastOkAtMs: receivedAtMs,
-      lastError: null,
-      consecutiveFailures: 0,
-      isStale: false,
-    },
-  };
+  const healthyStatus = removeFailingSinceFromStatus({
+    ...source.status,
+    lastAttemptAtMs: receivedAtMs,
+    lastOkAtMs: receivedAtMs,
+    lastError: null,
+    consecutiveFailures: 0,
+    isStale: false,
+  });
+  const healthySource: DataSource = { ...source, status: healthyStatus };
   const nextSlices = {
     ...slices,
     dataSources: replaceDataSource(slices.dataSources, healthySource),
@@ -108,6 +108,8 @@ function recordFailedPoll(
   error: string,
   attemptedAtMs: number,
 ): ReducerOutcome {
+  // Kept from the first failure on; set now when this is the first one.
+  const failingSinceMs = source.status.failingSinceMs ?? attemptedAtMs;
   const staleSource: DataSource = {
     ...source,
     status: {
@@ -116,6 +118,7 @@ function recordFailedPoll(
       lastError: error,
       consecutiveFailures: source.status.consecutiveFailures + 1,
       isStale: true,
+      failingSinceMs,
     },
   };
   const nextSlices = { ...slices, dataSources: replaceDataSource(slices.dataSources, staleSource) };

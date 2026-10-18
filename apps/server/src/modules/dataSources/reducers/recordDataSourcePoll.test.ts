@@ -12,7 +12,8 @@
  *
  * What these tests prove:
  *   - A good poll stores the shapes and the time, and clears the error and the count.
- *   - A failure keeps the snapshot and the last success, marks stale and counts.
+ *   - A failure keeps the snapshot and the last success, marks stale, counts, and notes
+ *     when the failing started (its rules: recordDataSourcePollFailingSince.test.ts).
  *   - A payload that fails its shape, names a shape that does not exist, or carries no
  *     shape at all is a failure whose pt-BR error says why (naming the path when there
  *     is one); nothing of it is kept. A failure with an empty error reads a pt-BR fallback.
@@ -26,7 +27,7 @@
  *     kept when the source goes stale, recovers, or its error changes.
  *
  * What these tests deliberately do not cover:
- *   - The store skipping the row and the broadcast; dataSourcePollsOnTheStore.test.ts.
+ *   - The store skipping the row and the broadcast: dataSourcePollsOnTheStore.test.ts.
  *   - Who may send this command; authorizeDataSourceCommands.test.ts in core/store.
  */
 import type { DataSource } from '@bajaovrlay/shared';
@@ -201,6 +202,7 @@ describe('recordDataSourcePoll, a failed poll', () => {
       isStale: true,
       staleAfterMs: 6_000,
       recordingError: null,
+      failingSinceMs: momentOfThePollMs,
     });
   });
 
@@ -298,9 +300,7 @@ describe('recordDataSourcePoll, a failed poll', () => {
     // Assert: stale, and the operator reads a sentence instead of an empty tooltip.
     const statusAfter =
       outcome.status === 'applied' ? outcome.slices.dataSources[0]?.status : undefined;
-    expect(statusAfter?.isStale, 'a failure with no reason still makes the source stale').toBe(
-      true,
-    );
+    expect(statusAfter?.isStale, 'a failure with no reason still makes it stale').toBe(true);
     expect(statusAfter?.lastError, 'a missing reason must read as the pt-BR fallback').toBe(
       'A leitura da fonte falhou sem dizer o motivo.',
     );

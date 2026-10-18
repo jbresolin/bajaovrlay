@@ -14,7 +14,8 @@
  *     and a screen reader hears the counts in its name, not only "Saúde das fontes".
  *   - It opens the "Fontes" page in a new tab.
  *   - A late source moves from "atrasada" to "com erro" once it has failed for a minute,
- *     as time passes, with nothing new from the server.
+ *     as time passes, with nothing new from the server; a source whose data stood still
+ *     for ten minutes counts as "atrasada" at its first failure, not "com erro".
  *   - It is hidden when no source is on, and appears when one is turned on.
  *
  * What these tests deliberately do not cover:
@@ -29,29 +30,30 @@ import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnF
 import {
   buildRehearsalReplayThatIsOk,
   buildSeededSimulatorThatIsOff,
+  buildSimulatorFailingAfterItsDataStoodStillForTenMinutes,
   buildSimulatorThatIsOk,
   buildSimulatorThatIsStale,
   buildSimulatorThatNeverHadData,
   buildSlicesWithDataSources,
-  momentOfTheSamplesMs,
+  momentTheSimulatorStartedFailingMs,
 } from '@/state/dataSourcesLikeTheServerSends.testSupport';
 
 import { DataSourcesHealthChip } from './DataSourcesHealthChip';
 
 /**
- * Makes time stand still this long after the samples' last good poll, so "late" and "in
- * error" do not depend on the day the tests run.
+ * Makes time stand still this long after the failing simulators' first failed poll, so
+ * "late" and "in error" do not depend on the day the tests run.
  */
-function holdThePageClockAfterTheLastGoodPoll(millisecondsAfter: number): void {
+function holdThePageClockAfterTheFailingStarted(millisecondsAfter: number): void {
   vi.useFakeTimers();
-  vi.setSystemTime(new Date(momentOfTheSamplesMs + millisecondsAfter));
+  vi.setSystemTime(new Date(momentTheSimulatorStartedFailingMs + millisecondsAfter));
 }
 
 describe('the data sources chip', () => {
   it('counts the sources that are on by health, in its text and in its accessible name', () => {
-    // Arrange: 40 s after the last good poll, two healthy sources, one late, one that
+    // Arrange: 40 s after the failing started, two healthy sources, one late, one that
     // never had data and one off.
-    holdThePageClockAfterTheLastGoodPoll(40_000);
+    holdThePageClockAfterTheFailingStarted(40_000);
     const slices = buildSlicesWithDataSources({
       dataSources: [
         buildSimulatorThatIsOk(),
@@ -109,8 +111,8 @@ describe('the data sources chip', () => {
   });
 
   it('moves a late source to "com erro" once it has failed for a minute', () => {
-    // Arrange: the failing simulator, 59 s after its last good poll: late.
-    holdThePageClockAfterTheLastGoodPoll(59_000);
+    // Arrange: the failing simulator, 59 s after its first failed poll: late.
+    holdThePageClockAfterTheFailingStarted(59_000);
     renderOnControlPageConnectedToFakeServer(
       <DataSourcesHealthChip />,
       buildSlicesWithDataSources({ dataSources: [buildSimulatorThatIsStale()] }),
@@ -128,6 +130,24 @@ describe('the data sources chip', () => {
       screen.getByRole('status', { name: 'Saúde das fontes de dados: 1 com erro' }),
       'after a minute the header must count it as in error, as its row chip reads',
     ).toHaveTextContent(/^Fontes: 1 com erro$/);
+  });
+
+  it('counts a source whose data stood still for 10 min as late at its first failure', () => {
+    // Arrange: a second after the first failed poll of a simulator whose data had stood
+    // still for ten minutes.
+    holdThePageClockAfterTheFailingStarted(1_000);
+    const slices = buildSlicesWithDataSources({
+      dataSources: [buildSimulatorFailingAfterItsDataStoodStillForTenMinutes()],
+    });
+
+    // Act: draw the chip.
+    renderOnControlPageConnectedToFakeServer(<DataSourcesHealthChip />, slices);
+
+    // Assert: "1 atrasada": it has failed for a second, not for ten minutes.
+    expect(
+      screen.getByRole('status', { name: 'Saúde das fontes de dados: 1 atrasada' }),
+      'the header must count the minute from the first failure, as the row chip does',
+    ).toHaveTextContent(/^Fontes: 1 atrasada$/);
   });
 
   it('is hidden while no source is on, and appears when one is turned on', () => {

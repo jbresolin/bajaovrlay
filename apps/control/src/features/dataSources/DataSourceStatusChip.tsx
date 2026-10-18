@@ -6,8 +6,9 @@ import { ptBR } from '@/i18n/ptBR';
 
 import {
   type DataSourceHealth,
-  describeTimeSinceLastGoodData,
+  describeTimeSinceMoment,
   findHealthOfDataSource,
+  findMomentTheLatenessCountsFrom,
 } from './dataSourceHealth';
 import { useServerAlignedTimeMs } from './useServerAlignedTimeMs';
 
@@ -22,12 +23,15 @@ const badgeVariantForEachHealth = {
 // passed, so the chip is drawn again once a second.
 const millisecondsBetweenDraws = 1_000;
 
-/** Writes the chip's word; a late source adds how long ago its last good data came. */
+/**
+ * Writes the chip's word; a late source adds how long it has been failing, or, late
+ * without failing (after a restart), how old its data is.
+ */
 function writeStatusChipText(health: DataSourceHealth, source: DataSource, nowMs: number): string {
   const texts = ptBR.dataSources.statusChip;
-  const lastOkAtMs = source.status.lastOkAtMs;
-  if (health === 'stale' && lastOkAtMs !== undefined) {
-    return texts.staleSince(describeTimeSinceLastGoodData(lastOkAtMs, nowMs));
+  const latenessStartMs = findMomentTheLatenessCountsFrom(source.status);
+  if (health === 'stale' && latenessStartMs !== undefined) {
+    return texts.staleSince(describeTimeSinceMoment(latenessStartMs, nowMs));
   }
   return texts[health];
 }
@@ -35,12 +39,12 @@ function writeStatusChipText(health: DataSourceHealth, source: DataSource, nowMs
 /**
  * The status chip of one source: green "Ok", amber "Atrasada (há 40 s)", red "Erro" or
  * grey "Desligada" (dataSourceHealth.ts says which, a late source turning red after a
- * minute of failing). A late or failing source carries the server's reason
- * (`status.lastError`) in a tooltip.
+ * minute of failing, counted from the server's failingSinceMs). A late or failing source
+ * carries the server's reason (`status.lastError`) in a tooltip.
  */
 export function DataSourceStatusChip(props: { source: DataSource }) {
   const { source } = props;
-  // On the server's clock, as `lastOkAtMs` is the server's: a tablet a few seconds off
+  // On the server's clock, as `failingSinceMs` is the server's: a tablet a few seconds off
   // would otherwise show the operator a wrong lateness.
   const nowMs = useServerAlignedTimeMs(millisecondsBetweenDraws);
   // Ties the reason to the chip for screen readers; unused when there is no reason.

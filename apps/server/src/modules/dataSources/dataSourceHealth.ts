@@ -1,5 +1,5 @@
-// What "healthy" and "stale" mean for a source's status, in one place, for the reducers
-// that set a status (create, update, enable, the poll results).
+// What "healthy", "stale" and "failing" mean for a source's status, in one place, for the
+// reducers that set a status (create, update, enable, the poll results).
 import type { DataSourceStatus } from '@bajaovrlay/shared';
 
 // A source is stale after three poll intervals without a good poll (the brief's default):
@@ -25,4 +25,15 @@ export function buildStatusOfANewSource(pollIntervalMs: number): DataSourceStatu
 /** Whether a source's last poll was good: not stale, no error, no failure counted. */
 export function isSourceHealthy(status: DataSourceStatus): boolean {
   return !status.isStale && status.lastError === null && status.consecutiveFailures === 0;
+}
+
+/**
+ * The same status without failingSinceMs, for a source that is no longer failing (a good
+ * poll, or turned on or off). The field is removed rather than set to undefined, so the
+ * stored JSON and the slice sent to the pages carry no trace of it.
+ */
+export function removeFailingSinceFromStatus(status: DataSourceStatus): DataSourceStatus {
+  const statusThatIsNotFailing = { ...status };
+  delete statusThatIsNotFailing.failingSinceMs;
+  return statusThatIsNotFailing;
 }

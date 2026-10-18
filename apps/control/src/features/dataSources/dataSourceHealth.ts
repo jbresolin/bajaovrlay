@@ -1,4 +1,4 @@
-import type { DataSource } from '@bajaovrlay/shared';
+import type { DataSource, DataSourceStatus } from '@bajaovrlay/shared';
 
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
@@ -6,8 +6,8 @@ import { ptBR } from '@/i18n/ptBR';
 /**
  * How a source is doing, in one word, as the page shows it:
  * - `off`: the source is turned off ("Desligada");
- * - `error`: it is failing and either never had good data, or has failed for a minute
- *   or more since its last good data ("Erro", red); its last data, if any, stays shown;
+ * - `error`: it is failing and either never had good data, or has been failing for a
+ *   minute or more ("Erro", red); its last data, if any, stays shown;
  * - `stale`: its data is late — failing for under a minute, or marked late by the server
  *   with no error yet, as every source that is on is right after a restart — and the
  *   last good data is still there and shown ("Atrasada", amber);
@@ -17,19 +17,20 @@ export type DataSourceHealth = 'ok' | 'stale' | 'error' | 'off';
 
 // João's ruling 4 at gate 2 of PR #16: amber "Atrasada" says "keep an eye on it"; after
 // a minute of failing, the operator must act (or take the data off air), so it is red.
-// Counted from `lastOkAtMs`. What could go wrong: the server does not rewrite lastOkAtMs
-// on a poll that repeats the stored data (D7), so a source whose data stood still for
-// minutes before it began to fail reads red at its first failure.
+// Counted from the server's `failingSinceMs` (his re-check), not from `lastOkAtMs`: the
+// server does not rewrite lastOkAtMs on a poll that repeats the stored data (D7), so a
+// source whose data stood still for minutes would otherwise read red at its first failure.
 const failingTimeBeforeAStaleSourceIsInErrorMs = 60_000;
 
 /**
- * Sums a source's status up at `nowMs`, a moment on the server's clock (as `lastOkAtMs`
- * is). The server owns staleness: `status.isStale` is as the server sent it. The page
- * adds only the minute rule: a late source with an error from the server reads "Erro"
- * once a minute has passed since its last good data, or at once if it never had any. A
- * late source with no error yet (after a restart, or just turned on again) is waiting for
- * a poll, not failing, so it reads "Atrasada" with no reason rather than a red "Erro"
- * with none; the poller gives it a reason if that poll does not come.
+ * Sums a source's status up at `nowMs`, a moment on the server's clock (as the status's
+ * moments are). The server owns staleness and when the failing started: `status.isStale`
+ * and `status.failingSinceMs` are as the server sent them. The page adds only the minute
+ * rule: a late source with an error reads "Erro" at once if it never had good data, or
+ * once a minute has passed since it started failing. A late source with no error yet
+ * (after a restart, or just turned on again) is waiting for a poll, not failing, so it
+ * reads "Atrasada" with no reason rather than a red "Erro" with none; the poller gives it
+ * a reason, and the server a failingSinceMs, if that poll does not come.
  */
 export function findHealthOfDataSource(source: DataSource, nowMs: number): DataSourceHealth {
   if (!source.isEnabled) {
@@ -42,15 +43,35 @@ export function findHealthOfDataSource(source: DataSource, nowMs: number): DataS
   if (!hasAnErrorToShow) {
     return 'stale';
   }
-  const lastOkAtMs = source.status.lastOkAtMs;
-  if (lastOkAtMs === undefined) {
+  const hasNeverHadGoodData = source.status.lastOkAtMs === undefined;
+  if (hasNeverHadGoodData) {
     return 'error';
   }
-  const millisecondsSinceTheLastGoodData = nowMs - lastOkAtMs;
-  if (millisecondsSinceTheLastGoodData >= failingTimeBeforeAStaleSourceIsInErrorMs) {
+  const failingSinceMs = source.status.failingSinceMs;
+  if (failingSinceMs === undefined) {
+    // An error with no failingSinceMs comes only from a database written before the field
+    // existed; the next failed poll sets it, so amber until then. What could go wrong: an
+    // adapter that hangs instead of failing never brings that poll (the poller's stale
+    // watch skips a source already stale with a reason), so it stays amber.
+    return 'stale';
+  }
+  const millisecondsSpentFailing = nowMs - failingSinceMs;
+  if (millisecondsSpentFailing >= failingTimeBeforeAStaleSourceIsInErrorMs) {
     return 'error';
   }
   return 'stale';
+}
+
+/**
+ * The moment the amber "Atrasada (há N)" counts from: when the source started failing,
+ * or, when it is late without failing (right after a restart), its last good data, the
+ * age of what is on screen. Undefined when there is neither.
+ */
+export function findMomentTheLatenessCountsFrom(status: DataSourceStatus): number | undefined {
+  if (status.failingSinceMs !== undefined) {
+    return status.failingSinceMs;
+  }
+  return status.lastOkAtMs;
 }
 
 /** How many sources that are on read ok, late and in error. */
@@ -86,16 +107,16 @@ const millisecondsPerSecond = 1_000;
 const secondsPerMinute = 60;
 
 /**
- * Writes how long ago the last good data came: "há 40 s" under a minute, where the
- * page's usual "agora" would hide that a source is late at all, then "há 3 min", "há 2 h"
- * (formatRelativeTimePtBR). `nowMs` is on the server's clock, as `lastOkAtMs` is; a
+ * Writes how long ago a moment of the server was, for the amber chip: "há 40 s" under a
+ * minute, where the page's usual "agora" would hide that a source is late at all, then
+ * "há 3 min", "há 2 h" (formatRelativeTimePtBR). `nowMs` is on the server's clock too; a
  * moment ahead of it (a poll stamped after the page last read "now") reads "há 0 s".
  */
-export function describeTimeSinceLastGoodData(lastOkAtMs: number, nowMs: number): string {
-  const elapsedMs = Math.max(0, nowMs - lastOkAtMs);
+export function describeTimeSinceMoment(pastMomentMs: number, nowMs: number): string {
+  const elapsedMs = Math.max(0, nowMs - pastMomentMs);
   const elapsedSeconds = Math.floor(elapsedMs / millisecondsPerSecond);
   if (elapsedSeconds < secondsPerMinute) {
     return ptBR.dataSources.secondsAgo(elapsedSeconds);
   }
-  return formatRelativeTimePtBR(new Date(lastOkAtMs), new Date(nowMs));
+  return formatRelativeTimePtBR(new Date(pastMomentMs), new Date(nowMs));
 }

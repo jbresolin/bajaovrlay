@@ -26,6 +26,14 @@ export const DataSourceStatusSchema = z.object({
   staleAfterMs: z.number().int().positive(),
   /** Why the last recording stopped on its own (a write failed), in pt-BR; null otherwise. */
   recordingError: z.string().nullable(),
+  /**
+   * When the source started failing: the moment of the first failed poll since its last
+   * good one (or since it was turned on). Missing while it is not failing: a good poll,
+   * and turning the source on or off, remove it. The page's red "Erro" counts its minute
+   * from here, not from lastOkAtMs, which stands still while a source repeats the same
+   * data (D7).
+   */
+  failingSinceMs: z.number().int().optional(),
 });
 
 /** A source status that has passed DataSourceStatusSchema. */

@@ -22,7 +22,7 @@ const millisecondsBetweenDraws = 1_000;
 export function DataSourcesHealthChip() {
   const texts = ptBR.dataSources.healthChip;
   const dataSources = useServerState((state) => state.dataSources);
-  // On the server's clock, as `lastOkAtMs` is (useServerAlignedTimeMs.ts).
+  // On the server's clock, as `failingSinceMs` is (useServerAlignedTimeMs.ts).
   const nowMs = useServerAlignedTimeMs(millisecondsBetweenDraws);
   const { okCount, staleCount, errorCount } = countEnabledDataSourcesByHealth(dataSources, nowMs);
 
