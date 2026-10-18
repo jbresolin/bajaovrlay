@@ -184,5 +184,14 @@ export const ptBR = {
     // first poll, or every line damaged).
     recordingHasNoData: (recordingId: string) =>
       `A gravação "${recordingId}" não tem nenhum dado para reproduzir.`,
+    // A simulator source with "falha simulada" switched on: every poll fails on purpose,
+    // so the operator can rehearse a late source.
+    simulatedFailure: 'Falha simulada.',
+  },
+  // The names the race simulator gives its event and session. They can reach the air
+  // through a binding, so they say plainly that the race is simulated.
+  simulatorSession: {
+    eventName: 'Baja SAE Brasil — Simulação',
+    sessionName: 'Enduro de Resistência (simulado)',
   },
 } as const;

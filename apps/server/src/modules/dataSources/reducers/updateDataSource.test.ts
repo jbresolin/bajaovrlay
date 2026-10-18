@@ -11,7 +11,8 @@
  *
  * What these tests prove:
  *   - Only what the command carries changes; the stale limit follows the interval.
- *   - The stored race start is kept, also over one the page sends.
+ *   - The stored race start is kept, also over one the page sends; a new speed moves it
+ *     so the race carries on from the same moment instead of jumping ahead.
  *   - A replay that is on and switched to another recording starts again now; a replay
  *     edited without touching its playback keeps its start.
  *   - An edit that changes nothing hands back the same slices; an unknown source and a
@@ -150,6 +151,35 @@ describe('updateDataSource', () => {
     expect(simulatedStartAtMs, 'a page must not be able to rewind the race').toBe(
       Date.parse('2027-08-14T14:00:00.000Z'),
     );
+  });
+
+  it('carries a race switched from 1× to 60× on from the same moment of the race', () => {
+    // Arrange: the simulator on at 1× since 14:00, so 32 min 05 s into its race at 14:32:05.
+    const slicesBefore = buildRaceDaySlicesWithDataSources({
+      dataSources: [buildHealthyEnduroSimulator()],
+    });
+    const raceMomentAtTheEditMs = 32 * 60_000 + 5_000;
+
+    // Act: the operator switches it to 60× at 14:32:05.
+    const outcome = reduceDataSourceCommand(
+      slicesBefore,
+      { type: 'updateDataSource', sourceId: 'simulador-enduro', config: { speed: 60 } },
+      contextOfTheDataSourceCommand,
+    );
+
+    // Assert: the start moved to 14:31:32.917, so "real time since the start × 60" is
+    // still 32 min 05 s (to 20 ms, from rounding to a whole ms), not 32 simulated hours.
+    const sourceAfter = outcome.status === 'applied' ? outcome.slices.dataSources[0] : undefined;
+    const simulatedStartAtMs =
+      sourceAfter?.kind === 'simulator' ? sourceAfter.config.simulatedStartAtMs : undefined;
+    expect(simulatedStartAtMs, 'the race start must move to keep the race moment').toBe(
+      Date.parse('2027-08-14T14:31:32.917Z'),
+    );
+    const raceMomentAfterTheEditMs = (momentOfTheCommandMs - (simulatedStartAtMs ?? 0)) * 60;
+    expect(
+      Math.abs(raceMomentAfterTheEditMs - raceMomentAtTheEditMs),
+      'the race must carry on from 32 min 05 s, give or take the rounding',
+    ).toBeLessThanOrEqual(30);
   });
 
   const replayTimelineScenarios = [

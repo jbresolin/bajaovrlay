@@ -9,6 +9,7 @@ import type {
   PolledShapes,
 } from './dataSourceAdapter.js';
 import { createReplayAdapter } from './replay/replayAdapter.js';
+import { createSimulatorAdapter } from './simulator/simulatorAdapter.js';
 
 /**
  * The adapter of each kind. A kind may be missing (none is registered yet, or a test
@@ -25,13 +26,12 @@ export type DataSourceAdaptersOptions = {
   recordingsFolder: string;
 };
 
-/**
- * Builds the adapters the running server uses: the replay. The simulator adapter is
- * added here next; until then an enabled simulator fails its polls with
- * noAdapterForKind ("O servidor ainda não sabe ler fontes do tipo …").
- */
+/** Builds the adapters the running server uses: the race simulator and the replay. */
 export function createDataSourceAdapters(options: DataSourceAdaptersOptions): DataSourceAdapters {
-  return { replay: createReplayAdapter({ recordingsFolder: options.recordingsFolder }) };
+  return {
+    simulator: createSimulatorAdapter(),
+    replay: createReplayAdapter({ recordingsFolder: options.recordingsFolder }),
+  };
 }
 
 /**

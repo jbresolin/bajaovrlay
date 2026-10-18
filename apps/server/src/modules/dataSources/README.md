@@ -11,7 +11,8 @@ an answer into a result and logs it), then `recorder.ts` (the data on screen at 
 recording source's good polls, appended to its file, one line each in the format of
 `recordingLine.ts`;
 `recordingsFromFolder.ts` lists the files again at boot). `adapters/` holds the
-adapters (`adapters/replay/` plays a recording back). `service.ts` starts the poller
+adapters (`adapters/simulator/` is the simulated enduro, `adapters/replay/` plays a recording
+back). `service.ts` starts the poller
 and the recorder with the server; `api.ts` is the snapshot REST route. The other
 reducers are one file per command (`reducers/reduceDataSourceCommand.ts`); `schema.ts`
 checks configs; `loadDataSourceSlices.ts` loads and seeds at boot. Refusals are in

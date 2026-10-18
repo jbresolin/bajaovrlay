@@ -152,6 +152,13 @@ describe('SimulatorConfigSchema and ReplayConfigSchema', () => {
       config: { sessionDurationMs: 0 },
       badField: 'sessionDurationMs',
     },
+    // A typo with extra zeros (167 days) would make every poll drive the cars for months.
+    {
+      name: 'refuses a simulator session longer than a day',
+      schema: SimulatorConfigSchema,
+      config: { sessionDurationMs: 144_000_000_000 },
+      badField: 'sessionDurationMs',
+    },
     // The replay speeds are a fixed list; 3× is not on it.
     {
       name: 'refuses a replay at speed 3',

@@ -53,6 +53,23 @@ export default defineConfig(
   },
 
   {
+    // The race simulator must give the same race for the same seed and moment, so every
+    // random number comes from its seededRandom.ts; an unseeded draw would break that
+    // quietly. (simulatorHasNoMathRandom.test.ts checks the folder's files as well.)
+    files: ['apps/server/src/modules/dataSources/adapters/simulator/**'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+          message: 'The simulator draws every number from seededRandom.ts.',
+        },
+      ],
+    },
+  },
+
+  {
     // Every word the operator reads comes from the pt-BR catalog (src/i18n/ptBR.ts).
     // These two rules catch the ways text gets written inline by accident: words between
     // tags, and a quoted string in an attribute people read or hear. Text in braces
