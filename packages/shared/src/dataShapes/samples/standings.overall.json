@@ -1,0 +1,906 @@
+{
+  "scope": "overall",
+  "updatedAtMs": 1805568240948,
+  "entries": [
+    {
+      "rank": 1,
+      "carNumber": 45,
+      "teamName": "Jandaia Racing",
+      "schoolName": "UFC",
+      "points": 646.9,
+      "pointsByEvent": {
+        "acceleration": 54.1,
+        "speed": 71.2,
+        "traction": 30.5,
+        "suspension": 70.3,
+        "maneuverability": 44.3,
+        "enduro": 376.5
+      }
+    },
+    {
+      "rank": 2,
+      "carNumber": 71,
+      "teamName": "Tuiuiú Racing",
+      "schoolName": "UFGD",
+      "points": 644.9,
+      "pointsByEvent": {
+        "acceleration": 66.1,
+        "speed": 42.1,
+        "traction": 58.2,
+        "suspension": 65.3,
+        "maneuverability": 60.3,
+        "enduro": 352.9
+      }
+    },
+    {
+      "rank": 3,
+      "carNumber": 81,
+      "teamName": "Sucuri Racing",
+      "schoolName": "UFMS",
+      "points": 639.8,
+      "pointsByEvent": {
+        "acceleration": 37.9,
+        "speed": 19.3,
+        "traction": 72.2,
+        "suspension": 57.5,
+        "maneuverability": 64.7,
+        "enduro": 388.2
+      }
+    },
+    {
+      "rank": 4,
+      "carNumber": 66,
+      "teamName": "Araucária Baja",
+      "schoolName": "UTFPR",
+      "points": 625.4,
+      "pointsByEvent": {
+        "acceleration": 72.3,
+        "speed": 21.3,
+        "traction": 56.8,
+        "suspension": 68.4,
+        "maneuverability": 65.4,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 5,
+      "carNumber": 42,
+      "teamName": "Jequitibá Racing",
+      "schoolName": "CEFET-MG",
+      "points": 623.9,
+      "pointsByEvent": {
+        "acceleration": 52.1,
+        "speed": 45.3,
+        "traction": 71.1,
+        "suspension": 34.4,
+        "maneuverability": 56.3,
+        "enduro": 364.7
+      }
+    },
+    {
+      "rank": 6,
+      "carNumber": 31,
+      "teamName": "Acauã Baja",
+      "schoolName": "Mauá",
+      "points": 621.1,
+      "pointsByEvent": {
+        "acceleration": 0.7,
+        "speed": 15.5,
+        "traction": 70.3,
+        "suspension": 70.6,
+        "maneuverability": 64,
+        "enduro": 400
+      }
+    },
+    {
+      "rank": 7,
+      "carNumber": 73,
+      "teamName": "Caatinga Racing",
+      "schoolName": "UFPB",
+      "points": 609.9,
+      "pointsByEvent": {
+        "acceleration": 57.6,
+        "speed": 41.5,
+        "traction": 56.2,
+        "suspension": 45.5,
+        "maneuverability": 67.9,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 8,
+      "carNumber": 30,
+      "teamName": "Pampa Baja",
+      "schoolName": "UFSM",
+      "points": 602.3,
+      "pointsByEvent": {
+        "acceleration": 57.7,
+        "speed": 18.2,
+        "traction": 50,
+        "suspension": 66.6,
+        "maneuverability": 21.6,
+        "enduro": 388.2
+      }
+    },
+    {
+      "rank": 9,
+      "carNumber": 14,
+      "teamName": "Jacarandá Baja",
+      "schoolName": "UNICAMP",
+      "points": 602.2,
+      "pointsByEvent": {
+        "acceleration": 51.2,
+        "speed": 66.4,
+        "traction": 53.4,
+        "suspension": 29.5,
+        "maneuverability": 72.3,
+        "enduro": 329.4
+      }
+    },
+    {
+      "rank": 10,
+      "carNumber": 69,
+      "teamName": "Seriema Off-Road",
+      "schoolName": "UFV",
+      "points": 597.8,
+      "pointsByEvent": {
+        "acceleration": 30.9,
+        "speed": 64.2,
+        "traction": 45.6,
+        "suspension": 51.4,
+        "maneuverability": 41,
+        "enduro": 364.7
+      }
+    },
+    {
+      "rank": 11,
+      "carNumber": 59,
+      "teamName": "Sertão Baja",
+      "schoolName": "UNIVASF",
+      "points": 595.5,
+      "pointsByEvent": {
+        "acceleration": 35.6,
+        "speed": 47.3,
+        "traction": 67.3,
+        "suspension": 59.6,
+        "maneuverability": 44.5,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 12,
+      "carNumber": 49,
+      "teamName": "Tamanduá Racing",
+      "schoolName": "UFOP",
+      "points": 593.7,
+      "pointsByEvent": {
+        "acceleration": 31.9,
+        "speed": 33.5,
+        "traction": 38,
+        "suspension": 55.9,
+        "maneuverability": 46.2,
+        "enduro": 388.2
+      }
+    },
+    {
+      "rank": 13,
+      "carNumber": 86,
+      "teamName": "Cutia Baja",
+      "schoolName": "UFRRJ",
+      "points": 592.1,
+      "pointsByEvent": {
+        "acceleration": 73.6,
+        "speed": 10.3,
+        "traction": 74.3,
+        "suspension": 59.8,
+        "maneuverability": 32.9,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 14,
+      "carNumber": 78,
+      "teamName": "Arara Off-Road",
+      "schoolName": "UNIFEI",
+      "points": 589.9,
+      "pointsByEvent": {
+        "acceleration": 20.8,
+        "speed": 52.8,
+        "traction": 49.4,
+        "suspension": 53.6,
+        "maneuverability": 25.1,
+        "enduro": 388.2
+      }
+    },
+    {
+      "rank": 15,
+      "carNumber": 52,
+      "teamName": "Pequi Off-Road",
+      "schoolName": "UFG",
+      "points": 585.7,
+      "pointsByEvent": {
+        "acceleration": 44.3,
+        "speed": 59.8,
+        "traction": 10.7,
+        "suspension": 18.3,
+        "maneuverability": 64.4,
+        "enduro": 388.2
+      }
+    },
+    {
+      "rank": 16,
+      "carNumber": 13,
+      "teamName": "Juriti Off-Road",
+      "schoolName": "UDESC",
+      "points": 582.5,
+      "pointsByEvent": {
+        "acceleration": 49.3,
+        "speed": 58,
+        "traction": 14.9,
+        "suspension": 71.2,
+        "maneuverability": 47.9,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 17,
+      "carNumber": 89,
+      "teamName": "Lobo-Guará Off-Road",
+      "schoolName": "UFU",
+      "points": 582.3,
+      "pointsByEvent": {
+        "acceleration": 15.5,
+        "speed": 70.2,
+        "traction": 51.2,
+        "suspension": 41.7,
+        "maneuverability": 27.2,
+        "enduro": 376.5
+      }
+    },
+    {
+      "rank": 18,
+      "carNumber": 67,
+      "teamName": "Babaçu Baja",
+      "schoolName": "UFMA",
+      "points": 580.6,
+      "pointsByEvent": {
+        "acceleration": 19,
+        "speed": 61.3,
+        "traction": 43.3,
+        "suspension": 65,
+        "maneuverability": 15.5,
+        "enduro": 376.5
+      }
+    },
+    {
+      "rank": 19,
+      "carNumber": 38,
+      "teamName": "Coruja Racing",
+      "schoolName": "EESC-USP",
+      "points": 574.7,
+      "pointsByEvent": {
+        "acceleration": 51,
+        "speed": 4.4,
+        "traction": 43.3,
+        "suspension": 36.2,
+        "maneuverability": 39.8,
+        "enduro": 400
+      }
+    },
+    {
+      "rank": 20,
+      "carNumber": 88,
+      "teamName": "Quero-Quero Racing",
+      "schoolName": "UFRGS",
+      "points": 572.6,
+      "pointsByEvent": {
+        "acceleration": 51,
+        "speed": 73.6,
+        "traction": 42.6,
+        "suspension": 60.1,
+        "maneuverability": 4.1,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 21,
+      "carNumber": 48,
+      "teamName": "Sagui Baja",
+      "schoolName": "PUC-Rio",
+      "points": 571.2,
+      "pointsByEvent": {
+        "acceleration": 8.5,
+        "speed": 68.5,
+        "traction": 71.3,
+        "suspension": 58.8,
+        "maneuverability": 22.9,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 22,
+      "carNumber": 47,
+      "teamName": "Carnaúba Baja",
+      "schoolName": "UFERSA",
+      "points": 569.8,
+      "pointsByEvent": {
+        "acceleration": 43.4,
+        "speed": 16.6,
+        "traction": 45.7,
+        "suspension": 27.5,
+        "maneuverability": 48.4,
+        "enduro": 388.2
+      }
+    },
+    {
+      "rank": 23,
+      "carNumber": 99,
+      "teamName": "Tucano Racing",
+      "schoolName": "UFPA",
+      "points": 564.9,
+      "pointsByEvent": {
+        "acceleration": 56.6,
+        "speed": 44.4,
+        "traction": 58.7,
+        "suspension": 38.4,
+        "maneuverability": 72.7,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 24,
+      "carNumber": 79,
+      "teamName": "Graúna Baja",
+      "schoolName": "UFRB",
+      "points": 560.5,
+      "pointsByEvent": {
+        "acceleration": 54.2,
+        "speed": 35.5,
+        "traction": 73.3,
+        "suspension": 66.3,
+        "maneuverability": 48.8,
+        "enduro": 282.4
+      }
+    },
+    {
+      "rank": 25,
+      "carNumber": 20,
+      "teamName": "Tatu-Bola Racing",
+      "schoolName": "UFBA",
+      "points": 554.4,
+      "pointsByEvent": {
+        "acceleration": 71.7,
+        "speed": 53.7,
+        "traction": 0.4,
+        "suspension": 41.3,
+        "maneuverability": 34.4,
+        "enduro": 352.9
+      }
+    },
+    {
+      "rank": 26,
+      "carNumber": 36,
+      "teamName": "Socó Off-Road",
+      "schoolName": "FEI",
+      "points": 548.2,
+      "pointsByEvent": {
+        "acceleration": 55.7,
+        "speed": 71.3,
+        "traction": 45.8,
+        "suspension": 45.1,
+        "maneuverability": 12.7,
+        "enduro": 317.6
+      }
+    },
+    {
+      "rank": 27,
+      "carNumber": 41,
+      "teamName": "Mandacaru Baja",
+      "schoolName": "UFCG",
+      "points": 547.1,
+      "pointsByEvent": {
+        "acceleration": 74.8,
+        "speed": 7.6,
+        "traction": 6.4,
+        "suspension": 58.7,
+        "maneuverability": 58.4,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 28,
+      "carNumber": 25,
+      "teamName": "Bem-te-vi Off-Road",
+      "schoolName": "UFES",
+      "points": 546.4,
+      "pointsByEvent": {
+        "acceleration": 73.6,
+        "speed": 30.3,
+        "traction": 7.2,
+        "suspension": 26.1,
+        "maneuverability": 21,
+        "enduro": 388.2
+      }
+    },
+    {
+      "rank": 29,
+      "carNumber": 23,
+      "teamName": "Jabuti Racing",
+      "schoolName": "UFAL",
+      "points": 546.2,
+      "pointsByEvent": {
+        "acceleration": 38.7,
+        "speed": 60.4,
+        "traction": 46.7,
+        "suspension": 18.8,
+        "maneuverability": 52.2,
+        "enduro": 329.4
+      }
+    },
+    {
+      "rank": 30,
+      "carNumber": 15,
+      "teamName": "Maracajá Off-Road",
+      "schoolName": "UFF",
+      "points": 545.8,
+      "pointsByEvent": {
+        "acceleration": 64,
+        "speed": 50.8,
+        "traction": 18.5,
+        "suspension": 58.2,
+        "maneuverability": 48.4,
+        "enduro": 305.9
+      }
+    },
+    {
+      "rank": 31,
+      "carNumber": 91,
+      "teamName": "Buriti Baja",
+      "schoolName": "UFT",
+      "points": 545,
+      "pointsByEvent": {
+        "acceleration": 8.9,
+        "speed": 39.1,
+        "traction": 40.1,
+        "suspension": 41.3,
+        "maneuverability": 74.4,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 32,
+      "carNumber": 87,
+      "teamName": "Anhuma Racing",
+      "schoolName": "IME",
+      "points": 543.6,
+      "pointsByEvent": {
+        "acceleration": 63.2,
+        "speed": 54.6,
+        "traction": 72,
+        "suspension": 58.4,
+        "maneuverability": 1.3,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 33,
+      "carNumber": 58,
+      "teamName": "Pitanga Racing",
+      "schoolName": "UFOB",
+      "points": 543.2,
+      "pointsByEvent": {
+        "acceleration": 45.1,
+        "speed": 28.5,
+        "traction": 61.2,
+        "suspension": 66.9,
+        "maneuverability": 47.4,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 34,
+      "carNumber": 64,
+      "teamName": "Siriema Baja",
+      "schoolName": "UFMT",
+      "points": 542.4,
+      "pointsByEvent": {
+        "acceleration": 15.9,
+        "speed": 57.9,
+        "traction": 37.7,
+        "suspension": 23.6,
+        "maneuverability": 42.6,
+        "enduro": 364.7
+      }
+    },
+    {
+      "rank": 35,
+      "carNumber": 51,
+      "teamName": "Pirarucu Off-Road",
+      "schoolName": "UNIFAP",
+      "points": 537.9,
+      "pointsByEvent": {
+        "acceleration": 3.6,
+        "speed": 71.9,
+        "traction": 67.7,
+        "suspension": 73,
+        "maneuverability": 39.3,
+        "enduro": 282.4
+      }
+    },
+    {
+      "rank": 36,
+      "carNumber": 61,
+      "teamName": "Cerrado Racing",
+      "schoolName": "UFJF",
+      "points": 530.1,
+      "pointsByEvent": {
+        "acceleration": 47,
+        "speed": 23.7,
+        "traction": 66.8,
+        "suspension": 10.8,
+        "maneuverability": 28.9,
+        "enduro": 352.9
+      }
+    },
+    {
+      "rank": 37,
+      "carNumber": 98,
+      "teamName": "Carcará Baja",
+      "schoolName": "UFPR",
+      "points": 520.8,
+      "pointsByEvent": {
+        "acceleration": 59.1,
+        "speed": 5,
+        "traction": 12.2,
+        "suspension": 41.3,
+        "maneuverability": 26.7,
+        "enduro": 376.5
+      }
+    },
+    {
+      "rank": 38,
+      "carNumber": 65,
+      "teamName": "Pantanal Off-Road",
+      "schoolName": "UEM",
+      "points": 513.5,
+      "pointsByEvent": {
+        "acceleration": 0.4,
+        "speed": 71.4,
+        "traction": 71.4,
+        "suspension": 14.6,
+        "maneuverability": 61.6,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 39,
+      "carNumber": 95,
+      "teamName": "Cangaço Baja",
+      "schoolName": "UFPE",
+      "points": 510.4,
+      "pointsByEvent": {
+        "acceleration": 15.5,
+        "speed": 17.6,
+        "traction": 21.7,
+        "suspension": 31,
+        "maneuverability": 48.1,
+        "enduro": 376.5
+      }
+    },
+    {
+      "rank": 40,
+      "carNumber": 56,
+      "teamName": "Taquara Racing",
+      "schoolName": "UFFS",
+      "points": 509.7,
+      "pointsByEvent": {
+        "acceleration": 25.6,
+        "speed": 55.2,
+        "traction": 62.7,
+        "suspension": 16.2,
+        "maneuverability": 55.9,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 41,
+      "carNumber": 5,
+      "teamName": "Paca Racing",
+      "schoolName": "IFSC",
+      "points": 507.8,
+      "pointsByEvent": {
+        "acceleration": 60,
+        "speed": 29.7,
+        "traction": 45.7,
+        "suspension": 1.4,
+        "maneuverability": 53.4,
+        "enduro": 317.6
+      }
+    },
+    {
+      "rank": 42,
+      "carNumber": 93,
+      "teamName": "Jacu Off-Road",
+      "schoolName": "UFPel",
+      "points": 502,
+      "pointsByEvent": {
+        "acceleration": 11.8,
+        "speed": 20,
+        "traction": 44.5,
+        "suspension": 3.2,
+        "maneuverability": 46,
+        "enduro": 376.5
+      }
+    },
+    {
+      "rank": 43,
+      "carNumber": 19,
+      "teamName": "Gralha Azul Baja",
+      "schoolName": "PUCPR",
+      "points": 501.6,
+      "pointsByEvent": {
+        "acceleration": 56,
+        "speed": 57.7,
+        "traction": 3.1,
+        "suspension": 30.8,
+        "maneuverability": 36.4,
+        "enduro": 317.6
+      }
+    },
+    {
+      "rank": 44,
+      "carNumber": 1,
+      "teamName": "Cascavel Off-Road",
+      "schoolName": "UNIOESTE",
+      "points": 499.5,
+      "pointsByEvent": {
+        "acceleration": 12.2,
+        "speed": 65.6,
+        "traction": 57.6,
+        "suspension": 72.1,
+        "maneuverability": 9.6,
+        "enduro": 282.4
+      }
+    },
+    {
+      "rank": 45,
+      "carNumber": 40,
+      "teamName": "Capivara Off-Road",
+      "schoolName": "UFSCar",
+      "points": 498.4,
+      "pointsByEvent": {
+        "acceleration": 4.3,
+        "speed": 36.9,
+        "traction": 25.7,
+        "suspension": 59.6,
+        "maneuverability": 66,
+        "enduro": 305.9
+      }
+    },
+    {
+      "rank": 46,
+      "carNumber": 6,
+      "teamName": "Uirapuru Racing",
+      "schoolName": "UFRR",
+      "points": 488.3,
+      "pointsByEvent": {
+        "acceleration": 45.8,
+        "speed": 11.8,
+        "traction": 5.5,
+        "suspension": 22.7,
+        "maneuverability": 49.6,
+        "enduro": 352.9
+      }
+    },
+    {
+      "rank": 47,
+      "carNumber": 11,
+      "teamName": "Sabiá Baja",
+      "schoolName": "UFMG",
+      "points": 484.3,
+      "pointsByEvent": {
+        "acceleration": 5.3,
+        "speed": 35.2,
+        "traction": 31.1,
+        "suspension": 44.5,
+        "maneuverability": 27,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 48,
+      "carNumber": 2,
+      "teamName": "Biguá Off-Road",
+      "schoolName": "FURG",
+      "points": 481.2,
+      "pointsByEvent": {
+        "acceleration": 21.1,
+        "speed": 67.1,
+        "traction": 9.4,
+        "suspension": 42.4,
+        "maneuverability": 35.3,
+        "enduro": 305.9
+      }
+    },
+    {
+      "rank": 49,
+      "carNumber": 35,
+      "teamName": "Jaguatirica Off-Road",
+      "schoolName": "UFSC",
+      "points": 476,
+      "pointsByEvent": {
+        "acceleration": 26.3,
+        "speed": 20.8,
+        "traction": 36.6,
+        "suspension": 30.8,
+        "maneuverability": 67.4,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 50,
+      "carNumber": 33,
+      "teamName": "Cuíca Off-Road",
+      "schoolName": "UFRJ",
+      "points": 475.6,
+      "pointsByEvent": {
+        "acceleration": 57,
+        "speed": 18.4,
+        "traction": 21.8,
+        "suspension": 66,
+        "maneuverability": 18.3,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 51,
+      "carNumber": 34,
+      "teamName": "Gavião Off-Road",
+      "schoolName": "UNESP",
+      "points": 471.1,
+      "pointsByEvent": {
+        "acceleration": 50.3,
+        "speed": 34.1,
+        "traction": 9.4,
+        "suspension": 59.8,
+        "maneuverability": 23.4,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 52,
+      "carNumber": 32,
+      "teamName": "Irara Racing",
+      "schoolName": "UFSJ",
+      "points": 466.7,
+      "pointsByEvent": {
+        "acceleration": 43.2,
+        "speed": 19.7,
+        "traction": 21.8,
+        "suspension": 14.5,
+        "maneuverability": 2.8,
+        "enduro": 364.7
+      }
+    },
+    {
+      "rank": 53,
+      "carNumber": 82,
+      "teamName": "Macaúba Racing",
+      "schoolName": "UFVJM",
+      "points": 463.3,
+      "pointsByEvent": {
+        "acceleration": 27.6,
+        "speed": 29.4,
+        "traction": 29,
+        "suspension": 52.2,
+        "maneuverability": 31,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 54,
+      "carNumber": 62,
+      "teamName": "Ariranha Baja",
+      "schoolName": "UFAM",
+      "points": 459.8,
+      "pointsByEvent": {
+        "acceleration": 0.1,
+        "speed": 22.5,
+        "traction": 40.2,
+        "suspension": 23.8,
+        "maneuverability": 20.3,
+        "enduro": 352.9
+      }
+    },
+    {
+      "rank": 55,
+      "carNumber": 24,
+      "teamName": "Cajueiro Off-Road",
+      "schoolName": "UFPI",
+      "points": 452.2,
+      "pointsByEvent": {
+        "acceleration": 20.2,
+        "speed": 10.3,
+        "traction": 59.9,
+        "suspension": 40.6,
+        "maneuverability": 27.1,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 56,
+      "carNumber": 16,
+      "teamName": "Mutum Off-Road",
+      "schoolName": "UEL",
+      "points": 451.6,
+      "pointsByEvent": {
+        "acceleration": 19.5,
+        "speed": 12.2,
+        "traction": 12.5,
+        "suspension": 60.7,
+        "maneuverability": 29.1,
+        "enduro": 317.6
+      }
+    },
+    {
+      "rank": 57,
+      "carNumber": 44,
+      "teamName": "Ipê Amarelo Baja",
+      "schoolName": "UnB",
+      "points": 449.8,
+      "pointsByEvent": {
+        "acceleration": 1.5,
+        "speed": 47.9,
+        "traction": 4.6,
+        "suspension": 53.9,
+        "maneuverability": 47.8,
+        "enduro": 294.1
+      }
+    },
+    {
+      "rank": 58,
+      "carNumber": 60,
+      "teamName": "Jatobá Baja",
+      "schoolName": "UFLA",
+      "points": 439.9,
+      "pointsByEvent": {
+        "acceleration": 3.5,
+        "speed": 39.3,
+        "traction": 18.9,
+        "suspension": 12.8,
+        "maneuverability": 24.2,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 59,
+      "carNumber": 4,
+      "teamName": "Mangue Baja",
+      "schoolName": "UFRN",
+      "points": 429,
+      "pointsByEvent": {
+        "acceleration": 19.9,
+        "speed": 16.3,
+        "traction": 24.9,
+        "suspension": 18.4,
+        "maneuverability": 8.3,
+        "enduro": 341.2
+      }
+    },
+    {
+      "rank": 60,
+      "carNumber": 96,
+      "teamName": "Guará Baja",
+      "schoolName": "UFS",
+      "points": 284.7,
+      "pointsByEvent": {
+        "acceleration": 11.9,
+        "speed": 61,
+        "traction": 31.9,
+        "suspension": 8,
+        "maneuverability": 30.7,
+        "enduro": 141.2
+      }
+    }
+  ]
+}

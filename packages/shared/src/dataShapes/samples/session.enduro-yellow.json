@@ -1,0 +1,16 @@
+{
+  "sessionId": "enduro-2027-nacional",
+  "eventName": "Baja SAE Brasil 2027 — Etapa Nacional",
+  "sessionName": "Enduro de Resistência",
+  "sessionKind": "enduro",
+  "state": "yellow",
+  "clock": {
+    "clockMode": "remaining",
+    "referenceTimeMs": 4007052,
+    "referenceWallClockMs": 1805568792948,
+    "running": true
+  },
+  "scheduledDurationMs": 14400000,
+  "lapsCompletedByLeader": 36,
+  "updatedAtMs": 1805568792948
+}

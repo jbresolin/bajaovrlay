@@ -122,3 +122,7 @@ export * from './macros/index.js';
 // The preview output: previewItem, stopPreview, takePreview,
 // previewClearLayer, takeAllPreviews and previewMacro.
 export * from './preview/index.js';
+
+// Canonical data shapes: session, positions, standings and brackets as every data source
+// produces them, their validator and the paths a binding may point at.
+export * from './dataShapes/index.js';
