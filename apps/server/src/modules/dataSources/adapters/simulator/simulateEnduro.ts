@@ -4,7 +4,7 @@
 // same seed and moment always give the same race (a restart, a replay, a test).
 import type { SessionState } from '@bajaovrlay/shared';
 
-import { type Breakdown, drawBreakdownOfCar } from './breakdowns.js';
+import { type Breakdown, drawBreakdownOfCar, type RepairableBreakdown } from './breakdowns.js';
 import { readFictionalTeamOfCar } from './fictionalTeams.js';
 import {
   buildFlagScheduleOfRace,
@@ -90,7 +90,8 @@ export function simulateEnduroAt(
  * says where it is. Each lap:
  * 1. its driving time is drawn (slower when it begins under a yellow);
  * 2. if the car's breakdown falls in this lap (or in the pit stop before it), it
- *    retires there, or stands still for the repair, which lengthens the lap;
+ *    retires there, or stands still for the repair, which lengthens the lap (a repair
+ *    begun in the pits adds only what is left of it once the stop is over);
  * 3. if the lap ends after now, the car is out on track (or stopped): done;
  * 4. the lap is completed; one completed at or after the checkered moment is its last;
  * 5. after every 8 to 14 laps it pits, and the next lap starts when the stop is over
@@ -134,7 +135,7 @@ function driveOneCarUntil(
       break;
     }
     if (breaksDownInThisLap && breakdown.kind === 'stop') {
-      lapEndsAtMs += breakdown.stopDurationMs;
+      lapEndsAtMs += measureRepairTimeAddedToTheLap(breakdown, lapStartsAtMs);
       const repairEndsAtMs = breakdown.atRunningMs + breakdown.stopDurationMs;
       isStandingStillNow = nowRunningMs >= breakdown.atRunningMs && nowRunningMs < repairEndsAtMs;
     }
@@ -182,4 +183,21 @@ function driveOneCarUntil(
     status,
     hasTakenTheCheckeredFlag,
   };
+}
+
+/**
+ * How much a repairable breakdown lengthens the lap it counts in: the part of the
+ * repair after the lap started. A breakdown on track stops the car for the whole
+ * repair; one during the pit stop before the lap is worked on in the pits, so only the
+ * repair left once the stop is over adds to the lap (none when the stop outlasts it).
+ * The car leaves at max(stop's end, breakdown + repair), never stop's end + repair.
+ */
+function measureRepairTimeAddedToTheLap(
+  breakdown: RepairableBreakdown,
+  lapStartsAtMs: number,
+): number {
+  const repairEndsAtMs = breakdown.atRunningMs + breakdown.stopDurationMs;
+  const repairStartsInThisLapAtMs = Math.max(breakdown.atRunningMs, lapStartsAtMs);
+  const repairLeftInThisLapMs = repairEndsAtMs - repairStartsInThisLapAtMs;
+  return Math.max(0, repairLeftInThisLapMs);
 }

@@ -98,7 +98,14 @@ describe('readSimulatorSourceForm', () => {
       name: 'a seed with a fraction',
       change: { seed: '20,5' },
       field: 'seed',
-      message: 'Informe a semente como um número inteiro.',
+      message: 'Informe a semente como um número inteiro de 0 a 4294967295.',
+    },
+    // The generator reads 32 bits: 2^32 would be seed 0's race under another number.
+    {
+      name: 'a seed of 4294967296 (2^32)',
+      change: { seed: '4294967296' },
+      field: 'seed',
+      message: 'Informe a semente como um número inteiro de 0 a 4294967295.',
     },
     // A typo with extra zeros: more than a day would block the server on every poll.
     {

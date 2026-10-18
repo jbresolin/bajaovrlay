@@ -16,10 +16,14 @@ const retirementShareOfBreakdowns = 0.5;
 const shortestBreakdownStopMs = 5 * 60_000;
 const longestBreakdownStopMs = 15 * 60_000;
 
+/** A breakdown the car never comes back from, at a moment in running time. */
+export type RetirementBreakdown = { kind: 'retirement'; atRunningMs: number };
+
+/** A breakdown the team repairs: the car stands still for `stopDurationMs` from the moment. */
+export type RepairableBreakdown = { kind: 'stop'; atRunningMs: number; stopDurationMs: number };
+
 /** A car's breakdown: a moment in running time, and either a stop of some length or the end. */
-export type Breakdown =
-  | { kind: 'retirement'; atRunningMs: number }
-  | { kind: 'stop'; atRunningMs: number; stopDurationMs: number };
+export type Breakdown = RetirementBreakdown | RepairableBreakdown;
 
 /**
  * The car's breakdown, or null when it runs trouble-free. About 15 % of the field over

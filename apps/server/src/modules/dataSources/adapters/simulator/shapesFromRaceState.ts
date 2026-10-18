@@ -4,7 +4,7 @@ import type { PositionsShape, SessionShape, StandingsShape } from '@bajaovrlay/s
 
 import { ptBR } from '../../../../core/messages/ptBR.js';
 import { buildPositionEntriesInRaceOrder, orderCarsByRacePosition } from './raceOrder.js';
-import type { EnduroRaceState } from './simulateEnduro.js';
+import type { CarRaceState, EnduroRaceState } from './simulateEnduro.js';
 import { buildOverallStandings } from './standingsFromRaceState.js';
 
 /** What one simulator poll answers. */
@@ -24,7 +24,9 @@ export function buildShapesFromRaceState(
 ): SimulatedShapes {
   // One session id per seed: two simulators with different seeds are different races.
   const sessionId = `simulador-enduro-${String(raceState.settings.seed)}`;
-  const orderedCars = orderCarsByRacePosition(raceState.cars);
+  const orderedCars = orderCarsByRacePosition(
+    reportStatusesAsFinishersOnceTheSessionIsFinished(raceState),
+  );
   const leaderLaps = orderedCars[0]?.lapCompletedAtRunningMs.length ?? 0;
 
   return {
@@ -36,6 +38,26 @@ export function buildShapesFromRaceState(
     },
     standings: buildOverallStandings(raceState, nowMs),
   };
+}
+
+/**
+ * The cars as the positions report them. The positions shape has no "finished" status,
+ * so once the session is finished every car that did not retire reads 'running', as the
+ * cars that took the checkered flag already do: a car still in the pits or stopped then
+ * is reported as finished like the others. Today's numbers (a pit stop of 4 min at most,
+ * a repair of 15 min at most, 15 min of checkered flag) never leave one there; this
+ * keeps it so if they change. Before the finish every status is reported as it is.
+ */
+function reportStatusesAsFinishersOnceTheSessionIsFinished(
+  raceState: EnduroRaceState,
+): CarRaceState[] {
+  if (raceState.flag !== 'finished') {
+    return raceState.cars;
+  }
+  return raceState.cars.map((car) => {
+    const isLeftInThePitsOrStopped = car.status === 'inPit' || car.status === 'stopped';
+    return isLeftInThePitsOrStopped ? { ...car, status: 'running' } : car;
+  });
 }
 
 /**

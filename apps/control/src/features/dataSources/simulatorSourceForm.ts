@@ -77,7 +77,7 @@ function findFormFieldOfConfigField(configField: PropertyKey | undefined): {
   const fieldErrors = ptBR.dataSources.form.fieldErrors;
   switch (configField) {
     case 'seed':
-      return { formField: 'seed', message: fieldErrors.seedNotWhole };
+      return { formField: 'seed', message: fieldErrors.seedOutOfRange };
     case 'carCount':
       return { formField: 'carCount', message: fieldErrors.carCountOutOfRange };
     case 'sessionDurationMs':

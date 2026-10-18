@@ -11,7 +11,8 @@
  *
  * What these tests prove:
  *   - Each kind's config fills its defaults (the seeded simulator is `{}` plus defaults)
- *     and refuses values out of range, naming the field.
+ *     and refuses values out of range, naming the field; the simulator's seed is a
+ *     whole number from 0 to 2^32 − 1, the values its generator tells apart.
  *   - A simulator source, a replay source, a snapshot and a recording are accepted
  *     unchanged; a source whose config belongs to the other kind is refused.
  *
@@ -106,6 +107,18 @@ describe('SimulatorConfigSchema and ReplayConfigSchema', () => {
     });
   });
 
+  it('accepts the largest 32-bit seed, 4 294 967 295', () => {
+    // Arrange: the last seed the generator can tell apart from every other.
+    const largestSeedConfig = { seed: 4_294_967_295 };
+
+    // Act: parse it.
+    const result = SimulatorConfigSchema.safeParse(largestSeedConfig);
+
+    // Assert: accepted, unchanged.
+    expect(result.success, 'the largest 32-bit seed must be accepted').toBe(true);
+    expect(result.data?.seed, 'the seed must be kept as given').toBe(4_294_967_295);
+  });
+
   it('fills the replay defaults around the recording it names', () => {
     // Arrange: a replay config naming only its recording.
     const configNamingTheRecording = {
@@ -158,6 +171,21 @@ describe('SimulatorConfigSchema and ReplayConfigSchema', () => {
       schema: SimulatorConfigSchema,
       config: { sessionDurationMs: 144_000_000_000 },
       badField: 'sessionDurationMs',
+    },
+    // The generator reads only the low 32 bits of a seed, so 2^32 would replay seed 0's
+    // race under another number: the seed is capped at 32 bits.
+    {
+      name: 'refuses a simulator seed of 2^32',
+      schema: SimulatorConfigSchema,
+      config: { seed: 4_294_967_296 },
+      badField: 'seed',
+    },
+    // A negative seed would also be another seed's race in disguise (-1 is 2^32 − 1).
+    {
+      name: 'refuses a negative simulator seed',
+      schema: SimulatorConfigSchema,
+      config: { seed: -1 },
+      badField: 'seed',
     },
     // The replay speeds are a fixed list; 3× is not on it.
     {

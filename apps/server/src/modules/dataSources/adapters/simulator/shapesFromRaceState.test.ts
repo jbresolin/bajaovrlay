@@ -17,6 +17,7 @@
  *
  * What these tests deliberately do not cover:
  *   - How the race itself unfolds (simulateEnduro.test.ts).
+ *   - The statuses once the session is finished (finishedSessionStatuses.test.ts).
  *   - Every rule of the shapes (packages/shared/src/dataShapes tests them).
  */
 import { type PositionsShape, validateDataShape } from '@bajaovrlay/shared';

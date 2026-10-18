@@ -6,8 +6,13 @@ import { z } from 'zod';
  * form and the server's simulator adapter use this same schema (decision D4).
  */
 export const SimulatorConfigSchema = z.object({
-  /** The seed of every random draw: the same seed and moment always give the same race. */
-  seed: z.number().int().default(2027),
+  /**
+   * The seed of every random draw: the same seed and moment always give the same race.
+   * A whole number from 0 to 2^32 − 1, the unsigned 32-bit range: the simulator's
+   * generator (mulberry32, after an FNV-1a mix) reads only a seed's low 32 bits, so a
+   * larger or negative seed would silently be another seed's race (2^32 races as 0).
+   */
+  seed: z.number().int().min(0).max(4_294_967_295).default(2027),
   /** How many cars race; the fictional team list has a hundred. */
   carCount: z.number().int().min(10).max(100).default(60),
   /**

@@ -11,5 +11,5 @@ then `lapTimes.ts`, `pitStops.ts`, `breakdowns.ts`, `flags.ts`, `raceOrder.ts`,
 `standingsFromRaceState.ts`, `shapesFromRaceState.ts` and `simulatorAdapter.ts`. Every
 draw comes from `seededRandom.ts`, never an unseeded generator (a test and ESLint enforce it).
 
-Other scenarios (acceleration runs, suspension brackets) are a later item, each its own
-`simulate<Scenario>.ts` with its shapes file, not a generic engine shared with this one.
+Above 1× the session clock jumps at each poll (a reading has no speed; clients run it at 1×
+between polls). Later scenarios each get their own `simulate<Scenario>.ts`, no shared engine.

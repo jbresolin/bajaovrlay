@@ -56,7 +56,8 @@ export function createMulberry32Generator(seed: number): () => number {
  * Mixes a list of integers into one 32-bit seed, with the FNV-1a steps applied to each
  * whole integer (offset basis 2166136261, prime 16777619). FNV alone mixes weakly, but
  * mulberry32's first output scrambles its seed thoroughly, so neighbouring inputs (lap
- * 34 and lap 35) still give unrelated draws. A seed beyond 32 bits is cut to its low 32.
+ * 34 and lap 35) still give unrelated draws. A number beyond 32 bits is cut to its low
+ * 32, which is why the config schema caps the race seed at 2^32 − 1.
  */
 function mixIntegersIntoOneSeed(integers: number[]): number {
   let hash = 2_166_136_261;

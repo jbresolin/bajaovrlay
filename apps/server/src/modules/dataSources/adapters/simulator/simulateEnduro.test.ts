@@ -20,6 +20,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The shapes built from the state (shapesFromRaceState.test.ts).
+ *   - A repairable breakdown during a pit stop (repairDuringPitStop.test.ts).
  *   - Wall time and speed (simulatorAdapter.test.ts).
  */
 import { describe, expect, it } from 'vitest';

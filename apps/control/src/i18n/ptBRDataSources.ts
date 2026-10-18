@@ -149,7 +149,7 @@ export const ptBRDataSources = {
     fieldErrors: {
       labelMissing: 'Informe o nome da fonte.',
       pollIntervalOutOfRange: 'Informe de 0,5 a 60 segundos.',
-      seedNotWhole: 'Informe a semente como um número inteiro.',
+      seedOutOfRange: 'Informe a semente como um número inteiro de 0 a 4294967295.',
       carCountOutOfRange: 'Informe de 10 a 100 carros.',
       sessionDurationOutOfRange: 'Informe a duração em minutos, maior que zero e até 1440 (24 h).',
       lapLengthNotPositive: 'Informe um comprimento maior que zero.',
