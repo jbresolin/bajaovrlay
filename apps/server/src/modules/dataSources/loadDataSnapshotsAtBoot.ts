@@ -7,6 +7,12 @@ import type { ServerLogger } from '../../core/logger/createLogger.js';
 /** The name of the slices-table row that held every snapshot before BAJAOVRLAY-40. */
 const legacySnapshotsSliceRowName = 'dataSnapshots';
 
+/** A source's place in the table order, with its snapshot, or none when its row was dropped. */
+type SnapshotInItsSourcePlace = {
+  sourceId: string;
+  snapshot: DataSnapshot | undefined;
+};
+
 /** The snapshots a boot starts with, and what it must still write to hold the same. */
 export type DataSnapshotsAtBoot = {
   dataSnapshots: DataSnapshot[];
@@ -36,21 +42,23 @@ export function loadDataSnapshotsAtBoot(
   updatedAt: string,
   logger: ServerLogger,
 ): DataSnapshotsAtBoot {
-  const dataSnapshots: DataSnapshot[] = [];
+  // Every table row keeps its place here, a dropped one too (with no snapshot), so a
+  // legacy snapshot that replaces a dropped row lands where that row was. On disk the
+  // upsert keeps the row's rowid, so memory and the next boot read the same order.
+  const snapshotsInTableOrder: SnapshotInItsSourcePlace[] = [];
   const sourceIdsToDelete: string[] = [];
   for (const storedRow of storedSnapshotRows) {
     const snapshot = readStoredSnapshotOrWarn(storedRow.json, logger);
     if (snapshot === undefined) {
       sourceIdsToDelete.push(storedRow.sourceId);
-    } else {
-      dataSnapshots.push(snapshot);
     }
+    snapshotsInTableOrder.push({ sourceId: storedRow.sourceId, snapshot });
   }
 
   const legacyRow = storedSliceRows.find((row) => row.name === legacySnapshotsSliceRowName);
   if (legacyRow === undefined) {
     return {
-      dataSnapshots,
+      dataSnapshots: keepOnlyTheReadableSnapshots(snapshotsInTableOrder),
       dataSnapshotRowChanges: { rowsToWrite: [], sourceIdsToDelete },
       sliceRowNamesToDelete: [],
     };
@@ -58,8 +66,9 @@ export function loadDataSnapshotsAtBoot(
 
   const legacySnapshots = readLegacySnapshotsRow(legacyRow.json, logger);
   for (const legacySnapshot of legacySnapshots) {
-    putSnapshotInItsSourcePlace(dataSnapshots, legacySnapshot);
+    putSnapshotInItsSourcePlace(snapshotsInTableOrder, legacySnapshot);
   }
+  const dataSnapshots = keepOnlyTheReadableSnapshots(snapshotsInTableOrder);
   const rowsToWrite: DataSnapshotRow[] = legacySnapshots.map((legacySnapshot) => ({
     sourceId: legacySnapshot.sourceId,
     json: legacySnapshot,
@@ -120,16 +129,31 @@ function readStoredSnapshotOrWarn(
   return undefined;
 }
 
-/** Replaces the snapshot of the same source in the list, or adds it at the end. */
-function putSnapshotInItsSourcePlace(snapshots: DataSnapshot[], snapshot: DataSnapshot): void {
-  const placeOfItsSource = snapshots.findIndex(
-    (candidate) => candidate.sourceId === snapshot.sourceId,
-  );
+/**
+ * Replaces the snapshot in its source's place (even a place whose row was dropped), or
+ * adds a new place at the end, as an insert of a new row lands last on disk.
+ */
+function putSnapshotInItsSourcePlace(
+  places: SnapshotInItsSourcePlace[],
+  snapshot: DataSnapshot,
+): void {
+  const placeOfItsSource = places.findIndex((place) => place.sourceId === snapshot.sourceId);
   if (placeOfItsSource === -1) {
-    snapshots.push(snapshot);
+    places.push({ sourceId: snapshot.sourceId, snapshot });
   } else {
-    snapshots[placeOfItsSource] = snapshot;
+    places[placeOfItsSource] = { sourceId: snapshot.sourceId, snapshot };
   }
+}
+
+/** The snapshots of the places in order, leaving out the places whose row was dropped. */
+function keepOnlyTheReadableSnapshots(places: SnapshotInItsSourcePlace[]): DataSnapshot[] {
+  const snapshots: DataSnapshot[] = [];
+  for (const place of places) {
+    if (place.snapshot !== undefined) {
+      snapshots.push(place.snapshot);
+    }
+  }
+  return snapshots;
 }
 
 /** The sourceId a stored snapshot names, for the log, or 'unknown' when it names none. */

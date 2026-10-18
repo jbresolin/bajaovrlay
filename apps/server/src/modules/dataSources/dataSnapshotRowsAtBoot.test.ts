@@ -13,16 +13,22 @@
  *     data_snapshots table holds one row per source, and the slices table has no
  *     `dataSnapshots` row any more.
  *   - A second boot reads the rows back and writes none of them again: the split ran once.
+ *   - On a database with both the table and the old row, where the old row replaces a
+ *     table row that fails the schema, the order of the sources stays the same in memory
+ *     and across a restart (the Fontes list must not reorder itself).
  *
  * What these tests deliberately do not cover:
- *   - Each rule of the split (a bad snapshot, a row that is not a list, a database with
- *     both); loadDataSnapshotsAtBoot.test.ts covers them.
+ *   - Each rule of the split (a bad snapshot, a row that is not a list, which snapshot
+ *     wins on a database with both); loadDataSnapshotsAtBoot.test.ts covers them.
  *   - The sources coming back stale after the restart; loadDataSourceSlices.test.ts.
  */
 import type { DataSnapshot } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { readAllDataSnapshotRows } from '../../core/db/dataSnapshotRowStorage.js';
+import {
+  readAllDataSnapshotRows,
+  writeDataSnapshotRowChanges,
+} from '../../core/db/dataSnapshotRowStorage.js';
 import type { ServerDatabase } from '../../core/db/openDatabase.js';
 import { readAllSliceRows, writeSliceRows } from '../../core/db/sliceRowStorage.js';
 import {
@@ -91,6 +97,48 @@ function writeTheDatabaseAsTheOlderServerLeftIt(databasePath: string): void {
     },
   ]);
   olderDatabase.$client.close();
+}
+
+/**
+ * Writes a database as it is after this server ran on it and then an older server did:
+ * the data_snapshots table holds a simulator row that fails today's schema, then the
+ * replay's good row; the older server's single row holds the simulator's newer snapshot.
+ * Then closes it.
+ */
+function writeTheDatabaseWithBothTheTableAndTheOldRow(
+  databasePath: string,
+  newerSimulatorMomentMs: number,
+): void {
+  const database = openDatabaseForTests(databasePath);
+  writeSliceRows(database, [
+    { name: 'layers', json: seededLayers, updatedAt: momentTheOlderServerWrote },
+    {
+      name: 'dataSources',
+      json: [buildEnduroSimulatorTurnedOff(), buildFridayReplayTurnedOff()],
+      updatedAt: momentTheOlderServerWrote,
+    },
+    {
+      name: 'dataSnapshots',
+      json: [buildSimulatorSnapshotReceivedAt(newerSimulatorMomentMs)],
+      updatedAt: momentTheOlderServerWrote,
+    },
+  ]);
+  writeDataSnapshotRowChanges(database, {
+    rowsToWrite: [
+      {
+        sourceId: 'simulador-enduro',
+        json: { sourceId: 'simulador-enduro', receivedAtMs: 'ontem' },
+        updatedAt: momentTheOlderServerWrote,
+      },
+      {
+        sourceId: 'reproducao-sexta',
+        json: buildFridayReplaySnapshot(),
+        updatedAt: momentTheOlderServerWrote,
+      },
+    ],
+    sourceIdsToDelete: [],
+  });
+  database.$client.close();
 }
 
 /** Boots this server's store on the database, at the given moment. */
@@ -166,5 +214,38 @@ describe('a second boot after the split', () => {
       readAllDataSnapshotRows(databaseOfTheSecondBoot).map((row) => row.updatedAt),
       'the split must run once: the second boot rewrites no snapshot row',
     ).toEqual([momentOfTheFirstBoot, momentOfTheFirstBoot]);
+  });
+});
+
+describe('a database with both the table and the old row', () => {
+  it('keeps the order of the sources the same in memory and after a restart', () => {
+    // Arrange: the simulator's table row is unreadable and the old row has its newer
+    // snapshot; this server boots on it once, then the database is reopened.
+    const databasePath = createTemporaryDatabasePath();
+    const newerSimulatorMomentMs = momentOfTheCommandMs + 60_000;
+    writeTheDatabaseWithBothTheTableAndTheOldRow(databasePath, newerSimulatorMomentMs);
+    const databaseOfTheFirstBoot = openDatabaseForTests(databasePath);
+    const storeOfTheFirstBoot = bootStoreOn(databaseOfTheFirstBoot, momentOfTheFirstBoot);
+    const sourceOrderOfTheFirstBoot = storeOfTheFirstBoot
+      .readAllSlices()
+      .dataSnapshots.map((snapshot) => snapshot.sourceId);
+    databaseOfTheFirstBoot.$client.close();
+    const databaseOfTheSecondBoot = openDatabaseForTests(databasePath);
+
+    // Act: this server boots on it again, ten minutes later.
+    const storeOfTheSecondBoot = bootStoreOn(databaseOfTheSecondBoot, momentOfTheSecondBoot);
+
+    // Assert: the simulator stays first, where its row was, on both boots.
+    expect(
+      sourceOrderOfTheFirstBoot,
+      "the simulator's newer snapshot must take the place of its dropped row",
+    ).toEqual(['simulador-enduro', 'reproducao-sexta']);
+    expect(
+      storeOfTheSecondBoot.readAllSlices().dataSnapshots,
+      'a restart must read the sources back in the same order, with the same data',
+    ).toEqual([
+      buildSimulatorSnapshotReceivedAt(newerSimulatorMomentMs),
+      buildFridayReplaySnapshot(),
+    ]);
   });
 });

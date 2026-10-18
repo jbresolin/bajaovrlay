@@ -227,11 +227,15 @@ describe('loadDataSnapshotsAtBoot, on a database with the legacy single row', ()
       silentLogger,
     );
 
-    // Assert: the replay as the table had it, the simulator from the old row, written over
-    // its unreadable row (so not deleted), and the old row removed.
-    expect(loaded.dataSnapshots, 'the old row must win for the simulator only').toEqual([
-      buildFridayReplaySnapshotReceivedAt(momentOfTheCommandMs),
+    // Assert: the simulator from the old row, in the place its unreadable row had (first,
+    // as the disk keeps it), the replay as the table had it, the simulator's row written
+    // over (so not deleted), and the old row removed.
+    expect(
+      loaded.dataSnapshots,
+      'the old row must win for the simulator only, in the place of its dropped row',
+    ).toEqual([
       buildSimulatorSnapshotReceivedAt(newerMomentMs),
+      buildFridayReplaySnapshotReceivedAt(momentOfTheCommandMs),
     ]);
     expect(
       loaded.dataSnapshotRowChanges,

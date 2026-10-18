@@ -252,8 +252,8 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 }
 
 /**
- * Hands the server's time in a hello, slice, slices or time message to the shared server-aligned
- * clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
+ * Hands the server's time in a hello, slice, slices, dataSnapshot or time message to the
+ * shared server-aligned clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
  * does the same (apps/renderer/src/serverConnection.ts), so the page and the screen
  * count from the same clock. A hello or slice without the time records NOTHING: it is
  * "no sample", never a sample saying the two clocks agree.
