@@ -105,8 +105,9 @@ export {
   type TimeMessage,
   TimeMessageSchema,
 } from './ws/serverMessages.js';
-// A page reloading itself, at most once a minute, when the hello names another build
-// than the one the page was loaded from; the browser's stand-ins it needs are typed here.
+// A page reloading itself, at most once per announced server build (once a minute when
+// sessionStorage cannot keep that build), when the hello names another build than the
+// one the page was loaded from; the browser's stand-ins it needs are typed here.
 export {
   lastReloadForNewBuildStorageKey,
   measureWaitUntilTheNextReloadForNewBuild,
@@ -114,13 +115,14 @@ export {
   type ReloadForNewBuildOutcome,
   type ReloadMemory,
   reloadThePageWhenTheServerBuildDiffers,
+  serverBuildLastReloadedForStorageKey,
   shortestTimeBetweenReloadsForNewBuildInMilliseconds,
 } from './build/reloadForNewServerBuild.js';
 // The buildId of a hello read before the page's own schema checks the rest of it, so a
 // page that refuses a newer server's hello can still reload onto the new bundle.
 export { readBuildIdOfAHello } from './build/readBuildIdOfAHello.js';
-// A page's watch on the server's build: compares each hello's build, logs, and looks once
-// more when a reload was skipped as less than a minute after the last one.
+// A page's watch on the server's build: compares each hello's build, logs, and, in the
+// once-a-minute fallback, looks once more when a reload was skipped as too recent.
 export {
   type CancelTimer,
   type ServerBuildWatch,

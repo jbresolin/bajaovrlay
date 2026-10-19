@@ -154,8 +154,8 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     switch (message.type) {
       case 'hello':
         numberOfFailedCallsInARow = 0;
-        // Taken in first, so a page that does not reload (same build, or reloaded less
-        // than a minute ago) is connected as always; one that reloads loses nothing.
+        // Taken in first, so a page that does not reload (same build, or already reloaded
+        // for this one) is connected as always; one that reloads loses nothing.
         serverStateStore.getState().replaceEverySlice(message.slices);
         serverStateStore.getState().changeConnectionStatus('connected');
         serverBuildWatch?.compareWithTheServerBuild(message.buildId);

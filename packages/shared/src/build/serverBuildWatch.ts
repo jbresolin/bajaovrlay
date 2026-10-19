@@ -1,11 +1,12 @@
 // What a page does with each server build it hears of, shared by the control page and the
 // renderer so the two follow the very same rule: compare with the page's own build
-// (reloadForNewServerBuild.ts), log what happened, and, when the reload was skipped as
-// less than a minute after the last one, compare once more when the minute is over.
-// Without that second look, a second upgrade within the minute (a quick rebuild to fix a
-// typo) would leave the page on the old bundle until its next reconnect, since a hello
-// only comes with a new connection. The page hands in its timers, which shared code
-// cannot name (it compiles without the DOM or Node types).
+// (reloadForNewServerBuild.ts: at most one reload per announced build), log what happened,
+// and, only in the fallback for a sessionStorage that cannot keep the announced build
+// (at most one reload a minute), compare once more when the minute is over after a
+// skipped reload. Without that second look, a second upgrade within the minute would
+// leave such a page on the old bundle until its next reconnect, since a hello only comes
+// with a new connection. The page hands in its timers, which shared code cannot name (it
+// compiles without the DOM or Node types).
 import {
   measureWaitUntilTheNextReloadForNewBuild,
   type PageReloadForNewBuild,
@@ -31,14 +32,15 @@ export type CancelTimer = () => void;
 export type ServerBuildWatch = {
   /** Compares the build a hello named with the page's, reloading when they differ. */
   compareWithTheServerBuild: (serverBuildId: string | undefined) => void;
-  /** Cancels the second look, if one is waiting (the page hung up). */
+  /** Cancels the fallback's second look, if one is waiting (the page hung up). */
   stop: () => void;
 };
 
 /**
  * Starts a page's watch on the server's build: each build heard of is compared with the
- * page's (at most one reload a minute), and a reload skipped as too recent is retried
- * once the minute is over, against the build of the latest hello.
+ * page's (at most one reload per announced build), and when the once-a-minute fallback
+ * skipped a reload as too recent, it is retried once the minute is over, against the
+ * build of the latest hello.
  */
 export function startServerBuildWatch(options: ServerBuildWatchOptions): ServerBuildWatch {
   const { pageReload, logBuildEvent } = options;
@@ -54,6 +56,15 @@ export function startServerBuildWatch(options: ServerBuildWatchOptions): ServerB
     const builds = { serverBuildId, pageBuildId: pageReload.pageBuildId };
     if (outcome === 'reloaded') {
       logBuildEvent('info', 'reloading the page: the server runs another build', builds);
+    }
+    if (outcome === 'alreadyReloadedForThisServerBuild') {
+      // A page loaded between `pnpm build` and the restart lands here at every reconnect
+      // until the restart: it carries the new build, the server still announces the old.
+      logBuildEvent(
+        'warn',
+        'not reloading for the server build: the page already reloaded once for it',
+        builds,
+      );
     }
     if (outcome === 'reloadedLessThanAMinuteAgo') {
       logBuildEvent(

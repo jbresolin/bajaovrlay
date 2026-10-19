@@ -5,11 +5,19 @@
 // Shared, so the control page and the renderer follow the very same rule; each hands in
 // its browser's clock, `location.reload` and `sessionStorage`, which shared code cannot
 // name (it compiles without the DOM types).
+//
+// At most one reload per build a server announces (gate 2 re-check, João): a page loaded
+// between `pnpm build` and the restart carries the new build while the server still
+// announces the old one, and a reload a minute would blank an OBS source on air each
+// minute until the restart. Keeping the announced id stops that after one reload.
 
-/** The sessionStorage key holding when this tab last reloaded for a new build, in ms. */
+/** The sessionStorage key holding the server build this tab last reloaded for. */
+export const serverBuildLastReloadedForStorageKey = 'bajaovrlay.serverBuildIdLastReloadedFor';
+
+/** The sessionStorage key holding when this tab last reloaded, for the fallback, in ms. */
 export const lastReloadForNewBuildStorageKey = 'bajaovrlay.lastReloadForNewBuildAtMs';
 
-/** The shortest time between two reloads for a new build: one minute. */
+/** The fallback's shortest time between two reloads for a new build: one minute. */
 export const shortestTimeBetweenReloadsForNewBuildInMilliseconds = 60_000;
 
 /** The two calls of the browser's sessionStorage this needs. */
@@ -33,13 +41,19 @@ export type ReloadForNewBuildOutcome =
   | 'reloaded'
   | 'sameBuild'
   | 'noBuildToCompare'
+  | 'alreadyReloadedForThisServerBuild'
   | 'reloadedLessThanAMinuteAgo'
   | 'noMemoryForReloads';
 
+/** What the once-per-announced-build rule found; 'storageFailed' hands over to the fallback. */
+type ReloadOncePerServerBuildOutcome =
+  'reloaded' | 'alreadyReloadedForThisServerBuild' | 'storageFailed';
+
 /**
- * Reloads the page when the server's build differs from the page's, at most once a minute
- * (the moment of each reload is kept in sessionStorage, which survives the reload).
- * Nothing is compared when either id is missing. Returns what it did.
+ * Reloads the page when the server's build differs from the page's, at most once for each
+ * build a server announces (the announced id is kept in sessionStorage, which survives the
+ * reload). If that id cannot be read or written, at most once a minute instead. Nothing is
+ * compared when either id is missing. Returns what it did.
  */
 export function reloadThePageWhenTheServerBuildDiffers(
   serverBuildId: string | undefined,
@@ -52,9 +66,54 @@ export function reloadThePageWhenTheServerBuildDiffers(
     return 'sameBuild';
   }
 
+  const outcomeOncePerServerBuild = reloadOncePerAnnouncedServerBuild(serverBuildId, pageReload);
+  if (outcomeOncePerServerBuild !== 'storageFailed') {
+    return outcomeOncePerServerBuild;
+  }
+  return reloadAtMostOnceAMinute(pageReload);
+}
+
+/**
+ * The main rule: reloads unless the storage already records a reload for this very server
+ * build, writing the id before reloading. Says 'storageFailed' when reading or writing throws.
+ */
+function reloadOncePerAnnouncedServerBuild(
+  serverBuildId: string,
+  pageReload: PageReloadForNewBuild,
+): ReloadOncePerServerBuildOutcome {
+  let reloadMemory: ReloadMemory;
+  let serverBuildLastReloadedFor: string | null;
+  try {
+    reloadMemory = pageReload.openReloadMemory();
+    serverBuildLastReloadedFor = reloadMemory.getItem(serverBuildLastReloadedForStorageKey);
+  } catch {
+    return 'storageFailed';
+  }
+
+  if (serverBuildLastReloadedFor === serverBuildId) {
+    return 'alreadyReloadedForThisServerBuild';
+  }
+
+  // Written before the reload: once the page is gone, nothing more can be written.
+  try {
+    reloadMemory.setItem(serverBuildLastReloadedForStorageKey, serverBuildId);
+  } catch {
+    return 'storageFailed';
+  }
+  pageReload.reloadPage();
+  return 'reloaded';
+}
+
+/**
+ * The fallback when the announced build cannot be kept: reloads at most once a minute, by
+ * the moment of the last reload kept in sessionStorage under its own key.
+ */
+function reloadAtMostOnceAMinute(pageReload: PageReloadForNewBuild): ReloadForNewBuildOutcome {
   // Without a working storage the page could not tell it had just reloaded, so a server
   // whose pages were not rebuilt would reload it at every hello. Not reloading is the
-  // safe side: the page goes on as before this feature, needing a reload by hand.
+  // safe side: the page goes on as before this feature, needing a reload by hand. In a
+  // browser whose sessionStorage fails as a whole (the usual case), this is where the
+  // fallback ends.
   let reloadMemory: ReloadMemory;
   let rememberedText: string | null;
   try {
@@ -85,10 +144,10 @@ export function reloadThePageWhenTheServerBuildDiffers(
 }
 
 /**
- * How long until the once-a-minute rule allows the next reload, in ms: 0 when no reload
- * is remembered or the storage cannot be read. A page whose reload was skipped as too
- * recent waits this long and compares the builds once more, so a second upgrade within a
- * minute (a quick rebuild to fix a typo) is not left until the next reconnect.
+ * How long until the fallback's once-a-minute rule allows the next reload, in ms: 0 when
+ * no reload is remembered or the storage cannot be read. A page whose reload the fallback
+ * skipped as too recent waits this long and compares the builds once more, so a second
+ * upgrade within a minute (a quick rebuild to fix a typo) is not left until the next reconnect.
  */
 export function measureWaitUntilTheNextReloadForNewBuild(
   pageReload: PageReloadForNewBuild,
@@ -103,7 +162,7 @@ export function measureWaitUntilTheNextReloadForNewBuild(
   if (lastReloadAtMs === undefined) {
     return 0;
   }
-  // The same distance either way as reloadThePageWhenTheServerBuildDiffers uses.
+  // The same distance either way as reloadAtMostOnceAMinute uses.
   const timeSinceLastReloadMs = Math.abs(pageReload.readNowMs() - lastReloadAtMs);
   const waitMs = shortestTimeBetweenReloadsForNewBuildInMilliseconds - timeSinceLastReloadMs;
   return Math.max(waitMs, 0);

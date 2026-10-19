@@ -14,7 +14,8 @@
  *   - Anything that is not an object (text, a number, nothing) gives no build id.
  *
  * What these tests deliberately do not cover:
- *   - The comparison and the once-a-minute rule; reloadForNewServerBuild.test.ts.
+ *   - The comparison, the once-per-build rule and its once-a-minute fallback;
+ *     reloadForNewServerBuild.test.ts.
  *   - Each page calling this when its own schema refuses a hello; the
  *     serverConnection.buildReload tests of apps/control and apps/renderer.
  */

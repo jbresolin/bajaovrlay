@@ -22,6 +22,7 @@ reload themselves when the server's build changes: `hello` carries `buildId` (re
 `build-id.json` by `startServer` once at boot and handed to the hub, so it names the build
 this process runs; `pnpm build` writes that file only once every package has built, so a
 rebuild with the server up changes nothing until the restart), and a page from another
-build reloads, at most once a minute. A page loaded between a finished build and the
-restart carries the new id against the old one, and reloads once a minute until the
-restart, so restart right after `pnpm build`. Pages opened before PR #17 still need one reload by hand.
+build reloads, at most once per announced build. A page loaded between a finished build
+and the restart carries the new id against the old one, and reloads once for the old id,
+then not again until the restart announces another build; restart right after `pnpm build`
+all the same, since that page runs the new bundle against the old server meanwhile. Pages opened before PR #17 still need one reload by hand.

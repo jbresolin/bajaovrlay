@@ -80,7 +80,8 @@ schemas, and drops a message they refuse without a word (an older control page d
 every `dataSnapshot`, its source tables frozen under "Em dia"). So `hello` names the
 server's build (`buildId`, the id both Vite builds embed, which `pnpm build` copies to
 `build-id.json` once every package has built and the server reads once at boot), and a
-page loaded from another build reloads itself, at most once a minute (`../build/`). The
+page loaded from another build reloads itself, at most once per announced build
+(once a minute only when sessionStorage cannot keep that build; `../build/`). The
 page reads `buildId` before its own schema checks the rest of the hello, so even a hello it
 refuses can make it reload. The field is optional: a server with no `build-id.json` (development) sends
 none, a page from the Vite dev server has none, and nothing is compared then. A page

@@ -19,10 +19,12 @@
  * very code.
  *
  * And it learns the server's build: a `hello` naming another build than the one this page
- * was loaded from reloads the page, at most once a minute (packages/shared/src/build), so
- * an OBS browser source left open across an upgrade does not go on with the old bundle.
- * The build is read even from a hello this page's own schema refuses (a newer server's
- * slices), and a reload skipped as too recent is tried again once the minute is over.
+ * was loaded from reloads the page, at most once per announced build
+ * (packages/shared/src/build), so an OBS browser source left open across an upgrade does
+ * not go on with the old bundle, and one loaded between a build and the restart is not
+ * blanked again and again. The build is read even from a hello this page's own schema
+ * refuses (a newer server's slices). Only when sessionStorage cannot keep the announced
+ * build is it once a minute, a reload skipped as too recent tried again after the minute.
  */
 import {
   type InstanceStatusMessage,
@@ -185,8 +187,8 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     }
     recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
     if (message.type === 'hello') {
-      // Drawn first: a page that does not reload (same build, or reloaded less than a
-      // minute ago) goes on as always, and one that reloads rebuilds the same stage.
+      // Drawn first: a page that does not reload (same build, or already reloaded for this
+      // one) goes on as always, and one that reloads rebuilds the same stage.
       deliverFullSnapshot(message.slices);
       serverBuildWatch?.compareWithTheServerBuild(message.buildId);
       return { wasHello: true };

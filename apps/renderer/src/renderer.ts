@@ -30,8 +30,9 @@ function startRenderer(stage: HTMLElement): void {
   const connection = connectToServer({
     webSocketAddress: `${webSocketScheme}//${location.host}${pageRole.webSocketPath}`,
     stateAddress: `${location.origin}${pageRole.stateReadingPath}`,
-    // A hello naming another build reloads this page (at most once a minute), so an OBS
-    // browser source left open across an upgrade does not go on with the old bundle.
+    // A hello naming another build reloads this page (at most once per announced build),
+    // so an OBS browser source left open across an upgrade does not go on with the old
+    // bundle, and one loaded between a build and the restart is not blanked repeatedly.
     pageReloadForNewBuild: browserPageReloadForNewBuild,
   });
 

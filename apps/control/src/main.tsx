@@ -36,8 +36,8 @@ const serverConnection = connectToServer({
   webSocketAddress: buildWebSocketAddress(window.location),
   serverStateStore,
   openSocket: openBrowserWebSocket,
-  // A hello naming another build reloads this tab (at most once a minute), so a tab left
-  // open across an upgrade does not go on with the old bundle.
+  // A hello naming another build reloads this tab (at most once per announced build), so
+  // a tab left open across an upgrade does not go on with the old bundle.
   pageReloadForNewBuild: browserPageReloadForNewBuild,
 });
 // The one browser setting of the page, read from localStorage once, here, as the page
