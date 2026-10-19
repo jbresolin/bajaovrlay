@@ -17,8 +17,10 @@
  * What these tests prove:
  *   - The state answer passes the shared SlicesSchema and shows the seeded layers.
  *   - With no role it carries every slice as the store holds it; with `?role=renderer`
- *     or `?role=monitor` the four drawn slices are as the store holds them and every
- *     other slice is an empty list; an unknown role is answered 400 with a pt-BR message.
+ *     or `?role=monitor` the four drawn slices are as the store holds them and each of
+ *     the nine other slices, every one holding something on the server (a macro run and
+ *     a recording included), is an empty list; an unknown role is answered 400 with a
+ *     pt-BR message.
  *   - A command applied to the store shows up in the next answer.
  *   - The OpenAPI document describes GET /state with its `role` query parameter, and
  *     is still generated with the `previewClearedLayerIds` slice (BAJAOVRLAY-36) in the
@@ -39,10 +41,9 @@ import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGr
 import { createStateStore } from '../../core/store/createStateStore.js';
 import { createRaceClockItemOnTheStore } from '../../core/store/raceClockItemOnTheStore.testSupport.js';
 import {
-  buildGoodPollOfTheSimulator,
-  firstPollAtMs,
-  recordPollsOfTheSimulatorByHand,
-} from '../../core/ws/simulatorPolledByHand.testSupport.js';
+  fillEverySliceAScreenIsNotSent,
+  listHiddenSlicesTheServerHoldsNothingIn,
+} from '../../core/ws/hiddenSlicesFilledOnTheStore.testSupport.js';
 import { buildTheCopyAScreenShouldGet } from '../../core/ws/slicesSentToScreens.testSupport.js';
 
 /** Builds the server app on a freshly seeded store, without opening a port. */
@@ -117,12 +118,11 @@ const roleScenarios = [
 
 describe('GET /api/v1/state with a role', () => {
   it.each(roleScenarios)('$name', async ({ address, isAScreen }) => {
-    // Arrange: a server app with a prepared item, and whose simulator was turned on,
-    // polled once by hand (this store has no poller) and turned off, so the slices a
-    // screen is not sent all hold something.
+    // Arrange: a server app with something in every slice a screen is not sent: an item,
+    // a macro and its run (this store has no runner, so the run stays), and the simulator
+    // recorded and polled once by hand (this store has no poller).
     const { app, stateStore } = createServerAppWithSeededStore();
-    createRaceClockItemOnTheStore(stateStore);
-    recordPollsOfTheSimulatorByHand(stateStore, [buildGoodPollOfTheSimulator(6, firstPollAtMs)]);
+    fillEverySliceAScreenIsNotSent(stateStore);
     const slicesOnTheServer = stateStore.readAllSlices();
 
     // Act: ask for the state at the address of the row.
@@ -133,11 +133,10 @@ describe('GET /api/v1/state with a role', () => {
     const expectedBody = isAScreen
       ? buildTheCopyAScreenShouldGet(slicesOnTheServer)
       : slicesOnTheServer;
-    expect(slicesOnTheServer.dataSnapshots, 'the poll must have stored a snapshot').toHaveLength(1);
-    expect(slicesOnTheServer.items, 'the prepared item must be on the server').not.toEqual([]);
-    expect(slicesOnTheServer.dataSources, 'the seeded simulator must be on the server').not.toEqual(
-      [],
-    );
+    expect(
+      listHiddenSlicesTheServerHoldsNothingIn(slicesOnTheServer),
+      'every slice a screen is not sent must hold something on the server, so its emptiness on a screen is proven',
+    ).toEqual([]);
     expect(response.status, 'the state must answer 200 OK').toBe(200);
     expect(body, 'a screen gets only what it draws; anyone else gets all').toEqual(expectedBody);
   });

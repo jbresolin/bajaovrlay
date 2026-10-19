@@ -17,8 +17,9 @@
  *
  * What these tests prove (with a real server on a random port and a real SQLite file):
  *   - An operator's hello carries every slice; the hello of a renderer and of a monitor
- *     carries the four drawn slices as the server holds them and every other slice as an
- *     empty list, on purpose, not because there is no data.
+ *     carries the four drawn slices as the server holds them and each of the nine other
+ *     slices as an empty list, on purpose: the server holds something in every one of
+ *     those nine (a macro run and a recording included), so none is empty by accident.
  *   - Polls recorded while all three are connected reach the operator as `dataSnapshot`
  *     messages and the `dataSources` slice; a renderer and a monitor receive no message
  *     for them at all (each poll changes only slices a screen is not sent).
@@ -46,7 +47,10 @@
 import type { ServerMessage } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { createRaceClockItemOnTheStore } from '../store/raceClockItemOnTheStore.testSupport.js';
+import {
+  fillEverySliceAScreenIsNotSent,
+  listHiddenSlicesTheServerHoldsNothingIn,
+} from './hiddenSlicesFilledOnTheStore.testSupport.js';
 import {
   buildGoodPollOfTheSimulator,
   firstPollAtMs,
@@ -108,14 +112,11 @@ function isSliceOrGroupOfSlices(message: ServerMessage): boolean {
 
 describe('the hello of a connection', () => {
   it('gives an operator every slice, and a renderer and a monitor the four drawn slices with the rest empty', async () => {
-    // Arrange: a running server with a prepared item and a polled simulator (turned on,
-    // polled once and turned off before anyone connected), so the slices a screen is not
-    // sent all have something in them on the server.
+    // Arrange: a running server with something in every slice a screen is not sent (an
+    // item, a macro and its run, and the simulator recorded and polled once), all done
+    // before anyone connected.
     const runningServer = await startServerOnARandomPort();
-    createRaceClockItemOnTheStore(runningServer.stateStore);
-    recordPollsOfTheSimulatorByHand(runningServer.stateStore, [
-      buildGoodPollOfTheSimulator(6, firstPollAtMs),
-    ]);
+    fillEverySliceAScreenIsNotSent(runningServer.stateStore);
     const slicesOnTheServer = runningServer.stateStore.readAllSlices();
 
     // Act: the control page, the renderer OBS loads and the "Programa" monitor connect.
@@ -127,16 +128,13 @@ describe('the hello of a connection', () => {
       role: 'monitor',
     });
 
-    // Assert: the server holds data in the hidden slices; the operator hello has
-    // everything; the two screens get the four drawn slices and the rest empty.
-    expect(slicesOnTheServer.items, 'the prepared item must be on the server').not.toEqual([]);
-    expect(slicesOnTheServer.dataSources, 'the seeded simulator must be on the server').not.toEqual(
-      [],
-    );
-    expect(slicesOnTheServer.dataSnapshots, 'the poll must have stored one snapshot').toHaveLength(
-      1,
-    );
-    expect(slicesOnTheServer.eventLog, 'the commands must have written rows').not.toEqual([]);
+    // Assert: the server holds something in each of the nine slices a screen is not
+    // sent; the operator hello has everything; the two screens get the four drawn slices
+    // and those nine empty.
+    expect(
+      listHiddenSlicesTheServerHoldsNothingIn(slicesOnTheServer),
+      'every slice a screen is not sent must hold something on the server, so its emptiness on a screen is proven',
+    ).toEqual([]);
     expect(helloOfTheOperator, 'the operator hello must carry every slice').toEqual({
       type: 'hello',
       slices: slicesOnTheServer,
