@@ -51,7 +51,9 @@ export type HttpJsonRequestBuildingOptions = {
  *      token changed on the server is sent from the next poll on.
  * Steps 1 and 2 come before any variable is read on purpose: otherwise "A variável …
  * não está definida" against a host off the list would tell an operator which secrets
- * the server holds. A variable not set, or set to nothing, is refused naming it; a
+ * the server holds. To a host on the list step 3 still names a missing variable, which
+ * is accepted: that host receives the value anyway. A variable not set, or set to
+ * nothing, is refused naming it; a
  * header value from a variable with a line break, or with a character fetch refuses (an
  * emoji), is refused by the variable's name. No error quotes a value.
  */

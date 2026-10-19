@@ -78,9 +78,11 @@ not answer the previous ping.
 its WebSocket when the server restarts; it keeps the bundle it loaded, with that bundle's
 schemas, and drops a message they refuse without a word (an older control page dropped
 every `dataSnapshot`, its source tables frozen under "Em dia"). So `hello` names the
-server's build (`buildId`, the id `pnpm build` writes to `build-id.json` and both Vite
-builds embed), and a page loaded from another build reloads itself, at most once a minute
-(`../build/`). The field is optional: a server with no `build-id.json` (development) sends
+server's build (`buildId`, the id both Vite builds embed, which `pnpm build` copies to
+`build-id.json` once every package has built and the server reads once at boot), and a
+page loaded from another build reloads itself, at most once a minute (`../build/`). The
+page reads `buildId` before its own schema checks the rest of the hello, so even a hello it
+refuses can make it reload. The field is optional: a server with no `build-id.json` (development) sends
 none, a page from the Vite dev server has none, and nothing is compared then. A page
 opened before PR #17 knows nothing of `buildId`, so it needs one reload by hand after this
 upgrade; every later upgrade reloads the pages by itself. A screen is spared the

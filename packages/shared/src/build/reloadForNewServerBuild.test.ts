@@ -19,6 +19,8 @@
  *     recent, and an unreadable remembered moment counts as none.
  *   - A storage that cannot be read or written (blocked, private window) reloads
  *     nothing, because without it the page could not stop a loop.
+ *   - The wait until the next reload is allowed: what is left of the minute since the
+ *     last reload, and none when no reload is remembered or the storage fails.
  *
  * What these tests deliberately do not cover:
  *   - The control page and the renderer calling this on their hello; each app's
@@ -30,6 +32,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   lastReloadForNewBuildStorageKey,
+  measureWaitUntilTheNextReloadForNewBuild,
   type PageReloadForNewBuild,
   type ReloadMemory,
   reloadThePageWhenTheServerBuildDiffers,
@@ -234,5 +237,77 @@ describe('a storage the page cannot use', () => {
     // Assert: no reload, because a page that cannot remember it could reload forever.
     expect(outcome, 'a storage that fails must stop the reload').toBe('noMemoryForReloads');
     expect(numberOfReloads, 'the page must not reload without a way to remember it').toBe(0);
+  });
+});
+
+describe('the wait until the next reload is allowed', () => {
+  const scenariosOfTheWait: Array<{
+    name: string;
+    storedEntries: Record<string, string>;
+    expectedWaitMs: number;
+  }> = [
+    // The page reloaded 20 s ago: a skipped reload is tried again 40 s from now.
+    {
+      name: 'waits what is left of the minute after a reload 20 seconds ago',
+      storedEntries: {
+        [lastReloadForNewBuildStorageKey]: String(momentTheHelloArrivesMs - 20_000),
+      },
+      expectedWaitMs: 40_000,
+    },
+    // A minute or more ago: a reload is allowed now.
+    {
+      name: 'waits nothing after a reload 75 seconds ago',
+      storedEntries: {
+        [lastReloadForNewBuildStorageKey]: String(momentTheHelloArrivesMs - 75_000),
+      },
+      expectedWaitMs: 0,
+    },
+    // The clock was set back: a moment 30 s ahead counts as 30 s ago, as for the reload.
+    {
+      name: 'counts a remembered moment 30 seconds ahead as 30 seconds ago',
+      storedEntries: {
+        [lastReloadForNewBuildStorageKey]: String(momentTheHelloArrivesMs + 30_000),
+      },
+      expectedWaitMs: 30_000,
+    },
+    // A page that never reloaded for a build has nothing to wait for.
+    {
+      name: 'waits nothing when no reload is remembered',
+      storedEntries: {},
+      expectedWaitMs: 0,
+    },
+  ];
+
+  it.each(scenariosOfTheWait)('$name', ({ storedEntries, expectedWaitMs }) => {
+    // Arrange: a page from yesterday's build with the row's remembered reload.
+    const { memory } = createReloadMemoryHolding(storedEntries);
+    const page = createPageReloadForTests(buildThePageWasLoadedFrom, memory);
+
+    // Act: measure how long until a reload is allowed again.
+    const waitMs = measureWaitUntilTheNextReloadForNewBuild(page.pageReload);
+
+    // Assert: the wait is what is left of the minute, and nothing was reloaded.
+    expect(waitMs, 'the wait must be what is left of the minute since the last reload').toBe(
+      expectedWaitMs,
+    );
+    expect(page.countReloads(), 'measuring must never reload the page').toBe(0);
+  });
+
+  it('waits nothing when the storage cannot be opened', () => {
+    // Arrange: a page whose sessionStorage is blocked.
+    const pageReload: PageReloadForNewBuild = {
+      pageBuildId: buildThePageWasLoadedFrom,
+      readNowMs: () => momentTheHelloArrivesMs,
+      reloadPage: () => undefined,
+      openReloadMemory: () => {
+        throw new Error('SecurityError: access to sessionStorage is denied');
+      },
+    };
+
+    // Act: measure how long until a reload is allowed again.
+    const waitMs = measureWaitUntilTheNextReloadForNewBuild(pageReload);
+
+    // Assert: no wait; the comparison itself then refuses to reload without a storage.
+    expect(waitMs, 'a storage that fails must give no wait').toBe(0);
   });
 });

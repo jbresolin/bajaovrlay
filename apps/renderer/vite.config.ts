@@ -31,9 +31,10 @@ function chooseHostToReachTheServer(serverListenHost: string | undefined): strin
 }
 
 /**
- * Embeds the id in the repo-root build-id.json (written first by `pnpm build`,
- * scripts/writeBuildId.js) as `import.meta.env.BAJAOVRLAY_BUILD_ID`, in built pages only:
- * the server sends the same id in its hello, and a page from another build reloads itself
+ * Embeds the id in the repo-root build-id.building.json (written first by `pnpm build`,
+ * scripts/writeBuildId.js) as `import.meta.env.BAJAOVRLAY_BUILD_ID`, in built pages only.
+ * Once every package has built, the same id is copied to build-id.json, which the server
+ * reads at boot and sends in its hello; a page from another build reloads itself
  * (packages/shared/src/build). The dev server and Vitest embed nothing, so no comparison
  * happens there; nor does a build that finds no usable file (`vite build` run by hand).
  * The control page's vite.config.ts carries the same plugin.
@@ -52,11 +53,13 @@ function embedTheBuildIdInBuiltPages(): Plugin {
   };
 }
 
-/** The `buildId` text of build-id.json, or undefined when the file is missing or unusable. */
+/** The `buildId` of build-id.building.json, or undefined when it is missing or unusable. */
 function readTheBuildIdOfThisBuild(): string | undefined {
   let fileJson: unknown;
   try {
-    fileJson = JSON.parse(readFileSync(new URL('../../build-id.json', import.meta.url), 'utf8'));
+    fileJson = JSON.parse(
+      readFileSync(new URL('../../build-id.building.json', import.meta.url), 'utf8'),
+    );
   } catch {
     return undefined;
   }

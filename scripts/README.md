@@ -10,7 +10,9 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
   Each answer is stamped with the moment it is made and its session clock runs down from
   when the script started (`liveExampleResponse.js`, tested by `liveExampleResponse.test.ts`),
   so the session card shows a believable race clock rather than the file's fixed instant.
-- `writeBuildId.js` (the first step of `pnpm build`): writes `build-id.json` at the root,
-  the build's moment as its id (`buildIdFile.js`, tested by `buildIdFile.test.ts`). Both
-  Vite builds embed it and the server sends it in hello, so an open page from an older
-  build reloads itself (`packages/shared/src/build`).
+- `writeBuildId.js` (the first step of `pnpm build`): writes `build-id.building.json` at
+  the root, the build's moment as its id, which both Vite builds embed.
+- `publishBuildId.js` (the last step, reached only when every package built): copies it
+  to `build-id.json`, which the server reads once at boot and sends in hello, so an open
+  page from an older build reloads itself after the restart (`packages/shared/src/build`).
+  Both use `buildIdFile.js`, tested by `buildIdFile.test.ts`.

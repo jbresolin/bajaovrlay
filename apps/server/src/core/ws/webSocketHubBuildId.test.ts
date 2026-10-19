@@ -3,15 +3,16 @@
  *
  * What this module is for:
  *   After an upgrade, an open page (an OBS browser source, a control tab) still runs the
- *   bundle it loaded before. The hub puts the build of the pages it serves (`buildId`,
- *   read from build-id.json, the value the built pages embed) in each hello, so a page
- *   from another build reloads itself (packages/shared/src/build).
+ *   bundle it loaded before. The hub puts the build the server runs (`buildId`, read
+ *   from build-id.json once at boot, the value the built pages of that build embed) in
+ *   each hello, so a page from another build reloads itself (packages/shared/src/build).
  *
  * What these tests prove (with a real server on a random port and real sockets):
  *   - An operator, a renderer and a monitor all find the build id in their hello.
- *   - The file is read again for each hello: after a `pnpm build` with the server still
- *     running, the next hello names the new build, the one the pages now embed, so a page
- *     that reloaded onto the new bundle is not told to reload again.
+ *   - The file is read once, at boot: a `pnpm build` with the server still up (which
+ *     rewrites build-id.json only once every package has built) changes nothing until
+ *     the restart, so no page is sent into a half-built folder or a bundle newer than
+ *     the server code that answers it.
  *   - A server started with no build-id.json sends a hello with no `buildId` field at all.
  *
  * What these tests deliberately do not cover:
@@ -75,9 +76,9 @@ describe('the build id in hello', () => {
     );
   });
 
-  it('names the new build once pnpm build has run with the server still up', async () => {
+  it('keeps naming the build it booted with after pnpm build runs with the server up', async () => {
     // Arrange: a server booted with this morning's build, then a lunchtime rebuild that
-    // rewrites build-id.json (and the served pages) without restarting the server.
+    // rewrites build-id.json (and the built folders) without restarting the server.
     const buildIdFilePath = choosePathForABuildIdFile();
     writeBuildIdFileNaming(buildIdFilePath, buildOfRaceDayMorning);
     const runningServer = await startServerOnARandomPort({
@@ -85,16 +86,19 @@ describe('the build id in hello', () => {
     });
     writeBuildIdFileNaming(buildIdFilePath, buildOfRaceDayLunchtime);
 
-    // Act: the OBS renderer, just reloaded onto the lunchtime bundle, connects.
+    // Act: the OBS renderer's socket drops and reconnects during that rebuild.
     const client = await connectWebSocketTestClient(runningServer.port, { role: 'renderer' });
     const hello = await client.waitForMessage('hello', (message) => message.type === 'hello');
 
-    // Assert: the hello names the lunchtime build, so the renderer stays put instead of
-    // reloading (and blanking the program output) once a minute until a restart.
+    // Assert: the hello still names this morning's build, the one this server process
+    // runs, so the renderer keeps its stage instead of reloading into the rebuild.
     expect(
       hello.type === 'hello' && hello.buildId,
-      'the hello must name the build the pages now embed, not the one at boot',
-    ).toBe(buildOfRaceDayLunchtime);
+      'the hello must name the build the server booted with, until a restart',
+    ).toBe(buildOfRaceDayMorning);
+    expect(runningServer.buildId, 'the server must say which build it booted with').toBe(
+      buildOfRaceDayMorning,
+    );
   });
 
   it('leaves the field out when there is no build-id.json', async () => {

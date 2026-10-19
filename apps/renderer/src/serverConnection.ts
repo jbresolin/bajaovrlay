@@ -21,16 +21,20 @@
  * And it learns the server's build: a `hello` naming another build than the one this page
  * was loaded from reloads the page, at most once a minute (packages/shared/src/build), so
  * an OBS browser source left open across an upgrade does not go on with the old bundle.
+ * The build is read even from a hello this page's own schema refuses (a newer server's
+ * slices), and a reload skipped as too recent is tried again once the minute is over.
  */
 import {
   type InstanceStatusMessage,
   mergeChangedSlicesIntoSlices,
   type PageReloadForNewBuild,
-  reloadThePageWhenTheServerBuildDiffers,
+  readBuildIdOfAHello,
+  type ServerBuildWatch,
   type ServerMessage,
   ServerMessageSchema,
   type Slices,
   SlicesSchema,
+  startServerBuildWatch,
 } from '@bajaovrlay/shared';
 import { recordServerClockSample } from '@bajaovrlay/shared/clock';
 
@@ -131,6 +135,9 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   // The socket that is open right now, if there is one: set when a socket opens and
   // emptied when it closes. It is the only socket anything may be sent on.
   let socketThatIsOpen: ServerSocket | undefined = undefined;
+  // Compares the build of each hello with the page's (packages/shared/src/build); none
+  // when the page brought no build stand-ins (most tests).
+  const serverBuildWatch = startWatchOnTheServerBuild(options.pageReloadForNewBuild, logEvent);
 
   function sendInstanceStatus(statusReport: InstanceStatusMessage): void {
     if (socketThatIsOpen === undefined) {
@@ -159,43 +166,21 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: false }));
   }
 
-  /**
-   * Reloads the page when the hello names another build than the page's (at most once a
-   * minute), and logs what it did unless the builds agree or there is nothing to compare.
-   */
-  function reloadWhenTheServerRunsAnotherBuild(serverBuildId: string | undefined): void {
-    if (options.pageReloadForNewBuild === undefined) {
-      return;
-    }
-    const pageBuildId = options.pageReloadForNewBuild.pageBuildId;
-    const outcome = reloadThePageWhenTheServerBuildDiffers(
-      serverBuildId,
-      options.pageReloadForNewBuild,
-    );
-    const builds = { serverBuildId, pageBuildId };
-    if (outcome === 'reloaded') {
-      logEvent('info', 'reloading the page: the server runs another build', builds);
-    }
-    if (outcome === 'reloadedLessThanAMinuteAgo') {
-      logEvent(
-        'warn',
-        'not reloading for the server build: the page reloaded less than a minute ago',
-        builds,
-      );
-    }
-    if (outcome === 'noMemoryForReloads') {
-      logEvent('warn', 'not reloading for the server build: sessionStorage is unusable', builds);
-    }
-  }
-
   /** Acts on one message, and tells the socket whether it was the hello it waits for. */
   function handleMessage(data: unknown): { wasHello: boolean } {
     // Read first, before the message is even parsed: checking a large hello takes a few
     // milliseconds, and each of them would make the sample of the server's clock later.
     const localTimeAtArrivalMs = Date.now();
-    const message = parseServerMessage(data);
+    const messageJson = readJsonOfMessage(data);
+    const message = parseServerMessage(messageJson);
     if (message === undefined) {
       logEvent('warn', 'server message ignored: not in the protocol');
+      // A hello this page's schema refuses is the case the build check exists for: a
+      // newer server's slices that this bundle does not know. Its build is read on its own.
+      const buildIdOfARefusedHello = readBuildIdOfAHello(messageJson);
+      if (buildIdOfARefusedHello !== undefined) {
+        serverBuildWatch?.compareWithTheServerBuild(buildIdOfARefusedHello);
+      }
       return { wasHello: false };
     }
     recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
@@ -203,7 +188,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       // Drawn first: a page that does not reload (same build, or reloaded less than a
       // minute ago) goes on as always, and one that reloads rebuilds the same stage.
       deliverFullSnapshot(message.slices);
-      reloadWhenTheServerRunsAnotherBuild(message.buildId);
+      serverBuildWatch?.compareWithTheServerBuild(message.buildId);
       return { wasHello: true };
     }
     if (message.type === 'slice') {
@@ -334,6 +319,27 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 }
 
 /**
+ * Starts the watch on the server's build with the browser's setTimeout, or none when the
+ * page brought no build stand-ins. The watch logs through the renderer's log.
+ */
+function startWatchOnTheServerBuild(
+  pageReloadForNewBuild: PageReloadForNewBuild | undefined,
+  logEvent: typeof logRendererEvent,
+): ServerBuildWatch | undefined {
+  if (pageReloadForNewBuild === undefined) {
+    return undefined;
+  }
+  return startServerBuildWatch({
+    pageReload: pageReloadForNewBuild,
+    logBuildEvent: logEvent,
+    startTimer: (callback, waitInMilliseconds) => {
+      const timer = setTimeout(callback, waitInMilliseconds);
+      return () => clearTimeout(timer);
+    },
+  });
+}
+
+/**
  * Records what a `hello`, `slice`, `slices` or `time` message says the server's clock showed, as
  * one sample for the shared "now" the graphics read. A `commandResult` carries no clock,
  * and neither does a hello or slice from a stand-in server that leaves `serverNowMs`
@@ -361,17 +367,20 @@ function recordServerClockSampleOfMessage(
   recordServerClockSample(message.serverNowMs, localTimeAtArrivalMs);
 }
 
-/** Reads one WebSocket message; undefined when it is not text, not JSON or not in the protocol. */
-function parseServerMessage(data: unknown): ServerMessage | undefined {
+/** Reads the JSON of one WebSocket message; undefined when it is not text or not JSON. */
+function readJsonOfMessage(data: unknown): unknown {
   if (typeof data !== 'string') {
     return undefined;
   }
-  let json: unknown;
   try {
-    json = JSON.parse(data);
+    return JSON.parse(data);
   } catch {
     return undefined;
   }
+}
+
+/** Checks the JSON of one message against the protocol; undefined when it is not in it. */
+function parseServerMessage(json: unknown): ServerMessage | undefined {
   const parsed = ServerMessageSchema.safeParse(json);
   if (!parsed.success) {
     return undefined;

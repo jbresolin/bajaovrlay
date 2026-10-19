@@ -14,7 +14,8 @@
  *     while one with typed values only is fetched from any host.
  *
  * What these tests deliberately do not cover:
- *   - That no refusal tells which variables exist, and how an entry matches a host: the
+ *   - That no refusal to a host off the list (or with no list) tells which variables
+ *     exist, and how an entry matches a host: the
  *     adapter's httpJsonHostAllowlist.test.ts and sourceHostAllowlist.test.ts.
  *   - The route's other answers: httpJsonSampleRoute.test.ts.
  */

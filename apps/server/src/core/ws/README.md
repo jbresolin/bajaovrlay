@@ -19,7 +19,9 @@ snapshot changed, just before that `slice`/`slices`, which never carry `dataSnap
 
 The message shapes, with one JSON example each: `packages/shared/src/ws/README.md`. Pages
 reload themselves when the server's build changes: `hello` carries `buildId` (read from
-`build-id.json` by `src/readBuildId.ts` for every hello, not once at boot, so a rebuild
-with the server up names the bundle now served), and a page from another build reloads, at
-most once a minute. A `pnpm build` that fails after writing the file leaves pages older
-than the id, reloading once a minute until a build succeeds. Pages opened before PR #17 still need one reload by hand.
+`build-id.json` by `startServer` once at boot and handed to the hub, so it names the build
+this process runs; `pnpm build` writes that file only once every package has built, so a
+rebuild with the server up changes nothing until the restart), and a page from another
+build reloads, at most once a minute. A page loaded between a finished build and the
+restart carries the new id against the old one, and reloads once a minute until the
+restart, so restart right after `pnpm build`. Pages opened before PR #17 still need one reload by hand.

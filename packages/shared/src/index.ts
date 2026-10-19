@@ -109,12 +109,24 @@ export {
 // than the one the page was loaded from; the browser's stand-ins it needs are typed here.
 export {
   lastReloadForNewBuildStorageKey,
+  measureWaitUntilTheNextReloadForNewBuild,
   type PageReloadForNewBuild,
   type ReloadForNewBuildOutcome,
   type ReloadMemory,
   reloadThePageWhenTheServerBuildDiffers,
   shortestTimeBetweenReloadsForNewBuildInMilliseconds,
 } from './build/reloadForNewServerBuild.js';
+// The buildId of a hello read before the page's own schema checks the rest of it, so a
+// page that refuses a newer server's hello can still reload onto the new bundle.
+export { readBuildIdOfAHello } from './build/readBuildIdOfAHello.js';
+// A page's watch on the server's build: compares each hello's build, logs, and looks once
+// more when a reload was skipped as less than a minute after the last one.
+export {
+  type CancelTimer,
+  type ServerBuildWatch,
+  type ServerBuildWatchOptions,
+  startServerBuildWatch,
+} from './build/serverBuildWatch.js';
 // WebSocket messages from a client: command (control page) and instanceStatus (renderer).
 export {
   type ClientMessage,

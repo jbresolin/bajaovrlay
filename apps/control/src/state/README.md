@@ -6,7 +6,9 @@ sending a command. Start reading at `serverConnection.ts`, then `serverStateStor
 - `serverConnection.ts` — the WebSocket client: checks every message against the shared
   schema, fills the store, redials with growing waits, and `sendCommand` (settles on the
   matching `commandResult`, gives up after 5 s); a hello naming another build than the
-  page's reloads the tab, at most once a minute (`packages/shared/src/build`).
+  page's reloads the tab, at most once a minute, even a hello this page's schema refuses;
+  a reload skipped as too recent is tried again when the minute is over
+  (`startServerBuildWatch`, `packages/shared/src/build`).
 - `serverStateStore.ts` — Zustand store: every slice, connection status, last error; a
   `dataSnapshot` message is merged into `dataSnapshots` by `sourceId` (null removes).
 - `commandFailure.ts` — the codes and the error a failed command carries.

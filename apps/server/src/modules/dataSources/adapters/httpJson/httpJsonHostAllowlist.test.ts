@@ -8,7 +8,9 @@
  *   closes that: with the list set, a request to a host not on it is refused before
  *   anything is read or sent; with the list unset, any host may be fetched, but a request
  *   that names a variable is refused. Either check runs before any variable is read, so
- *   the "variável não definida" message cannot tell anyone which secrets exist.
+ *   a request to a host off the list, or any request with no list set, cannot tell
+ *   anyone which secrets exist. To a host on the list, "não está definida" still names
+ *   a missing variable; that is accepted, because a listed host receives the value anyway.
  *
  * What these tests prove (a real HTTP server on 127.0.0.1 and a random port standing in
  * for an address someone wants the secrets sent to, real fetch):
@@ -215,7 +217,7 @@ describe('a list of allowed hosts that is not set', () => {
   });
 });
 
-describe('no way to learn which variables exist', () => {
+describe('no way to learn which variables exist without a listed host', () => {
   const oracleScenarios = [
     // Set list, host off it: the host is refused before anything else.
     {

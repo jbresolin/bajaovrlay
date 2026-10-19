@@ -32,7 +32,7 @@ export async function startServerOnARandomPort(
     heartbeatIntervalInMilliseconds?: number;
     logger?: ServerLogger;
     readCurrentTime?: () => Date;
-    /** The build-id.json the hub reads for each hello; none unless a test gives one. */
+    /** The build-id.json the boot reads once; none unless a test gives one. */
     buildIdFileUrl?: URL;
   } = {},
 ) {

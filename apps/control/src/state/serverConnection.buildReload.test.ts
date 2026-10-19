@@ -16,6 +16,11 @@
  *   - A second hello naming another build less than a minute after a reload (the page
  *     came back, and the server's pages were never rebuilt) reloads nothing and warns.
  *   - The hello is still taken in as usual: the page is connected either way.
+ *   - A reload skipped that way is not lost: once the minute is over, the builds are
+ *     compared again, and a page still on another build reloads then (a second upgrade
+ *     40 seconds after the first, to fix a typo).
+ *   - A hello this page's own schema refuses (a newer server's slices) still reloads the
+ *     page when it names another build: that page is the one that most needs it.
  *
  * What these tests deliberately do not cover:
  *   - The edge cases of the one-a-minute rule and a broken storage;
@@ -24,7 +29,7 @@
  *     the id Vite embeds; a page reloading itself after an upgrade is the PR walk's step.
  */
 import type { PageReloadForNewBuild, ServerMessage } from '@bajaovrlay/shared';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { connectControlPageToFakeServer } from './connectionToFakeServer.testSupport';
 import { buildSlicesWithNothingOnAir } from './slicesLikeTheServerSends.testSupport';
@@ -33,6 +38,8 @@ import { buildSlicesWithNothingOnAir } from './slicesLikeTheServerSends.testSupp
 // upgrade this morning, written as scripts/writeBuildId.js writes them.
 const buildOfThisPage = '2026-10-18T09:12:44.103Z';
 const buildOfTheUpgradedServer = '2026-10-19T07:40:02.518Z';
+// A second upgrade 40 seconds later, to fix a typo found right after the first.
+const buildOfTheTypoFix = '2026-10-19T07:40:42.907Z';
 // 10:15 in Brasília on 19 October 2026, when the first hello arrives.
 const momentOfTheFirstHelloMs = Date.parse('2026-10-19T13:15:00.000Z');
 
@@ -139,6 +146,12 @@ describe('the build named in hello', () => {
   });
 
   it('does not reload a second time within a minute, and warns instead', () => {
+    // Faked timers: the page now arms a timer for the end of the minute, and a real one
+    // must not outlive the test.
+    vi.useFakeTimers();
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     // Arrange: the page reloaded for this morning's build 20 seconds ago (the stand-in
     // storage outlives that reload), and the server's pages were never rebuilt, so the
     // page it reloaded into still carries yesterday's build.
@@ -171,5 +184,71 @@ describe('the build named in hello', () => {
       secondConnection.recordedLogLines.map((line) => line.message),
       'the log must say the page did not reload again',
     ).toContain('not reloading for the server build: the page reloaded less than a minute ago');
+  });
+
+  it('compares the builds again once the minute is over, and reloads then', () => {
+    // Arrange: timers faked; the page reloaded for this morning's build 20 seconds ago,
+    // and João has since rebuilt and restarted again to fix a typo, so the reloaded
+    // page's hello names the typo fix, which it does not carry either.
+    vi.useFakeTimers();
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const page = createPageThatCountsItsReloads(buildOfThisPage);
+    const firstConnection = connectControlPageToFakeServer({
+      pageReloadForNewBuild: page.pageReloadForNewBuild,
+    });
+    firstConnection.fakeServerSocket.acceptConnection();
+    firstConnection.fakeServerSocket.sendMessage(
+      buildHelloNamingTheBuild(buildOfTheUpgradedServer),
+    );
+    page.letTimePass(20_000);
+    const secondConnection = connectControlPageToFakeServer({
+      pageReloadForNewBuild: page.pageReloadForNewBuild,
+    });
+    secondConnection.fakeServerSocket.acceptConnection();
+    secondConnection.fakeServerSocket.sendMessage(buildHelloNamingTheBuild(buildOfTheTypoFix));
+    const reloadsRightAfterTheSecondHello = page.countReloads();
+
+    // Act: the rest of the minute passes, on the page's clock and on its timers.
+    page.letTimePass(39_999);
+    vi.advanceTimersByTime(39_999);
+    const reloadsJustBeforeTheMinute = page.countReloads();
+    page.letTimePass(1);
+    vi.advanceTimersByTime(1);
+
+    // Assert: no second reload inside the minute, then exactly one when it is over.
+    expect(reloadsRightAfterTheSecondHello, 'no reload may happen within the minute').toBe(1);
+    expect(reloadsJustBeforeTheMinute, 'no reload may happen a millisecond early').toBe(1);
+    expect(page.countReloads(), 'the skipped reload must happen once the minute is over').toBe(2);
+  });
+
+  it('reloads the page when its own schema refuses a hello naming another build', () => {
+    // Arrange: a page from yesterday's build, dialling a newer server whose hello carries
+    // layers in a shape this page's schema refuses.
+    const page = createPageThatCountsItsReloads(buildOfThisPage);
+    const { fakeServerSocket, serverStateStore, recordedLogLines } = connectControlPageToFakeServer(
+      { pageReloadForNewBuild: page.pageReloadForNewBuild },
+    );
+    fakeServerSocket.acceptConnection();
+    const helloThisPageRefuses = {
+      type: 'hello',
+      slices: { ...buildSlicesWithNothingOnAir(), layers: 'not-a-list' },
+      buildId: buildOfTheUpgradedServer,
+    };
+
+    // Act: that hello arrives.
+    fakeServerSocket.sendRawText(JSON.stringify(helloThisPageRefuses));
+
+    // Assert: the page reloaded once, though it never connected and logged the refusal.
+    expect(page.countReloads(), 'a refused hello naming another build must reload').toBe(1);
+    expect(
+      serverStateStore.getState().connectionStatus,
+      'a refused hello must not connect the page',
+    ).not.toBe('connected');
+    expect(
+      recordedLogLines.map((line) => line.message),
+      'the log must still say the message was not in the protocol',
+    ).toContain('ignored a server message that is not in the protocol');
   });
 });

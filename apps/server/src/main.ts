@@ -9,16 +9,12 @@ import { resolveDatabasePath } from './core/env/resolveDatabasePath.js';
 import { resolveDataFolder } from './core/env/resolveDataFolder.js';
 import { findBuiltPageFolder } from './core/http/builtPageFolders.js';
 import { createLogger } from './core/logger/createLogger.js';
-import { buildIdFileUrl, readBuildId } from './readBuildId.js';
+import { buildIdFileUrl } from './readBuildId.js';
 import { readServerVersion } from './readServerVersion.js';
 
 const environment = readServerEnvironment(process.env);
 const logger = createLogger({ level: environment.LOG_LEVEL });
 const version = readServerVersion();
-// The id of the last `pnpm build`, which the built pages embed. Read here only for the
-// boot log and warning: the hub reads the file again for every hello, because the pages
-// are served from disk and a rebuild with the server up changes them at once.
-const buildIdAtBoot = readBuildId(buildIdFileUrl);
 
 // Every path is resolved from this file (src/main.ts, or dist/main.js once built: the
 // same depth), never from the folder the server was started in.
@@ -38,9 +34,6 @@ if (controlPageFolder === undefined) {
 }
 if (rendererPageFolder === undefined) {
   logger.warn('renderer is not built; run `pnpm build` to serve it at /render/');
-}
-if (buildIdAtBoot === undefined) {
-  logger.warn('no build-id.json; open pages will not reload themselves after an upgrade');
 }
 
 try {
@@ -63,12 +56,16 @@ try {
       host: environment.HOST,
       port: runningServer.port,
       version,
-      build_id: buildIdAtBoot,
+      build_id: runningServer.buildId,
       database_path: databasePath,
       data_folder: dataFolder,
     },
     'server listening',
   );
+  // startServer read build-id.json once, at boot; that id is the one every hello names.
+  if (runningServer.buildId === undefined) {
+    logger.warn('no build-id.json; open pages will not reload themselves after an upgrade');
+  }
 
   // On Ctrl+C or a service stop: drop WebSocket clients, stop listening, close the
   // database, then exit.

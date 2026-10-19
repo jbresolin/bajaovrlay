@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "pnpm --recursive --parallel --if-present run dev",
-    "build": "node scripts/writeBuildId.js && pnpm --recursive --if-present run build",
+    "build": "node scripts/writeBuildId.js && pnpm --recursive --if-present run build && node scripts/publishBuildId.js",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --project tsconfig.json && pnpm --recursive --if-present run typecheck",

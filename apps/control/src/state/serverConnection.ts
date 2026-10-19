@@ -1,9 +1,11 @@
 import {
   type CommandInput,
   type PageReloadForNewBuild,
-  reloadThePageWhenTheServerBuildDiffers,
+  readBuildIdOfAHello,
+  type ServerBuildWatch,
   type ServerMessage,
   ServerMessageSchema,
+  startServerBuildWatch,
 } from '@bajaovrlay/shared';
 import { recordServerClockSample } from '@bajaovrlay/shared/clock';
 
@@ -103,6 +105,9 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   let numberOfFailedCallsInARow = 0;
   let redialTimer: ReturnType<typeof setTimeout> | undefined;
   let wasClosedOnPurpose = false;
+  // Compares the build of each hello with the page's (packages/shared/src/build); none
+  // when the page brought no build stand-ins (most tests).
+  const serverBuildWatch = startWatchOnTheServerBuild(options.pageReloadForNewBuild, logEvent);
 
   function dialTheServer(): void {
     currentSocket = openSocket(webSocketAddress, {
@@ -132,9 +137,16 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     // Read before the message is checked: checking a large hello takes a few
     // milliseconds, and each of them would make the sample of the server's clock later.
     const localTimeAtArrivalMs = Date.now();
-    const message = readServerMessage(text);
+    const messageJson = readJsonOfMessage(text);
+    const message = readServerMessage(messageJson);
     if (message === undefined) {
       logEvent('warn', 'ignored a server message that is not in the protocol');
+      // A hello this page's schema refuses is the case the build check exists for: a
+      // newer server's slices that this bundle does not know. Its build is read on its own.
+      const buildIdOfARefusedHello = readBuildIdOfAHello(messageJson);
+      if (buildIdOfARefusedHello !== undefined) {
+        serverBuildWatch?.compareWithTheServerBuild(buildIdOfARefusedHello);
+      }
       return;
     }
     recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
@@ -146,7 +158,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         // than a minute ago) is connected as always; one that reloads loses nothing.
         serverStateStore.getState().replaceEverySlice(message.slices);
         serverStateStore.getState().changeConnectionStatus('connected');
-        reloadWhenTheServerRunsAnotherBuild(message.buildId);
+        serverBuildWatch?.compareWithTheServerBuild(message.buildId);
         break;
       case 'slice':
         serverStateStore.getState().replaceOneSlice(message);
@@ -165,35 +177,6 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         // that is all: nothing is set in the store, so no component redraws, and no
         // line is logged every ten seconds.
         break;
-    }
-  }
-
-  /**
-   * Reloads the page when the hello names another build than the page's (at most once a
-   * minute, packages/shared/src/build), and logs what it did unless the builds agree.
-   */
-  function reloadWhenTheServerRunsAnotherBuild(serverBuildId: string | undefined): void {
-    if (options.pageReloadForNewBuild === undefined) {
-      return;
-    }
-    const pageBuildId = options.pageReloadForNewBuild.pageBuildId;
-    const outcome = reloadThePageWhenTheServerBuildDiffers(
-      serverBuildId,
-      options.pageReloadForNewBuild,
-    );
-    const builds = { serverBuildId, pageBuildId };
-    if (outcome === 'reloaded') {
-      logEvent('info', 'reloading the page: the server runs another build', builds);
-    }
-    if (outcome === 'reloadedLessThanAMinuteAgo') {
-      logEvent(
-        'warn',
-        'not reloading for the server build: the page reloaded less than a minute ago',
-        builds,
-      );
-    }
-    if (outcome === 'noMemoryForReloads') {
-      logEvent('warn', 'not reloading for the server build: sessionStorage is unusable', builds);
     }
   }
 
@@ -288,11 +271,33 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   function close(): void {
     wasClosedOnPurpose = true;
     clearTimeout(redialTimer);
+    serverBuildWatch?.stop();
     currentSocket?.close();
   }
 
   dialTheServer();
   return { sendCommand, close };
+}
+
+/**
+ * Starts the watch on the server's build with the browser's setTimeout, or none when the
+ * page brought no build stand-ins. The watch logs through the control page's log.
+ */
+function startWatchOnTheServerBuild(
+  pageReloadForNewBuild: PageReloadForNewBuild | undefined,
+  logEvent: LogControlEvent,
+): ServerBuildWatch | undefined {
+  if (pageReloadForNewBuild === undefined) {
+    return undefined;
+  }
+  return startServerBuildWatch({
+    pageReload: pageReloadForNewBuild,
+    logBuildEvent: logEvent,
+    startTimer: (callback, waitInMilliseconds) => {
+      const timer = setTimeout(callback, waitInMilliseconds);
+      return () => clearTimeout(timer);
+    },
+  });
 }
 
 /**
@@ -319,17 +324,20 @@ function recordServerClockSampleOfMessage(
   recordServerClockSample(message.serverNowMs, localTimeAtArrivalMs);
 }
 
-/** Reads one message as the protocol defines it, or undefined when it is not one. */
-function readServerMessage(text: unknown): ServerMessage | undefined {
+/** Reads the JSON of one message; undefined when it is not text or not JSON. */
+function readJsonOfMessage(text: unknown): unknown {
   if (typeof text !== 'string') {
     return undefined;
   }
-  let parsedJson: unknown;
   try {
-    parsedJson = JSON.parse(text);
+    return JSON.parse(text);
   } catch {
     return undefined;
   }
+}
+
+/** Reads one message as the protocol defines it, or undefined when it is not one. */
+function readServerMessage(parsedJson: unknown): ServerMessage | undefined {
   const parsedMessage = ServerMessageSchema.safeParse(parsedJson);
   if (!parsedMessage.success) {
     return undefined;

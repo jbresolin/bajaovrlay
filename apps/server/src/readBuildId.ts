@@ -4,8 +4,8 @@ import { z } from 'zod';
 
 // This file sits one level below apps/server both as source (src/) and when built
 // (dist/), so the same relative path reaches the repository root in both cases.
-// scripts/writeBuildId.js writes the file there at the start of `pnpm build`, and both
-// Vite configs embed the id it holds into their pages.
+// scripts/publishBuildId.js writes the file there at the end of `pnpm build`, once every
+// package has built, with the id both Vite configs embedded into their pages.
 /** Where `pnpm build` leaves build-id.json: the repository root. */
 export const buildIdFileUrl = new URL('../../../build-id.json', import.meta.url);
 

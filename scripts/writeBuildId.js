@@ -1,15 +1,13 @@
-// The first step of `pnpm build`: writes build-id.json at the repository root, so the
-// control page, the renderer and the server all name the same build. Both Vite configs
-// embed the id it holds into their pages, and the server reads it at boot and sends it in
-// every hello; a page whose id differs reloads itself (packages/shared/src/build).
+// The first step of `pnpm build`: writes build-id.building.json at the repository root,
+// the id of the build under way. Both Vite configs embed the id it holds into their
+// pages. The server does not read this file: it reads build-id.json, which
+// publishBuildId.js copies from this one only once every package has built, so a build
+// that fails or is still running never changes the build the server announces.
 // What could go wrong: a later `pnpm --filter <app> build` alone reuses the id already in
-// the file, so that page keeps the old id; only the root `pnpm build` writes a new one.
-// The file is gitignored: it describes this checkout's build, not the source.
+// the file, so that page keeps the last full build's id; only the root `pnpm build`
+// writes a new one. The file is gitignored: it describes this checkout's build.
 import { writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 
-import { writeBuildIdFileText } from './buildIdFile.js';
+import { buildingBuildIdFileUrl, writeBuildIdFileText } from './buildIdFile.js';
 
-const buildIdFilePath = fileURLToPath(new URL('../build-id.json', import.meta.url));
-
-writeFileSync(buildIdFilePath, writeBuildIdFileText(new Date()));
+writeFileSync(buildingBuildIdFileUrl, writeBuildIdFileText(new Date()));

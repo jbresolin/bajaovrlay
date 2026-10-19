@@ -8,6 +8,7 @@ import {
   type SourceHostAllowlist,
   startDataSourceService,
 } from '../../modules/dataSources/index.js';
+import { readBuildId } from '../../readBuildId.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
 import type { ServerLogger } from '../logger/createLogger.js';
@@ -41,8 +42,9 @@ export type StartServerOptions = {
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /**
-   * Where `pnpm build` leaves build-id.json (the id the served pages embed). The hub reads
-   * it for every hello so an open page from another build reloads itself. Undefined: none sent.
+   * Where `pnpm build` leaves build-id.json (the id the built pages embed). Read once, at
+   * boot: it names the build this process runs, which the hub sends in every hello so an
+   * open page from another build reloads itself. Undefined, or no usable file: none sent.
    */
   buildIdFileUrl?: URL | undefined;
   /** Defaults to 15 s; tests use a few milliseconds. */
@@ -59,6 +61,8 @@ export type StartServerOptions = {
 export type RunningServer = {
   port: number;
   stateStore: StateStore;
+  /** The build read from build-id.json at boot, sent in every hello; undefined when none. */
+  buildId: string | undefined;
   /**
    * Stops polling data sources (calling off every poll in flight), calls off pending
    * auto-outs and a macro's pending wait, drops WebSocket clients, stops listening and
@@ -92,6 +96,13 @@ async function startServingFromDatabase(
   database: ServerDatabase,
   options: StartServerOptions,
 ): Promise<RunningServer> {
+  // Once, at boot, and never again: the id names the build this process runs. A
+  // `pnpm build` with the server up writes a new id only once every package has built
+  // (scripts/publishBuildId.js), and it takes effect at the restart, together with the
+  // new server code; reading it per hello would send pages into a folder still being
+  // written, or onto a bundle newer than the code answering it.
+  const buildId =
+    options.buildIdFileUrl === undefined ? undefined : readBuildId(options.buildIdFileUrl);
   const stateStore = createStateStore({
     database,
     logger: options.logger,
@@ -144,7 +155,7 @@ async function startServingFromDatabase(
       heartbeatIntervalInMilliseconds:
         options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
       readCurrentTime: options.readCurrentTime,
-      buildIdFileUrl: options.buildIdFileUrl,
+      buildId,
     });
   } catch (bootError) {
     // The poller already armed a poll and a stale watch for every source left on: left
@@ -173,6 +184,7 @@ async function startServingFromDatabase(
   return {
     port: (httpServer.address() as AddressInfo).port,
     stateStore,
+    buildId,
     close: () => {
       closingEverything ??= closeEverything();
       return closingEverything;

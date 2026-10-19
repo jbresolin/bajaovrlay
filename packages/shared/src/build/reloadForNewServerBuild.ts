@@ -84,6 +84,31 @@ export function reloadThePageWhenTheServerBuildDiffers(
   return 'reloaded';
 }
 
+/**
+ * How long until the once-a-minute rule allows the next reload, in ms: 0 when no reload
+ * is remembered or the storage cannot be read. A page whose reload was skipped as too
+ * recent waits this long and compares the builds once more, so a second upgrade within a
+ * minute (a quick rebuild to fix a typo) is not left until the next reconnect.
+ */
+export function measureWaitUntilTheNextReloadForNewBuild(
+  pageReload: PageReloadForNewBuild,
+): number {
+  let rememberedText: string | null;
+  try {
+    rememberedText = pageReload.openReloadMemory().getItem(lastReloadForNewBuildStorageKey);
+  } catch {
+    return 0;
+  }
+  const lastReloadAtMs = readRememberedMoment(rememberedText);
+  if (lastReloadAtMs === undefined) {
+    return 0;
+  }
+  // The same distance either way as reloadThePageWhenTheServerBuildDiffers uses.
+  const timeSinceLastReloadMs = Math.abs(pageReload.readNowMs() - lastReloadAtMs);
+  const waitMs = shortestTimeBetweenReloadsForNewBuildInMilliseconds - timeSinceLastReloadMs;
+  return Math.max(waitMs, 0);
+}
+
 /** The remembered moment in ms, or undefined when none is kept or the text is no number. */
 function readRememberedMoment(rememberedText: string | null): number | undefined {
   if (rememberedText === null) {

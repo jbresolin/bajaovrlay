@@ -2,9 +2,10 @@
  * Reading the build id (apps/server)
  *
  * What this module is for:
- *   `pnpm build` first writes build-id.json at the repository root (scripts/writeBuildId.js),
- *   and both Vite builds embed the id it holds. The server reads the same file for every
- *   hello and puts the id in it, so an open page from another build reloads itself.
+ *   `pnpm build` ends, once every package has built, by writing build-id.json at the
+ *   repository root (scripts/publishBuildId.js), holding the id both Vite builds embedded.
+ *   The server reads it once at boot and puts the id in every hello, so an open page from
+ *   another build reloads itself.
  *
  * What these tests prove:
  *   - A file written as the build script writes it gives its id.
@@ -13,7 +14,7 @@
  *     reload helper must never stop the server from booting on race day.
  *
  * What these tests deliberately do not cover:
- *   - The real file at the repository root; the hub reads it with buildIdFileUrl.
+ *   - The real file at the repository root; startServer reads it with buildIdFileUrl.
  *   - Sending the id in hello; core/ws/webSocketHubBuildId.test.ts.
  */
 import { writeFileSync } from 'node:fs';
