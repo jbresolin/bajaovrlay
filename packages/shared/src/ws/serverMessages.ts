@@ -29,11 +29,18 @@ import { SlicesSchema } from '../slices/slices.js';
  */
 const ServerNowMsSchema = z.number().int().optional();
 
-/** Sent once, right after a client connects: every slice, and the server's clock time. */
+/**
+ * Sent once, right after a client connects: every slice, the server's clock time and the
+ * build the server runs (`buildId`, the value its built pages embed; packages/shared/src/build).
+ * A page loaded from another build reloads itself. `buildId` is optional: a server from
+ * before this field, or one started with no build-id.json, leaves it out, and nothing is
+ * compared then. A page from before this field ignores it (Zod drops unknown keys).
+ */
 export const HelloMessageSchema = z.object({
   type: z.literal('hello'),
   slices: SlicesSchema,
   serverNowMs: ServerNowMsSchema,
+  buildId: z.string().min(1).optional(),
 });
 
 /**

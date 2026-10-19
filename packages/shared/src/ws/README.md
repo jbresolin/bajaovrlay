@@ -7,7 +7,8 @@ checks that every JSON example below passes its schema, so this page cannot drif
 
 Every message is one JSON object, told apart by its `type` field:
 
-- `hello` (server → client): every slice, sent once right after the client connects.
+- `hello` (server → client): every slice, sent once right after the client connects, and
+  the server's build (`buildId`, optional; see "Pages reload themselves" below).
 - `slice` (server → client): the one slice a state change changed, sent to every client.
 - `slices` (server → client): instead of `slice`, when one state change changed more than
   one slice: every changed slice by name (a part of `hello`'s `slices`, each checked by
@@ -73,15 +74,18 @@ A message that is not JSON or not in the protocol is answered with an error
 logged; the socket stays open. The server pings every 15 s and drops a socket that did
 not answer the previous ping.
 
-**An upgrade that adds a message type or a data-source kind needs every page reloaded.**
-An open page only reconnects its WebSocket when the server restarts; it keeps the bundle
-it loaded, with that bundle's schemas. A page drops a message its schemas refuse without a
-word: an older control page drops every `dataSnapshot` (its source tables freeze while the
-chip still reads "Em dia"). A screen is spared the data-source kinds: it is never sent
-`dataSources`, so a source of a kind it does not know (`httpJson`, from PR #17) cannot make
-it refuse its `hello`; a new message type or a change to a drawn slice still can. After
-such an upgrade, refresh every OBS browser source and reload every open control tab. The
-server does not tell pages its build yet.
+**Pages reload themselves when the server's build changes.** An open page only reconnects
+its WebSocket when the server restarts; it keeps the bundle it loaded, with that bundle's
+schemas, and drops a message they refuse without a word (an older control page dropped
+every `dataSnapshot`, its source tables frozen under "Em dia"). So `hello` names the
+server's build (`buildId`, the id `pnpm build` writes to `build-id.json` and both Vite
+builds embed), and a page loaded from another build reloads itself, at most once a minute
+(`../build/`). The field is optional: a server with no `build-id.json` (development) sends
+none, a page from the Vite dev server has none, and nothing is compared then. A page
+opened before PR #17 knows nothing of `buildId`, so it needs one reload by hand after this
+upgrade; every later upgrade reloads the pages by itself. A screen is spared the
+data-source kinds anyway: it is never sent `dataSources`, so a source of a kind it does
+not know cannot make it refuse its `hello`.
 
 ## hello
 
@@ -138,7 +142,8 @@ server does not tell pages its build yet.
     "recordings": [],
     "eventLog": []
   },
-  "serverNowMs": 1791550800000
+  "serverNowMs": 1791550800000,
+  "buildId": "2026-10-19T07:40:02.518Z"
 }
 ```
 

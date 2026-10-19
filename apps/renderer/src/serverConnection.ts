@@ -17,10 +17,16 @@
  * (`serverNowMs`), and each is recorded as one sample for the shared "now" the graphics
  * read (@bajaovrlay/shared/clock). A program monitor does the same, since it runs this
  * very code.
+ *
+ * And it learns the server's build: a `hello` naming another build than the one this page
+ * was loaded from reloads the page, at most once a minute (packages/shared/src/build), so
+ * an OBS browser source left open across an upgrade does not go on with the old bundle.
  */
 import {
   type InstanceStatusMessage,
   mergeChangedSlicesIntoSlices,
+  type PageReloadForNewBuild,
+  reloadThePageWhenTheServerBuildDiffers,
   type ServerMessage,
   ServerMessageSchema,
   type Slices,
@@ -67,6 +73,12 @@ export type ServerConnectionOptions = {
   openSocket?: (address: string) => ServerSocket;
   fetchJson?: (address: string) => Promise<unknown>;
   logEvent?: typeof logRendererEvent;
+  /**
+   * The page's build and the browser's clock, reload and sessionStorage, for reloading the
+   * page when a hello names another build (renderer.ts hands in
+   * browserPageReloadForNewBuild). Left out (most tests), no build is compared.
+   */
+  pageReloadForNewBuild?: PageReloadForNewBuild | undefined;
 };
 
 /** A running connection. It never ends; the page is closed instead. */
@@ -147,6 +159,35 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     slicesCallbacks.forEach((callback) => callback({ slices, isFullSnapshot: false }));
   }
 
+  /**
+   * Reloads the page when the hello names another build than the page's (at most once a
+   * minute), and logs what it did unless the builds agree or there is nothing to compare.
+   */
+  function reloadWhenTheServerRunsAnotherBuild(serverBuildId: string | undefined): void {
+    if (options.pageReloadForNewBuild === undefined) {
+      return;
+    }
+    const pageBuildId = options.pageReloadForNewBuild.pageBuildId;
+    const outcome = reloadThePageWhenTheServerBuildDiffers(
+      serverBuildId,
+      options.pageReloadForNewBuild,
+    );
+    const builds = { serverBuildId, pageBuildId };
+    if (outcome === 'reloaded') {
+      logEvent('info', 'reloading the page: the server runs another build', builds);
+    }
+    if (outcome === 'reloadedLessThanAMinuteAgo') {
+      logEvent(
+        'warn',
+        'not reloading for the server build: the page reloaded less than a minute ago',
+        builds,
+      );
+    }
+    if (outcome === 'noMemoryForReloads') {
+      logEvent('warn', 'not reloading for the server build: sessionStorage is unusable', builds);
+    }
+  }
+
   /** Acts on one message, and tells the socket whether it was the hello it waits for. */
   function handleMessage(data: unknown): { wasHello: boolean } {
     // Read first, before the message is even parsed: checking a large hello takes a few
@@ -159,7 +200,10 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     }
     recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
     if (message.type === 'hello') {
+      // Drawn first: a page that does not reload (same build, or reloaded less than a
+      // minute ago) goes on as always, and one that reloads rebuilds the same stage.
       deliverFullSnapshot(message.slices);
+      reloadWhenTheServerRunsAnotherBuild(message.buildId);
       return { wasHello: true };
     }
     if (message.type === 'slice') {

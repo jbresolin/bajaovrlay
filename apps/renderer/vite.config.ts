@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { defaultClientConditions, defineConfig, loadEnv } from 'vite';
+import { defaultClientConditions, defineConfig, loadEnv, type Plugin } from 'vite';
 
 // In production the server itself serves this page, so /ws, /api and /graphics are on the
 // page's own origin. The dev server forwards those three to the BajaOvrLay server so the
@@ -29,10 +30,51 @@ function chooseHostToReachTheServer(serverListenHost: string | undefined): strin
   return serverListenHost;
 }
 
+/**
+ * Embeds the id in the repo-root build-id.json (written first by `pnpm build`,
+ * scripts/writeBuildId.js) as `import.meta.env.BAJAOVRLAY_BUILD_ID`, in built pages only:
+ * the server sends the same id in its hello, and a page from another build reloads itself
+ * (packages/shared/src/build). The dev server and Vitest embed nothing, so no comparison
+ * happens there; nor does a build that finds no usable file (`vite build` run by hand).
+ * The control page's vite.config.ts carries the same plugin.
+ */
+function embedTheBuildIdInBuiltPages(): Plugin {
+  return {
+    name: 'bajaovrlay-build-id',
+    apply: 'build',
+    config: () => {
+      const buildId = readTheBuildIdOfThisBuild();
+      if (buildId === undefined) {
+        return {};
+      }
+      return { define: { 'import.meta.env.BAJAOVRLAY_BUILD_ID': JSON.stringify(buildId) } };
+    },
+  };
+}
+
+/** The `buildId` text of build-id.json, or undefined when the file is missing or unusable. */
+function readTheBuildIdOfThisBuild(): string | undefined {
+  let fileJson: unknown;
+  try {
+    fileJson = JSON.parse(readFileSync(new URL('../../build-id.json', import.meta.url), 'utf8'));
+  } catch {
+    return undefined;
+  }
+  if (typeof fileJson !== 'object' || fileJson === null || !('buildId' in fileJson)) {
+    return undefined;
+  }
+  const buildId = fileJson.buildId;
+  if (typeof buildId !== 'string' || buildId === '') {
+    return undefined;
+  }
+  return buildId;
+}
+
 export default defineConfig({
   // The server serves the built renderer at /render/, and OBS loads it from there.
   // The dev server uses the same path so URLs are identical in both.
   base: '/render/',
+  plugins: [embedTheBuildIdInBuiltPages()],
   resolve: {
     // Import @bajaovrlay/shared from its TypeScript source; see packages/shared/README.md.
     conditions: ['@bajaovrlay/source', ...defaultClientConditions],

@@ -1,6 +1,8 @@
 node_modules/
 dist/
 coverage/
+# Written by `pnpm build` (scripts/writeBuildId.js): the id the built pages and the server share
+build-id.json
 
 # Playwright output (CI uploads these as artifacts when a run fails)
 test-results/

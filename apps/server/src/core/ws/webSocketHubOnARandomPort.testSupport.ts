@@ -32,6 +32,8 @@ export async function startServerOnARandomPort(
     heartbeatIntervalInMilliseconds?: number;
     logger?: ServerLogger;
     readCurrentTime?: () => Date;
+    /** The build the server says it runs in each hello; none unless a test gives one. */
+    buildId?: string;
   } = {},
 ) {
   const runningServer = await startServer({
@@ -44,6 +46,7 @@ export async function startServerOnARandomPort(
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     dataFolder: createTemporaryDataFolder(),
     sourceHostAllowlist: noSourceHostAllowlist,
+    buildId: options.buildId,
     heartbeatIntervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
     readCurrentTime: options.readCurrentTime ?? (() => new Date(momentTheServerClockIsHeldAt)),
   });

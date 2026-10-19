@@ -9,11 +9,15 @@ import { resolveDatabasePath } from './core/env/resolveDatabasePath.js';
 import { resolveDataFolder } from './core/env/resolveDataFolder.js';
 import { findBuiltPageFolder } from './core/http/builtPageFolders.js';
 import { createLogger } from './core/logger/createLogger.js';
+import { buildIdFileUrl, readBuildId } from './readBuildId.js';
 import { readServerVersion } from './readServerVersion.js';
 
 const environment = readServerEnvironment(process.env);
 const logger = createLogger({ level: environment.LOG_LEVEL });
 const version = readServerVersion();
+// The id of the last `pnpm build`, which the built pages embed; read once, like the
+// pages below, so a rebuild needs a restart before the server names the new build.
+const buildId = readBuildId(buildIdFileUrl);
 
 // Every path is resolved from this file (src/main.ts, or dist/main.js once built: the
 // same depth), never from the folder the server was started in.
@@ -33,6 +37,9 @@ if (controlPageFolder === undefined) {
 if (rendererPageFolder === undefined) {
   logger.warn('renderer is not built; run `pnpm build` to serve it at /render/');
 }
+if (buildId === undefined) {
+  logger.warn('no build-id.json; open pages will not reload themselves after an upgrade');
+}
 
 try {
   const runningServer = await startServer({
@@ -47,12 +54,14 @@ try {
     sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
     controlPageFolder,
     rendererPageFolder,
+    buildId,
   });
   logger.info(
     {
       host: environment.HOST,
       port: runningServer.port,
       version,
+      build_id: buildId,
       database_path: databasePath,
       data_folder: dataFolder,
     },

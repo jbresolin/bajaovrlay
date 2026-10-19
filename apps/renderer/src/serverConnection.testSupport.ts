@@ -4,7 +4,7 @@
 // It also keeps what the renderer sent, so a test can read back what the server would hear.
 // It also builds what that stand-in server says: the slices of a hello, and an answer to
 // GET /api/v1/state that the test gives by hand.
-import type { Instance, Slices } from '@bajaovrlay/shared';
+import type { Instance, PageReloadForNewBuild, Slices } from '@bajaovrlay/shared';
 import { onTestFinished, vi } from 'vitest';
 
 import { connectToServer, type ServerSocket, type SlicesDelivery } from './serverConnection.js';
@@ -109,12 +109,15 @@ export function createStateReadAnsweredByHand() {
  * Starts a connection on stand-in sockets with time faked, and returns everything a test
  * looks at: the sockets opened so far, the deliveries, the log lines (once as level and
  * message only, once with their details) and the state reads. `sendInstanceStatus` is the
- * connection's own, for the tests about what the renderer tells the server.
+ * connection's own, for the tests about what the renderer tells the server. With
+ * `pageReloadForNewBuild` the connection compares the build in each hello, as renderer.ts's
+ * does; without, it compares nothing.
  */
 export function startConnectionForTests(
   readStateOverHttp: (address: string) => Promise<unknown> = async () => {
     throw new Error('GET /api/v1/state was not expected in this test');
   },
+  pageReloadForNewBuild?: PageReloadForNewBuild,
 ) {
   vi.useFakeTimers();
   onTestFinished(() => {
@@ -143,6 +146,7 @@ export function startConnectionForTests(
       logLines.push({ level, message });
       logLinesWithDetails.push({ level, message, details });
     },
+    pageReloadForNewBuild,
   });
   connection.onSlices((delivery) => deliveries.push(delivery));
 

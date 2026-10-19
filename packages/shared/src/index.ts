@@ -105,6 +105,16 @@ export {
   type TimeMessage,
   TimeMessageSchema,
 } from './ws/serverMessages.js';
+// A page reloading itself, at most once a minute, when the hello names another build
+// than the one the page was loaded from; the browser's stand-ins it needs are typed here.
+export {
+  lastReloadForNewBuildStorageKey,
+  type PageReloadForNewBuild,
+  type ReloadForNewBuildOutcome,
+  type ReloadMemory,
+  reloadThePageWhenTheServerBuildDiffers,
+  shortestTimeBetweenReloadsForNewBuildInMilliseconds,
+} from './build/reloadForNewServerBuild.js';
 // WebSocket messages from a client: command (control page) and instanceStatus (renderer).
 export {
   type ClientMessage,

@@ -1,8 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defaultClientConditions, defineConfig, loadEnv } from 'vite';
+import { defaultClientConditions, defineConfig, loadEnv, type Plugin } from 'vite';
 
 // The dev server forwards server addresses to the BajaOvrLay server, so the control
 // page talks to the same origin in development as it does in production. PORT and HOST
@@ -30,8 +31,48 @@ function chooseHostToReachTheServer(serverListenHost: string | undefined): strin
   return serverListenHost;
 }
 
+/**
+ * Embeds the id in the repo-root build-id.json (written first by `pnpm build`,
+ * scripts/writeBuildId.js) as `import.meta.env.BAJAOVRLAY_BUILD_ID`, in built pages only:
+ * the server sends the same id in its hello, and a page from another build reloads itself
+ * (packages/shared/src/build). The dev server and Vitest embed nothing, so no comparison
+ * happens there; nor does a build that finds no usable file (`vite build` run by hand).
+ * The renderer's vite.config.ts carries the same plugin.
+ */
+function embedTheBuildIdInBuiltPages(): Plugin {
+  return {
+    name: 'bajaovrlay-build-id',
+    apply: 'build',
+    config: () => {
+      const buildId = readTheBuildIdOfThisBuild();
+      if (buildId === undefined) {
+        return {};
+      }
+      return { define: { 'import.meta.env.BAJAOVRLAY_BUILD_ID': JSON.stringify(buildId) } };
+    },
+  };
+}
+
+/** The `buildId` text of build-id.json, or undefined when the file is missing or unusable. */
+function readTheBuildIdOfThisBuild(): string | undefined {
+  let fileJson: unknown;
+  try {
+    fileJson = JSON.parse(readFileSync(new URL('../../build-id.json', import.meta.url), 'utf8'));
+  } catch {
+    return undefined;
+  }
+  if (typeof fileJson !== 'object' || fileJson === null || !('buildId' in fileJson)) {
+    return undefined;
+  }
+  const buildId = fileJson.buildId;
+  if (typeof buildId !== 'string' || buildId === '') {
+    return undefined;
+  }
+  return buildId;
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), embedTheBuildIdInBuiltPages()],
   resolve: {
     // `@/` is the shadcn/ui import alias for this app's src folder.
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

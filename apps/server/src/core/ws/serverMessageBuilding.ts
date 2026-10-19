@@ -17,11 +17,19 @@ import {
 import type { DataSnapshotChange } from '../store/dataSnapshotChanges.js';
 
 /**
- * The `hello` a client gets right after connecting: every slice, and `serverNowMs`, what
- * the server's wall clock shows now, in milliseconds.
+ * The `hello` a client gets right after connecting: every slice, `serverNowMs` (what the
+ * server's wall clock shows now, in milliseconds) and, when the server has one, the
+ * `buildId` its built pages embed. With no build id the field is left out altogether.
  */
-export function buildHelloMessage(slices: Slices, serverNowMs: number): ServerMessage {
-  return { type: 'hello', slices, serverNowMs };
+export function buildHelloMessage(
+  slices: Slices,
+  serverNowMs: number,
+  buildId: string | undefined,
+): ServerMessage {
+  if (buildId === undefined) {
+    return { type: 'hello', slices, serverNowMs };
+  }
+  return { type: 'hello', slices, serverNowMs, buildId };
 }
 
 /**

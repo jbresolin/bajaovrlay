@@ -1,4 +1,10 @@
-import { type CommandInput, type ServerMessage, ServerMessageSchema } from '@bajaovrlay/shared';
+import {
+  type CommandInput,
+  type PageReloadForNewBuild,
+  reloadThePageWhenTheServerBuildDiffers,
+  type ServerMessage,
+  ServerMessageSchema,
+} from '@bajaovrlay/shared';
 import { recordServerClockSample } from '@bajaovrlay/shared/clock';
 
 import { ptBR } from '@/i18n/ptBR';
@@ -56,6 +62,12 @@ export type ServerConnectionOptions = {
   webSocketAddress: string;
   serverStateStore: ServerStateStore;
   openSocket: OpenServerSocket;
+  /**
+   * The page's build and the browser's clock, reload and sessionStorage, for reloading the
+   * page when a hello names another build (browserPageReloadForNewBuild in main.tsx). Left
+   * out (most tests), no build is compared.
+   */
+  pageReloadForNewBuild?: PageReloadForNewBuild | undefined;
   logEvent?: LogControlEvent;
 };
 
@@ -130,8 +142,11 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     switch (message.type) {
       case 'hello':
         numberOfFailedCallsInARow = 0;
+        // Taken in first, so a page that does not reload (same build, or reloaded less
+        // than a minute ago) is connected as always; one that reloads loses nothing.
         serverStateStore.getState().replaceEverySlice(message.slices);
         serverStateStore.getState().changeConnectionStatus('connected');
+        reloadWhenTheServerRunsAnotherBuild(message.buildId);
         break;
       case 'slice':
         serverStateStore.getState().replaceOneSlice(message);
@@ -150,6 +165,35 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         // that is all: nothing is set in the store, so no component redraws, and no
         // line is logged every ten seconds.
         break;
+    }
+  }
+
+  /**
+   * Reloads the page when the hello names another build than the page's (at most once a
+   * minute, packages/shared/src/build), and logs what it did unless the builds agree.
+   */
+  function reloadWhenTheServerRunsAnotherBuild(serverBuildId: string | undefined): void {
+    if (options.pageReloadForNewBuild === undefined) {
+      return;
+    }
+    const pageBuildId = options.pageReloadForNewBuild.pageBuildId;
+    const outcome = reloadThePageWhenTheServerBuildDiffers(
+      serverBuildId,
+      options.pageReloadForNewBuild,
+    );
+    const builds = { serverBuildId, pageBuildId };
+    if (outcome === 'reloaded') {
+      logEvent('info', 'reloading the page: the server runs another build', builds);
+    }
+    if (outcome === 'reloadedLessThanAMinuteAgo') {
+      logEvent(
+        'warn',
+        'not reloading for the server build: the page reloaded less than a minute ago',
+        builds,
+      );
+    }
+    if (outcome === 'noMemoryForReloads') {
+      logEvent('warn', 'not reloading for the server build: sessionStorage is unusable', builds);
     }
   }
 

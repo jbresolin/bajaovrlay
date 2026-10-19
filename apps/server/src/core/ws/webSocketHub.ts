@@ -46,6 +46,11 @@ export type WebSocketHubOptions = {
     ((onEachInterval: () => void, intervalInMilliseconds: number) => unknown) | undefined;
   /** Cancels a timer started by startRepeatingTimer; defaults to Node's clearInterval. */
   cancelRepeatingTimer?: ((timerHandle: unknown) => void) | undefined;
+  /**
+   * The build the server runs, put in every hello so a page from another build reloads
+   * itself (packages/shared/src/build). Undefined (development, tests): hello names none.
+   */
+  buildId?: string | undefined;
 };
 
 /** The running hub; close() drops every client and stops the heartbeat and the time message. */
@@ -53,8 +58,8 @@ export type WebSocketHub = { close: () => Promise<void> };
 
 /**
  * Attaches the WebSocket protocol to the HTTP server, on the same port at `/ws`. Each
- * client gets `hello`, then one message per state change: `slice` when one slice
- * changed, `slices` when several did (each carrying `serverNowMs`, the server's clock at
+ * client gets `hello` (with the server's build id when it has one), then one message per
+ * state change: `slice` when one slice changed, `slices` when several did (each carrying `serverNowMs`, the server's clock at
  * the moment the message is built). An operator also gets one `dataSnapshot` message per
  * source whose snapshot changed, just before that `slice` or `slices`, because
  * `dataSnapshots` is never sent whole after the hello. Each client gets a
@@ -121,7 +126,11 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     }
     const allSlices = stateStore.readAllSlices();
     const slicesForThisClient = isScreen ? buildSlicesForAScreen(allSlices) : allSlices;
-    const helloMessage = buildHelloMessage(slicesForThisClient, readCurrentTime().getTime());
+    const helloMessage = buildHelloMessage(
+      slicesForThisClient,
+      readCurrentTime().getTime(),
+      options.buildId,
+    );
     client.send(serializeServerMessage(helloMessage));
 
     client.on('message', (data, isBinary) => {

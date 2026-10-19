@@ -5,7 +5,9 @@ slices in SQLite, changes them only through commands, pushes every change over `
 polls the data sources that are on, answers the REST API under `/api/v1`, and serves
 the built control page (`/`), renderer (`/render/`) and graphics (`/graphics/`).
 
-Start reading at `src/main.ts`, then `src/core/boot/startServer.ts` (the boot steps),
+Start reading at `src/main.ts` (it also reads the build id `pnpm build` left in
+`build-id.json`, `src/readBuildId.ts`, sent in every hello so open pages reload after an
+upgrade), then `src/core/boot/startServer.ts` (the boot steps),
 then `src/core/store/createStateStore.ts` (the single command path).
 
 - `src/core/` — the server's building blocks, one folder per concept (see its README).

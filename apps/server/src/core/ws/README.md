@@ -12,12 +12,12 @@ snapshot changed, just before that `slice`/`slices`, which never carry `dataSnap
   `previewClearedLayerIds` (the rest `[]` in hello, left out of changes, no `dataSnapshot`); GET /api/v1/state?role= too.
 - `clientMessageAnswers.ts` — checks a client message and runs its command (a renderer's `instanceStatus`
   becomes `reportInstanceStatus`); one `commandResult` each; outside the protocol: INVALID_MESSAGE, socket kept.
-- `serverMessageBuilding.ts` — builds and validates every outgoing message; `hello`, `slice`,
+- `serverMessageBuilding.ts` — builds and validates every outgoing message (`hello` also names the build); `hello`, `slice`,
   `slices`, `dataSnapshot` and `time` carry `serverNowMs`, the server's clock, which pages line their own up with;
   `serverTimeBroadcast.ts` sends `time` to every client every 10 s (the timer is injectable).
 - `heartbeat.ts` — pings every 15 s and drops clients that miss a ping.
 
-The message shapes, with one JSON example each: `packages/shared/src/ws/README.md`. A new
-message type or data-source kind needs every open page (OBS browser sources included)
-reloaded after the upgrade: an open page keeps its old schemas and drops what they refuse
-(that README says why).
+The message shapes, with one JSON example each: `packages/shared/src/ws/README.md`. Pages
+reload themselves when the server's build changes: `hello` carries `buildId` (read at boot
+from `build-id.json` by `src/readBuildId.ts`), and a page from another build reloads, at
+most once a minute. Pages opened before PR #17 still need one reload by hand.
