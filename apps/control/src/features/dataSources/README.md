@@ -17,6 +17,6 @@ the slices it is sent. Nothing here reaches the air.
   `dataSourceCommandsFromForm.ts` builds create / update-with-only-changes (pure);
   `recordingsOfferedForReplay.ts` lists the ended recordings newest first.
 - `DataSourceDetail.tsx` — the selected source's data: `SessionCard.tsx` (`useSessionClockText.ts`,
-  the race clock's shared sum), the positions and standings tables (`timingScreenText.ts`, gaps
-  to the tenth, cut), the stale banner and the raw JSON. Times count on the server's clock
-  (`useServerAlignedTimeMs.ts`).
+  the race clock's shared sum), the positions and standings tables (`timingScreenText.ts`: lap
+  times in ms, "4:38.293", João's call for a diagnostic screen; gaps to the tenth, cut), the
+  stale banner and the raw JSON. Times count on the server's clock (`useServerAlignedTimeMs.ts`).

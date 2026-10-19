@@ -84,8 +84,8 @@ builds embed), and a page loaded from another build reloads itself, at most once
 none, a page from the Vite dev server has none, and nothing is compared then. A page
 opened before PR #17 knows nothing of `buildId`, so it needs one reload by hand after this
 upgrade; every later upgrade reloads the pages by itself. A screen is spared the
-data-source kinds anyway: it is never sent `dataSources`, so a source of a kind it does
-not know cannot make it refuse its `hello`.
+data-source kinds anyway: it gets only the slices it draws, `dataSources` reaching it as an
+empty list, so a source of a kind it does not know cannot make it refuse its `hello`.
 
 ## hello
 

@@ -8,7 +8,8 @@
  *   in laps ("+2 voltas", lapped), the way a timing screen at the track does. A gap is
  *   never shown to the millisecond: Baja's timing records line passes with limited
  *   accuracy, so the last two digits would be false precision. Lap times keep their
- *   milliseconds here because this page is a diagnostic screen.
+ *   milliseconds here because this page is a diagnostic screen (João's ruling at gate 2
+ *   of PR #17).
  *
  * What these tests prove:
  *   - Lap times of an enduro (4–7 minutes), a sub-minute time and the padding of seconds
