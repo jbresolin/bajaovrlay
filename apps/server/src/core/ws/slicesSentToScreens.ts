@@ -1,0 +1,70 @@
+// The slices a screen is sent. A screen is a renderer page: the program renderer OBS
+// loads (`/ws?role=renderer`) or a copy of it the control page frames as its "Programa"
+// or "Prévia" monitor (`/ws?role=monitor`). A screen draws four slices and reads no
+// other: the layers, the graphics, the instances on air and the layers Prévia shows as
+// "vai limpar". So it is sent those four and nothing else (João's ruling at gate 2 of
+// PR #17): an allowlist, not a list of what to hide, so a slice added later reaches the
+// screens only when someone decides it should. Two reasons:
+//   - graphics receive resolved data only (architecture rule 3), and parsing a 60-car
+//     snapshot every two seconds per source is a frame-drop risk inside OBS;
+//   - a page opened before an upgrade keeps its old schemas and refuses a hello they
+//     refuse (a data source of a kind they do not know, such as `httpJson`); a slice it
+//     never receives can never do that.
+// Operator connections (the control page itself) still receive every slice. The hub
+// applies this to the hello and to every change; GET /api/v1/state applies it when asked
+// with `?role=`. What could go wrong: the role is not proven (anyone may connect as an
+// operator, or call the state route with no role), so this saves the screens work and
+// keeps them parsing; it does not keep any data secret.
+import type { SliceNameSentWhole, Slices } from '@bajaovrlay/shared';
+
+/** The slices a screen draws: the only ones it is sent with something in them. */
+export const sliceNamesScreensReceive: readonly SliceNameSentWhole[] = [
+  'layers',
+  'graphics',
+  'instances',
+  'previewClearedLayerIds',
+];
+
+/**
+ * A screen's copy of every slice, for its hello or its state read. The schema requires
+ * every slice, so each slice a screen does not draw is there but empty: empty on purpose
+ * for a screen, not "no data". Written out slice by slice on purpose: a slice added to
+ * the schema later fails typecheck here until someone decides what a screen gets of it.
+ * Keep the four drawn ones in step with sliceNamesScreensReceive above.
+ */
+export function buildSlicesForAScreen(slices: Slices): Slices {
+  return {
+    layers: slices.layers,
+    graphics: slices.graphics,
+    instances: slices.instances,
+    previewClearedLayerIds: slices.previewClearedLayerIds,
+    rundowns: [],
+    items: [],
+    quickFirePanels: [],
+    macros: [],
+    macroRuns: [],
+    dataSources: [],
+    dataSnapshots: [],
+    recordings: [],
+    eventLog: [],
+  };
+}
+
+/**
+ * The changed slice names a screen is told about, in the same order, out of those sent
+ * whole: only the ones it draws. May be empty, and then the screen is sent nothing for
+ * that change (a poll, which changes the source and its snapshot, or a refused command,
+ * which changes the event log alone). A slice it does not draw is left out of the
+ * message rather than sent empty: its hello already holds that slice empty, and nothing
+ * changes it afterwards, so an older page keeps parsing every message.
+ */
+export function keepSliceNamesScreensReceive(
+  changedSliceNames: SliceNameSentWhole[],
+): SliceNameSentWhole[] {
+  return changedSliceNames.filter((changedSliceName) => {
+    const isDrawnByAScreen = sliceNamesScreensReceive.some(
+      (drawnSliceName) => drawnSliceName === changedSliceName,
+    );
+    return isDrawnByAScreen;
+  });
+}

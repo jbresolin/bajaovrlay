@@ -18,10 +18,7 @@ import {
   serializeServerMessage,
 } from './serverMessageBuilding.js';
 import { startServerTimeBroadcast } from './serverTimeBroadcast.js';
-import {
-  buildSlicesForAScreen,
-  removeSliceNamesScreensNeverReceive,
-} from './slicesHiddenFromScreens.js';
+import { buildSlicesForAScreen, keepSliceNamesScreensReceive } from './slicesSentToScreens.js';
 
 /** The only path that upgrades to a WebSocket (the control page's dev proxy forwards it). */
 export const webSocketPath = '/ws';
@@ -65,10 +62,11 @@ export type WebSocketHub = { close: () => Promise<void> };
  * command, or a renderer's `instanceStatus`). Every ten seconds every client also gets a
  * `time` message, so a page keeps learning the server's clock while nothing changes. A
  * connection to `/ws?role=renderer` acts as a renderer, one to `/ws?role=monitor` as a
- * monitor, any other as an operator. A screen (a renderer or a monitor) is never sent
- * the `dataSnapshots` and `eventLog` slices (empty in its hello, left out of every
- * change, no `dataSnapshot` message, and no message at all for a change of those slices
- * alone). Any other upgrade path is refused.
+ * monitor, any other as an operator. A screen (a renderer or a monitor) is sent only the
+ * slices it draws (layers, graphics, instances, previewClearedLayerIds): every other
+ * slice is empty in its hello and left out of every change, it gets no `dataSnapshot`
+ * message, and no message at all for a change of other slices alone (see
+ * slicesSentToScreens.ts). Any other upgrade path is refused.
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
@@ -87,7 +85,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     cancelRepeatingTimer: options.cancelRepeatingTimer,
   });
   // The open screen connections (`/ws?role=renderer` or `/ws?role=monitor`); each leaves
-  // on close. They are sent every slice except the ones in slicesHiddenFromScreens.ts.
+  // on close. They are sent only the slices listed in slicesSentToScreens.ts.
   const screenClients = new Set<WebSocket>();
 
   httpServer.on('upgrade', (request, socket, head) => {
@@ -169,10 +167,11 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
         serializeServerMessage(buildDataSnapshotMessage(change, serverNowMs)),
       );
       const sliceNamesForOperators = keepSliceNamesSentWhole(changedSliceNames);
-      const sliceNamesForScreens = removeSliceNamesScreensNeverReceive(sliceNamesForOperators);
+      const sliceNamesForScreens = keepSliceNamesScreensReceive(sliceNamesForOperators);
       // Each undefined when that audience has no slice to hear of (a poll that changed
-      // only a snapshot; for screens, a refused command, which changes the event log
-      // alone): an empty `slices` group is not a valid message, so nothing is sent.
+      // only a snapshot; for screens, any change that touches none of the slices they
+      // draw, such as a poll or a refused command): an empty `slices` group is not a
+      // valid message, so nothing is sent.
       const sliceTextForOperators = serializeChangeOfSlicesOrNothing(
         sliceNamesForOperators,
         slices,

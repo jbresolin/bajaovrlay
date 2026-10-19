@@ -55,17 +55,18 @@ Every message is one JSON object, told apart by its `type` field:
   `slice` or `slices` message at all, not even for `eventLog`, and leaves no event-log
   entry; its sender still gets `ok: true`.
 
-A screen connection, renderer (`/ws?role=renderer`) or monitor (`/ws?role=monitor`), gets
-`dataSnapshots: []` and `eventLog: []` in its `hello` and never a message carrying either:
-both are left out of every change it is sent, and it is never sent a `dataSnapshot`. An accepted command usually changes its own
-slice and `eventLog`; a screen gets only the command's own slice, so that arrives as a
-single `slice` message (a routine poll arrives as a `slice` of `dataSources`, where an
-operator gets the source's `dataSnapshot` and then that same `slice`). A change of
-those two slices alone (a refused command, which changes `eventLog` alone) sends a screen
-nothing. Graphics get resolved data only, and a 60-car snapshot every 2 s is a frame-drop
-risk in OBS. `GET /api/v1/state?role=renderer` (or `monitor`) answers the same copy, for a
-page whose `hello` is late. Every other connection, the control page itself, gets every
-slice.
+A screen connection, renderer (`/ws?role=renderer`) or monitor (`/ws?role=monitor`), is
+sent only the four slices it draws: `layers`, `graphics`, `instances` and
+`previewClearedLayerIds`. Every other slice is an empty list in its `hello`, is left out
+of every change it is sent, and it is never sent a `dataSnapshot`. An accepted command
+usually changes its own slice and `eventLog`; a screen gets only the drawn slices among
+them, so a take arrives as a single `slice` of `instances`. A change of no drawn slice (a
+poll, which changes `dataSources` and a snapshot, or a refused command, which changes
+`eventLog` alone) sends a screen nothing. Graphics get resolved data only, a 60-car
+snapshot every 2 s is a frame-drop risk in OBS, and a slice a screen never receives can
+never make an older screen refuse its `hello`. `GET /api/v1/state?role=renderer` (or
+`monitor`) answers the same copy, for a page whose `hello` is late. Every other
+connection, the control page itself, gets every slice.
 
 A message that is not JSON or not in the protocol is answered with an error
 `commandResult` (code `INVALID_MESSAGE`, `requestId` echoed when it could be read) and
@@ -76,10 +77,10 @@ not answer the previous ping.
 An open page only reconnects its WebSocket when the server restarts; it keeps the bundle
 it loaded, with that bundle's schemas. A page drops a message its schemas refuse without a
 word: an older control page drops every `dataSnapshot` (its source tables freeze while the
-chip still reads "Em dia"), and an older renderer refuses every `hello`, its
-`GET /api/v1/state` fallback and every change of `dataSources` once a source of a kind it
-does not know exists (`httpJson`, from PR #17), so it never takes state again. After such
-an upgrade, refresh every OBS browser source and reload every open control tab. The
+chip still reads "Em dia"). A screen is spared the data-source kinds: it is never sent
+`dataSources`, so a source of a kind it does not know (`httpJson`, from PR #17) cannot make
+it refuse its `hello`; a new message type or a change to a drawn slice still can. After
+such an upgrade, refresh every OBS browser source and reload every open control tab. The
 server does not tell pages its build yet.
 
 ## hello
