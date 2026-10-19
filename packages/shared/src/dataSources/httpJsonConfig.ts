@@ -6,6 +6,7 @@ import {
   FlexMappingConfigSchema,
 } from '../flexMapping/flexMappingConfig.js';
 import { ptBRHttpJsonConfig } from './ptBRHttpJsonConfig.js';
+import { isReadableWebAddress, parseWebAddress } from './webAddressParsing.js';
 
 /** The most requests one flex source makes per poll: every one is fetched at every poll. */
 export const mostRequestsPerHttpJsonSource = 5;
@@ -182,10 +183,10 @@ function explainListProblem(fieldName: string) {
 
 /** Tells whether text parses as an address whose protocol is http or https. */
 function isHttpOrHttpsAddress(text: string): boolean {
-  if (!URL.canParse(text)) {
+  if (!isReadableWebAddress(text)) {
     return false;
   }
-  const protocol = new URL(text).protocol;
+  const protocol = parseWebAddress(text).protocol;
   return protocol === 'http:' || protocol === 'https:';
 }
 
@@ -195,7 +196,7 @@ function isHttpOrHttpsAddress(text: string): boolean {
  * sending it, which would read as a network failure.
  */
 function hasAUserOrPasswordInIt(address: string): boolean {
-  const parsedAddress = new URL(address);
+  const parsedAddress = parseWebAddress(address);
   return parsedAddress.username !== '' || parsedAddress.password !== '';
 }
 

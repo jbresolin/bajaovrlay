@@ -8,7 +8,8 @@ recorded feeds, rebuilt from disk at boot). Each kind's config schema lives here
 (`simulatorConfig.ts`, `replayConfig.ts`, and `httpJsonConfig.ts` for the flex HTTP/JSON
 source, whose mapping is `../flexMapping/` and whose refusals are `ptBRHttpJsonConfig.ts`)
 so the control page's forms and the server's adapters check the same thing.
-`httpJsonSampleAnswer.ts` is what the sample route ("Buscar da fonte") answers.
+`httpJsonSampleAnswer.ts` is what the sample route ("Buscar da fonte") answers, and
+`webAddressParsing.ts` reads the global `URL` without the DOM or Node type definitions.
 `areJsonValuesEqual.ts` compares two configs or snapshots by content, for the server's
 no-op checks and the control page's "what changed" on "Editar".
 
