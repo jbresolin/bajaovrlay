@@ -19,7 +19,7 @@
  * What these tests deliberately do not cover:
  *   - How an entry matches a host, and the refusal of a variable with no list:
  *     modules/dataSources/adapters/httpJson/*HostAllowlist.test.ts.
- *   - The sample route: httpJsonSampleRoute.test.ts in the data-source module.
+ *   - The sample route: httpJsonSampleRouteHostAllowlist.test.ts in the data-source module.
  *   - main.ts reading the variable: core/env/readServerEnvironment.test.ts.
  */
 import { describe, expect, it, onTestFinished, vi } from 'vitest';

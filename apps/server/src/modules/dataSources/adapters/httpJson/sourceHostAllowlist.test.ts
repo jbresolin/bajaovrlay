@@ -22,7 +22,8 @@
  *
  * What these tests deliberately do not cover:
  *   - Refusing a poll, a sample or a config with that answer: httpJsonHostAllowlist.test.ts,
- *     httpJsonSampleRoute.test.ts and flexSourceHostAllowlist.test.ts.
+ *     httpJsonSampleRouteHostAllowlist.test.ts, reducers/dataSourceHostAllowlist.test.ts
+ *     and core/boot/startServerSourceHostAllowlist.test.ts.
  *   - Reading the variable at boot: core/env/readServerEnvironment.test.ts.
  */
 import { describe, expect, it } from 'vitest';

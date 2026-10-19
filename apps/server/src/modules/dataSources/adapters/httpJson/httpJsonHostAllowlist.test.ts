@@ -24,8 +24,10 @@
  *
  * What these tests deliberately do not cover:
  *   - How an entry matches a host (ports, capitals, IPv6): sourceHostAllowlist.test.ts.
- *   - The same refusal through the sample route: httpJsonSampleRoute.test.ts; through a
- *     polled source and on save: flexSourceHostAllowlist.test.ts.
+ *   - The same refusal through the sample route: httpJsonSampleRouteHostAllowlist.test.ts
+ *     in the data-source module; through a polled source:
+ *     core/boot/startServerSourceHostAllowlist.test.ts; on save:
+ *     reducers/dataSourceHostAllowlist.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 

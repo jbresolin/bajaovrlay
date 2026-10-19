@@ -19,7 +19,8 @@
  *
  * What these tests deliberately do not cover:
  *   - How an entry matches a host: adapters/httpJson/sourceHostAllowlist.test.ts.
- *   - The store handing the list over from the boot: flexSourceHostAllowlist.test.ts.
+ *   - The store handing the list over from the boot:
+ *     core/boot/startServerSourceHostAllowlist.test.ts.
  */
 import type { HttpJsonDataSource } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
