@@ -22,7 +22,8 @@ import { checkDataSourceConfig } from '../schema.js';
  * except that a replay switched to another recording, offset or speed starts again from
  * the top (see carryTheTimelineStartIntoTheEdit). Hands back the same slices when nothing changes (the
  * edit form saved untouched). Refused for an unknown source and for a config that fails
- * its schema, like createDataSource.
+ * its schema or the host list, like createDataSource. An edit without a config (a rename)
+ * is not checked against the host list.
  */
 export function reduceUpdateDataSource(
   slices: SlicesChangedByCommands,
@@ -47,7 +48,12 @@ export function reduceUpdateDataSource(
     };
   }
   if (command.config !== undefined) {
-    const configCheck = checkDataSourceConfig(storedSource.kind, command.config, slices.recordings);
+    const configCheck = checkDataSourceConfig(
+      storedSource.kind,
+      command.config,
+      slices.recordings,
+      context.sourceHostAllowlist,
+    );
     if (!configCheck.isValid) {
       return { status: 'refused', error: configCheck.error };
     }

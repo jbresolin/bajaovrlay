@@ -2,7 +2,10 @@ import { Hono } from 'hono';
 import { requestId } from 'hono/request-id';
 
 import { createApiV1Routes } from '../../api/v1/createApiV1Routes.js';
-import type { ReadEnvironmentVariable } from '../../modules/dataSources/index.js';
+import type {
+  ReadEnvironmentVariable,
+  SourceHostAllowlist,
+} from '../../modules/dataSources/index.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
@@ -27,6 +30,8 @@ export type ServerAppOptions = {
   graphicPackagesFolder?: string | undefined;
   /** How the flex sample route reads BAJAOVRLAY_SOURCE_ variables; process.env when left out. */
   readSourceEnvironmentVariable?: ReadEnvironmentVariable | undefined;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the sample route; no list when left out. */
+  sourceHostAllowlist?: SourceHostAllowlist | undefined;
   /** The flex sample route's timeout; 10 s when left out (tests shorten it). */
   sampleRequestTimeoutInMilliseconds?: number | undefined;
 };
@@ -52,6 +57,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         stateStore: options.stateStore,
         version: options.version,
         readSourceEnvironmentVariable: options.readSourceEnvironmentVariable,
+        sourceHostAllowlist: options.sourceHostAllowlist,
         sampleRequestTimeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
       }),
     );

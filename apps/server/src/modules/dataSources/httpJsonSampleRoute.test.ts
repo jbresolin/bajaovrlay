@@ -26,78 +26,26 @@
  * What these tests deliberately do not cover:
  *   - Each failure of a fetch (the 5 MB cap, a refused connection, redirects): the
  *     adapter's tests, which run the same fetchHttpJsonRequest.
+ *   - BAJAOVRLAY_SOURCE_ALLOWED_HOSTS: httpJsonSampleRouteHostAllowlist.test.ts. Every
+ *     test here runs on a list that allows the test timing system (127.0.0.1).
  *   - The page's "Buscar da fonte" button (apps/control).
  */
 import { HttpJsonSampleAnswerSchema } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { countEventLogRows } from '../../core/db/eventLogRowStorage.js';
-import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
-import { createServerApp } from '../../core/http/createServerApp.js';
-import { createLogger, type ServerLogger } from '../../core/logger/createLogger.js';
 import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
-import { missingGraphicsFolderPath } from '../../core/store/builtGraphicsFolder.testSupport.js';
-import { createStateStore } from '../../core/store/createStateStore.js';
 import {
   readExampleTimingSystemResponse,
   startTimingSystemTestServer,
   type TimingSystemAnswer,
 } from './adapters/httpJson/timingSystemTestServer.testSupport.js';
-
-const sampleRoutePath = '/api/v1/data-sources/http-json/sample-request';
-
-/**
- * Builds the server app on a fresh store, reading BAJAOVRLAY_SOURCE_ variables from
- * `environment`, with the logger and the sample timeout a test chooses.
- */
-function createServerAppForSampleRequests(
-  options: {
-    environment?: Record<string, string>;
-    logger?: ServerLogger;
-    sampleRequestTimeoutInMilliseconds?: number;
-  } = {},
-) {
-  const logger = options.logger ?? createLogger({ level: 'silent' });
-  const { database } = openTemporaryDatabase();
-  const stateStore = createStateStore({
-    database,
-    logger,
-    graphicPackagesFolder: missingGraphicsFolderPath,
-  });
-  const environment = options.environment ?? {};
-  const app = createServerApp({
-    logger,
-    version: '0.3.1',
-    stateStore,
-    readSourceEnvironmentVariable: (variableName) => environment[variableName],
-    sampleRequestTimeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
-  });
-  return { app, database, stateStore };
-}
-
-/** The request "classificacao" of the example preset, pointed at the test timing system. */
-function buildClassificationRequestAt(baseUrl: string) {
-  return {
-    requestId: 'classificacao',
-    url: `${baseUrl}/cronometragem/classificacao`,
-    headers: [{ name: 'Accept', value: 'application/json' }],
-    queryParameters: [{ name: 'etapa', value: 'nacional-2027' }],
-  };
-}
-
-/** Posts a request config to the sample route, as the page's "Buscar da fonte" does. */
-async function postSampleRequest(
-  app: ReturnType<typeof createServerAppForSampleRequests>['app'],
-  request: unknown,
-) {
-  const response = await app.request(sampleRoutePath, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-  const body: unknown = await response.json();
-  return { status: response.status, body };
-}
+import {
+  buildClassificationRequestAt,
+  createServerAppForSampleRequests,
+  postSampleRequest,
+  sampleRoutePath,
+} from './httpJsonSampleRoute.testSupport.js';
 
 describe('POST /api/v1/data-sources/http-json/sample-request', () => {
   it('answers the timing system status and its JSON, parsed', async () => {

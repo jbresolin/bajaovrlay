@@ -11,4 +11,5 @@ watch), then `recorder.ts` (good polls appended to the recording file), then
 `adapters/httpJson/README.md` for the flex source. The other command reducers are in
 `reducers/` (its README says where to start); `service.ts` starts poller and recorder,
 `api.ts` holds the routes, and `index.ts` lists what core may use. For a flex source end
-to end, read `flexSourceThroughTheStore.test.ts`.
+to end, read `flexSourceThroughTheStore.test.ts`; for BAJAOVRLAY_SOURCE_ALLOWED_HOSTS (the
+hosts a flex source may fetch), `adapters/httpJson/sourceHostAllowlist.ts`.

@@ -42,6 +42,7 @@
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import { noSourceHostAllowlist } from '../../../modules/dataSources/index.js';
 import { reduceCommand } from './reduceCommand.js';
 import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
 import {
@@ -58,6 +59,7 @@ const contextOfTheTake: ReducerContext = {
   newQuickFirePanelId: 'd4b2e8f1-6a3c-4d7e-9b05-1c8f2a6e3d90',
   newMacroId: '8f3a1c6e-2d4b-4e9a-b7c5-0a1d3e5f7b92',
   newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
+  sourceHostAllowlist: noSourceHostAllowlist,
 };
 
 const teamLowerThirdData = { teamNumber: 42, teamName: 'Baja UFPR' };

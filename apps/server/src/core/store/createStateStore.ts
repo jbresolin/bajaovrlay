@@ -9,6 +9,10 @@ import {
 } from '@bajaovrlay/shared';
 
 import {
+  noSourceHostAllowlist,
+  type SourceHostAllowlist,
+} from '../../modules/dataSources/index.js';
+import {
   saveCommandOutcome,
   saveCommandOutcomeWithoutEventLogRow,
 } from '../db/commandOutcomeStorage.js';
@@ -30,7 +34,7 @@ import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialS
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
-/** What a store needs. The last seven have production defaults; tests replace them. */
+/** What a store needs. The last eight have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
   /** The authorisation step; defaults to allowCommandForActorRole (no login yet). */
   isCommandAllowed?: IsCommandAllowed | undefined;
@@ -46,6 +50,8 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
   createMacroId?: (() => string) | undefined;
   /** Makes the id of each new data source (createDataSource); defaults to a random UUID. */
   createDataSourceId?: (() => string) | undefined;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the reducers; no list by default. */
+  sourceHostAllowlist?: SourceHostAllowlist | undefined;
 };
 
 /**
@@ -122,6 +128,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const createQuickFirePanelId = options.createQuickFirePanelId ?? (() => randomUUID());
   const createMacroId = options.createMacroId ?? (() => randomUUID());
   const createDataSourceId = options.createDataSourceId ?? (() => randomUUID());
+  const sourceHostAllowlist = options.sourceHostAllowlist ?? noSourceHostAllowlist;
   const listeners = new Set<SliceChangeListener>();
   let currentSlices = loadInitialSlices({ ...options, readCurrentTime });
 
@@ -159,7 +166,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       });
     }
 
-    // Step 3, apply: the pure reducer, given the id and time it may need.
+    // Step 3, apply: the pure reducer, given the ids, time and boot facts it may need.
     const reducerContext = {
       newInstanceId: createInstanceId(),
       now,
@@ -167,6 +174,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       newQuickFirePanelId: createQuickFirePanelId(),
       newMacroId: createMacroId(),
       newDataSourceId: createDataSourceId(),
+      sourceHostAllowlist,
     };
     const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);
     if (reducerOutcome.status === 'refused') {

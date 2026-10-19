@@ -7,6 +7,7 @@ import { ptBR } from '../../../../core/messages/ptBR.js';
 import { longestPollTimeoutInMilliseconds } from '../../pollTimeouts.js';
 import { fetchHttpJsonRequest } from './fetchHttpJsonRequest.js';
 import type { ReadEnvironmentVariable } from './httpJsonRequestAddress.js';
+import type { SourceHostAllowlist } from './sourceHostAllowlist.js';
 
 /**
  * How long a sample may take: the poll's own ceiling, the same constant, so a source
@@ -18,6 +19,8 @@ export const sampleRequestTimeoutInMilliseconds = longestPollTimeoutInMillisecon
 export type FetchSampleOptions = {
   /** Reads a BAJAOVRLAY_SOURCE_ variable on the server, so a token never reaches the page. */
   readEnvironmentVariable: ReadEnvironmentVariable;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot: a sample obeys it like a poll. */
+  sourceHostAllowlist: SourceHostAllowlist;
   /** The request's logger, so its lines carry the request_id. */
   logger: ServerLogger;
   /** Defaults to 10 s; tests shorten it. */
@@ -39,6 +42,7 @@ export async function fetchSampleOfHttpJsonRequest(
   const fetchResult = await fetchHttpJsonRequest(request, {
     signal,
     readEnvironmentVariable: options.readEnvironmentVariable,
+    sourceHostAllowlist: options.sourceHostAllowlist,
     logger: options.logger,
   });
   if (fetchResult.ok) {

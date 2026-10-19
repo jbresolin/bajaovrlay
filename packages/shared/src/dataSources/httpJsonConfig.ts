@@ -15,8 +15,10 @@ export const mostRequestsPerHttpJsonSource = 5;
  * The prefix every environment variable a config names must start with. The dataSources
  * slice goes to every operator connection and into the event log, so a token is never
  * written in a config: the config names a variable and the server reads it at poll time.
- * The prefix stops a config from sending some other server secret (DATABASE_PATH, a
- * cloud key) to an address someone typed.
+ * The prefix keeps the server's other variables (DATABASE_PATH, a cloud key) out of any
+ * request. It does not decide where a BAJAOVRLAY_SOURCE_ secret may go: the server's
+ * BAJAOVRLAY_SOURCE_ALLOWED_HOSTS does (apps/server, adapters/httpJson), and with no such
+ * list no variable's value is sent at all.
  */
 export const sourceEnvironmentVariablePrefix = 'BAJAOVRLAY_SOURCE_';
 
@@ -125,8 +127,9 @@ export const HttpJsonRequestSchema = z.strictObject(
     }),
     /**
      * An http:// or https:// address with no user or password in it: those would be a
-     * secret in state, the event log and every browser. No address filter: see the
-     * adapter's README.
+     * secret in state, the event log and every browser. Which hosts may be fetched is
+     * the server's BAJAOVRLAY_SOURCE_ALLOWED_HOSTS, checked on save and at every request
+     * (see the server adapter's README), not this schema.
      */
     url: textFieldNamed('url').superRefine((url, context) => {
       if (!isHttpOrHttpsAddress(url)) {
@@ -300,7 +303,8 @@ function checkExactlyOneValueOrVariable(
 
 /**
  * Checks that a variable a header or query parameter names has the BAJAOVRLAY_SOURCE_
- * prefix: the rule that keeps every other server secret from being sent to an address.
+ * prefix: the rule that keeps every other server variable out of a request. Where a
+ * BAJAOVRLAY_SOURCE_ value may be sent is the server's host list, not this check.
  */
 function checkVariableHasTheSourcePrefix(
   nameAndValue: NameAndValue,

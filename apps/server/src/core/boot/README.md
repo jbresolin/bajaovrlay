@@ -9,6 +9,9 @@ the data-source poller and calling off pending auto-outs first.
 
 `src/main.ts` only reads the environment, works out the paths (the database file and
 the data folder, DATA_DIR, both read from the repository root when relative), and calls
-`startServer`; it exits non-zero with a logged error if the boot rejects.
+`startServer` with the parsed BAJAOVRLAY_SOURCE_ALLOWED_HOSTS, which startServer hands to
+the store, the data-source service and the HTTP app; it exits non-zero with a logged error
+if the boot rejects.
 Tests: `startServer.test.ts` (boot and close), `startServerRestart.test.ts` (a restart
-keeps the last good data); shared options in `bootedServer.testSupport.ts`.
+keeps the last good data), `startServerSourceHostAllowlist.test.ts` (the host list wired
+through, and the boot warning without it); shared options in `bootedServer.testSupport.ts`.

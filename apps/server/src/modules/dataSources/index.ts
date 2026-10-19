@@ -27,6 +27,13 @@ export {
   type ReadEnvironmentVariable,
   readServerEnvironmentVariable,
 } from './adapters/httpJson/httpJsonRequestAddress.js';
+// BAJAOVRLAY_SOURCE_ALLOWED_HOSTS: its parsed form, the "no list" value and how the boot reads it.
+export {
+  noSourceHostAllowlist,
+  parseSourceHostAllowlist,
+  sourceAllowedHostsVariableName,
+  type SourceHostAllowlist,
+} from './adapters/httpJson/sourceHostAllowlist.js';
 // The payload of a logged poll row: the source, ok, the moment, the error and the shape names.
 export { type PollEventLogPayload, trimPollCommandForTheEventLog } from './pollEventLogPayload.js';
 // The payload of the failed row of a poll that did not pass validation: type and sourceId only.

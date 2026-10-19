@@ -14,6 +14,7 @@ import {
   type ReadEnvironmentVariable,
   readServerEnvironmentVariable,
 } from './httpJson/httpJsonRequestAddress.js';
+import { noSourceHostAllowlist, type SourceHostAllowlist } from './httpJson/sourceHostAllowlist.js';
 import { createReplayAdapter } from './replay/replayAdapter.js';
 import { createSimulatorAdapter } from './simulator/simulatorAdapter.js';
 
@@ -29,7 +30,8 @@ export type DataSourceAdapters = {
 
 /**
  * What the adapters need from the server: where the recordings are (the replay), the
- * logger and the environment variables (the flex HTTP/JSON source).
+ * logger, the environment variables and the list of allowed hosts (the flex HTTP/JSON
+ * source).
  */
 export type DataSourceAdaptersOptions = {
   /** `<DATA_DIR>/recordings`, which the replay adapter reads recordings from. */
@@ -37,6 +39,8 @@ export type DataSourceAdaptersOptions = {
   logger: ServerLogger;
   /** Tests hand in a table; the server's own process.env, read at each poll, otherwise. */
   readSourceEnvironmentVariable?: ReadEnvironmentVariable | undefined;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot; no list when left out. */
+  sourceHostAllowlist?: SourceHostAllowlist | undefined;
 };
 
 /** Builds the adapters the running server uses: the race simulator, the replay and httpJson. */
@@ -48,6 +52,7 @@ export function createDataSourceAdapters(options: DataSourceAdaptersOptions): Da
       logger: options.logger,
       readEnvironmentVariable:
         options.readSourceEnvironmentVariable ?? readServerEnvironmentVariable,
+      sourceHostAllowlist: options.sourceHostAllowlist ?? noSourceHostAllowlist,
     }),
   };
 }

@@ -31,6 +31,7 @@ import { describe, expect, it } from 'vitest';
 import { createLogger } from '../../../../core/logger/createLogger.js';
 import { pollTheSourceIntoAPollResult } from '../../pollResultRecording.js';
 import { createHttpJsonAdapter } from './httpJsonAdapter.js';
+import { noSourceHostAllowlist } from './sourceHostAllowlist.js';
 import {
   findAPortNobodyListensOn,
   readExampleConfigPointedAt,
@@ -45,11 +46,12 @@ const pollMomentMs = Date.parse('2027-03-20T17:24:01.000Z');
 /** 5 MB, the most a response may be, counted in bytes. */
 const responseCapInBytes = 5_000_000;
 
-/** The adapter as the server builds it, silent, with no variable set. */
+/** The adapter as the server builds it, silent, with no variable and no host list set. */
 function createSilentAdapter() {
   return createHttpJsonAdapter({
     logger: createLogger({ level: 'silent' }),
     readEnvironmentVariable: () => undefined,
+    sourceHostAllowlist: noSourceHostAllowlist,
   });
 }
 

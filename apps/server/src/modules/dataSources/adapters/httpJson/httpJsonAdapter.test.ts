@@ -31,6 +31,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createLogger } from '../../../../core/logger/createLogger.js';
 import { createHttpJsonAdapter } from './httpJsonAdapter.js';
+import { noSourceHostAllowlist } from './sourceHostAllowlist.js';
 import {
   readExampleConfigPointedAt,
   readExampleTimingSystemResponse,
@@ -48,11 +49,15 @@ function buildPollContextThatNeverTimesOut() {
   };
 }
 
-/** The adapter as the server builds it, silent, reading variables from `environment`. */
+/**
+ * The adapter as the server builds it, silent, reading variables from `environment`, with
+ * no BAJAOVRLAY_SOURCE_ALLOWED_HOSTS (any host, typed values only).
+ */
 function createAdapterReading(environment: Record<string, string>) {
   return createHttpJsonAdapter({
     logger: createLogger({ level: 'silent' }),
     readEnvironmentVariable: (name) => environment[name],
+    sourceHostAllowlist: noSourceHostAllowlist,
   });
 }
 

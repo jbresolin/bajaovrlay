@@ -9,9 +9,11 @@ import {
   fetchSampleOfHttpJsonRequest,
   findDataSnapshotAnswer,
   getDataSnapshotRoute,
+  noSourceHostAllowlist,
   postHttpJsonSampleRequestRoute,
   type ReadEnvironmentVariable,
   readServerEnvironmentVariable,
+  type SourceHostAllowlist,
 } from '../../modules/dataSources/index.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
 
@@ -24,6 +26,8 @@ export function createApiV1Routes(options: {
   version: string;
   /** How the sample route reads BAJAOVRLAY_SOURCE_ variables; process.env when left out. */
   readSourceEnvironmentVariable?: ReadEnvironmentVariable | undefined;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the sample route; no list when left out. */
+  sourceHostAllowlist?: SourceHostAllowlist | undefined;
   /** The sample route's timeout; 10 s when left out (tests shorten it). */
   sampleRequestTimeoutInMilliseconds?: number | undefined;
 }): OpenAPIHono<ServerAppEnvironment> {
@@ -66,6 +70,7 @@ export function createApiV1Routes(options: {
       const request = context.req.valid('json');
       const answer = await fetchSampleOfHttpJsonRequest(request, {
         readEnvironmentVariable: readSourceEnvironmentVariable,
+        sourceHostAllowlist: options.sourceHostAllowlist ?? noSourceHostAllowlist,
         logger: context.get('requestLogger'),
         timeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
       });

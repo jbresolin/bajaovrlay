@@ -35,8 +35,10 @@ export const ptBRFlexSourceForm = {
     environmentVariable: (rowNumber: number) => `Variável ${rowNumber}`,
     removeButton: (rowNumber: number) => `Remover ${rowNumber}`,
   },
+  // The server sends a variable's value only to hosts on its BAJAOVRLAY_SOURCE_ALLOWED_HOSTS
+  // (gate 2 on PR #17), so the hint says so before the first poll does.
   environmentVariableHint:
-    'Para um token: só variáveis BAJAOVRLAY_SOURCE_…, definidas no servidor. O valor nunca aparece nesta página.',
+    'Para um token: só variáveis BAJAOVRLAY_SOURCE_…, definidas no servidor, e só para endereços em BAJAOVRLAY_SOURCE_ALLOWED_HOSTS. O valor nunca aparece nesta página.',
 
   // The mappings: one block per canonical shape the source produces. The names are the
   // shared catalog's (ptBRDataShapes), which the server's problem lines use too.

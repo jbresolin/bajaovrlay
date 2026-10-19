@@ -44,6 +44,7 @@ try {
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder,
     dataFolder,
+    sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
     controlPageFolder,
     rendererPageFolder,
   });

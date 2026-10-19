@@ -26,6 +26,7 @@
 import type { ServerMessage } from '@bajaovrlay/shared';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
+import { noSourceHostAllowlist } from '../../modules/dataSources/index.js';
 import { startServer } from '../boot/startServer.js';
 import { createTemporaryDataFolder } from '../boot/temporaryDataFolder.testSupport.js';
 import { committedMigrationsFolder } from '../db/openDatabase.js';
@@ -56,6 +57,7 @@ async function startServerOnARandomPort() {
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     dataFolder: createTemporaryDataFolder(),
+    sourceHostAllowlist: noSourceHostAllowlist,
     readCurrentTime: () => new Date(momentTheServerClockIsHeldAt),
   });
   onTestFinished(() => runningServer.close());

@@ -5,6 +5,7 @@ import { serve } from '@hono/node-server';
 
 import {
   buildRecordingsFolderPath,
+  type SourceHostAllowlist,
   startDataSourceService,
 } from '../../modules/dataSources/index.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
@@ -32,6 +33,11 @@ export type StartServerOptions = {
    * written to, and listed at boot from, its `recordings` folder.
    */
   dataFolder: string;
+  /**
+   * BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot. Required here, so production cannot
+   * leave it out by mistake: the store (saves), the poller and the sample route get it.
+   */
+  sourceHostAllowlist: SourceHostAllowlist;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /** Defaults to 15 s; tests use a few milliseconds. */
@@ -87,6 +93,7 @@ async function startServingFromDatabase(
     graphicPackagesFolder: options.graphicPackagesFolder,
     recordingsFolder: buildRecordingsFolderPath(options.dataFolder),
     readCurrentTime: options.readCurrentTime,
+    sourceHostAllowlist: options.sourceHostAllowlist,
   });
   // Started before anything can send a command, so no take of an item with an
   // auto-out delay is missed. It holds no timer until such a take happens.
@@ -99,6 +106,7 @@ async function startServingFromDatabase(
     stateStore,
     logger: options.logger,
     dataFolder: options.dataFolder,
+    sourceHostAllowlist: options.sourceHostAllowlist,
   });
   /** Stops the server's own actors; used by close() and by a boot that fails from here. */
   function stopTheServerActors(): void {
@@ -117,6 +125,7 @@ async function startServingFromDatabase(
       graphicPackagesFolder: options.graphicPackagesFolder,
       controlPageFolder: options.controlPageFolder,
       rendererPageFolder: options.rendererPageFolder,
+      sourceHostAllowlist: options.sourceHostAllowlist,
     });
     httpServer = await listen({
       fetch: app.fetch,

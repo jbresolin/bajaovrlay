@@ -5,6 +5,7 @@
 import type { ServerMessage } from '@bajaovrlay/shared';
 import { onTestFinished } from 'vitest';
 
+import { noSourceHostAllowlist } from '../../modules/dataSources/index.js';
 import { startServer } from '../boot/startServer.js';
 import { createTemporaryDataFolder } from '../boot/temporaryDataFolder.testSupport.js';
 import { committedMigrationsFolder } from '../db/openDatabase.js';
@@ -42,6 +43,7 @@ export async function startServerOnARandomPort(
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     dataFolder: createTemporaryDataFolder(),
+    sourceHostAllowlist: noSourceHostAllowlist,
     heartbeatIntervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
     readCurrentTime: options.readCurrentTime ?? (() => new Date(momentTheServerClockIsHeldAt)),
   });

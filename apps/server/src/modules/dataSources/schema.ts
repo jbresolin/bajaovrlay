@@ -16,7 +16,15 @@ import {
 } from '@bajaovrlay/shared';
 import { z } from 'zod';
 
-import { refuseInvalidDataSourceConfig, refuseUnknownRecording } from './dataSourceRefusals.js';
+import {
+  findFirstRequestToAHostNotAllowed,
+  type SourceHostAllowlist,
+} from './adapters/httpJson/sourceHostAllowlist.js';
+import {
+  refuseHostNotAllowed,
+  refuseInvalidDataSourceConfig,
+  refuseUnknownRecording,
+} from './dataSourceRefusals.js';
 
 /** A kind with a config of that kind, ready to be spread into a DataSource. */
 export type DataSourceKindAndConfig =
@@ -35,12 +43,15 @@ export type DataSourceConfigCheck =
  * replayStartedAtMs) is dropped: only the server sets it, so a page that sends back the
  * whole config it read cannot rewind a race or a replay. A replay may only name a
  * recording that exists and is closed: one still being recorded has no end yet, and
- * replaying it would chase a file that is still growing.
+ * replaying it would chase a file that is still growing. A flex source may only read
+ * hosts on BAJAOVRLAY_SOURCE_ALLOWED_HOSTS when that list is set (the reducer context
+ * carries it from the boot).
  */
 export function checkDataSourceConfig(
   kind: DataSourceKind,
   rawConfig: unknown,
   recordings: Recording[],
+  sourceHostAllowlist: SourceHostAllowlist,
 ): DataSourceConfigCheck {
   switch (kind) {
     case 'simulator': {
@@ -80,6 +91,19 @@ export function checkDataSourceConfig(
       if (!parsedConfig.success) {
         const badFieldPath = parsedConfig.error.issues[0]?.path ?? [];
         return { isValid: false, error: refuseInvalidDataSourceConfig(badFieldPath) };
+      }
+      // Checked on save as well as at every request, so "Salvar" says it at once. With no
+      // list set nothing is refused here: any host is allowed, and a request naming a
+      // variable is refused when it is built, not when it is saved.
+      const requestNotAllowed = findFirstRequestToAHostNotAllowed(
+        parsedConfig.data.requests,
+        sourceHostAllowlist,
+      );
+      if (requestNotAllowed !== undefined) {
+        return {
+          isValid: false,
+          error: refuseHostNotAllowed(requestNotAllowed.host, requestNotAllowed.requestId),
+        };
       }
       return { isValid: true, kindAndConfig: { kind: 'httpJson', config: parsedConfig.data } };
     }

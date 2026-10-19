@@ -42,6 +42,17 @@ export function refuseDataSourceThatIsNotASimulator(sourceLabel: string): Comman
   };
 }
 
+/**
+ * The refusal for a flex config with a request to a host not on BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
+ * worded as the poll's own error, so the form and the source's status say the same thing.
+ */
+export function refuseHostNotAllowed(host: string, requestId: string): CommandError {
+  return {
+    code: 'DATA_SOURCE_HOST_NOT_ALLOWED',
+    message: ptBR.httpJsonErrors.hostNotAllowed(host, requestId),
+  };
+}
+
 /** The refusal for a replay of a recording that does not exist or is still open. */
 export function refuseUnknownRecording(recordingId: string): CommandError {
   return {

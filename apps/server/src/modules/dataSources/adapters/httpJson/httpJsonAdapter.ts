@@ -15,6 +15,7 @@ import type {
 } from '../dataSourceAdapter.js';
 import { fetchHttpJsonRequest, type HttpJsonFetchResult } from './fetchHttpJsonRequest.js';
 import type { ReadEnvironmentVariable } from './httpJsonRequestAddress.js';
+import type { SourceHostAllowlist } from './sourceHostAllowlist.js';
 
 /** What the httpJson adapter needs. */
 export type HttpJsonAdapterOptions = {
@@ -22,6 +23,8 @@ export type HttpJsonAdapterOptions = {
   logger: ServerLogger;
   /** Reads a BAJAOVRLAY_SOURCE_ variable at poll time; the server reads process.env. */
   readEnvironmentVariable: ReadEnvironmentVariable;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot; a request to a host off it fails the poll. */
+  sourceHostAllowlist: SourceHostAllowlist;
 };
 
 /**
@@ -39,7 +42,7 @@ export type HttpJsonAdapterOptions = {
 export function createHttpJsonAdapter(
   options: HttpJsonAdapterOptions,
 ): DataSourceAdapter<HttpJsonConfig> {
-  const { logger, readEnvironmentVariable } = options;
+  const { logger, readEnvironmentVariable, sourceHostAllowlist } = options;
 
   async function pollOnce(
     config: HttpJsonConfig,
@@ -48,7 +51,12 @@ export function createHttpJsonAdapter(
     const pollMomentMs = context.readCurrentTime().getTime();
     const fetchResults = await Promise.all(
       config.requests.map((request) =>
-        fetchHttpJsonRequest(request, { signal: context.signal, readEnvironmentVariable, logger }),
+        fetchHttpJsonRequest(request, {
+          signal: context.signal,
+          readEnvironmentVariable,
+          sourceHostAllowlist,
+          logger,
+        }),
       ),
     );
 

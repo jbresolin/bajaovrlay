@@ -229,6 +229,15 @@ export const ptBR = {
       `A resposta de ${requestId} passou de ${megabytes.toLocaleString('pt-BR')} MB`,
     couldNotConnect: (host: string, requestId: string, reason: string) =>
       `Não consegui conectar a ${host} (${requestId}): ${reason}`,
+    // BAJAOVRLAY_SOURCE_ALLOWED_HOSTS is set and this request's host is not on it: a poll,
+    // a sample and a save (createDataSource, updateDataSource) are all refused with it.
+    hostNotAllowed: (host: string, requestId: string) =>
+      `O servidor não busca dados em ${host} (${requestId}): esse endereço não está em BAJAOVRLAY_SOURCE_ALLOWED_HOSTS.`,
+    // BAJAOVRLAY_SOURCE_ALLOWED_HOSTS is not set and the request names a variable: no
+    // variable's value is sent then. The variable is not named, so the answer is the
+    // same whether it is set on the server or not.
+    environmentVariableNeedsAllowedHosts: (requestId: string) =>
+      `A requisição ${requestId} usa uma variável de ambiente, mas BAJAOVRLAY_SOURCE_ALLOWED_HOSTS não está definida no servidor; sem essa lista, nenhum valor de variável é enviado.`,
     environmentVariableNotSet: (variableName: string) =>
       `A variável de ambiente ${variableName} não está definida no servidor.`,
     environmentVariableWithLineBreak: (variableName: string) =>

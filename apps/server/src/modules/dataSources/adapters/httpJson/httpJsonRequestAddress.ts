@@ -4,6 +4,7 @@
 import type { HttpJsonHeader, HttpJsonQueryParameter, HttpJsonRequest } from '@bajaovrlay/shared';
 
 import { ptBR } from '../../../../core/messages/ptBR.js';
+import { isHostOfAddressAllowed, type SourceHostAllowlist } from './sourceHostAllowlist.js';
 
 /**
  * Reads one environment variable of the server, or undefined when it is not set. The
@@ -34,19 +35,50 @@ const lineBreakOrNulPattern = /[\r\n\0]/;
 // else makes fetch throw before sending, which would read as a network failure.
 const headerValueCharactersPattern = /^[\t\x20-\x7e\x80-\xff]*$/;
 
+/** What building a request needs from the server. */
+export type HttpJsonRequestBuildingOptions = {
+  readEnvironmentVariable: ReadEnvironmentVariable;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot. */
+  sourceHostAllowlist: SourceHostAllowlist;
+};
+
 /**
  * Builds the address (the config's URL with its query parameters added) and the headers
- * of one request, reading every BAJAOVRLAY_SOURCE_ variable it names at this moment, so a
- * token changed on the server is sent from the next poll on. A variable that is not set,
- * or set to nothing, stops the request with a pt-BR error naming it; a header value from
- * a variable with a line break, or with a character fetch refuses (an emoji), is refused
- * by the variable's name. No error quotes a value.
+ * of one request, in this order, each step stopping the request with a pt-BR error:
+ *   1. the host must be on BAJAOVRLAY_SOURCE_ALLOWED_HOSTS, when that list is set;
+ *   2. with no list set, the request may name no variable at all;
+ *   3. only then is every BAJAOVRLAY_SOURCE_ variable it names read, at this moment, so a
+ *      token changed on the server is sent from the next poll on.
+ * Steps 1 and 2 come before any variable is read on purpose: otherwise "A variável …
+ * não está definida" against a host off the list would tell an operator which secrets
+ * the server holds. A variable not set, or set to nothing, is refused naming it; a
+ * header value from a variable with a line break, or with a character fetch refuses (an
+ * emoji), is refused by the variable's name. No error quotes a value.
  */
 export function buildHttpJsonRequestToSend(
   request: HttpJsonRequest,
-  readEnvironmentVariable: ReadEnvironmentVariable,
+  options: HttpJsonRequestBuildingOptions,
 ): HttpJsonRequestToSend {
+  const { readEnvironmentVariable, sourceHostAllowlist } = options;
   const address = new URL(request.url);
+
+  // Step 1: the host, before anything else is looked at.
+  if (!isHostOfAddressAllowed(address, sourceHostAllowlist)) {
+    return {
+      ok: false,
+      error: ptBR.httpJsonErrors.hostNotAllowed(address.host, request.requestId),
+    };
+  }
+
+  // Step 2: with no list, any host may be fetched, so no secret may go with the request.
+  if (!sourceHostAllowlist.isSet && isAnyVariableNamed(request)) {
+    return {
+      ok: false,
+      error: ptBR.httpJsonErrors.environmentVariableNeedsAllowedHosts(request.requestId),
+    };
+  }
+
+  // Step 3: the values, variables read now.
   for (const queryParameter of request.queryParameters) {
     const resolved = resolveValue(queryParameter, readEnvironmentVariable);
     if (!resolved.ok) {
@@ -72,6 +104,12 @@ export function buildHttpJsonRequestToSend(
   }
 
   return { ok: true, address, headers };
+}
+
+/** Tells whether any header or query parameter of the request names a variable. */
+function isAnyVariableNamed(request: HttpJsonRequest): boolean {
+  const namesAndValues = [...request.headers, ...request.queryParameters];
+  return namesAndValues.some((nameAndValue) => nameAndValue.valueFromEnvironment !== undefined);
 }
 
 /** The value of a header or query parameter: as written, or read from its variable now. */

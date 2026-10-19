@@ -5,7 +5,9 @@
  *   A token is never written in a flex source's config, which every operator's browser
  *   and the event log see: a header or query parameter names a BAJAOVRLAY_SOURCE_
  *   variable instead, and the adapter reads it from the server's environment at every
- *   poll. The value goes to fetch and nowhere else.
+ *   poll. The value goes to fetch and nowhere else. Every test here runs on a server
+ *   whose BAJAOVRLAY_SOURCE_ALLOWED_HOSTS lists 127.0.0.1, where the test timing system
+ *   listens: without that list no variable's value is sent at all.
  *
  * What these tests prove (a real HTTP server on 127.0.0.1 and a random port, real fetch):
  *   - A header and a query parameter named by a variable are sent with its value, and
@@ -18,6 +20,7 @@
  * What these tests deliberately do not cover:
  *   - Which variable names a config may use (the BAJAOVRLAY_SOURCE_ prefix): the config
  *     schema's tests in packages/shared.
+ *   - A host off the list, or no list at all: httpJsonHostAllowlist.test.ts.
  *   - Good polls and the failures of a request: httpJsonAdapter.test.ts and
  *     httpJsonAdapterFailures.test.ts.
  */
@@ -26,6 +29,7 @@ import { describe, expect, it } from 'vitest';
 import { createLogger } from '../../../../core/logger/createLogger.js';
 import { createRecordingLogger } from '../../../../core/logger/recordingLogger.testSupport.js';
 import { createHttpJsonAdapter } from './httpJsonAdapter.js';
+import type { SourceHostAllowlist } from './sourceHostAllowlist.js';
 import {
   readExampleConfigPointedAt,
   readExampleTimingSystemResponse,
@@ -34,6 +38,12 @@ import {
 
 /** 14:24:01 in Brasília (17:24:01 UTC) on Saturday 20 March 2027, the moment every poll here is made at. */
 const pollMomentMs = Date.parse('2027-03-20T17:24:01.000Z');
+
+/** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS=127.0.0.1: the test timing system, on any port. */
+const allowlistOfTheTestTimingSystem: SourceHostAllowlist = {
+  isSet: true,
+  allowedHosts: [{ hostName: '127.0.0.1', port: undefined }],
+};
 
 /** A poll context at the poll moment, with a signal that never fires. */
 function buildPollContextThatNeverTimesOut() {
@@ -48,6 +58,7 @@ function createAdapterReading(environment: Record<string, string>) {
   return createHttpJsonAdapter({
     logger: createLogger({ level: 'silent' }),
     readEnvironmentVariable: (name) => environment[name],
+    sourceHostAllowlist: allowlistOfTheTestTimingSystem,
   });
 }
 
@@ -89,6 +100,7 @@ describe('values from environment variables', () => {
     const { logger, readRecordedLines } = createRecordingLogger();
     const adapter = createHttpJsonAdapter({
       logger,
+      sourceHostAllowlist: allowlistOfTheTestTimingSystem,
       readEnvironmentVariable: (name) =>
         ({
           BAJAOVRLAY_SOURCE_BAJA_TOKEN: 'Bearer token-secreto-da-baja-9f2c',

@@ -12,12 +12,15 @@ import {
   type ReadEnvironmentVariable,
 } from './httpJsonRequestAddress.js';
 import { largestResponseBodyInBytes, readResponseBodyWithinCap } from './responseBodyWithinCap.js';
+import type { SourceHostAllowlist } from './sourceHostAllowlist.js';
 
 /** What fetching one request needs. */
 export type FetchHttpJsonRequestOptions = {
   /** Fires when the caller gives up (the poll's timeout); the fetch stops at once. */
   signal: AbortSignal;
   readEnvironmentVariable: ReadEnvironmentVariable;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot; checked before anything is sent. */
+  sourceHostAllowlist: SourceHostAllowlist;
   logger: ServerLogger;
 };
 
@@ -28,7 +31,8 @@ export type HttpJsonFetchResult =
 /**
  * GETs one request with Node's own fetch and reads its body as JSON. It never throws: every
  * failure is a pt-BR sentence naming the request (and the host at most), checked in this
- * order: a variable not set, the signal fired ("Tempo esgotado"), no connection, an
+ * order: a host not on BAJAOVRLAY_SOURCE_ALLOWED_HOSTS, a variable named with no such
+ * list set, a variable not set, the signal fired ("Tempo esgotado"), no connection, an
  * answer outside 2xx, a body over 5 MB, a body that is not JSON. No retry: the poller's
  * rhythm is the retry.
  *
@@ -36,10 +40,10 @@ export type HttpJsonFetchResult =
  * following one would send the headers, a token among them, to an address the operator
  * never typed.
  *
- * Network reach, a deliberate trade-off: the server fetches whatever http(s) address an
- * operator typed, with no filter on private or local addresses. On the event LAN the
- * operators are trusted and their roles get PINs in M4; a filter would also block the
- * timing system on the LAN, the main case. Revisit if the server is ever exposed beyond it.
+ * Network reach: with BAJAOVRLAY_SOURCE_ALLOWED_HOSTS set, only its hosts are fetched;
+ * without it, any http(s) address an operator typed is, private or local ones included,
+ * but no BAJAOVRLAY_SOURCE_ variable's value goes with it (gate 2 on PR #17). There is
+ * no filter on private addresses as such: the timing system on the LAN is the main case.
  *
  * The log line carries the request id, host, path, status and size, never the query
  * (which may hold a variable's value) and never a header.
@@ -48,8 +52,11 @@ export async function fetchHttpJsonRequest(
   request: HttpJsonRequest,
   options: FetchHttpJsonRequestOptions,
 ): Promise<HttpJsonFetchResult> {
-  const { signal, readEnvironmentVariable, logger } = options;
-  const requestToSend = buildHttpJsonRequestToSend(request, readEnvironmentVariable);
+  const { signal, readEnvironmentVariable, sourceHostAllowlist, logger } = options;
+  const requestToSend = buildHttpJsonRequestToSend(request, {
+    readEnvironmentVariable,
+    sourceHostAllowlist,
+  });
   if (!requestToSend.ok) {
     return requestToSend;
   }
