@@ -1,4 +1,4 @@
-import type { PageReloadForNewBuild } from '@bajaovrlay/shared';
+import { keepTheReloadMemoryOfOnePageApart, type PageReloadForNewBuild } from '@bajaovrlay/shared';
 
 /**
  * The control page's side of "reload when the server's build changes": the build this
@@ -11,5 +11,11 @@ export const browserPageReloadForNewBuild: PageReloadForNewBuild = {
   readNowMs: () => Date.now(),
   reloadPage: () => window.location.reload(),
   // A getter, because merely reading window.sessionStorage throws when site data is blocked.
-  openReloadMemory: () => window.sessionStorage,
+  // Keyed by this page's address: the control page and its Programa and Prévia frames
+  // share one sessionStorage, and one page's reload must not hold back the others.
+  openReloadMemory: () =>
+    keepTheReloadMemoryOfOnePageApart(
+      window.sessionStorage,
+      window.location.pathname + window.location.search,
+    ),
 };

@@ -8,7 +8,9 @@ build reloads the page, at most once per announced build (the id it last reloade
 is kept in sessionStorage), so a lasting mismatch costs one reload, not a loop. Only when
 that id cannot be read or written does the older rule apply, at most once a minute by
 the moment of the last reload; a reload it skipped as too recent is tried again when the
-minute is over. A storage that fails as a whole means no reload. `readBuildIdOfAHello.ts` reads the build from the raw
+minute is over. A storage that fails as a whole means no reload. The control page and its two monitor
+frames share one sessionStorage, so each page keys its entries by its own address
+(`reloadMemoryOfOnePage.ts`). `readBuildIdOfAHello.ts` reads the build from the raw
 JSON, so a page whose own schema refuses a newer server's hello still reloads.
 
 One id per build: `pnpm build` first writes the build moment to `build-id.building.json`
@@ -21,4 +23,4 @@ for the old id and not again until the restart announces another build. A page f
 compared there.
 
 Tests: `reloadForNewServerBuild.test.ts` (the once-per-build rule), `.fallback.test.ts`
-(the once-a-minute fallback), both on the stand-ins of `pageReloadStandIns.testSupport.ts`.
+(the once-a-minute fallback), `reloadMemoryOfOnePage.test.ts` (pages sharing one storage), both on the stand-ins of `pageReloadStandIns.testSupport.ts`.

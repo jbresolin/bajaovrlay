@@ -118,6 +118,9 @@ export {
   serverBuildLastReloadedForStorageKey,
   shortestTimeBetweenReloadsForNewBuildInMilliseconds,
 } from './build/reloadForNewServerBuild.js';
+// A page's own reload memory inside the sessionStorage its tab shares with other pages
+// (the control page and its two monitor frames), keyed by the page's address.
+export { keepTheReloadMemoryOfOnePageApart } from './build/reloadMemoryOfOnePage.js';
 // The buildId of a hello read before the page's own schema checks the rest of it, so a
 // page that refuses a newer server's hello can still reload onto the new bundle.
 export { readBuildIdOfAHello } from './build/readBuildIdOfAHello.js';

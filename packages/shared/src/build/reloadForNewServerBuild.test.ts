@@ -24,6 +24,8 @@
  *   - A second upgrade seconds after the first reloads at once: there is no minute to wait.
  *
  * What these tests deliberately do not cover:
+ *   - Several pages sharing one sessionStorage (the control page and its monitor
+ *     frames); reloadMemoryOfOnePage.test.ts.
  *   - The control page and the renderer calling this on their hello; each app's
  *     serverConnection tests cover that, with the browser stand-ins injected.
  *   - The once-a-minute fallback for a storage that cannot keep the announced build, and a
@@ -146,7 +148,7 @@ describe('at most one reload per announced server build', () => {
     ]);
   });
 
-  it('reloads nothing more once the restarted server announces the build of the page', () => {
+  it("after the restart, reloads once more only if the server announces a build other than the page's: the page's own build reloads nothing", () => {
     // Arrange: that page, reloaded once for the old build and reconnected since.
     const { memory } = createReloadMemoryHolding({});
     const page = createPageReloadForTests(buildOfThePageLoadedBeforeTheRestart, memory);
@@ -158,12 +160,15 @@ describe('at most one reload per announced server build', () => {
       page.pageReload,
     );
 
-    // Assert: the two builds match, so the single reload is still the only one.
+    // Assert: the two builds match, so the single reload is still the only one. "Once
+    // more after the restart" (João's ruling) is read as "at most once more": the page
+    // already holds the bundle the restarted server runs, so a reload would only blank it.
+    // The next test shows the one more reload, for a build the page does not carry.
     expect(outcome, 'the restarted server runs the build of the page').toBe('sameBuild');
     expect(page.countReloads(), 'no reload may follow the restart').toBe(1);
   });
 
-  it('reloads once more when the restarted server announces a still later build', () => {
+  it("after the restart, reloads once more when the server announces a still later build than the page's", () => {
     // Arrange: that page, reloaded once for the old build and reconnected since.
     const { memory, readEntry } = createReloadMemoryHolding({});
     const page = createPageReloadForTests(buildOfThePageLoadedBeforeTheRestart, memory);

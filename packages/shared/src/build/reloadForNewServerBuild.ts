@@ -11,10 +11,14 @@
 // announces the old one, and a reload a minute would blank an OBS source on air each
 // minute until the restart. Keeping the announced id stops that after one reload.
 
-/** The sessionStorage key holding the server build this tab last reloaded for. */
+// The two keys below are the plain names; each app's browserPageReloadForNewBuild.ts adds
+// the page's address to them (reloadMemoryOfOnePage.ts), because the control page and its
+// two monitor frames share one sessionStorage and must each keep their own entries.
+
+/** The sessionStorage key holding the server build this page last reloaded for. */
 export const serverBuildLastReloadedForStorageKey = 'bajaovrlay.serverBuildIdLastReloadedFor';
 
-/** The sessionStorage key holding when this tab last reloaded, for the fallback, in ms. */
+/** The sessionStorage key holding when this page last reloaded, for the fallback, in ms. */
 export const lastReloadForNewBuildStorageKey = 'bajaovrlay.lastReloadForNewBuildAtMs';
 
 /** The fallback's shortest time between two reloads for a new build: one minute. */
