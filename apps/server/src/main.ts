@@ -15,9 +15,10 @@ import { readServerVersion } from './readServerVersion.js';
 const environment = readServerEnvironment(process.env);
 const logger = createLogger({ level: environment.LOG_LEVEL });
 const version = readServerVersion();
-// The id of the last `pnpm build`, which the built pages embed; read once, like the
-// pages below, so a rebuild needs a restart before the server names the new build.
-const buildId = readBuildId(buildIdFileUrl);
+// The id of the last `pnpm build`, which the built pages embed. Read here only for the
+// boot log and warning: the hub reads the file again for every hello, because the pages
+// are served from disk and a rebuild with the server up changes them at once.
+const buildIdAtBoot = readBuildId(buildIdFileUrl);
 
 // Every path is resolved from this file (src/main.ts, or dist/main.js once built: the
 // same depth), never from the folder the server was started in.
@@ -28,7 +29,8 @@ const graphicPackagesFolder = fileURLToPath(
 const databasePath = resolveDatabasePath(environment.DATABASE_PATH, repositoryRootFolder);
 const dataFolder = resolveDataFolder(environment.DATA_DIR, repositoryRootFolder);
 
-// The built pages are looked up once, at boot. Building them later needs a restart.
+// The built page folders are looked up once, at boot: building them for the first time
+// later needs a restart, while a rebuild of a folder found here is served at once.
 const controlPageFolder = findBuiltPageFolder(new URL('../../control/dist/', import.meta.url));
 const rendererPageFolder = findBuiltPageFolder(new URL('../../renderer/dist/', import.meta.url));
 if (controlPageFolder === undefined) {
@@ -37,7 +39,7 @@ if (controlPageFolder === undefined) {
 if (rendererPageFolder === undefined) {
   logger.warn('renderer is not built; run `pnpm build` to serve it at /render/');
 }
-if (buildId === undefined) {
+if (buildIdAtBoot === undefined) {
   logger.warn('no build-id.json; open pages will not reload themselves after an upgrade');
 }
 
@@ -54,14 +56,14 @@ try {
     sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
     controlPageFolder,
     rendererPageFolder,
-    buildId,
+    buildIdFileUrl,
   });
   logger.info(
     {
       host: environment.HOST,
       port: runningServer.port,
       version,
-      build_id: buildId,
+      build_id: buildIdAtBoot,
       database_path: databasePath,
       data_folder: dataFolder,
     },

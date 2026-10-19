@@ -41,10 +41,10 @@ export type StartServerOptions = {
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /**
-   * The id of the build the served pages embed (build-id.json, read by main.ts), sent in
-   * every hello so an open page from another build reloads itself. Undefined: none sent.
+   * Where `pnpm build` leaves build-id.json (the id the served pages embed). The hub reads
+   * it for every hello so an open page from another build reloads itself. Undefined: none sent.
    */
-  buildId?: string | undefined;
+  buildIdFileUrl?: URL | undefined;
   /** Defaults to 15 s; tests use a few milliseconds. */
   heartbeatIntervalInMilliseconds?: number | undefined;
   /**
@@ -144,7 +144,7 @@ async function startServingFromDatabase(
       heartbeatIntervalInMilliseconds:
         options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
       readCurrentTime: options.readCurrentTime,
-      buildId: options.buildId,
+      buildIdFileUrl: options.buildIdFileUrl,
     });
   } catch (bootError) {
     // The poller already armed a poll and a stale watch for every source left on: left

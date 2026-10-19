@@ -32,8 +32,8 @@ export async function startServerOnARandomPort(
     heartbeatIntervalInMilliseconds?: number;
     logger?: ServerLogger;
     readCurrentTime?: () => Date;
-    /** The build the server says it runs in each hello; none unless a test gives one. */
-    buildId?: string;
+    /** The build-id.json the hub reads for each hello; none unless a test gives one. */
+    buildIdFileUrl?: URL;
   } = {},
 ) {
   const runningServer = await startServer({
@@ -46,7 +46,7 @@ export async function startServerOnARandomPort(
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     dataFolder: createTemporaryDataFolder(),
     sourceHostAllowlist: noSourceHostAllowlist,
-    buildId: options.buildId,
+    buildIdFileUrl: options.buildIdFileUrl,
     heartbeatIntervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
     readCurrentTime: options.readCurrentTime ?? (() => new Date(momentTheServerClockIsHeldAt)),
   });

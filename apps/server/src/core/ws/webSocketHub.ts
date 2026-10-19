@@ -4,6 +4,7 @@ import type { IncomingMessage, Server } from 'node:http';
 import type { SliceNameSentWhole, Slices } from '@bajaovrlay/shared';
 import { type WebSocket, WebSocketServer } from 'ws';
 
+import { readBuildId } from '../../readBuildId.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
@@ -47,10 +48,10 @@ export type WebSocketHubOptions = {
   /** Cancels a timer started by startRepeatingTimer; defaults to Node's clearInterval. */
   cancelRepeatingTimer?: ((timerHandle: unknown) => void) | undefined;
   /**
-   * The build the server runs, put in every hello so a page from another build reloads
-   * itself (packages/shared/src/build). Undefined (development, tests): hello names none.
+   * Where `pnpm build` leaves build-id.json, read for every hello so a page from another
+   * build reloads itself (packages/shared/src/build). Undefined (tests): hello names none.
    */
-  buildId?: string | undefined;
+  buildIdFileUrl?: URL | undefined;
 };
 
 /** The running hub; close() drops every client and stops the heartbeat and the time message. */
@@ -126,10 +127,18 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     }
     const allSlices = stateStore.readAllSlices();
     const slicesForThisClient = isScreen ? buildSlicesForAScreen(allSlices) : allSlices;
+    // Read on every hello, not once at boot: the pages are served from disk on every
+    // request, so after a `pnpm build` with the server still up a page reloads onto the
+    // new bundle, and a boot-time id would tell it to reload again, once a minute, until
+    // a restart (OBS blanking each time). The file is a few bytes and readBuildId never
+    // throws. What could still go wrong: a `pnpm build` that fails after writing the file
+    // leaves pages older than the id, and they reload once a minute until a build succeeds.
+    const buildIdOfServedPages =
+      options.buildIdFileUrl === undefined ? undefined : readBuildId(options.buildIdFileUrl);
     const helloMessage = buildHelloMessage(
       slicesForThisClient,
       readCurrentTime().getTime(),
-      options.buildId,
+      buildIdOfServedPages,
     );
     client.send(serializeServerMessage(helloMessage));
 

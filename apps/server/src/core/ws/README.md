@@ -18,6 +18,8 @@ snapshot changed, just before that `slice`/`slices`, which never carry `dataSnap
 - `heartbeat.ts` — pings every 15 s and drops clients that miss a ping.
 
 The message shapes, with one JSON example each: `packages/shared/src/ws/README.md`. Pages
-reload themselves when the server's build changes: `hello` carries `buildId` (read at boot
-from `build-id.json` by `src/readBuildId.ts`), and a page from another build reloads, at
-most once a minute. Pages opened before PR #17 still need one reload by hand.
+reload themselves when the server's build changes: `hello` carries `buildId` (read from
+`build-id.json` by `src/readBuildId.ts` for every hello, not once at boot, so a rebuild
+with the server up names the bundle now served), and a page from another build reloads, at
+most once a minute. A `pnpm build` that fails after writing the file leaves pages older
+than the id, reloading once a minute until a build succeeds. Pages opened before PR #17 still need one reload by hand.
