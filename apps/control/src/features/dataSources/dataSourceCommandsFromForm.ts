@@ -8,21 +8,23 @@
  * of its fields sends the whole config from the form. The moment the race or the replay
  * started is set and kept by the server; the form never holds it, so it is not compared.
  */
-import type {
-  CreateDataSourceCommand,
-  DataSource,
-  DataSourceKind,
-  UpdateDataSourceCommand,
+import {
+  areJsonValuesEqual,
+  type CreateDataSourceCommand,
+  type DataSource,
+  type DataSourceKind,
+  type HttpJsonConfig,
+  type UpdateDataSourceCommand,
 } from '@bajaovrlay/shared';
 
 import type { ReplayConfigFromForm } from './replaySourceForm';
 import type { SimulatorConfigFromForm } from './simulatorSourceForm';
 
-/** What a valid form of either kind reads into. */
+/** What a valid form of any kind reads into. */
 export type DataSourceFormReading = {
   label: string;
   pollIntervalMs: number;
-  config: SimulatorConfigFromForm | ReplayConfigFromForm;
+  config: SimulatorConfigFromForm | ReplayConfigFromForm | HttpJsonConfig;
 };
 
 // The config fields only the server writes: the start of the simulated race or the replay.
@@ -30,8 +32,9 @@ const configFieldsSetByTheServer = ['simulatedStartAtMs', 'replayStartedAtMs'];
 
 /**
  * Answers whether the form's config differs from the stored one in any field the form
- * holds, including a field the operator emptied (an optional one now left out). Every
- * config value is a number, a text or a yes/no, so `!==` compares them fairly.
+ * holds, including a field the operator emptied (an optional one now left out). Values
+ * are compared by content (areJsonValuesEqual), because a flex config's requests and
+ * mappings are lists and objects that the form builds anew, never the stored ones.
  */
 function hasConfigChanged(
   storedConfig: Record<string, unknown>,
@@ -42,7 +45,7 @@ function hasConfigChanged(
     if (configFieldsSetByTheServer.includes(fieldName)) {
       continue;
     }
-    if (storedConfig[fieldName] !== configFromForm[fieldName]) {
+    if (!areJsonValuesEqual(storedConfig[fieldName], configFromForm[fieldName])) {
       return true;
     }
   }

@@ -33,7 +33,7 @@ export function buildActorForConnection(
 
 /**
  * Whether a connection's actor is a screen (a renderer or a monitor), which the hub
- * never sends the slices listed in slicesHiddenFromScreens.ts.
+ * sends only the slices listed in slicesSentToScreens.ts.
  */
 export function isScreenConnectionActor(actor: string): boolean {
   return isRendererActor(actor) || isMonitorActor(actor);

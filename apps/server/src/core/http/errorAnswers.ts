@@ -28,12 +28,23 @@ export const answerRouteNotFound: NotFoundHandler<ServerAppEnvironment> = (conte
 };
 
 /**
- * Answers an unexpected exception with a 500 in JSON and logs it with the request id.
- * The stack trace goes to the log only; the operator sees a pt-BR message.
+ * Answers an unexpected exception with a 500 in JSON and logs it with the request id, and
+ * a body that is not JSON with a 400 in JSON. The operator always sees a pt-BR message.
  */
 export const answerUnexpectedError: ErrorHandler<ServerAppEnvironment> = (error, context) => {
-  // A deliberate HTTPException (thrown by Hono middleware or by us) already carries
-  // the answer it wants to send.
+  // Hono's JSON body validator throws a 400 HTTPException with a plain English line when
+  // the body cannot be parsed, before a route's own hook runs. Every body route takes
+  // JSON and nothing of ours throws a 400 HTTPException, so a 400 here means exactly
+  // that; it is answered in JSON with a pt-BR message like every other error. If a form
+  // body or our own 400 HTTPException is ever added, this check must look closer.
+  if (error instanceof HTTPException && error.status === 400) {
+    const body: ErrorAnswerBody = {
+      error: { code: 'MALFORMED_JSON_BODY', message: ptBR.errors.malformedJsonBody },
+    };
+    return context.json(body, 400);
+  }
+  // Any other deliberate HTTPException (thrown by Hono middleware) already carries the
+  // answer it wants to send.
   if (error instanceof HTTPException) {
     return error.getResponse();
   }

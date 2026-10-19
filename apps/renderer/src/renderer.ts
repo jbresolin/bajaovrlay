@@ -8,6 +8,7 @@
 // the take instead (the preview instances, over what is on air, minus the layers marked
 // "will be cleared") and tells nothing either. rendererPageRole.ts decides which of the
 // three this page is; everything below is the same code for all of them.
+import { browserPageReloadForNewBuild } from './browserPageReloadForNewBuild.js';
 import { createGraphicLoader } from './graphicLoader.js';
 import { createInstancePlayer } from './instancePlayer.js';
 import { createLayerContainers } from './layerContainers.js';
@@ -29,6 +30,10 @@ function startRenderer(stage: HTMLElement): void {
   const connection = connectToServer({
     webSocketAddress: `${webSocketScheme}//${location.host}${pageRole.webSocketPath}`,
     stateAddress: `${location.origin}${pageRole.stateReadingPath}`,
+    // A hello naming another build reloads this page (at most once per announced build),
+    // so an OBS browser source left open across an upgrade does not go on with the old
+    // bundle, and one loaded between a build and the restart is not blanked repeatedly.
+    pageReloadForNewBuild: browserPageReloadForNewBuild,
   });
 
   const layerContainers = createLayerContainers(stage);

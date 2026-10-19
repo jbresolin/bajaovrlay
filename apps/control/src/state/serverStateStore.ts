@@ -1,5 +1,7 @@
 import {
   type ChangedSlices,
+  type DataSnapshot,
+  type DataSnapshotMessage,
   mergeChangedSlicesIntoSlices,
   type SliceMessage,
   type Slices,
@@ -31,6 +33,11 @@ export type ServerState = Slices & {
    * them becomes what the server sent, all in ONE store update.
    */
   replaceSeveralSlices: (changedSlices: ChangedSlices) => void;
+  /**
+   * A dataSnapshot message arrived: that one source's entry of `dataSnapshots` becomes
+   * what the server sent (added when new, removed on null); every other entry stays.
+   */
+  mergeOneDataSnapshot: (message: DataSnapshotMessage) => void;
   changeConnectionStatus: (connectionStatus: ConnectionStatus) => void;
   rememberCommandError: (commandError: LastCommandError) => void;
   forgetCommandError: () => void;
@@ -114,9 +121,6 @@ export function createServerStateStore(): ServerStateStore {
         case 'dataSources':
           set({ dataSources: message.slice });
           break;
-        case 'dataSnapshots':
-          set({ dataSnapshots: message.slice });
-          break;
         case 'recordings':
           set({ recordings: message.slice });
           break;
@@ -132,6 +136,19 @@ export function createServerStateStore(): ServerStateStore {
       set((state) => mergeChangedSlicesIntoSlices(state, changedSlices));
     },
 
+    // The one merge in this store: the server sends one source's snapshot at a time
+    // (BAJAOVRLAY-40), so the list is the hello's, with that source's entry replaced.
+    // What the server sent still wins for that source; nothing is computed here.
+    mergeOneDataSnapshot: (message) => {
+      set((state) => ({
+        dataSnapshots: mergeDataSnapshotIntoList(
+          state.dataSnapshots,
+          message.sourceId,
+          message.snapshot,
+        ),
+      }));
+    },
+
     changeConnectionStatus: (connectionStatus) => {
       set({ connectionStatus });
     },
@@ -142,4 +159,27 @@ export function createServerStateStore(): ServerStateStore {
       set({ lastCommandError: null });
     },
   }));
+}
+
+/**
+ * The list with one source's snapshot put in: in its place when the source has one,
+ * at the end when it is new, or taken out when the snapshot is null. A null for a source
+ * the list does not have hands back the very same list, so nothing redraws.
+ */
+function mergeDataSnapshotIntoList(
+  snapshots: DataSnapshot[],
+  sourceId: string,
+  snapshot: DataSnapshot | null,
+): DataSnapshot[] {
+  const hasThisSource = snapshots.some((candidate) => candidate.sourceId === sourceId);
+  if (snapshot === null) {
+    if (!hasThisSource) {
+      return snapshots;
+    }
+    return snapshots.filter((candidate) => candidate.sourceId !== sourceId);
+  }
+  if (!hasThisSource) {
+    return [...snapshots, snapshot];
+  }
+  return snapshots.map((candidate) => (candidate.sourceId === sourceId ? snapshot : candidate));
 }

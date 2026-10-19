@@ -2,13 +2,15 @@
 
 The in-memory state slices and the single path that changes them. Start at `createStateStore.ts`:
 `applyCommand` validates → authorises → applies a reducer → saves (one SQLite transaction) → logs
-the event → tells listeners. A command that changes nothing is not saved, logged or broadcast; a
+the event → tells listeners. The `dataSnapshots` slice is saved one row per source, and listeners are
+told which sources' snapshots changed (`dataSnapshotChanges.ts`), so the hub sends only those. A command that changes nothing is not saved, logged or broadcast; a
 routine data-source poll (one that leaves its source's health as it was) is saved and broadcast
 but not logged (decision D11, `isLeftOutOfTheEventLog`).
 
 - `reducers/` — one pure reducer per command, plus `reduceCommand.ts` choosing it; the data-source reducers live in `../../modules/dataSources/`, reached through its `index.ts`.
 - `graphicDataPreparation.ts` (null fields out, `takeTimeFieldKeys` stamped; `graphicSchemaProperties.ts` says which fields may be), `updateRules/` (named pure rules an update runs, e.g. the clock's), then `graphicDataValidation.ts` (manifest schema).
 - `authorizeCommand.ts` — a renderer may only report instance status, `sistema:macro:<id>` only a step's command and its run's bookkeeping, `sistema:macro-watchdog` only endMacroRun, `sistema:fonte:<sourceId>` only recordDataSourcePoll of its own source, `sistema:gravador` only stopRecording and recordRecordingProgress, other `sistema:` only clearLayer; operators never recordDataSourcePoll, recordRecordingProgress or a stopRecording with a failureMessage; `commandActors.ts`: `role:id` actor names.
+- `commandEventLogPayload.ts` — what an event-log row stores as a command's name and payload (a poll's shapes left out).
 - `commandRefusals.ts`, `rundownCommandRefusals.ts`, `quickFireAndMacroRefusals.ts`, `previewRefusals.ts` — every refusal, its code and pt-BR message.
 - `loadInitialSlices.ts` — loads or seeds layers and instances at boot (`seedLayers.ts`), dropping what was on the preview output; rebuilds graphics (`discoverBuiltGraphics.ts`, `graphicPlacement.ts`).
 - `loadRundownSlices.ts` — loads or seeds rundowns and items (`seedRundowns.ts`), converting older items to their `home` first (`itemHomeMigration.ts`); `loadQuickFireAndMacroSlices.ts` — panels (`seedQuickFirePanels.ts`) and macros; `macroRuns` and `previewClearedLayerIds` are memory only (empty at boot).

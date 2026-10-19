@@ -3,7 +3,7 @@
  *
  * What this module is for:
  *   The "Fontes" page creates a source. The config arrives as whatever the page sent and
- *   is checked here by the schema of the source's kind (simulator or replay), with
+ *   is checked here by the schema of the source's kind (simulator, replay or httpJson), with
  *   defaults filled in, so the stored config is always complete. A replay may only name
  *   a recording that exists and is closed. The timeline start is the server's alone.
  *
@@ -11,9 +11,12 @@
  *   - createDataSource adds the source off, with the id the store made, its config
  *     completed with defaults, and a stale limit of three poll intervals.
  *   - A timeline start sent by the page is dropped.
+ *   - A flex HTTP/JSON source is stored with its config as parsed (lists filled in).
  *   - A config that fails its kind's schema is refused with INVALID_DATA_SOURCE_CONFIG,
  *     naming the field as `config.<path>` in pt-BR; a replay of an unknown or still open
- *     recording is refused with RECORDING_NOT_FOUND.
+ *     recording is refused with RECORDING_NOT_FOUND; a flex source naming a variable
+ *     without the BAJAOVRLAY_SOURCE_ prefix, or a request it does not have, is refused
+ *     naming the path inside its config.
  *
  * What these tests deliberately do not cover:
  *   - Editing a source; updateDataSource.test.ts covers it.
@@ -30,6 +33,29 @@ import {
   fridayRecordingId,
 } from './dataSourceSlices.testSupport.js';
 import { reduceDataSourceCommand } from './reduceDataSourceCommand.js';
+
+/** A flex config reading an imaginary timing system's session, with `requestChanges` on its request. */
+function buildTimingSystemFlexConfig(requestChanges: Record<string, unknown> = {}) {
+  return {
+    requests: [
+      {
+        requestId: 'classificacao',
+        url: 'http://cronometragem.local:8080/api/classificacao',
+        ...requestChanges,
+      },
+    ],
+    mappings: [
+      {
+        shapeKey: 'session',
+        requestId: 'classificacao',
+        fields: [
+          { targetField: 'sessionId', fromPath: 'prova.id' },
+          { targetField: 'sessionKind', constantValue: 'enduro' },
+        ],
+      },
+    ],
+  };
+}
 
 describe('createDataSource', () => {
   it("adds a simulator, off, with the store's id, its defaults and a stale limit of 3 polls", () => {
@@ -137,6 +163,41 @@ describe('createDataSource', () => {
     ).not.toHaveProperty('simulatedStartAtMs');
   });
 
+  it('adds a flex HTTP/JSON source with its config as parsed, header and query lists filled in', () => {
+    // Arrange: the seeded simulator only.
+    const slicesBefore = buildRaceDaySlicesWithDataSources({
+      dataSources: [buildEnduroSimulatorTurnedOff()],
+    });
+
+    // Act: create a flex source reading the timing system's classification.
+    const outcome = reduceDataSourceCommand(
+      slicesBefore,
+      {
+        type: 'createDataSource',
+        label: 'Cronometragem — Classificação',
+        kind: 'httpJson',
+        config: buildTimingSystemFlexConfig(),
+        pollIntervalMs: 2_000,
+      },
+      contextOfTheDataSourceCommand,
+    );
+
+    // Assert: the flex source is there, its request completed with empty lists.
+    const newSource = outcome.status === 'applied' ? outcome.slices.dataSources[1] : undefined;
+    expect(newSource?.kind, 'the new source must be a flex source').toBe('httpJson');
+    expect(newSource?.config, 'the config must be stored as parsed').toEqual({
+      ...buildTimingSystemFlexConfig(),
+      requests: [
+        {
+          requestId: 'classificacao',
+          url: 'http://cronometragem.local:8080/api/classificacao',
+          headers: [],
+          queryParameters: [],
+        },
+      ],
+    });
+  });
+
   const refusedCreateScenarios = [
     // Nine cars is below the simulator's range; the form shows the field.
     {
@@ -164,6 +225,29 @@ describe('createDataSource', () => {
       expectedCode: 'INVALID_DATA_SOURCE_CONFIG',
       expectedMessage:
         'A configuração da fonte é inválida: o campo "config" está ausente ou tem um valor errado.',
+    },
+    // A flex config may only send BAJAOVRLAY_SOURCE_ variables, so another server secret stays home.
+    {
+      name: 'refuses a flex source sending a variable without the prefix, naming its path',
+      kind: 'httpJson' as const,
+      config: buildTimingSystemFlexConfig({
+        headers: [{ name: 'Authorization', valueFromEnvironment: 'DATABASE_PATH' }],
+      }),
+      expectedCode: 'INVALID_DATA_SOURCE_CONFIG',
+      expectedMessage:
+        'A configuração da fonte é inválida: o campo "config.requests.0.headers.0.valueFromEnvironment" está ausente ou tem um valor errado.',
+    },
+    // A mapping reading a request the source does not make would fail every poll.
+    {
+      name: 'refuses a flex source whose mapping reads a request it does not have',
+      kind: 'httpJson' as const,
+      config: {
+        ...buildTimingSystemFlexConfig(),
+        requests: [{ requestId: 'voltas', url: 'http://cronometragem.local:8080/api/voltas' }],
+      },
+      expectedCode: 'INVALID_DATA_SOURCE_CONFIG',
+      expectedMessage:
+        'A configuração da fonte é inválida: o campo "config.mappings.0.requestId" está ausente ou tem um valor errado.',
     },
     // A recording nobody made cannot be replayed.
     {

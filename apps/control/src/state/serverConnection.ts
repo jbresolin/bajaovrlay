@@ -1,4 +1,12 @@
-import { type CommandInput, type ServerMessage, ServerMessageSchema } from '@bajaovrlay/shared';
+import {
+  type CommandInput,
+  type PageReloadForNewBuild,
+  readBuildIdOfAHello,
+  type ServerBuildWatch,
+  type ServerMessage,
+  ServerMessageSchema,
+  startServerBuildWatch,
+} from '@bajaovrlay/shared';
 import { recordServerClockSample } from '@bajaovrlay/shared/clock';
 
 import { ptBR } from '@/i18n/ptBR';
@@ -56,6 +64,12 @@ export type ServerConnectionOptions = {
   webSocketAddress: string;
   serverStateStore: ServerStateStore;
   openSocket: OpenServerSocket;
+  /**
+   * The page's build and the browser's clock, reload and sessionStorage, for reloading the
+   * page when a hello names another build (browserPageReloadForNewBuild in main.tsx). Left
+   * out (most tests), no build is compared.
+   */
+  pageReloadForNewBuild?: PageReloadForNewBuild | undefined;
   logEvent?: LogControlEvent;
 };
 
@@ -91,6 +105,9 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   let numberOfFailedCallsInARow = 0;
   let redialTimer: ReturnType<typeof setTimeout> | undefined;
   let wasClosedOnPurpose = false;
+  // Compares the build of each hello with the page's (packages/shared/src/build); none
+  // when the page brought no build stand-ins (most tests).
+  const serverBuildWatch = startWatchOnTheServerBuild(options.pageReloadForNewBuild, logEvent);
 
   function dialTheServer(): void {
     currentSocket = openSocket(webSocketAddress, {
@@ -120,9 +137,16 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     // Read before the message is checked: checking a large hello takes a few
     // milliseconds, and each of them would make the sample of the server's clock later.
     const localTimeAtArrivalMs = Date.now();
-    const message = readServerMessage(text);
+    const messageJson = readJsonOfMessage(text);
+    const message = readServerMessage(messageJson);
     if (message === undefined) {
       logEvent('warn', 'ignored a server message that is not in the protocol');
+      // A hello this page's schema refuses is the case the build check exists for: a
+      // newer server's slices that this bundle does not know. Its build is read on its own.
+      const buildIdOfARefusedHello = readBuildIdOfAHello(messageJson);
+      if (buildIdOfARefusedHello !== undefined) {
+        serverBuildWatch?.compareWithTheServerBuild(buildIdOfARefusedHello);
+      }
       return;
     }
     recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
@@ -130,14 +154,20 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     switch (message.type) {
       case 'hello':
         numberOfFailedCallsInARow = 0;
+        // Taken in first, so a page that does not reload (same build, or already reloaded
+        // for this one) is connected as always; one that reloads loses nothing.
         serverStateStore.getState().replaceEverySlice(message.slices);
         serverStateStore.getState().changeConnectionStatus('connected');
+        serverBuildWatch?.compareWithTheServerBuild(message.buildId);
         break;
       case 'slice':
         serverStateStore.getState().replaceOneSlice(message);
         break;
       case 'slices':
         serverStateStore.getState().replaceSeveralSlices(message.slices);
+        break;
+      case 'dataSnapshot':
+        serverStateStore.getState().mergeOneDataSnapshot(message);
         break;
       case 'commandResult':
         settleCommandAwaitingThisResult(message);
@@ -241,6 +271,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   function close(): void {
     wasClosedOnPurpose = true;
     clearTimeout(redialTimer);
+    serverBuildWatch?.stop();
     currentSocket?.close();
   }
 
@@ -249,8 +280,29 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
 }
 
 /**
- * Hands the server's time in a hello, slice, slices or time message to the shared server-aligned
- * clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
+ * Starts the watch on the server's build with the browser's setTimeout, or none when the
+ * page brought no build stand-ins. The watch logs through the control page's log.
+ */
+function startWatchOnTheServerBuild(
+  pageReloadForNewBuild: PageReloadForNewBuild | undefined,
+  logEvent: LogControlEvent,
+): ServerBuildWatch | undefined {
+  if (pageReloadForNewBuild === undefined) {
+    return undefined;
+  }
+  return startServerBuildWatch({
+    pageReload: pageReloadForNewBuild,
+    logBuildEvent: logEvent,
+    startTimer: (callback, waitInMilliseconds) => {
+      const timer = setTimeout(callback, waitInMilliseconds);
+      return () => clearTimeout(timer);
+    },
+  });
+}
+
+/**
+ * Hands the server's time in a hello, slice, slices, dataSnapshot or time message to the
+ * shared server-aligned clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
  * does the same (apps/renderer/src/serverConnection.ts), so the page and the screen
  * count from the same clock. A hello or slice without the time records NOTHING: it is
  * "no sample", never a sample saying the two clocks agree.
@@ -272,17 +324,20 @@ function recordServerClockSampleOfMessage(
   recordServerClockSample(message.serverNowMs, localTimeAtArrivalMs);
 }
 
-/** Reads one message as the protocol defines it, or undefined when it is not one. */
-function readServerMessage(text: unknown): ServerMessage | undefined {
+/** Reads the JSON of one message; undefined when it is not text or not JSON. */
+function readJsonOfMessage(text: unknown): unknown {
   if (typeof text !== 'string') {
     return undefined;
   }
-  let parsedJson: unknown;
   try {
-    parsedJson = JSON.parse(text);
+    return JSON.parse(text);
   } catch {
     return undefined;
   }
+}
+
+/** Reads one message as the protocol defines it, or undefined when it is not one. */
+function readServerMessage(parsedJson: unknown): ServerMessage | undefined {
   const parsedMessage = ServerMessageSchema.safeParse(parsedJson);
   if (!parsedMessage.success) {
     return undefined;

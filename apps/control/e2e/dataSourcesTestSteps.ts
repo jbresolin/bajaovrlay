@@ -1,6 +1,6 @@
 // Test support: the page steps the data source test files share (simulatorRaceMoves.e2e.ts,
 // simulatorFailureKeepsTheData.e2e.ts, recordAndReplay.e2e.ts, dataSourcesPageLayout.e2e.ts,
-// emptyServerState.e2e.ts): opening the "Fontes de dados" page, finding a source's row
+// dataSourceCardPicking.e2e.ts, emptyServerState.e2e.ts, flexSourceFollowsATimingSystem.e2e.ts): opening the "Fontes de dados" page, finding a source's row
 // and its data, reading the positions table, changing a simulator through its "Editar"
 // form and restarting its race with "Reiniciar corrida", as an operator does. What the
 // tests read from the server's state lives in dataSourceStateOnTheRealServer.ts.
@@ -17,7 +17,7 @@ import { seededSimulatorLabel } from './emptyTheServerState';
 export { seededSimulatorLabel };
 
 /** The kinds of source "+ Fonte" offers, as its buttons name them. */
-export type NewSourceKindButton = 'Simulador' | 'Reprodução';
+export type NewSourceKindButton = 'Simulador' | 'Reprodução' | 'HTTP/JSON (flexível)';
 
 /** How many cars the seeded simulator races with its default settings. */
 export const carsInTheSeededRace = 60;

@@ -7,14 +7,17 @@ checks that every JSON example below passes its schema, so this page cannot drif
 
 Every message is one JSON object, told apart by its `type` field:
 
-- `hello` (server → client): every slice, sent once right after the client connects.
+- `hello` (server → client): every slice, sent once right after the client connects, and
+  the server's build (`buildId`, optional; see "Pages reload themselves" below).
 - `slice` (server → client): the one slice a state change changed, sent to every client.
 - `slices` (server → client): instead of `slice`, when one state change changed more than
   one slice: every changed slice by name (a part of `hello`'s `slices`, each checked by
   its own schema), so a client takes them in ONE step and never shows the moment between
   them. Every accepted command changes its own slice and `eventLog`, so it sends `slices`
   to an operator; a refused one changes `eventLog` alone and sends `slice`. A screen is
-  never sent `eventLog` (below), so it gets fewer slices of the same change.
+  never sent `eventLog` (below), so it gets fewer slices of the same change. Neither
+  `slice` nor `slices` ever carries `dataSnapshots`: after the hello, snapshots travel
+  source by source in `dataSnapshot`.
   All three carry `serverNowMs`: the server's wall clock, in whole milliseconds since 1970,
   when the message was built. A renderer subtracts its own clock from it and keeps the
   median of the last five differences, so the race clock on air counts on the server's
@@ -22,6 +25,15 @@ Every message is one JSON object, told apart by its `type` field:
   message leave it out (test stand-ins do); the server always sends it, and `slices`
   must. `commandResult` does not carry it. A message without it gives a page no sample at
   all; it is never read as "the clocks agree".
+- `dataSnapshot` (server → every operator connection): one source's last good data changed.
+  It carries `sourceId`, `snapshot` (the source's new snapshot, or `null` when the source
+  was deleted and has none any more) and `serverNowMs` (required). The page replaces that
+  source's entry in its `dataSnapshots` list, adds it when it is new, or removes it on
+  `null`. Each source whose snapshot changed gets its own message, sent just before the
+  `slice` or `slices` of the same change, so a 60-car poll of one source never resends
+  another source's data. A poll that changes nothing (the same data on a healthy source)
+  sends no message at all, and a failed poll sends the source's new health but no
+  `dataSnapshot`: the last good data stays (rule 4).
 - `time` (server → every client, every 10 s): `serverNowMs` and nothing else, so a page
   keeps getting samples while no slice changes. Here the field is required. A page
   records the sample and does nothing more with the message.
@@ -44,21 +56,39 @@ Every message is one JSON object, told apart by its `type` field:
   `slice` or `slices` message at all, not even for `eventLog`, and leaves no event-log
   entry; its sender still gets `ok: true`.
 
-A screen connection, renderer (`/ws?role=renderer`) or monitor (`/ws?role=monitor`), gets
-`dataSnapshots: []` and `eventLog: []` in its `hello` and never a message carrying either:
-both are left out of every change it is sent. An accepted command usually changes its own
-slice and `eventLog`; a screen gets only the command's own slice, so that arrives as a
-single `slice` message (a routine poll arrives as a `slice` of `dataSources`). A change of
-those two slices alone (a refused command, which changes `eventLog` alone) sends a screen
-nothing. Graphics get resolved data only, and a 60-car snapshot every 2 s is a frame-drop
-risk in OBS. `GET /api/v1/state?role=renderer` (or `monitor`) answers the same copy, for a
-page whose `hello` is late. Every other connection, the control page itself, gets every
-slice.
+A screen connection, renderer (`/ws?role=renderer`) or monitor (`/ws?role=monitor`), is
+sent only the four slices it draws: `layers`, `graphics`, `instances` and
+`previewClearedLayerIds`. Every other slice is an empty list in its `hello`, is left out
+of every change it is sent, and it is never sent a `dataSnapshot`. An accepted command
+usually changes its own slice and `eventLog`; a screen gets only the drawn slices among
+them, so a take arrives as a single `slice` of `instances`. A change of no drawn slice (a
+poll, which changes `dataSources` and a snapshot, or a refused command, which changes
+`eventLog` alone) sends a screen nothing. Graphics get resolved data only, a 60-car
+snapshot every 2 s is a frame-drop risk in OBS, and a slice a screen never receives can
+never make an older screen refuse its `hello`. `GET /api/v1/state?role=renderer` (or
+`monitor`) answers the same copy, for a page whose `hello` is late. Every other
+connection, the control page itself, gets every slice.
 
 A message that is not JSON or not in the protocol is answered with an error
 `commandResult` (code `INVALID_MESSAGE`, `requestId` echoed when it could be read) and
 logged; the socket stays open. The server pings every 15 s and drops a socket that did
 not answer the previous ping.
+
+**Pages reload themselves when the server's build changes.** An open page only reconnects
+its WebSocket when the server restarts; it keeps the bundle it loaded, with that bundle's
+schemas, and drops a message they refuse without a word (an older control page dropped
+every `dataSnapshot`, its source tables frozen under "Em dia"). So `hello` names the
+server's build (`buildId`, the id both Vite builds embed, which `pnpm build` copies to
+`build-id.json` once every package has built and the server reads once at boot), and a
+page loaded from another build reloads itself, at most once per announced build
+(once a minute only when sessionStorage cannot keep that build; `../build/`). The
+page reads `buildId` before its own schema checks the rest of the hello, so even a hello it
+refuses can make it reload. The field is optional: a server with no `build-id.json` (development) sends
+none, a page from the Vite dev server has none, and nothing is compared then. A page
+opened before PR #17 knows nothing of `buildId`, so it needs one reload by hand after this
+upgrade; every later upgrade reloads the pages by itself. A screen is spared the
+data-source kinds anyway: it gets only the slices it draws, `dataSources` reaching it as an
+empty list, so a source of a kind it does not know cannot make it refuse its `hello`.
 
 ## hello
 
@@ -115,7 +145,8 @@ not answer the previous ping.
     "recordings": [],
     "eventLog": []
   },
-  "serverNowMs": 1791550800000
+  "serverNowMs": 1791550800000,
+  "buildId": "2026-10-19T07:40:02.518Z"
 }
 ```
 
@@ -176,6 +207,50 @@ gets its line, all in one message.
     ]
   },
   "serverNowMs": 1791551100000
+}
+```
+
+## dataSnapshot
+
+What a good poll of the seeded simulator sends the control page: its new data alone.
+
+```json
+{
+  "type": "dataSnapshot",
+  "sourceId": "simulador-enduro",
+  "snapshot": {
+    "sourceId": "simulador-enduro",
+    "receivedAtMs": 1791550802000,
+    "shapes": {
+      "session": {
+        "sessionId": "enduro-2026-nacional",
+        "eventName": "Baja SAE Brasil 2026 — Etapa Nacional",
+        "sessionName": "Enduro de Resistência",
+        "sessionKind": "enduro",
+        "state": "green",
+        "clock": {
+          "clockMode": "remaining",
+          "referenceTimeMs": 12475000,
+          "referenceWallClockMs": 1791550802000,
+          "running": true
+        },
+        "lapsCompletedByLeader": 6,
+        "updatedAtMs": 1791550802000
+      }
+    }
+  },
+  "serverNowMs": 1791550802004
+}
+```
+
+## dataSnapshot (source deleted)
+
+```json
+{
+  "type": "dataSnapshot",
+  "sourceId": "simulador-enduro",
+  "snapshot": null,
+  "serverNowMs": 1791551400000
 }
 ```
 

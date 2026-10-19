@@ -3,6 +3,7 @@
 // places, and a reader of the seeded simulator. Functions only; nothing is shared between tests.
 import type { DataSource } from '@bajaovrlay/shared';
 
+import { noSourceHostAllowlist } from '../../modules/dataSources/index.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
 import { missingGraphicsFolderPath } from '../store/builtGraphicsFolder.testSupport.js';
@@ -14,7 +15,7 @@ export const operatorActor = 'operador:conexao-7';
 
 /**
  * The options production uses, on a random port, a temporary database file and data
- * folder, and a silent logger.
+ * folder, a silent logger and no BAJAOVRLAY_SOURCE_ALLOWED_HOSTS set.
  */
 export function buildBootOptions(migrationsFolder: string) {
   return {
@@ -26,6 +27,7 @@ export function buildBootOptions(migrationsFolder: string) {
     migrationsFolder,
     graphicPackagesFolder: missingGraphicsFolderPath,
     dataFolder: createTemporaryDataFolder(),
+    sourceHostAllowlist: noSourceHostAllowlist,
   };
 }
 

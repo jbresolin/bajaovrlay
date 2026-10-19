@@ -9,6 +9,7 @@ import { resolveDatabasePath } from './core/env/resolveDatabasePath.js';
 import { resolveDataFolder } from './core/env/resolveDataFolder.js';
 import { findBuiltPageFolder } from './core/http/builtPageFolders.js';
 import { createLogger } from './core/logger/createLogger.js';
+import { buildIdFileUrl } from './readBuildId.js';
 import { readServerVersion } from './readServerVersion.js';
 
 const environment = readServerEnvironment(process.env);
@@ -24,7 +25,8 @@ const graphicPackagesFolder = fileURLToPath(
 const databasePath = resolveDatabasePath(environment.DATABASE_PATH, repositoryRootFolder);
 const dataFolder = resolveDataFolder(environment.DATA_DIR, repositoryRootFolder);
 
-// The built pages are looked up once, at boot. Building them later needs a restart.
+// The built page folders are looked up once, at boot: building them for the first time
+// later needs a restart, while a rebuild of a folder found here is served at once.
 const controlPageFolder = findBuiltPageFolder(new URL('../../control/dist/', import.meta.url));
 const rendererPageFolder = findBuiltPageFolder(new URL('../../renderer/dist/', import.meta.url));
 if (controlPageFolder === undefined) {
@@ -44,19 +46,26 @@ try {
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder,
     dataFolder,
+    sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
     controlPageFolder,
     rendererPageFolder,
+    buildIdFileUrl,
   });
   logger.info(
     {
       host: environment.HOST,
       port: runningServer.port,
       version,
+      build_id: runningServer.buildId,
       database_path: databasePath,
       data_folder: dataFolder,
     },
     'server listening',
   );
+  // startServer read build-id.json once, at boot; that id is the one every hello names.
+  if (runningServer.buildId === undefined) {
+    logger.warn('no build-id.json; open pages will not reload themselves after an upgrade');
+  }
 
   // On Ctrl+C or a service stop: drop WebSocket clients, stop listening, close the
   // database, then exit.

@@ -139,7 +139,10 @@ describe('turning on a replay of a large recording', () => {
     const poller = startDataSourcePoller({
       stateStore: storeSeenByThePoller,
       logger: createLogger({ level: 'silent' }),
-      adapters: createDataSourceAdapters({ recordingsFolder }),
+      adapters: createDataSourceAdapters({
+        recordingsFolder,
+        logger: createLogger({ level: 'silent' }),
+      }),
     });
 
     // Act: the operator turns the replay on; wait for the first poll's result.
@@ -168,7 +171,10 @@ describe('turning on a replay of a large recording', () => {
     const poller = startDataSourcePoller({
       stateStore: storeSeenByThePoller,
       logger: createLogger({ level: 'silent' }),
-      adapters: createDataSourceAdapters({ recordingsFolder }),
+      adapters: createDataSourceAdapters({
+        recordingsFolder,
+        logger: createLogger({ level: 'silent' }),
+      }),
       startTimer: timers.startTimer,
       cancelTimer: timers.cancelTimer,
     });

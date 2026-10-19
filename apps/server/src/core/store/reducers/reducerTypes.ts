@@ -1,5 +1,7 @@
 import type { CommandError, Slices } from '@bajaovrlay/shared';
 
+import type { SourceHostAllowlist } from '../../../modules/dataSources/index.js';
+
 /**
  * The slices a command may change. The event log is not among them: the store appends
  * to it itself, after a command that changed one of these slices or was refused. A
@@ -24,7 +26,7 @@ export type SlicesChangedByCommands = Pick<
 
 /**
  * Everything a reducer needs that is not pure: made by the store before calling it, so
- * a reducer never reads the clock or generates ids itself.
+ * a reducer never reads the clock, the environment or generates ids itself.
  */
 export type ReducerContext = {
   /**
@@ -43,6 +45,11 @@ export type ReducerContext = {
   newMacroId: string;
   /** The id to give a data source the command creates (createDataSource). */
   newDataSourceId: string;
+  /**
+   * BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot: createDataSource and updateDataSource
+   * refuse a flex request to a host off it.
+   */
+  sourceHostAllowlist: SourceHostAllowlist;
 };
 
 /**

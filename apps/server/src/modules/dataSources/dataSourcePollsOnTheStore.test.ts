@@ -10,8 +10,8 @@
  *
  * What these tests prove (with a real SQLite file in a temporary folder):
  *   - Ten routine good polls of a healthy source write no event-log row, yet the last
- *     snapshot is saved in the slices table and listeners hear of the two slices it
- *     changed, without 'eventLog'.
+ *     snapshot is saved as the source's row of the data_snapshots table and listeners
+ *     hear of the two slices it changed, without 'eventLog'.
  *   - The rows that are written are the operator's commands, the source going stale, a
  *     changed error and the recovery; repeated failures with the same error are not.
  *   - A poll that repeats the stored shapes on a healthy source leaves no trace: no row,
@@ -29,8 +29,8 @@
 import type { RecordDataSourcePollCommand, SliceName } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import { readAllDataSnapshotRows } from '../../core/db/dataSnapshotRowStorage.js';
 import { countEventLogRows, readNewestEventLogRows } from '../../core/db/eventLogRowStorage.js';
-import { readAllSliceRows } from '../../core/db/sliceRowStorage.js';
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../../core/logger/createLogger.js';
 import { missingGraphicsFolderPath } from '../../core/store/builtGraphicsFolder.testSupport.js';
@@ -105,11 +105,12 @@ describe('routine polls of a healthy source', () => {
     }
 
     // Assert: still one row; the tenth snapshot on disk; ten changes without 'eventLog'.
-    const savedSnapshotsRow = readAllSliceRows(database).find(
-      (row) => row.name === 'dataSnapshots',
-    );
+    const savedSnapshotRows = readAllDataSnapshotRows(database);
     expect(countEventLogRows(database), 'routine polls must write no event-log row').toBe(1);
-    expect(savedSnapshotsRow?.json, 'the last snapshot must be saved all the same').toEqual([
+    expect(
+      savedSnapshotRows.map((row) => row.json),
+      'the last snapshot must be saved all the same',
+    ).toEqual([
       {
         sourceId: 'simulador-enduro',
         receivedAtMs: startOfTheEnduroMs + 20_000,

@@ -1,5 +1,5 @@
 /**
- * Comparing two JSON values by content (apps/server)
+ * Comparing two JSON values by content (packages/shared)
  *
  * What this module is for:
  *   A poll that repeats the stored shapes, or an edit that saves what is there, must hand

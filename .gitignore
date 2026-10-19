@@ -1,6 +1,10 @@
 node_modules/
 dist/
 coverage/
+# Written by `pnpm build`: the id the Vite builds embed (scripts/writeBuildId.js, first)
+# and the copy the server reads at boot (scripts/publishBuildId.js, once every package built)
+build-id.building.json
+build-id.json
 
 # Playwright output (CI uploads these as artifacts when a run fails)
 test-results/

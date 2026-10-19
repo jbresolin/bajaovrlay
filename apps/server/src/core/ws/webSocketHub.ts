@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, Server } from 'node:http';
 
-import type { SliceName, Slices } from '@bajaovrlay/shared';
+import type { SliceNameSentWhole, Slices } from '@bajaovrlay/shared';
 import { type WebSocket, WebSocketServer } from 'ws';
 
 import type { ServerLogger } from '../logger/createLogger.js';
@@ -10,16 +10,15 @@ import { answerClientMessage } from './clientMessageAnswers.js';
 import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
 import { startHeartbeat } from './heartbeat.js';
 import {
+  buildDataSnapshotMessage,
   buildHelloMessage,
   buildSliceMessage,
   buildSlicesMessage,
+  keepSliceNamesSentWhole,
   serializeServerMessage,
 } from './serverMessageBuilding.js';
 import { startServerTimeBroadcast } from './serverTimeBroadcast.js';
-import {
-  buildSlicesForAScreen,
-  removeSliceNamesScreensNeverReceive,
-} from './slicesHiddenFromScreens.js';
+import { buildSlicesForAScreen, keepSliceNamesScreensReceive } from './slicesSentToScreens.js';
 
 /** The only path that upgrades to a WebSocket (the control page's dev proxy forwards it). */
 export const webSocketPath = '/ws';
@@ -47,6 +46,12 @@ export type WebSocketHubOptions = {
     ((onEachInterval: () => void, intervalInMilliseconds: number) => unknown) | undefined;
   /** Cancels a timer started by startRepeatingTimer; defaults to Node's clearInterval. */
   cancelRepeatingTimer?: ((timerHandle: unknown) => void) | undefined;
+  /**
+   * The build this server runs (build-id.json as startServer read it at boot), named in
+   * every hello so a page from another build reloads itself (packages/shared/src/build).
+   * Undefined (development, most tests): hello names none.
+   */
+  buildId?: string | undefined;
 };
 
 /** The running hub; close() drops every client and stops the heartbeat and the time message. */
@@ -54,16 +59,20 @@ export type WebSocketHub = { close: () => Promise<void> };
 
 /**
  * Attaches the WebSocket protocol to the HTTP server, on the same port at `/ws`. Each
- * client gets `hello`, then one message per state change: `slice` when one slice
- * changed, `slices` when several did (each carrying `serverNowMs`, the server's clock at
- * the moment the message is built), and a `commandResult` for each message it sends (a
+ * client gets `hello` (with the server's build id when it has one), then one message per
+ * state change: `slice` when one slice changed, `slices` when several did (each carrying `serverNowMs`, the server's clock at
+ * the moment the message is built). An operator also gets one `dataSnapshot` message per
+ * source whose snapshot changed, just before that `slice` or `slices`, because
+ * `dataSnapshots` is never sent whole after the hello. Each client gets a
+ * `commandResult` for each message it sends (a
  * command, or a renderer's `instanceStatus`). Every ten seconds every client also gets a
  * `time` message, so a page keeps learning the server's clock while nothing changes. A
  * connection to `/ws?role=renderer` acts as a renderer, one to `/ws?role=monitor` as a
- * monitor, any other as an operator. A screen (a renderer or a monitor) is never sent
- * the `dataSnapshots` and `eventLog` slices (empty in its hello, left out of every
- * change, and no message at all for a change of those slices alone). Any other upgrade
- * path is refused.
+ * monitor, any other as an operator. A screen (a renderer or a monitor) is sent only the
+ * slices it draws (layers, graphics, instances, previewClearedLayerIds): every other
+ * slice is empty in its hello and left out of every change, it gets no `dataSnapshot`
+ * message, and no message at all for a change of other slices alone (see
+ * slicesSentToScreens.ts). Any other upgrade path is refused.
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
@@ -82,7 +91,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     cancelRepeatingTimer: options.cancelRepeatingTimer,
   });
   // The open screen connections (`/ws?role=renderer` or `/ws?role=monitor`); each leaves
-  // on close. They are sent every slice except the ones in slicesHiddenFromScreens.ts.
+  // on close. They are sent only the slices listed in slicesSentToScreens.ts.
   const screenClients = new Set<WebSocket>();
 
   httpServer.on('upgrade', (request, socket, head) => {
@@ -118,7 +127,11 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     }
     const allSlices = stateStore.readAllSlices();
     const slicesForThisClient = isScreen ? buildSlicesForAScreen(allSlices) : allSlices;
-    const helloMessage = buildHelloMessage(slicesForThisClient, readCurrentTime().getTime());
+    const helloMessage = buildHelloMessage(
+      slicesForThisClient,
+      readCurrentTime().getTime(),
+      options.buildId,
+    );
     client.send(serializeServerMessage(helloMessage));
 
     client.on('message', (data, isBinary) => {
@@ -146,34 +159,55 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   // for a moment before it animated out). The listener is told the command's own slices
   // and the event log together, so an accepted command always sends `slices`; a refused
   // one changes the event log alone and sends `slice`, as before `slices` existed.
-  const stopListening = stateStore.subscribeToSliceChanges((changedSliceNames, slices) => {
-    // The clock is read as late as possible: a renderer takes the difference between
-    // this time and its own clock at arrival, so every millisecond between this reading
-    // and the send shows up as an error in its sample.
-    const serverNowMs = readCurrentTime().getTime();
-    // Each text is built once per change and audience, not once per client: a routine
-    // poll of 60 cars would otherwise be serialised again for every page connected.
-    const textForOperators = serializeChangeOfSlices(changedSliceNames, slices, serverNowMs);
-    const sliceNamesForScreens = removeSliceNamesScreensNeverReceive(changedSliceNames);
-    // undefined when the change was only slices screens never receive (a refused command
-    // changes the event log alone): they get nothing, because an empty `slices` group is
-    // not a valid message.
-    const textForScreens =
-      sliceNamesForScreens.length === 0
-        ? undefined
-        : serializeChangeOfSlices(sliceNamesForScreens, slices, serverNowMs);
-    for (const client of webSocketServer.clients) {
-      if (client.readyState !== client.OPEN) {
-        continue;
+  // A changed snapshot is the exception to "one message": it goes as its own
+  // `dataSnapshot` message per source (BAJAOVRLAY-40), so a poll of one source does not
+  // resend every source's data. Those go first, so by the time the page reads a source's
+  // new "last good poll" moment in `dataSources`, that poll's data is already there.
+  // What could go wrong: between the two messages the page shows the new data with the
+  // source's old health for a moment, which nothing on air reads.
+  const stopListening = stateStore.subscribeToSliceChanges(
+    (changedSliceNames, slices, changedDataSnapshots) => {
+      // The clock is read as late as possible: a renderer takes the difference between
+      // this time and its own clock at arrival, so every millisecond between this reading
+      // and the send shows up as an error in its sample.
+      const serverNowMs = readCurrentTime().getTime();
+      // Each text is built once per change and audience, not once per client: a routine
+      // poll of 60 cars would otherwise be serialised again for every page connected.
+      const snapshotTextsForOperators = changedDataSnapshots.map((change) =>
+        serializeServerMessage(buildDataSnapshotMessage(change, serverNowMs)),
+      );
+      const sliceNamesForOperators = keepSliceNamesSentWhole(changedSliceNames);
+      const sliceNamesForScreens = keepSliceNamesScreensReceive(sliceNamesForOperators);
+      // Each undefined when that audience has no slice to hear of (a poll that changed
+      // only a snapshot; for screens, any change that touches none of the slices they
+      // draw, such as a poll or a refused command): an empty `slices` group is not a
+      // valid message, so nothing is sent.
+      const sliceTextForOperators = serializeChangeOfSlicesOrNothing(
+        sliceNamesForOperators,
+        slices,
+        serverNowMs,
+      );
+      const sliceTextForScreens = serializeChangeOfSlicesOrNothing(
+        sliceNamesForScreens,
+        slices,
+        serverNowMs,
+      );
+      for (const client of webSocketServer.clients) {
+        if (client.readyState !== client.OPEN) {
+          continue;
+        }
+        const isScreen = screenClients.has(client);
+        if (isScreen) {
+          sendIfThereIsSomething(client, sliceTextForScreens);
+          continue;
+        }
+        for (const snapshotText of snapshotTextsForOperators) {
+          client.send(snapshotText);
+        }
+        sendIfThereIsSomething(client, sliceTextForOperators);
       }
-      const isScreen = screenClients.has(client);
-      if (!isScreen) {
-        client.send(textForOperators);
-      } else if (textForScreens !== undefined) {
-        client.send(textForScreens);
-      }
-    }
-  });
+    },
+  );
 
   return {
     close: () => {
@@ -191,15 +225,25 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   };
 }
 
+/** Sends the text to the client, unless there is none for it. */
+function sendIfThereIsSomething(client: WebSocket, text: string | undefined): void {
+  if (text !== undefined) {
+    client.send(text);
+  }
+}
+
 /**
  * The text of the message for one state change: `slice` when one slice changed,
- * `slices` when several did. The names must not be empty.
+ * `slices` when several did, undefined when none did.
  */
-function serializeChangeOfSlices(
-  changedSliceNames: SliceName[],
+function serializeChangeOfSlicesOrNothing(
+  changedSliceNames: SliceNameSentWhole[],
   slices: Slices,
   serverNowMs: number,
-): string {
+): string | undefined {
+  if (changedSliceNames.length === 0) {
+    return undefined;
+  }
   const onlyChangedSliceName = changedSliceNames.length === 1 ? changedSliceNames[0] : undefined;
   const changeMessage =
     onlyChangedSliceName === undefined

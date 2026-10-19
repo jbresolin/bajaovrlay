@@ -1,11 +1,14 @@
-import type { DataSource, UpdateDataSourceCommand } from '@bajaovrlay/shared';
+import {
+  areJsonValuesEqual,
+  type DataSource,
+  type UpdateDataSourceCommand,
+} from '@bajaovrlay/shared';
 
 import type {
   ReducerContext,
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
-import { areJsonValuesEqual } from '../areJsonValuesEqual.js';
 import { computeStaleAfterMs } from '../dataSourceHealth.js';
 import { findDataSource, replaceDataSource } from '../dataSourceListing.js';
 import { refuseUnknownDataSource } from '../dataSourceRefusals.js';
@@ -19,7 +22,8 @@ import { checkDataSourceConfig } from '../schema.js';
  * except that a replay switched to another recording, offset or speed starts again from
  * the top (see carryTheTimelineStartIntoTheEdit). Hands back the same slices when nothing changes (the
  * edit form saved untouched). Refused for an unknown source and for a config that fails
- * its schema, like createDataSource.
+ * its schema or the host list, like createDataSource. An edit without a config (a rename)
+ * is not checked against the host list.
  */
 export function reduceUpdateDataSource(
   slices: SlicesChangedByCommands,
@@ -44,7 +48,12 @@ export function reduceUpdateDataSource(
     };
   }
   if (command.config !== undefined) {
-    const configCheck = checkDataSourceConfig(storedSource.kind, command.config, slices.recordings);
+    const configCheck = checkDataSourceConfig(
+      storedSource.kind,
+      command.config,
+      slices.recordings,
+      context.sourceHostAllowlist,
+    );
     if (!configCheck.isValid) {
       return { status: 'refused', error: configCheck.error };
     }

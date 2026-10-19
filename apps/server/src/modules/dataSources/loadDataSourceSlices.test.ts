@@ -2,7 +2,8 @@
  * Loading the data-source slices at boot, and seeding the simulator (apps/server)
  *
  * What this module is for:
- *   At boot the store reads the `dataSources` and `dataSnapshots` rows back. A database
+ *   At boot the store reads the `dataSources` row and the snapshot rows (one per source,
+ *   in the data_snapshots table) back. A database
  *   with no source gets one, the simulator "Simulador — Enduro", off, so the "Fontes"
  *   page is never empty on a new machine (decision D12: also after every source was
  *   deleted). Every source that was on comes back stale, because its data is from before
@@ -17,17 +18,19 @@
  *   - A stored source that fails its schema throws, which stops the boot.
  *   - A stored snapshot that fails today's schema (written before a rule got stricter)
  *     is dropped with a warning naming its source, the other snapshots and every source
- *     stay, and the cleaned row is saved (gate 2 on PR #16: snapshots can be thrown
- *     away, a source cannot).
+ *     stay, and only that source's row is to be deleted (gate 2 on PR #16: snapshots can
+ *     be thrown away, a source cannot).
  *
  * What these tests deliberately do not cover:
+ *   - The split of the single `dataSnapshots` row a database written before BAJAOVRLAY-40
+ *     has; loadDataSnapshotsAtBoot.test.ts and dataSnapshotRowsAtBoot.test.ts cover it.
  *   - The real restart on a SQLite file; dataSourceRestart.test.ts covers it.
  *   - The `recordings` slice, rebuilt from the recordings folder; recordingsFromFolder.test.ts
  *     covers it.
  */
 import { describe, expect, it } from 'vitest';
 
-import type { SliceRow } from '../../core/db/tables.js';
+import type { DataSnapshotRow, SliceRow } from '../../core/db/tables.js';
 import { createLogger } from '../../core/logger/createLogger.js';
 import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
 import { loadOrSeedDataSourceSlices } from './loadDataSourceSlices.js';
@@ -57,7 +60,7 @@ describe('loadOrSeedDataSourceSlices, on a database with no source', () => {
     // Arrange: this row's stored rows (built above).
 
     // Act: load at boot.
-    const loaded = loadOrSeedDataSourceSlices(storedRows, momentOfTheBoot, silentLogger);
+    const loaded = loadOrSeedDataSourceSlices(storedRows, [], momentOfTheBoot, silentLogger);
 
     // Assert: the seeded simulator, no snapshot, and the row to save.
     expect(loaded.dataSources, 'the simulator must be seeded, off').toEqual([
@@ -74,22 +77,29 @@ describe('loadOrSeedDataSourceSlices, on a database with no source', () => {
 
 describe('loadOrSeedDataSourceSlices, on a database with sources', () => {
   it('brings a source that was on back stale and not recording, with its snapshot', () => {
-    // Arrange: the simulator was on, healthy and recording, with its last data.
+    // Arrange: the simulator was on, healthy and recording, with its last data in its row.
     const storedRows: SliceRow[] = [
       {
         name: 'dataSources',
         json: [{ ...buildHealthyEnduroSimulator(), isRecording: true }],
         updatedAt: '2027-08-14T14:32:05.000Z',
       },
+    ];
+    const storedSnapshotRows: DataSnapshotRow[] = [
       {
-        name: 'dataSnapshots',
-        json: [buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs)],
+        sourceId: 'simulador-enduro',
+        json: buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs),
         updatedAt: '2027-08-14T14:32:05.000Z',
       },
     ];
 
     // Act: load at boot.
-    const loaded = loadOrSeedDataSourceSlices(storedRows, momentOfTheBoot, silentLogger);
+    const loaded = loadOrSeedDataSourceSlices(
+      storedRows,
+      storedSnapshotRows,
+      momentOfTheBoot,
+      silentLogger,
+    );
 
     // Assert: stale and not recording, everything else as stored; the snapshot kept.
     const expectedSource = {
@@ -106,6 +116,10 @@ describe('loadOrSeedDataSourceSlices, on a database with sources', () => {
     expect(loaded.rowsToSaveAtBoot, 'the stale source must be saved at once').toEqual([
       { name: 'dataSources', json: [expectedSource], updatedAt: momentOfTheBoot },
     ]);
+    expect(
+      loaded.dataSnapshotRowChangesAtBoot,
+      'a snapshot row that reads well is left as it is',
+    ).toEqual({ rowsToWrite: [], sourceIdsToDelete: [] });
   });
 
   it('leaves a source that was off untouched and saves nothing', () => {
@@ -116,17 +130,21 @@ describe('loadOrSeedDataSourceSlices, on a database with sources', () => {
         json: [buildEnduroSimulatorTurnedOff()],
         updatedAt: '2027-08-14T14:00:00.000Z',
       },
-      { name: 'dataSnapshots', json: [], updatedAt: '2027-08-14T14:00:00.000Z' },
     ];
 
-    // Act: load at boot.
-    const loaded = loadOrSeedDataSourceSlices(storedRows, momentOfTheBoot, silentLogger);
+    // Act: load at boot, with no snapshot row.
+    const loaded = loadOrSeedDataSourceSlices(storedRows, [], momentOfTheBoot, silentLogger);
 
     // Assert: as stored; no row to save.
     expect(loaded.dataSources, 'an off source comes back as it was').toEqual([
       buildEnduroSimulatorTurnedOff(),
     ]);
     expect(loaded.rowsToSaveAtBoot, 'nothing changed, nothing to save').toEqual([]);
+    expect(
+      loaded.dataSnapshotRowChangesAtBoot,
+      'no snapshot row to write or delete either',
+    ).toEqual({ rowsToWrite: [], sourceIdsToDelete: [] });
+    expect(loaded.sliceRowNamesToDeleteAtBoot, 'and no slice row to remove').toEqual([]);
   });
 
   it('throws on a stored source that fails its schema, which stops the boot', () => {
@@ -141,7 +159,7 @@ describe('loadOrSeedDataSourceSlices, on a database with sources', () => {
 
     // Act and assert: loading throws.
     expect(
-      () => loadOrSeedDataSourceSlices(storedRows, momentOfTheBoot, silentLogger),
+      () => loadOrSeedDataSourceSlices(storedRows, [], momentOfTheBoot, silentLogger),
       'a damaged row must stop the boot, not be replaced silently',
     ).toThrow();
   });
@@ -176,19 +194,31 @@ describe('loadOrSeedDataSourceSlices, on a database with sources', () => {
         json: [buildEnduroSimulatorTurnedOff(), buildFridayReplayTurnedOff()],
         updatedAt: '2027-08-14T14:32:05.000Z',
       },
+    ];
+    const storedSnapshotRows: DataSnapshotRow[] = [
       {
-        name: 'dataSnapshots',
-        json: [buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs), replaySnapshotWithAZeroLap],
+        sourceId: 'simulador-enduro',
+        json: buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs),
+        updatedAt: '2027-08-14T14:32:05.000Z',
+      },
+      {
+        sourceId: 'reproducao-sexta',
+        json: replaySnapshotWithAZeroLap,
         updatedAt: '2027-08-14T14:32:05.000Z',
       },
     ];
     const { logger, readRecordedLines } = createRecordingLogger();
 
     // Act: load at boot.
-    const loaded = loadOrSeedDataSourceSlices(storedRows, momentOfTheBoot, logger);
+    const loaded = loadOrSeedDataSourceSlices(
+      storedRows,
+      storedSnapshotRows,
+      momentOfTheBoot,
+      logger,
+    );
 
     // Assert: both sources back, the good snapshot kept, the bad one dropped with a
-    // warning naming its source, and the cleaned snapshots row to save.
+    // warning naming its source, and only the bad one's row to delete.
     expect(
       loaded.dataSources.map((source) => source.id),
       'a bad snapshot must never cost its source',
@@ -202,14 +232,9 @@ describe('loadOrSeedDataSourceSlices, on a database with sources', () => {
       'the dropped snapshot must leave a warning naming its source',
     ).toEqual([['stored data snapshot dropped: it fails the current schema', 'reproducao-sexta']]);
     expect(
-      loaded.rowsToSaveAtBoot,
-      'the database must hold what memory holds, without the dropped snapshot',
-    ).toEqual([
-      {
-        name: 'dataSnapshots',
-        json: [buildSimulatorSnapshotReceivedAt(momentOfTheCommandMs)],
-        updatedAt: momentOfTheBoot,
-      },
-    ]);
+      loaded.dataSnapshotRowChangesAtBoot,
+      "the database must hold what memory holds: the replay's row deleted, the simulator's untouched",
+    ).toEqual({ rowsToWrite: [], sourceIdsToDelete: ['reproducao-sexta'] });
+    expect(loaded.rowsToSaveAtBoot, 'no slice row changes for a dropped snapshot').toEqual([]);
   });
 });

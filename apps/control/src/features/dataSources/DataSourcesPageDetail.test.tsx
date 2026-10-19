@@ -3,9 +3,9 @@
  *
  * What this module is for:
  *   Beside the list, the page shows the latest data of the selected source (the first
- *   one until the operator picks another by its label), readably: a positions table, a
- *   standings table, the session card, a banner when the data is late, and the raw JSON
- *   behind a toggle. This is how the operator checks a feed before any graphic uses it.
+ *   one until the operator picks another), readably: a positions table, a standings
+ *   table, the session card, a banner when the data is late, and the raw JSON behind a
+ *   toggle. This is how the operator checks a feed before any graphic uses it.
  *
  * What these tests prove:
  *   - The positions table has a row per car (60), each with its place, car, team,
@@ -17,12 +17,13 @@
  *   - A source turned off shows "Dados de hh:mm:ss — fonte desligada" above the data it
  *     kept, and its session clock is held instead of counting as if live.
  *   - "Exibir JSON" shows the raw data, and "Ocultar JSON" hides it again.
- *   - Picking another source by its label shows that source's data.
  *
  * What these tests deliberately do not cover:
  *   - The session card and its live clock: SessionCard.test.tsx.
  *   - Lap time and gap text in every case: timingScreenText.test.ts.
  *   - The hour in the banner, which is the operator's local time.
+ *   - Picking another source (a click on its card, or "Ver"):
+ *     DataSourcesPageSourcePicking.test.tsx.
  */
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -30,7 +31,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import {
   buildEnduroSnapshotAtLap34,
-  buildRehearsalReplayThatIsOk,
   buildSimulatorThatIsOk,
   buildSimulatorThatIsStale,
   buildSlicesWithDataSources,
@@ -103,7 +103,7 @@ describe('the positions table', () => {
     expect(
       readCellTexts(rows[2] as HTMLElement)[7],
       'second place, on the leader lap, reads its gap in seconds',
-    ).toBe('+19,087 s');
+    ).toBe('+19,0 s');
     expect(
       readCellTexts(rows[3] as HTMLElement)[7],
       'third place, a lap down, reads its gap in laps',
@@ -231,28 +231,5 @@ describe('"Exibir JSON"', () => {
       screen.queryByText(/"eventName"/),
       'the raw data must hide again',
     ).not.toBeInTheDocument();
-  });
-});
-
-describe('picking a source', () => {
-  it("shows the picked source's data", () => {
-    // Arrange: the simulator with data and the rehearsal replay with none yet.
-    renderOnControlPageConnectedToFakeServer(
-      <DataSourcesPage />,
-      buildSlicesWithDataSources({
-        dataSources: [buildSimulatorThatIsOk(), buildRehearsalReplayThatIsOk()],
-        dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
-      }),
-    );
-
-    // Act: pick the replay by its label.
-    fireEvent.click(screen.getByRole('button', { name: 'Ensaio de sexta' }));
-
-    // Assert: the replay's area, saying it has no data yet.
-    const replayData = within(screen.getByRole('region', { name: 'Dados de Ensaio de sexta' }));
-    expect(
-      replayData.getByText('Esta fonte ainda não tem dados.'),
-      'the picked source has no data yet, and says so',
-    ).toBeInTheDocument();
   });
 });

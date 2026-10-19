@@ -4,6 +4,7 @@
 // fresh objects on each call, so no test can change what another one sees.
 import type { Instance } from '@bajaovrlay/shared';
 
+import { noSourceHostAllowlist } from '../../../modules/dataSources/index.js';
 import type { ReducerContext } from './reducerTypes.js';
 import {
   buildEnduroClockData,
@@ -24,6 +25,7 @@ export const contextOfTheLaterTake: ReducerContext = {
   newQuickFirePanelId: '3b7d9f1a-5c2e-4a8b-9d6f-0e1c3a5b7d92',
   newMacroId: '6e2c4a8f-1b3d-4f5e-a7c9-2d4f6b8a0c13',
   newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
+  sourceHostAllowlist: noSourceHostAllowlist,
   now: '2026-10-09T14:47:30.250Z',
 };
 

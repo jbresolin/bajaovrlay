@@ -31,7 +31,7 @@ export default defineConfig(
 
   {
     // Code that runs in Node: the server, every config file and the root scripts.
-    files: ['apps/server/**', '**/*.config.{js,ts}'],
+    files: ['apps/server/**', '**/*.config.{js,ts}', 'scripts/**'],
     languageOptions: { globals: globals.node },
   },
 

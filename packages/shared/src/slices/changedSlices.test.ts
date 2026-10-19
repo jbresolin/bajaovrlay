@@ -11,8 +11,9 @@
  *
  * What these tests prove:
  *   - ChangedSlicesSchema checks each slice it carries with that slice's own schema, so
- *     layers sent under `instances` are refused, and refuses a name that is not a slice
- *     and a group that carries no slice at all.
+ *     layers sent under `instances` are refused, and refuses a name that is not a slice,
+ *     `dataSnapshots` (sent source by source since BAJAOVRLAY-40) and a group that
+ *     carries no slice at all.
  *   - mergeChangedSlicesIntoSlices replaces exactly the slices it was given, all of them,
  *     and keeps every other slice as the very same list.
  *
@@ -96,6 +97,13 @@ describe('ChangedSlicesSchema', () => {
     {
       name: 'refuses a name that is not a slice',
       changedSlices: { instancias: [enduroClockOnAir], previewClearedLayerIds: ['clock'] },
+      isAccepted: false,
+    },
+    // The snapshots go source by source in a `dataSnapshot` message (BAJAOVRLAY-40); a
+    // group carrying the whole list would resend every source's data on every poll.
+    {
+      name: 'refuses the dataSnapshots slice, which is never sent whole after the hello',
+      changedSlices: { dataSnapshots: [], previewClearedLayerIds: ['clock'] },
       isAccepted: false,
     },
     // A group that changes nothing is a server bug, not a state change.

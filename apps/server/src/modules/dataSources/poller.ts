@@ -10,6 +10,7 @@ import {
   readSourceFromTheStore,
   recordPollResultOnTheStore,
 } from './pollResultRecording.js';
+import { longestPollTimeoutInMilliseconds } from './pollTimeouts.js';
 import {
   hasTheConfigChangedSinceItWasPrepared,
   prepareSourceForPollingAndLogACrash,
@@ -31,12 +32,6 @@ export type DataSourcePollerOptions = {
 
 /** The running poller; stop() calls every loop off and stops watching the store. */
 export type DataSourcePoller = { stop: () => void };
-
-/**
- * The longest a poll may take, whatever the interval: a source that has not answered in
- * ten seconds is down, and the operator should see it soon (the brief's number).
- */
-const longestPollTimeoutInMilliseconds = 10_000;
 
 /**
  * One loop: the polling of one source while it is on. A new object is made every time

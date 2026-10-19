@@ -1,6 +1,13 @@
-// The module's REST route: GET /api/v1/data-sources/{sourceId}/snapshot. Declared here
-// with its Zod schemas and mounted by api/v1/createApiV1Routes.ts, which stays thin.
-import { type DataSnapshot, DataSnapshotSchema, type Slices } from '@bajaovrlay/shared';
+// The module's REST routes: GET /api/v1/data-sources/{sourceId}/snapshot and
+// POST /api/v1/data-sources/http-json/sample-request. Declared here with their Zod
+// schemas and mounted by api/v1/createApiV1Routes.ts, which stays thin.
+import {
+  type DataSnapshot,
+  DataSnapshotSchema,
+  HttpJsonRequestSchema,
+  HttpJsonSampleAnswerSchema,
+  type Slices,
+} from '@bajaovrlay/shared';
 import { createRoute } from '@hono/zod-openapi';
 
 import { type ErrorAnswerBody, ErrorAnswerBodySchema } from '../../core/http/errorAnswers.js';
@@ -50,4 +57,45 @@ export function findDataSnapshotAnswer(slices: Slices, sourceId: string): DataSn
     return { isFound: false, errorBody: { error: { code: 'DATA_SNAPSHOT_NOT_FOUND', message } } };
   }
   return { isFound: true, snapshot };
+}
+
+/**
+ * `POST /api/v1/data-sources/http-json/sample-request`: "Buscar da fonte" on the flex
+ * source form. Takes one request of a flex source (the same schema a saved config's
+ * requests pass), fetches it once and answers its parsed JSON or the poll's pt-BR error.
+ * A read with no state change, so a REST route and not a command, and no event-log row.
+ * POST only because the request config is a body; nothing is created.
+ */
+export const postHttpJsonSampleRequestRoute = createRoute({
+  method: 'post',
+  path: '/data-sources/http-json/sample-request',
+  summary: 'Fetch one request of a flex HTTP/JSON source once, as a sample',
+  request: {
+    body: {
+      required: true,
+      content: { 'application/json': { schema: HttpJsonRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description:
+        'The status and parsed JSON the source answered, or the pt-BR error a poll would give.',
+      content: { 'application/json': { schema: HttpJsonSampleAnswerSchema } },
+    },
+    400: {
+      description: 'The request config is invalid (the config schema reason, in pt-BR).',
+      content: { 'application/json': { schema: ErrorAnswerBodySchema } },
+    },
+  },
+});
+
+/**
+ * The 400 body for a sample request the config schema refused: the schema's own pt-BR
+ * sentence for the first problem, the same one the form shows.
+ */
+export function buildInvalidSampleRequestAnswer(
+  firstIssueMessage: string | undefined,
+): ErrorAnswerBody {
+  const message = firstIssueMessage ?? ptBR.errors.invalidSampleRequest;
+  return { error: { code: 'INVALID_SAMPLE_REQUEST', message } };
 }

@@ -4,7 +4,17 @@ import type { ErrorAnswerBody } from '../../core/http/errorAnswers.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
 import { ptBR } from '../../core/messages/ptBR.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
-import { findDataSnapshotAnswer, getDataSnapshotRoute } from '../../modules/dataSources/index.js';
+import {
+  buildInvalidSampleRequestAnswer,
+  fetchSampleOfHttpJsonRequest,
+  findDataSnapshotAnswer,
+  getDataSnapshotRoute,
+  noSourceHostAllowlist,
+  postHttpJsonSampleRequestRoute,
+  type ReadEnvironmentVariable,
+  readServerEnvironmentVariable,
+  type SourceHostAllowlist,
+} from '../../modules/dataSources/index.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
 
 /**
@@ -14,7 +24,15 @@ import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
 export function createApiV1Routes(options: {
   stateStore: StateStore;
   version: string;
+  /** How the sample route reads BAJAOVRLAY_SOURCE_ variables; process.env when left out. */
+  readSourceEnvironmentVariable?: ReadEnvironmentVariable | undefined;
+  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the sample route; no list when left out. */
+  sourceHostAllowlist?: SourceHostAllowlist | undefined;
+  /** The sample route's timeout; 10 s when left out (tests shorten it). */
+  sampleRequestTimeoutInMilliseconds?: number | undefined;
 }): OpenAPIHono<ServerAppEnvironment> {
+  const readSourceEnvironmentVariable =
+    options.readSourceEnvironmentVariable ?? readServerEnvironmentVariable;
   const apiRoutes = new OpenAPIHono<ServerAppEnvironment>();
 
   apiRoutes.openapi(
@@ -45,6 +63,28 @@ export function createApiV1Routes(options: {
     }
     return context.json(answer.snapshot, 200);
   });
+
+  apiRoutes.openapi(
+    postHttpJsonSampleRequestRoute,
+    async (context) => {
+      const request = context.req.valid('json');
+      const answer = await fetchSampleOfHttpJsonRequest(request, {
+        readEnvironmentVariable: readSourceEnvironmentVariable,
+        sourceHostAllowlist: options.sourceHostAllowlist ?? noSourceHostAllowlist,
+        logger: context.get('requestLogger'),
+        timeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
+      });
+      return context.json(answer, 200);
+    },
+    // The config schema words every refusal in pt-BR; the first one is sent as it is.
+    (validation, context) => {
+      if (validation.success) {
+        return undefined;
+      }
+      const firstIssueMessage = validation.error.issues[0]?.message;
+      return context.json(buildInvalidSampleRequestAnswer(firstIssueMessage), 400);
+    },
+  );
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

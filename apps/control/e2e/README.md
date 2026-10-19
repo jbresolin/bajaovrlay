@@ -18,7 +18,11 @@ Browser tests of the control page (Playwright, Chromium). Labels are the clock m
   `simulatorRaceMoves.e2e.ts` (speed 60: 60 cars, the table changes, nothing goes on air), `simulatorFailureKeepsTheData.e2e.ts`
   ("Falha simulada": "Atrasada" with the last data kept over several failed polls, then "Ok" again; a few seconds, never the minute
   that turns it red), `recordAndReplay.e2e.ts` ("Gravar" until the file holds 40 lines, ~20 s; a looping "Reprodução" at 10×),
-  `dataSourcesPageLayout.e2e.ts` ("Fontes" opens a new tab; at 1024×768 the positions table scrolls in its box, the page does not).
+  `dataSourcesPageLayout.e2e.ts` ("Fontes" opens a new tab; at 1024×768 the positions table scrolls in its box, the page does not),
+  `dataSourceCardPicking.e2e.ts` (a click on a greyed-out command does not pick its card; Tab to "Ver", Enter picks it),
+  `flexSourceFollowsATimingSystem.e2e.ts` (the example preset imported into "HTTP/JSON (flexível)", pointed at an imaginary
+  timing system the test serves on a free port, `timingSystemTestServer.ts`: "Testar" shows 20 cars; saved and on, the table
+  follows a changed answer, keeps its data "Atrasada" while the timing system answers 500, and is "Ok" again after).
   A restart keeps the last data, marked stale: the harness cannot restart its server, so
   `apps/server/src/core/boot/startServerRestart.test.ts` proves it.
 

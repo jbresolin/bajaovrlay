@@ -2,21 +2,34 @@ import {
   type ChangedSlices,
   type CommandError,
   type CommandResultMessage,
+  type DataSnapshotMessage,
   type ServerMessage,
   ServerMessageSchema,
   type SliceMessage,
   type SliceName,
+  type SliceNameSentWhole,
+  SliceNameSentWholeSchema,
   type Slices,
   type SlicesMessage,
   type TimeMessage,
 } from '@bajaovrlay/shared';
 
+import type { DataSnapshotChange } from '../store/dataSnapshotChanges.js';
+
 /**
- * The `hello` a client gets right after connecting: every slice, and `serverNowMs`, what
- * the server's wall clock shows now, in milliseconds.
+ * The `hello` a client gets right after connecting: every slice, `serverNowMs` (what the
+ * server's wall clock shows now, in milliseconds) and, when the server has one, the
+ * `buildId` its built pages embed. With no build id the field is left out altogether.
  */
-export function buildHelloMessage(slices: Slices, serverNowMs: number): ServerMessage {
-  return { type: 'hello', slices, serverNowMs };
+export function buildHelloMessage(
+  slices: Slices,
+  serverNowMs: number,
+  buildId: string | undefined,
+): ServerMessage {
+  if (buildId === undefined) {
+    return { type: 'hello', slices, serverNowMs };
+  }
+  return { type: 'hello', slices, serverNowMs, buildId };
 }
 
 /**
@@ -25,7 +38,7 @@ export function buildHelloMessage(slices: Slices, serverNowMs: number): ServerMe
  * its own clock so the race clock on air counts on the server's.
  */
 export function buildSliceMessage(
-  sliceName: SliceName,
+  sliceName: SliceNameSentWhole,
   slices: Slices,
   serverNowMs: number,
 ): SliceMessage {
@@ -55,8 +68,6 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'macroRuns', slice: slices.macroRuns, serverNowMs };
     case 'dataSources':
       return { type: 'slice', name: 'dataSources', slice: slices.dataSources, serverNowMs };
-    case 'dataSnapshots':
-      return { type: 'slice', name: 'dataSnapshots', slice: slices.dataSnapshots, serverNowMs };
     case 'recordings':
       return { type: 'slice', name: 'recordings', slice: slices.recordings, serverNowMs };
     case 'eventLog':
@@ -70,7 +81,7 @@ export function buildSliceMessage(
  * of the names given, which is the order the store reports changes in.
  */
 export function buildSlicesMessage(
-  changedSliceNames: SliceName[],
+  changedSliceNames: SliceNameSentWhole[],
   slices: Slices,
   serverNowMs: number,
 ): SlicesMessage {
@@ -85,7 +96,11 @@ export function buildSlicesMessage(
  * Copies the slice of that name into the group. One case per name, written out, so the
  * compiler checks each name gets the kind of list that belongs to it.
  */
-function copyOneSliceByName(sliceName: SliceName, slices: Slices, group: ChangedSlices): void {
+function copyOneSliceByName(
+  sliceName: SliceNameSentWhole,
+  slices: Slices,
+  group: ChangedSlices,
+): void {
   switch (sliceName) {
     case 'layers':
       group.layers = slices.layers;
@@ -117,9 +132,6 @@ function copyOneSliceByName(sliceName: SliceName, slices: Slices, group: Changed
     case 'dataSources':
       group.dataSources = slices.dataSources;
       break;
-    case 'dataSnapshots':
-      group.dataSnapshots = slices.dataSnapshots;
-      break;
     case 'recordings':
       group.recordings = slices.recordings;
       break;
@@ -127,6 +139,38 @@ function copyOneSliceByName(sliceName: SliceName, slices: Slices, group: Changed
       group.eventLog = slices.eventLog;
       break;
   }
+}
+
+/**
+ * The changed slice names a `slice` or `slices` message may carry, in the same order:
+ * every name but `dataSnapshots`, whose change is sent source by source instead
+ * (buildDataSnapshotMessage). May be empty, and then no `slice` or `slices` is sent.
+ */
+export function keepSliceNamesSentWhole(changedSliceNames: SliceName[]): SliceNameSentWhole[] {
+  const sliceNamesSentWhole: SliceNameSentWhole[] = [];
+  for (const changedSliceName of changedSliceNames) {
+    const nameCheck = SliceNameSentWholeSchema.safeParse(changedSliceName);
+    if (nameCheck.success) {
+      sliceNamesSentWhole.push(nameCheck.data);
+    }
+  }
+  return sliceNamesSentWhole;
+}
+
+/**
+ * The `dataSnapshot` message for one source whose snapshot changed: the new snapshot, or
+ * null when it is gone, with `serverNowMs` as in buildSliceMessage.
+ */
+export function buildDataSnapshotMessage(
+  change: DataSnapshotChange,
+  serverNowMs: number,
+): DataSnapshotMessage {
+  return {
+    type: 'dataSnapshot',
+    sourceId: change.sourceId,
+    snapshot: change.snapshot,
+    serverNowMs,
+  };
 }
 
 /**

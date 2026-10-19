@@ -1,7 +1,10 @@
+import { ptBRFlexSourceForm } from './ptBRFlexSourceForm';
+
 /**
  * pt-BR catalog, data sources part: the "Fontes de dados" page (features/dataSources) and
  * the health chip beside the connection badge. Kept in a file of its own so ptBR.ts stays
  * readable; ptBR.ts makes it `ptBR.dataSources`.
+ * The flex HTTP/JSON form has its own file, ptBRFlexSourceForm.ts (`ptBR.dataSources.flexForm`).
  * The flag and car status words are the page's own, in sentence case; the race clock
  * writes its flags on air in capitals from its own catalog, which the page never imports.
  */
@@ -15,6 +18,7 @@ export const ptBRDataSources = {
   kinds: {
     simulator: 'Simulador',
     replay: 'Reprodução',
+    httpJson: 'HTTP/JSON (flexível)',
   },
 
   // The status chip of each source (DataSourceStatusChip.tsx).
@@ -43,7 +47,9 @@ export const ptBRDataSources = {
 
   // One row of the list (DataSourceRow.tsx).
   row: {
-    // The label is a button that shows the source's data beside the list.
+    // A click anywhere on the card, or this button (for the keyboard), shows the
+    // source's data beside the list.
+    viewButton: 'Ver',
     lastGoodData: (time: string) => `Último dado: ${time}`,
     noGoodDataYet: 'Ainda sem dados',
     pollInterval: (seconds: string) => `Leitura a cada ${seconds} s`,
@@ -165,4 +171,7 @@ export const ptBRDataSources = {
         'Informe os segundos como um número maior ou igual a zero, ou deixe em branco.',
     },
   },
+
+  // The flex HTTP/JSON source's form, in ptBRFlexSourceForm.ts.
+  flexForm: ptBRFlexSourceForm,
 } as const;

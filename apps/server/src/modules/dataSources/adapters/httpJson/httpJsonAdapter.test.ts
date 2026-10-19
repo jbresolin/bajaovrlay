@@ -1,0 +1,248 @@
+/**
+ * The httpJson adapter: polling a flex source (apps/server)
+ *
+ * What this module is for:
+ *   A flex source is any JSON API: its config lists the addresses to GET and how their
+ *   JSON maps into the canonical shapes. At every poll the adapter fetches every request
+ *   at once with Node's own fetch, reads each answer as JSON and runs the shared
+ *   applyFlexMapping on them, so the source then behaves like every other one. Secrets
+ *   (a token) are not in the config: a header or query parameter names a
+ *   BAJAOVRLAY_SOURCE_ variable, read from the server's environment at poll time.
+ *
+ * What these tests prove (a real HTTP server on 127.0.0.1 and a random port, real fetch):
+ *   - A good poll of the fictional timing system gives positions (its 20 cars, in order)
+ *     and session, which pass the canonical validation the store runs next.
+ *   - listProducedShapes answers the mappings' shape keys.
+ *   - Two requests are both fetched in one poll, each shape reading its own; one of them
+ *     failing fails the whole poll.
+ *   - A response that starts with a byte-order mark is read as the same JSON.
+ *   - A response that does not map fails the poll with the mapping's summary.
+ *
+ * What these tests deliberately do not cover:
+ *   - Values read from environment variables: httpJsonAdapterEnvironmentVariables.test.ts.
+ *   - The failures of a single request (status, bad JSON, the 5 MB cap, connection
+ *     refused, a timeout, a redirect): httpJsonAdapterFailures.test.ts.
+ *   - The rules of the config and of the mapping: packages/shared covers them.
+ *   - A flex source through the poller and the store, recorded and replayed: the store
+ *     tests of the data-source module.
+ */
+import { validateDataShape } from '@bajaovrlay/shared';
+import { describe, expect, it } from 'vitest';
+
+import { createLogger } from '../../../../core/logger/createLogger.js';
+import { createHttpJsonAdapter } from './httpJsonAdapter.js';
+import { noSourceHostAllowlist } from './sourceHostAllowlist.js';
+import {
+  readExampleConfigPointedAt,
+  readExampleTimingSystemResponse,
+  startTimingSystemTestServer,
+} from './timingSystemTestServer.testSupport.js';
+
+/** 14:24:01 in Brasília (17:24:01 UTC) on Saturday 20 March 2027, the moment every poll here is made at. */
+const pollMomentMs = Date.parse('2027-03-20T17:24:01.000Z');
+
+/** A poll context at the poll moment, with a signal that never fires. */
+function buildPollContextThatNeverTimesOut() {
+  return {
+    readCurrentTime: () => new Date(pollMomentMs),
+    signal: new AbortController().signal,
+  };
+}
+
+/**
+ * The adapter as the server builds it, silent, reading variables from `environment`, with
+ * no BAJAOVRLAY_SOURCE_ALLOWED_HOSTS (any host, typed values only).
+ */
+function createAdapterReading(environment: Record<string, string>) {
+  return createHttpJsonAdapter({
+    logger: createLogger({ level: 'silent' }),
+    readEnvironmentVariable: (name) => environment[name],
+    sourceHostAllowlist: noSourceHostAllowlist,
+  });
+}
+
+/** Runs a poll that must fail, and gives back its pt-BR error message. */
+async function captureThePollError(polling: Promise<unknown>): Promise<string> {
+  try {
+    await polling;
+  } catch (pollError) {
+    return pollError instanceof Error ? pollError.message : String(pollError);
+  }
+  throw new Error('the poll was expected to fail, and it answered');
+}
+
+describe('a good poll', () => {
+  it("maps the timing system's 20 cars and its session, which pass the canonical validation", async () => {
+    // Arrange: the timing system answering its example classification, and the example preset.
+    const timingSystem = await startTimingSystemTestServer();
+    timingSystem.answer('/cronometragem/classificacao', {
+      kind: 'json',
+      body: readExampleTimingSystemResponse(),
+    });
+    const config = readExampleConfigPointedAt(
+      `${timingSystem.baseUrl}/cronometragem/classificacao`,
+    );
+    const adapter = createAdapterReading({});
+
+    // Act: poll once.
+    const answer = await adapter.pollOnce(config, buildPollContextThatNeverTimesOut());
+
+    // Assert: positions and session, valid, 20 cars in the order of the list.
+    const positionsCheck = validateDataShape('positions', answer.shapes.positions);
+    const sessionCheck = validateDataShape('session', answer.shapes.session);
+    expect(Object.keys(answer.shapes), 'the poll must answer positions and session').toEqual([
+      'positions',
+      'session',
+    ]);
+    expect(positionsCheck.isValid, 'the mapped positions must pass the canonical shape').toBe(true);
+    expect(sessionCheck.isValid, 'the mapped session must pass the canonical shape').toBe(true);
+    expect(answer.shapes.positions, 'the list must hold the 20 cars').toHaveProperty(
+      'entries.length',
+      20,
+    );
+    expect(answer.shapes.positions, 'car 17 leads, as the list is in order').toHaveProperty(
+      'entries.0',
+      expect.objectContaining({ position: 1, carNumber: 17, teamName: 'Acauã Baja' }),
+    );
+  });
+
+  it('reads a response that starts with a byte-order mark', async () => {
+    // Arrange: timing software written for Windows, which starts its JSON with a byte-order mark.
+    const timingSystem = await startTimingSystemTestServer();
+    timingSystem.answer('/cronometragem/classificacao', {
+      kind: 'text',
+      text: `\uFEFF${JSON.stringify(readExampleTimingSystemResponse())}`,
+      contentType: 'application/json; charset=utf-8',
+    });
+    const config = readExampleConfigPointedAt(
+      `${timingSystem.baseUrl}/cronometragem/classificacao`,
+    );
+    const adapter = createAdapterReading({});
+
+    // Act: poll once.
+    const answer = await adapter.pollOnce(config, buildPollContextThatNeverTimesOut());
+
+    // Assert: the mark is dropped and the 20 cars are read, as without it.
+    expect(
+      answer.shapes.positions,
+      'a body with a byte-order mark must still be read',
+    ).toHaveProperty('entries.length', 20);
+  });
+
+  it('says the shapes it produces are the shape keys of its mappings', () => {
+    // Arrange: the example preset, which maps positions and session.
+    const config = readExampleConfigPointedAt('http://cronometragem.local:4790/classificacao');
+    const adapter = createAdapterReading({});
+
+    // Act: ask which shapes a source with this config produces.
+    const producedShapes = adapter.listProducedShapes(config);
+
+    // Assert: exactly the two it maps, in its order.
+    expect(producedShapes, 'the produced shapes must be the mapped ones').toEqual([
+      'positions',
+      'session',
+    ]);
+  });
+
+  it('fails with the mapping summary when the response does not map', async () => {
+    // Arrange: the timing system's classification with car 17's last lap garbled.
+    const timingSystem = await startTimingSystemTestServer();
+    const garbledResponse = readExampleTimingSystemResponse() as {
+      classificacao: Array<Record<string, unknown>>;
+    };
+    const firstCar = garbledResponse.classificacao[0] ?? {};
+    firstCar.ultima_volta = '4:3x.293';
+    timingSystem.answer('/cronometragem/classificacao', { kind: 'json', body: garbledResponse });
+    const config = readExampleConfigPointedAt(
+      `${timingSystem.baseUrl}/cronometragem/classificacao`,
+    );
+    const adapter = createAdapterReading({});
+
+    // Act: poll once.
+    const error = await captureThePollError(
+      adapter.pollOnce(config, buildPollContextThatNeverTimesOut()),
+    );
+
+    // Assert: the poll fails naming the car, its line, the field and the path.
+    expect(error, 'the poll error must be the mapping problem, naming car, line and path').toBe(
+      'Posições › carro 17 (linha 1) › Última volta: não consegui ler "ultima_volta": "4:3x.293" não é um tempo de volta como 4:38.293, 278.293 ou 1:02:03.4',
+    );
+  });
+});
+
+describe('two requests', () => {
+  /** A flex source reading positions from the classification and the session from race control. */
+  function buildTwoRequestConfig(baseUrl: string) {
+    const exampleConfig = readExampleConfigPointedAt(`${baseUrl}/cronometragem/classificacao`);
+    const [positionsMapping, sessionMapping] = exampleConfig.mappings;
+    if (positionsMapping === undefined || sessionMapping === undefined) {
+      throw new Error('the example preset must map positions and session');
+    }
+    return {
+      requests: [
+        ...exampleConfig.requests,
+        {
+          requestId: 'direcao_de_prova',
+          url: `${baseUrl}/cronometragem/prova`,
+          headers: [],
+          queryParameters: [],
+        },
+      ],
+      mappings: [positionsMapping, { ...sessionMapping, requestId: 'direcao_de_prova' }],
+    };
+  }
+
+  it('fetches both in one poll, each shape reading its own response', async () => {
+    // Arrange: the classification and race control both answering the example response.
+    const timingSystem = await startTimingSystemTestServer();
+    const exampleResponse = readExampleTimingSystemResponse();
+    timingSystem.answer('/cronometragem/classificacao', { kind: 'json', body: exampleResponse });
+    timingSystem.answer('/cronometragem/prova', { kind: 'json', body: exampleResponse });
+    const adapter = createAdapterReading({});
+
+    // Act: poll once.
+    const answer = await adapter.pollOnce(
+      buildTwoRequestConfig(timingSystem.baseUrl),
+      buildPollContextThatNeverTimesOut(),
+    );
+
+    // Assert: both addresses were asked once, and both shapes came back.
+    const pathsAsked = timingSystem.readRequestsReceived().map((request) => request.pathWithQuery);
+    expect([...pathsAsked].sort(), 'each request must be fetched once').toEqual([
+      '/cronometragem/classificacao',
+      '/cronometragem/prova',
+    ]);
+    expect(Object.keys(answer.shapes), 'both shapes must be answered').toEqual([
+      'positions',
+      'session',
+    ]);
+  });
+
+  it('fails the whole poll when one of the two fails: a source never half-succeeds', async () => {
+    // Arrange: the classification answering, race control down with a 503.
+    const timingSystem = await startTimingSystemTestServer();
+    timingSystem.answer('/cronometragem/classificacao', {
+      kind: 'json',
+      body: readExampleTimingSystemResponse(),
+    });
+    timingSystem.answer('/cronometragem/prova', {
+      kind: 'json',
+      status: 503,
+      body: { erro: 'manutenção' },
+    });
+    const adapter = createAdapterReading({});
+
+    // Act: poll once.
+    const error = await captureThePollError(
+      adapter.pollOnce(
+        buildTwoRequestConfig(timingSystem.baseUrl),
+        buildPollContextThatNeverTimesOut(),
+      ),
+    );
+
+    // Assert: no shape at all, and the error names the request that failed.
+    expect(error, 'the poll must fail with the failing request named').toBe(
+      'A fonte respondeu 503 (Service Unavailable) em direcao_de_prova',
+    );
+  });
+});

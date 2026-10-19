@@ -9,14 +9,18 @@
  *
  *   A renderer page whose hello is late calls it with its own role (`?role=renderer` for
  *   the page OBS loads, `?role=monitor` for the control page's frames), and then gets
- *   the same slices the WebSocket hub gives that role: no `dataSnapshots` and no
- *   `eventLog`, because graphics receive resolved data only.
+ *   the same slices the WebSocket hub gives that role: the four a screen draws (layers,
+ *   graphics, instances, previewClearedLayerIds) and every other slice empty, because
+ *   graphics receive resolved data only and an older page must not meet a slice its
+ *   schemas refuse (João's ruling at gate 2 of PR #17).
  *
  * What these tests prove:
  *   - The state answer passes the shared SlicesSchema and shows the seeded layers.
- *   - With no role it carries the stored snapshot and the event log; with
- *     `?role=renderer` or `?role=monitor` both are empty lists and every other slice is
- *     the same; an unknown role is answered 400 with a pt-BR message.
+ *   - With no role it carries every slice as the store holds it; with `?role=renderer`
+ *     or `?role=monitor` the four drawn slices are as the store holds them and each of
+ *     the nine other slices, every one holding something on the server (a macro run and
+ *     a recording included), is an empty list; an unknown role is answered 400 with a
+ *     pt-BR message.
  *   - A command applied to the store shows up in the next answer.
  *   - The OpenAPI document describes GET /state with its `role` query parameter, and
  *     is still generated with the `previewClearedLayerIds` slice (BAJAOVRLAY-36) in the
@@ -37,10 +41,10 @@ import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGr
 import { createStateStore } from '../../core/store/createStateStore.js';
 import { createRaceClockItemOnTheStore } from '../../core/store/raceClockItemOnTheStore.testSupport.js';
 import {
-  buildGoodPollOfTheSimulator,
-  firstPollAtMs,
-  recordPollsOfTheSimulatorByHand,
-} from '../../core/ws/simulatorPolledByHand.testSupport.js';
+  fillEverySliceAScreenIsNotSent,
+  listHiddenSlicesTheServerHoldsNothingIn,
+} from '../../core/ws/hiddenSlicesFilledOnTheStore.testSupport.js';
+import { buildTheCopyAScreenShouldGet } from '../../core/ws/slicesSentToScreens.testSupport.js';
 
 /** Builds the server app on a freshly seeded store, without opening a port. */
 function createServerAppWithSeededStore() {
@@ -94,45 +98,47 @@ describe('GET /api/v1/state', () => {
 const roleScenarios = [
   // Anyone else (a curl while debugging, a future tool) still sees everything.
   {
-    name: 'answers the snapshot and the event log when no role is given',
+    name: 'answers every slice when no role is given',
     address: '/api/v1/state',
-    isHiddenFromThisCaller: false,
+    isAScreen: false,
   },
   // The page OBS loads, reading the state because its hello is late.
   {
-    name: 'answers empty snapshots and event log to ?role=renderer',
+    name: 'answers only the four drawn slices, the rest empty, to ?role=renderer',
     address: '/api/v1/state?role=renderer',
-    isHiddenFromThisCaller: true,
+    isAScreen: true,
   },
   // The control page's "Programa" and "Prévia" frames, in the same situation.
   {
-    name: 'answers empty snapshots and event log to ?role=monitor',
+    name: 'answers only the four drawn slices, the rest empty, to ?role=monitor',
     address: '/api/v1/state?role=monitor',
-    isHiddenFromThisCaller: true,
+    isAScreen: true,
   },
 ];
 
 describe('GET /api/v1/state with a role', () => {
-  it.each(roleScenarios)('$name', async ({ address, isHiddenFromThisCaller }) => {
-    // Arrange: a server app whose simulator was turned on, polled once by hand (this store
-    // has no poller) and turned off, so it holds a snapshot and event-log rows.
+  it.each(roleScenarios)('$name', async ({ address, isAScreen }) => {
+    // Arrange: a server app with something in every slice a screen is not sent: an item,
+    // a macro and its run (this store has no runner, so the run stays), and the simulator
+    // recorded and polled once by hand (this store has no poller).
     const { app, stateStore } = createServerAppWithSeededStore();
-    recordPollsOfTheSimulatorByHand(stateStore, [buildGoodPollOfTheSimulator(6, firstPollAtMs)]);
+    fillEverySliceAScreenIsNotSent(stateStore);
     const slicesOnTheServer = stateStore.readAllSlices();
 
     // Act: ask for the state at the address of the row.
     const response = await app.request(address);
     const body = SlicesSchema.parse(await response.json());
 
-    // Assert: 200, and the two slices are there or empty as the role decides.
-    const expectedBody = isHiddenFromThisCaller
-      ? { ...slicesOnTheServer, dataSnapshots: [], eventLog: [] }
+    // Assert: 200, and the slices are all there or a screen's copy, as the role decides.
+    const expectedBody = isAScreen
+      ? buildTheCopyAScreenShouldGet(slicesOnTheServer)
       : slicesOnTheServer;
-    expect(slicesOnTheServer.dataSnapshots, 'the poll must have stored a snapshot').toHaveLength(1);
+    expect(
+      listHiddenSlicesTheServerHoldsNothingIn(slicesOnTheServer),
+      'every slice a screen is not sent must hold something on the server, so its emptiness on a screen is proven',
+    ).toEqual([]);
     expect(response.status, 'the state must answer 200 OK').toBe(200);
-    expect(body, 'a screen gets no snapshot and no history; anyone else gets all').toEqual(
-      expectedBody,
-    );
+    expect(body, 'a screen gets only what it draws; anyone else gets all').toEqual(expectedBody);
   });
 
   it('answers 400 with a pt-BR message to a role it does not know', async () => {

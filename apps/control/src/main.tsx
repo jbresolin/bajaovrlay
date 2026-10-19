@@ -15,6 +15,7 @@ import { ItemEditorTargetProvider } from './features/items/ItemEditorTargetProvi
 import { QuickEditChoiceProvider } from './features/playout/QuickEditChoiceProvider';
 import { QuickFireTabChoiceProvider } from './features/quickFire/QuickFireTabChoiceProvider';
 import { ptBR } from './i18n/ptBR';
+import { browserPageReloadForNewBuild } from './state/browserPageReloadForNewBuild';
 import { buildWebSocketAddress, openBrowserWebSocket } from './state/browserWebSocket';
 import { ControlPageStateProvider } from './state/ControlPageStateProvider';
 import { connectToServer } from './state/serverConnection';
@@ -35,6 +36,9 @@ const serverConnection = connectToServer({
   webSocketAddress: buildWebSocketAddress(window.location),
   serverStateStore,
   openSocket: openBrowserWebSocket,
+  // A hello naming another build reloads this tab (at most once per announced build), so
+  // a tab left open across an upgrade does not go on with the old bundle.
+  pageReloadForNewBuild: browserPageReloadForNewBuild,
 });
 // The one browser setting of the page, read from localStorage once, here, as the page
 // opens. Kept apart from the server-state store, which holds only what the server sent.

@@ -15,6 +15,7 @@ import type {
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
 import { buildRaceDaySlicesWithRundown } from '../../../core/store/reducers/rundownSlices.testSupport.js';
+import { noSourceHostAllowlist } from '../adapters/httpJson/sourceHostAllowlist.js';
 
 /** The moment every reducer test runs at: 14:32:05 UTC on 14 August 2027, the enduro day. */
 export const momentOfTheCommandMs = Date.parse('2027-08-14T14:32:05.000Z');
@@ -27,6 +28,7 @@ export const contextOfTheDataSourceCommand: ReducerContext = {
   newQuickFirePanelId: 'd4b2e8f1-6a3c-4d7e-9b05-1c8f2a6e3d90',
   newMacroId: '8f3a1c6e-2d4b-4e9a-b7c5-0a1d3e5f7b92',
   newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
+  sourceHostAllowlist: noSourceHostAllowlist,
 };
 
 /** The id of the recording of Friday's training session, closed, ready to replay. */

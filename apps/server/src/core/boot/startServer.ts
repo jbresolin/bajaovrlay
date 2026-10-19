@@ -5,8 +5,10 @@ import { serve } from '@hono/node-server';
 
 import {
   buildRecordingsFolderPath,
+  type SourceHostAllowlist,
   startDataSourceService,
 } from '../../modules/dataSources/index.js';
+import { readBuildId } from '../../readBuildId.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
 import type { ServerLogger } from '../logger/createLogger.js';
@@ -32,8 +34,19 @@ export type StartServerOptions = {
    * written to, and listed at boot from, its `recordings` folder.
    */
   dataFolder: string;
+  /**
+   * BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot. Required here, so production cannot
+   * leave it out by mistake: the store (saves), the poller and the sample route get it.
+   */
+  sourceHostAllowlist: SourceHostAllowlist;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
+  /**
+   * Where `pnpm build` leaves build-id.json (the id the built pages embed). Read once, at
+   * boot: it names the build this process runs, which the hub sends in every hello so an
+   * open page from another build reloads itself. Undefined, or no usable file: none sent.
+   */
+  buildIdFileUrl?: URL | undefined;
   /** Defaults to 15 s; tests use a few milliseconds. */
   heartbeatIntervalInMilliseconds?: number | undefined;
   /**
@@ -48,6 +61,8 @@ export type StartServerOptions = {
 export type RunningServer = {
   port: number;
   stateStore: StateStore;
+  /** The build read from build-id.json at boot, sent in every hello; undefined when none. */
+  buildId: string | undefined;
   /**
    * Stops polling data sources (calling off every poll in flight), calls off pending
    * auto-outs and a macro's pending wait, drops WebSocket clients, stops listening and
@@ -81,12 +96,20 @@ async function startServingFromDatabase(
   database: ServerDatabase,
   options: StartServerOptions,
 ): Promise<RunningServer> {
+  // Once, at boot, and never again: the id names the build this process runs. A
+  // `pnpm build` with the server up writes a new id only once every package has built
+  // (scripts/publishBuildId.js), and it takes effect at the restart, together with the
+  // new server code; reading it per hello would send pages into a folder still being
+  // written, or onto a bundle newer than the code answering it.
+  const buildId =
+    options.buildIdFileUrl === undefined ? undefined : readBuildId(options.buildIdFileUrl);
   const stateStore = createStateStore({
     database,
     logger: options.logger,
     graphicPackagesFolder: options.graphicPackagesFolder,
     recordingsFolder: buildRecordingsFolderPath(options.dataFolder),
     readCurrentTime: options.readCurrentTime,
+    sourceHostAllowlist: options.sourceHostAllowlist,
   });
   // Started before anything can send a command, so no take of an item with an
   // auto-out delay is missed. It holds no timer until such a take happens.
@@ -99,6 +122,7 @@ async function startServingFromDatabase(
     stateStore,
     logger: options.logger,
     dataFolder: options.dataFolder,
+    sourceHostAllowlist: options.sourceHostAllowlist,
   });
   /** Stops the server's own actors; used by close() and by a boot that fails from here. */
   function stopTheServerActors(): void {
@@ -117,6 +141,7 @@ async function startServingFromDatabase(
       graphicPackagesFolder: options.graphicPackagesFolder,
       controlPageFolder: options.controlPageFolder,
       rendererPageFolder: options.rendererPageFolder,
+      sourceHostAllowlist: options.sourceHostAllowlist,
     });
     httpServer = await listen({
       fetch: app.fetch,
@@ -130,6 +155,7 @@ async function startServingFromDatabase(
       heartbeatIntervalInMilliseconds:
         options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
       readCurrentTime: options.readCurrentTime,
+      buildId,
     });
   } catch (bootError) {
     // The poller already armed a poll and a stale watch for every source left on: left
@@ -158,6 +184,7 @@ async function startServingFromDatabase(
   return {
     port: (httpServer.address() as AddressInfo).port,
     stateStore,
+    buildId,
     close: () => {
       closingEverything ??= closeEverything();
       return closingEverything;

@@ -1,13 +1,12 @@
 // The poller's preparation step: when a source is prepared again, and preparing it
 // without letting a buggy adapter break the store's listener.
-import type { DataSource } from '@bajaovrlay/shared';
+import { areJsonValuesEqual, type DataSource } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import {
   type DataSourceAdapters,
   prepareDataSourceWithTheAdapterOfItsKind,
 } from './adapters/createDataSourceAdapters.js';
-import { areJsonValuesEqual } from './areJsonValuesEqual.js';
 
 /**
  * Whether the source's config differs from the one it was last prepared with. Compared

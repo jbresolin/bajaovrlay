@@ -8,6 +8,8 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   `?role=monitor` (a renderer page whose hello is late) `dataSnapshots` and `eventLog` are empty.
 - `GET /api/v1/data-sources/{sourceId}/snapshot` — declared by the data-source module
   (`modules/dataSources/api.ts`), the latest good data of one source.
+- `POST /api/v1/data-sources/http-json/sample-request` — also declared there: "Buscar da
+  fonte", one flex request fetched once (10 s timeout), no state change, no event-log row.
 
 Each route is declared with `createRoute` from @hono/zod-openapi so it appears in the
 OpenAPI document; a route added with plain `app.get` would be missing from it.

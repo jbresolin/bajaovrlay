@@ -52,11 +52,14 @@ export {
 } from './slices/eventLogEntry.js';
 // Every slice together (GET /api/v1/state, WS hello) and the list of slice names.
 export { type SliceName, SliceNameSchema, type Slices, SlicesSchema } from './slices/slices.js';
-// The slices one state change changed (a part of Slices), and how a client lays them over its own.
+// The slices one state change changed (a part of Slices, never dataSnapshots), how a client
+// lays them over its own, and the names of the slices sent whole after the hello.
 export {
   type ChangedSlices,
   ChangedSlicesSchema,
   mergeChangedSlicesIntoSlices,
+  type SliceNameSentWhole,
+  SliceNameSentWholeSchema,
 } from './slices/changedSlices.js';
 
 // Why a command was refused: a stable code and a pt-BR message.
@@ -86,10 +89,12 @@ export { type ClearAllCommand, ClearAllCommandSchema } from './commands/clearAll
 // Every command, told apart by `type`; the only way state changes.
 export { type Command, type CommandInput, CommandSchema } from './commands/command.js';
 
-// WebSocket messages from the server: hello, slice, slices, commandResult and time.
+// WebSocket messages from the server: hello, slice, slices, dataSnapshot, commandResult and time.
 export {
   type CommandResultMessage,
   CommandResultMessageSchema,
+  type DataSnapshotMessage,
+  DataSnapshotMessageSchema,
   HelloMessageSchema,
   type ServerMessage,
   ServerMessageSchema,
@@ -100,6 +105,33 @@ export {
   type TimeMessage,
   TimeMessageSchema,
 } from './ws/serverMessages.js';
+// A page reloading itself, at most once per announced server build (once a minute when
+// sessionStorage cannot keep that build), when the hello names another build than the
+// one the page was loaded from; the browser's stand-ins it needs are typed here.
+export {
+  lastReloadForNewBuildStorageKey,
+  measureWaitUntilTheNextReloadForNewBuild,
+  type PageReloadForNewBuild,
+  type ReloadForNewBuildOutcome,
+  type ReloadMemory,
+  reloadThePageWhenTheServerBuildDiffers,
+  serverBuildLastReloadedForStorageKey,
+  shortestTimeBetweenReloadsForNewBuildInMilliseconds,
+} from './build/reloadForNewServerBuild.js';
+// A page's own reload memory inside the sessionStorage its tab shares with other pages
+// (the control page and its two monitor frames), keyed by the page's address.
+export { keepTheReloadMemoryOfOnePageApart } from './build/reloadMemoryOfOnePage.js';
+// The buildId of a hello read before the page's own schema checks the rest of it, so a
+// page that refuses a newer server's hello can still reload onto the new bundle.
+export { readBuildIdOfAHello } from './build/readBuildIdOfAHello.js';
+// A page's watch on the server's build: compares each hello's build, logs, and, in the
+// once-a-minute fallback, looks once more when a reload was skipped as too recent.
+export {
+  type CancelTimer,
+  type ServerBuildWatch,
+  type ServerBuildWatchOptions,
+  startServerBuildWatch,
+} from './build/serverBuildWatch.js';
 // WebSocket messages from a client: command (control page) and instanceStatus (renderer).
 export {
   type ClientMessage,
@@ -132,3 +164,11 @@ export * from './dataSources/index.js';
 // Canonical data shapes: session, positions, standings and brackets as every data source
 // produces them, their validator and the paths a binding may point at.
 export * from './dataShapes/index.js';
+
+// The transform registry: the named pure functions a flex source's mapping applies to a
+// value (textToNumber, lapTimeTextToMs, mapValues…), and the check a config runs on them.
+export * from './transforms/index.js';
+
+// The flex mapping: paths into a JSON response, the mapping config of a flex source, the
+// canonical fields a rule can fill, and applyFlexMapping, shared by the server and "Testar".
+export * from './flexMapping/index.js';

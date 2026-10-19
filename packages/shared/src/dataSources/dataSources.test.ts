@@ -14,11 +14,12 @@
  *     and refuses values out of range, naming the field; the simulator's seed is a
  *     whole number from 0 to 2^32 − 1, the values its generator tells apart.
  *   - A simulator source, a replay source (its status with failingSinceMs included), a
- *     snapshot and a recording are accepted unchanged; a source whose config belongs to
- *     the other kind is refused.
+ *     flex HTTP/JSON source, a snapshot and a recording are accepted unchanged; a source
+ *     whose config belongs to another kind is refused.
  *
  * What these tests deliberately do not cover:
  *   - The commands; dataSourceCommands.test.ts covers them.
+ *   - The rules of the flex source's config; httpJsonConfig.test.ts covers them.
  *   - Whether the shapes in a poll are valid, and every other rule (unknown source,
  *     replay of an unknown recording, who may send what): the reducers and the
  *     authorisation hook in apps/server cover them.
@@ -87,6 +88,47 @@ function buildStaleReplaySource() {
       recordingError: null,
       // Failing since its first failed poll, two seconds after its last good one.
       failingSinceMs: 1_805_568_238_000,
+    },
+  };
+}
+
+/** Builds a flex source reading an imaginary timing system's classification, off. */
+function buildTimingSystemFlexSourceTurnedOff() {
+  return {
+    id: 'cronometragem-classificacao',
+    label: 'Cronometragem — Classificação',
+    kind: 'httpJson',
+    config: {
+      requests: [
+        {
+          requestId: 'classificacao',
+          url: 'http://cronometragem.local:8080/api/classificacao',
+          headers: [
+            { name: 'Authorization', valueFromEnvironment: 'BAJAOVRLAY_SOURCE_CRONO_TOKEN' },
+          ],
+          queryParameters: [],
+        },
+      ],
+      mappings: [
+        {
+          shapeKey: 'session',
+          requestId: 'classificacao',
+          fields: [
+            { targetField: 'sessionId', fromPath: 'prova.id' },
+            { targetField: 'sessionKind', constantValue: 'enduro' },
+          ],
+        },
+      ],
+    },
+    pollIntervalMs: 2_000,
+    isEnabled: false,
+    isRecording: false,
+    status: {
+      lastError: null,
+      consecutiveFailures: 0,
+      isStale: false,
+      staleAfterMs: 6_000,
+      recordingError: null,
     },
   };
 }
@@ -226,6 +268,8 @@ describe('DataSourceSchema, DataSnapshotSchema and RecordingSchema', () => {
     { name: 'accepts a healthy simulator source', source: buildHealthyEnduroSimulatorSource() },
     // A replay that failed twice (failingSinceMs kept), with a pending "Atualizar agora".
     { name: 'accepts a stale replay source', source: buildStaleReplaySource() },
+    // A flex source whose token is named by a server variable, never written in the config.
+    { name: 'accepts a flex HTTP/JSON source', source: buildTimingSystemFlexSourceTurnedOff() },
   ];
 
   it.each(acceptedSourceScenarios)('$name', ({ source }) => {

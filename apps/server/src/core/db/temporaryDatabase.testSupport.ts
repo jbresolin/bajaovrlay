@@ -1,6 +1,6 @@
 // Test support: real SQLite files in temporary folders, removed after each test.
 // Files named *.testSupport.ts are left out of the build (tsconfig.build.json).
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -34,6 +34,51 @@ export function openTemporaryDatabase(): { database: ServerDatabase; databasePat
   const databasePath = createTemporaryDatabasePath();
   const database = openDatabaseForTests(databasePath);
   return { database, databasePath };
+}
+
+// The first committed migration: the slices and event_log tables, and nothing else. It is
+// the whole schema of every server built before BAJAOVRLAY-40 added data_snapshots.
+const migrationOfTheServerBeforeBajaovrlay40 = '0000_create_slices_and_event_log';
+
+/**
+ * Opens a database at a path as a server built before BAJAOVRLAY-40 laid it out: only the
+ * first committed migration applied (no data_snapshots table), with drizzle's own journal
+ * of it, so opening the same path later with openDatabaseForTests applies the rest exactly
+ * as a server upgrade does. Closed when the test ends unless the test closed it already.
+ */
+export function openDatabaseAsTheServerBeforeBajaovrlay40LaidItOut(
+  databasePath: string,
+): ServerDatabase {
+  const migrationsFolder = mkdtempSync(join(tmpdir(), 'bajaovrlay-migracoes-antigas-'));
+  onTestFinished(() => rmSync(migrationsFolder, { recursive: true, force: true }));
+  mkdirSync(join(migrationsFolder, 'meta'));
+  const committedJournalPath = join(committedMigrationsFolder, 'meta', '_journal.json');
+  const committedJournal = JSON.parse(readFileSync(committedJournalPath, 'utf8')) as {
+    entries: Array<{ tag: string }>;
+  };
+  const journalOfTheOlderServer = {
+    ...committedJournal,
+    entries: committedJournal.entries.filter(
+      (entry) => entry.tag === migrationOfTheServerBeforeBajaovrlay40,
+    ),
+  };
+  writeFileSync(
+    join(migrationsFolder, 'meta', '_journal.json'),
+    JSON.stringify(journalOfTheOlderServer),
+  );
+  const migrationFileName = `${migrationOfTheServerBeforeBajaovrlay40}.sql`;
+  copyFileSync(
+    join(committedMigrationsFolder, migrationFileName),
+    join(migrationsFolder, migrationFileName),
+  );
+
+  const database = openDatabase({ databasePath, migrationsFolder });
+  onTestFinished(() => {
+    if (database.$client.open) {
+      database.$client.close();
+    }
+  });
+  return database;
 }
 
 /**

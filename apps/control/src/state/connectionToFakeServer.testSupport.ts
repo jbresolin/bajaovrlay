@@ -2,6 +2,8 @@
 // connectToServer) dialling a fake server, with every log line it writes recorded.
 // Used by the tests of the connection itself; component tests use
 // controlPageOnFakeServer.testSupport.tsx, which also draws the page.
+import type { PageReloadForNewBuild } from '@bajaovrlay/shared';
+
 import { createFakeServerSocket } from './fakeServerSocket.testSupport';
 import { connectToServer } from './serverConnection';
 import { createServerStateStore } from './serverStateStore';
@@ -17,8 +19,12 @@ export type RecordedLogLine = {
 /**
  * Builds a control page connection dialling a fake server, which has not picked up yet.
  * The connection numbers its commands pedido-1, pedido-2, ... in the order they are sent.
+ * With `pageReloadForNewBuild` it compares the build in each hello, as main.tsx's does;
+ * without, it compares nothing.
  */
-export function connectControlPageToFakeServer() {
+export function connectControlPageToFakeServer(
+  options: { pageReloadForNewBuild?: PageReloadForNewBuild } = {},
+) {
   const serverStateStore = createServerStateStore();
   const fakeServerSocket = createFakeServerSocket();
   const recordedLogLines: RecordedLogLine[] = [];
@@ -27,6 +33,7 @@ export function connectControlPageToFakeServer() {
     webSocketAddress: 'ws://192.168.0.10:3000/ws',
     serverStateStore,
     openSocket: fakeServerSocket.openSocket,
+    pageReloadForNewBuild: options.pageReloadForNewBuild,
     logEvent: (level, message, details = {}) => {
       recordedLogLines.push({ level, message, details });
     },

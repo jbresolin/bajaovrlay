@@ -19,7 +19,7 @@ export type SaveDataSourceOptions = {
 };
 
 /**
- * The save of both source forms: sends createDataSource for a new source, or
+ * The save of every source form: sends createDataSource for a new source, or
  * updateDataSource with only the changes for a stored one, and calls `onSaved` once the
  * server accepts (the form then closes). A refusal leaves the form open, and
  * `wasLastSaveRefused` tells the form to show the reason (CommandErrorMessage).

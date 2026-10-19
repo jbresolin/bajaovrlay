@@ -15,7 +15,8 @@
  *     them replaced, so the stage never sees some new and the others old.
  *   - Anything that is not a protocol message is logged and ignored; so is a `slice` or a
  *     `slices` that arrives before any `hello`. A `commandResult` that says ok is ignored
- *     silently.
+ *     silently, and so is a `dataSnapshot` (one source's raw data, which the server sends
+ *     operator pages only; a renderer has no use for it).
  *
  * What these tests deliberately do not cover:
  *   - What the renderer sends (the `instanceStatus` message) and a `commandResult` that
@@ -207,6 +208,30 @@ describe('messages from the server', () => {
     // Assert: still only the hello's delivery, and no new log line.
     expect(connection.deliveries, 'a commandResult must not deliver anything').toHaveLength(1);
     expect(connection.logLines, 'an ok commandResult must not be logged').toHaveLength(
+      logLineCountAfterHello,
+    );
+  });
+
+  it('ignores a dataSnapshot message, without delivering or logging anything', () => {
+    // Arrange: a connection that already received its hello.
+    const connection = startConnectionForTests();
+    connection.latestSocket().simulateOpen();
+    connection
+      .latestSocket()
+      .simulateMessage({ type: 'hello', slices: createSlicesWithInstances([]) });
+    const logLineCountAfterHello = connection.logLines.length;
+
+    // Act: a dataSnapshot arrives anyway, saying the simulator's data was deleted.
+    connection.latestSocket().simulateMessage({
+      type: 'dataSnapshot',
+      sourceId: 'simulador-enduro',
+      snapshot: null,
+      serverNowMs: 1_791_556_325_000,
+    });
+
+    // Assert: still only the hello's delivery, and no new log line.
+    expect(connection.deliveries, 'a dataSnapshot must not deliver anything').toHaveLength(1);
+    expect(connection.logLines, 'a dataSnapshot must not be logged').toHaveLength(
       logLineCountAfterHello,
     );
   });

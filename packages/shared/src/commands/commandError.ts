@@ -75,6 +75,8 @@ export const CommandErrorCodeSchema = z.enum([
   'DATA_SOURCE_NOT_A_SIMULATOR',
   /** A replay names a recording that does not exist or is still being recorded. */
   'RECORDING_NOT_FOUND',
+  /** A flex source's request goes to a host not on the server's BAJAOVRLAY_SOURCE_ALLOWED_HOSTS. */
+  'DATA_SOURCE_HOST_NOT_ALLOWED',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

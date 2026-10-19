@@ -1,5 +1,5 @@
 import type { DataSource } from '@bajaovrlay/shared';
-import { useId } from 'react';
+import { type MouseEvent, useId } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,26 @@ import { formatTimeOfDay } from './timeOfDayText';
 const texts = ptBR.dataSources;
 const millisecondsPerSecond = 1_000;
 
+/**
+ * What on a card does its own job, so a click on it must not also pick the source: every
+ * button (the commands and "Ver" itself), the switch, the switch's label (a click there
+ * flips the switch), links, and the whole commands area (marked data-card-controls).
+ * The area is there because a disabled button or switch has pointer-events: none (shadcn),
+ * so a real browser hands its click to what is under it, the area, and without the area
+ * in this list a press on a greyed-out "Atualizar agora" would pick the source.
+ * Anything new added to the card that is clickable belongs here.
+ */
+const cardControlsSelector = 'button, a, input, label, [role="switch"], [data-card-controls]';
+
+/** Whether a click on the card landed on one of its controls rather than on its empty space. */
+function isClickOnACardControl(event: MouseEvent<HTMLElement>): boolean {
+  const clickedElement = event.target;
+  if (!(clickedElement instanceof Element)) {
+    return false;
+  }
+  return clickedElement.closest(cardControlsSelector) !== null;
+}
+
 /** What a row needs from the page. */
 export type DataSourceRowProps = {
   source: DataSource;
@@ -28,8 +48,9 @@ export type DataSourceRowProps = {
 };
 
 /**
- * One source in the list: its label (a button that shows its data beside the list), its
- * kind, its status chip, a "Gravando" badge while recording, when its last good data
+ * One source in the list, as a card: a click anywhere on it except on its controls shows
+ * its data beside the list, and so does its "Ver" button (for the keyboard). It shows its
+ * label, its kind, its status chip, a "Gravando" badge while recording, when its last good data
  * came and how often it is read, why a recording stopped on its own, and its commands —
  * the on/off switch, "Atualizar agora", "Reiniciar corrida" (simulators only), "Gravar" /
  * "Parar gravação", "Editar" and "Excluir" (two presses, the rundown's DeleteItemButton).
@@ -52,17 +73,25 @@ export function DataSourceRow(props: DataSourceRowProps) {
     'pt-BR',
   );
 
+  const selectedCardClassName = props.isSelected ? 'border-primary' : '';
+
+  // The card's click is for the mouse only: the keyboard way in is "Ver", a real button,
+  // so the card itself is not made focusable (it would be a second Tab stop doing the same).
+  function selectUnlessAControlWasClicked(event: MouseEvent<HTMLElement>) {
+    if (isClickOnACardControl(event)) {
+      return;
+    }
+    props.onSelect();
+  }
+
   return (
-    <li aria-label={source.label} className="flex flex-col gap-2 rounded-md border p-3">
+    <li
+      aria-label={source.label}
+      className={`flex cursor-pointer flex-col gap-2 rounded-md border p-3 ${selectedCardClassName}`}
+      onClick={selectUnlessAControlWasClicked}
+    >
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="link"
-          className="h-auto p-0 font-semibold"
-          aria-pressed={props.isSelected}
-          onClick={props.onSelect}
-        >
-          {source.label}
-        </Button>
+        <span className="font-semibold">{source.label}</span>
         <span className="text-sm text-muted-foreground">{texts.kinds[source.kind]}</span>
         <DataSourceStatusChip source={source} />
         {source.isRecording && <Badge variant="destructive">{texts.row.recordingBadge}</Badge>}
@@ -76,7 +105,7 @@ export function DataSourceRow(props: DataSourceRowProps) {
         <p className="text-sm text-destructive">{source.status.recordingError}</p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div data-card-controls className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2">
           <Switch
             id={enabledSwitchId}
@@ -124,6 +153,14 @@ export function DataSourceRow(props: DataSourceRowProps) {
             {texts.row.startRecordingButton}
           </ActionButton>
         )}
+        <Button
+          size="xs"
+          variant="outline"
+          aria-pressed={props.isSelected}
+          onClick={props.onSelect}
+        >
+          {texts.row.viewButton}
+        </Button>
         <Button size="xs" variant="ghost" onClick={props.onEdit}>
           {texts.row.editButton}
         </Button>

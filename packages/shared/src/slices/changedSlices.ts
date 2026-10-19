@@ -1,14 +1,27 @@
 import { z } from 'zod';
 
-import { type Slices, SlicesSchema } from './slices.js';
+import { SliceNameSchema, type Slices, SlicesSchema } from './slices.js';
+
+/**
+ * The names of the slices a `slice` or `slices` message carries whole: every slice but
+ * `dataSnapshots`, whose changes go source by source in a `dataSnapshot` message, so a
+ * poll of one source does not resend every source's data (BAJAOVRLAY-40). `hello` still
+ * carries every slice, `dataSnapshots` included.
+ */
+export const SliceNameSentWholeSchema = SliceNameSchema.exclude(['dataSnapshots']);
+
+/** One of SliceNameSentWholeSchema's values. */
+export type SliceNameSentWhole = z.infer<typeof SliceNameSentWholeSchema>;
 
 /**
  * The slices one state change changed, by name: a part of Slices, each value checked by
  * that slice's own schema. `strict`, so a misspelt name is refused instead of dropped
- * (the change it carried would be lost without a word). An empty group is refused: a
- * state change always changes something, so an empty one is a server bug.
+ * (the change it carried would be lost without a word), and so is `dataSnapshots`, which
+ * is never sent whole after the hello (see SliceNameSentWholeSchema). An empty group is
+ * refused: a state change always changes something, so an empty one is a server bug.
  */
-export const ChangedSlicesSchema = SlicesSchema.partial()
+export const ChangedSlicesSchema = SlicesSchema.omit({ dataSnapshots: true })
+  .partial()
   .strict()
   .refine((changedSlices) => Object.keys(changedSlices).length > 0, {
     message: 'a group of changed slices must carry at least one slice',
@@ -36,7 +49,8 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     macros: changedSlices.macros ?? slices.macros,
     macroRuns: changedSlices.macroRuns ?? slices.macroRuns,
     dataSources: changedSlices.dataSources ?? slices.dataSources,
-    dataSnapshots: changedSlices.dataSnapshots ?? slices.dataSnapshots,
+    // Never in a group: a snapshot arrives source by source (`dataSnapshot` message).
+    dataSnapshots: slices.dataSnapshots,
     recordings: changedSlices.recordings ?? slices.recordings,
     eventLog: changedSlices.eventLog ?? slices.eventLog,
   };

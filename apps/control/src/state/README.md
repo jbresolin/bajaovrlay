@@ -5,10 +5,17 @@ sending a command. Start reading at `serverConnection.ts`, then `serverStateStor
 
 - `serverConnection.ts` — the WebSocket client: checks every message against the shared
   schema, fills the store, redials with growing waits, and `sendCommand` (settles on the
-  matching `commandResult`, gives up after 5 s).
-- `serverStateStore.ts` — Zustand store: every slice, connection status, last error.
+  matching `commandResult`, gives up after 5 s); a hello naming another build than the
+  page's reloads the tab, at most once per announced build (kept in sessionStorage), even
+  a hello this page's schema refuses; only when that storage cannot keep the build is it
+  once a minute, a skipped reload tried again when the minute is over
+  (`startServerBuildWatch`, `packages/shared/src/build`).
+- `serverStateStore.ts` — Zustand store: every slice, connection status, last error; a
+  `dataSnapshot` message is merged into `dataSnapshots` by `sourceId` (null removes).
 - `commandFailure.ts` — the codes and the error a failed command carries.
 - `browserWebSocket.ts` — the few lines that touch the browser's WebSocket API.
+- `browserPageReloadForNewBuild.ts` — the page's build id (embedded by `vite build`) and
+  the browser's clock, `location.reload` and `sessionStorage`, handed in by `main.tsx`.
 - `ControlPageStateProvider.tsx` — `useServerState`, `useSendCommand`, `useReadServerStateNow`.
 - `*.testSupport.*` — the fake server socket and believable slices (panels and macros too;
   data sources, their data from the shared samples and recordings in
