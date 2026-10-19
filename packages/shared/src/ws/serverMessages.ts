@@ -153,8 +153,9 @@ export type SlicesMessage = z.infer<typeof SlicesMessageSchema>;
  * connections never get it (graphics receive resolved data only). `serverNowMs` is
  * required, as on `slices`: this message is newer than every stand-in server.
  * A control page still running an older bundle drops this message without a word, which
- * is why the hello names the server's build and a page from another build reloads itself
- * (README: "Pages reload themselves when the server's build changes").
+ * is why the hello names the server's build and a page from another build reloads itself,
+ * from the next upgrade on. A page opened before PR #17 has no reload code, so it needs
+ * one reload by hand (README: "Pages reload themselves when the server's build changes").
  */
 export const DataSnapshotMessageSchema = z
   .object({
