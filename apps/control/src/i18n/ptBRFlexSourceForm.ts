@@ -96,6 +96,8 @@ export const ptBRFlexSourceForm = {
     fetchingButton: 'Buscando…',
     fetchedStatus: (status: number) => `A fonte respondeu ${status}.`,
     testButton: 'Testar',
+    // Shown in place of a result once the requests, mappings or a sample change after it.
+    resultOutdated: 'O mapeamento mudou; teste de novo.',
     problemsTitle: 'Problemas',
     resultTitle: 'Resultado',
     configHasProblems: 'Corrija os campos marcados na configuração antes de testar.',

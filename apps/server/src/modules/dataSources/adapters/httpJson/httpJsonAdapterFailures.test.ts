@@ -39,7 +39,7 @@ import {
   type TimingSystemAnswer,
 } from './timingSystemTestServer.testSupport.js';
 
-/** 14:24 UTC on Saturday 20 March 2027, the moment every poll here is made at. */
+/** 14:24:01 in Brasília (17:24:01 UTC) on Saturday 20 March 2027, the moment every poll here is made at. */
 const pollMomentMs = Date.parse('2027-03-20T17:24:01.000Z');
 
 /** 5 MB, the most a response may be, counted in bytes. */

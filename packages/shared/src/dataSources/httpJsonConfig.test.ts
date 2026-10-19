@@ -30,6 +30,8 @@
  *     flexMappingConfig.test.ts in flexMapping/ covers them; here a few rows prove they
  *     are reached through this schema, at the right place.
  *   - Misspelt keys and fields of the wrong type: httpJsonConfigWrongKeysAndTypes.test.ts.
+ *   - The header names fetch sets itself (Connection, Expect, …):
+ *     httpJsonConfigHeadersFetchRefuses.test.ts.
  *   - Reading the variables and fetching: the server's httpJson adapter does both at poll
  *     time (apps/server/src/modules/dataSources/adapters/httpJson/).
  */

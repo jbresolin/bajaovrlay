@@ -145,6 +145,8 @@ export type SlicesMessage = z.infer<typeof SlicesMessageSchema>;
  * snapshot (BAJAOVRLAY-40); the page merges it into its list by `sourceId`. Screen
  * connections never get it (graphics receive resolved data only). `serverNowMs` is
  * required, as on `slices`: this message is newer than every stand-in server.
+ * A control page still running an older bundle drops this message without a word, so
+ * every open tab must be reloaded after the upgrade (README: "An upgrade that adds…").
  */
 export const DataSnapshotMessageSchema = z
   .object({

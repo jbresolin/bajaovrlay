@@ -15,11 +15,28 @@ import { FlexTestResult } from './FlexTestResult';
 
 const texts = ptBR.dataSources.flexForm.test;
 
-/** What "Testar" shows: nothing yet, the config's own problems, or the test's result. */
+/**
+ * What "Testar" shows: nothing yet, the config's own problems, or the test's result. The
+ * last two keep the text of the inputs they were made from, so the panel can tell when
+ * they no longer describe what the form holds.
+ */
 type TestOutcome =
   | { kind: 'notTestedYet' }
-  | { kind: 'configHasProblems'; problems: string[] }
-  | { kind: 'tested'; result: FlexSampleTestResult };
+  | { kind: 'configHasProblems'; problems: string[]; testedInputsText: string }
+  | { kind: 'tested'; result: FlexSampleTestResult; testedInputsText: string };
+
+/**
+ * The requests, mappings and samples a test reads, as one text to compare by content.
+ * Compared as text rather than by reference, because react-hook-form may hand back a new
+ * object for the same values.
+ */
+function describeTestedInputs(
+  requestValues: unknown,
+  mappingValues: unknown,
+  sampleTextByRequestFieldId: Record<string, string>,
+): string {
+  return JSON.stringify({ requestValues, mappingValues, sampleTextByRequestFieldId });
+}
 
 /**
  * The "Testar" panel: a sample response per request (FlexSampleBox: fetched by the
@@ -31,6 +48,9 @@ type TestOutcome =
  * its place in the list nor its name: removing the request above, or renaming this one,
  * must leave a request with its own sample, or "Testar" would read the wrong response.
  * An import rebuilds the requests with new ids, so it starts every sample empty.
+ * A result stops showing as soon as the requests, mappings or a sample change after the
+ * test, and a note asks for a new one: a table from an older mapping would otherwise
+ * promise what the poller will no longer accept.
  */
 export function FlexTestPanel(props: {
   form: UseFormReturn<FlexSourceFormValues>;
@@ -40,10 +60,18 @@ export function FlexTestPanel(props: {
 }) {
   const { form } = props;
   const requestValues = useWatch({ control: form.control, name: 'requests' });
+  const mappingValues = useWatch({ control: form.control, name: 'mappings' });
   const [sampleTextByRequestFieldId, setSampleTextByRequestFieldId] = useState<
     Record<string, string>
   >({});
   const [testOutcome, setTestOutcome] = useState<TestOutcome>({ kind: 'notTestedYet' });
+  const currentInputsText = describeTestedInputs(
+    requestValues,
+    mappingValues,
+    sampleTextByRequestFieldId,
+  );
+  const isOutcomeOutdated =
+    testOutcome.kind !== 'notTestedYet' && testOutcome.testedInputsText !== currentInputsText;
 
   function changeSampleText(requestFieldId: string, sampleText: string): void {
     setSampleTextByRequestFieldId((previousTexts) => ({
@@ -69,6 +97,7 @@ export function FlexTestPanel(props: {
       setTestOutcome({
         kind: 'configHasProblems',
         problems: [texts.configHasProblems, ...configReading.generalProblems],
+        testedInputsText: currentInputsText,
       });
       return;
     }
@@ -81,7 +110,7 @@ export function FlexTestPanel(props: {
       sampleTextByRequestId,
       readServerAlignedTimeMs(),
     );
-    setTestOutcome({ kind: 'tested', result });
+    setTestOutcome({ kind: 'tested', result, testedInputsText: currentInputsText });
   }
 
   return (
@@ -117,10 +146,15 @@ export function FlexTestPanel(props: {
           <Button type="button" className="self-start" onClick={testTheMapping}>
             {texts.testButton}
           </Button>
-          {testOutcome.kind === 'configHasProblems' && (
+          {isOutcomeOutdated && (
+            <p className="text-sm text-muted-foreground">{texts.resultOutdated}</p>
+          )}
+          {!isOutcomeOutdated && testOutcome.kind === 'configHasProblems' && (
             <FlexTestResult result={{ isPassing: false, problems: testOutcome.problems }} />
           )}
-          {testOutcome.kind === 'tested' && <FlexTestResult result={testOutcome.result} />}
+          {!isOutcomeOutdated && testOutcome.kind === 'tested' && (
+            <FlexTestResult result={testOutcome.result} />
+          )}
         </CardContent>
       </Card>
     </section>

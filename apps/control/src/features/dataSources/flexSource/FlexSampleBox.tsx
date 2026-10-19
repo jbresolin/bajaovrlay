@@ -17,6 +17,9 @@ type FetchNote =
  * The sample of one request in the "Testar" panel: a box for its JSON, which the operator
  * pastes into or "Buscar da fonte" fills with what the server fetched (indented, to be
  * read). A failed fetch says why in the server's pt-BR words and leaves the box as it was.
+ * The box is closed to typing while a fetch is under way (up to the route's 10 s): an
+ * answer arriving after the operator gave up and pasted a sample would otherwise replace
+ * that sample without a word.
  */
 export function FlexSampleBox(props: {
   requestName: string;
@@ -67,6 +70,7 @@ export function FlexSampleBox(props: {
         rows={8}
         spellCheck={false}
         className="field-sizing-fixed max-h-80 font-mono text-xs"
+        disabled={isFetching}
         value={props.sampleText}
         onChange={(event) => {
           // The status note was about what the source sent; edited text is no longer that.

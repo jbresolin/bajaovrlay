@@ -12,10 +12,14 @@
  *   - The example preset tested on the pasted example response shows the 20 cars in the
  *     positions table and the session card, and sends no command.
  *   - A pasted response with one unreadable lap time shows that problem, naming the car.
+ *   - Once a path or a sample is edited after "Testar", the earlier result is replaced by
+ *     a note asking for a new test, so a table from an older mapping is never trusted.
  *   - Each sample stays with its own request when a request above it is removed.
  *   - "Buscar da fonte" posts the form's request to the sample route and fills the box
  *     with the body the server fetched; a failure shows the server's pt-BR reason; the
- *     "A fonte respondeu 200." note goes away once the operator edits the text.
+ *     "A fonte respondeu 200." note goes away once the operator edits the text; while a
+ *     fetch is under way the box cannot be typed into, so a slow answer never overwrites
+ *     a sample pasted meanwhile.
  *
  * What these tests deliberately do not cover:
  *   - The sample route itself (the server's fetch, the variables, the 10 s timeout):
@@ -119,6 +123,83 @@ describe('"Testar" with a pasted sample', () => {
       screen.queryByRole('table', { name: 'Posições' }),
       'a failing test must show no table',
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('"Testar" after the mapping or the sample changes', () => {
+  it('replaces the earlier result with a note once a path is edited', async () => {
+    // Arrange: the example preset tested on the example response, its 20 cars shown.
+    renderPageWithSources();
+    openTheNewFlexForm();
+    importTheExamplePreset();
+    pasteSampleOfClassificacao(readExampleTimingSystemResponseText());
+    pressButton('Testar');
+    await letThePageFinishWhatItStarted();
+
+    // Act: point "Última volta" at a path the sample does not have.
+    const positions = within(screen.getByRole('region', { name: 'Mapeamento: Posições' }));
+    fireEvent.change(positions.getByRole('textbox', { name: 'Caminho de Última volta' }), {
+      target: { value: 'tempos.ultima' },
+    });
+
+    // Assert: the old table is gone and the panel asks for a new test.
+    expect(
+      screen.queryByRole('region', { name: 'Resultado' }),
+      'a result from the earlier mapping must not stay on screen',
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('O mapeamento mudou; teste de novo.'),
+      'the panel must say the result is out of date',
+    ).toBeVisible();
+  });
+
+  it('replaces the earlier result with a note once the sample is edited', async () => {
+    // Arrange: the example preset tested on the example response.
+    renderPageWithSources();
+    openTheNewFlexForm();
+    importTheExamplePreset();
+    pasteSampleOfClassificacao(readExampleTimingSystemResponseText());
+    pressButton('Testar');
+    await letThePageFinishWhatItStarted();
+
+    // Act: paste a different response, with no cars in it.
+    pasteSampleOfClassificacao('{ "classificacao": [] }');
+
+    // Assert: the 20-car table from the earlier sample is gone.
+    expect(
+      screen.queryByRole('table', { name: 'Posições' }),
+      'a table from the earlier sample must not stay on screen',
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('O mapeamento mudou; teste de novo.'),
+      'the panel must say the result is out of date',
+    ).toBeVisible();
+  });
+
+  it('shows the new result when "Testar" is pressed again after the edit', async () => {
+    // Arrange: the example preset tested, then its sample edited.
+    renderPageWithSources();
+    openTheNewFlexForm();
+    importTheExamplePreset();
+    pasteSampleOfClassificacao(readExampleTimingSystemResponseText());
+    pressButton('Testar');
+    await letThePageFinishWhatItStarted();
+    pasteSampleOfClassificacao(readExampleTimingSystemResponseText().replace('Acauã', 'Carcará'));
+
+    // Act: press "Testar" again.
+    pressButton('Testar');
+    await letThePageFinishWhatItStarted();
+
+    // Assert: the note is gone and the table shows the edited sample.
+    expect(
+      screen.queryByText('O mapeamento mudou; teste de novo.'),
+      'a fresh test must clear the out-of-date note',
+    ).not.toBeInTheDocument();
+    const positionsTable = screen.getByRole('table', { name: 'Posições' });
+    expect(
+      within(positionsTable).getAllByRole('row')[1],
+      'the table must show the sample as it is now',
+    ).toHaveTextContent('Carcará Baja');
   });
 });
 
@@ -239,5 +320,43 @@ describe('"Buscar da fonte"', () => {
       screen.queryByText('A fonte respondeu 200.'),
       'the note must not describe text the operator changed',
     ).not.toBeInTheDocument();
+  });
+
+  it('keeps the box closed to typing while a slow fetch is under way', async () => {
+    // Arrange: the example preset imported, and a sample route that answers only when told.
+    let answerTheFetch: (response: Response) => void = () => undefined;
+    const slowFetch = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          answerTheFetch = resolve;
+        }),
+    );
+    vi.stubGlobal('fetch', slowFetch);
+    renderPageWithSources();
+    openTheNewFlexForm();
+    importTheExamplePreset();
+
+    // Act: press "Buscar da fonte" and look at the box before the answer arrives.
+    pressButton('Buscar da fonte');
+    await screen.findByRole('button', { name: 'Buscando…' });
+    const boxWhileFetching = findSampleBoxOfClassificacao();
+
+    // Assert: the box cannot be typed into, then opens again with the body once it arrives.
+    expect(
+      boxWhileFetching,
+      'a sample pasted during the fetch would be overwritten by the answer',
+    ).toBeDisabled();
+    answerTheFetch(
+      Response.json({ ok: true, status: 200, body: readExampleTimingSystemResponse() }),
+    );
+    await waitFor(() => {
+      expect(
+        findSampleBoxOfClassificacao(),
+        'the box must open again after the answer',
+      ).toBeEnabled();
+    });
+    expect(findSampleBoxOfClassificacao(), 'the box must hold the fetched body').toHaveValue(
+      readExampleTimingSystemResponseText(),
+    );
   });
 });

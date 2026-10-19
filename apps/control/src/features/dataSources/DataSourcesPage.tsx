@@ -57,7 +57,7 @@ function buildNewSourceFormOfKind(kind: DataSourceKind): OpenSourceForm {
  * The "Fontes de dados" page (#/fontes): on the left, "+ Fonte" and the list of sources
  * (DataSourceRow.tsx) with the refusals of their commands under it; on the right, the
  * data of the selected source (DataSourceDetail.tsx) — the first one until the operator
- * picks another by its label. On a tablet the two columns stack, list first; they sit
+ * picks another with a click on its card or its "Ver" button. On a tablet the two columns stack, list first; they sit
  * side by side from the `lg` width up. "+ Fonte" asks the kind first, then opens that
  * kind's form above the list, where "Editar" opens it too; one form at a time. The flex
  * HTTP/JSON form, with its "Testar" panel, is too wide for the list's column, so it opens

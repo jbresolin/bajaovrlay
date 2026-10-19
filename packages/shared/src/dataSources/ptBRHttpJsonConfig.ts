@@ -39,6 +39,8 @@ export const ptBRHttpJsonConfig = {
     'O endereço tem usuário ou senha escritos nele: credenciais vão num cabeçalho, com o valor lido de uma variável BAJAOVRLAY_SOURCE_.',
   badHeaderName: (name: string) =>
     `O nome de cabeçalho "${name}" é inválido: use só letras, números e "-", como X-Api-Key.`,
+  headerControlledByTheServer: (name: string) =>
+    `O cabeçalho "${name}" é controlado pelo próprio servidor e não pode ser definido.`,
   emptyParameterName: 'O nome do parâmetro está vazio.',
   needsExactlyOneValue: (name: string) =>
     `"${name}" precisa de exatamente um valor: um valor digitado ou uma variável de ambiente.`,

@@ -72,6 +72,16 @@ A message that is not JSON or not in the protocol is answered with an error
 logged; the socket stays open. The server pings every 15 s and drops a socket that did
 not answer the previous ping.
 
+**An upgrade that adds a message type or a data-source kind needs every page reloaded.**
+An open page only reconnects its WebSocket when the server restarts; it keeps the bundle
+it loaded, with that bundle's schemas. A page drops a message its schemas refuse without a
+word: an older control page drops every `dataSnapshot` (its source tables freeze while the
+chip still reads "Em dia"), and an older renderer refuses every `hello`, its
+`GET /api/v1/state` fallback and every change of `dataSources` once a source of a kind it
+does not know exists (`httpJson`, from PR #17), so it never takes state again. After such
+an upgrade, refresh every OBS browser source and reload every open control tab. The
+server does not tell pages its build yet.
+
 ## hello
 
 ```json

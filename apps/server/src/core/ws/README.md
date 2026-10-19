@@ -17,4 +17,7 @@ snapshot changed, just before that `slice`/`slices`, which never carry `dataSnap
   `serverTimeBroadcast.ts` sends `time` to every client every 10 s (the timer is injectable).
 - `heartbeat.ts` — pings every 15 s and drops clients that miss a ping.
 
-The message shapes, with one JSON example each: `packages/shared/src/ws/README.md`.
+The message shapes, with one JSON example each: `packages/shared/src/ws/README.md`. A new
+message type or data-source kind needs every open page (OBS browser sources included)
+reloaded after the upgrade: an open page keeps its old schemas and drops what they refuse
+(that README says why).

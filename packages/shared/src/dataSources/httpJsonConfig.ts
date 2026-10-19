@@ -29,6 +29,19 @@ const requestIdPattern = /^[A-Za-z0-9_-]{1,40}$/;
 // An HTTP header name is a "token" (RFC 9110 §5.6.2); fetch refuses anything else.
 const headerNamePattern = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
 
+// The headers Node's fetch (undici) manages itself, written in lower case. A request that
+// sets one makes fetch throw before sending (UND_ERR_INVALID_ARG, UND_ERR_NOT_SUPPORTED for
+// Expect), which would read as a network failure at every poll. Operators paste them from
+// the browser's devtools (Connection: keep-alive), so they are refused at save instead.
+const headerNamesFetchSetsItself = new Set([
+  'connection',
+  'keep-alive',
+  'transfer-encoding',
+  'upgrade',
+  'content-length',
+  'expect',
+]);
+
 // A line break or NUL in a header value would let one value write a second header.
 const lineBreakOrNulPattern = /[\r\n\0]/;
 
@@ -58,6 +71,15 @@ export const HttpJsonHeaderSchema = z
         code: 'custom',
         path: ['name'],
         message: ptBRHttpJsonConfig.badHeaderName(header.name),
+      });
+      return;
+    }
+    const isAHeaderFetchSetsItself = headerNamesFetchSetsItself.has(header.name.toLowerCase());
+    if (isAHeaderFetchSetsItself) {
+      context.addIssue({
+        code: 'custom',
+        path: ['name'],
+        message: ptBRHttpJsonConfig.headerControlledByTheServer(header.name),
       });
       return;
     }

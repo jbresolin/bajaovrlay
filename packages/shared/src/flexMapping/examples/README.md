@@ -13,3 +13,9 @@ being its n-th team). Never show it as real results.
   `requests`, by the httpJson config schema.
 
 Both are the fixtures of `applyFlexMapping.test.ts` and of the flex source's e2e test.
+
+The response is a fixed snapshot of one instant ("gerado_em", 20 March 2027, with the
+session clock running). That is right for a pasted sample in "Testar", but served as it is
+to a live source, the session clock would count from that far-off moment; so
+`pnpm serve:flex-example` stamps each answer with its own moment (`scripts/liveExampleResponse.js`).
+The e2e timing system serves it unchanged, since that test reads the positions table only.

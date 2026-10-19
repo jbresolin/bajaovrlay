@@ -37,7 +37,7 @@ import {
   startTimingSystemTestServer,
 } from './timingSystemTestServer.testSupport.js';
 
-/** 14:24 UTC on Saturday 20 March 2027, the moment every poll here is made at. */
+/** 14:24:01 in Brasília (17:24:01 UTC) on Saturday 20 March 2027, the moment every poll here is made at. */
 const pollMomentMs = Date.parse('2027-03-20T17:24:01.000Z');
 
 /** A poll context at the poll moment, with a signal that never fires. */
