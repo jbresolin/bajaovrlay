@@ -75,6 +75,7 @@ export function LayerStatusPanel() {
                 isHoldingAPreview={instanceInPreview !== undefined}
                 isMarkedToBeCleared={previewClearedLayerIds.includes(layer.id)}
                 graphicName={findGraphicName(graphics, instanceOnProgram?.graphicId)}
+                graphicOnProgram={graphicOnProgram}
                 currentTime={currentTime}
                 onClearPressed={() => void sendCommand({ type: 'clearLayer', layerId: layer.id })}
                 onPreviewClearPressed={() =>

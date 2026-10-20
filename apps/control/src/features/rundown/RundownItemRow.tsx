@@ -5,6 +5,7 @@ import { cn } from 'cn';
 import { type MouseEvent, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { ItemSourceMarker } from '@/features/bindings/ItemSourceMarker';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { ItemColorChip } from '@/features/items/ItemColorChip';
 import { ptBR } from '@/i18n/ptBR';
@@ -147,6 +148,7 @@ export function RundownItemRow(props: RundownItemRowProps) {
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span className="truncate">{graphicName}</span>
           <Badge variant="outline">{layerName}</Badge>
+          <ItemSourceMarker item={item} />
         </div>
         <div className="flex flex-wrap items-center gap-1">
           <ActionButton

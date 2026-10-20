@@ -81,4 +81,18 @@ export const ptBRBindings = {
     correctButton: 'Corrigir valor da fonte…',
     correctButtonLabel: (fieldLabel: string) => `Corrigir valor da fonte: ${fieldLabel}`,
   },
+  // The chips of a Camadas row about the sources its instance reads.
+  chips: {
+    sourceLate: 'fonte atrasada',
+    sourceFailing: 'fonte com erro',
+    sourceDeleted: 'fonte excluída',
+    valueCorrected: 'valor corrigido',
+  },
+  // The marker of an item that reads a source, on its rundown row and shortcut button.
+  marker: {
+    readsASource: 'fonte',
+    readsASourceHint: 'Lê dados de uma fonte.',
+    cannotTakeNow: 'fonte · não entra agora',
+    cannotTakeNowLabel: (reason: string) => `Não entra no ar agora: ${reason}`,
+  },
 };
