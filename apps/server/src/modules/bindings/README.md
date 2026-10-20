@@ -10,8 +10,9 @@ source (overrides). Reading a binding is shared code
 Start at `liveRefresher.ts`: after a snapshot changes it asks `liveFieldsRefresh.ts` what
 each bound instance should now show, and sends `refreshBoundInstanceData` as
 `sistema:vinculos`; `reducers/refreshBoundInstanceData.ts` applies it through
-updateInstanceData's steps, never marking "alterado no ar" and writing no event-log row
-(a refused refresh is logged once per instance). The operator's corrections are
+updateInstanceData's steps, never marking "alterado no ar" and writing no event-log row.
+A refresh refused as a whole is retried in parts (`reducers/refreshSplitIntoParts.ts`),
+and the refused keys are kept on the instance's entry, which logs one failed row per spell. The operator's corrections are
 `reducers/setOverride.ts` and `reducers/clearOverride.ts` (the `overrides` slice, shapes in
 `packages/shared/src/overrides/`); the refresher rewrites the air when they change.
 `service.ts` starts the refresher with the server, and `index.ts` lists what core may use.
