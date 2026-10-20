@@ -18,7 +18,9 @@ jobs:
   checks:
     name: Lint, typecheck, test, build, Playwright
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 30 since gate 2 of PR #18: the job took 18 min, past 15 with 20 as the ceiling, as
+    # the M2 browser tests wait for simulated races (docs/decisions.md).
+    timeout-minutes: 30
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7

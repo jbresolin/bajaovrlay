@@ -21,9 +21,12 @@ import { isTableRowTheSame } from './tableRowComparison';
 const texts = ptBR.dataSources.standingsTable;
 const columns = texts.columns;
 
+// Built once: toLocaleString builds a new formatter at every call, 60 times a poll.
+const pointsFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
+
 /** Writes points the Brazilian way ("646,9"); some events score fractions, so up to two decimals. */
 function formatPoints(points: number): string {
-  return points.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+  return pointsFormat.format(points);
 }
 
 /** One correctable value of a team, or the plain value without corrections. */

@@ -7,7 +7,8 @@
  *   with one redraw per row per poll, the page froze (gate 2 of PR #18).
  *
  * What these tests prove:
- *   - A new object with the same values counts as the same car.
+ *   - A new object with the same values counts as the same car, a nested object of the
+ *     same values (a standings row's points by event) included.
  *   - A changed field, a field more or less, or a change of what the source sent counts
  *     as a change.
  *   - New corrections always redraw the row, since a cell may now be corrected.
@@ -37,6 +38,14 @@ const correctionsOfTheSimulator = { sourceId: 'simulador-enduro' };
 
 describe('isTableRowTheSame', () => {
   const scenarios = [
+    // A standings row carries its points by event: a new object each poll, same values.
+    {
+      name: 'is the same when a nested object holds the same values',
+      nextEntry: { ...buildCar42AtLap33(), pointsByEvent: { enduro: 400 } },
+      previousExtra: { pointsByEvent: { enduro: 400 } },
+      nextCorrections: correctionsOfTheSimulator,
+      isTheSame: true,
+    },
     // The usual case: the next poll, nothing new for this car.
     {
       name: 'is the same for a new object with the same values',
@@ -67,10 +76,11 @@ describe('isTableRowTheSame', () => {
     },
   ];
 
-  it.each(scenarios)('$name', ({ nextEntry, nextCorrections, isTheSame }) => {
-    // Arrange: car 42's row as the last poll drew it.
+  it.each(scenarios)('$name', ({ nextEntry, nextCorrections, isTheSame, ...row }) => {
+    // Arrange: car 42's row as the last poll drew it (with this row's extra fields).
+    const previousExtra = 'previousExtra' in row ? row.previousExtra : {};
     const previousRow = {
-      entry: buildCar42AtLap33(),
+      entry: { ...buildCar42AtLap33(), ...previousExtra },
       entryAsSent: buildCar42AtLap33(),
       corrections: correctionsOfTheSimulator,
     };

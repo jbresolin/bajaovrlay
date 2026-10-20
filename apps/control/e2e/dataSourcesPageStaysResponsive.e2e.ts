@@ -10,16 +10,22 @@
  *   of freeze fails here with a clear message instead of somewhere else as a timeout.
  *
  * What these tests prove:
- *   - After ten seconds of the 60-car simulator at 60×, read every 0,5 s, with the page's
- *     CPU slowed four times, a round trip to the page (page.evaluate) answers within
+ *   - After ten seconds of the 60-car simulator at 60×, read every 0,5 s, on a machine as
+ *     slow as the CI runner, a round trip to the page (page.evaluate) answers within
  *     1,5 s, and no task in those ten seconds held the main thread longer than 1,5 s (the
  *     browser's long-task timing).
  *
- * Why the CPU is slowed, and why these bounds:
- *   On a fast developer machine the freeze did not show: the round trip took 10 ms. With
- *   Chrome's CPU throttling at 4×, as slow as a CI runner or the stream PC under load, the
- *   frozen page took 14,7 s to answer; the fixed page answers in 25–790 ms, its longest
- *   task 300–370 ms. 1,5 s is ten times under the freeze and twice the slowest fixed run.
+ * Why the CPU is slowed off CI only, and why these bounds:
+ *   The CI runner is the machine the freeze was found on (gate 2 of PR #18); the broken
+ *   page's longest task took 737 ms there and 212 ms on a developer machine, so the runner
+ *   is about 3,5 times slower. On CI the page runs as it is; anywhere else Chrome's CPU
+ *   throttling slows it 4 times, to about the runner's speed. On a developer machine so
+ *   slowed, the frozen page took 14,7 s to answer and the fixed one 25–790 ms (its longest
+ *   task 280–370 ms). The fixed page only falls behind its polls at about 8 times slower
+ *   (each poll's redraw in React's development build then outlasts the 0,5 s between
+ *   polls), so the runner has about twice its speed in hand. 1,5 s is ten times under the
+ *   freeze and twice the slowest fixed run. Slowing the runner 4 times on top took it past
+ *   that point (10,9 s, the first CI run of gate 2).
  *
  * What these tests deliberately do not cover:
  *   - The corrections themselves; DataSourcesPageCorrections.test.tsx.
@@ -35,9 +41,9 @@ import {
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
 
-// The page's CPU is slowed this many times (Chrome's own throttling), so a fast developer
-// machine sees what a CI runner or the stream PC sees.
-const cpuSlowdownFactor = 4;
+// The page's CPU is slowed this many times (Chrome's own throttling) off CI, so a fast
+// developer machine sees what the CI runner sees; the runner is left as it is (header).
+const cpuSlowdownFactor = process.env.CI === undefined ? 4 : 1;
 // How long the race runs before the page is measured: twenty polls of 60 cars.
 const raceRunningTimeBeforeTheMeasureInMilliseconds = 10_000;
 // The frozen page answered in 14,7 s; the fixed one in at most 790 ms (see the header).

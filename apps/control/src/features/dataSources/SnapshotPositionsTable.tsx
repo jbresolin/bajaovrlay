@@ -62,8 +62,8 @@ function CarValue(props: {
 }
 
 /**
- * One car's row. Memoised, compared field by field (tableRowComparison.ts): a poll that
- * did not change this car leaves its row as it is.
+ * One car's row. Memoised, compared by value (tableRowComparison.ts): a poll that did not
+ * change this car leaves its row as it is.
  */
 const PositionsRow = memo(function PositionsRow(props: {
   entry: PositionEntry;
