@@ -23,6 +23,8 @@ export {
   resolveBindingAgainstSources,
   type SourcesForBindings,
 } from './bindingResolution.js';
+// The fields an item reads from a source (the whole clock as its four fields).
+export { listFieldKeysItemReadsFromASource } from './itemFieldsReadFromASource.js';
 // The instanceBindings slice: the bindings each instance kept from its take.
 export {
   type InstanceBindings,

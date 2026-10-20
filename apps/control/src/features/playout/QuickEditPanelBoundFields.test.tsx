@@ -15,6 +15,9 @@
  *   - "Corrigir valor da fonte…" on the title sends setOverride for the session name,
  *     with the value and the reason typed.
  *   - A corrected title carries the "corrigido" badge.
+ *   - A field frozen at the take is editable on program (gate 2 of PR #18): the server
+ *     keeps no binding of it there, so nothing would overwrite what is typed. Its item
+ *     still reads the source, so "Salvar no item" skips it.
  *
  * What these tests deliberately do not cover:
  *   - The dialog's own rules (a blank reason, a value that does not fit);
@@ -48,7 +51,7 @@ function loadTheBoundClockIntoQuickEdit(overrides = buildSlicesWithTheBoundRaceC
 }
 
 describe('the bound fields of an instance in "Edição rápida"', () => {
-  it('shows the title and the flag read-only with where they read, and the time editable', () => {
+  it('shows the title and the flag read-only with where they read, and the clock mode editable', () => {
     // Arrange and act: the bound clock loaded with "Editar".
     loadTheBoundClockIntoQuickEdit();
 
@@ -111,5 +114,28 @@ describe('the bound fields of an instance in "Edição rápida"', () => {
     const badge = screen.getByText('corrigido');
     expect(badge, 'the corrected value must say so').toBeVisible();
     expect(badge, 'the reason must be at hand').toHaveAttribute('title', 'Nome oficial da prova.');
+  });
+
+  it('lets a title frozen at the take be typed over on program', () => {
+    // Arrange: the clock on air with its title frozen at the take: on program the server
+    // keeps the flag's live binding only.
+    const slices = buildSlicesWithTheBoundRaceClockOnAir({});
+    const flagBindingOnly = slices.instanceBindings.map((entry) => ({
+      ...entry,
+      boundFields: entry.boundFields.filter((boundField) => boundField.fieldKey === 'state'),
+    }));
+
+    // Act: load it into "Edição rápida".
+    loadTheBoundClockIntoQuickEdit({ ...slices, instanceBindings: flagBindingOnly });
+
+    // Assert: the title is a text box; the flag is still read-only.
+    expect(
+      screen.getByRole('textbox', { name: 'Título' }),
+      'a frozen value is a value like any other once on air',
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('combobox', { name: 'Bandeira' }),
+      'the live flag stays read-only',
+    ).toBeNull();
   });
 });

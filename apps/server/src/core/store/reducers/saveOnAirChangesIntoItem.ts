@@ -1,10 +1,12 @@
-import type {
-  FieldValue,
-  Graphic,
-  Instance,
-  ItemFields,
-  SaveOnAirChangesIntoItemCommand,
-  WallClockFieldsChoice,
+import {
+  type FieldValue,
+  findClockFieldKeysByRole,
+  type Graphic,
+  type Instance,
+  type ItemFields,
+  listFieldKeysItemReadsFromASource,
+  type SaveOnAirChangesIntoItemCommand,
+  type WallClockFieldsChoice,
 } from '@bajaovrlay/shared';
 
 import { refuseUnknownInstance } from '../commandRefusals.js';
@@ -38,6 +40,11 @@ import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js'
  * when it goes on air. A graphic the server no longer lists marks no field, so every
  * field is then a literal.
  *
+ * A field the item reads from a source (a binding, or the four fields of the whole clock)
+ * is skipped and stays listed as changed on air: the item keeps following its source
+ * (gate 2 of PR #18), and the control page names what was not saved. When every listed
+ * field is one, the save changes nothing.
+ *
  * Refused, with nothing changed, if the instance is not there (INSTANCE_NOT_FOUND), if it
  * has no item (INSTANCE_WITHOUT_ITEM: put on air by hand before BAJAOVRLAY-37), if its
  * item was deleted (ITEM_NOT_FOUND) or if nothing is listed (NOTHING_CHANGED_ON_AIR).
@@ -69,7 +76,16 @@ export function reduceSaveOnAirChangesIntoItem(
   }
 
   const graphic = slices.graphics.find((candidate) => candidate.id === instance.graphicId);
-  const keysToSave = addTheWholeClockWhenAPartOfItIsListed(keysChangedOnAir, graphic);
+  const keysItemReadsFromASource = listFieldKeysItemReadsFromASource(
+    item.fields,
+    graphic === undefined ? undefined : findClockFieldKeysByRole(graphic),
+  );
+  const keysToSave = addTheWholeClockWhenAPartOfItIsListed(keysChangedOnAir, graphic).filter(
+    (fieldKey) => !keysItemReadsFromASource.includes(fieldKey),
+  );
+  if (keysToSave.length === 0) {
+    return { status: 'applied', slices };
+  }
   const fieldsSaved: ItemFields = {};
   for (const fieldKey of keysToSave) {
     fieldsSaved[fieldKey] = buildFieldValueFromAir(

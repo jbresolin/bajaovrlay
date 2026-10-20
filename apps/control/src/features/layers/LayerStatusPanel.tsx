@@ -38,7 +38,7 @@ export function LayerStatusPanel() {
   const sendCommand = useSendCommand();
   const { editInstanceInQuickEdit } = useQuickEditChoice();
   const currentTime = useCurrentTime(relativeTimeRefreshIntervalInMilliseconds);
-  const saves = useSavesFromCamadas(graphics);
+  const saves = useSavesFromCamadas(graphics, items);
   // Where "Salvar como item" puts a new item; with no rundown and no panel it is not offered.
   const homeOfItemSavedFromCamadas = chooseHomeOfItemSavedFromCamadas(rundowns, panels);
 
@@ -119,6 +119,11 @@ export function LayerStatusPanel() {
         </ul>
         {/* "Limpar" and "Limpar tudo" show their refusals below the panel (AppShell.tsx). */}
         <CommandErrorMessage commandTypes={['previewClearLayer', 'saveOnAirChangesIntoItem']} />
+        {saves.noteAboutTheLastSave !== null && (
+          <p role="status" className="text-sm text-muted-foreground">
+            {saves.noteAboutTheLastSave}
+          </p>
+        )}
         <WallClockChoiceDialog
           isOpen={saves.isAskingAboutTheClock}
           onChosen={saves.answerTheClockQuestion}
