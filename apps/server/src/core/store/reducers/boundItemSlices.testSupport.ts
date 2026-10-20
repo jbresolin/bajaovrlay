@@ -10,6 +10,7 @@ import type {
   DataSnapshot,
   DataSource,
   Instance,
+  InstanceBindings,
   Item,
   ItemFields,
   Override,
@@ -93,8 +94,8 @@ export function buildEnduroClockItemBoundToTheSimulator(order: number): Item {
 
 /**
  * Builds race day slices with the race clock's real schema, the simulator on (unless
- * other sources are given), the given snapshots (none unless given), items, instances
- * and rundowns.
+ * other sources are given), the given snapshots (none unless given), items, instances,
+ * their bindings and rundowns.
  */
 export function buildRaceDaySlicesWithTheSimulator(parts: {
   items: Item[];
@@ -102,6 +103,7 @@ export function buildRaceDaySlicesWithTheSimulator(parts: {
   rundowns?: Rundown[];
   dataSources?: DataSource[];
   dataSnapshots?: DataSnapshot[];
+  instanceBindings?: InstanceBindings;
 }): SlicesChangedByCommands {
   const raceDaySlices = buildRaceDaySlicesWithTheRaceClockSchema({
     items: parts.items,
@@ -112,6 +114,7 @@ export function buildRaceDaySlicesWithTheSimulator(parts: {
     ...raceDaySlices,
     dataSources: parts.dataSources ?? [buildSimulatorSourceThatIsOn()],
     dataSnapshots: parts.dataSnapshots ?? [],
+    instanceBindings: parts.instanceBindings ?? [],
   };
 }
 

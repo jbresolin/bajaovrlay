@@ -88,6 +88,7 @@ export function buildSlicesWithNothingOnAir(): Slices {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    instanceBindings: [],
   };
 }
 

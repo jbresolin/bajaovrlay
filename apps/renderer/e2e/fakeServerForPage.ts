@@ -106,7 +106,7 @@ export async function startFakeServerForPage(
     instances: options.instancesOnAir,
     // The preview page reads this one; the first hello marks nothing "will be cleared".
     previewClearedLayerIds: [],
-    // The renderer never reads these five; they are here because every hello carries them.
+    // The renderer never reads these; they are here because every hello carries them.
     rundowns: [],
     items: [],
     quickFirePanels: [],
@@ -115,6 +115,7 @@ export async function startFakeServerForPage(
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    instanceBindings: [],
     eventLog: [],
   };
   const connections: WebSocketRoute[] = [];

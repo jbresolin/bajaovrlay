@@ -43,6 +43,7 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     graphics: changedSlices.graphics ?? slices.graphics,
     instances: changedSlices.instances ?? slices.instances,
     previewClearedLayerIds: changedSlices.previewClearedLayerIds ?? slices.previewClearedLayerIds,
+    instanceBindings: changedSlices.instanceBindings ?? slices.instanceBindings,
     rundowns: changedSlices.rundowns ?? slices.rundowns,
     items: changedSlices.items ?? slices.items,
     quickFirePanels: changedSlices.quickFirePanels ?? slices.quickFirePanels,

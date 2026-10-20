@@ -19,3 +19,12 @@ export {
   resolveBindingAgainstSources,
   type SourcesForBindings,
 } from './bindingResolution.js';
+// The instanceBindings slice: the bindings each instance kept from its take.
+export {
+  type InstanceBindings,
+  type InstanceBindingsEntry,
+  InstanceBindingsEntrySchema,
+  InstanceBindingsSchema,
+  type InstanceBoundField,
+  InstanceBoundFieldSchema,
+} from './instanceBindings.js';

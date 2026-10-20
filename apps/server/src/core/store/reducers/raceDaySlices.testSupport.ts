@@ -109,5 +109,6 @@ export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesCh
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    instanceBindings: [],
   };
 }

@@ -91,8 +91,22 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     graphicsRow,
     instancesRow,
   ];
+  // The bindings of what is on air are saved with the instances (BAJAOVRLAY-20), so a
+  // restart goes on refreshing them; a dropped preview's entry goes with it.
+  const instanceBindingsAtBoot = readInstanceBindingsKeptAcrossTheRestart(
+    storedRows,
+    instancesKeptAcrossTheRestart,
+  );
+  const instanceBindingsRow: SliceRow = {
+    name: 'instanceBindings',
+    json: instanceBindingsAtBoot.instanceBindings,
+    updatedAt,
+  };
   const rowsOfALaterBoot =
     numberOfPreviewInstancesDropped > 0 ? [graphicsRow, instancesRow] : [graphicsRow];
+  if (instanceBindingsAtBoot.wasAnyEntryDropped) {
+    rowsOfALaterBoot.push(instanceBindingsRow);
+  }
   // Rundowns and items are loaded, or seeded when their row is missing (a first boot,
   // or a database written before they existed); see loadRundownSlices.ts.
   const rundownSlices = loadOrSeedRundownSlices(storedRows, updatedAt, options.logger);
@@ -147,6 +161,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     // starts with none, as it starts with no preview instance. A row of that name in the
     // database (only a bug could have written one) is not read and is left where it is.
     previewClearedLayerIds: [],
+    instanceBindings: instanceBindingsAtBoot.instanceBindings,
     eventLog,
     rundowns: rundownSlices.rundowns,
     items: rundownSlices.items,
@@ -170,6 +185,27 @@ function readRecordingsAtBoot(
     return [];
   }
   return readRecordingsFromFolder(options.recordingsFolder, dataSources, options.logger);
+}
+
+/**
+ * The stored instanceBindings, keeping only the entries of instances still there after
+ * the boot (a preview's go with the preview). A database written before BAJAOVRLAY-20
+ * has no row and starts with none; a row that fails its schema stops the boot, as the
+ * instances row does, because refreshing on bindings we cannot read could change what
+ * is on air.
+ */
+function readInstanceBindingsKeptAcrossTheRestart(
+  storedRows: SliceRow[],
+  instancesKept: Slices['instances'],
+): { instanceBindings: Slices['instanceBindings']; wasAnyEntryDropped: boolean } {
+  const storedRow = storedRows.find((row) => row.name === 'instanceBindings');
+  const storedEntries = SlicesSchema.shape.instanceBindings.parse(storedRow?.json ?? []);
+  const instanceIdsKept = new Set(instancesKept.map((instance) => instance.id));
+  const entriesKept = storedEntries.filter((entry) => instanceIdsKept.has(entry.instanceId));
+  return {
+    instanceBindings: entriesKept,
+    wasAnyEntryDropped: entriesKept.length !== storedEntries.length,
+  };
 }
 
 /** The first-boot layers and instances: the fixed layers, nothing on air. */

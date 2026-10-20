@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { InstanceBindingsSchema } from '../bindings/instanceBindings.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
@@ -20,6 +21,7 @@ export const SliceNameSchema = z.enum([
   'graphics',
   'instances',
   'previewClearedLayerIds',
+  'instanceBindings',
   'rundowns',
   'items',
   'quickFirePanels',
@@ -47,6 +49,11 @@ export const SlicesSchema = z.object({
    * Kept in the server's memory only, never saved: after a restart it is empty.
    */
   previewClearedLayerIds: PreviewClearedLayerIdsSchema,
+  /**
+   * The bindings of each instance on air or in preview, by instance id (BAJAOVRLAY-20):
+   * what the live refreshes read. Saved with the instances; screens never receive it.
+   */
+  instanceBindings: InstanceBindingsSchema,
   /** The ordered lists of items, one per session, each with its "next" cursor. */
   rundowns: z.array(RundownSchema),
   /**

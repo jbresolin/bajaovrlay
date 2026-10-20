@@ -7,7 +7,11 @@ import type { SliceName, Slices } from '@bajaovrlay/shared';
 
 import { buildDataSourcePollerActor } from '../store/commandActors.js';
 import type { StateStore } from '../store/createStateStore.js';
-import { createRaceClockItemOnTheStore } from '../store/raceClockItemOnTheStore.testSupport.js';
+import {
+  buildGreenFlagEnduroClockData,
+  buildLiteralItemFieldsFromData,
+  createRaceClockItemOnTheStore,
+} from '../store/raceClockItemOnTheStore.testSupport.js';
 import { buildGoodPollOfTheSimulator, firstPollAtMs } from './simulatorPolledByHand.testSupport.js';
 
 const operatorActor = 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81';
@@ -19,6 +23,8 @@ const enduroSimulatorId = 'simulador-enduro';
  * server (see fillEverySliceAScreenIsNotSent).
  */
 export const sliceNamesAScreenIsNotSent: SliceName[] = [
+  // A clock whose flag follows the simulator, taken after its poll (BAJAOVRLAY-20).
+  'instanceBindings',
   // Seeded at the first boot: "Sessão principal".
   'rundowns',
   // The race clock item prepared in "Sessão principal".
@@ -41,7 +47,8 @@ export const sliceNamesAScreenIsNotSent: SliceName[] = [
 
 /**
  * Puts something into every slice a screen is not sent: an item, a macro and its run,
- * and the simulator recorded (no line in it), then polled once by hand and turned off
+ * the simulator recorded (no line in it), then polled once by hand and turned off, and
+ * a clock bound to its flag taken
  * (all within one tick, so the poller's first poll, on a 0 ms timer, never runs). Throws when the
  * store refuses a step, so a broken Arrange step fails loudly.
  */
@@ -72,6 +79,21 @@ export function fillEverySliceAScreenIsNotSent(stateStore: StateStore): void {
     buildDataSourcePollerActor(enduroSimulatorId),
   );
   turnTheSimulatorOnOrOff(stateStore, false);
+  // The simulator now has data (and stays off): a clock bound to its flag can go on air.
+  const boundClockItemId = createRaceClockItemOnTheStore(stateStore, {
+    label: 'Relógio do enduro — fonte',
+    fields: {
+      ...buildLiteralItemFieldsFromData(buildGreenFlagEnduroClockData()),
+      state: {
+        kind: 'binding',
+        sourceId: enduroSimulatorId,
+        shapeKey: 'session',
+        path: 'state',
+        isLive: true,
+      },
+    },
+  });
+  applyOrThrow(stateStore, { type: 'takeItem', itemId: boundClockItemId });
 }
 
 /** The names of the slices a screen is not sent that hold nothing on the server. */

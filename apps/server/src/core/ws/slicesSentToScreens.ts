@@ -38,6 +38,8 @@ export function buildSlicesForAScreen(slices: Slices): Slices {
     graphics: slices.graphics,
     instances: slices.instances,
     previewClearedLayerIds: slices.previewClearedLayerIds,
+    // The bindings behind what is on air: graphics get resolved data only (rule 3).
+    instanceBindings: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

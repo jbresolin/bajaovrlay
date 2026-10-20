@@ -284,6 +284,7 @@ export function buildRaceDaySlicesWithRundown(parts: {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    instanceBindings: [],
   };
 }
 

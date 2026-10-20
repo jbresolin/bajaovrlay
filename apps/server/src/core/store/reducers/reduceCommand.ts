@@ -3,6 +3,7 @@ import type { Command } from '@bajaovrlay/shared';
 import { reduceDataSourceCommand } from '../../../modules/dataSources/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
+import { dropBindingsOfInstancesGone } from './instanceBindingsBookkeeping.js';
 import { reducePreviewClearLayer } from './previewClearLayer.js';
 import { reducePreviewItem } from './previewItem.js';
 import { reducePreviewMacro } from './previewMacro.js';
@@ -16,10 +17,27 @@ import { reduceTakePreview } from './takePreview.js';
 import { reduceUpdateInstanceData } from './updateInstanceData.js';
 
 /**
- * Sends a valid command to its reducer (one file per command). Pure: same slices,
- * command and context always give the same outcome, and nothing is read or written.
+ * Sends a valid command to its reducer (one file per command), then drops the bindings of
+ * any instance the command removed (instanceBindingsBookkeeping.ts), in this one place so
+ * no reducer has to remember. Pure: same slices, command and context always give the
+ * same outcome, and nothing is read or written.
  */
 export function reduceCommand(
+  slices: SlicesChangedByCommands,
+  command: Command,
+  context: ReducerContext,
+): ReducerOutcome {
+  const outcome = reduceCommandOfItsType(slices, command, context);
+  const haveInstancesChanged =
+    outcome.status === 'applied' && outcome.slices.instances !== slices.instances;
+  if (outcome.status === 'refused' || !haveInstancesChanged) {
+    return outcome;
+  }
+  return { ...outcome, slices: dropBindingsOfInstancesGone(outcome.slices) };
+}
+
+/** The switch from a command's type to its reducer. */
+function reduceCommandOfItsType(
   slices: SlicesChangedByCommands,
   command: Command,
   context: ReducerContext,

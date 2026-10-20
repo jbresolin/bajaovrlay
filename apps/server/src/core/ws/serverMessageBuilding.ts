@@ -56,6 +56,13 @@ export function buildSliceMessage(
         slice: slices.previewClearedLayerIds,
         serverNowMs,
       };
+    case 'instanceBindings':
+      return {
+        type: 'slice',
+        name: 'instanceBindings',
+        slice: slices.instanceBindings,
+        serverNowMs,
+      };
     case 'rundowns':
       return { type: 'slice', name: 'rundowns', slice: slices.rundowns, serverNowMs };
     case 'items':

@@ -14,6 +14,7 @@ export type SlicesChangedByCommands = Pick<
   | 'graphics'
   | 'instances'
   | 'previewClearedLayerIds'
+  | 'instanceBindings'
   | 'rundowns'
   | 'items'
   | 'quickFirePanels'
