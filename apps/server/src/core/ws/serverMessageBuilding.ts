@@ -153,6 +153,13 @@ function copyOneSliceByName(
     case 'eventLog':
       group.eventLog = slices.eventLog;
       break;
+    default: {
+      // A slice added to SliceNameSentWhole without its case here stops the build: its
+      // changes would otherwise never reach open pages (as the two new slices of
+      // BAJAOVRLAY-20 did not, until the walk found it).
+      const sliceNameWithoutItsCase: never = sliceName;
+      throw new Error(`no case for slice ${String(sliceNameWithoutItsCase)}`);
+    }
   }
 }
 

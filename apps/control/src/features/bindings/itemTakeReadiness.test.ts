@@ -12,6 +12,7 @@
  *   - A typed item, and a bound item whose source has data, can be taken.
  *   - A bound item whose source has no data yet cannot, and the reason names the field and
  *     the source; nor can one whose source was deleted.
+ *   - A title that reads a car the source does not list cannot, naming the car.
  *   - An optional field whose value is absent does not stop the take.
  *
  * What these tests deliberately do not cover:
@@ -91,6 +92,26 @@ const readinessScenarios = [
     item: buildClockItemWithFields({ state: buildSessionBinding('state') }),
     sources: { dataSources: [], dataSnapshots: [], overrides: [] },
     expected: 'Bandeira: a fonte de dados "simulador-enduro" não existe.',
+  },
+  // Car 999 is in no race: the required title has nothing to read.
+  {
+    name: 'a title read from a car the source does not list cannot, naming the car',
+    item: buildClockItemWithFields({
+      sessionName: {
+        kind: 'binding',
+        sourceId: seededSimulatorId,
+        shapeKey: 'positions',
+        path: 'entryOfCar.teamName',
+        carNumber: 999,
+        isLive: true,
+      },
+    }),
+    sources: {
+      dataSources: [buildSimulatorThatIsOk()],
+      dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
+      overrides: [],
+    },
+    expected: 'Título: a fonte Simulador — Enduro não tem o carro 999 em Posições.',
   },
   // The leader's laps are optional on the race clock: absent, they are left out.
   {
