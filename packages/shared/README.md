@@ -9,8 +9,10 @@ with a README of their own: `health/`, `slices/` (the state the server owns), `c
 (the only way state changes), `rundown/`, `quickFire/`, `macros/`, `preview/`, `ws/`,
 `clock/`, `build/` (a page reloading itself when the server's build changes),
 `dataShapes/` (the canonical shapes), `dataSources/` (polled sources, recordings),
-`transforms/` (the registry of named pure transforms a mapping applies), `flexMapping/` (how
-a flex source's JSON becomes the canonical shapes).
+`transforms/` (the registry of named pure transforms a mapping or a binding applies),
+`flexMapping/` (how a flex source's JSON becomes the canonical shapes), `bindings/` (item
+fields read from a source, and reading them) and `overrides/` (an operator's corrections of a
+source's values).
 
 **How other packages import it.** `package.json` exports the source file under the
 custom condition `@bajaovrlay/source` and the built `dist/` otherwise. Typecheck, Vitest,
