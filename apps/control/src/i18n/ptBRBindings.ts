@@ -103,7 +103,11 @@ export const ptBRBindings = {
     sourceLate: 'fonte atrasada',
     sourceFailing: 'fonte com erro',
     sourceDeleted: 'fonte excluída',
+    sourceOff: 'fonte desligada',
     valueCorrected: 'valor corrigido',
+    refreshRefused: 'atualização recusada',
+    refreshRefusedTooltip: (fieldTitles: string) =>
+      `O gráfico recusou o valor da fonte para: ${fieldTitles}`,
   },
   // The marker of an item that reads a source, on its rundown row and shortcut button.
   marker: {

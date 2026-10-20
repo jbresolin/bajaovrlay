@@ -2,6 +2,7 @@ import type { Graphic, Instance } from '@bajaovrlay/shared';
 
 import { Badge } from '@/components/ui/badge';
 import { useServerAlignedTimeMs } from '@/features/dataSources/useServerAlignedTimeMs';
+import { nameFieldsByTheirTitles } from '@/features/layers/fieldsOfInstanceOnAir';
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
@@ -13,8 +14,10 @@ const healthRefreshIntervalMs = 1_000;
 
 /**
  * The chips of a Camadas row about the sources its instance reads live: "fonte
- * atrasada" (amber), "fonte com erro" (red) or "fonte excluída", and "valor corrigido"
- * while a correction changed a bound value. Nothing for an instance with no live binding.
+ * atrasada" (amber), "fonte com erro" (red), "fonte excluída" or "fonte desligada";
+ * "valor corrigido" while a correction changed a bound value; and "atualização recusada"
+ * (red, the refused fields in its tooltip) while the graphic refused part of the last
+ * refresh. Nothing for an instance with no live binding.
  */
 export function BoundSourceChips(props: { instance: Instance; graphic: Graphic | undefined }) {
   const instanceBindings = useServerState((state) => state.instanceBindings);
@@ -37,7 +40,18 @@ export function BoundSourceChips(props: { instance: Instance; graphic: Graphic |
         <Badge variant="destructive">{texts.sourceFailing}</Badge>
       )}
       {summary.sourceState === 'deleted' && <Badge variant="outline">{texts.sourceDeleted}</Badge>}
+      {summary.sourceState === 'off' && <Badge variant="outline">{texts.sourceOff}</Badge>}
       {summary.isAnyBoundValueCorrected && <Badge variant="outline">{texts.valueCorrected}</Badge>}
+      {summary.refusedFieldKeys.length > 0 && (
+        <Badge
+          variant="destructive"
+          title={texts.refreshRefusedTooltip(
+            nameFieldsByTheirTitles(props.graphic, summary.refusedFieldKeys).join(', '),
+          )}
+        >
+          {texts.refreshRefused}
+        </Badge>
+      )}
     </>
   );
 }

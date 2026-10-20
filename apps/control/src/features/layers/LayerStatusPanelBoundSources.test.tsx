@@ -6,12 +6,16 @@
  *   its source included. A row whose instance has live bindings on a source that is late
  *   or failing carries a chip, by the "Fontes" page's health rule (PR #16): "fonte
  *   atrasada" (amber) under a minute of failing, "fonte com erro" (red) after; "fonte
- *   excluída" once the source was deleted, its last data still on air. A row whose bound
- *   value a correction changed carries "valor corrigido". Nothing on air ever blanks.
+ *   excluída" once the source was deleted, its last data still on air; "fonte desligada"
+ *   once it was switched off, its last data still on air (gate 2 of PR #18). A row whose
+ *   bound value a correction changed carries "valor corrigido", and one whose last
+ *   refresh the graphic refused in part or in whole carries "atualização recusada", the
+ *   refused fields in its tooltip (gate 2 of PR #18). Nothing on air ever blanks.
  *
  * What these tests prove:
  *   - Each chip appears for its case, row by row, and a healthy source with no
  *     correction shows none of them.
+ *   - The refused chip names the refused fields by their titles.
  *
  * What these tests deliberately do not cover:
  *   - The health rule itself, minute by minute; dataSourceHealth.test.ts.
@@ -25,12 +29,34 @@ import {
 } from '@/state/boundInstancesLikeTheServerSends.testSupport';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import {
+  buildSeededSimulatorThatIsOff,
   buildSimulatorThatIsOk,
   buildSimulatorThatIsStale,
   momentTheSimulatorStartedFailingMs,
 } from '@/state/dataSourcesLikeTheServerSends.testSupport';
 
 import { LayerStatusPanel } from './LayerStatusPanel';
+
+/** The bound clock on air whose last refresh had its title refused by the graphic. */
+function buildSlicesWithTheTitleRefused() {
+  const slices = buildSlicesWithTheBoundRaceClockOnAir({});
+  return {
+    ...slices,
+    instanceBindings: slices.instanceBindings.map((entry) => ({
+      ...entry,
+      refusedFieldKeys: ['sessionName'],
+    })),
+  };
+}
+
+const allChipTexts = [
+  'fonte atrasada',
+  'fonte com erro',
+  'fonte excluída',
+  'fonte desligada',
+  'valor corrigido',
+  'atualização recusada',
+];
 
 const chipScenarios = [
   // 40 s of failing: keep an eye on it.
@@ -53,6 +79,22 @@ const chipScenarios = [
     millisecondsAfterTheFailingStarted: 0,
     slices: buildSlicesWithTheBoundRaceClockOnAir({ dataSources: [] }),
     expectedChips: ['fonte excluída'],
+  },
+  // Switched off on "Fontes": nothing refreshes the clock any more, its data stays.
+  {
+    name: 'shows "fonte desligada" when the source was switched off',
+    millisecondsAfterTheFailingStarted: 0,
+    slices: buildSlicesWithTheBoundRaceClockOnAir({
+      dataSources: [buildSeededSimulatorThatIsOff()],
+    }),
+    expectedChips: ['fonte desligada'],
+  },
+  // The graphic refused the title the source sent; the flag and clock went on.
+  {
+    name: 'shows "atualização recusada" when the last refresh was refused in part',
+    millisecondsAfterTheFailingStarted: 0,
+    slices: buildSlicesWithTheTitleRefused(),
+    expectedChips: ['atualização recusada'],
   },
   // The session name on air is the operator's correction.
   {
@@ -85,13 +127,27 @@ describe('the Camadas row of a bound instance', () => {
 
       // Assert: exactly the chips of this row on the clock's row.
       const clockRow = within(screen.getByRole('listitem', { name: 'Relógio' }));
-      const chipsAboutTheSource = [
-        'fonte atrasada',
-        'fonte com erro',
-        'fonte excluída',
-        'valor corrigido',
-      ].filter((chipText) => clockRow.queryByText(chipText) !== null);
+      const chipsAboutTheSource = allChipTexts.filter(
+        (chipText) => clockRow.queryByText(chipText) !== null,
+      );
       expect(chipsAboutTheSource, 'the row must carry exactly these chips').toEqual(expectedChips);
     },
   );
+});
+
+describe('the "atualização recusada" chip', () => {
+  it('names the refused fields by their titles in its tooltip', () => {
+    // Arrange and act: the clock whose title was refused, drawn in Camadas.
+    renderOnControlPageConnectedToFakeServer(
+      <LayerStatusPanel />,
+      buildSlicesWithTheTitleRefused(),
+    );
+
+    // Assert: the tooltip says which field kept its old value.
+    const clockRow = within(screen.getByRole('listitem', { name: 'Relógio' }));
+    expect(
+      clockRow.getByText('atualização recusada'),
+      'the operator must see which field the graphic refused',
+    ).toHaveAttribute('title', 'O gráfico recusou o valor da fonte para: Título');
+  });
 });

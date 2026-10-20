@@ -79,30 +79,12 @@ export type SliceChangeListener = (
   changedDataSnapshots: DataSnapshotChange[],
 ) => void;
 
-/**
- * What a server actor may ask of applyCommand beyond the command. Only the refresher of
- * bound fields uses it, never a connection: no page can reach this argument.
- */
-export type ApplyCommandOptions = {
-  /**
-   * The command's refusal, if it is refused, writes no event-log row. The refresher asks
-   * it for an instance whose last refresh was already refused and logged, so a refresh
-   * the schema refuses writes one row per instance until one succeeds again, not one a
-   * poll (BAJAOVRLAY-20; the routine-poll reasoning of PR #16).
-   */
-  isRefusalLeftOutOfTheEventLog?: boolean;
-};
-
 /** The store: the only holder of state and the only way to change it. */
 export type StateStore = {
   /** Every slice as it is now. Treat the result as read-only. */
   readAllSlices: () => Slices;
   /** Runs one command through the single command path; see createStateStore. */
-  applyCommand: (
-    commandInput: unknown,
-    actor: string,
-    options?: ApplyCommandOptions,
-  ) => CommandOutcome;
+  applyCommand: (commandInput: unknown, actor: string) => CommandOutcome;
   /** Registers a listener for slice changes; returns a function that removes it. */
   subscribeToSliceChanges: (listener: SliceChangeListener) => () => void;
 };
@@ -128,13 +110,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   // listeners what changed. A command that fails any step is still logged, as failed.
   // An accepted command that changes nothing skips the save, the log and the listeners;
   // a routine data-source poll, a recording's progress and a routine refresh of bound
-  // fields skip only the log (see the exception below), and a refresh refused again for
-  // the same instance skips the log of its refusal (ApplyCommandOptions).
-  function applyCommand(
-    commandInput: unknown,
-    actor: string,
-    options: ApplyCommandOptions = {},
-  ): CommandOutcome {
+  // fields skip only the log (see the exception below).
+  function applyCommand(commandInput: unknown, actor: string): CommandOutcome {
     const now = readCurrentTime().toISOString();
 
     // Step 1, validate: the command's shape, with the first bad field named.
@@ -174,11 +151,6 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       sourceHostAllowlist,
     };
     const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);
-    // The second exception to "every refusal is logged": a refresh of bound fields
-    // already refused and logged for its instance (see ApplyCommandOptions).
-    if (reducerOutcome.status === 'refused' && options.isRefusalLeftOutOfTheEventLog === true) {
-      return { ok: false, error: reducerOutcome.error };
-    }
     if (reducerOutcome.status === 'refused') {
       return recordRefusal({
         now,
@@ -209,6 +181,23 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     // The recorder's count of written lines (recordRecordingProgress) follows each poll
     // of a recording source, so it is left out the same way (gate 2 on PR #16), and so is
     // a refresh of an instance's live bound fields, which follows a poll (BAJAOVRLAY-20).
+    // A refresh of bound fields that begins a spell of refusals (part of it, or all of
+    // it, refused by the graphic's schema) is applied as far as it fits and logged as
+    // failed, once per spell: the spell is the refused keys on the instance's entry of
+    // instanceBindings, so it survives a restart (gate 2 of PR #18).
+    if (reducerOutcome.refusalWrittenToTheEventLog !== undefined) {
+      recordOutcome({
+        nextSlices: reducerOutcome.slices,
+        logEntry: {
+          ts: now,
+          actor,
+          command: command.type,
+          payload: buildEventLogPayloadOfCommand(command),
+          result: { status: 'failed', error: reducerOutcome.refusalWrittenToTheEventLog },
+        },
+      });
+      return { ok: true };
+    }
     if (reducerOutcome.isLeftOutOfTheEventLog === true) {
       recordOutcomeWithoutEventLogRow(reducerOutcome.slices, now);
       return { ok: true };

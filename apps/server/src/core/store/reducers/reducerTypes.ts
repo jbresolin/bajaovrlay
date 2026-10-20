@@ -68,5 +68,15 @@ export type ReducerContext = {
  * event-log row (decision D11; see createStateStore.ts).
  */
 export type ReducerOutcome =
-  | { status: 'applied'; slices: SlicesChangedByCommands; isLeftOutOfTheEventLog?: true }
+  | {
+      status: 'applied';
+      slices: SlicesChangedByCommands;
+      isLeftOutOfTheEventLog?: true;
+      /**
+       * Set by refreshBoundInstanceData only, when a spell of refused refreshes of an
+       * instance begins: the change is applied, and its event-log row is written as
+       * failed with this reason, once per spell (gate 2 of PR #18).
+       */
+      refusalWrittenToTheEventLog?: CommandError;
+    }
   | { status: 'refused'; error: CommandError };

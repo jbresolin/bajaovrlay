@@ -32,11 +32,10 @@ export type LiveRefresher = { stop: () => void };
  * - The refresh runs from a timer, not inside the store's listener, so one change is
  *   told to every listener before the next begins (as the macro runner does). Changes
  *   that land before the timer runs are refreshed together in one pass.
- * - A refused refresh (the graphic's schema refuses the source's value) is logged as a
- *   failed row once per instance: the refresher remembers the instance and asks the
- *   store to leave the next refusals out of the event log until a refresh of it succeeds
- *   (ApplyCommandOptions), so a poll every two seconds cannot fill the log. The memory
- *   lives here, so after a restart the first refusal is logged again.
+ * - A refresh the graphic's schema refuses, in part or in whole, is applied as far as it
+ *   fits and its refused keys are kept on the instance's entry (refreshBoundInstanceData.ts),
+ *   which also writes one failed event-log row per spell of refusals. The refresher keeps
+ *   no memory of its own; it writes one warning to the server log when a spell begins.
  */
 export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher {
   const { stateStore, logger } = options;
@@ -46,7 +45,6 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
   let sourceIdsToRefresh: Set<string> | undefined = new Set();
   let pendingPassHandle: unknown;
   let isPassPending = false;
-  const instanceIdsWhoseRefreshWasRefused = new Set<string>();
 
   /** Notes what changed and starts a pass unless one is already waiting. */
   function scheduleRefresh(changedSourceIds: string[], isEverySourceAffected: boolean): void {
@@ -70,7 +68,6 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
     isPassPending = false;
     try {
       const slices = stateStore.readAllSlices();
-      forgetInstancesThatLeft(slices);
       for (const entry of slices.instanceBindings) {
         refreshOneInstance(slices, entry.instanceId, entry.boundFields, sourceIdsThatChanged);
       }
@@ -109,31 +106,28 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
       instanceId,
       data,
     };
-    const wasRefusedBefore = instanceIdsWhoseRefreshWasRefused.has(instanceId);
-    const outcome = stateStore.applyCommand(command, bindingRefresherActor, {
-      isRefusalLeftOutOfTheEventLog: wasRefusedBefore,
-    });
-    if (outcome.ok) {
-      instanceIdsWhoseRefreshWasRefused.delete(instanceId);
-      return;
-    }
-    if (!wasRefusedBefore) {
+    const wasRefusedBefore = readRefusedFieldKeys(slices, instanceId) !== undefined;
+    const outcome = stateStore.applyCommand(command, bindingRefresherActor);
+    if (!outcome.ok) {
       logger.warn(
         { instance_id: instanceId, error: outcome.error },
         'refresh of bound fields was refused',
       );
+      return;
     }
-    instanceIdsWhoseRefreshWasRefused.add(instanceId);
+    const refusedFieldKeysNow = readRefusedFieldKeys(stateStore.readAllSlices(), instanceId);
+    if (!wasRefusedBefore && refusedFieldKeysNow !== undefined) {
+      logger.warn(
+        { instance_id: instanceId, refused_field_keys: refusedFieldKeysNow },
+        'refresh of bound fields was refused in part',
+      );
+    }
   }
 
-  /** Lets go of the refusals of instances no longer there. */
-  function forgetInstancesThatLeft(slices: Slices): void {
-    for (const instanceId of instanceIdsWhoseRefreshWasRefused) {
-      const isStillThere = slices.instances.some((instance) => instance.id === instanceId);
-      if (!isStillThere) {
-        instanceIdsWhoseRefreshWasRefused.delete(instanceId);
-      }
-    }
+  /** The keys of the instance whose last refresh was refused, from its entry, if any. */
+  function readRefusedFieldKeys(slices: Slices, instanceId: string): string[] | undefined {
+    const entry = slices.instanceBindings.find((candidate) => candidate.instanceId === instanceId);
+    return entry?.refusedFieldKeys;
   }
 
   const stopWatchingTheStore = stateStore.subscribeToSliceChanges(

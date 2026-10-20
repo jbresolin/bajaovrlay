@@ -15,10 +15,14 @@ export type InstanceBoundField = z.infer<typeof InstanceBoundFieldSchema>;
  * The bindings one instance kept from its take: on program its live bindings, which the
  * live refreshes read; on preview its frozen ones as well, which "Tomar" reads again.
  * An instance with no binding has no entry.
+ * `refusedFieldKeys`: the fields whose last refresh the graphic's schema refused, kept on
+ * air as they were while the others went on (gate 2 of PR #18); Camadas shows them as
+ * "atualização recusada". Absent once a refresh fits as a whole.
  */
 export const InstanceBindingsEntrySchema = z.object({
   instanceId: z.string().min(1),
   boundFields: z.array(InstanceBoundFieldSchema).min(1),
+  refusedFieldKeys: z.array(z.string().min(1)).min(1).optional(),
 });
 
 /** One entry of the `instanceBindings` slice, after validation. */
