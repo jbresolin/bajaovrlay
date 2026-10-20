@@ -166,6 +166,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     const reducerContext = {
       newInstanceId: createInstanceId(),
       now,
+      actor,
       newItemId: createItemId(),
       newQuickFirePanelId: createQuickFirePanelId(),
       newMacroId: createMacroId(),

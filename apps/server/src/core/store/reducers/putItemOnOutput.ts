@@ -53,11 +53,10 @@ export function putItemOnOutput(
     fields: item.fields,
     graphic: slices.graphics.find((graphic) => graphic.id === item.graphicId),
     momentOfTheTake: context.now,
-    // The overrides join with their slice (step 7 of BAJAOVRLAY-20).
     sources: {
       dataSources: slices.dataSources,
       dataSnapshots: slices.dataSnapshots,
-      overrides: [],
+      overrides: slices.overrides,
     },
   });
   if (resolution.status === 'refused') {

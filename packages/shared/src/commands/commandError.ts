@@ -92,6 +92,8 @@ export const CommandErrorCodeSchema = z.enum([
    * snapshot. The message starts with the field's title and names the source.
    */
   'BINDING_NOT_RESOLVED',
+  /** setOverride carried a value its canonical field cannot hold; the message names the field. */
+  'INVALID_OVERRIDE_VALUE',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

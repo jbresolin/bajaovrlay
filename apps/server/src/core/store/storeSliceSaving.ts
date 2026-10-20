@@ -21,6 +21,7 @@ export const sliceNamesChangedByCommands = [
   'macroRuns',
   'dataSources',
   'dataSnapshots',
+  'overrides',
   'recordings',
 ] as const;
 
@@ -81,6 +82,7 @@ export function buildAllSlices(
     macroRuns: slicesOfCommands.macroRuns,
     dataSources: slicesOfCommands.dataSources,
     dataSnapshots: slicesOfCommands.dataSnapshots,
+    overrides: slicesOfCommands.overrides,
     recordings: slicesOfCommands.recordings,
     eventLog,
   };

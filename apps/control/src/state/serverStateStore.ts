@@ -64,6 +64,7 @@ export function createServerStateStore(): ServerStateStore {
     macroRuns: [],
     dataSources: [],
     dataSnapshots: [],
+    overrides: [],
     recordings: [],
     eventLog: [],
     connectionStatus: 'connecting',
@@ -83,6 +84,7 @@ export function createServerStateStore(): ServerStateStore {
         macroRuns: slices.macroRuns,
         dataSources: slices.dataSources,
         dataSnapshots: slices.dataSnapshots,
+        overrides: slices.overrides,
         recordings: slices.recordings,
         eventLog: slices.eventLog,
       });
@@ -125,6 +127,9 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'dataSources':
           set({ dataSources: message.slice });
+          break;
+        case 'overrides':
+          set({ overrides: message.slice });
           break;
         case 'recordings':
           set({ recordings: message.slice });

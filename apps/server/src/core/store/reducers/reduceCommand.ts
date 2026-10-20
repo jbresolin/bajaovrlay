@@ -104,6 +104,8 @@ function reduceCommandOfItsType(
       return reduceDataSourceCommand(slices, command, context);
     // Bindings (BAJAOVRLAY-20): their reducers live in the module modules/bindings.
     case 'refreshBoundInstanceData':
+    case 'setOverride':
+    case 'clearOverride':
       return reduceBindingCommand(slices, command, context);
   }
 }

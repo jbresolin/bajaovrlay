@@ -75,6 +75,8 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'macroRuns', slice: slices.macroRuns, serverNowMs };
     case 'dataSources':
       return { type: 'slice', name: 'dataSources', slice: slices.dataSources, serverNowMs };
+    case 'overrides':
+      return { type: 'slice', name: 'overrides', slice: slices.overrides, serverNowMs };
     case 'recordings':
       return { type: 'slice', name: 'recordings', slice: slices.recordings, serverNowMs };
     case 'eventLog':

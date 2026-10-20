@@ -22,6 +22,7 @@ export type SlicesChangedByCommands = Pick<
   | 'macroRuns'
   | 'dataSources'
   | 'dataSnapshots'
+  | 'overrides'
   | 'recordings'
 >;
 
@@ -38,6 +39,11 @@ export type ReducerContext = {
   newInstanceId: string;
   /** The current time, as an ISO 8601 timestamp. */
   now: string;
+  /**
+   * Who sent the command (`operador:<connection id>`, `sistema:…`), for a reducer that
+   * signs what it stores with it (setOverride's setBy).
+   */
+  actor: string;
   /** The id to give an item the command creates (createItem). */
   newItemId: string;
   /** The id to give a quick-fire panel the command creates (createQuickFirePanel). */

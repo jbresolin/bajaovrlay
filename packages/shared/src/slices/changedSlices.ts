@@ -52,6 +52,7 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     dataSources: changedSlices.dataSources ?? slices.dataSources,
     // Never in a group: a snapshot arrives source by source (`dataSnapshot` message).
     dataSnapshots: slices.dataSnapshots,
+    overrides: changedSlices.overrides ?? slices.overrides,
     recordings: changedSlices.recordings ?? slices.recordings,
     eventLog: changedSlices.eventLog ?? slices.eventLog,
   };

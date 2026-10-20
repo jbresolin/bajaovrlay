@@ -97,8 +97,7 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
       sources: {
         dataSources: slices.dataSources,
         dataSnapshots: slices.dataSnapshots,
-        // The overrides join with their slice (step 7 of BAJAOVRLAY-20).
-        overrides: [],
+        overrides: slices.overrides,
       },
       sourceIdsThatChanged,
     });
@@ -138,10 +137,13 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
   }
 
   const stopWatchingTheStore = stateStore.subscribeToSliceChanges(
-    (_changedSliceNames, _slices, changedDataSnapshots) => {
+    (changedSliceNames, _slices, changedDataSnapshots) => {
+      // A correction set or cleared changes what every source says from now on, so it
+      // refreshes every bound instance; a snapshot only those bound to its source.
+      const haveOverridesChanged = changedSliceNames.includes('overrides');
       const changedSourceIds = changedDataSnapshots.map((change) => change.sourceId);
-      if (changedSourceIds.length > 0) {
-        scheduleRefresh(changedSourceIds, false);
+      if (haveOverridesChanged || changedSourceIds.length > 0) {
+        scheduleRefresh(changedSourceIds, haveOverridesChanged);
       }
     },
   );

@@ -31,6 +31,7 @@ export function buildTheCopyAScreenShouldGet(slicesOnTheServer: Slices): Slices 
     dataSnapshots: [],
     recordings: [],
     instanceBindings: [],
+    overrides: [],
     eventLog: [],
   };
 }

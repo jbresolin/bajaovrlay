@@ -34,6 +34,9 @@ export const ptBRDataShapes = {
    */
   carChosenByNumberLabel: 'Carro escolhido pelo número',
 
+  /** One car, wherever it is listed: the first part of a car correction's label. */
+  carLabel: 'Carro',
+
   /** The session fields a binding may point at. */
   sessionFieldLabels: {
     eventName: 'Evento',

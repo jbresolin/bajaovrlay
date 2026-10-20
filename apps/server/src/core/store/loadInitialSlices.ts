@@ -170,6 +170,12 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     macroRuns: [],
     dataSources: dataSourceSlices.dataSources,
     dataSnapshots: dataSourceSlices.dataSnapshots,
+    // The operator's corrections are saved (BAJAOVRLAY-20): a restart keeps every one in
+    // force. A database written before them has no row and starts with none; a row that
+    // fails its schema stops the boot, as the items row does.
+    overrides: SlicesSchema.shape.overrides.parse(
+      storedRows.find((row) => row.name === 'overrides')?.json ?? [],
+    ),
     // Rebuilt from the recordings folder at every boot, every recording closed (D13);
     // never saved in the database: the files are the truth.
     recordings: readRecordingsAtBoot(options, dataSourceSlices.dataSources),

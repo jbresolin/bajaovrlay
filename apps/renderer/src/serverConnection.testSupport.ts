@@ -77,6 +77,7 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     previewClearedLayerIds: [],
     // The renderer never reads these; they are here because every hello carries them.
     instanceBindings: [],
+    overrides: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

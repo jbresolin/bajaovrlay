@@ -76,3 +76,12 @@ export const OverrideSchema = z.discriminatedUnion('scope', [
 
 /** An override that has passed OverrideSchema. */
 export type Override = z.infer<typeof OverrideSchema>;
+
+/**
+ * The `overrides` slice (concept §4, BAJAOVRLAY-20): every correction in force, at most
+ * one per key, saved so a restart keeps them. Operators only; screens never receive it.
+ */
+export const OverridesSchema = z.array(OverrideSchema);
+
+/** The `overrides` slice, after validation. */
+export type Overrides = z.infer<typeof OverridesSchema>;

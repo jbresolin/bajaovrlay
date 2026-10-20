@@ -39,6 +39,8 @@ export const sliceNamesAScreenIsNotSent: SliceName[] = [
   'dataSources',
   // The one poll of the simulator recorded by hand.
   'dataSnapshots',
+  // The session name of the simulator corrected by the operator (BAJAOVRLAY-20).
+  'overrides',
   // "Gravar" pressed on the simulator: closed when it is turned off, but kept listed.
   'recordings',
   // Every command above writes a row.
@@ -47,8 +49,8 @@ export const sliceNamesAScreenIsNotSent: SliceName[] = [
 
 /**
  * Puts something into every slice a screen is not sent: an item, a macro and its run,
- * the simulator recorded (no line in it), then polled once by hand and turned off, and
- * a clock bound to its flag taken
+ * the simulator recorded (no line in it), then polled once by hand and turned off, a
+ * clock bound to its flag taken, and its session name corrected
  * (all within one tick, so the poller's first poll, on a 0 ms timer, never runs). Throws when the
  * store refuses a step, so a broken Arrange step fails loudly.
  */
@@ -94,6 +96,14 @@ export function fillEverySliceAScreenIsNotSent(stateStore: StateStore): void {
     },
   });
   applyOrThrow(stateStore, { type: 'takeItem', itemId: boundClockItemId });
+  applyOrThrow(stateStore, {
+    type: 'setOverride',
+    sourceId: enduroSimulatorId,
+    scope: 'session',
+    field: 'sessionName',
+    value: 'Enduro — Etapa Nacional',
+    reason: 'Nome oficial da prova.',
+  });
 }
 
 /** The names of the slices a screen is not sent that hold nothing on the server. */

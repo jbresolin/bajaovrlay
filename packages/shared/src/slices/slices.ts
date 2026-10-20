@@ -6,6 +6,7 @@ import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
+import { OverridesSchema } from '../overrides/override.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
 import { RundownSchema } from '../rundown/rundown.js';
@@ -29,6 +30,7 @@ export const SliceNameSchema = z.enum([
   'macroRuns',
   'dataSources',
   'dataSnapshots',
+  'overrides',
   'recordings',
   'eventLog',
 ]);
@@ -77,6 +79,11 @@ export const SlicesSchema = z.object({
    * next good poll). Renderer connections never receive it: graphics get resolved data.
    */
   dataSnapshots: z.array(DataSnapshotSchema),
+  /**
+   * The operator's corrections of what the sources say (BAJAOVRLAY-20), each in force
+   * until it is cleared. Saved; screens never receive it.
+   */
+  overrides: OverridesSchema,
   /**
    * The recorded feeds a replay can play. Kept in the server's memory only and rebuilt
    * from the recordings folder at boot.

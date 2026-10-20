@@ -61,6 +61,7 @@ function createSlicesWithClockLayerAndInstances(instances: Slices['instances']):
     instances,
     previewClearedLayerIds: [],
     instanceBindings: [],
+    overrides: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],
