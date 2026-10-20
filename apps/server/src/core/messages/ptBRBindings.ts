@@ -12,4 +12,7 @@ export const ptBRBindingErrors = {
   // would be written over it (a takeTime would stamp the take's moment and the clock jump).
   wholeClockBesideAClockField: (otherFieldTitle: string) =>
     `o Relógio completo preenche também "${otherFieldTitle}", que deve ficar sem valor.`,
+  // A guard: the save refuses the whole clock on a graphic without the four clock roles.
+  wholeClockWithoutClockFields:
+    'o Relógio completo só preenche um gráfico que marca os quatro campos do relógio.',
 };

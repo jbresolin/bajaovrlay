@@ -18,6 +18,23 @@ export const ptBRBindings = {
       `A transformação "${transformLabel}" não se aplica a ${pathLabel}.`,
   },
 
+  /**
+   * Why a binding cannot be read now. Each starts in lower case because the server puts
+   * the field's title before it: "Título: a fonte Simulador — Enduro ainda não tem dados."
+   */
+  resolutionProblems: {
+    sourceNotFound: (sourceId: string) => `a fonte de dados "${sourceId}" não existe.`,
+    noDataYet: (sourceLabel: string) => `a fonte ${sourceLabel} ainda não tem dados.`,
+    shapeNotSent: (sourceLabel: string, shapeName: string) =>
+      `a fonte ${sourceLabel} não tem ${shapeName}.`,
+    valueNotInSnapshot: (sourceLabel: string, pathLabel: string) =>
+      `a fonte ${sourceLabel} não tem valor em ${pathLabel}.`,
+    carNotListed: (sourceLabel: string, carNumber: number) =>
+      `a fonte ${sourceLabel} não tem o carro ${carNumber} em Posições.`,
+    transformRefused: (transformLabel: string, reason: string) =>
+      `a transformação "${transformLabel}" recusou o valor: ${reason}.`,
+  },
+
   /** Why a binding does not fit the graphic field it is stored on. */
   fieldFitProblems: {
     valueDoesNotFitField: (pathLabel: string) => `${pathLabel} não serve para este campo.`,

@@ -86,6 +86,12 @@ export const CommandErrorCodeSchema = z.enum([
    * The message starts with the field's title.
    */
   'INVALID_BINDING',
+  /**
+   * A take or a preview could not read a bound field: its source does not exist, has no
+   * data yet or does not send that shape, or a required field's value is absent from the
+   * snapshot. The message starts with the field's title and names the source.
+   */
+  'BINDING_NOT_RESOLVED',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

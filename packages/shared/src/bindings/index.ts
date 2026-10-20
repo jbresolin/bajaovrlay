@@ -13,3 +13,9 @@ export {
   findProblemInBindingForGraphicField,
   listValueTypesThatFitGraphicField,
 } from './bindingFitsGraphicField.js';
+// Reading one binding against the sources: snapshot, overrides, path, transform.
+export {
+  type BindingResolution,
+  resolveBindingAgainstSources,
+  type SourcesForBindings,
+} from './bindingResolution.js';

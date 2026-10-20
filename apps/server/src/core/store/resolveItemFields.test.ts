@@ -7,7 +7,8 @@
  *   graphic receives. A field value is either a `literal` (typed by the operator, used
  *   as typed) or a `takeTime` (the clock time of the take itself, in milliseconds, which
  *   is how a prepared race clock starts counting from the moment it goes on air and not
- *   from the moment it was saved). M2 (BAJAOVRLAY-20) adds values read from data sources.
+ *   from the moment it was saved). A `binding` (BAJAOVRLAY-20) reads a data source;
+ *   resolveItemFieldsWithBindings.test.ts covers it.
  *
  * What these tests prove:
  *   - Literal values of every JSON type pass through unchanged, under the same key,
@@ -28,6 +29,20 @@ import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { resolveItemFieldsIntoGraphicData } from './resolveItemFields.js';
+
+/**
+ * Resolves fields with no data source and no graphic registered, which literals and
+ * takeTime never need: the bound fields have tests of their own
+ * (resolveItemFieldsWithBindings.test.ts).
+ */
+function resolveFieldsWithoutSources(fields: ItemFields, momentOfTheTake: string) {
+  return resolveItemFieldsIntoGraphicData({
+    fields,
+    graphic: undefined,
+    momentOfTheTake,
+    sources: { dataSources: [], dataSnapshots: [], overrides: [] },
+  });
+}
 
 // The moment of a take as the store writes it, and the same moment in milliseconds:
 // 14:32:05 UTC on 9 October 2026, during the endurance race.
@@ -117,7 +132,7 @@ describe('resolveItemFieldsIntoGraphicData with literal values', () => {
     const copyOfFieldsBefore = structuredClone(fields);
 
     // Act: resolve them for a take at 14:32:05.
-    const resolution = resolveItemFieldsIntoGraphicData(fields, momentOfTheTake);
+    const resolution = resolveFieldsWithoutSources(fields, momentOfTheTake);
 
     // Assert: resolved to the expected data, and the fields are as they were.
     expect(resolution, 'every literal must reach the data unchanged, under its key').toEqual({
@@ -135,7 +150,7 @@ describe('resolveItemFieldsIntoGraphicData with a takeTime value', () => {
     const copyOfFieldsBefore = structuredClone(fields);
 
     // Act: resolve them for a take at 14:32:05.
-    const resolution = resolveItemFieldsIntoGraphicData(fields, momentOfTheTake);
+    const resolution = resolveFieldsWithoutSources(fields, momentOfTheTake);
 
     // Assert: the reference moment is that take in milliseconds, a whole number as the
     // race clock requires; the literals are as typed; the stored fields still say takeTime.
@@ -160,8 +175,8 @@ describe('resolveItemFieldsIntoGraphicData with a takeTime value', () => {
     const fields = buildClockFieldsThatStartAtTheTake();
 
     // Act: resolve them for a take at 14:32:05 and for another at 14:47:30.250.
-    const firstResolution = resolveItemFieldsIntoGraphicData(fields, momentOfTheTake);
-    const secondResolution = resolveItemFieldsIntoGraphicData(fields, momentOfTheSecondTake);
+    const firstResolution = resolveFieldsWithoutSources(fields, momentOfTheTake);
+    const secondResolution = resolveFieldsWithoutSources(fields, momentOfTheSecondTake);
 
     // Assert: each take carries its own moment, down to the quarter of a second.
     const referenceMomentOfEachTake = [firstResolution, secondResolution].map((resolution) =>
@@ -178,8 +193,8 @@ describe('resolveItemFieldsIntoGraphicData with a takeTime value', () => {
     const fields = buildClockFieldsThatStartAtTheTake();
 
     // Act: resolve them twice for the take at 14:32:05.
-    const firstResolution = resolveItemFieldsIntoGraphicData(fields, momentOfTheTake);
-    const secondResolution = resolveItemFieldsIntoGraphicData(fields, momentOfTheTake);
+    const firstResolution = resolveFieldsWithoutSources(fields, momentOfTheTake);
+    const secondResolution = resolveFieldsWithoutSources(fields, momentOfTheTake);
 
     // Assert: the answers are equal, so the function reads no clock of its own.
     expect(
@@ -202,7 +217,7 @@ describe('resolveItemFieldsIntoGraphicData with a kind it does not know', () => 
     } as unknown as ItemFields;
 
     // Act: resolve them.
-    const resolution = resolveItemFieldsIntoGraphicData(fieldsWithEntity, momentOfTheTake);
+    const resolution = resolveFieldsWithoutSources(fieldsWithEntity, momentOfTheTake);
 
     // Assert: refused as a whole, naming the field, its kind and the entity library.
     expect(resolution, 'an unknown kind must refuse, never give half-filled data').toEqual({

@@ -169,6 +169,9 @@ export * from './dataShapes/index.js';
 // value (textToNumber, lapTimeTextToMs, mapValues…), and the check a config runs on them.
 export * from './transforms/index.js';
 
+// Overrides: an operator's correction of a source's session field or of one car's field.
+export * from './overrides/index.js';
+
 // Bindings: item fields read from a data source, whether a binding makes sense, and
 // which graphic fields it fits.
 export * from './bindings/index.js';

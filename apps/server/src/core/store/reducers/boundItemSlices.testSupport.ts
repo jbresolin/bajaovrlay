@@ -1,6 +1,10 @@
 // Test support: a race day whose items read fields from a data source. The simulator is
 // on and healthy, the race clock is registered with its real schema, and bindings read
-// like the item editor stores them. Every function builds fresh objects on each call.
+// like the item editor stores them. Its snapshot is the shared sample of the enduro at
+// lap 34 (60 cars, car 31 Acauã Baja leading, car 42 Jequitibá Racing 19th). Every
+// function builds fresh objects on each call.
+import { readFileSync } from 'node:fs';
+
 import type {
   BindingFieldValue,
   DataSnapshot,
@@ -8,6 +12,7 @@ import type {
   Instance,
   Item,
   ItemFields,
+  Override,
   Rundown,
 } from '@bajaovrlay/shared';
 
@@ -107,5 +112,63 @@ export function buildRaceDaySlicesWithTheSimulator(parts: {
     ...raceDaySlices,
     dataSources: parts.dataSources ?? [buildSimulatorSourceThatIsOn()],
     dataSnapshots: parts.dataSnapshots ?? [],
+  };
+}
+
+/** Reads one sample of packages/shared/src/dataShapes/samples afresh. */
+function readSharedSample(fileName: string): unknown {
+  const sampleUrl = new URL(
+    `../../../../../../packages/shared/src/dataShapes/samples/${fileName}`,
+    import.meta.url,
+  );
+  return JSON.parse(readFileSync(sampleUrl, 'utf8'));
+}
+
+/**
+ * The simulator's last good poll at lap 34: the session (green unless the flag given
+ * says otherwise), the 60-car positions and the overall standings.
+ */
+export function readSimulatorSnapshotAtLap34(
+  sessionSampleFileName = 'session.enduro-green.json',
+): DataSnapshot {
+  return {
+    sourceId: simulatorSourceId,
+    receivedAtMs: simulatorLastGoodPollMs,
+    shapes: {
+      session: readSharedSample(sessionSampleFileName),
+      positions: readSharedSample('positions.enduro-lap-34.json'),
+      standings: readSharedSample('standings.overall.json'),
+    } as DataSnapshot['shapes'],
+  };
+}
+
+/** The operator's correction of the session name the simulator sends. */
+export function buildSessionNameOverride(correctedName: string): Override {
+  return {
+    sourceId: simulatorSourceId,
+    scope: 'session',
+    field: 'sessionName',
+    value: correctedName,
+    reason: 'O nome oficial da prova é outro.',
+    setBy: 'operador:3f2a9c1e',
+    setAt: '2026-10-09T14:30:00.000Z',
+  };
+}
+
+/** The operator's correction of one field of one car, wherever the car is listed. */
+export function buildCarOverride(
+  carNumber: number,
+  field: 'teamName' | 'schoolName' | 'status' | 'points',
+  value: unknown,
+): Override {
+  return {
+    sourceId: simulatorSourceId,
+    scope: 'car',
+    carNumber,
+    field,
+    value,
+    reason: 'A equipe pediu a correção na secretaria de prova.',
+    setBy: 'operador:3f2a9c1e',
+    setAt: '2026-10-09T14:30:00.000Z',
   };
 }

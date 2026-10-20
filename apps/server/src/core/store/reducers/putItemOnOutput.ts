@@ -43,7 +43,17 @@ export function putItemOnOutput(
   // can, because the keys named below are remembered on the preview instance (see
   // putGraphicOnOutput). What could go wrong: an item edited after it was previewed goes
   // on air as it was previewed, until it is previewed again.
-  const resolution = resolveItemFieldsIntoGraphicData(item.fields, context.now);
+  const resolution = resolveItemFieldsIntoGraphicData({
+    fields: item.fields,
+    graphic: slices.graphics.find((graphic) => graphic.id === item.graphicId),
+    momentOfTheTake: context.now,
+    // The overrides join with their slice (step 7 of BAJAOVRLAY-20).
+    sources: {
+      dataSources: slices.dataSources,
+      dataSnapshots: slices.dataSnapshots,
+      overrides: [],
+    },
+  });
   if (resolution.status === 'refused') {
     return { status: 'refused', error: resolution.error };
   }
