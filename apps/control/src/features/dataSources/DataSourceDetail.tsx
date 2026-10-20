@@ -1,4 +1,8 @@
-import type { DataSource, SessionShape } from '@bajaovrlay/shared';
+import {
+  applyOverridesToSnapshotShapes,
+  type DataSource,
+  type SessionShape,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
@@ -40,13 +44,22 @@ export function DataSourceDetail(props: { source: DataSource }) {
   const { source } = props;
   const texts = ptBR.dataSources.detail;
   const dataSnapshots = useServerState((state) => state.dataSnapshots);
+  const overrides = useServerState((state) => state.overrides);
   const snapshot = dataSnapshots.find((candidate) => candidate.sourceId === source.id);
   const whyTheDataIsOld = findWhyTheDataIsOld(source);
+  // What the tables show is the source's data with the operator's corrections laid over
+  // it, as every binding reads it; what the source itself sent stays at hand for the
+  // correction dialog.
+  const shapesShown =
+    snapshot === undefined
+      ? undefined
+      : applyOverridesToSnapshotShapes(source.id, snapshot.shapes, overrides);
   const sessionAsSent = snapshot?.shapes.session;
+  const sessionCorrected = shapesShown?.session;
   const sessionToShow =
-    sessionAsSent !== undefined && whyTheDataIsOld === 'sourceIsOff'
-      ? holdTheSessionClock(sessionAsSent)
-      : sessionAsSent;
+    sessionCorrected !== undefined && whyTheDataIsOld === 'sourceIsOff'
+      ? holdTheSessionClock(sessionCorrected)
+      : sessionCorrected;
 
   return (
     <section aria-label={texts.regionLabel(source.label)} className="flex min-w-0 flex-col gap-4">
@@ -61,13 +74,35 @@ export function DataSourceDetail(props: { source: DataSource }) {
           {sessionToShow !== undefined && (
             // Drawn anew for each snapshot, so its "now" is read after the new reading
             // was stamped: counting from an older "now" would step a countdown back up.
-            <SessionCard key={snapshot.receivedAtMs} session={sessionToShow} />
+            <SessionCard
+              key={snapshot.receivedAtMs}
+              session={sessionToShow}
+              corrections={
+                sessionAsSent === undefined
+                  ? undefined
+                  : { sourceId: source.id, sourceLabel: source.label, sessionAsSent }
+              }
+            />
           )}
-          {snapshot.shapes.positions !== undefined && (
-            <SnapshotPositionsTable positions={snapshot.shapes.positions} />
+          {snapshot.shapes.positions !== undefined && shapesShown?.positions !== undefined && (
+            <SnapshotPositionsTable
+              positions={shapesShown.positions}
+              corrections={{
+                sourceId: source.id,
+                sourceLabel: source.label,
+                positionsAsSent: snapshot.shapes.positions,
+              }}
+            />
           )}
-          {snapshot.shapes.standings !== undefined && (
-            <SnapshotStandingsTable standings={snapshot.shapes.standings} />
+          {snapshot.shapes.standings !== undefined && shapesShown?.standings !== undefined && (
+            <SnapshotStandingsTable
+              standings={shapesShown.standings}
+              corrections={{
+                sourceId: source.id,
+                sourceLabel: source.label,
+                standingsAsSent: snapshot.shapes.standings,
+              }}
+            />
           )}
           <RawSnapshotJson shapes={snapshot.shapes} />
         </>

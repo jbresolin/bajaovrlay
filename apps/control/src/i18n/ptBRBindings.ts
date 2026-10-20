@@ -71,6 +71,19 @@ export const ptBRBindings = {
     } as Record<string, string>,
     // The badge on a value a correction changed; its tooltip is the reason.
     correctedBadge: 'corrigido',
+    // The menu of a value on the "Fontes" page.
+    correctMenuItem: 'Corrigir valor…',
+    valueButtonLabel: (fieldDescription: string, valueText: string) =>
+      `${fieldDescription}: ${valueText}`,
+    carFieldDescription: (fieldLabel: string, carNumber: number) =>
+      `${fieldLabel} do carro ${carNumber}`,
+    // How the session card names its correctable values.
+    sessionFieldLabels: {
+      eventName: 'Evento',
+      sessionName: 'Nome da sessão',
+      state: 'Bandeira',
+      lapsCompletedByLeader: 'Voltas do líder',
+    },
   },
   // Bound fields of what is on air (Edição rápida, Camadas, rundown and shortcuts).
   onAir: {

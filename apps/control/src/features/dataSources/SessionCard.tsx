@@ -1,7 +1,9 @@
 import type { SessionShape, SessionState } from '@bajaovrlay/shared';
 import { cn } from 'cn';
+import type { ReactNode } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CorrectableValue } from '@/features/overrides/CorrectableValue';
 import { ptBR } from '@/i18n/ptBR';
 
 import { useSessionClockText } from './useSessionClockText';
@@ -23,10 +25,38 @@ const flagClassForEachState = {
  * The session of the selected source's data: event and session names, the flag with its
  * colour, the session clock running live (useSessionClockText.ts, the race clock's own
  * sum and text) and the laps of the leader when the source knows them.
+ * With `corrections` (a stored source, not a "Testar" result), the session shown is the
+ * corrected one and its event, name, flag and laps can be corrected (CorrectableValue.tsx).
  */
-export function SessionCard(props: { session: SessionShape }) {
-  const { session } = props;
+export function SessionCard(props: {
+  session: SessionShape;
+  corrections?: { sourceId: string; sourceLabel: string; sessionAsSent: SessionShape };
+}) {
+  const { session, corrections } = props;
   const clockText = useSessionClockText(session.clock);
+  const sessionFieldLabels = ptBR.bindings.overrides.sessionFieldLabels;
+
+  /** One correctable value of the session, or the value drawn as it is without corrections. */
+  function drawSessionValue(
+    field: 'eventName' | 'sessionName' | 'state' | 'lapsCompletedByLeader',
+    writeValue: (shownSession: SessionShape) => string,
+    drawnValue?: ReactNode,
+  ) {
+    if (corrections === undefined) {
+      return drawnValue ?? writeValue(session);
+    }
+    return (
+      <CorrectableValue
+        sourceLabel={corrections.sourceLabel}
+        overrideKey={{ sourceId: corrections.sourceId, scope: 'session', field }}
+        fieldDescription={sessionFieldLabels[field]}
+        valueText={writeValue(session)}
+        valueAsSentText={writeValue(corrections.sessionAsSent)}
+      >
+        {drawnValue}
+      </CorrectableValue>
+    );
+  }
 
   return (
     <Card>
@@ -37,20 +67,28 @@ export function SessionCard(props: { session: SessionShape }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">{session.eventName}</p>
-          <p className="font-semibold">{session.sessionName}</p>
+          <p className="text-sm text-muted-foreground">
+            {drawSessionValue('eventName', (shownSession) => shownSession.eventName)}
+          </p>
+          <p className="font-semibold">
+            {drawSessionValue('sessionName', (shownSession) => shownSession.sessionName)}
+          </p>
         </div>
         <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
           <dt className="text-muted-foreground">{texts.flagLabel}</dt>
           <dd>
-            <span
-              className={cn(
-                'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-                flagClassForEachState[session.state],
-              )}
-            >
-              {texts.flagStates[session.state]}
-            </span>
+            {drawSessionValue(
+              'state',
+              (shownSession) => texts.flagStates[shownSession.state],
+              <span
+                className={cn(
+                  'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+                  flagClassForEachState[session.state],
+                )}
+              >
+                {texts.flagStates[session.state]}
+              </span>,
+            )}
           </dd>
           <dt className="text-muted-foreground">{texts.clockModes[session.clock.clockMode]}</dt>
           <dd>
@@ -61,7 +99,11 @@ export function SessionCard(props: { session: SessionShape }) {
           {session.lapsCompletedByLeader !== undefined && (
             <>
               <dt className="text-muted-foreground">{texts.lapsOfLeaderLabel}</dt>
-              <dd className="tabular-nums">{session.lapsCompletedByLeader}</dd>
+              <dd className="tabular-nums">
+                {drawSessionValue('lapsCompletedByLeader', (shownSession) =>
+                  String(shownSession.lapsCompletedByLeader ?? ''),
+                )}
+              </dd>
             </>
           )}
         </dl>

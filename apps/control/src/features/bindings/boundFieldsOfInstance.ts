@@ -19,6 +19,7 @@ import {
   resolveBindingAgainstSources,
 } from '@bajaovrlay/shared';
 
+import { findOverrideInForce } from '@/features/overrides/overrideInForce';
 import { ptBR } from '@/i18n/ptBR';
 
 /** One bound field of an instance, described for the page. */
@@ -76,15 +77,7 @@ export function describeBoundFieldsOfInstance(
     const resolution = resolveBindingAgainstSources(binding, slices);
     const overrideKey = findOverrideKeyOfBinding(binding, snapshot?.shapes);
     const overrideInForce =
-      overrideKey === undefined
-        ? undefined
-        : slices.overrides.find(
-            (override) =>
-              override.sourceId === overrideKey.sourceId &&
-              override.scope === overrideKey.scope &&
-              override.field === overrideKey.field &&
-              (override.scope === 'session' || override.carNumber === overrideKey.carNumber),
-          );
+      overrideKey === undefined ? undefined : findOverrideInForce(slices.overrides, overrideKey);
     return {
       fieldKeys,
       binding,
