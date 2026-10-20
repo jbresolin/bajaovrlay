@@ -23,8 +23,13 @@ Browser tests of the control page (Playwright, Chromium). Labels are the clock m
   `flexSourceFollowsATimingSystem.e2e.ts` (the example preset imported into "HTTP/JSON (flexível)", pointed at an imaginary
   timing system the test serves on a free port, `timingSystemTestServer.ts`: "Testar" shows 20 cars; saved and on, the table
   follows a changed answer, keeps its data "Atrasada" while the timing system answers 500, and is "Ok" again after).
+  `bindingsFollowTheSimulator.e2e.ts` (BAJAOVRLAY-20, the brief's walk, about a minute): a race clock whose title and flag read the
+  simulator and whose time is "Relógio da fonte" goes on air with the simulator's state, turns yellow by itself at the seeded race's
+  first yellow (56,7 simulated minutes in, ~57 s at 60×), takes a correction of the session name ("Corrigir valor da fonte…") and
+  loses it again, and shows "fonte atrasada" on its Camadas row with "Falha simulada" on, its data still on air (read from
+  `GET /api/v1/state`).
   A restart keeps the last data, marked stale: the harness cannot restart its server, so
   `apps/server/src/core/boot/startServerRestart.test.ts` proves it.
 
-`emptyTheServerState.ts` empties the server before each test, panels, macros and "vai limpar" marks included, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database).
+`emptyTheServerState.ts` empties the server before each test, panels, macros, "vai limpar" marks and corrections of a source's values included, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database).
 `clockStoppedOnAir.e2e.ts` fails locally when the WSL clock steps (a time sync moves the wall clock); the fix is syncing the Windows clock (Settings → Time & language → Date & time → Sync now), then running `wsl --shutdown` in PowerShell and reopening the terminal, not quarantine.

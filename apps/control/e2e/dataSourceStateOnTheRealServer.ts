@@ -23,9 +23,16 @@ type RecordingAsTheTestsReadIt = {
   snapshotCount: number;
 };
 
+/** The parts of an instance the tests read: where it is and the data it shows. */
+type InstanceAsTheTestsReadIt = {
+  layerId: string;
+  target: string;
+  resolvedData: Record<string, unknown>;
+};
+
 /** The parts of GET /api/v1/state the data source tests read. */
 type StateTheDataSourceTestsRead = {
-  instances: unknown[];
+  instances: InstanceAsTheTestsReadIt[];
   dataSources: DataSourceAsTheTestsReadIt[];
   recordings: RecordingAsTheTestsReadIt[];
 };
@@ -58,6 +65,21 @@ export async function readDataSourceFromTheRealServer(
 export async function countGraphicsOnTheOutputsOfTheRealServer(): Promise<number> {
   const state = await readStateFromTheRealServer();
   return state.instances.length;
+}
+
+/**
+ * Reads the data the real server has on air on one layer's program output (what OBS
+ * draws), or undefined when nothing is there: how a bound graphic is followed on air
+ * without reading the renderer's drawing.
+ */
+export async function readDataOnAirOfLayerFromTheRealServer(
+  layerId: string,
+): Promise<Record<string, unknown> | undefined> {
+  const state = await readStateFromTheRealServer();
+  const instanceOnAir = state.instances.find(
+    (instance) => instance.layerId === layerId && instance.target === 'program',
+  );
+  return instanceOnAir?.resolvedData;
 }
 
 /**

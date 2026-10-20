@@ -123,6 +123,9 @@ function copyOneSliceByName(
     case 'previewClearedLayerIds':
       group.previewClearedLayerIds = slices.previewClearedLayerIds;
       break;
+    case 'instanceBindings':
+      group.instanceBindings = slices.instanceBindings;
+      break;
     case 'rundowns':
       group.rundowns = slices.rundowns;
       break;
@@ -140,6 +143,9 @@ function copyOneSliceByName(
       break;
     case 'dataSources':
       group.dataSources = slices.dataSources;
+      break;
+    case 'overrides':
+      group.overrides = slices.overrides;
       break;
     case 'recordings':
       group.recordings = slices.recordings;
