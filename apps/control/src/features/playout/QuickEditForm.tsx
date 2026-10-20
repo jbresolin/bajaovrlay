@@ -1,9 +1,19 @@
-import type { Graphic, Instance } from '@bajaovrlay/shared';
+import {
+  findClockFieldKeysByRole,
+  type Graphic,
+  type Instance,
+  wholeClockBindingPath,
+} from '@bajaovrlay/shared';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { describeBoundFieldsOfInstance } from '@/features/bindings/boundFieldsOfInstance';
+import {
+  findSourceValueKindOfBinding,
+  findSourceValueKindOfClockField,
+  writeSourceValueForReading,
+} from '@/features/bindings/sourceValueText';
 import {
   buildSchemaFormResolver,
   buildSchemaFormValuesFromDataOnAir,
@@ -15,7 +25,7 @@ import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
 import { findClockFieldKeysOfGraphic } from './clockFieldsOfGraphic';
-import { QuickEditBoundField, writeValueOnAirForReading } from './QuickEditBoundField';
+import { QuickEditBoundField } from './QuickEditBoundField';
 import { QuickEditButtons } from './QuickEditButtons';
 import { useQuickEditCommands } from './useQuickEditCommands';
 import { useTimeOnScreenInQuickEdit } from './useTimeOnScreenInQuickEdit';
@@ -236,9 +246,16 @@ function useBoundFieldsDrawnReadOnly(
     dataSnapshots,
     overrides,
   });
+  const clockFieldKeys = findClockFieldKeysByRole(graphic);
   const contentPairs: Array<[string, ReactNode]> = [];
   for (const boundField of boundFields) {
+    const isWholeClock = boundField.binding.path === wholeClockBindingPath;
     for (const fieldKey of boundField.fieldKeys) {
+      // The whole clock fills four fields; each is written by its clock role.
+      const valueKind =
+        isWholeClock && clockFieldKeys !== undefined
+          ? findSourceValueKindOfClockField(fieldKey, clockFieldKeys)
+          : findSourceValueKindOfBinding(boundField.binding);
       const fieldLabel =
         description.fields.find((field) => field.key === fieldKey)?.label ?? fieldKey;
       contentPairs.push([
@@ -247,7 +264,10 @@ function useBoundFieldsDrawnReadOnly(
           key={fieldKey}
           boundField={boundField}
           fieldLabel={fieldLabel}
-          valueOnAirText={writeValueOnAirForReading(instanceBeingEdited.resolvedData[fieldKey])}
+          valueOnAirText={writeSourceValueForReading(
+            instanceBeingEdited.resolvedData[fieldKey],
+            valueKind,
+          )}
         />,
       ]);
     }

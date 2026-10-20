@@ -59,11 +59,3 @@ export function QuickEditBoundField(props: {
     </div>
   );
 }
-
-/** What a bound field shows on air, for reading: a text as it is, anything else as JSON. */
-export function writeValueOnAirForReading(value: unknown): string {
-  if (value === undefined) {
-    return '—';
-  }
-  return typeof value === 'string' ? value : JSON.stringify(value);
-}

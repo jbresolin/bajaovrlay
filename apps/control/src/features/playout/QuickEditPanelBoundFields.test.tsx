@@ -15,6 +15,7 @@
  *   - "Corrigir valor da fonte…" on the title sends setOverride for the session name,
  *     with the value and the reason typed.
  *   - A corrected title carries the "corrigido" badge.
+ *   - The flag on air reads in pt-BR words ("Verde"), not as the source's code.
  *   - A field frozen at the take is editable on program (gate 2 of PR #18): the server
  *     keeps no binding of it there, so nothing would overwrite what is typed. Its item
  *     still reads the source, so "Salvar no item" skips it.
@@ -137,5 +138,16 @@ describe('the bound fields of an instance in "Edição rápida"', () => {
       screen.queryByRole('combobox', { name: 'Bandeira' }),
       'the live flag stays read-only',
     ).toBeNull();
+  });
+});
+
+describe('the value on air of a bound field', () => {
+  it('writes the flag on air in pt-BR words', () => {
+    // Arrange and act: the bound clock, green on air, loaded with "Editar".
+    loadTheBoundClockIntoQuickEdit();
+
+    // Assert: "Verde", as the operator says it, and never the code "green".
+    expect(screen.getByText('Verde'), 'the flag must read in words').toBeVisible();
+    expect(screen.queryByText('green'), 'the code must not show').toBeNull();
   });
 });

@@ -55,13 +55,15 @@ export {
 } from './validateDataShape.js';
 // The paths a binding may point at in each shape, with their pt-BR labels and value types,
 // one path read back, the prefix of the paths that follow a car chosen by number, and the
-// path of the whole clock.
+// path of the whole clock and the clock role of each session clock path.
 export {
   type BindablePath,
   type BindableValueType,
   BindableValueTypeSchema,
+  type ClockFieldRole,
   entryOfCarPathPrefix,
   findBindablePath,
+  findClockRoleOfSessionPath,
   listBindablePathsOfShape,
   wholeClockBindingPath,
 } from './bindablePaths.js';

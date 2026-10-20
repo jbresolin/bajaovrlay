@@ -13,7 +13,7 @@
  *   - "Fonte" is offered for the race clock's flag, and "Relógio da fonte" only on its
  *     time field; a field no path fits (the lower third's social networks) offers neither.
  *   - The path list of the flag holds the session flag and not the clock's running switch.
- *   - The line under the binding shows the flag the simulator sends now.
+ *   - The line under the binding shows the flag the simulator sends now, in pt-BR words.
  *   - Saving sends the flag binding exactly as chosen, frozen at the take.
  *   - "Relógio da fonte" saves one whole-clock binding on the time field and nothing on
  *     the three other clock fields.
@@ -125,8 +125,11 @@ describe('the binding controls of a field', () => {
     // Act: bind the flag.
     bindTheFlagToTheSimulator();
 
-    // Assert: the line under the binding reads the value of now.
-    expect(screen.getByText('Valor agora: green'), 'the value of now must be shown').toBeVisible();
+    // Assert: the line under the binding reads the value of now, the flag in words.
+    expect(
+      screen.getByText('Valor agora: Verde'),
+      'the value of now must be shown in pt-BR',
+    ).toBeVisible();
   });
 
   it('saves the flag binding as chosen, frozen at the take', async () => {

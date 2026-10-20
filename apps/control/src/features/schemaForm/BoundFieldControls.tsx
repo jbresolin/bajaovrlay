@@ -69,7 +69,10 @@ export function BoundFieldControls(props: {
   const bindingRead = readBindingFromSchemaFormValue(field, bindingValue, dataSchema, isWholeClock);
   const valueNowText =
     bindingRead.status === 'binding'
-      ? describeBindingValueNow(bindingOptions.readValueNow(bindingRead.binding))
+      ? describeBindingValueNow(
+          bindingOptions.readValueNow(bindingRead.binding),
+          bindingRead.binding,
+        )
       : editorTexts.chooseToSeeTheValue;
 
   /** Chooses a path, and a transform that makes it fit when it fits through one only. */

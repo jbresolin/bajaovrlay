@@ -66,6 +66,28 @@ export const entryOfCarPathPrefix = 'entryOfCar.';
  */
 export const wholeClockBindingPath = 'clock';
 
+/** The role a clock field plays: the `v_baja.role` a graphic marks its clock fields with. */
+export type ClockFieldRole = 'clockTime' | 'wallClock' | 'clockRunning' | 'clockMode';
+
+// The session clock's own fields by path, each with the role of the graphic field it fills.
+const clockRoleOfEachSessionClockPath: Record<string, ClockFieldRole> = {
+  'clock.referenceTimeMs': 'clockTime',
+  'clock.referenceWallClockMs': 'wallClock',
+  'clock.running': 'clockRunning',
+  'clock.clockMode': 'clockMode',
+};
+
+/**
+ * The clock role of one field of the session clock, by its path ("clock.running"), or
+ * undefined for any other path. Lets a page write a clock field's value in words (a time,
+ * a moment) without naming the shape's fields itself (gate 2 of PR #18).
+ */
+export function findClockRoleOfSessionPath(path: string): ClockFieldRole | undefined {
+  return Object.hasOwn(clockRoleOfEachSessionClockPath, path)
+    ? clockRoleOfEachSessionClockPath[path]
+    : undefined;
+}
+
 /**
  * Lists the paths a binding may point at in one shape, with their pt-BR labels and value
  * types, in the order the picker shows them. Written out by hand on purpose (readability
