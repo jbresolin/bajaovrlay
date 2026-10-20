@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Faixa — demo de movimento</title>
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="styles.css">
+
+<style>
+  /* Demo-only choreography on one 14 s loop. Percentages are seconds / 14. */
+  .stage-note { left: 600px; top: 300px; }
+  /* The incoming band lives in a slot clipped at the plate's left edge, so it slides in from
+     under the edge instead of appearing beside the plate. The slot is as wide as the band
+     plus its overhang, so the angled cap still clears the plate on the right. */
+  .demo-flag-slot { --band: calc(var(--flag-band-height) + var(--rule-height)); position: absolute; left: 0; bottom: 0; height: var(--band); width: calc(100% + var(--band) * var(--skew-tangent)); overflow: hidden; }
+  .demo-flag-slot .flag-band { width: 100%; }
+  .strip-cars-stack { position: relative; flex: 1; min-width: 0; }
+  /* The incoming page is painted twice (gradient over colour): one layer of the .96 white let
+     the old page's names show through faintly while the wipe crossed them. */
+  .strip-cars-stack .strip-cars { position: absolute; inset: 0; background: linear-gradient(var(--panel-base), var(--panel-base)) var(--panel-base); }
+  .strip-page { position: relative; }
+  .strip-page .page-next, .pos-next { position: absolute; opacity: 0; }
+  .cell-position { position: relative; }
+
+  /* --wipe-run per plate: (plate height + the two 40px margins) × tan 12°, from the tokens that
+     make each height (motion.md): clock 253px → 53.8, 8-row tower 385 → 81.9, bug 284 → 60.4,
+     strip 152 → 32.3, lower third 245 → 52.1 (52px and 28px are the name's and the team line's
+     line-heights in styles.css). */
+  .race-clock { --wipe-run: calc((var(--stripe-height) + var(--ribbon-height) + var(--clock-body-height) + var(--flag-band-height) + var(--rule-height) + 80px) * var(--skew-tangent)); }
+  .positions-compact { --wipe-run: calc((var(--stripe-height) + var(--ribbon-height) + 8 * var(--row-height-compact) + var(--rule-height) + 80px) * var(--skew-tangent)); }
+  .sponsor-bug { --wipe-run: calc((var(--sponsor-bug-height) + 80px) * var(--skew-tangent)); }
+  .lower-strip { --wipe-run: calc((var(--strip-height) + 80px) * var(--skew-tangent)); }
+  .lower-third { --wipe-run: calc((var(--stripe-height) + var(--space-3) + 52px + var(--space-2) + var(--ribbon-height-small) + var(--space-2) + 28px + var(--space-3) + var(--rule-height) + 80px) * var(--skew-tangent)); }
+
+  /* Every entrance is 300ms (--motion-in): clock 0 s, tower 0.1 s, strip 0.2 s, bug 0.3 s, and
+     the lower third 1 s after the strip, at 1.2 s. Every exit is 220ms (--motion-out) at 11 s. */
+  @keyframes demo-wipe-clock {
+    0%, 0% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-out); }
+    2.143%, 78.571% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, calc(100% + 40px + var(--wipe-run)) -40px, calc(100% + 40px) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-in); }
+    80.143%, 100% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); }
+  }
+  @keyframes demo-wipe-tower {
+    0%, 0.714% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-out); }
+    2.857%, 78.571% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, calc(100% + 40px + var(--wipe-run)) -40px, calc(100% + 40px) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-in); }
+    80.143%, 100% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); }
+  }
+  @keyframes demo-wipe-bug {
+    0%, 2.143% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-out); }
+    4.286%, 78.571% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, calc(100% + 40px + var(--wipe-run)) -40px, calc(100% + 40px) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-in); }
+    80.143%, 100% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); }
+  }
+  @keyframes demo-wipe-strip {
+    0%, 1.429% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-out); }
+    3.571%, 78.571% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, calc(100% + 40px + var(--wipe-run)) -40px, calc(100% + 40px) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-in); }
+    80.143%, 100% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); }
+  }
+  @keyframes demo-wipe-third {
+    0%, 8.571% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-out); }
+    10.714%, 78.571% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, calc(100% + 40px + var(--wipe-run)) -40px, calc(100% + 40px) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); animation-timing-function: var(--ease-in); }
+    80.143%, 100% { clip-path: polygon(calc(-40px - var(--wipe-run)) -40px, -40px -40px, calc(-40px - var(--wipe-run)) calc(100% + 40px), calc(-40px - var(--wipe-run)) calc(100% + 40px)); }
+  }
+  .race-clock { animation: demo-wipe-clock 14s infinite; }
+  .positions-compact { animation: demo-wipe-tower 14s infinite; }
+  .sponsor-bug { animation: demo-wipe-bug 14s infinite; }
+  .lower-strip { animation: demo-wipe-strip 14s infinite; }
+  .lower-third { animation: demo-wipe-third 14s infinite; }
+
+  @keyframes demo-row-deal { 0%, 2.857% { opacity: 0; transform: translateY(-8px); animation-timing-function: var(--ease-out); } 5%, 100% { opacity: 1; transform: translateY(0); } }
+  .positions-compact .row { animation: demo-row-deal 14s both infinite; animation-delay: calc(var(--i) * var(--motion-row-stagger)); }
+
+  @keyframes demo-row-down { 0%, 2.857% { opacity: 0; transform: translateY(-8px); animation-timing-function: var(--ease-out); } 5%, 35.714% { opacity: 1; transform: translateY(0); animation-timing-function: var(--ease-in-out); } 38.429%, 100% { opacity: 1; transform: translateY(var(--row-height-compact)); } }
+  @keyframes demo-row-up { 0%, 2.857% { opacity: 0; transform: translateY(-8px); animation-timing-function: var(--ease-out); } 5%, 35.714% { opacity: 1; transform: translateY(0); animation-timing-function: var(--ease-in-out); } 38.429%, 100% { opacity: 1; transform: translateY(calc(-1 * var(--row-height-compact))); } }
+  .row.demo-swap-down { animation-name: demo-row-down; }
+  .row.demo-swap-up { animation-name: demo-row-up; }
+
+  @keyframes demo-cell-up { 0%, 35.714% { background: var(--panel-ribbon); } 38.429%, 52.857% { background: var(--position-up); } 54%, 100% { background: var(--panel-ribbon); } }
+  @keyframes demo-cell-down { 0%, 35.714% { background: var(--panel-ribbon); } 38.429%, 52.857% { background: var(--position-down); } 54%, 100% { background: var(--panel-ribbon); } }
+  .demo-swap-up .cell-position { animation: demo-cell-up 14s infinite; }
+  .demo-swap-down .cell-position { animation: demo-cell-down 14s infinite; }
+  @keyframes demo-fade-out { 0%, 35.714% { opacity: 1; } 38.429%, 100% { opacity: 0; } }
+  @keyframes demo-fade-in { 0%, 35.714% { opacity: 0; } 38.429%, 100% { opacity: 1; } }
+  @keyframes demo-mark { 0%, 35.714% { opacity: 0; } 38.429%, 52.857% { opacity: 1; } 54%, 100% { opacity: 0; } }
+  .pos-now { animation: demo-fade-out 14s infinite; }
+  .pos-next { animation: demo-fade-in 14s infinite; display: inline-flex; align-items: center; gap: var(--move-mark-gap); }
+  .pos-next .move-mark { animation: demo-mark 14s infinite; }
+
+  @keyframes demo-flag-slide { 0%, 21.429% { transform: translateX(-110%); animation-timing-function: var(--ease-out); } 23.571%, 100% { transform: translateX(0); } }
+  .demo-flag-incoming { animation: demo-flag-slide 14s infinite; }
+
+  /* The page wipe (400ms, 8.0 to 8.4 s) has the 12° edge too: run = the car area's 69px × tan 12°. */
+  .lower-strip { --page-wipe-run: calc((var(--strip-height) - var(--rule-height)) * var(--skew-tangent)); }
+  @keyframes demo-page-wipe { 0%, 57.143% { clip-path: polygon(0 0, 0 0, calc(-1 * var(--page-wipe-run)) 100%, 0 100%); animation-timing-function: var(--ease-in-out); } 60%, 100% { clip-path: polygon(0 0, calc(100% + var(--page-wipe-run)) 0, 100% 100%, 0 100%); } }
+  .strip-cars.is-incoming { animation: demo-page-wipe 14s infinite; }
+  @keyframes demo-page-now { 0%, 57.143% { opacity: 1; } 60%, 100% { opacity: 0; } }
+  @keyframes demo-page-next { 0%, 57.143% { opacity: 0; } 60%, 100% { opacity: 1; } }
+  .page-now { animation: demo-page-now 14s infinite; }
+  .page-next { animation: demo-page-next 14s infinite; }
+</style>
+</head>
+<body>
+<div class="sheet-label stage-note" style="left:600px;top:300px">Demo de movimento, 14 s em loop: entrada 0–1,5 s · bandeira 3 s · troca de posição 5 s · página da faixa 8 s · saída 11 s</div>
+<div class="plate race-clock" data-graphic="race-clock">
+  <div class="ribbon ribbon-flush"><span>Enduro de Resistência</span></div>
+  <div class="clock-body">
+    <div class="clock-time">1:16:00</div>
+    <div class="clock-side">
+      <div class="caption">TEMPO RESTANTE</div>
+      <div class="clock-laps">34 VOLTAS</div>
+    </div>
+  </div>
+  <div class="ribbon ribbon-flush flag-band" data-flag="green"><span class="flag-word">VERDE</span></div>
+  <div class="demo-flag-slot"><div class="ribbon ribbon-flush flag-band demo-flag-incoming" data-flag="yellow"><span class="flag-word">AMARELA</span></div></div>
+</div>
+<div class="plate tower positions-compact" data-graphic="positions-compact">
+  <div class="ribbon ribbon-flush"><span>Posições</span><span class="ribbon-sub">Volta 34</span></div>
+  <div class="rows">
+<div class="row is-leader" data-row data-status="running" style="--i:0">
+  <div class="cell-position">1</div>
+  <div class="cell-number">31</div>
+  <div class="cell-name">Acauã Baja</div>
+  <div class="cell-laps">34</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row demo-swap-down" data-row data-status="running" style="--i:1">
+  <div class="cell-position"><span class="pos-now">2</span><span class="pos-next">3<svg class="move-mark" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 8.5.8 1.5h8.4z" fill="currentColor"/></svg></span></div>
+  <div class="cell-number">38</div>
+  <div class="cell-name">Coruja Racing</div>
+  <div class="cell-laps">34</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row demo-swap-up" data-row data-status="running" style="--i:2">
+  <div class="cell-position"><span class="pos-now">3</span><span class="pos-next">2<svg class="move-mark" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.5 9.2 8.5H.8z" fill="currentColor"/></svg></span></div>
+  <div class="cell-number">25</div>
+  <div class="cell-name">Bem-te-vi Off-Road</div>
+  <div class="cell-laps">33</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row" data-row data-status="running" style="--i:3">
+  <div class="cell-position">4</div>
+  <div class="cell-number">78</div>
+  <div class="cell-name">Arara Off-Road</div>
+  <div class="cell-laps">33</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row" data-row data-status="running" style="--i:4">
+  <div class="cell-position">5</div>
+  <div class="cell-number">52</div>
+  <div class="cell-name">Pequi Off-Road</div>
+  <div class="cell-laps">33</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row" data-row data-status="running" style="--i:5">
+  <div class="cell-position">6</div>
+  <div class="cell-number">47</div>
+  <div class="cell-name">Carnaúba Baja</div>
+  <div class="cell-laps">33</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row" data-row data-status="running" style="--i:6">
+  <div class="cell-position">7</div>
+  <div class="cell-number">30</div>
+  <div class="cell-name">Pampa Baja</div>
+  <div class="cell-laps">33</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row" data-row data-status="running" style="--i:7">
+  <div class="cell-position">8</div>
+  <div class="cell-number">81</div>
+  <div class="cell-name">Sucuri Racing</div>
+  <div class="cell-laps">33</div>
+  <div class="cell-status"></div>
+</div>
+  </div>
+</div>
+<div class="sponsor-bug" data-graphic="sponsor-bug">
+  <div class="plate">
+    <img class="sponsor-logo" src="../../../brand/logo-colorida.png" alt="Baja SAE Brasil">
+    <div class="caption sponsor-line">Apresentado por</div>
+    <div class="sponsor-name">Metalúrgica Serrana</div>
+  </div>
+</div>
+<div class="plate lower-strip" data-graphic="lower-strip">
+  <div class="strip-clock">
+    <div class="strip-time">1:16:00</div>
+    <div class="strip-flag" data-flag="green"><span>VERDE</span></div>
+  </div>
+  <div class="strip-cars-stack">
+  <div class="strip-cars" data-page="1">
+    <div class="strip-car is-leader" data-row><span class="strip-position">1</span><span class="strip-number">31</span><span class="strip-school">Mauá</span></div>
+    <div class="strip-car" data-row><span class="strip-position">2</span><span class="strip-number">38</span><span class="strip-school">EESC-USP</span></div>
+    <div class="strip-car" data-row><span class="strip-position">3</span><span class="strip-number">25</span><span class="strip-school">UFES</span></div>
+    <div class="strip-car" data-row><span class="strip-position">4</span><span class="strip-number">78</span><span class="strip-school">UNIFEI</span></div>
+    <div class="strip-car" data-row><span class="strip-position">5</span><span class="strip-number">52</span><span class="strip-school">UFG</span></div>
+  </div>
+  <div class="strip-cars is-incoming" data-page="2">
+    <div class="strip-car" data-row><span class="strip-position">6</span><span class="strip-number">47</span><span class="strip-school">UFERSA</span></div>
+    <div class="strip-car" data-row><span class="strip-position">7</span><span class="strip-number">30</span><span class="strip-school">UFSM</span></div>
+    <div class="strip-car" data-row><span class="strip-position">8</span><span class="strip-number">81</span><span class="strip-school">UFMS</span></div>
+    <div class="strip-car" data-row><span class="strip-position">9</span><span class="strip-number">49</span><span class="strip-school">UFOP</span></div>
+    <div class="strip-car" data-row><span class="strip-position">10</span><span class="strip-number">95</span><span class="strip-school">UFPE</span></div>
+  </div>
+  </div>
+  <div class="strip-page"><span class="page-now">1/12</span><span class="page-next">2/12</span></div>
+</div>
+<div class="plate lower-third" data-graphic="lower-third">
+  <div class="person-name">Mariana Costa</div>
+  <div class="ribbon ribbon-float person-role"><span>Capitã da equipe</span></div>
+  <div class="person-team"><span class="team-badge">31</span><span>Acauã Baja · Mauá</span></div>
+</div>
+</body>
+</html>

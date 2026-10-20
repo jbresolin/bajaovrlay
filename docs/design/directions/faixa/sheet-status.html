@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Faixa — estado do carro</title>
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="sheet-label sheet-title" style="left:96px;top:54px">Estado do carro — três formas, coluna fixa; a forma carrega o significado, nunca só a cor</div>
+<div class="plate sheet-icon-plate" style="left:96px;top:110px"><svg class="status-pit" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 15.5V4.5h3.8a2.9 2.9 0 0 1 0 5.8H7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg><div class="status-label">No box</div><div class="caption">Um &quot;P&quot; num quadrado</div></div>
+<div class="plate sheet-icon-plate" style="left:320px;top:110px"><svg class="status-stopped" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.8 17.4H1.2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg><div class="status-label">Parado</div><div class="caption">Um triângulo com &quot;!&quot;</div></div>
+<div class="plate sheet-icon-plate" style="left:544px;top:110px"><svg class="status-retired" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><div class="status-label">Abandonou</div><div class="caption">Um círculo com uma barra</div></div>
+<div class="sheet-label" style="left:96px;top:360px">Linhas da torre compacta (carro 69 no box, 65 parado, 96 abandonou: o texto a 70%, o ícone não)</div>
+<div class="plate tower positions-compact" data-graphic="positions-compact" style="top:400px">
+  <div class="ribbon ribbon-flush"><span>Posições</span><span class="ribbon-sub">Volta 34</span></div>
+  <div class="rows">
+<div class="row" data-row data-status="inPit">
+  <div class="cell-position">17</div>
+  <div class="cell-number">69</div>
+  <div class="cell-name">Seriema Off-Road</div>
+  <div class="cell-laps">31</div>
+  <div class="cell-status"><svg class="status-pit" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 15.5V4.5h3.8a2.9 2.9 0 0 1 0 5.8H7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg></div>
+</div>
+<div class="row" data-row data-status="stopped">
+  <div class="cell-position">49</div>
+  <div class="cell-number">65</div>
+  <div class="cell-name">Pantanal Off-Road</div>
+  <div class="cell-laps">25</div>
+  <div class="cell-status"><svg class="status-stopped" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.8 17.4H1.2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg></div>
+</div>
+<div class="row" data-row data-status="retired">
+  <div class="cell-position">60</div>
+  <div class="cell-number">96</div>
+  <div class="cell-name">Guará Baja</div>
+  <div class="cell-laps">12</div>
+  <div class="cell-status"><svg class="status-retired" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+</div>
+  </div>
+</div>
+<div class="sheet-label" style="left:96px;top:560px">As mesmas linhas na torre detalhada</div>
+<div class="plate tower positions-detailed" data-graphic="positions-detailed" style="top:600px">
+  <div class="ribbon ribbon-flush detailed-head">
+    <div class="head-title"><span>Posições</span><span class="ribbon-sub">Volta 34</span></div>
+    <div class="head-caption">Voltas</div>
+    <div class="head-caption">Dif.</div>
+    <div class="head-caption">Interv.</div>
+    <div class="head-caption">Últ. volta</div>
+    <div class="head-caption">Melhor</div>
+    <div class="head-caption">Abast.</div>
+    <div class="head-caption"></div>
+  </div>
+  <div class="rows">
+<div class="row" data-row data-status="inPit">
+  <div class="cell-position">17</div>
+  <div class="cell-number">69</div>
+  <div class="cell-team"><span class="team-name">Seriema Off-Road</span><span class="team-school">UFV</span></div>
+  <div class="cell-num is-strong">31</div>
+  <div class="cell-num">+3 voltas</div>
+  <div class="cell-num is-muted">+24,6 s</div>
+  <div class="cell-num">5:07,9</div>
+  <div class="cell-num is-strong">5:04,8</div>
+  <div class="cell-num is-muted">3</div>
+  <div class="cell-status"><svg class="status-pit" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 15.5V4.5h3.8a2.9 2.9 0 0 1 0 5.8H7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg></div>
+</div>
+<div class="row" data-row data-status="stopped">
+  <div class="cell-position">49</div>
+  <div class="cell-number">65</div>
+  <div class="cell-team"><span class="team-name">Pantanal Off-Road</span><span class="team-school">UEM</span></div>
+  <div class="cell-num is-strong">25</div>
+  <div class="cell-num">+9 voltas</div>
+  <div class="cell-num is-muted">+80,4 s</div>
+  <div class="cell-num">6:14,7</div>
+  <div class="cell-num is-strong">6:11,8</div>
+  <div class="cell-num is-muted">2</div>
+  <div class="cell-status"><svg class="status-stopped" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.8 17.4H1.2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg></div>
+</div>
+<div class="row" data-row data-status="retired">
+  <div class="cell-position">60</div>
+  <div class="cell-number">96</div>
+  <div class="cell-team"><span class="team-name">Guará Baja</span><span class="team-school">UFS</span></div>
+  <div class="cell-num is-strong">12</div>
+  <div class="cell-num">+22 voltas</div>
+  <div class="cell-num is-muted">+412,7 s</div>
+  <div class="cell-num">6:38,4</div>
+  <div class="cell-num is-strong">6:32,8</div>
+  <div class="cell-num is-muted">1</div>
+  <div class="cell-status"><svg class="status-retired" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+</div>
+  </div>
+</div>
+<div class="sheet-label" style="left:96px;top:780px">Célula de posição: líder (verde), normal (azul-marinho), subiu (verde com seta para cima por 2 s), desceu (azul com seta para baixo por 2 s)</div>
+<div class="sheet-label" style="left:560px;top:900px">13 e 14: posição de dois dígitos com a seta, o caso que dimensiona a célula de 52 px</div>
+<div class="plate positions-compact" style="left:96px;top:820px">
+  <div class="rows">
+<div class="row is-leader" data-row data-status="running">
+  <div class="cell-position">1</div>
+  <div class="cell-number">31</div>
+  <div class="cell-name">Acauã Baja</div>
+  <div class="cell-laps">34</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row" data-row data-status="running">
+  <div class="cell-position">2</div>
+  <div class="cell-number">38</div>
+  <div class="cell-name">Coruja Racing</div>
+  <div class="cell-laps">34</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row is-moved-up" data-row data-status="running">
+  <div class="cell-position">3<svg class="move-mark" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.5 9.2 8.5H.8z" fill="currentColor"/></svg></div>
+  <div class="cell-number">25</div>
+  <div class="cell-name">Bem-te-vi Off-Road</div>
+  <div class="cell-laps">33</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row is-moved-down" data-row data-status="running">
+  <div class="cell-position">4<svg class="move-mark" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 8.5.8 1.5h8.4z" fill="currentColor"/></svg></div>
+  <div class="cell-number">78</div>
+  <div class="cell-name">Arara Off-Road</div>
+  <div class="cell-laps">33</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row is-moved-up" data-row data-status="running">
+  <div class="cell-position">13<svg class="move-mark" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.5 9.2 8.5H.8z" fill="currentColor"/></svg></div>
+  <div class="cell-number">89</div>
+  <div class="cell-name">Lobo-Guará Off-Road</div>
+  <div class="cell-laps">32</div>
+  <div class="cell-status"></div>
+</div>
+<div class="row is-moved-down" data-row data-status="running">
+  <div class="cell-position">14<svg class="move-mark" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 8.5.8 1.5h8.4z" fill="currentColor"/></svg></div>
+  <div class="cell-number">45</div>
+  <div class="cell-name">Jandaia Racing</div>
+  <div class="cell-laps">32</div>
+  <div class="cell-status"></div>
+</div>
+  </div>
+</div>
+<div class="sheet-label" style="left:800px;top:110px">Ícone a 120 px acima e a 20 px nas linhas; mesma geometria, azul-marinho em todos os estados.</div>
+</body>
+</html>

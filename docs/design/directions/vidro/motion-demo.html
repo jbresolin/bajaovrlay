@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>vidro — motion demo</title>
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .demo-note { position: absolute; right: var(--safe-x); top: var(--safe-y); max-width: 760px; padding: 16px 20px; }
+  /* Demo only: the tower and the lower third never share the air, so keep them apart here. */
+  [data-graphic='lower-third'] { left: 596px; }
+  .demo-list { margin: 8px 0 0; padding-left: 24px; font-size: 20px; line-height: 28px; color: var(--text); }
+  .demo-footnote { margin-top: 8px; font-size: 20px; line-height: 28px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<section class="glass race-clock" data-graphic="race-clock">
+  <div class="clock-session"><span class="live-dot"></span><span class="caption-lg truncate">Enduro de Resistência</span></div>
+  <div class="clock-caption caption">TEMPO RESTANTE</div>
+  <div class="clock-time number">1:16:00</div>
+  <div class="clock-foot"><span class="clock-laps number">34 VOLTAS</span><span class="flag-pill" data-flag="green"><span class="flag-word">VERDE</span></span></div>
+</section>
+<section class="glass tower tower--compact" data-graphic="positions-compact">
+  <header class="tower-header"><span class="caption-lg">POSIÇÕES</span><span class="caption-lg number">VOLTA 34</span></header>
+    <div class="row row--leader" data-row data-status="running">
+      <span class="row-pos number">1</span>
+      <span class="row-car number">31</span>
+      <span class="row-name truncate">Acauã Baja</span>
+      <span class="row-laps number">34</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">2</span>
+      <span class="row-car number">38</span>
+      <span class="row-name truncate">Coruja Racing</span>
+      <span class="row-laps number">34</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">3</span>
+      <span class="row-car number">25</span>
+      <span class="row-name truncate">Bem-te-vi Off-Road</span>
+      <span class="row-laps number">33</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">4</span>
+      <span class="row-car number">78</span>
+      <span class="row-name truncate">Arara Off-Road</span>
+      <span class="row-laps number">33</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">5</span>
+      <span class="row-car number">52</span>
+      <span class="row-name truncate">Pequi Off-Road</span>
+      <span class="row-laps number">33</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">6</span>
+      <span class="row-car number">47</span>
+      <span class="row-name truncate">Carnaúba Baja</span>
+      <span class="row-laps number">33</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">7</span>
+      <span class="row-car number">30</span>
+      <span class="row-name truncate">Pampa Baja</span>
+      <span class="row-laps number">33</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">8</span>
+      <span class="row-car number">81</span>
+      <span class="row-name truncate">Sucuri Racing</span>
+      <span class="row-laps number">33</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">9</span>
+      <span class="row-car number">49</span>
+      <span class="row-name truncate">Tamanduá Racing</span>
+      <span class="row-laps number">33</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">10</span>
+      <span class="row-car number">95</span>
+      <span class="row-name truncate">Cangaço Baja</span>
+      <span class="row-laps number">32</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">11</span>
+      <span class="row-car number">67</span>
+      <span class="row-name truncate">Babaçu Baja</span>
+      <span class="row-laps number">32</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">12</span>
+      <span class="row-car number">93</span>
+      <span class="row-name truncate">Jacu Off-Road</span>
+      <span class="row-laps number">32</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">13</span>
+      <span class="row-car number">89</span>
+      <span class="row-name truncate">Lobo-Guará Off-Road</span>
+      <span class="row-laps number">32</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">14</span>
+      <span class="row-car number">45</span>
+      <span class="row-name truncate">Jandaia Racing</span>
+      <span class="row-laps number">32</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">15</span>
+      <span class="row-car number">98</span>
+      <span class="row-name truncate">Carcará Baja</span>
+      <span class="row-laps number">32</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">16</span>
+      <span class="row-car number">32</span>
+      <span class="row-name truncate">Irara Racing</span>
+      <span class="row-laps number">31</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="inPit">
+      <span class="row-pos number">17</span>
+      <span class="row-car number">69</span>
+      <span class="row-name truncate">Seriema Off-Road</span>
+      <span class="row-laps number">31</span>
+      <span class="row-status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" rx="4"/><path d="M7.5 14.5V5.5h3.25a2.75 2.75 0 0 1 0 5.5H7.5"/></svg></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">18</span>
+      <span class="row-car number">64</span>
+      <span class="row-name truncate">Siriema Baja</span>
+      <span class="row-laps number">31</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">19</span>
+      <span class="row-car number">42</span>
+      <span class="row-name truncate">Jequitibá Racing</span>
+      <span class="row-laps number">31</span>
+      <span class="row-status"></span>
+    </div>
+    <div class="row" data-row data-status="running">
+      <span class="row-pos number">20</span>
+      <span class="row-car number">71</span>
+      <span class="row-name truncate">Tuiuiú Racing</span>
+      <span class="row-laps number">30</span>
+      <span class="row-status"></span>
+    </div>
+</section>
+<section class="glass lower-strip" data-graphic="lower-strip">
+  <div class="strip-clock">
+    <span class="strip-time number">1:16:00</span>
+    <span class="flag-pill flag-pill--strip" data-flag="green"><span class="flag-word">VERDE</span></span>
+  </div>
+  <div class="strip-cells">
+    <div class="strip-page" data-page="1">
+      <div class="strip-cell strip-cell--leader" data-row data-status="running">
+        <span class="strip-pos number">1</span>
+        <span class="strip-car number">31</span>
+        <span class="strip-school truncate">Mauá</span>
+      </div>
+      <div class="strip-cell" data-row data-status="running">
+        <span class="strip-pos number">2</span>
+        <span class="strip-car number">38</span>
+        <span class="strip-school truncate">EESC-USP</span>
+      </div>
+      <div class="strip-cell" data-row data-status="running">
+        <span class="strip-pos number">3</span>
+        <span class="strip-car number">25</span>
+        <span class="strip-school truncate">UFES</span>
+      </div>
+      <div class="strip-cell" data-row data-status="running">
+        <span class="strip-pos number">4</span>
+        <span class="strip-car number">78</span>
+        <span class="strip-school truncate">UNIFEI</span>
+      </div>
+    </div>
+    <div class="strip-page strip-page--hidden" data-page="2">
+      <div class="strip-cell" data-row data-status="running">
+        <span class="strip-pos number">5</span>
+        <span class="strip-car number">52</span>
+        <span class="strip-school truncate">UFG</span>
+      </div>
+      <div class="strip-cell" data-row data-status="running">
+        <span class="strip-pos number">6</span>
+        <span class="strip-car number">47</span>
+        <span class="strip-school truncate">UFERSA</span>
+      </div>
+      <div class="strip-cell" data-row data-status="running">
+        <span class="strip-pos number">7</span>
+        <span class="strip-car number">30</span>
+        <span class="strip-school truncate">UFSM</span>
+      </div>
+      <div class="strip-cell" data-row data-status="running">
+        <span class="strip-pos number">8</span>
+        <span class="strip-car number">81</span>
+        <span class="strip-school truncate">UFMS</span>
+      </div>
+    </div>
+  </div>
+  <div class="strip-pages number"><span class="strip-page-index">1</span>/15</div>
+</section>
+<section class="glass lower-third" data-graphic="lower-third">
+  <div class="lt-name truncate">Mariana Costa</div>
+  <div class="lt-role truncate">Capitã da equipe</div>
+  <div class="lt-team"><span class="truncate">Acauã Baja · Mauá</span></div>
+</section>
+<aside class="glass demo-note">
+  <div class="caption">demo de movimento · repete a cada 9 s</div>
+  <ol class="demo-list">
+    <li>0,0 s — entrada: relógio, 20 linhas da torre (escalonadas 14 ms), faixa, lower third</li>
+    <li>1,8 s — troca de bandeira: transição de cor 250 ms + pulso de escala</li>
+    <li>3,2 s — troca P3/P4: FLIP 450 ms, brilho verde em quem subiu, azul em quem desceu</li>
+    <li>4,8 s — página 1 → 2 da faixa: crossfade 300 ms com deslize de 8 px</li>
+    <li>6,4 s — bandeira volta ao verde</li>
+    <li>7,6 s — saída: 200 ms ease-in, depois reinicia</li>
+  </ol>
+  <div class="demo-footnote">A torre tem 20 linhas aqui, não 22: a faixa ocupa y 950..1026, onde ficariam as linhas 21 e 22, e o operador tira essas duas quando a faixa está no ar.</div>
+</aside>
+<script>
+(() => {
+  const styles = getComputedStyle(document.documentElement);
+  const ms = (token) => Number.parseFloat(styles.getPropertyValue(token));
+  const easeOut = styles.getPropertyValue('--ease-out').trim();
+  const easeIn = styles.getPropertyValue('--ease-in').trim();
+  const easeSwap = styles.getPropertyValue('--ease-swap').trim();
+  const glowUp = styles.getPropertyValue('--accent-glow-up').trim();
+  const glowDown = styles.getPropertyValue('--accent-glow-down').trim();
+
+  const clock = document.querySelector('[data-graphic="race-clock"]');
+  const tower = document.querySelector('[data-graphic="positions-compact"]');
+  const strip = document.querySelector('[data-graphic="lower-strip"]');
+  const lowerThird = document.querySelector('[data-graphic="lower-third"]');
+  const pills = [...document.querySelectorAll('.flag-pill')];
+  const pages = [...strip.querySelectorAll('.strip-page')];
+  const pageIndex = strip.querySelector('.strip-page-index');
+  const flagWords = {"green":"VERDE","yellow":"AMARELA"};
+
+  const inFrames = [
+    { opacity: 0, transform: 'translateY(12px)', filter: 'blur(6px)' },
+    { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' },
+  ];
+  const outFrames = [
+    { opacity: 1, transform: 'translateY(0)' },
+    { opacity: 0, transform: 'translateY(8px)' },
+  ];
+  const enter = (element, delay = 0) =>
+    element.animate(inFrames, { duration: ms('--motion-in'), easing: easeOut, delay, fill: 'both' });
+  const leave = (element, delay = 0) =>
+    element.animate(outFrames, { duration: ms('--motion-out'), easing: easeIn, delay, fill: 'both' });
+  const wait = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
+
+  function rows() { return [...tower.querySelectorAll('[data-row]')]; }
+
+  function enterAll() {
+    enter(clock);
+    rows().forEach((row, index) => enter(row, 60 + index * ms('--motion-stagger')));
+    enter(strip, 100);
+    enter(lowerThird, 200);
+  }
+
+  function leaveAll() {
+    leave(clock);
+    rows().forEach((row) => leave(row));
+    leave(strip);
+    leave(lowerThird);
+  }
+
+  function setFlag(flag) {
+    for (const pill of pills) {
+      pill.dataset.flag = flag;
+      pill.querySelector('.flag-word').textContent = flagWords[flag];
+      pill.animate(
+        [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }],
+        { duration: ms('--motion-flag'), easing: easeOut },
+      );
+    }
+  }
+
+  // FLIP: the lower row moves up one slot; position numbers stay with the slot.
+  function swapWithRowBelow(upperIndex, animate = true) {
+    const list = rows();
+    const upper = list[upperIndex];
+    const lower = list[upperIndex + 1];
+    const upperTop = upper.getBoundingClientRect().top;
+    const lowerTop = lower.getBoundingClientRect().top;
+    upper.parentNode.insertBefore(lower, upper);
+    const upperPos = upper.querySelector('.row-pos');
+    const lowerPos = lower.querySelector('.row-pos');
+    const text = upperPos.textContent;
+    upperPos.textContent = lowerPos.textContent;
+    lowerPos.textContent = text;
+    if (!animate) return;
+    const delta = lowerTop - upperTop;
+    const swap = { duration: ms('--motion-swap'), easing: easeSwap };
+    lower.animate([{ transform: 'translateY(' + delta + 'px)' }, { transform: 'translateY(0)' }], swap);
+    upper.animate([{ transform: 'translateY(' + -delta + 'px)' }, { transform: 'translateY(0)' }], swap);
+    const glow = { duration: ms('--motion-glow'), easing: easeOut };
+    lower.animate([{ backgroundColor: glowUp }, { backgroundColor: glowUp, offset: 0.5 }, { backgroundColor: 'transparent' }], glow);
+    upper.animate([{ backgroundColor: glowDown }, { backgroundColor: glowDown, offset: 0.5 }, { backgroundColor: 'transparent' }], glow);
+  }
+
+  function showPage(index) {
+    const page = ms('--motion-strip-page');
+    pages.forEach((layer, layerIndex) => {
+      const isNext = layerIndex === index;
+      layer.classList.remove('strip-page--hidden');
+      layer.animate(
+        isNext
+          ? [{ opacity: 0, transform: 'translateX(8px)' }, { opacity: 1, transform: 'translateX(0)' }]
+          : [{ opacity: 1, transform: 'translateX(0)' }, { opacity: 0, transform: 'translateX(-8px)' }],
+        { duration: page, easing: easeOut, fill: 'both' },
+      );
+    });
+    pageIndex.textContent = String(index + 1);
+  }
+
+  async function loop() {
+    for (;;) {
+      enterAll();
+      await wait(1800);
+      setFlag('yellow');
+      await wait(1400);
+      swapWithRowBelow(2);
+      await wait(1600);
+      showPage(1);
+      await wait(1600);
+      setFlag('green');
+      await wait(1200);
+      leaveAll();
+      await wait(800);
+      swapWithRowBelow(2, false);
+      showPage(0);
+    }
+  }
+  loop();
+})();
+</script>
+</body>
+</html>

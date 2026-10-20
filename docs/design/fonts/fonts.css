@@ -1,0 +1,40 @@
+/*
+ * Self-hosted type for the design mock-ups. Every family here is SIL Open Font License 1.1
+ * (the LICENSE file sits beside each family's files), subset to Latin, which covers every
+ * pt-BR character. Nothing is loaded from a CDN: the graphics must work offline at the track.
+ *
+ * Tabular figures: Barlow, Barlow Condensed, Inter and Saira answer `font-variant-numeric:
+ * tabular-nums` with equal-width digits (checked in Chromium, see README.md). Saira
+ * Condensed does NOT, so it may set names and words, never times, gaps or laps.
+ */
+
+/* Barlow Condensed — direction "placar" (rows, numbers, titles) */
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: block; src: url('./barlow-condensed/barlow-condensed-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: block; src: url('./barlow-condensed/barlow-condensed-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: block; src: url('./barlow-condensed/barlow-condensed-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 800; font-display: block; src: url('./barlow-condensed/barlow-condensed-latin-800-normal.woff2') format('woff2'); }
+
+/* Barlow — direction "placar" (small text, captions) */
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: block; src: url('./barlow/barlow-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: block; src: url('./barlow/barlow-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: block; src: url('./barlow/barlow-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: block; src: url('./barlow/barlow-latin-700-normal.woff2') format('woff2'); }
+
+/* Inter — direction "vidro" (everything) */
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: block; src: url('./inter/inter-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: block; src: url('./inter/inter-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: block; src: url('./inter/inter-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: block; src: url('./inter/inter-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 800; font-display: block; src: url('./inter/inter-latin-800-normal.woff2') format('woff2'); }
+
+/* Saira — direction "faixa" (numbers, text, titles) */
+@font-face { font-family: 'Saira'; font-style: normal; font-weight: 400; font-display: block; src: url('./saira/saira-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Saira'; font-style: normal; font-weight: 500; font-display: block; src: url('./saira/saira-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Saira'; font-style: normal; font-weight: 600; font-display: block; src: url('./saira/saira-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Saira'; font-style: normal; font-weight: 700; font-display: block; src: url('./saira/saira-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Saira'; font-style: normal; font-weight: 800; font-display: block; src: url('./saira/saira-latin-800-normal.woff2') format('woff2'); }
+
+/* Saira Condensed — direction "faixa", names and words only (no tabular figures) */
+@font-face { font-family: 'Saira Condensed'; font-style: normal; font-weight: 500; font-display: block; src: url('./saira-condensed/saira-condensed-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Saira Condensed'; font-style: normal; font-weight: 600; font-display: block; src: url('./saira-condensed/saira-condensed-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Saira Condensed'; font-style: normal; font-weight: 700; font-display: block; src: url('./saira-condensed/saira-condensed-latin-700-normal.woff2') format('woff2'); }

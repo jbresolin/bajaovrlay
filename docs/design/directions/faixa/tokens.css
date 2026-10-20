@@ -1,0 +1,134 @@
+/*
+ * Faixa — the stripe. Every value the direction uses, as custom properties on :root.
+ * styles.css reads only these; nothing there is a literal colour, size or duration.
+ */
+:root {
+  /* ---- Colour roles --------------------------------------------------------------- */
+  --panel-base: rgba(255, 255, 255, 0.96);     /* the white plate, near-opaque           */
+  --panel-secondary: #f1f4f8;                   /* alternate tower rows, caption fields   */
+  --panel-ribbon: #003b71;                      /* the navy ribbon every plate repeats    */
+  --panel-ribbon-secondary: #386db4;            /* blue ribbons and the team line         */
+  --accent: #009739;                            /* the 6px green stripe, the leader cell  */
+  --text: #003b71;                              /* navy type on white                     */
+  --text-muted: #4c5a6b;                        /* captions and secondary numbers (7.0:1) */
+  --text-on-ribbon: #ffffff;                    /* type on navy, blue and green           */
+  --text-on-ribbon-muted: #d9e2ec;              /* captions on navy (8.6:1)               */
+  --text-team-line: #386db4;                    /* the blue team line (5.2:1 on white)    */
+  --rule: #003b71;                              /* the 3px bottom rule of every plate     */
+  --hairline: #003b71;                          /* skewed separators in the strip         */
+  --row-retired-opacity: 0.7;                   /* a retired car's text cells: the lowest   */
+                                                /* value where every pair keeps AA-large  */
+  --position-up: #009739;                       /* position cell after moving up          */
+  --position-down: #386db4;                     /* position cell after moving down        */
+
+  /* ---- Flag set: its own semantics, never the brand values --------------------------- */
+  /* One flag palette shared by all three directions, so João compares looks, not flag colours. */
+  --flag-pre-background: #5b6472;        --flag-pre-text: #ffffff;     /* 5.98:1 */
+  --flag-green-background: #15803d;      --flag-green-text: #ffffff;   /* 5.02:1, AA at any size */
+  --flag-yellow-background: #ffd600;     --flag-yellow-text: #111111;  /* 13.37:1 */
+  --flag-red-background: #dc2626;        --flag-red-text: #ffffff;     /* 4.83:1 */
+  --flag-checkered-dark: #111111;        --flag-checkered-light: #f5f5f5;
+  --flag-checkered-text: #f5f5f5;        --flag-checkered-cell: 22px;  /* word on the dark plate, 17.32:1; one square */
+  --flag-finished-background: #1f2937;   --flag-finished-text: #ffffff; /* 14.68:1 */
+
+  /* ---- Status icons: shape carries the meaning, colour is the same for all three ------ */
+  --status-pit: #003b71;
+  --status-stopped: #003b71;
+  --status-retired: #003b71;
+  --status-icon-size: 20px;
+  --move-mark-size: 14px;        /* the up/down triangle after a moved position: inline SVG */
+  --move-mark-gap: 2px;          /* off the 4px grid on purpose: "13" (32px) + 2 + 14 = 48px   */
+                                 /* leaves 2px each side of the 52px position cell           */
+
+  /* ---- Brand values (docs/brand/logo-baja.svg). Yellow is declared and never used. ---- */
+  --brand-green: #009739;
+  --brand-navy: #003b71;
+  --brand-blue: #386db4;
+  --brand-yellow: #f4c42a;
+  --brand-grey: #383838;
+
+  /* ---- Type ------------------------------------------------------------------------- */
+  --font-display: 'Saira', 'Arial', sans-serif;                 /* numbers, times, titles */
+  --font-text: 'Saira', 'Arial', sans-serif;                    /* captions, lines        */
+  --font-names: 'Saira Condensed', 'Saira', 'Arial', sans-serif; /* team names ONLY       */
+  --weight-caption: 500;
+  --weight-name: 600;
+  --weight-bold: 700;
+  --size-caption: 20px;          /* captions, uppercase, tracked                         */
+  --size-caption-large: 22px;    /* the lower third's team line                        */
+  --size-label: 24px;            /* ribbon titles, laps in rows, detailed-tower numbers  */
+  --size-row: 26px;              /* compact tower numbers                                */
+  --size-row-name: 27px;         /* compact tower team names (Saira Condensed)           */
+  --size-row-detailed: 24px;     /* detailed tower numbers                               */
+  --size-row-detailed-name: 26px;/* detailed tower team names (Saira Condensed)          */
+  --size-flag: 26px;             /* the flag word in the clock band                      */
+  --size-strip: 28px;            /* every strip cell                                     */
+  --size-strip-time: 44px;       /* the strip's clock                                    */
+  --size-person: 48px;           /* lower-third name                                     */
+  --size-clock: 72px;            /* the race clock                                       */
+  --tracking-caption: 0.06em;
+  --tracking-title: 0.04em;
+  --tracking-flag: 0.08em;
+
+  /* ---- Spacing and geometry (4px grid) ---------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --stripe-height: 6px;          /* the green top stripe                                 */
+  --rule-height: 3px;            /* the navy bottom rule                                 */
+  --ribbon-height: 40px;         /* plate header ribbons                                 */
+  --ribbon-height-small: 36px;   /* the lower third's role ribbon                        */
+  --flag-band-height: 44px;      /* the clock's flag band                                */
+  --row-height-compact: 32px;
+  --row-height-detailed: 36px;
+  --strip-height: 72px;
+  --strip-flag-height: 44px;     /* the strip's flag cell: as tall as the time's line box,     */
+                                 /* centred in the 69px navy block (12.5px of navy above it)  */
+  --skew-angle: 12deg;           /* the one gesture every graphic repeats                */
+  --skew-tangent: 0.2126;        /* tan(12deg): horizontal run per px of height          */
+  --radius: 0px;                 /* no rounded corners anywhere                          */
+  --shadow-plate: 0 6px 20px rgba(0, 0, 0, 0.35);
+
+  /* ---- Stage ------------------------------------------------------------------------ */
+  --safe-left: 96px;
+  --safe-top: 54px;
+  --safe-right: 1824px;
+  --safe-bottom: 1026px;
+  --gap-between-plates: 12px;
+
+  /* ---- Motion ----------------------------------------------------------------------- */
+  --motion-in: 300ms;            /* angled wipe in                                       */
+  --motion-out: 220ms;           /* angled wipe out, reversed                            */
+  --motion-swap: 380ms;          /* rows trading places                                  */
+  --motion-strip-page: 400ms;    /* the strip's angled page wipe                         */
+  --motion-strip-hold: 7000ms;   /* one page on screen                                   */
+  --motion-flag: 300ms;          /* the new flag band sliding in along the skew          */
+  --motion-row-stagger: 15ms;    /* rows dealing in from the top                         */
+  --motion-highlight-hold: 2000ms; /* the up/down colour on a moved position cell        */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in: cubic-bezier(0.5, 0, 0.9, 0.4);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ---- Layout values styles.css derives positions from (appended with the geometry) -------- */
+:root {
+  --stage-width: 1920px;
+  --stage-height: 1080px;
+  --clock-body-height: 80px;      /* the 72px time with 4px above and below its box        */
+  --lower-third-bottom: 940px;    /* the lower third's bottom edge, above the strip's room */
+  --sponsor-bug-height: 204px;
+  --strip-clock-width: 400px;     /* the strip's navy clock block (time + flag cell)     */
+  --strip-page-width: 92px;       /* the page cell: "12/12" is 79px at 28px, plus 6px each side */
+  --strip-cars-per-page: 5;       /* equal cells, one fifth of the car area each; must match   */
+                                  /* STRIP_CARS_PER_PAGE in generatePages.mjs (README, strip)  */
+  /* The position cell is 52px in both towers: a two-digit position with its move mark (48px in
+     the compact tower, 45.5px in the detailed) must fit without touching the car number. */
+  --columns-compact: 52px 52px minmax(0, 1fr) 40px 28px;
+  /* Detailed: number and status columns are the compact tower's (52 and 28). Every numeric column
+     holds its caption and its widest value with 12px of padding, and is wide enough that its
+     caption sits at least 24px from the caption before it (README, "Tower rows"). The team column
+     takes the rest: 308px at 1140, 16px more than the widest team-plus-school pair needs. */
+  --columns-detailed: 52px 52px minmax(0, 1fr) 92px 132px 112px 144px 116px 104px 28px;
+}

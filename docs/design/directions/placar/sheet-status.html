@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>placar — sheet status</title>
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="sheet">
+  <div class="sheet__title">placar · situação do carro — ícones e linhas reais (folha de referência, não vai ao ar)</div>
+  <div class="sheet__icons">
+    <div class="sheet__icon-cell plate">
+      <div class="sheet__icon-frame"><svg class="status-icon status-icon--large" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.25 14.75V5.25h3.25a2.6 2.6 0 0 1 0 5.2H7.25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="sheet__icon-caption"><span class="sheet__icon-label">No box</span><span class="caption">P num quadrado</span></div>
+    </div>
+    <div class="sheet__icon-cell plate">
+      <div class="sheet__icon-frame"><svg class="status-icon status-icon--large" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.7 17.4H1.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg></div>
+      <div class="sheet__icon-caption"><span class="sheet__icon-label">Parado</span><span class="caption">triângulo</span></div>
+    </div>
+    <div class="sheet__icon-cell plate">
+      <div class="sheet__icon-frame"><svg class="status-icon status-icon--large" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+      <div class="sheet__icon-caption"><span class="sheet__icon-label">Abandonou</span><span class="caption">círculo cortado</span></div>
+    </div>
+  </div>
+  <div class="sheet__rows">
+    <div class="sheet__cell">
+      <div class="sheet__label">torre compacta · carros 69, 65 e 96</div>
+<section class="tower tower--compact">
+  <header class="tower__header">
+    <span class="caption">POSIÇÕES</span>
+    <span class="caption">VOLTA 34</span>
+  </header>
+  <ol class="tower__rows">
+    <li class="tower-row" data-row data-status="inPit">
+      <span class="tower-row__position">17</span>
+      <span class="tower-row__cue"></span>
+      <span class="tower-row__number">69</span>
+      <span class="tower-row__team">Seriema Off-Road</span>
+      <span class="tower-row__laps">31</span>
+      <span class="tower-row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.25 14.75V5.25h3.25a2.6 2.6 0 0 1 0 5.2H7.25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </li>
+    <li class="tower-row" data-row data-status="stopped">
+      <span class="tower-row__position">49</span>
+      <span class="tower-row__cue"></span>
+      <span class="tower-row__number">65</span>
+      <span class="tower-row__team">Pantanal Off-Road</span>
+      <span class="tower-row__laps">25</span>
+      <span class="tower-row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.7 17.4H1.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg></span>
+    </li>
+    <li class="tower-row" data-row data-status="retired">
+      <span class="tower-row__position">60</span>
+      <span class="tower-row__cue"></span>
+      <span class="tower-row__number">96</span>
+      <span class="tower-row__team">Guará Baja</span>
+      <span class="tower-row__laps">12</span>
+      <span class="tower-row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+    </li>
+  </ol>
+</section>
+    </div>
+    <div class="sheet__cell">
+      <div class="sheet__label">torre detalhada · carros 69, 65 e 96</div>
+<section class="tower tower--detailed">
+  <header class="tower__header detail-head">
+    <span class="detail-head__cell detail-head__cell--position caption">POS</span>
+    <span class="detail-head__cell detail-head__cell--cue caption"></span>
+    <span class="detail-head__cell detail-head__cell--number caption">Nº</span>
+    <span class="detail-head__cell detail-head__cell--team caption">EQUIPE</span>
+    <span class="detail-head__cell detail-head__cell--laps caption">VOLTAS</span>
+    <span class="detail-head__cell detail-head__cell--gap caption">DIF.</span>
+    <span class="detail-head__cell detail-head__cell--interval caption">INTERV.</span>
+    <span class="detail-head__cell detail-head__cell--last-lap caption">ÚLT. VOLTA</span>
+    <span class="detail-head__cell detail-head__cell--best-lap caption">MELHOR</span>
+    <span class="detail-head__cell detail-head__cell--pit-stops caption">ABAST.</span>
+    <span class="detail-head__cell detail-head__cell--status caption"></span>
+  </header>
+  <ol class="tower__rows">
+    <li class="detail-row" data-row data-status="inPit">
+      <span class="detail-row__position">17</span>
+      <span class="detail-row__cue"></span>
+      <span class="detail-row__number">69</span>
+      <span class="detail-row__team"><span class="detail-row__team-name">Seriema Off-Road</span><span class="detail-row__school">UFV</span></span>
+      <span class="detail-row__laps">31</span>
+      <span class="detail-row__gap">+3 voltas</span>
+      <span class="detail-row__interval">+24,6 s</span>
+      <span class="detail-row__last-lap">5:07,9</span>
+      <span class="detail-row__best-lap">5:04,8</span>
+      <span class="detail-row__pit-stops">3</span>
+      <span class="detail-row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.25 14.75V5.25h3.25a2.6 2.6 0 0 1 0 5.2H7.25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </li>
+    <li class="detail-row" data-row data-status="stopped">
+      <span class="detail-row__position">49</span>
+      <span class="detail-row__cue"></span>
+      <span class="detail-row__number">65</span>
+      <span class="detail-row__team"><span class="detail-row__team-name">Pantanal Off-Road</span><span class="detail-row__school">UEM</span></span>
+      <span class="detail-row__laps">25</span>
+      <span class="detail-row__gap">+9 voltas</span>
+      <span class="detail-row__interval">+80,4 s</span>
+      <span class="detail-row__last-lap">6:14,7</span>
+      <span class="detail-row__best-lap">6:11,8</span>
+      <span class="detail-row__pit-stops">2</span>
+      <span class="detail-row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.7 17.4H1.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg></span>
+    </li>
+    <li class="detail-row" data-row data-status="retired">
+      <span class="detail-row__position">60</span>
+      <span class="detail-row__cue"></span>
+      <span class="detail-row__number">96</span>
+      <span class="detail-row__team"><span class="detail-row__team-name">Guará Baja</span><span class="detail-row__school">UFS</span></span>
+      <span class="detail-row__laps">12</span>
+      <span class="detail-row__gap">+22 voltas</span>
+      <span class="detail-row__interval">+412,7 s</span>
+      <span class="detail-row__last-lap">6:38,4</span>
+      <span class="detail-row__best-lap">6:32,8</span>
+      <span class="detail-row__pit-stops">1</span>
+      <span class="detail-row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+    </li>
+  </ol>
+</section>
+    </div>
+  </div>
+</div>
+</body>
+</html>
