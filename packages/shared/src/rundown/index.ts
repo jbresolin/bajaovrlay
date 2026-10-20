@@ -8,8 +8,8 @@ export { type Rundown, RundownSchema } from './rundown.js';
 export { type Item, ItemSchema } from './item.js';
 // Where an item lives (a rundown or a quick-fire panel), and whether two homes are one.
 export { isSameItemHome, type ItemHome, ItemHomeSchema } from './itemHome.js';
-// How a field of an item gets its value (`literal`, or `takeTime` stamped by the server
-// at the take; bindings arrive in M2), and an item's fields.
+// How a field of an item gets its value (`literal`, `takeTime` stamped by the server at
+// the take, or `binding`, whose schema lives in ../bindings/), and an item's fields.
 export {
   type FieldValue,
   FieldValueSchema,

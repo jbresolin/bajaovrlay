@@ -1,0 +1,13 @@
+# packages/shared/src/bindings
+
+Bindings: an item field that reads its value from a data source instead of holding a typed
+one (concept §2 and §5, BAJAOVRLAY-20). Start at `bindingFieldValue.ts` (what a binding
+stores: source, shape, path, car number, live or frozen, one transform), then
+`bindingProblems.ts` (whether its parts make sense together) and
+`bindingFitsGraphicField.ts` (which value types fit a graphic's field, read from the
+manifest schema, and the four clock fields found by role for the clock group).
+
+Everything here is pure and runs alike on the server (when an item is saved, and at the
+take) and in the item editor (before sending). The paths a binding may name, with their
+labels and value types, live with the shapes in `../dataShapes/bindablePaths.ts`; the
+pt-BR sentences in `ptBRBindings.ts`. `index.ts` lists every export.

@@ -13,7 +13,8 @@
  *     cursor must always be written, never left out.
  *   - A prepared race-clock item is accepted unchanged, with or without an auto-out.
  *   - An item is refused, with the field named, when its colour is not one of the six
- *     fixed names, when a field value is of a kind that only arrives in M2, when a
+ *     fixed names, when a field value is of a kind that only arrives with the entity
+ *     library (BAJAOVRLAY-19), when a
  *     literal has no value, when its order is negative or its auto-out is zero.
  *   - The six item colours are exactly the names the control page maps to its tokens.
  *   - An instance may carry the id of the item it was taken from, and may also have none.
@@ -190,12 +191,13 @@ describe('ItemSchema', () => {
       changedPart: { color: '#ff0000' },
       fieldNamedInTheFailure: 'color',
     },
-    // Bindings to data sources arrive in M2 (BAJAOVRLAY-20); until then no field is bound.
+    // Entity references arrive with the entity library (BAJAOVRLAY-19); until then no
+    // field names an entity.
     {
-      name: 'refuses a field bound to a data source, naming kind',
+      name: 'refuses a field that names a team of the entity library, naming kind',
       changedPart: {
         fields: {
-          sessionName: { kind: 'binding', sourceId: 'scoring', path: 'enduro.sessionName' },
+          sessionName: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
         },
       },
       fieldNamedInTheFailure: 'kind',

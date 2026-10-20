@@ -13,7 +13,8 @@
  *     on nothing, and saves both rows stamped with the store's clock.
  *   - A database written by M0 boots, gets the same seed, and keeps its layers and
  *     instances rows exactly as they were.
- *   - A later boot loads the stored rundowns and items back and does not seed again.
+ *   - A later boot loads the stored rundowns and items back and does not seed again,
+ *     an item whose fields read from a data source (BAJAOVRLAY-20) included.
  *   - A stored items row that fails its schema stops the boot.
  *
  * What these tests deliberately do not cover:
@@ -186,6 +187,43 @@ describe('the rundowns and items on a later boot', () => {
       [updatedAtBySliceName.rundowns, updatedAtBySliceName.items],
       'a boot that finds both rows must not write them again',
     ).toEqual(['2026-10-09T21:15:00.000Z', '2026-10-09T21:15:00.000Z']);
+  });
+
+  it('loads back an item whose flag and whole clock are bound to the simulator', () => {
+    // Arrange: a booted database holding "Relógio do enduro — fonte", saved with
+    // bindings the evening before the race.
+    const { database } = openTemporaryDatabase();
+    loadSlicesAtBoot(database, firstBootTime);
+    const boundClockItem: Item = {
+      ...buildEnduroStartItem(),
+      label: 'Relógio do enduro — fonte',
+      fields: {
+        sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
+        state: {
+          kind: 'binding',
+          sourceId: 'simulador-enduro',
+          shapeKey: 'session',
+          path: 'state',
+          isLive: true,
+        },
+        referenceTimeMs: {
+          kind: 'binding',
+          sourceId: 'simulador-enduro',
+          shapeKey: 'session',
+          path: 'clock',
+          isLive: true,
+        },
+      },
+    };
+    writeSliceRows(database, [
+      { name: 'items', json: [boundClockItem], updatedAt: '2026-10-09T21:15:00.000Z' },
+    ]);
+
+    // Act: boot again on the morning of the race.
+    const slices = loadSlicesAtBoot(database, raceDayBootTime);
+
+    // Assert: the item and its bindings are back exactly as saved.
+    expect(slices.items, 'the bound item must come back as saved').toEqual([boundClockItem]);
   });
 
   it('stops the boot when the stored items fail their schema', () => {

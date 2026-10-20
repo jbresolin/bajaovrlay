@@ -4,6 +4,7 @@ import type { CommandError, Item, UpdateItemFieldsCommand } from '@bajaovrlay/sh
 
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
 import { removeKeysFromFieldsChangedOnAirOfItem } from '../fieldsChangedOnAir.js';
+import { findRefusalOfBindingFieldsForGraphic } from '../itemBindingFields.js';
 import {
   findRefusalOfTakeTimeFieldsForGraphic,
   listKeysOfTakeTimeFields,
@@ -19,7 +20,8 @@ import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js'
  * the item's own. The graphic cannot change: the command schema has no graphicId and
  * drops one sent anyway. Refused if the item or the new layer does not exist, or if a
  * field value in the command says takeTime and the item's graphic does not mark that
- * field as a wall-clock moment (the check and the message of a take).
+ * field as a wall-clock moment (the check and the message of a take), or if a binding in
+ * the command cannot be stored (INVALID_BINDING, the check of createItem).
  * An update that leaves the item exactly as it was hands back the same slices. A field
  * whose stored value changed leaves the list of fields changed on air of the item's live
  * instances, on program and in preview.
@@ -48,6 +50,10 @@ export function reduceUpdateItemFields(
   }
 
   const itemAfter = buildItemWithChangedParts(itemBefore, command);
+  const refusalOfABinding = findRefusalOfBindingsInCommand(slices, itemBefore, itemAfter, command);
+  if (refusalOfABinding !== undefined) {
+    return { status: 'refused', error: refusalOfABinding };
+  }
   // Compared by content: the editor may save a form the operator did not touch, and
   // that must not be saved and broadcast as if something had changed.
   if (isDeepStrictEqual(itemAfter, itemBefore)) {
@@ -96,6 +102,38 @@ function findRefusalOfTakeTimeFieldsInCommand(
     return refuseUnknownGraphic(itemBefore.graphicId);
   }
   return findRefusalOfTakeTimeFieldsForGraphic(graphicOfTheItem, fieldsInCommand);
+}
+
+/**
+ * The refusal for a binding the command carries that cannot be stored, or for a field
+ * that would sit beside a whole clock, or undefined. Like the takeTime check above, a
+ * graphic no longer registered refuses a command carrying a binding with
+ * GRAPHIC_NOT_FOUND (no manifest to fit it to), and lets any other command through.
+ * The whole-clock check reads the item as it will be stored, merged, so a takeTime sent
+ * onto the moment of a clock bound whole is refused as well.
+ */
+function findRefusalOfBindingsInCommand(
+  slices: SlicesChangedByCommands,
+  itemBefore: Item,
+  itemAfter: Item,
+  command: UpdateItemFieldsCommand,
+): CommandError | undefined {
+  if (command.fields === undefined) {
+    return undefined;
+  }
+  const commandCarriesABinding = Object.values(command.fields).some(
+    (fieldValue) => fieldValue.kind === 'binding',
+  );
+  const graphicOfTheItem = slices.graphics.find((graphic) => graphic.id === itemBefore.graphicId);
+  if (graphicOfTheItem === undefined) {
+    return commandCarriesABinding ? refuseUnknownGraphic(itemBefore.graphicId) : undefined;
+  }
+  return findRefusalOfBindingFieldsForGraphic(
+    graphicOfTheItem,
+    command.fields,
+    itemAfter.fields,
+    slices.dataSources,
+  );
 }
 
 /** A copy of the item with each part the command names replaced, and the rest kept. */

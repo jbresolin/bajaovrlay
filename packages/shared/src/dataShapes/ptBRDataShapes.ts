@@ -28,12 +28,20 @@ export const ptBRDataShapes = {
   /** "Lista completa": a path that points at a whole list (the tower takes it all). */
   wholeListLabel: 'Lista completa',
 
+  /**
+   * The car a binding names by its number (`carNumber`), wherever it is in the list: a
+   * team card or a battle card that follows one car.
+   */
+  carChosenByNumberLabel: 'Carro escolhido pelo número',
+
   /** The session fields a binding may point at. */
   sessionFieldLabels: {
     eventName: 'Evento',
     sessionName: 'Nome da sessão',
     sessionKind: 'Prova',
     state: 'Bandeira',
+    /** The whole clock at once: the clock group that fills a graphic's four clock fields. */
+    wholeClock: 'Relógio completo',
     clock: 'Relógio',
     scheduledDurationMs: 'Duração prevista',
     lapsCompletedByLeader: 'Voltas do líder',

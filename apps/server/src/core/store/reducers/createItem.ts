@@ -1,6 +1,7 @@
 import type { CreateItemCommand, Item } from '@bajaovrlay/shared';
 
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
+import { findRefusalOfBindingFieldsForGraphic } from '../itemBindingFields.js';
 import { findRefusalOfTakeTimeFieldsForGraphic } from '../itemTakeTimeFields.js';
 import { findRefusalOfUnknownItemHome } from './itemHomeExistence.js';
 import { listItemsOfHomeInOrder, numberItemsByPositionInList } from './itemOrdering.js';
@@ -14,7 +15,9 @@ import { giveCursorToFirstItemOfEmptyRundown } from './rundownCursor.js';
  * graphic does not exist, or if
  * a field says takeTime and the graphic's schema does not mark that field as a
  * wall-clock moment (the check and the message of a take; a graphic without a schema
- * accepts no takeTime field).
+ * accepts no takeTime field), or if a binding cannot be stored (INVALID_BINDING: its
+ * source does not exist, its parts make no sense, its value does not fit the field;
+ * itemBindingFields.ts).
  * The first item of an empty rundown also gets the cursor, so "next" works at once; an
  * item of a panel never gets any cursor.
  * What could go wrong: typed field values are not checked against the graphic here, so
@@ -44,6 +47,15 @@ export function reduceCreateItem(
   const refusalOfATakeTimeField = findRefusalOfTakeTimeFieldsForGraphic(graphic, command.fields);
   if (refusalOfATakeTimeField !== undefined) {
     return { status: 'refused', error: refusalOfATakeTimeField };
+  }
+  const refusalOfABinding = findRefusalOfBindingFieldsForGraphic(
+    graphic,
+    command.fields,
+    command.fields,
+    slices.dataSources,
+  );
+  if (refusalOfABinding !== undefined) {
+    return { status: 'refused', error: refusalOfABinding };
   }
 
   const itemsAlreadyInHome = listItemsOfHomeInOrder(slices.items, command.home);

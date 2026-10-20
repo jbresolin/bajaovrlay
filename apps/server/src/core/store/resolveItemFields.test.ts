@@ -16,7 +16,7 @@
  *     so two takes of the same item at different moments give different values.
  *   - An item with no fields resolves to empty data.
  *   - A field value of a kind the server does not know yet refuses the whole
- *     resolution (no half-filled data) with a pt-BR message that names M2.
+ *     resolution (no half-filled data) with a pt-BR message that names the entity library.
  *   - The fields given are not changed.
  *
  * What these tests deliberately do not cover:
@@ -190,33 +190,30 @@ describe('resolveItemFieldsIntoGraphicData with a takeTime value', () => {
 });
 
 describe('resolveItemFieldsIntoGraphicData with a kind it does not know', () => {
-  it('refuses the whole resolution with a message that names M2', () => {
-    // Arrange: a clock whose flag is bound to the timing system, which only M2 will
-    // understand. Today's types allow only literal and takeTime, so the test forces it in.
-    // (Through the running server this cannot happen yet: the command schema refuses
-    // such a command and a stored item like this stops the boot. This is a guard for M2.)
-    const fieldsWithBinding = {
+  it('refuses the whole resolution with a message that names the entity library', () => {
+    // Arrange: a lower third whose team name names a team of the entity library, which
+    // only BAJAOVRLAY-19 will understand. Today's types do not allow it, so the test
+    // forces it in. (Through the running server this cannot happen yet: the command
+    // schema refuses such a command and a stored item like this stops the boot. This is
+    // a guard for the day the schema accepts it before the resolver has its case.)
+    const fieldsWithEntity = {
       sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
-      state: { kind: 'binding', sourceId: 'cronometragem', path: 'session.flag' },
+      state: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
     } as unknown as ItemFields;
 
     // Act: resolve them.
-    const resolution = resolveItemFieldsIntoGraphicData(fieldsWithBinding, momentOfTheTake);
+    const resolution = resolveItemFieldsIntoGraphicData(fieldsWithEntity, momentOfTheTake);
 
-    // Assert: refused as a whole, naming the field, its kind and M2.
+    // Assert: refused as a whole, naming the field, its kind and the entity library.
     expect(resolution, 'an unknown kind must refuse, never give half-filled data').toEqual({
       status: 'refused',
       error: {
         code: 'UNSUPPORTED_FIELD_KIND',
         message:
-          'O campo "state" usa um valor do tipo "binding", que o servidor só vai saber ' +
-          'resolver no marco M2 (BAJAOVRLAY-20). Por enquanto, preencha o campo com um ' +
-          'valor literal.',
+          'O campo "state" usa um valor do tipo "entity", que o servidor só vai saber ' +
+          'resolver com a biblioteca de entidades (BAJAOVRLAY-19). Por enquanto, preencha ' +
+          'o campo com um valor literal ou de uma fonte de dados.',
       },
     });
-    expect(
-      resolution.status === 'refused' ? resolution.error.message : '',
-      'the message must name the milestone that brings the missing kind',
-    ).toContain('M2');
   });
 });

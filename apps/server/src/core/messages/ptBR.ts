@@ -1,3 +1,5 @@
+import { ptBRBindingErrors } from './ptBRBindings.js';
+
 /**
  * pt-BR catalog for every message the server sends to people (error answers the
  * control page shows to the operator). Log messages stay in English: they are for
@@ -86,8 +88,10 @@ export const ptBR = {
     rundownCursorEmpty: (rundownName: string) =>
       `O rundown "${rundownName}" não tem próximo item: o cursor não está em nenhum item. Escolha o próximo item antes de colocar no ar.`,
     unsupportedFieldKind: (fieldKey: string, fieldKind: string) =>
-      `O campo "${fieldKey}" usa um valor do tipo "${fieldKind}", que o servidor só vai saber resolver no marco M2 (BAJAOVRLAY-20). Por enquanto, preencha o campo com um valor literal.`,
+      `O campo "${fieldKey}" usa um valor do tipo "${fieldKind}", que o servidor só vai saber resolver com a biblioteca de entidades (BAJAOVRLAY-19). Por enquanto, preencha o campo com um valor literal ou de uma fonte de dados.`,
   },
+  // Refusals about item fields read from a data source (BAJAOVRLAY-20); see ptBRBindings.ts.
+  bindingErrors: ptBRBindingErrors,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
   // each goes with a stable code. The layer is named as the operator reads it.
   onAirChangeErrors: {

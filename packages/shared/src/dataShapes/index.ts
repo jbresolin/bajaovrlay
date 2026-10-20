@@ -53,5 +53,13 @@ export {
   type DataShapeValidation,
   validateDataShape,
 } from './validateDataShape.js';
-// The paths a binding may point at in each shape, with their pt-BR labels.
-export { type BindablePath, listBindablePathsOfShape } from './bindablePaths.js';
+// The paths a binding may point at in each shape, with their pt-BR labels and value types,
+// one path read back, and the prefix of the paths that follow a car chosen by number.
+export {
+  type BindablePath,
+  type BindableValueType,
+  BindableValueTypeSchema,
+  entryOfCarPathPrefix,
+  findBindablePath,
+  listBindablePathsOfShape,
+} from './bindablePaths.js';
