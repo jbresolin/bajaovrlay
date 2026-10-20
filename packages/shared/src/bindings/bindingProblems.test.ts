@@ -14,8 +14,10 @@
  *   - Bindings the editor builds pass: the flag, the whole clock, a place, a car by number.
  *   - Each mistake is refused with its own sentence: a path not listed for the shape, a
  *     car path without a car number, a car number on a fixed place, an unknown
- *     transform, parameters without a transform, and a transform with bad parameters.
- *   - findValueTypeOfBinding gives the type of value the binding reads.
+ *     transform, parameters without a transform, a transform with bad parameters, a
+ *     mapping transform, and a transform that does not read the path's type.
+ *   - findValueTypeOfBinding gives the type of value the binding reads, after its
+ *     transform when it has one.
  *
  * What these tests deliberately do not cover:
  *   - Whether the source exists; that needs the dataSources slice, the server checks it.
@@ -124,11 +126,32 @@ describe('findProblemInBinding', () => {
     {
       name: 'refuses a transform with bad parameters',
       binding: {
+        ...buildLiveBindingToTheSimulatorPositions('entries'),
+        transformId: 'topN',
+        transformParameters: { n: 0 },
+      },
+      expectedProblem: 'O número de entradas deve ser um inteiro de 1 a 60.',
+    },
+    // A mapping transform reads a source's own format; canonical data is already read.
+    {
+      name: 'refuses a mapping transform',
+      binding: {
         ...buildLiveBindingToTheSimulatorSession('state'),
         transformId: 'mapValues',
-        transformParameters: {},
+        transformParameters: { green: 'VERDE' },
       },
-      expectedProblem: 'A tabela de valores está vazia.',
+      expectedProblem:
+        'A transformação "Tabela de valores" serve para mapear uma fonte, não para vincular campos de um gráfico.',
+    },
+    // A lap-time format on a text: it would be refused on air at every refresh.
+    {
+      name: 'refuses a transform that does not read the type of the path',
+      binding: {
+        ...buildLiveBindingToTheSimulatorSession('sessionName'),
+        transformId: 'formatLapTimeAsText',
+      },
+      expectedProblem:
+        'A transformação "Tempo de volta como texto" não se aplica a Sessão › Nome da sessão.',
     },
   ];
 
@@ -156,6 +179,27 @@ describe('findValueTypeOfBinding', () => {
     // Assert: the types the editor filters fields with.
     expect(flagType, 'the flag must read as the race clock flag').toBe('stateEnum');
     expect(clockType, 'the whole clock must read as the clock group').toBe('clockGroup');
+  });
+
+  it('gives the type a transform gives, not the type of the path', () => {
+    // Arrange: the leader's last lap written as text, and the top six of the positions.
+    const lastLapAsText: BindingFieldValue = {
+      ...buildLiveBindingToTheSimulatorPositions('entries.0.lastLapMs'),
+      transformId: 'formatLapTimeAsText',
+    };
+    const topSix: BindingFieldValue = {
+      ...buildLiveBindingToTheSimulatorPositions('entries'),
+      transformId: 'topN',
+      transformParameters: { n: 6 },
+    };
+
+    // Act: ask the type of each.
+    const lastLapType = findValueTypeOfBinding(lastLapAsText);
+    const topSixType = findValueTypeOfBinding(topSix);
+
+    // Assert: a text for the lap, and still the positions list for the top six.
+    expect(lastLapType, 'a formatted lap time is text').toBe('text');
+    expect(topSixType, 'topN gives back the list it read').toBe('positionsEntries');
   });
 
   it('answers undefined for a path that is not listed', () => {

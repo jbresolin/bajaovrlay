@@ -14,6 +14,8 @@ export const ptBRBindings = {
       `O número do carro só vale para os caminhos de "${carChosenByNumberLabel}".`,
     parametersWithoutTransform:
       'Há parâmetros de transformação, mas nenhuma transformação escolhida.',
+    transformDoesNotReadPath: (transformLabel: string, pathLabel: string) =>
+      `A transformação "${transformLabel}" não se aplica a ${pathLabel}.`,
   },
 
   /** Why a binding does not fit the graphic field it is stored on. */

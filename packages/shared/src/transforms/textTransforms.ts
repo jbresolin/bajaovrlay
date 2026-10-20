@@ -2,8 +2,8 @@ import { ptBRTransforms } from './ptBRTransforms.js';
 import { quoteValueForReason } from './quoteValueForReason.js';
 import {
   giveTransformedValue,
+  type MappingTransform,
   refuseTransformValue,
-  type Transform,
   type TransformResult,
 } from './transform.js';
 
@@ -20,8 +20,9 @@ function trimSpacesAtTheEnds(value: unknown): TransformResult {
 }
 
 /** "  Baja UFPR " becomes "Baja UFPR". */
-export const trimTextTransform: Transform = {
+export const trimTextTransform: MappingTransform = {
   id: 'trimText',
+  family: 'mapping',
   label: ptBRTransforms.transforms.trimText.label,
   description: ptBRTransforms.transforms.trimText.description,
   apply: (value) => trimSpacesAtTheEnds(value),

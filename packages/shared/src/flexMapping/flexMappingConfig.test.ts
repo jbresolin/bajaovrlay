@@ -12,8 +12,8 @@
  * What these tests prove:
  *   - The mappings of the example preset pass.
  *   - A rule has exactly one source; a transform only reads a path; parameters need a
- *     transform; an unknown transform and a bad value table are refused; a broken path is
- *     refused, in a rule and as the list's path.
+ *     transform; an unknown transform, a binding transform and a bad value table are
+ *     refused; a broken path is refused, in a rule and as the list's path.
  *   - A target must be a field of that shape, at its level (an entry field among the
  *     shape's own fields is refused, and the other way round), and appear once;
  *     "ordem na lista" fills entry fields only.
@@ -166,6 +166,23 @@ describe('FlexMappingConfigSchema', () => {
       ],
       expectedPath: '0.entryFields.0.transformId',
       expectedMessage: 'A transformação "formatLapTime" não existe.',
+    },
+    // A binding transform formats canonical data for the screen; a mapping must bring the
+    // lap in as ms (BAJAOVRLAY-20 marks every transform with its family).
+    {
+      name: 'refuses a binding transform, which formats for the screen',
+      mappings: [
+        buildPositionsMappingWithEntryFields([
+          {
+            targetField: 'lastLapMs',
+            fromPath: 'ultima_volta',
+            transformId: 'formatLapTimeAsText',
+          },
+        ]),
+      ],
+      expectedPath: '0.entryFields.0.transformId',
+      expectedMessage:
+        'A transformação "Tempo de volta como texto" serve para vincular campos de um gráfico, não para mapear uma fonte.',
     },
     // The value table is checked by its own schema when the config is saved.
     {

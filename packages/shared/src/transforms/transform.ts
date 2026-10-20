@@ -1,5 +1,7 @@
 import type { z } from 'zod';
 
+import type { BindableValueType } from '../dataShapes/bindablePaths.js';
+
 /**
  * Any value JSON can hold. A transform hands one of these back, because whatever it gives
  * goes on into a canonical shape, which is JSON from the source to the screen.
@@ -15,24 +17,52 @@ export type JsonValue =
 export type TransformResult = { ok: true; value: JsonValue } | { ok: false; reason: string };
 
 /**
- * One named, pure transform of the registry (architecture rule 5). `apply` reads no clock,
- * keeps no memory and never throws, so the same value and parameters always give the same
- * answer, on the server and in the browser alike.
- * What could go wrong: `apply` receives whatever the source sent, of any type, so each
+ * The two families of the registry, kept apart because each form offers one only:
+ * - `mapping`: brings a source's own data into the canonical shapes (a flex source's
+ *   mapping: "4:38.293" into 278 293 ms);
+ * - `binding`: shapes canonical data for a graphic (an item field's binding: 278 293 ms
+ *   into "4:38,2", the first six cars of the list).
+ * A rule or a binding naming a transform of the other family is refused when saved.
+ */
+export type TransformFamily = 'mapping' | 'binding';
+
+/**
+ * What every transform of the registry has (architecture rule 5). `apply` reads no clock,
+ * keeps no memory and never throws, so the same value and parameters always give the
+ * same answer, on the server and in the browser alike.
+ * What could go wrong: `apply` receives whatever it is handed, of any type, so each
  * transform checks the type itself before reading it.
  */
-export type Transform = {
-  /** The stable name a mapping rule points at, such as "lapTimeTextToMs". */
+type TransformOfEitherFamily = {
+  /** The stable name a rule or a binding points at, such as "lapTimeTextToMs". */
   id: string;
   /** The pt-BR name the operator picks in the dropdown. */
   label: string;
   /** One pt-BR sentence with an example, shown beside the dropdown. */
   description: string;
-  /** The shape of the parameters, for the one transform that takes any (mapValues). */
+  /** The shape of the parameters, for a transform that takes any (mapValues, topN…). */
   parametersSchema?: z.ZodType;
-  /** Turns one value from the source into one value for the canonical shape. */
+  /** Turns one value into one value. */
   apply: (value: unknown, parameters: unknown) => TransformResult;
 };
+
+/** A transform that brings a source's data into a canonical shape (a flex mapping's). */
+export type MappingTransform = TransformOfEitherFamily & { family: 'mapping' };
+
+/**
+ * A transform that shapes canonical data for a graphic (an item binding's). It says which
+ * value types it reads, so the item editor offers it only on a path it can read, and which
+ * it gives, so the editor offers it only for a field that type fits; topN gives back the
+ * kind of list it was given ("sameAsTheValueRead").
+ */
+export type BindingTransform = TransformOfEitherFamily & {
+  family: 'binding';
+  valueTypesRead: BindableValueType[];
+  valueTypeGiven: BindableValueType | 'sameAsTheValueRead';
+};
+
+/** Any transform of the registry, told apart by `family`. */
+export type Transform = MappingTransform | BindingTransform;
 
 /** Builds the answer of a transform that read its value. */
 export function giveTransformedValue(value: JsonValue): TransformResult {

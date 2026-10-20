@@ -1,6 +1,7 @@
 import { type BindableValueType, findBindablePath } from '../dataShapes/bindablePaths.js';
 import { ptBRDataShapes } from '../dataShapes/ptBRDataShapes.js';
 import { checkTransformParameters } from '../transforms/checkTransformParameters.js';
+import { findTransform } from '../transforms/transformRegistry.js';
 import type { BindingFieldValue } from './bindingFieldValue.js';
 import { ptBRBindings } from './ptBRBindings.js';
 
@@ -30,19 +31,39 @@ export function findProblemInBinding(binding: BindingFieldValue): string | undef
     );
   }
 
-  return findProblemInTransformOfBinding(binding);
+  return findProblemInTransformOfBinding(binding, bindablePath.valueType, bindablePath.label);
 }
 
 /**
- * The type of value the binding reads, or undefined when its path is not listed. This
+ * The type of value the binding gives its field: its path's type, or what its transform
+ * makes of it (a lap in ms written as text is text; topN gives back the list it read).
+ * Undefined when its path is not listed or its transform is not a binding transform. This
  * is what decides which graphic fields it may fill (bindingFitsGraphicField.ts).
  */
 export function findValueTypeOfBinding(binding: BindingFieldValue): BindableValueType | undefined {
-  return findBindablePath(binding.shapeKey, binding.path)?.valueType;
+  const valueTypeOfThePath = findBindablePath(binding.shapeKey, binding.path)?.valueType;
+  if (valueTypeOfThePath === undefined || binding.transformId === undefined) {
+    return valueTypeOfThePath;
+  }
+  const transform = findTransform(binding.transformId);
+  if (transform?.family !== 'binding') {
+    return undefined;
+  }
+  return transform.valueTypeGiven === 'sameAsTheValueRead'
+    ? valueTypeOfThePath
+    : transform.valueTypeGiven;
 }
 
-/** The transform's problem: parameters with no transform, or the registry's own check. */
-function findProblemInTransformOfBinding(binding: BindingFieldValue): string | undefined {
+/**
+ * The transform's problem: parameters with no transform, the registry's own check (an
+ * unknown id, a mapping transform, bad parameters), or a transform that cannot read the
+ * type found at the path, which would be refused on air at every refresh.
+ */
+function findProblemInTransformOfBinding(
+  binding: BindingFieldValue,
+  valueTypeOfThePath: BindableValueType,
+  labelOfThePath: string,
+): string | undefined {
   if (binding.transformId === undefined) {
     if (binding.transformParameters !== undefined) {
       return ptBRBindings.bindingProblems.parametersWithoutTransform;
@@ -52,6 +73,17 @@ function findProblemInTransformOfBinding(binding: BindingFieldValue): string | u
   const parametersCheck = checkTransformParameters(
     binding.transformId,
     binding.transformParameters,
+    'binding',
   );
-  return parametersCheck.ok ? undefined : parametersCheck.reason;
+  if (!parametersCheck.ok) {
+    return parametersCheck.reason;
+  }
+  const transform = findTransform(binding.transformId);
+  const canReadThePath =
+    transform?.family === 'binding' && transform.valueTypesRead.includes(valueTypeOfThePath);
+  if (!canReadThePath) {
+    const transformLabel = transform?.label ?? binding.transformId;
+    return ptBRBindings.bindingProblems.transformDoesNotReadPath(transformLabel, labelOfThePath);
+  }
+  return undefined;
 }

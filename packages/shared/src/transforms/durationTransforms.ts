@@ -2,8 +2,8 @@ import { ptBRTransforms } from './ptBRTransforms.js';
 import { quoteValueForReason } from './quoteValueForReason.js';
 import {
   giveTransformedValue,
+  type MappingTransform,
   refuseTransformValue,
-  type Transform,
   type TransformResult,
 } from './transform.js';
 
@@ -125,16 +125,18 @@ function readLapTimeTextAsMs(value: unknown): TransformResult {
 }
 
 /** 278.293 (seconds, a number) becomes 278 293 ms. */
-export const secondsToMsTransform: Transform = {
+export const secondsToMsTransform: MappingTransform = {
   id: 'secondsToMs',
+  family: 'mapping',
   label: ptBRTransforms.transforms.secondsToMs.label,
   description: ptBRTransforms.transforms.secondsToMs.description,
   apply: (value) => convertSecondsToMs(value),
 };
 
 /** "4:38.293", "4:38,293", "278.293" and "1:02:03.4" become milliseconds. */
-export const lapTimeTextToMsTransform: Transform = {
+export const lapTimeTextToMsTransform: MappingTransform = {
   id: 'lapTimeTextToMs',
+  family: 'mapping',
   label: ptBRTransforms.transforms.lapTimeTextToMs.label,
   description: ptBRTransforms.transforms.lapTimeTextToMs.description,
   apply: (value) => readLapTimeTextAsMs(value),

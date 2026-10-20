@@ -156,9 +156,11 @@ function checkOneFieldRule(rule: FlexFieldRule, context: z.RefinementCtx): void 
     return;
   }
 
-  // An unknown id is reported at the id, a bad table at the parameters, so the form can
-  // put the sentence beside the control that is wrong.
-  if (findTransform(rule.transformId) === undefined) {
+  // An unknown id, or a binding transform (it formats canonical data for the screen, it
+  // never reads a source), is reported at the id, a bad table at the parameters, so the
+  // form can put the sentence beside the control that is wrong.
+  const transform = findTransform(rule.transformId);
+  if (transform === undefined) {
     context.addIssue({
       code: 'custom',
       path: ['transformId'],
@@ -166,7 +168,19 @@ function checkOneFieldRule(rule: FlexFieldRule, context: z.RefinementCtx): void 
     });
     return;
   }
-  const transformCheck = checkTransformParameters(rule.transformId, rule.transformParameters);
+  if (transform.family !== 'mapping') {
+    context.addIssue({
+      code: 'custom',
+      path: ['transformId'],
+      message: ptBRTransforms.parameterReasons.bindingTransformInMapping(transform.label),
+    });
+    return;
+  }
+  const transformCheck = checkTransformParameters(
+    rule.transformId,
+    rule.transformParameters,
+    'mapping',
+  );
   if (!transformCheck.ok) {
     context.addIssue({
       code: 'custom',

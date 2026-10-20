@@ -2,8 +2,8 @@ import { ptBRTransforms } from './ptBRTransforms.js';
 import { quoteValueForReason } from './quoteValueForReason.js';
 import {
   giveTransformedValue,
+  type MappingTransform,
   refuseTransformValue,
-  type Transform,
   type TransformResult,
 } from './transform.js';
 
@@ -79,16 +79,18 @@ function readTextAsInteger(value: unknown): TransformResult {
 }
 
 /** "12,5" and "12.5" become 12.5; "1.234,5" is refused as ambiguous. */
-export const textToNumberTransform: Transform = {
+export const textToNumberTransform: MappingTransform = {
   id: 'textToNumber',
+  family: 'mapping',
   label: ptBRTransforms.transforms.textToNumber.label,
   description: ptBRTransforms.transforms.textToNumber.description,
   apply: (value) => readTextAsNumber(value),
 };
 
 /** "42" becomes 42; "42,5" is refused. */
-export const textToIntegerTransform: Transform = {
+export const textToIntegerTransform: MappingTransform = {
   id: 'textToInteger',
+  family: 'mapping',
   label: ptBRTransforms.transforms.textToInteger.label,
   description: ptBRTransforms.transforms.textToInteger.description,
   apply: (value) => readTextAsInteger(value),

@@ -68,10 +68,14 @@ function doesPathLeadToAFieldOfSchema(schema: z.ZodType, path: string): boolean 
     }
     const isListIndex = /^\d+$/.test(step);
     if (isListIndex) {
-      currentSchema = currentSchema instanceof z.ZodArray ? currentSchema.element : undefined;
+      currentSchema =
+        currentSchema instanceof z.ZodArray ? (currentSchema.element as z.ZodType) : undefined;
       continue;
     }
-    currentSchema = currentSchema instanceof z.ZodObject ? currentSchema.shape[step] : undefined;
+    currentSchema =
+      currentSchema instanceof z.ZodObject
+        ? (currentSchema.shape[step] as z.ZodType | undefined)
+        : undefined;
   }
   return currentSchema !== undefined;
 }
