@@ -7,6 +7,7 @@ import {
   type InstanceBoundField,
   resolveBindingAgainstSources,
   type SourcesForBindings,
+  wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
 import { listRequiredFieldKeysOfGraphic } from '../../core/store/graphicSchemaProperties.js';
@@ -24,9 +25,6 @@ export type LiveBoundFieldsRefreshRequest = {
   /** The sources whose data changed; undefined means every source (an override changed). */
   sourceIdsThatChanged: ReadonlySet<string> | undefined;
 };
-
-/** The session path that reads the whole clock at once (the clock group). */
-const wholeClockPath = 'clock';
 
 /**
  * The data to send as refreshBoundInstanceData for one instance, or undefined when
@@ -55,7 +53,7 @@ export function buildRefreshOfLiveBoundFields(
       continue;
     }
     const resolution = resolveBindingAgainstSources(binding, sources);
-    if (binding.path === wholeClockPath) {
+    if (binding.path === wholeClockBindingPath) {
       const clockReading = resolution.status === 'resolved' ? resolution.value : undefined;
       const isClockReading =
         typeof clockReading === 'object' && clockReading !== null && !Array.isArray(clockReading);

@@ -60,6 +60,13 @@ const firstEntriesWithTheirOwnPaths = 10;
 export const entryOfCarPathPrefix = 'entryOfCar.';
 
 /**
+ * The session path of the whole clock, the clock group: one binding that fills a
+ * graphic's four clock fields at once. Every check of "is this the whole clock" compares
+ * with this one name (gate 2 of PR #18).
+ */
+export const wholeClockBindingPath = 'clock';
+
+/**
  * Lists the paths a binding may point at in one shape, with their pt-BR labels and value
  * types, in the order the picker shows them. Written out by hand on purpose (readability
  * law): deriving it from the Zod schemas would need type-level code a reviewer has to run
@@ -107,7 +114,7 @@ function listSessionPaths(): BindablePath[] {
     buildPathAtFixedPlace('sessionName', [shapeName, fieldLabels.sessionName], 'text'),
     buildPathAtFixedPlace('sessionKind', [shapeName, fieldLabels.sessionKind], 'text'),
     buildPathAtFixedPlace('state', [shapeName, fieldLabels.state], 'stateEnum'),
-    buildPathAtFixedPlace('clock', [shapeName, fieldLabels.wholeClock], 'clockGroup'),
+    buildPathAtFixedPlace(wholeClockBindingPath, [shapeName, fieldLabels.wholeClock], 'clockGroup'),
     buildPathAtFixedPlace(
       'clock.clockMode',
       [shapeName, fieldLabels.clock, clockLabels.clockMode],

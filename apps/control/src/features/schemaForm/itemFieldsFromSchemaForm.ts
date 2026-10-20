@@ -166,13 +166,21 @@ export function buildChangedItemFieldsFromSchemaForm(
  * each changed literal as its value, a cleared one as null (which takes it off air).
  * A field changed to "filled by the server at the take" is left out: the brief sends the
  * changed literals only, so the moment already on air stays until the item is taken again.
+ * So is every key in `keysReadFromASource` (fieldsReadFromASource.ts): the item stores
+ * the binding, and the source's value goes on air at the next take. The three clock
+ * fields the whole clock fills are among them; sent as null, the server refused them every
+ * time (gate 2 of PR #18).
  * An empty answer means there is nothing to update on air.
  */
 export function buildInstanceUpdateDataFromChangedItemFields(
   changedItemFields: ItemFields,
+  keysReadFromASource: string[],
 ): Record<string, unknown> {
   const dataPairs: Array<[string, unknown]> = [];
   for (const [fieldKey, changedField] of Object.entries(changedItemFields)) {
+    if (keysReadFromASource.includes(fieldKey)) {
+      continue;
+    }
     if (changedField.kind === 'literal') {
       dataPairs.push([fieldKey, changedField.value]);
     }

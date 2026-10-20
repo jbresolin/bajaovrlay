@@ -5,6 +5,7 @@ import {
   findProblemInBindingForGraphicField,
   type Graphic,
   type ItemFields,
+  wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
@@ -64,7 +65,8 @@ function findRefusalOfWholeClockBesideClockFields(
     return undefined;
   }
   const clockTimeField = fields[clockFieldKeys.clockTime];
-  const isWholeClockBound = clockTimeField?.kind === 'binding' && clockTimeField.path === 'clock';
+  const isWholeClockBound =
+    clockTimeField?.kind === 'binding' && clockTimeField.path === wholeClockBindingPath;
   if (!isWholeClockBound) {
     return undefined;
   }

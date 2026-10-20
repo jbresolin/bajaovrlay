@@ -7,6 +7,9 @@
 export const ptBRBindings = {
   // The controls of a field set to "Fonte" in the item editor.
   editor: {
+    // Under the item editor's fields while the item is on air and a source choice changed:
+    // "Atualizar no ar" sends typed values only (gate 2 of PR #18).
+    sourceChangeAtTheNextTake: 'A mudança de fonte entra no ar na próxima entrada.',
     sourceLabel: (fieldLabel: string) => `Fonte de ${fieldLabel}`,
     pathLabel: (fieldLabel: string) => `O que ${fieldLabel} lê da fonte`,
     carNumberLabel: (fieldLabel: string) => `Número do carro de ${fieldLabel}`,

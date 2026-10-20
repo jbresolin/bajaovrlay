@@ -168,7 +168,7 @@ export function checkSchemaFormValues(
  * The three clock fields "Relógio da fonte" fills while it is the time field's kind, or
  * none: their own values are kept in the form, unchecked and unsent.
  */
-function listKeysFilledByAChosenWholeClock(
+export function listKeysFilledByAChosenWholeClock(
   description: SchemaFormDescription,
   formValues: SchemaFormValues,
 ): string[] {

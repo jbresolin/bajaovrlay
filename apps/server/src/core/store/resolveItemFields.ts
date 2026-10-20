@@ -6,6 +6,7 @@ import {
   type ItemFields,
   resolveBindingAgainstSources,
   type SourcesForBindings,
+  wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
@@ -79,7 +80,7 @@ export function resolveItemFieldsIntoGraphicData(
         resolvedKeysAndValues.push([fieldKey, momentOfTheTakeInMilliseconds]);
         break;
       case 'binding': {
-        const isWholeClock = fieldValue.path === wholeClockPath;
+        const isWholeClock = fieldValue.path === wholeClockBindingPath;
         const fieldOutcome = isWholeClock
           ? resolveWholeClock(fieldKey, fieldValue, graphic, sources)
           : resolveOneBoundField(fieldKey, fieldValue, graphic, sources, requiredFieldKeys);
@@ -101,9 +102,6 @@ export function resolveItemFieldsIntoGraphicData(
     data: Object.fromEntries([...resolvedKeysAndValues, ...keysAndValuesOfTheWholeClock]),
   };
 }
-
-/** The session path that reads the whole clock at once (the clock group). */
-const wholeClockPath = 'clock';
 
 /** What one bound field gives: the keys and values it fills (none when left out), or why not. */
 type BoundFieldOutcome =

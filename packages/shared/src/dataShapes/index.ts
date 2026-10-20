@@ -54,7 +54,8 @@ export {
   validateDataShape,
 } from './validateDataShape.js';
 // The paths a binding may point at in each shape, with their pt-BR labels and value types,
-// one path read back, and the prefix of the paths that follow a car chosen by number.
+// one path read back, the prefix of the paths that follow a car chosen by number, and the
+// path of the whole clock.
 export {
   type BindablePath,
   type BindableValueType,
@@ -62,4 +63,5 @@ export {
   entryOfCarPathPrefix,
   findBindablePath,
   listBindablePathsOfShape,
+  wholeClockBindingPath,
 } from './bindablePaths.js';

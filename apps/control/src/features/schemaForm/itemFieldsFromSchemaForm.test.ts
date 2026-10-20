@@ -302,7 +302,7 @@ describe('buildInstanceUpdateDataFromChangedItemFields', () => {
     };
 
     // Act: build the data of "Atualizar no ar".
-    const updateData = buildInstanceUpdateDataFromChangedItemFields(changedItemFields);
+    const updateData = buildInstanceUpdateDataFromChangedItemFields(changedItemFields, []);
 
     // Assert: literals only; the moment on air stays until the item is taken again.
     expect(updateData, 'the update must hold the changed literal fields only').toEqual({
@@ -316,7 +316,7 @@ describe('buildInstanceUpdateDataFromChangedItemFields', () => {
     const changedItemFields: ItemFields = {};
 
     // Act: build the data of "Atualizar no ar".
-    const updateData = buildInstanceUpdateDataFromChangedItemFields(changedItemFields);
+    const updateData = buildInstanceUpdateDataFromChangedItemFields(changedItemFields, []);
 
     // Assert: empty, which the panel reads as "nothing to update on air".
     expect(updateData, 'no changed field means no data').toEqual({});

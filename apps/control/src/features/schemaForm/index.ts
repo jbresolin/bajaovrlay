@@ -65,6 +65,12 @@ export { buildZodSchemaFromDataSchema } from './zodSchemaFromDataSchema';
 // The parts of an updateInstanceData that come from a form, and "is there nothing to send?".
 export type { InstanceUpdateFromSchemaForm } from './instanceUpdateFromSchemaForm';
 // Builds an on-air update from a checked form: only the changed fields, null for a cleared one.
+export {
+  // Whether a source choice changed since the form opened (it reaches the air at the take).
+  hasSourceChoiceChangedSinceOpened,
+  // The keys the form reads from a source now, which "Atualizar no ar" leaves out.
+  listFieldKeysReadFromASource,
+} from './fieldsReadFromASource';
 export { buildInstanceUpdateFromDirtySchemaFormFields } from './instanceUpdateFromSchemaForm';
 export {
   // Of a stored item, only the fields in which the form differs (updateItemFields.fields).

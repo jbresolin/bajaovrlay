@@ -12,6 +12,7 @@ import {
   listBindablePathsOfShape,
   listTransformsOfFamily,
   listValueTypesThatFitDataSchemaField,
+  wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
 /** One path a field may read, as its dropdown offers it. */
@@ -32,7 +33,7 @@ export type BindingPathChoice = {
 };
 
 /** The whole session clock's key: offered apart, as "Relógio da fonte". */
-export const wholeClockPathKey = 'session:clock';
+export const wholeClockPathKey = `session:${wholeClockBindingPath}`;
 
 /** Joins a shape and a path into the key a dropdown holds. */
 export function buildBindingPathKey(shapeKey: DataShapeKey, path: string): string {

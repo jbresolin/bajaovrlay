@@ -8,7 +8,7 @@
  * starting value instead and its label is listed, so the panel can warn the operator
  * that saving or taking writes what the form shows.
  */
-import type { ItemFields } from '@bajaovrlay/shared';
+import { type ItemFields, wholeClockBindingPath } from '@bajaovrlay/shared';
 
 import {
   canFieldTakeTheWholeClock,
@@ -216,7 +216,7 @@ function listKeysFilledByAStoredWholeClock(
   const storedClockTime =
     clockTimeField === undefined ? undefined : readOwnValueOfRecord(itemFields, clockTimeField.key);
   const isWholeClockStored =
-    storedClockTime?.kind === 'binding' && storedClockTime.path === 'clock';
+    storedClockTime?.kind === 'binding' && storedClockTime.path === wholeClockBindingPath;
   return isWholeClockStored ? listClockFieldKeysFilledByTheWholeClock(description.dataSchema) : [];
 }
 
@@ -278,7 +278,7 @@ export function buildSchemaFormValuesFromItemFields(
     }
     if (storedField?.kind === 'binding') {
       const isWholeClock =
-        storedField.path === 'clock' &&
+        storedField.path === wholeClockBindingPath &&
         canFieldTakeTheWholeClock(description.dataSchema, field.key);
       valuePairs.push([field.key, buildStartingValueOfField(field)]);
       kindPairs.push([field.key, isWholeClock ? 'wholeClock' : 'binding']);

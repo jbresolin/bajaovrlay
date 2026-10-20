@@ -17,6 +17,7 @@ import {
   type Override,
   type OverrideKey,
   resolveBindingAgainstSources,
+  wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
 import { findOverrideInForce } from '@/features/overrides/overrideInForce';
@@ -61,7 +62,7 @@ export function describeBoundFieldsOfInstance(
   }
   const clockFieldKeys = graphic === undefined ? undefined : findClockFieldKeysByRole(graphic);
   return entry.boundFields.map(({ fieldKey, binding }) => {
-    const isWholeClock = binding.path === 'clock' && clockFieldKeys !== undefined;
+    const isWholeClock = binding.path === wholeClockBindingPath && clockFieldKeys !== undefined;
     const fieldKeys = isWholeClock
       ? [
           clockFieldKeys.clockTime,

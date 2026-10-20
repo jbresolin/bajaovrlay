@@ -1,8 +1,10 @@
-import type {
-  InstanceBindings,
-  InstanceBoundField,
-  InstanceTarget,
-  ItemFields,
+import {
+  type ClockFieldKeysByRole,
+  type InstanceBindings,
+  type InstanceBoundField,
+  type InstanceTarget,
+  type ItemFields,
+  wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
 import type { SlicesChangedByCommands } from './reducerTypes.js';
@@ -62,4 +64,49 @@ export function dropBindingsOfInstancesGone(
     return slices;
   }
   return { ...slices, instanceBindings: entriesKept };
+}
+
+/** The graphic fields one bound field fills: the four clock fields for the whole clock. */
+function listFieldKeysFilledByBoundField(
+  boundField: InstanceBoundField,
+  clockFieldKeys: ClockFieldKeysByRole | undefined,
+): string[] {
+  const isWholeClock = boundField.binding.path === wholeClockBindingPath;
+  if (isWholeClock && clockFieldKeys !== undefined) {
+    return Object.values(clockFieldKeys);
+  }
+  return [boundField.fieldKey];
+}
+
+/**
+ * The slice after an operator's updateInstanceData typed `keysTypedOnAir` into one
+ * instance: each bound field that fills one of those keys is dropped, the whole clock as
+ * one, and the entry goes when nothing is left. So the next refresh leaves what was typed
+ * on air until the next take, which reads the item again (gate 2 of PR #18). The very
+ * same list comes back when nothing was dropped.
+ */
+export function releaseBindingsOfFieldsTypedOnAir(
+  instanceBindings: InstanceBindings,
+  instanceId: string,
+  keysTypedOnAir: string[],
+  clockFieldKeys: ClockFieldKeysByRole | undefined,
+): InstanceBindings {
+  const entry = instanceBindings.find((candidate) => candidate.instanceId === instanceId);
+  if (entry === undefined) {
+    return instanceBindings;
+  }
+  const boundFieldsKept = entry.boundFields.filter((boundField) => {
+    const keysFilled = listFieldKeysFilledByBoundField(boundField, clockFieldKeys);
+    return !keysFilled.some((keyFilled) => keysTypedOnAir.includes(keyFilled));
+  });
+  if (boundFieldsKept.length === entry.boundFields.length) {
+    return instanceBindings;
+  }
+  const otherEntries = instanceBindings.filter((candidate) => candidate !== entry);
+  if (boundFieldsKept.length === 0) {
+    return otherEntries;
+  }
+  return instanceBindings.map((candidate) =>
+    candidate === entry ? { instanceId, boundFields: boundFieldsKept } : candidate,
+  );
 }

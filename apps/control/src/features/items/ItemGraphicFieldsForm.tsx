@@ -1,11 +1,13 @@
 import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
 import { type Ref, useImperativeHandle, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import {
   buildChangedItemFieldsFromSchemaForm,
   buildItemFieldsFromSchemaForm,
   buildSchemaFormResolver,
+  hasSourceChoiceChangedSinceOpened,
+  listFieldKeysReadFromASource,
   SchemaFormFields,
   type SchemaFormValues,
 } from '@/features/schemaForm';
@@ -35,6 +37,8 @@ export type ItemGraphicFieldsFormHandle = {
    * after `checkFields` answered true.
    */
   findFieldsChangedFromStoredItem: (storedItem: Item) => ItemFields;
+  /** The keys the form reads from a source now; "Atualizar no ar" leaves them out. */
+  listFieldKeysReadFromASource: () => string[];
 };
 
 /** What the item editor panel gives this form. */
@@ -50,6 +54,8 @@ export type ItemGraphicFieldsFormProps = {
   whenFieldsAreChecked: 'onChange' | 'onSubmit';
   /** Where the panel receives the handle above while this form is on the page. */
   handleRef: Ref<ItemGraphicFieldsFormHandle>;
+  /** true while the stored item is on the program output ("Atualizar no ar" is offered). */
+  isItemOnAir: boolean;
 };
 
 /**
@@ -63,7 +69,7 @@ export type ItemGraphicFieldsFormProps = {
  * belong to two different graphics.
  */
 export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
-  const { graphic, fieldsToShow, whenFieldsAreChecked, handleRef } = props;
+  const { graphic, fieldsToShow, whenFieldsAreChecked, handleRef, isItemOnAir } = props;
 
   // Decided at the first draw and kept: a newer copy of the graphics slice (a reconnect)
   // must not refill the form over what the operator has typed.
@@ -90,9 +96,22 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
           form.getValues(),
           storedItem.fields,
         ),
+      listFieldKeysReadFromASource: () =>
+        listFieldKeysReadFromASource(graphicFields.description, form.getValues()),
     }),
     [form, graphicFields],
   );
+
+  // Watched so the note below follows the operator's choices as they are made.
+  const kindsNow = useWatch({ control: form.control, name: 'kinds' });
+  const bindingsNow = useWatch({ control: form.control, name: 'bindings' });
+  const isSourceChangeWaitingForTheTake =
+    isItemOnAir &&
+    hasSourceChoiceChangedSinceOpened(
+      graphicFields.description,
+      { ...graphicFields.formValues, kinds: kindsNow, bindings: bindingsNow },
+      graphicFields.formValues,
+    );
 
   const hasFieldsThatCouldNotBeRead = graphicFields.labelsOfFieldsThatCouldNotBeRead.length > 0;
   // The item editor alone lets a field read a data source (BAJAOVRLAY-20).
@@ -113,6 +132,11 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
         controlIdPrefix={graphicFieldsControlIdPrefix}
         bindingOptions={bindingOptions}
       />
+      {isSourceChangeWaitingForTheTake && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {ptBR.bindings.editor.sourceChangeAtTheNextTake}
+        </p>
+      )}
     </>
   );
 }

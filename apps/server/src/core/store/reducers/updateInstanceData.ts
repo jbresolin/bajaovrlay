@@ -1,8 +1,13 @@
-import type { Instance, UpdateInstanceDataCommand } from '@bajaovrlay/shared';
+import {
+  findClockFieldKeysByRole,
+  type Instance,
+  type UpdateInstanceDataCommand,
+} from '@bajaovrlay/shared';
 
 import { refuseUnknownInstance } from '../commandRefusals.js';
 import { listFieldsChangedOnAirAfterUpdate } from '../fieldsChangedOnAir.js';
 import { prepareInstanceDataUpdate } from '../instanceDataUpdate.js';
+import { releaseBindingsOfFieldsTypedOnAir } from './instanceBindingsBookkeeping.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
 /**
@@ -23,7 +28,9 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * longer stamped again at the take, and an edited automatic preview becomes `manual`. On an
  * instance of an item, the fields the operator sent that now differ from what the item
  * gives join the instance's `fieldsChangedOnAir` (fieldsChangedOnAir.ts), which Camadas
- * shows as "alterado no ar".
+ * shows as "alterado no ar". A field sent that a live binding of the instance fills stops
+ * following its source (instanceBindingsBookkeeping.ts), so the next refresh does not put
+ * the source's value back over what the operator typed.
  */
 export function reduceUpdateInstanceData(
   slices: SlicesChangedByCommands,
@@ -88,7 +95,21 @@ export function reduceUpdateInstanceData(
   const instancesAfterUpdate = slices.instances.map((instance) =>
     instance.id === command.instanceId ? updatedInstance : instance,
   );
-  return { status: 'applied', slices: { ...slices, instances: instancesAfterUpdate } };
+  const graphic = slices.graphics.find((candidate) => candidate.id === instanceToUpdate.graphicId);
+  const instanceBindingsAfterUpdate = releaseBindingsOfFieldsTypedOnAir(
+    slices.instanceBindings,
+    command.instanceId,
+    [...Object.keys(command.data), ...command.takeTimeFieldKeys],
+    graphic === undefined ? undefined : findClockFieldKeysByRole(graphic),
+  );
+  return {
+    status: 'applied',
+    slices: {
+      ...slices,
+      instances: instancesAfterUpdate,
+      instanceBindings: instanceBindingsAfterUpdate,
+    },
+  };
 }
 
 /**

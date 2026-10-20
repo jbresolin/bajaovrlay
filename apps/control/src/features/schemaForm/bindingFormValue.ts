@@ -6,7 +6,11 @@
  * save (findProblemInBindingForDataSchemaField), so the editor never sends what the server
  * would refuse for a reason the editor could have said.
  */
-import { type BindingFieldValue, findProblemInBindingForDataSchemaField } from '@bajaovrlay/shared';
+import {
+  type BindingFieldValue,
+  findProblemInBindingForDataSchemaField,
+  wholeClockBindingPath,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -54,7 +58,10 @@ export function buildSchemaFormBindingValueFromBinding(
       : undefined;
   return {
     sourceId: binding.sourceId,
-    pathKey: binding.path === 'clock' ? '' : buildBindingPathKey(binding.shapeKey, binding.path),
+    pathKey:
+      binding.path === wholeClockBindingPath
+        ? ''
+        : buildBindingPathKey(binding.shapeKey, binding.path),
     carNumberText: binding.carNumber === undefined ? '' : String(binding.carNumber),
     isLive: binding.isLive,
     transformId: binding.transformId ?? '',
@@ -85,7 +92,7 @@ export function readBindingFromSchemaFormValue(
     return { status: 'problem', message: formErrors.sourceMissing(field.label) };
   }
   const shapeAndPath = isWholeClock
-    ? { shapeKey: 'session' as const, path: 'clock' }
+    ? { shapeKey: 'session' as const, path: wholeClockBindingPath }
     : readBindingPathKey(bindingValue.pathKey);
   if (shapeAndPath === undefined) {
     return { status: 'problem', message: formErrors.pathMissing(field.label) };

@@ -142,6 +142,8 @@ export type UpdateInstanceDataCommandParts = {
    * which is what the air is compared with until this editor changes it.
    */
   changedFields: ItemFields;
+  /** The keys the form reads from a source now, left out (listFieldKeysReadFromASource). */
+  keysReadFromASource: string[];
 };
 
 /**
@@ -149,14 +151,18 @@ export type UpdateInstanceDataCommandParts = {
  * holds a typed value goes on air as that value, and a cleared one as null, which takes
  * it off air. Returns undefined when no such field changed, so the caller sends nothing
  * (a new label or colour is not something the audience sees).
- * A field changed to "filled by the server at the take" is left out, and the list of
+ * A field the form now reads from a source is left out: its value reaches the air at the
+ * next take. A field changed to "filled by the server at the take" is left out, and the list of
  * fields for the server to stamp is always empty: the moment already on air stays until
  * the item is taken again. Stamping it here would restart a running clock on air.
  */
 export function buildUpdateInstanceDataCommandFromChangedFields(
   parts: UpdateInstanceDataCommandParts,
 ): UpdateInstanceDataCommand | undefined {
-  const data = buildInstanceUpdateDataFromChangedItemFields(parts.changedFields);
+  const data = buildInstanceUpdateDataFromChangedItemFields(
+    parts.changedFields,
+    parts.keysReadFromASource,
+  );
   const hasAnythingToChangeOnAir = Object.keys(data).length > 0;
   if (!hasAnythingToChangeOnAir) {
     return undefined;
