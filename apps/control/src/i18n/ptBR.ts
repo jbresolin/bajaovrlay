@@ -1,3 +1,4 @@
+import { ptBRBindings } from './ptBRBindings';
 import { ptBRDataSources } from './ptBRDataSources';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
@@ -10,11 +11,13 @@ import { ptBRQuickFire } from './ptBRQuickFire';
  * Some parts live in files of their own to keep this one readable, and are reached
  * through here like the rest: `ptBR.keyboard` (ptBRKeyboard.ts), `ptBR.quickFire`
  * (ptBRQuickFire.ts, the quick-fire panels and the macros), `ptBR.layers`
- * (ptBRLayers.ts), `ptBR.playout.quickEdit` (ptBRQuickEdit.ts, "Edição rápida") and
- * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page).
+ * (ptBRLayers.ts), `ptBR.playout.quickEdit` (ptBRQuickEdit.ts, "Edição rápida"),
+ * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page) and `ptBR.bindings`
+ * (ptBRBindings.ts, fields read from a source and corrections of a source).
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,
+  bindings: ptBRBindings,
   quickFire: ptBRQuickFire,
   app: {
     title: 'BajaOvrLay',
@@ -164,7 +167,11 @@ export const ptBR = {
     kindLabels: {
       literal: 'Valor digitado',
       takeTime: 'Momento da entrada no ar',
+      binding: 'Fonte',
+      wholeClock: 'Relógio da fonte',
     },
+    // A list field (drawn read-only) that may also read a source: its value as it is.
+    listKindAsItIs: 'Valor como está',
     takeTimeNote: 'Preenchido pelo servidor no momento em que entra no ar.',
     unsupportedPropertyNote:
       'O formulário ainda não sabe editar este campo. O valor abaixo é só para leitura e segue como está.',

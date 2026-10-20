@@ -2,6 +2,13 @@ import { type UseFormReturn, useWatch } from 'react-hook-form';
 
 import { ptBR } from '@/i18n/ptBR';
 
+import {
+  canFieldBeBoundToASource,
+  canFieldTakeTheWholeClock,
+  listClockFieldKeysFilledByTheWholeClock,
+} from './bindingChoices';
+import type { SchemaFormBindingOptions } from './BoundFieldControls';
+import { ListFieldWithSourceChoice } from './ListFieldWithSourceChoice';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';
 import type { SchemaFormValues, UnsupportedValueAsJson } from './schemaFormValues';
@@ -43,6 +50,9 @@ function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
  * point at a control of the first, so each must pass its own.
  * `textShownInUntouchedField` lets the panel have one text or mm:ss field show a text of
  * the panel's own while the operator has not touched it (textShownInUntouchedField.ts).
+ * `bindingOptions` (the item editor only) lets a field read a data source: "Fonte" where a
+ * bindable path fits it, "Relógio da fonte" on a clock's time field, which then fills the
+ * three other clock fields; a field the form draws read-only (a list) may read one too.
  */
 export function SchemaFormFields(props: {
   form: UseFormReturn<SchemaFormValues>;
@@ -52,11 +62,22 @@ export function SchemaFormFields(props: {
   isDisabled?: boolean;
   /** A text for one untouched field to show in place of its value. Default: none. */
   textShownInUntouchedField?: TextShownInUntouchedField;
+  /** What a field may read from a data source; left out, no field offers "Fonte". */
+  bindingOptions?: SchemaFormBindingOptions;
 }) {
-  const { form, description, controlIdPrefix, textShownInUntouchedField } = props;
+  const { form, description, controlIdPrefix, textShownInUntouchedField, bindingOptions } = props;
   const isDisabled = props.isDisabled ?? false;
   const unsupportedValuesAsJson =
     useWatch({ control: form.control, name: 'unsupportedValuesAsJson' }) ?? [];
+  const kinds = useWatch({ control: form.control, name: 'kinds' }) ?? {};
+  const isWholeClockChosen = description.fields.some(
+    (field) =>
+      kinds[field.key] === 'wholeClock' &&
+      canFieldTakeTheWholeClock(description.dataSchema, field.key),
+  );
+  const keysFilledByTheWholeClock = isWholeClockChosen
+    ? listClockFieldKeysFilledByTheWholeClock(description.dataSchema)
+    : [];
 
   if (description.isWholeDataSchemaUnsupported) {
     return (
@@ -81,6 +102,24 @@ export function SchemaFormFields(props: {
         // give two elements the id of the first one's help text.
         if (field.control === 'unsupported') {
           const keptValue = unsupportedValuesAsJson.find((entry) => entry.key === field.key);
+          const canReadASource =
+            bindingOptions !== undefined &&
+            canFieldBeBoundToASource(description.dataSchema, field.key);
+          if (canReadASource) {
+            return (
+              <div key={field.key} className={chooseWidthClassOfField(field)}>
+                <ListFieldWithSourceChoice
+                  form={form}
+                  field={field}
+                  dataSchema={description.dataSchema}
+                  controlId={`${controlIdPrefix}-unsupported-${positionInTheForm}`}
+                  keptJsonText={keptValue?.jsonText}
+                  bindingOptions={bindingOptions}
+                  isDisabled={isDisabled}
+                />
+              </div>
+            );
+          }
           return (
             <div key={field.key} className={chooseWidthClassOfField(field)}>
               <UnsupportedValueBox
@@ -108,6 +147,9 @@ export function SchemaFormFields(props: {
                   ? textShownInUntouchedField
                   : undefined
               }
+              dataSchema={description.dataSchema}
+              bindingOptions={bindingOptions}
+              isFilledByTheWholeClock={keysFilledByTheWholeClock.includes(field.key)}
             />
           </div>
         );

@@ -97,8 +97,7 @@ describe('applyCommand with an invalid command', () => {
     // Arrange: a store, and a command type the server does not know.
     const { store } = createStoreWithRaceClockRegistered();
     const instancesBefore = store.readAllSlices().instances;
-    // (It was takeItem until BAJAOVRLAY-13, runMacro until -16 and setOverride until -20;
-    // importing entities arrives with the entity library, BAJAOVRLAY-19.)
+    // (It was takeItem, then runMacro, then setOverride; entities arrive with BAJAOVRLAY-19.)
     const unknownCommand = { type: 'importEntities', sourceId: 'scoring', value: [] };
 
     // Act: apply it as the operator.

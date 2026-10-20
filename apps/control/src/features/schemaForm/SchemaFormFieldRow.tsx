@@ -12,10 +12,12 @@ import {
 } from '@/components/ui/select';
 import { ptBR } from '@/i18n/ptBR';
 
+import { canFieldBeBoundToASource, canFieldTakeTheWholeClock } from './bindingChoices';
+import { BoundFieldControls, type SchemaFormBindingOptions } from './BoundFieldControls';
 import { clearBlankOptionalTypedFormValue } from './fieldValueConversion';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormValueControl } from './SchemaFormValueControl';
-import type { SchemaFormValues } from './schemaFormValues';
+import type { SchemaFormFieldKind, SchemaFormValues } from './schemaFormValues';
 import {
   chooseTextShownInPlaceOfFieldValue,
   type CursorVisitToField,
@@ -26,8 +28,29 @@ import {
 // free text. A number input refuses "27:34", and a switch or a dropdown has no text.
 const controlsThatCanShowAPanelText = ['text', 'duration'];
 
-// The kinds the selector lists, in the order the operator reads them.
-const kindsTheSelectorOffers = ['literal', 'takeTime'] as const;
+/**
+ * The kinds the selector lists for a field, in the order the operator reads them: typed
+ * always; "filled by the server at the take" where the description offers it; "Fonte"
+ * where the panel handed binding options and some bindable path fits the field; "Relógio
+ * da fonte" on the time field of a graphic that marks the four clock roles.
+ */
+function listKindsOfferedForField(
+  field: SchemaFormFieldDescription,
+  dataSchema: unknown,
+  bindingOptions: SchemaFormBindingOptions | undefined,
+): SchemaFormFieldKind[] {
+  const kinds: SchemaFormFieldKind[] = ['literal'];
+  if (field.offersTakeTime) {
+    kinds.push('takeTime');
+  }
+  if (bindingOptions !== undefined && canFieldBeBoundToASource(dataSchema, field.key)) {
+    kinds.push('binding');
+  }
+  if (bindingOptions !== undefined && canFieldTakeTheWholeClock(dataSchema, field.key)) {
+    kinds.push('wholeClock');
+  }
+  return kinds;
+}
 
 /** Joins the ids of the texts under a control for `aria-describedby`; undefined when none. */
 function joinIdsOfDescribingTexts(idsOrNothing: Array<string | undefined>): string | undefined {
@@ -68,17 +91,27 @@ export function SchemaFormFieldRow(props: {
   isDisabled: boolean;
   /** The panel's text for this field while it is untouched; undefined for none. */
   textShownWhileUntouched: TextShownInUntouchedField | undefined;
+  /** The graphic's data schema, which decides which paths of a source fit the field. */
+  dataSchema: unknown;
+  /** What the panel offers for reading a source; undefined: no "Fonte" (Edição rápida). */
+  bindingOptions: SchemaFormBindingOptions | undefined;
+  /** True while another field is "Relógio da fonte" and fills this clock field too. */
+  isFilledByTheWholeClock: boolean;
 }) {
   const { form, field, controlId, isDisabled, textShownWhileUntouched } = props;
+  const { dataSchema, bindingOptions, isFilledByTheWholeClock } = props;
   const kindSelectorId = `${controlId}-kind`;
   const takeTimeNoteId = `${controlId}-take-time-note`;
   const helpTextId = `${controlId}-help`;
   const errorMessageId = `${controlId}-error`;
 
   const chosenKind = useWatch({ control: form.control, name: `kinds.${field.key}` });
+  const kindsOffered = listKindsOfferedForField(field, dataSchema, bindingOptions);
   const isFilledByTheServer = field.offersTakeTime && chosenKind === 'takeTime';
+  const isReadFromASource =
+    (chosenKind === 'binding' || chosenKind === 'wholeClock') && kindsOffered.includes(chosenKind);
   const errorMessage = form.formState.errors.values?.[field.key]?.message;
-  const hasError = errorMessage !== undefined && !isFilledByTheServer;
+  const hasError = errorMessage !== undefined && !isFilledByTheServer && !isFilledByTheWholeClock;
   const describedByIds = joinIdsOfDescribingTexts([
     field.help === undefined ? undefined : helpTextId,
     hasError ? errorMessageId : undefined,
@@ -115,6 +148,17 @@ export function SchemaFormFieldRow(props: {
     }
   }
 
+  if (isFilledByTheWholeClock) {
+    return (
+      <div className="flex flex-col gap-2">
+        <Label>{field.label}</Label>
+        <p className="text-sm text-muted-foreground">
+          {ptBR.bindings.editor.filledByTheWholeClockNote}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-1">
@@ -133,7 +177,7 @@ export function SchemaFormFieldRow(props: {
         )}
       </div>
 
-      {field.offersTakeTime && (
+      {kindsOffered.length > 1 && (
         <Controller
           control={form.control}
           name={`kinds.${field.key}`}
@@ -153,7 +197,7 @@ export function SchemaFormFieldRow(props: {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {kindsTheSelectorOffers.map((kind) => (
+                {kindsOffered.map((kind) => (
                   <SelectItem key={kind} value={kind}>
                     {ptBR.schemaForm.kindLabels[kind]}
                   </SelectItem>
@@ -164,11 +208,23 @@ export function SchemaFormFieldRow(props: {
         />
       )}
 
-      {isFilledByTheServer ? (
+      {isReadFromASource && bindingOptions !== undefined && (
+        <BoundFieldControls
+          form={form}
+          field={field}
+          dataSchema={dataSchema}
+          controlId={controlId}
+          isWholeClock={chosenKind === 'wholeClock'}
+          bindingOptions={bindingOptions}
+          isDisabled={isDisabled}
+        />
+      )}
+      {isFilledByTheServer && (
         <p id={takeTimeNoteId} className="text-sm text-muted-foreground">
           {ptBR.schemaForm.takeTimeNote}
         </p>
-      ) : (
+      )}
+      {!isFilledByTheServer && !isReadFromASource && (
         <Controller
           control={form.control}
           name={`values.${field.key}`}

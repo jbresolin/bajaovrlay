@@ -11,12 +11,21 @@
 import type { ItemFields } from '@bajaovrlay/shared';
 
 import {
+  canFieldTakeTheWholeClock,
+  listClockFieldKeysFilledByTheWholeClock,
+} from './bindingChoices';
+import {
+  buildSchemaFormBindingValueFromBinding,
+  emptySchemaFormBindingValue,
+} from './bindingFormValue';
+import {
   clearBlankOptionalTypedFormValue,
   convertDataValueIntoFormValue,
 } from './fieldValueConversion';
 import { isPlainRecord, readOwnValueOfRecord } from './plainRecord';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import type {
+  SchemaFormBindingValue,
   SchemaFormFieldKind,
   SchemaFormFieldValue,
   SchemaFormValues,
@@ -79,15 +88,32 @@ function listFieldsTheFormCanEdit(description: SchemaFormDescription) {
   return description.fields.filter((field) => field.control !== 'unsupported');
 }
 
-/** Puts the three parts together, building both records from pairs (never by assignment). */
+/**
+ * Puts the parts together, building the records from pairs (never by assignment). A field
+ * with no binding pair gets the empty "Fonte" (nothing chosen, live), so every editable
+ * field has one for the kind selector to switch to.
+ */
 function assembleSchemaFormValues(
   valuePairs: Array<[string, SchemaFormFieldValue]>,
   kindPairs: Array<[string, SchemaFormFieldKind]>,
   unsupportedValuesAsJson: UnsupportedValueAsJson[],
+  bindingPairs: Array<[string, SchemaFormBindingValue]> = [],
 ): SchemaFormValues {
+  const bindingsByKey = new Map(bindingPairs);
+  const keysOfEditableFields = valuePairs.map(([fieldKey]) => fieldKey);
+  // A list field the form draws read-only has no value, but may hold a binding.
+  const keysOfListFieldsWithABinding = bindingPairs
+    .map(([fieldKey]) => fieldKey)
+    .filter((fieldKey) => !keysOfEditableFields.includes(fieldKey));
   return {
     values: Object.fromEntries(valuePairs),
     kinds: Object.fromEntries(kindPairs),
+    bindings: Object.fromEntries(
+      [...keysOfEditableFields, ...keysOfListFieldsWithABinding].map((fieldKey) => [
+        fieldKey,
+        bindingsByKey.get(fieldKey) ?? emptySchemaFormBindingValue,
+      ]),
+    ),
     unsupportedValuesAsJson,
   };
 }
@@ -176,8 +202,29 @@ export function buildSchemaFormValuesFromDataOnAir(
 }
 
 /**
- * Fills a form from the stored fields of an item. A `literal` shows its value and a
- * `takeTime` shows as "filled by the server at the take" where the form offers that.
+ * The three clock fields an item's stored whole clock fills (none when the item stores
+ * no whole clock). The item stores nothing, or a literal null, on them; the form must not
+ * read that as "missing".
+ */
+function listKeysFilledByAStoredWholeClock(
+  description: SchemaFormDescription,
+  itemFields: ItemFields,
+): string[] {
+  const clockTimeField = description.fields.find((field) =>
+    canFieldTakeTheWholeClock(description.dataSchema, field.key),
+  );
+  const storedClockTime =
+    clockTimeField === undefined ? undefined : readOwnValueOfRecord(itemFields, clockTimeField.key);
+  const isWholeClockStored =
+    storedClockTime?.kind === 'binding' && storedClockTime.path === 'clock';
+  return isWholeClockStored ? listClockFieldKeysFilledByTheWholeClock(description.dataSchema) : [];
+}
+
+/**
+ * Fills a form from the stored fields of an item. A `literal` shows its value, a
+ * `takeTime` shows as "filled by the server at the take" where the form offers that, and
+ * a `binding` as "Fonte" with its choices, or as "Relógio da fonte" for the whole clock on
+ * the time field (its three other clock fields are then the whole clock's, not unreadable).
  * - A field the item does not store, or stores as a literal null: cleared when optional;
  *   listed, and started as in an empty form (starting value and kind), when required.
  * - A literal the control cannot show, or a `takeTime` on a field that does not offer
@@ -197,8 +244,10 @@ export function buildSchemaFormValuesFromItemFields(
 ): SchemaFormValuesReadFromData {
   const valuePairs: Array<[string, SchemaFormFieldValue]> = [];
   const kindPairs: Array<[string, SchemaFormFieldKind]> = [];
+  const bindingPairs: Array<[string, SchemaFormBindingValue]> = [];
   const unsupportedValuesAsJson: UnsupportedValueAsJson[] = [];
   const labelsOfFieldsThatCouldNotBeRead: string[] = [];
+  const keysFilledByAStoredWholeClock = listKeysFilledByAStoredWholeClock(description, itemFields);
 
   if (description.isWholeDataSchemaUnsupported) {
     for (const [key, storedField] of Object.entries(itemFields)) {
@@ -214,12 +263,31 @@ export function buildSchemaFormValuesFromItemFields(
       if (storedField?.kind === 'literal') {
         unsupportedValuesAsJson.push(...writeUnsupportedValueAsJson(field.key, storedField.value));
       }
+      // A list field bound to a source (a tower's cars) shows its "Fonte" choices.
+      if (storedField?.kind === 'binding') {
+        kindPairs.push([field.key, 'binding']);
+        bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(storedField)]);
+      }
       continue;
     }
 
     if (storedField?.kind === 'takeTime' && field.offersTakeTime) {
       valuePairs.push([field.key, buildStartingValueOfField(field)]);
       kindPairs.push([field.key, 'takeTime']);
+      continue;
+    }
+    if (storedField?.kind === 'binding') {
+      const isWholeClock =
+        storedField.path === 'clock' &&
+        canFieldTakeTheWholeClock(description.dataSchema, field.key);
+      valuePairs.push([field.key, buildStartingValueOfField(field)]);
+      kindPairs.push([field.key, isWholeClock ? 'wholeClock' : 'binding']);
+      bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(storedField)]);
+      continue;
+    }
+    if (keysFilledByAStoredWholeClock.includes(field.key)) {
+      valuePairs.push([field.key, buildStartingValueOfField(field)]);
+      kindPairs.push([field.key, chooseStartingKindOfField(field)]);
       continue;
     }
     if (storedField?.kind === 'literal') {
@@ -246,7 +314,12 @@ export function buildSchemaFormValuesFromItemFields(
   }
 
   return {
-    formValues: assembleSchemaFormValues(valuePairs, kindPairs, unsupportedValuesAsJson),
+    formValues: assembleSchemaFormValues(
+      valuePairs,
+      kindPairs,
+      unsupportedValuesAsJson,
+      bindingPairs,
+    ),
     labelsOfFieldsThatCouldNotBeRead,
   };
 }

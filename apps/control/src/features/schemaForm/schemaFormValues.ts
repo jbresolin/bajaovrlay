@@ -9,9 +9,34 @@
  * - `literal`: what the operator typed or chose;
  * - `takeTime`: the server writes the moment of the take (wall-clock milliseconds) when
  *   the graphic goes on air. Offered only where the description says `offersTakeTime`.
- * M2 adds `binding` and `entity` here.
+ * - `binding` ("Fonte", BAJAOVRLAY-20): read from a data source, as `bindings` says.
+ *   Offered only in the item editor, where some bindable path fits the field.
+ * - `wholeClock` ("Relógio da fonte"): the whole session clock of a source, on the time
+ *   field of a graphic that marks the four clock roles; it fills the other three too.
+ * The entity library (BAJAOVRLAY-19) adds `entity` here.
  */
-export type SchemaFormFieldKind = 'literal' | 'takeTime';
+export type SchemaFormFieldKind = 'literal' | 'takeTime' | 'binding' | 'wholeClock';
+
+/**
+ * A binding as the form holds it while the operator chooses: plain texts and a switch,
+ * so react-hook-form copies and compares them like any value. bindingFormValue.ts turns
+ * it into the binding an item stores when the form is checked.
+ * - `sourceId`: the source chosen, '' for none yet;
+ * - `pathKey`: the shape and path chosen, "positions:entries.0.teamName", '' for none;
+ * - `carNumberText`: the car number typed, for a path that follows a car by number;
+ * - `isLive`: "Ao vivo" (true) or "Congelado na entrada" (false);
+ * - `transformId`: a binding transform, '' for none;
+ * - `transformParameterText`: its one parameter as text (each binding transform takes at
+ *   most one), '' when it takes none.
+ */
+export type SchemaFormBindingValue = {
+  sourceId: string;
+  pathKey: string;
+  carNumberText: string;
+  isLive: boolean;
+  transformId: string;
+  transformParameterText: string;
+};
 
 /**
  * What one control holds:
@@ -33,8 +58,8 @@ export type UnsupportedValueAsJson = {
 
 /**
  * Everything a generated form holds.
- * `values` and `kinds` have one entry per field the form can edit, by property key, so
- * react-hook-form names them `values.<key>` and `kinds.<key>`.
+ * `values`, `kinds` and `bindings` have one entry per field the form can edit, by property
+ * key, so react-hook-form names them `values.<key>`, `kinds.<key>` and `bindings.<key>`.
  * `unsupportedValuesAsJson` is a list and holds text on purpose: react-hook-form copies
  * and compares what it holds key by key, and a property key such as `__proto__` or `a.b`
  * would be lost or misread on the way. Text in a list passes through it unharmed. It has
@@ -45,6 +70,8 @@ export type UnsupportedValueAsJson = {
 export type SchemaFormValues = {
   values: Record<string, SchemaFormFieldValue>;
   kinds: Record<string, SchemaFormFieldKind>;
+  /** One per editable field: what "Fonte" or "Relógio da fonte" holds, kept while unused. */
+  bindings: Record<string, SchemaFormBindingValue>;
   unsupportedValuesAsJson: UnsupportedValueAsJson[];
 };
 
@@ -56,4 +83,5 @@ export type SchemaFormValues = {
 export type SchemaFormDirtyFields = {
   values?: Partial<Record<string, boolean>>;
   kinds?: Partial<Record<string, boolean>>;
+  bindings?: Partial<Record<string, unknown>>;
 };

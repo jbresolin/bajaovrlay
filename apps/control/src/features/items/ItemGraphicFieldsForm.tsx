@@ -12,6 +12,7 @@ import {
 import { ptBR } from '@/i18n/ptBR';
 
 import { fillGraphicFieldsOfItemEditor } from './graphicFieldsOfItemEditor';
+import { useBindingOptionsOfItemEditor } from './useBindingOptionsOfItemEditor';
 
 // "Edição rápida" draws generated fields too, and is on the page at the same time. This
 // prefix keeps the element ids of the editor's fields apart from the ids of those.
@@ -94,6 +95,8 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   );
 
   const hasFieldsThatCouldNotBeRead = graphicFields.labelsOfFieldsThatCouldNotBeRead.length > 0;
+  // The item editor alone lets a field read a data source (BAJAOVRLAY-20).
+  const bindingOptions = useBindingOptionsOfItemEditor();
 
   return (
     <>
@@ -108,6 +111,7 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
         form={form}
         description={graphicFields.description}
         controlIdPrefix={graphicFieldsControlIdPrefix}
+        bindingOptions={bindingOptions}
       />
     </>
   );

@@ -21,26 +21,32 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** The `properties` of a manifest's data schema, or undefined when it has none. */
+function readPropertiesOfDataSchema(dataSchema: unknown): Record<string, unknown> | undefined {
+  const schemaProperties = isPlainObject(dataSchema) ? dataSchema.properties : undefined;
+  return isPlainObject(schemaProperties) ? schemaProperties : undefined;
+}
+
 /**
- * What the graphic's data schema says about one top-level field, or undefined when the
- * manifest has no schema or does not declare the field (a key such as `constructor` is
- * not found unless the manifest wrote it).
+ * What a data schema says about one top-level field, or undefined when there is no schema
+ * or it does not declare the field (a key such as `constructor` is not found unless the
+ * manifest wrote it).
  */
 function readSchemaPropertyOfField(
-  graphic: Graphic,
+  dataSchema: unknown,
   fieldKey: string,
 ): Record<string, unknown> | undefined {
-  const schemaProperties = graphic.manifest.schema?.properties;
-  if (!isPlainObject(schemaProperties) || !Object.hasOwn(schemaProperties, fieldKey)) {
+  const schemaProperties = readPropertiesOfDataSchema(dataSchema);
+  if (schemaProperties === undefined || !Object.hasOwn(schemaProperties, fieldKey)) {
     return undefined;
   }
   const schemaProperty = schemaProperties[fieldKey];
   return isPlainObject(schemaProperty) ? schemaProperty : undefined;
 }
 
-/** The `v_baja.role` a manifest marks one field with, or undefined. */
-function readRoleOfField(graphic: Graphic, fieldKey: string): string | undefined {
-  const vendorHints = readSchemaPropertyOfField(graphic, fieldKey)?.v_baja;
+/** The `v_baja.role` a data schema marks one field with, or undefined. */
+function readRoleOfField(dataSchema: unknown, fieldKey: string): string | undefined {
+  const vendorHints = readSchemaPropertyOfField(dataSchema, fieldKey)?.v_baja;
   const role = isPlainObject(vendorHints) ? vendorHints.role : undefined;
   return typeof role === 'string' ? role : undefined;
 }
@@ -52,23 +58,24 @@ function readRoleOfField(graphic: Graphic, fieldKey: string): string | undefined
  * never by a graphic, so no code here belongs to the race clock.
  */
 export function findClockFieldKeysByRole(graphic: Graphic): ClockFieldKeysByRole | undefined {
-  const schemaProperties = graphic.manifest.schema?.properties;
-  if (!isPlainObject(schemaProperties)) {
+  return findClockFieldKeysByRoleInDataSchema(graphic.manifest.schema);
+}
+
+/** findClockFieldKeysByRole for a manifest's data schema alone (the generated form has it). */
+export function findClockFieldKeysByRoleInDataSchema(
+  dataSchema: unknown,
+): ClockFieldKeysByRole | undefined {
+  const schemaProperties = readPropertiesOfDataSchema(dataSchema);
+  if (schemaProperties === undefined) {
     return undefined;
   }
   const fieldKeys = Object.keys(schemaProperties);
-  const clockTime = fieldKeys.find(
-    (fieldKey) => readRoleOfField(graphic, fieldKey) === 'clockTime',
-  );
-  const wallClock = fieldKeys.find(
-    (fieldKey) => readRoleOfField(graphic, fieldKey) === 'wallClock',
-  );
-  const clockRunning = fieldKeys.find(
-    (fieldKey) => readRoleOfField(graphic, fieldKey) === 'clockRunning',
-  );
-  const clockMode = fieldKeys.find(
-    (fieldKey) => readRoleOfField(graphic, fieldKey) === 'clockMode',
-  );
+  const findFieldOfRole = (role: string) =>
+    fieldKeys.find((fieldKey) => readRoleOfField(dataSchema, fieldKey) === role);
+  const clockTime = findFieldOfRole('clockTime');
+  const wallClock = findFieldOfRole('wallClock');
+  const clockRunning = findFieldOfRole('clockRunning');
+  const clockMode = findFieldOfRole('clockMode');
   if (
     clockTime === undefined ||
     wallClock === undefined ||
@@ -94,12 +101,20 @@ export function listValueTypesThatFitGraphicField(
   graphic: Graphic,
   fieldKey: string,
 ): BindableValueType[] {
-  const schemaProperty = readSchemaPropertyOfField(graphic, fieldKey);
+  return listValueTypesThatFitDataSchemaField(graphic.manifest.schema, fieldKey);
+}
+
+/** listValueTypesThatFitGraphicField for a manifest's data schema alone. */
+export function listValueTypesThatFitDataSchemaField(
+  dataSchema: unknown,
+  fieldKey: string,
+): BindableValueType[] {
+  const schemaProperty = readSchemaPropertyOfField(dataSchema, fieldKey);
   if (schemaProperty === undefined) {
     return [];
   }
   const valueTypes = listValueTypesOfJsonSchemaType(schemaProperty.type);
-  const clockFieldKeys = findClockFieldKeysByRole(graphic);
+  const clockFieldKeys = findClockFieldKeysByRoleInDataSchema(dataSchema);
   const isTheClockTimeOfAWholeClock = clockFieldKeys?.clockTime === fieldKey;
   if (isTheClockTimeOfAWholeClock) {
     valueTypes.push('clockGroup');
@@ -135,12 +150,21 @@ export function findProblemInBindingForGraphicField(
   graphic: Graphic,
   fieldKey: string,
 ): string | undefined {
+  return findProblemInBindingForDataSchemaField(binding, graphic.manifest.schema, fieldKey);
+}
+
+/** findProblemInBindingForGraphicField for a manifest's data schema alone. */
+export function findProblemInBindingForDataSchemaField(
+  binding: BindingFieldValue,
+  dataSchema: unknown,
+  fieldKey: string,
+): string | undefined {
   const problemOfTheBinding = findProblemInBinding(binding);
   if (problemOfTheBinding !== undefined) {
     return problemOfTheBinding;
   }
   const valueType = findValueTypeOfBinding(binding);
-  const typesThatFit = listValueTypesThatFitGraphicField(graphic, fieldKey);
+  const typesThatFit = listValueTypesThatFitDataSchemaField(dataSchema, fieldKey);
   if (valueType !== undefined && typesThatFit.includes(valueType)) {
     return undefined;
   }

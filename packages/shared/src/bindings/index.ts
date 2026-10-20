@@ -7,10 +7,14 @@ export { type BindingFieldValue, BindingFieldValueSchema } from './bindingFieldV
 // Whether a binding's parts make sense together (pt-BR sentence), and the type it reads.
 export { findProblemInBinding, findValueTypeOfBinding } from './bindingProblems.js';
 // Which value types fit a graphic's field, the clock fields by role, and the save check.
+// Each has a twin reading a manifest's data schema alone, for the generated form.
 export {
   type ClockFieldKeysByRole,
   findClockFieldKeysByRole,
+  findClockFieldKeysByRoleInDataSchema,
+  findProblemInBindingForDataSchemaField,
   findProblemInBindingForGraphicField,
+  listValueTypesThatFitDataSchemaField,
   listValueTypesThatFitGraphicField,
 } from './bindingFitsGraphicField.js';
 // Reading one binding against the sources: snapshot, overrides, path, transform.
