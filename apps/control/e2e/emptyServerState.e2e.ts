@@ -295,13 +295,22 @@ test.describe('emptying the server state', () => {
     await dialog.getByLabel('Valor corrigido').fill('Enduro — Etapa Nacional');
     await dialog.getByLabel('Motivo (obrigatório)').fill('Nome oficial da prova.');
     await dialog.getByRole('button', { name: 'Salvar correção' }).click();
-    await expect(page.getByText('corrigido'), 'the correction must be in force').toBeVisible();
+    // The dialog closes on the server's ok: only then is the correction stored, and only
+    // then may the reset run (gate 2 of PR #18). "corrigido" alone, not inside "Corrigir".
+    await expect(dialog, 'the dialog closes once the correction is stored').toBeHidden();
+    await expect(
+      page.getByText('corrigido', { exact: true }),
+      'the correction must be in force',
+    ).toBeVisible();
 
     // Act: empty the server.
     await emptyTheServerState();
 
     // Assert: the correction is gone, the simulator's own name is back.
-    await expect(page.getByText('corrigido'), 'after the reset no value is corrected').toBeHidden();
+    await expect(
+      page.getByText('corrigido', { exact: true }),
+      'after the reset no value is corrected',
+    ).toBeHidden();
   });
 
   test('changes nothing and does not fail on a server that is already empty', async ({ page }) => {

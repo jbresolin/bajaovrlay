@@ -11,12 +11,16 @@
  *   Camadas row says "fonte atrasada" and nothing on air blanks. This is the brief's walk,
  *   in a real Chromium against the real server and a real SQLite file.
  *
- * What these tests prove (the brief's five E2E steps):
- *   1. The simulator on; a race clock made with its title and flag bound to the session
- *      and its time set to "Relógio da fonte".
+ * What these tests prove (the brief's five E2E steps, steps 4 and 5 in tests of their
+ * own so a failure names its step, gate 2 of PR #18):
+ *   1. The simulator on at speed 1; a race clock made with its title and flag bound to
+ *      the session and its time set to "Relógio da fonte". At speed 1 the seeded race
+ *      stays under green for 56 simulated minutes, so the editor steps never race a
+ *      flag change.
  *   2. Taken: the clock on air shows the simulator's session name, flag and clock.
- *   3. The race restarted at 60×: the flag on air turns yellow by itself at the first
- *      yellow of the seeded race (56,7 simulated minutes in, about a minute of waiting).
+ *   3. The speed set to 60× just before "Reiniciar corrida": once the simulator's own
+ *      data turns yellow (56,7 simulated minutes in, about a minute of waiting, on the
+ *      Console page), the flag on air turns yellow within seconds, by itself.
  *   4. A correction of the session name changes the title on air; removed, the title
  *      goes back to the simulator's.
  *   5. "Falha simulada" on: the Camadas row shows "fonte atrasada" and the clock stays on
@@ -36,13 +40,16 @@
  */
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
-import { readDataOnAirOfLayerFromTheRealServer } from './dataSourceStateOnTheRealServer';
+import {
+  readDataOnAirOfLayerFromTheRealServer,
+  readSessionFlagOfSourceFromTheRealServer,
+} from './dataSourceStateOnTheRealServer';
 import {
   changeSimulatorInItsEditForm,
   openDataSourcesPageAndWaitUntilConnected,
   restartTheSimulatedRaceWithItsButton,
   seededSimulatorLabel,
-  startTheSeededSimulatorFastFromTheGreenFlag,
+  startTheSeededSimulatorFromTheGreenFlag,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
 import { openItemEditorWithNewGraphic, saveAndTakeTheItemInTheEditor } from './previewTestSteps';
@@ -52,6 +59,8 @@ const simulatedSessionName = 'Enduro de Resistência (simulado)';
 const correctedSessionName = 'Enduro — Etapa Nacional';
 // At 60× the seeded race's first yellow comes 56,7 simulated minutes in: about 57 s.
 const waitForTheFirstYellowInMilliseconds = 90_000;
+// Once the source says yellow, the refresh follows its poll at once: a few seconds.
+const waitForTheYellowOnAirInMilliseconds = 5_000;
 // A refresh follows the next poll (every 0,5 s); a few seconds cover a slow machine.
 const waitForTheNextRefreshInMilliseconds = 10_000;
 
@@ -101,6 +110,44 @@ function findClockLayerRow(page: Page): Locator {
   return page.getByRole('region', { name: 'Camadas' }).getByRole('listitem', { name: 'Relógio' });
 }
 
+/**
+ * Steps 1 and 2: the simulator on at speed 1, read every 0,5 s; on the console, a race
+ * clock whose title and flag read the session and whose time is "Relógio da fonte",
+ * saved and taken; and the clock on air with the simulator's session, green, running.
+ */
+async function putTheBoundClockOnAir(page: Page): Promise<void> {
+  await openDataSourcesPageAndWaitUntilConnected(page);
+  await startTheSeededSimulatorFromTheGreenFlag(page, '1');
+  await openConsoleAndWaitUntilConnected(page);
+  const itemEditor = await openItemEditorWithNewGraphic(page, 'Relógio do enduro — fonte');
+  await bindFieldToTheSimulator(page, itemEditor, 'Título', 'Sessão › Nome da sessão');
+  await bindFieldToTheSimulator(page, itemEditor, 'Bandeira', 'Sessão › Bandeira');
+  await chooseInEditorDropdown(
+    page,
+    itemEditor,
+    'Como preencher Tempo de referência',
+    'Relógio da fonte',
+  );
+  await chooseInEditorDropdown(
+    page,
+    itemEditor,
+    'Fonte de Tempo de referência',
+    seededSimulatorLabel,
+  );
+  await saveAndTakeTheItemInTheEditor(itemEditor);
+  await expect
+    .poll(pollTheClockOnAir, {
+      message: 'the clock on air must show the simulator session',
+      timeout: waitForTheNextRefreshInMilliseconds,
+    })
+    .toMatchObject({
+      sessionName: simulatedSessionName,
+      state: 'green',
+      clockMode: 'remaining',
+      running: true,
+    });
+}
+
 /** Opens "Corrigir valor da fonte…" of the title in "Edição rápida", the clock loaded. */
 async function openTheTitleCorrection(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: 'Corrigir valor da fonte: Título' }).click();
@@ -108,64 +155,45 @@ async function openTheTitleCorrection(page: Page): Promise<Locator> {
 }
 
 test.describe('a race clock bound to the simulator', () => {
-  test('follows the race on air, takes a correction and keeps its data when the source fails', async ({
-    page,
-  }) => {
+  test('goes on air with the simulator session and turns yellow with it', async ({ page }) => {
     test.setTimeout(180_000);
 
-    // Arrange (step 1): the simulator on at 60×, read every 0,5 s; on the console, a race
-    // clock whose title and flag read the session and whose time is "Relógio da fonte".
+    // Arrange (steps 1 and 2): the bound clock on air, green, at speed 1.
+    await putTheBoundClockOnAir(page);
+
+    // Act (step 3): speed 60× just before "Reiniciar corrida", then wait on the Console
+    // page until the simulator's own data says yellow.
     await openDataSourcesPageAndWaitUntilConnected(page);
-    await startTheSeededSimulatorFastFromTheGreenFlag(page);
-    await openConsoleAndWaitUntilConnected(page);
-    const itemEditor = await openItemEditorWithNewGraphic(page, 'Relógio do enduro — fonte');
-    await bindFieldToTheSimulator(page, itemEditor, 'Título', 'Sessão › Nome da sessão');
-    await bindFieldToTheSimulator(page, itemEditor, 'Bandeira', 'Sessão › Bandeira');
-    await chooseInEditorDropdown(
-      page,
-      itemEditor,
-      'Como preencher Tempo de referência',
-      'Relógio da fonte',
-    );
-    await chooseInEditorDropdown(
-      page,
-      itemEditor,
-      'Fonte de Tempo de referência',
-      seededSimulatorLabel,
-    );
-
-    // Act (step 2): save and take it.
-    await saveAndTakeTheItemInTheEditor(itemEditor);
-
-    // Assert (step 2): on air with the simulator's session: its name, the green flag, its
-    // countdown running.
-    await expect
-      .poll(pollTheClockOnAir, {
-        message: 'the clock on air must show the simulator session',
-        timeout: waitForTheNextRefreshInMilliseconds,
-      })
-      .toMatchObject({
-        sessionName: simulatedSessionName,
-        state: 'green',
-        clockMode: 'remaining',
-        running: true,
-      });
-
-    // Act (step 3): restart the race at 60× and wait.
-    await openDataSourcesPageAndWaitUntilConnected(page);
+    await changeSimulatorInItsEditForm(page, seededSimulatorLabel, { speedAsTyped: '60' });
     await restartTheSimulatedRaceWithItsButton(page, seededSimulatorLabel);
-
-    // Assert (step 3): the flag on air turns yellow by itself at the first yellow.
+    await openConsoleAndWaitUntilConnected(page);
     await expect
-      .poll(async () => (await pollTheClockOnAir())?.state, {
-        message: 'the flag on air must turn yellow at the simulator first yellow',
+      .poll(() => readSessionFlagOfSourceFromTheRealServer(seededSimulatorLabel), {
+        message: 'the simulator must reach its first yellow',
         timeout: waitForTheFirstYellowInMilliseconds,
         intervals: [500],
       })
       .toBe('yellow');
 
+    // Assert (step 3): the flag on air follows within seconds, by itself.
+    await expect
+      .poll(async () => (await pollTheClockOnAir())?.state, {
+        message: 'the flag on air must turn yellow with the simulator',
+        timeout: waitForTheYellowOnAirInMilliseconds,
+        intervals: [250],
+      })
+      .toBe('yellow');
+  });
+
+  test('takes a correction of the title on air and gives it back when removed', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    // Arrange (steps 1 and 2): the bound clock on air.
+    await putTheBoundClockOnAir(page);
+
     // Act (step 4a): correct the session name from "Edição rápida".
-    await openConsoleAndWaitUntilConnected(page);
     await findClockLayerRow(page).getByRole('button', { name: 'Editar', exact: true }).click();
     const correctionDialog = await openTheTitleCorrection(page);
     await correctionDialog.getByLabel('Valor corrigido').fill(correctedSessionName);
@@ -195,6 +223,15 @@ test.describe('a race clock bound to the simulator', () => {
         timeout: waitForTheNextRefreshInMilliseconds,
       })
       .toBe(simulatedSessionName);
+  });
+
+  test('keeps its data on air and says "fonte atrasada" when the source fails', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    // Arrange (steps 1 and 2): the bound clock on air.
+    await putTheBoundClockOnAir(page);
 
     // Act (step 5): "Falha simulada" on.
     await openDataSourcesPageAndWaitUntilConnected(page);

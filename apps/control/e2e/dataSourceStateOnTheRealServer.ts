@@ -1,7 +1,8 @@
 // Test support: what the data source test files read from the real server's state
 // (GET /api/v1/state) instead of sleeping, so a test waits exactly as long as the server
-// needs: one source by its label, how many graphics are on the outputs, how many polls
-// failed in a row, and how many lines the open recording holds. The page steps (clicks,
+// needs: one source by its label, the flag its last session sent, how many graphics are
+// on the outputs, how many polls failed in a row, and how many lines the open recording
+// holds. The page steps (clicks,
 // forms, tables) live in dataSourcesTestSteps.ts. Functions only; nothing here remembers
 // anything between calls or between tests.
 import { expect } from '@playwright/test';
@@ -30,10 +31,17 @@ type InstanceAsTheTestsReadIt = {
   resolvedData: Record<string, unknown>;
 };
 
+/** The parts of a source's last good data the tests read: its session's flag. */
+type DataSnapshotAsTheTestsReadIt = {
+  sourceId: string;
+  shapes: { session?: { state: string } };
+};
+
 /** The parts of GET /api/v1/state the data source tests read. */
 type StateTheDataSourceTestsRead = {
   instances: InstanceAsTheTestsReadIt[];
   dataSources: DataSourceAsTheTestsReadIt[];
+  dataSnapshots: DataSnapshotAsTheTestsReadIt[];
   recordings: RecordingAsTheTestsReadIt[];
 };
 
@@ -80,6 +88,20 @@ export async function readDataOnAirOfLayerFromTheRealServer(
     (instance) => instance.layerId === layerId && instance.target === 'program',
   );
   return instanceOnAir?.resolvedData;
+}
+
+/**
+ * Reads the flag of the session a source last sent, as the real server holds it, or
+ * undefined before its first good poll: what the source says, before any refresh puts it
+ * on air.
+ */
+export async function readSessionFlagOfSourceFromTheRealServer(
+  sourceLabel: string,
+): Promise<string | undefined> {
+  const state = await readStateFromTheRealServer();
+  const source = state.dataSources.find((dataSource) => dataSource.label === sourceLabel);
+  const snapshot = state.dataSnapshots.find((candidate) => candidate.sourceId === source?.id);
+  return snapshot?.shapes.session?.state;
 }
 
 /**
