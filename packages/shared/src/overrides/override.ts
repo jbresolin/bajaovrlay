@@ -24,11 +24,11 @@ export type OverridableSessionField = z.infer<typeof OverridableSessionFieldSche
 
 /**
  * The fields of one car an operator may correct: who the car is (team and school) and,
- * where the list has them, its status (positions) and its points (standings). Laps, times,
- * gaps and ranks are left out: one of them corrected alone would break the order the
- * shape's own rules keep, and the source is the one to fix them.
+ * in the positions, its status. Laps, times, gaps, ranks and points are left out: one of
+ * them corrected alone would break the order the shape's own rules keep (points decide the
+ * standings order as a rank does, gate 2 of PR #18), and the source is the one to fix them.
  */
-export const OverridableCarFieldSchema = z.enum(['teamName', 'schoolName', 'status', 'points']);
+export const OverridableCarFieldSchema = z.enum(['teamName', 'schoolName', 'status']);
 
 /** One of OverridableCarFieldSchema's values. */
 export type OverridableCarField = z.infer<typeof OverridableCarFieldSchema>;

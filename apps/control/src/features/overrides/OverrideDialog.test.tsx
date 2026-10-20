@@ -4,13 +4,17 @@
  * What this module is for:
  *   "Corrigir valor…" (Fontes) and "Corrigir valor da fonte…" (Edição rápida) open one
  *   dialog: what is corrected, the value now, the corrected value (a dropdown for a flag,
- *   a status or a kind of session, a number for points and durations, text otherwise),
+ *   a status or a kind of session, a number for the leader's laps, mm:ss for the scheduled duration,
+ *   text otherwise),
  *   and the reason, required. "Salvar correção" sends setOverride; "Remover correção",
  *   shown when a correction is in force, sends clearOverride.
  *
  * What these tests prove:
  *   - A flag correction is chosen from the flags and sent as setOverride.
- *   - Points typed with a decimal comma are sent as a number.
+ *   - The leader's laps are sent as a number; a scheduled duration is typed and shown as
+ *     mm:ss, as every clock field is, and sent in milliseconds.
+ *   - The dialog shows only the refusal of its own command, never another correction's,
+ *     and its buttons are off while it waits for the server.
  *   - A blank reason, or a value the field cannot hold, is refused in the dialog and
  *     nothing is sent.
  *   - "Remover correção" sends clearOverride for the correction in force.
@@ -19,7 +23,7 @@
  *   - Where the dialog is opened from; the Edição rápida and Fontes tests.
  */
 import type { Override } from '@bajaovrlay/shared';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
@@ -77,33 +81,149 @@ describe('OverrideDialog', () => {
     });
   });
 
-  it('sends points typed with a decimal comma as a number', async () => {
-    // Arrange: the dialog for car 42's points.
+  it("sends the leader's laps typed as a number", async () => {
+    // Arrange: the dialog for the laps of the leader.
     const { fakeServer, dialog } = renderDialogFor({
-      overrideKey: { sourceId: 'simulador-enduro', scope: 'car', carNumber: 42, field: 'points' },
+      overrideKey: {
+        sourceId: 'simulador-enduro',
+        scope: 'session',
+        field: 'lapsCompletedByLeader',
+      },
     });
 
-    // Act: type 512,5 and a reason, and save.
-    fireEvent.change(dialog.getByLabelText('Valor corrigido'), { target: { value: '512,5' } });
+    // Act: type 35 and a reason, and save.
+    fireEvent.change(dialog.getByLabelText('Valor corrigido'), { target: { value: '35' } });
     fireEvent.change(dialog.getByLabelText('Motivo (obrigatório)'), {
-      target: { value: 'Penalidade revista.' },
+      target: { value: 'A volta 35 do líder não foi lida.' },
     });
     fireEvent.click(dialog.getByRole('button', { name: 'Salvar correção' }));
 
-    // Assert: 512.5 as a number.
+    // Assert: 35 as a number, not the text "35".
     await waitFor(() => {
-      expect(fakeServer.listCommandsReceived(), 'the points as a number').toEqual([
+      expect(fakeServer.listCommandsReceived(), 'the laps as a number').toEqual([
         {
           type: 'setOverride',
           sourceId: 'simulador-enduro',
-          scope: 'car',
-          carNumber: 42,
-          field: 'points',
-          value: 512.5,
-          reason: 'Penalidade revista.',
+          scope: 'session',
+          field: 'lapsCompletedByLeader',
+          value: 35,
+          reason: 'A volta 35 do líder não foi lida.',
         },
       ]);
     });
+  });
+
+  it('sends a scheduled duration typed as minutes and seconds, in milliseconds', async () => {
+    // Arrange: the dialog for the session's scheduled duration.
+    const { fakeServer, dialog } = renderDialogFor({
+      overrideKey: { sourceId: 'simulador-enduro', scope: 'session', field: 'scheduledDurationMs' },
+    });
+
+    // Act: type four hours as the clock fields take them, 240:00, and save.
+    fireEvent.change(dialog.getByLabelText('Valor corrigido'), { target: { value: '240:00' } });
+    fireEvent.change(dialog.getByLabelText('Motivo (obrigatório)'), {
+      target: { value: 'O enduro tem quatro horas.' },
+    });
+    fireEvent.click(dialog.getByRole('button', { name: 'Salvar correção' }));
+
+    // Assert: four hours in milliseconds, the unit the session holds.
+    await waitFor(() => {
+      expect(fakeServer.listCommandsReceived(), 'the duration in milliseconds').toEqual([
+        {
+          type: 'setOverride',
+          sourceId: 'simulador-enduro',
+          scope: 'session',
+          field: 'scheduledDurationMs',
+          value: 14_400_000,
+          reason: 'O enduro tem quatro horas.',
+        },
+      ]);
+    });
+  });
+
+  it('fills a scheduled duration in force as minutes and seconds', () => {
+    // Arrange and act: the dialog for a duration corrected to three hours.
+    const { dialog } = renderDialogFor({
+      overrideKey: { sourceId: 'simulador-enduro', scope: 'session', field: 'scheduledDurationMs' },
+      overrideInForce: {
+        sourceId: 'simulador-enduro',
+        scope: 'session',
+        field: 'scheduledDurationMs',
+        value: 10_800_000,
+        reason: 'Prova encurtada pela chuva.',
+        setBy: 'operador:3f2a9c1e',
+        setAt: '2027-03-20T19:25:00.000Z',
+      },
+    });
+
+    // Assert: 180:00, never the raw 10800000.
+    expect(
+      dialog.getByLabelText('Valor corrigido'),
+      'the correction must read as minutes and seconds',
+    ).toHaveValue('180:00');
+  });
+
+  it("shows its own refusal and not another command's", async () => {
+    // Arrange: a refusal of another correction already on the page, then the dialog.
+    const { fakeServer, serverStateStore, dialog } = renderDialogFor({
+      overrideKey: { sourceId: 'simulador-enduro', scope: 'session', field: 'sessionName' },
+    });
+    act(() =>
+      serverStateStore.getState().rememberCommandError({
+        commandType: 'setOverride',
+        code: 'INVALID_OVERRIDE_VALUE',
+        message: 'O valor "" não serve para Equipe.',
+      }),
+    );
+
+    // Act: save this correction, and the server refuses it.
+    fireEvent.change(dialog.getByLabelText('Valor corrigido'), {
+      target: { value: 'Enduro — Etapa Nacional' },
+    });
+    fireEvent.change(dialog.getByLabelText('Motivo (obrigatório)'), {
+      target: { value: 'Nome oficial.' },
+    });
+    const otherRefusalShownBeforeSaving = dialog.queryByText('O valor "" não serve para Equipe.');
+    fireEvent.click(dialog.getByRole('button', { name: 'Salvar correção' }));
+    await waitFor(() => {
+      expect(fakeServer.listCommandsReceived(), 'the correction is sent').toHaveLength(1);
+    });
+    fakeServer.refuseLastCommand({
+      code: 'DATA_SOURCE_NOT_FOUND',
+      message: 'A fonte simulador-enduro não existe mais.',
+    });
+
+    // Assert: the other refusal was never shown; this one is, and the dialog stays open.
+    expect(otherRefusalShownBeforeSaving, "another command's refusal must not show").toBeNull();
+    expect(
+      await dialog.findByText('A fonte simulador-enduro não existe mais.'),
+      'its own refusal must show',
+    ).toBeVisible();
+  });
+
+  it('turns its buttons off while it waits for the server', async () => {
+    // Arrange: the dialog for the session name, filled.
+    const { fakeServer, dialog } = renderDialogFor({
+      overrideKey: { sourceId: 'simulador-enduro', scope: 'session', field: 'sessionName' },
+    });
+    fireEvent.change(dialog.getByLabelText('Valor corrigido'), {
+      target: { value: 'Enduro — Etapa Nacional' },
+    });
+    fireEvent.change(dialog.getByLabelText('Motivo (obrigatório)'), {
+      target: { value: 'Nome oficial.' },
+    });
+
+    // Act: save, and the server has not answered yet.
+    fireEvent.click(dialog.getByRole('button', { name: 'Salvar correção' }));
+    await waitFor(() => {
+      expect(fakeServer.listCommandsReceived(), 'the correction is sent').toHaveLength(1);
+    });
+
+    // Assert: a second press cannot send it again while it waits.
+    expect(
+      dialog.getByRole('button', { name: 'Salvar correção' }),
+      'saving must be off while the server has not answered',
+    ).toBeDisabled();
   });
 
   const refusedScenarios = [

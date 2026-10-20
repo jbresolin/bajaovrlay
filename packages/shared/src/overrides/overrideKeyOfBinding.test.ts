@@ -14,7 +14,8 @@
  *   - The session name and the flag are session corrections.
  *   - The team of the 1st place is a correction of car 31, the car there now.
  *   - The team of car 42 chosen by number is a correction of car 42.
- *   - The points of the 1st standings row are a correction of car 45, the team there.
+ *   - The team of the 1st standings row is a correction of car 45, the team there; its
+ *     points have no correction (gate 2 of PR #18).
  *   - The clock, the laps and the whole positions list have no correction.
  *
  * What these tests deliberately do not cover:
@@ -73,9 +74,15 @@ describe('findOverrideKeyOfBinding', () => {
     },
     // The 1st standings row is car 45 (Jandaia Racing).
     {
-      name: 'corrects the points of the 1st standings row as car 45',
+      name: 'corrects the team of the 1st standings row as car 45',
+      binding: buildBinding('standings', 'entries.0.teamName'),
+      expected: { sourceId: 'simulador-enduro', scope: 'car', carNumber: 45, field: 'teamName' },
+    },
+    // Points decide the standings order, so they are not correctable.
+    {
+      name: 'has no correction for the points of the 1st standings row',
       binding: buildBinding('standings', 'entries.0.points'),
-      expected: { sourceId: 'simulador-enduro', scope: 'car', carNumber: 45, field: 'points' },
+      expected: undefined,
     },
     // Four values that only mean something together: corrected on air, not here.
     {

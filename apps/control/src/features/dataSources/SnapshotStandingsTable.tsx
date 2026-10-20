@@ -1,4 +1,5 @@
 import type { StandingsEntry, StandingsShape } from '@bajaovrlay/shared';
+import { memo } from 'react';
 
 import {
   Table,
@@ -9,56 +10,92 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CorrectableValue } from '@/features/overrides/CorrectableValue';
+import {
+  type CorrectionsOfSource,
+  findOverrideInLookup,
+} from '@/features/overrides/overrideLookup';
 import { ptBR } from '@/i18n/ptBR';
 
+import { isTableRowTheSame } from './tableRowComparison';
+
 const texts = ptBR.dataSources.standingsTable;
+const columns = texts.columns;
 
 /** Writes points the Brazilian way ("646,9"); some events score fractions, so up to two decimals. */
 function formatPoints(points: number): string {
   return points.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 }
 
+/** One correctable value of a team, or the plain value without corrections. */
+function TeamValue(props: {
+  entry: StandingsEntry;
+  entryAsSent: StandingsEntry | undefined;
+  corrections: CorrectionsOfSource | undefined;
+  field: 'teamName' | 'schoolName';
+}) {
+  const { entry, corrections, field } = props;
+  if (corrections === undefined) {
+    return entry[field];
+  }
+  const overrideKey = {
+    sourceId: corrections.sourceId,
+    scope: 'car' as const,
+    carNumber: entry.carNumber,
+    field,
+  };
+  return (
+    <CorrectableValue
+      sourceLabel={corrections.sourceLabel}
+      overrideKey={overrideKey}
+      overrideInForce={findOverrideInLookup(corrections.overrideLookup, overrideKey)}
+      fieldDescription={ptBR.bindings.overrides.carFieldDescription(
+        columns[field],
+        entry.carNumber,
+      )}
+      valueText={entry[field]}
+      valueAsSentText={(props.entryAsSent ?? entry)[field]}
+    />
+  );
+}
+
+/** One team's row, memoised like the positions rows (SnapshotPositionsTable.tsx). */
+const StandingsRow = memo(function StandingsRow(props: {
+  entry: StandingsEntry;
+  entryAsSent: StandingsEntry | undefined;
+  corrections: CorrectionsOfSource | undefined;
+}) {
+  const { entry } = props;
+  return (
+    <TableRow>
+      <TableCell className="tabular-nums">{entry.rank}</TableCell>
+      <TableCell className="tabular-nums">{entry.carNumber}</TableCell>
+      <TableCell>
+        <TeamValue {...props} field="teamName" />
+      </TableCell>
+      <TableCell>
+        <TeamValue {...props} field="schoolName" />
+      </TableCell>
+      <TableCell className="tabular-nums">{formatPoints(entry.points)}</TableCell>
+    </TableRow>
+  );
+}, isTableRowTheSame);
+
 /**
  * The standings of the selected source, one row per team in rank order: rank, car,
  * team, school and points. The table scrolls sideways in its own box on a narrow screen.
  * With `corrections` (a stored source), the standings shown are the corrected ones and a
- * team's name, school and points can be corrected (CorrectableValue.tsx).
+ * team's name and school can be corrected (CorrectableValue.tsx), matched to what the
+ * source sent by car number. Points are not correctable (gate 2 of PR #18): they are the
+ * organisers' result, and a wrong one is fixed at the source.
  */
 export function SnapshotStandingsTable(props: {
   standings: StandingsShape;
-  corrections?: { sourceId: string; sourceLabel: string; standingsAsSent: StandingsShape };
+  corrections?: CorrectionsOfSource & { standingsAsSent: StandingsShape };
 }) {
-  const columns = texts.columns;
   const { corrections } = props;
-
-  /** One correctable cell of a team, or the plain value without corrections. */
-  function drawTeamValue(
-    entry: StandingsEntry,
-    entryAsSent: StandingsEntry | undefined,
-    field: 'teamName' | 'schoolName' | 'points',
-    writeValue: (team: StandingsEntry) => string,
-  ) {
-    if (corrections === undefined) {
-      return writeValue(entry);
-    }
-    return (
-      <CorrectableValue
-        sourceLabel={corrections.sourceLabel}
-        overrideKey={{
-          sourceId: corrections.sourceId,
-          scope: 'car',
-          carNumber: entry.carNumber,
-          field,
-        }}
-        fieldDescription={ptBR.bindings.overrides.carFieldDescription(
-          columns[field],
-          entry.carNumber,
-        )}
-        valueText={writeValue(entry)}
-        valueAsSentText={writeValue(entryAsSent ?? entry)}
-      />
-    );
-  }
+  const entriesAsSentByCar = new Map(
+    (corrections?.standingsAsSent.entries ?? []).map((entry) => [entry.carNumber, entry]),
+  );
   return (
     <Table aria-label={texts.label}>
       <TableHeader>
@@ -71,24 +108,14 @@ export function SnapshotStandingsTable(props: {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {props.standings.entries.map((entry, index) => {
-          const entryAsSent = corrections?.standingsAsSent.entries[index];
-          return (
-            <TableRow key={entry.carNumber}>
-              <TableCell className="tabular-nums">{entry.rank}</TableCell>
-              <TableCell className="tabular-nums">{entry.carNumber}</TableCell>
-              <TableCell>
-                {drawTeamValue(entry, entryAsSent, 'teamName', (team) => team.teamName)}
-              </TableCell>
-              <TableCell>
-                {drawTeamValue(entry, entryAsSent, 'schoolName', (team) => team.schoolName)}
-              </TableCell>
-              <TableCell className="tabular-nums">
-                {drawTeamValue(entry, entryAsSent, 'points', (team) => formatPoints(team.points))}
-              </TableCell>
-            </TableRow>
-          );
-        })}
+        {props.standings.entries.map((entry) => (
+          <StandingsRow
+            key={entry.carNumber}
+            entry={entry}
+            entryAsSent={entriesAsSentByCar.get(entry.carNumber)}
+            corrections={corrections}
+          />
+        ))}
       </TableBody>
     </Table>
   );

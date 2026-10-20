@@ -1,4 +1,5 @@
 import {
+  type CommandInput,
   findProblemInOverrideValue,
   labelOfOverridableField,
   type Override,
@@ -23,11 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
-import { useSendCommandAndReadItsAnswer } from '@/state/ControlPageStateProvider';
+import { useSendCommandAndReadItsRefusal } from '@/state/ControlPageStateProvider';
 
-import { chooseOverrideValueControl, readOverrideValueFromText } from './overrideValueControl';
+import {
+  chooseOverrideValueControl,
+  readOverrideValueFromText,
+  writeOverrideValueAsText,
+} from './overrideValueControl';
 
 const texts = ptBR.bindings.overrides;
 const valueControlId = 'override-dialog-value';
@@ -54,16 +58,35 @@ export type OverrideDialogProps = {
  * runs (findProblemInOverrideValue), sends setOverride and closes on the server's ok;
  * "Remover correção", only while a correction is in force, sends clearOverride. A refusal
  * from the server is shown in the dialog, which stays open.
+ * Deliberate (gate 2 of PR #18): the dialog shows the refusal of its own command only, read
+ * from the answer, not the page's last refusal of any correction; and its buttons are off
+ * while it waits, so a second press cannot send the correction twice.
  */
 export function OverrideDialog(props: OverrideDialogProps) {
   const { isOpen, onClose, sourceLabel, overrideKey, overrideInForce, valueNowText } = props;
-  const sendCommand = useSendCommandAndReadItsAnswer();
+  const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
   const valueControl = chooseOverrideValueControl(overrideKey.field);
   const [valueText, setValueText] = useState(
-    overrideInForce === undefined ? '' : String(overrideInForce.value),
+    overrideInForce === undefined
+      ? ''
+      : writeOverrideValueAsText(overrideKey.field, overrideInForce.value),
   );
   const [reason, setReason] = useState(overrideInForce?.reason ?? '');
   const [problem, setProblem] = useState<string | undefined>(undefined);
+  const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
+
+  /** Sends one command and closes on the server's ok; a refusal stays in the dialog. */
+  async function sendAndCloseWhenAccepted(command: CommandInput): Promise<void> {
+    setProblem(undefined);
+    setIsWaitingForTheServer(true);
+    const refusal = await sendCommandAndReadItsRefusal(command);
+    setIsWaitingForTheServer(false);
+    if (refusal === null) {
+      onClose();
+      return;
+    }
+    setProblem(refusal);
+  }
 
   const fieldLabel = labelOfOverridableField(overrideKey.scope, overrideKey.field);
   const whatIsCorrected =
@@ -83,19 +106,12 @@ export function OverrideDialog(props: OverrideDialogProps) {
       setProblem(texts.reasonMissing);
       return;
     }
-    setProblem(undefined);
-    const answer = await sendCommand({ type: 'setOverride', ...overrideKey, value, reason });
-    if (answer !== null) {
-      onClose();
-    }
+    await sendAndCloseWhenAccepted({ type: 'setOverride', ...overrideKey, value, reason });
   }
 
   /** Sends the removal of the correction in force. */
   async function removeTheCorrection(): Promise<void> {
-    const answer = await sendCommand({ type: 'clearOverride', ...overrideKey });
-    if (answer !== null) {
-      onClose();
-    }
+    await sendAndCloseWhenAccepted({ type: 'clearOverride', ...overrideKey });
   }
 
   return (
@@ -137,6 +153,7 @@ export function OverrideDialog(props: OverrideDialogProps) {
               id={valueControlId}
               autoComplete="off"
               inputMode={valueControl.kind === 'number' ? 'decimal' : undefined}
+              placeholder={valueControl.kind === 'duration' ? texts.durationPlaceholder : undefined}
               value={valueText}
               onChange={(event) => setValueText(event.target.value)}
             />
@@ -156,13 +173,21 @@ export function OverrideDialog(props: OverrideDialogProps) {
             {problem}
           </p>
         )}
-        <CommandErrorMessage commandTypes={['setOverride', 'clearOverride']} />
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={() => void saveTheCorrection()}>
+          <Button
+            type="button"
+            disabled={isWaitingForTheServer}
+            onClick={() => void saveTheCorrection()}
+          >
             {texts.saveButton}
           </Button>
           {overrideInForce !== undefined && (
-            <Button type="button" variant="secondary" onClick={() => void removeTheCorrection()}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isWaitingForTheServer}
+              onClick={() => void removeTheCorrection()}
+            >
               {texts.clearButton}
             </Button>
           )}

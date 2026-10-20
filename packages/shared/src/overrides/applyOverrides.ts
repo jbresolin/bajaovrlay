@@ -8,7 +8,7 @@ import type { Override } from './override.js';
  * never changed in place, and a shape no override touched comes back as the very same
  * object. A session override replaces its field; a car override replaces its field in
  * every entry of that car, in the positions and in the standings, when that list has the
- * field (status in the positions, points in the standings). Overrides of other sources
+ * field (status in the positions only). Overrides of other sources
  * are skipped, and one naming a car the snapshot does not list changes nothing.
  * Deliberate: the shape rules are not checked again. A correction is the operator's word
  * and is shown as it is; the fields that could break an order (laps, gaps, ranks) are
@@ -56,7 +56,7 @@ export function applyOverridesToSnapshotShapes(
 
 /**
  * One entry with the overrides of its car laid over the fields it has. A field the entry's
- * list does not have (points on a position) is skipped, so no list gains a field its
+ * list does not have (a status on a standings row) is skipped, so no list gains a field its
  * schema does not know.
  */
 function applyCarOverridesToEntry<Entry extends PositionEntry | StandingsEntry>(
@@ -75,16 +75,13 @@ function applyCarOverridesToEntry<Entry extends PositionEntry | StandingsEntry>(
 
 /**
  * Whether a car field belongs to the kind of list this entry comes from: team and school
- * are in both, status in the positions only, points in the standings only. A positions
- * entry is told by its `position` (a standings entry has a `rank` instead).
+ * are in both, status in the positions only. A positions entry is told by its `position`
+ * (a standings entry has a `rank` instead).
  */
 function isFieldOfTheList(entry: PositionEntry | StandingsEntry, field: string): boolean {
   const isPositionEntry = Object.hasOwn(entry, 'position');
   if (field === 'status') {
     return isPositionEntry;
-  }
-  if (field === 'points') {
-    return !isPositionEntry;
   }
   return true;
 }

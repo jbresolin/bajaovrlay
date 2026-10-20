@@ -15,8 +15,7 @@
  *     standings, whatever its place, and no other car.
  *   - An override of another source changes nothing, nor does one naming a car the
  *     snapshot does not list; the shapes given are never changed.
- *   - A status override touches the positions only, and a points override the
- *     standings only, each list having only its own fields.
+ *   - A status override touches the positions only, the standings having no status.
  *
  * What these tests deliberately do not cover:
  *   - Which values an override may hold; overrideValue.test.ts (with the commands).
@@ -103,14 +102,13 @@ describe('applyOverridesToSnapshotShapes', () => {
     expect(shapes, 'the shapes given must never be changed in place').toEqual(copyOfShapes);
   });
 
-  it('corrects a status in the positions only, and points in the standings only', () => {
-    // Arrange: car 42 shown running though it stopped, and its points mistyped.
+  it('corrects a status in the positions only', () => {
+    // Arrange: car 42 shown running though it stopped.
     const shapes = readSimulatorSnapshotAtLap34().shapes;
 
     // Act: correct both.
     const correctedShapes = applyOverridesToSnapshotShapes(simulatorSourceId, shapes, [
       buildCarOverride(42, 'status', 'stopped'),
-      buildCarOverride(42, 'points', 512.5),
     ]);
 
     // Assert: each list got the field it has, and no field it lacks.
@@ -123,8 +121,6 @@ describe('applyOverridesToSnapshotShapes', () => {
     expect(car42InPositions?.status, 'the positions must show the corrected status').toBe(
       'stopped',
     );
-    expect(car42InPositions, 'the positions have no points').not.toHaveProperty('points');
-    expect(car42InStandings?.points, 'the standings must show the corrected points').toBe(512.5);
     expect(car42InStandings, 'the standings have no status').not.toHaveProperty('status');
   });
 });

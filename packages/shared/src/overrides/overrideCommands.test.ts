@@ -11,7 +11,8 @@
  *   - A session name correction and a car's team name correction are accepted as sent.
  *   - A correction with a blank reason is refused, naming reason.
  *   - A car correction with no car number, a session correction with one, and a field
- *     that is not correctable for its scope are refused, each naming the part.
+ *     that is not correctable for its scope (laps, and since gate 2 of PR #18 points) are
+ *     refused, each naming the part.
  *   - clearOverride is accepted for a session field and for a car's field.
  *
  * What these tests deliberately do not cover:
@@ -154,7 +155,24 @@ describe('setOverride and clearOverride in the command union', () => {
     },
   ];
 
-  it.each(refusedCommands)('$name', ({ command, partNamed }) => {
+  it.each([
+    ...refusedCommands,
+    // Points decide the standings order as a rank does: one corrected alone would put a
+    // team out of its rank (gate 2 of PR #18), so they are not correctable.
+    {
+      name: "refuses a correction of a team's points, naming field",
+      command: {
+        type: 'setOverride',
+        sourceId: 'cronometragem',
+        scope: 'car',
+        carNumber: 42,
+        field: 'points',
+        value: 512.5,
+        reason: 'Penalidade revista.',
+      },
+      partNamed: 'field',
+    },
+  ])('$name', ({ command, partNamed }) => {
     // Arrange: the command of this row.
 
     // Act: check it and read the failure.

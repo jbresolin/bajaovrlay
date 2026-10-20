@@ -83,7 +83,7 @@ export function buildSessionNameOverride(correctedName: string): Override {
 /** The operator's correction of one field of one car, wherever the car is listed. */
 export function buildCarOverride(
   carNumber: number,
-  field: 'teamName' | 'schoolName' | 'status' | 'points',
+  field: 'teamName' | 'schoolName' | 'status',
   value: unknown,
 ): Override {
   return {

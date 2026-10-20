@@ -2,6 +2,7 @@ import type { CommandInput } from '@bajaovrlay/shared';
 import { createContext, type ReactNode, useContext } from 'react';
 import { useStore } from 'zustand';
 
+import { CommandFailedError } from './commandFailure';
 import type { CommandResult, SendCommand } from './serverConnection';
 import type { ServerState, ServerStateStore } from './serverStateStore';
 
@@ -104,6 +105,26 @@ export function useSendCommand(): (command: CommandInput) => Promise<boolean> {
       return true;
     } catch {
       return false;
+    }
+  };
+}
+
+/**
+ * Returns a function that sends a command and resolves to the operator's sentence for its
+ * refusal, or to null when the server accepted it. For a dialog that shows the refusal of
+ * its own command beside its buttons, rather than the page's last refusal of that kind
+ * (the correction dialog, gate 2 of PR #18). It never rejects.
+ */
+export function useSendCommandAndReadItsRefusal(): (
+  command: CommandInput,
+) => Promise<string | null> {
+  const { sendCommand } = useControlPageState();
+  return async (command) => {
+    try {
+      await sendCommand(command);
+      return null;
+    } catch (failure) {
+      return failure instanceof CommandFailedError ? failure.message : String(failure);
     }
   };
 }

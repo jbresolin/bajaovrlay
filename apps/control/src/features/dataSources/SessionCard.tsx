@@ -4,6 +4,10 @@ import type { ReactNode } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CorrectableValue } from '@/features/overrides/CorrectableValue';
+import {
+  type CorrectionsOfSource,
+  findOverrideInLookup,
+} from '@/features/overrides/overrideLookup';
 import { ptBR } from '@/i18n/ptBR';
 
 import { useSessionClockText } from './useSessionClockText';
@@ -30,7 +34,7 @@ const flagClassForEachState = {
  */
 export function SessionCard(props: {
   session: SessionShape;
-  corrections?: { sourceId: string; sourceLabel: string; sessionAsSent: SessionShape };
+  corrections?: CorrectionsOfSource & { sessionAsSent: SessionShape };
 }) {
   const { session, corrections } = props;
   const clockText = useSessionClockText(session.clock);
@@ -45,10 +49,12 @@ export function SessionCard(props: {
     if (corrections === undefined) {
       return drawnValue ?? writeValue(session);
     }
+    const overrideKey = { sourceId: corrections.sourceId, scope: 'session' as const, field };
     return (
       <CorrectableValue
         sourceLabel={corrections.sourceLabel}
-        overrideKey={{ sourceId: corrections.sourceId, scope: 'session', field }}
+        overrideKey={overrideKey}
+        overrideInForce={findOverrideInLookup(corrections.overrideLookup, overrideKey)}
         fieldDescription={sessionFieldLabels[field]}
         valueText={writeValue(session)}
         valueAsSentText={writeValue(corrections.sessionAsSent)}

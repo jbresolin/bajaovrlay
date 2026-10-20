@@ -3,7 +3,9 @@ import {
   type DataSource,
   type SessionShape,
 } from '@bajaovrlay/shared';
+import { useMemo } from 'react';
 
+import { buildOverrideLookup } from '@/features/overrides/overrideLookup';
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
@@ -54,6 +56,18 @@ export function DataSourceDetail(props: { source: DataSource }) {
     snapshot === undefined
       ? undefined
       : applyOverridesToSnapshotShapes(source.id, snapshot.shapes, overrides);
+  // One lookup of the corrections for every cell: each cell reads its own from it, so no
+  // cell subscribes to the store or searches the list itself (gate 2 of PR #18).
+  // Kept while the corrections are the same, so a memoised row with the same car data is
+  // left as it is.
+  const corrections = useMemo(
+    () => ({
+      sourceId: source.id,
+      sourceLabel: source.label,
+      overrideLookup: buildOverrideLookup(overrides),
+    }),
+    [source.id, source.label, overrides],
+  );
   const sessionAsSent = snapshot?.shapes.session;
   const sessionCorrected = shapesShown?.session;
   const sessionToShow =
@@ -78,30 +92,20 @@ export function DataSourceDetail(props: { source: DataSource }) {
               key={snapshot.receivedAtMs}
               session={sessionToShow}
               corrections={
-                sessionAsSent === undefined
-                  ? undefined
-                  : { sourceId: source.id, sourceLabel: source.label, sessionAsSent }
+                sessionAsSent === undefined ? undefined : { ...corrections, sessionAsSent }
               }
             />
           )}
           {snapshot.shapes.positions !== undefined && shapesShown?.positions !== undefined && (
             <SnapshotPositionsTable
               positions={shapesShown.positions}
-              corrections={{
-                sourceId: source.id,
-                sourceLabel: source.label,
-                positionsAsSent: snapshot.shapes.positions,
-              }}
+              corrections={{ ...corrections, positionsAsSent: snapshot.shapes.positions }}
             />
           )}
           {snapshot.shapes.standings !== undefined && shapesShown?.standings !== undefined && (
             <SnapshotStandingsTable
               standings={shapesShown.standings}
-              corrections={{
-                sourceId: source.id,
-                sourceLabel: source.label,
-                standingsAsSent: snapshot.shapes.standings,
-              }}
+              corrections={{ ...corrections, standingsAsSent: snapshot.shapes.standings }}
             />
           )}
           <RawSnapshotJson shapes={snapshot.shapes} />

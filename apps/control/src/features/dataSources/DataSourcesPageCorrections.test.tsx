@@ -13,6 +13,7 @@
  *   - "Corrigir valor…" on car 42's team sends setOverride for car 42's team name.
  *   - "Remover correção" sends clearOverride for that correction.
  *   - A corrected session name shows on the session card with its badge.
+ *   - Points are not correctable (gate 2 of PR #18): the standings points are plain text.
  *
  * What these tests deliberately do not cover:
  *   - The dialog's rules; OverrideDialog.test.tsx.
@@ -91,11 +92,8 @@ describe('corrections on the positions table', () => {
 
     // Act: open the team's menu, correct it with a reason.
     const positionsTable = within(screen.getByRole('table', { name: 'Posições' }));
-    // (Opened with Enter, the keyboard way: a menu opens on the pointer going down, which
-    // the test page does not do for a click.)
-    fireEvent.keyDown(
+    fireEvent.click(
       positionsTable.getByRole('button', { name: 'Equipe do carro 42: Jequitibá Racing' }),
-      { key: 'Enter' },
     );
     fireEvent.click(screen.getByRole('menuitem', { name: 'Corrigir valor…' }));
     const dialog = within(screen.getByRole('dialog'));
@@ -160,5 +158,20 @@ describe('corrections on the session card', () => {
     );
     expect(sessionCard.getByText('Enduro — Etapa Nacional'), 'the corrected name').toBeVisible();
     expect(sessionCard.getByText('corrigido'), 'its badge').toBeVisible();
+  });
+});
+
+describe('values that are not correctable', () => {
+  it('shows the standings points as plain text, with no menu', () => {
+    // Arrange and act: the page with the simulator at lap 34.
+    renderPageWithCorrections([]);
+
+    // Assert: the 1st row's points (car 45, 646,9) are not a button.
+    const standingsTable = within(screen.getByRole('table', { name: 'Classificação' }));
+    expect(
+      standingsTable.queryByRole('button', { name: /^Pontos do carro 45/ }),
+      'points decide the order and are not correctable',
+    ).toBeNull();
+    expect(standingsTable.getByText('646,9'), 'the points are still shown').toBeVisible();
   });
 });

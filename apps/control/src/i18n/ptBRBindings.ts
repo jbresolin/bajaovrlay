@@ -52,7 +52,6 @@ export const ptBRBindings = {
     whatIsCorrected: (sourceLabel: string, fieldLabel: string) => `${sourceLabel} › ${fieldLabel}`,
     ofCar: (fieldLabel: string, carNumber: number) => `${fieldLabel} do carro ${carNumber}`,
     valueNow: (valueText: string) => `Na fonte agora: ${valueText}`,
-    correctedNow: (valueText: string, reason: string) => `Corrigido para ${valueText}: ${reason}`,
     valueLabel: 'Valor corrigido',
     reasonLabel: 'Motivo (obrigatório)',
     saveButton: 'Salvar correção',
@@ -60,6 +59,8 @@ export const ptBRBindings = {
     cancelButton: 'Cancelar',
     closeDialogButton: 'Fechar',
     reasonMissing: 'Escreva o motivo da correção.',
+    // The scheduled duration is typed as every clock field is: minutes and seconds.
+    durationPlaceholder: 'mm:ss',
     sessionKinds: {
       enduro: 'Enduro',
       acceleration: 'Aceleração',

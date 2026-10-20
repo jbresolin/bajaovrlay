@@ -4,15 +4,15 @@
  * What this module is for:
  *   An override's value goes on air wherever the field is bound, so it must be what the
  *   canonical shape would hold there: a text for a name, one of the flags for the session
- *   state, one of the statuses for a car, a number for points. findProblemInOverrideValue
+ *   state, one of the statuses for a car, a number for a duration. findProblemInOverrideValue
  *   checks it with the shapes' own field schemas and answers one pt-BR sentence naming
  *   the field, or undefined. The server runs it at setOverride; the control page before
  *   sending.
  *
  * What these tests prove:
- *   - A session name, a flag, a car status, points and a scheduled duration that fit pass.
- *   - A number as a session name, an unknown flag, an empty team name, points written as
- *     text and an unknown status are refused, each naming the field.
+ *   - A session name, a flag, a car status, a school and a scheduled duration that fit pass.
+ *   - A number as a session name, an unknown flag, an empty team name, a duration written
+ *     as text and an unknown status are refused, each naming the field.
  *
  * What these tests deliberately do not cover:
  *   - Which fields may be corrected at all; overrideCommands.test.ts.
@@ -30,7 +30,7 @@ describe('findProblemInOverrideValue', () => {
     // A car that stopped though the source says it runs.
     { name: 'a car stopped', scope: 'car', field: 'status', value: 'stopped' },
     // Points with a decimal, as Baja scores them.
-    { name: 'points with a decimal', scope: 'car', field: 'points', value: 512.5 },
+    { name: 'a school name', scope: 'car', field: 'schoolName', value: 'CEFET-MG' },
     // Four hours in ms.
     {
       name: 'a scheduled duration in ms',
@@ -75,13 +75,13 @@ describe('findProblemInOverrideValue', () => {
       value: '',
       expected: 'O valor "" não serve para Carro › Equipe.',
     },
-    // Points typed as text.
+    // A duration typed as text.
     {
-      name: 'refuses points written as text',
-      scope: 'car',
-      field: 'points',
-      value: '512,5',
-      expected: 'O valor "512,5" não serve para Carro › Pontos.',
+      name: 'refuses a scheduled duration written as text',
+      scope: 'session',
+      field: 'scheduledDurationMs',
+      value: '4:00:00',
+      expected: 'O valor "4:00:00" não serve para Sessão › Duração prevista.',
     },
     // A status in Portuguese instead of the shape's word.
     {

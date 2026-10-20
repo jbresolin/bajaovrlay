@@ -1,4 +1,5 @@
 import type { PositionEntry, PositionsShape } from '@bajaovrlay/shared';
+import { memo } from 'react';
 
 import {
   Table,
@@ -9,17 +10,87 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CorrectableValue } from '@/features/overrides/CorrectableValue';
+import {
+  type CorrectionsOfSource,
+  findOverrideInLookup,
+} from '@/features/overrides/overrideLookup';
 import { ptBR } from '@/i18n/ptBR';
 
+import { isTableRowTheSame } from './tableRowComparison';
 import { formatGapToLeader, formatLapTime } from './timingScreenText';
 
 const texts = ptBR.dataSources.positionsTable;
+const columns = texts.columns;
 const unknownValue = ptBR.dataSources.detail.unknownValue;
 
 /** Writes a lap time, or a dash when the source does not know it. */
 function formatLapTimeOrUnknown(lapTimeMs: number | undefined): string {
   return lapTimeMs === undefined ? unknownValue : formatLapTime(lapTimeMs);
 }
+
+/** One correctable value of a car, or the plain value without corrections. */
+function CarValue(props: {
+  entry: PositionEntry;
+  entryAsSent: PositionEntry | undefined;
+  corrections: CorrectionsOfSource | undefined;
+  field: 'teamName' | 'schoolName' | 'status';
+  writeValue: (car: PositionEntry) => string;
+}) {
+  const { entry, corrections, field, writeValue } = props;
+  if (corrections === undefined) {
+    return writeValue(entry);
+  }
+  const overrideKey = {
+    sourceId: corrections.sourceId,
+    scope: 'car' as const,
+    carNumber: entry.carNumber,
+    field,
+  };
+  return (
+    <CorrectableValue
+      sourceLabel={corrections.sourceLabel}
+      overrideKey={overrideKey}
+      overrideInForce={findOverrideInLookup(corrections.overrideLookup, overrideKey)}
+      fieldDescription={ptBR.bindings.overrides.carFieldDescription(
+        columns[field],
+        entry.carNumber,
+      )}
+      valueText={writeValue(entry)}
+      valueAsSentText={writeValue(props.entryAsSent ?? entry)}
+    />
+  );
+}
+
+/**
+ * One car's row. Memoised, compared field by field (tableRowComparison.ts): a poll that
+ * did not change this car leaves its row as it is.
+ */
+const PositionsRow = memo(function PositionsRow(props: {
+  entry: PositionEntry;
+  entryAsSent: PositionEntry | undefined;
+  corrections: CorrectionsOfSource | undefined;
+}) {
+  const { entry } = props;
+  return (
+    <TableRow>
+      <TableCell className="tabular-nums">{entry.position}</TableCell>
+      <TableCell className="tabular-nums">{entry.carNumber}</TableCell>
+      <TableCell>
+        <CarValue {...props} field="teamName" writeValue={(car) => car.teamName} />
+      </TableCell>
+      <TableCell>
+        <CarValue {...props} field="schoolName" writeValue={(car) => car.schoolName} />
+      </TableCell>
+      <TableCell className="tabular-nums">{entry.laps}</TableCell>
+      <TableCell className="tabular-nums">{formatLapTimeOrUnknown(entry.lastLapMs)}</TableCell>
+      <TableCell className="tabular-nums">{formatLapTimeOrUnknown(entry.bestLapMs)}</TableCell>
+      <TableCell className="tabular-nums">{formatGapToLeader(entry)}</TableCell>
+      <TableCell>
+        <CarValue {...props} field="status" writeValue={(car) => texts.statuses[car.status]} />
+      </TableCell>
+    </TableRow>
+  );
+}, isTableRowTheSame);
 
 /**
  * The positions of the selected source, one row per car in the order the source gave:
@@ -28,43 +99,17 @@ function formatLapTimeOrUnknown(lapTimeMs: number | undefined): string {
  * its own box on a narrow screen (components/ui/table.tsx).
  * With `corrections` (a stored source, not a "Testar" result), the positions shown are
  * the corrected ones and a car's team, school and status can be corrected
- * (CorrectableValue.tsx); `positionsAsSent` is what the source itself sent.
+ * (CorrectableValue.tsx); `positionsAsSent` is what the source itself sent, matched to
+ * each row by car number (a corrected list need not keep the source's order).
  */
 export function SnapshotPositionsTable(props: {
   positions: PositionsShape;
-  corrections?: { sourceId: string; sourceLabel: string; positionsAsSent: PositionsShape };
+  corrections?: CorrectionsOfSource & { positionsAsSent: PositionsShape };
 }) {
-  const columns = texts.columns;
   const { corrections } = props;
-
-  /** One correctable cell of a car, or the plain value without corrections. */
-  function drawCarValue(
-    entry: PositionEntry,
-    entryAsSent: PositionEntry | undefined,
-    field: 'teamName' | 'schoolName' | 'status',
-    writeValue: (car: PositionEntry) => string,
-  ) {
-    if (corrections === undefined) {
-      return writeValue(entry);
-    }
-    return (
-      <CorrectableValue
-        sourceLabel={corrections.sourceLabel}
-        overrideKey={{
-          sourceId: corrections.sourceId,
-          scope: 'car',
-          carNumber: entry.carNumber,
-          field,
-        }}
-        fieldDescription={ptBR.bindings.overrides.carFieldDescription(
-          columns[field],
-          entry.carNumber,
-        )}
-        valueText={writeValue(entry)}
-        valueAsSentText={writeValue(entryAsSent ?? entry)}
-      />
-    );
-  }
+  const entriesAsSentByCar = new Map(
+    (corrections?.positionsAsSent.entries ?? []).map((entry) => [entry.carNumber, entry]),
+  );
   return (
     <Table aria-label={texts.label}>
       <TableHeader>
@@ -81,32 +126,14 @@ export function SnapshotPositionsTable(props: {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {props.positions.entries.map((entry, index) => {
-          const entryAsSent = corrections?.positionsAsSent.entries[index];
-          return (
-            <TableRow key={entry.carNumber}>
-              <TableCell className="tabular-nums">{entry.position}</TableCell>
-              <TableCell className="tabular-nums">{entry.carNumber}</TableCell>
-              <TableCell>
-                {drawCarValue(entry, entryAsSent, 'teamName', (car) => car.teamName)}
-              </TableCell>
-              <TableCell>
-                {drawCarValue(entry, entryAsSent, 'schoolName', (car) => car.schoolName)}
-              </TableCell>
-              <TableCell className="tabular-nums">{entry.laps}</TableCell>
-              <TableCell className="tabular-nums">
-                {formatLapTimeOrUnknown(entry.lastLapMs)}
-              </TableCell>
-              <TableCell className="tabular-nums">
-                {formatLapTimeOrUnknown(entry.bestLapMs)}
-              </TableCell>
-              <TableCell className="tabular-nums">{formatGapToLeader(entry)}</TableCell>
-              <TableCell>
-                {drawCarValue(entry, entryAsSent, 'status', (car) => texts.statuses[car.status])}
-              </TableCell>
-            </TableRow>
-          );
-        })}
+        {props.positions.entries.map((entry) => (
+          <PositionsRow
+            key={entry.carNumber}
+            entry={entry}
+            entryAsSent={entriesAsSentByCar.get(entry.carNumber)}
+            corrections={corrections}
+          />
+        ))}
       </TableBody>
     </Table>
   );
