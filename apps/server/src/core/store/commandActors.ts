@@ -5,7 +5,8 @@
 // fourth role, `sistema:<what>`, is never given to a connection: it signs what the
 // server does by itself (the auto-out, `sistema:auto-out`, the macro runner,
 // `sistema:macro:<macroId>`, the macro watchdog, `sistema:macro-watchdog`, the poller of
-// each data source, `sistema:fonte:<sourceId>`, and the recorder, `sistema:gravador`).
+// each data source, `sistema:fonte:<sourceId>`, the recorder, `sistema:gravador`, and the
+// refresher of bound fields, `sistema:vinculos`).
 const rendererRolePrefix = 'renderer:';
 const monitorRolePrefix = 'monitor:';
 const operatorRolePrefix = 'operador:';
@@ -19,6 +20,12 @@ const dataSourcePollerRolePrefix = 'sistema:fonte:';
  * recordRecordingProgress once lines are in a recording's file. It may send nothing else.
  */
 export const dataSourceRecorderActor = 'sistema:gravador';
+
+/**
+ * The actor name the refresher of bound fields signs its refreshBoundInstanceData with
+ * (BAJAOVRLAY-20): "vínculos" are the bindings. It may send nothing else.
+ */
+export const bindingRefresherActor = 'sistema:vinculos';
 
 /**
  * The actor name the macro watchdog signs its endMacroRun with. The hyphen keeps it out

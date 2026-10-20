@@ -90,3 +90,16 @@ export function listClockFieldKeysOfGraphic(graphic: Graphic): string[] {
   }
   return clockFieldKeys;
 }
+
+/**
+ * The keys the graphic's data schema lists under `required`, or none when the manifest
+ * has no schema or no usable list. The resolver leaves an optional field out when its
+ * bound value is absent, and refuses the take for a required one.
+ */
+export function listRequiredFieldKeysOfGraphic(graphic: Graphic): string[] {
+  const requiredFieldKeys = graphic.manifest.schema?.required;
+  if (!Array.isArray(requiredFieldKeys)) {
+    return [];
+  }
+  return requiredFieldKeys.filter((fieldKey): fieldKey is string => typeof fieldKey === 'string');
+}

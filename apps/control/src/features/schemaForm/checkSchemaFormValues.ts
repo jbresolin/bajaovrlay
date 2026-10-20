@@ -5,7 +5,9 @@
  *
  * The order of the rules, for each field the form can edit:
  *  1. A field set to "filled by the server at the take" is not checked at all: it has no
- *     value yet, and the server writes one.
+ *     value yet, and the server writes one. Neither is a clock field the whole clock fills
+ *     ("Relógio da fonte" on the time field). A field set to "Fonte" or "Relógio da fonte"
+ *     is read as its binding (bindingFormValue.ts), or gets that binding's message.
  *  2. What was typed is read as data. A number, an mm:ss time or a date that cannot be
  *     read gets its message.
  *  3. The blank rules: a required field left blank is refused (also a required text: an
@@ -15,8 +17,16 @@
  *     Zod schema built from the same JSON Schema.
  * The server's Ajv check stays the authority; see zodSchemaFromDataSchema.ts.
  */
+import type { BindingFieldValue } from '@bajaovrlay/shared';
+
 import { ptBR } from '@/i18n/ptBR';
 
+import {
+  canFieldBeBoundToASource,
+  canFieldTakeTheWholeClock,
+  listClockFieldKeysFilledByTheWholeClock,
+} from './bindingChoices';
+import { emptySchemaFormBindingValue, readBindingFromSchemaFormValue } from './bindingFormValue';
 import { type ProblemReadingFormValue, readDataValueFromFormValue } from './fieldValueConversion';
 import { readOwnValueOfRecord } from './plainRecord';
 import type { SchemaFormDescription } from './schemaFormDescription';
@@ -27,7 +37,9 @@ import { buildZodSchemaFromDataSchema } from './zodSchemaFromDataSchema';
 export type CheckedSchemaFormField =
   | { key: string; outcome: 'value'; value: string | number | boolean }
   | { key: string; outcome: 'cleared' }
-  | { key: string; outcome: 'takeTime' };
+  | { key: string; outcome: 'takeTime' }
+  | { key: string; outcome: 'binding'; binding: BindingFieldValue }
+  | { key: string; outcome: 'filledByTheWholeClock' };
 
 /** The pt-BR message for one wrong field. */
 export type SchemaFormFieldMessage = {
@@ -66,14 +78,45 @@ export function checkSchemaFormValues(
   const checkedFields: CheckedSchemaFormField[] = [];
   const fieldMessages: SchemaFormFieldMessage[] = [];
   const dataPairsToCheckAgainstTheLimits: Array<[string, string | number | boolean]> = [];
+  const keysFilledByTheWholeClock = listKeysFilledByAChosenWholeClock(description, formValues);
 
   for (const field of description.fields) {
-    if (field.control === 'unsupported') {
+    // A field the form cannot edit is not checked, unless it reads a source (a list).
+    const isListFieldReadingASource =
+      field.control === 'unsupported' &&
+      readOwnValueOfRecord(formValues.kinds, field.key) === 'binding';
+    if (field.control === 'unsupported' && !isListFieldReadingASource) {
+      continue;
+    }
+    // First: the whole clock fills these whatever their own kind (the moment field starts
+    // as "filled at the take" in a new form, and must not stamp over the source's moment).
+    if (keysFilledByTheWholeClock.includes(field.key)) {
+      checkedFields.push({ key: field.key, outcome: 'filledByTheWholeClock' });
       continue;
     }
     const kind = readOwnValueOfRecord(formValues.kinds, field.key);
     if (field.offersTakeTime && kind === 'takeTime') {
       checkedFields.push({ key: field.key, outcome: 'takeTime' });
+      continue;
+    }
+    const isBound =
+      kind === 'binding' && canFieldBeBoundToASource(description.dataSchema, field.key);
+    const isWholeClock =
+      kind === 'wholeClock' && canFieldTakeTheWholeClock(description.dataSchema, field.key);
+    if (isBound || isWholeClock) {
+      const bindingValue =
+        readOwnValueOfRecord(formValues.bindings, field.key) ?? emptySchemaFormBindingValue;
+      const bindingRead = readBindingFromSchemaFormValue(
+        field,
+        bindingValue,
+        description.dataSchema,
+        isWholeClock,
+      );
+      if (bindingRead.status === 'problem') {
+        fieldMessages.push({ fieldKey: field.key, message: bindingRead.message });
+      } else {
+        checkedFields.push({ key: field.key, outcome: 'binding', binding: bindingRead.binding });
+      }
       continue;
     }
 
@@ -119,6 +162,22 @@ export function checkSchemaFormValues(
     return { status: 'invalid', fieldMessages };
   }
   return { status: 'valid', checkedFields };
+}
+
+/**
+ * The three clock fields "Relógio da fonte" fills while it is the time field's kind, or
+ * none: their own values are kept in the form, unchecked and unsent.
+ */
+export function listKeysFilledByAChosenWholeClock(
+  description: SchemaFormDescription,
+  formValues: SchemaFormValues,
+): string[] {
+  const isWholeClockChosen = description.fields.some(
+    (field) =>
+      readOwnValueOfRecord(formValues.kinds, field.key) === 'wholeClock' &&
+      canFieldTakeTheWholeClock(description.dataSchema, field.key),
+  );
+  return isWholeClockChosen ? listClockFieldKeysFilledByTheWholeClock(description.dataSchema) : [];
 }
 
 /**

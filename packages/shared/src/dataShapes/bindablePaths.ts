@@ -1,12 +1,47 @@
+import { z } from 'zod';
+
 import type { DataShapeKey } from './dataShapeKey.js';
 import { ptBRDataShapes } from './ptBRDataShapes.js';
 
-/** One path a binding may point at inside a shape, and the pt-BR label the picker shows. */
+/**
+ * The kind of value found at a bindable path. The item editor offers a path to a field
+ * only when its type fits the field (bindingFitsGraphicField.ts), and a binding
+ * transform says which types it reads and which it gives.
+ * - `text`, `integer`, `number`, `boolean`: one plain value.
+ * - `stateEnum`: the session flag, exactly the race clock's flag values.
+ * - `positionsEntries`, `standingsEntries`, `bracketsRounds`: a whole list, for a tower,
+ *   a standings table or a bracket.
+ * - `clockGroup`: the whole session clock, which fills a graphic's four clock fields at
+ *   once (the clock group, concept §5), so the clock never jumps between two of them.
+ */
+export const BindableValueTypeSchema = z.enum([
+  'text',
+  'integer',
+  'number',
+  'boolean',
+  'stateEnum',
+  'positionsEntries',
+  'standingsEntries',
+  'bracketsRounds',
+  'clockGroup',
+]);
+
+/** One of BindableValueTypeSchema's values. */
+export type BindableValueType = z.infer<typeof BindableValueTypeSchema>;
+
+/** One path a binding may point at inside a shape, and what the picker shows for it. */
 export type BindablePath = {
-  /** Dot-separated, from the shape's root: "entries.0.teamName". */
+  /** Dot-separated, from the shape's root: "entries.0.teamName", "entryOfCar.laps". */
   path: string;
   /** "Posições › 1º colocado › Equipe". */
   label: string;
+  /** What is found there, so the picker offers it only to a field it fits. */
+  valueType: BindableValueType;
+  /**
+   * True for the paths under `entryOfCar`, which read the car whose number the binding
+   * names (`carNumber`) wherever it is in the list, instead of a fixed place.
+   */
+  isCarChosenByNumber: boolean;
 };
 
 /**
@@ -18,10 +53,46 @@ export type BindablePath = {
 const firstEntriesWithTheirOwnPaths = 10;
 
 /**
- * Lists the paths a binding may point at in one shape, with their pt-BR labels, in the
- * order the picker shows them. Written out by hand on purpose (readability law): deriving
- * it from the Zod schemas would need type-level code a reviewer has to run in their head,
- * and it would offer fields no graphic should show (ids, `updatedAtMs`).
+ * The word that starts every path reading the car the binding names by number. Written
+ * as a path form with one parameter (the binding's `carNumber`) rather than one path per
+ * car, so the list stays short and no query language is needed (brief B).
+ */
+export const entryOfCarPathPrefix = 'entryOfCar.';
+
+/**
+ * The session path of the whole clock, the clock group: one binding that fills a
+ * graphic's four clock fields at once. Every check of "is this the whole clock" compares
+ * with this one name (gate 2 of PR #18).
+ */
+export const wholeClockBindingPath = 'clock';
+
+/** The role a clock field plays: the `v_baja.role` a graphic marks its clock fields with. */
+export type ClockFieldRole = 'clockTime' | 'wallClock' | 'clockRunning' | 'clockMode';
+
+// The session clock's own fields by path, each with the role of the graphic field it fills.
+const clockRoleOfEachSessionClockPath: Record<string, ClockFieldRole> = {
+  'clock.referenceTimeMs': 'clockTime',
+  'clock.referenceWallClockMs': 'wallClock',
+  'clock.running': 'clockRunning',
+  'clock.clockMode': 'clockMode',
+};
+
+/**
+ * The clock role of one field of the session clock, by its path ("clock.running"), or
+ * undefined for any other path. Lets a page write a clock field's value in words (a time,
+ * a moment) without naming the shape's fields itself (gate 2 of PR #18).
+ */
+export function findClockRoleOfSessionPath(path: string): ClockFieldRole | undefined {
+  return Object.hasOwn(clockRoleOfEachSessionClockPath, path)
+    ? clockRoleOfEachSessionClockPath[path]
+    : undefined;
+}
+
+/**
+ * Lists the paths a binding may point at in one shape, with their pt-BR labels and value
+ * types, in the order the picker shows them. Written out by hand on purpose (readability
+ * law): deriving it from the Zod schemas would need type-level code a reviewer has to run
+ * in their head, and it would offer fields no graphic should show (ids, `updatedAtMs`).
  */
 export function listBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[] {
   switch (shapeKey) {
@@ -36,107 +107,153 @@ export function listBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[]
   }
 }
 
+/** The listed entry of this path in this shape, or undefined when the path is not listed. */
+export function findBindablePath(shapeKey: DataShapeKey, path: string): BindablePath | undefined {
+  return listBindablePathsOfShape(shapeKey).find((bindablePath) => bindablePath.path === path);
+}
+
 /** Joins label parts with the catalog's separator: "Sessão › Bandeira". */
 function joinLabelParts(labelParts: string[]): string {
   return labelParts.join(ptBRDataShapes.labelSeparator);
 }
 
-/** The session's fields, the clock field by field. */
+/** A path read at a fixed place, or a top-level field; never chosen by car number. */
+function buildPathAtFixedPlace(
+  path: string,
+  labelParts: string[],
+  valueType: BindableValueType,
+): BindablePath {
+  return { path, label: joinLabelParts(labelParts), valueType, isCarChosenByNumber: false };
+}
+
+/** The session's fields: the whole clock first, then the clock field by field. */
 function listSessionPaths(): BindablePath[] {
   const shapeName = ptBRDataShapes.shapeNames.session;
   const fieldLabels = ptBRDataShapes.sessionFieldLabels;
   const clockLabels = ptBRDataShapes.clockFieldLabels;
   return [
-    { path: 'eventName', label: joinLabelParts([shapeName, fieldLabels.eventName]) },
-    { path: 'sessionName', label: joinLabelParts([shapeName, fieldLabels.sessionName]) },
-    { path: 'sessionKind', label: joinLabelParts([shapeName, fieldLabels.sessionKind]) },
-    { path: 'state', label: joinLabelParts([shapeName, fieldLabels.state]) },
-    {
-      path: 'clock.clockMode',
-      label: joinLabelParts([shapeName, fieldLabels.clock, clockLabels.clockMode]),
-    },
-    {
-      path: 'clock.referenceTimeMs',
-      label: joinLabelParts([shapeName, fieldLabels.clock, clockLabels.referenceTimeMs]),
-    },
-    {
-      path: 'clock.referenceWallClockMs',
-      label: joinLabelParts([shapeName, fieldLabels.clock, clockLabels.referenceWallClockMs]),
-    },
-    {
-      path: 'clock.running',
-      label: joinLabelParts([shapeName, fieldLabels.clock, clockLabels.running]),
-    },
-    {
-      path: 'scheduledDurationMs',
-      label: joinLabelParts([shapeName, fieldLabels.scheduledDurationMs]),
-    },
-    {
-      path: 'lapsCompletedByLeader',
-      label: joinLabelParts([shapeName, fieldLabels.lapsCompletedByLeader]),
-    },
+    buildPathAtFixedPlace('eventName', [shapeName, fieldLabels.eventName], 'text'),
+    buildPathAtFixedPlace('sessionName', [shapeName, fieldLabels.sessionName], 'text'),
+    buildPathAtFixedPlace('sessionKind', [shapeName, fieldLabels.sessionKind], 'text'),
+    buildPathAtFixedPlace('state', [shapeName, fieldLabels.state], 'stateEnum'),
+    buildPathAtFixedPlace(wholeClockBindingPath, [shapeName, fieldLabels.wholeClock], 'clockGroup'),
+    buildPathAtFixedPlace(
+      'clock.clockMode',
+      [shapeName, fieldLabels.clock, clockLabels.clockMode],
+      'text',
+    ),
+    buildPathAtFixedPlace(
+      'clock.referenceTimeMs',
+      [shapeName, fieldLabels.clock, clockLabels.referenceTimeMs],
+      'integer',
+    ),
+    buildPathAtFixedPlace(
+      'clock.referenceWallClockMs',
+      [shapeName, fieldLabels.clock, clockLabels.referenceWallClockMs],
+      'integer',
+    ),
+    buildPathAtFixedPlace(
+      'clock.running',
+      [shapeName, fieldLabels.clock, clockLabels.running],
+      'boolean',
+    ),
+    buildPathAtFixedPlace(
+      'scheduledDurationMs',
+      [shapeName, fieldLabels.scheduledDurationMs],
+      'integer',
+    ),
+    buildPathAtFixedPlace(
+      'lapsCompletedByLeader',
+      [shapeName, fieldLabels.lapsCompletedByLeader],
+      'integer',
+    ),
   ];
 }
 
-/** The fields of one car the picker offers per place, in the order it shows them. */
-const positionsEntryFieldsPerPlace = [
-  'carNumber',
-  'teamName',
-  'schoolName',
-  'laps',
-  'lastLapMs',
-  'bestLapMs',
-  'gapToLeaderMs',
-  'gapToLeaderLaps',
-  'intervalMs',
-  'pitStops',
-  'status',
+/** The fields of one car the picker offers, in the order it shows them, with their types. */
+const positionsEntryFieldTypes = [
+  { fieldName: 'carNumber', valueType: 'integer' },
+  { fieldName: 'teamName', valueType: 'text' },
+  { fieldName: 'schoolName', valueType: 'text' },
+  { fieldName: 'laps', valueType: 'integer' },
+  { fieldName: 'lastLapMs', valueType: 'integer' },
+  { fieldName: 'bestLapMs', valueType: 'integer' },
+  { fieldName: 'gapToLeaderMs', valueType: 'integer' },
+  { fieldName: 'gapToLeaderLaps', valueType: 'integer' },
+  { fieldName: 'intervalMs', valueType: 'integer' },
+  { fieldName: 'pitStops', valueType: 'integer' },
+  { fieldName: 'status', valueType: 'text' },
 ] as const;
 
-/** The whole list, then each of the first ten places field by field. */
+/** The whole list, then the car chosen by number, then each of the first ten places. */
 function listPositionsPaths(): BindablePath[] {
   const shapeName = ptBRDataShapes.shapeNames.positions;
   const paths: BindablePath[] = [
-    { path: 'entries', label: joinLabelParts([shapeName, ptBRDataShapes.wholeListLabel]) },
+    buildPathAtFixedPlace(
+      'entries',
+      [shapeName, ptBRDataShapes.wholeListLabel],
+      'positionsEntries',
+    ),
   ];
+  for (const { fieldName, valueType } of positionsEntryFieldTypes) {
+    const fieldLabel = ptBRDataShapes.positionsEntryFieldLabels[fieldName];
+    paths.push({
+      path: `${entryOfCarPathPrefix}${fieldName}`,
+      label: joinLabelParts([shapeName, ptBRDataShapes.carChosenByNumberLabel, fieldLabel]),
+      valueType,
+      isCarChosenByNumber: true,
+    });
+  }
   for (let index = 0; index < firstEntriesWithTheirOwnPaths; index += 1) {
     const placeLabel = ptBRDataShapes.placeLabel(index + 1);
-    for (const fieldName of positionsEntryFieldsPerPlace) {
+    for (const { fieldName, valueType } of positionsEntryFieldTypes) {
       const fieldLabel = ptBRDataShapes.positionsEntryFieldLabels[fieldName];
-      paths.push({
-        path: `entries.${index}.${fieldName}`,
-        label: joinLabelParts([shapeName, placeLabel, fieldLabel]),
-      });
+      paths.push(
+        buildPathAtFixedPlace(
+          `entries.${index}.${fieldName}`,
+          [shapeName, placeLabel, fieldLabel],
+          valueType,
+        ),
+      );
     }
   }
   return paths;
 }
 
 /** The fields of one team the picker offers per row, in the order it shows them. */
-const standingsEntryFieldsPerRow = ['carNumber', 'teamName', 'schoolName', 'points'] as const;
+const standingsEntryFieldTypes = [
+  { fieldName: 'carNumber', valueType: 'integer' },
+  { fieldName: 'teamName', valueType: 'text' },
+  { fieldName: 'schoolName', valueType: 'text' },
+  { fieldName: 'points', valueType: 'number' },
+] as const;
 
 /**
  * The scope, the whole list, then each of the first ten rows field by field. Labelled by
  * row ("1ª linha"), not by place: tied teams share a rank, so a row's index is not its
- * place. Picking a team by its car number is BAJAOVRLAY-20's to add.
+ * place. A team chosen by its car number is offered in the positions only (brief B).
  */
 function listStandingsPaths(): BindablePath[] {
   const shapeName = ptBRDataShapes.shapeNames.standings;
   const paths: BindablePath[] = [
-    {
-      path: 'scope',
-      label: joinLabelParts([shapeName, ptBRDataShapes.standingsFieldLabels.scope]),
-    },
-    { path: 'entries', label: joinLabelParts([shapeName, ptBRDataShapes.wholeListLabel]) },
+    buildPathAtFixedPlace('scope', [shapeName, ptBRDataShapes.standingsFieldLabels.scope], 'text'),
+    buildPathAtFixedPlace(
+      'entries',
+      [shapeName, ptBRDataShapes.wholeListLabel],
+      'standingsEntries',
+    ),
   ];
   for (let index = 0; index < firstEntriesWithTheirOwnPaths; index += 1) {
     const rowLabel = ptBRDataShapes.rowLabel(index + 1);
-    for (const fieldName of standingsEntryFieldsPerRow) {
+    for (const { fieldName, valueType } of standingsEntryFieldTypes) {
       const fieldLabel = ptBRDataShapes.standingsEntryFieldLabels[fieldName];
-      paths.push({
-        path: `entries.${index}.${fieldName}`,
-        label: joinLabelParts([shapeName, rowLabel, fieldLabel]),
-      });
+      paths.push(
+        buildPathAtFixedPlace(
+          `entries.${index}.${fieldName}`,
+          [shapeName, rowLabel, fieldLabel],
+          valueType,
+        ),
+      );
     }
   }
   return paths;
@@ -146,9 +263,10 @@ function listStandingsPaths(): BindablePath[] {
 function listBracketsPaths(): BindablePath[] {
   const shapeName = ptBRDataShapes.shapeNames.brackets;
   return [
-    {
-      path: 'rounds',
-      label: joinLabelParts([shapeName, ptBRDataShapes.bracketsFieldLabels.rounds]),
-    },
+    buildPathAtFixedPlace(
+      'rounds',
+      [shapeName, ptBRDataShapes.bracketsFieldLabels.rounds],
+      'bracketsRounds',
+    ),
   ];
 }

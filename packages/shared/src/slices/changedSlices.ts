@@ -43,6 +43,7 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     graphics: changedSlices.graphics ?? slices.graphics,
     instances: changedSlices.instances ?? slices.instances,
     previewClearedLayerIds: changedSlices.previewClearedLayerIds ?? slices.previewClearedLayerIds,
+    instanceBindings: changedSlices.instanceBindings ?? slices.instanceBindings,
     rundowns: changedSlices.rundowns ?? slices.rundowns,
     items: changedSlices.items ?? slices.items,
     quickFirePanels: changedSlices.quickFirePanels ?? slices.quickFirePanels,
@@ -51,6 +52,7 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     dataSources: changedSlices.dataSources ?? slices.dataSources,
     // Never in a group: a snapshot arrives source by source (`dataSnapshot` message).
     dataSnapshots: slices.dataSnapshots,
+    overrides: changedSlices.overrides ?? slices.overrides,
     recordings: changedSlices.recordings ?? slices.recordings,
     eventLog: changedSlices.eventLog ?? slices.eventLog,
   };

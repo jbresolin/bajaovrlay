@@ -1,25 +1,35 @@
 /**
- * How a field of an item gets its value: literal or the time of the take (packages/shared)
+ * How a field of an item gets its value: literal, time of the take or a data source
+ * (packages/shared)
  *
  * What this module is for:
  *   An item stores, for each field of its graphic, how that field gets its value. A
  *   `literal` is what the operator typed, used as typed. A `takeTime` is filled in by
  *   the server at the moment the item goes on air, with the wall-clock milliseconds of
  *   that take. The race clock needs it: a clock prepared on Friday must start counting
- *   when it is fired on Saturday, not from the moment it was saved.
+ *   when it is fired on Saturday, not from the moment it was saved. A `binding`
+ *   (BAJAOVRLAY-20) reads the value from a data source: which source, which shape, which
+ *   path in it, whether it keeps updating on air (`isLive`) and, optionally, one
+ *   transform from the registry.
  *
  * What these tests prove:
- *   - A literal and a takeTime are both accepted as field values, unchanged.
+ *   - A literal, a takeTime and a binding (live, frozen, with a transform, with a car
+ *     chosen by number) are all accepted as field values, unchanged.
  *   - A takeTime that carries a value is refused, naming `value`: the server decides
  *     the time, so a value written next to it would be silently ignored.
- *   - A kind that only arrives in M2 (a binding) is still refused, naming `kind`.
+ *   - A binding with no path, or with a misspelt key, is refused, naming the part.
+ *   - A kind that only arrives with the entity library (BAJAOVRLAY-19) is still
+ *     refused, naming `kind`.
+ *   - A binding is accepted inside a createItem command, unchanged.
  *   - A takeTime field is accepted inside a stored item, inside a createItem command
  *     and inside an updateItemFields command, and comes back exactly as written.
  *   - A takeTime carrying a value is refused inside those two commands as well.
  *
  * What these tests deliberately do not cover:
- *   - Turning a takeTime into milliseconds; resolveItemFieldsIntoGraphicData in
+ *   - Turning a takeTime or a binding into a value; resolveItemFieldsIntoGraphicData in
  *     apps/server does that at the take.
+ *   - Whether a binding's path, car number and transform make sense together, which
+ *     bindingProblems.test.ts covers (the schema checks the shape of the value only).
  *   - Whether the graphic's field is one that can hold a time; the server checks the
  *     resolved data against the graphic's own schema at the take.
  *   - The other rules of a literal (it must have a value), of items and of the two
@@ -87,6 +97,42 @@ describe('FieldValueSchema', () => {
     },
     // The new kind: it says "the server fills this in at the take" and holds nothing else.
     { name: 'accepts a takeTime, which carries no value', fieldValue: { kind: 'takeTime' } },
+    // The race clock's flag, following the simulator while on air.
+    {
+      name: 'accepts a live binding to the session flag of the simulator',
+      fieldValue: {
+        kind: 'binding',
+        sourceId: 'simulador-enduro',
+        shapeKey: 'session',
+        path: 'state',
+        isLive: true,
+      },
+    },
+    // A lower third that names the leader at the take and then keeps that name.
+    {
+      name: 'accepts a frozen binding to the leader team name, with a transform',
+      fieldValue: {
+        kind: 'binding',
+        sourceId: 'simulador-enduro',
+        shapeKey: 'positions',
+        path: 'entries.0.schoolName',
+        isLive: false,
+        transformId: 'shortenSchoolName',
+        transformParameters: { maxLength: 12 },
+      },
+    },
+    // A team card that follows car 42 wherever it runs.
+    {
+      name: 'accepts a binding to car 42 chosen by its number',
+      fieldValue: {
+        kind: 'binding',
+        sourceId: 'simulador-enduro',
+        shapeKey: 'positions',
+        path: 'entryOfCar.teamName',
+        carNumber: 42,
+        isLive: true,
+      },
+    },
   ];
 
   it.each(acceptedFieldValueScenarios)('$name', ({ fieldValue }) => {
@@ -121,12 +167,49 @@ describe('FieldValueSchema', () => {
   });
 
   const refusedFieldValueScenarios = [
-    // Bindings to data sources arrive in M2 (BAJAOVRLAY-20); adding takeTime did not open
-    // the door to them.
+    // Entity references arrive with the entity library (BAJAOVRLAY-19); adding bindings
+    // did not open the door to them.
     {
-      name: 'refuses a field bound to a data source, naming kind',
-      fieldValue: { kind: 'binding', sourceId: 'cronometragem', path: 'session.flag' },
+      name: 'refuses a field that names a team of the entity library, naming kind',
+      fieldValue: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
       wordInTheFailure: 'kind',
+    },
+    // A binding must say where in the shape it reads; without a path it reads nothing.
+    {
+      name: 'refuses a binding with no path, naming path',
+      fieldValue: {
+        kind: 'binding',
+        sourceId: 'simulador-enduro',
+        shapeKey: 'session',
+        isLive: true,
+      },
+      wordInTheFailure: 'path',
+    },
+    // `live` instead of `isLive`: dropped silently, the field would freeze at the take
+    // while the operator believes it follows the race.
+    {
+      name: 'refuses a binding with the misspelt key live, naming it',
+      fieldValue: {
+        kind: 'binding',
+        sourceId: 'simulador-enduro',
+        shapeKey: 'session',
+        path: 'state',
+        isLive: true,
+        live: true,
+      },
+      wordInTheFailure: 'live',
+    },
+    // A shape that does not exist: the four canonical shapes are a closed list.
+    {
+      name: 'refuses a binding to a shape that is not canonical, naming shapeKey',
+      fieldValue: {
+        kind: 'binding',
+        sourceId: 'simulador-enduro',
+        shapeKey: 'classificacao',
+        path: 'entries',
+        isLive: true,
+      },
+      wordInTheFailure: 'shapeKey',
     },
     // A field value must say how it gets its value; one with no kind says nothing.
     {
@@ -150,7 +233,7 @@ describe('FieldValueSchema', () => {
   });
 });
 
-describe('a takeTime field inside an item and inside the commands that carry fields', () => {
+describe('takeTime and binding fields inside an item and inside the commands that carry fields', () => {
   it('is accepted in a stored item, unchanged', () => {
     // Arrange: the enduro clock item whose reference moment is stamped at the take.
     const enduroClockItem = buildEnduroClockItemWithFields(
@@ -163,6 +246,29 @@ describe('a takeTime field inside an item and inside the commands that carry fie
     // Assert: it is accepted, and the takeTime field is still a takeTime with no value.
     expect(result.success, 'an item with a takeTime field must be accepted').toBe(true);
     expect(result.data, 'the accepted item must not be altered').toEqual(enduroClockItem);
+  });
+
+  it('accepts a binding in a createItem command, unchanged', () => {
+    // Arrange: an enduro clock whose flag follows the simulator.
+    const createItemWithABoundFlag = buildCreateItemForTheEnduroClockWithFields({
+      ...buildEnduroClockFieldsStampedAtTheTake(),
+      state: {
+        kind: 'binding',
+        sourceId: 'simulador-enduro',
+        shapeKey: 'session',
+        path: 'state',
+        isLive: true,
+      },
+    });
+
+    // Act: check the command.
+    const result = CommandSchema.safeParse(createItemWithABoundFlag);
+
+    // Assert: it is accepted and the binding comes back exactly as written.
+    expect(result.success, 'a createItem with a binding must be accepted').toBe(true);
+    expect(result.data, 'the accepted createItem must not be altered').toEqual(
+      createItemWithABoundFlag,
+    );
   });
 
   it('is accepted in a createItem command, unchanged', () => {

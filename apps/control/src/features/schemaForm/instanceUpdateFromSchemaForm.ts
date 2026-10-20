@@ -56,6 +56,11 @@ export function buildInstanceUpdateFromDirtySchemaFormFields(
       case 'takeTime':
         takeTimeFieldKeys.push(checkedField.key);
         break;
+      // "Edição rápida" never offers "Fonte": a field bound on air is shown read-only and
+      // corrected with an override, so a binding never reaches an update of what is on air.
+      case 'binding':
+      case 'filledByTheWholeClock':
+        break;
     }
   }
 

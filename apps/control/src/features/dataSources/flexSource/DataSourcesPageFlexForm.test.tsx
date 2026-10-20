@@ -12,6 +12,8 @@
  *   - The example preset imported and named is sent as createDataSource, its config whole.
  *   - A positions block filled by hand (list order, a transform, a value table) is sent
  *     with exactly those rules.
+ *   - A rule's transform dropdown offers the eight mapping transforms only, never the
+ *     binding ones an item field uses (BAJAOVRLAY-20).
  *   - A header variable without the BAJAOVRLAY_SOURCE_ prefix is refused under its row
  *     and nothing is sent.
  *   - "Editar" on a flex source sends updateDataSource with only the new name, its
@@ -64,6 +66,35 @@ describe('a new flex source', () => {
         },
       ]);
     });
+  });
+
+  it('offers only the mapping transforms for a rule, never the binding ones', () => {
+    // Arrange: a new flex form with a positions block whose last lap reads a path.
+    renderPageWithSources();
+    openTheNewFlexForm();
+    pressButton('+ Posições');
+    const positions = within(screen.getByRole('region', { name: 'Mapeamento: Posições' }));
+    chooseOptionIn(positions, 'Origem de Última volta', 'Caminho');
+
+    // Act: open the rule's transform dropdown.
+    fireEvent.keyDown(positions.getByRole('combobox', { name: 'Transformação de Última volta' }), {
+      key: 'Enter',
+    });
+    const optionNames = screen.getAllByRole('option').map((option) => option.textContent);
+
+    // Assert: "none" and the eight mapping transforms; "Tempo de volta como texto" formats
+    // canonical data for the screen and belongs to an item's binding, not to a mapping.
+    expect(optionNames, 'a mapping rule must offer mapping transforms only').toEqual([
+      'Sem transformação',
+      'Texto para número',
+      'Texto para número inteiro',
+      'Segundos para milissegundos',
+      'Tempo de volta (texto) para milissegundos',
+      'Data e hora ISO 8601 para milissegundos',
+      'Segundos desde 1970 para milissegundos',
+      'Remover espaços das pontas',
+      'Tabela de valores',
+    ]);
   });
 
   it('is sent with the rules of a positions block filled by hand', async () => {

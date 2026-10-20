@@ -10,8 +10,9 @@ import { refuseUnknownDataSource } from '../dataSourceRefusals.js';
 import { closeOpenRecordingOfSource } from '../recordingBookkeeping.js';
 
 /**
- * deleteDataSource ("Excluir"): removes the source and its snapshot, and closes its open
- * recording at this moment. Its recordings stay listed (and their files on disk), so
+ * deleteDataSource ("Excluir"): removes the source, its snapshot and the operator's
+ * corrections of it (they correct nothing any more), and closes its open recording at this
+ * moment. What is on air from it stays as it is (rule 4): its live refreshes simply stop. Its recordings stay listed (and their files on disk), so
  * they can still be replayed; each keeps the label the source had. Refused for an
  * unknown source.
  */
@@ -34,5 +35,12 @@ export function reduceDeleteDataSource(
     ? slices.dataSnapshots.filter((snapshot) => snapshot.sourceId !== command.sourceId)
     : slices.dataSnapshots;
   const recordings = closeOpenRecordingOfSource(slices.recordings, command.sourceId, nowMs);
-  return { status: 'applied', slices: { ...slices, dataSources, dataSnapshots, recordings } };
+  const hasOverrides = slices.overrides.some((override) => override.sourceId === command.sourceId);
+  const overrides = hasOverrides
+    ? slices.overrides.filter((override) => override.sourceId !== command.sourceId)
+    : slices.overrides;
+  return {
+    status: 'applied',
+    slices: { ...slices, dataSources, dataSnapshots, recordings, overrides },
+  };
 }

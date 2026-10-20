@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
+import { InstanceBindingsSchema } from '../bindings/instanceBindings.js';
 import { CommandErrorSchema } from '../commands/commandError.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
+import { OverridesSchema } from '../overrides/override.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
 import { RundownSchema } from '../rundown/rundown.js';
@@ -72,6 +74,18 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('previewClearedLayerIds'),
     slice: PreviewClearedLayerIdsSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('instanceBindings'),
+    slice: InstanceBindingsSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('overrides'),
+    slice: OverridesSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({

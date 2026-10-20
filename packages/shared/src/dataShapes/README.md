@@ -11,7 +11,8 @@ Conventions: times are integer milliseconds (durations like `lastLapMs`, moments
 what a source gives (gate 2 of PR #16). **`bracketsShape.ts` is a draft** until BAJAOVRLAY-25.
 
 `validateDataShape.ts` checks a payload (pt-BR error naming the path); `bindablePaths.ts`
-hand-lists the paths a binding may point at (standings by row, "1ª linha", since tied teams
-share a rank; picking a car or team by its number is a need noted for BAJAOVRLAY-20);
+hand-lists the paths a binding may point at, each with its value type (standings by row,
+"1ª linha", since tied teams share a rank; a positions car chosen by its number under
+`entryOfCar.`; the whole session clock as `clock`, the clock group);
 `ptBRDataShapes.ts` holds the pt-BR texts;
 `samples/` holds realistic payloads, also the test fixtures. `index.ts` lists every export.

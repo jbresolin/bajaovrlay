@@ -23,6 +23,8 @@
  *     recording, and with its default settings back (read every 2 s, speed 1, "Falha
  *     simulada" off). Its race start is not put back: no command can while it is off,
  *     so each data source test restarts the race itself ("Reiniciar corrida").
+ *   - With the simulator's session name corrected ("Corrigir valor…"), `emptyTheServerState`
+ *     leaves no correction (BAJAOVRLAY-20).
  *   - Called on a server that is already empty, it changes nothing and does not fail.
  *
  * What these tests deliberately do not cover:
@@ -279,6 +281,36 @@ test.describe('emptying the server state', () => {
       editForm.getByRole('switch', { name: 'Falha simulada' }),
       'after the reset the seeded simulator must not fail on purpose',
     ).not.toBeChecked();
+  });
+
+  test("removes the corrections of a source's values", async ({ page }) => {
+    // Arrange: the seeded simulator on with data, and its session name corrected from
+    // the session card, as a data operator does ("Corrigir valor…").
+    await openDataSourcesPageAndWaitUntilConnected(page);
+    await turnSourceOnWithItsSwitch(page, seededSimulatorLabel);
+    const sessionNameButton = page.getByRole('button', { name: /^Nome da sessão: / });
+    await sessionNameButton.press('Enter');
+    await page.getByRole('menuitem', { name: 'Corrigir valor…' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Valor corrigido').fill('Enduro — Etapa Nacional');
+    await dialog.getByLabel('Motivo (obrigatório)').fill('Nome oficial da prova.');
+    await dialog.getByRole('button', { name: 'Salvar correção' }).click();
+    // The dialog closes on the server's ok: only then is the correction stored, and only
+    // then may the reset run (gate 2 of PR #18). "corrigido" alone, not inside "Corrigir".
+    await expect(dialog, 'the dialog closes once the correction is stored').toBeHidden();
+    await expect(
+      page.getByText('corrigido', { exact: true }),
+      'the correction must be in force',
+    ).toBeVisible();
+
+    // Act: empty the server.
+    await emptyTheServerState();
+
+    // Assert: the correction is gone, the simulator's own name is back.
+    await expect(
+      page.getByText('corrigido', { exact: true }),
+      'after the reset no value is corrected',
+    ).toBeHidden();
   });
 
   test('changes nothing and does not fail on a server that is already empty', async ({ page }) => {

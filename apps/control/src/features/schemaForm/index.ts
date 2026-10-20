@@ -23,9 +23,11 @@ export type {
   SchemaFormSelectOption,
 } from './schemaFormDescription';
 export type {
+  // A binding as the form holds it: source, path, car number, live or frozen, transform.
+  SchemaFormBindingValue,
   // Which fields the operator changed: the part of react-hook-form's `dirtyFields` read here.
   SchemaFormDirtyFields,
-  // How a field gets its value: `literal` (typed) or `takeTime` (the server writes the moment).
+  // How a field gets its value: typed, the take's moment, a source, or the source's whole clock.
   SchemaFormFieldKind,
   // What one control holds: text, true/false, or null for a cleared field.
   SchemaFormFieldValue,
@@ -63,6 +65,12 @@ export { buildZodSchemaFromDataSchema } from './zodSchemaFromDataSchema';
 // The parts of an updateInstanceData that come from a form, and "is there nothing to send?".
 export type { InstanceUpdateFromSchemaForm } from './instanceUpdateFromSchemaForm';
 // Builds an on-air update from a checked form: only the changed fields, null for a cleared one.
+export {
+  // Whether a source choice changed since the form opened (it reaches the air at the take).
+  hasSourceChoiceChangedSinceOpened,
+  // The keys the form reads from a source now, which "Atualizar no ar" leaves out.
+  listFieldKeysReadFromASource,
+} from './fieldsReadFromASource';
 export { buildInstanceUpdateFromDirtySchemaFormFields } from './instanceUpdateFromSchemaForm';
 export {
   // Of a stored item, only the fields in which the form differs (updateItemFields.fields).
@@ -75,6 +83,10 @@ export {
 
 // Draws the fields of a generated form for a react-hook-form `form`.
 export { SchemaFormFields } from './SchemaFormFields';
+// What a panel hands the form so fields can read a data source ("Fonte", "Relógio da fonte").
+export type { SchemaFormBindingOptions } from './BoundFieldControls';
+// The line saying what a bound field would get now, or why it would get nothing.
+export { describeBindingValueNow } from './bindingValueNowText';
 // A text a panel has one untouched field show in place of the value the form holds.
 export type { TextShownInUntouchedField } from './textShownInUntouchedField';
 // Writes milliseconds as mm:ss ("12:34"), the way a duration field shows them.

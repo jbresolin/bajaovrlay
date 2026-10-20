@@ -56,6 +56,7 @@ export function createServerStateStore(): ServerStateStore {
     graphics: [],
     instances: [],
     previewClearedLayerIds: [],
+    instanceBindings: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],
@@ -63,6 +64,7 @@ export function createServerStateStore(): ServerStateStore {
     macroRuns: [],
     dataSources: [],
     dataSnapshots: [],
+    overrides: [],
     recordings: [],
     eventLog: [],
     connectionStatus: 'connecting',
@@ -74,6 +76,7 @@ export function createServerStateStore(): ServerStateStore {
         graphics: slices.graphics,
         instances: slices.instances,
         previewClearedLayerIds: slices.previewClearedLayerIds,
+        instanceBindings: slices.instanceBindings,
         rundowns: slices.rundowns,
         items: slices.items,
         quickFirePanels: slices.quickFirePanels,
@@ -81,6 +84,7 @@ export function createServerStateStore(): ServerStateStore {
         macroRuns: slices.macroRuns,
         dataSources: slices.dataSources,
         dataSnapshots: slices.dataSnapshots,
+        overrides: slices.overrides,
         recordings: slices.recordings,
         eventLog: slices.eventLog,
       });
@@ -103,6 +107,9 @@ export function createServerStateStore(): ServerStateStore {
         case 'previewClearedLayerIds':
           set({ previewClearedLayerIds: message.slice });
           break;
+        case 'instanceBindings':
+          set({ instanceBindings: message.slice });
+          break;
         case 'rundowns':
           set({ rundowns: message.slice });
           break;
@@ -120,6 +127,9 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'dataSources':
           set({ dataSources: message.slice });
+          break;
+        case 'overrides':
+          set({ overrides: message.slice });
           break;
         case 'recordings':
           set({ recordings: message.slice });

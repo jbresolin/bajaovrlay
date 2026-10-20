@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { RefreshBoundInstanceDataCommandSchema } from '../bindings/refreshBoundInstanceData.js';
 import { CreateDataSourceCommandSchema } from '../dataSources/createDataSource.js';
 import { DeleteDataSourceCommandSchema } from '../dataSources/deleteDataSource.js';
 import { PollDataSourceNowCommandSchema } from '../dataSources/pollDataSourceNow.js';
@@ -19,6 +20,8 @@ import {
 import { RunMacroCommandSchema } from '../macros/runMacro.js';
 import { StopMacroCommandSchema } from '../macros/stopMacro.js';
 import { UpdateMacroCommandSchema } from '../macros/updateMacro.js';
+import { ClearOverrideCommandSchema } from '../overrides/clearOverride.js';
+import { SetOverrideCommandSchema } from '../overrides/setOverride.js';
 import { PreviewClearLayerCommandSchema } from '../preview/previewClearLayer.js';
 import { PreviewItemCommandSchema } from '../preview/previewItem.js';
 import { PreviewMacroCommandSchema } from '../preview/previewMacro.js';
@@ -101,6 +104,12 @@ export const CommandSchema = z.discriminatedUnion('type', [
   StopRecordingCommandSchema,
   RecordDataSourcePollCommandSchema,
   RecordRecordingProgressCommandSchema,
+  // Bindings (BAJAOVRLAY-20); ../bindings/. Sent only by the server's refresher
+  // (sistema:vinculos) when a source's data changes.
+  RefreshBoundInstanceDataCommandSchema,
+  // Overrides (BAJAOVRLAY-20); ../overrides/. Operators only.
+  SetOverrideCommandSchema,
+  ClearOverrideCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

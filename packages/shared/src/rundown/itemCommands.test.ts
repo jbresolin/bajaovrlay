@@ -12,8 +12,8 @@
  *     notes, and no order or auto-out is invented for it.
  *   - A createItem with every part filled in is accepted unchanged.
  *   - A createItem is refused, with the field named, when the label is empty, the order
- *     is negative or not whole, the colour is not one of the six names, a field is bound
- *     to a data source (M2) or the auto-out is zero.
+ *     is negative or not whole, the colour is not one of the six names, a field names an
+ *     entity (BAJAOVRLAY-19) or the auto-out is zero.
  *   - An updateItemFields may change any one thing on its own (its layer included, since
  *     BAJAOVRLAY-36), may remove the auto-out with null, and adds nothing the editor did
  *     not send.
@@ -112,11 +112,14 @@ describe('createItem', () => {
       changedPart: { color: 'purple' },
       fieldNamedInTheFailure: 'color',
     },
-    // Bindings arrive in M2 (BAJAOVRLAY-20); the editor cannot send one today.
+    // Entity references arrive with the entity library (BAJAOVRLAY-19); the editor
+    // cannot send one today.
     {
-      name: 'refuses a field bound to a data source, naming kind',
+      name: 'refuses a field that names a team of the entity library, naming kind',
       changedPart: {
-        fields: { sessionName: { kind: 'binding', sourceId: 'scoring', path: 'enduro.name' } },
+        fields: {
+          sessionName: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
+        },
       },
       fieldNamedInTheFailure: 'kind',
     },

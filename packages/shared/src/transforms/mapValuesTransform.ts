@@ -5,8 +5,8 @@ import { quoteValueForReason } from './quoteValueForReason.js';
 import {
   giveTransformedValue,
   type JsonValue,
+  type MappingTransform,
   refuseTransformValue,
-  type Transform,
   type TransformResult,
 } from './transform.js';
 
@@ -76,8 +76,9 @@ function lookUpValueInTable(value: unknown, parameters: unknown): TransformResul
 }
 
 /** `{ "BOX": "inPit" }` turns "BOX" into "inPit"; a value not in the table is refused. */
-export const mapValuesTransform: Transform = {
+export const mapValuesTransform: MappingTransform = {
   id: 'mapValues',
+  family: 'mapping',
   label: ptBRTransforms.transforms.mapValues.label,
   description: ptBRTransforms.transforms.mapValues.description,
   parametersSchema: MapValuesParametersSchema,

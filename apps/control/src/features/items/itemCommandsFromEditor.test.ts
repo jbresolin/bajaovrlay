@@ -22,26 +22,20 @@
  *   - Auto-out: a new number sets it, blank over a stored delay sends `null` (remove),
  *     and an untouched delay is not sent.
  *   - An edit that changed nothing builds no command at all.
- *   - The on-air update carries a changed value as that value and a cleared field as
- *     null, never a field left to be stamped at the take, and asks the server to stamp
- *     nothing; with no value to change on air it builds no command.
  *
  * What these tests deliberately do not cover:
  *   - Reading the fields out of the generated form, and finding which of them differ
  *     from the stored item: features/schemaForm/itemFieldsFromSchemaForm.test.ts.
  *   - The rules that refuse a badly filled form: itemEditorForm.test.ts and
  *     features/schemaForm/checkSchemaFormValues.test.ts. These builders get valid values.
+ *   - The on-air update ("Atualizar no ar"); updateInstanceDataCommandFromEditor.test.ts.
  *   - When each command is sent: the ItemEditorPanel test files.
  *   - What the server does with the commands (apps/server).
  */
 import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildCreateItemCommand,
-  buildUpdateInstanceDataCommandFromChangedFields,
-  buildUpdateItemFieldsCommand,
-} from './itemCommandsFromEditor';
+import { buildCreateItemCommand, buildUpdateItemFieldsCommand } from './itemCommandsFromEditor';
 import type { ItemEditorFormValues } from './itemEditorForm';
 import {
   buildEnduranceStartClockItem,
@@ -321,80 +315,5 @@ describe('buildUpdateItemFieldsCommand', () => {
       itemId: '5e1a9c73-2b64-4f08-b3d1-7a9e0c6d8f25',
       autoOutAfterMs: null,
     });
-  });
-});
-
-describe('buildUpdateInstanceDataCommandFromChangedFields', () => {
-  const idOfTheClockInstanceOnAir = '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11';
-
-  it('sends each changed value as it is and a cleared field as null', () => {
-    // Arrange: on the item whose clock is on air, the operator raised the green flag and
-    // cleared the laps.
-    const changedFields: ItemFields = {
-      state: { kind: 'literal', value: 'green' },
-      lapsCompletedByLeader: { kind: 'literal', value: null },
-    };
-
-    // Act: build the on-air update.
-    const command = buildUpdateInstanceDataCommandFromChangedFields({
-      instanceId: idOfTheClockInstanceOnAir,
-      changedFields,
-    });
-
-    // Assert: plain values for the graphic, null for the field to take off air, and no
-    // field for the server to stamp.
-    expect(command, 'the on-air update must carry the two changes as data').toEqual({
-      type: 'updateInstanceData',
-      instanceId: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
-      data: { state: 'green', lapsCompletedByLeader: null },
-      takeTimeFieldKeys: [],
-    });
-  });
-
-  it('leaves out a field changed to "filled by the server at the take"', () => {
-    // Arrange: the operator typed a new time and also switched the reference moment of
-    // an older item from a stored number to "the moment of the take".
-    const changedFields: ItemFields = {
-      referenceTimeMs: { kind: 'literal', value: 5_400_000 },
-      referenceWallClockMs: { kind: 'takeTime' },
-    };
-
-    // Act: build the on-air update.
-    const command = buildUpdateInstanceDataCommandFromChangedFields({
-      instanceId: idOfTheClockInstanceOnAir,
-      changedFields,
-    });
-
-    // Assert: only the typed time goes on air. The moment on air stays as it is, and the
-    // server is not asked to stamp a new one.
-    expect(command, 'a field left to the take must never be sent on air from the editor').toEqual({
-      type: 'updateInstanceData',
-      instanceId: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
-      data: { referenceTimeMs: 5_400_000 },
-      takeTimeFieldKeys: [],
-    });
-  });
-
-  const scenariosWithNothingToChangeOnAir: Array<{ name: string; changedFields: ItemFields }> = [
-    // A new label or colour changes the rundown row, not what the audience sees.
-    { name: 'builds no command when no field changed', changedFields: {} },
-    // The only change is a field now left to the take: nothing typed to put on air.
-    {
-      name: 'builds no command when the only change is a field left to the take',
-      changedFields: { referenceWallClockMs: { kind: 'takeTime' } },
-    },
-  ];
-
-  it.each(scenariosWithNothingToChangeOnAir)('$name', ({ changedFields }) => {
-    // Arrange: the changed fields of this row.
-
-    // Act: build the on-air update.
-    const command = buildUpdateInstanceDataCommandFromChangedFields({
-      instanceId: idOfTheClockInstanceOnAir,
-      changedFields,
-    });
-
-    // Assert: there is nothing to send to the instance on air.
-    expect(command, 'with no typed value changed, nothing may be sent on air').toBeUndefined();
   });
 });

@@ -1,4 +1,4 @@
-import { type MappableField, transformRegistry } from '@bajaovrlay/shared';
+import { listTransformsOfFamily, type MappableField } from '@bajaovrlay/shared';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,10 @@ import { readErrorMessageAtPath } from './formErrorAtPath';
 import { ValueTableEditor } from './ValueTableEditor';
 
 const texts = ptBR.dataSources.flexForm;
+
+// Only the mapping family: a binding transform formats canonical data for the screen and
+// belongs to an item field (BAJAOVRLAY-20); the config schema refuses one here anyway.
+const mappingTransforms = listTransformsOfFamily('mapping');
 
 // "Ordem na lista" is the place of an item in its list, so only an item's field offers it.
 const sourceKindsOfTopLevelFields: readonly FieldRuleSourceKind[] = [
@@ -117,7 +121,7 @@ export function FlexFieldRuleRow(props: {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={noTransformId}>{texts.fieldRule.noTransform}</SelectItem>
-                  {transformRegistry.map((transform) => (
+                  {mappingTransforms.map((transform) => (
                     <SelectItem key={transform.id} value={transform.id}>
                       {transform.label}
                     </SelectItem>

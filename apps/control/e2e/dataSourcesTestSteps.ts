@@ -219,9 +219,21 @@ export async function restartTheSimulatedRaceWithItsButton(
  * ("Reiniciar corrida"), and its 60 cars shown in the positions table.
  */
 export async function startTheSeededSimulatorFastFromTheGreenFlag(page: Page): Promise<void> {
+  await startTheSeededSimulatorFromTheGreenFlag(page, '60');
+}
+
+/**
+ * Starts the seeded simulator as above at the speed given, as typed: '1' keeps the race
+ * under green for its first 56 simulated minutes, so a test can work through forms
+ * without the flag changing under it (gate 2 of PR #18).
+ */
+export async function startTheSeededSimulatorFromTheGreenFlag(
+  page: Page,
+  speedAsTyped: string,
+): Promise<void> {
   await changeSimulatorInItsEditForm(page, seededSimulatorLabel, {
     pollIntervalAsTyped: pollIntervalOfTheTestsAsTyped,
-    speedAsTyped: '60',
+    speedAsTyped,
   });
   await turnSourceOnWithItsSwitch(page, seededSimulatorLabel);
   await restartTheSimulatedRaceWithItsButton(page, seededSimulatorLabel);

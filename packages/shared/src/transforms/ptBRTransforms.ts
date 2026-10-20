@@ -1,6 +1,7 @@
 /**
- * The pt-BR texts of the transform registry: each transform's label and description, and
- * the reasons a transform gives when it cannot read a value. They live in shared, like
+ * The pt-BR texts of the transform registry: each transform's label and description, the
+ * reasons a transform gives when it cannot read a value, and the pieces of the texts the
+ * binding transforms write on air. They live in shared, like
  * ptBRDataShapes.ts, because the server's poll error and the control page's "Testar" panel
  * show the same reason as it is. Each reason takes the value already quoted
  * (quoteValueForReason.ts), so every reason names what it could not read.
@@ -50,6 +51,26 @@ export const ptBRTransforms = {
       description:
         'Troca o valor da fonte pelo valor da tabela: "BOX" vira "inPit". Um valor que não está na tabela é recusado.',
     },
+    topN: {
+      label: 'Primeiras N entradas',
+      description:
+        'Fica só com as primeiras N entradas de uma lista: N = 6 mostra os seis primeiros da classificação.',
+    },
+    formatLapTimeAsText: {
+      label: 'Tempo de volta como texto',
+      description:
+        'Escreve um tempo em milissegundos como na cronometragem, até o décimo, sem arredondar: 278 299 vira "4:38,2".',
+    },
+    formatGapAsText: {
+      label: 'Diferença como texto',
+      description:
+        'Escreve uma diferença para o líder: em tempo, até o décimo, sem arredondar ("+12,3 s"), ou em voltas ("+2 voltas").',
+    },
+    shortenSchoolName: {
+      label: 'Encurtar nome da escola',
+      description:
+        'Corta um nome comprido no tamanho máximo, na última palavra inteira que couber, com "…": nunca inventa uma sigla.',
+    },
   },
 
   /** Why a transform could not read the value it was given. */
@@ -71,6 +92,18 @@ export const ptBRTransforms = {
     notATableKey: (quotedValue: string) =>
       `${quotedValue} não pode ser procurado na tabela de valores, que só procura textos, números e verdadeiro/falso`,
     valueNotInTable: (quotedValue: string) => `${quotedValue} não está na tabela de valores`,
+    notAList: (quotedValue: string) => `${quotedValue} não é uma lista`,
+    notADurationInMs: (quotedValue: string) =>
+      `${quotedValue} não é uma duração em milissegundos inteiros`,
+    notAWholeNumberFromZero: (quotedValue: string) =>
+      `${quotedValue} não é um número inteiro de 0 para cima`,
+  },
+
+  /** Pieces of the texts the binding transforms write on air. */
+  onAirTexts: {
+    gapInSeconds: (secondsToTheTenth: string) => `+${secondsToTheTenth} s`,
+    gapInLaps: (laps: number) => (laps === 1 ? '+1 volta' : `+${laps} voltas`),
+    cutMark: '…',
   },
 
   /** Why the parameters given to a transform were refused. */
@@ -83,5 +116,12 @@ export const ptBRTransforms = {
     mapValuesTableMustBeObject:
       'A tabela de valores deve ser um objeto JSON como { "BOX": "inPit", "PISTA": "running" }.',
     mapValuesTableIsEmpty: 'A tabela de valores está vazia.',
+    topNOutOfRange: 'O número de entradas deve ser um inteiro de 1 a 60.',
+    gapUnitUnknown: 'A unidade da diferença deve ser "ms" (tempo) ou "laps" (voltas).',
+    maxLengthOutOfRange: 'O tamanho máximo deve ser um inteiro de 4 a 60 letras.',
+    bindingTransformInMapping: (transformLabel: string) =>
+      `A transformação "${transformLabel}" serve para vincular campos de um gráfico, não para mapear uma fonte.`,
+    mappingTransformInBinding: (transformLabel: string) =>
+      `A transformação "${transformLabel}" serve para mapear uma fonte, não para vincular campos de um gráfico.`,
   },
 };
