@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -97,6 +97,8 @@ export function SchemaFormFieldRow(props: {
   bindingOptions: SchemaFormBindingOptions | undefined;
   /** True while another field is "Relógio da fonte" and fills this clock field too. */
   isFilledByTheWholeClock: boolean;
+  /** What the panel shows in place of the control, for a field drawn read-only. */
+  readOnlyContent: ReactNode | undefined;
 }) {
   const { form, field, controlId, isDisabled, textShownWhileUntouched } = props;
   const { dataSchema, bindingOptions, isFilledByTheWholeClock } = props;
@@ -146,6 +148,15 @@ export function SchemaFormFieldRow(props: {
     if (cursorVisit !== undefined && !cursorVisit.hasOperatorTyped) {
       setCursorVisit({ ...cursorVisit, hasOperatorTyped: true });
     }
+  }
+
+  if (props.readOnlyContent !== undefined) {
+    return (
+      <div className="flex flex-col gap-2">
+        <Label>{field.label}</Label>
+        {props.readOnlyContent}
+      </div>
+    );
   }
 
   if (isFilledByTheWholeClock) {

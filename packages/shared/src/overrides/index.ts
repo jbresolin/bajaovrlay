@@ -24,3 +24,5 @@ export { type SetOverrideCommand, SetOverrideCommandSchema } from './setOverride
 export { doesOverrideHaveKey, type OverrideKey } from './overrideKey.js';
 // Whether a corrected value fits its canonical field (pt-BR sentence), and its label.
 export { findProblemInOverrideValue, labelOfOverridableField } from './overrideValue.js';
+// The correction a bound field can take ("Corrigir valor da fonte…"), or none.
+export { findOverrideKeyOfBinding } from './overrideKeyOfBinding.js';

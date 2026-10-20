@@ -46,4 +46,39 @@ export const ptBRBindings = {
       `Informe em "${fieldLabel}" o número do carro, um inteiro de 1 para cima.`,
     aboutField: (fieldLabel: string, problem: string) => `${fieldLabel}: ${problem}`,
   },
+  // The correction dialog ("Corrigir valor…", "Corrigir valor da fonte…").
+  overrides: {
+    title: 'Corrigir valor da fonte',
+    whatIsCorrected: (sourceLabel: string, fieldLabel: string) => `${sourceLabel} › ${fieldLabel}`,
+    ofCar: (fieldLabel: string, carNumber: number) => `${fieldLabel} do carro ${carNumber}`,
+    valueNow: (valueText: string) => `Na fonte agora: ${valueText}`,
+    correctedNow: (valueText: string, reason: string) => `Corrigido para ${valueText}: ${reason}`,
+    valueLabel: 'Valor corrigido',
+    reasonLabel: 'Motivo (obrigatório)',
+    saveButton: 'Salvar correção',
+    clearButton: 'Remover correção',
+    cancelButton: 'Cancelar',
+    closeDialogButton: 'Fechar',
+    reasonMissing: 'Escreva o motivo da correção.',
+    sessionKinds: {
+      enduro: 'Enduro',
+      acceleration: 'Aceleração',
+      speed: 'Velocidade',
+      traction: 'Tração',
+      suspension: 'Suspensão',
+      maneuverability: 'Manobrabilidade',
+      other: 'Outra',
+    } as Record<string, string>,
+    // The badge on a value a correction changed; its tooltip is the reason.
+    correctedBadge: 'corrigido',
+  },
+  // Bound fields of what is on air (Edição rápida, Camadas, rundown and shortcuts).
+  onAir: {
+    whereItReads: (sourceLabel: string, pathLabel: string, isLive: boolean) =>
+      `Vinculado: ${sourceLabel} › ${pathLabel} (${isLive ? 'ao vivo' : 'congelado na entrada'})`,
+    pathOfCar: (pathLabel: string, carNumber: number) => `${pathLabel}, carro ${carNumber}`,
+    deletedSourceName: 'fonte excluída',
+    correctButton: 'Corrigir valor da fonte…',
+    correctButtonLabel: (fieldLabel: string) => `Corrigir valor da fonte: ${fieldLabel}`,
+  },
 };

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { type UseFormReturn, useWatch } from 'react-hook-form';
 
 import { ptBR } from '@/i18n/ptBR';
@@ -32,6 +33,17 @@ function writeAllUnsupportedValuesAsOneJsonText(
   return JSON.stringify(Object.fromEntries(keysAndValues), null, 2);
 }
 
+/** What the panel shows in place of a field's control, when it draws the field read-only. */
+function readOwnContentOfField(
+  readOnlyFieldContents: Record<string, ReactNode> | undefined,
+  fieldKey: string,
+): ReactNode | undefined {
+  if (readOnlyFieldContents === undefined || !Object.hasOwn(readOnlyFieldContents, fieldKey)) {
+    return undefined;
+  }
+  return readOnlyFieldContents[fieldKey];
+}
+
 /** Text and unsupported fields take the full width; the smaller controls sit two to a row. */
 function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
   const takesTheFullWidth = field.control === 'text' || field.control === 'unsupported';
@@ -64,6 +76,11 @@ export function SchemaFormFields(props: {
   textShownInUntouchedField?: TextShownInUntouchedField;
   /** What a field may read from a data source; left out, no field offers "Fonte". */
   bindingOptions?: SchemaFormBindingOptions;
+  /**
+   * Fields drawn read-only, by key, with what the panel shows in place of their control
+   * ("Edição rápida" shows a field a source keeps up to date this way). Default: none.
+   */
+  readOnlyFieldContents?: Record<string, ReactNode>;
 }) {
   const { form, description, controlIdPrefix, textShownInUntouchedField, bindingOptions } = props;
   const isDisabled = props.isDisabled ?? false;
@@ -150,6 +167,7 @@ export function SchemaFormFields(props: {
               dataSchema={description.dataSchema}
               bindingOptions={bindingOptions}
               isFilledByTheWholeClock={keysFilledByTheWholeClock.includes(field.key)}
+              readOnlyContent={readOwnContentOfField(props.readOnlyFieldContents, field.key)}
             />
           </div>
         );
