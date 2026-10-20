@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 
 import { serve } from '@hono/node-server';
 
+import { startBindingService } from '../../modules/bindings/index.js';
 import {
   buildRecordingsFolderPath,
   type SourceHostAllowlist,
@@ -116,6 +117,9 @@ async function startServingFromDatabase(
   const autoOutScheduler = startAutoOutScheduler({ stateStore, logger: options.logger });
   // Started before anything can send a command too, so no runMacro is missed.
   const macroRunner = startMacroRunner({ stateStore, logger: options.logger });
+  // Started before the sources poll, so the first poll after a restart already refreshes
+  // the bound fields of what was on air (BAJAOVRLAY-20).
+  const bindingService = startBindingService({ stateStore, logger: options.logger });
   // Sources left on before a restart start polling again at once; unlike a macro, a
   // source that is on is meant to keep running.
   const dataSourceService = startDataSourceService({
@@ -127,6 +131,7 @@ async function startServingFromDatabase(
   /** Stops the server's own actors; used by close() and by a boot that fails from here. */
   function stopTheServerActors(): void {
     dataSourceService.stop();
+    bindingService.stop();
     autoOutScheduler.stop();
     macroRunner.stop();
   }

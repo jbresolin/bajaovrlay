@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { RefreshBoundInstanceDataCommandSchema } from '../bindings/refreshBoundInstanceData.js';
 import { CreateDataSourceCommandSchema } from '../dataSources/createDataSource.js';
 import { DeleteDataSourceCommandSchema } from '../dataSources/deleteDataSource.js';
 import { PollDataSourceNowCommandSchema } from '../dataSources/pollDataSourceNow.js';
@@ -101,6 +102,9 @@ export const CommandSchema = z.discriminatedUnion('type', [
   StopRecordingCommandSchema,
   RecordDataSourcePollCommandSchema,
   RecordRecordingProgressCommandSchema,
+  // Bindings (BAJAOVRLAY-20); ../bindings/. Sent only by the server's refresher
+  // (sistema:vinculos) when a source's data changes.
+  RefreshBoundInstanceDataCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

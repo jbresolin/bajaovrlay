@@ -1,6 +1,7 @@
 import type { Command } from '@bajaovrlay/shared';
 
 import {
+  bindingRefresherActor,
   dataSourceRecorderActor,
   isMonitorActor,
   isRendererActor,
@@ -43,14 +44,18 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  * - the recorder (`sistema:gravador`) may only stop a recording (stopRecording), which it
  *   does when a write to the file failed or the recording reached its cap, and report how
  *   many lines are in a recording's file (recordRecordingProgress);
+ * - the refresher of bound fields (`sistema:vinculos`) may only send
+ *   refreshBoundInstanceData, the new values of an instance's live bound fields after its
+ *   source's data changed, and nobody else may send that (BAJAOVRLAY-20);
  * - every other server timer (`sistema:`, today the auto-out) may only clear one layer:
  *   a bug in a timer must never be able to put a graphic on air or empty the screen;
  * - every other actor (an operator) may send everything else, except the runner's
  *   bookkeeping, so no page can fake or end a run the runner is carrying out (an
  *   operator stops a run with stopMacro, "Parar", which the runner then ends), except
  *   poll results and a recording's progress, so no page can fake race data or a count,
- *   and except a stopRecording that carries a failureMessage: only the recorder says why
- *   a recording failed (gate 2 on PR #16).
+ *   except a stopRecording that carries a failureMessage: only the recorder says why
+ *   a recording failed (gate 2 on PR #16), and except refreshBoundInstanceData: a value
+ *   typed over a live field is a correction, made with setOverride.
  * The role comes from the address the connection chose (`/ws?role=renderer`,
  * `/ws?role=monitor`), so this keeps honest pages in their lane; it is not a defence
  * against a hostile client.
@@ -62,6 +67,7 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   const isMacroRunBookkeeping =
     command.type === 'advanceMacroRun' || command.type === 'endMacroRun';
   const isPollResult = command.type === 'recordDataSourcePoll';
+  const isRefreshOfBoundFields = command.type === 'refreshBoundInstanceData';
   const isRecorderBookkeeping =
     command.type === 'recordRecordingProgress' ||
     (command.type === 'stopRecording' && command.failureMessage !== undefined);
@@ -82,6 +88,9 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   if (sourceIdOfThePoller !== undefined) {
     return isPollResult && command.sourceId === sourceIdOfThePoller;
   }
+  if (actor === bindingRefresherActor) {
+    return isRefreshOfBoundFields;
+  }
   if (actor === dataSourceRecorderActor) {
     return command.type === 'stopRecording' || command.type === 'recordRecordingProgress';
   }
@@ -89,7 +98,11 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
     return command.type === 'clearLayer';
   }
   return (
-    !isReportFromTheScreen && !isMacroRunBookkeeping && !isPollResult && !isRecorderBookkeeping
+    !isReportFromTheScreen &&
+    !isMacroRunBookkeeping &&
+    !isPollResult &&
+    !isRecorderBookkeeping &&
+    !isRefreshOfBoundFields
   );
 };
 

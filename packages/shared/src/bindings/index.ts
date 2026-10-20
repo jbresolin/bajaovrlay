@@ -28,3 +28,8 @@ export {
   type InstanceBoundField,
   InstanceBoundFieldSchema,
 } from './instanceBindings.js';
+// refreshBoundInstanceData: the server's refresh of an instance's live bound fields.
+export {
+  type RefreshBoundInstanceDataCommand,
+  RefreshBoundInstanceDataCommandSchema,
+} from './refreshBoundInstanceData.js';

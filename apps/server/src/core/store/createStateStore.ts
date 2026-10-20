@@ -16,7 +16,6 @@ import {
   saveCommandOutcome,
   saveCommandOutcomeWithoutEventLogRow,
 } from '../db/commandOutcomeStorage.js';
-import type { SliceRow } from '../db/tables.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
 import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
 import {
@@ -33,6 +32,11 @@ import {
 import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialSlices.js';
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
+import {
+  buildAllSlices,
+  buildRowsOfChangedSlicesToSave,
+  sliceNamesChangedByCommands,
+} from './storeSliceSaving.js';
 
 /** What a store needs. The last eight have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
@@ -75,47 +79,33 @@ export type SliceChangeListener = (
   changedDataSnapshots: DataSnapshotChange[],
 ) => void;
 
+/**
+ * What a server actor may ask of applyCommand beyond the command. Only the refresher of
+ * bound fields uses it, never a connection: no page can reach this argument.
+ */
+export type ApplyCommandOptions = {
+  /**
+   * The command's refusal, if it is refused, writes no event-log row. The refresher asks
+   * it for an instance whose last refresh was already refused and logged, so a refresh
+   * the schema refuses writes one row per instance until one succeeds again, not one a
+   * poll (BAJAOVRLAY-20; the routine-poll reasoning of PR #16).
+   */
+  isRefusalLeftOutOfTheEventLog?: boolean;
+};
+
 /** The store: the only holder of state and the only way to change it. */
 export type StateStore = {
   /** Every slice as it is now. Treat the result as read-only. */
   readAllSlices: () => Slices;
   /** Runs one command through the single command path; see createStateStore. */
-  applyCommand: (commandInput: unknown, actor: string) => CommandOutcome;
+  applyCommand: (
+    commandInput: unknown,
+    actor: string,
+    options?: ApplyCommandOptions,
+  ) => CommandOutcome;
   /** Registers a listener for slice changes; returns a function that removes it. */
   subscribeToSliceChanges: (listener: SliceChangeListener) => () => void;
 };
-
-// The slices a reducer may change, in the order changes are reported.
-const sliceNamesChangedByCommands = [
-  'layers',
-  'graphics',
-  'instances',
-  'previewClearedLayerIds',
-  'instanceBindings',
-  'rundowns',
-  'items',
-  'quickFirePanels',
-  'macros',
-  'macroRuns',
-  'dataSources',
-  'dataSnapshots',
-  'recordings',
-] as const;
-
-// The slice saved one row per source in its own table (data_snapshots) instead of as one
-// row of the slices table: a poll of one source must not rewrite every source's data.
-const sliceNameSavedOneRowPerSource: keyof SlicesChangedByCommands = 'dataSnapshots';
-
-// The slices that live in memory only and are never written to the database: a macro
-// run is something happening now, and a restart must not resume it (see macroRunner.ts);
-// the "will be cleared" markers are scaffolding of the Prévia monitor, dropped at a
-// restart like the preview instances (see loadInitialSlices.ts); the recordings are
-// files on disk, and their list is rebuilt from the recordings folder at boot.
-const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = [
-  'previewClearedLayerIds',
-  'macroRuns',
-  'recordings',
-];
 
 /**
  * Creates the store, loading its slices from the database (or seeding an empty one).
@@ -137,9 +127,14 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   // changed slices and the event-log row (one transaction) → update memory → tell
   // listeners what changed. A command that fails any step is still logged, as failed.
   // An accepted command that changes nothing skips the save, the log and the listeners;
-  // a routine data-source poll and a recording's progress skip only the log (see the
-  // exception below).
-  function applyCommand(commandInput: unknown, actor: string): CommandOutcome {
+  // a routine data-source poll, a recording's progress and a routine refresh of bound
+  // fields skip only the log (see the exception below), and a refresh refused again for
+  // the same instance skips the log of its refusal (ApplyCommandOptions).
+  function applyCommand(
+    commandInput: unknown,
+    actor: string,
+    options: ApplyCommandOptions = {},
+  ): CommandOutcome {
     const now = readCurrentTime().toISOString();
 
     // Step 1, validate: the command's shape, with the first bad field named.
@@ -178,6 +173,11 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       sourceHostAllowlist,
     };
     const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);
+    // The second exception to "every refusal is logged": a refresh of bound fields
+    // already refused and logged for its instance (see ApplyCommandOptions).
+    if (reducerOutcome.status === 'refused' && options.isRefusalLeftOutOfTheEventLog === true) {
+      return { ok: false, error: reducerOutcome.error };
+    }
     if (reducerOutcome.status === 'refused') {
       return recordRefusal({
         now,
@@ -206,7 +206,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     // day. What could go wrong: the log cannot say when each routine poll happened; the
     // source's status (lastOkAtMs) and the server's own log lines carry that instead.
     // The recorder's count of written lines (recordRecordingProgress) follows each poll
-    // of a recording source, so it is left out the same way (gate 2 on PR #16).
+    // of a recording source, so it is left out the same way (gate 2 on PR #16), and so is
+    // a refresh of an instance's live bound fields, which follows a poll (BAJAOVRLAY-20).
     if (reducerOutcome.isLeftOutOfTheEventLog === true) {
       recordOutcomeWithoutEventLogRow(reducerOutcome.slices, now);
       return { ok: true };
@@ -349,52 +350,5 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-  };
-}
-
-/**
- * The slices-table rows of the changed slices, leaving out the slices kept in memory only
- * and the snapshots, which are saved one row per source (buildRowChangesOfDataSnapshots).
- */
-function buildRowsOfChangedSlicesToSave(
-  nextSlices: SlicesChangedByCommands,
-  changedSliceNames: Array<keyof SlicesChangedByCommands>,
-  updatedAt: string,
-): SliceRow[] {
-  const changedSliceNamesToSave = changedSliceNames.filter((sliceName) => {
-    const isKeptInMemoryOnly = sliceNamesKeptInMemoryOnly.includes(sliceName);
-    const isSavedOneRowPerSource = sliceName === sliceNameSavedOneRowPerSource;
-    return !isKeptInMemoryOnly && !isSavedOneRowPerSource;
-  });
-  return changedSliceNamesToSave.map((sliceName) => ({
-    name: sliceName,
-    json: nextSlices[sliceName],
-    updatedAt,
-  }));
-}
-
-/**
- * Every slice: those a command may change, plus the event log. Written out one slice per
- * line on purpose: the compiler checks each name, and a new slice cannot be forgotten.
- */
-function buildAllSlices(
-  slicesOfCommands: SlicesChangedByCommands,
-  eventLog: Slices['eventLog'],
-): Slices {
-  return {
-    layers: slicesOfCommands.layers,
-    graphics: slicesOfCommands.graphics,
-    instances: slicesOfCommands.instances,
-    previewClearedLayerIds: slicesOfCommands.previewClearedLayerIds,
-    instanceBindings: slicesOfCommands.instanceBindings,
-    rundowns: slicesOfCommands.rundowns,
-    items: slicesOfCommands.items,
-    quickFirePanels: slicesOfCommands.quickFirePanels,
-    macros: slicesOfCommands.macros,
-    macroRuns: slicesOfCommands.macroRuns,
-    dataSources: slicesOfCommands.dataSources,
-    dataSnapshots: slicesOfCommands.dataSnapshots,
-    recordings: slicesOfCommands.recordings,
-    eventLog,
   };
 }

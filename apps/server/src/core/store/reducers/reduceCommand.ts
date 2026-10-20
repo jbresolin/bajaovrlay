@@ -1,5 +1,6 @@
 import type { Command } from '@bajaovrlay/shared';
 
+import { reduceBindingCommand } from '../../../modules/bindings/index.js';
 import { reduceDataSourceCommand } from '../../../modules/dataSources/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
@@ -101,5 +102,8 @@ function reduceCommandOfItsType(
     case 'recordDataSourcePoll':
     case 'recordRecordingProgress':
       return reduceDataSourceCommand(slices, command, context);
+    // Bindings (BAJAOVRLAY-20): their reducers live in the module modules/bindings.
+    case 'refreshBoundInstanceData':
+      return reduceBindingCommand(slices, command, context);
   }
 }
