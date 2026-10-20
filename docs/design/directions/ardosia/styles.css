@@ -1,0 +1,25 @@
+/*
+ * ardosia — what this direction adds to the shared slate structure (../../tools/slate-base.css):
+ * the scoreboard's head (logo left, session word right), caps rows with a little tracking.
+ * Written against tokens.css only.
+ */
+@import url('../../tools/slate-base.css');
+
+/* The scoreboard's header: the logo at the left, the session word big at the right. */
+.race-clock__head { justify-content: space-between; }
+.race-clock__title { text-align: right; }
+
+/* Bebas Neue is tight by design; a little tracking keeps caps names readable at 720p. */
+.row__team, .strip-car__school, .lower-third__name { letter-spacing: 0.02em; }
+
+/* The bug keeps the scoreboard's "ENDURO" word big beside the logo. */
+.sponsor-bug__label { font-size: 44px; }
+
+/* Bebas Neue has no lowercase, and a gap's unit must read "s", not "S": the detailed tower's
+   gaps, intervals and lap times are set in Barlow (also tabular), the names stay in caps. */
+.row--detailed .row__gap, .row--detailed .row__interval, .row--detailed .row__last-lap, .row--detailed .row__best-lap {
+  font-family: var(--font-text);
+  font-weight: 600;
+  font-size: 24px;
+  text-transform: none;
+}

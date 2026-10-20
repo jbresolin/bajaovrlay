@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>grafite — sheet status</title>
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="sheet">
+  <div class="sheet__title">grafite · situação do carro — três formas numa coluna fixa; a forma carrega o significado, nunca só a cor (folha de referência, não vai ao ar)</div>
+  <div class="sheet__icons">
+    <div class="card sheet__icon-cell">
+      <div class="sheet__icon-frame"><svg class="status-icon status-icon--large" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.25 14.75V5.25h3.25a2.6 2.6 0 0 1 0 5.2H7.25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="sheet__icon-caption"><span class="sheet__icon-label">No box</span><span class="caption">um P num quadrado</span></div>
+    </div>
+    <div class="card sheet__icon-cell">
+      <div class="sheet__icon-frame"><svg class="status-icon status-icon--large" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.7 17.4H1.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg></div>
+      <div class="sheet__icon-caption"><span class="sheet__icon-label">Parado</span><span class="caption">um triângulo</span></div>
+    </div>
+    <div class="card sheet__icon-cell">
+      <div class="sheet__icon-frame"><svg class="status-icon status-icon--large" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+      <div class="sheet__icon-caption"><span class="sheet__icon-label">Abandonou</span><span class="caption">um círculo cortado</span></div>
+    </div>
+  </div>
+  <div class="sheet__rows">
+    <div class="sheet__cell">
+      <div class="sheet__label">linhas da torre compacta · carro 69 no box, 65 parado, 96 abandonou (linha esmaecida)</div>
+<section class="tower tower--compact">
+  <header class="pill pill--head tower__head">
+    <span class="caption">POSIÇÕES</span>
+    <span class="caption">VOLTA 34</span>
+  </header>
+  <ol class="tower__rows">
+    <li class="pill row" data-row data-status="inPit">
+      <span class="row__pos">17</span>
+      <span class="row__cue"></span>
+      <span class="row__car chip">69</span>
+      <span class="row__team">Seriema Off-Road</span>
+      <span class="row__laps">31</span>
+      <span class="row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.25 14.75V5.25h3.25a2.6 2.6 0 0 1 0 5.2H7.25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </li>
+    <li class="pill row" data-row data-status="stopped">
+      <span class="row__pos">49</span>
+      <span class="row__cue"></span>
+      <span class="row__car chip">65</span>
+      <span class="row__team">Pantanal Off-Road</span>
+      <span class="row__laps">25</span>
+      <span class="row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.7 17.4H1.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg></span>
+    </li>
+    <li class="pill row" data-row data-status="retired">
+      <span class="row__pos">60</span>
+      <span class="row__cue"></span>
+      <span class="row__car chip">96</span>
+      <span class="row__team">Guará Baja</span>
+      <span class="row__laps">12</span>
+      <span class="row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+    </li>
+  </ol>
+</section>
+    </div>
+    <div class="sheet__cell">
+      <div class="sheet__label">as mesmas linhas na torre detalhada</div>
+<section class="tower tower--detailed">
+  <header class="pill pill--head tower__head detail-head">
+    <span class="caption detail-head__pos">POS</span>
+    <span class="caption detail-head__cue"></span>
+    <span class="caption detail-head__car">Nº</span>
+    <span class="caption detail-head__team">EQUIPE</span>
+    <span class="caption detail-head__laps">VOLTAS</span>
+    <span class="caption detail-head__gap">DIF.</span>
+    <span class="caption detail-head__interval">INTERV.</span>
+    <span class="caption detail-head__last-lap">ÚLT. VOLTA</span>
+    <span class="caption detail-head__best-lap">MELHOR</span>
+    <span class="caption detail-head__pit-stops">ABAST.</span>
+    <span class="caption detail-head__status"></span>
+  </header>
+  <ol class="tower__rows">
+    <li class="pill row row--detailed" data-row data-status="inPit">
+      <span class="row__pos">17</span>
+      <span class="row__cue"></span>
+      <span class="row__car chip">69</span>
+      <span class="row__team"><span class="row__team-name">Seriema Off-Road</span><span class="row__school">UFV</span></span>
+      <span class="row__laps">31</span>
+      <span class="row__gap">+3 voltas</span>
+      <span class="row__interval">+24,6 s</span>
+      <span class="row__last-lap">5:07,9</span>
+      <span class="row__best-lap">5:04,8</span>
+      <span class="row__pit-stops">3</span>
+      <span class="row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.25 14.75V5.25h3.25a2.6 2.6 0 0 1 0 5.2H7.25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </li>
+    <li class="pill row row--detailed" data-row data-status="stopped">
+      <span class="row__pos">49</span>
+      <span class="row__cue"></span>
+      <span class="row__car chip">65</span>
+      <span class="row__team"><span class="row__team-name">Pantanal Off-Road</span><span class="row__school">UEM</span></span>
+      <span class="row__laps">25</span>
+      <span class="row__gap">+9 voltas</span>
+      <span class="row__interval">+80,4 s</span>
+      <span class="row__last-lap">6:14,7</span>
+      <span class="row__best-lap">6:11,8</span>
+      <span class="row__pit-stops">2</span>
+      <span class="row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.7 17.4H1.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg></span>
+    </li>
+    <li class="pill row row--detailed" data-row data-status="retired">
+      <span class="row__pos">60</span>
+      <span class="row__cue"></span>
+      <span class="row__car chip">96</span>
+      <span class="row__team"><span class="row__team-name">Guará Baja</span><span class="row__school">UFS</span></span>
+      <span class="row__laps">12</span>
+      <span class="row__gap">+22 voltas</span>
+      <span class="row__interval">+412,7 s</span>
+      <span class="row__last-lap">6:38,4</span>
+      <span class="row__best-lap">6:32,8</span>
+      <span class="row__pit-stops">1</span>
+      <span class="row__status"><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+    </li>
+  </ol>
+</section>
+    </div>
+  </div>
+</div>
+</body>
+</html>

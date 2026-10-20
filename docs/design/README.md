@@ -10,7 +10,9 @@ docs/design/
   README.md               this file: what lives here and the page contract
   sample-data.json        the real sample race, every number already written as on-air text
   fonts/                  self-hosted OFL fonts and fonts.css (see fonts/README.md)
-  tools/                  buildSampleData, screenshot, checkLayout, contrastRatio
+  tools/                  buildSampleData, screenshot, checkLayout, contrastRatio, and what the
+                          three directions share: slateTemplates.mjs (markup), slate-base.css
+                          (structure), slateMotionDemo.js (the demo script)
   directions/
     README.md             the comparison table
     <direction>/          one folder per direction (see "What a direction holds")
@@ -22,7 +24,8 @@ docs/design/
 | --- | --- |
 | `README.md` | The idea in two sentences, legibility at 720p on a phone, safe areas, contrast, how many tower rows and why, how the system extends to the rest of the §9 catalogue. |
 | `tokens.css` | The direction's CSS custom properties: colour roles (panel base, accent, text, muted, the flag set, the status-icon set), type scale, spacing, radius, shadow, animation timings. |
-| `styles.css` | The rules every page of the direction shares, written against the tokens. |
+| `styles.css` | Imports the structure the three directions share (`tools/slate-base.css`, written against the tokens) and adds the direction's own few rules. |
+| `generatePages.mjs` | Writes the static pages from `sample-data.json` through the shared templates (`tools/slateTemplates.mjs`), so no row is typed by hand; `node docs/design/directions/<direction>/generatePages.mjs` from the repo root regenerates them. The pages are committed as the generator writes them. |
 | `race-clock.html` | Session title, time remaining, flag state, laps of the leader. |
 | `sheet-flags.html` | A reference sheet, not an on-air composition: the clock in all six flag states, side by side. |
 | `sheet-status.html` | A reference sheet: the three status icons at size, and real rows of the sample for car 69 (in the pit), car 65 (stopped) and car 96 (retired), in the compact and the detailed row styles. |
@@ -59,9 +62,13 @@ loads nothing from the network.
 - **Brand colours** (`docs/brand/logo-baja.svg`): green `#009739`, navy `#003B71`, blue `#386DB4`,
   yellow `#F4C42A`, grey `#383838`. White text on brand green is 3.83:1, so green fields may
   only carry large text (24px and up, or bold 19px and up).
+- **The starting point** is the scoreboard the stream uses today
+  (placarbaja.juansalles.com.br: slate pills, a car chip, a colour per column); the three
+  directions keep that style and differ in palette, type, chip treatment and density.
 - **Flag colours are a separate semantic set** (pre-start, green, yellow, red, checkered,
   finished), declared as their own tokens, never the brand values. Brand yellow never
-  appears where it could be read as a yellow flag: never as a field, never near the flag slot.
+  appears where it could be read as a yellow flag: never as a field, never near the flag slot
+  (ardosia uses it as the position column's text, as the scoreboard does, and nowhere else).
   The flag slot always shows the flag's word ("VERDE", "AMARELA"...) beside its colour.
   The three directions share one flag palette, so the comparison is about the look and not
   about flag colours: pre `#5B6472`, green `#15803D` (white word, 5.02:1), yellow `#FFD600`

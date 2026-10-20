@@ -1,0 +1,129 @@
+/*
+ * grafite — the scoreboard's structure in one colour plus one accent: graphite pills, white
+ * type, the car chip in brand green, nothing else coloured. Every value a renderer would
+ * inject lives here; styles.css and ../../tools/slate-base.css use these tokens only.
+ */
+:root {
+  /* ---- Brand values (docs/brand/logo-baja.svg). Yellow has no token on purpose: a yellow
+     field would read as a yellow flag, and this direction has no yellow at all. */
+  --brand-green: #009739;
+  --brand-navy: #003B71;
+  --brand-blue: #386DB4;
+  --brand-grey: #383838;
+
+  /* ---- Surfaces: graphite, denser than the scoreboard's slate, with a soft shadow */
+  --panel-base: rgb(14 18 32 / 0.88);
+  --panel-head: rgb(14 18 32 / 0.97);
+  --shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+
+  /* ---- Text: white and one grey; the one accent is the car chip */
+  --text: #FFFFFF;
+  --text-muted: #A9B2C3;
+  --text-pos: #FFFFFF;
+  --chip-pos-background: transparent;
+  --chip-car-background: var(--brand-green);   /* white 26px bold on it: 3.83:1, large text */
+  --chip-car-text: #FFFFFF;
+  --text-laps: #FFFFFF;
+  --chip-laps-background: transparent;
+  --laps-padding: 0px;
+  --leader-background: #FFFFFF;                /* the leader's position: a white chip */
+  --leader-text: #0E1220;
+  --cue-up: var(--brand-green);
+  --cue-down: var(--brand-blue);
+  --cue-text: #FFFFFF;
+
+  /* ---- Status icons */
+  --status-icon: #FFFFFF;
+  --status-icon-size: 20px;
+  --status-retired-opacity: 0.5;
+
+  /* ---- Flags: the semantic set shared by the three directions */
+  --flag-pre-background: #5B6472;        --flag-pre-text: #FFFFFF;
+  --flag-green-background: #15803D;      --flag-green-text: #FFFFFF;
+  --flag-yellow-background: #FFD600;     --flag-yellow-text: #111111;
+  --flag-red-background: #DC2626;        --flag-red-text: #FFFFFF;
+  --flag-checkered-dark: #111111;        --flag-checkered-light: #F5F5F5;
+  --flag-checkered-text: #F5F5F5;        --flag-checkered-square: 20px;
+  --flag-finished-background: #1F2937;   --flag-finished-text: #FFFFFF;
+
+  /* ---- Type: Barlow Condensed for rows, numbers and titles; Barlow for small text */
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-text: 'Barlow', Arial, sans-serif;
+  --weight-display: 700;
+  --weight-number: 700;
+  --weight-row: 600;
+  --weight-caption: 600;
+  --size-title: 30px;
+  --size-time: 56px;
+  --size-row: 26px;
+  --size-detail: 24px;
+  --size-caption: 20px;
+  --size-flag: 24px;
+  --size-strip: 28px;
+  --size-strip-time: 44px;
+  --size-name: 44px;
+  --size-role: 22px;
+  --tracking-display: 0.04em;
+  --tracking-time: 0;
+  --tracking-caption: 0.08em;
+  --tracking-flag: 0.1em;
+  --case-rows: none;
+  --case-names: none;
+  --case-title: uppercase;
+
+  /* ---- Geometry: the column on the left (broadcast convention), the bug top-right */
+  --column-width: 420px;
+  --column-left: 96px;
+  --column-right: auto;
+  --bug-left: auto;
+  --bug-right: 96px;
+  --bug-width: 300px;
+  --bug-logo-height: 56px;
+  --clock-height: 176px;          /* 60 head + 84 body (caption line over the time) + 32 flag band */
+  --clock-head-height: 60px;
+  --clock-body-height: 84px;
+  --clock-logo-height: 40px;
+  --flag-band-height: 32px;
+  --stack-gap: 8px;
+  --tower-top: calc(54px + var(--clock-height) + var(--stack-gap));   /* 238 */
+  --head-height: 28px;
+  --row-height: 32px;
+  --row-gap: 4px;
+  --row-padding: 10px;
+  --column-pos: 36px;
+  --column-cue: 14px;
+  --column-laps: 44px;
+  --column-status: 28px;
+  --chip-width: 44px;
+  --chip-height: 26px;
+  --radius: 6px;
+  --radius-chip: 4px;
+  --radius-pill: 999px;
+  --detailed-width: 1060px;
+  --detailed-row-height: 36px;
+  --detail-columns: 36px 14px 44px 1fr 84px 112px 108px 128px 104px 84px 28px;
+  --strip-height: 72px;
+  --name-height: 64px;
+  --role-height: 40px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+
+  /* ---- Motion (motion.md): quick and quiet */
+  --motion-in: 280ms;
+  --motion-out: 180ms;
+  --motion-row-stagger: 16ms;
+  --motion-lead: 80ms;
+  --motion-swap: 380ms;
+  --motion-flag: 250ms;
+  --motion-strip-page: 250ms;
+  --motion-strip-hold: 7000ms;
+  --motion-cue-hold: 2000ms;
+  --motion-in-offset: 16;
+  --motion-in-scale: 1;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
