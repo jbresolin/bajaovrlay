@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — positions detailed</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section
+      class="tower tower--detailed"
+      data-graphic="positions-detailed"
+      style="
+        --detail-columns: var(--col-pos) var(--column-cue) var(--chip-width) minmax(0, 1fr)
+          var(--col-laps) var(--col-gap) var(--col-interval) var(--col-last-lap) var(--col-best-lap)
+          var(--col-pit-stops) var(--column-status);
+        width: calc(
+          var(--col-pos) + var(--column-cue) + var(--chip-width) + var(--col-team) +
+            var(--col-laps) + var(--col-gap) + var(--col-interval) + var(--col-last-lap) +
+            var(--col-best-lap) + var(--col-pit-stops) + var(--column-status) + 2 *
+            var(--row-padding)
+        );
+      "
+    >
+      <header class="pill pill--head tower__head detail-head">
+        <span class="caption detail-head__pos">POS</span>
+        <span class="caption detail-head__cue"></span>
+        <span class="caption detail-head__car">Nº</span>
+        <span class="caption detail-head__team">EQUIPE</span>
+        <span class="caption detail-head__laps">VOLTAS</span>
+        <span class="caption detail-head__gap">DIF.</span>
+        <span class="caption detail-head__interval">INTERV.</span>
+        <span class="caption detail-head__last-lap">ÚLT. VOLTA</span>
+        <span class="caption detail-head__best-lap">MELHOR</span>
+        <span class="caption detail-head__pit-stops">PARADAS</span>
+        <span class="caption detail-head__status"></span>
+      </header>
+      <ol class="tower__rows">
+        <li class="pill row row--detailed" data-row data-status="running" data-leader>
+          <span class="row__pos">1</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">31</span>
+          <span class="row__team"
+            ><span class="row__team-name">Acauã Baja</span
+            ><span class="row__school">Mauá</span></span
+          >
+          <span class="row__laps">34</span>
+          <span class="row__gap"></span>
+          <span class="row__interval"></span>
+          <span class="row__last-lap">4:38,2</span>
+          <span class="row__best-lap">4:38,2</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">2</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">38</span>
+          <span class="row__team"
+            ><span class="row__team-name">Coruja Racing</span
+            ><span class="row__school">EESC-USP</span></span
+          >
+          <span class="row__laps">34</span>
+          <span class="row__gap">+19,0</span>
+          <span class="row__interval">+19,0</span>
+          <span class="row__last-lap">4:43,5</span>
+          <span class="row__best-lap">4:39,5</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">3</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">25</span>
+          <span class="row__team"
+            ><span class="row__team-name">Bem-te-vi Off-Road</span
+            ><span class="row__school">UFES</span></span
+          >
+          <span class="row__laps">33</span>
+          <span class="row__gap">+1 volta</span>
+          <span class="row__interval">+41,3</span>
+          <span class="row__last-lap">4:44,3</span>
+          <span class="row__best-lap">4:44,0</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">4</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">78</span>
+          <span class="row__team"
+            ><span class="row__team-name">Arara Off-Road</span
+            ><span class="row__school">UNIFEI</span></span
+          >
+          <span class="row__laps">33</span>
+          <span class="row__gap">+1 volta</span>
+          <span class="row__interval">+0,0</span>
+          <span class="row__last-lap">4:44,2</span>
+          <span class="row__best-lap">4:41,6</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">5</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">52</span>
+          <span class="row__team"
+            ><span class="row__team-name">Pequi Off-Road</span
+            ><span class="row__school">UFG</span></span
+          >
+          <span class="row__laps">33</span>
+          <span class="row__gap">+1 volta</span>
+          <span class="row__interval">+8,3</span>
+          <span class="row__last-lap">4:44,7</span>
+          <span class="row__best-lap">4:42,3</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">6</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">47</span>
+          <span class="row__team"
+            ><span class="row__team-name">Carnaúba Baja</span
+            ><span class="row__school">UFERSA</span></span
+          >
+          <span class="row__laps">33</span>
+          <span class="row__gap">+1 volta</span>
+          <span class="row__interval">+22,1</span>
+          <span class="row__last-lap">6:17,0</span>
+          <span class="row__best-lap">4:40,4</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">7</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">30</span>
+          <span class="row__team"
+            ><span class="row__team-name">Pampa Baja</span
+            ><span class="row__school">UFSM</span></span
+          >
+          <span class="row__laps">33</span>
+          <span class="row__gap">+1 volta</span>
+          <span class="row__interval">+25,8</span>
+          <span class="row__last-lap">4:49,2</span>
+          <span class="row__best-lap">4:45,6</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">8</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">81</span>
+          <span class="row__team"
+            ><span class="row__team-name">Sucuri Racing</span
+            ><span class="row__school">UFMS</span></span
+          >
+          <span class="row__laps">33</span>
+          <span class="row__gap">+1 volta</span>
+          <span class="row__interval">+16,4</span>
+          <span class="row__last-lap">4:45,8</span>
+          <span class="row__best-lap">4:42,2</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">9</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">49</span>
+          <span class="row__team"
+            ><span class="row__team-name">Tamanduá Racing</span
+            ><span class="row__school">UFOP</span></span
+          >
+          <span class="row__laps">33</span>
+          <span class="row__gap">+1 volta</span>
+          <span class="row__interval">+6,6</span>
+          <span class="row__last-lap">4:52,1</span>
+          <span class="row__best-lap">4:47,0</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">10</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">95</span>
+          <span class="row__team"
+            ><span class="row__team-name">Cangaço Baja</span
+            ><span class="row__school">UFPE</span></span
+          >
+          <span class="row__laps">32</span>
+          <span class="row__gap">+2 voltas</span>
+          <span class="row__interval">+63,9</span>
+          <span class="row__last-lap">4:52,1</span>
+          <span class="row__best-lap">4:46,2</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">11</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">67</span>
+          <span class="row__team"
+            ><span class="row__team-name">Babaçu Baja</span
+            ><span class="row__school">UFMA</span></span
+          >
+          <span class="row__laps">32</span>
+          <span class="row__gap">+2 voltas</span>
+          <span class="row__interval">+46,1</span>
+          <span class="row__last-lap">4:53,3</span>
+          <span class="row__best-lap">4:48,5</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">12</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">93</span>
+          <span class="row__team"
+            ><span class="row__team-name">Jacu Off-Road</span
+            ><span class="row__school">UFPel</span></span
+          >
+          <span class="row__laps">32</span>
+          <span class="row__gap">+2 voltas</span>
+          <span class="row__interval">+41,8</span>
+          <span class="row__last-lap">4:57,5</span>
+          <span class="row__best-lap">4:49,8</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">13</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">89</span>
+          <span class="row__team"
+            ><span class="row__team-name">Lobo-Guará Off-Road</span
+            ><span class="row__school">UFU</span></span
+          >
+          <span class="row__laps">32</span>
+          <span class="row__gap">+2 voltas</span>
+          <span class="row__interval">+44,4</span>
+          <span class="row__last-lap">4:57,0</span>
+          <span class="row__best-lap">4:54,6</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">14</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">45</span>
+          <span class="row__team"
+            ><span class="row__team-name">Jandaia Racing</span
+            ><span class="row__school">UFC</span></span
+          >
+          <span class="row__laps">32</span>
+          <span class="row__gap">+2 voltas</span>
+          <span class="row__interval">+14,5</span>
+          <span class="row__last-lap">4:53,8</span>
+          <span class="row__best-lap">4:51,5</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">15</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">98</span>
+          <span class="row__team"
+            ><span class="row__team-name">Carcará Baja</span
+            ><span class="row__school">UFPR</span></span
+          >
+          <span class="row__laps">32</span>
+          <span class="row__gap">+2 voltas</span>
+          <span class="row__interval">+34,4</span>
+          <span class="row__last-lap">4:50,2</span>
+          <span class="row__best-lap">4:46,1</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">16</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">32</span>
+          <span class="row__team"
+            ><span class="row__team-name">Irara Racing</span
+            ><span class="row__school">UFSJ</span></span
+          >
+          <span class="row__laps">31</span>
+          <span class="row__gap">+3 voltas</span>
+          <span class="row__interval">+88,2</span>
+          <span class="row__last-lap">5:02,8</span>
+          <span class="row__best-lap">5:02,8</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="inPit">
+          <span class="row__pos">17</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">69</span>
+          <span class="row__team"
+            ><span class="row__team-name">Seriema Off-Road</span
+            ><span class="row__school">UFV</span></span
+          >
+          <span class="row__laps">31</span>
+          <span class="row__gap">+3 voltas</span>
+          <span class="row__interval">+24,6</span>
+          <span class="row__last-lap">5:07,9</span>
+          <span class="row__best-lap">5:04,8</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"
+            ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="No box">
+              <rect
+                x="1.5"
+                y="1.5"
+                width="17"
+                height="17"
+                rx="2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+              <path
+                d="M7.25 14.75V5.25h3.25a2.6 2.6 0 0 1 0 5.2H7.25"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">18</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">64</span>
+          <span class="row__team"
+            ><span class="row__team-name">Siriema Baja</span
+            ><span class="row__school">UFMT</span></span
+          >
+          <span class="row__laps">31</span>
+          <span class="row__gap">+3 voltas</span>
+          <span class="row__interval">+21,1</span>
+          <span class="row__last-lap">5:03,6</span>
+          <span class="row__best-lap">5:03,1</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">19</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">42</span>
+          <span class="row__team"
+            ><span class="row__team-name">Jequitibá Racing</span
+            ><span class="row__school">CEFET-MG</span></span
+          >
+          <span class="row__laps">31</span>
+          <span class="row__gap">+3 voltas</span>
+          <span class="row__interval">+41,7</span>
+          <span class="row__last-lap">5:09,7</span>
+          <span class="row__best-lap">5:03,7</span>
+          <span class="row__pit-stops">2</span>
+          <span class="row__status"></span>
+        </li>
+        <li class="pill row row--detailed" data-row data-status="running">
+          <span class="row__pos">20</span>
+          <span class="row__cue"></span>
+          <span class="row__car chip">71</span>
+          <span class="row__team"
+            ><span class="row__team-name">Tuiuiú Racing</span
+            ><span class="row__school">UFGD</span></span
+          >
+          <span class="row__laps">30</span>
+          <span class="row__gap">+4 voltas</span>
+          <span class="row__interval">+57,4</span>
+          <span class="row__last-lap">5:09,2</span>
+          <span class="row__best-lap">5:03,0</span>
+          <span class="row__pit-stops">3</span>
+          <span class="row__status"></span>
+        </li>
+      </ol>
+    </section>
+  </body>
+</html>
