@@ -182,6 +182,7 @@ const positionsEntryFieldTypes = [
   { fieldName: 'gapToLeaderLaps', valueType: 'integer' },
   { fieldName: 'intervalMs', valueType: 'integer' },
   { fieldName: 'pitStops', valueType: 'integer' },
+  { fieldName: 'fuelStops', valueType: 'integer' },
   { fieldName: 'status', valueType: 'text' },
 ] as const;
 

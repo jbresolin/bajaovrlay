@@ -108,6 +108,7 @@ function listPositionsFields(): MappableField[] {
     entryField('gapToLeaderLaps', carLabels.gapToLeaderLaps, false),
     entryField('intervalMs', carLabels.intervalMs, false),
     entryField('pitStops', carLabels.pitStops, false),
+    entryField('fuelStops', carLabels.fuelStops, false),
   ];
 }
 

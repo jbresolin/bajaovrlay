@@ -17,7 +17,7 @@ import { discoverBuiltGraphics } from './discoverBuiltGraphics.js';
 import { loadOrSeedQuickFireAndMacroSlices } from './loadQuickFireAndMacroSlices.js';
 import { loadOrSeedRundownSlices } from './loadRundownSlices.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
-import { seededLayers } from './seedLayers.js';
+import { addSeededLayersMissingFromStoredLayers, seededLayers } from './seedLayers.js';
 
 /** What loadInitialSlices needs: the open database, the graphics folder and a clock. */
 export type LoadInitialSlicesOptions = {
@@ -35,8 +35,14 @@ export type LoadInitialSlicesOptions = {
   recordingsFolder?: string | undefined;
 };
 
-/** The layers and instances the operator built up; graphics come from the filesystem. */
-type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'>;
+/**
+ * The layers and instances the operator built up (graphics come from the filesystem),
+ * and the ids of the seeded layers a later boot had to add to the stored ones, so the
+ * caller knows to write the layers row again; empty on a first boot.
+ */
+type OperatorSlices = Pick<SlicesChangedByCommands, 'layers' | 'instances'> & {
+  seededLayerIdsAdded: string[];
+};
 
 /**
  * Returns the slices the store starts with. Layers and instances are loaded from the
@@ -75,22 +81,20 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const numberOfPreviewInstancesDropped =
     operatorSlices.instances.length - instancesKeptAcrossTheRestart.length;
 
-  // The graphics row is rewritten on every boot; layers only when seeded; instances
+  // The graphics row is rewritten on every boot; layers when seeded and when a layer
+  // seeded since the database was written was added just above (the tower); instances
   // when seeded and when a preview was dropped just above, so that the database holds
   // what memory holds from the first moment (nothing else writes that row before the
   // next command that changes an instance).
   const updatedAt = options.readCurrentTime().toISOString();
+  const layersRow: SliceRow = { name: 'layers', json: operatorSlices.layers, updatedAt };
   const graphicsRow: SliceRow = { name: 'graphics', json: graphics, updatedAt };
   const instancesRow: SliceRow = {
     name: 'instances',
     json: instancesKeptAcrossTheRestart,
     updatedAt,
   };
-  const seedRows: SliceRow[] = [
-    { name: 'layers', json: operatorSlices.layers, updatedAt },
-    graphicsRow,
-    instancesRow,
-  ];
+  const seedRows: SliceRow[] = [layersRow, graphicsRow, instancesRow];
   // The bindings of what is on air are saved with the instances (BAJAOVRLAY-20), so a
   // restart goes on refreshing them; a dropped preview's entry goes with it.
   const instanceBindingsAtBoot = readInstanceBindingsKeptAcrossTheRestart(
@@ -106,6 +110,10 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     numberOfPreviewInstancesDropped > 0 ? [graphicsRow, instancesRow] : [graphicsRow];
   if (instanceBindingsAtBoot.wasAnyEntryDropped) {
     rowsOfALaterBoot.push(instanceBindingsRow);
+  }
+  const wasAnySeededLayerAdded = operatorSlices.seededLayerIdsAdded.length > 0;
+  if (wasAnySeededLayerAdded) {
+    rowsOfALaterBoot.push(layersRow);
   }
   // Rundowns and items are loaded, or seeded when their row is missing (a first boot,
   // or a database written before they existed); see loadRundownSlices.ts.
@@ -138,6 +146,12 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   });
   if (isFirstBoot) {
     options.logger.info('empty database seeded with the fixed layers');
+  }
+  if (wasAnySeededLayerAdded) {
+    options.logger.info(
+      { added_layer_ids: operatorSlices.seededLayerIdsAdded },
+      'seeded layers missing from the stored layers were added',
+    );
   }
   if (numberOfPreviewInstancesDropped > 0) {
     options.logger.info(
@@ -216,13 +230,15 @@ function readInstanceBindingsKeptAcrossTheRestart(
 
 /** The first-boot layers and instances: the fixed layers, nothing on air. */
 function buildSeedOperatorSlices(): OperatorSlices {
-  return { layers: seededLayers, instances: [] };
+  return { layers: seededLayers, instances: [], seededLayerIdsAdded: [] };
 }
 
 /**
  * Turns stored rows back into layers and instances, checking each against the shared
  * schema. A row that fails the check throws, which stops the boot: running on state we
  * cannot read could put the wrong thing on air. A missing instances row starts empty.
+ * A seeded layer the stored layers lack (one added to the seed since the database was
+ * written, like the tower) is added in its z-order place, and named in the answer.
  */
 function readStoredOperatorSlices(storedRows: SliceRow[], logger: ServerLogger): OperatorSlices {
   const layersRow = storedRows.find((row) => row.name === 'layers');
@@ -235,8 +251,11 @@ function readStoredOperatorSlices(storedRows: SliceRow[], logger: ServerLogger):
     throw new Error(message);
   }
   const instancesRow = storedRows.find((row) => row.name === 'instances');
+  const storedLayers = SlicesSchema.shape.layers.parse(layersRow.json);
+  const layersWithTheSeedCaughtUp = addSeededLayersMissingFromStoredLayers(storedLayers);
   return {
-    layers: SlicesSchema.shape.layers.parse(layersRow.json),
+    layers: layersWithTheSeedCaughtUp.layers,
     instances: SlicesSchema.shape.instances.parse(instancesRow?.json ?? []),
+    seededLayerIdsAdded: layersWithTheSeedCaughtUp.addedLayerIds,
   };
 }

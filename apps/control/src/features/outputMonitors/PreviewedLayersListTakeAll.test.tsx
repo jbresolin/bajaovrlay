@@ -62,7 +62,7 @@ const momentTheBandWasPreviewed = '2026-10-10T12:59:00.000Z';
 const momentOfTakeAll = '2026-10-10T13:00:00.000Z';
 
 /**
- * What the server sends for these tests: its five layers, the race clock and the lower
+ * What the server sends for these tests: its six layers, the race clock and the lower
  * third, the endurance rundown with its cursor on the start, these instances and these
  * layers marked "vai limpar".
  */

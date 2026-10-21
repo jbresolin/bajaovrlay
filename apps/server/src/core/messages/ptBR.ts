@@ -64,6 +64,7 @@ export const ptBR = {
     bug: 'Logo',
     ticker: 'Letreiro',
     clock: 'Relógio',
+    tower: 'Torre',
     lowerThird: 'Tarja',
     fullscreen: 'Tela cheia',
   },

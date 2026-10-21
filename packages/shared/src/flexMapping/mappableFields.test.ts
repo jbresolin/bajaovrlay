@@ -171,6 +171,7 @@ describe('listMappableFieldsOfShape', () => {
         level: 'entry',
       },
       { targetField: 'pitStops', label: 'Paradas nos boxes', isRequired: false, level: 'entry' },
+      { targetField: 'fuelStops', label: 'Abastecimentos', isRequired: false, level: 'entry' },
     ]);
   });
 

@@ -44,6 +44,10 @@ export function buildPositionEntriesInRaceOrder(orderedCars: CarRaceState[]): Po
       schoolName: car.schoolName,
       laps: car.lapCompletedAtRunningMs.length,
       pitStops: car.pitStopCount,
+      // In the simulator's model every pit stop is a refuel, so fuelStops equals
+      // pitStops; the real scoring app may count them differently (a stop for a repair
+      // is not a refuel there).
+      fuelStops: car.pitStopCount,
       status: car.status,
     };
     if (lastLapMs !== undefined) {

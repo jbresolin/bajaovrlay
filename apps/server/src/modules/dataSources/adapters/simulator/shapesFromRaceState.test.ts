@@ -12,6 +12,8 @@
  *   - Positions are valid and consistent at many moments of the race: every car once,
  *     places 1..n, ordered by laps and then by who crossed the line first, gaps that
  *     agree with the laps, intervals that agree with the line crossings.
+ *   - Every car's fuelStops equals its pitStops: in the simulator's model every pit stop
+ *     is a refuel (a real scoring app may count them differently).
  *   - The session clock counts down the remaining time, stops during a red and at zero.
  *   - Standings: overall points are the sum of the events, ranked high to low.
  *
@@ -204,6 +206,24 @@ describe('positions through the race', () => {
         entry.intervalMs !== undefined,
     );
     expect(entriesWithAGap, 'nobody has a gap before the first lap').toEqual([]);
+  });
+
+  it("counts every car's refuels as its pit stops, because every simulated stop is a refuel", () => {
+    // Arrange: the race two hours in, when the field has been through the pits.
+    const raceState = simulateEnduroAt(defaultRace, 2 * 60 * oneMinuteMs);
+
+    // Act: build the positions.
+    const positions = buildShapesFromRaceState(raceState, pollAtWallClockMs).positions;
+
+    // Assert: some cars have stopped by now, and each car's fuelStops is its pitStops.
+    const carsThatStopped = positions.entries.filter((entry) => (entry.pitStops ?? 0) > 0);
+    expect(carsThatStopped.length, 'two hours in, some cars must have stopped').toBeGreaterThan(0);
+    for (const entry of positions.entries) {
+      expect(
+        entry.fuelStops,
+        `car ${String(entry.carNumber)} must have refuelled once per pit stop`,
+      ).toBe(entry.pitStops);
+    }
   });
 });
 
