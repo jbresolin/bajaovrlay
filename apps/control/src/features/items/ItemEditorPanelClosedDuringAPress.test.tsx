@@ -37,7 +37,7 @@ import {
   pressUpdateOnAirAndWaitForCommand,
   renderItemEditorPanelForItemOnAir,
   renderItemEditorPanelForItemOnAirWithAnotherItemToOpen,
-  renderItemEditorPanelOnFakeServer,
+  renderItemEditorPanelForNewRaceClockItem,
   waitForThePageToDealWithTheLastAnswer,
 } from './itemEditorOnFakeServer.testSupport';
 import {
@@ -106,8 +106,9 @@ describe('the item editor closed while a press is still under way', () => {
   });
 
   it('sends nothing when the operator cancels while the forms are still being checked', async () => {
-    // Arrange: the editor for a new item with its label typed.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: the editor for a new race clock item with its label typed, so the check
+    // of the forms would pass and the item would be sent if nothing interrupted it.
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Rótulo', 'Largada do Enduro');
 
     // Act: "Salvar item" and, before the check of the fields has finished, "Cancelar".

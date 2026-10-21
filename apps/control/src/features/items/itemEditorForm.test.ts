@@ -11,6 +11,9 @@
  *
  * What these tests prove:
  *   - The starting values: nothing chosen, nothing typed, the neutral colour, no auto-out.
+ *   - A new item without a prefill opens with those starting values: no graphic is
+ *     chosen for the operator, whatever the server lists; a prefill ("Salvar como
+ *     item") opens on its own graphic and layer.
  *   - A correctly filled form has no messages; a missing graphic, layer or label and a
  *     badly typed auto-out each get their own pt-BR message, all at once.
  *   - Auto-out typed in whole seconds becomes milliseconds, and blank means "none".
@@ -25,6 +28,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildItemEditorFormValuesAtOpening,
   buildItemEditorFormValuesFromItem,
   convertAutoOutSecondsTextToMilliseconds,
   defaultItemEditorFormValues,
@@ -63,6 +67,40 @@ describe('defaultItemEditorFormValues', () => {
       color: 'neutral',
       notes: '',
       autoOutAfterSeconds: '',
+    });
+  });
+});
+
+describe('buildItemEditorFormValuesAtOpening', () => {
+  it('opens a new item without a prefill with no graphic chosen', () => {
+    // Arrange: a new item, opened from "+ Item": no stored item and no prefill.
+    const opening = { storedItem: null, prefill: null };
+
+    // Act: build the values the form opens with.
+    const openingValues = buildItemEditorFormValuesAtOpening(opening);
+
+    // Assert: the graphic is the operator's to choose, so it and the layer start empty.
+    // (What the server lists plays no part here: the function is not even told.)
+    expect(openingValues, 'a new item must open with no graphic chosen').toEqual(
+      defaultItemEditorFormValues,
+    );
+  });
+
+  it('opens a new item with a prefill on the prefilled graphic and layer', () => {
+    // Arrange: "Salvar como item" on the race clock shown on the lower-third layer.
+    const opening = {
+      storedItem: null,
+      prefill: { graphicId: 'race-clock', layerId: 'lower-third', fields: {} },
+    };
+
+    // Act: build the values the form opens with.
+    const openingValues = buildItemEditorFormValuesAtOpening(opening);
+
+    // Assert: the graphic and the layer are the prefill's; the rest starts empty.
+    expect(openingValues, 'a prefilled new item must open on its own graphic and layer').toEqual({
+      ...defaultItemEditorFormValues,
+      graphicId: 'race-clock',
+      layerId: 'lower-third',
     });
   });
 });

@@ -41,7 +41,10 @@ import {
 } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 
 import {
+  chooseGraphicInTheEditor,
   pressSaveAndWaitForCommand,
+  raceClockGraphicName,
+  renderItemEditorPanelForNewRaceClockItem,
   renderItemEditorPanelOnFakeServer,
   renderItemEditorPanelOnFakeServerWithSlices,
 } from './itemEditorOnFakeServer.testSupport';
@@ -79,10 +82,10 @@ function buildItemOfAGraphicTheServerNoLongerHas(): Item {
 
 describe('the item editor panel for a new item of the interview lower third', () => {
   it("moves the layer, drops the race clock's fields and draws the lower third's fields at their defaults", () => {
-    // Arrange: the editor for a new item, which opens on the race clock.
-    renderItemEditorPanelOnFakeServer(null);
+    // Arrange: the editor for a new item, with the race clock chosen by name.
+    renderItemEditorPanelForNewRaceClockItem();
 
-    // Act: choose the interview lower third as the graphic.
+    // Act: choose the interview lower third as the graphic instead.
     chooseOptionInDropdown('Gráfico', 'Tarja de entrevista');
 
     // Assert: the layer followed the graphic, the clock's fields are gone, and the
@@ -187,8 +190,8 @@ describe('the item editor panel for a new item of the interview lower third', ()
   });
 
   it('starts the fields of a graphic from its defaults again after another graphic was chosen in between', () => {
-    // Arrange: a new item on the race clock, with a session name typed.
-    renderItemEditorPanelOnFakeServer(null);
+    // Arrange: a new item with the race clock chosen, and a session name typed.
+    renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Título', 'Enduro — Bateria 2');
 
     // Act: choose the lower third, then go back to the race clock.
@@ -241,12 +244,14 @@ describe('the item editor panel for a stored item of the interview lower third',
 
 describe('the item editor panel for a graphic whose manifest has no data schema', () => {
   it('draws no fields for the graphic and saves the item with empty fields', async () => {
-    // Arrange: a server that also has the competition's logo, which shows no data.
+    // Arrange: a server that also has the competition's logo, which shows no data; the
+    // editor for a new item with the race clock chosen first, so its fields are on screen.
     const slicesAfterBoot = buildSlicesWithTheRaceClockAndTheLowerThird();
     const { fakeServer } = renderItemEditorPanelOnFakeServerWithSlices(null, {
       ...slicesAfterBoot,
       graphics: [...slicesAfterBoot.graphics, buildCompetitionLogoGraphic()],
     });
+    chooseGraphicInTheEditor(raceClockGraphicName);
     typeIntoField('Rótulo', 'Logo Baja SAE Brasil');
 
     // Act: choose the logo and save.

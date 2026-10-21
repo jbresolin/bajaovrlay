@@ -1,8 +1,8 @@
 # apps/control/e2e
 
-Browser tests of the control page (Playwright, Chromium). Labels are the manifests' titles. The server lists two graphics
-(the positions tower first, by package folder), so every step that makes a race clock chooses "Relógio de prova" in "Gráfico"
-(`chooseGraphicInTheItemEditor` in `previewTestSteps.ts`) instead of trusting which graphic a new item opens on.
+Browser tests of the control page (Playwright, Chromium). Labels are the manifests' titles. A new item opens with no
+graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so every step that makes a race clock chooses
+"Relógio de prova" in "Gráfico" (`chooseGraphicInTheItemEditor` in `previewTestSteps.ts`).
 
 - `takeAndClear.e2e.ts` (start here) — a page at `/render/` as OBS: "Novo gráfico…" + "Salvar e disparar" ("No ar"
   within 3 s), "Editar" + "Atualizar", reload, "Limpar"; with no OBS the layer stays "Carregando" (the monitor never reports).

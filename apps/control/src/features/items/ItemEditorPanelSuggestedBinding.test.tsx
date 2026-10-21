@@ -41,21 +41,27 @@ import {
 } from '@/state/slicesLikeTheServerSends.testSupport';
 
 import {
+  chooseGraphicInTheEditor,
   pressSaveAndWaitForCommand,
   renderItemEditorPanelOnFakeServerWithSlices,
 } from './itemEditorOnFakeServer.testSupport';
 
+/** The tower fixture, as the "Gráfico" dropdown names it (its manifest's name). */
+const towerGraphicName = 'Torre de posições';
+
 /**
- * The editor for a new item on a page whose first graphic is the tower, that also knows
- * the race clock, and where the simulator (as given) holds the lap-34 data.
+ * The editor for a new item on a page that knows the tower and the race clock, where the
+ * simulator (as given) holds the lap-34 data, with the tower chosen by name as its graphic.
  */
 function renderNewTowerItemEditorWithTheSimulator(simulator: DataSource) {
-  return renderItemEditorPanelOnFakeServerWithSlices(null, {
+  const editorOnFakeServer = renderItemEditorPanelOnFakeServerWithSlices(null, {
     ...buildSlicesWithNothingOnAir(),
     graphics: [buildPositionsTowerFixtureGraphic(), buildRaceClockGraphic()],
     dataSources: [simulator],
     dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
   });
+  chooseGraphicInTheEditor(towerGraphicName);
+  return editorOnFakeServer;
 }
 
 describe('the item editor for a new tower item', () => {

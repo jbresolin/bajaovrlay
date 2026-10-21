@@ -10,12 +10,12 @@
  *   has accepted it.
  *
  * What these tests prove:
- *   - For a new item the panel opens with the first graphic chosen, that graphic's
- *     default layer, an empty label, the neutral colour and the graphic's fields at the
- *     defaults of its manifest — whether the server's graphics arrive after the panel is
- *     drawn or were already on the page when it opened (the "+ Item" case). Its header
- *     does not say "Item salvo", which belongs to a stored item.
- *   - The race clock's reference moment opens as "filled by the server at the take".
+ *   - For a new item the panel opens titled "Novo item" with an empty label, the neutral
+ *     colour, empty notes and no auto-out; its header does not say "Item salvo", which
+ *     belongs to a stored item.
+ *   - Choosing the race clock by name draws its fields generated from its manifest, at
+ *     the manifest's defaults, and its reference moment opens as "filled by the server
+ *     at the take".
  *   - The colour dropdown offers the six fixed colours, each with a name in words.
  *   - "Salvar item" builds the right `createItem` from what was typed and chosen, with
  *     the clock's reference moment left to the take, and the panel asks to be closed
@@ -27,6 +27,8 @@
  *     are its own: typing into one does not touch the other form's field of that name.
  *
  * What these tests deliberately do not cover:
+ *   - A new item before a graphic is chosen ("Escolha um gráfico…", the save buttons
+ *     off, no fields): ItemEditorPanelNoGraphicChosen.test.tsx.
  *   - A graphic other than the race clock, and changing the graphic of a new item:
  *     ItemEditorPanelOtherGraphic.test.tsx.
  *   - Editing an existing item: ItemEditorPanelEditing.test.tsx, and
@@ -52,9 +54,11 @@ import {
 } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 
 import {
+  chooseGraphicInTheEditor,
   pressSaveAndWaitForCommand,
+  raceClockGraphicName,
+  renderItemEditorPanelForNewRaceClockItem,
   renderItemEditorPanelOnFakeServer,
-  renderItemEditorPanelOpenedOnAPageThatAlreadyKnowsTheGraphics,
 } from './itemEditorOnFakeServer.testSupport';
 import {
   raceClockLapsLabel,
@@ -63,13 +67,14 @@ import {
 } from './itemsLikeTheEditorSaves.testSupport';
 
 describe('the item editor panel for a new item', () => {
-  it('opens with the first graphic, its default layer, an empty label and the neutral colour', () => {
+  it('opens titled "Novo item" with an empty label, the neutral colour, no notes and no auto-out', () => {
     // Arrange: a connected page that knows the race clock and the interview lower third.
 
     // Act: draw the editor for a new item.
     renderItemEditorPanelOnFakeServer(null);
 
-    // Assert: the panel is a named region titled "Novo item", with every field at its start.
+    // Assert: the panel is a named region titled "Novo item", with every field at its
+    // start. (The graphic, chosen by nobody yet: ItemEditorPanelNoGraphicChosen.test.tsx.)
     const editorPanel = screen.getByRole('region', { name: 'Editor de item' });
     expect(
       within(editorPanel).getByRole('heading', { name: 'Novo item' }),
@@ -79,14 +84,6 @@ describe('the item editor panel for a new item', () => {
       screen.queryByText('Item salvo — vale para os próximos disparos'),
       'a new item is not saved yet, so its header must not say it is',
     ).toBeNull();
-    expect(
-      screen.getByRole('combobox', { name: 'Gráfico' }),
-      'the first graphic of the server must be chosen already',
-    ).toHaveTextContent('Relógio de prova');
-    expect(
-      screen.getByRole('combobox', { name: 'Camada' }),
-      "the layer must start as the race clock's default layer",
-    ).toHaveTextContent('Relógio');
     expect(screen.getByLabelText('Rótulo'), 'the label must start empty').toHaveValue('');
     expect(
       screen.getByRole('combobox', { name: 'Cor' }),
@@ -99,14 +96,24 @@ describe('the item editor panel for a new item', () => {
     ).toHaveValue('');
   });
 
-  it("shows the race clock's fields generated from its manifest, at the manifest's defaults", () => {
-    // Arrange: the same connected page; the race clock is the first graphic.
-
-    // Act: draw the editor for a new item.
+  it("draws the race clock's fields generated from its manifest, at the manifest's defaults, once it is chosen", () => {
+    // Arrange: the editor for a new item.
     renderItemEditorPanelOnFakeServer(null);
 
-    // Assert: the fields the manifest describes, each starting at its default. The
-    // reference moment is not typed: it is left for the server to stamp at the take.
+    // Act: choose the race clock by name.
+    chooseGraphicInTheEditor(raceClockGraphicName);
+
+    // Assert: the layer moved to the clock's default, and the fields the manifest
+    // describes are there, each at its default. The reference moment is not typed: it
+    // is left for the server to stamp at the take.
+    expect(
+      screen.getByRole('combobox', { name: 'Gráfico' }),
+      'the dropdown must show the graphic that was chosen',
+    ).toHaveTextContent('Relógio de prova');
+    expect(
+      screen.getByRole('combobox', { name: 'Camada' }),
+      "the layer must move to the race clock's default layer",
+    ).toHaveTextContent('Relógio');
     expect(
       screen.getByLabelText('Título'),
       'the session name must start as the manifest default',
@@ -141,29 +148,6 @@ describe('the item editor panel for a new item', () => {
     ).toBeNull();
   });
 
-  it('opens with the first graphic and its fields when the page already knew the graphics, as after "+ Item"', () => {
-    // Arrange: a connected page that already holds the graphics and the layers. (The
-    // tests above draw the editor before the server's hello; a real operator presses
-    // "+ Item" long after it.)
-
-    // Act: open the editor for a new item with a button press.
-    renderItemEditorPanelOpenedOnAPageThatAlreadyKnowsTheGraphics();
-
-    // Assert: the graphic and the layer are chosen at once and the clock fields are there.
-    expect(
-      screen.getByRole('combobox', { name: 'Gráfico' }),
-      'the first graphic must be chosen as soon as the editor opens',
-    ).toHaveTextContent('Relógio de prova');
-    expect(
-      screen.getByRole('combobox', { name: 'Camada' }),
-      "the layer must be the race clock's default layer as soon as the editor opens",
-    ).toHaveTextContent('Relógio');
-    expect(
-      screen.getByLabelText('Título'),
-      'the fields of the graphic chosen at the start must be on screen, at their defaults',
-    ).toHaveValue('Enduro de Resistência');
-  });
-
   it('offers the six fixed colours, each with a name in words', () => {
     // Arrange: the editor for a new item.
     renderItemEditorPanelOnFakeServer(null);
@@ -183,9 +167,10 @@ describe('the item editor panel for a new item', () => {
   });
 
   it('builds the right createItem from what was typed and asks to be closed once the server accepts', async () => {
-    // Arrange: the editor filled for the start of the endurance race: the clock stopped
-    // at 240:00 and counting down, green in the rundown, off air by itself after 90 s.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: the editor on the race clock, filled for the start of the endurance
+    // race: the clock stopped at 240:00 and counting down, green in the rundown, off
+    // air by itself after 90 s.
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Rótulo', 'Largada do Enduro');
     chooseOptionInDropdown('Cor', 'Sucesso');
     typeIntoField('Observações', 'Entrar quando os carros alinharem.');
@@ -243,7 +228,7 @@ describe('the item editor panel for a new item', () => {
     // Arrange: a new clock item whose operator wants the clock to count from a fixed
     // instant, the official start at 10:00 in Brasília on race day, whenever it is taken.
     const officialStartInMilliseconds = Date.parse('2026-10-10T13:00:00.000Z');
-    const { fakeServer } = renderItemEditorPanelOnFakeServer(null);
+    const { fakeServer } = renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Rótulo', 'Relógio desde a largada oficial');
 
     // Act: switch the reference moment to a typed value, type the instant and save.
@@ -267,7 +252,7 @@ describe('the item editor panel for a new item', () => {
 
   it('sends the layer the operator chose by hand instead of the default one', async () => {
     // Arrange: a new race clock item that the operator wants on the full-screen layer.
-    const { fakeServer } = renderItemEditorPanelOnFakeServer(null);
+    const { fakeServer } = renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Rótulo', 'Relógio em tela cheia');
 
     // Act: choose the layer by hand and save.
@@ -285,7 +270,7 @@ describe('the item editor panel for a new item', () => {
 
   it('asks to be closed and sends nothing when "Cancelar" is pressed', () => {
     // Arrange: the editor with a label already typed.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Rótulo', 'Largada do Enduro');
 
     // Act: press "Cancelar".
@@ -299,11 +284,11 @@ describe('the item editor panel for a new item', () => {
 
 describe('the item editor panel on the same page as another generated form', () => {
   it('keeps its fields apart from the fields of the same name in the other form', () => {
-    // Arrange: the page as the operator has it: the editor for a new item and, beside
-    // it, another form generated from the race clock's manifest (on the real page that
-    // is "Edição rápida"; here a plain generated form stands in for it). Both draw a
-    // "Título" field.
-    renderItemEditorPanelOnFakeServer(null);
+    // Arrange: the page as the operator has it: the editor for a new race clock item
+    // and, beside it, another form generated from the race clock's manifest (on the
+    // real page that is "Edição rápida"; here a plain generated form stands in for it).
+    // Both draw a "Título" field.
+    renderItemEditorPanelForNewRaceClockItem();
     const raceClockFormDescription = describeSchemaFormFromDataSchema(raceClockManifest.schema);
     renderSchemaFormOnTestPage({
       description: raceClockFormDescription,

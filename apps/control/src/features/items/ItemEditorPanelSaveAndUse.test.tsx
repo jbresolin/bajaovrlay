@@ -35,7 +35,9 @@ import { typeIntoField } from '@/features/schemaForm/schemaFormOnTestPage.testSu
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 
 import {
-  renderItemEditorPanelOnFakeServer,
+  chooseGraphicInTheEditor,
+  raceClockGraphicName,
+  renderItemEditorPanelForNewRaceClockItem,
   renderItemEditorPanelOnFakeServerWithSlices,
   waitForCommandsReceived,
   waitForThePageToDealWithTheLastAnswer,
@@ -88,8 +90,8 @@ describe('"Salvar e disparar" and "Salvar e prévia" for a new item', () => {
   ];
 
   it.each(useOfTheNewItemScenarios)('$name', async ({ buttonName, expectedUseCommand }) => {
-    // Arrange: the editor for a new item, filled in.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: the editor for a new race clock item, filled in.
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
     fillTheSafetyCarClockItem();
 
     // Act: press this row's button; the server accepts the createItem naming the new
@@ -115,8 +117,9 @@ describe('"Salvar e disparar" and "Salvar e prévia" for a new item', () => {
   });
 
   it('sends no take when the save is refused', async () => {
-    // Arrange: the editor for a new item, filled in, and "Salvar e disparar" pressed.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: the editor for a new race clock item, filled in, and "Salvar e disparar"
+    // pressed.
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
     fillTheSafetyCarClockItem();
     pressEditorButton('Salvar e disparar');
     await waitForCommandsReceived(1, fakeServer);
@@ -140,12 +143,14 @@ describe('"Salvar e disparar" and "Salvar e prévia" for a new item', () => {
   });
 
   it('turns into the editor of the saved item, showing why, when the take is refused', async () => {
-    // Arrange: the rundown column with the editor opened by "+ Item", filled in.
+    // Arrange: the rundown column with the editor opened by "+ Item", the race clock
+    // chosen by name, and the form filled in.
     const { fakeServer } = renderOnControlPageConnectedToFakeServer(
       <RundownPanel />,
       buildSlicesWithTheRaceClockAndTheLowerThird(),
     );
     fireEvent.click(screen.getByRole('button', { name: '+ Item' }));
+    chooseGraphicInTheEditor(raceClockGraphicName);
     fillTheSafetyCarClockItem();
     pressEditorButton('Salvar e disparar');
     await waitForCommandsReceived(1, fakeServer);

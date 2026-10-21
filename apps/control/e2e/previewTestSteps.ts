@@ -60,9 +60,9 @@ export const raceClockGraphicName = 'Relógio de prova';
 
 /**
  * Chooses the graphic of a new item in the item editor's "Gráfico" dropdown. A new item
- * opens on the first graphic the server lists, which is the positions tower now that the
- * server has two (they come in the order of their package folders), so every step that
- * makes a race clock names the clock here instead of trusting that order.
+ * opens with no graphic chosen ("Escolha um gráfico…"; the order the server lists them
+ * in, their package folders, never picks one), and its save buttons stay off until one
+ * is chosen, so every step that makes a race clock names the clock here.
  */
 export async function chooseGraphicInTheItemEditor(
   page: Page,
