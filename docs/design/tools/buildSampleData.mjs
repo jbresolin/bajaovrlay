@@ -1,11 +1,26 @@
 // Builds docs/design/sample-data.json from the real samples in packages/shared, with every
 // number already written the way it goes on air (pt-BR, gaps and laps to the tenth, cut and
 // never rounded, as docs/00-concept.md §8 rules). The mock-ups copy these strings verbatim,
-// so three directions never disagree on a number. Run from the repo root:
+// so no page ever disagrees with another on a number. What no canonical shape carries yet
+// (cities, notices, the schedule, messages, sponsors) comes from sampleFixtures.mjs, with each
+// car's team looked up here by its number. Run from the repo root:
 //   node docs/design/tools/buildSampleData.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import * as prettier from 'prettier';
+
+import {
+  battleFixture,
+  countdownFixture,
+  messageFixtures,
+  noticeFixtures,
+  qrFixture,
+  scheduleFixture,
+  sponsorFixtures,
+  teamCardFixtures,
+} from './sampleFixtures.mjs';
 
 const toolsFolder = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(toolsFolder, '../../..');
@@ -17,6 +32,7 @@ const sessionGreen = readSample('session.enduro-green.json');
 const sessionYellow = readSample('session.enduro-yellow.json');
 const positions = readSample('positions.enduro-lap-34.json');
 const standings = readSample('standings.overall.json');
+const brackets = readSample('brackets.suspension.json');
 
 // --- formatting rules, copied from the product (clockFormatting.ts, timingScreenText.ts) ---
 
@@ -68,6 +84,31 @@ function formatInterval(entry) {
   return `+${writeSecondsToTheTenthCut(entry.intervalMs)} s`;
 }
 
+/** A change of interval: "−0,7" when the gap shrank, "+0,7" when it grew, "0,0" when it held. */
+function formatIntervalChange(nowMs, oneLapAgoMs) {
+  const changeMs = nowMs - oneLapAgoMs;
+  let sign = '';
+  if (changeMs < 0) sign = '−';
+  if (changeMs > 0) sign = '+';
+  return `${sign}${writeSecondsToTheTenthCut(Math.abs(changeMs))}`;
+}
+
+/** Points on air keep one decimal with a comma: 646.9 reads "646,9", 64 reads "64,0". */
+function formatPoints(points) {
+  return points.toFixed(1).replace('.', ',');
+}
+
+/** The date of a moment in pt-BR, for a board's head: "sábado, 20 de março de 2027". */
+function formatDateInPtBR(momentMs) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date(momentMs));
+}
+
 const statusLabels = {
   running: 'Em prova',
   inPit: 'No box',
@@ -86,6 +127,18 @@ const flagLabels = {
   finished: 'ENCERRADA',
 };
 
+// The dynamic events in the order a standings table lists them, with their column captions.
+const eventColumns = [
+  { key: 'acceleration', label: 'Aceleração', shortLabel: 'ACEL.' },
+  { key: 'speed', label: 'Velocidade', shortLabel: 'VELOC.' },
+  { key: 'traction', label: 'Tração', shortLabel: 'TRAÇÃO' },
+  { key: 'suspension', label: 'Suspensão', shortLabel: 'SUSP.' },
+  { key: 'maneuverability', label: 'Manobrabilidade', shortLabel: 'MANOBR.' },
+  { key: 'enduro', label: 'Enduro', shortLabel: 'ENDURO' },
+];
+
+const scheduleStatusLabels = { done: 'Concluída', live: 'Em andamento', next: 'A seguir' };
+
 function describeSession(session) {
   const laps = session.lapsCompletedByLeader;
   return {
@@ -97,6 +150,7 @@ function describeSession(session) {
     timeRemaining: formatRemainingClock(session.clock.referenceTimeMs),
     lapsCompletedByLeader: laps,
     lapsLabel: laps === 1 ? '1 VOLTA' : `${laps} VOLTAS`,
+    dateText: formatDateInPtBR(session.updatedAtMs),
   };
 }
 
@@ -115,13 +169,138 @@ const entries = positions.entries.map((entry) => ({
   pitStops: entry.pitStops ?? 0,
 }));
 
+/** The on-air entry of a car a fixture names by its number; a wrong number fails loudly. */
+function entryOfCar(carNumber) {
+  const entry = entries.find((candidate) => candidate.carNumber === carNumber);
+  if (entry === undefined) {
+    throw new Error(`No car ${carNumber} in the positions sample.`);
+  }
+  return entry;
+}
+
 const fastest = positions.entries
   .filter((entry) => entry.bestLapMs !== undefined)
   .sort((a, b) => a.bestLapMs - b.bestLapMs)[0];
 
+// --- standings: the overall table with points per event, and one event's table derived
+// from it (a canonical per-event standings would come with scope "enduro"; the sample holds
+// only the overall scope, so the enduro column is ranked here, tied teams sharing a rank).
+
+function describeStandingsEntry(entry) {
+  return {
+    rank: entry.rank,
+    carNumber: entry.carNumber,
+    teamName: entry.teamName,
+    schoolName: entry.schoolName,
+    pointsText: formatPoints(entry.points),
+    pointsByEventText: Object.fromEntries(
+      eventColumns.map((column) => {
+        const points = entry.pointsByEvent?.[column.key];
+        return [column.key, points === undefined ? '—' : formatPoints(points)];
+      }),
+    ),
+  };
+}
+
+function rankOneEvent(eventKey) {
+  const ranked = [...standings.entries]
+    .filter((entry) => entry.pointsByEvent?.[eventKey] !== undefined)
+    .sort((a, b) => b.pointsByEvent[eventKey] - a.pointsByEvent[eventKey]);
+  let rank = 0;
+  let previousPoints = null;
+  return ranked.map((entry, index) => {
+    const points = entry.pointsByEvent[eventKey];
+    if (points !== previousPoints) {
+      rank = index + 1;
+      previousPoints = points;
+    }
+    return {
+      rank,
+      carNumber: entry.carNumber,
+      teamName: entry.teamName,
+      schoolName: entry.schoolName,
+      pointsText: formatPoints(points),
+    };
+  });
+}
+
+// --- brackets: every time written as a lap time; the winner left out until decided.
+
+function describeBracketCar(car) {
+  return {
+    carNumber: car.carNumber,
+    teamName: car.teamName,
+    schoolName: car.schoolName,
+    timeText: car.timeMs === undefined ? '' : formatLapTimeOnAir(car.timeMs),
+  };
+}
+
+const bracketRounds = brackets.rounds.map((round) => ({
+  name: round.name,
+  matches: round.matches.map((match) => ({
+    matchId: match.matchId,
+    carA: describeBracketCar(match.carA),
+    carB: describeBracketCar(match.carB),
+    winnerCarNumber: match.winnerCarNumber,
+  })),
+}));
+
+// --- the battle card: the two cars of the fixture, the interval between them as the
+// positions sample gives it, and the three trends from the interval a lap ago.
+
+const behindEntry = positions.entries.find(
+  (entry) => entry.carNumber === battleFixture.behindCarNumber,
+);
+const battle = {
+  ahead: entryOfCar(battleFixture.aheadCarNumber),
+  behind: entryOfCar(battleFixture.behindCarNumber),
+  gapText: `+${writeSecondsToTheTenthCut(behindEntry.intervalMs)}`,
+  trends: Object.fromEntries(
+    Object.entries(battleFixture.intervalOneLapAgoMs).map(([trend, oneLapAgoMs]) => [
+      trend,
+      formatIntervalChange(behindEntry.intervalMs, oneLapAgoMs),
+    ]),
+  ),
+};
+
+// --- a placeholder QR code: the three finder patterns and a fixed pseudo-random fill from a
+// tiny seeded generator, so the pattern never changes between runs. It does not scan.
+
+function buildPlaceholderQrModules(size) {
+  let seed = 20270320;
+  const nextBit = () => {
+    seed = (seed * 1103515245 + 12345) % 2147483648;
+    return seed % 3 !== 0;
+  };
+  const finderRing = (row, column) =>
+    row === 0 ||
+    row === 6 ||
+    column === 0 ||
+    column === 6 ||
+    (row >= 2 && row <= 4 && column >= 2 && column <= 4);
+  const rows = [];
+  for (let row = 0; row < size; row += 1) {
+    let line = '';
+    for (let column = 0; column < size; column += 1) {
+      const inTopLeft = row < 7 && column < 7;
+      const inTopRight = row < 7 && column >= size - 7;
+      const inBottomLeft = row >= size - 7 && column < 7;
+      if (inTopLeft || inTopRight || inBottomLeft) {
+        const localRow = row < 7 ? row : row - (size - 7);
+        const localColumn = column < 7 ? column : column - (size - 7);
+        line += finderRing(localRow, localColumn) ? '1' : '0';
+      } else {
+        line += nextBit() ? '1' : '0';
+      }
+    }
+    rows.push(line);
+  }
+  return rows;
+}
+
 const sampleData = {
   about:
-    'Generated by docs/design/tools/buildSampleData.mjs from packages/shared/src/dataShapes/samples. Strings are final on-air text (pt-BR). Do not edit by hand.',
+    'Generated by docs/design/tools/buildSampleData.mjs from packages/shared/src/dataShapes/samples and sampleFixtures.mjs. Strings are final on-air text (pt-BR). Do not edit by hand.',
   session: describeSession(sessionGreen),
   sessionYellow: describeSession(sessionYellow),
   positions: entries,
@@ -137,8 +316,56 @@ const sampleData = {
     carNumber: entry.carNumber,
     teamName: entry.teamName,
     schoolName: entry.schoolName,
-    pointsText: entry.points.toFixed(1).replace('.', ','),
+    pointsText: formatPoints(entry.points),
   })),
+  standings: {
+    scope: standings.scope,
+    title: 'Classificação geral',
+    eventColumns: eventColumns.map((column) => ({ key: column.key, label: column.shortLabel })),
+    entries: standings.entries.map(describeStandingsEntry),
+  },
+  standingsEnduro: {
+    scope: 'enduro',
+    title: 'Classificação · Enduro',
+    entries: rankOneEvent('enduro'),
+  },
+  brackets: {
+    title: 'Eliminatórias · Suspensão',
+    rounds: bracketRounds,
+  },
+  podium: {
+    title: `Pódio · ${sessionGreen.sessionName}`,
+    places: entries.slice(0, 3),
+  },
+  teamCards: {
+    withMedia: {
+      ...entryOfCar(teamCardFixtures.withMedia.carNumber),
+      ...teamCardFixtures.withMedia,
+    },
+    withoutMedia: {
+      ...entryOfCar(teamCardFixtures.withoutMedia.carNumber),
+      ...teamCardFixtures.withoutMedia,
+    },
+  },
+  battle,
+  notices: Object.fromEntries(
+    Object.entries(noticeFixtures).map(([name, notice]) => [
+      name,
+      { ...entryOfCar(notice.carNumber), ...notice },
+    ]),
+  ),
+  countdown: {
+    sessionName: countdownFixture.sessionName,
+    startTimeText: countdownFixture.startTimeText,
+    remainingText: formatRemainingClock(countdownFixture.remainingMs),
+  },
+  schedule: scheduleFixture.map((slot) => ({
+    ...slot,
+    statusLabel: scheduleStatusLabels[slot.status],
+  })),
+  messages: messageFixtures,
+  sponsors: sponsorFixtures.map((name) => ({ name, initial: name.slice(-1) })),
+  qr: { ...qrFixture, modules: buildPlaceholderQrModules(25) },
   people: [
     { name: 'Mariana Costa', role: 'Capitã da equipe', team: 'Acauã Baja · Mauá', carNumber: 31 },
     { name: 'Carlos Henrique Lima', role: 'Diretor de prova', team: '' },
@@ -152,7 +379,13 @@ const sampleData = {
   },
 };
 
-writeFileSync(outputFile, `${JSON.stringify(sampleData, null, 2)}\n`);
+// Formatted with the repo's Prettier, so `pnpm lint` passes on the file exactly as written.
+const prettierConfig = (await prettier.resolveConfig(outputFile)) ?? {};
+const json = await prettier.format(JSON.stringify(sampleData, null, 2), {
+  ...prettierConfig,
+  filepath: outputFile,
+});
+writeFileSync(outputFile, json);
 console.log(
-  `wrote ${outputFile}: ${entries.length} cars, leader on lap ${sampleData.session.lapsCompletedByLeader}`,
+  `wrote ${outputFile}: ${entries.length} cars, leader on lap ${sampleData.session.lapsCompletedByLeader}, ${standings.entries.length} teams in the standings, ${bracketRounds.length} bracket rounds`,
 );
