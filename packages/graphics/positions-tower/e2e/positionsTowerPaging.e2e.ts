@@ -82,11 +82,28 @@ test.describe('paging', () => {
     await placeTokenOverridesBeforeTheGraphicLoads(page, { '--motion-strip-hold': '300ms' });
     await openPreviewWithPaging(page, 'firstPageOnly');
 
-    // Act: let five holds' worth of time pass.
-    await page.waitForTimeout(1500);
+    // Act and first assert: watch the first row for five holds' worth of time, looking
+    // every 100 ms (a fixed wait would miss a page that turned and came back; the watch
+    // remembers it), and demand that page 1 was there the whole time.
+    const fiveHoldsMs = 1500;
+    const watchStartedAt = Date.now();
+    let wasAnotherPageSeen = false;
+    await expect
+      .poll(
+        async () => {
+          const firstCar = await readFirstCarNumberOnAir(page);
+          wasAnotherPageSeen = wasAnotherPageSeen || firstCar !== '31';
+          if (wasAnotherPageSeen) {
+            return `another page was seen (car ${firstCar} first)`;
+          }
+          const hasTheTimePassed = Date.now() - watchStartedAt >= fiveHoldsMs;
+          return hasTheTimePassed ? 'page 1 held for five holds' : 'still watching page 1';
+        },
+        { message: 'page 1 must stay on air for five holds', intervals: [100], timeout: 5000 },
+      )
+      .toBe('page 1 held for five holds');
 
-    // Assert: still page 1, 20 rows.
-    expect(await readFirstCarNumberOnAir(page), 'page 1 must stay on air').toBe('31');
+    // Assert: page 1 still holds its 20 rows.
     await expect(page.getByTestId('positions-tower-row'), 'page 1 holds 20 rows').toHaveCount(20);
   });
 });

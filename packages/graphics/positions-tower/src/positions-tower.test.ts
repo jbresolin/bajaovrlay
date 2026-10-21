@@ -14,11 +14,13 @@
  *   - load draws page 1 of the field: 20 rows (the theme's rows per page) keyed by car
  *     number, the leader marked, the head with the compact captions.
  *   - Play while on air takes the tower off (OGraf's "past the last step" rule), and a
- *     play cut short by a stop reports no step, matching what is on screen.
+ *     play cut short by a stop reports no step, matching what is on screen. A tower
+ *     played again after a stop starts on page 1, whatever page it was stopped on.
  *   - Bad load data answers 400 with a pt-BR message naming the field.
  *   - The page timer turns pages only while on air with pages cycling: after the hold the
  *     tower shows cars 21–40; after stop or dispose no page turns, however much time
- *     passes.
+ *     passes. A tower taken with a field that fits on one page starts turning once an
+ *     update grows the field past it.
  *   - dispose kills the running timelines; a play that was animating when dispose came
  *     still resolves (with 409) instead of hanging, and a dispose that lands while load
  *     is still waiting is not undone.
@@ -37,6 +39,8 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest';
 import {
   ardosiaMotionTokenDeclarations,
   createCompactTowerDataOnTheSample,
+  createEnduroSampleEntries,
+  createFirstCarsOfTheEnduroSample,
   createTowerOnThePage,
   findPartOfTower,
   listRowElements,
@@ -210,6 +214,25 @@ describe('playing and stopping', () => {
       currentStep: undefined,
     });
   });
+
+  it('comes back on page 1 when played again after a stop on page 2', async () => {
+    // Arrange: the theme's hold (so the timer stays 7 s away), a cycling tower on air
+    // turned to page 2 by hand, as the timer would have done.
+    placeTokensOnTheRoot({ '--motion-strip-hold': '7000ms', '--tower-rows-per-page': '20' });
+    const tower = createTowerOnThePage();
+    await loadTowerWithData(tower, createCompactTowerDataOnTheSample());
+    await tower.playAction({ skipAnimation: true });
+    await tower.turnToTheNextPageNow();
+    const firstCarBeforeTheStop = readCarNumbersOnThePage(tower)[0];
+
+    // Act: the operator takes the tower off and on again.
+    await tower.stopAction({ skipAnimation: true });
+    await tower.playAction({ skipAnimation: true });
+
+    // Assert: it was on page 2 when stopped, and the re-take shows page 1, the leader first.
+    expect(firstCarBeforeTheStop, 'the tower was on page 2 when stopped').toBe(6);
+    expect(readCarNumbersOnThePage(tower)[0], 'a re-take must start on page 1').toBe(31);
+  });
 });
 
 describe('bad load data', () => {
@@ -280,6 +303,32 @@ describe('the page timer', () => {
     // Assert: dispose answered 200 and the rows never changed.
     expect(answer, 'dispose must answer 200').toEqual({ statusCode: 200 });
     expect(readCarNumbersOnThePage(tower)[0], 'no page may turn after dispose').toBe(31);
+  });
+
+  it('starts turning pages when a field taken with 12 cars grows past one page', async () => {
+    // Arrange: the hold and rows per page from the theme, timers under the test's
+    // control, and a tower on air with 12 cars (one page: the timer has nothing to do).
+    placeTokensOnTheRoot({ '--motion-strip-hold': '7000ms', '--tower-rows-per-page': '20' });
+    takeControlOfTimers();
+    const tower = createTowerOnThePage();
+    await loadTowerWithData(tower, {
+      entries: createFirstCarsOfTheEnduroSample(12),
+      paging: 'cycle',
+    });
+    await tower.playAction({ skipAnimation: true });
+
+    // Act: the field grows to all 60 cars (three pages), then one hold passes.
+    await tower.updateAction({
+      data: { entries: createEnduroSampleEntries() },
+      skipAnimation: true,
+    });
+    await vi.advanceTimersByTimeAsync(7000);
+
+    // Assert: the timer started with the bigger field and turned to page 2.
+    expect(
+      readCarNumbersOnThePage(tower)[0],
+      'once the field has more than one page the timer must turn to page 2 after the hold',
+    ).toBe(6);
   });
 
   it('does not run with pages held on the first page', async () => {

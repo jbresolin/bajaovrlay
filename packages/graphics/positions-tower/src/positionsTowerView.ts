@@ -4,7 +4,9 @@
  * and the one function that makes the rows match a new list of visible entries. Rows are
  * one node per visible car, keyed by car number, reused across updates and never rebuilt;
  * when motion is wanted this module also takes the two layout measures FLIP needs (every
- * row's top before the DOM change and after it) and nothing else.
+ * row's top before the DOM change and after it) and nothing else. Reads and writes are
+ * kept apart: every measure of a pass happens before any write of that pass, so the
+ * browser lays the page out once per measure and not once per row.
  */
 import { html, type TemplateResult } from 'lit';
 
@@ -130,13 +132,25 @@ export function applyColumnsToTower(
   return columns;
 }
 
-/** Makes every row's cells match the columns shown (a layout or column switch on air). */
+/**
+ * Makes every row's cells match the columns shown (a layout or column switch on air)
+ * and writes every visible row again from its entry, so a cell the switch created
+ * carries its text at once. Without the rewrite a switch during a page turn, when the
+ * component applies nothing else, would leave the new cells empty until the next list.
+ */
 export function rebuildEveryRowForColumns(
   rows: TowerRowsByCarNumber,
   columns: TowerColumn[],
+  visibleEntries: readonly TowerEntry[],
 ): void {
   for (const row of rows.values()) {
     rebuildTowerRowCells(row, columns);
+  }
+  for (const entry of visibleEntries) {
+    const row = rows.get(entry.carNumber);
+    if (row !== undefined) {
+      writeTowerRowFromEntry(row, entry, entry.position === 1);
+    }
   }
 }
 
@@ -188,7 +202,7 @@ export function placeVisibleEntries(
   }
 
   const rowsEntering: TowerRow[] = [];
-  entriesAfter.forEach((entry, index) => {
+  for (const entry of entriesAfter) {
     const existingRow = rows.get(entry.carNumber);
     const row = existingRow ?? createTowerRow(entry.carNumber, columns);
     if (existingRow === undefined) {
@@ -196,9 +210,23 @@ export function placeVisibleEntries(
       rowsEntering.push(row);
     }
     parts.rows.append(row.element);
-    const isLeader = index === 0;
+    // The leader is the car in position 1, wherever the page starts: the first row of
+    // page 2 is the 21st car, with a gap and no mark.
+    const isLeader = entry.position === 1;
     writeTowerRowFromEntry(row, entry, isLeader);
-  });
+  }
+
+  // FLIP's second measure: where every staying row is now, read for every row before
+  // the cue writes below so the browser lays the page out once, not once per cued row.
+  const topAfterByCarNumber = new Map<number, number>();
+  if (isAnimated) {
+    for (const stayingRow of diff.staying) {
+      const row = rows.get(stayingRow.carNumber);
+      if (row !== undefined) {
+        topAfterByCarNumber.set(stayingRow.carNumber, row.element.getBoundingClientRect().top);
+      }
+    }
+  }
 
   const newRowElements = rowsEntering.map((row) => row.element);
   if (placement === 'atOnce') {
@@ -211,16 +239,17 @@ export function placeVisibleEntries(
     return { rowsEntering, rowsLeaving, slotShifts: [], cuedRows: [] };
   }
 
-  // FLIP's second measure: where every staying row is now; the difference is the slide.
+  // The slides (the difference between the two measures) and the cues: writes only.
   const slotShifts: RowSlotShift[] = [];
   const cuedRows: VisibleRowsChange['cuedRows'] = [];
   for (const stayingRow of diff.staying) {
     const row = rows.get(stayingRow.carNumber);
     const topBeforePx = topBeforeByCarNumber.get(stayingRow.carNumber);
-    if (row === undefined || topBeforePx === undefined) {
+    const topAfterPx = topAfterByCarNumber.get(stayingRow.carNumber);
+    if (row === undefined || topBeforePx === undefined || topAfterPx === undefined) {
       continue;
     }
-    const shiftPx = topBeforePx - row.element.getBoundingClientRect().top;
+    const shiftPx = topBeforePx - topAfterPx;
     if (shiftPx !== 0) {
       slotShifts.push({ element: row.element, shiftPx });
     }

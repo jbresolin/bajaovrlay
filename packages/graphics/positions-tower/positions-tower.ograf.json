@@ -37,7 +37,7 @@
             "lastLapMs": { "type": "integer", "minimum": 1 },
             "bestLapMs": { "type": "integer", "minimum": 1 },
             "gapToLeaderMs": { "type": "integer", "minimum": 0 },
-            "gapToLeaderLaps": { "type": "integer", "minimum": 0 },
+            "gapToLeaderLaps": { "type": "integer", "minimum": 1 },
             "intervalMs": { "type": "integer", "minimum": 0 },
             "pitStops": { "type": "integer", "minimum": 0 },
             "fuelStops": { "type": "integer", "minimum": 0 },

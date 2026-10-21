@@ -23,8 +23,9 @@
  *      positions show the first 20 places in another order than the rows had at the
  *      take, the rows in the monitor leave that order and follow the data on air.
  *   4. The item opened again ("Editar" of its button in "Atalhos"), "Leiaute" set to
- *      "Detalhada", "Atualizar no ar": the same instance (its id unchanged on the server)
- *      is detailed and shows more columns (the "DIF." caption, a gap cell in every row).
+ *      "Detalhada", "Atualizar no ar": the same instance (its id unchanged on the server,
+ *      and the very same tower element in the monitor, carrying that id) is detailed and
+ *      shows more columns (the "DIF." caption, a gap cell in every row).
  *   5. A race clock taken too: the clock card and the tower do not overlap (the card's
  *      bottom is above the tower's top) and both sit in the same column.
  *
@@ -78,6 +79,7 @@ import { findQuickFireArea } from './quickFireTestSteps';
 import {
   findClockCardInProgramMonitor,
   findTowerHead,
+  findTowerInProgramMonitor,
   findTowerRows,
   findTowerSection,
   measureHowTheClockAndTheTowerStack,
@@ -262,9 +264,13 @@ test.describe('a positions tower bound to the simulator', () => {
     test.setTimeout(120_000);
 
     // Arrange (steps 1 and 2): the bound tower on air, compact (the manifest's default),
-    // and which instance it is on the server.
+    // which instance it is on the server, and a handle to the tower element the monitor
+    // drew for it (the renderer writes the instance id on that element).
     await putTheBoundTowerOnAir(page);
     const towerInstanceIdAtTheTake = await readIdOfTheTowerInstanceOnAir();
+    const towerElementAtTheTake = await findTowerInProgramMonitor(page).evaluateHandle(
+      (tower) => tower,
+    );
     await expect(
       findTowerSection(page),
       'the tower must go on air compact, the layout the manifest defaults to',
@@ -294,8 +300,9 @@ test.describe('a positions tower bound to the simulator', () => {
     ).toBeHidden();
 
     // Assert (step 4): the very same instance is now detailed on the server (changed in
-    // place, not taken again), and the monitor shows the detailed tower with more
-    // columns: the "DIF." caption in the head and a gap cell in every row.
+    // place, not taken again), the monitor still draws it on the same element with the
+    // same instance id (not a new element loaded for a new take), and the detailed
+    // tower shows more columns: the "DIF." caption in the head and a gap cell in every row.
     await expect
       .poll(
         async () => {
@@ -312,6 +319,18 @@ test.describe('a positions tower bound to the simulator', () => {
       findTowerSection(page),
       'the tower in the monitor must be drawn in the detailed layout',
     ).toHaveAttribute('data-layout', 'detailed', { timeout: waitForTheRowsToFollowInMilliseconds });
+    await expect(
+      findTowerInProgramMonitor(page),
+      'the tower element in the monitor must still carry the instance id of the take',
+    ).toHaveAttribute('data-instance-id', towerInstanceIdAtTheTake);
+    const isTheSameTowerElement = await findTowerInProgramMonitor(page).evaluate(
+      (tower, towerBefore) => tower === towerBefore,
+      towerElementAtTheTake,
+    );
+    expect(
+      isTheSameTowerElement,
+      'the update must change the tower in place: the same DOM element as at the take',
+    ).toBe(true);
     await expect(
       findTowerHead(page),
       'the detailed head must carry the "DIF." caption',

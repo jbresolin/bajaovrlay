@@ -13,9 +13,9 @@
  *   - The same payloads pass or fail both checks: the whole 60-car enduro sample as it
  *     is (a canonical positions list binds as is); the entries alone; an entry carrying
  *     a field the tower does not know (passes: the shape may gain fields); an entry
- *     missing its team name, with a status outside the six, or with a negative refuel
- *     count (fail); a layout outside the two, a paging mode outside the two and a
- *     top-level field the tower does not know (fail).
+ *     missing its team name, with a status outside the six, with a negative refuel
+ *     count or with a gap of zero laps (fail); a layout outside the two, a paging mode
+ *     outside the two and a top-level field the tower does not know (fail).
  *
  * What these tests deliberately do not cover:
  *   - The rest of the manifest (settings, titles, durations, the OGraf schema itself);
@@ -97,6 +97,13 @@ const dataAgreementScenarios = [
   {
     name: 'both refuse a negative refuel count',
     data: { entries: createSampleWithEntryChanged(0, 'fuelStops', -1) },
+    isValid: false,
+  },
+  // A lapped car is at least one lap down, as in the canonical shape: a 0 would mean
+  // "on the leader's lap", which is gapToLeaderMs's job.
+  {
+    name: 'both refuse a gap of zero laps',
+    data: { entries: createSampleWithEntryChanged(2, 'gapToLeaderLaps', 0) },
     isValid: false,
   },
   // A layout outside compact and detailed.

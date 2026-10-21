@@ -4,15 +4,16 @@
  * OGraf lifecycle (load, play, update, stop, dispose) and only wires the pieces
  * together; the rules live in named modules: positionsTowerModel (data and settings),
  * towerStage (the page on air and its rows, moved in place and never rebuilt, on top of
- * positionsTowerView and towerRows), towerPages (which cars are on which page),
+ * positionsTowerView and towerRows), towerPageTurns (a turn and what arrived during it:
+ * nothing sent during a turn is lost), towerPages (which cars are on which page),
  * pageTurner (the hold between pages), positionsTowerAnimations (GSAP timelines from the
- * theme's motion tokens), towerLayoutTokens (rows per page from the theme), playSteps
- * and themeFonts.
+ * theme's motion tokens), towerLayoutTokens (rows per page and the page hold from the
+ * theme), playSteps, and the theme's own font wait (`@bajaovrlay/theme/fonts`).
  *
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
-import { readMotionTokens } from '@bajaovrlay/theme/motion';
+import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
 import type {
@@ -47,9 +48,8 @@ import {
   type RowPlacement,
 } from './positionsTowerView.js';
 import { ptBR } from './ptBR.js';
-import { waitForThemeFontsToBeReady } from './themeFonts.js';
 import { readTowerLayoutTokens } from './towerLayoutTokens.js';
-import { chooseNextPageInCycle } from './towerPages.js';
+import { TowerPageTurns } from './towerPageTurns.js';
 import { TowerStage } from './towerStage.js';
 
 /** Must match "stepCount" in positions-tower.ograf.json: play shows the tower, stop hides it. */
@@ -73,11 +73,11 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
   private data: PositionsTowerData | undefined = undefined;
   private settings: TowerSettings | undefined = undefined;
   private stage: TowerStage | undefined = undefined;
-  private isTurningPage = false;
+  private pageTurns: TowerPageTurns | undefined = undefined;
   private readonly runningTimelines = new Set<TowerTimeline>();
   private readonly pageTurner: PageTurner = createPageTurner({
-    onTurn: () => this.turnToTheNextPage(),
-    readHoldMs: () => readMotionTokens(this).stripHoldMs,
+    onTurn: () => this.turnToTheNextPageNow(),
+    readHoldMs: () => readTowerLayoutTokens(this).pageHoldMs,
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
   });
@@ -108,7 +108,9 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     // What could go wrong: a renderer calling load on an element not yet in the page
     // waits here until it is added, because Lit renders only connected elements.
     await this.updateComplete;
-    await waitForThemeFontsToBeReady();
+    // The font token is read from this element: custom properties reach into the
+    // shadow root, and the host is where every other token is read too.
+    await waitForThemeFontsToBeReady(this);
 
     // A dispose that came while load was waiting must win; going on would bring a
     // disposed graphic back to life.
@@ -123,6 +125,13 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
       runTimeline: (timeline, skipAnimation) => this.runTimeline(timeline, skipAnimation),
     });
     this.stage = stage;
+    this.pageTurns = new TowerPageTurns({
+      stage,
+      isOnAir: () => this.lifecycle === 'onAir',
+      isDisposed: () => this.lifecycle === 'disposed',
+      readEntries: () => this.requireData().entries,
+      placeEntriesOnTheStage: (skipAnimation) => this.placeEntriesOnTheStage(skipAnimation),
+    });
     this.data = dataCheck.data;
     this.settings = readTowerSettings(dataCheck.data);
     stage.applyColumns(this.settings);
@@ -172,7 +181,10 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     return { statusCode: 200, currentStep: target.step };
   }
 
-  /** OGraf stopAction: stops the page timer, animates the tower out, resolves once off screen. */
+  /**
+   * OGraf stopAction: stops the page timer, animates the tower out, resolves once off
+   * screen, and leaves page 1 drawn off air so the next take starts at the leader.
+   */
   async stopAction(params: OGrafStopActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
     if (refusal !== undefined) {
@@ -186,6 +198,7 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     this.currentStep = undefined;
     this.pageTurner.stop();
     await this.requireStage().playOut(params.skipAnimation ?? false);
+    this.requirePageTurns().restOnPageOneForTheNextTake();
     return okAnswer;
   }
 
@@ -194,7 +207,8 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
    * (the live binding sends a new list about every 2 s; the operator may change the
    * layout, the columns or the paging). On air the rows whose slot changed slide, cars
    * entering the page rise in and cars leaving lift out; a column change rebuilds the
-   * cells of the same rows in place; off air everything is simply drawn, ready for play.
+   * cells of the same rows in place and writes them; off air everything is simply
+   * drawn, ready for play. During a page turn the list is kept for the turn's end.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
@@ -216,21 +230,23 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     }
 
     const skipAnimation = params.skipAnimation ?? false;
-    // During a page turn the rows on air are on their way out or in; the turn's second
-    // half draws the new page from the data just stored, so nothing else is moved here.
-    if (!this.isTurningPage) {
-      const placement = this.chooseRowPlacement(skipAnimation);
-      if (placement === 'animated') {
-        await stage.applyEntriesWithMotion(dataCheck.data.entries);
-      } else {
-        stage.placeCurrentPage(dataCheck.data.entries, placement);
-      }
+    const pageTurns = this.requirePageTurns();
+    if (pageTurns.isTurning()) {
+      // The rows on air are on their way out or in: the turn applies the list once it
+      // has ended (the data is already stored above, so the turn's own draw sees it).
+      pageTurns.keepUpdateForAfterTheTurn(skipAnimation);
+    } else {
+      await this.placeEntriesOnTheStage(skipAnimation);
     }
 
     const hasPagingChanged = settingsBefore.paging !== settingsAfter.paging;
-    if (hasPagingChanged && this.readLifecycleNow() !== 'disposed') {
-      await this.applyPagingChange(skipAnimation);
+    if (hasPagingChanged && settingsAfter.paging === 'firstPageOnly') {
+      this.pageTurner.stop();
+      await pageTurns.holdPageOne(skipAnimation);
     }
+    // After every update, not only a paging change: a field taken with one page and
+    // grown past it must start turning, and starting a running timer does nothing.
+    this.startPageTurnerWhenCycling();
     return okAnswer;
   }
 
@@ -254,15 +270,15 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
   }
 
   /**
-   * Turns to the next page now, as the page timer does after its hold. Not an OGraf
-   * action: the preview page's "Próxima página" button and the tests call it. Refused
-   * silently before load; with one page there is nothing to turn.
+   * Turns to the next page now: what the page timer calls after its hold, and what the
+   * preview page's "Próxima página" button and the tests call (not an OGraf action).
+   * Refused silently before load; with one page there is nothing to turn.
    */
   async turnToTheNextPageNow(): Promise<void> {
     if (this.refuseUnlessLoaded() !== undefined) {
       return;
     }
-    await this.turnToTheNextPage();
+    await this.requirePageTurns().turnToTheNextPage();
   }
 
   /**
@@ -291,6 +307,13 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     return this.stage;
   }
 
+  private requirePageTurns(): TowerPageTurns {
+    if (this.pageTurns === undefined) {
+      throw new Error('the page turns exist only after load; a bug in positions-tower.ts');
+    }
+    return this.pageTurns;
+  }
+
   private requireData(): PositionsTowerData {
     if (this.data === undefined) {
       throw new Error('data is read only after load; a bug in positions-tower.ts');
@@ -305,25 +328,31 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     return this.settings;
   }
 
+  /** Draws the current page of the stored data on the stage the way the lifecycle allows. */
+  private async placeEntriesOnTheStage(skipAnimation: boolean): Promise<void> {
+    const stage = this.requireStage();
+    const entries = this.requireData().entries;
+    const placement = this.chooseRowPlacement(skipAnimation);
+    if (placement === 'animated') {
+      await stage.applyEntriesWithMotion(entries);
+    } else {
+      stage.placeCurrentPage(entries, placement);
+    }
+  }
+
   /** How rows are placed for the lifecycle now: drawn off air, shown at once, or animated. */
   private chooseRowPlacement(skipAnimation: boolean): RowPlacement {
     if (this.lifecycle !== 'onAir') {
       return 'offAir';
     }
-    return skipAnimation ? 'atOnce' : 'animated';
-  }
-
-  /** Holds page 1 when paging turned to firstPageOnly; starts cycling when it turned to cycle. */
-  private async applyPagingChange(skipAnimation: boolean): Promise<void> {
-    const paging = this.requireSettings().paging;
-    if (paging === 'firstPageOnly') {
-      this.pageTurner.stop();
-      if (this.requireStage().readCurrentPage() !== 1) {
-        await this.turnToPage(1, skipAnimation);
-      }
-      return;
+    // During the play-in the rows are still rising in cascade: the update is drawn at
+    // once on the rows as they are and the cascade goes on. An animated update would
+    // first finish the running motion to measure settled rows, cutting the take short.
+    const isPlayingIn = this.requireStage().isPlayingIn();
+    if (skipAnimation || isPlayingIn) {
+      return 'atOnce';
     }
-    this.startPageTurnerWhenCycling();
+    return 'animated';
   }
 
   /** Starts the page timer, only on air with pages cycling and more than one page. */
@@ -333,45 +362,6 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     if (this.lifecycle === 'onAir' && isCycling && pageCount > 1) {
       this.pageTurner.start();
     }
-  }
-
-  /** The page after this one in the cycle; nothing to do with a single page. */
-  private async turnToTheNextPage(): Promise<void> {
-    const stage = this.requireStage();
-    const pageCount = stage.countPages(this.requireData().entries.length);
-    if (pageCount === 1) {
-      return;
-    }
-    await this.turnToPage(chooseNextPageInCycle(stage.readCurrentPage(), pageCount), false);
-  }
-
-  /**
-   * Turns the page: on air the rows leave together, then the new page's rows rise in
-   * cascade while the head stays; off air the new page is simply drawn. Only one turn at
-   * a time: a second ask while one is in progress is dropped.
-   */
-  private async turnToPage(pageNumber: number, skipAnimation: boolean): Promise<void> {
-    if (this.isTurningPage) {
-      return;
-    }
-    this.isTurningPage = true;
-    const stage = this.requireStage();
-    const isAnimated = this.lifecycle === 'onAir' && !skipAnimation;
-
-    if (isAnimated) {
-      await stage.liftRowsOut();
-    }
-    if (this.readLifecycleNow() === 'disposed') {
-      this.isTurningPage = false;
-      return;
-    }
-
-    const isOnAirAtOnce = this.readLifecycleNow() === 'onAir' && skipAnimation;
-    stage.showPage(this.requireData().entries, pageNumber, isOnAirAtOnce ? 'atOnce' : 'offAir');
-    if (isAnimated && this.readLifecycleNow() === 'onAir') {
-      await stage.riseRowsIn();
-    }
-    this.isTurningPage = false;
   }
 
   /** Plays a timeline to its end, keeping track of it so dispose can end it early. */

@@ -51,6 +51,7 @@ export class TowerStage {
   private currentPage = 1;
   private updateCount = 0;
   private runningMotionTimeline: TowerTimeline | undefined = undefined;
+  private isPlayInRunning = false;
 
   constructor(options: TowerStageOptions) {
     this.parts = options.parts;
@@ -68,10 +69,19 @@ export class TowerStage {
     return countTowerPages(entryCount, this.rowsPerPage);
   }
 
-  /** Dresses the tower for the settings and rebuilds every row's cells for its columns. */
+  /**
+   * Dresses the tower for the settings, rebuilds every row's cells for its columns and
+   * writes the visible rows again, so no cell made by the change is left empty, even
+   * during a page turn.
+   */
   applyColumns(settings: TowerSettings): void {
     this.columns = applyColumnsToTower(this.parts, settings);
-    rebuildEveryRowForColumns(this.rows, this.columns);
+    rebuildEveryRowForColumns(this.rows, this.columns, this.visibleEntries);
+  }
+
+  /** Whether the play-in cascade is still running; an update then draws at once on it. */
+  isPlayingIn(): boolean {
+    return this.isPlayInRunning;
   }
 
   /** Puts the head in its off-air look, as load leaves it for the first play. */
@@ -146,7 +156,12 @@ export class TowerStage {
   async playIn(skipAnimation: boolean): Promise<void> {
     const { tokensSource, head } = this.parts;
     const playIn = buildPlayInTimeline(tokensSource, head, this.listVisibleRowElements());
-    await this.runMotionTimeline(playIn, skipAnimation);
+    this.isPlayInRunning = true;
+    try {
+      await this.runMotionTimeline(playIn, skipAnimation);
+    } finally {
+      this.isPlayInRunning = false;
+    }
   }
 
   /** The stop-out: every pill together. */

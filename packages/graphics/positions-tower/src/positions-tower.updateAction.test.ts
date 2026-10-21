@@ -22,11 +22,13 @@
  *   - Over many updates the row nodes are reused: the same 20 elements after 20 swaps.
  *   - A layout change on air keeps the same row nodes, adds the detailed cells to each
  *     and writes the detailed grid and width on the tower; switching a column off takes
- *     its cells away.
+ *     its cells away, and switching it back on draws the status icons again.
  *   - A page turn on air (as the timer asks) shows the next 20 cars on new rows while
  *     the head stays the same node; paging switched to firstPageOnly brings page 1 back.
  *
  * What these tests deliberately do not cover:
+ *   - Updates that arrive while a motion is running (a page turn, the play-in);
+ *     positions-tower.updatesDuringMotion.test.ts covers them.
  *   - The FLIP slide, the rise and the lift themselves; jsdom lays nothing out, so every
  *     measured shift is 0 here. e2e/positionsTowerUpdates.e2e.ts watches them in Chromium.
  */
@@ -297,6 +299,29 @@ describe('a layout or column change on air', () => {
       firstRow?.querySelector('[data-testid="row-lastLap"]'),
       'ÚLT. VOLTA must still be there',
     ).not.toBeNull();
+  });
+
+  it('draws the status icons again when the status column is switched off and back on', async () => {
+    // Arrange: a detailed tower on air; car 69 (17th) is in the pit, its row noted.
+    const tower = createTowerOnThePage();
+    await loadTowerWithData(tower, {
+      ...createHeldCompactTowerDataOnTheSample(),
+      layout: 'detailed',
+    });
+    await tower.playAction({ skipAnimation: true });
+    const rowOfCar69 = listRowElements(tower)[16];
+
+    // Act: the operator turns the status column off, then on again.
+    await tower.updateAction({ data: { showStatus: false }, skipAnimation: true });
+    const statusCellWhileOff = rowOfCar69?.querySelector('[data-testid="row-status"]');
+    await tower.updateAction({ data: { showStatus: true }, skipAnimation: true });
+
+    // Assert: the cell was gone while off, and the cell created again shows the pit icon.
+    expect(statusCellWhileOff, 'with the column off the status cell is gone').toBeNull();
+    expect(
+      rowOfCar69?.querySelector('[data-testid="row-status"] svg')?.getAttribute('aria-label'),
+      'the status cell created again must draw the pit icon, not stay empty',
+    ).toBe('No box');
   });
 });
 

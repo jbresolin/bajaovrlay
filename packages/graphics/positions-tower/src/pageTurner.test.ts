@@ -16,6 +16,8 @@
  *   - Starting twice does not run two timers side by side.
  *   - Stopping cancels the exact timer that was pending, and no turn is asked afterwards;
  *     a stop that lands during a turn stops the holds after it.
+ *   - A turn that fails does not stop the pages: the next hold is booked all the same
+ *     (a tower stuck on one page for the rest of the stream would be the worse failure).
  *
  * What these tests deliberately do not cover:
  *   - The real setTimeout; a hand-driven stand-in says exactly when time passes. The
@@ -76,10 +78,11 @@ function createTurnFinishedByHand() {
   };
 }
 
-/** Lets every promise that is already settled run its continuations. */
+/** Lets every promise that is already settled run its continuations (a few ticks deep). */
 async function letPromisesSettle(): Promise<void> {
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let tick = 0; tick < 5; tick += 1) {
+    await Promise.resolve();
+  }
 }
 
 describe('createPageTurner', () => {
@@ -200,5 +203,31 @@ describe('createPageTurner', () => {
 
     // Assert: no hold was booked after the turn.
     expect(timers.pendingCallbacks.size, 'a turner stopped mid-turn must not hold again').toBe(0);
+  });
+
+  it('books the next hold even when a turn fails', async () => {
+    // Arrange: a turner whose every turn rejects (a timeline that could not be built).
+    const timers = createHandDrivenTimers();
+    const turner = createPageTurner({
+      onTurn: () => Promise.reject(new Error('a timeline that could not be built')),
+      readHoldMs: () => 7000,
+      setTimer: timers.setTimer,
+      clearTimer: timers.clearTimer,
+    });
+
+    // Act: start it and let the hold pass, so the failing turn is asked and settles.
+    turner.start();
+    timers.fireNextTimer();
+    await letPromisesSettle();
+
+    // Assert: the failure was swallowed and the next hold was booked all the same.
+    expect(
+      timers.pendingCallbacks.size,
+      'a failed turn must not stop the pages: the next hold must be booked',
+    ).toBe(1);
+    expect(
+      timers.bookedDelays,
+      'two holds were booked, one before and one after the failed turn',
+    ).toEqual([7000, 7000]);
   });
 });

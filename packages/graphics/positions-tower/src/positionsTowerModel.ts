@@ -49,7 +49,8 @@ export type PositionStatus = (typeof positionStatuses)[number];
 
 // Loose on purpose: a canonical entry passes as is even when the shape gains a field the
 // tower does not draw yet (decision 10 of the context pack). The limits repeat the
-// canonical shape's: no lap takes no time, counts start at 0.
+// canonical shape's: no lap takes no time, counts start at 0, a lapped car is at least
+// one lap down (a gap of 0 laps would mean "on the leader's lap", which gapToLeaderMs says).
 const towerEntrySchema = z.looseObject({
   position: z.int().min(1),
   carNumber: z.int().min(1),
@@ -59,7 +60,7 @@ const towerEntrySchema = z.looseObject({
   lastLapMs: z.int().min(1).optional(),
   bestLapMs: z.int().min(1).optional(),
   gapToLeaderMs: z.int().min(0).optional(),
-  gapToLeaderLaps: z.int().min(0).optional(),
+  gapToLeaderLaps: z.int().min(1).optional(),
   intervalMs: z.int().min(0).optional(),
   pitStops: z.int().min(0).optional(),
   fuelStops: z.int().min(0).optional(),

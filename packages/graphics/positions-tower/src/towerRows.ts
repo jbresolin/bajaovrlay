@@ -4,7 +4,8 @@
  * visible car and reused across updates: afterwards only its texts, its data attributes
  * and its icons change, and only when they differ. The one time cells are created again
  * is a column change on air (the layout or a column switch), which adds or removes the
- * cells of the columns that changed on the same row.
+ * cells of the columns that changed on the same row; a status cell made again this way
+ * draws the row's icon at once, since the status itself did not change.
  */
 import { nothing, render } from 'lit';
 
@@ -22,6 +23,8 @@ export type TowerRow = {
   pill: HTMLDivElement;
   carNumber: number;
   cells: Map<TowerColumnKey, HTMLElement>;
+  /** The status last written, so a status cell made again can draw its icon. */
+  status: PositionStatus | undefined;
   /** The team name inside the team cell (cut with an ellipsis). */
   teamName: HTMLElement;
   /** The school after the team name, shown in the detailed layout only. */
@@ -61,7 +64,15 @@ export function createTowerRow(carNumber: number, columns: TowerColumn[]): Tower
   schoolName.className = 'school-name';
   schoolName.dataset.testid = 'row-school-name';
 
-  const row: TowerRow = { element, pill, carNumber, cells: new Map(), teamName, schoolName };
+  const row: TowerRow = {
+    element,
+    pill,
+    carNumber,
+    cells: new Map(),
+    status: undefined,
+    teamName,
+    schoolName,
+  };
   rebuildTowerRowCells(row, columns);
   return row;
 }
@@ -69,8 +80,9 @@ export function createTowerRow(carNumber: number, columns: TowerColumn[]): Tower
 /**
  * Makes the row's cells match the columns shown: a cell of a column that is now off is
  * removed, a cell of a column that is now on is created, and the cells are put in
- * column order. Cells that stay keep their text and icon. The one place cells are made
- * after a row's creation.
+ * column order. Cells that stay keep their text and icon; a status cell made again gets
+ * its icon drawn here, because the status write below skips a status that did not
+ * change. The one place cells are made after a row's creation.
  */
 export function rebuildTowerRowCells(row: TowerRow, columns: TowerColumn[]): void {
   const columnKeysShown = new Set(columns.map((column) => column.key));
@@ -86,6 +98,10 @@ export function rebuildTowerRowCells(row: TowerRow, columns: TowerColumn[]): voi
     row.cells.set(column.key, cell);
     // append moves a cell already in the pill, so this also puts the cells in order.
     row.pill.append(cell);
+    const isNewStatusCell = existingCell === undefined && column.key === 'status';
+    if (isNewStatusCell && row.status !== undefined) {
+      render(renderStatusIcon(row.status), cell);
+    }
   }
 }
 
@@ -162,9 +178,10 @@ export function writeTowerRowFromEntry(row: TowerRow, entry: TowerEntry, isLeade
 
 /** Writes the status attribute and redraws the icon, only when the status changed. */
 function writeStatusIfChanged(row: TowerRow, status: PositionStatus): void {
-  if (row.element.dataset.status === status) {
+  if (row.status === status) {
     return;
   }
+  row.status = status;
   row.element.dataset.status = status;
   const statusCell = row.cells.get('status');
   if (statusCell !== undefined) {

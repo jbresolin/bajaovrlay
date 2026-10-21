@@ -45,9 +45,9 @@ export function createCompactTowerDataOnTheSample(): PositionsTowerData {
 }
 
 /**
- * The same tower with its pages held on page 1. Without the theme the page hold reads
- * 0 ms, so a cycling tower on air would turn its pages under a test that is about
- * something else; holding the pages keeps those tests about what they say.
+ * The same tower with its pages held on page 1. Without the theme the page hold falls
+ * back to 7 s, far longer than any test here, but a cycling tower on air would still
+ * arm a real timer; holding the pages keeps those tests about what they say.
  */
 export function createHeldCompactTowerDataOnTheSample(): PositionsTowerData {
   return { ...createCompactTowerDataOnTheSample(), paging: 'firstPageOnly' };
@@ -95,6 +95,35 @@ export function readCarNumbersOnThePage(tower: PositionsTowerGraphic): number[] 
   return listRowElementsInFlow(tower).map((row) => Number(row.dataset.carNumber));
 }
 
+/**
+ * Resolves as soon as a row for `carNumber` is in the list: at once if it already is,
+ * otherwise on the DOM change that adds it (a MutationObserver, which fires right after
+ * the change, before any timer). A poll could wake up long after a motion has ended; a
+ * test that must act during a motion waits here instead.
+ */
+export function waitUntilCarIsOnThePage(
+  tower: PositionsTowerGraphic,
+  carNumber: number,
+): Promise<void> {
+  const rowsList = findPartOfTower(tower, 'positions-tower-rows');
+  if (rowsList === undefined) {
+    throw new Error('the tower has no rows list; load it before waiting for a car');
+  }
+  const isCarOnThePage = () => readCarNumbersOnThePage(tower).includes(carNumber);
+  if (isCarOnThePage()) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const watcher = new MutationObserver(() => {
+      if (isCarOnThePage()) {
+        watcher.disconnect();
+        resolve();
+      }
+    });
+    watcher.observe(rowsList, { childList: true });
+  });
+}
+
 /** The text of one cell of a row, found by the cell's test id. */
 export function readRowCellText(row: HTMLElement, cellTestId: string): string | null | undefined {
   return row.querySelector(`[data-testid="${cellTestId}"]`)?.textContent;
@@ -121,6 +150,21 @@ export const ardosiaMotionTokenDeclarations: Record<string, string> = {
   '--ease-in': 'cubic-bezier(0.7, 0, 0.84, 0)',
   '--ease-in-out': 'cubic-bezier(0.65, 0, 0.35, 1)',
   '--tower-rows-per-page': '20',
+};
+
+/**
+ * Ardósia's tokens with the motion made brief: a play-in or a page's rise-in of 20
+ * rows lasts about 340 ms (300 + 20 × 2), a lift 30 ms, a swap 30 ms. Long enough for a
+ * test to send something in the middle of a motion, short enough not to slow the suite.
+ * The page hold stays 7 s so the timer never turns a page under a test.
+ */
+export const briefMotionTokenDeclarations: Record<string, string> = {
+  ...ardosiaMotionTokenDeclarations,
+  '--motion-in': '300ms',
+  '--motion-out': '30ms',
+  '--motion-row-stagger': '2ms',
+  '--motion-swap': '30ms',
+  '--motion-cue-hold': '40ms',
 };
 
 /**
