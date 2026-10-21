@@ -12,7 +12,9 @@ brand/logo-branca.png     the white Baja SAE Brasil logo, 256 px tall (the clock
 src/motion.ts             the `@bajaovrlay/theme/motion` entry a graphic imports (the two below)
 src/readMotionTokens.ts   reads the --motion-* and --ease-* tokens as numbers and ease strings (start here for motion)
 src/gsapEaseOfToken.ts    turns an ease token into a GSAP ease name (CustomEase, registered once per curve)
-src/noHardCodedValues.test.ts  the guard: no hex colour or px font size in a graphic's source
+src/waitForThemeFonts.ts  the `@bajaovrlay/theme/fonts` entry: the wait for the display face every graphic does before its first draw
+src/noHardCodedValues.test.ts  the guard: no colour (hex, rgb, hsl) or px font size in a graphic's source (preview.html is excluded on purpose)
+src/motionTokensDeclaredInTheme.test.ts  every token readMotionTokens reads is declared in tokens.css
 ```
 
 **Who reads what.** The server serves this folder at `/theme/` (tokens, font CSS, font file,
@@ -47,4 +49,9 @@ theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRL
 
 **Fonts.** Bebas Neue 400 only (its one weight), Latin subset: no lowercase glyphs, so every
 graphic sets its text in caps and never asks for bold. Barlow and Barlow Condensed are not
-shipped: the chosen design uses one face.
+shipped: the chosen design uses one face. Before its first draw a graphic awaits
+`waitForThemeFontsToBeReady(this)` (`@bajaovrlay/theme/fonts`): it asks the page for the face
+named by `--font-display` (`document.fonts.load`, read through the graphic so the token reaches
+inside its shadow root) and then for `document.fonts.ready`, since `ready` alone can resolve
+before the file is fetched on a cold OBS start; it never rejects, a face that fails leaves
+the fallback on air.

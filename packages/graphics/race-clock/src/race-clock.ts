@@ -3,13 +3,15 @@
  * laps and the optional flag band. This file owns the OGraf lifecycle (load, play,
  * update, stop, dispose) and only wires the pieces together; the rules live in named
  * modules: raceClockModel (data), raceClockView (the DOM, changed in place, never
- * rebuilt), playSteps (the OGraf step rule), clockTicker (the frame loop),
- * raceClockAnimations (GSAP timelines from the theme's motion tokens) and themeFonts.
+ * rebuilt), playSteps (the OGraf step rule), clockTicker (the frame loop) and
+ * raceClockAnimations (GSAP timelines from the theme's motion tokens). The wait for the
+ * theme's face before the first draw is the theme's own (`@bajaovrlay/theme/fonts`).
  *
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
 import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
+import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
 import { type ClockTicker, createClockTicker } from './clockTicker.js';
@@ -54,7 +56,6 @@ import {
   writeClockTimeAt,
   writeSessionCaptionAndLaps,
 } from './raceClockView.js';
-import { waitForThemeFontsToBeReady } from './themeFonts.js';
 
 /** Must match "stepCount" in race-clock.ograf.json: play shows the clock, stop hides it. */
 const raceClockStepCount = 1;
@@ -114,7 +115,9 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     // What could go wrong: a renderer calling load on an element not yet in the page
     // waits here until it is added, because Lit renders only connected elements.
     await this.updateComplete;
-    await waitForThemeFontsToBeReady();
+    // The element itself is where the face's token is read: custom properties reach
+    // inside the shadow root, so the wait follows the theme on the page.
+    await waitForThemeFontsToBeReady(this);
 
     // A dispose that came while load was waiting must win; going on would bring a
     // disposed graphic back to life.

@@ -18,6 +18,9 @@
  *   - The band toggle animates the card's height between the two heights it is given
  *     and leaves no inline height behind once it ends, so the styles own the height
  *     again.
+ *   - The band toggle runs on `--ease-out` whether the band comes on or goes, like the
+ *     flag crossfade (the design's motion.md: a flag change settles, it is not a piece
+ *     leaving on `--ease-in`).
  *   - With skipAnimation, a timeline jumps straight to its end and the promise
  *     resolves at once, as the OGraf spec asks.
  *   - A timeline that reached its end, by skipAnimation or by playing, is killed, so
@@ -29,6 +32,7 @@
  *     a real browser.
  *   - Reading and parsing the tokens; packages/theme tests readMotionTokens.
  */
+import { gsapEaseOfToken } from '@bajaovrlay/theme/motion';
 import { gsap } from 'gsap';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
@@ -179,6 +183,47 @@ describe('the flag-band toggle', () => {
       'half way the card must be between the two heights',
     ).toBeGreaterThan(cardHeightWithoutBandPx);
     expect(inlineHeightAfterTheEnd, 'the toggle must leave no inline height behind').toBe('');
+  });
+
+  const bandToggleDirections = [
+    // The band coming on: the card grows. An entry, so --ease-out is the obvious curve.
+    {
+      name: 'uses --ease-out when the band comes on',
+      toggle: {
+        heightBeforePx: cardHeightWithoutBandPx,
+        heightAfterPx: cardHeightWithBandPx,
+        isShowing: true,
+      },
+    },
+    // The band going: the card shrinks. Still --ease-out, not the exit curve --ease-in:
+    // motion.md gives every flag change --ease-out, and a card that accelerated away
+    // would read as the clock leaving.
+    {
+      name: 'uses --ease-out when the band goes too, as the design gives every flag change',
+      toggle: {
+        heightBeforePx: cardHeightWithBandPx,
+        heightAfterPx: cardHeightWithoutBandPx,
+        isShowing: false,
+      },
+    },
+  ];
+
+  it.each(bandToggleDirections)('$name', ({ toggle }) => {
+    // Arrange: the tokens on :root, the elements, and the GSAP name of the --ease-out curve.
+    placeArdosiaMotionTokensOnTheRoot();
+    const animatedElements = createAnimatedElementsInAnEmptyPage();
+    const easeOutName = gsapEaseOfToken(ardosiaMotionTokenDeclarations['--ease-out'] ?? '');
+
+    // Act: build the toggle and read the ease of each tween in it (the height and the band).
+    const timeline = buildFlagBandToggleTimeline(animatedElements, toggle);
+    const easesOfTheTweens = timeline.getChildren().map((tween) => tween.vars.ease);
+    timeline.kill();
+
+    // Assert: both tweens run on the --ease-out curve.
+    expect(easesOfTheTweens, 'the height and the band must both run on --ease-out').toEqual([
+      easeOutName,
+      easeOutName,
+    ]);
   });
 });
 

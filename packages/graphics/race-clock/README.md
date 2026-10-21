@@ -6,7 +6,7 @@ race time, and the optional flag band. `race-clock.ograf.json` is what a rendere
 `main` points at the default export of `src/race-clock.ts` (a Lit element), which only wires
 the pure modules beside it: data model, time (the sum, its H:MM:SS text — shared with the
 control page's session card — and the server-aligned "now" it counts with, never `Date.now()`,
-are `@bajaovrlay/shared/clock`), frame loop, GSAP animations, `themeFonts.ts`, `ptBR.ts`.
+are `@bajaovrlay/shared/clock`), frame loop, GSAP animations, `ptBR.ts`.
 Lifecycle: `load` once with complete data; `playAction` animates in, `stopAction` out;
 `updateAction` is accepted any time after load, on air or off, and refused only before it;
 every call answers a status code, never throws. Two fields are optional: `lapsCompletedByLeader`
@@ -15,7 +15,8 @@ body only, 40 px lower; switched on air, the card grows or shrinks over `--motio
 The look comes from the theme alone (`packages/theme`): every colour, size, corner and duration
 is a `var(--token)` of `ardosia/tokens.css` with no fallback, the motion from `readMotionTokens`,
 the face Bebas Neue registered on the page by the theme's `fonts.css` (the graphic ships no font
-and only awaits `document.fonts.ready`), and the logo imported from `@bajaovrlay/theme/brand/`
+and only awaits it through the theme's `waitForThemeFontsToBeReady`, `@bajaovrlay/theme/fonts`),
+and the logo imported from `@bajaovrlay/theme/brand/`
 so Vite bundles a copy into `dist/assets/`. `preview.html` imports the same theme files.
 Preview: `pnpm --filter @bajaovrlay/race-clock dev`, then http://localhost:5175/preview.html
 (add `?data=<url-encoded JSON>`). Unit tests: `pnpm --filter @bajaovrlay/race-clock test`;

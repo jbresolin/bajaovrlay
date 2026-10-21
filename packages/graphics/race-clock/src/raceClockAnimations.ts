@@ -78,8 +78,10 @@ export function buildFlagChangeTimeline(elements: RaceClockAnimatedElements): Ra
 /**
  * Builds the paused band-toggle timeline: the card's height goes from the height it had
  * to the one the styles now give it while the band fades in or out, both over the flag
- * change's duration. The inline height and opacity are cleared at the end (`clearProps`),
- * so the styles own them again once the switch has settled.
+ * change's duration and with the flag change's ease, `--ease-out`, whichever way the
+ * band goes (the design's motion.md: a flag change settles, it never accelerates away
+ * like a piece leaving). The inline height and opacity are cleared at the end
+ * (`clearProps`), so the styles own them again once the switch has settled.
  */
 export function buildFlagBandToggleTimeline(
   elements: RaceClockAnimatedElements,
@@ -87,7 +89,7 @@ export function buildFlagBandToggleTimeline(
 ): RaceClockTimeline {
   const motion = readMotionTokens(elements.panel);
   const durationInSeconds = motion.flagMs / 1000;
-  const ease = gsapEaseOfToken(toggle.isShowing ? motion.easeOut : motion.easeIn);
+  const ease = gsapEaseOfToken(motion.easeOut);
   const timeline = gsap.timeline({ paused: true });
   timeline.fromTo(
     elements.panel,

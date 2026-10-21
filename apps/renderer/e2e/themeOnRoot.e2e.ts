@@ -15,12 +15,16 @@
  *     logged no "theme not loaded" error, and every /theme/ file the page asked for
  *     (the tokens and the font CSS among them) answered 200.
  *   - The Bebas Neue face is registered on the page and loads from /theme/fonts/.
+ *   - When `/theme/ardosia/tokens.css` answers 404 (routed so inside the page, before it
+ *     opens), the renderer logs the error line "theme not loaded on :root", naming the
+ *     token it checked and the file's address, and still builds its layers: nothing on
+ *     air is blanked by a missing stylesheet.
  *
  * What these tests deliberately do not cover:
  *   - The server's headers and refusals for /theme/; the server's themeFiles.test.ts.
  *   - What a graphic draws with the tokens; each graphic's own screenshot tests.
- *   - A page whose stylesheet fails to load; src/themeOnRoot.test.ts covers the check
- *     and the log line is the only thing the renderer does about it.
+ *   - What an unstyled graphic looks like on a page without the theme: the log line is
+ *     the only thing the renderer does about it (src/themeOnRoot.test.ts has the check).
  */
 import { expect, type Page, test } from '@playwright/test';
 
@@ -30,6 +34,18 @@ import { createEnduroInstance, enduroInstanceId } from './instancesOnTheFakeServ
 import { collectRendererLogLines } from './rendererLogLines.js';
 
 const bebasNeueFontSpec = "28px 'Bebas Neue'";
+const themeTokensAddress = '/theme/ardosia/tokens.css';
+const themeNotLoadedMessage = 'theme not loaded on :root';
+
+/**
+ * Makes the page's request for the theme's tokens answer 404, as when the server has no
+ * packages/theme folder beside it. Call it before `page.goto`, like the stand-in server.
+ */
+async function makeThemeTokensAnswer404(page: Page): Promise<void> {
+  await page.route(`**${themeTokensAddress}`, (route) =>
+    route.fulfill({ status: 404, contentType: 'text/plain', body: 'not found' }),
+  );
+}
 
 /** One answer to a request for a theme file: the path asked for and the status answered. */
 type ThemeFileAnswer = { path: string; status: number };
@@ -81,7 +97,7 @@ test.describe('the theme on the renderer page', () => {
       themeTokenAtLoad,
     );
     expect(
-      logLines.filter((line) => line.message === 'theme not loaded on :root'),
+      logLines.filter((line) => line.message === themeNotLoadedMessage),
       'the renderer must not complain about the theme when it is loaded',
     ).toEqual([]);
     expect(themeFileAnswers, 'the tokens and the font CSS must have been fetched').toEqual(
@@ -132,5 +148,43 @@ test.describe('the theme on the renderer page', () => {
       path: '/theme/fonts/bebas-neue/bebas-neue-latin-400-normal.woff2',
       status: 200,
     });
+  });
+
+  test('logs "theme not loaded on :root" when the tokens answer 404, and still builds its layers', async ({
+    page,
+  }) => {
+    // Arrange: the renderer's log kept, the tokens file answering 404 inside the page,
+    // and a stand-in server with nothing on air.
+    const logLines = collectRendererLogLines(page);
+    await makeThemeTokensAnswer404(page);
+    const fakeServer = await startFakeServerForPage(page, { instancesOnAir: [] });
+
+    // Act: open the page; it checks :root at start, then hears the hello and builds the
+    // layers. Then the operator takes the clock, as on a normal day.
+    await openRendererAndWaitForItsLayers(page);
+    fakeServer.sendInstances([createEnduroInstance('green')]);
+
+    // Assert: the error line names the token checked and the file to look for, and the
+    // page went on: the layers are there and the clock was loaded on one of them, with
+    // no token to see.
+    expect(
+      logLines.filter((line) => line.message === themeNotLoadedMessage),
+      'the renderer must log one error line naming the token checked and the file address',
+    ).toEqual([
+      expect.objectContaining({
+        level: 'error',
+        tokenChecked: '--panel-base',
+        themeAddress: themeTokensAddress,
+      }),
+    ]);
+    await expect(
+      page.locator('[data-layer-id]'),
+      'every layer of the hello must still be built without the theme',
+    ).toHaveCount(4);
+    await expect
+      .poll(() => readThemeTokenAtEachLoad(page, enduroInstanceId), {
+        message: 'the clock must still be loaded on its layer without the theme',
+      })
+      .toEqual(['']);
   });
 });

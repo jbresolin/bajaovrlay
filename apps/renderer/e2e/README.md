@@ -9,7 +9,9 @@ Browser tests of the renderer page (Playwright, Chromium). Start at `lifecycle.e
   `/api/v1/state` and must name its own role there.
 - `themeOnRoot` — the theme (packages/theme, from the real server at `/theme/` through the
   dev server's proxy) is on :root and its face registered before the first graphic loads;
-  the fake graphic notes the token it saw at `load` (`themeTokenAtLoad`).
+  the fake graphic notes the token it saw at `load` (`themeTokenAtLoad`). Its last test
+  routes the tokens file to a 404 inside the page: the renderer logs "theme not loaded on
+  :root" and still builds its layers (nothing is blanked).
 - `raceClockOnAir.e2e.ts` — the one file that drives the REAL server's state (`realServer.ts`,
   port 5185) and the built race clock; it holds the screenshot baseline. `themeOnRoot` reads
   the real server's `/theme/` files too, through the proxy, but sends it no command.

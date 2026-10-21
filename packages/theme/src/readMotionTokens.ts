@@ -42,6 +42,28 @@ export type MotionTokens = {
 export const fallbackEase = 'linear';
 
 /**
+ * The CSS custom property each field of MotionTokens is read from. `readMotionTokens`
+ * reads through this very list, and motionTokensDeclaredInTheme.test.ts checks every
+ * name here is declared in ardosia/tokens.css, so a token read by a graphic but missing
+ * from the theme (which would silently animate at 0 ms) is caught by a test, not on air.
+ */
+export const motionTokenNames: Record<keyof MotionTokens, string> = {
+  inMs: '--motion-in',
+  outMs: '--motion-out',
+  rowStaggerMs: '--motion-row-stagger',
+  leadMs: '--motion-lead',
+  swapMs: '--motion-swap',
+  flagMs: '--motion-flag',
+  stripPageMs: '--motion-strip-page',
+  stripHoldMs: '--motion-strip-hold',
+  cueHoldMs: '--motion-cue-hold',
+  inOffsetPx: '--motion-in-offset',
+  easeOut: '--ease-out',
+  easeIn: '--ease-in',
+  easeInOut: '--ease-in-out',
+};
+
+/**
  * Reads every motion token from the computed style of `element` (custom properties
  * reach inside a shadow root, so a graphic passes itself). Numbers are milliseconds
  * and pixels; a token that is missing or not a number reads as 0.
@@ -55,19 +77,19 @@ export function readMotionTokens(element: Element): MotionTokens {
   }
 
   return {
-    inMs: readDurationInMilliseconds(readToken('--motion-in')),
-    outMs: readDurationInMilliseconds(readToken('--motion-out')),
-    rowStaggerMs: readDurationInMilliseconds(readToken('--motion-row-stagger')),
-    leadMs: readDurationInMilliseconds(readToken('--motion-lead')),
-    swapMs: readDurationInMilliseconds(readToken('--motion-swap')),
-    flagMs: readDurationInMilliseconds(readToken('--motion-flag')),
-    stripPageMs: readDurationInMilliseconds(readToken('--motion-strip-page')),
-    stripHoldMs: readDurationInMilliseconds(readToken('--motion-strip-hold')),
-    cueHoldMs: readDurationInMilliseconds(readToken('--motion-cue-hold')),
-    inOffsetPx: readLengthInPixels(readToken('--motion-in-offset')),
-    easeOut: readEase(readToken('--ease-out')),
-    easeIn: readEase(readToken('--ease-in')),
-    easeInOut: readEase(readToken('--ease-in-out')),
+    inMs: readDurationInMilliseconds(readToken(motionTokenNames.inMs)),
+    outMs: readDurationInMilliseconds(readToken(motionTokenNames.outMs)),
+    rowStaggerMs: readDurationInMilliseconds(readToken(motionTokenNames.rowStaggerMs)),
+    leadMs: readDurationInMilliseconds(readToken(motionTokenNames.leadMs)),
+    swapMs: readDurationInMilliseconds(readToken(motionTokenNames.swapMs)),
+    flagMs: readDurationInMilliseconds(readToken(motionTokenNames.flagMs)),
+    stripPageMs: readDurationInMilliseconds(readToken(motionTokenNames.stripPageMs)),
+    stripHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.stripHoldMs)),
+    cueHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.cueHoldMs)),
+    inOffsetPx: readLengthInPixels(readToken(motionTokenNames.inOffsetPx)),
+    easeOut: readEase(readToken(motionTokenNames.easeOut)),
+    easeIn: readEase(readToken(motionTokenNames.easeIn)),
+    easeInOut: readEase(readToken(motionTokenNames.easeInOut)),
   };
 }
 

@@ -7,21 +7,31 @@
  *   graphic as a CSS custom property (`var(--panel-base)`). That only stays true if no
  *   one writes a colour or a size into a graphic again, so this test is the guard: it
  *   reads every source file of every graphic under packages/graphics/<package>/src and fails,
- *   naming file and line, when it finds a hex colour or a `font-size` in pixels.
+ *   naming file and line, when it finds a colour (`#1f2937`, `rgb(...)`, `hsl(...)`) or a
+ *   font size in pixels (`font-size: 24px`, or the `font:` shorthand with a px size).
  *
  * What these tests prove:
- *   - No source file of any graphic holds a hex colour (`#1f2937`, `#fff`) or a
- *     `font-size:` written in px, except on a comment line and except the lines of the
- *     allowlist below (meant to stay empty). A failure names each file and line.
- *   - The search itself works: it reports the right lines of a sample text, leaves a
- *     comment line alone, and it really went through the graphics' sources (it saw the
- *     race clock's styles file and left its tests out).
+ *   - No source file of any graphic holds a hex colour, an `rgb()` / `rgba()` /
+ *     `hsl()` / `hsla()` colour, a `font-size:` in px or a `font:` shorthand with a px
+ *     size, outside comments and outside the lines of the allowlist below (meant to stay
+ *     empty). A failure names each file and line.
+ *   - The search itself works: it reports the right lines of a sample text, with their
+ *     numbers; a value inside a comment (a `//` after code, a block comment over several
+ *     lines) is not reported, while a value in the code before a `//` is; and it
+ *     really went through the graphics' sources (it saw the race clock's styles file and
+ *     left its tests out).
  *
  * What these tests deliberately do not cover:
- *   - Colours written another way (`rgb(...)`, a named colour) or sizes in rem; the
- *     tokens use hex and px, and a reviewer catches the rest.
+ *   - Named colours (`white`, `red`) and sizes in rem or em; the tokens use hex, rgb and
+ *     px, and a reviewer catches the rest.
  *   - Tests, test support and the vendored OGraf schema of a graphic: they may spell out
  *     expected values, and the schema is a copy of a published file.
+ *   - `preview.html` and the styles of the preview page, deliberately: the guard reads
+ *     `src/` only, and the preview page's own chrome (the backdrop that stands in for the
+ *     video, the data form) is not on air and may name colours and sizes of its own. The
+ *     graphic the preview page shows is drawn by the same `src/` the guard reads.
+ *   - A `//` inside a string (a URL, `https://...`): the rest of that line is treated as a
+ *     comment and not searched. The graphics' sources hold no such line today.
  *   - The page: this file runs in plain Node (the pragma on line 1) since it reads files
  *     and draws nothing; under jsdom `import.meta.url` is not a file address.
  */
@@ -36,8 +46,26 @@ const graphicsFolder = fileURLToPath(new URL('../../graphics/', import.meta.url)
 // A `#` followed by three to eight hex digits and then nothing that could make it a
 // longer word, so `#1f2937` and `#fff` are found and `#stage` (an id) is not.
 const hexColourPattern = /#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z_-])/;
+// `rgb(20 25 48 / 0.84)`, `rgba(0, 0, 0, 0.5)`, `hsl(210 40% 20%)`, `hsla(...)`: the
+// whole call, so the failure shows the colour as written.
+const functionalColourPattern = /\b(?:rgba?|hsla?)\([^)]*\)/;
 // `font-size: 24px`, with or without the space; a token (`var(--size-title)`) has no px.
 const pixelFontSizePattern = /font-size:\s*\d+(\.\d+)?px/;
+// The `font:` shorthand with a px size anywhere in its value: `font: 700 24px/1 sans-serif`.
+// `\b` keeps `font-size:` and `font-family:` from matching here (they have no colon
+// right after "font").
+const pixelFontShorthandPattern = /\bfont:[^;`]*?\d+(\.\d+)?px/;
+
+const patternsOfHardCodedValues = [
+  hexColourPattern,
+  functionalColourPattern,
+  pixelFontSizePattern,
+  pixelFontShorthandPattern,
+];
+
+// A block comment (`/* ... */`, over any number of lines) or a line comment (`//` to the
+// end of its line). A colour may be named in either as an example or a note.
+const commentPattern = /\/\*[\s\S]*?\*\/|\/\/[^\n]*/g;
 
 /**
  * Lines allowed to hold a value, as (file path from packages/graphics, exact line text)
@@ -49,12 +77,12 @@ const allowedHardCodedValues: Array<{ filePath: string; lineText: string }> = []
 /** One place where a hard-coded value was found. */
 type HardCodedValueFound = { filePath: string; lineNumber: number; value: string };
 
-/** Answers whether a line is a comment, where a colour may be named as an example. */
-function isCommentLine(line: string): boolean {
-  const trimmedLine = line.trimStart();
-  return (
-    trimmedLine.startsWith('//') || trimmedLine.startsWith('/*') || trimmedLine.startsWith('*')
-  );
+/**
+ * Blanks every comment of a source text, keeping its newlines, so the text that is left
+ * has the same line numbers as the file and a value inside a comment is never seen.
+ */
+function blankOutComments(text: string): string {
+  return text.replaceAll(commentPattern, (comment) => comment.replaceAll(/[^\n]/g, ' '));
 }
 
 /** Answers whether a file is a test, test support or the vendored OGraf schema. */
@@ -106,22 +134,22 @@ function listSourceFilesOfEveryGraphic(): string[] {
   return sourceFilePaths.sort();
 }
 
-/** Lists every line of a file's text that holds a hex colour or a px font size. */
+/**
+ * Lists every line of a file's text that holds a hard-coded value, comments left out.
+ * A line with two kinds of value is reported once per kind, in the order of the patterns.
+ */
 function findHardCodedValuesInText(filePath: string, text: string): HardCodedValueFound[] {
   const valuesFound: HardCodedValueFound[] = [];
-  text.split('\n').forEach((line, lineIndex) => {
-    if (isCommentLine(line)) {
-      return;
-    }
-    const hexColour = hexColourPattern.exec(line);
-    if (hexColour !== null) {
-      valuesFound.push({ filePath, lineNumber: lineIndex + 1, value: hexColour[0] });
-    }
-    const pixelFontSize = pixelFontSizePattern.exec(line);
-    if (pixelFontSize !== null) {
-      valuesFound.push({ filePath, lineNumber: lineIndex + 1, value: pixelFontSize[0] });
-    }
-  });
+  blankOutComments(text)
+    .split('\n')
+    .forEach((line, lineIndex) => {
+      for (const pattern of patternsOfHardCodedValues) {
+        const valueMatch = pattern.exec(line);
+        if (valueMatch !== null) {
+          valuesFound.push({ filePath, lineNumber: lineIndex + 1, value: valueMatch[0] });
+        }
+      }
+    });
   return valuesFound;
 }
 
@@ -138,53 +166,117 @@ function describeHardCodedValueFound(found: HardCodedValueFound): string {
   return `packages/graphics/${found.filePath}:${found.lineNumber} — ${found.value}`;
 }
 
-describe('the search for hard-coded values', () => {
-  it('reports the file, the line and the value for each line that has one', () => {
-    // Arrange: a styles file as someone might write it: a colour on line 3, a px font
-    // size on line 5, and a colour named on a comment line, which is allowed.
-    const textOfAStylesFileWithValues = [
+const sampleStylesFilePath = 'positions-tower/src/positionsTowerStyles.ts';
+
+/** One sample text and what the search must report for it, as `line — value` pairs. */
+type SearchScenario = { name: string; lines: string[]; expectedFindings: string[] };
+
+const searchScenarios: SearchScenario[] = [
+  // The first catch the guard was written for: a hex colour and a px font-size.
+  {
+    name: 'reports a hex colour and a px font-size with their line numbers',
+    lines: [
       'export const towerStyles = css`',
       '  .row {',
       '    background: #1f2937;',
       '    color: var(--text);',
       '    font-size: 28px;',
-      '    /* the design used #4ade80 here before the token existed */',
       '  }',
       '`;',
-    ].join('\n');
-
-    // Act: search it.
-    const valuesFound = findHardCodedValuesInText(
-      'positions-tower/src/positionsTowerStyles.ts',
-      textOfAStylesFileWithValues,
-    );
-
-    // Assert: the colour and the font size are reported, the comment line is not.
-    expect(
-      valuesFound.map(describeHardCodedValueFound),
-      'each line holding a hex colour or a px font size must be reported with its file and line',
-    ).toEqual([
-      'packages/graphics/positions-tower/src/positionsTowerStyles.ts:3 — #1f2937',
-      'packages/graphics/positions-tower/src/positionsTowerStyles.ts:5 — font-size: 28px',
-    ]);
-  });
-
-  it('leaves an id selector and a font size from a token alone', () => {
-    // Arrange: lines that look close to a value but are not one.
-    const textWithoutValues = [
+    ],
+    expectedFindings: ['3 — #1f2937', '5 — font-size: 28px'],
+  },
+  // The `font:` shorthand hides a px size in the middle of its value; a reviewer skimming
+  // for `font-size` would miss it.
+  {
+    name: 'reports a font shorthand whose size is in px',
+    lines: ['  .caption {', '    font: 700 24px/1 sans-serif;', '  }'],
+    expectedFindings: ['2 — font: 700 24px'],
+  },
+  // A colour written as a function, in each of the four forms CSS has.
+  {
+    name: 'reports rgb, rgba, hsl and hsla colours',
+    lines: [
+      '    background: rgb(20 25 48 / 0.84);',
+      '    border-color: rgba(255, 255, 255, 0.5);',
+      '    color: hsl(210 40% 20%);',
+      '    outline-color: hsla(210, 40%, 20%, 0.5);',
+    ],
+    expectedFindings: [
+      '1 — rgb(20 25 48 / 0.84)',
+      '2 — rgba(255, 255, 255, 0.5)',
+      '3 — hsl(210 40% 20%)',
+      '4 — hsla(210, 40%, 20%, 0.5)',
+    ],
+  },
+  // A colour named in a block comment that spans several lines is a note, not a value;
+  // the lines inside the comment do not start with `*`, so only real comment parsing
+  // leaves them alone.
+  {
+    name: 'leaves a value inside a block comment over several lines alone',
+    lines: [
+      '  /* the design used',
+      '     #4ade80 and rgb(0 0 0 / 0.5) here',
+      '     before the token existed */',
+      '  .laps { color: var(--text-laps); }',
+    ],
+    expectedFindings: [],
+  },
+  // A `//` comment after code may name a colour as a note on what the token replaced.
+  {
+    name: 'leaves a value in a // comment after code alone',
+    lines: ['  color: var(--text); // was #ffffff in the first draft'],
+    expectedFindings: [],
+  },
+  // The comment is blanked, the code before it is still searched, and the line number is
+  // the file's.
+  {
+    name: 'still reports a value in the code before a // comment',
+    lines: ['  .head {', '    background: #003b71; // the brand navy', '  }'],
+    expectedFindings: ['2 — #003b71'],
+  },
+  // A line that only starts with `*` (the body of a doc comment) was all the old guard
+  // skipped; the block comment as a whole is what must be left alone.
+  {
+    name: 'leaves a doc comment alone and keeps the line numbers of what follows it',
+    lines: [
+      '/**',
+      ' * The flag band: the design drew it in #dc2626.',
+      ' */',
+      'export const flagRed = css`',
+      '  .band { background: #dc2626; }',
+      '`;',
+    ],
+    expectedFindings: ['5 — #dc2626'],
+  },
+  // Things that look close to a value but are not one.
+  {
+    name: 'leaves an id selector, a token-based size and a test id alone',
+    lines: [
       '  #stage { position: absolute; }',
       '  font-size: var(--size-row);',
+      '  font-family: var(--font-display);',
       "  const testId = 'race-clock-panel';",
-    ].join('\n');
+    ],
+    expectedFindings: [],
+  },
+];
+
+describe('the search for hard-coded values', () => {
+  it.each(searchScenarios)('$name', ({ lines, expectedFindings }) => {
+    // Arrange: a styles file as someone might write it.
+    const textOfAStylesFile = lines.join('\n');
 
     // Act: search it.
-    const valuesFound = findHardCodedValuesInText(
-      'race-clock/src/raceClockStyles.ts',
-      textWithoutValues,
-    );
+    const valuesFound = findHardCodedValuesInText(sampleStylesFilePath, textOfAStylesFile);
 
-    // Assert: nothing is reported.
-    expect(valuesFound, 'an id selector and a token-based size must not be reported').toEqual([]);
+    // Assert: exactly the expected places are reported, each with its file and line.
+    expect(
+      valuesFound.map(describeHardCodedValueFound),
+      'each line holding a value outside a comment must be reported with its file and line, and nothing else',
+    ).toEqual(
+      expectedFindings.map((finding) => `packages/graphics/${sampleStylesFilePath}:${finding}`),
+    );
   });
 
   it('went through the sources of the graphics and left their tests out', () => {
@@ -205,7 +297,7 @@ describe('the search for hard-coded values', () => {
 });
 
 describe('packages/graphics/*/src', () => {
-  it('holds no hex colour and no px font size: every value comes from the theme tokens', () => {
+  it('holds no colour and no px font size of its own: every value comes from the theme tokens', () => {
     // Arrange: every source file of every graphic, with its text.
     const sourceFiles = listSourceFilesOfEveryGraphic().map((filePath) => ({
       filePath,
