@@ -46,7 +46,12 @@
 import { type BrowserContext, expect, type Locator, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
-import { openItemEditorWithNewGraphic, saveAndTakeTheItemInTheEditor } from './previewTestSteps';
+import {
+  chooseGraphicInTheItemEditor,
+  openItemEditorWithNewGraphic,
+  raceClockGraphicName,
+  saveAndTakeTheItemInTheEditor,
+} from './previewTestSteps';
 
 // The clock is taken at 12:34 and left running until the program output shows 12:38 or
 // later; only then is it stopped. So a clock that "stopped where it was" shows 12:38 or
@@ -224,6 +229,7 @@ test.describe('stopping a running race clock that is on air', () => {
     await openControlPageAndWaitUntilConnected(page);
     const itemEditor = findItemEditor(page);
     await page.getByRole('button', { name: '+ Item' }).click();
+    await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
     await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Enduro em andamento');
     await fillClockFormRunningFromTwelveThirtyFour(itemEditor);
     await itemEditor.getByRole('button', { name: 'Salvar item' }).click();

@@ -55,12 +55,35 @@ export function findRaceClockInMonitorFrame(
     .locator('[data-layer-id="clock"] > baja-graphic-race-clock');
 }
 
+/** The race clock, as the "Gráfico" dropdown of the item editor names it (its manifest's name). */
+export const raceClockGraphicName = 'Relógio de prova';
+
 /**
- * Prepares one race clock item through the item editor: "+ Item", the label, the session
- * name, "Salvar item"; then waits for the editor to close, which it does once the server
- * has accepted the new item. Everything else is left at the manifest's defaults, the
- * layer included (the clock's own layer, "Relógio") unless `layerName` names another one
- * as the "Camada" dropdown lists it.
+ * Chooses the graphic of a new item in the item editor's "Gráfico" dropdown. A new item
+ * opens on the first graphic the server lists, which is the positions tower now that the
+ * server has two (they come in the order of their package folders), so every step that
+ * makes a race clock names the clock here instead of trusting that order.
+ */
+export async function chooseGraphicInTheItemEditor(
+  page: Page,
+  itemEditor: Locator,
+  graphicName: string,
+): Promise<void> {
+  await itemEditor.getByRole('combobox', { name: 'Gráfico', exact: true }).click();
+  // The list of options is drawn outside the editor, at the end of the page.
+  await page.getByRole('option', { name: graphicName, exact: true }).click();
+  await expect(
+    itemEditor.getByRole('combobox', { name: 'Gráfico', exact: true }),
+    `the editor must show "${graphicName}" as the graphic of the new item`,
+  ).toContainText(graphicName);
+}
+
+/**
+ * Prepares one race clock item through the item editor: "+ Item", the race clock chosen
+ * as the graphic, the label, the session name, "Salvar item"; then waits for the editor
+ * to close, which it does once the server has accepted the new item. Everything else is
+ * left at the manifest's defaults, the layer included (the clock's own layer, "Relógio")
+ * unless `layerName` names another one as the "Camada" dropdown lists it.
  */
 export async function createRaceClockItemInTheEditor(
   page: Page,
@@ -72,6 +95,7 @@ export async function createRaceClockItemInTheEditor(
   // "Edição rápida" draws the same fields with the same labels, so everything is looked
   // up inside the editor.
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
+  await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
   if (layerName !== undefined) {
     await itemEditor.getByRole('combobox', { name: 'Camada', exact: true }).click();
     // The list of options is drawn outside the editor, at the end of the page.
@@ -101,15 +125,18 @@ export function findClockLayerRow(page: Page): Locator {
 
 /**
  * Opens the item editor for a new graphic from "Edição rápida" ("Novo gráfico…"), the way
- * an operator puts up something not prepared in the rundown, gives it the label, and
- * returns the editor so the test can fill the rest of the form.
+ * an operator puts up something not prepared in the rundown, chooses the graphic (the
+ * race clock unless `graphicName` names another, as the "Gráfico" dropdown lists it),
+ * gives it the label, and returns the editor so the test can fill the rest of the form.
  */
 export async function openItemEditorWithNewGraphic(
   page: Page,
   itemLabel: string,
+  graphicName: string = raceClockGraphicName,
 ): Promise<Locator> {
   await findCentreArea(page).getByRole('button', { name: 'Novo gráfico…' }).click();
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
+  await chooseGraphicInTheItemEditor(page, itemEditor, graphicName);
   await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
   return itemEditor;
 }

@@ -57,7 +57,12 @@ import {
   turnSourceOnWithItsSwitch,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
-import { openItemEditorWithNewGraphic, saveAndTakeTheItemInTheEditor } from './previewTestSteps';
+import {
+  chooseGraphicInTheItemEditor,
+  openItemEditorWithNewGraphic,
+  raceClockGraphicName,
+  saveAndTakeTheItemInTheEditor,
+} from './previewTestSteps';
 import { createRaceClockButtonInPanelShown, findQuickFireArea } from './quickFireTestSteps';
 
 /** Opens the control page and waits until it says it is connected to the server. */
@@ -88,6 +93,7 @@ test.describe('emptying the server state', () => {
     const quickEditArea = page.getByRole('region', { name: 'Programa e edição rápida' });
     await page.getByRole('button', { name: '+ Item' }).click();
     const itemEditor = page.getByRole('region', { name: 'Editor de item' });
+    await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
     await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
     await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro — Largada');
     await saveAndTakeTheItemInTheEditor(itemEditor);

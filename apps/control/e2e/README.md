@@ -1,6 +1,8 @@
 # apps/control/e2e
 
-Browser tests of the control page (Playwright, Chromium). Labels are the clock manifest's titles.
+Browser tests of the control page (Playwright, Chromium). Labels are the manifests' titles. The server lists two graphics
+(the positions tower first, by package folder), so every step that makes a race clock chooses "Relógio de prova" in "Gráfico"
+(`chooseGraphicInTheItemEditor` in `previewTestSteps.ts`) instead of trusting which graphic a new item opens on.
 
 - `takeAndClear.e2e.ts` (start here) — a page at `/render/` as OBS: "Novo gráfico…" + "Salvar e disparar" ("No ar"
   within 3 s), "Editar" + "Atualizar", reload, "Limpar"; with no OBS the layer stays "Carregando" (the monitor never reports).
@@ -28,6 +30,13 @@ Browser tests of the control page (Playwright, Chromium). Labels are the clock m
   first yellow (56,7 simulated minutes in, ~57 s at 60×), takes a correction of the session name ("Corrigir valor da fonte…") and
   loses it again, and shows "fonte atrasada" on its Camadas row with "Falha simulada" on, its data still on air (read from
   `GET /api/v1/state`).
+  `towerFollowsTheSimulator.e2e.ts` (BAJAOVRLAY-21/22, the brief's E2E, three tests; the monitor-frame finders and the box
+  measure in `towerInProgramMonitor.ts`): the simulator at 60×, "Novo gráfico…" with
+  "Torre de posições" opens with "Carros" already on "Fonte" (the manifest's suggestion), "Só os 20 primeiros", "Salvar e disparar":
+  20 rows in the "Programa" monitor (the rows inside the element's shadow root) and 60 cars on the `tower` layer; the rows swap
+  by themselves once the simulator's first 20 places change (waited on `GET /api/v1/state`, up to 60 s); "Editar" of its "Atalhos"
+  button, "Leiaute" "Detalhada", "Atualizar no ar": the same instance id, the "DIF." caption; a race clock taken too sits above the
+  tower in the same column (bounding boxes inside the frame, compared with each other only).
   A restart keeps the last data, marked stale: the harness cannot restart its server, so
   `apps/server/src/core/boot/startServerRestart.test.ts` proves it.
 
