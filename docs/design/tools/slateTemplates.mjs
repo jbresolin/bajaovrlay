@@ -3,7 +3,9 @@
 // (placarbaja.juansalles.com.br): the same graphics, the same elements in the same order, so
 // a direction is its tokens.css, its styles.css and a few numbers (rows, cars per strip
 // page), never its own copy of this file. slateSheets.mjs draws the reference sheets with
-// these builders and slatePages.mjs assembles the pages a generatePages.mjs writes.
+// these builders and slatePages.mjs assembles the pages a generatePages.mjs writes. The
+// catalogue of pass 2 (BAJAOVRLAY-43) builds on these in slateNotices.mjs, slateCards.mjs,
+// slateBoards.mjs and slateSteps.mjs.
 import {
   escapeHtml,
   flagOrder,
@@ -17,7 +19,8 @@ import {
 
 export { flagOrder, flagStateLabels, flagWords, largeIcon, sample, statusShapeWords };
 
-const logoPath = '../../../brand/logo-branca.png';
+/** The event logo every head shows, relative to a direction's page. */
+export const logoPath = '../../../brand/logo-branca.png';
 
 export function pageShell(direction, title, bodyHtml, script = '') {
   return `<!doctype html>
@@ -253,13 +256,18 @@ ${cars.map(renderStripCar).join('\n')}
   </ol>`;
 }
 
+/** The strip's clock block (time and flag pill), shared with the message ticker. */
+export function renderStripClock(session) {
+  return `  <div class="card lower-strip__clock">
+    <span class="lower-strip__time">${session.timeRemaining}</span>
+    ${renderFlagPill(session.flag, session.flagLabel, 'lower-strip__flag')}
+  </div>`;
+}
+
 export function renderLowerStrip(cars, session, pageNumber, pageCount, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="lower-strip"' : '';
   return `<section class="lower-strip"${root}>
-  <div class="card lower-strip__clock">
-    <span class="lower-strip__time">${session.timeRemaining}</span>
-    ${renderFlagPill(session.flag, session.flagLabel, 'lower-strip__flag')}
-  </div>
+${renderStripClock(session)}
   <div class="lower-strip__pages">
 ${renderStripPage(cars)}
   </div>

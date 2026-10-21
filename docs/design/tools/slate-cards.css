@@ -1,0 +1,396 @@
+/*
+ * The cards of the catalogue (BAJAOVRLAY-43, pass 2): the notice slot under the bug (fastest
+ * lap, penalty), the team card, the battle card, the QR card, the countdown card, the message
+ * ticker and the corner sponsor roll. Structure only, against the direction's tokens, like
+ * slate-base.css, which a direction's styles.css imports first; the boards that take the
+ * whole stage are in slate-boards.css.
+ */
+
+/* ---- The notice slot: top-left under the bug, the clock's width, one notice at a time. A
+   notice is one card like the clock's, a denser head over a body; it never carries a coloured
+   band, so it cannot be read as the clock's flag band. */
+.notice {
+  position: absolute;
+  top: var(--notice-top);
+  left: var(--bug-left);
+  width: var(--notice-width);
+  overflow: hidden;
+}
+.notice__head {
+  height: var(--notice-head-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  background: var(--panel-head);
+}
+.notice__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: var(--glyph-nudge) var(--space-3) 0;
+  border-radius: var(--radius-chip);
+  font-size: var(--size-flag);
+  letter-spacing: var(--tracking-flag);
+  line-height: 1;
+  white-space: nowrap;
+}
+/* The fastest lap's badge is the one green field besides the leader chip: white on brand
+   green is 3.83:1, enough for its 26 px caps and nothing smaller. */
+.notice__badge--best {
+  background: var(--leader-background);
+  color: var(--leader-text);
+}
+/* A penalty's badge has no field: the warning shape and the word carry it. */
+.notice__badge--warning {
+  padding-left: 0;
+  color: var(--text);
+}
+.notice__badge .status-icon {
+  width: 24px;
+  height: 24px;
+  margin-top: calc(-1 * var(--glyph-nudge));
+}
+.notice__row {
+  height: var(--notice-row-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  font-size: var(--size-row);
+  line-height: 1;
+  white-space: nowrap;
+}
+.notice__team {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+.notice__team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+.notice__school {
+  flex: none;
+  font-size: var(--size-caption);
+  color: var(--text-muted);
+}
+.notice__time {
+  flex: none;
+  font-size: var(--size-name);
+  letter-spacing: var(--tracking-time);
+  color: var(--text-laps);
+  padding-top: var(--glyph-nudge);
+}
+/* The reason row wraps: a long reason ("Conduta antidesportiva") pushes the penalty cell to
+   a second line, right-aligned, rather than being cut short. */
+.notice__row--reason {
+  height: auto;
+  min-height: var(--notice-row-height);
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+  box-sizing: border-box;
+}
+.notice__reason {
+  flex: 1 0 auto;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+.notice__penalty {
+  margin-left: auto;
+}
+/* The penalty itself, when there is one: a brand-navy cell with white text. Navy is a brand
+   colour, not a flag colour, and it is the one place a notice uses a field. */
+.notice__penalty {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: var(--chip-height);
+  padding: var(--glyph-nudge) var(--space-3) 0;
+  border-radius: var(--radius-chip);
+  background: var(--brand-navy);
+  color: #ffffff;
+}
+
+/* ---- Team card: where the lower third goes, a card with the big chip as its anchor. The
+   photo cell and the logo cell exist only when the team has them, so a card without media is
+   simply shorter, never a card with empty frames. */
+.team-card {
+  position: absolute;
+  left: 96px;
+  bottom: 140px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3);
+}
+.team-card__photo {
+  flex: none;
+  width: var(--team-photo-width);
+  height: var(--team-photo-height);
+  border-radius: var(--radius-chip);
+  background-position: center;
+  background-size: cover;
+}
+.team-card__identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) 0 var(--space-2);
+  min-width: 0;
+}
+.team-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.chip--large {
+  width: var(--chip-large-size);
+  height: var(--chip-large-size);
+  border-radius: var(--radius);
+  font-size: var(--size-chip-large);
+}
+.team-card__name {
+  font-size: var(--size-name);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.team-card__details {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding-left: calc(var(--chip-large-size) + var(--space-4));
+  font-size: var(--size-detail);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.team-card__city {
+  color: var(--text-muted);
+}
+.team-card__city::before {
+  content: '·';
+  margin-right: var(--space-3);
+}
+.team-card__logo {
+  flex: none;
+  width: var(--team-logo-size);
+  height: var(--team-logo-size);
+  display: grid;
+  place-items: center;
+}
+.team-card__logo .sponsor-mark {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Battle card: two cars for one place, bottom centre, the gap between them. The trend
+   (closing, opening, steady) is a word, a signed change and a shape, never only a colour or a
+   motion, so a still frame reads it. */
+.battle-card {
+  position: absolute;
+  left: 50%;
+  bottom: 140px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: stretch;
+  gap: var(--row-gap);
+}
+.battle-car {
+  height: var(--battle-height);
+  display: grid;
+  grid-template-columns: var(--column-pos) var(--chip-width) auto auto;
+  align-items: center;
+  column-gap: var(--space-3);
+  padding: 0 var(--space-4);
+  font-size: var(--size-strip);
+  line-height: 1;
+}
+.battle-car .chip {
+  font-size: var(--size-strip);
+}
+.battle-car__team {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+.battle-car__name {
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+.battle-car__school {
+  font-size: var(--size-caption);
+  color: var(--text-muted);
+}
+.battle-car__laps {
+  color: var(--text-laps);
+  padding-left: var(--space-3);
+  white-space: nowrap;
+}
+.battle-gap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: var(--battle-gap-width);
+  padding: 0 var(--space-4);
+}
+.battle-gap__value {
+  font-size: var(--size-name);
+  letter-spacing: var(--tracking-time);
+  line-height: 1;
+  padding-top: var(--glyph-nudge);
+}
+.battle-gap__trend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--size-flag);
+  letter-spacing: var(--tracking-caption);
+  line-height: 1;
+  white-space: nowrap;
+}
+.battle-gap__trend svg {
+  width: 24px;
+  height: 10px;
+  margin-top: calc(-1 * var(--glyph-nudge));
+}
+[data-trend='closing'] .battle-gap__trend {
+  color: var(--text-laps);
+}
+[data-trend='opening'] .battle-gap__trend {
+  color: var(--cue-down-text);
+}
+[data-trend='steady'] .battle-gap__trend {
+  color: var(--text-muted);
+}
+
+/* ---- QR card: the one light surface, so the code scans off a phone pointed at a screen. */
+.qr-card {
+  position: absolute;
+  left: 96px;
+  bottom: 140px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  background: var(--panel-light);
+  color: var(--text-on-light);
+}
+.qr-card__code {
+  flex: none;
+  width: var(--qr-size);
+  height: var(--qr-size);
+  display: block;
+}
+.qr-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) 0 var(--space-1);
+  white-space: nowrap;
+}
+.qr-card__call {
+  font-size: var(--size-title);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
+}
+.qr-card__url {
+  font-size: var(--size-detail);
+  letter-spacing: var(--tracking-caption);
+}
+
+/* ---- Countdown card: the race clock's card without the band; the session to come in the
+   head, the time to its start where the time remaining goes, the start time where the laps
+   go, in the text colour because it is not a count. */
+.countdown .race-clock__laps {
+  color: var(--text);
+}
+
+/* ---- Message ticker: the strip's bar with one message per page instead of six cars. A
+   label pill in the denser slate says what it is, and no chip, no yellow and no green appear,
+   so it can never be read as a standings page. */
+.message-ticker__pages {
+  display: flex;
+  gap: var(--row-gap);
+  min-width: 0;
+}
+.message-ticker__label {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+}
+.message-ticker__message {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-5);
+  font-size: var(--size-strip);
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Sponsor roll, corner: the bug's card with a sponsor cell (mark and name) under the
+   event word; the cell changes every few seconds (motion.md). */
+.sponsor-roll-corner__sponsor {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.sponsor-roll-corner__sponsor .sponsor-mark {
+  flex: none;
+  width: var(--sponsor-mark-small);
+  height: var(--sponsor-mark-small);
+}
+.sponsor-roll-corner__words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sponsor-mark {
+  display: block;
+  color: var(--text);
+}
+
+/* ---- On a reference sheet the cards sit in the flow, not at their on-air place */
+.sheet .notice,
+.sheet .battle-card,
+.sheet .team-card,
+.sheet .qr-card {
+  position: static;
+  transform: none;
+}
+.sheet__grid--notices {
+  display: grid;
+  grid-template-columns: repeat(3, var(--notice-width));
+  gap: var(--space-5);
+  align-items: start;
+}
+.sheet__grid--battle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+}

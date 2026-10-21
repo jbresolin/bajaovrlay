@@ -1,0 +1,51 @@
+// The notice slot (BAJAOVRLAY-43): the small transient cards under the sponsor bug, top-left,
+// one at a time: the fastest lap, and a penalty or an incident from race direction. Each is
+// one card like the clock's (a denser head, then rows) and never a coloured band, so a notice
+// cannot be read as the clock's flag band. slateCataloguePages.mjs places them and
+// slateCatalogueSheets.mjs shows every variant side by side.
+import { escapeHtml, warningIcon } from './slateVocabulary.mjs';
+
+function renderNoticeCar(car) {
+  return `<span class="chip">${car.carNumber}</span>
+    <span class="notice__team"><span class="notice__team-name">${escapeHtml(car.teamName)}</span><span class="notice__school">${escapeHtml(car.schoolName)}</span></span>`;
+}
+
+/** The fastest lap: a green "MELHOR VOLTA" badge, the car, the time in green, the lap. */
+export function renderFastestLap(fastestLap, { withRoot = true } = {}) {
+  const root = withRoot ? ' data-graphic="fastest-lap"' : '';
+  return `<section class="card notice fastest-lap"${root}>
+  <header class="notice__head">
+    <span class="notice__badge notice__badge--best">MELHOR VOLTA</span>
+    <span class="caption">VOLTA ${fastestLap.lap}</span>
+  </header>
+  <div class="notice__row">
+    ${renderNoticeCar(fastestLap)}
+    <span class="notice__time">${fastestLap.bestLapText}</span>
+  </div>
+</section>`;
+}
+
+const noticeKindWords = { penalty: 'PENALIDADE', incident: 'INCIDENTE' };
+
+/**
+ * A notice from race direction: the warning shape and the kind in the head, the car, then
+ * the reason with the penalty (optional) in a navy cell. No flag colour anywhere.
+ */
+export function renderPenaltyNotice(notice, { withRoot = true } = {}) {
+  const root = withRoot ? ' data-graphic="penalty-notice"' : '';
+  const penalty = notice.penalty
+    ? `\n    <span class="notice__penalty">${escapeHtml(notice.penalty)}</span>`
+    : '';
+  return `<section class="card notice penalty-notice"${root} data-notice="${notice.kind}">
+  <header class="notice__head">
+    <span class="notice__badge notice__badge--warning">${warningIcon}<span>${noticeKindWords[notice.kind]}</span></span>
+    <span class="caption">DIREÇÃO DE PROVA</span>
+  </header>
+  <div class="notice__row">
+    ${renderNoticeCar(notice)}
+  </div>
+  <div class="notice__row notice__row--reason">
+    <span class="notice__reason">${escapeHtml(notice.reason)}</span>${penalty}
+  </div>
+</section>`;
+}
