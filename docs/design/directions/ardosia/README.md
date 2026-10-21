@@ -50,6 +50,17 @@ checkered pill show the pattern alone: the word "QUADRICULADA" stays only as the
 accessible name. The strip's positions carry the ordinal sign ("1º", "13º"); the towers,
 where the position column is read as a column, do not.
 
+**Pass 2 (BAJAOVRLAY-43)** extended the direction to the rest of the §9 catalogue, as the spec
+for the build briefs: `catalogue.md` holds the layer plan, what can share the screen and each
+graphic's data needs; the table under "The catalogue" below lists the pages. The new pages
+come from the same generator through `../../tools/slateCataloguePages.mjs` (markup in
+`slateNotices.mjs`, `slateCards.mjs`, `slateBoards.mjs`, `slateSteps.mjs`, sheets in
+`slateCatalogueSheets.mjs`; structure in `slate-cards.css` and `slate-boards.css`, which
+`styles.css` imports after the base sheet), and the data they show was added to
+`sample-data.json` by `buildSampleData.mjs` (the full standings, a per-event table ranked from
+them, the brackets sample, and the typed fixtures of `sampleFixtures.mjs`: cities, notices, a
+schedule, messages, fictional sponsors).
+
 ## Legibility at 720p on a phone
 
 Sizes at 1080p, with the 720p equivalent in brackets: clock time 56 px (37); lower-third name
@@ -61,6 +72,14 @@ names in the detailed tower, the lower third's role and team line and the sponso
 caps have a tall shape that reads at 19 px on a 720p phone where a mixed-case face at the
 same size would not; the trade is that everything is caps, as on the scoreboard today. Pills
 are 34 px (23 at 720p) with 3 px gaps, so rows separate without lines.
+
+The catalogue keeps the same scale: the overall standings' rows are 40 px with 30 px text
+(the strip's size) and 26 px event points; the per-event table, the bracket's pills and the
+notices use the tower's 28 px; the battle card the strip's 30 px with a 44 px gap; the
+sessions board 44 px times and 34 px names; the podium 72 px positions and 44 px names; the
+countdown 56 px on the card, 160 px on the waiting screen and 96 px on the intermission
+board; the QR card 34 px and 26 px on its light surface. Nothing on air is under 22 px
+(`checkLayout.mjs` reports the smallest text of every page).
 
 ## Safe areas
 
@@ -76,28 +95,48 @@ Everything on air is inside the 90% title-safe box (x 96..1824, y 54..1026), che
 | Lower third                      | x 96.., bottom at y 940 (name pill 64, role pill 40), above the strip's room                |
 | Sponsor bug                      | x 96..428, y 54..178                                                                        |
 | Race clock without the flag band | x 1404..1824, y 54..206 (420 × 152)                                                         |
+| Team card                        | x 96..870, y 756..940 with photo and logo (774 × 184); x 96..450, y 810..940 without        |
+| Battle card                      | x 404..1516, y 863..940 (centred, 72 px pills)                                              |
+| Fastest lap                      | x 96..516, y 186..290 (the notice slot: 420 wide, 8 px under the bug)                       |
+| Penalty notice                   | x 96..516, y 186..350 (one line of reason and penalty; taller when the reason wraps)        |
+| Countdown card                   | x 1404..1824, y 54..206 (the clock without its band)                                        |
+| QR card                          | x 96..649, y 740..940                                                                       |
+| Message ticker                   | x 96..1824, y 954..1026 (the strip's bar)                                                   |
+| Sponsor roll, corner             | x 96..428, y 54..178 (the bug's card)                                                       |
+| Standings, overall               | x 96..1824, y 54..1018 (head 64, column head 32, 20 pills of 40)                            |
+| Standings, per event             | x 96..1824, y 54..898 (three columns of 20 pills of 34)                                     |
+| Bracket                          | x 96..1824, y 54..1026 (head 64, then a 900 px stage)                                       |
+| Podium                           | x 96..1824, y 54..1026 (the cards on the stage's baseline)                                  |
+| Sessions board                   | x 320..1600, y 204..876 (narrow board, nine slots of 64)                                    |
+| Intermission board               | x 320..1600, y 314..766                                                                     |
+| Countdown, full screen           | x 320..1600, y 330..750                                                                     |
+| Sponsor roll, full screen        | x 320..1600, y 260..820 (six tiles of 240)                                                  |
 
 ## Contrast
 
 Computed with `node docs/design/tools/contrastRatio.mjs`; translucent slate composited over
 `#E8EEF5` (bright sky, the worst backdrop):
 
-| Text             | On                         | Ratio   | Where                                                  |
-| ---------------- | -------------------------- | ------- | ------------------------------------------------------ |
-| `#E8ECF4` text   | slate at 84% over sky      | 9.34:1  | names, times, captions' neighbours                     |
-| `#AAB4C8` muted  | slate at 84% over sky      | 5.31:1  | captions, school names, page cell                      |
-| `#F4C42A` yellow | slate at 84% over sky      | 6.73:1  | position numbers                                       |
-| `#4ADE80` green  | slate at 84% over sky      | 6.35:1  | laps, clock laps                                       |
-| `#FFFFFF`        | `#386DB4` car chip         | 5.23:1  | car numbers                                            |
-| `#FFFFFF`        | `#009739` leader chip      | 3.83:1  | the leader's position, 28 px: large text only          |
-| `#E8ECF4` text   | head slate at 94% over sky | 12.64:1 | clock head, tower head                                 |
-| text at 55%      | slate at 84% over sky      | 3.59:1  | retired rows, 28 px: large text only, by design dimmed |
-| `#FFFFFF`        | flag pre `#5B6472`         | 5.98:1  | PRÉ-LARGADA                                            |
-| `#FFFFFF`        | flag green `#15803D`       | 5.02:1  | VERDE                                                  |
-| `#111111`        | flag yellow `#FFD600`      | 13.37:1 | AMARELA                                                |
-| `#FFFFFF`        | flag red `#DC2626`         | 4.83:1  | VERMELHA                                               |
-| `#F5F5F5`        | `#111111` word plate       | 17.32:1 | QUADRICULADA over the squares                          |
-| `#FFFFFF`        | flag finished `#1F2937`    | 14.68:1 | ENCERRADA                                              |
+| Text             | On                         | Ratio   | Where                                                                                             |
+| ---------------- | -------------------------- | ------- | ------------------------------------------------------------------------------------------------- |
+| `#E8ECF4` text   | slate at 84% over sky      | 9.34:1  | names, times, captions' neighbours                                                                |
+| `#AAB4C8` muted  | slate at 84% over sky      | 5.31:1  | captions, school names, page cell                                                                 |
+| `#F4C42A` yellow | slate at 84% over sky      | 6.73:1  | position numbers, podium positions                                                                |
+| `#4ADE80` green  | slate at 84% over sky      | 6.35:1  | laps, clock laps, points totals, the closing trend                                                |
+| `#7CB3F5` blue   | slate at 84% over sky      | 5.07:1  | the opening trend on the battle card                                                              |
+| `#FFFFFF`        | `#386DB4` car chip         | 5.23:1  | car numbers                                                                                       |
+| `#FFFFFF`        | `#009739` leader chip      | 3.83:1  | the leader's position, the winner's chip, the "MELHOR VOLTA" badge: 26 px and up, large text only |
+| `#FFFFFF`        | `#003B71` navy cell        | 11.27:1 | the penalty ("+30 SEGUNDOS")                                                                      |
+| `#111111`        | white at 96% over sky      | 18.77:1 | the QR card                                                                                       |
+| `#E8ECF4` text   | head slate at 94% over sky | 12.64:1 | clock head, tower head, board heads                                                               |
+| `#AAB4C8` muted  | head slate at 94% over sky | 7.18:1  | round names, column heads, the ticker's label                                                     |
+| text at 55%      | slate at 84% over sky      | 3.59:1  | retired rows and a bracket's losers, 28 px: large text only, by design dimmed                     |
+| `#FFFFFF`        | flag pre `#5B6472`         | 5.98:1  | PRÉ-LARGADA                                                                                       |
+| `#FFFFFF`        | flag green `#15803D`       | 5.02:1  | VERDE                                                                                             |
+| `#111111`        | flag yellow `#FFD600`      | 13.37:1 | AMARELA                                                                                           |
+| `#FFFFFF`        | flag red `#DC2626`         | 4.83:1  | VERMELHA                                                                                          |
+| `#F5F5F5`        | `#111111` word plate       | 17.32:1 | QUADRICULADA over the squares                                                                     |
+| `#FFFFFF`        | flag finished `#1F2937`    | 14.68:1 | ENCERRADA                                                                                         |
 
 ## Tower rows
 
@@ -133,22 +172,30 @@ for which every page of the 60-car field fits with whole names (measured in Chro
 widest page needs 1244 px of the 1392 available; 7 per page would need 1444). The clock
 block (time 44 px and the flag pill) never moves; the page cell at the right reads "1/10".
 
-## Extending to the §9 catalogue
+## The catalogue (pass 2)
 
-Everything is a slate pill or card with a blue chip where a car is named:
+Everything is a slate pill or card with a blue chip where a car is named, as in pass 1; the
+full-screen graphics are "boards" (a head card like the clock's, then pills like the towers'),
+the small transient ones are "notices" (one card in a slot under the bug). `catalogue.md`
+has the layer plan, the coexistence rules and the data needs; `motion.md` the in, out and
+steps.
 
-- **Team card**: a wide card, the head like the clock's (logo, team in caps), the car chip,
-  the school and the city in Barlow, a photo cell at the right.
-- **Battle card**: two pills facing each other with the gap in a yellow-text cell between.
-- **Podium**: three cards rising, 1º 2º 3º as yellow positions, the winner's chip green.
-- **Bracket**: pills on thin slate lines, the winner's chip green.
-- **Standings table**: the detailed tower's rows with a PONTOS column in green text.
-- **Intermission board**: a large centred card, not full-screen, so the footage stays.
-- **Sponsor roll**: the bug's card cycling sponsor names with the same 400 ms rise.
-- **Countdown**: the clock card without the flag band, the time at 56 px.
-- **Penalty notice**: a card with a red flag-set band and the car chip.
-- **Fastest lap**: a card with the lap time at 44 px and a green "MELHOR VOLTA" cell.
-- **QR card**: a light card (white at 96%) so the code scans; the one light surface.
+| Graphic              | Pages                                | Layer             | What it is                                                                                             |
+| -------------------- | ------------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------ |
+| Team card            | `team-card`, `team-card-sem-foto`    | lower-third       | The big chip, the team at 44 px, school and city; photo and logo cells only when they exist            |
+| Battle card          | `battle-card`, `sheet-battle`        | lower-third       | Two 72 px pills bottom-centre with the gap at 44 px and the trend (word, signed change, shape)         |
+| Standings, overall   | `standings`                          | fullscreen        | 20 rows of 40 px a page, one muted column per event, the total in green; three pages for 60 teams      |
+| Standings, per event | `standings-por-prova`                | fullscreen        | The whole field at once, three columns of 20 tower pills; ties share a rank                            |
+| Bracket              | `bracket-passo-1`, `-2`, `-3`        | fullscreen        | One column per round; "Next" reveals a round; the winner's chip green, the loser dimmed                |
+| Podium               | `podium-passo-1`, `-2`, `-3`         | fullscreen        | 2nd, 1st (taller), 3rd on one baseline; "Next" reveals 3rd, 2nd, 1st                                   |
+| Fastest lap          | `fastest-lap`, `combo-fastest-lap`   | notice (new)      | A 420 px card under the bug: green "MELHOR VOLTA" badge, the lap, the car, the time at 44 px           |
+| Penalty or incident  | `penalty-notice`, `sheet-notices`    | notice (new)      | The same card with a warning shape, the car, the reason and the penalty in a navy cell; no flag colour |
+| Countdown            | `countdown`, `countdown-tela-cheia`  | clock; fullscreen | The clock's card without the band; a narrow board with the count at 160 px                             |
+| Sessions board       | `sessions-board`                     | fullscreen        | A narrow board, one pill per slot with the state as a shape and a word                                 |
+| Intermission board   | `intermission-board`                 | fullscreen        | What is next with its count, the top five, a sponsor line                                              |
+| Sponsor roll         | `sponsor-roll`, `sponsor-roll-canto` | fullscreen; bug   | Six tiles a page; the bug's card with a sponsor cell                                                   |
+| QR card              | `qr-card`                            | lower-third       | The one light surface: the code, the call to action, the address                                       |
+| Message ticker       | `message-ticker`, `combo-ticker`     | ticker            | The strip's bar with an "AVISO" label and one message per page                                         |
 
 ## Type
 
@@ -160,6 +207,22 @@ and self-hosted (`../../fonts`). Urzeit, the scoreboard's face, is licensed to S
 available and cannot be bundled; once it is, it could set the session word in the clock head
 ("ENDURO DE RESISTÊNCIA") and the bug's "ENDURO", the two places the scoreboard uses it
 today, and nothing else.
+
+## Tokens added in pass 2
+
+All in `tokens.css` under "The catalogue", in the naming of the ones above. Colours:
+`--cue-down-text` (#7CB3F5, the "down" blue as text, since the chip blue is a field colour
+and fails as text on slate), `--panel-light` and `--text-on-light` (the QR card),
+`--bracket-line`. Geometry: `--notice-top`, `--notice-width`, `--notice-head-height`,
+`--notice-row-height` (the notice slot); `--chip-large-size`, `--size-chip-large` (the team
+card's and the podium's chip); `--team-photo-width`, `--team-photo-height`,
+`--team-logo-size`; `--battle-height`, `--battle-gap-width`; `--qr-size`; `--board-width`
+(the narrow boards), `--board-stage-height`, `--board-row-height`, `--size-board`,
+`--col-points`, `--col-total` (standings); `--session-row-height`, `--session-time-width`;
+`--size-countdown`, `--size-countdown-small`; `--size-podium-position`, `--podium-width`,
+`--podium-height`, `--podium-height-winner`; `--bracket-row-height`; `--sponsor-mark-small`,
+`--sponsor-mark-large`, `--sponsor-tile-height`. Motion: `--motion-notice-hold`,
+`--motion-board-hold`, `--motion-sponsor-hold` (`motion.md`).
 
 ## Open questions for João
 
@@ -175,3 +238,28 @@ today, and nothing else.
 7. ABAST. (refuels) needs a field the canonical positions shape does not have; PARADAS is the
    shape's `pitStops` (every pit entry). Add a `refuels` field to the shape (BAJAOVRLAY-18/21),
    or is PARADAS enough on air?
+
+Pass 2 (BAJAOVRLAY-43), the judgment calls to confirm:
+
+8. A new layer, **notice** (z 45, "Aviso"), for the fastest lap and the penalty notice, in a
+   slot under the bug (x 96..516 from y 186), so they share the screen with everything else.
+   The alternative, the bug layer, would take the bug off air for every notice.
+9. The **battle card** sits bottom-centre on the lower-third layer (it replaces a lower third)
+   rather than under the clock in the tower's slot, so the tower can stay up during a fight.
+10. The **penalty** is written in words ("+30 SEGUNDOS", because the face has no "s") in a
+    brand-navy cell, and "BANDEIRA PRETA" as words only; the notice carries no flag colour and
+    no coloured band at all, so it never reads as the clock's flag band.
+11. **Standings**: 20 rows a page (three pages, the tower's page size) rather than the 23 that
+    would fit; the per-event table shows all 60 at once in three columns and does not page.
+12. The **QR card** shows the stream's scoreboard address of today
+    (placarbaja.juansalles.com.br), in caps like everything else, on the one light surface.
+13. **Wide boards** (standings, bracket, podium) are taken with the column, the notice and the
+    ticker cleared, by a macro; the **narrow boards** are 1280 px centred so the bug and the
+    clock card stay beside them.
+14. The **fastest lap's "VOLTA 34"** is the car's lap count, since `bestLapMs` carries no lap
+    number: add a `bestLapNumber` to the positions shape, or let the operator type it?
+15. The **team card** shows the shape's short school name ("MAUÁ"); the full name would come
+    with the entity library. Fine for now?
+16. **Screenshots**: every page over every background as the contract says, 241 files; the
+    folder is listed in the PR. If that is too much for the repo, the intermediate steps and
+    the variants could be shot over frame 1, grey and black only.

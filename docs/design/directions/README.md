@@ -5,7 +5,8 @@ two (grafite, marinho) were removed from the branch and stay in the PR's history
 keeps the comparison that led to the choice, as the record. After the gate, four adjustments
 were applied to ardosia (one face for everything, the flag band optional, the ordinal sign on
 the strip's positions, no word on the checkered flag), so ardosia's screenshots differ in
-those four points from what the table below compared.
+those four points from what the table below compared. Pass 2 (BAJAOVRLAY-43) then extended
+ardosia to the rest of the §9 catalogue; its `catalogue.md` is the spec for the build briefs.
 
 The three were siblings of the scoreboard the stream uses today
 (placarbaja.juansalles.com.br: a slate column of pill rows, a car-number chip, a colour per
