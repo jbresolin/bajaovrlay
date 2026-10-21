@@ -43,7 +43,7 @@ docs/design/
 | `combo-strip.html`             | Lower strip and lower third together.                                                                                                                                                                                                                                                         |
 | `motion.md`                    | In and out animations, the tower's position-change animation, the strip's movement, with durations.                                                                                                                                                                                           |
 | `motion-demo.html`             | Optional: an animated demo of the above (CSS or the Web Animations API, nothing loaded from the network). The screenshot tool skips it.                                                                                                                                                       |
-| `screenshots/`                 | `<page>.<background>.jpg                                                                                                                                                                                                                                                                      | png`for every page over every frame in`docs/brand/frames/`, over mid-grey and over near-black; reference sheets over grey and black only. |
+| `screenshots/`                 | `<page>.<background>.jpg` for every page over every frame in `docs/brand/frames/`, over mid-grey and over near-black; reference sheets over grey and black only.                                                                                                                              |
 
 ## The page contract
 
@@ -52,7 +52,7 @@ loads nothing from the network.
 
 - The page is the 1920x1080 stage: `html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden }`.
 - The body paints the footage behind the graphics from one custom property, which the
-  screenshot tool overrides: `body { background: var(--stage-background, url('../../../brand/frames/1.png')) center / cover no-repeat }`.
+  screenshot tool overrides: `body { background: var(--stage-background, url('../../../brand/frames/1.jpg')) center / cover no-repeat }`.
 - Fonts come from `<link rel="stylesheet" href="../../fonts/fonts.css">` (self-hosted, OFL; see `fonts/README.md`).
   Times, gaps and laps always carry `font-variant-numeric: tabular-nums`.
 - The generator formats its pages with the repo's Prettier, so `pnpm lint` (`prettier --check .`)
@@ -109,5 +109,6 @@ node docs/design/directions/ardosia/generatePages.mjs   regenerate the pages (fo
 node docs/design/tools/contrastRatio.mjs "#ffffff" "#003b71" [panelAlpha] [backdrop]
 ```
 
-Screenshots over footage are JPEG at quality 85 (a 1920x1080 PNG of a photo is 2 to 3 MB
-and there are over a hundred); over grey and black they are PNG. `--png` makes them all PNG.
+Screenshots are JPEG, each near 300 KB (the tool steps the quality down from 85 until the
+file fits), because a 1920x1080 PNG of a photo is 2 to 3 MB and there are dozens; the footage
+frames in `docs/brand/frames/` are JPEG for the same reason. `--png` makes every shot PNG.

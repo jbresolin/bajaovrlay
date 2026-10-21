@@ -17,7 +17,7 @@ body {
 }
 body {
   position: relative;
-  background: var(--stage-background, url('../../brand/frames/1.png')) center / cover no-repeat;
+  background: var(--stage-background, url('../../brand/frames/1.jpg')) center / cover no-repeat;
   font-family: var(--font-display);
   color: var(--text);
   /* Every digit the same width: clocks and gaps never jitter as they count. */

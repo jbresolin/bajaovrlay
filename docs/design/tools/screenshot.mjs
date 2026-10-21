@@ -1,21 +1,22 @@
 // Screenshots every mock-up page of one or more design directions at 1920x1080, over each
 // footage frame in docs/brand/frames/ and over plain mid-grey and near-black. Run from the
 // repo root (Playwright comes from the repo's node_modules):
-//   node docs/design/tools/screenshot.mjs placar            one direction
-//   node docs/design/tools/screenshot.mjs placar vidro      several
+//   node docs/design/tools/screenshot.mjs ardosia           one direction
+//   node docs/design/tools/screenshot.mjs ardosia outra     several
 //   node docs/design/tools/screenshot.mjs --all             every folder under directions/
-//   node docs/design/tools/screenshot.mjs --png placar      PNG for the footage shots too
+//   node docs/design/tools/screenshot.mjs --png ardosia     lossless PNG instead of JPEG
 //
 // The page contract: a mock-up page is 1920x1080, and its <body> (or a .stage element) paints
 // its background from the CSS custom property --stage-background, which this tool sets on
 // <html> before shooting. A page never loads anything from the network.
 //
-// File format: shots over grey and black are PNG (lossless, flat backgrounds compress well).
-// Shots over footage default to JPEG at quality 85, because a 1920x1080 PNG of a photo is
-// 2 to 3 MB and there are over a hundred of them; --png keeps them lossless.
+// File format: JPEG, each file at most about 300 KB (the quality starts at 85 and steps down
+// until the file fits; a flat grey or black shot is far smaller at 85 already), because a
+// 1920x1080 PNG of a photo is 2 to 3 MB and there are dozens of them. --png keeps every shot
+// lossless instead.
 // The page.evaluate callbacks below run inside the browser page, not in Node.
 /* global document */
-import { existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -43,13 +44,13 @@ if (directionNames.length === 0) {
 }
 
 const frameFiles = readdirSync(framesFolder)
-  .filter((name) => name.endsWith('.png'))
+  .filter((name) => name.endsWith('.jpg'))
   .sort();
 
 /** Every background a page is shot over: the footage frames, then the two plain colours. */
 const backgrounds = [
   ...frameFiles.map((name) => ({
-    name: `frame-${basename(name, '.png')}`,
+    name: `frame-${basename(name, '.jpg')}`,
     cssValue: `url("${pathToFileURL(resolve(framesFolder, name)).href}")`,
     isFootage: true,
   })),
@@ -62,6 +63,21 @@ function listPagesOfDirection(directionFolder) {
   return readdirSync(directionFolder)
     .filter((name) => name.endsWith('.html') && !name.startsWith('motion'))
     .sort();
+}
+
+const stageClip = { x: 0, y: 0, width: 1920, height: 1080 };
+const targetJpegBytes = 320 * 1024;
+
+/** Shoots the stage as JPEG, stepping the quality down from 85 until the file is near 300 KB. */
+async function shootJpegNearTargetSize(page) {
+  let shot = null;
+  for (const quality of [85, 80, 75, 70, 65, 60]) {
+    shot = await page.screenshot({ type: 'jpeg', quality, clip: stageClip });
+    if (shot.length <= targetJpegBytes) {
+      return shot;
+    }
+  }
+  return shot;
 }
 
 const browser = await chromium.launch();
@@ -99,15 +115,15 @@ for (const directionName of directionNames) {
       // Let the background image decode and any entrance animation settle.
       await page.waitForTimeout(250);
 
-      const useJpeg = background.isFootage && !wantsLosslessFootage;
-      const extension = useJpeg ? 'jpg' : 'png';
-      const outputPath = resolve(screenshotsFolder, `${pageName}.${background.name}.${extension}`);
-      await page.screenshot({
-        path: outputPath,
-        type: useJpeg ? 'jpeg' : 'png',
-        ...(useJpeg ? { quality: 85 } : {}),
-        clip: { x: 0, y: 0, width: 1920, height: 1080 },
-      });
+      const outputPath = resolve(
+        screenshotsFolder,
+        `${pageName}.${background.name}.${wantsLosslessFootage ? 'png' : 'jpg'}`,
+      );
+      if (wantsLosslessFootage) {
+        await page.screenshot({ path: outputPath, type: 'png', clip: stageClip });
+      } else {
+        writeFileSync(outputPath, await shootJpegNearTargetSize(page));
+      }
       shotCount += 1;
     }
     console.log(`${directionName}/${pageName}: ${backgroundsForThisPage.length} shots`);
