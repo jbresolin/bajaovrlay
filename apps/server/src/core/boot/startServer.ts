@@ -31,6 +31,11 @@ export type StartServerOptions = {
   /** packages/graphics: registered as graphics at boot and served under /graphics/. */
   graphicPackagesFolder: string;
   /**
+   * packages/theme: served under /theme/ for the renderer page and the graphics. Left out
+   * only by tests that never open a page; main.ts always passes it.
+   */
+  themeFolder?: string | undefined;
+  /**
    * DATA_DIR, absolute: the server's files other than the database. Recordings are
    * written to, and listed at boot from, its `recordings` folder.
    */
@@ -144,6 +149,7 @@ async function startServingFromDatabase(
       version: options.version,
       stateStore,
       graphicPackagesFolder: options.graphicPackagesFolder,
+      themeFolder: options.themeFolder,
       controlPageFolder: options.controlPageFolder,
       rendererPageFolder: options.rendererPageFolder,
       sourceHostAllowlist: options.sourceHostAllowlist,

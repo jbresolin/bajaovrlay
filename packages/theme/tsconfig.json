@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The motion helper runs in the browser (inside a graphic bundled by Vite), so imports
+    // resolve the way a bundler resolves them instead of the NodeNext rules the server uses.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src"]
+}

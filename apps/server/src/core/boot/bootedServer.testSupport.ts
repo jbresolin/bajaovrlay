@@ -5,6 +5,7 @@ import type { DataSource } from '@bajaovrlay/shared';
 
 import { noSourceHostAllowlist } from '../../modules/dataSources/index.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
+import { createStandInThemeFolder } from '../http/themeFolder.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
 import { missingGraphicsFolderPath } from '../store/builtGraphicsFolder.testSupport.js';
 import type { StateStore } from '../store/createStateStore.js';
@@ -15,7 +16,7 @@ export const operatorActor = 'operador:conexao-7';
 
 /**
  * The options production uses, on a random port, a temporary database file and data
- * folder, a silent logger and no BAJAOVRLAY_SOURCE_ALLOWED_HOSTS set.
+ * folder, a stand-in theme folder, a silent logger and no BAJAOVRLAY_SOURCE_ALLOWED_HOSTS set.
  */
 export function buildBootOptions(migrationsFolder: string) {
   return {
@@ -26,6 +27,7 @@ export function buildBootOptions(migrationsFolder: string) {
     databasePath: createTemporaryDatabasePath(),
     migrationsFolder,
     graphicPackagesFolder: missingGraphicsFolderPath,
+    themeFolder: createStandInThemeFolder(),
     dataFolder: createTemporaryDataFolder(),
     sourceHostAllowlist: noSourceHostAllowlist,
   };

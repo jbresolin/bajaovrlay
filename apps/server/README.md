@@ -3,7 +3,8 @@
 The Node server that owns all BajaOvrLay state (Hono on Node 22). It keeps the state
 slices in SQLite, changes them only through commands, pushes every change over `/ws`,
 polls the data sources that are on, answers the REST API under `/api/v1`, and serves
-the built control page (`/`), renderer (`/render/`) and graphics (`/graphics/`).
+the built control page (`/`), renderer (`/render/`), graphics (`/graphics/`) and the
+on-air theme (`/theme/`, from packages/theme).
 
 Start reading at `src/main.ts` (it also points the boot at the `build-id.json` that
 `pnpm build` leaves once every package has built, `src/readBuildId.ts`, read once at boot

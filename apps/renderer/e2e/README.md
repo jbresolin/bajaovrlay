@@ -7,8 +7,12 @@ Browser tests of the renderer page (Playwright, Chromium). Start at `lifecycle.e
   (`fakeServerForPage.ts`) and the graphic in `../test-fixtures/fake-graphic`, whose calls `fakeGraphicCalls.ts` reads back.
 - `lateHelloStateRead` — a silent stand-in socket, so each page falls back to
   `/api/v1/state` and must name its own role there.
-- `raceClockOnAir.e2e.ts` — the one file on the REAL server (`realServer.ts`, port 5185) and
-  the built race clock; it holds the screenshot baseline.
+- `themeOnRoot` — the theme (packages/theme, from the real server at `/theme/` through the
+  dev server's proxy) is on :root and its face registered before the first graphic loads;
+  the fake graphic notes the token it saw at `load` (`themeTokenAtLoad`).
+- `raceClockOnAir.e2e.ts` — the one file that drives the REAL server's state (`realServer.ts`,
+  port 5185) and the built race clock; it holds the screenshot baseline. `themeOnRoot` reads
+  the real server's `/theme/` files too, through the proxy, but sends it no command.
 
 **Watch (2026-10-11, BAJAOVRLAY-13):** a test named "counts on its own while the clock is
 running" failed once in a full local run right after `main` was merged, and its error text

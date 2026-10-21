@@ -3,9 +3,9 @@ import { fileURLToPath } from 'node:url';
 
 import { defaultClientConditions, defineConfig, loadEnv, type Plugin } from 'vite';
 
-// In production the server itself serves this page, so /ws, /api and /graphics are on the
-// page's own origin. The dev server forwards those three to the BajaOvrLay server so the
-// page works the same way in development. PORT and HOST come from the repo-root `.env`,
+// In production the server itself serves this page, so /ws, /api, /graphics and /theme are
+// on the page's own origin. The dev server forwards those four to the BajaOvrLay server so
+// the page works the same way in development. PORT and HOST come from the repo-root `.env`,
 // the same file the server reads (a PORT or HOST already in the environment wins, which
 // is how the Playwright run points this at its own server). Same rule as the control
 // page's vite.config.ts; the empty prefix loads every variable, none reach the page.
@@ -88,6 +88,8 @@ export default defineConfig({
     proxy: {
       '/api': serverAddress,
       '/graphics': serverAddress,
+      // The theme's tokens, font CSS and font file, linked by index.html.
+      '/theme': serverAddress,
       '/ws': { target: serverAddress, ws: true },
     },
   },

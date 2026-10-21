@@ -3,6 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <title>BajaOvrLay renderer</title>
+    <!--
+      The on-air theme (packages/theme, served by the server at /theme/): the tokens go on
+      :root and the font is registered on this page, before the module script below runs,
+      because a stylesheet in the head is loaded before a module script starts. Every
+      graphic reads the tokens as var(--panel-base) inside its shadow root and carries no
+      fallback values; the font file is preloaded so the first frame on air has the face.
+      `vite-ignore` keeps Vite from looking for these files in this package: they come from
+      the server, in development through the dev server's proxy (vite.config.ts).
+    -->
+    <link rel="stylesheet" href="/theme/ardosia/tokens.css" vite-ignore />
+    <link rel="stylesheet" href="/theme/fonts/fonts.css" vite-ignore />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/theme/fonts/bebas-neue/bebas-neue-latin-400-normal.woff2"
+      vite-ignore
+    />
     <style>
       /*
        * Everything outside the graphics must be transparent so OBS shows the video
