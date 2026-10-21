@@ -3,7 +3,8 @@
 // so the demo and its motion.md cannot drift apart (the only numbers of this file's own are
 // the pauses between steps). The loop, from the sample's order every time: tower set in →
 // flag change → positions 3 and 4 trade places → positions 1 and 2 trade places (a new
-// leader) → flag back → tower set out → strip set in → two page changes → strip set out.
+// leader) → the tower turns to pages 2 and 3 and back → flag back → tower set out → strip
+// set in → two page changes → strip set out.
 const rootStyle = getComputedStyle(document.documentElement);
 const readMs = (token) => Number.parseFloat(rootStyle.getPropertyValue(token));
 const readNumber = (token) => Number.parseFloat(rootStyle.getPropertyValue(token));
@@ -242,13 +243,31 @@ async function stripTurnPage(templateId, pageNumber) {
   indicator.textContent = indicator.textContent.replace(/^\d+/, String(pageNumber));
 }
 
-// The two swaps leave the tower in another order than the sample's, so every pass starts by
-// putting the rows back as the page was written and tells the same story.
+// More than one page of cars: the tower turns pages (1–20, 21–40, 41–60) on the strip's
+// hold. The rows of the page on air leave together (the out motion) and the next page's rows
+// cascade in with the row stagger; the head pill stays. A car crossing a page boundary shows
+// up on the other page at the next turn.
+async function towerTurnPage(templateId, pageLabel) {
+  stepLabel.textContent = `torre: ${pageLabel}; as linhas saem juntas e as novas entram em cascata`;
+  const list = towerSet.querySelector('.tower__rows');
+  const oldRows = [...list.querySelectorAll('.row')];
+  await Promise.all(oldRows.map((row) => slideOut(row)));
+  const newRows = [...document.getElementById(templateId).content.children].map((row) =>
+    row.cloneNode(true),
+  );
+  newRows.forEach(hideNow);
+  list.replaceChildren(...newRows);
+  await Promise.all(newRows.map((row, index) => slideIn(row, index * timing.rowStagger)));
+}
+
+// The two swaps and the page turns leave the tower in another state than the sample's, so
+// every pass starts by putting page 1's rows back as written and tells the same story.
 const rowsAsWritten = [...towerSet.querySelectorAll('.row')];
 const positionsAsWritten = rowsAsWritten.map((row) => row.querySelector('.row__pos').textContent);
 
 function restoreSampleOrder() {
   const list = towerSet.querySelector('.tower__rows');
+  list.replaceChildren();
   rowsAsWritten.forEach((row, index) => {
     list.appendChild(row);
     row.querySelector('.row__pos').textContent = positionsAsWritten[index];
@@ -275,6 +294,12 @@ async function runLoop() {
     await swapRows(2);
     await wait(800);
     await swapRows(0);
+    await wait(800);
+    await towerTurnPage('tower-page-2', 'página 2, carros 21 a 40');
+    await wait(1600);
+    await towerTurnPage('tower-page-3', 'página 3, carros 41 a 60');
+    await wait(1600);
+    await towerTurnPage('tower-page-1', 'página 1, carros 1 a 20');
     await wait(800);
     await changeFlag('green-flag-band');
     await wait(1200);

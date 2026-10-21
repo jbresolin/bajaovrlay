@@ -142,9 +142,7 @@ h1 {
 .tower--compact {
   width: var(--column-width);
 }
-.tower--detailed {
-  width: var(--detailed-width);
-}
+/* The detailed tower's width is written on the element by the generator, from the columns shown. */
 
 /* ---- Race clock: the scoreboard's header (logo and session) with the time and flag under it */
 .race-clock {
@@ -384,7 +382,8 @@ h1 {
 .row--detailed .row__interval,
 .row--detailed .row__last-lap,
 .row--detailed .row__best-lap,
-.row--detailed .row__pit-stops {
+.row--detailed .row__pit-stops,
+.row--detailed .row__refuels {
   text-align: right;
   font-size: var(--size-detail);
   font-weight: var(--weight-number);
@@ -392,7 +391,8 @@ h1 {
 }
 .row--detailed .row__interval,
 .row--detailed .row__best-lap,
-.row--detailed .row__pit-stops {
+.row--detailed .row__pit-stops,
+.row--detailed .row__refuels {
   color: var(--text-muted);
 }
 .row--detailed .row__laps {
@@ -611,9 +611,6 @@ h1 {
 .sheet .tower {
   position: static;
   width: var(--column-width);
-}
-.sheet .tower--detailed {
-  width: var(--detailed-width);
 }
 .sheet__pills {
   display: flex;

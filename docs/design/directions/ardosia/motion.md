@@ -52,6 +52,27 @@ its position, and its position cell turns green for 2 s; the car that moved down
 ▼ and a blue cell. When the swap makes a new leader, the green leader chip simply follows
 slot 1. Several cars changing in one update slide together in the same 400 ms.
 
+## More than 20 cars: the tower turns pages
+
+The compact tower holds 20 cars and the field has 60, so the tower pages through it
+(positions 1–20, 21–40, 41–60) on the strip's hold, 7 s a page. The head pill stays; the rows
+of the page on air leave together (250 ms) and the next page's rows cascade in with the 30 ms
+stagger, so the turn reads as "the list changed", never as a scroll. A car that crosses a
+page boundary (20th to 21st) is simply on the other page at the next turn. The detailed
+tower pages the same way. The product may also hold the tower on page 1 (the top 20) and
+leave the whole field to the strip; that is an operator's choice, not a different motion.
+
+## Position change while the tower is on air
+
+A new positions snapshot moves rows, never numbers: the position cells belong to the slots,
+the pills to the cars. Every pill whose slot changed slides from its old place to its new one
+in the same 400 ms (FLIP), so two cars trading places cross each other and a car gaining
+three places slides past three others at once. The car that moved up shows the green ▲ and
+a green position cell for 2 s, the car that moved down the blue ▼ and a blue cell; a new
+leader simply takes the green leader chip of slot 1. A car entering the page from the next
+one rises in from below its slot (the in motion); a car leaving the page lifts out. Laps and
+status icons change in place with no motion: a number that changes is read, not watched.
+
 ## The lower strip
 
 Pages of 6 cars (README "The lower strip"), each held 7 s. On a page change the old pills lift
@@ -62,6 +83,7 @@ cannot be read on a phone while it moves; a still page can.
 ## The demo page
 
 `motion-demo.html` loops: tower set in → flag to yellow → positions 3 and 4 trade → a new
-leader (1 and 2 trade) → flag back to green → tower set out → strip and lower third in → two
-page turns → out. It shortens the 7 s page hold to 3 s so the loop stays watchable; every
+leader (1 and 2 trade) → the tower turns to page 2 (cars 21–40), page 3 (41–60, with the
+wrench and the retired icons) and back to page 1 → flag back to green → tower set out →
+strip and lower third in → two page turns → out. It shortens the 7 s page hold to 3 s so the loop stays watchable; every
 other number is the token above. Web Animations API only, nothing loaded from the network.

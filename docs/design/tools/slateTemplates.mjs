@@ -1,9 +1,9 @@
-// The markup every "slate" direction shares. The directions compared at the gate of PR #19
-// (ardosia, grafite, marinho) were siblings of the existing scoreboard
+// The on-air graphics' markup, shared by every "slate" direction. The directions compared at
+// the gate of PR #19 (ardosia, grafite, marinho) were siblings of the existing scoreboard
 // (placarbaja.juansalles.com.br): the same graphics, the same elements in the same order, so
 // a direction is its tokens.css, its styles.css and a few numbers (rows, cars per strip
-// page), never its own copy of this file. A direction's generatePages.mjs calls buildPages()
-// with those numbers and writes the result.
+// page), never its own copy of this file. slateSheets.mjs draws the reference sheets with
+// these builders and slatePages.mjs assembles the pages a generatePages.mjs writes.
 import {
   escapeHtml,
   flagOrder,
@@ -15,11 +15,11 @@ import {
   statusShapeWords,
 } from './slateVocabulary.mjs';
 
-export { flagWords, sample };
+export { flagOrder, flagStateLabels, flagWords, largeIcon, sample, statusShapeWords };
 
 const logoPath = '../../../brand/logo-branca.png';
 
-function pageShell(direction, title, bodyHtml, script = '') {
+export function pageShell(direction, title, bodyHtml, script = '') {
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -87,7 +87,7 @@ export function renderRaceClock(
 
 // Every row has an empty cue lane right after its position: the ▲ / ▼ of a position change
 // (motion.md) is drawn there, so it never sits on top of a two-digit position.
-function renderCompactRow(car) {
+export function renderCompactRow(car) {
   const leader = car.position === 1 ? ' data-leader' : '';
   return `    <li class="pill row" data-row data-status="${car.status}"${leader}>
       <span class="row__pos">${car.position}</span>
@@ -123,52 +123,113 @@ ${cars.map(renderCompactRow).join('\n')}
 </section>`;
 }
 
-const detailedColumns = [
-  ['pos', 'POS'],
-  ['cue', ''],
-  ['car', 'Nº'],
-  ['team', 'EQUIPE'],
-  ['laps', 'VOLTAS'],
-  ['gap', 'DIF.'],
-  ['interval', 'INTERV.'],
-  ['last-lap', 'ÚLT. VOLTA'],
-  ['best-lap', 'MELHOR'],
-  ['pit-stops', 'ABAST.'],
-  ['status', ''],
+// Every column the detailed tower can show, in order. The first five are always on; the rest
+// are optional (João's question on PR #19): an event without lap timing turns the time columns
+// off, one without a refuel count turns ABAST. off, and a tower without status icons drops the
+// status column. The canonical positions shape carries pitStops (every pit entry, PARADAS) and
+// no refuel count yet, so ABAST. is off by default and shows "—" when on.
+const detailedColumnRegistry = [
+  { key: 'pos', label: 'POS', width: 'var(--col-pos)', always: true },
+  { key: 'cue', label: '', width: 'var(--column-cue)', always: true },
+  { key: 'car', label: 'Nº', width: 'var(--chip-width)', always: true },
+  { key: 'team', label: 'EQUIPE', width: 'var(--col-team)', always: true },
+  { key: 'laps', label: 'VOLTAS', width: 'var(--col-laps)', always: true },
+  { key: 'gap', label: 'DIF.', width: 'var(--col-gap)' },
+  { key: 'interval', label: 'INTERV.', width: 'var(--col-interval)' },
+  { key: 'last-lap', label: 'ÚLT. VOLTA', width: 'var(--col-last-lap)' },
+  { key: 'best-lap', label: 'MELHOR', width: 'var(--col-best-lap)' },
+  { key: 'pit-stops', label: 'PARADAS', width: 'var(--col-pit-stops)' },
+  { key: 'refuels', label: 'ABAST.', width: 'var(--col-refuels)' },
+  { key: 'status', label: '', width: 'var(--column-status)' },
+];
+export const defaultDetailedColumns = [
+  'gap',
+  'interval',
+  'last-lap',
+  'best-lap',
+  'pit-stops',
+  'status',
 ];
 
 // The gap rule (docs/00-concept.md §8) writes "+19,0 s"; a direction set in a caps-only face
 // cannot show a lowercase unit, so it asks for the tower's gaps without it ("+19,0").
 let writeGap = (text) => text;
 
-function renderDetailedRow(car) {
+/** Chooses how gaps are written: 's' keeps "+19,0 s", 'none' writes "+19,0" (a caps-only face). */
+export function setGapUnit(gapUnit) {
+  writeGap = gapUnit === 'none' ? (text) => text.replace(/ s$/, '') : (text) => text;
+}
+
+// "—" is the on-air mark for a value the source does not know (never a 0 or a blank cell).
+const unknown = '—';
+
+function renderDetailedCell(column, car) {
+  switch (column.key) {
+    case 'pos':
+      return `<span class="row__pos">${car.position}</span>`;
+    case 'cue':
+      return '<span class="row__cue"></span>';
+    case 'car':
+      return `<span class="row__car chip">${car.carNumber}</span>`;
+    case 'team':
+      return `<span class="row__team"><span class="row__team-name">${escapeHtml(car.teamName)}</span><span class="row__school">${escapeHtml(car.schoolName)}</span></span>`;
+    case 'laps':
+      return `<span class="row__laps">${car.laps}</span>`;
+    case 'gap':
+      return `<span class="row__gap">${escapeHtml(writeGap(car.gapText))}</span>`;
+    case 'interval':
+      return `<span class="row__interval">${escapeHtml(writeGap(car.intervalText))}</span>`;
+    case 'last-lap':
+      return `<span class="row__last-lap">${escapeHtml(car.lastLapText)}</span>`;
+    case 'best-lap':
+      return `<span class="row__best-lap">${escapeHtml(car.bestLapText)}</span>`;
+    case 'pit-stops':
+      return `<span class="row__pit-stops">${car.pitStops ?? unknown}</span>`;
+    case 'refuels':
+      return `<span class="row__refuels">${car.refuels ?? unknown}</span>`;
+    case 'status':
+      return `<span class="row__status">${statusIcons[car.status] ?? ''}</span>`;
+    default:
+      return '';
+  }
+}
+
+function selectDetailedColumns(optionalKeys) {
+  return detailedColumnRegistry.filter(
+    (column) => column.always || optionalKeys.includes(column.key),
+  );
+}
+
+function renderDetailedRow(car, columns) {
   const leader = car.position === 1 ? ' data-leader' : '';
+  const cells = columns.map((column) => `      ${renderDetailedCell(column, car)}`).join('\n');
   return `    <li class="pill row row--detailed" data-row data-status="${car.status}"${leader}>
-      <span class="row__pos">${car.position}</span>
-      <span class="row__cue"></span>
-      <span class="row__car chip">${car.carNumber}</span>
-      <span class="row__team"><span class="row__team-name">${escapeHtml(car.teamName)}</span><span class="row__school">${escapeHtml(car.schoolName)}</span></span>
-      <span class="row__laps">${car.laps}</span>
-      <span class="row__gap">${escapeHtml(writeGap(car.gapText))}</span>
-      <span class="row__interval">${escapeHtml(writeGap(car.intervalText))}</span>
-      <span class="row__last-lap">${escapeHtml(car.lastLapText)}</span>
-      <span class="row__best-lap">${escapeHtml(car.bestLapText)}</span>
-      <span class="row__pit-stops">${car.pitStops}</span>
-      <span class="row__status">${statusIcons[car.status] ?? ''}</span>
+${cells}
     </li>`;
 }
 
-export function renderDetailedTower(cars, session, { withRoot = true } = {}) {
+// The tower's grid and width follow the columns shown: both are written on the element from
+// the width tokens, so a column turned off takes its width with it.
+export function renderDetailedTower(
+  cars,
+  session,
+  { withRoot = true, columns = defaultDetailedColumns } = {},
+) {
   const root = withRoot ? ' data-graphic="positions-detailed"' : '';
-  const header = detailedColumns
-    .map(([column, label]) => `    <span class="caption detail-head__${column}">${label}</span>`)
+  const shown = selectDetailedColumns(columns);
+  const gridTemplate = shown
+    .map((column) => (column.key === 'team' ? 'minmax(0, 1fr)' : column.width))
+    .join(' ');
+  const width = `calc(${shown.map((column) => column.width).join(' + ')} + 2 * var(--row-padding))`;
+  const header = shown
+    .map((column) => `    <span class="caption detail-head__${column.key}">${column.label}</span>`)
     .join('\n');
-  return `<section class="tower tower--detailed"${root}>
+  return `<section class="tower tower--detailed"${root} style="--detail-columns: ${gridTemplate}; width: ${width}">
   <header class="pill pill--head tower__head detail-head">
 ${header}
   </header>
   <ol class="tower__rows">
-${cars.map(renderDetailedRow).join('\n')}
+${cars.map((car) => renderDetailedRow(car, shown)).join('\n')}
   </ol>
 </section>`;
 }
@@ -227,159 +288,4 @@ export function renderSponsorBug(bug) {
   <span class="sponsor-bug__label">${escapeHtml(bug.eventLabel)}</span>
   <span class="sponsor-bug__sponsor"><span class="caption">${escapeHtml(bug.sponsorLine)}</span><span class="sponsor-bug__sponsor-name">${escapeHtml(bug.sponsorName)}</span></span>
 </section>`;
-}
-
-// ---------------------------------------------------------------- reference sheets
-
-function renderSheetFlags(direction) {
-  const clocks = flagOrder
-    .map((flag) => {
-      const session = flag === 'yellow' ? sample.sessionYellow : sample.session;
-      return `    <div class="sheet__cell">
-      <div class="sheet__label">${flagStateLabels[flag]}</div>
-${renderRaceClock(session, flag, flagWords[flag], { withRoot: false })}
-    </div>`;
-    })
-    .join('\n');
-  const pills = flagOrder.map((flag) => renderFlagPill(flag, flagWords[flag])).join('\n      ');
-  const withoutFlag = `    <div class="sheet__cell">
-      <div class="sheet__label">sem bandeira (a faixa é opcional)</div>
-${renderRaceClock(sample.session, sample.session.flag, sample.session.flagLabel, { withRoot: false, withFlag: false })}
-    </div>`;
-  return `<div class="sheet">
-  <div class="sheet__title">${direction} · bandeiras — o relógio nos seis estados e sem bandeira (folha de referência, não vai ao ar)</div>
-  <div class="sheet__grid sheet__grid--flags">
-${clocks}
-${withoutFlag}
-  </div>
-  <div class="sheet__label">a pílula da faixa inferior nos seis estados</div>
-  <div class="card sheet__pills">
-      ${pills}
-  </div>
-</div>`;
-}
-
-function renderSheetStatus(direction) {
-  const byCar = (carNumber) => sample.positions.find((car) => car.carNumber === carNumber);
-  const statusCars = [byCar(69), byCar(65), byCar(96)];
-  const icons = statusCars
-    .map(
-      (car) => `    <div class="card sheet__icon-cell">
-      <div class="sheet__icon-frame">${largeIcon(car.status)}</div>
-      <div class="sheet__icon-caption"><span class="sheet__icon-label">${escapeHtml(car.statusLabel)}</span><span class="caption">${statusShapeWords[car.status]}</span></div>
-    </div>`,
-    )
-    .join('\n');
-  return `<div class="sheet">
-  <div class="sheet__title">${direction} · situação do carro — três formas numa coluna fixa; a forma carrega o significado, nunca só a cor (folha de referência, não vai ao ar)</div>
-  <div class="sheet__icons">
-${icons}
-  </div>
-  <div class="sheet__rows">
-    <div class="sheet__cell">
-      <div class="sheet__label">linhas da torre compacta · carro 69 no box, 65 quebrado, 96 abandonou (linha esmaecida)</div>
-${renderCompactTower(statusCars, sample.session, { withRoot: false })}
-    </div>
-    <div class="sheet__cell">
-      <div class="sheet__label">as mesmas linhas na torre detalhada</div>
-${renderDetailedTower(statusCars, sample.session, { withRoot: false })}
-    </div>
-  </div>
-</div>`;
-}
-
-// ---------------------------------------------------------------- motion demo
-
-function renderMotionDemo(direction, options) {
-  const { compactRows, stripCarsPerPage } = options;
-  const pageOne = sample.positions.slice(0, stripCarsPerPage);
-  const pageTwo = sample.positions.slice(stripCarsPerPage, stripCarsPerPage * 2);
-  const pageCount = Math.ceil(sample.positions.length / stripCarsPerPage);
-  const body = `<div class="demo-stage" data-demo="tower-set">
-${renderRaceClock(sample.session)}
-${renderCompactTower(sample.positions.slice(0, compactRows), sample.session)}
-${renderSponsorBug(sample.sponsorBug)}
-</div>
-<div class="demo-stage" data-demo="strip-set">
-${renderLowerStrip(pageOne, sample.session, 1, pageCount)}
-${renderLowerThird(sample.people[0])}
-</div>
-<template id="strip-page-two">
-${renderStripPage(pageTwo)}
-</template>
-<template id="strip-page-one">
-${renderStripPage(pageOne)}
-</template>
-<template id="yellow-flag-band">
-${renderFlagBand(sample.sessionYellow.flag, sample.sessionYellow.flagLabel)}
-</template>
-<template id="green-flag-band">
-${renderFlagBand(sample.session.flag, sample.session.flagLabel)}
-</template>
-<template id="cue-up"><svg class="cue" viewBox="0 0 14 10" aria-hidden="true"><path d="M7 0 14 10H0Z" fill="currentColor"/></svg></template>
-<template id="cue-down"><svg class="cue" viewBox="0 0 14 10" aria-hidden="true"><path d="M0 0h14L7 10Z" fill="currentColor"/></svg></template>
-<div class="card demo-caption"><span class="caption">demo de movimento</span><span class="demo-caption__step" id="demo-step">…</span></div>`;
-  // The demo script is shared by the three directions and reads every timing from tokens.css.
-  const script = `<script src="../../tools/slateMotionDemo.js"></script>
-`;
-  return pageShell(direction, 'motion demo', body, script);
-}
-
-// ---------------------------------------------------------------- everything
-
-/**
- * Builds every page of one direction: a map of file name to HTML. Options: name (the folder
- * name), compactRows, detailedRows, stripCarsPerPage, and gapUnit ('s' keeps "+19,0 s",
- * 'none' writes "+19,0" for a caps-only face).
- */
-export function buildPages(options) {
-  const { name, compactRows, detailedRows, stripCarsPerPage, gapUnit = 's' } = options;
-  writeGap = gapUnit === 'none' ? (text) => text.replace(/ s$/, '') : (text) => text;
-  const compactCars = sample.positions.slice(0, compactRows);
-  const detailedCars = sample.positions.slice(0, detailedRows);
-  const stripCars = sample.positions.slice(0, stripCarsPerPage);
-  const stripPageCount = Math.ceil(sample.positions.length / stripCarsPerPage);
-  const shell = (title, body) => pageShell(name, title, body);
-
-  return {
-    'race-clock.html': shell('race clock', renderRaceClock(sample.session)),
-    'race-clock-sem-bandeira.html': shell(
-      'race clock without the flag',
-      renderRaceClock(sample.session, sample.session.flag, sample.session.flagLabel, {
-        withFlag: false,
-      }),
-    ),
-    'positions-compact.html': shell(
-      'positions compact',
-      renderCompactTower(compactCars, sample.session),
-    ),
-    'positions-detailed.html': shell(
-      'positions detailed',
-      renderDetailedTower(detailedCars, sample.session),
-    ),
-    'lower-strip.html': shell(
-      'lower strip',
-      renderLowerStrip(stripCars, sample.session, 1, stripPageCount),
-    ),
-    'lower-third.html': shell('lower third', renderLowerThird(sample.people[0])),
-    'sponsor-bug.html': shell('sponsor bug', renderSponsorBug(sample.sponsorBug)),
-    'combo-tower.html': shell(
-      'combo tower',
-      [
-        renderRaceClock(sample.session),
-        renderCompactTower(compactCars, sample.session),
-        renderSponsorBug(sample.sponsorBug),
-      ].join('\n'),
-    ),
-    'combo-strip.html': shell(
-      'combo strip',
-      [
-        renderLowerStrip(stripCars, sample.session, 1, stripPageCount),
-        renderLowerThird(sample.people[0]),
-      ].join('\n'),
-    ),
-    'sheet-flags.html': shell('sheet flags', renderSheetFlags(name)),
-    'sheet-status.html': shell('sheet status', renderSheetStatus(name)),
-    'motion-demo.html': renderMotionDemo(name, options),
-  };
 }

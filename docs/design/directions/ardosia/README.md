@@ -34,9 +34,11 @@ as a yellow flag. If João prefers no yellow at all, grafite is this direction w
 Pages: `race-clock`, `race-clock-sem-bandeira` (the clock without its flag band),
 `positions-compact`, `positions-detailed`, `lower-strip`, `lower-third`, `sponsor-bug`, the
 combos `combo-tower` (clock + compact tower + bug) and `combo-strip` (strip + lower third),
-the sheets `sheet-flags` and `sheet-status`, and `motion-demo` (`motion.md`). Every `.html`
+the sheets `sheet-flags`, `sheet-status` and `sheet-columns` (the detailed tower with every
+column, the default set, and the optional columns off), and `motion-demo` (`motion.md`). Every `.html`
 here is generated: `generatePages.mjs` writes them from `../../sample-data.json` through the
-templates in `../../tools/slateTemplates.mjs` and formats them with the repo's Prettier:
+page assembly in `../../tools/slatePages.mjs` (markup in `slateTemplates.mjs`, sheets in
+`slateSheets.mjs`) and formats them with the repo's Prettier:
 `node docs/design/directions/ardosia/generatePages.mjs` from the repo root. `styles.css`
 imports the structure sheet (`../../tools/slate-base.css`) and adds this direction's few
 rules; `tokens.css` is where the direction lives.
@@ -65,15 +67,15 @@ are 34 px (23 at 720p) with 3 px gaps, so rows separate without lines.
 Everything on air is inside the 90% title-safe box (x 96..1824, y 54..1026), checked by
 `node docs/design/tools/checkLayout.mjs ardosia`:
 
-| Graphic                          | Box (1080p)                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| Race clock                       | x 1404..1824, y 54..246 (420 × 192: 64 head, 88 body, 40 flag band)          |
-| Compact tower                    | x 1404..1824, y 254..1026 (head pill 32, then 20 pills of 34 with 3 px gaps) |
-| Detailed tower                   | x 764..1824, y 254..1026 (1060 wide, head pill 32, 20 pills of 34)           |
-| Lower strip                      | x 96..1824, y 954..1026 (72 tall)                                            |
-| Lower third                      | x 96.., bottom at y 940 (name pill 64, role pill 40), above the strip's room |
-| Sponsor bug                      | x 96..428, y 54..178                                                         |
-| Race clock without the flag band | x 1404..1824, y 54..206 (420 × 152)                                          |
+| Graphic                          | Box (1080p)                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| Race clock                       | x 1404..1824, y 54..246 (420 × 192: 64 head, 88 body, 40 flag band)                         |
+| Compact tower                    | x 1404..1824, y 254..1026 (head pill 32, then 20 pills of 34 with 3 px gaps)                |
+| Detailed tower                   | x 752..1824, y 254..1026 (1072 wide with the default columns, head pill 32, 20 pills of 34) |
+| Lower strip                      | x 96..1824, y 954..1026 (72 tall)                                                           |
+| Lower third                      | x 96.., bottom at y 940 (name pill 64, role pill 40), above the strip's room                |
+| Sponsor bug                      | x 96..428, y 54..178                                                                        |
+| Race clock without the flag band | x 1404..1824, y 54..206 (420 × 152)                                                         |
 
 ## Contrast
 
@@ -104,14 +106,22 @@ Computed with `node docs/design/tools/contrastRatio.mjs`; translucent slate comp
   with 3 px gaps, so 20 rows end exactly at 1026, the title-safe edge. A 21st pill would end at 1063. Narrower gaps or
   32 px pills would give 21 rows at the cost of the scoreboard's airy pills, which is the look
   being kept (open question 1).
-- **Detailed: 20 rows** (positions 1–20) of 34 px, the compact tower's pill, 1060 px wide:
-  POS 36, cue 12, chip 44, team
-  (name + school at 22 px), VOLTAS 84, DIF. 112, INTERV. 108, ÚLT. VOLTA 128, MELHOR 104,
-  ABAST. 84, status 28. Gaps and intervals in seconds are written without the unit ("+19,0",
-  "+1 VOLTA"): the face has no lowercase, so "+19,0 s" would read "+19,0 S"; the column
-  caption (DIF., INTERV.) says what the number is, as on every timing board.
+- **Detailed: 20 rows** (positions 1–20) of 34 px, the compact tower's pill. Five columns
+  are always there, POS 36, cue 12, chip 44, EQUIPE 300 (name + school at 22 px) and VOLTAS 84;
+  the rest are optional, each with its width token in `tokens.css`, and the tower's grid and
+  width follow the columns shown (the generator writes both on the element, so a column
+  turned off takes its width with it): DIF. 112, INTERV. 108, ÚLT. VOLTA 128, MELHOR 104,
+  PARADAS 96 (every pit entry, the shape's `pitStops`), ABAST. 84 (refuels; the canonical
+  shape has no such field yet, so the column is off by default and shows "—" when on), and
+  the status column 28. With the default set (times, PARADAS, status) the tower is 1072 px
+  wide; an event without lap timing shows VOLTAS and PARADAS only, 668 px (`sheet-columns`).
+  A value the source does not know shows "—", never 0 or a blank. Gaps and intervals in
+  seconds are written without the unit ("+19,0", "+1 VOLTA"): the face has no lowercase, so
+  "+19,0 s" would read "+19,0 S"; the column caption (DIF., INTERV.) says what the number is,
+  as on every timing board.
 - The field has 60 cars: the towers page through it (positions 1–20, 21–40, 41–60) on the
-  same hold as the strip; page 1 is what the mock-ups show.
+  same hold as the strip, the head pill staying and the rows changing (`motion.md`, "More than
+  20 cars"); page 1 is what the mock-up pages show, and `motion-demo.html` turns the pages.
 
 ## The lower strip
 
@@ -162,3 +172,6 @@ today, and nothing else.
    lowercase "s". Fine, or should the product's shared gap format change too?
 6. When the flag band is off, should the tower move up 40 px to gain a 21st row, or keep its
    place so the layout never shifts between sessions?
+7. ABAST. (refuels) needs a field the canonical positions shape does not have; PARADAS is the
+   shape's `pitStops` (every pit entry). Add a `refuels` field to the shape (BAJAOVRLAY-18/21),
+   or is PARADAS enough on air?

@@ -8,7 +8,21 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <section class="tower tower--detailed" data-graphic="positions-detailed">
+    <section
+      class="tower tower--detailed"
+      data-graphic="positions-detailed"
+      style="
+        --detail-columns: var(--col-pos) var(--column-cue) var(--chip-width) minmax(0, 1fr)
+          var(--col-laps) var(--col-gap) var(--col-interval) var(--col-last-lap) var(--col-best-lap)
+          var(--col-pit-stops) var(--column-status);
+        width: calc(
+          var(--col-pos) + var(--column-cue) + var(--chip-width) + var(--col-team) +
+            var(--col-laps) + var(--col-gap) + var(--col-interval) + var(--col-last-lap) +
+            var(--col-best-lap) + var(--col-pit-stops) + var(--column-status) + 2 *
+            var(--row-padding)
+        );
+      "
+    >
       <header class="pill pill--head tower__head detail-head">
         <span class="caption detail-head__pos">POS</span>
         <span class="caption detail-head__cue"></span>
@@ -19,7 +33,7 @@
         <span class="caption detail-head__interval">INTERV.</span>
         <span class="caption detail-head__last-lap">ÚLT. VOLTA</span>
         <span class="caption detail-head__best-lap">MELHOR</span>
-        <span class="caption detail-head__pit-stops">ABAST.</span>
+        <span class="caption detail-head__pit-stops">PARADAS</span>
         <span class="caption detail-head__status"></span>
       </header>
       <ol class="tower__rows">

@@ -110,9 +110,18 @@
   --radius: 8px;
   --radius-chip: 4px;
   --radius-pill: 999px;
-  --detailed-width: 1060px;
   --detailed-row-height: 34px; /* the same pill as the compact tower: 20 rows fit */
-  --detail-columns: 36px 12px 44px 1fr 84px 112px 108px 128px 104px 84px 28px;
+  /* Detailed tower columns (the generator composes the grid and the width from these; a
+     column turned off takes its width with it). With the default columns the tower is 1072px. */
+  --col-pos: 36px;
+  --col-team: 300px;
+  --col-laps: 84px;
+  --col-gap: 112px;
+  --col-interval: 108px;
+  --col-last-lap: 128px;
+  --col-best-lap: 104px;
+  --col-pit-stops: 96px; /* "PARADAS" needs 96 at 22px */
+  --col-refuels: 84px;
   --strip-height: 72px;
   --name-height: 64px;
   --role-height: 40px;
