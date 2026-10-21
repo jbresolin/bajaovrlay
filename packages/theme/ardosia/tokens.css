@@ -84,6 +84,7 @@
   --tracking-time: 0.02em;
   --tracking-caption: 0.06em;
   --tracking-flag: 0.1em;
+  --tracking-row: 0.02em; /* Bebas Neue is tight by design; a little tracking keeps caps names readable at 720p */
   --case-rows: uppercase;
   --case-names: uppercase;
   --case-title: uppercase;

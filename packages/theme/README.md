@@ -38,8 +38,9 @@ token names are the design's. Copied with these changes:
   directions compared at the gate could share one structure sheet) and `--motion-in-scale`
   (the "pop" of another direction, 1 in Ardósia);
 - added, because the pages hard-coded them: `--stage-safe-top` (54 px, the title-safe top the
-  clock sits on; `--tower-top` is built from it), `--tower-rows-per-page` (20) and
-  `--cue-width` / `--cue-height` (the ▲ / ▼ of a position change).
+  clock sits on; `--tower-top` is built from it), `--tower-rows-per-page` (20),
+  `--cue-width` / `--cue-height` (the ▲ / ▼ of a position change) and `--tracking-row` (the
+  tower's team names, from the design's styles.css).
 
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).

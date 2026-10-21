@@ -14,7 +14,13 @@
       "@bajaovrlay/source": "./src/clock/index.ts",
       "types": "./dist/clock/index.d.ts",
       "default": "./dist/clock/index.js"
-    }
+    },
+    "./raceTimeText": {
+      "@bajaovrlay/source": "./src/raceTimeText/index.ts",
+      "types": "./dist/raceTimeText/index.d.ts",
+      "default": "./dist/raceTimeText/index.js"
+    },
+    "./samples/positions.json": "./src/dataShapes/samples/positions.enduro-lap-34.json"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
