@@ -1,0 +1,15 @@
+/*
+ * Self-hosted type for the design mock-ups: Bebas Neue, SIL Open Font License 1.1 (the
+ * LICENSE file sits beside its file), subset to Latin, which covers every pt-BR character.
+ * Nothing is loaded from a CDN: the graphics must work offline at the track.
+ *
+ * Bebas Neue is an uppercase-only display face with one weight and tabular figures (checked
+ * in Chromium, see README.md): the pages set everything in caps, and never ask for bold.
+ */
+@font-face {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('./bebas-neue/bebas-neue-latin-400-normal.woff2') format('woff2');
+}

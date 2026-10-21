@@ -1,0 +1,689 @@
+/*
+ * The structure every slate direction shares, written against each direction's tokens.css
+ * only: no colour, no font and no duration is named here. A direction's styles.css imports
+ * this file and adds the few rules that are its own (chip shapes, a head layout).
+ *
+ * Geometry is literal where the stage is (1920x1080, title-safe 96..1824 x 54..1026) and a
+ * token where the direction decides (column width and side, row height and gap, radius).
+ */
+
+/* ---- The stage (page contract) */
+html,
+body {
+  margin: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+}
+body {
+  position: relative;
+  background: var(--stage-background, url('../../brand/frames/1.jpg')) center / cover no-repeat;
+  font-family: var(--font-display);
+  color: var(--text);
+  /* Every digit the same width: clocks and gaps never jitter as they count. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+ol,
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+h1 {
+  margin: 0;
+  font: inherit;
+}
+
+/* ---- Surfaces: the card (a panel) and the pill (a row). Both are the same slate; a pill is
+   a card the height of one row, which is what the existing scoreboard's rows are. */
+.card,
+.pill {
+  position: relative;
+  background: var(--panel-base);
+  color: var(--text);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.pill--head {
+  background: var(--panel-head);
+}
+.caption {
+  font-family: var(--font-text);
+  font-weight: var(--weight-caption);
+  font-size: var(--size-caption);
+  letter-spacing: var(--tracking-caption);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ---- Chips: the car number's square, the one element every cell can borrow */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--chip-width);
+  height: var(--chip-height);
+  /* The face's digits sit high in their line box; the nudge centres their ink in the chip. */
+  padding-top: var(--glyph-nudge);
+  box-sizing: border-box;
+  border-radius: var(--radius-chip);
+  background: var(--chip-car-background);
+  color: var(--chip-car-text);
+  font-family: var(--font-display);
+  font-weight: var(--weight-number);
+  font-size: var(--size-row);
+  line-height: 1;
+  flex: none;
+}
+
+/* ---- Flag surfaces: the clock's band, the strip's pill and the sheet's pills share colours */
+.flag-surface[data-flag='pre'] {
+  background: var(--flag-pre-background);
+  color: var(--flag-pre-text);
+}
+.flag-surface[data-flag='green'] {
+  background: var(--flag-green-background);
+  color: var(--flag-green-text);
+}
+.flag-surface[data-flag='yellow'] {
+  background: var(--flag-yellow-background);
+  color: var(--flag-yellow-text);
+}
+.flag-surface[data-flag='red'] {
+  background: var(--flag-red-background);
+  color: var(--flag-red-text);
+}
+.flag-surface[data-flag='finished'] {
+  background: var(--flag-finished-background);
+  color: var(--flag-finished-text);
+}
+.flag-surface[data-flag='checkered'] {
+  background: repeating-conic-gradient(
+      var(--flag-checkered-dark) 0% 25%,
+      var(--flag-checkered-light) 0% 50%
+    )
+    0 0 / var(--flag-checkered-square) var(--flag-checkered-square);
+  color: var(--flag-checkered-text);
+}
+.flag-surface[data-flag='checkered'] .flag-word {
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-chip);
+  background: var(--flag-checkered-dark);
+}
+.flag-word {
+  padding-top: var(--glyph-nudge);
+  font-family: var(--font-display);
+  font-weight: var(--weight-number);
+  font-size: var(--size-flag);
+  letter-spacing: var(--tracking-flag);
+  line-height: 32px;
+  white-space: nowrap;
+}
+.flag-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  min-width: 96px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+}
+
+/* ---- The column: clock on top, tower under it, on the side the direction chooses */
+.race-clock,
+.tower--compact,
+.tower--detailed {
+  position: absolute;
+  left: var(--column-left);
+  right: var(--column-right);
+}
+.race-clock,
+.tower--compact {
+  width: var(--column-width);
+}
+/* The detailed tower's width is written on the element by the generator, from the columns shown. */
+
+/* ---- Race clock: the scoreboard's header (logo and session) with the time and flag under it */
+.race-clock {
+  top: 54px;
+  height: var(--clock-height);
+  display: grid;
+  /* Three fixed rows: the body never grows into the flag band's room. */
+  grid-template-rows: var(--clock-head-height) var(--clock-body-height) var(--flag-band-height);
+  overflow: hidden;
+}
+/* The flag band is optional: without it the card is head and body only. */
+.race-clock--no-flag {
+  height: calc(var(--clock-height) - var(--flag-band-height));
+  grid-template-rows: var(--clock-head-height) var(--clock-body-height);
+}
+.race-clock__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
+  background: var(--panel-head);
+}
+.race-clock__logo {
+  height: var(--clock-logo-height);
+  width: auto;
+  flex: none;
+  object-fit: contain;
+}
+.race-clock__title {
+  min-width: 0;
+  font-size: var(--size-title);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
+  text-transform: var(--case-title);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.race-clock__body {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: 'caption laps' 'time time';
+  align-items: center;
+  column-gap: var(--space-4);
+  /* No bottom padding: the time's line box ends on the body's edge, and the face's descender
+     room under the digits is the margin to the band (about 10px at 56px, twice the first draft). */
+  padding: var(--space-1) var(--space-5) 0;
+  overflow: hidden;
+}
+.race-clock__time {
+  grid-area: time;
+  align-self: end;
+  font-size: var(--size-time);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-time);
+  line-height: 1;
+}
+.race-clock__caption {
+  font-family: var(--font-text);
+  font-weight: var(--weight-caption);
+  font-size: var(--size-caption);
+  letter-spacing: var(--tracking-caption);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: left;
+  white-space: nowrap;
+}
+.race-clock__laps {
+  grid-area: laps;
+  align-self: center;
+  font-size: var(--size-row);
+  font-weight: var(--weight-number);
+  text-align: right;
+  white-space: nowrap;
+  color: var(--text-laps);
+}
+.race-clock__flag {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-5);
+}
+
+/* ---- Towers: a head pill, then one pill per car, the gaps between them being the look */
+.tower--compact,
+.tower--detailed {
+  top: var(--tower-top);
+}
+.tower__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  margin-top: var(--row-gap);
+}
+.tower__head {
+  height: var(--head-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--row-padding);
+}
+/* The compact head names the columns on the rows' own grid, like the detailed head. */
+.compact-head {
+  display: grid;
+  grid-template-columns:
+    var(--column-pos) var(--column-cue) var(--chip-width) 1fr var(--column-laps)
+    var(--column-status);
+  align-items: center;
+}
+.compact-head .compact-head__pos,
+.compact-head .compact-head__car {
+  text-align: center;
+}
+.compact-head .compact-head__team {
+  padding-left: var(--space-3);
+}
+.compact-head .compact-head__laps {
+  text-align: right;
+}
+.row {
+  height: var(--row-height);
+  display: grid;
+  grid-template-columns:
+    var(--column-pos) var(--column-cue) var(--chip-width) 1fr var(--column-laps)
+    var(--column-status);
+  align-items: center;
+  padding: 0 var(--row-padding);
+  font-size: var(--size-row);
+  font-weight: var(--weight-row);
+  text-transform: var(--case-rows);
+  line-height: 1;
+}
+.row__pos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--chip-height);
+  padding-top: var(--glyph-nudge);
+  box-sizing: border-box;
+  border-radius: var(--radius-chip);
+  font-weight: var(--weight-number);
+  color: var(--text-pos);
+  background: var(--chip-pos-background);
+}
+[data-leader] .row__pos {
+  background: var(--leader-background);
+  color: var(--leader-text);
+}
+.row__cue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.row__team {
+  padding-left: var(--space-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* The line box holds the accents of a caps face (Bebas puts them above the cap height). */
+  line-height: 1.3;
+}
+.row__laps {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: var(--chip-height);
+  padding: 0 var(--laps-padding);
+  border-radius: var(--radius-chip);
+  font-weight: var(--weight-number);
+  color: var(--text-laps);
+  background: var(--chip-laps-background);
+}
+.row__status {
+  display: flex;
+  justify-content: flex-end;
+  color: var(--status-icon);
+}
+.status-icon {
+  width: var(--status-icon-size);
+  height: var(--status-icon-size);
+  display: block;
+}
+[data-status='retired'] {
+  opacity: var(--status-retired-opacity);
+}
+
+/* Detailed rows: the compact cells plus the timing columns, on one shared column template */
+.row--detailed,
+.detail-head {
+  display: grid;
+  grid-template-columns: var(--detail-columns);
+  align-items: center;
+  padding: 0 var(--row-padding);
+}
+.row--detailed {
+  height: var(--detailed-row-height);
+}
+.detail-head {
+  justify-content: initial;
+}
+.detail-head .caption {
+  text-align: right;
+  padding-left: var(--space-2);
+}
+.detail-head .detail-head__pos,
+.detail-head .detail-head__car {
+  text-align: center;
+  padding-left: 0;
+}
+.detail-head .detail-head__team {
+  text-align: left;
+  padding-left: var(--space-3);
+}
+.row--detailed .row__team {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.row--detailed .row__team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.row--detailed .row__school {
+  flex: none;
+  font-family: var(--font-text);
+  font-weight: var(--weight-caption);
+  font-size: var(--size-caption);
+  letter-spacing: 0;
+  text-transform: var(--case-rows);
+  color: var(--text-muted);
+}
+.row--detailed .row__gap,
+.row--detailed .row__interval,
+.row--detailed .row__last-lap,
+.row--detailed .row__best-lap,
+.row--detailed .row__pit-stops,
+.row--detailed .row__refuels {
+  text-align: right;
+  font-size: var(--size-detail);
+  font-weight: var(--weight-number);
+  white-space: nowrap;
+}
+.row--detailed .row__interval,
+.row--detailed .row__best-lap,
+.row--detailed .row__pit-stops,
+.row--detailed .row__refuels {
+  color: var(--text-muted);
+}
+.row--detailed .row__laps {
+  justify-self: end;
+}
+
+/* ---- Lower strip: the clock block, one pill per car, the page cell; along the bottom */
+.lower-strip {
+  position: absolute;
+  left: 96px;
+  right: 96px;
+  bottom: 54px;
+  height: var(--strip-height);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--row-gap);
+}
+.lower-strip__clock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
+}
+.lower-strip__time {
+  font-size: var(--size-strip-time);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-time);
+  line-height: 1;
+}
+.lower-strip__pages {
+  position: relative;
+  min-width: 0;
+}
+.lower-strip__cars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: var(--row-gap);
+}
+.strip-car {
+  /* Each pill is as wide as its name and the pills share what is left, so a short page never
+     squeezes a long school name; the generator picks how many cars a page holds so that every
+     page of the field fits (its README says the number and the measurement). */
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: var(--column-pos) var(--chip-width) 1fr;
+  align-items: center;
+  column-gap: var(--space-2);
+  padding: 0 var(--space-3);
+  font-size: var(--size-strip);
+  font-weight: var(--weight-row);
+  text-transform: var(--case-rows);
+  line-height: 1;
+}
+.strip-car__pos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--chip-height);
+  padding-top: var(--glyph-nudge);
+  box-sizing: border-box;
+  border-radius: var(--radius-chip);
+  font-weight: var(--weight-number);
+  color: var(--text-pos);
+  background: var(--chip-pos-background);
+}
+[data-leader] .strip-car__pos {
+  background: var(--leader-background);
+  color: var(--leader-text);
+}
+.strip-car .chip {
+  font-size: var(--size-strip);
+}
+.strip-car__school {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: var(--space-1);
+  line-height: 1.3;
+}
+.lower-strip__page {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  font-size: var(--size-strip);
+  font-weight: var(--weight-number);
+  color: var(--text-muted);
+}
+
+/* ---- Lower third: a name pill and a role pill, bottom-left, above the strip's room */
+.lower-third {
+  position: absolute;
+  left: 96px;
+  bottom: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--row-gap);
+}
+.lower-third__name {
+  height: var(--name-height);
+  padding: 0 var(--space-5);
+  display: flex;
+  align-items: center;
+  font-size: var(--size-name);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
+  text-transform: var(--case-names);
+  line-height: 1;
+  white-space: nowrap;
+}
+.lower-third__role {
+  height: var(--role-height);
+  padding: 0 var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-text);
+  font-weight: var(--weight-caption);
+  font-size: var(--size-role);
+  white-space: nowrap;
+}
+.lower-third__role-text {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caption);
+}
+.lower-third__team {
+  color: var(--text-muted);
+  font-weight: var(--weight-row);
+}
+.lower-third__team::before {
+  content: '·';
+  margin-right: var(--space-3);
+}
+
+/* ---- Sponsor bug: the logo, the event word, the sponsor line, opposite the column */
+.sponsor-bug {
+  position: absolute;
+  top: 54px;
+  left: var(--bug-left);
+  right: var(--bug-right);
+  width: var(--bug-width);
+  padding: var(--space-3) var(--space-4);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-4);
+  align-items: center;
+}
+.sponsor-bug__logo {
+  grid-row: 1 / 3;
+  height: var(--bug-logo-height);
+  width: auto;
+  object-fit: contain;
+}
+.sponsor-bug__label {
+  font-size: var(--size-title);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  line-height: 1;
+  align-self: end;
+}
+.sponsor-bug__sponsor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-self: start;
+  min-width: 0;
+}
+.sponsor-bug__sponsor .caption,
+.sponsor-bug__sponsor-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sponsor-bug__sponsor-name {
+  font-family: var(--font-text);
+  font-weight: var(--weight-caption);
+  font-size: var(--size-caption);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* ---- Reference sheets (not on air): the stage holds labelled samples, inside title-safe */
+.sheet {
+  position: absolute;
+  inset: 54px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.sheet__title,
+.sheet__label {
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-chip);
+  background: var(--panel-head);
+  font-family: var(--font-text);
+  font-weight: var(--weight-caption);
+  font-size: 20px;
+  color: var(--text);
+}
+.sheet__grid--flags {
+  display: grid;
+  grid-template-columns: repeat(3, var(--column-width));
+  gap: var(--space-5);
+}
+.sheet__cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.sheet .race-clock,
+.sheet .tower {
+  position: static;
+  width: var(--column-width);
+}
+.sheet__pills {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  align-self: flex-start;
+}
+.sheet__icons {
+  display: flex;
+  gap: var(--space-4);
+}
+.sheet__icon-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5) var(--space-3) var(--space-4);
+}
+.sheet__icon-frame {
+  color: var(--status-icon);
+}
+.status-icon--large {
+  width: 96px;
+  height: 96px;
+}
+.sheet__icon-caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.sheet__icon-label {
+  font-size: var(--size-row);
+  font-weight: var(--weight-number);
+  text-transform: var(--case-rows);
+}
+.sheet__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ---- Motion demo page */
+.demo-stage {
+  position: absolute;
+  inset: 0;
+}
+.demo-caption {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-text);
+  font-size: 20px;
+  white-space: nowrap;
+}
+.cue {
+  width: 14px;
+  height: 10px;
+}
+.is-up .cue {
+  color: var(--cue-up);
+}
+.is-down .cue {
+  color: var(--cue-down);
+}
+.is-up .row__pos {
+  background: var(--cue-up);
+  color: var(--cue-text);
+}
+.is-down .row__pos {
+  background: var(--cue-down);
+  color: var(--cue-text);
+}
