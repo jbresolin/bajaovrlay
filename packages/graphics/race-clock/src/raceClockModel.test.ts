@@ -15,6 +15,8 @@
  *     does not know is refused with a pt-BR message naming the field.
  *   - A partial update changes only the fields it carries and keeps every other field.
  *   - A bad partial update is refused and leaves nothing half-applied.
+ *   - The flag band switch (showFlagBand) is optional and reads as "shown" when it is
+ *     missing, so items saved before the field existed keep their band.
  *
  * What these tests deliberately do not cover:
  *   - That the manifest's JSON Schema agrees with these rules; raceClockManifest.test.ts
@@ -24,6 +26,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isFlagBandShown,
   mergePartialUpdateIntoRaceClockData,
   parseCompleteRaceClockData,
   type RaceClockData,
@@ -39,6 +42,7 @@ function createGreenFlagEnduroData(): RaceClockData {
     referenceWallClockMs: Date.parse('2026-05-16T14:30:00.000Z'),
     running: true,
     lapsCompletedByLeader: 12,
+    showFlagBand: true,
   };
 }
 
@@ -69,6 +73,18 @@ describe('parseCompleteRaceClockData', () => {
     expect(result.isValid, 'data without lapsCompletedByLeader must still be valid').toBe(true);
   });
 
+  it('accepts data without the optional flag band switch', () => {
+    // Arrange: an item saved before the switch existed sends no showFlagBand at all.
+    const dataWithoutTheSwitch: Partial<RaceClockData> = createGreenFlagEnduroData();
+    delete dataWithoutTheSwitch.showFlagBand;
+
+    // Act: check it as `load` does.
+    const result = parseCompleteRaceClockData(dataWithoutTheSwitch);
+
+    // Assert: the switch really is optional.
+    expect(result.isValid, 'data without showFlagBand must still be valid').toBe(true);
+  });
+
   const refusedDataScenarios = [
     {
       // The most likely mistake from a hand-written payload: a field left out.
@@ -87,6 +103,12 @@ describe('parseCompleteRaceClockData', () => {
       name: 'refuses a clock reading that is not a whole number of milliseconds',
       data: { ...createGreenFlagEnduroData(), referenceTimeMs: 3_900_000.5 },
       expectedProblem: 'Valor inválido no campo "referenceTimeMs".',
+    },
+    {
+      // The band switch must be a real boolean; "sim" would mean a form bug upstream.
+      name: 'refuses a flag band switch that is not a boolean',
+      data: { ...createGreenFlagEnduroData(), showFlagBand: 'sim' },
+      expectedProblem: 'Valor inválido no campo "showFlagBand".',
     },
     {
       // A typo in a field name would otherwise be silently ignored.
@@ -184,5 +206,31 @@ describe('mergePartialUpdateIntoRaceClockData', () => {
       isValid: false,
       problem: 'Campo desconhecido nos dados: "teamName".',
     });
+  });
+});
+
+describe('isFlagBandShown', () => {
+  const flagBandScenarios = [
+    // The everyday clock: the switch on.
+    { name: 'shows the band when showFlagBand is true', showFlagBand: true, expected: true },
+    // The operator took the band off: the lower card.
+    { name: 'hides the band when showFlagBand is false', showFlagBand: false, expected: false },
+    // An item saved before the switch existed sends nothing: the band stays, as before.
+    {
+      name: 'shows the band when showFlagBand is missing',
+      showFlagBand: undefined,
+      expected: true,
+    },
+  ];
+
+  it.each(flagBandScenarios)('$name', ({ showFlagBand, expected }) => {
+    // Arrange: enduro data with the switch as the scenario says.
+    const enduroData = { ...createGreenFlagEnduroData(), showFlagBand };
+
+    // Act: ask whether the band is shown.
+    const isShown = isFlagBandShown(enduroData);
+
+    // Assert: on and missing both show the band; only off hides it.
+    expect(isShown, 'a missing switch must read as the band shown').toBe(expected);
   });
 });

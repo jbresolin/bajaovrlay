@@ -73,7 +73,8 @@ describe('buildItemFieldsFromSchemaForm', () => {
     const itemFields = buildItemFieldsFromSchemaForm(description, formValues);
 
     // Assert: what gate 2 of BAJAOVRLAY-13 ruled: typed fields as literals, the moment
-    // as takeTime, and no key at all for the blank laps.
+    // as takeTime, and no key at all for the blank laps. The band switch, on by default,
+    // is stored as a literal like any other typed field.
     expect(itemFields, 'a new race clock item must store takeTime as its reference').toEqual({
       sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
       state: { kind: 'literal', value: 'pre' },
@@ -81,6 +82,7 @@ describe('buildItemFieldsFromSchemaForm', () => {
       referenceTimeMs: { kind: 'literal', value: 14_400_000 },
       referenceWallClockMs: { kind: 'takeTime' },
       running: { kind: 'literal', value: true },
+      showFlagBand: { kind: 'literal', value: true },
     });
   });
 

@@ -95,6 +95,8 @@ describe('buildEmptySchemaFormValues', () => {
       referenceWallClockMs: '0',
       running: false,
       lapsCompletedByLeader: null,
+      // The band switch is on by default (the manifest's `default: true`).
+      showFlagBand: true,
     });
     expect(
       formValues.kinds.referenceWallClockMs,

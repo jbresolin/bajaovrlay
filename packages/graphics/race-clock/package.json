@@ -2,7 +2,7 @@
   "name": "@bajaovrlay/race-clock",
   "version": "0.1.0",
   "private": true,
-  "description": "Race clock OGraf graphic: session name, flag band and the running race time.",
+  "description": "Race clock OGraf graphic: logo and session title, the running race time, the leader laps and the optional flag band.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@bajaovrlay/shared": "workspace:*",
-    "@fontsource/barlow-condensed": "^5.3.0",
     "gsap": "^3.15.0",
     "lit": "^3.3.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@bajaovrlay/theme": "workspace:*",
     "@playwright/test": "catalog:",
     "ajv": "^8.20.0",
     "jsdom": "^30.1.2",

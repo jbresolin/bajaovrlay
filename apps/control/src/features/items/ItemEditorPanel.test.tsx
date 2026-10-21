@@ -202,7 +202,7 @@ describe('the item editor panel for a new item', () => {
     // Assert: one createItem for the main session's rundown with the form as literals
     // (240:00 is 14 400 000 ms, 90 s is 90 000 ms). The clock's reference moment is not
     // a number: it is left for the server to stamp when the item is taken. The blank
-    // laps are not in the fields at all.
+    // laps are not in the fields at all; the band switch is stored at its default, on.
     expect(
       fakeServer.listCommandsReceived(),
       'the press must send exactly one createItem carrying the whole form',
@@ -223,6 +223,7 @@ describe('the item editor panel for a new item', () => {
           referenceTimeMs: { kind: 'literal', value: 14_400_000 },
           referenceWallClockMs: { kind: 'takeTime' },
           running: { kind: 'literal', value: false },
+          showFlagBand: { kind: 'literal', value: true },
         },
       },
     ]);

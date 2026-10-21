@@ -19,13 +19,14 @@
  *
  * What these tests deliberately do not cover:
  *   - updateAction, which race-clock.updateAction.test.ts covers.
- *   - Real rendering, fonts and timing; jsdom draws nothing. The Playwright suites in
- *     e2e/ run the built component in Chromium for the lifecycle order and screenshots.
- *   - Loading the display font: jsdom has no FontFace, so displayFont.ts is replaced
- *     by a stand-in that is ready at once.
+ *   - Real rendering, fonts and timing; jsdom draws nothing and has no `document.fonts`,
+ *     so load's wait for the theme's font ends at once, and no theme token is on the
+ *     page, so every timeline lasts 0 ms (the theme's rule for a missing token). The
+ *     Playwright suites in e2e/ run the built component in Chromium for the lifecycle
+ *     order, the motion and the screenshots.
  */
 import { gsap } from 'gsap';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import {
   createGreenFlagEnduroData,
@@ -35,10 +36,6 @@ import {
   readShownText,
   takeControlOfFramesAndTime,
 } from './raceClockOnThePage.testSupport.js';
-
-vi.mock('./displayFont.js', () => ({
-  loadDisplayFontOnce: () => Promise.resolve(),
-}));
 
 describe('calls made at the wrong moment', () => {
   it('answers 409 to playAction before load, without throwing', async () => {

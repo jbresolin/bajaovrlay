@@ -3,19 +3,22 @@
  *
  * What this module is for:
  *   preview.html shows the built race clock on its own with data from `?data=`, plays it
- *   in, and has buttons to play, stop and change the flag. These tests watch the clock
+ *   in, and has buttons to play, stop, change the flag and switch the band. It loads the
+ *   theme's tokens and font the way the renderer page does. These tests watch the clock
  *   there, in Chromium, the way a viewer of the stream would see it.
  *
  * What these tests prove:
  *   - A running clock counts on its own, with no update from outside.
  *   - The preview buttons work: the flag button changes the flag on air.
- *   - A flag change wipes the new colour in over several frames; it never snaps.
+ *   - A flag change crossfades the new band in over several frames; it never snaps.
+ *   - The band switched off on air shrinks the card over several frames (never a snap)
+ *     to its height without the band, on the very same card element.
  *   - An update changes text in place: the elements on screen are the same ones after
  *     it (the DOM is never rebuilt).
  *   - The clock text keeps its width when the digits change (tabular numerals), so it
  *     does not jitter on air.
- *   - A theme set on the page's :root (as the renderer's theme will be) reaches inside
- *     the graphic, and the built-in colours apply until it does.
+ *   - The graphic has no colours of its own: the band's colour is the theme token on
+ *     the page's :root, and changing the token changes the band.
  *
  * What these tests deliberately do not cover:
  *   - Pixel-exact looks; raceClockScreenshots.e2e.ts compares screenshots.
@@ -71,7 +74,7 @@ test.describe('the race clock in the preview page', () => {
     // Act: press the red-flag button, as a designer would.
     await page.getByRole('button', { name: 'Bandeira: VERMELHA' }).click();
 
-    // Assert: once the update finished, the red label is on air.
+    // Assert: once the update finished, the red word is on air.
     await expect(page.locator('body'), 'the update must finish').toHaveAttribute(
       'data-preview-state',
       'onAir',
@@ -81,43 +84,90 @@ test.describe('the race clock in the preview page', () => {
     );
   });
 
-  test('wipes a new flag colour in over several frames instead of snapping', async ({ page }) => {
+  test('crossfades a new flag band in over several frames instead of snapping', async ({
+    page,
+  }) => {
     // Arrange: the preview with a green-flag enduro on air.
     await openPreviewOnAir(page, createGreenFlagEnduroData(false));
 
-    // Act: change to red, and note the incoming flag layer's clip on every frame
+    // Act: change to red, and note the incoming band layer's opacity on every frame
     // until the update resolves.
-    const distinctClipsSeen = await page.evaluate(async () => {
+    const distinctOpacitiesSeen = await page.evaluate(async () => {
       type OGrafGraphic = HTMLElement & { updateAction: (params: object) => Promise<unknown> };
       const graphic = document.querySelector('baja-race-clock') as OGrafGraphic;
       const incomingLayer = graphic.shadowRoot?.querySelector(
         '[data-testid="race-clock-incoming-flag-layer"]',
       );
-      const clipsSeen = new Set<string>();
+      const opacitiesSeen = new Set<string>();
       let isStillSampling = true;
-      const sampleIncomingLayerClip = () => {
+      const sampleIncomingLayerOpacity = () => {
         if (incomingLayer) {
-          clipsSeen.add(getComputedStyle(incomingLayer).clipPath);
+          opacitiesSeen.add(getComputedStyle(incomingLayer).opacity);
         }
         if (isStillSampling) {
-          requestAnimationFrame(sampleIncomingLayerClip);
+          requestAnimationFrame(sampleIncomingLayerOpacity);
         }
       };
-      sampleIncomingLayerClip();
+      sampleIncomingLayerOpacity();
       await graphic.updateAction({ data: { state: 'red' } });
       isStillSampling = false;
-      return clipsSeen.size;
+      return opacitiesSeen.size;
     });
 
-    // Assert: more than a "before" and an "after" clip: the wipe had steps in between.
+    // Assert: more than a "before" and an "after" opacity: the crossfade had steps in between.
     expect(
-      distinctClipsSeen,
-      'a flag change must animate through intermediate frames, never snap',
+      distinctOpacitiesSeen,
+      'a flag change must fade through intermediate frames, never snap',
     ).toBeGreaterThan(2);
   });
 
+  test('shrinks the card over several frames when the band is switched off on air', async ({
+    page,
+  }) => {
+    // Arrange: the preview with a green-flag enduro on air, with its band.
+    await openPreviewOnAir(page, createGreenFlagEnduroData(false));
+
+    // Act: switch the band off, and note the card's height on every frame until the
+    // update resolves, then whether the card is still the same element.
+    const toggleAsSeen = await page.evaluate(async () => {
+      type OGrafGraphic = HTMLElement & { updateAction: (params: object) => Promise<unknown> };
+      const graphic = document.querySelector('baja-race-clock') as OGrafGraphic;
+      const findPanel = () => graphic.shadowRoot?.querySelector('[data-testid="race-clock-panel"]');
+      const panelBefore = findPanel();
+      const heightsSeen = new Set<number>();
+      let isStillSampling = true;
+      const samplePanelHeight = () => {
+        if (panelBefore) {
+          heightsSeen.add(Math.round(panelBefore.getBoundingClientRect().height));
+        }
+        if (isStillSampling) {
+          requestAnimationFrame(samplePanelHeight);
+        }
+      };
+      samplePanelHeight();
+      await graphic.updateAction({ data: { showFlagBand: false } });
+      isStillSampling = false;
+      return {
+        distinctHeightsSeen: heightsSeen.size,
+        heightAtTheEnd: Math.round(panelBefore?.getBoundingClientRect().height ?? 0),
+        isTheSameCard: panelBefore === findPanel(),
+      };
+    });
+
+    // Assert: the card went through heights between 192 and 152 (never a snap), ended
+    // at its height without the band, and is still the same element.
+    expect(
+      toggleAsSeen.distinctHeightsSeen,
+      'switching the band off must shrink the card through intermediate frames, never snap',
+    ).toBeGreaterThan(2);
+    expect(toggleAsSeen.heightAtTheEnd, 'without the band the card must end at 152 px').toBe(152);
+    expect(toggleAsSeen.isTheSameCard, 'the card must be the same element after the switch').toBe(
+      true,
+    );
+  });
+
   test('updates text in place without rebuilding the elements on screen', async ({ page }) => {
-    // Arrange: the preview on air, with the clock and flag label elements noted.
+    // Arrange: the preview on air, with the clock and flag word elements noted.
     await openPreviewOnAir(page, createGreenFlagEnduroData(false));
 
     // Act: send an update that changes the flag, the clock and the laps.
@@ -174,38 +224,47 @@ test.describe('the race clock in the preview page', () => {
     );
   });
 
-  test('takes its colours from a theme set on the page root', async ({ page }) => {
-    // Arrange: the preview on air under green flag, with no theme set yet.
+  test('draws the band with the theme token on the page root, and follows the token', async ({
+    page,
+  }) => {
+    // Arrange: the preview on air under green flag, with the theme's tokens on :root.
     await openPreviewOnAir(page, createGreenFlagEnduroData(false));
-    const readFlagAndBrandColours = () =>
+    const readBandBackground = () =>
       page.evaluate(() => {
-        const shadowRoot = document.querySelector('baja-race-clock')?.shadowRoot;
-        const flagLayer = shadowRoot?.querySelector(
-          '[data-testid="race-clock-current-flag-layer"]',
-        );
-        const sessionRow = shadowRoot?.querySelector('.session-row');
-        return {
-          flagBackground: flagLayer ? getComputedStyle(flagLayer).backgroundColor : 'no flag',
-          brandStripe: sessionRow ? getComputedStyle(sessionRow).borderLeftColor : 'no row',
-        };
+        const flagLayer = document
+          .querySelector('baja-race-clock')
+          ?.shadowRoot?.querySelector('[data-testid="race-clock-current-flag-layer"]');
+        return flagLayer ? getComputedStyle(flagLayer).backgroundColor : 'no band';
       });
-    const coloursBeforeTheme = await readFlagAndBrandColours();
+    const bandBackgroundFromTheTheme = await readBandBackground();
+    // The token's value as the browser draws it: a probe element painted with the
+    // token's own text, so the test reads the same colour notation the band reports.
+    const greenTokenAsDrawn = await page.evaluate(() => {
+      const tokenValue = getComputedStyle(document.documentElement)
+        .getPropertyValue('--flag-green-background')
+        .trim();
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = tokenValue;
+      document.body.append(probe);
+      const colourAsDrawn = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return { tokenValue, colourAsDrawn };
+    });
 
-    // Act: the renderer's theme sets a blue brand and a darker green flag on :root.
+    // Act: the theme changes the green flag token on :root to a darker green.
     await page.evaluate(() => {
-      document.documentElement.style.setProperty('--baja-brand', '#0057b8');
-      document.documentElement.style.setProperty('--baja-flag-green-background', '#006b2d');
+      document.documentElement.style.setProperty('--flag-green-background', '#006b2d');
     });
-    const coloursAfterTheme = await readFlagAndBrandColours();
+    const bandBackgroundAfterTheChange = await readBandBackground();
 
-    // Assert: the defaults showed first, then the theme's colours replaced them.
-    expect(coloursBeforeTheme, 'with no theme the built-in colours must show').toEqual({
-      flagBackground: 'rgb(21, 163, 74)',
-      brandStripe: 'rgb(242, 107, 29)',
-    });
-    expect(coloursAfterTheme, 'a theme on :root must reach inside the graphic').toEqual({
-      flagBackground: 'rgb(0, 107, 45)',
-      brandStripe: 'rgb(0, 87, 184)',
-    });
+    // Assert: the token was there, the band was drawn with it, and it followed the change.
+    expect(greenTokenAsDrawn.tokenValue, 'the theme must have put the token on :root').not.toBe('');
+    expect(
+      bandBackgroundFromTheTheme,
+      'the band must be drawn with the theme’s --flag-green-background, not a colour of its own',
+    ).toBe(greenTokenAsDrawn.colourAsDrawn);
+    expect(bandBackgroundAfterTheChange, 'a token changed on :root must reach the band').toBe(
+      'rgb(0, 107, 45)',
+    );
   });
 });

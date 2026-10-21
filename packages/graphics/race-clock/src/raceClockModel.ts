@@ -26,6 +26,8 @@ const raceClockDataSchema = z.strictObject({
   referenceWallClockMs: z.int().min(0),
   running: z.boolean(),
   lapsCompletedByLeader: z.int().min(0).optional(),
+  // Optional so items saved before the band switch existed keep working; see isFlagBandShown.
+  showFlagBand: z.boolean().optional(),
 });
 
 const partialRaceClockDataSchema = raceClockDataSchema.partial();
@@ -36,6 +38,14 @@ export type RaceClockData = z.infer<typeof raceClockDataSchema>;
 /** Either good data, or a pt-BR sentence saying what is wrong with it. */
 export type RaceClockDataCheck =
   { isValid: true; data: RaceClockData } | { isValid: false; problem: string };
+
+/**
+ * Whether the card shows its flag band. A missing switch means shown: the band is the
+ * everyday look, and an item saved before the switch existed must keep it.
+ */
+export function isFlagBandShown(data: RaceClockData): boolean {
+  return data.showFlagBand ?? true;
+}
 
 /** Checks the complete data `load` receives. Never throws; bad data gives a pt-BR problem. */
 export function parseCompleteRaceClockData(input: unknown): RaceClockDataCheck {

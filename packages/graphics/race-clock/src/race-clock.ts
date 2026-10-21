@@ -1,9 +1,10 @@
 /**
- * The race clock OGraf graphic: session name, running race time, leader laps and a flag
- * band. This file owns the OGraf lifecycle (load, play, update, stop, dispose) and only
- * wires the pieces together; the rules live in named modules: raceClockModel (data),
- * raceClockView (the DOM, changed in place, never rebuilt), playSteps (the OGraf step
- * rule), clockTicker (the frame loop) and raceClockAnimations.
+ * The race clock OGraf graphic: the logo and session title, running race time, leader
+ * laps and the optional flag band. This file owns the OGraf lifecycle (load, play,
+ * update, stop, dispose) and only wires the pieces together; the rules live in named
+ * modules: raceClockModel (data), raceClockView (the DOM, changed in place, never
+ * rebuilt), playSteps (the OGraf step rule), clockTicker (the frame loop),
+ * raceClockAnimations (GSAP timelines from the theme's motion tokens) and themeFonts.
  *
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
@@ -12,7 +13,6 @@ import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 import { LitElement } from 'lit';
 
 import { type ClockTicker, createClockTicker } from './clockTicker.js';
-import { loadDisplayFontOnce } from './displayFont.js';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -26,6 +26,7 @@ import type {
 import { choosePlayActionTarget } from './playSteps.js';
 import { ptBR } from './ptBR.js';
 import {
+  buildFlagBandToggleTimeline,
   buildFlagChangeTimeline,
   buildPlayInTimeline,
   buildStopOutTimeline,
@@ -36,6 +37,7 @@ import {
 } from './raceClockAnimations.js';
 import {
   type FlagState,
+  isFlagBandShown,
   mergePartialUpdateIntoRaceClockData,
   parseCompleteRaceClockData,
   type RaceClockData,
@@ -46,15 +48,21 @@ import {
   prepareIncomingFlagLayer,
   type RaceClockParts,
   renderRaceClockTemplate,
+  showFlagBandAtOnce,
+  showFlagBandAtOnceAndMeasureChange,
   showFlagStateAtOnce,
   writeClockTimeAt,
   writeSessionCaptionAndLaps,
 } from './raceClockView.js';
+import { waitForThemeFontsToBeReady } from './themeFonts.js';
 
 /** Must match "stepCount" in race-clock.ograf.json: play shows the clock, stop hides it. */
 const raceClockStepCount = 1;
 
 type LifecycleStage = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
+
+/** A flag change on air (crossfade or band toggle) and what draws its end state at once. */
+type RunningFlagChange = { timeline: RaceClockTimeline; settleAtOnce: () => void };
 
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 
@@ -73,8 +81,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   private parts: RaceClockParts | undefined = undefined;
   private readonly runningTimelines = new Set<RaceClockTimeline>();
   private runningPanelTimeline: RaceClockTimeline | undefined = undefined;
-  private runningFlagWipe: { timeline: RaceClockTimeline; flagState: FlagState } | undefined =
-    undefined;
+  private runningFlagChange: RunningFlagChange | undefined = undefined;
   private readonly clockTicker: ClockTicker = createClockTicker({
     onFrame: () => this.redrawClockTime(),
     requestFrame: (callback) => requestAnimationFrame(callback),
@@ -86,9 +93,10 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   }
 
   /**
-   * OGraf load: checks the data, waits for the first render and the font, draws off air.
-   * A graphic is loaded once; a second load answers 409 rather than half resetting one
-   * that may be on air. Bad data leaves it unloaded, so load can be tried again.
+   * OGraf load: checks the data, waits for the first render and the theme's font, draws
+   * off air. A graphic is loaded once; a second load answers 409 rather than half
+   * resetting one that may be on air. Bad data leaves it unloaded, so load can be tried
+   * again.
    */
   async load(params: OGrafLoadParams): Promise<OGrafReturnPayload> {
     if (this.lifecycle === 'disposed') {
@@ -106,7 +114,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     // What could go wrong: a renderer calling load on an element not yet in the page
     // waits here until it is added, because Lit renders only connected elements.
     await this.updateComplete;
-    await loadDisplayFontOnce();
+    await waitForThemeFontsToBeReady();
 
     // A dispose that came while load was waiting must win; going on would bring a
     // disposed graphic back to life.
@@ -120,6 +128,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     writeSessionCaptionAndLaps(parts, dataCheck.data);
     writeClockTimeAt(parts, dataCheck.data, readServerAlignedTimeMs());
     showFlagStateAtOnce(parts, dataCheck.data.state);
+    showFlagBandAtOnce(parts, isFlagBandShown(dataCheck.data));
     placePanelOffAir(parts);
     this.lifecycle = 'offAir';
     return okAnswer;
@@ -193,7 +202,8 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   /**
    * OGraf updateAction: merges partial data in at any time after load, on air or off
    * (João's ruling: the server may correct the data before play or after stop). On air
-   * a flag change wipes the new colour in; off air it is simply drawn, ready for play.
+   * a flag change crossfades the new band in and a band switch grows or shrinks the
+   * card; off air both are simply drawn, ready for play.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
@@ -209,17 +219,15 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     this.data = dataCheck.data;
     writeSessionCaptionAndLaps(this.requireParts(), dataCheck.data);
     this.redrawClockTime();
+    const skipAnimation = params.skipAnimation ?? false;
     const isFlagChange = dataCheck.data.state !== dataBeforeUpdate.state;
-    if (!isFlagChange) {
-      return okAnswer;
+    const isBandChange = isFlagBandShown(dataCheck.data) !== isFlagBandShown(dataBeforeUpdate);
+    if (isFlagChange) {
+      await this.changeFlagState(dataCheck.data.state, skipAnimation);
     }
-    if (this.lifecycle !== 'onAir') {
-      // Nobody sees a wipe off air; draw the new flag so the next play shows it.
-      this.finishRunningFlagWipe();
-      showFlagStateAtOnce(this.requireParts(), dataCheck.data.state);
-      return okAnswer;
+    if (isBandChange) {
+      await this.changeFlagBand(isFlagBandShown(dataCheck.data), skipAnimation);
     }
-    await this.wipeInFlagState(dataCheck.data.state, params.skipAnimation ?? false);
     return okAnswer;
   }
 
@@ -240,7 +248,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     }
     this.runningTimelines.clear();
     this.runningPanelTimeline = undefined;
-    this.runningFlagWipe = undefined;
+    this.runningFlagChange = undefined;
     return okAnswer;
   }
 
@@ -293,34 +301,72 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   }
 
   /**
-   * Wipes a new flag state in over the current one. A wipe still running from an earlier
-   * update is finished at once first, so two flag changes in a row never tangle.
+   * Changes the flag state: on air the new band crossfades in over the current one;
+   * off air nobody would see it, so the new flag is drawn at once, ready for play.
    */
-  private async wipeInFlagState(flagState: FlagState, skipAnimation: boolean): Promise<void> {
+  private async changeFlagState(flagState: FlagState, skipAnimation: boolean): Promise<void> {
     const parts = this.requireParts();
-    this.finishRunningFlagWipe();
-
-    prepareIncomingFlagLayer(parts, flagState);
-    const wipeTimeline = buildFlagChangeTimeline(parts);
-    this.runningFlagWipe = { timeline: wipeTimeline, flagState };
-    await this.runTimeline(wipeTimeline, skipAnimation);
-
-    // Only the latest wipe may settle the flag; an older one was settled when cut short.
-    const isStillTheLatestWipe = this.runningFlagWipe?.timeline === wipeTimeline;
-    if (isStillTheLatestWipe && this.readLifecycleNow() !== 'disposed') {
-      this.runningFlagWipe = undefined;
+    this.finishRunningFlagChange();
+    if (this.lifecycle !== 'onAir') {
       showFlagStateAtOnce(parts, flagState);
+      return;
+    }
+    prepareIncomingFlagLayer(parts, flagState);
+    await this.runFlagChange(
+      buildFlagChangeTimeline(parts),
+      () => showFlagStateAtOnce(parts, flagState),
+      skipAnimation,
+    );
+  }
+
+  /**
+   * Switches the band on or off: on air the card grows or shrinks by the band's height
+   * while the band fades; off air the card is simply redrawn at its new height. The
+   * heights come from the drawn card around the switch, so no pixel value lives here.
+   */
+  private async changeFlagBand(isShown: boolean, skipAnimation: boolean): Promise<void> {
+    const parts = this.requireParts();
+    this.finishRunningFlagChange();
+    const toggle = showFlagBandAtOnceAndMeasureChange(parts, isShown);
+    if (this.lifecycle !== 'onAir') {
+      return;
+    }
+    await this.runFlagChange(
+      buildFlagBandToggleTimeline(parts, toggle),
+      () => showFlagBandAtOnce(parts, isShown),
+      skipAnimation,
+    );
+  }
+
+  /**
+   * Runs a flag change (crossfade or band toggle) and settles it when it ends. Only the
+   * latest change may settle; an older one was settled when it was cut short, so two
+   * changes in a row never tangle.
+   */
+  private async runFlagChange(
+    timeline: RaceClockTimeline,
+    settleAtOnce: () => void,
+    skipAnimation: boolean,
+  ): Promise<void> {
+    const flagChange: RunningFlagChange = { timeline, settleAtOnce };
+    this.runningFlagChange = flagChange;
+    await this.runTimeline(timeline, skipAnimation);
+
+    const isStillTheLatestChange = this.runningFlagChange === flagChange;
+    if (isStillTheLatestChange && this.readLifecycleNow() !== 'disposed') {
+      this.runningFlagChange = undefined;
+      flagChange.settleAtOnce();
     }
   }
 
-  private finishRunningFlagWipe(): void {
-    const runningWipe = this.runningFlagWipe;
-    if (runningWipe === undefined) {
+  private finishRunningFlagChange(): void {
+    const runningChange = this.runningFlagChange;
+    if (runningChange === undefined) {
       return;
     }
-    this.runningFlagWipe = undefined;
-    finishTimelineAtOnce(runningWipe.timeline);
-    showFlagStateAtOnce(this.requireParts(), runningWipe.flagState);
+    this.runningFlagChange = undefined;
+    finishTimelineAtOnce(runningChange.timeline);
+    runningChange.settleAtOnce();
   }
 
   /** Runs an in or out animation; one still running is finished at once first. */
