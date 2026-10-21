@@ -6,6 +6,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 
+import type { SchemaFormBindingOptions } from './BoundFieldControls';
 import type { SchemaFormDescription } from './schemaFormDescription';
 import { SchemaFormFields } from './SchemaFormFields';
 import { buildSchemaFormResolver } from './schemaFormResolver';
@@ -32,6 +33,8 @@ export function renderSchemaFormOnTestPage(options: {
   isDisabled?: boolean;
   /** A text for one untouched field to show in place of its value, as a panel hands it. */
   textShownInUntouchedField?: TextShownInUntouchedField;
+  /** The sources a field may read, as the item editor hands them; left out, no "Fonte". */
+  bindingOptions?: SchemaFormBindingOptions;
 }): SchemaFormOnTestPage {
   // The form lives inside the page; this holder is how the test reaches it afterwards.
   const holder: {
@@ -59,6 +62,7 @@ export function renderSchemaFormOnTestPage(options: {
         controlIdPrefix={controlIdPrefixOnTestPage}
         isDisabled={options.isDisabled}
         textShownInUntouchedField={options.textShownInUntouchedField}
+        bindingOptions={options.bindingOptions}
       />
     );
   }

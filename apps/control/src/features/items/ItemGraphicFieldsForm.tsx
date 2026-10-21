@@ -12,6 +12,7 @@ import {
   type SchemaFormValues,
 } from '@/features/schemaForm';
 import { ptBR } from '@/i18n/ptBR';
+import { useServerState } from '@/state/ControlPageStateProvider';
 
 import { fillGraphicFieldsOfItemEditor } from './graphicFieldsOfItemEditor';
 import { useBindingOptionsOfItemEditor } from './useBindingOptionsOfItemEditor';
@@ -71,9 +72,15 @@ export type ItemGraphicFieldsFormProps = {
 export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   const { graphic, fieldsToShow, whenFieldsAreChecked, handleRef, isItemOnAir } = props;
 
+  // The sources a new item's suggested "Fonte" is judged by, as the page holds them now.
+  const dataSources = useServerState((state) => state.dataSources);
+  const dataSnapshots = useServerState((state) => state.dataSnapshots);
   // Decided at the first draw and kept: a newer copy of the graphics slice (a reconnect)
-  // must not refill the form over what the operator has typed.
-  const [graphicFields] = useState(() => fillGraphicFieldsOfItemEditor(graphic, fieldsToShow));
+  // must not refill the form over what the operator has typed, and a source that comes
+  // on later must not change a "Fonte" the operator already saw.
+  const [graphicFields] = useState(() =>
+    fillGraphicFieldsOfItemEditor(graphic, fieldsToShow, { dataSources, dataSnapshots }),
+  );
   const form = useForm<SchemaFormValues>({
     defaultValues: graphicFields.formValues,
     resolver: buildSchemaFormResolver(graphicFields.description),

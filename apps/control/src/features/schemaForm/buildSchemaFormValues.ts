@@ -8,7 +8,7 @@
  * starting value instead and its label is listed, so the panel can warn the operator
  * that saving or taking writes what the form shows.
  */
-import { type ItemFields, wholeClockBindingPath } from '@bajaovrlay/shared';
+import { type BindingFieldValue, type ItemFields, wholeClockBindingPath } from '@bajaovrlay/shared';
 
 import {
   canFieldTakeTheWholeClock,
@@ -122,13 +122,33 @@ function assembleSchemaFormValues(
  * The values of a form nobody filled yet: every field at its starting value (the
  * manifest's defaults), a wall-clock field set to "filled by the server at the take",
  * and no value for any property the form cannot edit.
+ * `bindingsSuggestedByTheManifest` (suggestedBindingsOfDataSchema.ts, by field key) sets
+ * those fields to "Fonte" with the binding's choices instead, a list field included; a
+ * key no field has is ignored.
  */
-export function buildEmptySchemaFormValues(description: SchemaFormDescription): SchemaFormValues {
+export function buildEmptySchemaFormValues(
+  description: SchemaFormDescription,
+  bindingsSuggestedByTheManifest: Record<string, BindingFieldValue> = {},
+): SchemaFormValues {
   const fieldsTheFormCanEdit = listFieldsTheFormCanEdit(description);
+  const kindPairs: Array<[string, SchemaFormFieldKind]> = [];
+  const bindingPairs: Array<[string, SchemaFormBindingValue]> = [];
+  for (const field of description.fields) {
+    const suggestedBinding = readOwnValueOfRecord(bindingsSuggestedByTheManifest, field.key);
+    if (suggestedBinding !== undefined) {
+      kindPairs.push([field.key, 'binding']);
+      bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(suggestedBinding)]);
+      continue;
+    }
+    if (field.control !== 'unsupported') {
+      kindPairs.push([field.key, chooseStartingKindOfField(field)]);
+    }
+  }
   return assembleSchemaFormValues(
     fieldsTheFormCanEdit.map((field) => [field.key, buildStartingValueOfField(field)]),
-    fieldsTheFormCanEdit.map((field) => [field.key, chooseStartingKindOfField(field)]),
+    kindPairs,
     [],
+    bindingPairs,
   );
 }
 

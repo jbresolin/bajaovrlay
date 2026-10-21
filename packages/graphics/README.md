@@ -53,8 +53,17 @@ On each property of `schema.properties` (`type` picks the control: `string` text
   control page; if one is missing, repeated or on the wrong kind of property, the time
   field shows the reference time, as for any graphic.
 
+- `v_baja.suggestedBinding` — `{ shapeKey, path, isLive }`, where the data usually comes
+  from (the tower's cars: `{ "shapeKey": "positions", "path": "entries", "isLive": true }`).
+  The item editor pre-fills that field's "Fonte" for a new item when exactly one enabled
+  source has that shape in its last good data; with none or several, the field opens
+  plain. The path must be one the editor offers for the shape and fit the field (a whole
+  list on an `array`, a text on a `string`…) and must not need a car number; a hint that
+  fails those rules is ignored, never an error.
+
 `schema.required` lists the fields that cannot be left blank; every other field gets a
 "limpar" control and, once cleared, is not sent to the graphic at all (never as `null`).
 
-Arrays, nested objects and `oneOf` are not supported yet: such a property is shown as
-read-only JSON until M2/M3.
+Arrays, nested objects and `oneOf` are not typed by hand yet: such a property is shown as
+read-only JSON until M2/M3. An `array` may still read a whole list from a source ("Fonte"
+in the item editor: the positions, the standings or the bracket rounds).

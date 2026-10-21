@@ -9,9 +9,11 @@ import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
 import {
   buildEmptySchemaFormValues,
   buildSchemaFormValuesFromItemFields,
+  buildSuggestedBindingsForNewItem,
   describeSchemaFormFromDataSchema,
   type SchemaFormDescription,
   type SchemaFormValues,
+  type SourcesForSuggestedBindings,
 } from '@/features/schemaForm';
 
 import type { ItemEditorPrefill } from './ItemEditorTargetProvider';
@@ -29,10 +31,18 @@ export type GraphicFieldsOfItemEditor = {
   labelsOfFieldsThatCouldNotBeRead: string[];
 };
 
+/** The page's sources when the editor has none to judge a manifest's suggestion by. */
+const noSourcesForSuggestedBindings: SourcesForSuggestedBindings = {
+  dataSources: [],
+  dataSnapshots: [],
+};
+
 /**
  * Generates the fields of `graphic` and fills them:
  * - with `fieldsToShow` null (a new item) from the manifest's defaults, with a
- *   wall-clock field left for the server to stamp at the take;
+ *   wall-clock field left for the server to stamp at the take, and a field whose
+ *   manifest suggests a "Fonte" pre-filled with it when exactly one enabled source of
+ *   `sources` produces that shape (suggestedBindingsOfDataSchema.ts);
  * - otherwise with those fields, each in the kind it is stored in: what a stored item
  *   stores, or the prefill of a new item opened by "Salvar como item".
  * What could go wrong: the fields of a stored item must be filled from the item as it was
@@ -41,13 +51,15 @@ export type GraphicFieldsOfItemEditor = {
 export function fillGraphicFieldsOfItemEditor(
   graphic: Graphic,
   fieldsToShow: ItemFields | null,
+  sources: SourcesForSuggestedBindings = noSourcesForSuggestedBindings,
 ): GraphicFieldsOfItemEditor {
   const description = describeSchemaFormFromDataSchema(graphic.manifest.schema);
 
   if (fieldsToShow === null) {
+    const suggestedBindings = buildSuggestedBindingsForNewItem(graphic.manifest.schema, sources);
     return {
       description,
-      formValues: buildEmptySchemaFormValues(description),
+      formValues: buildEmptySchemaFormValues(description, suggestedBindings),
       labelsOfFieldsThatCouldNotBeRead: [],
     };
   }

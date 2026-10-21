@@ -1,0 +1,163 @@
+/**
+ * The generated form of a graphic with a list field, a dropdown and switches (apps/control)
+ *
+ * What this module is for:
+ *   The positions tower (BAJAOVRLAY-21) is the first graphic whose data is a whole list
+ *   read from a source: its cars are an array, its layout an enum and its columns
+ *   booleans. The brief's check (section D) is that the control page needs no code for
+ *   it: SchemaFormFields draws the list with "Fonte", the dropdown with the manifest's
+ *   labels and the switches with their titles, from the manifest alone.
+ *
+ * What these tests prove:
+ *   - The list of cars gets a kind selector offering "Valor como está" and "Fonte".
+ *   - Once "Fonte" is chosen, the paths offered hold the whole positions list
+ *     ("Posições › Lista completa") and none of the single-car values, and with the
+ *     simulator chosen the line under the binding counts the cars it would get now.
+ *   - The layout dropdown opens on "Compacta" and offers "Compacta" and "Detalhada".
+ *   - Each column switch is drawn under its title, on or off as the manifest's default.
+ *
+ * What these tests deliberately do not cover:
+ *   - Which paths fit which field, row by row: bindingChoices.test.ts.
+ *   - The item editor around the form, and the pre-filled "Fonte" from the manifest's
+ *     suggestion: ItemEditorPanelSuggestedBinding.test.tsx.
+ *   - The real tower's manifest: the schema here is a fixture written like it.
+ */
+import { resolveBindingAgainstSources } from '@bajaovrlay/shared';
+import { fireEvent, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+
+import {
+  buildEnduroSnapshotAtLap34,
+  buildSimulatorThatIsOk,
+  seededSimulatorId,
+} from '@/state/dataSourcesLikeTheServerSends.testSupport';
+
+import { buildEmptySchemaFormValues } from './buildSchemaFormValues';
+import { describePositionsTowerFixtureForm } from './positionsTowerFixtureSchema.testSupport';
+import {
+  chooseOptionInDropdown,
+  renderSchemaFormOnTestPage,
+} from './schemaFormOnTestPage.testSupport';
+
+/** Draws the tower's empty form on a page that knows the simulator and its lap-34 data. */
+function renderEmptyTowerFormWithTheSimulator() {
+  const description = describePositionsTowerFixtureForm();
+  const simulator = buildSimulatorThatIsOk();
+  return renderSchemaFormOnTestPage({
+    description,
+    formValues: buildEmptySchemaFormValues(description),
+    bindingOptions: {
+      dataSources: [{ id: simulator.id, label: simulator.label }],
+      readValueNow: (binding) =>
+        resolveBindingAgainstSources(binding, {
+          dataSources: [simulator],
+          dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
+          overrides: [],
+        }),
+    },
+  });
+}
+
+/** The options a dropdown offers, by its accessible name, as the operator reads them. */
+function readOptionsOfDropdown(dropdownName: string): string[] {
+  fireEvent.keyDown(screen.getByRole('combobox', { name: dropdownName }), { key: 'Enter' });
+  const optionNames = screen.getAllByRole('option').map((option) => option.textContent ?? '');
+  fireEvent.keyDown(screen.getAllByRole('option')[0] ?? document.body, { key: 'Escape' });
+  return optionNames;
+}
+
+describe('the list of cars of the tower form', () => {
+  it('offers "Valor como está" and "Fonte" in its kind selector', () => {
+    // Arrange: the tower's empty form.
+    renderEmptyTowerFormWithTheSimulator();
+
+    // Act: read the kinds offered for the cars.
+    const kindsOfTheCars = readOptionsOfDropdown('Como preencher Carros');
+
+    // Assert: the list can stay as it is or read a source.
+    expect(kindsOfTheCars, 'a list field is kept as it is or read from a source').toEqual([
+      'Valor como está',
+      'Fonte',
+    ]);
+  });
+
+  it('offers the whole positions list as a path once "Fonte" is chosen, and no single car value', () => {
+    // Arrange: the cars set to read a source.
+    renderEmptyTowerFormWithTheSimulator();
+    chooseOptionInDropdown('Como preencher Carros', 'Fonte');
+
+    // Act: read the paths offered.
+    const pathsOffered = readOptionsOfDropdown('O que Carros lê da fonte');
+
+    // Assert: the whole list fits a list field; one car's team name does not.
+    expect(pathsOffered, 'the whole positions list fits the cars').toContain(
+      'Posições › Lista completa',
+    );
+    expect(pathsOffered, 'a single value does not fit a list').not.toContain(
+      'Posições › 1º colocado › Equipe',
+    );
+  });
+
+  it('counts the cars it would get now once the simulator and the whole list are chosen', () => {
+    // Arrange: the cars set to read a source.
+    renderEmptyTowerFormWithTheSimulator();
+    chooseOptionInDropdown('Como preencher Carros', 'Fonte');
+
+    // Act: choose the simulator and its whole positions list.
+    chooseOptionInDropdown('Fonte de Carros', 'Simulador — Enduro');
+    chooseOptionInDropdown('O que Carros lê da fonte', 'Posições › Lista completa');
+
+    // Assert: the line under the binding counts the 60 cars of the lap-34 sample.
+    expect(
+      screen.getByText('Valor agora: lista com 60 entradas'),
+      'the value of now must count the cars of the simulator',
+    ).toBeVisible();
+  });
+});
+
+describe('the layout and the column switches of the tower form', () => {
+  it('opens the layout on "Compacta" and offers the two layouts under the manifest labels', () => {
+    // Arrange: the tower's empty form.
+    renderEmptyTowerFormWithTheSimulator();
+
+    // Act: read what the layout shows and offers.
+    const layoutShown = screen.getByRole('combobox', { name: 'Leiaute' }).textContent;
+    const layoutsOffered = readOptionsOfDropdown('Leiaute');
+
+    // Assert: the manifest's default, and its pt-BR labels in its order.
+    expect(layoutShown, 'the layout must start at the manifest default').toBe('Compacta');
+    expect(layoutsOffered, 'the layouts must be offered by their labels').toEqual([
+      'Compacta',
+      'Detalhada',
+    ]);
+  });
+
+  const columnSwitches = [
+    // A column the design shows by default.
+    { title: 'Mostrar diferença para o líder', isOnByDefault: true },
+    // Another column on by default, to show every switch follows its own default.
+    { title: 'Mostrar intervalo', isOnByDefault: true },
+    // The pit stops column, titled with the design's word.
+    { title: 'Paradas', isOnByDefault: true },
+    // The one column the design hides by default.
+    { title: 'Abastecimentos', isOnByDefault: false },
+  ];
+
+  it.each(columnSwitches)(
+    'draws the switch "$title" at its default',
+    ({ title, isOnByDefault }) => {
+      // Arrange: the tower's empty form.
+      renderEmptyTowerFormWithTheSimulator();
+
+      // Act: find the switch by its title.
+      const columnSwitch = screen.getByRole('switch', { name: title });
+
+      // Assert: it is on or off as the manifest's default says.
+      if (isOnByDefault) {
+        expect(columnSwitch, `"${title}" must start on, as its default says`).toBeChecked();
+      } else {
+        expect(columnSwitch, `"${title}" must start off, as its default says`).not.toBeChecked();
+      }
+    },
+  );
+});

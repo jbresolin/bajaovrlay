@@ -85,6 +85,11 @@ export {
 export { SchemaFormFields } from './SchemaFormFields';
 // What a panel hands the form so fields can read a data source ("Fonte", "Relógio da fonte").
 export type { SchemaFormBindingOptions } from './BoundFieldControls';
+// The "Fonte" a manifest suggests for a new item's field, when exactly one source fits it.
+export {
+  buildSuggestedBindingsForNewItem,
+  type SourcesForSuggestedBindings,
+} from './suggestedBindingsOfDataSchema';
 // The line saying what a bound field would get now, or why it would get nothing.
 export { describeBindingValueNow } from './bindingValueNowText';
 // A text a panel has one untouched field show in place of the value the form holds.
