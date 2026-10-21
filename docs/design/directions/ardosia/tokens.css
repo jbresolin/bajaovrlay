@@ -7,9 +7,9 @@
   /* ---- Brand values (docs/brand/logo-baja.svg). Yellow is used as text only (the position
      column, as the scoreboard does), never as a field, so it cannot read as a yellow flag. */
   --brand-green: #009739;
-  --brand-navy: #003B71;
-  --brand-blue: #386DB4;
-  --brand-yellow: #F4C42A;
+  --brand-navy: #003b71;
+  --brand-blue: #386db4;
+  --brand-yellow: #f4c42a;
   --brand-grey: #383838;
 
   /* ---- Surfaces: the scoreboard's slate (rgb 20 25 48 at 78%), a touch denser for contrast */
@@ -18,48 +18,56 @@
   --shadow: none;
 
   /* ---- Text and the colour-per-column triad */
-  --text: #E8ECF4;
-  --text-muted: #AAB4C8;
-  --text-pos: var(--brand-yellow);          /* position: yellow text, no field */
+  --text: #e8ecf4;
+  --text-muted: #aab4c8;
+  --text-pos: var(--brand-yellow); /* position: yellow text, no field */
   --chip-pos-background: transparent;
   --chip-car-background: var(--brand-blue); /* car number: the blue chip */
-  --chip-car-text: #FFFFFF;
-  --text-laps: #4ADE80;                     /* laps: green text (brand green is 4.5:1 here; this reads at 9.9:1) */
+  --chip-car-text: #ffffff;
+  --text-laps: #4ade80; /* laps: green text (brand green is 4.5:1 here; this reads at 9.9:1) */
   --chip-laps-background: transparent;
   --laps-padding: 0px;
-  --leader-background: var(--brand-green);  /* the leader's position becomes a green chip */
-  --leader-text: #FFFFFF;
+  --leader-background: var(--brand-green); /* the leader's position becomes a green chip */
+  --leader-text: #ffffff;
   --cue-up: var(--brand-green);
   --cue-down: var(--brand-blue);
-  --cue-text: #FFFFFF;
+  --cue-text: #ffffff;
 
   /* ---- Status icons (shape carries the meaning; one colour) */
-  --status-icon: #E8ECF4;
+  --status-icon: #e8ecf4;
   --status-icon-size: 20px;
   --status-retired-opacity: 0.55;
 
   /* ---- Flags: the semantic set shared by the three directions, never the brand values */
-  --flag-pre-background: #5B6472;        --flag-pre-text: #FFFFFF;
-  --flag-green-background: #15803D;      --flag-green-text: #FFFFFF;
-  --flag-yellow-background: #FFD600;     --flag-yellow-text: #111111;
-  --flag-red-background: #DC2626;        --flag-red-text: #FFFFFF;
-  --flag-checkered-dark: #111111;        --flag-checkered-light: #F5F5F5;
-  --flag-checkered-text: #F5F5F5;        --flag-checkered-square: 20px;
-  --flag-finished-background: #1F2937;   --flag-finished-text: #FFFFFF;
+  --flag-pre-background: #5b6472;
+  --flag-pre-text: #ffffff;
+  --flag-green-background: #15803d;
+  --flag-green-text: #ffffff;
+  --flag-yellow-background: #ffd600;
+  --flag-yellow-text: #111111;
+  --flag-red-background: #dc2626;
+  --flag-red-text: #ffffff;
+  --flag-checkered-dark: #111111;
+  --flag-checkered-light: #f5f5f5;
+  --flag-checkered-text: #f5f5f5;
+  --flag-checkered-square: 20px;
+  --flag-finished-background: #1f2937;
+  --flag-finished-text: #ffffff;
 
-  /* ---- Type: Bebas Neue (uppercase display, tabular figures) for everything that is a
-     number or a name in caps, Barlow for small mixed-case text */
+  /* ---- Type: one face, Bebas Neue (João's gate on PR #19), for every word and number on
+     air. It has one weight and no lowercase, so every weight token is 400 and styles.css sets
+     the whole page in caps (a lowercase letter would fall back to another face). */
   --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
-  --font-text: 'Barlow', Arial, sans-serif;
+  --font-text: 'Bebas Neue', 'Arial Narrow', sans-serif;
   --weight-display: 400;
   --weight-number: 400;
   --weight-row: 400;
-  --weight-caption: 600;
-  --size-title: 34px;        /* session name in the clock head, event word on the bug */
+  --weight-caption: 400;
+  --size-title: 34px; /* session name in the clock head, event word on the bug */
   --size-time: 56px;
-  --size-row: 28px;          /* tower rows: positions, car chips, names, laps (Bebas caps) */
-  --size-detail: 26px;       /* detailed tower's times and gaps */
-  --size-caption: 20px;      /* captions, school names, sponsor line (the floor) */
+  --size-row: 28px; /* tower rows: positions, car chips, names, laps (Bebas caps) */
+  --size-detail: 26px; /* detailed tower's times and gaps */
+  --size-caption: 22px; /* captions, school names, sponsor line (Bebas caps need 22 to read as 20 of a text face) */
   --size-flag: 26px;
   --size-strip: 30px;
   --size-strip-time: 44px;
@@ -67,7 +75,7 @@
   --size-role: 22px;
   --tracking-display: 0.04em;
   --tracking-time: 0.02em;
-  --tracking-caption: 0.08em;
+  --tracking-caption: 0.06em;
   --tracking-flag: 0.1em;
   --case-rows: uppercase;
   --case-names: uppercase;
@@ -81,16 +89,16 @@
   --bug-right: auto;
   --bug-width: 300px;
   --bug-logo-height: 64px;
-  --clock-height: 192px;          /* 64 head + 88 body (caption line over the time) + 40 flag band */
+  --clock-height: 192px; /* 64 head + 88 body (caption line over the time) + 40 flag band */
   --clock-head-height: 64px;
   --clock-body-height: 88px;
   --clock-logo-height: 44px;
   --flag-band-height: 40px;
   --stack-gap: 8px;
-  --tower-top: calc(54px + var(--clock-height) + var(--stack-gap));   /* 254 */
+  --tower-top: calc(54px + var(--clock-height) + var(--stack-gap)); /* 254 */
   --head-height: 28px;
   --row-height: 34px;
-  --row-gap: 3px;                 /* the scoreboard's gap between pills */
+  --row-gap: 3px; /* the scoreboard's gap between pills */
   --row-padding: 10px;
   --column-pos: 36px;
   --column-cue: 12px;
@@ -123,7 +131,7 @@
   --motion-strip-page: 300ms;
   --motion-strip-hold: 7000ms;
   --motion-cue-hold: 2000ms;
-  --motion-in-offset: 20;         /* px a piece rises on entry (and lifts on exit) */
+  --motion-in-offset: 20; /* px a piece rises on entry (and lifts on exit) */
   --motion-in-scale: 1;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);

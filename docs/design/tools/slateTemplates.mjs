@@ -1,50 +1,21 @@
-// The markup every "slate" direction shares. The three directions (ardosia, grafite, marinho)
-// are siblings of the existing scoreboard (placarbaja.juansalles.com.br): the same graphics,
-// the same elements in the same order, so each direction is its tokens.css, its styles.css
-// and a few numbers (rows, cars per strip page), never its own copy of this file. A
-// direction's generatePages.mjs calls buildPages() with those numbers and writes the result.
-import { readFileSync } from 'node:fs';
+// The markup every "slate" direction shares. The directions compared at the gate of PR #19
+// (ardosia, grafite, marinho) were siblings of the existing scoreboard
+// (placarbaja.juansalles.com.br): the same graphics, the same elements in the same order, so
+// a direction is its tokens.css, its styles.css and a few numbers (rows, cars per strip
+// page), never its own copy of this file. A direction's generatePages.mjs calls buildPages()
+// with those numbers and writes the result.
+import {
+  escapeHtml,
+  flagOrder,
+  flagStateLabels,
+  flagWords,
+  largeIcon,
+  sample,
+  statusIcons,
+  statusShapeWords,
+} from './slateVocabulary.mjs';
 
-const sampleDataUrl = new URL('../sample-data.json', import.meta.url);
-export const sample = JSON.parse(readFileSync(sampleDataUrl, 'utf8'));
-
-// Flag words beyond the two in sample-data.json come from the product's own pt-BR catalogue
-// (packages/graphics/race-clock/src/ptBR.ts), so the sheet shows the words that go on air.
-export const flagWords = {
-  pre: 'PRÉ-LARGADA',
-  green: sample.session.flagLabel,
-  yellow: sample.sessionYellow.flagLabel,
-  red: 'VERMELHA',
-  checkered: 'QUADRICULADA',
-  finished: 'ENCERRADA',
-};
-const flagOrder = ['pre', 'green', 'yellow', 'red', 'checkered', 'finished'];
-const flagStateLabels = {
-  pre: 'antes da largada',
-  green: 'bandeira verde',
-  yellow: 'bandeira amarela',
-  red: 'bandeira vermelha',
-  checkered: 'bandeira quadriculada',
-  finished: 'prova encerrada',
-};
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// Status icons: inline SVG, three different shapes, paths only (no <text>), so the glyph stays
-// a glyph and the layout checker never reads it as small text.
-const statusIcons = {
-  inPit: `<svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="No box"><rect x="1.5" y="1.5" width="17" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.25 14.75V5.25h3.25a2.6 2.6 0 0 1 0 5.2H7.25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  stopped: `<svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Parado"><path d="M10 2.2 18.7 17.4H1.3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 7.6v4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.8" r="1.3" fill="currentColor"/></svg>`,
-  retired: `<svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Abandonou"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.6 15.4 15.4 4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
-};
-const statusShapeWords = { inPit: 'um P num quadrado', stopped: 'um triângulo', retired: 'um círculo cortado' };
-const largeIcon = (status) => statusIcons[status].replace('class="status-icon"', 'class="status-icon status-icon--large"');
+export { flagWords, sample };
 
 const logoPath = '../../../brand/logo-branca.png';
 
@@ -67,15 +38,39 @@ ${script}</body>
 
 // ---------------------------------------------------------------- race clock (the header card)
 
+// The checkered band carries no word (João's gate on PR #19): the pattern says it, and the
+// word stays in the markup only as the band's accessible name.
+function renderFlagWord(flag, word) {
+  if (flag === 'checkered') {
+    return '';
+  }
+  return `<span class="flag-word">${escapeHtml(word)}</span>`;
+}
+
 export function renderFlagBand(flag, word) {
-  return `<div class="race-clock__flag flag-surface" data-flag="${flag}"><span class="flag-word">${escapeHtml(word)}</span></div>`;
+  const label = flag === 'checkered' ? ` aria-label="${escapeHtml(word)}"` : '';
+  return `<div class="race-clock__flag flag-surface" data-flag="${flag}"${label}>${renderFlagWord(flag, word)}</div>`;
+}
+
+export function renderFlagPill(flag, word, extraClass = '') {
+  const label = flag === 'checkered' ? ` aria-label="${escapeHtml(word)}"` : '';
+  const classes = ['flag-surface', 'flag-pill', extraClass].filter(Boolean).join(' ');
+  return `<span class="${classes}" data-flag="${flag}"${label}>${renderFlagWord(flag, word)}</span>`;
 }
 
 // The existing scoreboard's header (logo + session name) becomes the race clock: the same
-// head, then the time with its caption and the leader's laps, then the flag band.
-export function renderRaceClock(session, flag = session.flag, word = session.flagLabel, { withRoot = true } = {}) {
+// head, then the time with its caption and the leader's laps, then the flag band. The band
+// is optional (João's gate on PR #19): a session with no flag state shows the clock without it.
+export function renderRaceClock(
+  session,
+  flag = session.flag,
+  word = session.flagLabel,
+  { withRoot = true, withFlag = true } = {},
+) {
   const root = withRoot ? ' data-graphic="race-clock"' : '';
-  return `<section class="card race-clock"${root}>
+  const noFlagClass = withFlag ? '' : ' race-clock--no-flag';
+  const band = withFlag ? `\n  ${renderFlagBand(flag, word)}` : '';
+  return `<section class="card race-clock${noFlagClass}"${root}>
   <header class="race-clock__head">
     <img class="race-clock__logo" src="${logoPath}" alt="Baja SAE Brasil">
     <h1 class="race-clock__title">${escapeHtml(session.sessionName)}</h1>
@@ -84,8 +79,7 @@ export function renderRaceClock(session, flag = session.flag, word = session.fla
     <span class="race-clock__caption">${escapeHtml(session.clockCaption)}</span>
     <span class="race-clock__time">${session.timeRemaining}</span>
     <span class="race-clock__laps">${escapeHtml(session.lapsLabel)}</span>
-  </div>
-  ${renderFlagBand(flag, word)}
+  </div>${band}
 </section>`;
 }
 
@@ -132,6 +126,10 @@ const detailedColumns = [
   ['status', ''],
 ];
 
+// The gap rule (docs/00-concept.md §8) writes "+19,0 s"; a direction set in a caps-only face
+// cannot show a lowercase unit, so it asks for the tower's gaps without it ("+19,0").
+let writeGap = (text) => text;
+
 function renderDetailedRow(car) {
   const leader = car.position === 1 ? ' data-leader' : '';
   return `    <li class="pill row row--detailed" data-row data-status="${car.status}"${leader}>
@@ -140,8 +138,8 @@ function renderDetailedRow(car) {
       <span class="row__car chip">${car.carNumber}</span>
       <span class="row__team"><span class="row__team-name">${escapeHtml(car.teamName)}</span><span class="row__school">${escapeHtml(car.schoolName)}</span></span>
       <span class="row__laps">${car.laps}</span>
-      <span class="row__gap">${escapeHtml(car.gapText)}</span>
-      <span class="row__interval">${escapeHtml(car.intervalText)}</span>
+      <span class="row__gap">${escapeHtml(writeGap(car.gapText))}</span>
+      <span class="row__interval">${escapeHtml(writeGap(car.intervalText))}</span>
       <span class="row__last-lap">${escapeHtml(car.lastLapText)}</span>
       <span class="row__best-lap">${escapeHtml(car.bestLapText)}</span>
       <span class="row__pit-stops">${car.pitStops}</span>
@@ -171,7 +169,7 @@ ${cars.map(renderDetailedRow).join('\n')}
 function renderStripCar(car) {
   const leader = car.position === 1 ? ' data-leader' : '';
   return `    <li class="pill strip-car" data-row data-status="${car.status}"${leader}>
-      <span class="strip-car__pos">${car.position}</span>
+      <span class="strip-car__pos">${car.position}º</span>
       <span class="strip-car__car chip">${car.carNumber}</span>
       <span class="strip-car__school">${escapeHtml(car.schoolName)}</span>
     </li>`;
@@ -188,7 +186,7 @@ export function renderLowerStrip(cars, session, pageNumber, pageCount, { withRoo
   return `<section class="lower-strip"${root}>
   <div class="card lower-strip__clock">
     <span class="lower-strip__time">${session.timeRemaining}</span>
-    <span class="lower-strip__flag flag-surface flag-pill" data-flag="${session.flag}"><span class="flag-word">${escapeHtml(session.flagLabel)}</span></span>
+    ${renderFlagPill(session.flag, session.flagLabel, 'lower-strip__flag')}
   </div>
   <div class="lower-strip__pages">
 ${renderStripPage(cars)}
@@ -200,8 +198,12 @@ ${renderStripPage(cars)}
 // ---------------------------------------------------------------- lower third and bug
 
 export function renderLowerThird(person) {
-  const chip = person.carNumber ? `<span class="chip lower-third__car">${person.carNumber}</span>` : '';
-  const team = person.team ? `<span class="lower-third__team">${escapeHtml(person.team)}</span>` : '';
+  const chip = person.carNumber
+    ? `<span class="chip lower-third__car">${person.carNumber}</span>`
+    : '';
+  const team = person.team
+    ? `<span class="lower-third__team">${escapeHtml(person.team)}</span>`
+    : '';
   return `<section class="lower-third" data-graphic="lower-third">
   <div class="card lower-third__name">${escapeHtml(person.name)}</div>
   <div class="card lower-third__role">${chip}<span class="lower-third__role-text">${escapeHtml(person.role)}</span>${team}</div>
@@ -228,13 +230,16 @@ ${renderRaceClock(session, flag, flagWords[flag], { withRoot: false })}
     </div>`;
     })
     .join('\n');
-  const pills = flagOrder
-    .map((flag) => `<span class="flag-surface flag-pill" data-flag="${flag}"><span class="flag-word">${flagWords[flag]}</span></span>`)
-    .join('\n      ');
+  const pills = flagOrder.map((flag) => renderFlagPill(flag, flagWords[flag])).join('\n      ');
+  const withoutFlag = `    <div class="sheet__cell">
+      <div class="sheet__label">sem bandeira (a faixa é opcional)</div>
+${renderRaceClock(sample.session, sample.session.flag, sample.session.flagLabel, { withRoot: false, withFlag: false })}
+    </div>`;
   return `<div class="sheet">
-  <div class="sheet__title">${direction} · bandeiras — o relógio nos seis estados (folha de referência, não vai ao ar)</div>
+  <div class="sheet__title">${direction} · bandeiras — o relógio nos seis estados e sem bandeira (folha de referência, não vai ao ar)</div>
   <div class="sheet__grid sheet__grid--flags">
 ${clocks}
+${withoutFlag}
   </div>
   <div class="sheet__label">a pílula da faixa inferior nos seis estados</div>
   <div class="card sheet__pills">
@@ -247,10 +252,12 @@ function renderSheetStatus(direction) {
   const byCar = (carNumber) => sample.positions.find((car) => car.carNumber === carNumber);
   const statusCars = [byCar(69), byCar(65), byCar(96)];
   const icons = statusCars
-    .map((car) => `    <div class="card sheet__icon-cell">
+    .map(
+      (car) => `    <div class="card sheet__icon-cell">
       <div class="sheet__icon-frame">${largeIcon(car.status)}</div>
       <div class="sheet__icon-caption"><span class="sheet__icon-label">${escapeHtml(car.statusLabel)}</span><span class="caption">${statusShapeWords[car.status]}</span></div>
-    </div>`)
+    </div>`,
+    )
     .join('\n');
   return `<div class="sheet">
   <div class="sheet__title">${direction} · situação do carro — três formas numa coluna fixa; a forma carrega o significado, nunca só a cor (folha de referência, não vai ao ar)</div>
@@ -311,10 +318,12 @@ ${renderFlagBand(sample.session.flag, sample.session.flagLabel)}
 
 /**
  * Builds every page of one direction: a map of file name to HTML. Options: name (the folder
- * name), compactRows, detailedRows, stripCarsPerPage.
+ * name), compactRows, detailedRows, stripCarsPerPage, and gapUnit ('s' keeps "+19,0 s",
+ * 'none' writes "+19,0" for a caps-only face).
  */
 export function buildPages(options) {
-  const { name, compactRows, detailedRows, stripCarsPerPage } = options;
+  const { name, compactRows, detailedRows, stripCarsPerPage, gapUnit = 's' } = options;
+  writeGap = gapUnit === 'none' ? (text) => text.replace(/ s$/, '') : (text) => text;
   const compactCars = sample.positions.slice(0, compactRows);
   const detailedCars = sample.positions.slice(0, detailedRows);
   const stripCars = sample.positions.slice(0, stripCarsPerPage);
@@ -323,18 +332,40 @@ export function buildPages(options) {
 
   return {
     'race-clock.html': shell('race clock', renderRaceClock(sample.session)),
-    'positions-compact.html': shell('positions compact', renderCompactTower(compactCars, sample.session)),
-    'positions-detailed.html': shell('positions detailed', renderDetailedTower(detailedCars, sample.session)),
-    'lower-strip.html': shell('lower strip', renderLowerStrip(stripCars, sample.session, 1, stripPageCount)),
+    'race-clock-sem-bandeira.html': shell(
+      'race clock without the flag',
+      renderRaceClock(sample.session, sample.session.flag, sample.session.flagLabel, {
+        withFlag: false,
+      }),
+    ),
+    'positions-compact.html': shell(
+      'positions compact',
+      renderCompactTower(compactCars, sample.session),
+    ),
+    'positions-detailed.html': shell(
+      'positions detailed',
+      renderDetailedTower(detailedCars, sample.session),
+    ),
+    'lower-strip.html': shell(
+      'lower strip',
+      renderLowerStrip(stripCars, sample.session, 1, stripPageCount),
+    ),
     'lower-third.html': shell('lower third', renderLowerThird(sample.people[0])),
     'sponsor-bug.html': shell('sponsor bug', renderSponsorBug(sample.sponsorBug)),
     'combo-tower.html': shell(
       'combo tower',
-      [renderRaceClock(sample.session), renderCompactTower(compactCars, sample.session), renderSponsorBug(sample.sponsorBug)].join('\n'),
+      [
+        renderRaceClock(sample.session),
+        renderCompactTower(compactCars, sample.session),
+        renderSponsorBug(sample.sponsorBug),
+      ].join('\n'),
     ),
     'combo-strip.html': shell(
       'combo strip',
-      [renderLowerStrip(stripCars, sample.session, 1, stripPageCount), renderLowerThird(sample.people[0])].join('\n'),
+      [
+        renderLowerStrip(stripCars, sample.session, 1, stripPageCount),
+        renderLowerThird(sample.people[0]),
+      ].join('\n'),
     ),
     'sheet-flags.html': shell('sheet flags', renderSheetFlags(name)),
     'sheet-status.html': shell('sheet status', renderSheetStatus(name)),

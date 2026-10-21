@@ -13,9 +13,12 @@
 // File format: shots over grey and black are PNG (lossless, flat backgrounds compress well).
 // Shots over footage default to JPEG at quality 85, because a 1920x1080 PNG of a photo is
 // 2 to 3 MB and there are over a hundred of them; --png keeps them lossless.
-import { mkdirSync, readdirSync, existsSync } from 'node:fs';
-import { dirname, resolve, basename } from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+// The page.evaluate callbacks below run inside the browser page, not in Node.
+/* global document */
+import { existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { basename, dirname, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
 import { chromium } from '@playwright/test';
 
 const toolsFolder = dirname(fileURLToPath(import.meta.url));
@@ -62,7 +65,10 @@ function listPagesOfDirection(directionFolder) {
 }
 
 const browser = await chromium.launch();
-const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+const context = await browser.newContext({
+  viewport: { width: 1920, height: 1080 },
+  deviceScaleFactor: 1,
+});
 const page = await context.newPage();
 
 let shotCount = 0;

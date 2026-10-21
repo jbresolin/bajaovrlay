@@ -153,4 +153,6 @@ const sampleData = {
 };
 
 writeFileSync(outputFile, `${JSON.stringify(sampleData, null, 2)}\n`);
-console.log(`wrote ${outputFile}: ${entries.length} cars, leader on lap ${sampleData.session.lapsCompletedByLeader}`);
+console.log(
+  `wrote ${outputFile}: ${entries.length} cars, leader on lap ${sampleData.session.lapsCompletedByLeader}`,
+);

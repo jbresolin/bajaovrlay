@@ -1,31 +1,15 @@
 /*
- * Self-hosted type for the design mock-ups. Every family here is SIL Open Font License 1.1
- * (the LICENSE file sits beside each family's files), subset to Latin, which covers every
- * pt-BR character. Nothing is loaded from a CDN: the graphics must work offline at the track.
+ * Self-hosted type for the design mock-ups: Bebas Neue, SIL Open Font License 1.1 (the
+ * LICENSE file sits beside its file), subset to Latin, which covers every pt-BR character.
+ * Nothing is loaded from a CDN: the graphics must work offline at the track.
  *
- * Tabular figures: Barlow, Barlow Condensed, Bebas Neue and Saira answer
- * `font-variant-numeric: tabular-nums` with equal-width digits (checked in Chromium, see
- * README.md). Bebas Neue is an uppercase-only display face, so it sets caps and numbers.
+ * Bebas Neue is an uppercase-only display face with one weight and tabular figures (checked
+ * in Chromium, see README.md): the pages set everything in caps, and never ask for bold.
  */
-
-/* Bebas Neue — direction "ardosia" (numbers, names in caps, titles) */
-@font-face { font-family: 'Bebas Neue'; font-style: normal; font-weight: 400; font-display: block; src: url('./bebas-neue/bebas-neue-latin-400-normal.woff2') format('woff2'); }
-
-/* Barlow Condensed — direction "grafite" (rows, numbers, titles) */
-@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: block; src: url('./barlow-condensed/barlow-condensed-latin-500-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: block; src: url('./barlow-condensed/barlow-condensed-latin-600-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: block; src: url('./barlow-condensed/barlow-condensed-latin-700-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 800; font-display: block; src: url('./barlow-condensed/barlow-condensed-latin-800-normal.woff2') format('woff2'); }
-
-/* Barlow — every direction's small mixed-case text (captions, roles, sponsor line) */
-@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: block; src: url('./barlow/barlow-latin-400-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: block; src: url('./barlow/barlow-latin-500-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: block; src: url('./barlow/barlow-latin-600-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: block; src: url('./barlow/barlow-latin-700-normal.woff2') format('woff2'); }
-
-/* Saira — direction "marinho" (numbers, names, titles) */
-@font-face { font-family: 'Saira'; font-style: normal; font-weight: 400; font-display: block; src: url('./saira/saira-latin-400-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Saira'; font-style: normal; font-weight: 500; font-display: block; src: url('./saira/saira-latin-500-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Saira'; font-style: normal; font-weight: 600; font-display: block; src: url('./saira/saira-latin-600-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Saira'; font-style: normal; font-weight: 700; font-display: block; src: url('./saira/saira-latin-700-normal.woff2') format('woff2'); }
-@font-face { font-family: 'Saira'; font-style: normal; font-weight: 800; font-display: block; src: url('./saira/saira-latin-800-normal.woff2') format('woff2'); }
+@font-face {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('./bebas-neue/bebas-neue-latin-400-normal.woff2') format('woff2');
+}

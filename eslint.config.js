@@ -36,6 +36,21 @@ export default defineConfig(
   },
 
   {
+    // The design mock-up tools (docs/design, BAJAOVRLAY-22): small Node scripts a person runs
+    // from the terminal, so printing to the console is what they are for. Nothing here runs
+    // in the product.
+    files: ['docs/design/tools/**/*.mjs', 'docs/design/directions/**/generatePages.mjs'],
+    languageOptions: { globals: globals.node },
+    rules: { 'no-console': 'off' },
+  },
+
+  {
+    // The design mock-ups' motion demo runs in a browser, from a static page.
+    files: ['docs/design/tools/slateMotionDemo.js'],
+    languageOptions: { globals: globals.browser },
+  },
+
+  {
     // Code that runs in the browser: the control page, the renderer (and the fake graphic
     // its browser tests load) and every graphic.
     files: [

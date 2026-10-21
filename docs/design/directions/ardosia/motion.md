@@ -7,18 +7,18 @@ one. Every duration, offset, stagger and easing is a token in `tokens.css` (`--m
 `--ease-*`), and the shared demo script (`../../tools/slateMotionDemo.js`, loaded by
 `motion-demo.html`) reads them from there, so the demo and this page cannot drift apart.
 
-| Token | Value | Where |
-| --- | --- | --- |
-| `--motion-in` | 400 ms, `--ease-out` cubic-bezier(0.16, 1, 0.3, 1) | every piece entering |
-| `--motion-in-offset` | 20 px | the rise on entry, the lift on exit |
-| `--motion-row-stagger` | 30 ms per pill | tower rows and strip cells, top to bottom and left to right |
-| `--motion-lead` | 100 ms | the tower starts this long after the clock; the bug too |
-| `--motion-out` | 250 ms, `--ease-in` cubic-bezier(0.7, 0, 0.84, 0) | every piece leaving |
-| `--motion-flag` | 300 ms, `--ease-out` | the new flag band fades in over the old |
-| `--motion-swap` | 400 ms, `--ease-in-out` cubic-bezier(0.65, 0, 0.35, 1) | two pills trading places |
-| `--motion-cue-hold` | 2000 ms | the ▲ / ▼ and the coloured position cell after a swap |
-| `--motion-strip-page` | 300 ms | a strip page turning |
-| `--motion-strip-hold` | 7000 ms | a strip page stays still this long |
+| Token                  | Value                                                  | Where                                                       |
+| ---------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| `--motion-in`          | 400 ms, `--ease-out` cubic-bezier(0.16, 1, 0.3, 1)     | every piece entering                                        |
+| `--motion-in-offset`   | 20 px                                                  | the rise on entry, the lift on exit                         |
+| `--motion-row-stagger` | 30 ms per pill                                         | tower rows and strip cells, top to bottom and left to right |
+| `--motion-lead`        | 100 ms                                                 | the tower starts this long after the clock; the bug too     |
+| `--motion-out`         | 250 ms, `--ease-in` cubic-bezier(0.7, 0, 0.84, 0)      | every piece leaving                                         |
+| `--motion-flag`        | 300 ms, `--ease-out`                                   | the new flag band fades in over the old                     |
+| `--motion-swap`        | 400 ms, `--ease-in-out` cubic-bezier(0.65, 0, 0.35, 1) | two pills trading places                                    |
+| `--motion-cue-hold`    | 2000 ms                                                | the ▲ / ▼ and the coloured position cell after a swap       |
+| `--motion-strip-page`  | 300 ms                                                 | a strip page turning                                        |
+| `--motion-strip-hold`  | 7000 ms                                                | a strip page stays still this long                          |
 
 ## In and out, per graphic
 
@@ -38,8 +38,10 @@ one. Every duration, offset, stagger and easing is a token in `tokens.css` (`--m
 ## Flag change (300 ms)
 
 The new band fades in over the old one at the bottom of the clock card (the colour and the
-word crossfade together), then replaces it. Nothing moves: a flag change must read as a
-state, not as an animation.
+word crossfade together; the checkered band has no word, only the pattern), then replaces
+it. Nothing moves: a flag change must read as a state, not as an animation. The band is
+optional: a clock taken without it never shows one, and a clock that gains or loses the band
+on air does so with the same 300 ms fade, the card growing or shrinking by the band's 40 px.
 
 ## Position change (400 ms, then 2 s)
 

@@ -21,7 +21,11 @@ const timing = {
 };
 const offsetPx = readNumber('--motion-in-offset');
 const inScale = readNumber('--motion-in-scale');
-const easing = { out: readEase('--ease-out'), in: readEase('--ease-in'), inOut: readEase('--ease-in-out') };
+const easing = {
+  out: readEase('--ease-out'),
+  in: readEase('--ease-in'),
+  inOut: readEase('--ease-in-out'),
+};
 
 const stepLabel = document.getElementById('demo-step');
 const towerSet = document.querySelector('[data-demo="tower-set"]');
@@ -33,12 +37,24 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const hiddenFrame = { opacity: 0, transform: `translateY(${offsetPx}px) scale(${inScale})` };
 const shownFrame = { opacity: 1, transform: 'translateY(0) scale(1)' };
 const goneFrame = { opacity: 0, transform: `translateY(${-offsetPx}px) scale(1)` };
-function hideNow(element) { element.style.opacity = '0'; }
+function hideNow(element) {
+  element.style.opacity = '0';
+}
 function slideIn(element, delay = 0) {
-  return element.animate([hiddenFrame, shownFrame], { duration: timing.in, easing: easing.out, delay, fill: 'both' }).finished;
+  return element.animate([hiddenFrame, shownFrame], {
+    duration: timing.in,
+    easing: easing.out,
+    delay,
+    fill: 'both',
+  }).finished;
 }
 function slideOut(element, delay = 0) {
-  return element.animate([shownFrame, goneFrame], { duration: timing.out, easing: easing.in, delay, fill: 'both' }).finished;
+  return element.animate([shownFrame, goneFrame], {
+    duration: timing.out,
+    easing: easing.in,
+    delay,
+    fill: 'both',
+  }).finished;
 }
 
 function towerPieces() {
@@ -62,7 +78,11 @@ async function towerSetOut() {
   stepLabel.textContent = `saída: tudo some para cima em ${timing.out} ms`;
   const clock = towerSet.querySelector('.race-clock');
   const bug = towerSet.querySelector('.sponsor-bug');
-  await Promise.all([slideOut(clock), slideOut(bug), ...towerPieces().map((piece) => slideOut(piece))]);
+  await Promise.all([
+    slideOut(clock),
+    slideOut(bug),
+    ...towerPieces().map((piece) => slideOut(piece)),
+  ]);
   towerSet.style.visibility = 'hidden';
 }
 
@@ -78,7 +98,11 @@ async function changeFlag(templateId) {
   newBand.style.bottom = '0';
   newBand.style.opacity = '0';
   oldBand.parentElement.appendChild(newBand);
-  await newBand.animate([{ opacity: 0 }, { opacity: 1 }], { duration: timing.flag, easing: easing.out, fill: 'both' }).finished;
+  await newBand.animate([{ opacity: 0 }, { opacity: 1 }], {
+    duration: timing.flag,
+    easing: easing.out,
+    fill: 'both',
+  }).finished;
   oldBand.remove();
   newBand.style.position = '';
   newBand.style.left = '';
@@ -94,7 +118,9 @@ function markLeaderBySlot(row) {
 
 function showCue(row, cueClass, templateId) {
   row.classList.add(cueClass);
-  row.querySelector('.row__cue').appendChild(document.getElementById(templateId).content.firstElementChild.cloneNode(true));
+  row
+    .querySelector('.row__cue')
+    .appendChild(document.getElementById(templateId).content.firstElementChild.cloneNode(true));
 }
 
 function clearCues(row) {
@@ -106,9 +132,10 @@ function clearCues(row) {
 // with the slots, and each pill slides from where it was to where it now is. The car that
 // moved up gets the ▲ and its position cell in the "up" colour; the other the ▼, for 2 s.
 async function swapRows(upperIndex) {
-  stepLabel.textContent = upperIndex === 0
-    ? `novo líder: as pílulas trocam de lugar em ${timing.swap} ms, seta por ${timing.cueHold / 1000} s`
-    : `troca de posição: as pílulas deslizam em ${timing.swap} ms, seta por ${timing.cueHold / 1000} s`;
+  stepLabel.textContent =
+    upperIndex === 0
+      ? `novo líder: as pílulas trocam de lugar em ${timing.swap} ms, seta por ${timing.cueHold / 1000} s`
+      : `troca de posição: as pílulas deslizam em ${timing.swap} ms, seta por ${timing.cueHold / 1000} s`;
   const list = towerSet.querySelector('.tower__rows');
   const rows = [...list.querySelectorAll('.row')];
   const upper = rows[upperIndex];
@@ -128,7 +155,10 @@ async function swapRows(upperIndex) {
   const upperShift = upperTopBefore - upper.getBoundingClientRect().top;
   const lowerShift = lowerTopBefore - lower.getBoundingClientRect().top;
   const slide = (row, shift) =>
-    row.animate([{ transform: `translateY(${shift}px)` }, { transform: 'translateY(0)' }], { duration: timing.swap, easing: easing.inOut }).finished;
+    row.animate([{ transform: `translateY(${shift}px)` }, { transform: 'translateY(0)' }], {
+      duration: timing.swap,
+      easing: easing.inOut,
+    }).finished;
 
   showCue(lower, 'is-up', 'cue-up');
   showCue(upper, 'is-down', 'cue-down');
@@ -140,12 +170,19 @@ async function swapRows(upperIndex) {
 
 function lowerThirdPieces() {
   const lowerThird = stripSet.querySelector('.lower-third');
-  return [lowerThird.querySelector('.lower-third__name'), lowerThird.querySelector('.lower-third__role')];
+  return [
+    lowerThird.querySelector('.lower-third__name'),
+    lowerThird.querySelector('.lower-third__role'),
+  ];
 }
 
 function stripPieces() {
   const strip = stripSet.querySelector('.lower-strip');
-  return [strip.querySelector('.lower-strip__clock'), ...strip.querySelectorAll('.strip-car'), strip.querySelector('.lower-strip__page')];
+  return [
+    strip.querySelector('.lower-strip__clock'),
+    ...strip.querySelectorAll('.strip-car'),
+    strip.querySelector('.lower-strip__page'),
+  ];
 }
 
 async function stripSetIn() {
@@ -161,7 +198,10 @@ async function stripSetIn() {
 
 async function stripSetOut() {
   stepLabel.textContent = `saída da faixa e do terço em ${timing.out} ms`;
-  await Promise.all([...stripPieces().map((piece) => slideOut(piece)), ...lowerThirdPieces().map((piece) => slideOut(piece))]);
+  await Promise.all([
+    ...stripPieces().map((piece) => slideOut(piece)),
+    ...lowerThirdPieces().map((piece) => slideOut(piece)),
+  ]);
   stripSet.style.visibility = 'hidden';
 }
 
@@ -178,8 +218,24 @@ async function stripTurnPage(templateId, pageNumber) {
   pages.appendChild(newPage);
   const oldCars = [...oldPage.querySelectorAll('.strip-car')];
   await Promise.all([
-    ...oldCars.map((car, index) => car.animate([shownFrame, goneFrame], { duration: timing.stripPage, easing: easing.in, delay: index * (timing.rowStagger / 2), fill: 'both' }).finished),
-    ...newCars.map((car, index) => car.animate([hiddenFrame, shownFrame], { duration: timing.stripPage, easing: easing.out, delay: index * (timing.rowStagger / 2), fill: 'both' }).finished),
+    ...oldCars.map(
+      (car, index) =>
+        car.animate([shownFrame, goneFrame], {
+          duration: timing.stripPage,
+          easing: easing.in,
+          delay: index * (timing.rowStagger / 2),
+          fill: 'both',
+        }).finished,
+    ),
+    ...newCars.map(
+      (car, index) =>
+        car.animate([hiddenFrame, shownFrame], {
+          duration: timing.stripPage,
+          easing: easing.out,
+          delay: index * (timing.rowStagger / 2),
+          fill: 'both',
+        }).finished,
+    ),
   ]);
   oldPage.remove();
   const indicator = stripSet.querySelector('.lower-strip__page');
@@ -205,7 +261,12 @@ async function runLoop() {
   const demoHold = Math.min(timing.stripHold, 3000);
   for (;;) {
     restoreSampleOrder();
-    for (const element of [towerSet.querySelector('.race-clock'), towerSet.querySelector('.sponsor-bug'), ...towerPieces()]) hideNow(element);
+    for (const element of [
+      towerSet.querySelector('.race-clock'),
+      towerSet.querySelector('.sponsor-bug'),
+      ...towerPieces(),
+    ])
+      hideNow(element);
     for (const element of [...stripPieces(), ...lowerThirdPieces()]) hideNow(element);
     await towerSetIn();
     await wait(1600);

@@ -4,9 +4,12 @@
 // y 54..1026), how many data-row rows it holds, and the smallest font-size of any text in it.
 // Run from the repo root:
 //   node docs/design/tools/checkLayout.mjs placar
+// The page.evaluate callbacks below run inside the browser page, not in Node.
+/* global document, NodeFilter, getComputedStyle */
 import { readdirSync } from 'node:fs';
-import { dirname, resolve, basename } from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { basename, dirname, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
 import { chromium } from '@playwright/test';
 
 const toolsFolder = dirname(fileURLToPath(import.meta.url));
@@ -26,7 +29,9 @@ let problemCount = 0;
 
 // Reference sheets (sheet-*.html) and the motion demo are not on-air compositions.
 const pageFiles = readdirSync(directionFolder)
-  .filter((name) => name.endsWith('.html') && !name.startsWith('motion') && !name.startsWith('sheet-'))
+  .filter(
+    (name) => name.endsWith('.html') && !name.startsWith('motion') && !name.startsWith('sheet-'),
+  )
   .sort();
 
 for (const pageFile of pageFiles) {
@@ -47,7 +52,12 @@ for (const pageFile of pageFiles) {
         if (textNode.textContent.trim() === '') continue;
         const element = textNode.parentElement;
         const style = getComputedStyle(element);
-        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) continue;
+        if (
+          style.display === 'none' ||
+          style.visibility === 'hidden' ||
+          Number(style.opacity) === 0
+        )
+          continue;
         const fontPx = Number.parseFloat(style.fontSize);
         if (fontPx < smallestFontPx) {
           smallestFontPx = fontPx;
@@ -81,11 +91,18 @@ for (const pageFile of pageFiles) {
     if (!insideSafe) problemCount += 1;
     const box = `x ${graphic.left}..${graphic.right}, y ${graphic.top}..${graphic.bottom}`;
     const rows = graphic.rows > 0 ? `, ${graphic.rows} rows` : '';
-    const font = graphic.smallestFontPx === null ? '' : `, smallest text ${graphic.smallestFontPx}px ("${graphic.smallestFontSample}")`;
-    console.log(`  ${graphic.name}: ${box}${rows}${font} — ${insideSafe ? 'inside title-safe' : 'OUTSIDE TITLE-SAFE'}`);
+    const font =
+      graphic.smallestFontPx === null
+        ? ''
+        : `, smallest text ${graphic.smallestFontPx}px ("${graphic.smallestFontSample}")`;
+    console.log(
+      `  ${graphic.name}: ${box}${rows}${font} — ${insideSafe ? 'inside title-safe' : 'OUTSIDE TITLE-SAFE'}`,
+    );
   }
 }
 
 await browser.close();
-console.log(`\n${problemCount === 0 ? 'every graphic is inside the title-safe area' : `${problemCount} problem(s)`}`);
+console.log(
+  `\n${problemCount === 0 ? 'every graphic is inside the title-safe area' : `${problemCount} problem(s)`}`,
+);
 process.exit(problemCount === 0 ? 0 : 1);
