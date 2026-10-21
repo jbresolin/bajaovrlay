@@ -65,6 +65,9 @@ h1 {
   justify-content: center;
   width: var(--chip-width);
   height: var(--chip-height);
+  /* The face's digits sit high in their line box; the nudge centres their ink in the chip. */
+  padding-top: var(--glyph-nudge);
+  box-sizing: border-box;
   border-radius: var(--radius-chip);
   background: var(--chip-car-background);
   color: var(--chip-car-text);
@@ -110,6 +113,7 @@ h1 {
   background: var(--flag-checkered-dark);
 }
 .flag-word {
+  padding-top: var(--glyph-nudge);
   font-family: var(--font-display);
   font-weight: var(--weight-number);
   font-size: var(--size-flag);
@@ -187,12 +191,14 @@ h1 {
   grid-template-areas: 'caption laps' 'time time';
   align-items: center;
   column-gap: var(--space-4);
-  padding: var(--space-1) var(--space-5);
+  /* No bottom padding: the time's line box ends on the body's edge, and the face's descender
+     room under the digits is the margin to the band (about 10px at 56px, twice the first draft). */
+  padding: var(--space-1) var(--space-5) 0;
   overflow: hidden;
 }
 .race-clock__time {
   grid-area: time;
-  align-self: center;
+  align-self: end;
   font-size: var(--size-time);
   font-weight: var(--weight-display);
   letter-spacing: var(--tracking-time);
@@ -241,6 +247,24 @@ h1 {
   justify-content: space-between;
   padding: 0 var(--row-padding);
 }
+/* The compact head names the columns on the rows' own grid, like the detailed head. */
+.compact-head {
+  display: grid;
+  grid-template-columns:
+    var(--column-pos) var(--column-cue) var(--chip-width) 1fr var(--column-laps)
+    var(--column-status);
+  align-items: center;
+}
+.compact-head .compact-head__pos,
+.compact-head .compact-head__car {
+  text-align: center;
+}
+.compact-head .compact-head__team {
+  padding-left: var(--space-3);
+}
+.compact-head .compact-head__laps {
+  text-align: right;
+}
 .row {
   height: var(--row-height);
   display: grid;
@@ -259,6 +283,8 @@ h1 {
   align-items: center;
   justify-content: center;
   height: var(--chip-height);
+  padding-top: var(--glyph-nudge);
+  box-sizing: border-box;
   border-radius: var(--radius-chip);
   font-weight: var(--weight-number);
   color: var(--text-pos);
@@ -427,6 +453,8 @@ h1 {
   align-items: center;
   justify-content: center;
   height: var(--chip-height);
+  padding-top: var(--glyph-nudge);
+  box-sizing: border-box;
   border-radius: var(--radius-chip);
   font-weight: var(--weight-number);
   color: var(--text-pos);

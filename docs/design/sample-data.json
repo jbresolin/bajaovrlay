@@ -700,7 +700,7 @@
       "schoolName": "UEM",
       "laps": 25,
       "status": "stopped",
-      "statusLabel": "Parado",
+      "statusLabel": "Quebrado",
       "gapText": "+9 voltas",
       "intervalText": "+80,4 s",
       "lastLapText": "6:14,7",

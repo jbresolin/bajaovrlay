@@ -71,7 +71,7 @@ function formatInterval(entry) {
 const statusLabels = {
   running: 'Em prova',
   inPit: 'No box',
-  stopped: 'Parado',
+  stopped: 'Quebrado', // João's wording (PR #19): a stopped car is a broken car
   retired: 'Abandonou',
   disqualified: 'Desclassificado',
   notStarted: 'Não largou',

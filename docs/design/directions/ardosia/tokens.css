@@ -96,7 +96,7 @@
   --flag-band-height: 40px;
   --stack-gap: 8px;
   --tower-top: calc(54px + var(--clock-height) + var(--stack-gap)); /* 254 */
-  --head-height: 28px;
+  --head-height: 32px; /* the column-header pill, with air around its captions */
   --row-height: 34px;
   --row-gap: 3px; /* the scoreboard's gap between pills */
   --row-padding: 10px;
@@ -106,11 +106,12 @@
   --column-status: 28px;
   --chip-width: 44px;
   --chip-height: 26px;
+  --glyph-nudge: 3px; /* padding-top that centres the face's high-sitting digits in a chip */
   --radius: 8px;
   --radius-chip: 4px;
   --radius-pill: 999px;
   --detailed-width: 1060px;
-  --detailed-row-height: 36px;
+  --detailed-row-height: 34px; /* the same pill as the compact tower: 20 rows fit */
   --detail-columns: 36px 12px 44px 1fr 84px 112px 108px 128px 104px 84px 28px;
   --strip-height: 72px;
   --name-height: 64px;

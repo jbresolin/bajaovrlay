@@ -37,7 +37,7 @@ counts, its `motion.md` and its `README.md`. The page contract is in
 
 All three shared: the flag palette (pre `#5B6472`, green `#15803D`, yellow `#FFD600` with a
 dark word, red `#DC2626`, checkered, finished `#1F2937`) in a full-width band under the clock
-and a pill in the strip; the status icons (P in a square, triangle, circle with a slash, in a
+and a pill in the strip; the status icons (P in a square, triangle, since replaced by a wrench for "quebrado" at the gate, circle with a slash, in a
 fixed column, retired rows dimmed); tabular figures on every number; everything inside the 90%
 title-safe area; the school name as the strip's short team name; paging, never scrolling, in
 the strip; and the legibility floor (26 px names and numbers in the tower, 28 px in the strip,

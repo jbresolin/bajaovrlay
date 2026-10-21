@@ -30,7 +30,7 @@ docs/design/
 | `race-clock.html`              | Session title, time remaining, flag state, laps of the leader.                                                                                                                                                                                                                                |
 | `race-clock-sem-bandeira.html` | The same clock without its flag band, which is optional (a session with no flag state).                                                                                                                                                                                                       |
 | `sheet-flags.html`             | A reference sheet, not an on-air composition: the clock in all six flag states, side by side.                                                                                                                                                                                                 |
-| `sheet-status.html`            | A reference sheet: the three status icons at size, and real rows of the sample for car 69 (in the pit), car 65 (stopped) and car 96 (retired), in the compact and the detailed row styles.                                                                                                    |
+| `sheet-status.html`            | A reference sheet: the three status icons at size, and real rows of the sample for car 69 (in the pit), car 65 (broken down) and car 96 (retired), in the compact and the detailed row styles.                                                                                                |
 | `positions-compact.html`       | The everyday tower: position, car number, team, laps, status icons; at the maximum rows the layout fits (at least 20).                                                                                                                                                                        |
 | `positions-detailed.html`      | The occasional tower: the compact columns plus gap, interval, last lap, best lap, fuel stops ("Abast."), status icons.                                                                                                                                                                        |
 | `lower-strip.html`             | The bottom standings strip with the race clock built in.                                                                                                                                                                                                                                      |
@@ -83,10 +83,10 @@ loads nothing from the network.
   a panel but never blur it: `backdrop-filter` only sees the page's own transparent pixels.
   Every translucent panel in these directions is therefore a flat tint, checked for contrast
   over bright sky as the worst case.
-- **Car status** (in the pit, stopped or broken down, retired) shows as small icons beside
-  the car, in a fixed column, each a different shape: a "P" in a square for the pit, a
-  triangle for stopped, a circle with a slash for retired. Colour may help but never carries
-  the meaning alone. A retired car's row is also dimmed.
+- **Car status** (in the pit, broken down, retired) shows as small icons beside the car, in a
+  fixed column, each a different shape: a "P" in a square for the pit, a wrench for a broken
+  car ("quebrado", João's word for a stopped car), a circle with a slash for retired. Colour
+  may help but never carries the meaning alone. A retired car's row is also dimmed.
 - **Type** is self-hosted SIL OFL. Numbers use tabular figures. Urzeit (the event's display
   face) is not depended on; a direction may note where it could appear later as an accent.
 - **Legibility at 720p on a phone**: the compact tower's numbers and names are at least 26px

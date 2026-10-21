@@ -53,26 +53,20 @@
               class="status-icon status-icon--large"
               viewBox="0 0 20 20"
               role="img"
-              aria-label="Parado"
+              aria-label="Quebrado"
             >
               <path
-                d="M10 2.2 18.7 17.4H1.3Z"
+                d="M14.5 2.2a4.3 4.3 0 0 0-5.3 5.9L2.7 14.6a1.9 1.9 0 1 0 2.7 2.7l6.5-6.5a4.3 4.3 0 0 0 5.9-5.3l-2.6 2.6-2.4-.9-.9-2.4z"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linejoin="round"
               />
-              <path
-                d="M10 7.6v4.4"
-                stroke="currentColor"
-                stroke-width="2.2"
-                stroke-linecap="round"
-              />
-              <circle cx="10" cy="14.8" r="1.3" fill="currentColor" />
             </svg>
           </div>
           <div class="sheet__icon-caption">
-            <span class="sheet__icon-label">Parado</span><span class="caption">um triângulo</span>
+            <span class="sheet__icon-label">Quebrado</span
+            ><span class="caption">uma chave inglesa</span>
           </div>
         </div>
         <div class="card sheet__icon-cell">
@@ -101,12 +95,16 @@
       <div class="sheet__rows">
         <div class="sheet__cell">
           <div class="sheet__label">
-            linhas da torre compacta · carro 69 no box, 65 parado, 96 abandonou (linha esmaecida)
+            linhas da torre compacta · carro 69 no box, 65 quebrado, 96 abandonou (linha esmaecida)
           </div>
           <section class="tower tower--compact">
-            <header class="pill pill--head tower__head">
-              <span class="caption">POSIÇÕES</span>
-              <span class="caption">VOLTA 34</span>
+            <header class="pill pill--head tower__head compact-head">
+              <span class="caption compact-head__pos">POS</span>
+              <span class="caption compact-head__cue"></span>
+              <span class="caption compact-head__car">Nº</span>
+              <span class="caption compact-head__team">EQUIPE</span>
+              <span class="caption compact-head__laps">VOLTAS</span>
+              <span class="caption compact-head__status"></span>
             </header>
             <ol class="tower__rows">
               <li class="pill row" data-row data-status="inPit">
@@ -144,21 +142,14 @@
                 <span class="row__team">Pantanal Off-Road</span>
                 <span class="row__laps">25</span>
                 <span class="row__status"
-                  ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Parado">
+                  ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Quebrado">
                     <path
-                      d="M10 2.2 18.7 17.4H1.3Z"
+                      d="M14.5 2.2a4.3 4.3 0 0 0-5.3 5.9L2.7 14.6a1.9 1.9 0 1 0 2.7 2.7l6.5-6.5a4.3 4.3 0 0 0 5.9-5.3l-2.6 2.6-2.4-.9-.9-2.4z"
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2"
                       stroke-linejoin="round"
-                    />
-                    <path
-                      d="M10 7.6v4.4"
-                      stroke="currentColor"
-                      stroke-width="2.2"
-                      stroke-linecap="round"
-                    />
-                    <circle cx="10" cy="14.8" r="1.3" fill="currentColor" /></svg
+                    /></svg
                 ></span>
               </li>
               <li class="pill row" data-row data-status="retired">
@@ -256,21 +247,14 @@
                 <span class="row__best-lap">6:11,8</span>
                 <span class="row__pit-stops">2</span>
                 <span class="row__status"
-                  ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Parado">
+                  ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Quebrado">
                     <path
-                      d="M10 2.2 18.7 17.4H1.3Z"
+                      d="M14.5 2.2a4.3 4.3 0 0 0-5.3 5.9L2.7 14.6a1.9 1.9 0 1 0 2.7 2.7l6.5-6.5a4.3 4.3 0 0 0 5.9-5.3l-2.6 2.6-2.4-.9-.9-2.4z"
                       fill="none"
                       stroke="currentColor"
                       stroke-width="2"
                       stroke-linejoin="round"
-                    />
-                    <path
-                      d="M10 7.6v4.4"
-                      stroke="currentColor"
-                      stroke-width="2.2"
-                      stroke-linecap="round"
-                    />
-                    <circle cx="10" cy="14.8" r="1.3" fill="currentColor" /></svg
+                    /></svg
                 ></span>
               </li>
               <li class="pill row row--detailed" data-row data-status="retired">

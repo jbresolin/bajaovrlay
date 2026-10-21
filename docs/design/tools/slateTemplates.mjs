@@ -99,12 +99,23 @@ function renderCompactRow(car) {
     </li>`;
 }
 
+const compactColumns = [
+  ['pos', 'POS'],
+  ['cue', ''],
+  ['car', 'Nº'],
+  ['team', 'EQUIPE'],
+  ['laps', 'VOLTAS'],
+  ['status', ''],
+];
+
 export function renderCompactTower(cars, session, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="positions-compact"' : '';
+  const header = compactColumns
+    .map(([column, label]) => `    <span class="caption compact-head__${column}">${label}</span>`)
+    .join('\n');
   return `<section class="tower tower--compact"${root}>
-  <header class="pill pill--head tower__head">
-    <span class="caption">POSIÇÕES</span>
-    <span class="caption">VOLTA ${session.lapsCompletedByLeader}</span>
+  <header class="pill pill--head tower__head compact-head">
+${header}
   </header>
   <ol class="tower__rows">
 ${cars.map(renderCompactRow).join('\n')}
@@ -266,7 +277,7 @@ ${icons}
   </div>
   <div class="sheet__rows">
     <div class="sheet__cell">
-      <div class="sheet__label">linhas da torre compacta · carro 69 no box, 65 parado, 96 abandonou (linha esmaecida)</div>
+      <div class="sheet__label">linhas da torre compacta · carro 69 no box, 65 quebrado, 96 abandonou (linha esmaecida)</div>
 ${renderCompactTower(statusCars, sample.session, { withRoot: false })}
     </div>
     <div class="sheet__cell">

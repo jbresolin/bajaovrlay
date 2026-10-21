@@ -6,10 +6,13 @@ blue car chip, green laps), the same logo-and-title head, in a clean open-licenc
 of Urzeit and with everything the brief adds: a real race clock with the flag, status icons,
 a detailed tower, a strip, a lower third and a bug that all belong to the same family.
 
-**Chosen by João at the gate on PR #19**, with four adjustments applied here: one face for
+**Chosen by João at the gate on PR #19**, with his adjustments applied here: one face for
 everything (Bebas Neue, in caps), the flag band optional on the clock, the ordinal sign on the
-strip's positions ("1º"), and no word on the checkered flag. The two other directions
-(grafite, marinho) were removed; `../README.md` keeps the comparison as the record.
+strip's positions ("1º"), no word on the checkered flag, "quebrado" with a wrench instead of
+"parado" with a triangle, the car chips' digits centred, a doubled margin under the clock's
+time, taller head pills, and the compact tower's head naming its columns (POS, Nº, EQUIPE,
+VOLTAS) like the detailed one. The two other directions (grafite, marinho) were removed;
+`../README.md` keeps the comparison as the record.
 
 ## A ideia
 
@@ -65,8 +68,8 @@ Everything on air is inside the 90% title-safe box (x 96..1824, y 54..1026), che
 | Graphic                          | Box (1080p)                                                                  |
 | -------------------------------- | ---------------------------------------------------------------------------- |
 | Race clock                       | x 1404..1824, y 54..246 (420 × 192: 64 head, 88 body, 40 flag band)          |
-| Compact tower                    | x 1404..1824, y 254..1022 (head pill 28, then 20 pills of 34 with 3 px gaps) |
-| Detailed tower                   | x 764..1824, y 254..1023 (1060 wide, 19 pills of 36)                         |
+| Compact tower                    | x 1404..1824, y 254..1026 (head pill 32, then 20 pills of 34 with 3 px gaps) |
+| Detailed tower                   | x 764..1824, y 254..1026 (1060 wide, head pill 32, 20 pills of 34)           |
 | Lower strip                      | x 96..1824, y 954..1026 (72 tall)                                            |
 | Lower third                      | x 96.., bottom at y 940 (name pill 64, role pill 40), above the strip's room |
 | Sponsor bug                      | x 96..428, y 54..178                                                         |
@@ -97,11 +100,12 @@ Computed with `node docs/design/tools/contrastRatio.mjs`; translucent slate comp
 ## Tower rows
 
 - **Compact: 20 rows** (positions 1–20), the brief's minimum met exactly. The clock card ends at
-  y 246; the tower starts 8 px under it at 254, its head pill is 28 px and each row pill 34 px
-  with 3 px gaps, so 20 rows end at 1022. A 21st pill would end at 1059. Narrower gaps or
+  y 246; the tower starts 8 px under it at 254, its head pill is 32 px and each row pill 34 px
+  with 3 px gaps, so 20 rows end exactly at 1026, the title-safe edge. A 21st pill would end at 1063. Narrower gaps or
   32 px pills would give 21 rows at the cost of the scoreboard's airy pills, which is the look
   being kept (open question 1).
-- **Detailed: 19 rows** (positions 1–19) of 36 px, 1060 px wide: POS 36, cue 12, chip 44, team
+- **Detailed: 20 rows** (positions 1–20) of 34 px, the compact tower's pill, 1060 px wide:
+  POS 36, cue 12, chip 44, team
   (name + school at 22 px), VOLTAS 84, DIF. 112, INTERV. 108, ÚLT. VOLTA 128, MELHOR 104,
   ABAST. 84, status 28. Gaps and intervals in seconds are written without the unit ("+19,0",
   "+1 VOLTA"): the face has no lowercase, so "+19,0 s" would read "+19,0 S"; the column

@@ -15,7 +15,7 @@ import { buildPages } from '../../tools/slateTemplates.mjs';
 const options = {
   name: 'ardosia',
   compactRows: 20,
-  detailedRows: 19,
+  detailedRows: 20,
   stripCarsPerPage: 6,
   gapUnit: 'none',
 };
