@@ -2,7 +2,7 @@
  * A generated form as the field values an item stores (`ItemFields`): for a new item,
  * for a change to a stored one, and for "Atualizar no ar" from the item editor.
  */
-import type { FieldValue, ItemFields } from '@bajaovrlay/shared';
+import { areJsonValuesEqual, type FieldValue, type ItemFields } from '@bajaovrlay/shared';
 
 import { readCheckedFieldsOfValidSchemaForm } from './checkSchemaFormValues';
 import { convertDataValueIntoFormValue, readDataValueFromFormValue } from './fieldValueConversion';
@@ -17,6 +17,8 @@ import type { SchemaFormValues } from './schemaFormValues';
  * - a cleared field is left out;
  * - a field set to "filled by the server at the take" is stored as `{ kind: 'takeTime' }`,
  *   so every take of the item gets its own moment;
+ * - a field set to "Fonte" or "Relógio da fonte" is stored as its binding, and the three
+ *   clock fields the whole clock fills are left out;
  * - a property the form cannot edit is stored as a literal exactly as it was where the
  *   form was filled from (a new, empty form has none).
  */
@@ -37,6 +39,9 @@ export function buildItemFieldsFromSchemaForm(
     }
     if (checkedField.outcome === 'takeTime') {
       fieldPairs.push([checkedField.key, { kind: 'takeTime' }]);
+    }
+    if (checkedField.outcome === 'binding') {
+      fieldPairs.push([checkedField.key, checkedField.binding]);
     }
   }
   return Object.fromEntries(fieldPairs);
@@ -76,6 +81,10 @@ function isStoredFieldNothingToTheForm(
  * what the item stores (that command merges key by key, so the rest is left out):
  * - a value differs unless the item stores the very same value as a literal;
  * - "filled by the server at the take" differs unless the item already stores that;
+ * - a binding differs unless the item stores the very same binding;
+ * - a clock field the whole clock fills is treated as cleared: a null where the item
+ *   stores a value, so the save keeps no value beside the whole clock (the server refuses
+ *   one);
  * - a cleared field is sent as `{ kind: 'literal', value: null }`, because the command
  *   cannot remove a key, and only when the item stores something there (the server
  *   strips the null at the take). An item that has no such field, or stores a text that
@@ -117,6 +126,15 @@ export function buildChangedItemFieldsFromSchemaForm(
         }
         break;
       }
+      case 'binding': {
+        const isStoredAsTheSameBinding =
+          storedField?.kind === 'binding' && areJsonValuesEqual(storedField, checkedField.binding);
+        if (!isStoredAsTheSameBinding) {
+          changedFieldPairs.push([checkedField.key, checkedField.binding]);
+        }
+        break;
+      }
+      case 'filledByTheWholeClock':
       case 'cleared': {
         const fieldOfTheForm = description.fields.find((field) => field.key === checkedField.key);
         const isStoredWithNothing = isStoredFieldNothingToTheForm(fieldOfTheForm, storedField);
@@ -125,6 +143,18 @@ export function buildChangedItemFieldsFromSchemaForm(
         }
         break;
       }
+    }
+  }
+  // A list field switched from "Fonte" back to "Valor como está" has no value of its own
+  // to keep (the binding was all it held), so it is cleared rather than left bound.
+  for (const field of description.fields) {
+    const storedField = readOwnValueOfRecord(storedItemFields, field.key);
+    const isListFieldUnbound =
+      field.control === 'unsupported' &&
+      storedField?.kind === 'binding' &&
+      readOwnValueOfRecord(formValues.kinds, field.key) !== 'binding';
+    if (isListFieldUnbound) {
+      changedFieldPairs.push([field.key, { kind: 'literal', value: null }]);
     }
   }
   return Object.fromEntries(changedFieldPairs);
@@ -136,13 +166,21 @@ export function buildChangedItemFieldsFromSchemaForm(
  * each changed literal as its value, a cleared one as null (which takes it off air).
  * A field changed to "filled by the server at the take" is left out: the brief sends the
  * changed literals only, so the moment already on air stays until the item is taken again.
+ * So is every key in `keysReadFromASource` (fieldsReadFromASource.ts): the item stores
+ * the binding, and the source's value goes on air at the next take. The three clock
+ * fields the whole clock fills are among them; sent as null, the server refused them every
+ * time (gate 2 of PR #18).
  * An empty answer means there is nothing to update on air.
  */
 export function buildInstanceUpdateDataFromChangedItemFields(
   changedItemFields: ItemFields,
+  keysReadFromASource: string[],
 ): Record<string, unknown> {
   const dataPairs: Array<[string, unknown]> = [];
   for (const [fieldKey, changedField] of Object.entries(changedItemFields)) {
+    if (keysReadFromASource.includes(fieldKey)) {
+      continue;
+    }
     if (changedField.kind === 'literal') {
       dataPairs.push([fieldKey, changedField.value]);
     }

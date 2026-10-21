@@ -28,6 +28,8 @@ function buildEverySliceEmpty() {
     graphics: [],
     instances: [],
     previewClearedLayerIds: [],
+    instanceBindings: [],
+    overrides: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

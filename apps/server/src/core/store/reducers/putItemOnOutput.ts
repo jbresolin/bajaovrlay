@@ -3,6 +3,10 @@ import type { CommandError, InstanceTarget, Item } from '@bajaovrlay/shared';
 import { listKeysOfTakeTimeFields } from '../itemTakeTimeFields.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
+import {
+  addBindingsOfNewInstance,
+  listBoundFieldsKeptByNewInstance,
+} from './instanceBindingsBookkeeping.js';
 import { type GraphicOnOutputRequest, putGraphicOnOutput } from './putGraphicOnOutput.js';
 import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
 
@@ -21,7 +25,9 @@ export type ItemOnOutputOutcome =
  * and hands the take, naming the item, to putGraphicOnOutput (so every rule of a take
  * holds without being written twice: one instance per layer and output, the refusals, a
  * field stored as a literal `null` left out of the data, the item's id on the instance).
- * It never touches the cursor; that is the caller's decision.
+ * The new instance's bound fields are written down in `instanceBindings` (on program the
+ * live ones, on preview all of them). It never touches the cursor; that is the caller's
+ * decision.
  * Refused if the item does not exist, if a field cannot be resolved, or for any reason
  * putGraphicOnOutput refuses; nothing changes then.
  */
@@ -43,7 +49,16 @@ export function putItemOnOutput(
   // can, because the keys named below are remembered on the preview instance (see
   // putGraphicOnOutput). What could go wrong: an item edited after it was previewed goes
   // on air as it was previewed, until it is previewed again.
-  const resolution = resolveItemFieldsIntoGraphicData(item.fields, context.now);
+  const resolution = resolveItemFieldsIntoGraphicData({
+    fields: item.fields,
+    graphic: slices.graphics.find((graphic) => graphic.id === item.graphicId),
+    momentOfTheTake: context.now,
+    sources: {
+      dataSources: slices.dataSources,
+      dataSnapshots: slices.dataSnapshots,
+      overrides: slices.overrides,
+    },
+  });
   if (resolution.status === 'refused') {
     return { status: 'refused', error: resolution.error };
   }
@@ -65,9 +80,18 @@ export function putItemOnOutput(
   if (takeOutcome.status === 'refused') {
     return takeOutcome;
   }
+  // The new instance's bindings are written down now, from the item as it is at this
+  // take: the refreshes read them from here, never from the item, so an item edited or
+  // deleted later does not change what is on air (instanceBindingsBookkeeping.ts). The
+  // entry of the instance this take replaced is dropped by reduceCommand.
+  const instanceBindingsAfter = addBindingsOfNewInstance(
+    takeOutcome.slices.instanceBindings,
+    context.newInstanceId,
+    listBoundFieldsKeptByNewInstance(item.fields, target),
+  );
   return {
     status: 'applied',
-    slices: takeOutcome.slices,
+    slices: { ...takeOutcome.slices, instanceBindings: instanceBindingsAfter },
     item,
   };
 }

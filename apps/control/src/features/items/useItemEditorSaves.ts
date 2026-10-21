@@ -225,7 +225,8 @@ export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorS
   // is still what the air is compared with, whatever has been saved since. Answers false
   // only when the server refused. Nothing is sent, and that counts as done, when no typed
   // value differs (a new label or layer is not on air: the instance stays on its layer,
-  // and the next take uses the new one) or when the item left the air while the save was
+  // and the next take uses the new one; a field now read from a source goes on air at the
+  // next take too) or when the item left the air while the save was
   // waiting: the instance is looked up at this moment, not as it was when drawn.
   async function updateInstanceOfItemOnAir(itemAsOpened: Item): Promise<boolean> {
     const instanceOnAirNow = findInstanceOfItemOnProgram(
@@ -238,6 +239,7 @@ export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorS
     const updateOnAirCommand = buildUpdateInstanceDataCommandFromChangedFields({
       instanceId: instanceOnAirNow.id,
       changedFields: findFieldsChangedFrom(itemAsOpened),
+      keysReadFromASource: graphicFieldsFormHandleRef.current?.listFieldKeysReadFromASource() ?? [],
     });
     if (updateOnAirCommand === undefined) {
       return true;

@@ -14,6 +14,7 @@ export type SlicesChangedByCommands = Pick<
   | 'graphics'
   | 'instances'
   | 'previewClearedLayerIds'
+  | 'instanceBindings'
   | 'rundowns'
   | 'items'
   | 'quickFirePanels'
@@ -21,6 +22,7 @@ export type SlicesChangedByCommands = Pick<
   | 'macroRuns'
   | 'dataSources'
   | 'dataSnapshots'
+  | 'overrides'
   | 'recordings'
 >;
 
@@ -37,6 +39,11 @@ export type ReducerContext = {
   newInstanceId: string;
   /** The current time, as an ISO 8601 timestamp. */
   now: string;
+  /**
+   * Who sent the command (`operador:<connection id>`, `sistema:…`), for a reducer that
+   * signs what it stores with it (setOverride's setBy).
+   */
+  actor: string;
   /** The id to give an item the command creates (createItem). */
   newItemId: string;
   /** The id to give a quick-fire panel the command creates (createQuickFirePanel). */
@@ -55,11 +62,21 @@ export type ReducerContext = {
 /**
  * What a reducer decides: the new slices (a slice it did not change is returned as the
  * very same array, so the store can tell what changed), or a refusal with its reason.
- * `isLeftOutOfTheEventLog` is set by two reducers only: recordDataSourcePoll, for a poll
- * that left its source's health as it was, and recordRecordingProgress, the recorder's
- * count of written lines. The store then saves and broadcasts the change but writes no
+ * `isLeftOutOfTheEventLog` is set by three reducers only: recordDataSourcePoll, for a poll
+ * that left its source's health as it was, recordRecordingProgress, the recorder's
+ * count of written lines, and refreshBoundInstanceData, a source's new values on air. The store then saves and broadcasts the change but writes no
  * event-log row (decision D11; see createStateStore.ts).
  */
 export type ReducerOutcome =
-  | { status: 'applied'; slices: SlicesChangedByCommands; isLeftOutOfTheEventLog?: true }
+  | {
+      status: 'applied';
+      slices: SlicesChangedByCommands;
+      isLeftOutOfTheEventLog?: true;
+      /**
+       * Set by refreshBoundInstanceData only, when a spell of refused refreshes of an
+       * instance begins: the change is applied, and its event-log row is written as
+       * failed with this reason, once per spell (gate 2 of PR #18).
+       */
+      refusalWrittenToTheEventLog?: CommandError;
+    }
   | { status: 'refused'; error: CommandError };

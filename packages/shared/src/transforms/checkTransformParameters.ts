@@ -1,22 +1,33 @@
 import { ptBRTransforms } from './ptBRTransforms.js';
+import type { TransformFamily } from './transform.js';
 import { findTransform } from './transformRegistry.js';
 
 /** The answer of checkTransformParameters: fine, or one pt-BR sentence saying why not. */
 export type TransformParametersCheck = { ok: true } | { ok: false; reason: string };
 
 /**
- * Checks, when a config is validated and not at poll time, that a transform id exists in
- * the registry and that its parameters are right: none for a transform that takes none,
- * and passing its schema for one that does. The source's config schema calls this, so a
- * wrong table is refused when the operator saves, not in the middle of a race.
+ * Checks, when a config or an item is saved and not on air, that a transform id exists in
+ * the registry, belongs to the family of what is being saved (`mapping` for a flex
+ * source's rule, `binding` for an item field), and that its parameters are right: none for
+ * a transform that takes none, and passing its schema for one that does. So a wrong table
+ * or a top of 0 is refused when the operator saves, not in the middle of a race.
  */
 export function checkTransformParameters(
   transformId: string,
   parameters: unknown,
+  familyOfWhatIsSaved: TransformFamily,
 ): TransformParametersCheck {
   const transform = findTransform(transformId);
   if (transform === undefined) {
     return { ok: false, reason: ptBRTransforms.parameterReasons.unknownTransform(transformId) };
+  }
+  if (transform.family !== familyOfWhatIsSaved) {
+    const reasons = ptBRTransforms.parameterReasons;
+    const reason =
+      transform.family === 'binding'
+        ? reasons.bindingTransformInMapping(transform.label)
+        : reasons.mappingTransformInBinding(transform.label);
+    return { ok: false, reason };
   }
 
   if (transform.parametersSchema === undefined) {

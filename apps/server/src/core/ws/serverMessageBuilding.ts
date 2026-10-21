@@ -56,6 +56,13 @@ export function buildSliceMessage(
         slice: slices.previewClearedLayerIds,
         serverNowMs,
       };
+    case 'instanceBindings':
+      return {
+        type: 'slice',
+        name: 'instanceBindings',
+        slice: slices.instanceBindings,
+        serverNowMs,
+      };
     case 'rundowns':
       return { type: 'slice', name: 'rundowns', slice: slices.rundowns, serverNowMs };
     case 'items':
@@ -68,6 +75,8 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'macroRuns', slice: slices.macroRuns, serverNowMs };
     case 'dataSources':
       return { type: 'slice', name: 'dataSources', slice: slices.dataSources, serverNowMs };
+    case 'overrides':
+      return { type: 'slice', name: 'overrides', slice: slices.overrides, serverNowMs };
     case 'recordings':
       return { type: 'slice', name: 'recordings', slice: slices.recordings, serverNowMs };
     case 'eventLog':
@@ -114,6 +123,9 @@ function copyOneSliceByName(
     case 'previewClearedLayerIds':
       group.previewClearedLayerIds = slices.previewClearedLayerIds;
       break;
+    case 'instanceBindings':
+      group.instanceBindings = slices.instanceBindings;
+      break;
     case 'rundowns':
       group.rundowns = slices.rundowns;
       break;
@@ -132,12 +144,22 @@ function copyOneSliceByName(
     case 'dataSources':
       group.dataSources = slices.dataSources;
       break;
+    case 'overrides':
+      group.overrides = slices.overrides;
+      break;
     case 'recordings':
       group.recordings = slices.recordings;
       break;
     case 'eventLog':
       group.eventLog = slices.eventLog;
       break;
+    default: {
+      // A slice added to SliceNameSentWhole without its case here stops the build: its
+      // changes would otherwise never reach open pages (as the two new slices of
+      // BAJAOVRLAY-20 did not, until the walk found it).
+      const sliceNameWithoutItsCase: never = sliceName;
+      throw new Error(`no case for slice ${String(sliceNameWithoutItsCase)}`);
+    }
   }
 }
 

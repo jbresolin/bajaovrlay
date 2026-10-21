@@ -1,7 +1,7 @@
 // Test support: puts the real server of the Playwright run back to how a new database
 // has it (nothing on air, nothing previewed, no layer marked "vai limpar", no item in the rundown or in any panel, no
 // macro, only the seeded panel "Atalhos", only the seeded simulator, off and with its
-// default settings), so every browser test starts from the same place whatever ran
+// default settings, and no correction of a source's value), so every browser test starts from the same place whatever ran
 // before it, in any order. playwright.config.ts starts that server.
 
 /** The real server's port in a Playwright run; far from 3000 so it never meets `pnpm dev`. */
@@ -41,6 +41,7 @@ type StateTheResetReads = {
   macros: { id: string }[];
   macroRuns: { macroId: string }[];
   dataSources: { id: string; isEnabled: boolean; isRecording: boolean }[];
+  overrides: { sourceId: string; scope: string; field: string; carNumber?: number }[];
 };
 
 /** A command the reset sends: its type and the one or two fields it carries. */
@@ -55,6 +56,9 @@ type ResetCommand = {
   label?: string;
   pollIntervalMs?: number;
   config?: object;
+  scope?: string;
+  field?: string;
+  carNumber?: number;
 };
 
 /**
@@ -179,7 +183,8 @@ async function putTheDataSourcesBackToTheSeed(state: StateTheResetReads): Promis
  * deleted (each is empty by then), and "Atalhos" gets its seeded name back. The seeded
  * rundown stays. The data sources go back to the seeded simulator alone, off, not
  * recording and with its default settings (putTheDataSourcesBackToTheSeed); recordings
- * stay listed. Each test file calls this in a `test.beforeEach`, so a test never
+ * stay listed. Every correction of a source's value is removed (clearOverride). Each test
+ * file calls this in a `test.beforeEach`, so a test never
  * depends on the one before it.
  * What could go wrong: it deletes whatever the server holds, so it must only ever be
  * pointed at the Playwright run's own server and SQLite file, which the port guarantees.
@@ -205,6 +210,15 @@ export async function emptyTheServerState(): Promise<void> {
       type: 'renameQuickFirePanel',
       panelId: seededPanelId,
       name: seededPanelName,
+    });
+  }
+  for (const override of state.overrides) {
+    await sendCommandToRealServer({
+      type: 'clearOverride',
+      sourceId: override.sourceId,
+      scope: override.scope,
+      field: override.field,
+      ...(override.carNumber === undefined ? {} : { carNumber: override.carNumber }),
     });
   }
   await putTheDataSourcesBackToTheSeed(state);

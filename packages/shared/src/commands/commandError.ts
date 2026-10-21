@@ -39,7 +39,10 @@ export const CommandErrorCodeSchema = z.enum([
   'ITEMS_NOT_A_PERMUTATION',
   /** takeNext was sent while the rundown's cursor is on nothing. */
   'RUNDOWN_CURSOR_EMPTY',
-  /** An item has a field value of a kind the server cannot resolve before M2. */
+  /**
+   * An item has a field value of a kind the server cannot resolve yet: an entity
+   * reference, until the entity library (BAJAOVRLAY-19).
+   */
   'UNSUPPORTED_FIELD_KIND',
   /** takePreview named a layer that has nothing on its preview output. */
   'LAYER_PREVIEW_EMPTY',
@@ -77,6 +80,20 @@ export const CommandErrorCodeSchema = z.enum([
   'RECORDING_NOT_FOUND',
   /** A flex source's request goes to a host not on the server's BAJAOVRLAY_SOURCE_ALLOWED_HOSTS. */
   'DATA_SOURCE_HOST_NOT_ALLOWED',
+  /**
+   * An item field's binding cannot be saved: its source does not exist, its path,
+   * car number or transform make no sense, or its value does not fit the graphic's field.
+   * The message starts with the field's title.
+   */
+  'INVALID_BINDING',
+  /**
+   * A take or a preview could not read a bound field: its source does not exist, has no
+   * data yet or does not send that shape, or a required field's value is absent from the
+   * snapshot. The message starts with the field's title and names the source.
+   */
+  'BINDING_NOT_RESOLVED',
+  /** setOverride carried a value its canonical field cannot hold; the message names the field. */
+  'INVALID_OVERRIDE_VALUE',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

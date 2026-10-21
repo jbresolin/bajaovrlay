@@ -20,3 +20,6 @@ the slices it is sent. Nothing here reaches the air.
   the race clock's shared sum), the positions and standings tables (`timingScreenText.ts`: lap
   times in ms, "4:38.293", João's call for a diagnostic screen; gaps to the tenth, cut), the
   stale banner and the raw JSON. Times count on the server's clock (`useServerAlignedTimeMs.ts`).
+  The tables and the card show the operator's corrections laid over the data, and a team,
+  school, status, points, event, session name, flag or laps can be corrected from there
+  (`features/overrides/CorrectableValue.tsx`, BAJAOVRLAY-20).

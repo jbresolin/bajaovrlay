@@ -2,8 +2,8 @@ import { ptBRTransforms } from './ptBRTransforms.js';
 import { quoteValueForReason } from './quoteValueForReason.js';
 import {
   giveTransformedValue,
+  type MappingTransform,
   refuseTransformValue,
-  type Transform,
   type TransformResult,
 } from './transform.js';
 
@@ -137,16 +137,18 @@ function convertUnixSecondsToMs(value: unknown): TransformResult {
 }
 
 /** "2027-08-14T14:30:00-03:00" becomes ms since 1970; a moment with no zone is refused. */
-export const isoDateTextToMsTransform: Transform = {
+export const isoDateTextToMsTransform: MappingTransform = {
   id: 'isoDateTextToMs',
+  family: 'mapping',
   label: ptBRTransforms.transforms.isoDateTextToMs.label,
   description: ptBRTransforms.transforms.isoDateTextToMs.description,
   apply: (value) => readIsoMomentTextAsMs(value),
 };
 
 /** 1818264600 (seconds since 1970) becomes 1818264600000 ms. */
-export const unixSecondsToMsTransform: Transform = {
+export const unixSecondsToMsTransform: MappingTransform = {
   id: 'unixSecondsToMs',
+  family: 'mapping',
   label: ptBRTransforms.transforms.unixSecondsToMs.label,
   description: ptBRTransforms.transforms.unixSecondsToMs.description,
   apply: (value) => convertUnixSecondsToMs(value),

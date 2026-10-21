@@ -16,7 +16,6 @@ import {
   saveCommandOutcome,
   saveCommandOutcomeWithoutEventLogRow,
 } from '../db/commandOutcomeStorage.js';
-import type { SliceRow } from '../db/tables.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
 import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
 import {
@@ -33,6 +32,11 @@ import {
 import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialSlices.js';
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
+import {
+  buildAllSlices,
+  buildRowsOfChangedSlicesToSave,
+  sliceNamesChangedByCommands,
+} from './storeSliceSaving.js';
 
 /** What a store needs. The last eight have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
@@ -85,37 +89,6 @@ export type StateStore = {
   subscribeToSliceChanges: (listener: SliceChangeListener) => () => void;
 };
 
-// The slices a reducer may change, in the order changes are reported.
-const sliceNamesChangedByCommands = [
-  'layers',
-  'graphics',
-  'instances',
-  'previewClearedLayerIds',
-  'rundowns',
-  'items',
-  'quickFirePanels',
-  'macros',
-  'macroRuns',
-  'dataSources',
-  'dataSnapshots',
-  'recordings',
-] as const;
-
-// The slice saved one row per source in its own table (data_snapshots) instead of as one
-// row of the slices table: a poll of one source must not rewrite every source's data.
-const sliceNameSavedOneRowPerSource: keyof SlicesChangedByCommands = 'dataSnapshots';
-
-// The slices that live in memory only and are never written to the database: a macro
-// run is something happening now, and a restart must not resume it (see macroRunner.ts);
-// the "will be cleared" markers are scaffolding of the Prévia monitor, dropped at a
-// restart like the preview instances (see loadInitialSlices.ts); the recordings are
-// files on disk, and their list is rebuilt from the recordings folder at boot.
-const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = [
-  'previewClearedLayerIds',
-  'macroRuns',
-  'recordings',
-];
-
 /**
  * Creates the store, loading its slices from the database (or seeding an empty one).
  * Its applyCommand is the single code path for every change; see the steps inside.
@@ -136,8 +109,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   // changed slices and the event-log row (one transaction) → update memory → tell
   // listeners what changed. A command that fails any step is still logged, as failed.
   // An accepted command that changes nothing skips the save, the log and the listeners;
-  // a routine data-source poll and a recording's progress skip only the log (see the
-  // exception below).
+  // a routine data-source poll, a recording's progress and a routine refresh of bound
+  // fields skip only the log (see the exception below).
   function applyCommand(commandInput: unknown, actor: string): CommandOutcome {
     const now = readCurrentTime().toISOString();
 
@@ -170,6 +143,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     const reducerContext = {
       newInstanceId: createInstanceId(),
       now,
+      actor,
       newItemId: createItemId(),
       newQuickFirePanelId: createQuickFirePanelId(),
       newMacroId: createMacroId(),
@@ -205,7 +179,25 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     // day. What could go wrong: the log cannot say when each routine poll happened; the
     // source's status (lastOkAtMs) and the server's own log lines carry that instead.
     // The recorder's count of written lines (recordRecordingProgress) follows each poll
-    // of a recording source, so it is left out the same way (gate 2 on PR #16).
+    // of a recording source, so it is left out the same way (gate 2 on PR #16), and so is
+    // a refresh of an instance's live bound fields, which follows a poll (BAJAOVRLAY-20).
+    // A refresh of bound fields that begins a spell of refusals (part of it, or all of
+    // it, refused by the graphic's schema) is applied as far as it fits and logged as
+    // failed, once per spell: the spell is the refused keys on the instance's entry of
+    // instanceBindings, so it survives a restart (gate 2 of PR #18).
+    if (reducerOutcome.refusalWrittenToTheEventLog !== undefined) {
+      recordOutcome({
+        nextSlices: reducerOutcome.slices,
+        logEntry: {
+          ts: now,
+          actor,
+          command: command.type,
+          payload: buildEventLogPayloadOfCommand(command),
+          result: { status: 'failed', error: reducerOutcome.refusalWrittenToTheEventLog },
+        },
+      });
+      return { ok: true };
+    }
     if (reducerOutcome.isLeftOutOfTheEventLog === true) {
       recordOutcomeWithoutEventLogRow(reducerOutcome.slices, now);
       return { ok: true };
@@ -348,51 +340,5 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-  };
-}
-
-/**
- * The slices-table rows of the changed slices, leaving out the slices kept in memory only
- * and the snapshots, which are saved one row per source (buildRowChangesOfDataSnapshots).
- */
-function buildRowsOfChangedSlicesToSave(
-  nextSlices: SlicesChangedByCommands,
-  changedSliceNames: Array<keyof SlicesChangedByCommands>,
-  updatedAt: string,
-): SliceRow[] {
-  const changedSliceNamesToSave = changedSliceNames.filter((sliceName) => {
-    const isKeptInMemoryOnly = sliceNamesKeptInMemoryOnly.includes(sliceName);
-    const isSavedOneRowPerSource = sliceName === sliceNameSavedOneRowPerSource;
-    return !isKeptInMemoryOnly && !isSavedOneRowPerSource;
-  });
-  return changedSliceNamesToSave.map((sliceName) => ({
-    name: sliceName,
-    json: nextSlices[sliceName],
-    updatedAt,
-  }));
-}
-
-/**
- * Every slice: those a command may change, plus the event log. Written out one slice per
- * line on purpose: the compiler checks each name, and a new slice cannot be forgotten.
- */
-function buildAllSlices(
-  slicesOfCommands: SlicesChangedByCommands,
-  eventLog: Slices['eventLog'],
-): Slices {
-  return {
-    layers: slicesOfCommands.layers,
-    graphics: slicesOfCommands.graphics,
-    instances: slicesOfCommands.instances,
-    previewClearedLayerIds: slicesOfCommands.previewClearedLayerIds,
-    rundowns: slicesOfCommands.rundowns,
-    items: slicesOfCommands.items,
-    quickFirePanels: slicesOfCommands.quickFirePanels,
-    macros: slicesOfCommands.macros,
-    macroRuns: slicesOfCommands.macroRuns,
-    dataSources: slicesOfCommands.dataSources,
-    dataSnapshots: slicesOfCommands.dataSnapshots,
-    recordings: slicesOfCommands.recordings,
-    eventLog,
   };
 }

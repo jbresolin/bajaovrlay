@@ -1,8 +1,19 @@
-import type { Graphic, Instance } from '@bajaovrlay/shared';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  findClockFieldKeysByRole,
+  type Graphic,
+  type Instance,
+  wholeClockBindingPath,
+} from '@bajaovrlay/shared';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { CardContent, CardFooter } from '@/components/ui/card';
+import { describeBoundFieldsOfInstance } from '@/features/bindings/boundFieldsOfInstance';
+import {
+  findSourceValueKindOfBinding,
+  findSourceValueKindOfClockField,
+  writeSourceValueForReading,
+} from '@/features/bindings/sourceValueText';
 import {
   buildSchemaFormResolver,
   buildSchemaFormValuesFromDataOnAir,
@@ -11,8 +22,10 @@ import {
   type SchemaFormValues,
 } from '@/features/schemaForm';
 import { ptBR } from '@/i18n/ptBR';
+import { useServerState } from '@/state/ControlPageStateProvider';
 
 import { findClockFieldKeysOfGraphic } from './clockFieldsOfGraphic';
+import { QuickEditBoundField } from './QuickEditBoundField';
 import { QuickEditButtons } from './QuickEditButtons';
 import { useQuickEditCommands } from './useQuickEditCommands';
 import { useTimeOnScreenInQuickEdit } from './useTimeOnScreenInQuickEdit';
@@ -47,6 +60,11 @@ export type QuickEditFormProps = {
  * shows the time on screen right now (useTimeOnScreenInQuickEdit.ts) while the form goes
  * on holding the reading of the instance. So that field stays "unchanged": "Atualizar"
  * does not send it.
+ *
+ * A field a source keeps up to date (the instance's entry of `instanceBindings`,
+ * BAJAOVRLAY-20) is drawn read-only with where it reads and "Corrigir valor da fonte…"
+ * (QuickEditBoundField.tsx): typing over it would be overwritten by the next refresh. Being
+ * read-only it is never changed, so "Atualizar" never sends it.
  *
  * The panel draws this component with a React `key` that changes at every "Editar", so
  * each press starts a fresh form; when the loaded instance goes, the panel draws no form
@@ -103,6 +121,12 @@ export function QuickEditForm(props: QuickEditFormProps) {
     dataOnAir: instanceBeingEdited.resolvedData,
     fieldsTheOperatorChanged,
   });
+
+  const readOnlyFieldContents = useBoundFieldsDrawnReadOnly(
+    graphic,
+    instanceBeingEdited,
+    description,
+  );
 
   const commands = useQuickEditCommands({
     description,
@@ -187,6 +211,7 @@ export function QuickEditForm(props: QuickEditFormProps) {
           description={description}
           controlIdPrefix={controlIdPrefixOfQuickEdit}
           textShownInUntouchedField={timeOnScreenForTheTimeField}
+          readOnlyFieldContents={readOnlyFieldContents}
         />
       </CardContent>
       <CardFooter className="flex flex-wrap items-center gap-3">
@@ -199,6 +224,55 @@ export function QuickEditForm(props: QuickEditFormProps) {
       </CardFooter>
     </form>
   );
+}
+
+/**
+ * The read-only rows of the instance's bound fields, by field key: each field a binding
+ * fills (the four clock fields for the whole clock) shows where it reads, its value on
+ * air, the "corrigido" badge and "Corrigir valor da fonte…".
+ */
+function useBoundFieldsDrawnReadOnly(
+  graphic: Graphic,
+  instanceBeingEdited: Instance,
+  description: ReturnType<typeof describeSchemaFormFromDataSchema>,
+): Record<string, ReactNode> {
+  const instanceBindings = useServerState((state) => state.instanceBindings);
+  const dataSources = useServerState((state) => state.dataSources);
+  const dataSnapshots = useServerState((state) => state.dataSnapshots);
+  const overrides = useServerState((state) => state.overrides);
+  const boundFields = describeBoundFieldsOfInstance(instanceBeingEdited.id, graphic, {
+    instanceBindings,
+    dataSources,
+    dataSnapshots,
+    overrides,
+  });
+  const clockFieldKeys = findClockFieldKeysByRole(graphic);
+  const contentPairs: Array<[string, ReactNode]> = [];
+  for (const boundField of boundFields) {
+    const isWholeClock = boundField.binding.path === wholeClockBindingPath;
+    for (const fieldKey of boundField.fieldKeys) {
+      // The whole clock fills four fields; each is written by its clock role.
+      const valueKind =
+        isWholeClock && clockFieldKeys !== undefined
+          ? findSourceValueKindOfClockField(fieldKey, clockFieldKeys)
+          : findSourceValueKindOfBinding(boundField.binding);
+      const fieldLabel =
+        description.fields.find((field) => field.key === fieldKey)?.label ?? fieldKey;
+      contentPairs.push([
+        fieldKey,
+        <QuickEditBoundField
+          key={fieldKey}
+          boundField={boundField}
+          fieldLabel={fieldLabel}
+          valueOnAirText={writeSourceValueForReading(
+            instanceBeingEdited.resolvedData[fieldKey],
+            valueKind,
+          )}
+        />,
+      ]);
+    }
+  }
+  return Object.fromEntries(contentPairs);
 }
 
 /**

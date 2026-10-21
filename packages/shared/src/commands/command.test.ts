@@ -120,10 +120,10 @@ describe('CommandSchema', () => {
 
   it('refuses a command type the server does not know, naming the type field', () => {
     // Arrange: a command from a future version of the control page. (Until BAJAOVRLAY-13
-    // this example was takeItem, and until BAJAOVRLAY-16 runMacro; both are known now.
-    // Overrides arrive in M2.)
+    // this example was takeItem, until BAJAOVRLAY-16 runMacro and until BAJAOVRLAY-20
+    // setOverride; all are known now. Importing entities arrives with BAJAOVRLAY-19.)
     const unknownCommand = {
-      type: 'setOverride',
+      type: 'importEntities',
       sourceId: 'scoring',
       path: 'enduro.positions',
       value: [],

@@ -2,14 +2,27 @@
 // own index.ts re-exports this file with one line; other packages import from
 // '@bajaovrlay/shared', never from here.
 
-// What a transform is, what it answers, and the JSON values it hands back.
-export { type JsonValue, type Transform, type TransformResult } from './transform.js';
-// Every transform there is, and how to read one by its id.
-export { findTransform, transformRegistry } from './transformRegistry.js';
+// What a transform is (of the mapping or the binding family), what it answers, and the
+// JSON values it hands back.
+export {
+  type BindingTransform,
+  type JsonValue,
+  type MappingTransform,
+  type Transform,
+  type TransformFamily,
+  type TransformResult,
+} from './transform.js';
+// Every transform there is, one family of them, and how to read one by its id.
+export { findTransform, listTransformsOfFamily, transformRegistry } from './transformRegistry.js';
 // Checks a transform id and its parameters when a config is validated (pt-BR reason).
 export {
   checkTransformParameters,
   type TransformParametersCheck,
 } from './checkTransformParameters.js';
-// The parameters of mapValues, the one transform that takes any: the value table.
+// The parameters of mapValues: the value table.
 export { type MapValuesParameters, MapValuesParametersSchema } from './mapValuesTransform.js';
+// The parameters of the binding transforms that take any: topN's n, formatGapAsText's
+// unit and shortenSchoolName's maximum length.
+export { GapUnitParametersSchema } from './raceTimeTextTransforms.js';
+export { ShortenSchoolNameParametersSchema } from './schoolNameTransforms.js';
+export { TopNParametersSchema } from './topNTransform.js';

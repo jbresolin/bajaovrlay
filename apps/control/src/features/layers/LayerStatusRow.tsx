@@ -1,7 +1,8 @@
-import type { Instance, Layer } from '@bajaovrlay/shared';
+import type { Graphic, Instance, Layer } from '@bajaovrlay/shared';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { BoundSourceChips } from '@/features/bindings/BoundSourceChips';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { ItemLabelOnAir } from '@/features/layers/ItemLabelOnAir';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
@@ -21,6 +22,8 @@ export type LayerStatusRowProps = {
   isMarkedToBeCleared: boolean;
   /** The on-air graphic's display name; ignored when the layer is empty. */
   graphicName: string;
+  /** The on-air graphic as the server lists it, or undefined (for its clock fields). */
+  graphicOnProgram: Graphic | undefined;
   currentTime: Date;
   onClearPressed: () => void;
   /**
@@ -71,7 +74,9 @@ export type LayerStatusRowProps = {
  * Every row with something on air names its item (ItemLabelOnAir.tsx). One changed on
  * air carries the chip "alterado no ar" and offers "Salvar no item"; one with no item
  * offers "Salvar como item" (BAJAOVRLAY-37). A preview changed with "Atualizar prévia"
- * carries the chip beside "em prévia", for information only.
+ * carries the chip beside "em prévia", for information only. A row whose instance reads a
+ * source live says when that source is late, failing or deleted, and when a correction
+ * changed a bound value (features/bindings/BoundSourceChips.tsx, BAJAOVRLAY-20).
  * Deliberate: the preview gets no status badge, because its status stays "loading" for
  * good (the pages that draw previews never report), so a badge would read "Carregando"
  * and mean nothing.
@@ -113,6 +118,7 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
               status={instanceOnProgram.status}
               statusDetail={instanceOnProgram.statusDetail}
             />
+            <BoundSourceChips instance={instanceOnProgram} graphic={props.graphicOnProgram} />
           </span>
         )}
         <span className="flex flex-wrap items-center gap-1">

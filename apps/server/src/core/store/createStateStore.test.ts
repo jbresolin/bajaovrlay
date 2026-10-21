@@ -97,8 +97,8 @@ describe('applyCommand with an invalid command', () => {
     // Arrange: a store, and a command type the server does not know.
     const { store } = createStoreWithRaceClockRegistered();
     const instancesBefore = store.readAllSlices().instances;
-    // (It was takeItem until BAJAOVRLAY-13, runMacro until -16; overrides arrive in M2.)
-    const unknownCommand = { type: 'setOverride', sourceId: 'scoring', value: [] };
+    // (It was takeItem, then runMacro, then setOverride; entities arrive with BAJAOVRLAY-19.)
+    const unknownCommand = { type: 'importEntities', sourceId: 'scoring', value: [] };
 
     // Act: apply it as the operator.
     store.applyCommand(unknownCommand, operatorActor);
@@ -110,7 +110,7 @@ describe('applyCommand with an invalid command', () => {
         id: 1,
         ts: '2026-10-09T14:32:05.000Z',
         actor: 'operador:conexao-7',
-        command: 'setOverride',
+        command: 'importEntities',
         payload: unknownCommand,
         result: {
           status: 'failed',

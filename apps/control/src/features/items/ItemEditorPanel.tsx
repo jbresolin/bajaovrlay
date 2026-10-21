@@ -202,6 +202,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
                 )}
                 whenFieldsAreChecked={whenFieldsAreChecked}
                 handleRef={graphicFieldsFormHandleRef}
+                isItemOnAir={isItemOnAir}
               />
             )}
           </CardContent>

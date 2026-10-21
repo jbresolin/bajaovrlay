@@ -148,7 +148,7 @@ describe('mapValues', () => {
     // Arrange: a mapping rule that names mapValues with this row's table.
 
     // Act: check the parameters as the config schema does when the source is saved.
-    const check = checkTransformParameters('mapValues', table);
+    const check = checkTransformParameters('mapValues', table, 'mapping');
 
     // Assert: refused, with the pt-BR sentence saying what is wrong with the table.
     expect(check, 'the table must be refused with this reason').toEqual({

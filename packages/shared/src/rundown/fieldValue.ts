@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { BindingFieldValueSchema } from '../bindings/bindingFieldValue.js';
+
 /** Answers whether a literal was given any value at all (null counts as a value). */
 function isValuePresent(value: unknown): boolean {
   return value !== undefined;
@@ -43,15 +45,17 @@ export type TakeTimeFieldValue = z.infer<typeof TakeTimeFieldValueSchema>;
 
 /**
  * How one field of an item gets its value, told apart by `kind`: a `literal` typed by
- * the operator, or a `takeTime` stamped by the server at the take. M2 (BAJAOVRLAY-20)
- * adds `binding` and `entity` as new members here, and code that switches on `kind`
- * gains a branch instead of being rewritten.
+ * the operator, a `takeTime` stamped by the server at the take, or a `binding` read from
+ * a data source (BAJAOVRLAY-20, bindings/bindingFieldValue.ts). The entity library
+ * (BAJAOVRLAY-19) adds `entity` as one more member here, and code that switches on
+ * `kind` gains a branch instead of being rewritten.
  * What could go wrong: only a literal has a `value`, so code must check `kind` before
  * reading it; the compiler refuses the read otherwise.
  */
 export const FieldValueSchema = z.discriminatedUnion('kind', [
   LiteralFieldValueSchema,
   TakeTimeFieldValueSchema,
+  BindingFieldValueSchema,
 ]);
 
 /** A field value of any kind, after validation. */

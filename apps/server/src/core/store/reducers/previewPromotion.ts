@@ -1,6 +1,14 @@
-import type { Instance } from '@bajaovrlay/shared';
+import {
+  findClockFieldKeysByRole,
+  type Instance,
+  type InstanceBoundField,
+  type ItemFields,
+  listFieldKeysItemReadsFromASource,
+} from '@bajaovrlay/shared';
 
 import { refusePreviewWithoutItem } from '../onAirChangeRefusals.js';
+import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
+import { addBindingsOfNewInstance } from './instanceBindingsBookkeeping.js';
 import { removePreviewClearedMarkerOfLayer } from './previewMarkersAndDiscards.js';
 import { type GraphicOnOutputRequest, putGraphicOnOutput } from './putGraphicOnOutput.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
@@ -15,10 +23,17 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * exactly as the preview's did, so the chip "alterado no ar" must say so at once.
  *
  * The data is the preview instance's own: the item is NOT resolved again, so what was
- * seen is what goes on air, even if the item was edited or deleted meanwhile. The one
- * exception is the fields the preview had stamped with its own moment (the keys the
- * preview instance remembers in `takeTimeFieldKeys`): they get the moment of THIS
- * command, so a previewed clock starts counting at the take.
+ * seen is what goes on air, even if the item was edited or deleted meanwhile. Two
+ * exceptions, both "frozen at the take, not at the preview": the fields the preview had
+ * stamped with its own moment (the keys the preview instance remembers in
+ * `takeTimeFieldKeys`) get the moment of THIS command, so a previewed clock starts
+ * counting at the take; and its frozen bound fields (`isLive: false`, kept in the
+ * preview's `instanceBindings` entry) are read again from the sources now, which refuses
+ * the take like any take when one cannot be read. Every frozen key is first taken out of
+ * the preview's data, so an optional value the source no longer sends goes off air as at
+ * any take, rather than staying at its previewed value (gate 2 of PR #18). Its live bound fields go on as they
+ * were seen (the refreshes keep them current), and their bindings move to the new
+ * program instance; the preview's entry leaves with the preview.
  *
  * The take itself is handed to putGraphicOnOutput, so it is checked like every take: the
  * stamp only goes into a field the graphic's schema marks as a wall-clock moment, and the
@@ -45,10 +60,27 @@ export function takePreviewInstanceToProgram(
       previewInstance.layerId;
     return { status: 'refused', error: refusePreviewWithoutItem(layerName) };
   }
+  const boundFieldsOfThePreview =
+    slices.instanceBindings.find((entry) => entry.instanceId === previewInstance.id)?.boundFields ??
+    [];
+  const frozenFieldsReadAgain = readFrozenBoundFieldsAgain(
+    slices,
+    previewInstance,
+    boundFieldsOfThePreview,
+    context.now,
+  );
+  if (frozenFieldsReadAgain.status === 'refused') {
+    return frozenFieldsReadAgain;
+  }
+  const previewDataWithoutFrozenKeys = Object.fromEntries(
+    Object.entries(previewInstance.resolvedData).filter(
+      ([fieldKey]) => !frozenFieldsReadAgain.frozenFieldKeys.includes(fieldKey),
+    ),
+  );
   const takeOfWhatWasPreviewed: GraphicOnOutputRequest = {
     graphicId: previewInstance.graphicId,
     layerId: previewInstance.layerId,
-    data: previewInstance.resolvedData,
+    data: { ...previewDataWithoutFrozenKeys, ...frozenFieldsReadAgain.data },
     target: 'program',
     // The one thing that is not carried over as it was seen: the take step writes this
     // command's moment over these fields. A preview that stamped nothing has no list.
@@ -71,7 +103,61 @@ export function takePreviewInstanceToProgram(
         : instance,
     );
 
-  return { status: 'applied', slices: { ...takeOutcome.slices, instances: instancesAfter } };
+  // The live bindings follow the instance to program; the preview's entry is dropped
+  // with the preview by reduceCommand.
+  const liveBoundFields = boundFieldsOfThePreview.filter((boundField) => boundField.binding.isLive);
+  const instanceBindingsAfter = addBindingsOfNewInstance(
+    takeOutcome.slices.instanceBindings,
+    context.newInstanceId,
+    liveBoundFields,
+  );
+  return {
+    status: 'applied',
+    slices: {
+      ...takeOutcome.slices,
+      instances: instancesAfter,
+      instanceBindings: instanceBindingsAfter,
+    },
+  };
+}
+
+/**
+ * Reads the preview's frozen bound fields again from the sources as they are now, through
+ * the resolver of every take, or refuses as a take would. No frozen field gives no data.
+ * Also answers the graphic keys those fields fill (four for a frozen whole clock), which
+ * the caller takes out of the preview's data before laying the values read over it.
+ */
+function readFrozenBoundFieldsAgain(
+  slices: SlicesChangedByCommands,
+  previewInstance: Instance,
+  boundFieldsOfThePreview: InstanceBoundField[],
+  momentOfTheTake: string,
+) {
+  const frozenFields: ItemFields = {};
+  for (const boundField of boundFieldsOfThePreview) {
+    if (!boundField.binding.isLive) {
+      frozenFields[boundField.fieldKey] = boundField.binding;
+    }
+  }
+  const graphic = slices.graphics.find((candidate) => candidate.id === previewInstance.graphicId);
+  const resolution = resolveItemFieldsIntoGraphicData({
+    fields: frozenFields,
+    graphic,
+    momentOfTheTake,
+    sources: {
+      dataSources: slices.dataSources,
+      dataSnapshots: slices.dataSnapshots,
+      overrides: slices.overrides,
+    },
+  });
+  if (resolution.status === 'refused') {
+    return resolution;
+  }
+  const frozenFieldKeys = listFieldKeysItemReadsFromASource(
+    frozenFields,
+    graphic === undefined ? undefined : findClockFieldKeysByRole(graphic),
+  );
+  return { ...resolution, frozenFieldKeys };
 }
 
 /**
