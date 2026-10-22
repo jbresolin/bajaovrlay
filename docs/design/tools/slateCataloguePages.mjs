@@ -68,15 +68,15 @@ export function buildCataloguePages(options) {
     'bracket-passo-2.html': shell('bracket, step 2', renderBracket(sample.brackets, 2)),
     'bracket-passo-3.html': shell('bracket, step 3', renderBracket(sample.brackets, 3)),
     'bracket-64-passo-1.html': shell(
-      'bracket of 64, step 1: the first round as a board',
+      'bracket of 64, step 1: the first round as a board, the top four seeds by W.O.',
       renderBracket(sample.bracket64, 1),
     ),
-    'bracket-64-passo-3.html': shell(
-      'bracket of 64, step 3: the round of 16 as a board',
-      renderBracket(sample.bracket64, 3),
+    'bracket-64-passo-2.html': shell(
+      'bracket of 64, step 2: the second round as a board, one W.O.',
+      renderBracket(sample.bracket64, 2),
     ),
     'bracket-64-passo-6.html': shell(
-      'bracket of 64, step 6: the tree from the quarter-finals',
+      'bracket of 64, step 6: the tree from the quarter-finals, one W.O.',
       renderBracket(sample.bracket64, 6),
     ),
     'podium-passo-1.html': shell('podium, step 1', renderPodium(sample.podium, 1)),

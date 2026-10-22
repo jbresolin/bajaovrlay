@@ -22,9 +22,10 @@ ${cell('estável: a diferença não mudou', 'steady')}
 </div>`;
 }
 
-// The three kinds of result a match can carry, on the same quarter-final of the suspension
-// sample: the times as recorded, the same match as best of three, and the same match as a
-// win with no number. Each in the tree's stacked form and the board's side-by-side form.
+// Every kind of result a match can carry, on the same quarter-final of the suspension
+// sample: the times as recorded, the same match as best of three, as a win with no number,
+// won by W.O. because the opponent did not run, won by W.O. against an empty slot (a bye),
+// and undecided. Each in the tree's stacked form and the board's score-line card.
 export function renderSheetBracketResults(direction) {
   const timed = sample.brackets.rounds[0].matches[0];
   const asBestOfThree = {
@@ -38,27 +39,40 @@ export function renderSheetBracketResults(direction) {
     carA: { ...timed.carA, timeText: '' },
     carB: { ...timed.carB, timeText: '' },
   };
+  const asNoShowWalkover = {
+    ...timed,
+    walkover: true,
+    carA: { ...timed.carA, timeText: '' },
+    carB: { ...timed.carB, timeText: '' },
+  };
+  const asBye = {
+    matchId: timed.matchId,
+    walkover: true,
+    carA: { ...timed.carA, timeText: '' },
+    winnerCarNumber: timed.carA.carNumber,
+  };
   const undecided = {
     ...timed,
     winnerCarNumber: undefined,
     carA: { ...timed.carA, timeText: '' },
     carB: { ...timed.carB, timeText: '' },
   };
-  const row = (label, match) => `    <div class="sheet__cell">
+  const state = (label, match) => `    <div class="sheet__state">
       <div class="sheet__label">${label}</div>
+      <div class="sheet__state-forms">
 ${renderBracketMatch(match)}
-    </div>
-    <div class="sheet__cell">
-      <div class="sheet__label">a mesma disputa numa rodada em lista</div>
 ${renderBracketMatch(match, { layout: 'board' })}
+      </div>
     </div>`;
   return `<div class="sheet">
-  <div class="sheet__title">${direction} · resultados de uma disputa — tempo por carro, melhor de 3 (contagem de vitórias) ou só a marca do vencedor; e antes de decidir (folha de referência, não vai ao ar)</div>
-  <div class="sheet__grid--brackets">
-${row('tempo por carro: prova cronometrada', timed)}
-${row('melhor de 3: a contagem de vitórias no lugar do tempo', asBestOfThree)}
-${row('vitória sem número: só a marca do vencedor', asPlainWin)}
-${row('antes de decidir: "—" nos dois', undecided)}
+  <div class="sheet__title">${direction} · resultados de uma disputa — na árvore (à esquerda) e numa rodada em lista (à direita) (folha de referência, não vai ao ar)</div>
+  <div class="sheet__states">
+${state('tempo por carro: prova cronometrada', timed)}
+${state('melhor de 3: a contagem de vitórias no lugar do tempo', asBestOfThree)}
+${state('vitória sem número: só a marca do vencedor', asPlainWin)}
+${state('W.O.: o adversário não correu (em qualquer rodada)', asNoShowWalkover)}
+${state('W.O. sem adversário: a vaga vazia de uma chave incompleta', asBye)}
+${state('antes de decidir: "—" nos dois', undecided)}
   </div>
 </div>`;
 }

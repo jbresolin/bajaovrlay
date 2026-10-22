@@ -10,195 +10,279 @@
   <body>
     <div class="sheet">
       <div class="sheet__title">
-        ardosia · resultados de uma disputa — tempo por carro, melhor de 3 (contagem de vitórias) ou
-        só a marca do vencedor; e antes de decidir (folha de referência, não vai ao ar)
+        ardosia · resultados de uma disputa — na árvore (à esquerda) e numa rodada em lista (à
+        direita) (folha de referência, não vai ao ar)
       </div>
-      <div class="sheet__grid--brackets">
-        <div class="sheet__cell">
+      <div class="sheet__states">
+        <div class="sheet__state">
           <div class="sheet__label">tempo por carro: prova cronometrada</div>
-          <div class="bracket__match" data-match="quartas-1">
-            <div class="pill bracket-car" data-row data-winner>
-              <span class="chip">98</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Carcará Baja</span
-                ><span class="bracket-car__school">UFPR</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--time">1:11,3</span>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="quartas-1">
+              <div class="pill bracket-car" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">1:11,3</span>
+              </div>
+              <div class="pill bracket-car" data-row data-loser>
+                <span class="chip">64</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">1:14,9</span>
+              </div>
             </div>
-            <div class="pill bracket-car" data-row data-loser>
-              <span class="chip">64</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Siriema Baja</span
-                ><span class="bracket-car__school">UFMT</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--time">1:14,9</span>
+            <div class="card bracket-fixture" data-match="quartas-1">
+              <div class="bracket-fixture__side bracket-fixture__side--left" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">1:11,3</span>
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div class="bracket-fixture__side bracket-fixture__side--right" data-row data-loser>
+                <span class="bracket-car__result bracket-car__result--time">1:14,9</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="chip">64</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="sheet__cell">
-          <div class="sheet__label">a mesma disputa numa rodada em lista</div>
-          <div class="bracket-board__match" data-match="quartas-1">
-            <div class="pill bracket-car bracket-car--board" data-row data-winner>
-              <span class="chip">98</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Carcará Baja</span
-                ><span class="bracket-car__school">UFPR</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--time">1:11,3</span>
-            </div>
-            <div class="pill bracket-car bracket-car--board" data-row data-loser>
-              <span class="chip">64</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Siriema Baja</span
-                ><span class="bracket-car__school">UFMT</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--time">1:14,9</span>
-            </div>
-          </div>
-        </div>
-        <div class="sheet__cell">
+        <div class="sheet__state">
           <div class="sheet__label">melhor de 3: a contagem de vitórias no lugar do tempo</div>
-          <div class="bracket__match" data-match="quartas-1">
-            <div class="pill bracket-car" data-row data-winner>
-              <span class="chip">98</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Carcará Baja</span
-                ><span class="bracket-car__school">UFPR</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--score">2</span>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="quartas-1">
+              <div class="pill bracket-car" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--score">2</span>
+              </div>
+              <div class="pill bracket-car" data-row data-loser>
+                <span class="chip">64</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--score">1</span>
+              </div>
             </div>
-            <div class="pill bracket-car" data-row data-loser>
-              <span class="chip">64</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Siriema Baja</span
-                ><span class="bracket-car__school">UFMT</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--score">1</span>
+            <div class="card bracket-fixture" data-match="quartas-1">
+              <div class="bracket-fixture__side bracket-fixture__side--left" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--score">2</span>
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div class="bracket-fixture__side bracket-fixture__side--right" data-row data-loser>
+                <span class="bracket-car__result bracket-car__result--score">1</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="chip">64</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="sheet__cell">
-          <div class="sheet__label">a mesma disputa numa rodada em lista</div>
-          <div class="bracket-board__match" data-match="quartas-1">
-            <div class="pill bracket-car bracket-car--board" data-row data-winner>
-              <span class="chip">98</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Carcará Baja</span
-                ><span class="bracket-car__school">UFPR</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--score">2</span>
-            </div>
-            <div class="pill bracket-car bracket-car--board" data-row data-loser>
-              <span class="chip">64</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Siriema Baja</span
-                ><span class="bracket-car__school">UFMT</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--score">1</span>
-            </div>
-          </div>
-        </div>
-        <div class="sheet__cell">
+        <div class="sheet__state">
           <div class="sheet__label">vitória sem número: só a marca do vencedor</div>
-          <div class="bracket__match" data-match="quartas-1">
-            <div class="pill bracket-car" data-row data-winner>
-              <span class="chip">98</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Carcará Baja</span
-                ><span class="bracket-car__school">UFPR</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--win"
-                ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
-                  <path
-                    d="M3.5 10.5 8 15 16.5 5.5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-              ></span>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="quartas-1">
+              <div class="pill bracket-car" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--win"
+                  ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                    <path
+                      d="M3.5 10.5 8 15 16.5 5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="pill bracket-car" data-row data-loser>
+                <span class="chip">64</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--win"></span>
+              </div>
             </div>
-            <div class="pill bracket-car" data-row data-loser>
-              <span class="chip">64</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Siriema Baja</span
-                ><span class="bracket-car__school">UFMT</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--win"></span>
+            <div class="card bracket-fixture" data-match="quartas-1">
+              <div class="bracket-fixture__side bracket-fixture__side--left" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--win"
+                  ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                    <path
+                      d="M3.5 10.5 8 15 16.5 5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div class="bracket-fixture__side bracket-fixture__side--right" data-row data-loser>
+                <span class="bracket-car__result bracket-car__result--win"></span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="chip">64</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="sheet__cell">
-          <div class="sheet__label">a mesma disputa numa rodada em lista</div>
-          <div class="bracket-board__match" data-match="quartas-1">
-            <div class="pill bracket-car bracket-car--board" data-row data-winner>
-              <span class="chip">98</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Carcará Baja</span
-                ><span class="bracket-car__school">UFPR</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--win"
-                ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
-                  <path
-                    d="M3.5 10.5 8 15 16.5 5.5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  /></svg
-              ></span>
+        <div class="sheet__state">
+          <div class="sheet__label">W.O.: o adversário não correu (em qualquer rodada)</div>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="quartas-1">
+              <div class="pill bracket-car" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover"
+                  ><span class="walkover-tag">W.O.</span></span
+                >
+              </div>
+              <div class="pill bracket-car" data-row data-loser>
+                <span class="chip">64</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover">—</span>
+              </div>
             </div>
-            <div class="pill bracket-car bracket-car--board" data-row data-loser>
-              <span class="chip">64</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Siriema Baja</span
-                ><span class="bracket-car__school">UFMT</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--win"></span>
+            <div class="card bracket-fixture" data-match="quartas-1">
+              <div class="bracket-fixture__side bracket-fixture__side--left" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover"
+                  ><span class="walkover-tag">W.O.</span></span
+                >
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div class="bracket-fixture__side bracket-fixture__side--right" data-row data-loser>
+                <span class="bracket-car__result bracket-car__result--walkover">—</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="chip">64</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="sheet__cell">
+        <div class="sheet__state">
+          <div class="sheet__label">W.O. sem adversário: a vaga vazia de uma chave incompleta</div>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="quartas-1">
+              <div class="pill bracket-car" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover"
+                  ><span class="walkover-tag">W.O.</span></span
+                >
+              </div>
+              <div class="bracket-car bracket-car--empty">
+                <span class="bracket-empty">SEM ADVERSÁRIO</span>
+              </div>
+            </div>
+            <div class="card bracket-fixture" data-match="quartas-1">
+              <div class="bracket-fixture__side bracket-fixture__side--left" data-row data-winner>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover"
+                  ><span class="walkover-tag">W.O.</span></span
+                >
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div
+                class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+              >
+                <span class="bracket-empty">SEM ADVERSÁRIO</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet__state">
           <div class="sheet__label">antes de decidir: "—" nos dois</div>
-          <div class="bracket__match" data-match="quartas-1">
-            <div class="pill bracket-car" data-row>
-              <span class="chip">98</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Carcará Baja</span
-                ><span class="bracket-car__school">UFPR</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--time">—</span>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="quartas-1">
+              <div class="pill bracket-car" data-row>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">—</span>
+              </div>
+              <div class="pill bracket-car" data-row>
+                <span class="chip">64</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">—</span>
+              </div>
             </div>
-            <div class="pill bracket-car" data-row>
-              <span class="chip">64</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Siriema Baja</span
-                ><span class="bracket-car__school">UFMT</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--time">—</span>
-            </div>
-          </div>
-        </div>
-        <div class="sheet__cell">
-          <div class="sheet__label">a mesma disputa numa rodada em lista</div>
-          <div class="bracket-board__match" data-match="quartas-1">
-            <div class="pill bracket-car bracket-car--board" data-row>
-              <span class="chip">98</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Carcará Baja</span
-                ><span class="bracket-car__school">UFPR</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--time">—</span>
-            </div>
-            <div class="pill bracket-car bracket-car--board" data-row>
-              <span class="chip">64</span>
-              <span class="bracket-car__team"
-                ><span class="bracket-car__name">Siriema Baja</span
-                ><span class="bracket-car__school">UFMT</span></span
-              >
-              <span class="bracket-car__result bracket-car__result--time">—</span>
+            <div class="card bracket-fixture" data-match="quartas-1">
+              <div class="bracket-fixture__side bracket-fixture__side--left" data-row>
+                <span class="chip">98</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Carcará Baja</span
+                  ><span class="bracket-car__school">UFPR</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">—</span>
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div class="bracket-fixture__side bracket-fixture__side--right" data-row>
+                <span class="bracket-car__result bracket-car__result--time">—</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Siriema Baja</span
+                  ><span class="bracket-car__school">UFMT</span></span
+                >
+                <span class="chip">64</span>
+              </div>
             </div>
           </div>
         </div>

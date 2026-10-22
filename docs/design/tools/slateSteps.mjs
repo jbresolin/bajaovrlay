@@ -8,9 +8,9 @@ import { escapeHtml, winIcon } from './slateVocabulary.mjs';
 
 // ---------------------------------------------------------------- bracket: the steps
 
-// A bracket is shown in steps. A round with more than four matches is a board: a list of
-// its matches, two a row, matchesPerPage (32) a page, so a round of 64 is one page and a
-// round of 128 two. The last rounds, from the quarter-finals (four matches) down, are the
+// A bracket is shown in steps. A round with more than four matches is a board: a draw sheet
+// of its matches, one card each, in two columns, matchesPerPage (32) a page, so a round of 64
+// is one page and a round of 128 two. The last rounds, from the quarter-finals (four matches) down, are the
 // tree, revealed one round per step. An 8-car bracket is therefore three tree steps; a
 // 64-car one three boards and three tree steps; a 128-car one four boards (its first round
 // in two pages) and the tree. Everything is derived from the rounds and their matches.
@@ -43,17 +43,22 @@ export function planBracketSteps(rounds, matchesPerPage) {
   return steps;
 }
 
-// ---------------------------------------------------------------- bracket: a car's pill
+// ---------------------------------------------------------------- bracket: a car and its result
 
 // A match's result is modular, and the match says which kind it is by what it carries: a
 // count of wins per car when it is best of N (bestOf), a time per car when it was a timed
-// run, or nothing but the winner's mark when a win has no number. "—" while undecided.
+// run, or nothing but the winner's mark when a win has no number. A walkover overrides all
+// three: the winner advanced without racing (the opponent did not run, or there was none),
+// so the winner carries the "W.O." tag and the other car "—". "—" on both while undecided.
 function renderBracketResult(car, match) {
   const decided = match.winnerCarNumber !== undefined;
   const isWinner = decided && car.carNumber === match.winnerCarNumber;
   let kind = 'time';
   let content = '—';
-  if (match.bestOf !== undefined) {
+  if (match.walkover) {
+    kind = 'walkover';
+    content = isWinner ? '<span class="walkover-tag">W.O.</span>' : '—';
+  } else if (match.bestOf !== undefined) {
     kind = 'score';
     content = car.wins === undefined ? '—' : String(car.wins);
   } else if (car.timeText !== '') {
@@ -65,32 +70,73 @@ function renderBracketResult(car, match) {
   return `<span class="bracket-car__result bracket-car__result--${kind}">${content}</span>`;
 }
 
-function renderBracketCar(car, match, extraClass = '') {
-  const decided = match.winnerCarNumber !== undefined;
-  let mark = '';
-  if (decided) mark = car.carNumber === match.winnerCarNumber ? ' data-winner' : ' data-loser';
-  const classes = ['pill', 'bracket-car', extraClass].filter(Boolean).join(' ');
-  return `      <div class="${classes}" data-row${mark}>
+/** ' data-winner', ' data-loser' or nothing (undecided), for a car of a match. */
+function markWinnerOrLoser(car, match) {
+  if (match.winnerCarNumber === undefined) return '';
+  return car.carNumber === match.winnerCarNumber ? ' data-winner' : ' data-loser';
+}
+
+function renderBracketTeam(car) {
+  return `<span class="bracket-car__team"><span class="bracket-car__name">${escapeHtml(car.teamName)}</span><span class="bracket-car__school">${escapeHtml(car.schoolName)}</span></span>`;
+}
+
+// The empty slot of a bye: no chip, no team, a dashed outline, so it can never be read as a
+// car; the car facing it carries the W.O. tag.
+const emptySlotWords = 'SEM ADVERSÁRIO';
+
+// ---------------------------------------------------------------- bracket: a match in the tree
+
+function renderTreeCar(car, match) {
+  if (car === undefined) {
+    return `      <div class="bracket-car bracket-car--empty"><span class="bracket-empty">${emptySlotWords}</span></div>`;
+  }
+  return `      <div class="pill bracket-car" data-row${markWinnerOrLoser(car, match)}>
         <span class="chip">${car.carNumber}</span>
-        <span class="bracket-car__team"><span class="bracket-car__name">${escapeHtml(car.teamName)}</span><span class="bracket-car__school">${escapeHtml(car.schoolName)}</span></span>
+        ${renderBracketTeam(car)}
         ${renderBracketResult(car, match)}
       </div>`;
 }
 
-/** One match as two pills, stacked in the tree or side by side on a board. */
+// ---------------------------------------------------------------- bracket: a match on a board
+
+// On a board a match is one card: the two cars face each other across a "×", chips on the
+// outer edges and the results meeting in the middle, read like a football score line
+// ("2 × 1", "W.O. × —"), so who runs against whom is never in doubt.
+function renderFixtureSide(car, match, side) {
+  const sideClass = `bracket-fixture__side bracket-fixture__side--${side}`;
+  if (car === undefined) {
+    return `      <div class="${sideClass} bracket-fixture__side--empty"><span class="bracket-empty">${emptySlotWords}</span></div>`;
+  }
+  const chip = `<span class="chip">${car.carNumber}</span>`;
+  const team = renderBracketTeam(car);
+  const result = renderBracketResult(car, match);
+  const cells = side === 'left' ? [chip, team, result] : [result, team, chip];
+  return `      <div class="${sideClass}" data-row${markWinnerOrLoser(car, match)}>
+        ${cells.join('\n        ')}
+      </div>`;
+}
+
+/** One match: two stacked pills in the tree, or one score-line card on a board. */
 export function renderBracketMatch(match, { layout = 'tree', style = '' } = {}) {
-  const classes = layout === 'board' ? 'bracket-board__match' : 'bracket__match';
-  const carClass = layout === 'board' ? 'bracket-car--board' : '';
   const styleAttribute = style ? ` style="${style}"` : '';
-  return `    <div class="${classes}"${styleAttribute} data-match="${match.matchId}">
-${renderBracketCar(match.carA, match, carClass)}
-${renderBracketCar(match.carB, match, carClass)}
+  if (layout === 'board') {
+    return `    <div class="card bracket-fixture"${styleAttribute} data-match="${match.matchId}">
+${renderFixtureSide(match.carA, match, 'left')}
+      <span class="bracket-fixture__versus">×</span>
+${renderFixtureSide(match.carB, match, 'right')}
+    </div>`;
+  }
+  return `    <div class="bracket__match"${styleAttribute} data-match="${match.matchId}">
+${renderTreeCar(match.carA, match)}
+${renderTreeCar(match.carB, match)}
     </div>`;
 }
 
 // ---------------------------------------------------------------- bracket: a round board
 
-// Two matches a row, read down the left column then the right, like a draw sheet.
+// Two columns of match cards, read down the left column then the right, like a draw sheet;
+// the gutter between the columns is wider than the gap between cards, so a row is never read
+// across as one match.
 function renderBracketBoard(brackets, step, stepNumber, stepCount, root) {
   const rowsPerColumn = Math.ceil(step.matches.length / 2);
   const pageWords = step.pageCount > 1 ? ` · página ${step.pageNumber}/${step.pageCount}` : '';

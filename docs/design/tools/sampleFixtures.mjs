@@ -91,21 +91,18 @@ export const sponsorFixtures = [
 ];
 
 /**
- * A 64-car bracket, since the eliminations routinely reach the round of 64 and may reach
- * 128: the 60 cars of the positions sample seeded by their place plus four more fictional
- * teams, drawn in the standard order (seed 1 meets seed 64, the winner meets the winner of
- * 32 against 33, and so on). Every match is best of three; the better seed wins except
- * where a seed below is listed as an upset winner (in the first two rounds only), and the
- * rounds are named as the Baja app would name them. The final is still to run.
+ * A 64-slot bracket, since the eliminations routinely reach the round of 64 and may reach
+ * 128: the 60 cars of the positions sample seeded by their place, drawn in the standard order
+ * (seed 1 meets seed 64, the winner meets the winner of 32 against 33, and so on), so seeds 1
+ * to 4 have no opponent in the first round and advance by W.O. Every match is best of three;
+ * the better seed wins except where a seed below is listed as an upset winner (in the first
+ * two rounds only); in the matches listed as walkovers the opponent did not run, so the
+ * winner advances by W.O. (one in the 2ª rodada, one in the quarter-finals, to show it at any
+ * point). The rounds are named as the Baja app would name them; the final is still to run.
  */
 export const bracket64Fixture = {
   title: 'Eliminatórias · Tração',
-  extraTeams: [
-    { carNumber: 3, teamName: 'Curió Racing', schoolName: 'UFAC' },
-    { carNumber: 7, teamName: 'Saíra Off-Road', schoolName: 'UFTM' },
-    { carNumber: 9, teamName: 'Tiê Baja', schoolName: 'UFCA' },
-    { carNumber: 12, teamName: 'Urutau Racing', schoolName: 'UNIR' },
-  ],
+  walkoverMatchIds: ['r2-m6', 'r4-m3'],
   roundNames: [
     '1ª rodada',
     '2ª rodada',

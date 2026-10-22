@@ -248,17 +248,14 @@ const bracketRounds = brackets.rounds.map((round) => ({
   })),
 }));
 
-// --- the 64-car bracket (sampleBracket64.mjs): the positions sample's cars seeded by their
-// place, then the fixture's four extra teams, so the field is a power of two.
+// --- the 64-slot bracket (sampleBracket64.mjs): the positions sample's 60 cars seeded by
+// their place; the four slots past the field are empty, so the top four seeds get a bye.
 
-const seededField = [
-  ...entries.map((entry) => ({
-    carNumber: entry.carNumber,
-    teamName: entry.teamName,
-    schoolName: entry.schoolName,
-  })),
-  ...bracket64Fixture.extraTeams,
-];
+const seededField = entries.map((entry) => ({
+  carNumber: entry.carNumber,
+  teamName: entry.teamName,
+  schoolName: entry.schoolName,
+}));
 
 // --- the battle card: the two cars of the fixture, the interval between them as the
 // positions sample gives it, and the three trends from the interval a lap ago.

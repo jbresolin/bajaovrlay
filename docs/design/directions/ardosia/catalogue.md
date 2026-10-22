@@ -114,14 +114,17 @@ and both on the green chip).
 - Missing: nothing. The event columns' captions are the fixed pt-BR names of the six session
   kinds.
 
-### 4. Elimination bracket — `bracket-passo-1`, `-2`, `-3`; `bracket-64-passo-1`, `-3`, `-6`; `sheet-bracket-results`
+### 4. Elimination bracket — `bracket-passo-1`, `-2`, `-3`; `bracket-64-passo-1`, `-2`, `-6`; `sheet-bracket-results`
 
 Full screen, in steps, one per "Next". The eliminations routinely reach the round of 64 and
 may reach 128, so a bracket is shown in two forms, and the generator picks between them from
-the rounds alone. A round with more than four matches is a **round board**: a list of its
-matches, two a row and read down the left column then the right, a match being its two
-pills side by side (40 px: chip, team with the school, result), 32 matches a page, so a
-round of 64 is one page and a round of 128 two ("1ª rodada · página 1/2"). The last rounds,
+the rounds alone. A round with more than four matches is a **round board**: a draw sheet in
+two columns, read down the left column then the right, where each match is **one card** with
+the two cars facing each other across a "×": chips on the outer edges, the results meeting
+in the middle like a football score line ("31 ACAUÃ BAJA 2 × 1 URUTAU RACING 12"), so who
+runs against whom is never in doubt; the gutter between the columns is wider than the gap
+between cards, so a row is never read across. 40 px cards, 32 matches a page, so a round of
+64 is one page and a round of 128 two ("1ª rodada · página 1/2"). The last rounds,
 from the quarter-finals (four matches) down, are the **tree**: one column per round under
 its name pill, the matches of a round spread over the height and each centred between the
 two it comes from, with the connecting lines, revealed one round per step; the round names
@@ -135,16 +138,27 @@ count of wins per car when it is best of N (`bestOf`; "2" beside the winner, "1"
 beside the loser), a time per car when it was a timed run ("1:11,3"), or nothing but the
 winner's mark (a check on the winner's pill) when a win has no number; "—" on both while
 undecided. In every form a decided match turns the winner's chip green and dims the loser
-like a retired row. `sheet-bracket-results` shows the four states in both forms.
+like a retired row.
+
+**W.O.** overrides the result in any round and in either form: the winner carries an
+outlined "W.O." tag in its result cell, in the winner's green, and the other car "—". Two
+cases look different beside the tag. When the opponent did not run (absent, broken, out),
+it is shown as a car like any loser, dimmed. When there is no opponent, a bye in a draw
+short of a power of two (60 cars in 64 slots give seeds 1 to 4 a free first round), the
+other slot is empty: no chip, no team, a dashed outline reading "SEM ADVERSÁRIO", so it can
+never be read as a car. A W.O. reads the same in the round of 64 as in the final.
+`sheet-bracket-results` shows all six states (time, best of 3, plain win, W.O. by absence,
+W.O. without opponent, undecided) in both forms; the 64-slot sample has the four byes on its
+first board, a W.O. by absence on its second and another in the quarter-finals.
 
 - Reads: brackets (draft shape, BAJAOVRLAY-25): `rounds[].name`, `matches[].carA` and
   `carB` (`carNumber`, `teamName`, `schoolName`, `timeMs`), `winnerCarNumber`. Live: a result
   arriving updates its match in place.
-- Missing: `bestOf` on a match and `wins` per car (the sub-wins of a best of N), which the
-  draft shape does not carry; and a bye (a car that advances without a match), which the
-  shape cannot express since a match needs two different cars, although a field short of a
-  power of two (60 cars in a round of 64) has them. Both for BAJAOVRLAY-25 against the Baja
-  app's `tournament` table.
+- Missing, for BAJAOVRLAY-25 against the Baja app's `tournament` table: `bestOf` on a match
+  and `wins` per car (the sub-wins of a best of N); a walkover mark on a match (`walkover`,
+  the winner advanced without racing); and a bye, which the draft shape cannot express since
+  a match needs two different cars: proposed, `carB` left out for a bye, the winner being
+  `carA` by W.O.
 
 ### 5. Podium — `podium-passo-1`, `-2`, `-3`
 

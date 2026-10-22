@@ -370,47 +370,127 @@
   width: 22px;
   height: 22px;
 }
-.bracket-car[data-winner] .chip {
+.bracket-car[data-winner] .chip,
+.bracket-fixture__side[data-winner] .chip {
   background: var(--leader-background);
 }
-.bracket-car[data-winner] .bracket-car__result {
+.bracket-car[data-winner] .bracket-car__result,
+.bracket-fixture__side[data-winner] .bracket-car__result {
   color: var(--text-laps);
 }
+.bracket-car[data-loser],
+.bracket-fixture__side[data-loser] {
+  opacity: var(--status-retired-opacity);
+}
 
-/* A round board: a big round as a list, two matches a row, read down the left column then
-   the right; a match is its two pills side by side with the row gap between them and the
-   stack gap between matches. */
+/* W.O.: the winner advanced without racing. An outlined tag in the result cell, in the
+   winner's green, the same in the tree and on a board, in any round. */
+.walkover-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: var(--glyph-nudge) var(--space-2) 0;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-radius: var(--radius-chip);
+  font-size: var(--size-caption);
+  letter-spacing: var(--tracking-caption);
+  line-height: 1;
+}
+
+/* The empty slot of a bye: no chip, no team, a dashed outline and muted words, so it can
+   never be read as a car. */
+.bracket-empty {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--size-caption);
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.bracket-car--empty {
+  border: 2px dashed var(--bracket-line);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+  grid-template-columns: 1fr;
+}
+
+/* A round board: a draw sheet, two columns of match cards read down the left column then the
+   right; the gutter is wider than the gap between cards, so a row is never read across. */
 .bracket-board {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: repeat(var(--bracket-board-rows), auto);
   grid-auto-flow: column;
-  gap: var(--stack-gap) var(--space-5);
+  gap: var(--stack-gap) var(--bracket-board-gutter);
 }
-.bracket-board__match {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--row-gap);
-}
-.bracket-car--board {
+/* A match on a board: one card, the cars facing each other across the "×", chips on the outer
+   edges and the results meeting in the middle like a score line. */
+.bracket-fixture {
   height: var(--board-row-height);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--bracket-versus-width) minmax(0, 1fr);
+  align-items: center;
+  padding: 0 var(--space-3);
+  font-size: var(--size-row);
+  line-height: 1;
 }
-/* On a reference sheet a tree match sits in the flow, the tree's column width */
+.bracket-fixture__side {
+  height: 100%;
+  display: grid;
+  align-items: center;
+  column-gap: var(--space-3);
+  min-width: 0;
+}
+.bracket-fixture__side--left {
+  grid-template-columns: var(--chip-width) minmax(0, 1fr) auto;
+}
+.bracket-fixture__side--right {
+  grid-template-columns: auto minmax(0, 1fr) var(--chip-width);
+}
+.bracket-fixture__side--right .bracket-car__team {
+  justify-content: flex-end;
+}
+.bracket-fixture__side--empty {
+  display: flex;
+  justify-content: flex-end;
+}
+.bracket-fixture__side--empty .bracket-empty {
+  height: var(--chip-height);
+  padding: 0 var(--space-3);
+  border: 2px dashed var(--bracket-line);
+  border-radius: var(--radius-chip);
+}
+.bracket-fixture__versus {
+  text-align: center;
+  font-size: var(--size-name);
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+/* On a reference sheet a match sits in the flow: the tree's column width, a board card's. */
 .sheet .bracket__match {
   position: static;
   width: 512px;
 }
-.sheet .bracket-board__match {
-  width: 860px;
+.sheet .bracket-fixture {
+  width: 854px;
 }
-.sheet__grid--brackets {
-  display: grid;
-  grid-template-columns: 512px 860px;
-  gap: var(--space-4) var(--space-5);
-  align-items: start;
+.sheet__states {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
-.bracket-car[data-loser] {
-  opacity: var(--status-retired-opacity);
+.sheet__state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.sheet__state-forms {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
 }
 .bracket__lines {
   position: absolute;

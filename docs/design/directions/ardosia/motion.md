@@ -104,10 +104,11 @@ graphics, what a "Next" does. Nothing new is scrolled, pulsed or spun.
 - **Standings, per event**: the three columns cascade at once, each column its own cascade
   from the top (row n of every column enters at the same moment), so the field fills in one
   sweep of 1.1 s. No pages.
-- **Bracket, round boards**: the head, then the matches' pills 30 ms apart down the left
-  column and then the right (32 matches, 64 pills, are in at 100 + 64 × 30 + 400 = 2.4 s; a
-  round of 16 in 1.1 s). "Next" turns to the next board as a standings page turns: the pills
-  leave together and the next round's cascade in, the head staying with its new round name.
+- **Bracket, round boards**: the head, then the match cards 30 ms apart down the left column
+  and then the right, each card whole (both cars together, never one car before the other:
+  a match arrives as a match); 32 cards are in at 100 + 32 × 30 + 400 = 1.5 s. "Next" turns
+  to the next board as a standings page turns: the cards leave together and the next round's
+  cascade in, the head staying with its new round name.
 - **Bracket, tree**: the first tree step brings the head (or keeps it, after a board), every
   round-name pill (100 ms after the head), then the first round's pills top to bottom, 30 ms
   apart; the lines of a round fade in (300 ms) once its last pill is in. Each "Next" adds a

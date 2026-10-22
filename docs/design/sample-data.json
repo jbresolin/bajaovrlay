@@ -2405,20 +2405,12 @@
         "matches": [
           {
             "matchId": "r1-m1",
-            "bestOf": 3,
+            "walkover": true,
             "carA": {
               "carNumber": 31,
               "teamName": "Acauã Baja",
               "schoolName": "Mauá",
-              "timeText": "",
-              "wins": 2
-            },
-            "carB": {
-              "carNumber": 12,
-              "teamName": "Urutau Racing",
-              "schoolName": "UNIR",
-              "timeText": "",
-              "wins": 1
+              "timeText": ""
             },
             "winnerCarNumber": 31
           },
@@ -2557,20 +2549,12 @@
           },
           {
             "matchId": "r1-m9",
-            "bestOf": 3,
+            "walkover": true,
             "carA": {
               "carNumber": 78,
               "teamName": "Arara Off-Road",
               "schoolName": "UNIFEI",
-              "timeText": "",
-              "wins": 2
-            },
-            "carB": {
-              "carNumber": 3,
-              "teamName": "Curió Racing",
-              "schoolName": "UFAC",
-              "timeText": "",
-              "wins": 0
+              "timeText": ""
             },
             "winnerCarNumber": 78
           },
@@ -2709,20 +2693,12 @@
           },
           {
             "matchId": "r1-m17",
-            "bestOf": 3,
+            "walkover": true,
             "carA": {
               "carNumber": 38,
               "teamName": "Coruja Racing",
               "schoolName": "EESC-USP",
-              "timeText": "",
-              "wins": 2
-            },
-            "carB": {
-              "carNumber": 9,
-              "teamName": "Tiê Baja",
-              "schoolName": "UFCA",
-              "timeText": "",
-              "wins": 0
+              "timeText": ""
             },
             "winnerCarNumber": 38
           },
@@ -2861,20 +2837,12 @@
           },
           {
             "matchId": "r1-m25",
-            "bestOf": 3,
+            "walkover": true,
             "carA": {
               "carNumber": 25,
               "teamName": "Bem-te-vi Off-Road",
               "schoolName": "UFES",
-              "timeText": "",
-              "wins": 2
-            },
-            "carB": {
-              "carNumber": 7,
-              "teamName": "Saíra Off-Road",
-              "schoolName": "UFTM",
-              "timeText": "",
-              "wins": 1
+              "timeText": ""
             },
             "winnerCarNumber": 25
           },
@@ -3114,19 +3082,18 @@
           {
             "matchId": "r2-m6",
             "bestOf": 3,
+            "walkover": true,
             "carA": {
               "carNumber": 89,
               "teamName": "Lobo-Guará Off-Road",
               "schoolName": "UFU",
-              "timeText": "",
-              "wins": 2
+              "timeText": ""
             },
             "carB": {
               "carNumber": 71,
               "teamName": "Tuiuiú Racing",
               "schoolName": "UFGD",
-              "timeText": "",
-              "wins": 0
+              "timeText": ""
             },
             "winnerCarNumber": 89
           },
@@ -3523,19 +3490,18 @@
           {
             "matchId": "r4-m3",
             "bestOf": 3,
+            "walkover": true,
             "carA": {
               "carNumber": 38,
               "teamName": "Coruja Racing",
               "schoolName": "EESC-USP",
-              "timeText": "",
-              "wins": 2
+              "timeText": ""
             },
             "carB": {
               "carNumber": 30,
               "teamName": "Pampa Baja",
               "schoolName": "UFSM",
-              "timeText": "",
-              "wins": 0
+              "timeText": ""
             },
             "winnerCarNumber": 38
           },

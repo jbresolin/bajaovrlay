@@ -180,6 +180,8 @@
   --podium-height: 320px;
   --podium-height-winner: 400px;
   --bracket-row-height: 48px;
+  --bracket-board-gutter: 40px; /* between a round board's two columns, wider than a row gap */
+  --bracket-versus-width: 40px; /* the "×" between the two cars of a board's match card */
   --sponsor-mark-small: 44px;
   --sponsor-mark-large: 120px;
   --sponsor-tile-height: 240px;
