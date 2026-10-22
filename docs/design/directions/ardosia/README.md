@@ -105,7 +105,8 @@ Everything on air is inside the 90% title-safe box (x 96..1824, y 54..1026), che
 | Sponsor roll, corner             | x 96..428, y 54..178 (the bug's card)                                                       |
 | Standings, overall               | x 96..1824, y 54..1018 (head 64, column head 32, 20 pills of 40)                            |
 | Standings, per event             | x 96..1824, y 54..898 (three columns of 20 pills of 34)                                     |
-| Bracket                          | x 96..1824, y 54..1026 (head 64, then a 900 px stage)                                       |
+| Bracket, tree                    | x 96..1824, y 54..1026 (head 64, then a 900 px stage)                                       |
+| Bracket, round board             | x 96..1824, y 54..886 with 32 matches (16 rows of 40 px pills); y 54..310 with 8            |
 | Podium                           | x 96..1824, y 54..1026 (the cards on the stage's baseline)                                  |
 | Sessions board                   | x 320..1600, y 204..876 (narrow board, nine slots of 64)                                    |
 | Intermission board               | x 320..1600, y 314..766                                                                     |
@@ -180,22 +181,22 @@ the small transient ones are "notices" (one card in a slot under the bug). `cata
 has the layer plan, the coexistence rules and the data needs; `motion.md` the in, out and
 steps.
 
-| Graphic              | Pages                                | Layer             | What it is                                                                                             |
-| -------------------- | ------------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------ |
-| Team card            | `team-card`, `team-card-sem-foto`    | lower-third       | The big chip, the team at 44 px, school and city; photo and logo cells only when they exist            |
-| Battle card          | `battle-card`, `sheet-battle`        | lower-third       | Two 72 px pills bottom-centre with the gap at 44 px and the trend (word, signed change, shape)         |
-| Standings, overall   | `standings`                          | fullscreen        | 20 rows of 40 px a page, one muted column per event, the total in green; three pages for 60 teams      |
-| Standings, per event | `standings-por-prova`                | fullscreen        | The whole field at once, three columns of 20 tower pills; ties share a rank                            |
-| Bracket              | `bracket-passo-1`, `-2`, `-3`        | fullscreen        | One column per round; "Next" reveals a round; the winner's chip green, the loser dimmed                |
-| Podium               | `podium-passo-1`, `-2`, `-3`         | fullscreen        | 2nd, 1st (taller), 3rd on one baseline; "Next" reveals 3rd, 2nd, 1st                                   |
-| Fastest lap          | `fastest-lap`, `combo-fastest-lap`   | notice (new)      | A 420 px card under the bug: green "MELHOR VOLTA" badge, the lap, the car, the time at 44 px           |
-| Penalty or incident  | `penalty-notice`, `sheet-notices`    | notice (new)      | The same card with a warning shape, the car, the reason and the penalty in a navy cell; no flag colour |
-| Countdown            | `countdown`, `countdown-tela-cheia`  | clock; fullscreen | The clock's card without the band; a narrow board with the count at 160 px                             |
-| Sessions board       | `sessions-board`                     | fullscreen        | A narrow board, one pill per slot with the state as a shape and a word                                 |
-| Intermission board   | `intermission-board`                 | fullscreen        | What is next with its count, the top five, a sponsor line                                              |
-| Sponsor roll         | `sponsor-roll`, `sponsor-roll-canto` | fullscreen; bug   | Six tiles a page; the bug's card with a sponsor cell                                                   |
-| QR card              | `qr-card`                            | lower-third       | The one light surface: the code, the call to action, the address                                       |
-| Message ticker       | `message-ticker`, `combo-ticker`     | ticker            | The strip's bar with an "AVISO" label and one message per page                                         |
+| Graphic              | Pages                                                                                    | Layer             | What it is                                                                                                                            |
+| -------------------- | ---------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Team card            | `team-card`, `team-card-sem-foto`                                                        | lower-third       | The big chip, the team at 44 px, school and city; photo and logo cells only when they exist                                           |
+| Battle card          | `battle-card`, `sheet-battle`                                                            | lower-third       | Two 72 px pills bottom-centre with the gap at 44 px and the trend (word, signed change, shape)                                        |
+| Standings, overall   | `standings`                                                                              | fullscreen        | 20 rows of 40 px a page, one muted column per event, the total in green; three pages for 60 teams                                     |
+| Standings, per event | `standings-por-prova`                                                                    | fullscreen        | The whole field at once, three columns of 20 tower pills; ties share a rank                                                           |
+| Bracket              | `bracket-passo-1`, `-2`, `-3`; `bracket-64-passo-1`, `-3`, `-6`; `sheet-bracket-results` | fullscreen        | A big round as a board (32 matches a page), the tree from the quarter-finals; the result a time, a count of wins or the winner's mark |
+| Podium               | `podium-passo-1`, `-2`, `-3`                                                             | fullscreen        | 2nd, 1st (taller), 3rd on one baseline; "Next" reveals 3rd, 2nd, 1st                                                                  |
+| Fastest lap          | `fastest-lap`, `combo-fastest-lap`                                                       | notice (new)      | A 420 px card under the bug: green "MELHOR VOLTA" badge, the lap, the car, the time at 44 px                                          |
+| Penalty or incident  | `penalty-notice`, `sheet-notices`                                                        | notice (new)      | The same card with a warning shape, the car, the reason and the penalty in a navy cell; no flag colour                                |
+| Countdown            | `countdown`, `countdown-tela-cheia`                                                      | clock; fullscreen | The clock's card without the band; a narrow board with the count at 160 px                                                            |
+| Sessions board       | `sessions-board`                                                                         | fullscreen        | A narrow board, one pill per slot with the state as a shape and a word                                                                |
+| Intermission board   | `intermission-board`                                                                     | fullscreen        | What is next with its count, the top five, a sponsor line                                                                             |
+| Sponsor roll         | `sponsor-roll`, `sponsor-roll-canto`                                                     | fullscreen; bug   | Six tiles a page; the bug's card with a sponsor cell                                                                                  |
+| QR card              | `qr-card`                                                                                | lower-third       | The one light surface: the code, the call to action, the address                                                                      |
+| Message ticker       | `message-ticker`, `combo-ticker`                                                         | ticker            | The strip's bar with an "AVISO" label and one message per page                                                                        |
 
 ## Type
 
@@ -260,6 +261,15 @@ Pass 2 (BAJAOVRLAY-43), the judgment calls to confirm:
     number: add a `bestLapNumber` to the positions shape, or let the operator type it?
 15. The **team card** shows the shape's short school name ("MAUÁ"); the full name would come
     with the entity library. Fine for now?
-16. **Screenshots**: every page over every background as the contract says, 241 files; the
+16. **Screenshots**: every page over every background as the contract says, 264 files; the
     folder is listed in the PR. If that is too much for the repo, the intermediate steps and
     the variants could be shot over frame 1, grey and black only.
+17. **Big brackets** (João's review): a round with more than four matches is a round board,
+    32 matches a page, and the tree starts at the quarter-finals, so a 64-car bracket is six
+    steps and a 128-car one eight. An eight-column tree was dropped as illegible. Fine, or
+    should the tree reach the round of 16 (eight matches in the first column, 360 px wide
+    columns, names cut short)?
+18. **Match results** (João's review) are modular: a count of wins per car for a best of N,
+    a time per car for a timed run, or only the winner's mark. The draft brackets shape needs
+    `bestOf` on a match and `wins` per car for that, and cannot express a bye (a match needs
+    two cars), which a 60-car field in a round of 64 has; both for BAJAOVRLAY-25.

@@ -104,12 +104,17 @@ graphics, what a "Next" does. Nothing new is scrolled, pulsed or spun.
 - **Standings, per event**: the three columns cascade at once, each column its own cascade
   from the top (row n of every column enters at the same moment), so the field fills in one
   sweep of 1.1 s. No pages.
-- **Bracket**: step 1 brings the head, every round-name pill (100 ms after the head), then the
-  first round's pills top to bottom, 30 ms apart; the lines of a round fade in (300 ms) once
-  its last pill is in. Each "Next" adds a round the same way: its pills cascade in and its
-  lines fade; what is on screen never moves. A result arriving on air changes its match in
-  place: the winner's chip turns green and the loser dims in 300 ms. Out: everything
-  together.
+- **Bracket, round boards**: the head, then the matches' pills 30 ms apart down the left
+  column and then the right (32 matches, 64 pills, are in at 100 + 64 × 30 + 400 = 2.4 s; a
+  round of 16 in 1.1 s). "Next" turns to the next board as a standings page turns: the pills
+  leave together and the next round's cascade in, the head staying with its new round name.
+- **Bracket, tree**: the first tree step brings the head (or keeps it, after a board), every
+  round-name pill (100 ms after the head), then the first round's pills top to bottom, 30 ms
+  apart; the lines of a round fade in (300 ms) once its last pill is in. Each "Next" adds a
+  round the same way: its pills cascade in and its lines fade; what is on screen never
+  moves. On a board or in the tree, a result arriving on air changes its match in place: the
+  winner's chip turns green, the loser dims and the result cell (a time, a count of wins or
+  the winner's mark) crossfades, in 300 ms. Out: everything together.
 - **Podium**: the head first; each "Next" raises one card from 40 px below (twice the usual
   offset, the "three cards rising" of the README) in 400 ms: 3rd, then 2nd, then 1st. The
   cards not yet revealed keep their room, invisible, so nothing shifts. Out: the three cards

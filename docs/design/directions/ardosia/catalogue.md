@@ -114,23 +114,37 @@ and both on the green chip).
 - Missing: nothing. The event columns' captions are the fixed pt-BR names of the six session
   kinds.
 
-### 4. Elimination bracket — `bracket-passo-1`, `-2`, `-3`
+### 4. Elimination bracket — `bracket-passo-1`, `-2`, `-3`; `bracket-64-passo-1`, `-3`, `-6`; `sheet-bracket-results`
 
-Full screen, revealed round by round with "Next". One column per round under its name pill;
-a match is two 48 px pills (chip, team with the school, time); a decided match turns the
-winner's chip green and dims the loser like a retired row; an undecided one shows "—" for the
-times. The generator writes every position and the connecting lines from the rounds and
-matches alone: the columns share the width, a round's matches share the height, each centred
-between the two it comes from. The round names are all there from step 1, so the shape of
-the bracket is known before it fills. Capacity: 3 rounds (8 cars) as shown; 4 rounds (16
-cars) fit with 360 px columns; 5 rounds (32 cars) do not fit in one screen and would page
-round by round.
+Full screen, in steps, one per "Next". The eliminations routinely reach the round of 64 and
+may reach 128, so a bracket is shown in two forms, and the generator picks between them from
+the rounds alone. A round with more than four matches is a **round board**: a list of its
+matches, two a row and read down the left column then the right, a match being its two
+pills side by side (40 px: chip, team with the school, result), 32 matches a page, so a
+round of 64 is one page and a round of 128 two ("1ª rodada · página 1/2"). The last rounds,
+from the quarter-finals (four matches) down, are the **tree**: one column per round under
+its name pill, the matches of a round spread over the height and each centred between the
+two it comes from, with the connecting lines, revealed one round per step; the round names
+are all there from the tree's first step. An 8-car bracket is three tree steps; a 64-car one
+three boards (1ª rodada, 2ª rodada, oitavas) and three tree steps; a 128-car one four boards
+(its first round in two pages) and the tree. A longer tree was tried and dropped: eight
+columns do not fit at a legible size, and a draw sheet is how a big round is read anyway.
+
+A match's **result is modular**, and the match says which kind it is by what it carries: a
+count of wins per car when it is best of N (`bestOf`; "2" beside the winner, "1" or "0"
+beside the loser), a time per car when it was a timed run ("1:11,3"), or nothing but the
+winner's mark (a check on the winner's pill) when a win has no number; "—" on both while
+undecided. In every form a decided match turns the winner's chip green and dims the loser
+like a retired row. `sheet-bracket-results` shows the four states in both forms.
 
 - Reads: brackets (draft shape, BAJAOVRLAY-25): `rounds[].name`, `matches[].carA` and
   `carB` (`carNumber`, `teamName`, `schoolName`, `timeMs`), `winnerCarNumber`. Live: a result
   arriving updates its match in place.
-- Missing: nothing beyond the draft shape being confirmed against the Baja app's `tournament`
-  table.
+- Missing: `bestOf` on a match and `wins` per car (the sub-wins of a best of N), which the
+  draft shape does not carry; and a bye (a car that advances without a match), which the
+  shape cannot express since a match needs two different cars, although a field short of a
+  power of two (60 cars in a round of 64) has them. Both for BAJAOVRLAY-25 against the Baja
+  app's `tournament` table.
 
 ### 5. Podium — `podium-passo-1`, `-2`, `-3`
 

@@ -19,7 +19,11 @@ import {
   renderSponsorRollCorner,
   renderTeamCard,
 } from './slateCards.mjs';
-import { renderSheetBattle, renderSheetNotices } from './slateCatalogueSheets.mjs';
+import {
+  renderSheetBattle,
+  renderSheetBracketResults,
+  renderSheetNotices,
+} from './slateCatalogueSheets.mjs';
 import { renderFastestLap, renderPenaltyNotice } from './slateNotices.mjs';
 import { renderBracket, renderPodium } from './slateSteps.mjs';
 import {
@@ -63,6 +67,18 @@ export function buildCataloguePages(options) {
     'bracket-passo-1.html': shell('bracket, step 1', renderBracket(sample.brackets, 1)),
     'bracket-passo-2.html': shell('bracket, step 2', renderBracket(sample.brackets, 2)),
     'bracket-passo-3.html': shell('bracket, step 3', renderBracket(sample.brackets, 3)),
+    'bracket-64-passo-1.html': shell(
+      'bracket of 64, step 1: the first round as a board',
+      renderBracket(sample.bracket64, 1),
+    ),
+    'bracket-64-passo-3.html': shell(
+      'bracket of 64, step 3: the round of 16 as a board',
+      renderBracket(sample.bracket64, 3),
+    ),
+    'bracket-64-passo-6.html': shell(
+      'bracket of 64, step 6: the tree from the quarter-finals',
+      renderBracket(sample.bracket64, 6),
+    ),
     'podium-passo-1.html': shell('podium, step 1', renderPodium(sample.podium, 1)),
     'podium-passo-2.html': shell('podium, step 2', renderPodium(sample.podium, 2)),
     'podium-passo-3.html': shell('podium, step 3', renderPodium(sample.podium, 3)),
@@ -120,5 +136,6 @@ export function buildCataloguePages(options) {
     ),
     'sheet-battle.html': shell('sheet battle', renderSheetBattle(name)),
     'sheet-notices.html': shell('sheet notices', renderSheetNotices(name)),
+    'sheet-bracket-results.html': shell('sheet bracket results', renderSheetBracketResults(name)),
   };
 }

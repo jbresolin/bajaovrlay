@@ -90,6 +90,34 @@ export const sponsorFixtures = [
   'Patrocinador I',
 ];
 
+/**
+ * A 64-car bracket, since the eliminations routinely reach the round of 64 and may reach
+ * 128: the 60 cars of the positions sample seeded by their place plus four more fictional
+ * teams, drawn in the standard order (seed 1 meets seed 64, the winner meets the winner of
+ * 32 against 33, and so on). Every match is best of three; the better seed wins except
+ * where a seed below is listed as an upset winner (in the first two rounds only), and the
+ * rounds are named as the Baja app would name them. The final is still to run.
+ */
+export const bracket64Fixture = {
+  title: 'Eliminatórias · Tração',
+  extraTeams: [
+    { carNumber: 3, teamName: 'Curió Racing', schoolName: 'UFAC' },
+    { carNumber: 7, teamName: 'Saíra Off-Road', schoolName: 'UFTM' },
+    { carNumber: 9, teamName: 'Tiê Baja', schoolName: 'UFCA' },
+    { carNumber: 12, teamName: 'Urutau Racing', schoolName: 'UNIR' },
+  ],
+  roundNames: [
+    '1ª rodada',
+    '2ª rodada',
+    'Oitavas de final',
+    'Quartas de final',
+    'Semifinal',
+    'Final',
+  ],
+  bestOf: 3,
+  upsetWinnerSeeds: [33, 40, 50, 19, 22],
+};
+
 /** The QR card's words. The address is the scoreboard the stream links to today. */
 export const qrFixture = {
   callToAction: 'Acompanhe os resultados',

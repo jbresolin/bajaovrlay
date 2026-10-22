@@ -11,8 +11,10 @@ import { fileURLToPath } from 'node:url';
 
 import * as prettier from 'prettier';
 
+import { buildBracket64 } from './sampleBracket64.mjs';
 import {
   battleFixture,
+  bracket64Fixture,
   countdownFixture,
   messageFixtures,
   noticeFixtures,
@@ -21,6 +23,7 @@ import {
   sponsorFixtures,
   teamCardFixtures,
 } from './sampleFixtures.mjs';
+import { buildPlaceholderQrModules } from './samplePlaceholderQr.mjs';
 
 const toolsFolder = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(toolsFolder, '../../..');
@@ -245,6 +248,18 @@ const bracketRounds = brackets.rounds.map((round) => ({
   })),
 }));
 
+// --- the 64-car bracket (sampleBracket64.mjs): the positions sample's cars seeded by their
+// place, then the fixture's four extra teams, so the field is a power of two.
+
+const seededField = [
+  ...entries.map((entry) => ({
+    carNumber: entry.carNumber,
+    teamName: entry.teamName,
+    schoolName: entry.schoolName,
+  })),
+  ...bracket64Fixture.extraTeams,
+];
+
 // --- the battle card: the two cars of the fixture, the interval between them as the
 // positions sample gives it, and the three trends from the interval a lap ago.
 
@@ -262,41 +277,6 @@ const battle = {
     ]),
   ),
 };
-
-// --- a placeholder QR code: the three finder patterns and a fixed pseudo-random fill from a
-// tiny seeded generator, so the pattern never changes between runs. It does not scan.
-
-function buildPlaceholderQrModules(size) {
-  let seed = 20270320;
-  const nextBit = () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return seed % 3 !== 0;
-  };
-  const finderRing = (row, column) =>
-    row === 0 ||
-    row === 6 ||
-    column === 0 ||
-    column === 6 ||
-    (row >= 2 && row <= 4 && column >= 2 && column <= 4);
-  const rows = [];
-  for (let row = 0; row < size; row += 1) {
-    let line = '';
-    for (let column = 0; column < size; column += 1) {
-      const inTopLeft = row < 7 && column < 7;
-      const inTopRight = row < 7 && column >= size - 7;
-      const inBottomLeft = row >= size - 7 && column < 7;
-      if (inTopLeft || inTopRight || inBottomLeft) {
-        const localRow = row < 7 ? row : row - (size - 7);
-        const localColumn = column < 7 ? column : column - (size - 7);
-        line += finderRing(localRow, localColumn) ? '1' : '0';
-      } else {
-        line += nextBit() ? '1' : '0';
-      }
-    }
-    rows.push(line);
-  }
-  return rows;
-}
 
 const sampleData = {
   about:
@@ -333,6 +313,7 @@ const sampleData = {
     title: 'Eliminatórias · Suspensão',
     rounds: bracketRounds,
   },
+  bracket64: buildBracket64(seededField, bracket64Fixture),
   podium: {
     title: `Pódio · ${sessionGreen.sessionName}`,
     places: entries.slice(0, 3),

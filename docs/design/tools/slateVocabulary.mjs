@@ -64,6 +64,9 @@ export const scheduleIcons = {
   next: `<svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="A seguir"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>`,
 };
 
+// A win with no number: the winner's pill carries a check mark where a time or a score would go.
+export const winIcon = `<svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu"><path d="M3.5 10.5 8 15 16.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
 // The battle card's trend beside its word: two arrows closing on each other when the gap
 // shrinks, opening out when it grows, a dash when it holds.
 export const trendIcons = {

@@ -352,17 +352,62 @@
   font-size: var(--size-caption);
   color: var(--text-muted);
 }
-.bracket-car__time {
+/* The result cell is modular: a time, a count of wins (best of N) or the winner's mark. */
+.bracket-car__result {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 2ch;
   font-size: var(--size-detail);
-  text-align: right;
   white-space: nowrap;
   color: var(--text-muted);
+}
+.bracket-car__result--score {
+  font-size: var(--size-row);
+  color: var(--text);
+}
+.bracket-car__result--win .status-icon {
+  width: 22px;
+  height: 22px;
 }
 .bracket-car[data-winner] .chip {
   background: var(--leader-background);
 }
-.bracket-car[data-winner] .bracket-car__time {
+.bracket-car[data-winner] .bracket-car__result {
   color: var(--text-laps);
+}
+
+/* A round board: a big round as a list, two matches a row, read down the left column then
+   the right; a match is its two pills side by side with the row gap between them and the
+   stack gap between matches. */
+.bracket-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(var(--bracket-board-rows), auto);
+  grid-auto-flow: column;
+  gap: var(--stack-gap) var(--space-5);
+}
+.bracket-board__match {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--row-gap);
+}
+.bracket-car--board {
+  height: var(--board-row-height);
+}
+/* On a reference sheet a tree match sits in the flow, the tree's column width */
+.sheet .bracket__match {
+  position: static;
+  width: 512px;
+}
+.sheet .bracket-board__match {
+  width: 860px;
+}
+.sheet__grid--brackets {
+  display: grid;
+  grid-template-columns: 512px 860px;
+  gap: var(--space-4) var(--space-5);
+  align-items: start;
 }
 .bracket-car[data-loser] {
   opacity: var(--status-retired-opacity);
