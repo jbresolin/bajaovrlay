@@ -23,3 +23,8 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
   Playwright JSON reports named on its command line and prints the 15 slowest files and
   tests as markdown, which CI appends to the run's summary page (docs/ci.md). The reading
   and writing are in `slowestTests.js`, tested by `slowestTests.test.ts`.
+- `verify.js` (`pnpm verify`, `pnpm verify --quick`): runs CI's commands in order on
+  this machine, one line per step with its time, and stops at the first failure, naming
+  it; `--quick` leaves out the browser tests. The steps are in `verifySteps.js` (tested by
+  `verifySteps.test.ts`); `verifyMatchesCi.test.ts` reads `.github/workflows/ci.yml`
+  through `ciWorkflowCommands.js` and fails when CI and the steps drift apart.
