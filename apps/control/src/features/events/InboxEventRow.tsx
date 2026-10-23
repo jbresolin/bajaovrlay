@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
+import { formatTimeOfDay } from '@/features/dataSources/timeOfDayText';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
 
@@ -12,9 +13,10 @@ const texts = ptBR.events;
 
 /**
  * One waiting event, on the console's "Eventos" tab and on the "Eventos" page: what it
- * is, the car's chip, the team, the reason, the penalty or the lap time, how long ago it arrived (and "na fila" when the
- * runner will show it), then "Prévia" (the rule's item filled from this event), "No ar"
- * and "Descartar". "Prévia" and "No ar" are off, saying why, when the rule has no item;
+ * is, the car's chip, the team, the reason, the penalty or the lap time, the time of day
+ * it arrived (on the operator's clock) beside how long ago ("14:05:00 há 5 min"), "na
+ * fila" when the runner will show it, then "Prévia" (the rule's item filled from this
+ * event), "No ar" and "Descartar". "Prévia" and "No ar" are off, saying why, when the rule has no item;
  * "No ar" and "Descartar" are off while one of their commands waits, so a second press
  * cannot send it twice (gate 2 of PR #22). The buttons only send; what happens is the
  * server's, and the row follows the `events` slice.
@@ -48,8 +50,11 @@ export function InboxEventRow(props: {
         {event.status === 'queued' ? (
           <Badge variant="secondary">{texts.statusWords.queued}</Badge>
         ) : null}
-        <span className="ml-auto text-xs text-muted-foreground">
-          {formatRelativeTimePtBR(new Date(event.detectedAtMs), now)}
+        <span className="ml-auto flex gap-1.5 text-xs text-muted-foreground">
+          <time className="tabular-nums" dateTime={new Date(event.detectedAtMs).toISOString()}>
+            {formatTimeOfDay(event.detectedAtMs)}
+          </time>
+          <span>{formatRelativeTimePtBR(new Date(event.detectedAtMs), now)}</span>
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">

@@ -13,9 +13,9 @@
  *   where the history, "+ Evento" and "Regras" now live.
  *
  * What these tests prove:
- *   - The waiting events are listed newest first, with kind, car, team, reason, penalty and
- *     age; a queued one says it is in the queue.
- *   - The events that are over are listed below, at most the 20 newest, with their status.
+ *   - The waiting events are listed newest first, with kind, car, team, reason, penalty,
+ *     the time of day it arrived and its age ("há 5 min"); a queued one says it is in the
+ *     queue.
  *   - "Prévia" sends previewItem of the rule's item naming the event; "No ar" sends
  *     showEvent; "Descartar" sends dismissEvent.
  *   - "No ar" and "Descartar" are off while their command waits (gate 2 of PR #22).
@@ -40,6 +40,7 @@ import type { InboxEvent } from '@bajaovrlay/shared';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { formatTimeOfDay } from '@/features/dataSources/timeOfDayText';
 import { QuickFireStrip } from '@/features/quickFire/QuickFireStrip';
 import {
   letThePageFinishWhatItStarted,
@@ -77,13 +78,11 @@ function readWaitingEventRows() {
 }
 
 describe('the waiting events', () => {
-  it('are listed newest first, with kind, car, team, reason and age', () => {
+  it('are listed newest first, with kind, car, team, reason, time and age', () => {
     // Arrange: a penalty 5 min ago, a warning 3 min ago, a fastest lap queued 1 min ago.
-    renderTheEventsTabWith([
-      buildPendingPenaltyOfCar47(5),
-      buildPendingWarningOfCar38(3),
-      buildQueuedFastestLapOfCar31(1),
-    ]);
+    const penalty = buildPendingPenaltyOfCar47(5);
+    const fastestLap = buildQueuedFastestLapOfCar31(1);
+    renderTheEventsTabWith([penalty, buildPendingWarningOfCar38(3), fastestLap]);
 
     // Act: read the rows.
     const rows = readWaitingEventRows();
@@ -97,6 +96,10 @@ describe('the waiting events', () => {
     expect(fastestLapRow?.getByText('4:38,2'), 'its lap time').toBeInTheDocument();
     expect(fastestLapRow?.getByText('na fila'), 'a queued event says so').toBeInTheDocument();
     expect(fastestLapRow?.getByText('há 1 min'), 'it arrived a minute ago').toBeInTheDocument();
+    expect(
+      fastestLapRow?.getByText(formatTimeOfDay(fastestLap.detectedAtMs)),
+      'and the time of day it arrived, beside the age',
+    ).toBeInTheDocument();
     expect(warningRow?.getByText('Advertência'), 'a warning is not a penalty').toBeInTheDocument();
     expect(warningRow?.getByText('há 3 min'), 'its age').toBeInTheDocument();
     expect(penaltyRow?.getByText('Penalidade'), 'its kind').toBeInTheDocument();
@@ -105,6 +108,10 @@ describe('the waiting events', () => {
     expect(penaltyRow?.getByText('Queima de largada'), 'its reason').toBeInTheDocument();
     expect(penaltyRow?.getByText('+30 segundos'), 'its penalty').toBeInTheDocument();
     expect(penaltyRow?.getByText('há 5 min'), 'its age').toBeInTheDocument();
+    expect(
+      penaltyRow?.getByText(formatTimeOfDay(penalty.detectedAtMs)),
+      'its time of day',
+    ).toBeInTheDocument();
   });
 
   it('counts the pending events on the tab badge, not the queued ones', () => {
