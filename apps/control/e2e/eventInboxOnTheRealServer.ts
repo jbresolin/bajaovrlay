@@ -9,7 +9,7 @@ export type InboxEventAsTheTestsReadIt = {
   kind: string;
   status: string;
   detectedAtMs: number;
-  payload: { carNumber: number; reason?: string };
+  payload: { carNumber: number; reason?: string; lapNumber?: number };
 };
 
 /** The parts of GET /api/v1/state these tests read. */

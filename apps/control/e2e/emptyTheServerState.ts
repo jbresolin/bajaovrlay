@@ -74,7 +74,7 @@ type ResetCommand = {
 const seededEventRulesWithoutItems = [
   { kind: 'newIncident', mode: 'ask', durationMs: 10_000, maxAgeMs: null },
   { kind: 'fastestLap', mode: 'auto', durationMs: 8_000, maxAgeMs: 120_000 },
-  { kind: 'leaderChanged', mode: 'auto', durationMs: 6_000, maxAgeMs: 120_000 },
+  { kind: 'leaderChanged', mode: 'ignore', durationMs: 6_000, maxAgeMs: 120_000 },
   { kind: 'manual', mode: 'ask', durationMs: 10_000, maxAgeMs: null },
   { kind: 'superChat', mode: 'ask', durationMs: 15_000, maxAgeMs: null },
 ];
