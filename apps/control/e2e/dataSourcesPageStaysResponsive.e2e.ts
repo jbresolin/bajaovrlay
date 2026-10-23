@@ -78,7 +78,10 @@ test.describe('the "Fontes de dados" page during a 60-car race', () => {
       }).observe({ type: 'longtask', buffered: false });
     });
 
-    // Act: let the race run, then time a round trip and read the longest task.
+    // Act: let the race run, then time a round trip and read the longest task. A fixed
+    // wait on purpose (docs/ci.md, the waits policy): it waits for nothing to happen, it is
+    // the stretch of polls the long-task observer watches, and the longest task in it must
+    // stay short. Polling for an event would not shorten it.
     await page.waitForTimeout(raceRunningTimeBeforeTheMeasureInMilliseconds);
     const roundTripStartMs = Date.now();
     const longestTaskMs = await page.evaluate(() => {
