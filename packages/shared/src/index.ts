@@ -176,6 +176,10 @@ export * from './overrides/index.js';
 // which graphic fields it fits.
 export * from './bindings/index.js';
 
+// The entity library: teams by car number, people, sponsors and the schedule, their
+// slices, the schedule's derived status and the upsert, delete and import commands.
+export * from './entities/index.js';
+
 // The flex mapping: paths into a JSON response, the mapping config of a flex source, the
 // canonical fields a rule can fill, and applyFlexMapping, shared by the server and "Testar".
 export * from './flexMapping/index.js';

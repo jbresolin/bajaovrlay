@@ -120,13 +120,12 @@ describe('CommandSchema', () => {
 
   it('refuses a command type the server does not know, naming the type field', () => {
     // Arrange: a command from a future version of the control page. (Until BAJAOVRLAY-13
-    // this example was takeItem, until BAJAOVRLAY-16 runMacro and until BAJAOVRLAY-20
-    // setOverride; all are known now. Importing entities arrives with BAJAOVRLAY-19.)
+    // this example was takeItem, until BAJAOVRLAY-16 runMacro, until BAJAOVRLAY-20
+    // setOverride and until BAJAOVRLAY-19 importEntities; all are known now. Switching the
+    // OBS scene arrives with the OBS control of M4.)
     const unknownCommand = {
-      type: 'importEntities',
-      sourceId: 'scoring',
-      path: 'enduro.positions',
-      value: [],
+      type: 'switchObsScene',
+      sceneName: 'Pódio',
     };
 
     // Act: check it and turn the failure into readable text.

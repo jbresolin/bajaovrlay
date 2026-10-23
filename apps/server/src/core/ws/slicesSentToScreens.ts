@@ -49,6 +49,11 @@ export function buildSlicesForAScreen(slices: Slices): Slices {
     dataSnapshots: [],
     overrides: [],
     recordings: [],
+    // The entity library: a graphic gets a team's name or logo URL already resolved.
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
     eventLog: [],
   };
 }

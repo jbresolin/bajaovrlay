@@ -4,6 +4,10 @@ import { InstanceBindingsSchema } from '../bindings/instanceBindings.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
+import { PeopleSchema } from '../entities/person.js';
+import { ScheduleSlotsSchema } from '../entities/scheduleSlot.js';
+import { SponsorsSchema } from '../entities/sponsor.js';
+import { TeamsSchema } from '../entities/team.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { OverridesSchema } from '../overrides/override.js';
@@ -32,6 +36,10 @@ export const SliceNameSchema = z.enum([
   'dataSnapshots',
   'overrides',
   'recordings',
+  'teams',
+  'people',
+  'sponsors',
+  'scheduleSlots',
   'eventLog',
 ]);
 
@@ -89,6 +97,16 @@ export const SlicesSchema = z.object({
    * from the recordings folder at boot.
    */
   recordings: z.array(RecordingSchema),
+  /**
+   * The entity library (BAJAOVRLAY-19): the teams by car number, the people, the
+   * sponsors and the day's schedule, each a slice of its own so an edit of one sponsor
+   * does not resend every team. Saved; screens never receive them (graphics get resolved
+   * data only, rule 3).
+   */
+  teams: TeamsSchema,
+  people: PeopleSchema,
+  sponsors: SponsorsSchema,
+  scheduleSlots: ScheduleSlotsSchema,
   /** The newest entries of the event log only; the database keeps every entry. */
   eventLog: z.array(EventLogEntrySchema),
 });

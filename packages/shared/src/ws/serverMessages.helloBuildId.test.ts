@@ -38,6 +38,10 @@ function buildEverySliceEmpty() {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
     eventLog: [],
   };
 }

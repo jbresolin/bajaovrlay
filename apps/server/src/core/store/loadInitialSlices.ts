@@ -4,6 +4,7 @@ import {
   loadOrSeedDataSourceSlices,
   readRecordingsFromFolder,
 } from '../../modules/dataSources/index.js';
+import { loadEntitySlices } from '../../modules/entities/index.js';
 import { writeBootRows } from '../db/bootRowStorage.js';
 import { readAllDataSnapshotRows } from '../db/dataSnapshotRowStorage.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
@@ -193,6 +194,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     // Rebuilt from the recordings folder at every boot, every recording closed (D13);
     // never saved in the database: the files are the truth.
     recordings: readRecordingsAtBoot(options, dataSourceSlices.dataSources),
+    // The entity library (BAJAOVRLAY-19), loaded by modules/entities; nothing is seeded.
+    ...loadEntitySlices(storedRows),
   };
 }
 

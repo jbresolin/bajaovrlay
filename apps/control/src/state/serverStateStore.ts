@@ -66,6 +66,10 @@ export function createServerStateStore(): ServerStateStore {
     dataSnapshots: [],
     overrides: [],
     recordings: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
     eventLog: [],
     connectionStatus: 'connecting',
     lastCommandError: null,
@@ -86,6 +90,10 @@ export function createServerStateStore(): ServerStateStore {
         dataSnapshots: slices.dataSnapshots,
         overrides: slices.overrides,
         recordings: slices.recordings,
+        teams: slices.teams,
+        people: slices.people,
+        sponsors: slices.sponsors,
+        scheduleSlots: slices.scheduleSlots,
         eventLog: slices.eventLog,
       });
     },
@@ -133,6 +141,18 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'recordings':
           set({ recordings: message.slice });
+          break;
+        case 'teams':
+          set({ teams: message.slice });
+          break;
+        case 'people':
+          set({ people: message.slice });
+          break;
+        case 'sponsors':
+          set({ sponsors: message.slice });
+          break;
+        case 'scheduleSlots':
+          set({ scheduleSlots: message.slice });
           break;
         case 'eventLog':
           set({ eventLog: message.slice });

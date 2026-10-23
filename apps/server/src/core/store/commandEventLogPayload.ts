@@ -4,6 +4,7 @@ import {
   trimInvalidPollForTheEventLog,
   trimPollCommandForTheEventLog,
 } from '../../modules/dataSources/index.js';
+import { trimImportForTheEventLog } from '../../modules/entities/index.js';
 
 // What an event-log row stores for a command: its name and its payload, for a valid
 // command, an invalid one and a data-source poll (whose shapes are left out). Used by the
@@ -33,10 +34,16 @@ export function describePayloadAsReceived(commandInput: unknown): unknown {
  * data-source poll, whose row names its shapes instead of carrying them (gate 2 on
  * PR #16). A logged poll row is rare (decision D11), but each one with a 60-car snapshot
  * was tens of kilobytes in the eventLog slice that every operator page is sent again.
+ * An entity import is trimmed to its keys the same way (BAJAOVRLAY-19).
  */
 export function buildEventLogPayloadOfCommand(command: Command): unknown {
   if (command.type === 'recordDataSourcePoll') {
     return trimPollCommandForTheEventLog(command);
+  }
+  // An import keeps its type and keys, not its records, for the same reason
+  // (modules/entities/importEventLogPayload.ts).
+  if (command.type === 'importEntities') {
+    return trimImportForTheEventLog(command);
   }
   return command;
 }

@@ -5,6 +5,10 @@ import { CommandErrorSchema } from '../commands/commandError.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
+import { PeopleSchema } from '../entities/person.js';
+import { ScheduleSlotsSchema } from '../entities/scheduleSlot.js';
+import { SponsorsSchema } from '../entities/sponsor.js';
+import { TeamsSchema } from '../entities/team.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { OverridesSchema } from '../overrides/override.js';
@@ -128,6 +132,30 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('recordings'),
     slice: z.array(RecordingSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('teams'),
+    slice: TeamsSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('people'),
+    slice: PeopleSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('sponsors'),
+    slice: SponsorsSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('scheduleSlots'),
+    slice: ScheduleSlotsSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({
