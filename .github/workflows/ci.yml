@@ -92,7 +92,9 @@ jobs:
 
       # The browser is kept between runs under the exact @playwright/test version, which
       # the pnpm catalog pins for every package. On a hit the install below finds it and
-      # skips the download; its system packages (--with-deps) still come from apt.
+      # skips the download; its system packages (--with-deps) still come from apt. The key
+      # also names the runner image (ImageOS, e.g. ubuntu24) and the architecture, so a new
+      # Ubuntu image never restores a Chromium built for the old one.
       - name: Read the Playwright version
         id: playwright-version
         run: echo "version=$(pnpm exec playwright --version | sed 's/^Version //')" >> "$GITHUB_OUTPUT"
@@ -101,9 +103,12 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browser-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+          key: playwright-browser-${{ runner.os }}-${{ env.ImageOS }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.version }}
 
+      # 5 minutes: it takes about half a minute, but a slow apt mirror once made it 12:51.
+      # Past 5 it fails here, by name, instead of using up the job's 15.
       - name: Install the Playwright browser
+        timeout-minutes: 5
         run: pnpm exec playwright install --with-deps chromium
 
       # Every package's browser tests but the control page's, one package at a time so
@@ -173,13 +178,17 @@ jobs:
         id: playwright-version
         run: echo "version=$(pnpm exec playwright --version | sed 's/^Version //')" >> "$GITHUB_OUTPUT"
 
+      # Same key as in the job above (image, architecture, Playwright version).
       - name: Restore the Playwright browser
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-browser-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+          key: playwright-browser-${{ runner.os }}-${{ env.ImageOS }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.version }}
 
+      # 5 minutes: it takes about half a minute, but a slow apt mirror once made it 12:51.
+      # Past 5 it fails here, by name, instead of using up the job's 15.
       - name: Install the Playwright browser
+        timeout-minutes: 5
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Browser tests of the control page (Playwright)
