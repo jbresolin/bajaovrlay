@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
 
 import { EventHistoryTable } from './EventHistoryTable';
@@ -14,8 +15,9 @@ const texts = ptBR.events;
  * The "Eventos" page, "#/eventos" (gate 2 of PR #22): the room the console's tab does not
  * have. "+ Evento" and "Regras" on top; the waiting events with the same buttons as on the
  * console, uncapped; and the history of every event the server keeps
- * (EventHistoryTable.tsx). Opened from the header in a new tab, so it can sit on a second
- * screen; it plays no chime, which stays with the console's tab.
+ * (EventHistoryTable.tsx), where a dismissed event can be restored. A refusal of the
+ * commands sent from here shows at the bottom. Opened from the header in a new tab, so it
+ * can sit on a second screen; it plays no chime, which stays with the console's tab.
  */
 export function EventReviewPage() {
   const [isManualFormOpen, setIsManualFormOpen] = useState(false);
@@ -42,6 +44,10 @@ export function EventReviewPage() {
         <h3 className="text-sm font-semibold">{texts.reviewPage.historyHeading}</h3>
         <EventHistoryTable />
       </section>
+
+      <CommandErrorMessage
+        commandTypes={['previewItem', 'showEvent', 'dismissEvent', 'restoreEvent']}
+      />
 
       {isManualFormOpen ? <ManualEventDialog onClose={() => setIsManualFormOpen(false)} /> : null}
       {areRulesOpen ? <EventRulesDialog onClose={() => setAreRulesOpen(false)} /> : null}

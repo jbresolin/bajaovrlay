@@ -13,7 +13,8 @@
  *     on the console.
  *   - The history lists every event, newest first, with its time of day, kind, car, team,
  *     lap, details (reason, penalty, lap time), where it came from (the source's name, or
- *     "Digitado") and its status.
+ *     "Digitado") and its status; a dismissed event's row has "Restaurar", which sends
+ *     restoreEvent (humans err, the walk of PR #22).
  *   - "+ Evento" and "Regras" open their forms on this page.
  *
  * What these tests deliberately do not cover:
@@ -95,7 +96,8 @@ describe('the history', () => {
     const rows = readHistoryRows();
 
     // Assert: four rows, newest first. Each row: time, kind, car, team, lap, details,
-    // origin, status. The typed notice says "Digitado"; the others name their source.
+    // origin, status, and "Restaurar" for the dismissed one only. The typed notice says
+    // "Digitado"; the others name their source.
     expect(rows, 'every event the server keeps, newest first').toEqual([
       [
         formatTimeOfDay(fastestLap.detectedAtMs),
@@ -106,6 +108,7 @@ describe('the history', () => {
         '4:38,2',
         'Simulador — Enduro',
         'na fila',
+        '',
       ],
       [
         formatTimeOfDay(penalty.detectedAtMs),
@@ -116,6 +119,7 @@ describe('the history', () => {
         'Queima de largada · +30 segundos',
         'Simulador — Enduro',
         'esperando',
+        '',
       ],
       [
         formatTimeOfDay(leaderChange.detectedAtMs),
@@ -126,6 +130,7 @@ describe('the history', () => {
         '',
         'Simulador — Enduro',
         'descartado',
+        'Restaurar',
       ],
       [
         formatTimeOfDay(notice.detectedAtMs),
@@ -136,7 +141,26 @@ describe('the history', () => {
         'Troca de piloto no box',
         'Digitado',
         'exibido',
+        '',
       ],
+    ]);
+  });
+
+  it('sends restoreEvent from "Restaurar" on a dismissed event', () => {
+    // Arrange: car 52's leader change, dismissed half an hour ago.
+    const { fakeServer } = renderTheReviewPageWith([
+      buildFinishedLeaderChangeOfCar52(30, 'dismissed'),
+    ]);
+
+    // Act: press "Restaurar" on its row.
+    fireEvent.click(screen.getByRole('button', { name: 'Restaurar' }));
+
+    // Assert: the restore of that event was sent.
+    expect(fakeServer.listCommandsReceived(), '"Restaurar" must bring it back').toEqual([
+      {
+        type: 'restoreEvent',
+        eventId: 'simulador-enduro:leaderChanged:enduro-2027-nacional:52:30',
+      },
     ]);
   });
 

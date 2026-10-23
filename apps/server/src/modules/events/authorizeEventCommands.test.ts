@@ -3,16 +3,16 @@
  *
  * What this module is for:
  *   The authorize step (core/store/authorizeCommand.ts) decides by the actor's role. The
- *   inbox adds five commands and one server actor, the event detection and runner,
+ *   inbox adds six commands and one server actor, the event detection and runner,
  *   `sistema:eventos`. It may record what it detected and show an event (the runner's
- *   "No ar"), and nothing else: a bug in it must never dismiss an event, change a rule,
+ *   "No ar"), and nothing else: a bug in it must never dismiss or restore an event, change a rule,
  *   type an event or put any other graphic on air. Operators may approve, dismiss, type
  *   and change rules, but never record a detection: no page can fake race events.
  *
  * What these tests prove, one row per actor and command:
  *   - `sistema:eventos` may send recordDetectedEvents and showEvent; it may not send
- *     dismissEvent, createManualEvent, updateEventRule, takeItem or clearLayer.
- *   - An operator may send showEvent, dismissEvent, createManualEvent and
+ *     dismissEvent, restoreEvent, createManualEvent, updateEventRule, takeItem or clearLayer.
+ *   - An operator may send showEvent, dismissEvent, restoreEvent, createManualEvent and
  *     updateEventRule, and may not send recordDetectedEvents.
  *   - A renderer and a monitor may send none of them; the auto-out may only clear.
  *
@@ -51,6 +51,10 @@ const dismissTheStartPenalty: Command = {
   type: 'dismissEvent',
   eventId: 'simulador-enduro:incident:ocorrencia-0007',
 };
+const restoreTheStartPenalty: Command = {
+  type: 'restoreEvent',
+  eventId: 'simulador-enduro:incident:ocorrencia-0007',
+};
 const typeAPenalty: Command = {
   type: 'createManualEvent',
   noticeKind: 'penalty',
@@ -86,6 +90,13 @@ const authorizationScenarios: Array<{
     name: 'keeps the detection from dismissing an event',
     actor: eventInboxActor,
     command: dismissTheStartPenalty,
+    isAllowed: false,
+  },
+  // Undoing a dismissal is the operator's correction, never the server's.
+  {
+    name: 'keeps the detection from restoring an event',
+    actor: eventInboxActor,
+    command: restoreTheStartPenalty,
     isAllowed: false,
   },
   // The server never invents an event.
@@ -128,6 +139,13 @@ const authorizationScenarios: Array<{
     name: 'lets an operator dismiss',
     actor: operatorActor,
     command: dismissTheStartPenalty,
+    isAllowed: true,
+  },
+  // "Desfazer" and "Restaurar".
+  {
+    name: 'lets an operator restore a dismissed event',
+    actor: operatorActor,
+    command: restoreTheStartPenalty,
     isAllowed: true,
   },
   // "+ Evento".

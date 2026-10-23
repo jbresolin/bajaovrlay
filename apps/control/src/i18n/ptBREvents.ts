@@ -37,6 +37,12 @@ export const ptBREvents = {
   previewButton: 'Prévia',
   showButton: 'No ar',
   dismissButton: 'Descartar',
+  /** Under the console's waiting events: what was dismissed in the last 30 s. */
+  recentlyDismissedListLabel: 'Descartados agora há pouco',
+  /** "Penalidade · carro 47" on a recently dismissed event's row. */
+  recentlyDismissedText: (kindWord: string, carNumber: number) =>
+    `${kindWord} · carro ${String(carNumber)}`,
+  undoDismissButton: 'Desfazer',
 
   noticeKindWords,
   /** What an event is, in a word, for the kinds whose notice does not say it. */
@@ -76,7 +82,10 @@ export const ptBREvents = {
       details: 'Detalhes',
       origin: 'Origem',
       status: 'Situação',
+      actions: 'Ações',
     },
+    /** On a dismissed event's row of the history: undo the dismissal. */
+    restoreButton: 'Restaurar',
     /** The origin of an event typed with "+ Evento", which no source produced. */
     typedOrigin: 'Digitado',
     /** Between the reason, the penalty and the lap time in one cell. */

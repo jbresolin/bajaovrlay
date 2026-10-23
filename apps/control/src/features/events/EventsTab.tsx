@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ptBR } from '@/i18n/ptBR';
 
+import { RecentlyDismissedEvents } from './RecentlyDismissedEvents';
 import { WaitingEventsList } from './WaitingEventsList';
 
 const texts = ptBR.events;
@@ -11,7 +12,8 @@ const soundSwitchId = 'events-sound';
 /**
  * The "Eventos" tab of the quick-fire strip (BAJAOVRLAY-44): "Som de eventos" and the link
  * to the "Eventos" page on top, then the waiting events, newest first, each with its
- * buttons. The tab sits above Camadas, so its list scrolls inside a capped height (16rem)
+ * buttons, and under them what was dismissed in the last 30 s with "Desfazer"
+ * (RecentlyDismissedEvents.tsx). The tab sits above Camadas, so its list scrolls inside a capped height (16rem)
  * rather than pushing Camadas off the screen, and everything else about the inbox (the
  * history, "+ Evento", "Regras") is on the page, which opens in a new tab so the console
  * stays (gate 2 of PR #22). The sound stays here because the chime plays on the console;
@@ -46,6 +48,7 @@ export function EventsTab(props: {
       <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
         <WaitingEventsList />
       </div>
+      <RecentlyDismissedEvents />
     </div>
   );
 }

@@ -131,6 +131,7 @@ export function QuickFireStrip() {
           'deleteMacro',
           'showEvent',
           'dismissEvent',
+          'restoreEvent',
         ]}
       />
     </section>

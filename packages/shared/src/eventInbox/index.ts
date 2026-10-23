@@ -33,7 +33,8 @@ export {
   EventRulesSchema,
   eventRuleTimeLimitsMs,
 } from './eventRule.js';
-// The five inbox commands: show, dismiss, type by hand, change a rule, record detected.
+// The six inbox commands: show, dismiss, restore a dismissed one, type by hand, change a
+// rule, record detected.
 export {
   type CreateManualEventCommand,
   CreateManualEventCommandSchema,
@@ -41,6 +42,8 @@ export {
   DismissEventCommandSchema,
   type RecordDetectedEventsCommand,
   RecordDetectedEventsCommandSchema,
+  type RestoreEventCommand,
+  RestoreEventCommandSchema,
   type ShowEventCommand,
   ShowEventCommandSchema,
   type UpdateEventRuleCommand,

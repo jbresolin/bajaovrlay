@@ -122,6 +122,7 @@ function reduceCommandOfItsType(
     // The event inbox (BAJAOVRLAY-44): its reducers live in the module modules/events.
     case 'showEvent':
     case 'dismissEvent':
+    case 'restoreEvent':
     case 'createManualEvent':
     case 'updateEventRule':
     case 'recordDetectedEvents':

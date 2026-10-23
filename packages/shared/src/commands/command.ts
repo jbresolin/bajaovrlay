@@ -18,6 +18,7 @@ import {
   CreateManualEventCommandSchema,
   DismissEventCommandSchema,
   RecordDetectedEventsCommandSchema,
+  RestoreEventCommandSchema,
   ShowEventCommandSchema,
   UpdateEventRuleCommandSchema,
 } from '../eventInbox/eventCommands.js';
@@ -128,6 +129,7 @@ export const CommandSchema = z.discriminatedUnion('type', [
   // the server's event detection (sistema:eventos), which may also send showEvent.
   ShowEventCommandSchema,
   DismissEventCommandSchema,
+  RestoreEventCommandSchema,
   CreateManualEventCommandSchema,
   UpdateEventRuleCommandSchema,
   RecordDetectedEventsCommandSchema,

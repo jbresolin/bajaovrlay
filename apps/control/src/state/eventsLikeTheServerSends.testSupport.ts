@@ -153,6 +153,22 @@ export function buildFinishedLeaderChangeOfCar52(
 }
 
 /**
+ * Car 47's start penalty, arrived 2 minutes ago and dismissed `secondsAgo` seconds before
+ * nowInTheInboxTests: what "Desfazer" on the console can still undo when it is recent.
+ */
+export function buildPenaltyOfCar47DismissedSecondsAgo(secondsAgo: number): InboxEvent {
+  const penalty = buildPendingPenaltyOfCar47(2);
+  return {
+    ...penalty,
+    status: 'dismissed',
+    statusChanges: [
+      ...penalty.statusChanges,
+      { status: 'dismissed', atMs: nowInTheInboxTests.getTime() - secondsAgo * 1_000 },
+    ],
+  };
+}
+
+/**
  * A notice the operator typed about car 12 `minutesAgo` minutes ago ("+ Evento", no
  * source), shown and over.
  */

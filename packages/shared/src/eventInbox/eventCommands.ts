@@ -30,6 +30,18 @@ export const DismissEventCommandSchema = z.object({
 export type DismissEventCommand = z.infer<typeof DismissEventCommandSchema>;
 
 /**
+ * Undoes "Descartar" ("Desfazer" on the console, "Restaurar" on the "Eventos" page): a
+ * dismissed event waits for the operator again. Operators only.
+ */
+export const RestoreEventCommandSchema = z.object({
+  type: z.literal('restoreEvent'),
+  eventId: z.string().min(1),
+});
+
+/** A restoreEvent command after validation. */
+export type RestoreEventCommand = z.infer<typeof RestoreEventCommandSchema>;
+
+/**
  * Types an event by hand ("+ Evento"): a penalty or a notice about one car. Team and
  * school may be left out; the server fills them from the cars the sources list.
  * Operators only.

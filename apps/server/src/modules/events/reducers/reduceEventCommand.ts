@@ -8,6 +8,7 @@ import type {
 import { reduceCreateManualEvent } from './createManualEvent.js';
 import { reduceDismissEvent } from './dismissEvent.js';
 import { reduceRecordDetectedEvents } from './recordDetectedEvents.js';
+import { reduceRestoreEvent } from './restoreEvent.js';
 import { reduceShowEvent } from './showEvent.js';
 import { reduceUpdateEventRule } from './updateEventRule.js';
 
@@ -18,6 +19,7 @@ export type EventInboxCommand = Extract<
     type:
       | 'showEvent'
       | 'dismissEvent'
+      | 'restoreEvent'
       | 'createManualEvent'
       | 'updateEventRule'
       | 'recordDetectedEvents';
@@ -35,6 +37,8 @@ export function reduceEventInboxCommand(
       return reduceShowEvent(slices, command, context);
     case 'dismissEvent':
       return reduceDismissEvent(slices, command, context);
+    case 'restoreEvent':
+      return reduceRestoreEvent(slices, command, context);
     case 'createManualEvent':
       return reduceCreateManualEvent(slices, command, context);
     case 'updateEventRule':

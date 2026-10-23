@@ -23,6 +23,18 @@ export const ptBREventErrors = {
   /** "Este evento não está mais esperando: foi descartado." */
   eventNotWaiting: (status: InboxEventStatus) =>
     `Este evento não está mais esperando: ${ptBREventErrors.whyNotWaiting[status]}.`,
+  /** "Este evento não foi descartado: está esperando." (restoreEvent, "Desfazer"). */
+  eventNotDismissed: (status: InboxEventStatus) =>
+    `Este evento não foi descartado: ${ptBREventErrors.whatItIsInstead[status]}.`,
+  /** What an event that cannot be restored is instead, by its status. */
+  whatItIsInstead: {
+    pending: 'está esperando',
+    queued: 'está na fila',
+    onAir: 'está no ar',
+    shown: 'já foi exibido',
+    dismissed: 'foi descartado',
+    expired: 'expirou',
+  } satisfies Record<InboxEventStatus, string>,
   /** Why an event is not waiting any more, by its status. */
   whyNotWaiting: {
     pending: 'ainda espera',

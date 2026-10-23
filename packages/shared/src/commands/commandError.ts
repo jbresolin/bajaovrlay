@@ -102,6 +102,11 @@ export const CommandErrorCodeSchema = z.enum([
    * shown, dismissed or expired. The message says which.
    */
   'EVENT_NOT_WAITING',
+  /**
+   * restoreEvent named an event that was not dismissed (waiting, on air, shown or
+   * expired); only a dismissal can be undone. The message says its status.
+   */
+  'EVENT_NOT_DISMISSED',
   /** showEvent named an event whose rule has no item to show it with ("Regras"). */
   'EVENT_RULE_WITHOUT_ITEM',
   /**

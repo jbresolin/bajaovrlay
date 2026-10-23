@@ -21,6 +21,9 @@
  *   - "No ar" and "Descartar" are off while their command waits (gate 2 of PR #22).
  *   - "Prévia" and "No ar" are off for an event whose rule has no item.
  *   - The tab's badge counts the pending events only (not the queued ones).
+ *   - An event dismissed in the last 30 s is listed under the waiting ones with
+ *     "Desfazer", which sends restoreEvent; one dismissed earlier is not (humans err, the
+ *     walk of PR #22; older ones are restored on the "Eventos" page).
  *   - The tab keeps the waiting events only: no events that are over, no "+ Evento" and
  *     no "Regras", and a link opening "#/eventos" in a new tab; the waiting list scrolls
  *     inside a capped height.
@@ -44,6 +47,7 @@ import {
 } from '@/state/controlPageOnFakeServer.testSupport';
 import {
   buildFinishedLeaderChangeOfCar52,
+  buildPenaltyOfCar47DismissedSecondsAgo,
   buildPendingPenaltyOfCar47,
   buildPendingWarningOfCar38,
   buildQueuedFastestLapOfCar31,
@@ -244,5 +248,36 @@ describe('the tab on the console', () => {
     // Assert: a capped height (16rem) that scrolls, so Camadas below is never pushed off.
     expect(scrollingArea, 'the height is capped').toHaveClass('max-h-64');
     expect(scrollingArea, 'and the list scrolls inside it').toHaveClass('overflow-y-auto');
+  });
+});
+
+describe('undoing a dismissal on the console', () => {
+  it('offers "Desfazer" for an event dismissed in the last 30 s, sending restoreEvent', () => {
+    // Arrange: car 47's penalty dismissed 10 s ago, by a slip of the mouse.
+    const { fakeServer } = renderTheEventsTabWith([buildPenaltyOfCar47DismissedSecondsAgo(10)]);
+
+    // Act: press "Desfazer" on it.
+    const recentlyDismissed = screen.getByRole('list', { name: 'Descartados agora há pouco' });
+    const penaltyRow = within(
+      within(recentlyDismissed).getAllByRole('listitem')[0] ?? document.body,
+    );
+    fireEvent.click(penaltyRow.getByRole('button', { name: 'Desfazer' }));
+
+    // Assert: the row says what was dismissed, and the restore was sent.
+    expect(penaltyRow.getByText('Penalidade · carro 47'), 'what was dismissed').toBeInTheDocument();
+    expect(fakeServer.listCommandsReceived(), '"Desfazer" must bring it back').toEqual([
+      { type: 'restoreEvent', eventId: 'simulador-enduro:incident:ocorrencia-0007' },
+    ]);
+  });
+
+  it('leaves out an event dismissed more than 30 s ago', () => {
+    // Arrange: the penalty dismissed 40 s ago.
+    renderTheEventsTabWith([buildPenaltyOfCar47DismissedSecondsAgo(40)]);
+
+    // Act: look for the list of recent dismissals.
+    const recentlyDismissed = screen.queryByRole('list', { name: 'Descartados agora há pouco' });
+
+    // Assert: none; an older one is restored from the "Eventos" page's history.
+    expect(recentlyDismissed, 'only the last 30 s are offered here').toBe(null);
   });
 });

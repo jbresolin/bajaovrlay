@@ -29,3 +29,30 @@ export function listPendingEventIds(events: InboxEvent[]): string[] {
 export function countPendingEvents(events: InboxEvent[]): number {
   return events.filter((event) => event.status === 'pending').length;
 }
+
+/** How long after "Descartar" the console still offers "Desfazer" (humans err). */
+export const undoDismissWindowMs = 30_000;
+
+/** The moment an event was dismissed: its last status change, or undefined if it was not. */
+function readDismissedAtMs(event: InboxEvent): number | undefined {
+  if (event.status !== 'dismissed') {
+    return undefined;
+  }
+  return event.statusChanges.at(-1)?.atMs;
+}
+
+/**
+ * The events dismissed within `undoDismissWindowMs` of `nowMs`, the latest dismissal
+ * first: what the console offers to undo. An older dismissal is undone from the page's
+ * history. `nowMs` is the page's clock and the moments the server's, so a clock off by a
+ * few seconds only moves the end of the window.
+ */
+export function listEventsDismissedJustNow(events: InboxEvent[], nowMs: number): InboxEvent[] {
+  const recentlyDismissed = events.filter((event) => {
+    const dismissedAtMs = readDismissedAtMs(event);
+    return dismissedAtMs !== undefined && nowMs - dismissedAtMs <= undoDismissWindowMs;
+  });
+  return recentlyDismissed.sort(
+    (first, second) => (readDismissedAtMs(second) ?? 0) - (readDismissedAtMs(first) ?? 0),
+  );
+}
