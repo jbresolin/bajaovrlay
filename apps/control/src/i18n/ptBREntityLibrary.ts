@@ -146,6 +146,33 @@ export const ptBREntityLibrary = {
     serverUnreachable: 'Não foi possível buscar as equipes do simulador: o servidor não respondeu.',
   },
 
+  // The item editor's "Cadastro" kind (features/schemaForm/EntityReferenceControls.tsx).
+  editor: {
+    entityTypeSelectorLabel: (fieldLabel: string) => `Tipo de cadastro de ${fieldLabel}`,
+    searchLabel: (fieldLabel: string) => `Buscar cadastro de ${fieldLabel}`,
+    searchPlaceholder: 'Número do carro, equipe ou nome',
+    recordSelectorLabel: (fieldLabel: string) => `Cadastro de ${fieldLabel}`,
+    attributeSelectorLabel: (fieldLabel: string) => `Campo do cadastro de ${fieldLabel}`,
+    noRecordFound: 'Nenhum cadastro encontrado.',
+    valueNow: (valueText: string) => `Valor agora: ${valueText}`,
+    noValueNow: (reason: string) => `Sem valor agora: ${reason}`,
+    imageNowAlt: (fieldLabel: string) => `${fieldLabel} agora`,
+    // Each goes after the field's label: "Título: escolha o cadastro."
+    formErrors: {
+      entityTypeMissing: 'escolha o tipo de cadastro.',
+      recordMissing: 'escolha o cadastro.',
+      attributeMissing: 'escolha o campo do cadastro.',
+    },
+  },
+
+  // The marker of an item that reads the library, on its rundown row and its button.
+  marker: {
+    readsTheLibrary: 'cadastro',
+    readsTheLibraryHint: 'Lê dados dos cadastros.',
+    cannotTakeNow: 'cadastro · não entra agora',
+    cannotTakeNowLabel: (reason: string) => `Não entra no ar agora: ${reason}`,
+  },
+
   // The images of the media store, above the tabs.
   media: {
     summary: (imageCount: number, sizeText: string) =>

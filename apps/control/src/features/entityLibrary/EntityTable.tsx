@@ -12,7 +12,7 @@ import {
 import { useServerAlignedTimeMs } from '@/features/dataSources/useServerAlignedTimeMs';
 import { DeleteItemButton } from '@/features/rundown/DeleteItemButton';
 import { ptBR } from '@/i18n/ptBR';
-import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
+import { useSendCommand } from '@/state/ControlPageStateProvider';
 
 import { listRecordsOfTypeInOrder } from './entityOrdering';
 import {
@@ -21,6 +21,7 @@ import {
   readKeyOfRecord,
 } from './entityRecordsOfType';
 import { listTableColumnsOfEntityType } from './entityTableColumns';
+import { useEntityLibrary } from './useEntityLibrary';
 
 const texts = ptBR.entityLibrary;
 
@@ -44,14 +45,11 @@ export type EntityTableProps = {
  */
 export function EntityTable(props: EntityTableProps) {
   const { entityType } = props;
-  const teams = useServerState((state) => state.teams);
-  const people = useServerState((state) => state.people);
-  const sponsors = useServerState((state) => state.sponsors);
-  const scheduleSlots = useServerState((state) => state.scheduleSlots);
+  const library = useEntityLibrary();
   const sendCommand = useSendCommand();
   const nowMs = useServerAlignedTimeMs(statusRefreshIntervalMs);
 
-  const records = listRecordsOfTypeInOrder({ teams, people, sponsors, scheduleSlots }, entityType);
+  const records = listRecordsOfTypeInOrder(library, entityType);
   if (records.length === 0) {
     return <p className="text-sm text-muted-foreground">{texts.emptyTabs[entityType]}</p>;
   }
@@ -71,7 +69,7 @@ export function EntityTable(props: EntityTableProps) {
           <TableRow key={readKeyOfRecord(entityType, record)}>
             {columns.map((column) => (
               <TableCell key={column.header}>
-                {column.renderCell(record, { nowMs, scheduleSlots })}
+                {column.renderCell(record, { nowMs, scheduleSlots: library.scheduleSlots })}
               </TableCell>
             ))}
             <TableCell>

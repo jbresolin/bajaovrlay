@@ -12,7 +12,23 @@ export const mediaIdPattern = /^[0-9a-f]{64}$/;
 /** A media id that has passed the pattern above. */
 export const MediaIdSchema = z.string().regex(mediaIdPattern);
 
+// Where the server serves the images, followed by the media id.
+const mediaUrlPrefix = '/media/';
+
 /** The address an image is served at, and the value a resolved image field holds. */
 export function buildMediaUrl(mediaId: string): string {
-  return `/media/${mediaId}`;
+  return `${mediaUrlPrefix}${mediaId}`;
+}
+
+/**
+ * The media id of an address of the media store ("/media/<mediaId>"), or undefined for
+ * any other text (an outside URL typed into an image field, a typo). The item editor's
+ * image picker reads a stored image field with it.
+ */
+export function readMediaIdOfMediaUrl(url: string): string | undefined {
+  if (!url.startsWith(mediaUrlPrefix)) {
+    return undefined;
+  }
+  const mediaId = url.slice(mediaUrlPrefix.length);
+  return mediaIdPattern.test(mediaId) ? mediaId : undefined;
 }

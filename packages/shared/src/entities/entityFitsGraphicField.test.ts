@@ -13,7 +13,8 @@
  *   - An image field is offered the team's logo and car photo and nothing else.
  *   - A plain text field is offered the team's text attributes, never its images.
  *   - An integer field is offered the car number.
- *   - A boolean field and a field the schema does not declare are offered nothing.
+ *   - A boolean field, a field with a fixed list of values (an enum) and a field the
+ *     schema does not declare are offered nothing.
  *   - The save check refuses an unknown attribute and an image on a text field, naming
  *     them in pt-BR, and accepts the team name on a text field.
  *
@@ -36,6 +37,7 @@ const teamCardDataSchema = {
     logoUrl: { type: 'string', title: 'Logo', v_baja: { role: 'imageUrl' } },
     carNumber: { type: 'integer', title: 'Carro' },
     showLogo: { type: 'boolean', title: 'Mostrar logo' },
+    flag: { type: 'string', title: 'Bandeira', enum: ['green', 'yellow', 'red'] },
   },
 };
 
@@ -61,6 +63,12 @@ describe('listAttributesThatFitDataSchemaField', () => {
     },
     // Nothing of a team is yes or no.
     { name: 'offers nothing on a boolean field', fieldKey: 'showLogo', expected: [] },
+    // A fixed list (the flag) takes its own values only, which no text of a team is.
+    {
+      name: 'offers nothing on a field with a fixed list of values',
+      fieldKey: 'flag',
+      expected: [],
+    },
     // A key the manifest does not declare takes nothing.
     {
       name: 'offers nothing on a field the schema does not declare',

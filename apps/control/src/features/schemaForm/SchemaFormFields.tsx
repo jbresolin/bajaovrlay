@@ -1,3 +1,4 @@
+import type { EntityLibrary } from '@bajaovrlay/shared';
 import type { ReactNode } from 'react';
 import { type UseFormReturn, useWatch } from 'react-hook-form';
 
@@ -65,6 +66,8 @@ function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
  * `bindingOptions` (the item editor only) lets a field read a data source: "Fonte" where a
  * bindable path fits it, "Relógio da fonte" on a clock's time field, which then fills the
  * three other clock fields; a field the form draws read-only (a list) may read one too.
+ * `entityLibrary` (the item editor only) lets a field read the library: "Cadastro" where
+ * an attribute fits it (BAJAOVRLAY-19).
  */
 export function SchemaFormFields(props: {
   form: UseFormReturn<SchemaFormValues>;
@@ -76,6 +79,8 @@ export function SchemaFormFields(props: {
   textShownInUntouchedField?: TextShownInUntouchedField;
   /** What a field may read from a data source; left out, no field offers "Fonte". */
   bindingOptions?: SchemaFormBindingOptions;
+  /** The entity library a field may read; left out, no field offers "Cadastro". */
+  entityLibrary?: EntityLibrary;
   /**
    * Fields drawn read-only, by key, with what the panel shows in place of their control
    * ("Edição rápida" shows a field a source keeps up to date this way). Default: none.
@@ -166,6 +171,7 @@ export function SchemaFormFields(props: {
               }
               dataSchema={description.dataSchema}
               bindingOptions={bindingOptions}
+              entityLibrary={props.entityLibrary}
               isFilledByTheWholeClock={keysFilledByTheWholeClock.includes(field.key)}
               readOnlyContent={readOwnContentOfField(props.readOnlyFieldContents, field.key)}
             />

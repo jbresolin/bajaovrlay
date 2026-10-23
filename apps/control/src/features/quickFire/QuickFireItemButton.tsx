@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ItemSourceMarker } from '@/features/bindings/ItemSourceMarker';
+import { ItemEntityMarker } from '@/features/entityLibrary/ItemEntityMarker';
 import { buttonClassForEachItemColor } from '@/features/items/itemColorButton';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
@@ -71,6 +72,7 @@ export function QuickFireItemButton(props: QuickFireItemButtonProps) {
         <span className="w-full truncate text-sm font-semibold">{item.label}</span>
         <span className="w-full truncate text-xs opacity-80">{graphicName}</span>
         <ItemSourceMarker item={item} />
+        <ItemEntityMarker item={item} />
         {digitKey === null ? null : (
           <kbd aria-hidden="true" className="absolute bottom-1 right-2 text-xs opacity-80">
             {digitKey}

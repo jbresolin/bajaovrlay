@@ -179,6 +179,7 @@ export const ptBR = {
       takeTime: 'Momento da entrada no ar',
       binding: 'Fonte',
       wholeClock: 'Relógio da fonte',
+      entity: 'Cadastro',
     },
     // A list field (drawn read-only) that may also read a source: its value as it is.
     listKindAsItIs: 'Valor como está',

@@ -19,6 +19,10 @@ import {
   emptySchemaFormBindingValue,
 } from './bindingFormValue';
 import {
+  buildSchemaFormEntityReferenceValueFromReference,
+  type SchemaFormEntityReferenceValue,
+} from './entityReferenceFormValue';
+import {
   clearBlankOptionalTypedFormValue,
   convertDataValueIntoFormValue,
 } from './fieldValueConversion';
@@ -98,6 +102,7 @@ function assembleSchemaFormValues(
   kindPairs: Array<[string, SchemaFormFieldKind]>,
   unsupportedValuesAsJson: UnsupportedValueAsJson[],
   bindingPairs: Array<[string, SchemaFormBindingValue]> = [],
+  entityReferencePairs: Array<[string, SchemaFormEntityReferenceValue]> = [],
 ): SchemaFormValues {
   const bindingsByKey = new Map(bindingPairs);
   const keysOfEditableFields = valuePairs.map(([fieldKey]) => fieldKey);
@@ -105,7 +110,7 @@ function assembleSchemaFormValues(
   const keysOfListFieldsWithABinding = bindingPairs
     .map(([fieldKey]) => fieldKey)
     .filter((fieldKey) => !keysOfEditableFields.includes(fieldKey));
-  return {
+  const formValues: SchemaFormValues = {
     values: Object.fromEntries(valuePairs),
     kinds: Object.fromEntries(kindPairs),
     bindings: Object.fromEntries(
@@ -116,6 +121,11 @@ function assembleSchemaFormValues(
     ),
     unsupportedValuesAsJson,
   };
+  // Only a form that holds a "Cadastro" choice carries the record (schemaFormValues.ts).
+  if (entityReferencePairs.length > 0) {
+    formValues.entityReferences = Object.fromEntries(entityReferencePairs);
+  }
+  return formValues;
 }
 
 /**
@@ -242,9 +252,10 @@ function listKeysFilledByAStoredWholeClock(
 
 /**
  * Fills a form from the stored fields of an item. A `literal` shows its value, a
- * `takeTime` shows as "filled by the server at the take" where the form offers that, and
- * a `binding` as "Fonte" with its choices, or as "Relógio da fonte" for the whole clock on
- * the time field (its three other clock fields are then the whole clock's, not unreadable).
+ * `takeTime` shows as "filled by the server at the take" where the form offers that, a
+ * `binding` as "Fonte" with its choices, or as "Relógio da fonte" for the whole clock on
+ * the time field (its three other clock fields are then the whole clock's, not
+ * unreadable), and an `entity` reference as "Cadastro" with its choices.
  * - A field the item does not store, or stores as a literal null: cleared when optional;
  *   listed, and started as in an empty form (starting value and kind), when required.
  * - A literal the control cannot show, or a `takeTime` on a field that does not offer
@@ -265,6 +276,7 @@ export function buildSchemaFormValuesFromItemFields(
   const valuePairs: Array<[string, SchemaFormFieldValue]> = [];
   const kindPairs: Array<[string, SchemaFormFieldKind]> = [];
   const bindingPairs: Array<[string, SchemaFormBindingValue]> = [];
+  const entityReferencePairs: Array<[string, SchemaFormEntityReferenceValue]> = [];
   const unsupportedValuesAsJson: UnsupportedValueAsJson[] = [];
   const labelsOfFieldsThatCouldNotBeRead: string[] = [];
   const keysFilledByAStoredWholeClock = listKeysFilledByAStoredWholeClock(description, itemFields);
@@ -305,6 +317,16 @@ export function buildSchemaFormValuesFromItemFields(
       bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(storedField)]);
       continue;
     }
+    // A field read from the entity library shows as "Cadastro" with its choices.
+    if (storedField?.kind === 'entity') {
+      valuePairs.push([field.key, buildStartingValueOfField(field)]);
+      kindPairs.push([field.key, 'entity']);
+      entityReferencePairs.push([
+        field.key,
+        buildSchemaFormEntityReferenceValueFromReference(storedField),
+      ]);
+      continue;
+    }
     if (keysFilledByAStoredWholeClock.includes(field.key)) {
       valuePairs.push([field.key, buildStartingValueOfField(field)]);
       kindPairs.push([field.key, chooseStartingKindOfField(field)]);
@@ -339,6 +361,7 @@ export function buildSchemaFormValuesFromItemFields(
       kindPairs,
       unsupportedValuesAsJson,
       bindingPairs,
+      entityReferencePairs,
     ),
     labelsOfFieldsThatCouldNotBeRead,
   };

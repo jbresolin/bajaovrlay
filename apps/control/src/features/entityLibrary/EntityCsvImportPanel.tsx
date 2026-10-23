@@ -15,10 +15,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { ptBR } from '@/i18n/ptBR';
-import { useSendCommandAndReadItsRefusal, useServerState } from '@/state/ControlPageStateProvider';
+import { useSendCommandAndReadItsRefusal } from '@/state/ControlPageStateProvider';
 
 import { listCsvColumnsOfEntityType } from './entityCsvColumns';
 import { buildCsvImportPreview, listRecordsToImport } from './entityCsvImport';
+import { useEntityLibrary } from './useEntityLibrary';
 
 const texts = ptBR.entityLibrary.csv;
 
@@ -37,10 +38,7 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
   const { entityType } = props;
   const pasteBoxId = useId();
   const fileInputId = useId();
-  const teams = useServerState((state) => state.teams);
-  const people = useServerState((state) => state.people);
-  const sponsors = useServerState((state) => state.sponsors);
-  const scheduleSlots = useServerState((state) => state.scheduleSlots);
+  const library = useEntityLibrary();
   const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
   const [csvText, setCsvText] = useState('');
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
@@ -51,9 +49,7 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
   const preview =
     csvText.trim() === ''
       ? undefined
-      : buildCsvImportPreview(entityType, csvText, { teams, people, sponsors, scheduleSlots }, () =>
-          crypto.randomUUID(),
-        );
+      : buildCsvImportPreview(entityType, csvText, library, () => crypto.randomUUID());
   const recordsToImport = preview === undefined ? undefined : listRecordsToImport(preview);
   const validRowCount = recordsToImport?.records.length ?? 0;
 

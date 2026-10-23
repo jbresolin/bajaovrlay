@@ -1,3 +1,5 @@
+import type { SchemaFormEntityReferenceValue } from './entityReferenceFormValue';
+
 /**
  * The values of a generated form as react-hook-form holds them while the operator edits.
  * Only types live here; buildSchemaFormValues.ts builds them and the files named
@@ -13,9 +15,11 @@
  *   Offered only in the item editor, where some bindable path fits the field.
  * - `wholeClock` ("Relógio da fonte"): the whole session clock of a source, on the time
  *   field of a graphic that marks the four clock roles; it fills the other three too.
- * The entity library (BAJAOVRLAY-19) adds `entity` here.
+ * - `entity` ("Cadastro", BAJAOVRLAY-19): one attribute of one record of the entity
+ *   library, as `entityReferences` says. Offered only in the item editor, where some
+ *   attribute fits the field (entityReferenceFormValue.ts).
  */
-export type SchemaFormFieldKind = 'literal' | 'takeTime' | 'binding' | 'wholeClock';
+export type SchemaFormFieldKind = 'literal' | 'takeTime' | 'binding' | 'wholeClock' | 'entity';
 
 /**
  * A binding as the form holds it while the operator chooses: plain texts and a switch,
@@ -72,6 +76,12 @@ export type SchemaFormValues = {
   kinds: Record<string, SchemaFormFieldKind>;
   /** One per editable field: what "Fonte" or "Relógio da fonte" holds, kept while unused. */
   bindings: Record<string, SchemaFormBindingValue>;
+  /**
+   * What "Cadastro" holds, for the fields that hold a choice (BAJAOVRLAY-19). Left out
+   * until one does: a control with no entry reads it as nothing chosen, so a form that
+   * reads nothing of the library is exactly what it was before.
+   */
+  entityReferences?: Record<string, SchemaFormEntityReferenceValue>;
   unsupportedValuesAsJson: UnsupportedValueAsJson[];
 };
 

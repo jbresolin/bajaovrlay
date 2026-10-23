@@ -33,8 +33,9 @@ export function isImageFieldOfDataSchema(dataSchema: unknown, fieldKey: string):
 /**
  * The value types of the library one field takes, from its JSON Schema type: an image
  * URL on an image field and nothing else (a name would be read as an address), text on
- * any other string field, a whole number on an integer or number field, and nothing on
- * any other field or one the schema does not declare.
+ * any other string field unless it is a fixed list (an `enum`, such as the flag: no text
+ * of the library is one of its values), a whole number on an integer or number field, and
+ * nothing on any other field or one the schema does not declare.
  */
 export function listEntityValueTypesThatFitDataSchemaField(
   dataSchema: unknown,
@@ -49,7 +50,7 @@ export function listEntityValueTypesThatFitDataSchemaField(
   }
   switch (schemaProperty.type) {
     case 'string':
-      return ['text'];
+      return schemaProperty.enum === undefined ? ['text'] : [];
     case 'integer':
     case 'number':
       return ['integer'];

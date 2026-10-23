@@ -3,6 +3,7 @@ import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
 import { listUnusedMediaIds, writeMediaFolderSize } from './mediaUsage';
+import { useEntityLibrary } from './useEntityLibrary';
 
 const texts = ptBR.entityLibrary.media;
 
@@ -14,13 +15,10 @@ const texts = ptBR.entityLibrary.media;
  */
 export function MediaFolderSummary() {
   const media = useServerState((state) => state.media);
-  const teams = useServerState((state) => state.teams);
-  const people = useServerState((state) => state.people);
-  const sponsors = useServerState((state) => state.sponsors);
-  const scheduleSlots = useServerState((state) => state.scheduleSlots);
+  const library = useEntityLibrary();
   const sendCommand = useSendCommand();
 
-  const unusedMediaIds = listUnusedMediaIds(media, { teams, people, sponsors, scheduleSlots });
+  const unusedMediaIds = listUnusedMediaIds(media, library);
   return (
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <span title={texts.sizeHint}>{texts.summary(media.length, writeMediaFolderSize(media))}</span>

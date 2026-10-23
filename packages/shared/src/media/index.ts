@@ -2,8 +2,9 @@
 // exports. The package's own index.ts re-exports this file with one line; other packages
 // import from '@bajaovrlay/shared', never from here.
 
-// A media id (the SHA-256 of the file), its pattern, and the URL an image is served at.
-export { buildMediaUrl, mediaIdPattern, MediaIdSchema } from './mediaId.js';
+// A media id (the SHA-256 of the file), its pattern, the URL an image is served at, and
+// the id read back from such a URL.
+export { buildMediaUrl, mediaIdPattern, MediaIdSchema, readMediaIdOfMediaUrl } from './mediaId.js';
 // One image of the store, the media slice, the four accepted types and the 5 MB limit.
 export {
   type AcceptedImageContentType,
