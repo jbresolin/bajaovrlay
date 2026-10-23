@@ -152,15 +152,20 @@ export async function turnSourceOnWithItsSwitch(page: Page, sourceLabel: string)
 }
 
 /**
- * Changes a simulator through its "Editar" form: the poll interval and the speed typed as
- * the operator types them ("0,5", "60"), and the "Falha simulada" switch put on or off when
- * asked; then "Salvar fonte", and waits for the form to close, which it does once the
- * server has accepted the edit.
+ * Changes a simulator through its "Editar" form: the poll interval, the speed and the
+ * race's seed typed as the operator types them ("0,5", "60", "227"), and the "Falha
+ * simulada" switch put on or off when asked; then "Salvar fonte", and waits for the form
+ * to close, which it does once the server has accepted the edit.
  */
 export async function changeSimulatorInItsEditForm(
   page: Page,
   sourceLabel: string,
-  change: { pollIntervalAsTyped?: string; speedAsTyped?: string; isFailing?: boolean },
+  change: {
+    pollIntervalAsTyped?: string;
+    speedAsTyped?: string;
+    seedAsTyped?: string;
+    isFailing?: boolean;
+  },
 ): Promise<void> {
   await findDataSourceRow(page, sourceLabel).getByRole('button', { name: 'Editar' }).click();
   const editForm = page.getByRole('region', { name: `Editar fonte: ${sourceLabel}` });
@@ -169,6 +174,9 @@ export async function changeSimulatorInItsEditForm(
   }
   if (change.speedAsTyped !== undefined) {
     await editForm.getByLabel('Velocidade (vezes o tempo real)').fill(change.speedAsTyped);
+  }
+  if (change.seedAsTyped !== undefined) {
+    await editForm.getByLabel('Semente da corrida').fill(change.seedAsTyped);
   }
   if (change.isFailing !== undefined) {
     const isFailingSwitch = editForm.getByRole('switch', { name: 'Falha simulada' });
