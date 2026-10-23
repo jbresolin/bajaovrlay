@@ -180,6 +180,10 @@ export * from './bindings/index.js';
 // slices, the schedule's derived status and the upsert, delete and import commands.
 export * from './entities/index.js';
 
+// The media store: uploaded logos and photos named by their SHA-256, the media slice, its
+// two commands and the uses of an image in the library.
+export * from './media/index.js';
+
 // The flex mapping: paths into a JSON response, the mapping config of a flex source, the
 // canonical fields a rule can fill, and applyFlexMapping, shared by the server and "Testar".
 export * from './flexMapping/index.js';

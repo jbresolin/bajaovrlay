@@ -198,5 +198,6 @@ export function buildRaceDaySlicesWithDataSources(parts: {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
   };
 }

@@ -6,6 +6,7 @@ import type {
   ReadEnvironmentVariable,
   SourceHostAllowlist,
 } from '../../modules/dataSources/index.js';
+import { serveMediaFiles } from '../../modules/media/index.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
@@ -37,6 +38,11 @@ export type ServerAppOptions = {
   sourceHostAllowlist?: SourceHostAllowlist | undefined;
   /** The flex sample route's timeout; 10 s when left out (tests shorten it). */
   sampleRequestTimeoutInMilliseconds?: number | undefined;
+  /**
+   * DATA_DIR/media: uploads (POST /api/v1/media) are written there and served at
+   * /media/<mediaId>. Both need the store; leave out in tests that touch no image.
+   */
+  mediaFolder?: string | undefined;
 };
 
 /**
@@ -62,8 +68,12 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         readSourceEnvironmentVariable: options.readSourceEnvironmentVariable,
         sourceHostAllowlist: options.sourceHostAllowlist,
         sampleRequestTimeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
+        mediaFolder: options.mediaFolder,
       }),
     );
+    if (options.mediaFolder !== undefined) {
+      serveMediaFiles(app, { stateStore: options.stateStore, mediaFolder: options.mediaFolder });
+    }
   }
   if (options.graphicPackagesFolder !== undefined) {
     serveGraphicPackages(app, options.graphicPackagesFolder);

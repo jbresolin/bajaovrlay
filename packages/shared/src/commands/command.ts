@@ -23,6 +23,10 @@ import {
 import { RunMacroCommandSchema } from '../macros/runMacro.js';
 import { StopMacroCommandSchema } from '../macros/stopMacro.js';
 import { UpdateMacroCommandSchema } from '../macros/updateMacro.js';
+import {
+  DeleteMediaCommandSchema,
+  RecordUploadedMediaCommandSchema,
+} from '../media/mediaCommands.js';
 import { ClearOverrideCommandSchema } from '../overrides/clearOverride.js';
 import { SetOverrideCommandSchema } from '../overrides/setOverride.js';
 import { PreviewClearLayerCommandSchema } from '../preview/previewClearLayer.js';
@@ -118,6 +122,10 @@ export const CommandSchema = z.discriminatedUnion('type', [
   UpsertEntityCommandSchema,
   DeleteEntityCommandSchema,
   ImportEntitiesCommandSchema,
+  // The media store (BAJAOVRLAY-19); ../media/. recordUploadedMedia is sent only by the
+  // server's media store (sistema:midia) after the upload route wrote the file.
+  RecordUploadedMediaCommandSchema,
+  DeleteMediaCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

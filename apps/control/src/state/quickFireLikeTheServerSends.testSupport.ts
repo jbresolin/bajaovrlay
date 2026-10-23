@@ -87,6 +87,7 @@ export function buildSlicesWithShortcutsAndMacros(): Slices {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
   };
 }
 

@@ -93,6 +93,7 @@ export function buildSlicesWithNothingOnAir(): Slices {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
     instanceBindings: [],
     overrides: [],
   };

@@ -47,6 +47,7 @@ function buildSlicesEachAListOfItsOwn(): Slices {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
     eventLog: [],
   };
 }

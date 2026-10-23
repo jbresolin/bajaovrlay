@@ -30,6 +30,14 @@ export {
   labelOfScheduleSlotStatus,
   type ScheduleSlotStatus,
 } from './scheduleSlotStatus.js';
+// The four slices together, and how a refusal names one record ("Equipe 42 (Baja UFPR)").
+export {
+  describePerson,
+  describeScheduleSlot,
+  describeSponsor,
+  describeTeam,
+  type EntityLibrary,
+} from './entityLibrary.js';
 // The two-letter state codes a team's `state` takes.
 export { type BrazilianStateCode, BrazilianStateCodeSchema } from './brazilianStates.js';
 // The three commands: upsert one record, delete one by its key, import many of one type.

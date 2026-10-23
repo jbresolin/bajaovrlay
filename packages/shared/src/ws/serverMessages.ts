@@ -11,6 +11,7 @@ import { SponsorsSchema } from '../entities/sponsor.js';
 import { TeamsSchema } from '../entities/team.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
+import { MediaSchema } from '../media/mediaRecord.js';
 import { OverridesSchema } from '../overrides/override.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
@@ -156,6 +157,12 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('scheduleSlots'),
     slice: ScheduleSlotsSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('media'),
+    slice: MediaSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({

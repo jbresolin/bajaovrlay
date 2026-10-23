@@ -272,5 +272,6 @@ export function buildSlicesWithDataSources(parts: {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
   };
 }

@@ -86,6 +86,14 @@ export const ptBREntities = {
     endBeforeStart: 'Fim: deve ser depois do início.',
   },
 
+  /** How a refusal or a list of uses names one record. */
+  recordDescriptions: {
+    team: (carNumber: number, teamName: string) => `Equipe ${String(carNumber)} (${teamName})`,
+    person: (name: string, role: string) => `${name} (${role})`,
+    sponsor: (name: string) => `Patrocinador ${name}`,
+    scheduleSlot: (sessionName: string) => `Programação: ${sessionName}`,
+  },
+
   /** Why a slice or an import was refused: a key that appears twice. */
   sliceProblems: {
     carListedTwice: (carNumber: number) => `O carro ${String(carNumber)} aparece duas vezes.`,

@@ -28,6 +28,7 @@ export type SlicesChangedByCommands = Pick<
   | 'people'
   | 'sponsors'
   | 'scheduleSlots'
+  | 'media'
 >;
 
 /**

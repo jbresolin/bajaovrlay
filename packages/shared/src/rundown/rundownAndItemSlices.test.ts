@@ -116,6 +116,7 @@ function buildRaceMorningStateWithOnePreparedItem() {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
     eventLog: [],
   };
 }

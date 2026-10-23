@@ -10,6 +10,7 @@ import { SponsorsSchema } from '../entities/sponsor.js';
 import { TeamsSchema } from '../entities/team.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
+import { MediaSchema } from '../media/mediaRecord.js';
 import { OverridesSchema } from '../overrides/override.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
@@ -40,6 +41,7 @@ export const SliceNameSchema = z.enum([
   'people',
   'sponsors',
   'scheduleSlots',
+  'media',
   'eventLog',
 ]);
 
@@ -107,6 +109,12 @@ export const SlicesSchema = z.object({
   people: PeopleSchema,
   sponsors: SponsorsSchema,
   scheduleSlots: ScheduleSlotsSchema,
+  /**
+   * The images of the media store (BAJAOVRLAY-19): one record per file under
+   * DATA_DIR/media, named by its SHA-256. Saved; screens never receive it (a graphic gets
+   * the image's URL already resolved).
+   */
+  media: MediaSchema,
   /** The newest entries of the event log only; the database keeps every entry. */
   eventLog: z.array(EventLogEntrySchema),
 });

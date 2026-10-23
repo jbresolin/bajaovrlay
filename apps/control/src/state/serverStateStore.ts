@@ -70,6 +70,7 @@ export function createServerStateStore(): ServerStateStore {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
     eventLog: [],
     connectionStatus: 'connecting',
     lastCommandError: null,
@@ -94,6 +95,7 @@ export function createServerStateStore(): ServerStateStore {
         people: slices.people,
         sponsors: slices.sponsors,
         scheduleSlots: slices.scheduleSlots,
+        media: slices.media,
         eventLog: slices.eventLog,
       });
     },
@@ -153,6 +155,9 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'scheduleSlots':
           set({ scheduleSlots: message.slice });
+          break;
+        case 'media':
+          set({ media: message.slice });
           break;
         case 'eventLog':
           set({ eventLog: message.slice });

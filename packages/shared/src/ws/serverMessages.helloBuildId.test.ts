@@ -42,6 +42,7 @@ function buildEverySliceEmpty() {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
     eventLog: [],
   };
 }

@@ -119,6 +119,7 @@ export async function startFakeServerForPage(
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
     instanceBindings: [],
     overrides: [],
     eventLog: [],

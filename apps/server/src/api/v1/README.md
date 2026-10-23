@@ -10,6 +10,9 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   (`modules/dataSources/api.ts`), the latest good data of one source.
 - `POST /api/v1/data-sources/http-json/sample-request` — also declared there: "Buscar da
   fonte", one flex request fetched once (10 s timeout), no state change, no event-log row.
+- `POST /api/v1/media` — declared by the media module (`modules/media/api.ts`): one image
+  as multipart form data, checked by its bytes, recorded through the command path as
+  `sistema:midia`. The image itself is served outside /api/v1, at `/media/<mediaId>`.
 
 Each route is declared with `createRoute` from @hono/zod-openapi so it appears in the
 OpenAPI document; a route added with plain `app.get` would be missing from it.

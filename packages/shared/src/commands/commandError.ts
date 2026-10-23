@@ -94,6 +94,13 @@ export const CommandErrorCodeSchema = z.enum([
   'BINDING_NOT_RESOLVED',
   /** setOverride carried a value its canonical field cannot hold; the message names the field. */
   'INVALID_OVERRIDE_VALUE',
+  /**
+   * A record of the entity library names an image the media store does not hold; the
+   * message names the field ("Logo: …").
+   */
+  'MEDIA_NOT_FOUND',
+  /** deleteMedia named an image a record still uses; the message lists the uses. */
+  'MEDIA_IN_USE',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

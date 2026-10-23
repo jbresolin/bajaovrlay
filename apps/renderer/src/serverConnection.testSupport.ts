@@ -90,6 +90,7 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     people: [],
     sponsors: [],
     scheduleSlots: [],
+    media: [],
   };
 }
 
