@@ -10,6 +10,15 @@ export default mergeConfig(
     test: {
       name: 'control',
       environment: 'jsdom',
+      // Each test file runs in a VM context of its own inside a worker that is reused, so
+      // jsdom's code loads once per worker instead of once per file, and every file still
+      // starts with a fresh global scope (Vitest's own advice: "jsdom was created 196
+      // times"). On 2 cores this project went from 208 s to 93 s (BAJAOVRLAY-42).
+      pool: 'vmThreads',
+      // A VM context is never fully freed, so a worker grows with every file until it is
+      // replaced. 512 MB was as fast as 1 GB and halved the peak (1.1 GB against 1.5 GB;
+      // 3.2 GB with no limit), which leaves room on CI's 7 GB runner.
+      vmMemoryLimit: '512MB',
       include: ['src/**/*.test.{ts,tsx}'],
       setupFiles: ['./src/testSetup.ts'],
       // Every test starts with a real `fetch` again, even if the previous one stubbed it.
