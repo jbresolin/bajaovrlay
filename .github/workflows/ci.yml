@@ -217,14 +217,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      # scripts/checkJobResults.sh: red unless every result is "success" (tested by
+      # checkJobResults.test.ts).
       - name: Check that every job passed
         env:
           RESULTS_OF_THE_JOBS: ${{ join(needs.*.result, ' ') }}
-        run: |
-          echo "Results of the jobs: $RESULTS_OF_THE_JOBS"
-          for result in $RESULTS_OF_THE_JOBS; do
-            if [ "$result" != "success" ]; then
-              echo "A job ended as \"$result\", so CI did not pass."
-              exit 1
-            fi
-          done
+        run: bash scripts/checkJobResults.sh

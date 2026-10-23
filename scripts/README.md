@@ -28,3 +28,6 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
   it; `--quick` leaves out the browser tests. The steps are in `verifySteps.js` (tested by
   `verifySteps.test.ts`); `verifyMatchesCi.test.ts` reads `.github/workflows/ci.yml`
   through `ciWorkflowCommands.js` and fails when CI and the steps drift apart.
+- `checkJobResults.sh` (CI's "CI passed" job): fails unless every result in
+  RESULTS_OF_THE_JOBS is "success" (an empty list fails too), tested by
+  `checkJobResults.test.ts`.

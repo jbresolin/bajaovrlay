@@ -60,3 +60,22 @@ export function readRunCommandsOfWorkflow(workflowText) {
 function collapseSpaces(text) {
   return text.replace(/ +/g, ' ').trim();
 }
+
+/**
+ * Every `working-directory:` the workflow sets (a step's, or a job's under `defaults`), as
+ * written. A command run in another folder is not the command `pnpm verify` runs from the
+ * root, though it reads the same, so verifyMatchesCi.test.ts allows none.
+ * @param {string} workflowText
+ * @returns {string[]}
+ */
+export function findWorkingDirectoriesOfWorkflow(workflowText) {
+  /** @type {string[]} */
+  const workingDirectories = [];
+  for (const line of workflowText.split('\n')) {
+    const match = /^\s*(- )?working-directory: ?(.*)$/.exec(line);
+    if (match !== null) {
+      workingDirectories.push((match[2] ?? '').trim());
+    }
+  }
+  return workingDirectories;
+}
