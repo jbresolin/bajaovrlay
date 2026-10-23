@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * The OGraf manifest, race-clock.ograf.json (packages/graphics/race-clock)
  *
@@ -18,76 +19,54 @@
  *     property itself, that the reference time is typed as mm:ss (`unit: 'ms'`) and that
  *     the reference moment may be left to the server (`role: 'wallClock'`); no other
  *     field carries such a hint. The official schema accepts a `v_` field there too.
- *   - The play and stop durations in the manifest are the real animation lengths.
- *   - Every data field has a pt-BR title, and the manifest's data schema accepts and
- *     refuses exactly the same payloads as the graphic's own validation.
+ *   - The play and stop durations in the manifest are the theme's `--motion-in` and
+ *     `--motion-out`, read from the text of packages/theme/ardosia/tokens.css: the
+ *     timelines take their lengths from those tokens at run time, and the manifest,
+ *     which is static JSON, must promise a renderer the same numbers.
+ *   - Every data field has a pt-BR title.
  *   - The text field (key sessionName) is titled "Título" and its description says it is
- *     the text above the clock, with two examples.
+ *     the text above the clock, with two examples; the two optional fields say in their
+ *     descriptions what happens when they are left out or switched off.
  *
  * What these tests deliberately do not cover:
+ *   - That the data schema and the graphic's Zod validation accept and refuse the same
+ *     payloads; raceClockManifestDataAgreement.test.ts runs the same payloads through both.
  *   - That a real renderer can load the module named in "main"; the Playwright test
  *     e2e/raceClockLifecycle.e2e.ts loads it from dist/ the way a renderer does.
+ *   - The page: this file runs in plain Node (the pragma on line 1) since it draws
+ *     nothing and reads the token file from disk, which Vitest's page environment would
+ *     hand over as an empty stylesheet.
  */
-import { Ajv2020 } from 'ajv/dist/2020.js';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+
 import { describe, expect, it } from 'vitest';
 
-import gddBasicTypesSchema from '../ograf-schema/gdd/basic-types.json';
-import gddTypesSchema from '../ograf-schema/gdd/gdd-types.json';
-import gddObjectSchema from '../ograf-schema/gdd/object.json';
 import ografManifestSchema from '../ograf-schema/graphics/schema.json';
-import ografActionSchema from '../ograf-schema/lib/action.json';
-import ografBooleanConstraintSchema from '../ograf-schema/lib/constraints/boolean.json';
-import ografNumberConstraintSchema from '../ograf-schema/lib/constraints/number.json';
 import raceClockManifest from '../race-clock.ograf.json';
-import { playInDurationMs, stopOutDurationMs } from './raceClockAnimations.js';
-import { parseCompleteRaceClockData, type RaceClockData } from './raceClockModel.js';
+import { createOGrafSchemaValidator } from './ografSchemaValidator.testSupport.js';
 
 /**
- * Builds a JSON Schema validator for the 2020-12 draft the OGraf schemas declare, with
- * every OGraf schema registered under its published $id so no $ref goes to the network.
+ * The text of packages/theme/ardosia/tokens.css, found through the theme package's own
+ * exports (never by a path into another package's folder).
  */
-function createOGrafSchemaValidator() {
-  // These are OGraf annotations, not 2020-12 keywords: `example` (lib/action.json) and
-  // the GDD form hints a data schema may carry (gdd/object.json). Strict mode refuses
-  // unknown keywords, so it is told they are annotations that validate nothing.
-  // `v_baja` is BajaOvrLay's own vendor field on a data property. The official manifest
-  // schema allows any `v_` field there by pattern, but when the data schema is compiled
-  // on its own (the agreement tests below) strict mode knows no such pattern and would
-  // stop with `strict mode: unknown keyword: "v_baja"`.
-  const validator = new Ajv2020({ allErrors: true });
-  const annotationsThatValidateNothing = [
-    'example',
-    'gddType',
-    'gddOptions',
-    'hidden',
-    'order',
-    'v_baja',
-  ];
-  for (const annotation of annotationsThatValidateNothing) {
-    validator.addKeyword(annotation);
-  }
-  validator.addSchema([
-    gddBasicTypesSchema,
-    gddTypesSchema,
-    gddObjectSchema,
-    ografActionSchema,
-    ografBooleanConstraintSchema,
-    ografNumberConstraintSchema,
-  ]);
-  return validator;
+function readArdosiaTokensCssText(): string {
+  const resolveLikeNode = createRequire(import.meta.url);
+  return readFileSync(resolveLikeNode.resolve('@bajaovrlay/theme/ardosia/tokens.css'), 'utf8');
 }
 
-/** Builds the data the server sends when the enduro is under green flag, 1:05:00 in. */
-function createGreenFlagEnduroData(): RaceClockData {
-  return {
-    sessionName: 'Enduro de Resistência',
-    state: 'green',
-    clockMode: 'elapsed',
-    referenceTimeMs: 3_900_000,
-    referenceWallClockMs: Date.parse('2026-05-16T14:30:00.000Z'),
-    running: true,
-    lapsCompletedByLeader: 12,
-  };
+/**
+ * Reads a duration token (`--motion-in: 400ms;`) from the text of tokens.css, in
+ * milliseconds. Throws when the token is not there: a manifest checked against a
+ * missing token would pass for the wrong reason.
+ */
+function readDurationTokenInMilliseconds(tokenName: string): number {
+  const tokensCssText = readArdosiaTokensCssText();
+  const tokenDeclaration = new RegExp(`${tokenName}:\\s*(\\d+)ms;`).exec(tokensCssText);
+  if (tokenDeclaration === null) {
+    throw new Error(`${tokenName} is not declared in packages/theme/ardosia/tokens.css`);
+  }
+  return Number(tokenDeclaration[1]);
 }
 
 describe('race-clock.ograf.json against the OGraf v1 manifest schema', () => {
@@ -186,16 +165,20 @@ describe('race-clock.ograf.json settings', () => {
     });
   });
 
-  it('declares the real play and stop animation lengths', () => {
-    // Arrange: the animation lengths come from raceClockAnimations.ts, which builds them.
+  it('declares the play and stop lengths the theme sets in --motion-in and --motion-out', () => {
+    // Arrange: the two durations as packages/theme/ardosia/tokens.css writes them. The
+    // timelines read the same tokens from the page at run time (raceClockAnimations.ts),
+    // so the manifest tells the truth only while it matches the file.
+    const motionInMs = readDurationTokenInMilliseconds('--motion-in');
+    const motionOutMs = readDurationTokenInMilliseconds('--motion-out');
 
     // Act: read what the manifest promises a renderer.
     const declaredDurations = raceClockManifest.actionDurations;
 
-    // Assert: the manifest says exactly what the animations really take.
-    expect(declaredDurations, 'the manifest durations must be the real animation lengths').toEqual([
-      { type: 'playAction', duration: playInDurationMs },
-      { type: 'stopAction', duration: stopOutDurationMs },
+    // Assert: the manifest says exactly what the theme's tokens say.
+    expect(declaredDurations, 'the manifest durations must be the theme’s motion tokens').toEqual([
+      { type: 'playAction', duration: motionInMs },
+      { type: 'stopAction', duration: motionOutMs },
     ]);
   });
 
@@ -216,7 +199,8 @@ describe('race-clock.ograf.json settings', () => {
       referenceTimeMs: 'Tempo de referência',
       referenceWallClockMs: 'Horário da referência (ms desde 1970)',
       running: 'Relógio correndo',
-      lapsCompletedByLeader: 'Voltas completadas pelo líder',
+      lapsCompletedByLeader: 'Voltas do líder',
+      showFlagBand: 'Mostrar faixa da bandeira',
     });
   });
 
@@ -235,103 +219,50 @@ describe('race-clock.ograf.json settings', () => {
       description: 'Texto acima do relógio, ex.: Enduro de Resistência, Classificação',
     });
   });
-});
 
-const dataAgreementScenarios = [
-  // The everyday payload must pass both checks.
-  { name: 'both accept complete enduro data', data: createGreenFlagEnduroData(), isValid: true },
-  // The one optional field really is optional in both.
-  {
-    name: 'both accept data without the leader lap count',
-    data: { ...createGreenFlagEnduroData(), lapsCompletedByLeader: undefined },
-    isValid: true,
-  },
-  // One row per flag state the graphic draws, so a value dropped or misspelled in the
-  // manifest's enum (or in Zod) fails here.
-  // Before the start: the state a session is created in.
-  {
-    name: 'both accept the pre-start state',
-    data: { ...createGreenFlagEnduroData(), state: 'pre' },
-    isValid: true,
-  },
-  // Racing: the most common state; listed again here so all six sit together.
-  {
-    name: 'both accept the green flag',
-    data: { ...createGreenFlagEnduroData(), state: 'green' },
-    isValid: true,
-  },
-  // Caution: thrown on track incidents.
-  {
-    name: 'both accept the yellow flag',
-    data: { ...createGreenFlagEnduroData(), state: 'yellow' },
-    isValid: true,
-  },
-  // Session stopped: the clock is usually held.
-  {
-    name: 'both accept the red flag',
-    data: { ...createGreenFlagEnduroData(), state: 'red' },
-    isValid: true,
-  },
-  // The leader has crossed the line.
-  {
-    name: 'both accept the checkered flag',
-    data: { ...createGreenFlagEnduroData(), state: 'checkered' },
-    isValid: true,
-  },
-  // After the session: results are final.
-  {
-    name: 'both accept the finished state',
-    data: { ...createGreenFlagEnduroData(), state: 'finished' },
-    isValid: true,
-  },
-  // A state outside the six must fail both, or the form would offer a value the graphic refuses.
-  {
-    name: 'both refuse an unknown flag state',
-    data: { ...createGreenFlagEnduroData(), state: 'blue' },
-    isValid: false,
-  },
-  // A typo'd field name must fail both.
-  {
-    name: 'both refuse an unknown field',
-    data: { ...createGreenFlagEnduroData(), laps: 12 },
-    isValid: false,
-  },
-  // Milliseconds are whole numbers in both.
-  {
-    name: 'both refuse a fractional clock reading',
-    data: { ...createGreenFlagEnduroData(), referenceTimeMs: 1.5 },
-    isValid: false,
-  },
-  // A lap count below zero is meaningless in both.
-  {
-    name: 'both refuse a negative lap count',
-    data: { ...createGreenFlagEnduroData(), lapsCompletedByLeader: -1 },
-    isValid: false,
-  },
-  // A missing required field fails both.
-  {
-    name: 'both refuse data without the running flag',
-    data: { ...createGreenFlagEnduroData(), running: undefined },
-    isValid: false,
-  },
-];
+  it('describes the two optional fields: the leader’s laps and the flag band switch', () => {
+    // Arrange: the two fields an operator may leave out. Neither is in "required", so
+    // the form offers "limpar" on them and sends nothing for a cleared one.
+    const lapsField = raceClockManifest.schema.properties.lapsCompletedByLeader;
+    const flagBandField = raceClockManifest.schema.properties.showFlagBand;
 
-describe('the manifest data schema and the graphic validation agree', () => {
-  it.each(dataAgreementScenarios)('$name', ({ data, isValid }) => {
-    // Arrange: the manifest's data schema compiled into a validator; JSON drops
-    // undefined fields, exactly as they would be dropped on the wire.
-    const validator = createOGrafSchemaValidator();
-    const validateDataWithManifestSchema = validator.compile(raceClockManifest.schema);
-    const dataAsSentOnTheWire: unknown = JSON.parse(JSON.stringify(data));
+    // Act: read what the form shows for each, and whether the manifest requires them.
+    const optionalFieldsAsShown = {
+      laps: { type: lapsField.type, title: lapsField.title, description: lapsField.description },
+      flagBand: {
+        type: flagBandField.type,
+        title: flagBandField.title,
+        description: flagBandField.description,
+        default: flagBandField.default,
+      },
+      requiredFields: raceClockManifest.schema.required,
+    };
 
-    // Act: check the same payload with both.
-    const isValidForManifest = validateDataWithManifestSchema(dataAsSentOnTheWire);
-    const isValidForGraphic = parseCompleteRaceClockData(dataAsSentOnTheWire).isValid;
-
-    // Assert: both give the expected answer.
-    expect(isValidForManifest, 'the manifest data schema must give the expected answer').toBe(
-      isValid,
-    );
-    expect(isValidForGraphic, 'the graphic validation must give the expected answer').toBe(isValid);
+    // Assert: the laps are an optional integer whose absence hides the count; the band
+    // switch is a boolean, on by default, whose description says the card gets lower.
+    expect(
+      optionalFieldsAsShown,
+      'both fields must be optional and say what leaving them out does',
+    ).toEqual({
+      laps: {
+        type: 'integer',
+        title: 'Voltas do líder',
+        description: 'Opcional; ausente, a contagem de voltas não aparece.',
+      },
+      flagBand: {
+        type: 'boolean',
+        title: 'Mostrar faixa da bandeira',
+        description: 'Desligada, o cartão fica sem a faixa e 40 px mais baixo.',
+        default: true,
+      },
+      requiredFields: [
+        'sessionName',
+        'state',
+        'clockMode',
+        'referenceTimeMs',
+        'referenceWallClockMs',
+        'running',
+      ],
+    });
   });
 });

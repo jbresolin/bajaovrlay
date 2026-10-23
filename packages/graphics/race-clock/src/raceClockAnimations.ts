@@ -1,20 +1,18 @@
 /**
- * The race clock's GSAP timelines (in, out, flag change) and their lengths. The play
- * and stop lengths are also promised to renderers in race-clock.ograf.json
- * ("actionDurations"); raceClockAnimations.test.ts and raceClockManifest.test.ts keep
- * the code and the manifest in agreement, so change both together.
+ * The race clock's GSAP timelines: in, out, flag change and the band switched on or
+ * off on air. Every duration, offset and ease comes from the theme's motion tokens
+ * (`--motion-*`, `--ease-*` in packages/theme/ardosia/tokens.css), read from the card's
+ * computed style when a timeline is built, so motion follows the theme like colours
+ * do. The manifest's static "actionDurations" promise a renderer the same `--motion-in`
+ * and `--motion-out`; raceClockManifest.test.ts keeps the JSON and the token file in
+ * agreement.
+ *
+ * On a page without the theme every token reads as 0 and the ease as linear (the
+ * theme package's rule), so every timeline still ends; nothing on air ever waits on a
+ * token that is not there.
  */
+import { gsapEaseOfToken, readMotionTokens } from '@bajaovrlay/theme/motion';
 import { gsap } from 'gsap';
-
-const panelSlideInMs = 400;
-const flagBandOpenMs = 200;
-
-/** How long playAction takes: the panel slides in, then the flag band opens. */
-export const playInDurationMs = panelSlideInMs + flagBandOpenMs;
-/** How long stopAction takes: the panel slides out and fades. */
-export const stopOutDurationMs = 400;
-/** How long a flag change takes during updateAction: the new colour wipes in. */
-export const flagChangeDurationMs = 400;
 
 /** The three elements the animations move. */
 export type RaceClockAnimatedElements = {
@@ -26,64 +24,109 @@ export type RaceClockAnimatedElements = {
 /** A paused GSAP timeline built by this module, played with `playTimelineToTheEnd`. */
 export type RaceClockTimeline = ReturnType<typeof gsap.timeline>;
 
-const panelSlideDistancePx = -48;
+/** What the band toggle needs: the card's heights before and after, and the direction. */
+export type FlagBandToggle = {
+  /** The card's height as drawn before the switch, in pixels. */
+  heightBeforePx: number;
+  /** The card's height the styles give it after the switch, in pixels. */
+  heightAfterPx: number;
+  /** True when the band comes on (the card grows), false when it goes (the card shrinks). */
+  isShowing: boolean;
+};
 
-// The incoming flag layer is revealed left to right by its clip; GSAP interpolates the
-// percentages, so the wipe works for plain colours and the checkered pattern alike.
-const flagLayerHiddenClip = 'inset(0% 100% 0% 0%)';
-const flagLayerRevealedClip = 'inset(0% 0% 0% 0%)';
-
-/** Builds the paused play-in timeline: panel slides in and fades up, then the band opens. */
+/** Builds the paused play-in timeline: the whole card rises its offset and fades up. */
 export function buildPlayInTimeline(elements: RaceClockAnimatedElements): RaceClockTimeline {
+  const motion = readMotionTokens(elements.panel);
   const timeline = gsap.timeline({ paused: true });
   timeline.fromTo(
     elements.panel,
-    { opacity: 0, x: panelSlideDistancePx },
-    { opacity: 1, x: 0, duration: panelSlideInMs / 1000, ease: 'power3.out' },
-  );
-  timeline.fromTo(
-    elements.flagBand,
-    { scaleY: 0 },
-    { scaleY: 1, duration: flagBandOpenMs / 1000, ease: 'power2.out' },
+    { opacity: 0, y: motion.inOffsetPx },
+    { opacity: 1, y: 0, duration: motion.inMs / 1000, ease: gsapEaseOfToken(motion.easeOut) },
   );
   return timeline;
 }
 
-/** Builds the paused stop-out timeline: the panel slides back out and fades away. */
+/** Builds the paused stop-out timeline: the card lifts its offset and fades away. */
 export function buildStopOutTimeline(elements: RaceClockAnimatedElements): RaceClockTimeline {
+  const motion = readMotionTokens(elements.panel);
   const timeline = gsap.timeline({ paused: true });
   timeline.to(elements.panel, {
     opacity: 0,
-    x: panelSlideDistancePx,
-    duration: stopOutDurationMs / 1000,
-    ease: 'power2.in',
+    y: -motion.inOffsetPx,
+    duration: motion.outMs / 1000,
+    ease: gsapEaseOfToken(motion.easeIn),
   });
   return timeline;
 }
 
-/** Builds the paused flag-change timeline: the incoming flag layer wipes in from the left. */
+/**
+ * Builds the paused flag-change timeline: the incoming layer, already dressed in the
+ * new flag, fades in over the current one. Nothing moves: a flag change must read as
+ * a state, not as an animation (the design's motion.md).
+ */
 export function buildFlagChangeTimeline(elements: RaceClockAnimatedElements): RaceClockTimeline {
+  const motion = readMotionTokens(elements.panel);
   const timeline = gsap.timeline({ paused: true });
   timeline.fromTo(
     elements.incomingFlagLayer,
-    { clipPath: flagLayerHiddenClip },
-    {
-      clipPath: flagLayerRevealedClip,
-      duration: flagChangeDurationMs / 1000,
-      ease: 'power2.inOut',
-    },
+    { opacity: 0 },
+    { opacity: 1, duration: motion.flagMs / 1000, ease: gsapEaseOfToken(motion.easeOut) },
   );
   return timeline;
 }
 
-/** Hides the incoming flag layer again, ready for the next flag change. */
-export function hideIncomingFlagLayer(elements: RaceClockAnimatedElements): void {
-  gsap.set(elements.incomingFlagLayer, { clipPath: flagLayerHiddenClip });
+/**
+ * Builds the paused band-toggle timeline: the card's height goes from the height it had
+ * to the one the styles now give it while the band fades in or out, both over the flag
+ * change's duration and with the flag change's ease, `--ease-out`, whichever way the
+ * band goes (the design's motion.md: a flag change settles, it never accelerates away
+ * like a piece leaving). The inline height and opacity are cleared at the end
+ * (`clearProps`), so the styles own them again once the switch has settled.
+ */
+export function buildFlagBandToggleTimeline(
+  elements: RaceClockAnimatedElements,
+  toggle: FlagBandToggle,
+): RaceClockTimeline {
+  const motion = readMotionTokens(elements.panel);
+  const durationInSeconds = motion.flagMs / 1000;
+  const ease = gsapEaseOfToken(motion.easeOut);
+  const timeline = gsap.timeline({ paused: true });
+  timeline.fromTo(
+    elements.panel,
+    { height: toggle.heightBeforePx },
+    { height: toggle.heightAfterPx, duration: durationInSeconds, ease, clearProps: 'height' },
+  );
+  // autoAlpha sets visibility along with opacity, so a band fading out is also hidden
+  // from the page once invisible, and a band fading in is visible from its first frame.
+  timeline.fromTo(
+    elements.flagBand,
+    { autoAlpha: toggle.isShowing ? 0 : 1 },
+    {
+      autoAlpha: toggle.isShowing ? 1 : 0,
+      duration: durationInSeconds,
+      ease,
+      clearProps: 'opacity,visibility',
+    },
+    0,
+  );
+  return timeline;
 }
 
-/** Puts the panel in its off-air look (invisible, slid out) without animating. */
+/** Clears whatever inline height, opacity or visibility a band toggle left behind. */
+export function clearFlagBandToggleLeftovers(elements: RaceClockAnimatedElements): void {
+  gsap.set(elements.panel, { clearProps: 'height' });
+  gsap.set(elements.flagBand, { clearProps: 'opacity,visibility' });
+}
+
+/** Makes the incoming flag layer invisible again, ready for the next flag change. */
+export function hideIncomingFlagLayer(elements: RaceClockAnimatedElements): void {
+  gsap.set(elements.incomingFlagLayer, { opacity: 0 });
+}
+
+/** Puts the card in its off-air look (invisible, below its place) without animating. */
 export function placePanelOffAir(elements: RaceClockAnimatedElements): void {
-  gsap.set(elements.panel, { opacity: 0, x: panelSlideDistancePx });
+  const motion = readMotionTokens(elements.panel);
+  gsap.set(elements.panel, { opacity: 0, y: motion.inOffsetPx });
 }
 
 /**

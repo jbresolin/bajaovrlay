@@ -11,6 +11,7 @@
       "lastLapMs": 278293,
       "bestLapMs": 278291,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -24,6 +25,7 @@
       "gapToLeaderMs": 19087,
       "intervalMs": 19087,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -37,6 +39,7 @@
       "gapToLeaderLaps": 1,
       "intervalMs": 41372,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -50,6 +53,7 @@
       "gapToLeaderLaps": 1,
       "intervalMs": 6,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -63,6 +67,7 @@
       "gapToLeaderLaps": 1,
       "intervalMs": 8388,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -76,6 +81,7 @@
       "gapToLeaderLaps": 1,
       "intervalMs": 22154,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -89,6 +95,7 @@
       "gapToLeaderLaps": 1,
       "intervalMs": 25818,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -102,6 +109,7 @@
       "gapToLeaderLaps": 1,
       "intervalMs": 16480,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -115,6 +123,7 @@
       "gapToLeaderLaps": 1,
       "intervalMs": 6657,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -128,6 +137,7 @@
       "gapToLeaderLaps": 2,
       "intervalMs": 63905,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -141,6 +151,7 @@
       "gapToLeaderLaps": 2,
       "intervalMs": 46181,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -154,6 +165,7 @@
       "gapToLeaderLaps": 2,
       "intervalMs": 41869,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -167,6 +179,7 @@
       "gapToLeaderLaps": 2,
       "intervalMs": 44403,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -180,6 +193,7 @@
       "gapToLeaderLaps": 2,
       "intervalMs": 14556,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -193,6 +207,7 @@
       "gapToLeaderLaps": 2,
       "intervalMs": 34437,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -206,6 +221,7 @@
       "gapToLeaderLaps": 3,
       "intervalMs": 88214,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -219,6 +235,7 @@
       "gapToLeaderLaps": 3,
       "intervalMs": 24656,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "inPit"
     },
     {
@@ -232,6 +249,7 @@
       "gapToLeaderLaps": 3,
       "intervalMs": 21147,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -245,6 +263,7 @@
       "gapToLeaderLaps": 3,
       "intervalMs": 41735,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -258,6 +277,7 @@
       "gapToLeaderLaps": 4,
       "intervalMs": 57430,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -271,6 +291,7 @@
       "gapToLeaderLaps": 4,
       "intervalMs": 40507,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "inPit"
     },
     {
@@ -284,6 +305,7 @@
       "gapToLeaderLaps": 4,
       "intervalMs": 39714,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -297,6 +319,7 @@
       "gapToLeaderLaps": 4,
       "intervalMs": 1760,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -310,6 +333,7 @@
       "gapToLeaderLaps": 4,
       "intervalMs": 109078,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -323,6 +347,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 102667,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -336,6 +361,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 62338,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -349,6 +375,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 2194,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -362,6 +389,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 10273,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -375,6 +403,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 40280,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -388,6 +417,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 14881,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -401,6 +431,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 4246,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -414,6 +445,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 3689,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -427,6 +459,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 45324,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "running"
     },
     {
@@ -440,6 +473,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 6756,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -453,6 +487,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 18493,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -466,6 +501,7 @@
       "gapToLeaderLaps": 5,
       "intervalMs": 83889,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -479,6 +515,7 @@
       "gapToLeaderLaps": 6,
       "intervalMs": 134018,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -492,6 +529,7 @@
       "gapToLeaderLaps": 6,
       "intervalMs": 228808,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -505,6 +543,7 @@
       "gapToLeaderLaps": 7,
       "intervalMs": 96552,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -518,6 +557,7 @@
       "gapToLeaderLaps": 7,
       "intervalMs": 26271,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -531,6 +571,7 @@
       "gapToLeaderLaps": 7,
       "intervalMs": 108824,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -544,6 +585,7 @@
       "gapToLeaderLaps": 7,
       "intervalMs": 14781,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -557,6 +599,7 @@
       "gapToLeaderLaps": 8,
       "intervalMs": 151290,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -570,6 +613,7 @@
       "gapToLeaderLaps": 8,
       "intervalMs": 185609,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -583,6 +627,7 @@
       "gapToLeaderLaps": 8,
       "intervalMs": 68761,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -596,6 +641,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 77843,
       "pitStops": 1,
+      "fuelStops": 1,
       "status": "running"
     },
     {
@@ -609,6 +655,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 49039,
       "pitStops": 1,
+      "fuelStops": 1,
       "status": "running"
     },
     {
@@ -622,6 +669,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 68384,
       "pitStops": 3,
+      "fuelStops": 3,
       "status": "inPit"
     },
     {
@@ -635,6 +683,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 80426,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "stopped"
     },
     {
@@ -648,6 +697,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 20790,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -661,6 +711,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 11712,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -674,6 +725,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 52390,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -687,6 +739,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 87019,
       "pitStops": 1,
+      "fuelStops": 1,
       "status": "running"
     },
     {
@@ -700,6 +753,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 1026,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -713,6 +767,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 33419,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -726,6 +781,7 @@
       "gapToLeaderLaps": 9,
       "intervalMs": 7097,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -739,6 +795,7 @@
       "gapToLeaderLaps": 10,
       "intervalMs": 119306,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -752,6 +809,7 @@
       "gapToLeaderLaps": 10,
       "intervalMs": 67025,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -765,6 +823,7 @@
       "gapToLeaderLaps": 10,
       "intervalMs": 115955,
       "pitStops": 2,
+      "fuelStops": 2,
       "status": "running"
     },
     {
@@ -778,6 +837,7 @@
       "gapToLeaderLaps": 22,
       "intervalMs": 412775,
       "pitStops": 1,
+      "fuelStops": 1,
       "status": "retired"
     }
   ]

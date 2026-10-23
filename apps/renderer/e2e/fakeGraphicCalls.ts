@@ -9,6 +9,8 @@ export type FakeGraphicCall = {
   action: 'load' | 'playAction' | 'updateAction' | 'stopAction' | 'customAction' | 'dispose';
   moment: 'called' | 'finished';
   params: Record<string, unknown>;
+  /** On a `load` record only: the theme token `--panel-base` on :root when load was called. */
+  themeTokenAtLoad?: string;
 };
 
 /** Reads every record the fake graphics on the page have written so far, oldest first. */
@@ -48,6 +50,18 @@ export async function readParamsOfCalls(
     .filter((call) => call.instanceId === instanceId)
     .filter((call) => call.action === action && call.moment === 'called')
     .map((call) => call.params);
+}
+
+/**
+ * Reads, for each load of one instance in call order, the theme token the fake graphic
+ * saw on :root at the moment load was called; an empty string means no theme was there.
+ */
+export async function readThemeTokenAtEachLoad(page: Page, instanceId: string): Promise<string[]> {
+  const calls = await readFakeGraphicCalls(page);
+  return calls
+    .filter((call) => call.instanceId === instanceId)
+    .filter((call) => call.action === 'load' && call.moment === 'called')
+    .map((call) => call.themeTokenAtLoad ?? '');
 }
 
 /** Makes every call of the fake graphic take this long, standing in for an animation. */

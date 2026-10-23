@@ -17,7 +17,6 @@ import type { PrefilledOpening } from './ItemEditorTargetProvider';
 import { ItemGraphicFieldsForm, type ItemGraphicFieldsFormHandle } from './ItemGraphicFieldsForm';
 import { ItemHomeSelect } from './ItemHomeSelect';
 import { findInstanceOfItemOnProgram } from './itemInstanceOnAir';
-import { useFirstGraphicForNewItemOnceKnown } from './useFirstGraphicForNewItemOnceKnown';
 import { useItemEditorSaves } from './useItemEditorSaves';
 
 /** What the rundown gives the panel. */
@@ -102,17 +101,20 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   const [hasCheckedTheFormsOnce, setHasCheckedTheFormsOnce] = useState(false);
   const whenFieldsAreChecked = hasCheckedTheFormsOnce ? 'onChange' : 'onSubmit';
 
+  // A new item without a prefill opens with no graphic chosen: "Gráfico" shows "Escolha
+  // um gráfico…" until the operator picks one. The server's list is never consulted for
+  // a default, because its order is the order of the package folders (itemEditorForm.ts).
   const itemForm = useForm<ItemEditorFormValues>({
     defaultValues: buildItemEditorFormValuesAtOpening({
       storedItem: itemAsItWasWhenOpened,
       prefill,
-      firstGraphic: graphics[0],
     }),
     resolver: resolveItemEditorForm,
     mode: whenFieldsAreChecked,
   });
   const chosenGraphicId = useWatch({ control: itemForm.control, name: 'graphicId' });
   const chosenGraphic = graphics.find((graphic) => graphic.id === chosenGraphicId);
+  const isGraphicStillToBeChosen = chosenGraphicId === '';
 
   // The second form lives in ItemGraphicFieldsForm, drawn below once the page knows the
   // chosen graphic. This is how the panel reaches it at a press: the form puts its handle
@@ -120,10 +122,6 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // chosen yet, or a stored item whose graphic the server no longer has), and then the
   // item has no fields of a graphic to check or to send.
   const graphicFieldsFormHandleRef = useRef<ItemGraphicFieldsFormHandle | null>(null);
-
-  // A new item without a prefill starts on the first graphic, also when the list of
-  // graphics arrives after the panel is drawn (why both, in the hook).
-  useFirstGraphicForNewItemOnceKnown(itemForm, graphics, isEditingStoredItem);
 
   // `trigger` checks every field of one form, puts the messages under the wrong ones and
   // answers whether all passed. The item part goes first. Whatever its result, the
@@ -189,8 +187,9 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
                 {ptBR.itemEditor.graphicOfItemNotRegistered}
               </p>
             )}
-            {/* The key makes "another graphic" mean "a new form, from that graphic's
-                defaults": React throws the form of the first graphic away. */}
+            {/* Nothing of a graphic is drawn until one is chosen. The key makes "another
+                graphic" mean "a new form, from that graphic's defaults": React throws
+                the form of the graphic chosen before away. */}
             {chosenGraphic !== undefined && (
               <ItemGraphicFieldsForm
                 key={chosenGraphic.id}
@@ -209,6 +208,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
           <CardFooter className="flex flex-wrap items-center gap-3">
             <ItemEditorButtons
               isWaitingForTheServer={saves.isWaitingForTheServer}
+              isGraphicStillToBeChosen={isGraphicStillToBeChosen}
               isItemOnAir={isItemOnAir}
               commandTypesSentInThisOpening={saves.commandTypesSentInThisOpening}
               onSavePressed={() => saves.pressSaveButton('saveItem')}

@@ -13,7 +13,7 @@
  *   - The session list is fixed, label by label and type by type, with the whole clock
  *     ("Relógio completo", the clock group) before its four fields.
  *   - Positions offer the whole list, then one car chosen by its number, then the 1st to
- *     10th places, each with the same eleven fields and the same types.
+ *     10th places, each with the same twelve fields and the same types.
  *   - Standings offer the scope, the whole list and the 1st to 10th rows, labelled
  *     "1ª linha", not "1º colocado": tied teams share a rank. Brackets (a draft) offer
  *     only their rounds.
@@ -112,11 +112,11 @@ describe('listBindablePathsOfShape', () => {
   it('lists the whole positions list, then one car chosen by its number, field by field', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
-    // Act: ask for the positions paths and keep the first twelve.
+    // Act: ask for the positions paths and keep the first thirteen.
     const positionsPaths = listBindablePathsOfShape('positions');
-    const wholeListAndCarChosenByNumber = positionsPaths.slice(0, 12);
+    const wholeListAndCarChosenByNumber = positionsPaths.slice(0, 13);
 
-    // Assert: the whole list first (the tower), then the eleven fields of the car whose
+    // Assert: the whole list first (the tower), then the twelve fields of the car whose
     // number the binding names (a team card that follows car 42 wherever it runs).
     expect(
       wholeListAndCarChosenByNumber,
@@ -189,6 +189,12 @@ describe('listBindablePathsOfShape', () => {
         isCarChosenByNumber: true,
       },
       {
+        path: 'entryOfCar.fuelStops',
+        label: 'Posições › Carro escolhido pelo número › Abastecimentos',
+        valueType: 'integer',
+        isCarChosenByNumber: true,
+      },
+      {
         path: 'entryOfCar.status',
         label: 'Posições › Carro escolhido pelo número › Situação',
         valueType: 'text',
@@ -198,12 +204,12 @@ describe('listBindablePathsOfShape', () => {
   });
 
   it('lists the 1st place with the same fields and types as the car chosen by number', () => {
-    // Arrange: the eleven fields of the car chosen by number, the row above checks them.
+    // Arrange: the twelve fields of the car chosen by number, the test above checks them.
     const positionsPaths = listBindablePathsOfShape('positions');
-    const carChosenByNumberFields = positionsPaths.slice(1, 12);
+    const carChosenByNumberFields = positionsPaths.slice(1, 13);
 
-    // Act: keep the eleven paths of the 1st place, which follow the car chosen by number.
-    const firstPlaceFields = positionsPaths.slice(12, 23);
+    // Act: keep the twelve paths of the 1st place, which follow the car chosen by number.
+    const firstPlaceFields = positionsPaths.slice(13, 25);
 
     // Assert: same fields in the same order with the same types, only labelled by place.
     expect(
@@ -221,16 +227,22 @@ describe('listBindablePathsOfShape', () => {
       valueType: 'text',
       isCarChosenByNumber: false,
     });
+    expect(firstPlaceFields[10], 'the refuels of a place are offered as a whole number').toEqual({
+      path: 'entries.0.fuelStops',
+      label: 'Posições › 1º colocado › Abastecimentos',
+      valueType: 'integer',
+      isCarChosenByNumber: false,
+    });
   });
 
-  it('stops the positions at the 10th place, with eleven fields per place', () => {
+  it('stops the positions at the 10th place, with twelve fields per place', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
     // Act: ask for the positions paths.
     const positionsPaths = listBindablePathsOfShape('positions');
 
-    // Assert: the whole list, the car by number and 10 places, all of 11 fields.
-    expect(positionsPaths, 'positions must offer 1 + 11 + 10 × 11 paths').toHaveLength(122);
+    // Assert: the whole list, the car by number and 10 places, all of 12 fields.
+    expect(positionsPaths, 'positions must offer 1 + 12 + 10 × 12 paths').toHaveLength(133);
     expect(positionsPaths.at(-1), 'the last path must be the 10th place status').toEqual({
       path: 'entries.9.status',
       label: 'Posições › 10º colocado › Situação',

@@ -9,7 +9,9 @@
  * What a test can read: `window.__fakeGraphicCalls`, a list with two records per call,
  * `{ instanceId, action, moment: 'called', params }` when the renderer calls and
  * `{ ..., moment: 'finished' }` when the call resolves. `instanceId` is the element's
- * `data-instance-id`, which the renderer sets.
+ * `data-instance-id`, which the renderer sets. The two records of a `load` also carry
+ * `themeTokenAtLoad`: the value of the theme token `--panel-base` on :root at the moment
+ * load was called (empty when the theme was not on the page yet).
  *
  * What a test can set:
  *   - `window.__fakeGraphicDelayInMilliseconds`: how long every call takes (default 0),
@@ -30,26 +32,35 @@ function waitForTheConfiguredDelay() {
 }
 
 export default class FakeGraphic extends HTMLElement {
-  /** Writes one record of a call on the list the tests read. */
-  recordCall(action, moment, params) {
+  /**
+   * Writes one record of a call on the list the tests read. A load record also carries
+   * the theme token seen on :root at that moment (`themeTokenAtLoad`); other calls pass none.
+   */
+  recordCall(action, moment, params, themeTokenAtLoad) {
     window.__fakeGraphicCalls ??= [];
-    window.__fakeGraphicCalls.push({
-      instanceId: this.dataset.instanceId ?? null,
-      action,
-      moment,
-      params,
-    });
+    const record = { instanceId: this.dataset.instanceId ?? null, action, moment, params };
+    if (themeTokenAtLoad !== undefined) {
+      record.themeTokenAtLoad = themeTokenAtLoad;
+    }
+    window.__fakeGraphicCalls.push(record);
   }
 
   /** Records the call, waits the configured delay, records that it finished. */
-  async recordAndWait(action, params) {
-    this.recordCall(action, 'called', params);
+  async recordAndWait(action, params, themeTokenAtLoad) {
+    this.recordCall(action, 'called', params, themeTokenAtLoad);
     await waitForTheConfiguredDelay();
-    this.recordCall(action, 'finished', params);
+    this.recordCall(action, 'finished', params, themeTokenAtLoad);
   }
 
   async load(params) {
-    await this.recordAndWait('load', params);
+    // The renderer promises every graphic that the theme's tokens are on :root before
+    // load is called (apps/renderer/index.html links them before its script). One token
+    // is written down with the call, so e2e/themeOnRoot.e2e.ts can check the promise at
+    // the very moment it matters, not later.
+    const themeTokenAtLoad = getComputedStyle(document.documentElement)
+      .getPropertyValue('--panel-base')
+      .trim();
+    await this.recordAndWait('load', params, themeTokenAtLoad);
     const loadOutcome = params.data?.fakeGraphicLoadOutcome;
     if (loadOutcome === 'rejects') {
       throw new Error('O gráfico de teste foi instruído a falhar no load.');

@@ -1,10 +1,10 @@
 // Test support: what the data source test files read from the real server's state
 // (GET /api/v1/state) instead of sleeping, so a test waits exactly as long as the server
-// needs: one source by its label, the flag its last session sent, how many graphics are
-// on the outputs, how many polls failed in a row, and how many lines the open recording
-// holds. The page steps (clicks,
-// forms, tables) live in dataSourcesTestSteps.ts. Functions only; nothing here remembers
-// anything between calls or between tests.
+// needs: one source by its label, the flag and the positions its last poll sent, how many
+// graphics are on the outputs, what is on air on one layer (its data, and the instance
+// itself), how many polls failed in a row, and how many lines the open recording holds.
+// The page steps (clicks, forms, tables) live in dataSourcesTestSteps.ts. Functions only;
+// nothing here remembers anything between calls or between tests.
 import { expect } from '@playwright/test';
 
 import { realServerPort } from './emptyTheServerState';
@@ -24,17 +24,26 @@ type RecordingAsTheTestsReadIt = {
   snapshotCount: number;
 };
 
-/** The parts of an instance the tests read: where it is and the data it shows. */
+/** The parts of an instance the tests read: which one it is, where it is and the data it shows. */
 type InstanceAsTheTestsReadIt = {
+  id: string;
   layerId: string;
   target: string;
   resolvedData: Record<string, unknown>;
 };
 
-/** The parts of a source's last good data the tests read: its session's flag. */
+/** One car of the positions a source sent, as the tests read it: its number alone. */
+export type PositionEntryAsTheTestsReadIt = {
+  carNumber: number;
+};
+
+/** The parts of a source's last good data the tests read: its session's flag and its positions. */
 type DataSnapshotAsTheTestsReadIt = {
   sourceId: string;
-  shapes: { session?: { state: string } };
+  shapes: {
+    session?: { state: string };
+    positions?: { entries: PositionEntryAsTheTestsReadIt[] };
+  };
 };
 
 /** The parts of GET /api/v1/state the data source tests read. */
@@ -88,6 +97,38 @@ export async function readDataOnAirOfLayerFromTheRealServer(
     (instance) => instance.layerId === layerId && instance.target === 'program',
   );
   return instanceOnAir?.resolvedData;
+}
+
+/**
+ * Reads the instance the real server has on one layer's program output (what OBS draws),
+ * or undefined when nothing is there: its id, to tell an instance changed in place from
+ * one taken again, and the data it shows.
+ */
+export async function readInstanceOnAirOfLayerFromTheRealServer(
+  layerId: string,
+): Promise<{ id: string; resolvedData: Record<string, unknown> } | undefined> {
+  const state = await readStateFromTheRealServer();
+  const instanceOnAir = state.instances.find(
+    (instance) => instance.layerId === layerId && instance.target === 'program',
+  );
+  if (instanceOnAir === undefined) {
+    return undefined;
+  }
+  return { id: instanceOnAir.id, resolvedData: instanceOnAir.resolvedData };
+}
+
+/**
+ * Reads the positions a source last sent, in the order of the race (first place first),
+ * as the real server holds them; an empty list before its first good poll or for a
+ * source without positions. What the source says, before any refresh puts it on air.
+ */
+export async function readPositionsOfSourceFromTheRealServer(
+  sourceLabel: string,
+): Promise<PositionEntryAsTheTestsReadIt[]> {
+  const state = await readStateFromTheRealServer();
+  const source = state.dataSources.find((dataSource) => dataSource.label === sourceLabel);
+  const snapshot = state.dataSnapshots.find((candidate) => candidate.sourceId === source?.id);
+  return snapshot?.shapes.positions?.entries ?? [];
 }
 
 /**

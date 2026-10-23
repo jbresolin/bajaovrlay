@@ -16,9 +16,21 @@ import { createOperationsPerDelivery } from './operationsPerDelivery.js';
 import { logRendererEvent } from './rendererLog.js';
 import { decideRendererPageRole } from './rendererPageRole.js';
 import { connectToServer } from './serverConnection.js';
+import { isThemeOnRoot, themeTokenCheckedOnRoot, themeTokensAddress } from './themeOnRoot.js';
 
 /** Builds the renderer on the stage element and connects it to the server it came from. */
 function startRenderer(stage: HTMLElement): void {
+  // index.html links the theme's tokens in its head, before this script, so they are on
+  // :root before any graphic loads. A graphic has no fallback values, so if the link
+  // failed the graphics draw unstyled; that is logged here and the page goes on: OBS must
+  // keep drawing whatever it can, nothing on air is blanked by a missing stylesheet.
+  if (!isThemeOnRoot()) {
+    logRendererEvent('error', 'theme not loaded on :root', {
+      tokenChecked: themeTokenCheckedOnRoot,
+      themeAddress: themeTokensAddress,
+    });
+  }
+
   // The page is served by the server (or by the dev server that forwards to it), so the
   // WebSocket and the API live on the page's own host. `role=renderer` is how the server
   // tells the program output from every other page: only it may report what is on screen.

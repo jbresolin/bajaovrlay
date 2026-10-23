@@ -70,6 +70,7 @@ export const ptBRDataShapes = {
     gapToLeaderLaps: 'Diferença para o líder (voltas)',
     intervalMs: 'Intervalo para o carro à frente',
     pitStops: 'Paradas nos boxes',
+    fuelStops: 'Abastecimentos',
     status: 'Situação',
   },
 

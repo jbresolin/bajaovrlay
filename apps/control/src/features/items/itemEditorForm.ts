@@ -5,13 +5,7 @@
  * (The fields of the chosen graphic are generated from its manifest and keep their own
  * values and rules, features/schemaForm/.)
  */
-import {
-  defaultItemColor,
-  type Graphic,
-  type Item,
-  type ItemColor,
-  ItemColorSchema,
-} from '@bajaovrlay/shared';
+import { defaultItemColor, type Item, type ItemColor, ItemColorSchema } from '@bajaovrlay/shared';
 import { z } from 'zod';
 
 import { ptBR } from '@/i18n/ptBR';
@@ -32,9 +26,10 @@ export type ItemEditorFormValues = {
 };
 
 /**
- * The values the form opens with for a new item. The graphic and the layer are empty
- * here because they depend on what the server has registered; the panel chooses the
- * first graphic and its default layer as soon as it knows them.
+ * The values the form opens with for a new item. The graphic is empty on purpose: it is
+ * the operator's to choose, and the layer follows the graphic when it is chosen. A
+ * default taken from the server's list would be whichever graphic's package folder
+ * sorts first, which means nothing on air (decided in PR #20).
  */
 export const defaultItemEditorFormValues: ItemEditorFormValues = {
   graphicId: '',
@@ -44,24 +39,6 @@ export const defaultItemEditorFormValues: ItemEditorFormValues = {
   notes: '',
   autoOutAfterSeconds: '',
 };
-
-/**
- * The values the form opens with for a new item when the page already knows the
- * server's graphics: the first graphic, on its default layer. With no graphic known
- * yet (`undefined`) both stay empty and the panel fills them in when the list arrives.
- */
-export function buildItemEditorFormValuesForNewItem(
-  firstGraphic: Graphic | undefined,
-): ItemEditorFormValues {
-  if (firstGraphic === undefined) {
-    return defaultItemEditorFormValues;
-  }
-  return {
-    ...defaultItemEditorFormValues,
-    graphicId: firstGraphic.id,
-    layerId: firstGraphic.defaultLayerId,
-  };
-}
 
 /**
  * The values the form opens with for a new item opened with a prefill ("Salvar como
@@ -84,13 +61,11 @@ export type ItemEditorOpening = {
   storedItem: Item | null;
   /** What a new item was opened with ("Salvar como item"), or null. */
   prefill: ItemEditorPrefill | null;
-  /** The first graphic the page knows, or undefined while the server has sent none. */
-  firstGraphic: Graphic | undefined;
 };
 
 /**
  * The values the form opens with: what a stored item stores; for a new item, its
- * prefill's graphic and layer, or else the first graphic on its default layer.
+ * prefill's graphic and layer, or else nothing chosen (defaultItemEditorFormValues).
  */
 export function buildItemEditorFormValuesAtOpening(
   opening: ItemEditorOpening,
@@ -101,7 +76,7 @@ export function buildItemEditorFormValuesAtOpening(
   if (opening.prefill !== null) {
     return buildItemEditorFormValuesForPrefilledNewItem(opening.prefill);
   }
-  return buildItemEditorFormValuesForNewItem(opening.firstGraphic);
+  return defaultItemEditorFormValues;
 }
 
 /** One pt-BR message per field that has a problem; an empty object means "all good". */

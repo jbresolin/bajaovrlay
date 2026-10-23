@@ -11,8 +11,8 @@
  *
  * What these tests prove:
  *   - After a takeItem of the race clock item, the clock is drawn inside the clock layer,
- *     at its place on the 1920x1080 stage, showing the data of the take, and it looks
- *     like its baseline screenshot.
+ *     at its Ardósia place on the 1920x1080 stage (top-right, inside the title-safe
+ *     area), showing the data of the take, and it looks like its baseline screenshot.
  *   - After the page is reloaded (OBS refreshing its browser source) the clock is back
  *     without any new command, and its in-animation is skipped.
  *
@@ -146,11 +146,13 @@ test.describe('the race clock taken on the real server', () => {
       'race-clock-on-the-stage.png',
       { maxDiffPixelRatio: 0.01 },
     );
+    // Ardósia puts the clock top-right: 420 px wide, 96 px from the right edge of the
+    // 1920 px stage (so x = 1920 - 96 - 420) and on the title-safe top at 54 px.
     const panelPlaceOnTheStage = await clockPanel.boundingBox();
     expect(
       { x: panelPlaceOnTheStage?.x, y: panelPlaceOnTheStage?.y },
-      'the clock must sit at its designed place, 64 px from the left and 48 px from the top',
-    ).toEqual({ x: 64, y: 48 });
+      'the clock must sit at its designed place, 420 px wide at 96 px from the right and 54 px from the top',
+    ).toEqual({ x: 1404, y: 54 });
   });
 
   test('brings the clock back after a page reload, without the in-animation', async ({ page }) => {

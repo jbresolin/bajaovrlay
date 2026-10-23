@@ -108,6 +108,11 @@ export const ptBR = {
       // Where a new item goes: the rundown on screen or one of the quick-fire panels.
       home: 'Onde',
     },
+    // "Gráfico" of a new item until the operator chooses one. None is chosen for them:
+    // the order the server lists the graphics in (their package folders) means nothing.
+    graphicPlaceholder: 'Escolha um gráfico…',
+    // Beside the save buttons of a new item while they are off for want of a graphic.
+    saveNeedsAGraphic: 'Escolha um gráfico para salvar o item.',
     homeOptions: {
       rundown: (rundownName: string) => `Rundown: ${rundownName}`,
       quickFirePanel: (panelName: string) => `Painel de atalhos: ${panelName}`,

@@ -30,7 +30,8 @@ export type ItemEditorOnFakeServer = {
 /**
  * Draws the item editor on a connected page that knows the race clock (with its real
  * manifest) and the interview lower third, with nothing on air. `itemBeingEdited` null
- * draws the editor for a new item of the main session's rundown.
+ * draws the editor for a new item of the main session's rundown, with no graphic chosen
+ * yet (renderItemEditorPanelForNewRaceClockItem chooses the race clock as well).
  */
 export function renderItemEditorPanelOnFakeServer(
   itemBeingEdited: Item | null,
@@ -39,6 +40,31 @@ export function renderItemEditorPanelOnFakeServer(
     itemBeingEdited,
     buildSlicesWithTheRaceClockAndTheLowerThird(),
   );
+}
+
+/** The race clock, as the "Gráfico" dropdown of the editor names it (its manifest's name). */
+export const raceClockGraphicName = 'Relógio de prova';
+
+/**
+ * Chooses the graphic of a new item in the editor's "Gráfico" dropdown, by the name the
+ * operator reads there. A new item opens with no graphic chosen (never the first one the
+ * server lists), so every test that needs a graphic's fields names the graphic here, as
+ * the browser tests do (e2e/previewTestSteps.ts).
+ */
+export function chooseGraphicInTheEditor(graphicName: string): void {
+  fireEvent.keyDown(screen.getByRole('combobox', { name: 'Gráfico' }), { key: 'Enter' });
+  fireEvent.click(screen.getByRole('option', { name: graphicName }));
+}
+
+/**
+ * Draws the editor for a new item of the main session's rundown, as
+ * renderItemEditorPanelOnFakeServer does, and chooses the race clock by name, so the
+ * clock's fields are on screen at their manifest defaults.
+ */
+export function renderItemEditorPanelForNewRaceClockItem(): ItemEditorOnFakeServer {
+  const editorOnFakeServer = renderItemEditorPanelOnFakeServer(null);
+  chooseGraphicInTheEditor(raceClockGraphicName);
+  return editorOnFakeServer;
 }
 
 /**
@@ -139,6 +165,13 @@ export function renderItemEditorPanelForItemOnAirWithAnotherItemToOpen(
   return controlPage.fakeServer;
 }
 
+/** Lets every timer already due run, and React redraw what they changed. */
+async function letOneTurnOfTheTimerQueuePass(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 /**
  * Waits until the page has finished everything the server's last answer set off. For a
  * test that must prove something did NOT happen after an answer, when nothing on screen
@@ -147,9 +180,18 @@ export function renderItemEditorPanelForItemOnAirWithAnotherItemToOpen(
  * one turn of the timer queue is enough.
  */
 export async function waitForThePageToDealWithTheLastAnswer(): Promise<void> {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await letOneTurnOfTheTimerQueuePass();
+}
+
+/**
+ * Lets a dropdown that was just closed (a graphic chosen in "Gráfico") give the focus
+ * back to its button, which it does on a timer a moment after closing. A test that
+ * asserts where the focus went after a press must let that happen before the press, as
+ * it does for a real operator; otherwise the dropdown's late refocus would undo the
+ * press's and the test would fail for a reason that is not the editor's.
+ */
+export async function letTheClosedDropdownGiveFocusBack(): Promise<void> {
+  await letOneTurnOfTheTimerQueuePass();
 }
 
 /** The text of the stand-in button that opens the editor in the test below. */

@@ -4,17 +4,19 @@
  * What this module is for:
  *   At boot the store needs its slices. Layers and instances are the operator's: they
  *   are loaded from the database as they are, or, on the very first boot (an empty
- *   database), seeded with the five fixed layers (bug, ticker, clock, lower-third,
- *   fullscreen, bottom to top) and nothing on air. Graphics are not the operator's: they
+ *   database), seeded with the six fixed layers (bug, ticker, clock, tower, lower-third,
+ *   fullscreen, bottom to top) and nothing on air. A layer seeded since a database was
+ *   first written (the tower, BAJAOVRLAY-22) is added to it on the next boot, or no
+ *   graphic could ever be placed there. Graphics are not the operator's: they
  *   describe what is built under packages/graphics, so they are rebuilt from the built
  *   OGraf manifests on every boot and saved. A package that is not built, or whose
  *   manifest is broken, is logged and left out; it never stops the boot.
  *
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
- *   - An empty database is seeded with the five layers in ascending z-order, each with
- *     its pt-BR name, `out-then-in` swaps, and only the logo and clock persistent; the
- *     seed is saved, stamped with the store's clock rather than the machine's.
+ *   - An empty database is seeded with the six layers in ascending z-order, each with
+ *     its pt-BR name, `out-then-in` swaps, and only the logo, clock and tower persistent;
+ *     the seed is saved, stamped with the store's clock rather than the machine's.
  *   - A built race clock is registered with its manifest, under its folder name; an
  *     unbuilt one logs a warning, a broken one logs an error, and the boot carries on.
  *   - A second boot registers a race clock built since the first, and saves it, while
@@ -23,6 +25,8 @@
  *     stops the boot instead of running on it.
  *
  * What these tests deliberately do not cover:
+ *   - A database seeded before the tower layer existed gaining it on the next boot;
+ *     loadInitialSlicesNewSeededLayer.test.ts covers it.
  *   - Loading back slices changed by commands; storeRestart.test.ts covers it.
  *   - Which default layer and category a graphic gets (from its manifest, or fullscreen
  *     with a warning); loadInitialSlicesGraphicPlacement.test.ts covers it. The test
@@ -93,7 +97,7 @@ function createRaceClockOnProgramInstance(): Instance {
 }
 
 describe('loadInitialSlices on an empty database', () => {
-  it('seeds the five layers in ascending z-order and saves them, stamped with the store clock', () => {
+  it('seeds the six layers in ascending z-order and saves them, stamped with the store clock', () => {
     // Arrange: a brand-new database file.
     const { database } = openTemporaryDatabase();
 
@@ -103,10 +107,12 @@ describe('loadInitialSlices on an empty database', () => {
       graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     });
 
-    // Assert: the five layers, bottom to top, and the seed is in the slices table.
-    // Every layer swaps out-then-in (two graphics never overlap); only the logo and the
-    // clock are persistent, the two things meant to stay on screen all day.
-    expect(slices.layers, 'the seeded layers must be exactly these five').toEqual([
+    // Assert: the six layers, bottom to top, and the seed is in the slices table.
+    // Every layer swaps out-then-in (two graphics never overlap); only the logo, the
+    // clock and the tower are persistent, the things meant to stay on screen all day.
+    // The tower sits at 35, between the clock it stacks under on the same right-hand
+    // column and the lower third.
+    expect(slices.layers, 'the seeded layers must be exactly these six').toEqual([
       { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
       {
         id: 'ticker',
@@ -116,6 +122,7 @@ describe('loadInitialSlices on an empty database', () => {
         persistent: false,
       },
       { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
+      { id: 'tower', name: 'Torre', zIndex: 35, replacePolicy: 'out-then-in', persistent: true },
       {
         id: 'lower-third',
         name: 'Tarja',
@@ -135,7 +142,7 @@ describe('loadInitialSlices on an empty database', () => {
     expect(zIndexes, 'each layer must sit above the one before').toEqual(
       [...zIndexes].sort((lower, higher) => lower - higher),
     );
-    expect(new Set(zIndexes).size, 'no two layers may share a z-index').toBe(5);
+    expect(new Set(zIndexes).size, 'no two layers may share a z-index').toBe(6);
     expect(
       readAllSliceRows(database).map((row) => [row.name, row.updatedAt]),
       'the seed must be saved, stamped with the store clock, so the next boot loads it',
@@ -186,7 +193,7 @@ describe('loadInitialSlices on an empty database', () => {
 
     // Assert: no graphics, the layers are still seeded, and a warning names the package.
     expect(slices.graphics, 'no graphic can be registered without a build').toEqual([]);
-    expect(slices.layers.length, 'the layers are seeded anyway').toBe(5);
+    expect(slices.layers.length, 'the layers are seeded anyway').toBe(6);
     expect(readRecordedLines(), 'a warning must say the package is not built').toContainEqual(
       expect.objectContaining({
         level: 'warn',
@@ -246,7 +253,7 @@ describe('loadInitialSlices on a database that already has slices', () => {
     expect(storedGraphicsRow?.json, 'the refreshed graphics must be saved').toEqual([
       raceClockGraphic,
     ]);
-    expect(slicesOnSecondBoot.layers.length, 'the saved layers must load back').toBe(5);
+    expect(slicesOnSecondBoot.layers.length, 'the saved layers must load back').toBe(6);
   });
 
   it('keeps the stored instances when it refreshes the graphics', () => {

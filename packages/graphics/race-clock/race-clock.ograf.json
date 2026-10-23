@@ -17,8 +17,8 @@
     "updateRule": "carryClockForward"
   },
   "actionDurations": [
-    { "type": "playAction", "duration": 600 },
-    { "type": "stopAction", "duration": 400 }
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
   ],
   "schema": {
     "type": "object",
@@ -86,9 +86,15 @@
       },
       "lapsCompletedByLeader": {
         "type": "integer",
-        "title": "Voltas completadas pelo líder",
-        "description": "Opcional; quando ausente, a contagem de voltas não aparece.",
+        "title": "Voltas do líder",
+        "description": "Opcional; ausente, a contagem de voltas não aparece.",
         "minimum": 0
+      },
+      "showFlagBand": {
+        "type": "boolean",
+        "title": "Mostrar faixa da bandeira",
+        "description": "Desligada, o cartão fica sem a faixa e 40 px mais baixo.",
+        "default": true
       }
     },
     "required": [

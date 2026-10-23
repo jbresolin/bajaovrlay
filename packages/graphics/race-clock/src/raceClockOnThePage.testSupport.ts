@@ -1,7 +1,7 @@
 /**
  * Test support shared by the race clock's component tests: the element under test, its
- * data, and control over frames and time. Each test file still mocks displayFont.ts
- * itself, because vi.mock only takes effect from inside a test file.
+ * data, and control over frames and time. No theme token is placed on the page here, so
+ * every timeline lasts 0 ms and a test never waits on real motion.
  */
 import { onTestFinished, vi } from 'vitest';
 
@@ -49,6 +49,14 @@ export function loadRaceClockWithData(raceClock: RaceClockGraphic, data: unknown
     renderType: 'realtime',
     renderCharacteristics: { resolution: { width: 1920, height: 1080 } },
   });
+}
+
+/** Finds one part of the graphic by its test id inside the shadow root; undefined when absent. */
+export function findPartOfRaceClock(
+  raceClock: RaceClockGraphic,
+  testId: string,
+): HTMLElement | undefined {
+  return raceClock.shadowRoot?.querySelector<HTMLElement>(`[data-testid="${testId}"]`) ?? undefined;
 }
 
 /** Reads the text of one part of the graphic, found by its test id inside the shadow root. */

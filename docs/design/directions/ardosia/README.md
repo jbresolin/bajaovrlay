@@ -43,6 +43,11 @@ page assembly in `../../tools/slatePages.mjs` (markup in `slateTemplates.mjs`, s
 imports the structure sheet (`../../tools/slate-base.css`) and adds this direction's few
 rules; `tokens.css` is where the direction lives.
 
+**Source of truth.** Since BAJAOVRLAY-22 the product's copy of the tokens,
+`packages/theme/ardosia/tokens.css`, is the source of truth and the one the renderer serves;
+the `tokens.css` here is the design record and is read by no product code. The tokens removed
+and added when it was copied are listed in `packages/theme/README.md`.
+
 The flag band is optional: a session with no flag state (acceleration, the suspension test)
 takes the clock without it, 152 px tall instead of 192 (`race-clock--no-flag`), and the tower
 under it may start 40 px higher, which fits a 21st row. The checkered band and the strip's

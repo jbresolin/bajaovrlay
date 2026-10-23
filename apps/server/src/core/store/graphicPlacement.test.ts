@@ -26,7 +26,7 @@ import { describe, expect, it } from 'vitest';
 
 import { decideGraphicPlacementFromManifest } from './graphicPlacement.js';
 
-const idsOfTheSeededLayers = ['bug', 'ticker', 'clock', 'lower-third', 'fullscreen'];
+const idsOfTheSeededLayers = ['bug', 'ticker', 'clock', 'tower', 'lower-third', 'fullscreen'];
 
 const placementScenarios: Array<{
   name: string;
@@ -105,7 +105,7 @@ const placementScenarios: Array<{
 
 describe('decideGraphicPlacementFromManifest', () => {
   it.each(placementScenarios)('$name', ({ manifest, expectedDecision }) => {
-    // Arrange: the five seeded layers and the manifest of this scenario.
+    // Arrange: the six seeded layers and the manifest of this scenario.
 
     // Act: decide where the graphic goes.
     const decision = decideGraphicPlacementFromManifest(manifest, idsOfTheSeededLayers);

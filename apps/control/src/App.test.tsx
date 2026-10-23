@@ -199,9 +199,9 @@ describe('the three areas of the control page', () => {
     // Act: draw the page.
     renderControlPageWithTheRaceClockOnAir();
 
-    // Assert: the right area lists the five layers and has "Limpar tudo".
+    // Assert: the right area lists the six layers and has "Limpar tudo".
     const layersArea = within(screen.getByRole('region', { name: 'Camadas' }));
-    expect(layersArea.getAllByRole('listitem'), 'all five layers must be listed').toHaveLength(5);
+    expect(layersArea.getAllByRole('listitem'), 'all six layers must be listed').toHaveLength(6);
     expect(
       layersArea.getByRole('button', { name: 'Limpar tudo' }),
       'the clear all button must sit next to the layers',

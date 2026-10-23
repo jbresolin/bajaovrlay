@@ -8,6 +8,8 @@ Start reading at `index.ts` (the public surface), then `describeSchemaFormFromDa
   descriptions (`schemaFormDescription.ts`, `v_baja.role` included); `plainRecord.ts` reads safely.
 - `buildSchemaFormValues.ts` fills the form (`schemaFormValues.ts`); `fieldValueConversion.ts`
   turns a value between data and control (`minutesAndSeconds.ts`, `localDateAndTimeText.ts`).
+- `suggestedBindingsOfDataSchema.ts` reads a manifest's `v_baja.suggestedBinding` hints into the
+  "Fonte" a new item opens with, when exactly one enabled source produces the shape.
 - `checkSchemaFormValues.ts` checks the form with `zodSchemaFromDataSchema.ts` (pt-BR messages;
   the server stays the authority); `schemaFormResolver.ts` hands it to react-hook-form.
 - `instanceUpdateFromSchemaForm.ts`, `itemFieldsFromSchemaForm.ts`

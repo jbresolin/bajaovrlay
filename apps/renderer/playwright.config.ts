@@ -12,7 +12,7 @@ const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 const isRunningInCI = Boolean(process.env.CI);
 
 // Both web servers read these: the real server listens there, and the renderer's Vite dev
-// server forwards /ws, /api and /graphics there (see vite.config.ts). The ports, the
+// server forwards /ws, /api, /graphics and /theme there (see vite.config.ts). The ports, the
 // database and the data folder are the test run's own, so a `pnpm dev` left running and
 // its data are untouched.
 const realServerEnvironment = {

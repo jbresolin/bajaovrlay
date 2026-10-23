@@ -14,6 +14,7 @@ import { serveGraphicPackages } from './graphicPackages.js';
 import { createHealthRoute } from './healthRoute.js';
 import type { ServerAppEnvironment } from './httpContextVariables.js';
 import { logEachRequest } from './requestLogging.js';
+import { serveThemeFiles } from './themeFiles.js';
 
 /** Everything the server app needs; main.ts reads these from the environment. */
 export type ServerAppOptions = {
@@ -28,6 +29,8 @@ export type ServerAppOptions = {
   stateStore?: StateStore | undefined;
   /** Absolute path of packages/graphics, served at /graphics/<package>/ from each dist. */
   graphicPackagesFolder?: string | undefined;
+  /** Absolute path of packages/theme, served at /theme/ (its ardosia/, fonts/ and brand/ only). */
+  themeFolder?: string | undefined;
   /** How the flex sample route reads BAJAOVRLAY_SOURCE_ variables; process.env when left out. */
   readSourceEnvironmentVariable?: ReadEnvironmentVariable | undefined;
   /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the sample route; no list when left out. */
@@ -64,6 +67,9 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
   }
   if (options.graphicPackagesFolder !== undefined) {
     serveGraphicPackages(app, options.graphicPackagesFolder);
+  }
+  if (options.themeFolder !== undefined) {
+    serveThemeFiles(app, options.themeFolder);
   }
 
   if (options.rendererPageFolder !== undefined) {

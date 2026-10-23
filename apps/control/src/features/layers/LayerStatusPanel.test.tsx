@@ -48,13 +48,13 @@ const twoAndAHalfMinutesLater = new Date('2026-10-10T13:02:30.000Z');
 
 describe('the layer status panel', () => {
   it('lists one row per layer, from the bottom layer to the top one', () => {
-    // Arrange: a server with its five seeded layers and nothing on air.
+    // Arrange: a server with its six seeded layers and nothing on air.
     const slices = buildSlicesWithNothingOnAir();
 
     // Act: draw the panel.
     renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
 
-    // Assert: five rows, named after the layers, lowest z-index first.
+    // Assert: six rows, named after the layers, lowest z-index first.
     const layerNamesInRowOrder = screen
       .getAllByRole('listitem')
       .map((row) => row.getAttribute('aria-label'));
@@ -62,6 +62,7 @@ describe('the layer status panel', () => {
       'Logo',
       'Letreiro',
       'Relógio',
+      'Torre',
       'Tarja',
       'Tela cheia',
     ]);
@@ -83,6 +84,7 @@ describe('the layer status panel', () => {
       'Logo',
       'Letreiro',
       'Relógio',
+      'Torre',
       'Tarja',
       'Tela cheia',
     ]);
@@ -95,7 +97,7 @@ describe('the layer status panel', () => {
     // Act: draw the panel.
     renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
 
-    // Assert: each of the five rows says "vazia".
+    // Assert: each of the six rows says "vazia".
     const rows = screen.getAllByRole('listitem');
     for (const row of rows) {
       expect(
@@ -131,8 +133,8 @@ describe('the layer status panel', () => {
     expect(clockRow.queryByText('vazia'), 'a layer with a graphic is not "vazia"').toBeNull();
     expect(
       screen.getAllByText('vazia'),
-      'the four other layers must still say "vazia"',
-    ).toHaveLength(4);
+      'the five other layers must still say "vazia"',
+    ).toHaveLength(5);
   });
 
   it('keeps the "há ... min" text up to date as minutes pass', () => {
@@ -296,7 +298,7 @@ describe('the layer status panel', () => {
     ).getByRole('button', { name: 'Limpar' });
     focusAreaAroundDisabledButton(clearButtonOfTheClockRow);
 
-    // Assert: all five buttons are disabled, and the tooltip explains it in pt-BR.
+    // Assert: all six buttons are disabled, and the tooltip explains it in pt-BR.
     for (const clearButton of clearButtons) {
       expect(clearButton, 'no "Limpar" may be pressed without a connection').toBeDisabled();
     }

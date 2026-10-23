@@ -94,6 +94,8 @@ export default defineConfig({
       // (`pnpm build`), not the renderer's own dev server on port 5174.
       '/render': serverAddress,
       '/graphics': serverAddress,
+      // The framed renderer page links the theme (tokens and font) from /theme/ as well.
+      '/theme': serverAddress,
     },
   },
 });

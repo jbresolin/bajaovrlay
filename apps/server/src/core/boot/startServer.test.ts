@@ -8,6 +8,8 @@
  *
  * What these tests prove (with a real port and a real SQLite file):
  *   - A booted server answers GET /api/v1/state over real HTTP with the seeded layers.
+ *   - A booted server serves the theme folder it was given at /theme/, so the renderer
+ *     page it serves can link the tokens from the same port.
  *   - A booted server has the seeded rundown and a running auto-out scheduler: an item
  *     taken with a delay leaves the air by itself (in real time, with a 40 ms delay).
  *   - A booted server runs the data-source service: a source turned on is polled.
@@ -28,6 +30,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { writeBrokenMigrationsFolder } from '../db/temporaryDatabase.testSupport.js';
+import { standInTokensCss } from '../http/themeFolder.testSupport.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
 import {
@@ -52,12 +55,29 @@ describe('startServer', () => {
     const response = await fetch(`http://127.0.0.1:${runningServer.port}/api/v1/state`);
     const body = (await response.json()) as { layers: Array<{ id: string }> };
 
-    // Assert: 200 and the five seeded layers.
+    // Assert: 200 and the six seeded layers.
     expect(response.status, 'the booted server must answer 200 OK').toBe(200);
     expect(
       body.layers.map((layer) => layer.id),
       'the seeded layers must be served',
-    ).toEqual(['bug', 'ticker', 'clock', 'lower-third', 'fullscreen']);
+    ).toEqual(['bug', 'ticker', 'clock', 'tower', 'lower-third', 'fullscreen']);
+  });
+
+  it('serves the theme tokens it was booted with at /theme/ over real HTTP', async () => {
+    // Arrange: a server booted on a random port with the stand-in theme folder.
+    const runningServer = await startServer(buildBootOptions(committedMigrationsFolder));
+    onTestFinished(() => runningServer.close());
+
+    // Act: ask for the tokens over the network, as the renderer page's <link> does.
+    const response = await fetch(`http://127.0.0.1:${runningServer.port}/theme/ardosia/tokens.css`);
+    const body = await response.text();
+
+    // Assert: 200, never cached, and the tokens file of the folder the boot was given.
+    expect(response.status, 'the booted server must serve the theme tokens').toBe(200);
+    expect(response.headers.get('cache-control'), 'the tokens must not be cached').toBe('no-cache');
+    expect(body, 'the body must be the tokens file of the theme folder given at boot').toBe(
+      standInTokensCss,
+    );
   });
 
   it('takes an item with an auto-out delay off air by itself, and seeds the rundown', async () => {

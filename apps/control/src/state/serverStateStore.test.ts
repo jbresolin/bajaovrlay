@@ -66,8 +66,8 @@ describe('slices arriving from the server', () => {
     expect(state.instances, 'the old instance must be gone after the hello').toEqual([]);
     expect(
       state.layers.map((layer) => layer.name),
-      'the layers must be the five the server sent',
-    ).toEqual(['Logo', 'Letreiro', 'Relógio', 'Tarja', 'Tela cheia']);
+      'the layers must be the six the server sent',
+    ).toEqual(['Logo', 'Letreiro', 'Relógio', 'Torre', 'Tarja', 'Tela cheia']);
     expect(
       state.graphics.map((graphic) => graphic.id),
       'the graphics must be the ones the server sent',

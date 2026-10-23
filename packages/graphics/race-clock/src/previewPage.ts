@@ -1,9 +1,16 @@
 /**
  * Wires preview.html: registers the graphic as a renderer would, loads it with the data
  * from `?data=` (or the running enduro sample), plays it in, and adds buttons for play,
- * stop and each flag state. `data-preview-state` on <body> tells tests and people what
- * happened last: loading, busy, onAir, offAir or error.
+ * stop, each flag state and the band switch. `data-preview-state` on <body> tells tests
+ * and people what happened last: loading, busy, onAir, offAir or error.
+ *
+ * The theme's tokens and font are imported here from the theme package, so the preview
+ * looks like the air without a server; on air the renderer page links the same two files
+ * from /theme/ (packages/theme/README.md).
  */
+import '@bajaovrlay/theme/ardosia/tokens.css';
+import '@bajaovrlay/theme/fonts/fonts.css';
+
 import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 
 import type { OGrafReturnPayload } from './ografGraphicTypes.js';
@@ -83,6 +90,22 @@ async function startPreview(): Promise<void> {
       );
     });
   }
+  addPreviewButton(ptBR.preview.flagBandOnButton, () => {
+    const bandOnUpdate = { data: { showFlagBand: true } };
+    void runActionAndShowAnswer(
+      'updateAction',
+      () => raceClock.updateAction(bandOnUpdate),
+      'onAir',
+    );
+  });
+  addPreviewButton(ptBR.preview.flagBandOffButton, () => {
+    const bandOffUpdate = { data: { showFlagBand: false } };
+    void runActionAndShowAnswer(
+      'updateAction',
+      () => raceClock.updateAction(bandOffUpdate),
+      'onAir',
+    );
+  });
 
   // The same "now" the graphic counts with, so the sample reading and the clock drawn
   // from it share one clock. On this page no renderer records the server's time, so it

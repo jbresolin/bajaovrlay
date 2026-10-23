@@ -39,6 +39,11 @@ export const PositionEntrySchema = z.object({
   /** Time behind the car one place ahead, as the source measures it. */
   intervalMs: z.number().int().min(0).optional(),
   pitStops: z.number().int().min(0).optional(),
+  /**
+   * Refuels. The simulator counts every pit stop as one, so there it equals pitStops; a
+   * real scoring app may count them differently (a stop for a repair is not a refuel).
+   */
+  fuelStops: z.number().int().min(0).optional(),
   status: PositionStatusSchema,
 });
 

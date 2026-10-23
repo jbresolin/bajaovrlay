@@ -7,7 +7,8 @@ described here once and validated on both sides.
 Start reading at `src/index.ts`, which lists every export. One folder per concept, most
 with a README of their own: `health/`, `slices/` (the state the server owns), `commands/`
 (the only way state changes), `rundown/`, `quickFire/`, `macros/`, `preview/`, `ws/`,
-`clock/`, `build/` (a page reloading itself when the server's build changes),
+`clock/`, `raceTimeText/` (lap times and gaps written to the tenth, cut; a Zod-free entry
+like `clock/`), `build/` (a page reloading itself when the server's build changes),
 `dataShapes/` (the canonical shapes), `dataSources/` (polled sources, recordings),
 `transforms/` (the registry of named pure transforms a mapping or a binding applies),
 `flexMapping/` (how a flex source's JSON becomes the canonical shapes), `bindings/` (item

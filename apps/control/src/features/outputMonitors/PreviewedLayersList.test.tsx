@@ -63,7 +63,7 @@ const momentTheStartWasPreviewed = '2026-10-10T12:58:00.000Z';
 const momentTheBandWasPreviewed = '2026-10-10T12:59:00.000Z';
 
 /**
- * What the server sends for these tests: its five layers, the race clock and the lower
+ * What the server sends for these tests: its six layers, the race clock and the lower
  * third as graphics, the three items of the endurance race, and these instances.
  */
 function buildSlicesWithTheseInstances(instances: Instance[]): Slices {

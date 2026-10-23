@@ -198,7 +198,7 @@ describe('describeSchemaFormFromDataSchema, on the lower third fixture', () => {
 });
 
 describe('describeSchemaFormFromDataSchema, on the real race clock manifest', () => {
-  it('reads the six operator fields and the wall-clock reference', () => {
+  it('reads the seven operator fields and the wall-clock reference', () => {
     // Arrange: the manifest exactly as it is in packages/graphics.
     const dataSchema = raceClockManifest.schema;
 
@@ -209,8 +209,9 @@ describe('describeSchemaFormFromDataSchema, on the real race clock manifest', ()
       .filter((field) => field.offersTakeTime)
       .map((field) => field.key);
 
-    // Assert: the same fields the hand-written form had, each with its control.
-    expect(controlByKey, 'the race clock must read as its seven fields').toEqual([
+    // Assert: the same fields the hand-written form had plus the band switch, each
+    // with its control.
+    expect(controlByKey, 'the race clock must read as its eight fields').toEqual([
       ['sessionName', 'text'],
       ['state', 'select'],
       ['clockMode', 'select'],
@@ -218,6 +219,7 @@ describe('describeSchemaFormFromDataSchema, on the real race clock manifest', ()
       ['referenceWallClockMs', 'number'],
       ['running', 'switch'],
       ['lapsCompletedByLeader', 'number'],
+      ['showFlagBand', 'switch'],
     ]);
     expect(
       keysThatOfferTakeTime,
@@ -225,8 +227,8 @@ describe('describeSchemaFormFromDataSchema, on the real race clock manifest', ()
     ).toEqual(['referenceWallClockMs']);
     expect(
       description.fields.filter((field) => !field.isRequired).map((field) => field.key),
-      'only the laps are optional',
-    ).toEqual(['lapsCompletedByLeader']);
+      'only the laps and the band switch are optional',
+    ).toEqual(['lapsCompletedByLeader', 'showFlagBand']);
   });
 });
 

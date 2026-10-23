@@ -27,7 +27,9 @@ import {
 } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 
 import {
+  chooseGraphicInTheEditor,
   pressSaveAndWaitForCommand,
+  raceClockGraphicName,
   renderItemEditorPanelOnFakeServerWithSlices,
 } from './itemEditorOnFakeServer.testSupport';
 import {
@@ -46,8 +48,9 @@ function buildSlicesWithTwoPanels(): Slices {
   };
 }
 
-/** Fills the two fields a new race clock item needs: its label and its session name. */
+/** Chooses the race clock by name and fills what the item needs: its label and session name. */
 function fillTheClockItem(): void {
+  chooseGraphicInTheEditor(raceClockGraphicName);
   typeIntoField('Rótulo', 'Relógio do enduro');
   typeIntoField('Título', 'Enduro de Resistência');
 }

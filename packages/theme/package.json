@@ -1,0 +1,26 @@
+{
+  "name": "@bajaovrlay/theme",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The on-air theme (Ardósia): CSS tokens, the self-hosted font, the logo, and the motion tokens read for GSAP.",
+  "type": "module",
+  "exports": {
+    "./ardosia/tokens.css": "./ardosia/tokens.css",
+    "./fonts/fonts.css": "./fonts/fonts.css",
+    "./brand/logo-branca.png": "./brand/logo-branca.png",
+    "./motion": "./src/motion.ts",
+    "./fonts": "./src/waitForThemeFonts.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "gsap": "^3.15.0"
+  },
+  "devDependencies": {
+    "gsap": "^3.15.0",
+    "jsdom": "^30.1.2",
+    "vite": "^8.3.3"
+  }
+}

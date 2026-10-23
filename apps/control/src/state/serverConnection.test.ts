@@ -67,7 +67,7 @@ describe('connecting and receiving state', () => {
     // Assert: the store mirrors the hello and the page is connected.
     const state = serverStateStore.getState();
     expect(state.connectionStatus, 'a hello means the page is connected').toBe('connected');
-    expect(state.layers, 'the layers from the hello must be in the store').toHaveLength(5);
+    expect(state.layers, 'the layers from the hello must be in the store').toHaveLength(6);
     expect(state.instances, 'the instance from the hello must be in the store').toEqual([
       buildRaceClockInstanceOnTheClockLayer(momentTheClockWentOnAir),
     ]);

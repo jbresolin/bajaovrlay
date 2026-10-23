@@ -5,6 +5,8 @@
 // or between tests.
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { chooseGraphicInTheItemEditor, raceClockGraphicName } from './previewTestSteps';
+
 /** Finds the quick-fire strip, in the right column above the layer panel. */
 export function findQuickFireArea(page: Page): Locator {
   return page.getByRole('region', { name: 'Atalhos e macros' });
@@ -12,10 +14,11 @@ export function findQuickFireArea(page: Page): Locator {
 
 /**
  * Prepares one race clock button in the panel shown in the strip: "+ Atalho" opens the
- * page's item editor (in the rundown column) with "Onde" on that panel; the label and
- * the session name are typed, everything else is left at the manifest's defaults (the
- * clock's own layer, "Relógio"); then "Salvar item", and the test waits for the editor to
- * close, which it does once the server has accepted the new item.
+ * page's item editor (in the rundown column) with "Onde" on that panel; the race clock is
+ * chosen as the graphic, the label and the session name are typed, everything else is
+ * left at the manifest's defaults (the clock's own layer, "Relógio"); then "Salvar item",
+ * and the test waits for the editor to close, which it does once the server has accepted
+ * the new item.
  */
 export async function createRaceClockButtonInPanelShown(
   page: Page,
@@ -26,6 +29,7 @@ export async function createRaceClockButtonInPanelShown(
   // "Edição rápida" draws the same fields with the same labels, so everything is looked
   // up inside the editor.
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
+  await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
   await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
   await itemEditor.getByLabel('Título', { exact: true }).fill(sessionName);
   await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
