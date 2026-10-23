@@ -22,7 +22,9 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
 - `reportSlowestTests.js` (CI's "Report the slowest tests" step): reads the Vitest and
   Playwright JSON reports named on its command line and prints the 15 slowest files and
   tests as markdown, which CI appends to the run's summary page (docs/ci.md). The reading
-  and writing are in `slowestTests.js`, tested by `slowestTests.test.ts`.
+  and writing are in `slowestTests.js` (tested by `slowestTests.test.ts`); reading the files,
+  never throwing on a missing or broken one, in `slowestTestsOfReportFiles.js` (tested by
+  `slowestTestsOfReportFiles.test.ts`).
 - `verify.js` (`pnpm verify`, `pnpm verify --quick`): runs CI's commands in order on
   this machine, one line per step with its time, and stops at the first failure, naming
   it; `--quick` leaves out the browser tests. The steps are in `verifySteps.js` (tested by

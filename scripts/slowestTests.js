@@ -1,8 +1,8 @@
 // The slowest-tests table of every CI run (BAJAOVRLAY-42): reads Vitest's and Playwright's
 // JSON reports and writes the slowest files and tests as a small markdown table, which CI
 // appends to the run's summary page. A test that turns slow then shows on the run's page,
-// without anyone downloading a log. The reading and the writing are here, pure;
-// reportSlowestTests.js only reads the files and prints.
+// without anyone downloading a log. The reading of a report and the writing of the tables
+// are here, pure; slowestTestsOfReportFiles.js reads the report files from disk.
 import path from 'node:path';
 
 /**
@@ -45,13 +45,28 @@ export function readTimingsFromVitestReport(report, repositoryRoot) {
   const counts = { passed: 0, failed: 0, skipped: 0 };
   for (const fileResult of report.testResults) {
     const file = path.relative(repositoryRoot, fileResult.name);
-    files.push({ file, durationMs: fileResult.endTime - fileResult.startTime });
+    files.push({ file, durationMs: measureFileFromStartToEnd(fileResult) });
     for (const testResult of fileResult.assertionResults) {
       tests.push({ file, test: testResult.fullName, durationMs: testResult.duration ?? 0 });
       countTestByItsStatus(counts, testResult.status);
     }
   }
   return { files, tests, counts };
+}
+
+/**
+ * A Vitest file's time from its start to its end, or 0 when either moment is missing (a
+ * file that crashed before it started, say): with one moment missing there is no length
+ * to show, and taking the missing one as 0 would give a duration of some 56 years.
+ * @param {{ startTime?: number, endTime?: number }} fileResult
+ * @returns {number}
+ */
+function measureFileFromStartToEnd(fileResult) {
+  const { startTime, endTime } = fileResult;
+  if (typeof startTime !== 'number' || typeof endTime !== 'number') {
+    return 0;
+  }
+  return endTime - startTime;
 }
 
 /**

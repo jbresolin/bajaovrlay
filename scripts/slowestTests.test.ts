@@ -18,10 +18,11 @@
  *   - Several reports (the Playwright packages, the shards) combine into one table.
  *   - The table lists the slowest first, at most the count asked for, in seconds with
  *     one decimal, and a `|` in a test name does not break the table.
+ *   - A file with no start or end time counts as 0 s instead of breaking the table.
  *
  * What these tests deliberately do not cover:
- *   - The command line itself (reading files, a missing report): it is a short loop
- *     around these functions, run by every CI job, whose output shows on the run's page.
+ *   - Reading the report files from disk, a missing or unreadable one included:
+ *     slowestTestsOfReportFiles.test.ts.
  *   - The exact report formats of every Vitest and Playwright version: the reports here
  *     carry only the fields the module reads, copied from real reports of Vitest 5.0 and
  *     Playwright 1.62.
@@ -355,5 +356,29 @@ describe('writeSlowestTestsMarkdown', () => {
     expect(markdown, 'a "|" in a test name must be escaped so the row keeps its columns').toContain(
       '| Space \\| Enter takes the next item | apps/control/src/features/rundown/RundownKeys.test.tsx | 1.2 s |',
     );
+  });
+});
+
+describe('a Vitest file with no start or end time', () => {
+  it('counts as 0 s instead of a nonsense duration', () => {
+    // Arrange: a file that crashed before Vitest stamped its start, so only its end is
+    // written.
+    const report = {
+      testResults: [
+        {
+          name: `${repositoryRoot}/apps/server/src/core/boot/startServer.test.ts`,
+          endTime: 1_761_250_000_000,
+          assertionResults: [],
+        },
+      ],
+    };
+
+    // Act: read the timings.
+    const timings = readTimingsFromVitestReport(report, repositoryRoot);
+
+    // Assert: the file is listed at 0 s.
+    expect(timings.files, 'a file with a missing moment must count as 0 s').toEqual([
+      { file: 'apps/server/src/core/boot/startServer.test.ts', durationMs: 0 },
+    ]);
   });
 });
