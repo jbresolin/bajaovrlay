@@ -48,5 +48,28 @@ export {
   mostRecordsInOneImport,
 } from './importEntities.js';
 export { type UpsertEntityCommand, UpsertEntityCommandSchema } from './upsertEntity.js';
+// The entity reference, a FieldValue that reads one attribute of one record (always live).
+export { type EntityFieldValue, EntityFieldValueSchema } from './entityFieldValue.js';
+// Every attribute a reference may read, by kind of record, with its label and value type.
+export {
+  type EntityAttribute,
+  type EntityValueType,
+  findEntityAttribute,
+  labelOfEntityAttribute,
+  listAttributesOfEntityType,
+} from './entityAttributes.js';
+// Which attributes fit a graphic's field (the imageUrl role), and the save check.
+export {
+  findProblemInEntityReferenceForDataSchemaField,
+  imageUrlRole,
+  isImageFieldOfDataSchema,
+  listAttributesThatFitDataSchemaField,
+  listEntityValueTypesThatFitDataSchemaField,
+} from './entityFitsGraphicField.js';
+// Reading one reference against the library: the value, absent, or why it cannot be read.
+export {
+  type EntityReferenceResolution,
+  resolveEntityReferenceAgainstLibrary,
+} from './entityReferenceResolution.js';
 // The labels and refusal sentences in pt-BR, shared by the server, the form and the CSV.
 export { ptBREntities } from './ptBREntities.js';

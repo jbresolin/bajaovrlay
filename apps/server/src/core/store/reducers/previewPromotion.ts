@@ -60,9 +60,10 @@ export function takePreviewInstanceToProgram(
       previewInstance.layerId;
     return { status: 'refused', error: refusePreviewWithoutItem(layerName) };
   }
-  const boundFieldsOfThePreview =
-    slices.instanceBindings.find((entry) => entry.instanceId === previewInstance.id)?.boundFields ??
-    [];
+  const entryOfThePreview = slices.instanceBindings.find(
+    (entry) => entry.instanceId === previewInstance.id,
+  );
+  const boundFieldsOfThePreview = entryOfThePreview?.boundFields ?? [];
   const frozenFieldsReadAgain = readFrozenBoundFieldsAgain(
     slices,
     previewInstance,
@@ -103,13 +104,14 @@ export function takePreviewInstanceToProgram(
         : instance,
     );
 
-  // The live bindings follow the instance to program; the preview's entry is dropped
-  // with the preview by reduceCommand.
+  // The live bindings and the entity references (always live) follow the instance to
+  // program; the preview's entry is dropped with the preview by reduceCommand.
   const liveBoundFields = boundFieldsOfThePreview.filter((boundField) => boundField.binding.isLive);
   const instanceBindingsAfter = addBindingsOfNewInstance(
     takeOutcome.slices.instanceBindings,
     context.newInstanceId,
     liveBoundFields,
+    entryOfThePreview?.entityFields ?? [],
   );
   return {
     status: 'applied',
@@ -149,6 +151,8 @@ function readFrozenBoundFieldsAgain(
       dataSnapshots: slices.dataSnapshots,
       overrides: slices.overrides,
     },
+    // Only frozen bindings are read again here; entity fields are live and go on as seen.
+    entities: slices,
   });
   if (resolution.status === 'refused') {
     return resolution;

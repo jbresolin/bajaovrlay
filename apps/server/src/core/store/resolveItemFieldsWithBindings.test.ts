@@ -53,6 +53,7 @@ import {
   readSnapshotWithCar42Leading,
   readTypedEnduroClockData,
 } from './resolveItemFieldsWithBindings.testSupport.js';
+import { buildEmptyLibrary } from './resolveItemFieldsWithEntities.testSupport.js';
 
 describe('resolveItemFieldsIntoGraphicData with bindings that resolve', () => {
   const resolvedScenarios: Array<{
@@ -190,6 +191,7 @@ describe('resolveItemFieldsIntoGraphicData with bindings that resolve', () => {
       graphic,
       momentOfTheTake,
       sources,
+      entities: buildEmptyLibrary(),
     });
 
     // Assert: exactly this data for the graphic.
@@ -219,6 +221,7 @@ describe('resolveItemFieldsIntoGraphicData with bindings that resolve', () => {
       graphic: buildPositionsTowerGraphic(),
       momentOfTheTake,
       sources: buildSourcesAtLap34([]),
+      entities: buildEmptyLibrary(),
     });
 
     // Assert: six cars, the leader first and car 47 (6th) last.
@@ -255,6 +258,7 @@ describe('resolveItemFieldsIntoGraphicData with bindings that resolve', () => {
       graphic: buildRaceClockGraphic(),
       momentOfTheTake,
       sources,
+      entities: buildEmptyLibrary(),
     });
 
     // Assert: read like any other; a stale source never blocks a take (concept §5.4).

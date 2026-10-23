@@ -6,6 +6,7 @@ import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import {
   addBindingsOfNewInstance,
   listBoundFieldsKeptByNewInstance,
+  listEntityFieldsKeptByNewInstance,
 } from './instanceBindingsBookkeeping.js';
 import { type GraphicOnOutputRequest, putGraphicOnOutput } from './putGraphicOnOutput.js';
 import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
@@ -58,6 +59,7 @@ export function putItemOnOutput(
       dataSnapshots: slices.dataSnapshots,
       overrides: slices.overrides,
     },
+    entities: slices,
   });
   if (resolution.status === 'refused') {
     return { status: 'refused', error: resolution.error };
@@ -80,14 +82,16 @@ export function putItemOnOutput(
   if (takeOutcome.status === 'refused') {
     return takeOutcome;
   }
-  // The new instance's bindings are written down now, from the item as it is at this
-  // take: the refreshes read them from here, never from the item, so an item edited or
-  // deleted later does not change what is on air (instanceBindingsBookkeeping.ts). The
-  // entry of the instance this take replaced is dropped by reduceCommand.
+  // The new instance's bindings and entity references are written down now, from the item
+  // as it is at this take: the refreshes read them from here, never from the item, so an
+  // item edited or deleted later does not change what is on air
+  // (instanceBindingsBookkeeping.ts). The entry of the instance this take replaced is
+  // dropped by reduceCommand.
   const instanceBindingsAfter = addBindingsOfNewInstance(
     takeOutcome.slices.instanceBindings,
     context.newInstanceId,
     listBoundFieldsKeptByNewInstance(item.fields, target),
+    listEntityFieldsKeptByNewInstance(item.fields),
   );
   return {
     status: 'applied',

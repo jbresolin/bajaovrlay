@@ -40,8 +40,9 @@ export const CommandErrorCodeSchema = z.enum([
   /** takeNext was sent while the rundown's cursor is on nothing. */
   'RUNDOWN_CURSOR_EMPTY',
   /**
-   * An item has a field value of a kind the server cannot resolve yet: an entity
-   * reference, until the entity library (BAJAOVRLAY-19).
+   * An item has a field value of a kind the server cannot resolve: a guard kept for a
+   * kind added to the schema before the resolver has its case (entity references had
+   * it until BAJAOVRLAY-19).
    */
   'UNSUPPORTED_FIELD_KIND',
   /** takePreview named a layer that has nothing on its preview output. */
@@ -101,6 +102,18 @@ export const CommandErrorCodeSchema = z.enum([
   'MEDIA_NOT_FOUND',
   /** deleteMedia named an image a record still uses; the message lists the uses. */
   'MEDIA_IN_USE',
+  /**
+   * An item field's entity reference cannot be saved: its record is not in the library,
+   * its attribute does not exist, or its value does not fit the field. The message
+   * starts with the field's title.
+   */
+  'INVALID_ENTITY_REFERENCE',
+  /**
+   * A take or a preview could not read a field from the entity library: its record is
+   * not there (deleted), or a required field's attribute is absent (no logo). The message
+   * starts with the field's title and names the record.
+   */
+  'ENTITY_NOT_RESOLVED',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

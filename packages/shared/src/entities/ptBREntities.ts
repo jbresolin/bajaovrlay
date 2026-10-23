@@ -6,6 +6,9 @@
  * with the field's label, so a CSV line's reason says which column to fix.
  */
 export const ptBREntities = {
+  /** Put between the parts of a label: "Equipe › Logo", as the shapes' labels do. */
+  labelSeparator: ' › ',
+
   /** The name of each kind of record, as a tab and a picker name it. */
   entityTypeNames: {
     team: 'Equipe',
@@ -92,6 +95,24 @@ export const ptBREntities = {
     person: (name: string, role: string) => `${name} (${role})`,
     sponsor: (name: string) => `Patrocinador ${name}`,
     scheduleSlot: (sessionName: string) => `Programação: ${sessionName}`,
+  },
+
+  /**
+   * Why an entity reference cannot be read or stored. The ones that start in lower case
+   * get the field's title put before them by the server: "Título: a equipe do carro 7 …".
+   */
+  referenceProblems: {
+    teamNotFound: (carNumber: number) =>
+      `a equipe do carro ${String(carNumber)} não está nos cadastros.`,
+    personNotFound: (personId: string) => `a pessoa "${personId}" não está nos cadastros.`,
+    sponsorNotFound: (sponsorId: string) => `o patrocinador "${sponsorId}" não está nos cadastros.`,
+    scheduleSlotNotFound: (slotId: string) => `a sessão "${slotId}" não está na programação.`,
+    unknownAttribute: (entityTypeName: string, attributeKey: string) =>
+      `o cadastro de ${entityTypeName} não tem o campo "${attributeKey}".`,
+    attributeAbsent: (recordDescription: string, attributeLabel: string) =>
+      `${recordDescription} não tem ${attributeLabel}.`,
+    attributeDoesNotFitField: (attributeLabel: string) =>
+      `${attributeLabel} não serve para este campo.`,
   },
 
   /** Why a slice or an import was refused: a key that appears twice. */

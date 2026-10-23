@@ -5,6 +5,7 @@ import type { CommandError, Item, UpdateItemFieldsCommand } from '@bajaovrlay/sh
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
 import { removeKeysFromFieldsChangedOnAirOfItem } from '../fieldsChangedOnAir.js';
 import { findRefusalOfBindingFieldsForGraphic } from '../itemBindingFields.js';
+import { findRefusalOfEntityFieldsForGraphic } from '../itemEntityFields.js';
 import {
   findRefusalOfTakeTimeFieldsForGraphic,
   listKeysOfTakeTimeFields,
@@ -105,10 +106,11 @@ function findRefusalOfTakeTimeFieldsInCommand(
 }
 
 /**
- * The refusal for a binding the command carries that cannot be stored, or for a field
- * that would sit beside a whole clock, or undefined. Like the takeTime check above, a
- * graphic no longer registered refuses a command carrying a binding with
- * GRAPHIC_NOT_FOUND (no manifest to fit it to), and lets any other command through.
+ * The refusal for a binding or an entity reference the command carries that cannot be
+ * stored, or for a field that would sit beside a whole clock, or undefined. Like the
+ * takeTime check above, a graphic no longer registered refuses a command carrying a
+ * binding or a reference with GRAPHIC_NOT_FOUND (no manifest to fit it to), and lets any
+ * other command through.
  * The whole-clock check reads the item as it will be stored, merged, so a takeTime sent
  * onto the moment of a clock bound whole is refused as well.
  */
@@ -121,19 +123,25 @@ function findRefusalOfBindingsInCommand(
   if (command.fields === undefined) {
     return undefined;
   }
-  const commandCarriesABinding = Object.values(command.fields).some(
-    (fieldValue) => fieldValue.kind === 'binding',
+  const commandCarriesABindingOrAReference = Object.values(command.fields).some(
+    (fieldValue) => fieldValue.kind === 'binding' || fieldValue.kind === 'entity',
   );
   const graphicOfTheItem = slices.graphics.find((graphic) => graphic.id === itemBefore.graphicId);
   if (graphicOfTheItem === undefined) {
-    return commandCarriesABinding ? refuseUnknownGraphic(itemBefore.graphicId) : undefined;
+    return commandCarriesABindingOrAReference
+      ? refuseUnknownGraphic(itemBefore.graphicId)
+      : undefined;
   }
-  return findRefusalOfBindingFieldsForGraphic(
+  const refusalOfABinding = findRefusalOfBindingFieldsForGraphic(
     graphicOfTheItem,
     command.fields,
     itemAfter.fields,
     slices.dataSources,
   );
+  if (refusalOfABinding !== undefined) {
+    return refusalOfABinding;
+  }
+  return findRefusalOfEntityFieldsForGraphic(graphicOfTheItem, command.fields, slices);
 }
 
 /** A copy of the item with each part the command names replaced, and the rest kept. */

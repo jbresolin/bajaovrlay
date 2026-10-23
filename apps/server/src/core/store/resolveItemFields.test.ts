@@ -17,7 +17,7 @@
  *     so two takes of the same item at different moments give different values.
  *   - An item with no fields resolves to empty data.
  *   - A field value of a kind the server does not know yet refuses the whole
- *     resolution (no half-filled data) with a pt-BR message that names the entity library.
+ *     resolution (no half-filled data) with a pt-BR message that names the field's kind.
  *   - The fields given are not changed.
  *
  * What these tests deliberately do not cover:
@@ -29,6 +29,7 @@ import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { resolveItemFieldsIntoGraphicData } from './resolveItemFields.js';
+import { buildEmptyLibrary } from './resolveItemFieldsWithEntities.testSupport.js';
 
 /**
  * Resolves fields with no data source and no graphic registered, which literals and
@@ -41,6 +42,7 @@ function resolveFieldsWithoutSources(fields: ItemFields, momentOfTheTake: string
     graphic: undefined,
     momentOfTheTake,
     sources: { dataSources: [], dataSnapshots: [], overrides: [] },
+    entities: buildEmptyLibrary(),
   });
 }
 
@@ -205,29 +207,30 @@ describe('resolveItemFieldsIntoGraphicData with a takeTime value', () => {
 });
 
 describe('resolveItemFieldsIntoGraphicData with a kind it does not know', () => {
-  it('refuses the whole resolution with a message that names the entity library', () => {
-    // Arrange: a lower third whose team name names a team of the entity library, which
-    // only BAJAOVRLAY-19 will understand. Today's types do not allow it, so the test
-    // forces it in. (Through the running server this cannot happen yet: the command
-    // schema refuses such a command and a stored item like this stops the boot. This is
-    // a guard for the day the schema accepts it before the resolver has its case.)
-    const fieldsWithEntity = {
+  it("refuses the whole resolution with a message that names the field's kind", () => {
+    // Arrange: a flag field of a kind no server knows, a formula (which architecture rule
+    // 5 forbids anyway). The types do not allow it, so the test forces it in. (Through the
+    // running server this cannot happen: the command schema refuses such a command and a
+    // stored item like this stops the boot. Entity references had this guard until
+    // BAJAOVRLAY-19; it stays for the day the schema accepts a kind before the resolver
+    // has its case.)
+    const fieldsWithAFormula = {
       sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
-      state: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
+      state: { kind: 'formula', expression: 'positions.entries[0].status' },
     } as unknown as ItemFields;
 
     // Act: resolve them.
-    const resolution = resolveFieldsWithoutSources(fieldsWithEntity, momentOfTheTake);
+    const resolution = resolveFieldsWithoutSources(fieldsWithAFormula, momentOfTheTake);
 
-    // Assert: refused as a whole, naming the field, its kind and the entity library.
+    // Assert: refused as a whole, naming the field and its kind.
     expect(resolution, 'an unknown kind must refuse, never give half-filled data').toEqual({
       status: 'refused',
       error: {
         code: 'UNSUPPORTED_FIELD_KIND',
         message:
-          'O campo "state" usa um valor do tipo "entity", que o servidor só vai saber ' +
-          'resolver com a biblioteca de entidades (BAJAOVRLAY-19). Por enquanto, preencha ' +
-          'o campo com um valor literal ou de uma fonte de dados.',
+          'O campo "state" usa um valor do tipo "formula", que este servidor não sabe ' +
+          'resolver. Preencha o campo com um valor digitado, de uma fonte de dados ou ' +
+          'dos cadastros.',
       },
     });
   });

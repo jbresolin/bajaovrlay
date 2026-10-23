@@ -1,7 +1,9 @@
 import {
   type ClockFieldKeysByRole,
   type InstanceBindings,
+  type InstanceBindingsEntry,
   type InstanceBoundField,
+  type InstanceEntityField,
   type InstanceTarget,
   type ItemFields,
   wholeClockBindingPath,
@@ -33,18 +35,53 @@ export function listBoundFieldsKeptByNewInstance(
 }
 
 /**
+ * The fields a new instance reads from the entity library, in the item's field order:
+ * every one, on program and on preview alike, because an entity reference is always
+ * live (an edit of the record refreshes it; there is nothing frozen to read again).
+ */
+export function listEntityFieldsKeptByNewInstance(fields: ItemFields): InstanceEntityField[] {
+  const entityFields: InstanceEntityField[] = [];
+  for (const [fieldKey, fieldValue] of Object.entries(fields)) {
+    if (fieldValue.kind === 'entity') {
+      entityFields.push({ fieldKey, entityReference: fieldValue });
+    }
+  }
+  return entityFields;
+}
+
+/**
  * The slice with an entry for a new instance, or the very same list when it keeps no
- * bound field (nothing to save or broadcast then).
+ * bound field and no entity field (nothing to save or broadcast then).
  */
 export function addBindingsOfNewInstance(
   instanceBindings: InstanceBindings,
   instanceId: string,
   boundFields: InstanceBoundField[],
+  entityFields: InstanceEntityField[],
 ): InstanceBindings {
-  if (boundFields.length === 0) {
+  const entry = buildEntryOfInstance(instanceId, boundFields, entityFields);
+  if (entry === undefined) {
     return instanceBindings;
   }
-  return [...instanceBindings, { instanceId, boundFields }];
+  return [...instanceBindings, entry];
+}
+
+/**
+ * One instance's entry with these fields, or undefined when it keeps none: the
+ * entityFields key is left out when there is no entity field, as the schema wants.
+ */
+function buildEntryOfInstance(
+  instanceId: string,
+  boundFields: InstanceBoundField[],
+  entityFields: InstanceEntityField[],
+): InstanceBindingsEntry | undefined {
+  if (boundFields.length === 0 && entityFields.length === 0) {
+    return undefined;
+  }
+  if (entityFields.length === 0) {
+    return { instanceId, boundFields };
+  }
+  return { instanceId, boundFields, entityFields };
 }
 
 /**
@@ -81,9 +118,9 @@ function listFieldKeysFilledByBoundField(
 /**
  * The slice after an operator's updateInstanceData typed `keysTypedOnAir` into one
  * instance: each bound field that fills one of those keys is dropped, the whole clock as
- * one, and the entry goes when nothing is left. So the next refresh leaves what was typed
- * on air until the next take, which reads the item again (gate 2 of PR #18). The very
- * same list comes back when nothing was dropped.
+ * one, and each entity field of those keys too; the entry goes when nothing is left. So
+ * the next refresh leaves what was typed on air until the next take, which reads the
+ * item again (gate 2 of PR #18). The very same list comes back when nothing was dropped.
  */
 export function releaseBindingsOfFieldsTypedOnAir(
   instanceBindings: InstanceBindings,
@@ -99,14 +136,19 @@ export function releaseBindingsOfFieldsTypedOnAir(
     const keysFilled = listFieldKeysFilledByBoundField(boundField, clockFieldKeys);
     return !keysFilled.some((keyFilled) => keysTypedOnAir.includes(keyFilled));
   });
-  if (boundFieldsKept.length === entry.boundFields.length) {
+  const entityFieldsBefore = entry.entityFields ?? [];
+  const entityFieldsKept = entityFieldsBefore.filter(
+    (entityField) => !keysTypedOnAir.includes(entityField.fieldKey),
+  );
+  const isAnythingReleased =
+    boundFieldsKept.length !== entry.boundFields.length ||
+    entityFieldsKept.length !== entityFieldsBefore.length;
+  if (!isAnythingReleased) {
     return instanceBindings;
   }
-  const otherEntries = instanceBindings.filter((candidate) => candidate !== entry);
-  if (boundFieldsKept.length === 0) {
-    return otherEntries;
+  const entryAfter = buildEntryOfInstance(instanceId, boundFieldsKept, entityFieldsKept);
+  if (entryAfter === undefined) {
+    return instanceBindings.filter((candidate) => candidate !== entry);
   }
-  return instanceBindings.map((candidate) =>
-    candidate === entry ? { instanceId, boundFields: boundFieldsKept } : candidate,
-  );
+  return instanceBindings.map((candidate) => (candidate === entry ? entryAfter : candidate));
 }
