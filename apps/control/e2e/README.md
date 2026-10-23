@@ -40,5 +40,12 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   A restart keeps the last data, marked stale: the harness cannot restart its server, so
   `apps/server/src/core/boot/startServerRestart.test.ts` proves it.
 
-`emptyTheServerState.ts` empties the server before each test, panels, macros, "vai limpar" marks and corrections of a source's values included, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database).
+- The entity library, on "Cadastros" `#/cadastros` (steps and a real PNG in `entityLibraryTestSteps.ts`):
+  `entityLibraryWalk.e2e.ts` (BAJAOVRLAY-19, the brief's walk, three tests): "Importar equipes do simulador" lists 100 teams;
+  a logo uploaded on car 7's form shows and is served as a PNG; a race clock from "+ Item" with its title on "Cadastro" ›
+  Equipe › car 7 › "Nome da equipe", "Salvar e disparar": the title on air is "Juriti Off-Road", and renamed on Cadastros it
+  follows by itself; the team deleted, the rundown row says "cadastro · não entra agora" naming the car while the air keeps
+  its title; an SVG with a script opened at `/media/<id>` runs nothing (no dialog, the CSP header).
+
+`emptyTheServerState.ts` empties the server before each test, panels, macros, "vai limpar" marks, corrections of a source's values and the entity library with its images included, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database). A second checkout running its browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (for example 100: 5287/5288), which moves every package's browser-test ports alike.
 `clockStoppedOnAir.e2e.ts` fails locally when the WSL clock steps (a time sync moves the wall clock); the fix is syncing the Windows clock (Settings → Time & language → Date & time → Sync now), then running `wsl --shutdown` in PowerShell and reopening the terminal, not quarantine.

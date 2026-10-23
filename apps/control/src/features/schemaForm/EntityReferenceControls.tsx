@@ -94,7 +94,7 @@ export function EntityReferenceControls(props: EntityReferenceControlsProps) {
   return (
     <div className="flex flex-col gap-2">
       <Select
-        value={entityType === '' ? undefined : entityType}
+        value={entityType}
         onValueChange={(value) => chooseTheKindOfRecord(EntityTypeSchema.parse(value))}
         disabled={isDisabled}
       >
@@ -132,7 +132,7 @@ export function EntityReferenceControls(props: EntityReferenceControlsProps) {
               name={`entityReferences.${field.key}.recordKey`}
               render={({ field: recordKeyField }) => (
                 <Select
-                  value={recordKeyField.value === '' ? undefined : recordKeyField.value}
+                  value={recordKeyField.value ?? ''}
                   onValueChange={recordKeyField.onChange}
                   disabled={isDisabled}
                 >
@@ -163,7 +163,7 @@ export function EntityReferenceControls(props: EntityReferenceControlsProps) {
             name={`entityReferences.${field.key}.attribute`}
             render={({ field: attributeField }) => (
               <Select
-                value={attributeField.value === '' ? undefined : attributeField.value}
+                value={attributeField.value ?? ''}
                 onValueChange={attributeField.onChange}
                 disabled={isDisabled}
               >
