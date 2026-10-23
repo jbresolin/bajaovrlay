@@ -3,7 +3,8 @@
 The event inbox (BAJAOVRLAY-44): the console's "Eventos" tab of "Atalhos e macros", and the
 "Eventos" page (#/eventos). Start at `EventsTab.tsx` (the waiting events in a capped,
 scrolling list, "Som de eventos" and the link to the page) and `EventReviewPage.tsx` (the
-waiting events, "+ Evento", "Regras" and the history, `EventHistoryTable.tsx`). Both draw
+waiting events, "+ Evento", "Regras" and the history, `EventHistoryTable.tsx`, searched and
+sorted by `eventHistoryView.ts`). Both draw
 `WaitingEventsList.tsx`, whose rows (`InboxEventRow.tsx`) have "Prévia", "No ar" and
 "Descartar"; the tab's `RecentlyDismissedEvents.tsx` offers "Desfazer" for 30 s after one. The lists are
 `inboxEventLists.ts`, the words `inboxEventText.ts`; the forms are `ManualEventDialog.tsx` and

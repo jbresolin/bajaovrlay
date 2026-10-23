@@ -73,6 +73,9 @@ export const ptBREvents = {
     historyHeading: 'Histórico',
     historyTableLabel: 'Histórico de eventos',
     noEventsYet: 'Nenhum evento ainda.',
+    searchLabel: 'Buscar no histórico',
+    searchPlaceholder: 'Carro, equipe, motivo, origem…',
+    nothingFound: 'Nenhum evento encontrado.',
     columns: {
       time: 'Hora',
       kind: 'Tipo',

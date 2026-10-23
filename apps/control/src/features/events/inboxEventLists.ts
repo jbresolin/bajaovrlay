@@ -15,11 +15,6 @@ export function listWaitingEventsNewestFirst(events: InboxEvent[]): InboxEvent[]
   return events.filter(isWaiting).reverse();
 }
 
-/** Every event the server keeps (its newest 200), newest first: the page's history. */
-export function listAllEventsNewestFirst(events: InboxEvent[]): InboxEvent[] {
-  return [...events].reverse();
-}
-
 /** The ids of the events waiting for the operator: what the chime follows. */
 export function listPendingEventIds(events: InboxEvent[]): string[] {
   return events.filter((event) => event.status === 'pending').map((event) => event.eventId);
