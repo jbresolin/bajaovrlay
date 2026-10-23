@@ -45,7 +45,7 @@ export const postMediaRoute = createRoute({
   method: 'post',
   path: '/media',
   summary:
-    'Upload one image (PNG, JPEG, WebP or SVG, up to 5 MB) to the media store, from this server\'s own pages or a tool that sends no Origin',
+    "Upload one image (PNG, JPEG, WebP or SVG, up to 5 MB) to the media store, from this server's own pages or a tool that sends no Origin",
   request: {
     body: {
       required: true,
@@ -125,7 +125,10 @@ export function buildFileMissingAnswer(): ErrorAnswerBody {
 /** The 403 body of an upload sent by a page of another site. */
 export function buildUploadFromAnotherSiteAnswer(): ErrorAnswerBody {
   return {
-    error: { code: 'MEDIA_UPLOAD_FROM_ANOTHER_SITE', message: ptBR.mediaErrors.uploadFromAnotherSite },
+    error: {
+      code: 'MEDIA_UPLOAD_FROM_ANOTHER_SITE',
+      message: ptBR.mediaErrors.uploadFromAnotherSite,
+    },
   };
 }
 

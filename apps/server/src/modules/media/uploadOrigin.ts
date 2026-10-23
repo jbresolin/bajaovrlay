@@ -7,7 +7,10 @@
  * page's Host, so the dev page passes too). No Origin at all is curl or Companion, which
  * no web page can make a browser send for a cross-site POST, so it is let through.
  */
-export function isUploadFromAnotherSite(originHeader: string | undefined, requestUrl: string): boolean {
+export function isUploadFromAnotherSite(
+  originHeader: string | undefined,
+  requestUrl: string,
+): boolean {
   if (originHeader === undefined) {
     return false;
   }

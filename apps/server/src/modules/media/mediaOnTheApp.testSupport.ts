@@ -44,7 +44,9 @@ export function createAppWithAMediaFolder(earlierUploads?: Media): AppWithAMedia
   if (earlierUploads !== undefined) {
     // A first boot seeds the database; the media row is then written as an older day left it.
     createStateStore(storeOptions);
-    writeSliceRows(database, [{ name: 'media', json: earlierUploads, updatedAt: momentOfTheUploads }]);
+    writeSliceRows(database, [
+      { name: 'media', json: earlierUploads, updatedAt: momentOfTheUploads },
+    ]);
   }
   const stateStore = createStateStore(storeOptions);
   const app = createServerApp({ logger, version: '0.3.1', stateStore, mediaFolder });
@@ -72,5 +74,9 @@ export async function uploadFile(
   if (addresses?.origin !== undefined) {
     headers['Origin'] = addresses.origin;
   }
-  return await app.request(`${serverAddress}/api/v1/media`, { method: 'POST', body: form, headers });
+  return await app.request(`${serverAddress}/api/v1/media`, {
+    method: 'POST',
+    body: form,
+    headers,
+  });
 }

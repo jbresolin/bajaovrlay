@@ -129,7 +129,12 @@ describe('resolveEntityReferenceAgainstLibrary', () => {
     // A sponsor deleted from the library.
     {
       name: 'says a sponsor no longer in the library was deleted, in words',
-      reference: { kind: 'entity', entityType: 'sponsor', sponsorId: 'apoio-pneus', attribute: 'name' },
+      reference: {
+        kind: 'entity',
+        entityType: 'sponsor',
+        sponsorId: 'apoio-pneus',
+        attribute: 'name',
+      },
       expected: 'lê um patrocinador excluído dos cadastros.',
     },
     // A slot removed from the schedule.

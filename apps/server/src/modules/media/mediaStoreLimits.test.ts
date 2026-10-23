@@ -60,7 +60,9 @@ function buildEarlierUploads(count: number, sizeBytes: number): Media {
 describe('storeUploadedImage, the limits of the store', () => {
   it('refuses a new image with 1000 already stored, writing nothing', () => {
     // Arrange: a store holding 1000 small photos.
-    const { stateStore, mediaFolder } = createAppWithAMediaFolder(buildEarlierUploads(1000, 20 * 1024));
+    const { stateStore, mediaFolder } = createAppWithAMediaFolder(
+      buildEarlierUploads(1000, 20 * 1024),
+    );
 
     // Act: upload the logo of team 42.
     const outcome = storeUploadedImage(
@@ -106,9 +108,15 @@ describe('storeUploadedImage, the limits of the store', () => {
 
   it('accepts the same bytes as a stored image when the store is full', () => {
     // Arrange: a store of 999 photos, and team 42's logo stored as the 1000th.
-    const { stateStore, mediaFolder } = createAppWithAMediaFolder(buildEarlierUploads(999, 20 * 1024));
+    const { stateStore, mediaFolder } = createAppWithAMediaFolder(
+      buildEarlierUploads(999, 20 * 1024),
+    );
     const logo = buildPngLogo(64, 64);
-    const dependencies = { stateStore, mediaFolder, readFreeBytesOfTheDisk: readFreeBytesOfARoomyDisk };
+    const dependencies = {
+      stateStore,
+      mediaFolder,
+      readFreeBytesOfTheDisk: readFreeBytesOfARoomyDisk,
+    };
     storeUploadedImage({ bytes: logo, fileName: 'logo-ufpr.png' }, dependencies);
 
     // Act: upload the same logo again.

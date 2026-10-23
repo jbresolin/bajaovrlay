@@ -30,7 +30,10 @@ import { LayerStatusPanel } from '@/features/layers/LayerStatusPanel';
 import { buildLowerThirdDataForCar42 } from '@/features/schemaForm/lowerThirdFixtureSchema.testSupport';
 import { typeIntoField } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
-import { buildNarrator, buildTeam42WithItsLogo } from '@/state/entitiesLikeTheServerSends.testSupport';
+import {
+  buildNarrator,
+  buildTeam42WithItsLogo,
+} from '@/state/entitiesLikeTheServerSends.testSupport';
 import {
   buildLowerThirdFixtureGraphic,
   buildLowerThirdFixtureInstanceOnProgram,

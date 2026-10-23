@@ -42,17 +42,20 @@ const records = [
 ];
 
 describe('buildHashOfRecordToOpen and readRecordToOpenFromHash', () => {
-  it.each(records)('writes and reads back the address of $name', ({ recordToOpen, expectedHash }) => {
-    // Arrange: the record of this row.
+  it.each(records)(
+    'writes and reads back the address of $name',
+    ({ recordToOpen, expectedHash }) => {
+      // Arrange: the record of this row.
 
-    // Act: write its address, then read it back.
-    const hash = buildHashOfRecordToOpen(recordToOpen);
-    const recordReadBack = readRecordToOpenFromHash(hash);
+      // Act: write its address, then read it back.
+      const hash = buildHashOfRecordToOpen(recordToOpen);
+      const recordReadBack = readRecordToOpenFromHash(hash);
 
-    // Assert: the address, and the same record from it.
-    expect(hash, 'the address of the record').toBe(expectedHash);
-    expect(recordReadBack, 'the address names the same record').toEqual(recordToOpen);
-  });
+      // Assert: the address, and the same record from it.
+      expect(hash, 'the address of the record').toBe(expectedHash);
+      expect(recordReadBack, 'the address names the same record').toEqual(recordToOpen);
+    },
+  );
 });
 
 describe('readRecordToOpenFromHash', () => {
