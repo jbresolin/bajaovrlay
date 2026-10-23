@@ -8,11 +8,11 @@ import { listMotionDemos } from './slateMotionDemos.mjs';
 import { pageShell } from './slateTemplates.mjs';
 import { escapeHtml } from './slateVocabulary.mjs';
 
-// GSAP is the race clock's dependency (packages/graphics/race-clock), and pnpm links every
-// dependency of the workspace under node_modules/.pnpm/node_modules as well, a path with no
-// version in it. The pages open from the file system, so the path is relative to a
-// direction's folder; it needs `pnpm install`, and nothing is loaded from the network.
-const gsapFolder = '../../../../node_modules/.pnpm/node_modules/gsap/dist';
+// GSAP as the product has it (3.15.0, the race clock's dependency), copied byte for byte into
+// docs/design/vendor/gsap: the pages open from the file system in any browser, and one that
+// reads the WSL disk through \\wsl.localhost cannot follow node_modules' symlinks (see that
+// folder's README). The path is relative to a direction's folder; nothing comes from the network.
+const gsapFolder = '../../vendor/gsap';
 
 const actionLabels = {
   enter: 'Entrar',

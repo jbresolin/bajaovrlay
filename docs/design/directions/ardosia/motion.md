@@ -179,8 +179,8 @@ The catalogue has one demo page per graphic and per combination of its optional 
 (`motion-<graphic>-<parts>.html`, 31 pages), all linked from `motion-catalogo.html`. Each is
 the graphic over the footage with a bar above the title-safe area: the buttons named above
 and a status line saying what just moved and for how long, in the tokens' own values. They
-use GSAP 3.15 with CustomEase, as the product's graphics do, loaded from the repo's
-`node_modules` (after `pnpm install`; nothing from the network), and read every duration,
+use GSAP 3.15 with CustomEase, as the product's graphics do, from a byte-for-byte copy in
+`../../vendor/gsap` (nothing from the network, no `node_modules` needed), and read every duration,
 offset and curve from `tokens.css` the way `packages/theme`'s `readMotionTokens` and
 `gsapEaseOfToken` do: milliseconds and pixels from the custom properties, each cubic-bezier
 registered as a CustomEase with exactly its curve. No hold is shortened: a standings page

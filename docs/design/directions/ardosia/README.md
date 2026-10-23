@@ -66,9 +66,10 @@ one demo page per graphic and per combination of its optional parts (31 pages,
 `motion-<graphic>-<parts>.html`), each with the buttons to judge it (Entrar and Sair; Próximo
 for the bracket and the podium; Atualizar for the battle card, the sponsor roll and the
 sessions board; Novo evento for the notices) and a status line saying what moved and for how
-long. They run GSAP with CustomEase as the product does, loaded from the repo's
-`node_modules` (run `pnpm install` once), with every duration, offset and curve read from
-`tokens.css`; `motion.md` describes exactly what each one does. The screenshot and layout
+long. They run GSAP with CustomEase as the product does, from a copy of the product's GSAP in
+`../../vendor/gsap` (so they open in any browser, a Windows one reading the WSL disk
+included), with every duration, offset and curve read from `tokens.css`; `motion.md`
+describes exactly what each one does. The screenshot and layout
 tools skip them, as they skip `motion-demo.html`.
 
 ## Legibility at 720p on a phone

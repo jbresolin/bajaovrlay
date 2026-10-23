@@ -38,8 +38,10 @@ and per combination of its optional parts) and `slateMotionPages.mjs` (the pages
 index, `motion-catalogo.html`), styled by `slate-demo.css` (the controls bar), and run in the
 browser by `motionDemoCore.js` (the motion tokens read as the product's `packages/theme`
 reads them, the moves, the buttons) with `motionDemoCards.js` or `motionDemoBoards.js`. They
-load GSAP and CustomEase from the repo's `node_modules`, so `pnpm install` must have run;
-nothing comes from the network.
+load GSAP and CustomEase from `vendor/gsap/`, a byte-for-byte copy of the product's GSAP
+3.15.0. It is a copy, not a path into `node_modules`, because pnpm's symlinks cannot be
+followed by a Windows browser reading the WSL disk (`vendor/gsap/README.md`). Nothing comes
+from the network.
 
 ## What a direction holds
 
@@ -70,7 +72,7 @@ nothing comes from the network.
 | `sheet-battle.html`, `sheet-notices.html`                                                                        | Pass 2 reference sheets: the battle card's three trends; every notice beside the clock with a red flag.                                                                                                                                                                                       |
 | `motion.md`                                                                                                      | In and out animations, the tower's position-change animation, the strip's movement, with durations; pass 2's in, out and steps.                                                                                                                                                               |
 | `motion-demo.html`                                                                                               | Optional: an animated demo of the above (CSS or the Web Animations API, nothing loaded from the network). The screenshot tool skips it. It covers pass 1.                                                                                                                                     |
-| `motion-catalogo.html`, `motion-<graphic>-<parts>.html`                                                          | Pass 2: the catalogue's motion demos, one page per graphic and per combination of its optional parts, with buttons (Entrar, Sair, Próximo, Atualizar, Novo evento) and GSAP from `node_modules`; every timing from `tokens.css`. The screenshot and layout tools skip them.                   |
+| `motion-catalogo.html`, `motion-<graphic>-<parts>.html`                                                          | Pass 2: the catalogue's motion demos, one page per graphic and per combination of its optional parts, with buttons (Entrar, Sair, Próximo, Atualizar, Novo evento) and GSAP from `docs/design/vendor/gsap`; every timing from `tokens.css`. The screenshot and layout tools skip them.        |
 | `screenshots/`                                                                                                   | `<page>.<background>.jpg` for every page over every frame in `docs/brand/frames/`, over mid-grey and over near-black; reference sheets over grey and black only.                                                                                                                              |
 
 ## The page contract
