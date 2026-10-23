@@ -14,7 +14,9 @@
     "format": "prettier --write .",
     "typecheck": "tsc --project tsconfig.json && pnpm --recursive --if-present run typecheck",
     "test": "vitest run",
-    "test:e2e": "pnpm --recursive --workspace-concurrency=1 --if-present run test:e2e",
+    "test:e2e": "pnpm test:e2e:renderer-and-graphics && pnpm test:e2e:control",
+    "test:e2e:renderer-and-graphics": "pnpm --recursive --workspace-concurrency=1 --filter '!@bajaovrlay/control' --if-present run test:e2e",
+    "test:e2e:control": "pnpm --filter @bajaovrlay/control run test:e2e",
     "start": "pnpm --filter @bajaovrlay/server run start",
     "serve:flex-example": "node scripts/serveFlexExample.js"
   },
