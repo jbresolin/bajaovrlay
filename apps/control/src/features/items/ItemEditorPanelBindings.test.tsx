@@ -81,7 +81,9 @@ describe('the kind selector of the item editor with data sources', () => {
     const kindsOfTheFlag = readOptionsOfDropdown('Como preencher Bandeira');
     const kindsOfTheTime = readOptionsOfDropdown('Como preencher Tempo de referência');
 
-    // Assert: "Fonte" on both; the whole clock only where the time is.
+    // Assert: "Fonte" on both; the whole clock only where the time is. "Cadastro" on the
+    // time too, as on any whole-number field (BAJAOVRLAY-19), but not on the flag, whose
+    // fixed list of values no record of the library holds.
     expect(kindsOfTheFlag, 'the flag can be typed or read from a source').toEqual([
       'Valor digitado',
       'Fonte',
@@ -90,6 +92,7 @@ describe('the kind selector of the item editor with data sources', () => {
       'Valor digitado',
       'Fonte',
       'Relógio da fonte',
+      'Cadastro',
     ]);
   });
 

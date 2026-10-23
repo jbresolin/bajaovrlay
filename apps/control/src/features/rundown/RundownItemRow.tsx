@@ -7,6 +7,7 @@ import { type MouseEvent, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ItemSourceMarker } from '@/features/bindings/ItemSourceMarker';
 import { ActionButton } from '@/features/connection/ActionButton';
+import { ItemEntityMarker } from '@/features/entityLibrary/ItemEntityMarker';
 import { ItemColorChip } from '@/features/items/ItemColorChip';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
@@ -149,6 +150,7 @@ export function RundownItemRow(props: RundownItemRowProps) {
           <span className="truncate">{graphicName}</span>
           <Badge variant="outline">{layerName}</Badge>
           <ItemSourceMarker item={item} />
+          <ItemEntityMarker item={item} />
         </div>
         <div className="flex flex-wrap items-center gap-1">
           <ActionButton

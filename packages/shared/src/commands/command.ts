@@ -11,6 +11,9 @@ import { SetDataSourceEnabledCommandSchema } from '../dataSources/setDataSourceE
 import { StartRecordingCommandSchema } from '../dataSources/startRecording.js';
 import { StopRecordingCommandSchema } from '../dataSources/stopRecording.js';
 import { UpdateDataSourceCommandSchema } from '../dataSources/updateDataSource.js';
+import { DeleteEntityCommandSchema } from '../entities/deleteEntity.js';
+import { ImportEntitiesCommandSchema } from '../entities/importEntities.js';
+import { UpsertEntityCommandSchema } from '../entities/upsertEntity.js';
 import { CreateMacroCommandSchema } from '../macros/createMacro.js';
 import { DeleteMacroCommandSchema } from '../macros/deleteMacro.js';
 import {
@@ -20,6 +23,10 @@ import {
 import { RunMacroCommandSchema } from '../macros/runMacro.js';
 import { StopMacroCommandSchema } from '../macros/stopMacro.js';
 import { UpdateMacroCommandSchema } from '../macros/updateMacro.js';
+import {
+  DeleteMediaCommandSchema,
+  RecordUploadedMediaCommandSchema,
+} from '../media/mediaCommands.js';
 import { ClearOverrideCommandSchema } from '../overrides/clearOverride.js';
 import { SetOverrideCommandSchema } from '../overrides/setOverride.js';
 import { PreviewClearLayerCommandSchema } from '../preview/previewClearLayer.js';
@@ -110,6 +117,15 @@ export const CommandSchema = z.discriminatedUnion('type', [
   // Overrides (BAJAOVRLAY-20); ../overrides/. Operators only.
   SetOverrideCommandSchema,
   ClearOverrideCommandSchema,
+  // The entity library (BAJAOVRLAY-19); ../entities/. Operators only. Each is a union of
+  // its own on entityType, so the record is checked by the schema of the type it names.
+  UpsertEntityCommandSchema,
+  DeleteEntityCommandSchema,
+  ImportEntitiesCommandSchema,
+  // The media store (BAJAOVRLAY-19); ../media/. recordUploadedMedia is sent only by the
+  // server's media store (sistema:midia) after the upload route wrote the file.
+  RecordUploadedMediaCommandSchema,
+  DeleteMediaCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

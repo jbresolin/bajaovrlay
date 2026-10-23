@@ -43,6 +43,11 @@ function buildSlicesEachAListOfItsOwn(): Slices {
     dataSnapshots: [],
     overrides: [],
     recordings: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
     eventLog: [],
   };
 }

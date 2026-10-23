@@ -89,6 +89,11 @@ export function buildSlicesWithNothingOnAir(): Slices {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
     instanceBindings: [],
     overrides: [],
   };

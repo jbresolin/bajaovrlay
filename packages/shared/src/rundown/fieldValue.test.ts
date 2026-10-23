@@ -18,8 +18,8 @@
  *   - A takeTime that carries a value is refused, naming `value`: the server decides
  *     the time, so a value written next to it would be silently ignored.
  *   - A binding with no path, or with a misspelt key, is refused, naming the part.
- *   - A kind that only arrives with the entity library (BAJAOVRLAY-19) is still
- *     refused, naming `kind`.
+ *   - An entity reference in the concept's first draft shape (entityId instead of the
+ *     car number a team is chosen by since BAJAOVRLAY-19) is refused, naming carNumber.
  *   - A binding is accepted inside a createItem command, unchanged.
  *   - A takeTime field is accepted inside a stored item, inside a createItem command
  *     and inside an updateItemFields command, and comes back exactly as written.
@@ -167,12 +167,12 @@ describe('FieldValueSchema', () => {
   });
 
   const refusedFieldValueScenarios = [
-    // Entity references arrive with the entity library (BAJAOVRLAY-19); adding bindings
-    // did not open the door to them.
+    // The concept's first draft of an entity reference said entityId; as built by
+    // BAJAOVRLAY-19 a team is chosen by its car number, so that draft is refused.
     {
-      name: 'refuses a field that names a team of the entity library, naming kind',
+      name: 'refuses a team reference in the first draft shape, naming carNumber',
       fieldValue: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
-      wordInTheFailure: 'kind',
+      wordInTheFailure: 'carNumber',
     },
     // A binding must say where in the shape it reads; without a path it reads nothing.
     {

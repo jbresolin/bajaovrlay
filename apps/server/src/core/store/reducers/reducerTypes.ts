@@ -24,6 +24,11 @@ export type SlicesChangedByCommands = Pick<
   | 'dataSnapshots'
   | 'overrides'
   | 'recordings'
+  | 'teams'
+  | 'people'
+  | 'sponsors'
+  | 'scheduleSlots'
+  | 'media'
 >;
 
 /**

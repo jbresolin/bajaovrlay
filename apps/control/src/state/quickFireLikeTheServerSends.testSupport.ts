@@ -83,6 +83,11 @@ export function buildSlicesWithShortcutsAndMacros(): Slices {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
   };
 }
 

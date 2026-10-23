@@ -1,6 +1,8 @@
 // The refresher of bound fields (concept §5.2): after a source's data changed, every
 // instance on air or in preview with live bindings on it gets the source's new values
-// through refreshBoundInstanceData, signed `sistema:vinculos`, the one command path.
+// through refreshBoundInstanceData, signed `sistema:vinculos`, the one command path; and
+// after the entity library changed, every instance that reads it (BAJAOVRLAY-19).
+import type { SliceName } from '@bajaovrlay/shared';
 import type { RefreshBoundInstanceDataCommand, Slices } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../../core/logger/createLogger.js';
@@ -24,7 +26,8 @@ export type LiveRefresher = { stop: () => void };
 /**
  * Watches the store: when snapshots change (a good poll, a deleted source) or the
  * overrides change, it refreshes, from a 0 ms timer, every instance whose live bindings
- * read a source that changed (every instance with live bindings, for an override). It
+ * read a source that changed (every instance with live bindings, for an override); when
+ * a team, person, sponsor or slot changes, every instance that reads the library. It
  * reads each instance's entry of `instanceBindings`, never the item, and sends only what
  * changes (buildRefreshOfLiveBoundFields), so a poll that repeats what is on air sends
  * nothing.
@@ -43,11 +46,19 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
   const cancelTimer = options.cancelTimer ?? cancelNodeTimer;
   // The sources changed since the last pass; undefined for "every source" (an override).
   let sourceIdsToRefresh: Set<string> | undefined = new Set();
+  let haveEntitiesChangedSinceThePass = false;
   let pendingPassHandle: unknown;
   let isPassPending = false;
 
   /** Notes what changed and starts a pass unless one is already waiting. */
-  function scheduleRefresh(changedSourceIds: string[], isEverySourceAffected: boolean): void {
+  function scheduleRefresh(
+    changedSourceIds: string[],
+    isEverySourceAffected: boolean,
+    haveEntitiesChanged: boolean,
+  ): void {
+    if (haveEntitiesChanged) {
+      haveEntitiesChangedSinceThePass = true;
+    }
     if (isEverySourceAffected) {
       sourceIdsToRefresh = undefined;
     } else if (sourceIdsToRefresh !== undefined) {
@@ -64,12 +75,14 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
   /** One pass over every instance with bindings. Never throws: it runs from a timer. */
   function runRefreshPass(): void {
     const sourceIdsThatChanged = sourceIdsToRefresh;
+    const haveEntitiesChanged = haveEntitiesChangedSinceThePass;
     sourceIdsToRefresh = new Set();
+    haveEntitiesChangedSinceThePass = false;
     isPassPending = false;
     try {
       const slices = stateStore.readAllSlices();
       for (const entry of slices.instanceBindings) {
-        refreshOneInstance(slices, entry.instanceId, entry.boundFields, sourceIdsThatChanged);
+        refreshOneInstance(slices, entry, sourceIdsThatChanged, haveEntitiesChanged);
       }
     } catch (refreshError) {
       logger.error({ err: refreshError }, 'refresh of bound fields crashed');
@@ -79,17 +92,18 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
   /** Sends the refresh of one instance, when anything it shows changed. */
   function refreshOneInstance(
     slices: Slices,
-    instanceId: string,
-    boundFields: Slices['instanceBindings'][number]['boundFields'],
+    entry: Slices['instanceBindings'][number],
     sourceIdsThatChanged: ReadonlySet<string> | undefined,
+    haveEntitiesChanged: boolean,
   ): void {
+    const instanceId = entry.instanceId;
     const instance = slices.instances.find((candidate) => candidate.id === instanceId);
     if (instance === undefined) {
       return;
     }
     const data = buildRefreshOfLiveBoundFields({
       instance,
-      boundFields,
+      boundFields: entry.boundFields,
       graphic: slices.graphics.find((graphic) => graphic.id === instance.graphicId),
       sources: {
         dataSources: slices.dataSources,
@@ -97,6 +111,9 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
         overrides: slices.overrides,
       },
       sourceIdsThatChanged,
+      entityFields: entry.entityFields ?? [],
+      entities: slices,
+      haveEntitiesChanged,
     });
     if (data === undefined) {
       return;
@@ -136,8 +153,12 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
       // refreshes every bound instance; a snapshot only those bound to its source.
       const haveOverridesChanged = changedSliceNames.includes('overrides');
       const changedSourceIds = changedDataSnapshots.map((change) => change.sourceId);
-      if (haveOverridesChanged || changedSourceIds.length > 0) {
-        scheduleRefresh(changedSourceIds, haveOverridesChanged);
+      // An edit in Cadastros refreshes every instance that reads the library.
+      const haveEntitiesChanged = changedSliceNames.some((sliceName) =>
+        entitySliceNames.includes(sliceName),
+      );
+      if (haveOverridesChanged || changedSourceIds.length > 0 || haveEntitiesChanged) {
+        scheduleRefresh(changedSourceIds, haveOverridesChanged, haveEntitiesChanged);
       }
     },
   );
@@ -152,6 +173,9 @@ export function startLiveRefresher(options: LiveRefresherOptions): LiveRefresher
     },
   };
 }
+
+/** The slices of the entity library, whose change refreshes the fields that read it. */
+const entitySliceNames: readonly SliceName[] = ['teams', 'people', 'sponsors', 'scheduleSlots'];
 
 /** Node's setTimeout, as the default way to wait. */
 function startNodeTimer(onTimeIsUp: () => void, delayInMilliseconds: number): unknown {

@@ -40,6 +40,7 @@ import {
   readSimulatorSnapshotAtLap34,
   simulatorSourceId,
 } from '../../core/store/reducers/boundItemSlices.testSupport.js';
+import { buildEmptyLibrary } from '../../core/store/resolveItemFieldsWithEntities.testSupport.js';
 import { buildRefreshOfLiveBoundFields } from './liveFieldsRefresh.js';
 
 /** The race clock with its real data schema. */
@@ -123,6 +124,9 @@ function buildRefreshOfTheClock(
     graphic: buildRaceClockGraphic(),
     sources,
     sourceIdsThatChanged,
+    entityFields: [],
+    entities: buildEmptyLibrary(),
+    haveEntitiesChanged: false,
   });
 }
 
@@ -241,6 +245,9 @@ describe('buildRefreshOfLiveBoundFields', () => {
       graphic: buildRaceClockGraphic(),
       sources: buildSourcesWithSnapshot(readSimulatorSnapshotAtLap34()),
       sourceIdsThatChanged: undefined,
+      entityFields: [],
+      entities: buildEmptyLibrary(),
+      haveEntitiesChanged: false,
     });
 
     // Assert: nothing; a required field keeps its value instead of leaving the air.

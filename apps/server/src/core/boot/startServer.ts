@@ -9,6 +9,7 @@ import {
   type SourceHostAllowlist,
   startDataSourceService,
 } from '../../modules/dataSources/index.js';
+import { buildMediaFolderPath, startMediaService } from '../../modules/media/index.js';
 import { readBuildId } from '../../readBuildId.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
@@ -37,7 +38,8 @@ export type StartServerOptions = {
   themeFolder?: string | undefined;
   /**
    * DATA_DIR, absolute: the server's files other than the database. Recordings are
-   * written to, and listed at boot from, its `recordings` folder.
+   * written to, and listed at boot from, its `recordings` folder; uploaded images are
+   * kept in its `media` folder.
    */
   dataFolder: string;
   /**
@@ -133,8 +135,12 @@ async function startServingFromDatabase(
     dataFolder: options.dataFolder,
     sourceHostAllowlist: options.sourceHostAllowlist,
   });
+  // Creates DATA_DIR/media when missing, and removes the file of a deleted image.
+  const mediaFolder = buildMediaFolderPath(options.dataFolder);
+  const mediaService = startMediaService({ stateStore, mediaFolder, logger: options.logger });
   /** Stops the server's own actors; used by close() and by a boot that fails from here. */
   function stopTheServerActors(): void {
+    mediaService.stop();
     dataSourceService.stop();
     bindingService.stop();
     autoOutScheduler.stop();
@@ -153,6 +159,7 @@ async function startServingFromDatabase(
       controlPageFolder: options.controlPageFolder,
       rendererPageFolder: options.rendererPageFolder,
       sourceHostAllowlist: options.sourceHostAllowlist,
+      mediaFolder,
     });
     httpServer = await listen({
       fetch: app.fetch,

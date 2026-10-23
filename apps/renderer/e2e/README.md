@@ -13,7 +13,8 @@ Browser tests of the renderer page (Playwright, Chromium). Start at `lifecycle.e
   routes the tokens file to a 404 inside the page: the renderer logs "theme not loaded on
   :root" and still builds its layers (nothing is blanked).
 - `raceClockOnAir.e2e.ts` — the one file that drives the REAL server's state (`realServer.ts`,
-  port 5185) and the built race clock; it holds the screenshot baseline. `themeOnRoot` reads
+  port 5185, or 5185 plus `BAJAOVRLAY_E2E_PORT_OFFSET`, so a second checkout can run at the
+  same time) and the built race clock; it holds the screenshot baseline. `themeOnRoot` reads
   the real server's `/theme/` files too, through the proxy, but sends it no command.
 
 **Watch (2026-10-11, BAJAOVRLAY-13):** a test named "counts on its own while the clock is

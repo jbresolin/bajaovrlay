@@ -33,6 +33,7 @@ import {
   buildTypedEnduroClockFields,
   momentOfTheTake,
 } from './resolveItemFieldsWithBindings.testSupport.js';
+import { buildEmptyLibrary } from './resolveItemFieldsWithEntities.testSupport.js';
 
 describe('resolveItemFieldsIntoGraphicData with bindings that cannot resolve', () => {
   const refusedScenarios: Array<{
@@ -101,6 +102,7 @@ describe('resolveItemFieldsIntoGraphicData with bindings that cannot resolve', (
       graphic,
       momentOfTheTake,
       sources,
+      entities: buildEmptyLibrary(),
     });
 
     // Assert: the whole take refused, the field and the cause named in pt-BR.

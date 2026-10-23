@@ -39,9 +39,10 @@ export const ptBRLayers = {
   changedOnAirChip: 'alterado no ar',
   changedOnAirTooltip: (fieldTitles: string) => `Alterado no ar: ${fieldTitles}`,
   // Under Camadas after "Salvar no item" skipped fields the item reads from a source
-  // (gate 2 of PR #18): those keep their binding and stay "alterado no ar".
+  // (gate 2 of PR #18) or from the entity library (BAJAOVRLAY-19): those keep their
+  // binding or reference and stay "alterado no ar".
   notSavedBecauseReadFromASource: (fieldTitles: string) =>
-    `Não salvo no item, porque o item lê da fonte: ${fieldTitles}.`,
+    `Não salvo no item, porque o item lê da fonte ou dos cadastros: ${fieldTitles}.`,
   // The same chip beside "em prévia", for a preview changed with "Atualizar prévia".
   changedInPreviewTooltip: (fieldTitles: string) => `Alterado na prévia: ${fieldTitles}`,
   // Keeps the change on air for the next takes of the item.

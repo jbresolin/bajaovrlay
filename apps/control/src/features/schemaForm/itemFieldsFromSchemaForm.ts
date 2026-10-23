@@ -19,6 +19,7 @@ import type { SchemaFormValues } from './schemaFormValues';
  *   so every take of the item gets its own moment;
  * - a field set to "Fonte" or "Relógio da fonte" is stored as its binding, and the three
  *   clock fields the whole clock fills are left out;
+ * - a field set to "Cadastro" is stored as its entity reference;
  * - a property the form cannot edit is stored as a literal exactly as it was where the
  *   form was filled from (a new, empty form has none).
  */
@@ -42,6 +43,9 @@ export function buildItemFieldsFromSchemaForm(
     }
     if (checkedField.outcome === 'binding') {
       fieldPairs.push([checkedField.key, checkedField.binding]);
+    }
+    if (checkedField.outcome === 'entity') {
+      fieldPairs.push([checkedField.key, checkedField.reference]);
     }
   }
   return Object.fromEntries(fieldPairs);
@@ -81,7 +85,8 @@ function isStoredFieldNothingToTheForm(
  * what the item stores (that command merges key by key, so the rest is left out):
  * - a value differs unless the item stores the very same value as a literal;
  * - "filled by the server at the take" differs unless the item already stores that;
- * - a binding differs unless the item stores the very same binding;
+ * - a binding differs unless the item stores the very same binding, and so does an
+ *   entity reference;
  * - a clock field the whole clock fills is treated as cleared: a null where the item
  *   stores a value, so the save keeps no value beside the whole clock (the server refuses
  *   one);
@@ -131,6 +136,14 @@ export function buildChangedItemFieldsFromSchemaForm(
           storedField?.kind === 'binding' && areJsonValuesEqual(storedField, checkedField.binding);
         if (!isStoredAsTheSameBinding) {
           changedFieldPairs.push([checkedField.key, checkedField.binding]);
+        }
+        break;
+      }
+      case 'entity': {
+        const isStoredAsTheSameReference =
+          storedField?.kind === 'entity' && areJsonValuesEqual(storedField, checkedField.reference);
+        if (!isStoredAsTheSameReference) {
+          changedFieldPairs.push([checkedField.key, checkedField.reference]);
         }
         break;
       }

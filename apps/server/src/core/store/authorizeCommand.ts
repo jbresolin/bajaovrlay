@@ -7,6 +7,7 @@ import {
   isRendererActor,
   isSystemActor,
   macroWatchdogActor,
+  mediaStoreActor,
   readMacroIdOfMacroRunnerActor,
   readSourceIdOfDataSourcePollerActor,
 } from './commandActors.js';
@@ -47,6 +48,9 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  * - the refresher of bound fields (`sistema:vinculos`) may only send
  *   refreshBoundInstanceData, the new values of an instance's live bound fields after its
  *   source's data changed, and nobody else may send that (BAJAOVRLAY-20);
+ * - the media store (`sistema:midia`) may only send recordUploadedMedia, which lists a
+ *   file the upload route has just written, and nobody else may: a page that could would
+ *   list an image with no file behind it (BAJAOVRLAY-19);
  * - every other server timer (`sistema:`, today the auto-out) may only clear one layer:
  *   a bug in a timer must never be able to put a graphic on air or empty the screen;
  * - every other actor (an operator) may send everything else, except the runner's
@@ -55,7 +59,8 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   poll results and a recording's progress, so no page can fake race data or a count,
  *   except a stopRecording that carries a failureMessage: only the recorder says why
  *   a recording failed (gate 2 on PR #16), and except refreshBoundInstanceData: a value
- *   typed over a live field is a correction, made with setOverride.
+ *   typed over a live field is a correction, made with setOverride, and except
+ *   recordUploadedMedia.
  * The role comes from the address the connection chose (`/ws?role=renderer`,
  * `/ws?role=monitor`), so this keeps honest pages in their lane; it is not a defence
  * against a hostile client.
@@ -68,6 +73,7 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
     command.type === 'advanceMacroRun' || command.type === 'endMacroRun';
   const isPollResult = command.type === 'recordDataSourcePoll';
   const isRefreshOfBoundFields = command.type === 'refreshBoundInstanceData';
+  const isRecordOfAnUpload = command.type === 'recordUploadedMedia';
   const isRecorderBookkeeping =
     command.type === 'recordRecordingProgress' ||
     (command.type === 'stopRecording' && command.failureMessage !== undefined);
@@ -91,6 +97,9 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   if (actor === bindingRefresherActor) {
     return isRefreshOfBoundFields;
   }
+  if (actor === mediaStoreActor) {
+    return isRecordOfAnUpload;
+  }
   if (actor === dataSourceRecorderActor) {
     return command.type === 'stopRecording' || command.type === 'recordRecordingProgress';
   }
@@ -102,7 +111,8 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
     !isMacroRunBookkeeping &&
     !isPollResult &&
     !isRecorderBookkeeping &&
-    !isRefreshOfBoundFields
+    !isRefreshOfBoundFields &&
+    !isRecordOfAnUpload
   );
 };
 
