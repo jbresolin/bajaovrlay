@@ -16,3 +16,6 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
   to `build-id.json`, which the server reads once at boot and sends in hello, so an open
   page from an older build reloads itself after the restart (`packages/shared/src/build`).
   Both use `buildIdFile.js`, tested by `buildIdFile.test.ts`.
+- `e2ePortOffset.ts` (not a script: every Playwright config and e2e helper imports it):
+  reads `BAJAOVRLAY_E2E_PORT_OFFSET` once, a whole number or else 0, tested by
+  `e2ePortOffset.test.ts`.

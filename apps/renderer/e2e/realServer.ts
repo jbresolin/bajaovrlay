@@ -2,10 +2,10 @@
 // test sends it a command over its WebSocket, exactly as the control page will.
 // playwright.config.ts starts that server (with its own SQLite file) before the tests.
 
-// BAJAOVRLAY_E2E_PORT_OFFSET (default 0) moves every port of the browser tests by the same
-// amount, so two checkouts (two worktrees) can run them at once without one reusing the
-// other's servers; CI leaves it unset and runs on the ports written here.
-const portOffsetOfTheBrowserTests = Number(process.env.BAJAOVRLAY_E2E_PORT_OFFSET ?? '0');
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset.
 
 /** The real server's port in a Playwright run; far from 3000 so it never meets `pnpm dev`. */
 export const realServerPort = 5185 + portOffsetOfTheBrowserTests;

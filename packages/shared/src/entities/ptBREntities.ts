@@ -119,9 +119,10 @@ export const ptBREntities = {
   referenceProblems: {
     teamNotFound: (carNumber: number) =>
       `a equipe do carro ${String(carNumber)} não está nos cadastros.`,
-    personNotFound: (personId: string) => `a pessoa "${personId}" não está nos cadastros.`,
-    sponsorNotFound: (sponsorId: string) => `o patrocinador "${sponsorId}" não está nos cadastros.`,
-    scheduleSlotNotFound: (slotId: string) => `a sessão "${slotId}" não está na programação.`,
+    // In words, never by the id: "Nome: lê uma pessoa excluída dos cadastros." (gate 2 of PR #23).
+    personNotFound: 'lê uma pessoa excluída dos cadastros.',
+    sponsorNotFound: 'lê um patrocinador excluído dos cadastros.',
+    scheduleSlotNotFound: 'lê uma sessão excluída da programação.',
     unknownAttribute: (entityTypeName: string, attributeKey: string) =>
       `o cadastro de ${entityTypeName} não tem o campo "${attributeKey}".`,
     attributeAbsent: (recordDescription: string, attributeLabel: string) =>

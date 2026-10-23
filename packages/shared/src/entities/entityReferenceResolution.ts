@@ -83,7 +83,7 @@ function findRecordOfReference(
     case 'person': {
       const person = library.people.find((candidate) => candidate.personId === reference.personId);
       return person === undefined
-        ? { isFound: false, problem: problems.personNotFound(reference.personId) }
+        ? { isFound: false, problem: problems.personNotFound }
         : {
             isFound: true,
             record: { recordFields: person, recordDescription: describePerson(person) },
@@ -94,7 +94,7 @@ function findRecordOfReference(
         (candidate) => candidate.sponsorId === reference.sponsorId,
       );
       return sponsor === undefined
-        ? { isFound: false, problem: problems.sponsorNotFound(reference.sponsorId) }
+        ? { isFound: false, problem: problems.sponsorNotFound }
         : {
             isFound: true,
             record: { recordFields: sponsor, recordDescription: describeSponsor(sponsor) },
@@ -103,7 +103,7 @@ function findRecordOfReference(
     case 'scheduleSlot': {
       const slot = library.scheduleSlots.find((candidate) => candidate.slotId === reference.slotId);
       return slot === undefined
-        ? { isFound: false, problem: problems.scheduleSlotNotFound(reference.slotId) }
+        ? { isFound: false, problem: problems.scheduleSlotNotFound }
         : {
             isFound: true,
             record: { recordFields: slot, recordDescription: describeScheduleSlot(slot) },

@@ -13,7 +13,10 @@
  *   - A program renamed as a PNG, a GIF, a plain text file and an HTML page that holds an
  *     SVG are refused as not an accepted image.
  *   - An SVG that gives no size at all, and a PNG cut off before its header ends, are
- *     refused as images whose size cannot be read.
+ *     refused as images whose size cannot be read; so are malformed JPEG headers (cut
+ *     off, a length past the end or of 0, a scan before the frame, 0 by 0) and malformed
+ *     WebP headers (no first chunk, no signature byte, no start code, an unknown chunk),
+ *     each without reading past the end (gate 2 of PR #23).
  *
  * What these tests deliberately do not cover:
  *   - The 5 MB limit and the route's answers; mediaRoutes.test.ts.
@@ -29,6 +32,30 @@ import {
   buildSvgSponsorLogo,
   buildWebpSponsorLogo,
 } from './imageFiles.testSupport.js';
+
+/** A lossy WebP ("VP8 ") whose three start-code bytes are zeros instead of 9D 01 2A. */
+function buildLossyWebpWithoutItsStartCode(): Buffer {
+  const bytes = Buffer.alloc(30);
+  bytes.write('RIFF', 0, 'ascii');
+  bytes.writeUInt32LE(22, 4);
+  bytes.write('WEBP', 8, 'ascii');
+  bytes.write('VP8 ', 12, 'ascii');
+  bytes.writeUInt32LE(10, 16);
+  bytes.writeUInt16LE(600, 26);
+  bytes.writeUInt16LE(200, 28);
+  return bytes;
+}
+
+/** A WebP whose first chunk is "ICCP" (a colour profile), which carries no size. */
+function buildWebpWithAnUnknownFirstChunk(): Buffer {
+  const bytes = Buffer.alloc(30);
+  bytes.write('RIFF', 0, 'ascii');
+  bytes.writeUInt32LE(22, 4);
+  bytes.write('WEBP', 8, 'ascii');
+  bytes.write('ICCP', 12, 'ascii');
+  bytes.writeUInt32LE(10, 16);
+  return bytes;
+}
 
 describe('readImageContent', () => {
   const acceptedImages = [
@@ -118,6 +145,66 @@ describe('readImageContent', () => {
     {
       name: 'refuses a PNG cut off before its size',
       bytes: buildPngLogo(256, 128).subarray(0, 18),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // Malformed JPEG headers (gate 2 of PR #23): each must be refused, never read past
+    // its end, never loop.
+    // The frame header cut off after its marker: the size bytes are missing.
+    {
+      name: 'refuses a JPEG cut off inside its frame header',
+      bytes: buildJpegCarPhoto(1920, 1280).subarray(0, 24),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // A segment whose length points far past the end of the file.
+    {
+      name: 'refuses a JPEG whose segment length runs past the end',
+      bytes: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0xff, 0xf0, 0x4a, 0x46, 0x49, 0x46]),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // A segment of length 0, which would make a careless walk stand still.
+    {
+      name: 'refuses a JPEG with a segment of length 0',
+      bytes: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // The scan starts before any frame header: there is no size to read.
+    {
+      name: 'refuses a JPEG whose scan starts before its frame header',
+      bytes: Buffer.from([0xff, 0xd8, 0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00]),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // A frame header that says 0 × 0.
+    {
+      name: 'refuses a JPEG whose frame header says 0 by 0',
+      bytes: buildJpegCarPhoto(0, 0),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // Malformed WebP headers (gate 2 of PR #23).
+    // RIFF and WEBP, then nothing: the first chunk is missing.
+    {
+      name: 'refuses a WebP cut off after its RIFF header',
+      bytes: buildWebpSponsorLogo(600, 200).subarray(0, 14),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // A lossless chunk without its signature byte.
+    {
+      name: 'refuses a lossless WebP without its signature byte',
+      bytes: Buffer.concat([
+        buildWebpSponsorLogo(600, 200).subarray(0, 20),
+        Buffer.from([0x00, 0x57, 0x02, 0x32, 0x00]),
+      ]),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // A lossy chunk whose start code is wrong.
+    {
+      name: 'refuses a lossy WebP without its start code',
+      bytes: buildLossyWebpWithoutItsStartCode(),
+      expectedProblem: 'sizeUnreadable',
+    },
+    // A first chunk of a kind WebP does not have.
+    {
+      name: 'refuses a WebP whose first chunk is of no known kind',
+      bytes: buildWebpWithAnUnknownFirstChunk(),
       expectedProblem: 'sizeUnreadable',
     },
   ];

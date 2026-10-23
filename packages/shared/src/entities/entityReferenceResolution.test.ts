@@ -13,7 +13,8 @@
  *     read as stored.
  *   - Team 42's logo gives the URL /media/<mediaId>.
  *   - A record that is not in the library is unresolvable, with a pt-BR sentence naming
- *     the car (or the id).
+ *     the car, or for a person, sponsor or slot saying in words that it was deleted:
+ *     their ids are UUIDs that tell the operator nothing (gate 2 of PR #23).
  *   - Team 7's logo, which it does not have, is an absent value naming the team and the
  *     field: the take leaves an optional field out. So is the city of a team with none.
  *   - An attribute the type does not have is unresolvable.
@@ -113,25 +114,48 @@ describe('resolveEntityReferenceAgainstLibrary', () => {
     });
   });
 
-  it('says a sponsor that is not in the library is missing, naming the id', () => {
-    // Arrange: the library.
-    const library = buildLibraryOfTheRaceWeekend();
-
-    // Act: read a sponsor deleted from the library.
-    const resolution = resolveEntityReferenceAgainstLibrary(
-      {
+  const missingRecords: Array<{ name: string; reference: EntityFieldValue; expected: string }> = [
+    // A person deleted since the item was made: the id is a UUID the page made.
+    {
+      name: 'says a person no longer in the library was deleted, in words',
+      reference: {
         kind: 'entity',
-        entityType: 'sponsor',
-        sponsorId: 'apoio-pneus',
+        entityType: 'person',
+        personId: '0f6c2a9e-41d7-4b8e-9a35-7c1e5d2b8f40',
         attribute: 'name',
       },
-      library,
-    );
+      expected: 'lê uma pessoa excluída dos cadastros.',
+    },
+    // A sponsor deleted from the library.
+    {
+      name: 'says a sponsor no longer in the library was deleted, in words',
+      reference: { kind: 'entity', entityType: 'sponsor', sponsorId: 'apoio-pneus', attribute: 'name' },
+      expected: 'lê um patrocinador excluído dos cadastros.',
+    },
+    // A slot removed from the schedule.
+    {
+      name: 'says a slot no longer in the schedule was deleted, in words',
+      reference: {
+        kind: 'entity',
+        entityType: 'scheduleSlot',
+        slotId: '5b8d1e3f-7a9c-4e2b-8d6f-1a3c5e7b9d02',
+        attribute: 'sessionName',
+      },
+      expected: 'lê uma sessão excluída da programação.',
+    },
+  ];
 
-    // Assert: unresolvable, naming the id.
-    expect(resolution, 'a missing sponsor must be named by its id').toEqual({
+  it.each(missingRecords)('$name', ({ reference, expected }) => {
+    // Arrange: the library, which no longer has the record of this row.
+    const library = buildLibraryOfTheRaceWeekend();
+
+    // Act: read the reference.
+    const resolution = resolveEntityReferenceAgainstLibrary(reference, library);
+
+    // Assert: unresolvable, in words and never by its id (gate 2 of PR #23).
+    expect(resolution, 'a missing record is named in words').toEqual({
       status: 'unresolvable',
-      problem: 'o patrocinador "apoio-pneus" não está nos cadastros.',
+      problem: expected,
     });
   });
 

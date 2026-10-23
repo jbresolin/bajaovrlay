@@ -13,6 +13,7 @@ import {
   resolveEntityReferenceAgainstLibrary,
 } from '@bajaovrlay/shared';
 
+import { readRequiredFieldKeys, readTitleOfField } from '@/features/bindings/dataSchemaFieldFacts';
 import { ptBR } from '@/i18n/ptBR';
 
 /** Says whether an item reads any field from the entity library. */
@@ -27,10 +28,7 @@ export function findWhyItemCannotBeTakenNowFromTheLibrary(
   library: EntityLibrary,
 ): string | undefined {
   const dataSchema = graphic?.manifest.schema;
-  const required = dataSchema?.required;
-  const requiredFieldKeys = Array.isArray(required)
-    ? required.filter((key) => typeof key === 'string')
-    : [];
+  const requiredFieldKeys = readRequiredFieldKeys(dataSchema);
   for (const [fieldKey, fieldValue] of Object.entries(item.fields)) {
     if (fieldValue.kind !== 'entity') {
       continue;
@@ -47,21 +45,4 @@ export function findWhyItemCannotBeTakenNowFromTheLibrary(
     }
   }
   return undefined;
-}
-
-/** A field's title in the data schema, or its key. */
-function readTitleOfField(
-  dataSchema: Record<string, unknown> | undefined,
-  fieldKey: string,
-): string {
-  const properties = dataSchema?.properties;
-  const property =
-    typeof properties === 'object' && properties !== null && Object.hasOwn(properties, fieldKey)
-      ? (properties as Record<string, unknown>)[fieldKey]
-      : undefined;
-  const title =
-    typeof property === 'object' && property !== null
-      ? (property as Record<string, unknown>).title
-      : undefined;
-  return typeof title === 'string' ? title : fieldKey;
 }

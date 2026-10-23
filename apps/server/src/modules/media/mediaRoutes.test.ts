@@ -15,8 +15,9 @@
  *   - A PNG is accepted: the answer names its media id (the SHA-256), type and size, the
  *     file is on disk under that id, and the media slice and the event log record it.
  *   - A JPEG, a WebP and an SVG are accepted with their own type.
- *   - A program renamed logo.png is refused (415), and so is a 6 MB file (413), nothing
- *     written or recorded; a request with no file is refused (400).
+ *   - A program renamed logo.png is refused (415), and so is a 6 MB file (413), also
+ *     when it is streamed in chunks with no length given, nothing written or recorded;
+ *     a request with no file is refused (400).
  *   - The same file uploaded twice is one media.
  *   - GET /media/<mediaId> answers the bytes with their type, a year of cache, nosniff
  *     and the CSP; an SVG with a script is served with the same CSP.
@@ -169,6 +170,44 @@ describe('POST /api/v1/media', () => {
       },
     });
     expect(readdirSync(mediaFolder), 'nothing is written').toEqual([]);
+  });
+
+  it('refuses a chunked upload over the limit, which gives no length up front', async () => {
+    // Arrange: the app, and 6 MB sent in 64 KB chunks with no Content-Length, as a
+    // script streaming a file would send it (gate 2 of PR #23).
+    const { app, mediaFolder, stateStore } = createAppWithAMediaFolder();
+    const chunkOf64Kilobytes = new Uint8Array(64 * 1024);
+    let chunksLeft = (6 * 1024 * 1024) / chunkOf64Kilobytes.length;
+    const streamOf6Megabytes = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (chunksLeft === 0) {
+          controller.close();
+          return;
+        }
+        chunksLeft -= 1;
+        controller.enqueue(chunkOf64Kilobytes);
+      },
+    });
+
+    // Act: post the stream.
+    const response = await app.request('/api/v1/media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data; boundary=limite-baja' },
+      body: streamOf6Megabytes,
+      duplex: 'half',
+    } as RequestInit);
+    const body: unknown = await response.json();
+
+    // Assert: 413 in pt-BR, nothing written, nothing recorded.
+    expect(response.status, 'a stream over the limit must answer 413').toBe(413);
+    expect(body, 'the reason states the limit in pt-BR').toEqual({
+      error: {
+        code: 'MEDIA_TOO_LARGE',
+        message: 'A imagem passa de 5 MB; reduza-a antes de enviar.',
+      },
+    });
+    expect(readdirSync(mediaFolder), 'nothing is written').toEqual([]);
+    expect(stateStore.readAllSlices().media, 'nothing is recorded').toEqual([]);
   });
 
   it('refuses a request that carries no file', async () => {

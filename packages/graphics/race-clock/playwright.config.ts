@@ -1,11 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
 // The tests open the BUILT graphic (dist/) under the same folder the server will use,
 // so they also prove that dist/ works when served from /graphics/race-clock/.
-// BAJAOVRLAY_E2E_PORT_OFFSET (default 0) moves every port of the browser tests by the same
-// amount, so two checkouts (two worktrees) can run them at once without one reusing the
-// other's servers; CI leaves it unset and runs on the ports written here.
-const previewPort = 5176 + Number(process.env.BAJAOVRLAY_E2E_PORT_OFFSET ?? '0');
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset.
+const previewPort = 5176 + portOffsetOfTheBrowserTests;
 const builtGraphicAddress = `http://127.0.0.1:${String(previewPort)}/graphics/race-clock/`;
 const isRunningInCI = Boolean(process.env.CI);
 

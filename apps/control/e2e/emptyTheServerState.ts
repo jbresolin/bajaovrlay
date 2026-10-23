@@ -5,11 +5,12 @@
 // media store), so every browser test starts from the same place whatever ran
 // before it, in any order. playwright.config.ts starts that server.
 
-// BAJAOVRLAY_E2E_PORT_OFFSET (default 0) moves every port of the browser tests by the same
-// amount, so two checkouts (two worktrees) can run them at once without one reusing the
-// other's servers; CI leaves it unset and runs on the ports written here.
-/** How far every browser-test port is moved (BAJAOVRLAY_E2E_PORT_OFFSET), 0 when unset. */
-export const portOffsetOfTheBrowserTests = Number(process.env.BAJAOVRLAY_E2E_PORT_OFFSET ?? '0');
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset. Passed on for
+// playwright.config.ts, which moves the control page's own port by it.
+export { portOffsetOfTheBrowserTests };
 
 /** The real server's port in a Playwright run; far from 3000 so it never meets `pnpm dev`. */
 export const realServerPort = 5187 + portOffsetOfTheBrowserTests;

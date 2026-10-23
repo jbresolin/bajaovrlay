@@ -121,6 +121,9 @@ export const ptBREntityLibrary = {
     importValidRowsButton: (validRowCount: number) =>
       validRowCount === 1 ? 'Importar 1 linha válida' : `Importar ${validRowCount} linhas válidas`,
     importingButton: 'Importando…',
+    // Beside the import button of a tab keyed by id (gate 2 of PR #23).
+    linesWithoutIdsCreateNewRecords:
+      'Linhas sem id criam cadastros novos a cada importação: o mesmo arquivo importado duas vezes repete cada um. Para atualizar, importe o CSV exportado, que traz os ids.',
     imported: (recordCount: number) =>
       recordCount === 1 ? '1 cadastro importado.' : `${recordCount} cadastros importados.`,
     closeButton: 'Fechar',

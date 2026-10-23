@@ -12,6 +12,9 @@
  *   - A pasted CSV with a new car, a stored car and a bad line shows the three statuses
  *     with their lines and the reason.
  *   - "Importar" sends one importEntities with the two valid teams.
+ *   - On Pessoas, Patrocinadores and Programação, the import button carries the note that
+ *     lines without an id create new records at every import (gate 2 of PR #23); on
+ *     Equipes, keyed by the car, it does not.
  *   - "Exportar CSV" hands the browser the teams as a file named equipes.csv.
  *
  * What these tests deliberately do not cover:
@@ -23,6 +26,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import {
+  buildNarrator,
   buildSlicesWithTheLibrary,
   buildTeam42WithItsLogo,
   logoOfTeam42MediaId,
@@ -115,6 +119,39 @@ describe('the CSV import panel', () => {
         ],
       },
     ]);
+  });
+});
+
+describe('the note by the import button', () => {
+  it('warns on Pessoas that lines without an id create new people at every import', () => {
+    // Arrange: the page with the narrator, on the Pessoas tab.
+    renderOnControlPageConnectedToFakeServer(
+      <EntityLibraryPage />,
+      buildSlicesWithTheLibrary({ people: [buildNarrator()] }),
+    );
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Pessoas' }));
+
+    // Act: open the import panel.
+    fireEvent.click(screen.getByRole('button', { name: 'Importar CSV' }));
+
+    // Assert: the import button is described by the note.
+    expect(
+      screen.getByRole('button', { name: 'Importar 0 linhas válidas' }),
+      'the note is read with the button',
+    ).toHaveAccessibleDescription(
+      'Linhas sem id criam cadastros novos a cada importação: o mesmo arquivo importado duas vezes repete cada um. Para atualizar, importe o CSV exportado, que traz os ids.',
+    );
+  });
+
+  it('gives no such note on Equipes, where the car is the key', () => {
+    // Arrange and act: the teams' import panel open.
+    openTheTeamsImportPanel();
+
+    // Assert: no note on the button.
+    expect(
+      screen.getByRole('button', { name: 'Importar 0 linhas válidas' }),
+      'a car already stored is updated, never repeated',
+    ).not.toHaveAccessibleDescription();
   });
 });
 

@@ -39,6 +39,10 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
   const { entityType } = props;
   const pasteBoxId = useId();
   const fileInputId = useId();
+  const noteAboutIdsId = useId();
+  // A team is keyed by its car, which every line carries; the other kinds by an id a line
+  // may leave out, and then each import of the same file makes the records again.
+  const isKeyedByAnId = entityType !== 'team';
   const library = useEntityLibrary();
   const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
   const [csvText, setCsvText] = useState('');
@@ -164,9 +168,15 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
           {outcomeMessage.text}
         </p>
       )}
+      {isKeyedByAnId && (
+        <p id={noteAboutIdsId} className="text-sm text-muted-foreground">
+          {texts.linesWithoutIdsCreateNewRecords}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <ActionButton
           size="sm"
+          aria-describedby={isKeyedByAnId ? noteAboutIdsId : undefined}
           disabled={validRowCount === 0 || isWaitingForTheServer}
           onClick={() => void importTheValidRows()}
         >
