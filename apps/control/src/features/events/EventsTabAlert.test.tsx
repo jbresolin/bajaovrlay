@@ -13,6 +13,10 @@
  *   - A new pending event makes the badge pulse and plays the chime once.
  *   - The events already waiting when the page opens do not chime, and neither does a
  *     queued one (it goes on air by itself).
+ *   - The chime follows the events, not their count: a new pending event arriving as
+ *     another leaves chimes (gate 2 of PR #22).
+ *   - After a reconnect, a pending event that arrived while the page was away chimes once,
+ *     and the ones it had already heard do not chime again.
  *   - With "Som de eventos" switched off the badge still pulses but nothing plays, and the
  *     choice is kept in this browser.
  *
@@ -103,6 +107,58 @@ describe('a new pending event', () => {
       vi.mocked(playEventChime),
       'nothing new to approve, nothing to hear',
     ).not.toHaveBeenCalled();
+  });
+});
+
+describe('the chime across changes and reconnects', () => {
+  it('chimes for a new pending event that arrives as another leaves, the count unchanged', () => {
+    // Arrange: car 47's penalty waiting when the page opened.
+    const { fakeServer } = renderTheStripWith([buildPendingPenaltyOfCar47(5)]);
+
+    // Act: the penalty is dismissed elsewhere and car 38's warning arrives, in one change.
+    act(() => {
+      fakeServer.sendMessage({
+        type: 'slice',
+        name: 'events',
+        slice: [
+          { ...buildPendingPenaltyOfCar47(5), status: 'dismissed' as const },
+          buildPendingWarningOfCar38(0),
+        ],
+      });
+    });
+
+    // Assert: one chime: the warning is new, whatever the count says.
+    expect(vi.mocked(playEventChime), 'a new event must be heard').toHaveBeenCalledTimes(1);
+  });
+
+  it('chimes once after a reconnect for an event that arrived meanwhile, not for the others', () => {
+    // Arrange: car 47's penalty waiting when the page opened; the line drops.
+    const { fakeServer } = renderTheStripWith([buildPendingPenaltyOfCar47(5)]);
+    act(() => {
+      fakeServer.dropConnection();
+    });
+
+    // Act: the server says hello again with car 38's warning added; then the line drops
+    // and comes back once more with the same two.
+    const slicesWithBoth = buildSlicesWithTheInbox([
+      buildPendingPenaltyOfCar47(5),
+      buildPendingWarningOfCar38(1),
+    ]);
+    act(() => {
+      fakeServer.sendMessage({ type: 'hello', slices: slicesWithBoth });
+    });
+    act(() => {
+      fakeServer.dropConnection();
+    });
+    act(() => {
+      fakeServer.sendMessage({ type: 'hello', slices: slicesWithBoth });
+    });
+
+    // Assert: one chime, for the warning, the first time only.
+    expect(
+      vi.mocked(playEventChime),
+      'only the event the page had not heard',
+    ).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -27,7 +27,7 @@ const texts = ptBR.events.rules;
 /**
  * One row of "Regras": the kind's mode, its item, its seconds on air and its maximum wait,
  * and "Salvar", which sends the whole row as updateEventRule (eventRuleForm.ts). A problem
- * or the server's refusal is shown in the row. The Super Chat row offers "Perguntar" only
+ * or the server's refusal is shown in the row, and "Salvo." once the server accepted it. The Super Chat row offers "Perguntar" only
  * and says why.
  */
 export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
@@ -36,6 +36,16 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
   const [values, setValues] = useState<EventRuleFormValues>(() => buildEventRuleFormValues(rule));
   const [problem, setProblem] = useState<string | undefined>(undefined);
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  // The row follows the rule as the server holds it: another operator's change, or this
+  // row's own save coming back, shows here (gate 2 of PR #22). Compared during the draw,
+  // React's way to adjust state when a prop changes, so no extra draw happens. What could
+  // go wrong: a change made elsewhere while this row is being edited replaces what was typed.
+  const [ruleTheValuesCameFrom, setRuleTheValuesCameFrom] = useState(rule);
+  if (rule !== ruleTheValuesCameFrom) {
+    setRuleTheValuesCameFrom(rule);
+    setValues(buildEventRuleFormValues(rule));
+  }
   const kindName = texts.kindNames[rule.kind];
   const idPrefix = `event-rule-${rule.kind}`;
   const modesOffered = listModesOfferedForKind(rule.kind);
@@ -47,10 +57,12 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
       return;
     }
     setProblem(undefined);
+    setIsSaved(false);
     setIsWaitingForTheServer(true);
     const refusal = await sendCommandAndReadItsRefusal(reading.command);
     setIsWaitingForTheServer(false);
     setProblem(refusal ?? undefined);
+    setIsSaved(refusal === null);
   }
 
   return (
@@ -122,6 +134,11 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
           {problem}
         </p>
       )}
+      {isSaved ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          {texts.savedConfirmation}
+        </p>
+      ) : null}
       <Button
         type="button"
         size="xs"

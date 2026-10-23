@@ -115,6 +115,9 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   const chosenGraphicId = useWatch({ control: itemForm.control, name: 'graphicId' });
   const chosenGraphic = graphics.find((graphic) => graphic.id === chosenGraphicId);
   const isGraphicStillToBeChosen = chosenGraphicId === '';
+  // Whether a field of the graphic is "Evento" now (BAJAOVRLAY-44): the item then goes
+  // on air only through its event, and "Salvar e disparar" is off.
+  const [isAnyFieldFilledByAnEvent, setIsAnyFieldFilledByAnEvent] = useState(false);
 
   // The second form lives in ItemGraphicFieldsForm, drawn below once the page knows the
   // chosen graphic. This is how the panel reaches it at a press: the form puts its handle
@@ -202,6 +205,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
                 whenFieldsAreChecked={whenFieldsAreChecked}
                 handleRef={graphicFieldsFormHandleRef}
                 isItemOnAir={isItemOnAir}
+                onIsFilledByAnEventChanged={setIsAnyFieldFilledByAnEvent}
               />
             )}
           </CardContent>
@@ -210,6 +214,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
               isWaitingForTheServer={saves.isWaitingForTheServer}
               isGraphicStillToBeChosen={isGraphicStillToBeChosen}
               isItemOnAir={isItemOnAir}
+              isTakenOnlyThroughAnEvent={chosenGraphic !== undefined && isAnyFieldFilledByAnEvent}
               commandTypesSentInThisOpening={saves.commandTypesSentInThisOpening}
               onSavePressed={() => saves.pressSaveButton('saveItem')}
               onSaveAndTakePressed={() => saves.pressSaveButton('saveItemAndTake')}

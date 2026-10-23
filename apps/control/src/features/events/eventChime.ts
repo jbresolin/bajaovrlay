@@ -1,3 +1,13 @@
+// The page's one AudioContext, made at the first chime and kept: a browser allows only a
+// few at a time, and one made per chime would run out over a long race (gate 2 of PR #22).
+let sharedAudioContext: AudioContext | undefined;
+
+/** The page's AudioContext, made the first time it is needed. */
+function readSharedAudioContext(): AudioContext {
+  sharedAudioContext ??= new AudioContext();
+  return sharedAudioContext;
+}
+
 /**
  * The short chime of a new pending event: two soft tones made with the browser's Web Audio,
  * so the page ships no sound file. Never throws: a browser without Web Audio, or one that
@@ -5,7 +15,7 @@
  */
 export function playEventChime(): void {
   try {
-    const audioContext = new AudioContext();
+    const audioContext = readSharedAudioContext();
     const tonesInHz = [880, 1320];
     const toneLengthSeconds = 0.12;
     tonesInHz.forEach((toneInHz, toneIndex) => {

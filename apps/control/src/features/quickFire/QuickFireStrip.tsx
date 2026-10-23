@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTakeThenPreviewNextItem } from '@/features/autoPreview/useTakeThenPreviewNextItem';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { EventsTab } from '@/features/events/EventsTab';
-import { countPendingEvents } from '@/features/events/inboxEventLists';
+import { countPendingEvents, listPendingEventIds } from '@/features/events/inboxEventLists';
 import { useEventSoundSetting } from '@/features/events/useEventSoundSetting';
 import { usePendingEventAlert } from '@/features/events/usePendingEventAlert';
 import { MacroGrid } from '@/features/macros/MacroGrid';
@@ -47,7 +47,7 @@ export function QuickFireStrip() {
   const events = useServerState((state) => state.events);
   const { isEventSoundOn, chooseIsEventSoundOn } = useEventSoundSetting();
   const pendingEventCount = countPendingEvents(events);
-  const isEventBadgePulsing = usePendingEventAlert(pendingEventCount, isEventSoundOn);
+  const isEventBadgePulsing = usePendingEventAlert(listPendingEventIds(events), isEventSoundOn);
   const sendCommand = useSendCommand();
   const sendTakeByThisOperator = useTakeThenPreviewNextItem();
   const { chosenTab, chooseTab: setChosenTab } = useQuickFireTabChoice();

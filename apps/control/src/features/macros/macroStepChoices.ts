@@ -6,6 +6,7 @@ import {
   type Rundown,
 } from '@bajaovrlay/shared';
 
+import { isItemTakenOnlyThroughAnEvent } from '@/features/events/itemTakenThroughAnEvent';
 import { ptBR } from '@/i18n/ptBR';
 
 /** One item the step picker offers: its id and the words shown for it. */
@@ -14,7 +15,8 @@ export type ItemChoiceForMacroStep = { itemId: string; optionName: string };
 /**
  * Every item a "Pôr item no ar" step may name, rundown or panel alike, in the order the
  * operator meets them on the page: each rundown's items in firing order, then each
- * panel's buttons in tab order. Each is shown by its label with its home in brackets
+ * panel's buttons in tab order. An item filled by an event is left out: it goes on air
+ * only through its event, and the server refuses a run that takes it (gate 2 of PR #22). Each is shown by its label with its home in brackets
  * ("Logo Baja (Atalhos)"), because two items in different homes may share a label.
  */
 export function listItemChoicesForMacroSteps(
@@ -23,8 +25,9 @@ export function listItemChoicesForMacroSteps(
   panels: QuickFirePanel[],
 ): ItemChoiceForMacroStep[] {
   const itemOption = ptBR.quickFire.macroEditor.itemOption;
+  const itemsAMacroMayTake = items.filter((item) => !isItemTakenOnlyThroughAnEvent(item));
   const choicesFromRundowns = rundowns.flatMap((rundown) =>
-    listItemsOfRundownInOrder(items, rundown.id).map((item) => ({
+    listItemsOfRundownInOrder(itemsAMacroMayTake, rundown.id).map((item) => ({
       itemId: item.id,
       optionName: itemOption(item.label, rundown.name),
     })),
@@ -34,7 +37,7 @@ export function listItemChoicesForMacroSteps(
     (onePanel, otherPanel) => onePanel.order - otherPanel.order,
   );
   const choicesFromPanels = panelsInTabOrder.flatMap((panel) =>
-    listItemsOfQuickFirePanelInOrder(items, panel.id).map((item) => ({
+    listItemsOfQuickFirePanelInOrder(itemsAMacroMayTake, panel.id).map((item) => ({
       itemId: item.id,
       optionName: itemOption(item.label, panel.name),
     })),

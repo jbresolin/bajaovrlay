@@ -17,6 +17,8 @@
  *   - Saving "Evento" with no payload field chosen is refused on the page, naming the
  *     field, and nothing is sent.
  *   - A stored item opens with its event field chosen.
+ *   - "Salvar e disparar" is off once a field is "Evento", saying why: such an item goes
+ *     on air only through its event (gate 2 of PR #22); "Salvar e prévia" stays on.
  *
  * What these tests deliberately do not cover:
  *   - Which payload fields fit which graphic fields, row by row; eventFieldValue.test.ts
@@ -129,6 +131,24 @@ describe('"Evento" in the kind selector of the item editor', () => {
       'the page must say what is missing',
     ).toBeTruthy();
     expect(fakeServer.listCommandsReceived(), 'nothing may be sent').toEqual([]);
+  });
+
+  it('turns "Salvar e disparar" off once a field is "Evento", keeping "Salvar e prévia"', () => {
+    // Arrange: a new race clock item.
+    renderItemEditorPanelForNewRaceClockItem();
+
+    // Act: set its title to "Evento".
+    chooseOptionInDropdown('Como preencher Título', 'Evento');
+
+    // Assert: no take of a template from the editor; its look can still be previewed.
+    expect(
+      screen.getByRole('button', { name: 'Salvar e disparar' }),
+      'a template cannot be taken by itself',
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Salvar e prévia' }),
+      'its look can be seen with a sample event',
+    ).toBeEnabled();
   });
 
   it('opens a stored item with its event field chosen', () => {

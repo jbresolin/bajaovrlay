@@ -29,6 +29,10 @@ export const ptBREvents = {
   addEventButton: '+ Evento',
   rulesButton: 'Regras',
   soundSwitchLabel: 'Som de eventos',
+  /** Why a take of an item filled by an event is off, everywhere on the page. */
+  takeOfTemplateItemOff: 'Este item é preenchido por um evento: ele entra no ar pela aba Eventos.',
+  /** Why "Prévia" and "No ar" are off for an event whose rule has no item. */
+  ruleWithoutItemReason: 'A regra deste tipo de evento não tem item. Escolha um em Regras.',
   previewButton: 'Prévia',
   showButton: 'No ar',
   dismissButton: 'Descartar',
@@ -101,6 +105,7 @@ export const ptBREvents = {
     maxAgeLabel: (kindName: string) => `Espera máxima (s) de ${kindName}`,
     noMaxAgePlaceholder: 'sem limite',
     saveButton: 'Salvar',
+    savedConfirmation: 'Salvo.',
     closeButton: 'Fechar',
     superChatExplanation:
       'Super Chat nunca entra no ar sozinho: o conteúdo de um espectador sempre espera aprovação.',

@@ -1,6 +1,6 @@
 import type { Item } from '@bajaovrlay/shared';
 import { cn } from 'cn';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -8,7 +8,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ItemSourceMarker } from '@/features/bindings/ItemSourceMarker';
+import { findWhyTheTakeOfItemIsOff } from '@/features/events/itemTakenThroughAnEvent';
 import { buttonClassForEachItemColor } from '@/features/items/itemColorButton';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
@@ -31,7 +33,9 @@ const texts = ptBR.quickFire;
  * One quick-fire button: painted in the item's colour, its label large and its graphic's
  * name small, with the digit that fires it in the corner. A click puts the item on air;
  * right-click, or the small "⋯" beside it, opens "Prévia", "Editar" and "Mover para
- * rundown". Like a rundown row it is off while the page is disconnected.
+ * rundown". Like a rundown row it is off while the page is disconnected. A button of an
+ * item filled by an event (the notices of "Avisos") is off too, a tooltip saying why, its
+ * "Prévia" kept (gate 2 of PR #22).
  *
  * Two focus rules keep Space and Enter safe in the middle of a show. After a click the
  * button lets go of the focus, as the rundown's "Disparar" does, so a later Enter cannot
@@ -43,6 +47,7 @@ export function QuickFireItemButton(props: QuickFireItemButtonProps) {
   const { item, graphicName, digitKey } = props;
   const isConnected = useIsConnectedToServer();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const whyTheTakeIsOff = findWhyTheTakeOfItemIsOff(item);
 
   function takeThisItemAndLetGoOfTheFocus(button: HTMLButtonElement): void {
     button.blur();
@@ -56,27 +61,29 @@ export function QuickFireItemButton(props: QuickFireItemButtonProps) {
       aria-label={item.label}
       className={cn('relative flex rounded-md shadow-xs', buttonClassForEachItemColor[item.color])}
     >
-      <button
-        type="button"
-        disabled={!isConnected}
-        data-item-color={item.color}
-        onClick={(click) => takeThisItemAndLetGoOfTheFocus(click.currentTarget)}
-        onContextMenu={(rightClick) => {
-          // The browser's own menu would cover the button; ours opens instead.
-          rightClick.preventDefault();
-          setIsMenuOpen(true);
-        }}
-        className="flex min-h-16 w-full min-w-0 flex-col items-start gap-0.5 rounded-md p-2 pr-7 text-left outline-none hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <span className="w-full truncate text-sm font-semibold">{item.label}</span>
-        <span className="w-full truncate text-xs opacity-80">{graphicName}</span>
-        <ItemSourceMarker item={item} />
-        {digitKey === null ? null : (
-          <kbd aria-hidden="true" className="absolute bottom-1 right-2 text-xs opacity-80">
-            {digitKey}
-          </kbd>
-        )}
-      </button>
+      <TakeButtonWithItsReason whyTheTakeIsOff={whyTheTakeIsOff}>
+        <button
+          type="button"
+          disabled={!isConnected || whyTheTakeIsOff !== undefined}
+          data-item-color={item.color}
+          onClick={(click) => takeThisItemAndLetGoOfTheFocus(click.currentTarget)}
+          onContextMenu={(rightClick) => {
+            // The browser's own menu would cover the button; ours opens instead.
+            rightClick.preventDefault();
+            setIsMenuOpen(true);
+          }}
+          className="flex min-h-16 w-full min-w-0 flex-col items-start gap-0.5 rounded-md p-2 pr-7 text-left outline-none hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="w-full truncate text-sm font-semibold">{item.label}</span>
+          <span className="w-full truncate text-xs opacity-80">{graphicName}</span>
+          <ItemSourceMarker item={item} />
+          {digitKey === null ? null : (
+            <kbd aria-hidden="true" className="absolute bottom-1 right-2 text-xs opacity-80">
+              {digitKey}
+            </kbd>
+          )}
+        </button>
+      </TakeButtonWithItsReason>
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger asChild>
           <button
@@ -99,5 +106,29 @@ export function QuickFireItemButton(props: QuickFireItemButtonProps) {
         </DropdownMenuContent>
       </DropdownMenu>
     </li>
+  );
+}
+
+/**
+ * The button as it is, or, when its take is off for a reason (an item filled by an
+ * event), wrapped in a focusable span that shows the reason as a tooltip: a disabled
+ * button receives neither hover nor focus (as features/connection/ActionButton.tsx does).
+ */
+function TakeButtonWithItsReason(props: {
+  whyTheTakeIsOff: string | undefined;
+  children: ReactNode;
+}) {
+  if (props.whyTheTakeIsOff === undefined) {
+    return props.children;
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} className="flex w-full rounded-md">
+          {props.children}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{props.whyTheTakeIsOff}</TooltipContent>
+    </Tooltip>
   );
 }

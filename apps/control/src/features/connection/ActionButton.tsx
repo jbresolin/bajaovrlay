@@ -8,12 +8,17 @@ import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
 /**
  * The button every command uses. While the page is connected it is a plain Button.
  * While it is not, the button is disabled and a tooltip says why, so the operator never
- * presses something that silently does nothing.
+ * presses something that silently does nothing. `disabledReason`, when given, turns it
+ * off the same way with that reason (a take of an item filled by an event, BAJAOVRLAY-44).
  */
-export function ActionButton(props: ComponentProps<typeof Button>) {
+export function ActionButton(
+  props: ComponentProps<typeof Button> & { disabledReason?: string | undefined },
+) {
+  const { disabledReason, ...buttonProps } = props;
   const isConnected = useIsConnectedToServer();
-  if (isConnected) {
-    return <Button {...props} />;
+  const reasonForBeingOff = isConnected ? disabledReason : ptBR.connection.actionsDisabledReason;
+  if (reasonForBeingOff === undefined) {
+    return <Button {...buttonProps} />;
   }
 
   // A disabled button receives neither hover nor focus, so it could never show its own
@@ -22,10 +27,10 @@ export function ActionButton(props: ComponentProps<typeof Button>) {
     <Tooltip>
       <TooltipTrigger asChild>
         <span tabIndex={0} className="inline-flex rounded-md">
-          <Button {...props} disabled />
+          <Button {...buttonProps} disabled />
         </span>
       </TooltipTrigger>
-      <TooltipContent>{ptBR.connection.actionsDisabledReason}</TooltipContent>
+      <TooltipContent>{reasonForBeingOff}</TooltipContent>
     </Tooltip>
   );
 }

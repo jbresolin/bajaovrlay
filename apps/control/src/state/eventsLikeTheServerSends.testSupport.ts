@@ -60,7 +60,7 @@ export function buildDefaultEventRules(): EventRule[] {
       durationMs: 8_000,
       maxAgeMs: 120_000,
     },
-    { kind: 'leaderChanged', mode: 'auto', itemId: null, durationMs: 6_000, maxAgeMs: 120_000 },
+    { kind: 'leaderChanged', mode: 'ignore', itemId: null, durationMs: 6_000, maxAgeMs: 120_000 },
     { kind: 'manual', mode: 'ask', itemId: 'penalidade', durationMs: 10_000, maxAgeMs: null },
     { kind: 'superChat', mode: 'ask', itemId: null, durationMs: 15_000, maxAgeMs: null },
   ];

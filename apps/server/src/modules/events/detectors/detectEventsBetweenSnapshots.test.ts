@@ -24,7 +24,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The baseline after a boot or after a source is turned on, which needs memory of
- *     what was seen: the detection watcher's tests (eventDetection.test.ts).
+ *     what was seen: the detection's store tests (eventDetectionOnTheStore.test.ts).
  *   - Recording the events, their rules and statuses (the inbox's tests).
  */
 import type { DataSnapshotShapes, DetectedEvent } from '@bajaovrlay/shared';

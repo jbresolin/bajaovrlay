@@ -6,6 +6,7 @@ import {
   type QuickFirePanel,
 } from '@bajaovrlay/shared';
 
+import { isItemTakenOnlyThroughAnEvent } from '@/features/events/itemTakenThroughAnEvent';
 import { keyboardMap } from '@/keyboard/keyboardMap';
 
 /**
@@ -137,5 +138,9 @@ export function chooseCommandForDigitKey(press: DigitKeyPress): CommandInput | n
   }
   const buttonsOfPanel = listItemsOfQuickFirePanelInOrder(press.items, press.tabShown.panelId);
   const item = buttonsOfPanel[position];
-  return item === undefined ? null : { type: 'takeItem', itemId: item.id };
+  // An item filled by an event goes on air only through its event (gate 2 of PR #22).
+  if (item === undefined || isItemTakenOnlyThroughAnEvent(item)) {
+    return null;
+  }
+  return { type: 'takeItem', itemId: item.id };
 }

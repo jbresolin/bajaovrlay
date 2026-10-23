@@ -7,6 +7,7 @@ import { type MouseEvent, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { ItemSourceMarker } from '@/features/bindings/ItemSourceMarker';
 import { ActionButton } from '@/features/connection/ActionButton';
+import { findWhyTheTakeOfItemIsOff } from '@/features/events/itemTakenThroughAnEvent';
 import { ItemColorChip } from '@/features/items/ItemColorChip';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
@@ -153,6 +154,7 @@ export function RundownItemRow(props: RundownItemRowProps) {
         <div className="flex flex-wrap items-center gap-1">
           <ActionButton
             size="xs"
+            disabledReason={findWhyTheTakeOfItemIsOff(item)}
             onClick={(click) => takeThisItemAndLetGoOfTheFocus(click.currentTarget)}
           >
             {ptBR.rundown.takeItemButton}

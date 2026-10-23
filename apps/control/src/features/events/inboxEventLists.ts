@@ -27,6 +27,11 @@ export function listFinishedEventsNewestFirst(events: InboxEvent[]): InboxEvent[
   return events.filter(isFinished).reverse().slice(0, finishedEventsListed);
 }
 
+/** The ids of the events waiting for the operator: what the chime follows. */
+export function listPendingEventIds(events: InboxEvent[]): string[] {
+  return events.filter((event) => event.status === 'pending').map((event) => event.eventId);
+}
+
 /** How many events wait for the operator: the badge's number (queued ones need nobody). */
 export function countPendingEvents(events: InboxEvent[]): number {
   return events.filter((event) => event.status === 'pending').length;

@@ -1,4 +1,5 @@
 import type { CommandInput, InboxEvent } from '@bajaovrlay/shared';
+import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
@@ -12,9 +13,11 @@ const texts = ptBR.events;
 /**
  * One waiting event of the "Eventos" tab: what it is, the car's chip, the team, the
  * reason, the penalty or the lap time, how long ago it arrived (and "na fila" when the
- * runner will show it), then "Prévia" (the rule's item filled from this event; off when
- * the rule has no item), "No ar" and "Descartar". The buttons only send; what happens is
- * the server's, and the row follows the `events` slice.
+ * runner will show it), then "Prévia" (the rule's item filled from this event), "No ar"
+ * and "Descartar". "Prévia" and "No ar" are off, saying why, when the rule has no item;
+ * "No ar" and "Descartar" are off while one of their commands waits, so a second press
+ * cannot send it twice (gate 2 of PR #22). The buttons only send; what happens is the
+ * server's, and the row follows the `events` slice.
  */
 export function InboxEventRow(props: {
   event: InboxEvent;
@@ -25,6 +28,15 @@ export function InboxEventRow(props: {
 }) {
   const { event, itemIdOfItsRule, now, sendCommand } = props;
   const { payload } = event;
+  const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
+  const whyThereIsNoItem = itemIdOfItsRule === null ? texts.ruleWithoutItemReason : undefined;
+
+  /** Sends "No ar" or "Descartar", the two buttons off until the server answers. */
+  async function sendAndWaitForTheAnswer(command: CommandInput): Promise<void> {
+    setIsWaitingForTheServer(true);
+    await sendCommand(command);
+    setIsWaitingForTheServer(false);
+  }
   return (
     <li className="flex flex-col gap-1 rounded-md border p-2">
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -53,7 +65,7 @@ export function InboxEventRow(props: {
         <ActionButton
           size="xs"
           variant="outline"
-          disabled={itemIdOfItsRule === null}
+          disabledReason={whyThereIsNoItem}
           onClick={() => {
             if (itemIdOfItsRule !== null) {
               void sendCommand({
@@ -69,14 +81,21 @@ export function InboxEventRow(props: {
         </ActionButton>
         <ActionButton
           size="xs"
-          onClick={() => void sendCommand({ type: 'showEvent', eventId: event.eventId })}
+          disabled={isWaitingForTheServer}
+          disabledReason={whyThereIsNoItem}
+          onClick={() =>
+            void sendAndWaitForTheAnswer({ type: 'showEvent', eventId: event.eventId })
+          }
         >
           {texts.showButton}
         </ActionButton>
         <ActionButton
           size="xs"
           variant="ghost"
-          onClick={() => void sendCommand({ type: 'dismissEvent', eventId: event.eventId })}
+          disabled={isWaitingForTheServer}
+          onClick={() =>
+            void sendAndWaitForTheAnswer({ type: 'dismissEvent', eventId: event.eventId })
+          }
         >
           {texts.dismissButton}
         </ActionButton>

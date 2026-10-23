@@ -17,16 +17,23 @@
  *   - The Super Chat row offers "Perguntar" only and explains it; the manual row offers no
  *     "Ignorar".
  *   - A duration under one second is refused on the page in pt-BR, sending nothing.
+ *   - The item picker offers only items an event fills (the notices), never a tower or a
+ *     clock, which would go on air in place of a notice (gate 2 of PR #22).
+ *   - A row shows the rule anew when it changes on the server (another operator), and
+ *     says "Salvo." once its own save is accepted.
  *
  * What these tests deliberately do not cover:
  *   - What each mode does on the server; apps/server/src/modules/events.
  */
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { QuickFireStrip } from '@/features/quickFire/QuickFireStrip';
 import { chooseOptionInDropdown } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
-import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
+import {
+  letThePageFinishWhatItStarted,
+  renderOnControlPageConnectedToFakeServer,
+} from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithTheInbox } from '@/state/eventsLikeTheServerSends.testSupport';
 
 /** The strip on the "Eventos" tab, with "Regras" open. */
@@ -139,6 +146,57 @@ describe('the rules editor', () => {
       'Perguntar',
       'Automático',
     ]);
+  });
+
+  it('offers only items filled by an event', () => {
+    // Arrange: the rules, on a page whose panels hold three shortcuts and the two notices.
+    openTheRules();
+
+    // Act: read the items offered for incidents.
+    const itemsOffered = readOptionsOfDropdown('Item de Incidente');
+
+    // Assert: none, or one of the two notices.
+    expect(itemsOffered, 'only templates can show events').toEqual([
+      'Nenhum',
+      'Volta mais rápida',
+      'Penalidade',
+    ]);
+  });
+
+  it('shows the rule anew when it changes on the server', () => {
+    // Arrange: the rules open.
+    const { fakeServer } = openTheRules();
+
+    // Act: another operator sets fastest laps to 12 s.
+    const rulesChanged = buildSlicesWithTheInbox([]).eventRules.map((rule) =>
+      rule.kind === 'fastestLap' ? { ...rule, durationMs: 12_000 } : rule,
+    );
+    act(() => {
+      fakeServer.sendMessage({ type: 'slice', name: 'eventRules', slice: rulesChanged });
+    });
+
+    // Assert: the row reads 12.
+    expect(
+      screen.getByLabelText('Segundos no ar de Volta mais rápida'),
+      'the row follows the server',
+    ).toHaveValue('12');
+  });
+
+  it('says "Salvo." once the server accepted the row', async () => {
+    // Arrange: the fastest lap set to wait for the operator.
+    const { fakeServer } = openTheRules();
+    chooseOptionInDropdown('Modo de Volta mais rápida', 'Perguntar');
+
+    // Act: save the row; the server accepts.
+    fireEvent.click(findRuleRow('Volta mais rápida').getByRole('button', { name: 'Salvar' }));
+    fakeServer.acceptLastCommand();
+    await letThePageFinishWhatItStarted();
+
+    // Assert: the row says so.
+    expect(
+      findRuleRow('Volta mais rápida').getByText('Salvo.'),
+      'the save is confirmed',
+    ).toBeInTheDocument();
   });
 
   it('refuses a duration under one second, sending nothing', () => {

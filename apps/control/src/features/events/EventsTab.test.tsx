@@ -16,7 +16,8 @@
  *   - The events that are over are listed below, at most the 20 newest, with their status.
  *   - "Prévia" sends previewItem of the rule's item naming the event; "No ar" sends
  *     showEvent; "Descartar" sends dismissEvent.
- *   - "Prévia" is off for an event whose rule has no item.
+ *   - "No ar" and "Descartar" are off while their command waits (gate 2 of PR #22).
+ *   - "Prévia" and "No ar" are off for an event whose rule has no item.
  *   - The tab's badge counts the pending events only (not the queued ones).
  *
  * What these tests deliberately do not cover:
@@ -30,7 +31,10 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { QuickFireStrip } from '@/features/quickFire/QuickFireStrip';
-import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
+import {
+  letThePageFinishWhatItStarted,
+  renderOnControlPageConnectedToFakeServer,
+} from '@/state/controlPageOnFakeServer.testSupport';
 import {
   buildFinishedLeaderChangeOfCar52,
   buildPendingPenaltyOfCar47,
@@ -152,7 +156,32 @@ describe('the buttons of a waiting event', () => {
     ]);
   });
 
-  it('turns "Prévia" off for an event whose rule has no item', () => {
+  it('turns "No ar" and "Descartar" off while the command waits for the server', async () => {
+    // Arrange: car 47's penalty waiting.
+    const { fakeServer } = renderTheEventsTabWith([buildPendingPenaltyOfCar47(2)]);
+    const penaltyRow = within(readWaitingEventRows()[0] ?? document.body);
+
+    // Act: press "No ar"; the server has not answered yet.
+    fireEvent.click(penaltyRow.getByRole('button', { name: 'No ar' }));
+    const isShowOffWhileWaiting = penaltyRow
+      .getByRole('button', { name: 'No ar' })
+      .hasAttribute('disabled');
+    const isDismissOffWhileWaiting = penaltyRow
+      .getByRole('button', { name: 'Descartar' })
+      .hasAttribute('disabled');
+    fakeServer.acceptLastCommand();
+    await letThePageFinishWhatItStarted();
+
+    // Assert: both off while waiting, so a second press cannot send it twice; on again after.
+    expect(isShowOffWhileWaiting, '"No ar" is off while its command waits').toBe(true);
+    expect(isDismissOffWhileWaiting, '"Descartar" too').toBe(true);
+    expect(
+      penaltyRow.getByRole('button', { name: 'No ar' }),
+      'on again once the server answered',
+    ).toBeEnabled();
+  });
+
+  it('turns "Prévia" and "No ar" off for an event whose rule has no item', () => {
     // Arrange: a leader change waiting (its rule has no item yet).
     const leaderChange = {
       ...buildFinishedLeaderChangeOfCar52(1, 'shown'),
@@ -160,13 +189,14 @@ describe('the buttons of a waiting event', () => {
     };
     renderTheEventsTabWith([leaderChange]);
 
-    // Act: find its "Prévia".
-    const previewButton = within(readWaitingEventRows()[0] ?? document.body).getByRole('button', {
-      name: 'Prévia',
-    });
+    // Act: find its "Prévia" and "No ar".
+    const row = within(readWaitingEventRows()[0] ?? document.body);
+    const previewButton = row.getByRole('button', { name: 'Prévia' });
+    const showButton = row.getByRole('button', { name: 'No ar' });
 
-    // Assert: off: there is nothing to preview it with.
+    // Assert: off: there is nothing to show it with ("Regras" is where to choose one).
     expect(previewButton, 'no item, no preview').toBeDisabled();
+    expect(showButton, 'no item, nothing to put on air').toBeDisabled();
   });
 });
 
