@@ -25,6 +25,8 @@ export type MotionTokens = {
   stripHoldMs: number;
   /** `--motion-cue-hold`: how long the ▲ / ▼ and the coloured cell stay after a swap. */
   cueHoldMs: number;
+  /** `--motion-notice-hold`: how long a notice (fastest lap, penalty) is meant to stay up. */
+  noticeHoldMs: number;
   /** `--motion-in-offset`: how many pixels a piece rises on entry and lifts on exit. */
   inOffsetPx: number;
   /** `--ease-out`: the curve of every entry, as a CSS cubic-bezier string. */
@@ -57,6 +59,7 @@ export const motionTokenNames: Record<keyof MotionTokens, string> = {
   stripPageMs: '--motion-strip-page',
   stripHoldMs: '--motion-strip-hold',
   cueHoldMs: '--motion-cue-hold',
+  noticeHoldMs: '--motion-notice-hold',
   inOffsetPx: '--motion-in-offset',
   easeOut: '--ease-out',
   easeIn: '--ease-in',
@@ -86,6 +89,7 @@ export function readMotionTokens(element: Element): MotionTokens {
     stripPageMs: readDurationInMilliseconds(readToken(motionTokenNames.stripPageMs)),
     stripHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.stripHoldMs)),
     cueHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.cueHoldMs)),
+    noticeHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.noticeHoldMs)),
     inOffsetPx: readLengthInPixels(readToken(motionTokenNames.inOffsetPx)),
     easeOut: readEase(readToken(motionTokenNames.easeOut)),
     easeIn: readEase(readToken(motionTokenNames.easeIn)),

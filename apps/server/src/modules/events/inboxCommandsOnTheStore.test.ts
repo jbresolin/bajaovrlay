@@ -208,8 +208,10 @@ describe('refused inbox commands', () => {
   });
 
   it('refuses to show an event whose rule has no item yet', () => {
-    // Arrange: a fresh inbox (every rule seeded with no item) and the penalty waiting.
+    // Arrange: the incidents rule left with no item ("Regras" set it to none), and the
+    // penalty waiting.
     const inbox = openEventInboxOnTheStore();
+    applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'newIncident', itemId: null });
     pollTheSimulator(inbox, buildShapesWithCar31Leading([]));
     pollTheSimulator(inbox, buildShapesWithCar31Leading([buildStartPenaltyOfCar47()]));
 

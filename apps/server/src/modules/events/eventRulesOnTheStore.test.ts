@@ -33,12 +33,21 @@ import {
   restartTheServer,
 } from './eventInboxOnTheStore.testSupport.js';
 
-/** João's defaults, before any item is chosen for them. */
+/**
+ * João's defaults, with the two seeded notice items: "Penalização" for incidents and
+ * manual events, "Volta mais rápida" for fastest laps (seededEventItems.test.ts).
+ */
 const seededRules: EventRule[] = [
-  { kind: 'newIncident', mode: 'ask', itemId: null, durationMs: 10_000, maxAgeMs: null },
-  { kind: 'fastestLap', mode: 'auto', itemId: null, durationMs: 8_000, maxAgeMs: 120_000 },
+  { kind: 'newIncident', mode: 'ask', itemId: 'penalizacao', durationMs: 10_000, maxAgeMs: null },
+  {
+    kind: 'fastestLap',
+    mode: 'auto',
+    itemId: 'volta-mais-rapida',
+    durationMs: 8_000,
+    maxAgeMs: 120_000,
+  },
   { kind: 'leaderChanged', mode: 'auto', itemId: null, durationMs: 6_000, maxAgeMs: 120_000 },
-  { kind: 'manual', mode: 'ask', itemId: null, durationMs: 10_000, maxAgeMs: null },
+  { kind: 'manual', mode: 'ask', itemId: 'penalizacao', durationMs: 10_000, maxAgeMs: null },
   { kind: 'superChat', mode: 'ask', itemId: null, durationMs: 15_000, maxAgeMs: null },
 ];
 

@@ -6,15 +6,18 @@
  *   on every later boot. When a layer joins the seed afterwards (the tower,
  *   BAJAOVRLAY-22, at z-index 35 between the clock and the lower third), an operator's
  *   database written before it has no such layer, and no graphic could ever be placed
- *   there. So loadInitialSlices adds every seeded layer the stored layers lack, in its
+ *   there. The notice (BAJAOVRLAY-44, at 45 between the lower third and the fullscreen)
+ *   is the second such layer. So loadInitialSlices adds every seeded layer the stored layers lack, in its
  *   z-order place, writes the layers row again and says so in the log.
  *
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
  *   - A database whose layers row has the five layers of a server before the tower
- *     boots with six, the tower between the clock and the lower third exactly as the
- *     seed defines it; the row is rewritten, stamped with this boot, and an info line
- *     names the layer added.
+ *     boots with seven, the tower between the clock and the lower third exactly as the
+ *     seed defines it (and the notice); the row is rewritten, stamped with this boot, and
+ *     an info line names the layers added.
+ *   - A database of a server before the notice (six layers) gains the notice alone, at
+ *     45, exactly as the seed defines it.
  *   - A database that already has every seeded layer comes back as it was: its layers
  *     row keeps its stamp and nothing is logged about adding a layer.
  *
@@ -101,12 +104,13 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
     // Act: boot again, as the updated server does on the operator's database.
     const slicesAfterTheUpdate = loadSlicesAtBoot({ database, graphicPackagesFolder, logger });
 
-    // Assert: the tower is there, in its place in the z-order, exactly as seeded; the
-    // layers row now holds the six, stamped with this boot; and an info line names it.
+    // Assert: the tower is there, in its place in the z-order, exactly as seeded (the
+    // notice too, added since); the layers row now holds the seven, stamped with this
+    // boot; and an info line names them.
     expect(
       slicesAfterTheUpdate.layers.map((layer) => layer.id),
       'the tower must sit between the clock and the lower third',
-    ).toEqual(['bug', 'ticker', 'clock', 'tower', 'lower-third', 'fullscreen']);
+    ).toEqual(['bug', 'ticker', 'clock', 'tower', 'lower-third', 'notice', 'fullscreen']);
     expect(
       slicesAfterTheUpdate.layers.find((layer) => layer.id === 'tower'),
       'the tower must be added exactly as the seed defines it',
@@ -128,7 +132,44 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
       expect.objectContaining({
         level: 'info',
         message: 'seeded layers missing from the stored layers were added',
-        added_layer_ids: ['tower'],
+        added_layer_ids: ['tower', 'notice'],
+      }),
+    );
+  });
+
+  it('adds the notice layer alone to a database of a server before the notice', () => {
+    // Arrange: a database whose layers row has the six layers of BAJAOVRLAY-22, the
+    // tower among them, and a logger we can read.
+    const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
+    const { database } = openTemporaryDatabase();
+    loadSlicesAtBoot({ database, graphicPackagesFolder });
+    const rowBeforeTheTower = buildLayersRowOfAServerBeforeTheTower();
+    const layersBeforeTheNotice = [
+      ...(rowBeforeTheTower.json as object[]).slice(0, 3),
+      { id: 'tower', name: 'Torre', zIndex: 35, replacePolicy: 'out-then-in', persistent: true },
+      ...(rowBeforeTheTower.json as object[]).slice(3),
+    ];
+    writeSliceRows(database, [{ ...rowBeforeTheTower, json: layersBeforeTheNotice }]);
+    const { logger, readRecordedLines } = createRecordingLogger();
+
+    // Act: boot again, as the server of BAJAOVRLAY-44 does.
+    const slicesAfterTheUpdate = loadSlicesAtBoot({ database, graphicPackagesFolder, logger });
+
+    // Assert: the notice at 45, exactly as seeded, and only it named as added.
+    expect(
+      slicesAfterTheUpdate.layers.find((layer) => layer.id === 'notice'),
+      'the notice must be added exactly as the seed defines it',
+    ).toEqual({
+      id: 'notice',
+      name: 'Aviso',
+      zIndex: 45,
+      replacePolicy: 'out-then-in',
+      persistent: false,
+    });
+    expect(readRecordedLines(), 'an info line must name the notice alone').toContainEqual(
+      expect.objectContaining({
+        message: 'seeded layers missing from the stored layers were added',
+        added_layer_ids: ['notice'],
       }),
     );
   });

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-notice",
+  "version": "0.1.0",
+  "name": "Aviso",
+  "description": "Cartão sob o bug: a volta mais rápida, ou uma penalidade, advertência ou incidente da direção de prova.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "notice.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "notice",
+    "category": "notice"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "variant": {
+        "type": "string",
+        "title": "Variante",
+        "description": "Volta mais rápida (selo verde e tempo) ou penalidade ou aviso (triângulo, motivo e punição).",
+        "enum": ["fastestLap", "penalty"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "fastestLap": "Volta mais rápida",
+            "penalty": "Penalidade ou aviso"
+          }
+        },
+        "default": "fastestLap"
+      },
+      "carNumber": {
+        "type": "integer",
+        "title": "Carro",
+        "description": "Número do carro, no chip azul.",
+        "minimum": 1
+      },
+      "teamName": {
+        "type": "string",
+        "title": "Equipe",
+        "description": "Opcional; ausente, só o chip do carro aparece.",
+        "gddType": "single-line"
+      },
+      "schoolName": {
+        "type": "string",
+        "title": "Escola",
+        "description": "Opcional; aparece menor, ao lado da equipe.",
+        "gddType": "single-line"
+      },
+      "lapNumber": {
+        "type": "integer",
+        "title": "Volta",
+        "description": "Volta mais rápida: a volta em que o tempo foi feito (VOLTA 34 no topo). Opcional.",
+        "minimum": 1
+      },
+      "lapTimeText": {
+        "type": "string",
+        "title": "Tempo da volta",
+        "description": "Volta mais rápida: o tempo como aparece no ar, ex.: 4:38,2. Opcional.",
+        "gddType": "single-line"
+      },
+      "noticeKind": {
+        "type": "string",
+        "title": "Tipo de aviso",
+        "description": "Penalidade ou aviso: a palavra no topo do cartão. Ausente, PENALIDADE.",
+        "enum": ["penalty", "warning", "incident", "notice"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "penalty": "Penalidade",
+            "warning": "Advertência",
+            "incident": "Incidente",
+            "notice": "Aviso"
+          }
+        }
+      },
+      "reason": {
+        "type": "string",
+        "title": "Motivo",
+        "description": "Penalidade ou aviso: ex.: Queima de largada. Opcional.",
+        "gddType": "single-line"
+      },
+      "penaltyText": {
+        "type": "string",
+        "title": "Punição",
+        "description": "Penalidade ou aviso: ex.: +30 segundos, na célula azul. Opcional; ausente, sem célula.",
+        "gddType": "single-line"
+      }
+    },
+    "required": ["variant", "carNumber"],
+    "additionalProperties": false
+  }
+}

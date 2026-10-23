@@ -71,16 +71,19 @@ function buildOpenTheSessionMacro() {
 }
 
 describe('the quick-fire panels and macros on the first boot', () => {
-  it('seeds "Atalhos" and no macro, saves both rows, and starts with no run', () => {
+  it('seeds "Atalhos" (and "Avisos") and no macro, saves both rows, and starts with no run', () => {
     // Arrange: a brand-new database file.
     const { database } = openTemporaryDatabase();
 
     // Act: load the slices, as the first boot does.
     const slices = loadSlicesAtBoot(database, firstBootTime);
 
-    // Assert: one panel, no macro, no run, and the two rows saved with the boot time.
-    expect(slices.quickFirePanels, 'the first boot must seed exactly the panel "Atalhos"').toEqual([
+    // Assert: "Atalhos", then "Avisos" (seeded with the event rules, BAJAOVRLAY-44;
+    // modules/events covers it), no macro, no run, and the two rows saved with the boot
+    // time.
+    expect(slices.quickFirePanels, 'the first boot must seed exactly these panels').toEqual([
       { id: 'atalhos', name: 'Atalhos', order: 0 },
+      { id: 'avisos', name: 'Avisos', order: 1 },
     ]);
     expect(slices.macros, 'no macro exists on the first boot').toEqual([]);
     expect(slices.macroRuns, 'no macro is running at boot').toEqual([]);
@@ -90,7 +93,10 @@ describe('the quick-fire panels and macros on the first boot', () => {
       'the seeded panel must be saved, so the next boot loads it',
     ).toEqual({
       name: 'quickFirePanels',
-      json: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
+      json: [
+        { id: 'atalhos', name: 'Atalhos', order: 0 },
+        { id: 'avisos', name: 'Avisos', order: 1 },
+      ],
       updatedAt: '2026-10-09T08:00:00.000Z',
     });
     expect(

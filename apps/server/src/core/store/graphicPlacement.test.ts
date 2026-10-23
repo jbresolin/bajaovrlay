@@ -26,7 +26,15 @@ import { describe, expect, it } from 'vitest';
 
 import { decideGraphicPlacementFromManifest } from './graphicPlacement.js';
 
-const idsOfTheSeededLayers = ['bug', 'ticker', 'clock', 'tower', 'lower-third', 'fullscreen'];
+const idsOfTheSeededLayers = [
+  'bug',
+  'ticker',
+  'clock',
+  'tower',
+  'lower-third',
+  'notice',
+  'fullscreen',
+];
 
 const placementScenarios: Array<{
   name: string;

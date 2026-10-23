@@ -33,6 +33,10 @@
   --text-laps: #4ade80; /* laps: green text (brand green is 4.5:1 here; this reads at 9.9:1) */
   --leader-background: var(--brand-green); /* the leader's position becomes a green chip */
   --leader-text: #ffffff;
+  /* A penalty in a notice ("+30 SEGUNDOS"): the one field a notice uses, brand navy, which
+     is no flag colour, so it can never be read as the clock's flag band. */
+  --notice-penalty-background: var(--brand-navy);
+  --notice-penalty-text: #ffffff;
   --cue-up: var(--brand-green);
   --cue-down: var(--brand-blue);
   --cue-text: #ffffff;
@@ -106,6 +110,11 @@
   --clock-logo-height: 44px;
   --flag-band-height: 40px;
   --stack-gap: 8px;
+  /* The notice slot (fastest lap, penalty): top-left under the bug, the clock's width. */
+  --notice-top: 186px; /* 8 px under the bug, which ends at 178 */
+  --notice-width: 420px; /* the clock's width, mirrored to the left */
+  --notice-head-height: 48px;
+  --notice-row-height: 56px;
   --tower-top: calc(var(--stage-safe-top) + var(--clock-height) + var(--stack-gap)); /* 254 */
   --tower-rows-per-page: 20; /* the pills that fit between the clock and the title-safe edge */
   --head-height: 32px; /* the column-header pill, with air around its captions */
@@ -154,6 +163,7 @@
   --motion-strip-page: 300ms;
   --motion-strip-hold: 7000ms;
   --motion-cue-hold: 2000ms;
+  --motion-notice-hold: 8000ms; /* a notice's hold; the server's event rule clears it, not the graphic */
   --motion-in-offset: 20; /* px a piece rises on entry (and lifts on exit) */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);

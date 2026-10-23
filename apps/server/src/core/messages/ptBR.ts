@@ -67,6 +67,7 @@ export const ptBR = {
     clock: 'Relógio',
     tower: 'Torre',
     lowerThird: 'Tarja',
+    notice: 'Aviso',
     fullscreen: 'Tela cheia',
   },
   // Name of the one rundown seeded on the first boot, as the operator sees it.

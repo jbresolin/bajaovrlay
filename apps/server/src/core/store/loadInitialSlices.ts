@@ -136,7 +136,14 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   );
   // The event inbox's events and rules (BAJAOVRLAY-44): loaded, the rules seeded when
   // their row is missing; see modules/events/loadEventInboxSlices.ts.
-  const eventInboxSlices = loadOrSeedEventInboxSlices(storedRows, updatedAt, options.logger);
+  // Seeding the rules also seeds the "Avisos" panel and its two items, once per database,
+  // so the panels and items go through it.
+  const eventInboxSlices = loadOrSeedEventInboxSlices(
+    storedRows,
+    { quickFirePanels: quickFireAndMacroSlices.quickFirePanels, items: rundownSlices.items },
+    updatedAt,
+    options.logger,
+  );
   const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
   writeBootRows(options.database, {
     sliceRowsToWrite: [
@@ -183,8 +190,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     instanceBindings: instanceBindingsAtBoot.instanceBindings,
     eventLog,
     rundowns: rundownSlices.rundowns,
-    items: rundownSlices.items,
-    quickFirePanels: quickFireAndMacroSlices.quickFirePanels,
+    items: eventInboxSlices.items,
+    quickFirePanels: eventInboxSlices.quickFirePanels,
     macros: quickFireAndMacroSlices.macros,
     macroRuns: [],
     dataSources: dataSourceSlices.dataSources,

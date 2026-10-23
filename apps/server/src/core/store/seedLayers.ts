@@ -7,7 +7,9 @@ import { ptBR } from '../messages/ptBR.js';
  * ten so a layer can be slotted in between later without renumbering the others; the
  * tower (BAJAOVRLAY-22) is the first to use a gap, at 35: it stacks under the clock on
  * the same right-hand column, so it sits next to the clock in the z-order, between the
- * clock and the lower third.
+ * clock and the lower third. The notice (BAJAOVRLAY-44, PR #21's layer plan) is the
+ * second, at 45: the fastest lap and penalty card under the bug, above the lower third,
+ * transient (each notice leaves after its rule's time).
  *
  * Every layer swaps graphics `out-then-in`, the safest policy: two graphics never
  * overlap on the same layer. The logo, the clock and the tower are `persistent`, the
@@ -49,6 +51,13 @@ export const seededLayers: Layer[] = [
     id: 'lower-third',
     name: ptBR.seededLayerNames.lowerThird,
     zIndex: 40,
+    replacePolicy: 'out-then-in',
+    persistent: false,
+  },
+  {
+    id: 'notice',
+    name: ptBR.seededLayerNames.notice,
+    zIndex: 45,
     replacePolicy: 'out-then-in',
     persistent: false,
   },
