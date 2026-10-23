@@ -86,7 +86,10 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      '/api': serverAddress,
+      // The page's Host is kept (a string target would turn changeOrigin on), so the
+      // server's Origin check of uploads (modules/media/uploadOrigin.ts) sees the page's
+      // own address on both headers and lets the dev page upload, as the built page does.
+      '/api': { target: serverAddress, changeOrigin: false },
       '/health': serverAddress,
       '/ws': { target: serverAddress, ws: true },
       // The program monitor frames /render/?monitor=1, which loads graphics from /graphics/. Both
