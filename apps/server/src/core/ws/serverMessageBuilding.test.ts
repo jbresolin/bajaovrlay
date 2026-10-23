@@ -43,6 +43,8 @@ function buildSlicesEachAListOfItsOwn(): Slices {
     dataSnapshots: [],
     overrides: [],
     recordings: [],
+    events: [],
+    eventRules: [],
     teams: [],
     people: [],
     sponsors: [],

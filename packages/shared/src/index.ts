@@ -187,3 +187,7 @@ export * from './media/index.js';
 // The flex mapping: paths into a JSON response, the mapping config of a flex source, the
 // canonical fields a rule can fill, and applyFlexMapping, shared by the server and "Testar".
 export * from './flexMapping/index.js';
+
+// The event inbox (BAJAOVRLAY-44): events detected in a source's data or typed by the
+// operator, the rules that show them, and the inbox commands.
+export * from './eventInbox/index.js';

@@ -1,5 +1,6 @@
 import type { PreviewItemCommand } from '@bajaovrlay/shared';
 
+import { chooseEventFillOfPreview } from '../../../modules/events/index.js';
 import { putItemOnOutput } from './putItemOnOutput.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
@@ -20,13 +21,25 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * for by hand stay (João's ruling, gate 2 of BAJAOVRLAY-15). It is done here, in the one
  * command, so no page ever sees the old and the new automatic preview together.
  * A refused preview removes nothing: the refusal comes back before anything is removed.
+ * An item filled by events is filled from the event the command names, or from a sample
+ * event (modules/events/eventFillOfPreview.ts, BAJAOVRLAY-44).
  */
 export function reducePreviewItem(
   slices: SlicesChangedByCommands,
   command: PreviewItemCommand,
   context: ReducerContext,
 ): ReducerOutcome {
-  const previewOutcome = putItemOnOutput(slices, command.itemId, 'preview', context);
+  const fillChoice = chooseEventFillOfPreview(slices, command.itemId, command.eventId);
+  if (fillChoice.status === 'refused') {
+    return fillChoice;
+  }
+  const previewOutcome = putItemOnOutput(
+    slices,
+    command.itemId,
+    'preview',
+    context,
+    fillChoice.eventFill,
+  );
   if (previewOutcome.status === 'refused') {
     return previewOutcome;
   }

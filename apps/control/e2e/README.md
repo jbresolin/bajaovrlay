@@ -40,6 +40,13 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   A restart keeps the last data, marked stale: the harness cannot restart its server, so
   `apps/server/src/core/boot/startServerRestart.test.ts` proves it.
 
+- The event inbox (BAJAOVRLAY-44; commands and state reads in `eventInboxOnTheRealServer.ts`): `eventInboxWithTheSimulator.e2e.ts`
+  (the simulator at 60× on seed 227, whose first penalty comes 3 simulated minutes in: the penalty waits in "Eventos" with nothing on
+  the notice layer, "No ar" shows it for its rule's 2 s; a fastest lap goes on air by itself) and `eventInboxAfterARestart.e2e.ts`
+  (a server of its own on 5189, stopped and started again on its SQLite file: nothing listed before is listed again, nothing is
+  replayed). `eventsTabKeepsTheLayersOnScreen.e2e.ts` (eight typed penalties waiting: Camadas stays on screen at 1600×900 and the
+  tab's list scrolls).
+
 - The entity library, on "Cadastros" `#/cadastros` (steps and a real PNG in `entityLibraryTestSteps.ts`):
   `entityLibraryWalk.e2e.ts` (BAJAOVRLAY-19, the brief's walk, three tests): "Importar equipes do simulador" lists 100 teams;
   a logo uploaded on car 7's form shows and is served as a PNG; a race clock from "+ Item" with its title on "Cadastro" ›
@@ -47,5 +54,5 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   follows by itself; the team deleted, the rundown row says "cadastro · não entra agora" naming the car while the air keeps
   its title; an SVG with a script opened at `/media/<id>` runs nothing (no dialog, the CSP header).
 
-`emptyTheServerState.ts` empties the server before each test, panels, macros, "vai limpar" marks, corrections of a source's values and the entity library with its images included, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database). A second checkout running its browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (for example 100: 5287/5288), which moves every package's browser-test ports alike; it is read once, in `scripts/e2ePortOffset.ts`, and anything but a whole number counts as 0.
+`emptyTheServerState.ts` empties the server before each test, panels, macros, "vai limpar" marks, corrections of a source's values, waiting events and the entity library with its images included, the event rules back to their defaults, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it; `emptyServerStateEventInbox.e2e.ts` the event inbox part). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database). A second checkout running its browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (for example 100: 5287/5288), which moves every package's browser-test ports alike; it is read once, in `scripts/e2ePortOffset.ts`, and anything but a whole number counts as 0.
 `clockStoppedOnAir.e2e.ts` fails locally when the WSL clock steps (a time sync moves the wall clock); the fix is syncing the Windows clock (Settings → Time & language → Date & time → Sync now), then running `wsl --shutdown` in PowerShell and reopening the terminal, not quarantine.

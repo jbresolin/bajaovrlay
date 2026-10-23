@@ -108,7 +108,7 @@ describe('an item whose clock starts at the take, through the store', () => {
       slicesAfter.instances,
     );
     expect(
-      slicesAfter.items[0]?.fields.referenceWallClockMs,
+      slicesAfter.items.find((item) => item.home.kind === 'rundown')?.fields.referenceWallClockMs,
       'the stored item must keep saying takeTime, never the moment of one take',
     ).toEqual({ kind: 'takeTime' });
   });

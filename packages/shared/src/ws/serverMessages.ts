@@ -9,6 +9,8 @@ import { PeopleSchema } from '../entities/person.js';
 import { ScheduleSlotsSchema } from '../entities/scheduleSlot.js';
 import { SponsorsSchema } from '../entities/sponsor.js';
 import { TeamsSchema } from '../entities/team.js';
+import { EventRulesSchema } from '../eventInbox/eventRule.js';
+import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { MediaSchema } from '../media/mediaRecord.js';
@@ -133,6 +135,18 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('recordings'),
     slice: z.array(RecordingSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('events'),
+    slice: InboxEventsSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('eventRules'),
+    slice: EventRulesSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({

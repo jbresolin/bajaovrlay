@@ -7,20 +7,10 @@ import type {
   Team,
 } from '@bajaovrlay/shared';
 
+import { writeTextForSearch } from '@/i18n/textForSearch';
+
 import { listRecordsOfTypeInOrder } from './entityOrdering';
 import type { AnyEntityRecord } from './entityRecordsOfType';
-
-/**
- * Text as a search compares it: lower case, accents taken off ("Biguá" finds "bigua"),
- * spaces at the ends dropped. An operator on a tablet types fast and without accents.
- */
-function writeForSearch(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim();
-}
 
 /** The texts a record is found by: a team by car number, team or school; the rest by name. */
 function listSearchableTextsOfRecord(entityType: EntityType, record: AnyEntityRecord): string[] {
@@ -51,14 +41,14 @@ export function listRecordsFoundBySearch(
   entityType: EntityType,
   searchText: string,
 ): AnyEntityRecord[] {
-  const query = writeForSearch(searchText);
+  const query = writeTextForSearch(searchText);
   const records = listRecordsOfTypeInOrder(library, entityType);
   if (query === '') {
     return records;
   }
   return records.filter((record) =>
     listSearchableTextsOfRecord(entityType, record).some((text) => {
-      const searchableText = writeForSearch(text);
+      const searchableText = writeTextForSearch(text);
       // A car number is found whole: "4" must not list car 42 before car 4.
       const isCarNumber = entityType === 'team' && /^\d+$/.test(text);
       return isCarNumber ? searchableText === query : searchableText.includes(query);

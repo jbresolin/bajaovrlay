@@ -1,6 +1,7 @@
 import { ptBRBindings } from './ptBRBindings';
 import { ptBRDataSources } from './ptBRDataSources';
 import { ptBREntityLibrary } from './ptBREntityLibrary';
+import { ptBREvents } from './ptBREvents';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
@@ -14,13 +15,16 @@ import { ptBRQuickFire } from './ptBRQuickFire';
  * (ptBRQuickFire.ts, the quick-fire panels and the macros), `ptBR.layers`
  * (ptBRLayers.ts), `ptBR.playout.quickEdit` (ptBRQuickEdit.ts, "Edição rápida"),
  * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page), `ptBR.entityLibrary`
- * (ptBREntityLibrary.ts, the "Cadastros" page) and `ptBR.bindings` (ptBRBindings.ts,
- * fields read from a source and corrections of a source).
+ * (ptBREntityLibrary.ts, the "Cadastros" page), `ptBR.bindings` (ptBRBindings.ts, fields
+ * read from a source and corrections of a source) and `ptBR.events` (ptBREvents.ts, the
+ * event inbox: the "Eventos" tab, its forms, the Camadas mark and the item editor's
+ * "Evento").
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,
   bindings: ptBRBindings,
   quickFire: ptBRQuickFire,
+  events: ptBREvents,
   app: {
     title: 'BajaOvrLay',
     rundownAreaTitle: 'Rundown',
@@ -32,6 +36,7 @@ export const ptBR = {
       console: 'Console',
       dataSources: 'Fontes',
       entityLibrary: 'Cadastros',
+      eventReview: 'Eventos',
     },
     // What "Cadastros" or "Fontes" shows instead of a blank tab when it throws.
     pageError: {
@@ -185,6 +190,7 @@ export const ptBR = {
       takeTime: 'Momento da entrada no ar',
       binding: 'Fonte',
       wholeClock: 'Relógio da fonte',
+      eventField: 'Evento',
       entity: 'Cadastro',
     },
     // A list field (drawn read-only) that may also read a source: its value as it is.

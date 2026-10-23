@@ -54,6 +54,8 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
   createMacroId?: (() => string) | undefined;
   /** Makes the id of each new data source (createDataSource); defaults to a random UUID. */
   createDataSourceId?: (() => string) | undefined;
+  /** Makes the id of each event the operator types (createManualEvent); a random UUID. */
+  createEventId?: (() => string) | undefined;
   /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the reducers; no list by default. */
   sourceHostAllowlist?: SourceHostAllowlist | undefined;
 };
@@ -101,6 +103,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const createQuickFirePanelId = options.createQuickFirePanelId ?? (() => randomUUID());
   const createMacroId = options.createMacroId ?? (() => randomUUID());
   const createDataSourceId = options.createDataSourceId ?? (() => randomUUID());
+  const createEventId = options.createEventId ?? (() => randomUUID());
   const sourceHostAllowlist = options.sourceHostAllowlist ?? noSourceHostAllowlist;
   const listeners = new Set<SliceChangeListener>();
   let currentSlices = loadInitialSlices({ ...options, readCurrentTime });
@@ -148,6 +151,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       newQuickFirePanelId: createQuickFirePanelId(),
       newMacroId: createMacroId(),
       newDataSourceId: createDataSourceId(),
+      newEventId: createEventId(),
       sourceHostAllowlist,
     };
     const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);

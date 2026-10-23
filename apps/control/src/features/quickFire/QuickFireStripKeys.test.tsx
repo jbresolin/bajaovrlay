@@ -164,18 +164,19 @@ describe('F1 to F4', () => {
     expect(wasLeftToTheBrowser, 'F1 must be kept from the browser').toBe(false);
   });
 
-  it('change nothing past the last tab', () => {
-    // Arrange: the strip, on "Box" (three tabs in all).
+  it('open "Eventos" with F4, the fourth tab', () => {
+    // Arrange: the strip, on "Box" (four tabs in all: two panels, Macros, Eventos). A key
+    // past the last tab changing nothing is quickFireTabs.test.ts's, with fewer tabs.
     renderStrip();
     pressKeyOnThePage('F2');
 
-    // Act: F4, a fourth tab that does not exist.
+    // Act: F4.
     pressKeyOnThePage('F4');
 
-    // Assert: still on "Box".
+    // Assert: the event inbox is shown (BAJAOVRLAY-44).
     expect(
-      screen.getByRole('tab', { name: 'Box' }),
-      'an F-key past the last tab must leave the tab shown as it was',
+      screen.getByRole('tab', { name: /^Eventos/ }),
+      'F4 must open the fourth tab, the event inbox',
     ).toHaveAttribute('aria-selected', 'true');
   });
 });

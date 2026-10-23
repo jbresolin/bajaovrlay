@@ -86,19 +86,20 @@ function buildTwoMacros(): Macro[] {
 }
 
 describe('listQuickFireTabsInOrder', () => {
-  it('lists one tab per panel in the panels’ order, then Macros', () => {
+  it('lists one tab per panel in the panels’ order, then Macros and Eventos', () => {
     // Arrange: three panels listed out of tab order.
     const panels = buildPanelsListedOutOfOrder();
 
     // Act: list the tabs.
     const tabs = listQuickFireTabsInOrder(panels);
 
-    // Assert: Atalhos, Box, Patrocinadores, then Macros.
-    expect(tabs, 'the tabs must follow `order` and end with Macros').toEqual([
+    // Assert: Atalhos, Box, Patrocinadores, then Macros and the event inbox (BAJAOVRLAY-44).
+    expect(tabs, 'the tabs must follow `order` and end with Macros and Eventos').toEqual([
       { kind: 'panel', panelId: 'atalhos' },
       { kind: 'panel', panelId: 'painel-box' },
       { kind: 'panel', panelId: 'painel-patrocinadores' },
       { kind: 'macros' },
+      { kind: 'events' },
     ]);
   });
 });
@@ -166,10 +167,11 @@ describe('findTabForFunctionKey', () => {
       panelCount: 3,
       expected: { kind: 'macros' },
     },
-    // With only the seeded panel there are two tabs; F3 reaches nothing.
+    // With only the seeded panel there are three tabs (it, Macros, Eventos); F4 reaches
+    // nothing.
     {
-      name: 'F3 opens nothing when there are two tabs',
-      key: 'F3',
+      name: 'F4 opens nothing when there are three tabs',
+      key: 'F4',
       panelCount: 1,
       expected: undefined,
     },
@@ -190,8 +192,8 @@ describe('findTabForFunctionKey', () => {
   });
 
   it('opens, for each key of the keyboard map in turn, the tab at that key’s place in the list', () => {
-    // Arrange: five tabs (four panels and Macros), one more than there are function keys,
-    // and the keys as the keyboard map lists them.
+    // Arrange: six tabs (four panels, Macros and Eventos), two more than there are
+    // function keys, and the keys as the keyboard map lists them.
     const tabs = listQuickFireTabsInOrder([
       ...buildPanelsListedOutOfOrder(),
       { id: 'painel-premiacao', name: 'Premiação', order: 3 },
@@ -205,7 +207,7 @@ describe('findTabForFunctionKey', () => {
     );
 
     // Assert: the n-th key of the map opens the n-th tab and is the key that tab shows;
-    // the tab past the map's last key has no key.
+    // the tabs past the map's last key have no key.
     expect(
       tabOpenedByEachKey,
       'the tab a key opens must be the one at the key’s place in the keyboard map',
@@ -213,7 +215,7 @@ describe('findTabForFunctionKey', () => {
     expect(
       keyShownOnEachTab,
       'each tab must show the key the keyboard map lists at its place, and none past the list',
-    ).toEqual([...functionKeysOfTheMap, undefined]);
+    ).toEqual([...functionKeysOfTheMap, undefined, undefined]);
   });
 });
 

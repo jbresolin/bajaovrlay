@@ -2,13 +2,15 @@ import type { z } from 'zod';
 
 import { type BracketsShape, BracketsShapeSchema } from './bracketsShape.js';
 import type { DataShapeKey } from './dataShapeKey.js';
+import { type IncidentsShape, IncidentsShapeSchema } from './incidentsShape.js';
 import { type PositionsShape, PositionsShapeSchema } from './positionsShape.js';
 import { ptBRDataShapes } from './ptBRDataShapes.js';
 import { type SessionShape, SessionShapeSchema } from './sessionShape.js';
 import { type StandingsShape, StandingsShapeSchema } from './standingsShape.js';
 
-/** Any one of the four canonical shapes, after validation. */
-export type DataShape = SessionShape | PositionsShape | StandingsShape | BracketsShape;
+/** Any one of the five canonical shapes, after validation. */
+export type DataShape =
+  SessionShape | PositionsShape | StandingsShape | BracketsShape | IncidentsShape;
 
 /** The answer of validateDataShape: the parsed shape, or one pt-BR sentence saying why not. */
 export type DataShapeValidation =
@@ -52,6 +54,8 @@ function parsePayloadForShape(
       return StandingsShapeSchema.safeParse(payload, parseOptions);
     case 'brackets':
       return BracketsShapeSchema.safeParse(payload, parseOptions);
+    case 'incidents':
+      return IncidentsShapeSchema.safeParse(payload, parseOptions);
   }
 }
 

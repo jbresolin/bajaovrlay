@@ -134,7 +134,7 @@ function listValueTypesOfJsonSchemaType(jsonSchemaType: unknown): BindableValueT
     case 'boolean':
       return ['boolean'];
     case 'array':
-      return ['positionsEntries', 'standingsEntries', 'bracketsRounds'];
+      return ['positionsEntries', 'standingsEntries', 'bracketsRounds', 'incidentsEntries'];
     default:
       return [];
   }

@@ -51,8 +51,12 @@ export function buildPositionEntriesInRaceOrder(orderedCars: CarRaceState[]): Po
       status: car.status,
     };
     if (lastLapMs !== undefined) {
+      const bestLapMs = Math.min(...lapDurationsMs);
       entry.lastLapMs = lastLapMs;
-      entry.bestLapMs = Math.min(...lapDurationsMs);
+      entry.bestLapMs = bestLapMs;
+      // The first lap that took the best time: a later lap of exactly the same ms does
+      // not beat it, as on a timing screen.
+      entry.bestLapNumber = lapDurationsMs.indexOf(bestLapMs) + 1;
     }
     if (leader !== undefined && carAhead !== undefined) {
       const gapToLeader = buildGapToLeader(car, leader);

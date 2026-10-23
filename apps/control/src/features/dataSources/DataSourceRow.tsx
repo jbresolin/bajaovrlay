@@ -8,10 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { DeleteItemButton } from '@/features/rundown/DeleteItemButton';
 import { ptBR } from '@/i18n/ptBR';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 import { useIsConnectedToServer, useSendCommand } from '@/state/ControlPageStateProvider';
 
 import { DataSourceStatusChip } from './DataSourceStatusChip';
-import { formatTimeOfDay } from './timeOfDayText';
 
 const texts = ptBR.dataSources;
 const millisecondsPerSecond = 1_000;

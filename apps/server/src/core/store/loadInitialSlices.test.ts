@@ -4,7 +4,7 @@
  * What this module is for:
  *   At boot the store needs its slices. Layers and instances are the operator's: they
  *   are loaded from the database as they are, or, on the very first boot (an empty
- *   database), seeded with the six fixed layers (bug, ticker, clock, tower, lower-third,
+ *   database), seeded with the seven fixed layers (bug, ticker, clock, tower, lower-third, notice,
  *   fullscreen, bottom to top) and nothing on air. A layer seeded since a database was
  *   first written (the tower, BAJAOVRLAY-22) is added to it on the next boot, or no
  *   graphic could ever be placed there. Graphics are not the operator's: they
@@ -14,7 +14,7 @@
  *
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
- *   - An empty database is seeded with the six layers in ascending z-order, each with
+ *   - An empty database is seeded with the seven layers in ascending z-order, each with
  *     its pt-BR name, `out-then-in` swaps, and only the logo, clock and tower persistent;
  *     the seed is saved, stamped with the store's clock rather than the machine's.
  *   - A built race clock is registered with its manifest, under its folder name; an
@@ -97,7 +97,7 @@ function createRaceClockOnProgramInstance(): Instance {
 }
 
 describe('loadInitialSlices on an empty database', () => {
-  it('seeds the six layers in ascending z-order and saves them, stamped with the store clock', () => {
+  it('seeds the seven layers in ascending z-order and saves them, stamped with the store clock', () => {
     // Arrange: a brand-new database file.
     const { database } = openTemporaryDatabase();
 
@@ -107,12 +107,12 @@ describe('loadInitialSlices on an empty database', () => {
       graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     });
 
-    // Assert: the six layers, bottom to top, and the seed is in the slices table.
+    // Assert: the seven layers, bottom to top, and the seed is in the slices table.
     // Every layer swaps out-then-in (two graphics never overlap); only the logo, the
     // clock and the tower are persistent, the things meant to stay on screen all day.
     // The tower sits at 35, between the clock it stacks under on the same right-hand
-    // column and the lower third.
-    expect(slices.layers, 'the seeded layers must be exactly these six').toEqual([
+    // column and the lower third; the notice (BAJAOVRLAY-44) at 45, above the lower third.
+    expect(slices.layers, 'the seeded layers must be exactly these seven').toEqual([
       { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
       {
         id: 'ticker',
@@ -131,6 +131,13 @@ describe('loadInitialSlices on an empty database', () => {
         persistent: false,
       },
       {
+        id: 'notice',
+        name: 'Aviso',
+        zIndex: 45,
+        replacePolicy: 'out-then-in',
+        persistent: false,
+      },
+      {
         id: 'fullscreen',
         name: 'Tela cheia',
         zIndex: 50,
@@ -142,7 +149,7 @@ describe('loadInitialSlices on an empty database', () => {
     expect(zIndexes, 'each layer must sit above the one before').toEqual(
       [...zIndexes].sort((lower, higher) => lower - higher),
     );
-    expect(new Set(zIndexes).size, 'no two layers may share a z-index').toBe(6);
+    expect(new Set(zIndexes).size, 'no two layers may share a z-index').toBe(7);
     expect(
       readAllSliceRows(database).map((row) => [row.name, row.updatedAt]),
       'the seed must be saved, stamped with the store clock, so the next boot loads it',
@@ -158,6 +165,8 @@ describe('loadInitialSlices on an empty database', () => {
       ['macros', '2026-10-09T08:00:00.000Z'],
       // The seeded simulator since BAJAOVRLAY-17; modules/dataSources covers it.
       ['dataSources', '2026-10-09T08:00:00.000Z'],
+      // The default event rules since BAJAOVRLAY-44; modules/events covers them.
+      ['eventRules', '2026-10-09T08:00:00.000Z'],
     ]);
     expect(slices.instances, 'nothing is on air on the first boot').toEqual([]);
   });
@@ -193,7 +202,7 @@ describe('loadInitialSlices on an empty database', () => {
 
     // Assert: no graphics, the layers are still seeded, and a warning names the package.
     expect(slices.graphics, 'no graphic can be registered without a build').toEqual([]);
-    expect(slices.layers.length, 'the layers are seeded anyway').toBe(6);
+    expect(slices.layers.length, 'the layers are seeded anyway').toBe(7);
     expect(readRecordedLines(), 'a warning must say the package is not built').toContainEqual(
       expect.objectContaining({
         level: 'warn',
@@ -253,7 +262,7 @@ describe('loadInitialSlices on a database that already has slices', () => {
     expect(storedGraphicsRow?.json, 'the refreshed graphics must be saved').toEqual([
       raceClockGraphic,
     ]);
-    expect(slicesOnSecondBoot.layers.length, 'the saved layers must load back').toBe(6);
+    expect(slicesOnSecondBoot.layers.length, 'the saved layers must load back').toBe(7);
   });
 
   it('keeps the stored instances when it refreshes the graphics', () => {

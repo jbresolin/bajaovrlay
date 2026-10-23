@@ -14,6 +14,8 @@
  *   - A new item stores the reference; an unchanged one is not sent again, a changed one is.
  *   - The field is listed among those "Atualizar no ar" leaves out, and switching it to
  *     "Cadastro" counts as a source choice that waits for the next take.
+ *   - An item whose title reads the library and whose laps read the event it shows
+ *     (BAJAOVRLAY-44) opens with both kinds and their choices, and saves back unchanged.
  *
  * What these tests deliberately do not cover:
  *   - Reading the choices; entityReferenceFormValue.test.ts.
@@ -130,5 +132,43 @@ describe('a field read from the entity library in the generated form', () => {
     // Assert: the title is among them, and the change waits for the take.
     expect(keysReadFromASource, 'the title is not sent on air').toEqual(['titulo']);
     expect(hasChoiceChanged, 'the note "na próxima entrada" shows').toBe(true);
+  });
+});
+
+describe('an item reading both the entity library and the event it shows', () => {
+  it('opens with "Cadastro" and "Evento" side by side and saves both back unchanged', () => {
+    // Arrange: a notice card whose title reads car 7's team from the library and whose
+    // laps read the lap of the event it shows (BAJAOVRLAY-44).
+    const description = describeTeamCardFixture();
+    const storedFields: ItemFields = {
+      titulo: buildTitleFromTheTeamOfCar(7),
+      voltas: { kind: 'eventField', path: 'lapNumber' },
+    };
+
+    // Act: open it in the form, then build the item's fields and the changed ones from it.
+    const { formValues } = buildSchemaFormValuesFromItemFields(description, storedFields);
+    const itemFields = buildItemFieldsFromSchemaForm(description, formValues);
+    const changedFields = buildChangedItemFieldsFromSchemaForm(
+      description,
+      formValues,
+      storedFields,
+    );
+
+    // Assert: each field keeps its kind and its choice; saved, the item is what it was,
+    // and nothing counts as changed.
+    // The card's logo, which the item leaves empty, stays typed.
+    expect(formValues.kinds, 'the title from the library, the laps from the event').toEqual({
+      titulo: 'entity',
+      voltas: 'eventField',
+      logo: 'literal',
+    });
+    expect(formValues.entityReferences?.titulo, "the title's choices").toEqual({
+      entityType: 'team',
+      recordKey: '7',
+      attribute: 'teamName',
+    });
+    expect(formValues.eventPaths?.voltas, "the laps' payload field").toBe('lapNumber');
+    expect(itemFields, 'both fields are saved as they were stored').toEqual(storedFields);
+    expect(changedFields, 'nothing changed, so nothing is sent').toEqual({});
   });
 });

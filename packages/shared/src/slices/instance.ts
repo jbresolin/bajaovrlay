@@ -90,6 +90,19 @@ export const InstanceSchema = z.object({
    * what goes on air is what was seen.
    */
   fieldsChangedOnAir: z.array(z.string().min(1)).optional(),
+  /**
+   * Only on an instance an event put on air (showEvent, BAJAOVRLAY-44): the event's id.
+   * The inbox reads it to know the event is on air, and that it was shown once this
+   * instance has left; Camadas marks the row "evento: …". A preview of an event carries it
+   * too, so "Tomar" counts as showing it.
+   */
+  eventId: z.string().min(1).optional(),
+  /**
+   * Only on an instance an event put on air: how long it stays, its rule's duration, in
+   * place of the item's own auto-out (the same item shows every event of its kind, each
+   * for its rule's time). Left out, the item's autoOutAfterMs counts, as always.
+   */
+  autoOutAfterMs: z.number().int().positive().optional(),
 });
 
 /** An instance that has passed InstanceSchema. */

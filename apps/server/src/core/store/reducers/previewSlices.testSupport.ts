@@ -25,6 +25,7 @@ export const contextOfTheLaterTake: ReducerContext = {
   newQuickFirePanelId: '3b7d9f1a-5c2e-4a8b-9d6f-0e1c3a5b7d92',
   newMacroId: '6e2c4a8f-1b3d-4f5e-a7c9-2d4f6b8a0c13',
   newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
+  newEventId: 'evento-digitado-1',
   sourceHostAllowlist: noSourceHostAllowlist,
   actor: 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81',
   now: '2026-10-09T14:47:30.250Z',

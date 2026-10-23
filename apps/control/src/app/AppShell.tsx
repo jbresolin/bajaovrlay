@@ -5,6 +5,7 @@ import { ConnectionBadge } from '@/features/connection/ConnectionBadge';
 import { DataSourcesHealthChip } from '@/features/dataSources/DataSourcesHealthChip';
 import { DataSourcesPage } from '@/features/dataSources/DataSourcesPage';
 import { EntityLibraryPage } from '@/features/entityLibrary/EntityLibraryPage';
+import { EventReviewPage } from '@/features/events/EventReviewPage';
 import { KeyboardMapDialog } from '@/features/keyboardHelp/KeyboardMapDialog';
 import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
 import { ptBR } from '@/i18n/ptBR';
@@ -18,10 +19,11 @@ const pageLinkTexts = ptBR.app.pageLinks;
 /**
  * The frame of the control page: a header that is always there, and below it the page
  * the address names (currentPage.ts) — the console (ConsoleView.tsx), "Fontes de dados"
- * (features/dataSources), which the header's "Fontes" and chip open in a new tab, or
- * "Cadastros" (features/entityLibrary), which "Cadastros" opens in a new tab too; each of
- * those two in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab. The
- * header holds the product name, the links to the three pages, the data sources
+ * (features/dataSources), which the header's "Fontes" and chip open in a new tab,
+ * "Cadastros" (features/entityLibrary), which "Cadastros" opens in a new tab too, or the
+ * review of the event inbox (features/events), which "Eventos" opens in a new tab; each of
+ * those three in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab. The
+ * header holds the product name, the links to the four pages, the data sources
  * chip ("Fontes: 2 ok · 1 atrasada"), the server check, the connection badge and the
  * "?" button, which lists every keyboard shortcut (src/keyboard/keyboardMap.ts).
  */
@@ -45,6 +47,11 @@ export function AppShell() {
               currentPage={currentPage}
               text={pageLinkTexts.entityLibrary}
             />
+            <PageLink
+              page="eventReview"
+              currentPage={currentPage}
+              text={pageLinkTexts.eventReview}
+            />
           </nav>
         </div>
         <div className="flex flex-wrap items-center gap-4">
@@ -66,6 +73,11 @@ export function AppShell() {
           <EntityLibraryPage />
         </PageErrorBoundary>
       )}
+      {currentPage === 'eventReview' && (
+        <PageErrorBoundary>
+          <EventReviewPage />
+        </PageErrorBoundary>
+      )}
     </div>
   );
 }
@@ -74,8 +86,8 @@ export function AppShell() {
  * One header link to a page, drawn as a small button and marked when it is the current
  * page. "Fontes" always opens in a new tab (João's ruling 2 at gate 2 of PR #16): the
  * console must never unmount under the producer, since its keys (Esc, "Limpar tudo"), an
- * unsaved item draft and the monitors live in it; "Cadastros" does the same, for the same
- * reason. "Console" stays a plain link in the same tab: from another page's tab it turns
+ * unsaved item draft and the monitors live in it; "Cadastros" and "Eventos" do the same,
+ * for the same reason. "Console" stays a plain link in the same tab: from another page's tab it turns
  * that tab into a console, and nothing is lost.
  */
 function PageLink(props: { page: ControlPageName; currentPage: ControlPageName; text: string }) {

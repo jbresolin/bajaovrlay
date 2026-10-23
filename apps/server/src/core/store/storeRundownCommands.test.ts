@@ -105,8 +105,10 @@ describe('createItem through the store', () => {
       createdItemId: 'item-1',
     });
     const itemsInMemory = store.readAllSlices().items;
+    // The rundown's items only; the panel "Avisos" holds two seeded notice items.
+    const itemsOfTheRundown = itemsInMemory.filter((item) => item.home.kind === 'rundown');
     expect(
-      itemsInMemory.map((item) => [item.id, item.label, item.order, item.color, item.notes]),
+      itemsOfTheRundown.map((item) => [item.id, item.label, item.order, item.color, item.notes]),
       'the item must be in memory with its id, position and the default colour and notes',
     ).toEqual([['item-1', 'Largada do enduro', 0, 'neutral', '']]);
     const storedItemsRow = readAllSliceRows(database).find((row) => row.name === 'items');
@@ -144,7 +146,10 @@ describe('createItem through the store', () => {
     store.applyCommand(buildCreateClockItemCommand('Bandeira amarela', 'yellow'), operatorActor);
 
     // Assert: two items whose ids are not empty and not equal.
-    const itemIds = store.readAllSlices().items.map((item) => item.id);
+    const itemIds = store
+      .readAllSlices()
+      .items.filter((item) => item.home.kind === 'rundown')
+      .map((item) => item.id);
     expect(itemIds.length, 'both items must exist').toBe(2);
     expect(new Set(itemIds).size, 'no two items may share an id').toBe(2);
   });
@@ -382,8 +387,10 @@ describe('a store opened on the file of a previous store', () => {
       'the cursor must come back where the take left it',
     ).toBe('item-3');
     expect(
-      slicesAfterRestart.items.map((item) => [item.label, item.order]),
-      'the remaining items must come back in their order',
+      slicesAfterRestart.items
+        .filter((item) => item.home.kind === 'rundown')
+        .map((item) => [item.label, item.order]),
+      'the remaining items of the rundown must come back in their order',
     ).toEqual([
       ['Largada do enduro', 0],
       ['Chegada do enduro', 1],

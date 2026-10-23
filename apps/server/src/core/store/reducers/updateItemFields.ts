@@ -6,6 +6,7 @@ import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js'
 import { removeKeysFromFieldsChangedOnAirOfItem } from '../fieldsChangedOnAir.js';
 import { findRefusalOfBindingFieldsForGraphic } from '../itemBindingFields.js';
 import { findRefusalOfEntityFieldsForGraphic } from '../itemEntityFields.js';
+import { findRefusalOfEventFieldsForGraphic } from '../itemEventFields.js';
 import {
   findRefusalOfTakeTimeFieldsForGraphic,
   listKeysOfTakeTimeFields,
@@ -112,7 +113,9 @@ function findRefusalOfTakeTimeFieldsInCommand(
  * binding or a reference with GRAPHIC_NOT_FOUND (no manifest to fit it to), and lets any
  * other command through.
  * The whole-clock check reads the item as it will be stored, merged, so a takeTime sent
- * onto the moment of a clock bound whole is refused as well.
+ * onto the moment of a clock bound whole is refused as well. An event field whose payload
+ * field does not fit is refused after the bindings and before the entity references
+ * (BAJAOVRLAY-44).
  */
 function findRefusalOfBindingsInCommand(
   slices: SlicesChangedByCommands,
@@ -140,6 +143,13 @@ function findRefusalOfBindingsInCommand(
   );
   if (refusalOfABinding !== undefined) {
     return refusalOfABinding;
+  }
+  const refusalOfAnEventField = findRefusalOfEventFieldsForGraphic(
+    graphicOfTheItem,
+    command.fields,
+  );
+  if (refusalOfAnEventField !== undefined) {
+    return refusalOfAnEventField;
   }
   return findRefusalOfEntityFieldsForGraphic(graphicOfTheItem, command.fields, slices);
 }

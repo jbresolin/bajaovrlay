@@ -1,7 +1,7 @@
 # packages/shared/src/dataShapes
 
-The canonical data shapes: what session, positions, standings and brackets look like inside
-BajaOvrLay. Every data source maps its data into these, and graphics bind only to them. Start
+The canonical data shapes: what session, positions, standings, brackets and incidents
+(penalties and warnings, which the event inbox watches) look like inside BajaOvrLay. Every data source maps its data into these, and graphics bind only to them. Start
 at `positionsShape.ts`, the richest one; `sessionShape.ts` reuses the race clock's flag values
 and clock field names (`clockMode`…) so a binding feeds the clock with no transform.
 

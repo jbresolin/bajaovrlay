@@ -95,6 +95,43 @@ export const CommandErrorCodeSchema = z.enum([
   'BINDING_NOT_RESOLVED',
   /** setOverride carried a value its canonical field cannot hold; the message names the field. */
   'INVALID_OVERRIDE_VALUE',
+  /** showEvent or dismissEvent named an event the inbox does not hold (BAJAOVRLAY-44). */
+  'EVENT_NOT_FOUND',
+  /**
+   * showEvent or dismissEvent named an event that is no longer waiting: already on air,
+   * shown, dismissed or expired. The message says which.
+   */
+  'EVENT_NOT_WAITING',
+  /**
+   * restoreEvent named an event that was not dismissed (waiting, on air, shown or
+   * expired); only a dismissal can be undone. The message says its status.
+   */
+  'EVENT_NOT_DISMISSED',
+  /**
+   * restoreEvent named a dismissed event past its rule's maximum wait: it would only
+   * expire at "No ar", so it stays dismissed. A kind with no maximum wait never is.
+   */
+  'EVENT_TOO_OLD',
+  /** showEvent named an event whose rule has no item to show it with ("Regras"). */
+  'EVENT_RULE_WITHOUT_ITEM',
+  /**
+   * A take of an item filled by an event (an item with "Evento" fields) that no event
+   * fills: such an item goes on air only through showEvent. Also "Tomar" on its Prévia
+   * filled from a sample event.
+   */
+  'ITEM_FILLED_BY_EVENT',
+  /** An event shown on an item with a required field the event does not carry. */
+  'EVENT_FIELD_NOT_FILLED',
+  /**
+   * createItem or updateItemFields carried an event field whose payload field does not fit
+   * the graphic's field; the message starts with the field's title.
+   */
+  'INVALID_EVENT_FIELD',
+  /**
+   * updateEventRule named an item no event fills (no "Evento" field): it would go on air in
+   * place of a notice and leave after the rule's time (gate 2 of PR #22).
+   */
+  'ITEM_NOT_FILLED_BY_EVENT',
   /**
    * A record of the entity library names an image the media store does not hold; the
    * message names the field ("Logo: …").

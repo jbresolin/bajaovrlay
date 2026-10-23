@@ -43,6 +43,10 @@ token names are the design's. Copied with these changes:
   clock sits on; `--tower-top` is built from it), `--tower-rows-per-page` (20),
   `--cue-width` / `--cue-height` (the ▲ / ▼ of a position change) and `--tracking-row` (the
   tower's team names, from the design's styles.css).
+- added for the notice (BAJAOVRLAY-44, from the catalogue of PR #21): `--notice-top`,
+  `--notice-width`, `--notice-head-height`, `--notice-row-height` and `--motion-notice-hold`
+  as the design names them, and `--notice-penalty-background` / `--notice-penalty-text`
+  (the navy cell, which the design wrote as `--brand-navy` and `#ffffff`).
 
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).

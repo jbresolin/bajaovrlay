@@ -18,7 +18,7 @@
  *     Zod schema built from the same JSON Schema.
  * The server's Ajv check stays the authority; see zodSchemaFromDataSchema.ts.
  */
-import type { BindingFieldValue, EntityFieldValue } from '@bajaovrlay/shared';
+import type { BindingFieldValue, EntityFieldValue, EventFieldValue } from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -33,6 +33,7 @@ import {
   emptySchemaFormEntityReferenceValue,
   readEntityReferenceFromSchemaFormValue,
 } from './entityReferenceFormValue';
+import { canFieldBeFilledByAnEvent, readEventFieldOfFormField } from './eventFieldFormValue';
 import { type ProblemReadingFormValue, readDataValueFromFormValue } from './fieldValueConversion';
 import { readOwnValueOfRecord } from './plainRecord';
 import type { SchemaFormDescription } from './schemaFormDescription';
@@ -46,7 +47,8 @@ export type CheckedSchemaFormField =
   | { key: string; outcome: 'takeTime' }
   | { key: string; outcome: 'binding'; binding: BindingFieldValue }
   | { key: string; outcome: 'entity'; reference: EntityFieldValue }
-  | { key: string; outcome: 'filledByTheWholeClock' };
+  | { key: string; outcome: 'filledByTheWholeClock' }
+  | { key: string; outcome: 'eventField'; eventField: EventFieldValue };
 
 /** The pt-BR message for one wrong field. */
 export type SchemaFormFieldMessage = {
@@ -127,6 +129,17 @@ export function checkSchemaFormValues(
       continue;
     }
 
+    // "Evento" (BAJAOVRLAY-44): the payload field chosen, or the message asking for one.
+    if (kind === 'eventField' && canFieldBeFilledByAnEvent(description.dataSchema, field.key)) {
+      const eventFieldRead = readEventFieldOfFormField(field, formValues, description.dataSchema);
+      if (eventFieldRead.status === 'problem') {
+        fieldMessages.push({ fieldKey: field.key, message: eventFieldRead.message });
+      } else {
+        const eventField = eventFieldRead.eventField;
+        checkedFields.push({ key: field.key, outcome: 'eventField', eventField });
+      }
+      continue;
+    }
     if (kind === 'entity' && canFieldReadTheEntityLibrary(description.dataSchema, field.key)) {
       const referenceValue =
         readOwnValueOfRecord(formValues.entityReferences ?? {}, field.key) ??

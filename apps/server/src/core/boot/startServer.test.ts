@@ -55,12 +55,12 @@ describe('startServer', () => {
     const response = await fetch(`http://127.0.0.1:${runningServer.port}/api/v1/state`);
     const body = (await response.json()) as { layers: Array<{ id: string }> };
 
-    // Assert: 200 and the six seeded layers.
+    // Assert: 200 and the seven seeded layers.
     expect(response.status, 'the booted server must answer 200 OK').toBe(200);
     expect(
       body.layers.map((layer) => layer.id),
       'the seeded layers must be served',
-    ).toEqual(['bug', 'ticker', 'clock', 'tower', 'lower-third', 'fullscreen']);
+    ).toEqual(['bug', 'ticker', 'clock', 'tower', 'lower-third', 'notice', 'fullscreen']);
   });
 
   it('serves the theme tokens it was booted with at /theme/ over real HTTP', async () => {

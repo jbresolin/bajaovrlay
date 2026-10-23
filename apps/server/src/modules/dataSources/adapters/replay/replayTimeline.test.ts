@@ -208,12 +208,13 @@ describe('chooseRecordedLineToReplay', () => {
 
 describe('rewriteShapesOntoTheCurrentTimeline', () => {
   it('sets updatedAtMs of every shape to now', () => {
-    // Arrange: the line recorded at 13:00:06 with all four shapes, replayed for 13:00:07.
+    // Arrange: the line recorded at 13:00:06 with all five shapes, replayed for 13:00:07.
     const recordedLine = buildFridayLineAt(fridayAt1300Ms + 6_000);
     const shapes = {
       ...recordedLine.shapes,
       standings: { scope: 'enduro' as const, updatedAtMs: fridayAt1300Ms, entries: [] },
       brackets: { sessionId: 'treino-2027-sexta', updatedAtMs: fridayAt1300Ms, rounds: [] },
+      incidents: { sessionId: 'treino-2027-sexta', updatedAtMs: fridayAt1300Ms, entries: [] },
     };
     const nowMs = replayTurnedOnAtMs + 7_000;
 
@@ -231,9 +232,10 @@ describe('rewriteShapesOntoTheCurrentTimeline', () => {
         rewritten.positions?.updatedAtMs,
         rewritten.standings?.updatedAtMs,
         rewritten.brackets?.updatedAtMs,
+        rewritten.incidents?.updatedAtMs,
       ],
       'every shape must be dated at the moment of the poll',
-    ).toEqual([nowMs, nowMs, nowMs, nowMs]);
+    ).toEqual([nowMs, nowMs, nowMs, nowMs, nowMs]);
     expect(rewritten.positions?.entries, 'the race data itself must be the recorded data').toEqual(
       recordedLine.shapes.positions?.entries,
     );

@@ -8,6 +8,8 @@ import { PeopleSchema } from '../entities/person.js';
 import { ScheduleSlotsSchema } from '../entities/scheduleSlot.js';
 import { SponsorsSchema } from '../entities/sponsor.js';
 import { TeamsSchema } from '../entities/team.js';
+import { EventRulesSchema } from '../eventInbox/eventRule.js';
+import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { MediaSchema } from '../media/mediaRecord.js';
@@ -37,6 +39,8 @@ export const SliceNameSchema = z.enum([
   'dataSnapshots',
   'overrides',
   'recordings',
+  'events',
+  'eventRules',
   'teams',
   'people',
   'sponsors',
@@ -99,6 +103,13 @@ export const SlicesSchema = z.object({
    * from the recordings folder at boot.
    */
   recordings: z.array(RecordingSchema),
+  /**
+   * The event inbox (BAJAOVRLAY-44): the newest 200 events detected in the sources' data
+   * or typed by the operator, each with its status. Saved; screens never receive it.
+   */
+  events: InboxEventsSchema,
+  /** One rule per kind of event: ask, auto or ignore, and the item that shows it. Saved. */
+  eventRules: EventRulesSchema,
   /**
    * The entity library (BAJAOVRLAY-19): the teams by car number, the people, the
    * sponsors and the day's schedule, each a slice of its own so an edit of one sponsor

@@ -86,6 +86,8 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    events: [],
+    eventRules: [],
     teams: [],
     people: [],
     sponsors: [],

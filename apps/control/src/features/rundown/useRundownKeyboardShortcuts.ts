@@ -1,5 +1,6 @@
 import type { CommandInput, Item, Rundown } from '@bajaovrlay/shared';
 
+import { isItemTakenOnlyThroughAnEvent } from '@/features/events/itemTakenThroughAnEvent';
 import { chooseCommandForOperatorKey } from '@/keyboard/commandForOperatorKey';
 import { isPressOfShortcut, keyboardMap } from '@/keyboard/keyboardMap';
 import { type KeyPress, useKeyboardShortcut } from '@/keyboard/useKeyboardShortcut';
@@ -63,6 +64,12 @@ export function useRundownKeyboardShortcuts(
     // Shift+Space only looks; plain Space is a take, whichever of the two takes it is.
     if (operatorKey === 'shiftSpace') {
       void sendCommand(command);
+      return;
+    }
+    // An item filled by an event at the cursor goes on air only through its event (gate 2
+    // of PR #22): Space does nothing then, as on a row whose "Disparar" is off.
+    const itemAtCursor = itemsOfRundownInOrder.find((item) => item.id === rundown?.cursorItemId);
+    if (itemAtCursor !== undefined && isItemTakenOnlyThroughAnEvent(itemAtCursor)) {
       return;
     }
     sendTakeByThisOperator(command);

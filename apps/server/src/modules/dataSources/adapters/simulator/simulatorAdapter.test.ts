@@ -2,8 +2,9 @@
  * The simulator adapter: a simulated enduro as a live source (apps/server)
  *
  * What this module is for:
- *   A source of kind `simulator` answers each poll with the session, positions and
- *   overall standings of a simulated enduro at "now". The adapter only turns wall time
+ *   A source of kind `simulator` answers each poll with the session, positions, overall
+ *   standings and incidents (penalties and warnings, BAJAOVRLAY-44) of a simulated enduro
+ *   at "now". The adapter only turns wall time
  *   into simulated time (from simulatedStartAtMs, at the configured speed) and hands
  *   the race state to shapesFromRaceState.ts. With isFailing on, every poll fails with
  *   "Falha simulada.", so the operator can rehearse a late source on purpose.
@@ -11,7 +12,10 @@
  * What these tests prove:
  *   - Wall time becomes simulated time with the speed: at 60×, one real minute is one
  *     simulated hour; before the start, or with no start, the race is at its green flag.
- *   - A poll answers the three shapes, dated now, and they are valid.
+ *   - A poll answers the four shapes, dated now, and they are valid.
+ *   - The session id names the seed and the race's start, so "Reiniciar corrida" is a new
+ *     session: the event inbox keys fastest laps and leader changes by it, and the same
+ *     lap of a restarted race is a new event.
  *   - Two polls at the same moment answer the same data (the race has no memory).
  *   - isFailing makes the poll throw the pt-BR "Falha simulada.".
  *   - The server registers this adapter for the `simulator` kind.
@@ -36,6 +40,12 @@ const turnedOnAtMs = Date.parse('2027-08-14T13:00:00.000Z');
 /** The seeded simulator's config (every default), started at 13:00, at the given speed. */
 function buildSimulatorConfigStartedAt1300(speed: number): SimulatorConfig {
   return SimulatorConfigSchema.parse({ speed, simulatedStartAtMs: turnedOnAtMs });
+}
+
+/** The sessionId of one shape of an answer, which the adapter hands back unchecked. */
+function readSessionIdOfShape(shape: unknown): unknown {
+  const isObject = typeof shape === 'object' && shape !== null;
+  return isObject && 'sessionId' in shape ? shape.sessionId : undefined;
 }
 
 /** The context of a poll made at a moment, with a signal that never fires. */
@@ -97,7 +107,7 @@ describe('wall time into simulated time', () => {
 });
 
 describe('a poll of the simulator', () => {
-  it('answers a valid session, positions and standings dated now', async () => {
+  it('answers a valid session, positions, standings and incidents dated now', async () => {
     // Arrange: the simulator at 60×, polled at 13:02 (two simulated hours in).
     const adapter = createSimulatorAdapter();
     const config = buildSimulatorConfigStartedAt1300(60);
@@ -106,13 +116,14 @@ describe('a poll of the simulator', () => {
     // Act: poll once.
     const answer = await adapter.pollOnce(config, buildPollContextAt(pollAtMs));
 
-    // Assert: three valid shapes, each dated at the poll.
-    expect(Object.keys(answer.shapes).sort(), 'the simulator answers three shapes').toEqual([
+    // Assert: four valid shapes, each dated at the poll.
+    expect(Object.keys(answer.shapes).sort(), 'the simulator answers four shapes').toEqual([
+      'incidents',
       'positions',
       'session',
       'standings',
     ]);
-    for (const shapeKey of ['session', 'positions', 'standings'] as const) {
+    for (const shapeKey of ['session', 'positions', 'standings', 'incidents'] as const) {
       const validation = validateDataShape(shapeKey, answer.shapes[shapeKey]);
       expect(
         validation.isValid ? 'valid' : validation.errorMessage,
@@ -123,8 +134,42 @@ describe('a poll of the simulator', () => {
     }
     expect(
       adapter.listProducedShapes(config),
-      'the simulator says it produces session, positions and standings',
-    ).toEqual(['session', 'positions', 'standings']);
+      'the simulator says it produces session, positions, standings and incidents',
+    ).toEqual(['session', 'positions', 'standings', 'incidents']);
+  });
+
+  it('names the session by its seed and its start, so a restarted race is a new session', async () => {
+    // Arrange: the same seeded simulator started at 13:00, and again at 13:30 (the operator
+    // pressed "Reiniciar corrida").
+    const adapter = createSimulatorAdapter();
+    const firstRace = buildSimulatorConfigStartedAt1300(60);
+    const restartedRace = { ...firstRace, simulatedStartAtMs: turnedOnAtMs + 30 * oneMinuteMs };
+
+    // Act: poll each one minute after its own start.
+    const firstAnswer = await adapter.pollOnce(
+      firstRace,
+      buildPollContextAt(turnedOnAtMs + oneMinuteMs),
+    );
+    const restartedAnswer = await adapter.pollOnce(
+      restartedRace,
+      buildPollContextAt(turnedOnAtMs + 31 * oneMinuteMs),
+    );
+
+    // Assert: the seed and the start moment name each session, the same in every shape.
+    const expectedFirstSessionId = `simulador-enduro-2027-${String(turnedOnAtMs)}`;
+    const expectedRestartedSessionId = `simulador-enduro-2027-${String(turnedOnAtMs + 30 * oneMinuteMs)}`;
+    expect(
+      readSessionIdOfShape(firstAnswer.shapes.session),
+      'the first race is named by its start',
+    ).toBe(expectedFirstSessionId);
+    expect(
+      readSessionIdOfShape(firstAnswer.shapes.incidents),
+      'the incidents carry the same session id as the session',
+    ).toBe(expectedFirstSessionId);
+    expect(
+      readSessionIdOfShape(restartedAnswer.shapes.positions),
+      'the restarted race is a session of its own',
+    ).toBe(expectedRestartedSessionId);
   });
 
   it('answers the same data to two polls at the same moment', async () => {

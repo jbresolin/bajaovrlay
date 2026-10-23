@@ -9,7 +9,7 @@
  *   the "Fontes de dados" page.
  *
  * What these tests prove:
- *   - Each of the five sample payloads in samples/ passes its shape, so the samples can
+ *   - Each of the six sample payloads in samples/ passes its shape, so the samples can
  *     be trusted as fixtures and as documentation.
  *   - Session, standings and brackets payloads with one mistake are refused, each with
  *     the exact pt-BR sentence the operator reads, naming the path from the shape's key.
@@ -84,6 +84,12 @@ describe('the sample payloads', () => {
       name: 'the suspension brackets pass the brackets shape',
       shapeKey: 'brackets',
       fileName: 'brackets.suspension.json',
+    },
+    // The incidents of the enduro: a penalty, a warning, an incident with no moment.
+    {
+      name: 'the enduro incidents pass the incidents shape',
+      shapeKey: 'incidents',
+      fileName: 'incidents.enduro.json',
     },
   ];
 

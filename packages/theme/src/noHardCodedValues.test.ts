@@ -18,8 +18,8 @@
  *   - The search itself works: it reports the right lines of a sample text, with their
  *     numbers; a value inside a comment (a `//` after code, a block comment over several
  *     lines) is not reported, while a value in the code before a `//` is; and it
- *     really went through the graphics' sources (it saw the race clock's styles file and
- *     left its tests out).
+ *     really went through the graphics' sources (it saw the race clock's and the notice's
+ *     styles files and left their tests out).
  *
  * What these tests deliberately do not cover:
  *   - Named colours (`white`, `red`) and sizes in rem or em; the tokens use hex, rgb and
@@ -285,10 +285,13 @@ describe('the search for hard-coded values', () => {
     // Act: list the paths the guard reads.
     const pathsRead = listSourceFilesOfEveryGraphic();
 
-    // Assert: the race clock's styles file is among them, its tests are not, so an
-    // empty or shallow search cannot pass for a clean one.
+    // Assert: the race clock's and the notice's styles files are among them, their tests
+    // are not, so an empty or shallow search cannot pass for a clean one.
     expect(pathsRead, 'the search must read the race clock’s styles file').toContain(
       join('race-clock', 'src', 'raceClockStyles.ts'),
+    );
+    expect(pathsRead, 'the search must read the notice’s styles file').toContain(
+      join('notice', 'src', 'noticeStyles.ts'),
     );
     expect(pathsRead, 'the search must leave the tests out').not.toContain(
       join('race-clock', 'src', 'raceClockView.test.ts'),

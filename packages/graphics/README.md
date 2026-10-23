@@ -7,7 +7,10 @@ values). Graphics receive resolved data only and never fetch anything themselves
 `race-clock/` is the first graphic and the template every later graphic copies: start
 reading at its README.md, which also says how to copy it.
 `positions-tower/` is the first data graphic (a whole list bound live to a source) and
-the template for the next one with rows. Every value a graphic draws with comes from the
+the template for the next one with rows.
+`notice/` is the card under the bug for a fastest lap or a race control notice, the first
+graphic with two variants in one manifest (`variant`) and an on-air hold left to the server.
+Every value a graphic draws with comes from the
 theme (`packages/theme`): tokens on the renderer page's `:root`, read as `var(--token)`
 inside the shadow root, never a colour or a size of the graphic's own.
 A media URL (`/media/<mediaId>`, a logo or a photo) is drawn with `<img>` only, never with

@@ -276,6 +276,7 @@ export function buildSchemaFormValuesFromItemFields(
   const valuePairs: Array<[string, SchemaFormFieldValue]> = [];
   const kindPairs: Array<[string, SchemaFormFieldKind]> = [];
   const bindingPairs: Array<[string, SchemaFormBindingValue]> = [];
+  const eventPathPairs: Array<[string, string]> = [];
   const entityReferencePairs: Array<[string, SchemaFormEntityReferenceValue]> = [];
   const unsupportedValuesAsJson: UnsupportedValueAsJson[] = [];
   const labelsOfFieldsThatCouldNotBeRead: string[] = [];
@@ -317,6 +318,13 @@ export function buildSchemaFormValuesFromItemFields(
       bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(storedField)]);
       continue;
     }
+    // A field filled by the event the item shows (BAJAOVRLAY-44): "Evento" and its path.
+    if (storedField?.kind === 'eventField') {
+      valuePairs.push([field.key, buildStartingValueOfField(field)]);
+      kindPairs.push([field.key, 'eventField']);
+      eventPathPairs.push([field.key, storedField.path]);
+      continue;
+    }
     // A field read from the entity library shows as "Cadastro" with its choices.
     if (storedField?.kind === 'entity') {
       valuePairs.push([field.key, buildStartingValueOfField(field)]);
@@ -356,13 +364,16 @@ export function buildSchemaFormValuesFromItemFields(
   }
 
   return {
-    formValues: assembleSchemaFormValues(
-      valuePairs,
-      kindPairs,
-      unsupportedValuesAsJson,
-      bindingPairs,
-      entityReferencePairs,
-    ),
+    formValues: {
+      ...assembleSchemaFormValues(
+        valuePairs,
+        kindPairs,
+        unsupportedValuesAsJson,
+        bindingPairs,
+        entityReferencePairs,
+      ),
+      eventPaths: Object.fromEntries(eventPathPairs),
+    },
     labelsOfFieldsThatCouldNotBeRead,
   };
 }

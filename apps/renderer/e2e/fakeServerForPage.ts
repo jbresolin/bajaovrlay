@@ -115,6 +115,8 @@ export async function startFakeServerForPage(
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    events: [],
+    eventRules: [],
     teams: [],
     people: [],
     sponsors: [],

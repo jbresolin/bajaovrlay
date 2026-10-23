@@ -33,6 +33,7 @@
  *   - That the other test files call it before each test; each of them does so in a
  *     `test.beforeEach` at its top, which is there to be read.
  *   - Layers and graphics: no command changes them, so there is nothing to put back.
+ *   - The event rules and waiting events (BAJAOVRLAY-44); emptyServerStateEventInbox.e2e.ts.
  *   - The event log, which keeps its rows; no browser test reads it.
  *   - A macro still running when the reset starts: the reset waits for it to end, which
  *     the macro e2e (macroTakeWaitClear.e2e.ts) leaves behind only for half a second.
@@ -225,8 +226,8 @@ test.describe('emptying the server state', () => {
     ).toBeVisible();
     await expect(
       quickFireArea.getByRole('tab'),
-      'after the reset only the seeded panel and the Macros tab may be left',
-    ).toHaveText([/^Atalhos/, /^Macros/]);
+      'after the reset only the seeded panel and the fixed Macros and Eventos tabs may be left',
+    ).toHaveText([/^Atalhos/, /^Macros/, /^Eventos/]);
     await quickFireArea.getByRole('tab', { name: 'Atalhos' }).click();
     await expect(
       quickFireArea.getByText('Crie um item aqui para ter um atalho'),

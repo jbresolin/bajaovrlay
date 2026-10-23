@@ -16,6 +16,8 @@ export type ItemEditorButtonsProps = {
   isGraphicStillToBeChosen: boolean;
   /** true while the stored item has an instance on the program output. */
   isItemOnAir: boolean;
+  /** true while a field is "Evento": the item goes on air only through its event. */
+  isTakenOnlyThroughAnEvent: boolean;
   /** The command types this opening of the editor sent; their refusals are shown here. */
   commandTypesSentInThisOpening: Command['type'][];
   onSavePressed: () => void;
@@ -32,7 +34,8 @@ export type ItemEditorButtonsProps = {
  * command this opening sent. Drawing only; what each press does is useItemEditorSaves.ts.
  * The save buttons are off while a press waits for the server and while a new item has
  * no graphic chosen yet (a line beside them says so); the form's own rule "Escolha o
- * gráfico." stays as the second guard. "Cancelar" stays on during a press, so the
+ * gráfico." stays as the second guard. "Salvar e disparar" is off, with its reason, while a
+ * field is "Evento": such an item goes on air only through its event (gate 2 of PR #22). "Cancelar" stays on during a press, so the
  * operator can always leave.
  */
 export function ItemEditorButtons(props: ItemEditorButtonsProps) {
@@ -47,6 +50,9 @@ export function ItemEditorButtons(props: ItemEditorButtonsProps) {
         type="button"
         variant="secondary"
         disabled={areSaveButtonsOff}
+        disabledReason={
+          props.isTakenOnlyThroughAnEvent ? ptBR.events.takeOfTemplateItemOff : undefined
+        }
         onClick={props.onSaveAndTakePressed}
       >
         {ptBR.itemEditor.saveAndTakeButton}

@@ -5,6 +5,11 @@ import {
   readRecordingsFromFolder,
 } from '../../modules/dataSources/index.js';
 import { loadEntitySlices } from '../../modules/entities/index.js';
+import {
+  isInstanceOfAnEvent,
+  loadOrSeedEventInboxSlices,
+  markEventsOnAirAsShownAtBoot,
+} from '../../modules/events/index.js';
 import { loadMediaSlice } from '../../modules/media/index.js';
 import { writeBootRows } from '../db/bootRowStorage.js';
 import { readAllDataSnapshotRows } from '../db/dataSnapshotRowStorage.js';
@@ -76,11 +81,16 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
 
   // What was on the preview output does not survive a restart: a preview is something
   // the operator was looking at, not state the show depends on, and a stale one would
-  // sit one "Tomar" away from air with nobody remembering why. Program instances stay.
+  // sit one "Tomar" away from air with nobody remembering why. Program instances stay,
+  // except an event's notice (BAJAOVRLAY-44, gate 2 of PR #22): its auto-out is lost at a
+  // restart, so it would stay up for good; its event is marked shown below.
   const instancesKeptAcrossTheRestart = operatorSlices.instances.filter(
-    (instance) => instance.target !== 'preview',
+    (instance) => instance.target !== 'preview' && !isInstanceOfAnEvent(instance),
   );
-  const numberOfPreviewInstancesDropped =
+  const numberOfPreviewInstancesDropped = operatorSlices.instances.filter(
+    (instance) => instance.target === 'preview',
+  ).length;
+  const numberOfInstancesDropped =
     operatorSlices.instances.length - instancesKeptAcrossTheRestart.length;
 
   // The graphics row is rewritten on every boot; layers when seeded and when a layer
@@ -109,7 +119,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
   };
   const rowsOfALaterBoot =
-    numberOfPreviewInstancesDropped > 0 ? [graphicsRow, instancesRow] : [graphicsRow];
+    numberOfInstancesDropped > 0 ? [graphicsRow, instancesRow] : [graphicsRow];
   if (instanceBindingsAtBoot.wasAnyEntryDropped) {
     rowsOfALaterBoot.push(instanceBindingsRow);
   }
@@ -135,6 +145,20 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     options.logger,
   );
+  // The event inbox's events and rules (BAJAOVRLAY-44): loaded, the rules seeded when
+  // their row is missing; see modules/events/loadEventInboxSlices.ts.
+  // Seeding the rules also seeds the "Avisos" panel and its two items, once per database,
+  // so the panels and items go through it.
+  const eventInboxSlices = loadOrSeedEventInboxSlices(
+    storedRows,
+    { quickFirePanels: quickFireAndMacroSlices.quickFirePanels, items: rundownSlices.items },
+    updatedAt,
+    options.logger,
+  );
+  const eventsAtBoot = markEventsOnAirAsShownAtBoot(eventInboxSlices.events, updatedAt);
+  if (eventsAtBoot.wereAnyMarked) {
+    rowsOfALaterBoot.push({ name: 'events', json: eventsAtBoot.events, updatedAt });
+  }
   const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
   writeBootRows(options.database, {
     sliceRowsToWrite: [
@@ -142,6 +166,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
       ...rundownSlices.rowsToSaveAtBoot,
       ...quickFireAndMacroSlices.rowsToSaveAtBoot,
       ...dataSourceSlices.rowsToSaveAtBoot,
+      ...eventInboxSlices.rowsToSaveAtBoot,
     ],
     sliceRowNamesToDelete: dataSourceSlices.sliceRowNamesToDeleteAtBoot,
     dataSnapshotRowChanges: dataSourceSlices.dataSnapshotRowChangesAtBoot,
@@ -180,8 +205,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     instanceBindings: instanceBindingsAtBoot.instanceBindings,
     eventLog,
     rundowns: rundownSlices.rundowns,
-    items: rundownSlices.items,
-    quickFirePanels: quickFireAndMacroSlices.quickFirePanels,
+    items: eventInboxSlices.items,
+    quickFirePanels: eventInboxSlices.quickFirePanels,
     macros: quickFireAndMacroSlices.macros,
     macroRuns: [],
     dataSources: dataSourceSlices.dataSources,
@@ -195,6 +220,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     // Rebuilt from the recordings folder at every boot, every recording closed (D13);
     // never saved in the database: the files are the truth.
     recordings: readRecordingsAtBoot(options, dataSourceSlices.dataSources),
+    events: eventsAtBoot.events,
+    eventRules: eventInboxSlices.eventRules,
     // The entity library (BAJAOVRLAY-19), loaded by modules/entities; nothing is seeded.
     ...loadEntitySlices(storedRows),
     // Its images, loaded by modules/media; the files themselves are under DATA_DIR/media.

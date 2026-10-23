@@ -4,6 +4,7 @@ import {
   type EntityLibrary,
   findClockFieldKeysByRole,
   type Graphic,
+  type InboxEventPayload,
   type ItemFields,
   resolveBindingAgainstSources,
   type SourcesForBindings,
@@ -14,6 +15,7 @@ import { ptBR } from '../messages/ptBR.js';
 import { listRequiredFieldKeysOfGraphic } from './graphicSchemaProperties.js';
 import { readTitleOfField } from './itemBindingFields.js';
 import { resolveEntityField } from './resolveEntityFields.js';
+import { resolveEventField } from './resolveEventField.js';
 import { refuseUnsupportedFieldKind } from './rundownCommandRefusals.js';
 
 /** What resolving an item's fields gives: the data for the graphic, or why it cannot be made. */
@@ -29,13 +31,16 @@ export type ItemFieldsResolution =
  * - `momentOfTheTake`: the moment the store gave the command (ISO 8601), which a
  *   `takeTime` field becomes;
  * - `sources`: the data sources, their last good snapshots and the operator's overrides;
- * - `entities`: the entity library (teams, people, sponsors, schedule), for `entity` fields.
+ * - `entities`: the entity library (teams, people, sponsors, schedule), for `entity` fields;
+ * - `eventPayload`: only when an event is shown or previewed with the item, what fills
+ *   its event fields (BAJAOVRLAY-44).
  */
 export type ItemFieldsResolutionRequest = {
   fields: ItemFields;
   graphic: Graphic | undefined;
   momentOfTheTake: string;
   sources: SourcesForBindings;
+  eventPayload?: InboxEventPayload | undefined;
   entities: EntityLibrary;
 };
 
@@ -48,7 +53,9 @@ export type ItemFieldsResolutionRequest = {
  * in shared). The whole clock (the path `clock`, stored on the field with the role
  * clockTime) fills the graphic's four clock fields by role, so the clock never takes a new
  * time with an old moment. An `entity` reference reads one attribute of one record of the
- * library, an image as its /media URL (resolveEntityFields.ts, BAJAOVRLAY-19).
+ * library, an image as its /media URL (resolveEntityFields.ts, BAJAOVRLAY-19). An
+ * `eventField` reads the payload of the event shown with the item (resolveEventField.ts,
+ * BAJAOVRLAY-44).
  * One field it cannot fill refuses the whole item (BINDING_NOT_RESOLVED or
  * ENTITY_NOT_RESOLVED, the field's title first): a missing source, a source with no data
  * yet, a shape it does not send, a record not in the library, or a value absent on a
@@ -96,6 +103,20 @@ export function resolveItemFieldsIntoGraphicData(
         }
         const destination = isWholeClock ? keysAndValuesOfTheWholeClock : resolvedKeysAndValues;
         destination.push(...fieldOutcome.keysAndValues);
+        break;
+      }
+      case 'eventField': {
+        const fieldOutcome = resolveEventField(
+          fieldKey,
+          fieldValue,
+          request.eventPayload,
+          graphic,
+          requiredFieldKeys,
+        );
+        if (fieldOutcome.status === 'refused') {
+          return fieldOutcome;
+        }
+        resolvedKeysAndValues.push(...fieldOutcome.keysAndValues);
         break;
       }
       case 'entity': {

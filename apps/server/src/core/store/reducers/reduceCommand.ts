@@ -3,6 +3,10 @@ import type { Command } from '@bajaovrlay/shared';
 import { reduceBindingCommand } from '../../../modules/bindings/index.js';
 import { reduceDataSourceCommand } from '../../../modules/dataSources/index.js';
 import { reduceEntityCommand } from '../../../modules/entities/index.js';
+import {
+  followEventsOfProgramInstances,
+  reduceEventInboxCommand,
+} from '../../../modules/events/index.js';
 import { reduceMediaCommand } from '../../../modules/media/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
@@ -20,10 +24,12 @@ import { reduceTakePreview } from './takePreview.js';
 import { reduceUpdateInstanceData } from './updateInstanceData.js';
 
 /**
- * Sends a valid command to its reducer (one file per command), then drops the bindings of
- * any instance the command removed (instanceBindingsBookkeeping.ts), in this one place so
- * no reducer has to remember. Pure: same slices, command and context always give the
- * same outcome, and nothing is read or written.
+ * Sends a valid command to its reducer (one file per command), then, when the instances
+ * changed, drops the bindings of any instance the command removed
+ * (instanceBindingsBookkeeping.ts) and moves the inbox's events on or off the air with the
+ * instances carrying them (modules/events, BAJAOVRLAY-44), in this one place so no
+ * reducer has to remember. Pure: same slices, command and context always give the same
+ * outcome, and nothing is read or written.
  */
 export function reduceCommand(
   slices: SlicesChangedByCommands,
@@ -36,7 +42,11 @@ export function reduceCommand(
   if (outcome.status === 'refused' || !haveInstancesChanged) {
     return outcome;
   }
-  return { ...outcome, slices: dropBindingsOfInstancesGone(outcome.slices) };
+  const slicesWithBindingsKept = dropBindingsOfInstancesGone(outcome.slices);
+  return {
+    ...outcome,
+    slices: followEventsOfProgramInstances(slicesWithBindingsKept, context.now),
+  };
 }
 
 /** The switch from a command's type to its reducer. */
@@ -109,6 +119,14 @@ function reduceCommandOfItsType(
     case 'setOverride':
     case 'clearOverride':
       return reduceBindingCommand(slices, command, context);
+    // The event inbox (BAJAOVRLAY-44): its reducers live in the module modules/events.
+    case 'showEvent':
+    case 'dismissEvent':
+    case 'restoreEvent':
+    case 'createManualEvent':
+    case 'updateEventRule':
+    case 'recordDetectedEvents':
+      return reduceEventInboxCommand(slices, command, context);
     // The entity library (BAJAOVRLAY-19): its reducers live in the module modules/entities.
     case 'upsertEntity':
     case 'deleteEntity':

@@ -1,5 +1,5 @@
 import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
-import { type Ref, useImperativeHandle, useState } from 'react';
+import { type Ref, useEffect, useImperativeHandle, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { useEntityLibrary } from '@/features/entityLibrary/useEntityLibrary';
@@ -58,6 +58,11 @@ export type ItemGraphicFieldsFormProps = {
   handleRef: Ref<ItemGraphicFieldsFormHandle>;
   /** true while the stored item is on the program output ("Atualizar no ar" is offered). */
   isItemOnAir: boolean;
+  /**
+   * Told whether any field is "Evento" now, and again each time that changes: such an
+   * item goes on air only through its event, so the panel turns "Salvar e disparar" off.
+   */
+  onIsFilledByAnEventChanged: (isFilledByAnEvent: boolean) => void;
 };
 
 /**
@@ -126,6 +131,12 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
       },
       graphicFields.formValues,
     );
+
+  const isFilledByAnEventNow = Object.values(kindsNow).includes('eventField');
+  const { onIsFilledByAnEventChanged } = props;
+  useEffect(() => {
+    onIsFilledByAnEventChanged(isFilledByAnEventNow);
+  }, [isFilledByAnEventNow, onIsFilledByAnEventChanged]);
 
   const hasFieldsThatCouldNotBeRead = graphicFields.labelsOfFieldsThatCouldNotBeRead.length > 0;
   // The item editor alone lets a field read a data source (BAJAOVRLAY-20) or the entity

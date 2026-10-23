@@ -1,4 +1,5 @@
 import { ptBRBindingErrors } from './ptBRBindings.js';
+import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
 
 /**
@@ -67,6 +68,7 @@ export const ptBR = {
     clock: 'Relógio',
     tower: 'Torre',
     lowerThird: 'Tarja',
+    notice: 'Aviso',
     fullscreen: 'Tela cheia',
   },
   // Name of the one rundown seeded on the first boot, as the operator sees it.
@@ -94,6 +96,8 @@ export const ptBR = {
   },
   // Refusals about item fields read from a data source (BAJAOVRLAY-20); see ptBRBindings.ts.
   bindingErrors: ptBRBindingErrors,
+  // Refusals about the event inbox (BAJAOVRLAY-44); see ptBREvents.ts.
+  eventErrors: ptBREventErrors,
   // Refusals about the media store: uploads, serving, deleting (BAJAOVRLAY-19); ptBRMedia.ts.
   mediaErrors: ptBRMediaErrors,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
@@ -169,7 +173,7 @@ export const ptBR = {
     // A poll answered a shape name that is none of the four canonical shapes: a bug in
     // the adapter. Worded like the shape validator's errors, naming the path.
     unknownShapeKey: (shapeKey: string) =>
-      `Dados inválidos em "${shapeKey}": este formato de dados não existe (os formatos são session, positions, standings e brackets).`,
+      `Dados inválidos em "${shapeKey}": este formato de dados não existe (os formatos são session, positions, standings, brackets e incidents).`,
     // A "good" poll that carried no shape at all: an adapter that answered nothing. Kept
     // as a failure so the last good data stays on air (rule 4).
     noShapesInPoll: 'A fonte respondeu sem nenhum dado.',
@@ -273,5 +277,18 @@ export const ptBR = {
   simulatorSession: {
     eventName: 'Baja SAE Brasil — Simulação',
     sessionName: 'Enduro de Resistência (simulado)',
+  },
+  // The simulated race direction's reasons (simulatedIncidents.ts): plausible, not the
+  // rulebook. A penalty is written in words ("+30 segundos"), as PR #21's notice asks,
+  // because the on-air face has no lowercase and "+30 s" would read "+30 S".
+  simulatorIncidents: {
+    penalties: [
+      { reason: 'Velocidade acima do limite nos boxes', penaltyText: '+30 segundos' },
+      { reason: 'Ultrapassagem sob bandeira amarela', penaltyText: '+60 segundos' },
+      { reason: 'Corte de pista', penaltyText: 'Volta cancelada' },
+      { reason: 'Reabastecimento com o motor ligado', penaltyText: '+120 segundos' },
+      { reason: 'Conduta antidesportiva', penaltyText: 'Bandeira preta' },
+    ],
+    warnings: ['Bloqueio de ultrapassagem', 'Ignorou a bandeira azul', 'Contato com outro carro'],
   },
 } as const;

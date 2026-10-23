@@ -24,6 +24,8 @@ export type SlicesChangedByCommands = Pick<
   | 'dataSnapshots'
   | 'overrides'
   | 'recordings'
+  | 'events'
+  | 'eventRules'
   | 'teams'
   | 'people'
   | 'sponsors'
@@ -57,6 +59,8 @@ export type ReducerContext = {
   newMacroId: string;
   /** The id to give a data source the command creates (createDataSource). */
   newDataSourceId: string;
+  /** The id to give an event the operator types (createManualEvent). */
+  newEventId: string;
   /**
    * BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot: createDataSource and updateDataSource
    * refuse a flex request to a host off it.

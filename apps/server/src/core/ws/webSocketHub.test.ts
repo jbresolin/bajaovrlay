@@ -56,7 +56,7 @@ describe('connecting to /ws', () => {
     const client = await connectWebSocketTestClient(runningServer.port);
     const hello = await client.waitForMessage('hello', (message) => message.type === 'hello');
 
-    // Assert: hello carries the very slices the store holds, six layers among them,
+    // Assert: hello carries the very slices the store holds, seven layers among them,
     // and the time the server's clock showed.
     expect(hello, 'hello must carry every slice the store holds and the server clock').toEqual({
       type: 'hello',
@@ -66,7 +66,7 @@ describe('connecting to /ws', () => {
     expect(
       hello.type === 'hello' ? hello.slices.layers.length : 0,
       'the seeded layers must be in hello',
-    ).toBe(6);
+    ).toBe(7);
   });
 });
 
@@ -196,7 +196,11 @@ describe('a command sent over /ws', () => {
 
     // Assert: ok, naming the id of the item the store now holds, so "Salvar e disparar"
     // can take that very item next.
-    const itemIdsInTheStore = runningServer.stateStore.readAllSlices().items.map((item) => item.id);
+    // The rundown's items only: the panel "Avisos" holds two seeded notice items.
+    const itemIdsInTheStore = runningServer.stateStore
+      .readAllSlices()
+      .items.filter((item) => item.home.kind === 'rundown')
+      .map((item) => item.id);
     expect(itemIdsInTheStore.length, 'exactly one item must have been created').toBe(1);
     expect(commandResult, 'the answer must name the item the server made').toEqual({
       type: 'commandResult',
