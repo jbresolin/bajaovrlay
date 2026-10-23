@@ -107,6 +107,11 @@ export const CommandErrorCodeSchema = z.enum([
    * expired); only a dismissal can be undone. The message says its status.
    */
   'EVENT_NOT_DISMISSED',
+  /**
+   * restoreEvent named a dismissed event past its rule's maximum wait: it would only
+   * expire at "No ar", so it stays dismissed. A kind with no maximum wait never is.
+   */
+  'EVENT_TOO_OLD',
   /** showEvent named an event whose rule has no item to show it with ("Regras"). */
   'EVENT_RULE_WITHOUT_ITEM',
   /**

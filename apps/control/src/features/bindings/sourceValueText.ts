@@ -16,9 +16,9 @@ import {
   wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
-import { formatTimeOfDay } from '@/features/dataSources/timeOfDayText';
 import { formatMillisecondsAsMinutesAndSeconds } from '@/features/schemaForm/minutesAndSeconds';
 import { ptBR } from '@/i18n/ptBR';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 
 /** How a source's value is written. */
 export type SourceValueKind =

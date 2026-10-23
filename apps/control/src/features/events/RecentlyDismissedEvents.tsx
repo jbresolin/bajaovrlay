@@ -1,5 +1,5 @@
 import { ActionButton } from '@/features/connection/ActionButton';
-import { useCurrentTime } from '@/features/layers/useCurrentTime';
+import { useServerAlignedTimeMs } from '@/features/dataSources/useServerAlignedTimeMs';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
@@ -21,9 +21,11 @@ const windowCheckIntervalMs = 5_000;
 export function RecentlyDismissedEvents() {
   const events = useServerState((state) => state.events);
   const sendCommand = useSendCommand();
-  const now = useCurrentTime(windowCheckIntervalMs);
+  // The server stamped the dismissal, so the 30 s count on its clock: a stream PC whose
+  // own clock is off by seconds would otherwise close the window early or keep it open.
+  const nowMs = useServerAlignedTimeMs(windowCheckIntervalMs);
 
-  const dismissedJustNow = listEventsDismissedJustNow(events, now.getTime());
+  const dismissedJustNow = listEventsDismissedJustNow(events, nowMs);
   if (dismissedJustNow.length === 0) {
     return null;
   }

@@ -26,7 +26,7 @@ import type { InboxEvent } from '@bajaovrlay/shared';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { formatTimeOfDay } from '@/features/dataSources/timeOfDayText';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSimulatorThatIsOk } from '@/state/dataSourcesLikeTheServerSends.testSupport';
 import {

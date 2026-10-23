@@ -3,9 +3,9 @@ import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { ActionButton } from '@/features/connection/ActionButton';
-import { formatTimeOfDay } from '@/features/dataSources/timeOfDayText';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 
 import { describeKindOfEvent } from './inboxEventText';
 

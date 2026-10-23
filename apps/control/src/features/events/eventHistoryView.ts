@@ -6,9 +6,9 @@
  */
 import type { DataSource, InboxEvent } from '@bajaovrlay/shared';
 
-import { formatTimeOfDay } from '@/features/dataSources/timeOfDayText';
 import { ptBR } from '@/i18n/ptBR';
 import { writeTextForSearch } from '@/i18n/textForSearch';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 
 import {
   describeDetailsOfEvent,

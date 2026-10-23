@@ -39,8 +39,7 @@ function readDismissedAtMs(event: InboxEvent): number | undefined {
 /**
  * The events dismissed within `undoDismissWindowMs` of `nowMs`, the latest dismissal
  * first: what the console offers to undo. An older dismissal is undone from the page's
- * history. `nowMs` is the page's clock and the moments the server's, so a clock off by a
- * few seconds only moves the end of the window.
+ * history. `nowMs` must be the server-aligned now, since the server stamped the moments.
  */
 export function listEventsDismissedJustNow(events: InboxEvent[], nowMs: number): InboxEvent[] {
   const recentlyDismissed = events.filter((event) => {

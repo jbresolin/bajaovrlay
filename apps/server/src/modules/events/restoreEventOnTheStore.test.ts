@@ -13,14 +13,18 @@
  *   - A dismissed penalty comes back pending, the change dated and logged, and "No ar"
  *     then shows it.
  *   - A dismissed penalty whose rule is automatic comes back pending, not queued.
+ *   - A dismissed penalty whose rule is now "Ignorar" comes back pending all the same: the
+ *     operator asked for it by name (gate 2 of the walk changes).
+ *   - A dismissed penalty past its rule's maximum wait is refused (EVENT_TOO_OLD), saying
+ *     so in pt-BR, and stays dismissed, rather than coming back only to expire at "No ar".
+ *     Kinds with no maximum wait (incidents, typed events) can be restored hours later.
  *   - Restoring an event that was not dismissed (one waiting, one already shown) is
  *     refused with EVENT_NOT_DISMISSED, saying its status; an unknown one with
  *     EVENT_NOT_FOUND.
  *
  * What these tests deliberately do not cover:
  *   - Who may send it (operators only); authorizeEventCommands.test.ts.
- *   - The max age: a restored event is checked by "No ar" like any other
- *     (inboxCommandsOnTheStore.test.ts), so one restored too late expires there.
+ *   - The max age at "No ar" itself; inboxCommandsOnTheStore.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -100,6 +104,73 @@ describe('restoreEvent, undoing "Descartar"', () => {
       readEvent(inbox.stateStore, startPenaltyEventId)?.status,
       'a corrected mistake waits for the operator',
     ).toBe('pending');
+  });
+});
+
+describe('restoreEvent and the rule as it is now', () => {
+  it('brings a penalty back pending even when its rule is now "Ignorar"', () => {
+    // Arrange: the penalty dismissed, then the incidents rule set to "Ignorar".
+    const inbox = openInboxWithThePenalty('ask');
+    applyOrThrow(inbox.stateStore, { type: 'dismissEvent', eventId: startPenaltyEventId });
+    applyOrThrow(inbox.stateStore, {
+      type: 'updateEventRule',
+      kind: 'newIncident',
+      mode: 'ignore',
+    });
+
+    // Act: undo the dismissal.
+    applyOrThrow(inbox.stateStore, { type: 'restoreEvent', eventId: startPenaltyEventId });
+
+    // Assert: it waits for the operator, who asked for this one by name.
+    expect(
+      readEvent(inbox.stateStore, startPenaltyEventId)?.status,
+      '"Ignorar" stops new events from being listed, not a restore asked for by name',
+    ).toBe('pending');
+  });
+
+  it("refuses a penalty past its rule's maximum wait, and keeps it dismissed", () => {
+    // Arrange: incidents may wait 2 min; the penalty dismissed, and 3 min gone by.
+    const inbox = openInboxWithThePenalty('ask');
+    applyOrThrow(inbox.stateStore, {
+      type: 'updateEventRule',
+      kind: 'newIncident',
+      maxAgeMs: 120_000,
+    });
+    applyOrThrow(inbox.stateStore, { type: 'dismissEvent', eventId: startPenaltyEventId });
+    inbox.clock.letTimePass(180_000);
+
+    // Act: try to undo the dismissal.
+    const outcome = inbox.stateStore.applyCommand(
+      { type: 'restoreEvent', eventId: startPenaltyEventId },
+      operatorActor,
+    );
+
+    // Assert: refused, saying why, rather than restored only to expire at "No ar".
+    expect(outcome, 'too old to come back').toEqual({
+      ok: false,
+      error: {
+        code: 'EVENT_TOO_OLD',
+        message: 'Este evento passou da espera máxima da regra e não pode mais ser restaurado.',
+      },
+    });
+    expect(readEvent(inbox.stateStore, startPenaltyEventId)?.status, 'still dismissed').toBe(
+      'dismissed',
+    );
+  });
+
+  it('restores a penalty hours later when its rule has no maximum wait', () => {
+    // Arrange: incidents with no maximum wait (the default); dismissed, then 3 h go by.
+    const inbox = openInboxWithThePenalty('ask');
+    applyOrThrow(inbox.stateStore, { type: 'dismissEvent', eventId: startPenaltyEventId });
+    inbox.clock.letTimePass(3 * 60 * 60 * 1_000);
+
+    // Act: undo the dismissal.
+    applyOrThrow(inbox.stateStore, { type: 'restoreEvent', eventId: startPenaltyEventId });
+
+    // Assert: it waits again; a penalty stays news until the operator decides.
+    expect(readEvent(inbox.stateStore, startPenaltyEventId)?.status, 'it waits again').toBe(
+      'pending',
+    );
   });
 });
 

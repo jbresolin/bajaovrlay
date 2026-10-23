@@ -26,7 +26,14 @@ export const ptBREventErrors = {
   /** "Este evento não foi descartado: está esperando." (restoreEvent, "Desfazer"). */
   eventNotDismissed: (status: InboxEventStatus) =>
     `Este evento não foi descartado: ${ptBREventErrors.whatItIsInstead[status]}.`,
-  /** What an event that cannot be restored is instead, by its status. */
+  /** restoreEvent of a dismissed event past its rule's maximum wait. */
+  eventTooOldToRestore:
+    'Este evento passou da espera máxima da regra e não pode mais ser restaurado.',
+  /**
+   * What an event that cannot be restored is instead, by its status. `dismissed` is never
+   * read (a dismissed event is restored, not refused); it is here because the type asks
+   * for every status, so a new one cannot be forgotten.
+   */
   whatItIsInstead: {
     pending: 'está esperando',
     queued: 'está na fila',

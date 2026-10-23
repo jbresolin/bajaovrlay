@@ -22,7 +22,7 @@
 import type { BindingFieldValue } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { formatTimeOfDay } from '@/features/dataSources/timeOfDayText';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 
 import {
   findSourceValueKindOfBinding,

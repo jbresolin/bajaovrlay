@@ -23,7 +23,8 @@
  *   - The tab's badge counts the pending events only (not the queued ones).
  *   - An event dismissed in the last 30 s is listed under the waiting ones with
  *     "Desfazer", which sends restoreEvent; one dismissed earlier is not (humans err, the
- *     walk of PR #22; older ones are restored on the "Eventos" page).
+ *     walk of PR #22; older ones are restored on the "Eventos" page). The 30 s count on
+ *     the server's clock, which stamped the dismissal, not the stream PC's.
  *   - The tab keeps the waiting events only: no events that are over, no "+ Evento" and
  *     no "Regras", and a link opening "#/eventos" in a new tab; the waiting list scrolls
  *     inside a capped height.
@@ -37,11 +38,12 @@
  *   - What the server does with the commands; apps/server/src/modules/events.
  */
 import type { InboxEvent } from '@bajaovrlay/shared';
+import { recordServerClockSample } from '@bajaovrlay/shared/clock';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { formatTimeOfDay } from '@/features/dataSources/timeOfDayText';
 import { QuickFireStrip } from '@/features/quickFire/QuickFireStrip';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 import {
   letThePageFinishWhatItStarted,
   renderOnControlPageConnectedToFakeServer,
@@ -270,7 +272,9 @@ describe('undoing a dismissal on the console', () => {
     );
     fireEvent.click(penaltyRow.getByRole('button', { name: 'Desfazer' }));
 
-    // Assert: the row says what was dismissed, and the restore was sent.
+    // Assert: the row says what was dismissed, inside the tab's capped scrolling area (so a
+    // burst of dismissals never pushes Camadas down), and the restore was sent.
+    expect(recentlyDismissed.parentElement, 'inside the capped area').toHaveClass('max-h-64');
     expect(penaltyRow.getByText('Penalidade · carro 47'), 'what was dismissed').toBeInTheDocument();
     expect(fakeServer.listCommandsReceived(), '"Desfazer" must bring it back').toEqual([
       { type: 'restoreEvent', eventId: 'simulador-enduro:incident:ocorrencia-0007' },
@@ -287,4 +291,47 @@ describe('undoing a dismissal on the console', () => {
     // Assert: none; an older one is restored from the "Eventos" page's history.
     expect(recentlyDismissed, 'only the last 30 s are offered here').toBe(null);
   });
+});
+
+describe('the "Desfazer" window on a clock that is off', () => {
+  const skewScenarios = [
+    // The stream PC 30 s ahead: 40 s on its own clock, only 10 s on the server's.
+    {
+      name: 'still offers "Desfazer" when the page clock runs ahead of the server',
+      dismissedSecondsAgoOnThePageClock: 40,
+      serverClockBehindThePageMs: 30_000,
+      isOffered: true,
+    },
+    // The stream PC 30 s behind: 10 s on its own clock, already 40 s on the server's.
+    {
+      name: 'no longer offers it when the page clock runs behind the server',
+      dismissedSecondsAgoOnThePageClock: 10,
+      serverClockBehindThePageMs: -30_000,
+      isOffered: false,
+    },
+  ];
+
+  it.each(skewScenarios)(
+    '$name',
+    ({ dismissedSecondsAgoOnThePageClock, serverClockBehindThePageMs, isOffered }) => {
+      // Arrange: the server's clock this far from the page's, and the penalty dismissed
+      // this long ago as the page's own clock reads it.
+      recordServerClockSample(
+        nowInTheInboxTests.getTime() - serverClockBehindThePageMs,
+        nowInTheInboxTests.getTime(),
+      );
+
+      // Act: draw the tab.
+      renderTheEventsTabWith([
+        buildPenaltyOfCar47DismissedSecondsAgo(dismissedSecondsAgoOnThePageClock),
+      ]);
+
+      // Assert: offered only while the server's clock says 30 s have not passed.
+      const recentlyDismissed = screen.queryByRole('list', { name: 'Descartados agora há pouco' });
+      expect(
+        recentlyDismissed !== null,
+        'the window counts on the server clock, which stamped the dismissal',
+      ).toBe(isOffered);
+    },
+  );
 });
