@@ -1,0 +1,172 @@
+/**
+ * Test support: the event inbox as the server sends it (BAJAOVRLAY-44), with realistic
+ * events of the 2027 enduro, the two notice items of the panel "Avisos" and João's default
+ * rules naming them. Every function builds fresh objects, so a test can change one thing.
+ */
+import type { EventRule, InboxEvent, Item, Slices } from '@bajaovrlay/shared';
+
+import { buildSlicesWithShortcutsAndMacros } from './quickFireLikeTheServerSends.testSupport';
+
+/** 14:10 UTC on 14 August 2027: "now" in the inbox tests (they set the page's clock to it). */
+export const nowInTheInboxTests = new Date('2027-08-14T14:10:00.000Z');
+
+/** A moment `minutesAgo` minutes before nowInTheInboxTests, in ms. */
+function minutesBeforeNowMs(minutesAgo: number): number {
+  return nowInTheInboxTests.getTime() - minutesAgo * 60_000;
+}
+
+/** The two notice items the server seeds in the panel "Avisos". */
+export function buildNoticeItems(): Item[] {
+  return [
+    {
+      id: 'volta-mais-rapida',
+      home: { kind: 'quickFire', panelId: 'avisos' },
+      order: 0,
+      graphicId: 'notice',
+      layerId: 'notice',
+      label: 'Volta mais rápida',
+      color: 'success',
+      notes: '',
+      fields: {
+        variant: { kind: 'literal', value: 'fastestLap' },
+        carNumber: { kind: 'eventField', path: 'carNumber' },
+      },
+    },
+    {
+      id: 'penalizacao',
+      home: { kind: 'quickFire', panelId: 'avisos' },
+      order: 1,
+      graphicId: 'notice',
+      layerId: 'notice',
+      label: 'Penalização',
+      color: 'danger',
+      notes: '',
+      fields: {
+        variant: { kind: 'literal', value: 'penalty' },
+        carNumber: { kind: 'eventField', path: 'carNumber' },
+      },
+    },
+  ];
+}
+
+/** João's default rules, with the seeded notice items. */
+export function buildDefaultEventRules(): EventRule[] {
+  return [
+    { kind: 'newIncident', mode: 'ask', itemId: 'penalizacao', durationMs: 10_000, maxAgeMs: null },
+    {
+      kind: 'fastestLap',
+      mode: 'auto',
+      itemId: 'volta-mais-rapida',
+      durationMs: 8_000,
+      maxAgeMs: 120_000,
+    },
+    { kind: 'leaderChanged', mode: 'auto', itemId: null, durationMs: 6_000, maxAgeMs: 120_000 },
+    { kind: 'manual', mode: 'ask', itemId: 'penalizacao', durationMs: 10_000, maxAgeMs: null },
+    { kind: 'superChat', mode: 'ask', itemId: null, durationMs: 15_000, maxAgeMs: null },
+  ];
+}
+
+/** Car 47's start penalty, waiting for the operator since `minutesAgo` minutes. */
+export function buildPendingPenaltyOfCar47(minutesAgo: number): InboxEvent {
+  const detectedAtMs = minutesBeforeNowMs(minutesAgo);
+  return {
+    eventId: 'simulador-enduro:incident:ocorrencia-0007',
+    kind: 'newIncident',
+    sourceId: 'simulador-enduro',
+    detectedAtMs,
+    payload: {
+      carNumber: 47,
+      teamName: 'Carnaúba Baja',
+      schoolName: 'UFERSA',
+      noticeKind: 'penalty',
+      reason: 'Queima de largada',
+      penaltyText: '+30 segundos',
+      lapNumber: 1,
+    },
+    status: 'pending',
+    statusChanges: [{ status: 'pending', atMs: detectedAtMs }],
+  };
+}
+
+/** Car 38's blocking warning, waiting for the operator since `minutesAgo` minutes. */
+export function buildPendingWarningOfCar38(minutesAgo: number): InboxEvent {
+  const detectedAtMs = minutesBeforeNowMs(minutesAgo);
+  return {
+    eventId: 'simulador-enduro:incident:ocorrencia-0012',
+    kind: 'newIncident',
+    sourceId: 'simulador-enduro',
+    detectedAtMs,
+    payload: {
+      carNumber: 38,
+      teamName: 'Coruja Racing',
+      schoolName: 'EESC-USP',
+      noticeKind: 'warning',
+      reason: 'Bloqueio de ultrapassagem',
+    },
+    status: 'pending',
+    statusChanges: [{ status: 'pending', atMs: detectedAtMs }],
+  };
+}
+
+/** Car 31's fastest lap, queued for the runner since `minutesAgo` minutes. */
+export function buildQueuedFastestLapOfCar31(minutesAgo: number): InboxEvent {
+  const detectedAtMs = minutesBeforeNowMs(minutesAgo);
+  return {
+    eventId: 'simulador-enduro:fastestLap:enduro-2027-nacional:31:34',
+    kind: 'fastestLap',
+    sourceId: 'simulador-enduro',
+    detectedAtMs,
+    payload: {
+      carNumber: 31,
+      teamName: 'Acauã Baja',
+      schoolName: 'Mauá',
+      lapNumber: 34,
+      lapTimeMs: 278_291,
+      lapTimeText: '4:38,2',
+    },
+    status: 'queued',
+    statusChanges: [{ status: 'queued', atMs: detectedAtMs }],
+  };
+}
+
+/**
+ * An event that is over, `minutesAgo` minutes ago: car 52's leader change, with the
+ * status given (shown, dismissed or expired).
+ */
+export function buildFinishedLeaderChangeOfCar52(
+  minutesAgo: number,
+  status: 'shown' | 'dismissed' | 'expired',
+): InboxEvent {
+  const detectedAtMs = minutesBeforeNowMs(minutesAgo);
+  return {
+    eventId: `simulador-enduro:leaderChanged:enduro-2027-nacional:52:${String(minutesAgo)}`,
+    kind: 'leaderChanged',
+    sourceId: 'simulador-enduro',
+    detectedAtMs,
+    payload: { carNumber: 52, teamName: 'Pequi Off-Road', schoolName: 'UFG', lapNumber: 20 },
+    status,
+    statusChanges: [
+      { status: 'queued', atMs: detectedAtMs },
+      { status, atMs: detectedAtMs + 1_000 },
+    ],
+  };
+}
+
+/**
+ * The strip's slices (panels "Atalhos" and "Box", the macros) plus the panel "Avisos" with
+ * its two notice items, the default rules, and the events given.
+ */
+export function buildSlicesWithTheInbox(events: InboxEvent[]): Slices {
+  const slices = buildSlicesWithShortcutsAndMacros();
+  const lastPanelOrder = Math.max(...slices.quickFirePanels.map((panel) => panel.order));
+  return {
+    ...slices,
+    quickFirePanels: [
+      ...slices.quickFirePanels,
+      { id: 'avisos', name: 'Avisos', order: lastPanelOrder + 1 },
+    ],
+    items: [...slices.items, ...buildNoticeItems()],
+    eventRules: buildDefaultEventRules(),
+    events,
+  };
+}

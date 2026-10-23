@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BoundSourceChips } from '@/features/bindings/BoundSourceChips';
 import { ActionButton } from '@/features/connection/ActionButton';
+import { EventMarkOnLayer } from '@/features/events/EventMarkOnLayer';
 import { ItemLabelOnAir } from '@/features/layers/ItemLabelOnAir';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
@@ -107,6 +108,7 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
         ) : (
           <span className="flex flex-wrap items-center gap-2 text-sm">
             <ItemLabelOnAir itemId={instanceOnProgram.itemId} />
+            <EventMarkOnLayer eventId={instanceOnProgram.eventId} />
             <span className="truncate">{graphicName}</span>
             {props.changedFieldTitles.length === 0 ? null : (
               <ChangedOnAirChip changedFieldTitles={props.changedFieldTitles} output="program" />

@@ -15,7 +15,8 @@ import { ptBRQuickFire } from './ptBRQuickFire';
  * (ptBRLayers.ts), `ptBR.playout.quickEdit` (ptBRQuickEdit.ts, "Edição rápida"),
  * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page) and `ptBR.bindings`
  * (ptBRBindings.ts, fields read from a source and corrections of a source) and
- * `ptBR.events` (ptBREvents.ts, the event inbox).
+ * `ptBR.events` (ptBREvents.ts, the event inbox: the "Eventos" tab, its forms, the Camadas
+ * mark and the item editor's "Evento").
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,

@@ -8,13 +8,17 @@ import {
 
 import { keyboardMap } from '@/keyboard/keyboardMap';
 
-/** One tab of the quick-fire strip: a panel of item buttons, or the macros. */
-export type QuickFireTab = { kind: 'panel'; panelId: string } | { kind: 'macros' };
+/**
+ * One tab of the quick-fire strip: a panel of item buttons, the macros, or the event inbox
+ * ("Eventos", BAJAOVRLAY-44).
+ */
+export type QuickFireTab =
+  { kind: 'panel'; panelId: string } | { kind: 'macros' } | { kind: 'events' };
 
 /**
  * The tabs of the strip, left to right: one per panel in the panels' `order` (the server
- * keeps it 0, 1, 2, ...), then "Macros". Macros is last so that adding a panel never moves
- * the panels' tabs, and F1 stays the first panel.
+ * keeps it 0, 1, 2, ...), then "Macros", then "Eventos". The two fixed tabs come last so
+ * that adding a panel never moves the panels' tabs, and F1 stays the first panel.
  */
 export function listQuickFireTabsInOrder(panels: QuickFirePanel[]): QuickFireTab[] {
   // Copied before sorting: the list in the store belongs to the store.
@@ -25,12 +29,12 @@ export function listQuickFireTabsInOrder(panels: QuickFirePanel[]): QuickFireTab
     kind: 'panel',
     panelId: panel.id,
   }));
-  return [...panelTabs, { kind: 'macros' }];
+  return [...panelTabs, { kind: 'macros' }, { kind: 'events' }];
 }
 
 /** Answers whether two tabs are the same tab. */
 export function isSameQuickFireTab(oneTab: QuickFireTab, otherTab: QuickFireTab): boolean {
-  if (oneTab.kind === 'macros' || otherTab.kind === 'macros') {
+  if (oneTab.kind !== 'panel' || otherTab.kind !== 'panel') {
     return oneTab.kind === otherTab.kind;
   }
   return oneTab.panelId === otherTab.panelId;
@@ -53,8 +57,8 @@ export function chooseTabShown(tabs: QuickFireTab[], chosenTab: QuickFireTab | n
 
 /**
  * The panel a new shortcut made from elsewhere on the page goes to ("Novo gráfico…" of
- * "Edição rápida"): the panel of the tab shown, or the first panel when the "Macros" tab
- * is shown, since a macro tab holds no items. Undefined when the server lists no panel at
+ * "Edição rápida"): the panel of the tab shown, or the first panel when the "Macros" or the
+ * "Eventos" tab is shown, since neither holds items. Undefined when the server lists no panel at
  * all (it always seeds one, so never in practice); the page then offers no new shortcut
  * rather than naming a panel the server does not know.
  */
@@ -126,6 +130,10 @@ export function chooseCommandForDigitKey(press: DigitKeyPress): CommandInput | n
   if (press.tabShown.kind === 'macros') {
     const macro = press.macros[position];
     return macro === undefined ? null : { type: 'runMacro', macroId: macro.id };
+  }
+  // The inbox has no numbered buttons: an event is approved with "No ar", by hand.
+  if (press.tabShown.kind === 'events') {
+    return null;
   }
   const buttonsOfPanel = listItemsOfQuickFirePanelInOrder(press.items, press.tabShown.panelId);
   const item = buttonsOfPanel[position];

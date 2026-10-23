@@ -54,19 +54,20 @@ function openMoreActionsMenu(itemLabel: string): void {
 }
 
 describe('the quick-fire strip', () => {
-  it('shows one tab per panel in order, then Macros, with the first panel open', () => {
+  it('shows one tab per panel in order, then Macros and Eventos, with the first panel open', () => {
     // Arrange: "Atalhos" (order 0) and "Box" (order 1), listed the other way round.
     const slices = buildSlicesWithShortcutsAndMacros();
 
     // Act: draw the strip.
     renderOnControlPageConnectedToFakeServer(<QuickFireStrip />, slices);
 
-    // Assert: three tabs in order, and "Atalhos" selected.
+    // Assert: four tabs in order (the event inbox, BAJAOVRLAY-44, last), and "Atalhos"
+    // selected.
     const tabs = screen.getAllByRole('tab');
     expect(
       tabs.map((tab) => tab.textContent),
-      'the tabs must follow the panels’ order, end with Macros and show their F-key',
-    ).toEqual(['AtalhosF1', 'BoxF2', 'MacrosF3']);
+      'the tabs must follow the panels’ order, end with Macros and Eventos and show their F-key',
+    ).toEqual(['AtalhosF1', 'BoxF2', 'MacrosF3', 'EventosF4']);
     expect(
       screen.getByRole('tab', { name: 'Atalhos' }),
       'the first panel must be the one shown',

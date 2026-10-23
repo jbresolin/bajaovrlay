@@ -2,6 +2,10 @@ import { useState } from 'react';
 
 import { useTakeThenPreviewNextItem } from '@/features/autoPreview/useTakeThenPreviewNextItem';
 import { ActionButton } from '@/features/connection/ActionButton';
+import { EventsTab } from '@/features/events/EventsTab';
+import { countPendingEvents } from '@/features/events/inboxEventLists';
+import { useEventSoundSetting } from '@/features/events/useEventSoundSetting';
+import { usePendingEventAlert } from '@/features/events/usePendingEventAlert';
 import { MacroGrid } from '@/features/macros/MacroGrid';
 import { useStopRunningMacroKey } from '@/features/macros/useStopRunningMacroKey';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
@@ -19,8 +23,10 @@ const texts = ptBR.quickFire;
 
 /**
  * The quick-fire strip, in the right column above the layer panel: a tab per quick-fire
- * panel (in the panels' order) and "Macros"; under the tabs, the panel's grid of item
- * buttons or the grid of macros. The digits 1–9 fire the first nine buttons of the tab
+ * panel (in the panels' order), "Macros" and "Eventos"; under the tabs, the panel's grid of
+ * item buttons, the grid of macros, or the event inbox (features/events). The "Eventos"
+ * tab's badge and its alert live here, so a new pending event is heard and seen whatever
+ * tab is shown. The digits 1–9 fire the first nine buttons of the tab
  * shown and F1–F4 show the first four tabs (useQuickFireKeys.ts); P stops the running
  * macro from any tab (features/macros/useStopRunningMacroKey.ts).
  *
@@ -38,6 +44,10 @@ const texts = ptBR.quickFire;
  */
 export function QuickFireStrip() {
   const panels = useServerState((state) => state.quickFirePanels);
+  const events = useServerState((state) => state.events);
+  const { isEventSoundOn, chooseIsEventSoundOn } = useEventSoundSetting();
+  const pendingEventCount = countPendingEvents(events);
+  const isEventBadgePulsing = usePendingEventAlert(pendingEventCount, isEventSoundOn);
   const sendCommand = useSendCommand();
   const sendTakeByThisOperator = useTakeThenPreviewNextItem();
   const { chosenTab, chooseTab: setChosenTab } = useQuickFireTabChoice();
@@ -66,6 +76,8 @@ export function QuickFireStrip() {
           tabShown={tabShown}
           panels={panels}
           onTabChosen={setChosenTab}
+          pendingEventCount={pendingEventCount}
+          isEventBadgePulsing={isEventBadgePulsing}
         />
         <ActionButton size="xs" variant="outline" onClick={() => setIsCreatingPanel(true)}>
           {texts.addPanelButton}
@@ -88,9 +100,11 @@ export function QuickFireStrip() {
         id={quickFireTabPanelId}
         aria-labelledby={buildQuickFireTabId(tabShownPosition)}
       >
-        {panelShown === undefined ? (
-          <MacroGrid />
-        ) : (
+        {tabShown.kind === 'events' ? (
+          <EventsTab isEventSoundOn={isEventSoundOn} chooseIsEventSoundOn={chooseIsEventSoundOn} />
+        ) : null}
+        {tabShown.kind === 'macros' ? <MacroGrid /> : null}
+        {panelShown === undefined ? null : (
           // The key gives each panel its own rename form, so one left open does not
           // follow the operator to another tab.
           <QuickFirePanelView
@@ -115,6 +129,8 @@ export function QuickFireStrip() {
           'createMacro',
           'updateMacro',
           'deleteMacro',
+          'showEvent',
+          'dismissEvent',
         ]}
       />
     </section>
