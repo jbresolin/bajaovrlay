@@ -83,6 +83,16 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'events', slice: slices.events, serverNowMs };
     case 'eventRules':
       return { type: 'slice', name: 'eventRules', slice: slices.eventRules, serverNowMs };
+    case 'teams':
+      return { type: 'slice', name: 'teams', slice: slices.teams, serverNowMs };
+    case 'people':
+      return { type: 'slice', name: 'people', slice: slices.people, serverNowMs };
+    case 'sponsors':
+      return { type: 'slice', name: 'sponsors', slice: slices.sponsors, serverNowMs };
+    case 'scheduleSlots':
+      return { type: 'slice', name: 'scheduleSlots', slice: slices.scheduleSlots, serverNowMs };
+    case 'media':
+      return { type: 'slice', name: 'media', slice: slices.media, serverNowMs };
     case 'eventLog':
       return { type: 'slice', name: 'eventLog', slice: slices.eventLog, serverNowMs };
   }
@@ -159,6 +169,21 @@ function copyOneSliceByName(
       break;
     case 'eventRules':
       group.eventRules = slices.eventRules;
+      break;
+    case 'teams':
+      group.teams = slices.teams;
+      break;
+    case 'people':
+      group.people = slices.people;
+      break;
+    case 'sponsors':
+      group.sponsors = slices.sponsors;
+      break;
+    case 'scheduleSlots':
+      group.scheduleSlots = slices.scheduleSlots;
+      break;
+    case 'media':
+      group.media = slices.media;
       break;
     case 'eventLog':
       group.eventLog = slices.eventLog;

@@ -268,5 +268,10 @@ export function buildSlicesWithDataSources(parts: {
     dataSources: parts.dataSources,
     dataSnapshots: parts.dataSnapshots ?? [],
     recordings: parts.recordings ?? [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
   };
 }

@@ -2,10 +2,12 @@ import type { Command } from '@bajaovrlay/shared';
 
 import { reduceBindingCommand } from '../../../modules/bindings/index.js';
 import { reduceDataSourceCommand } from '../../../modules/dataSources/index.js';
+import { reduceEntityCommand } from '../../../modules/entities/index.js';
 import {
   followEventsOfProgramInstances,
   reduceEventInboxCommand,
 } from '../../../modules/events/index.js';
+import { reduceMediaCommand } from '../../../modules/media/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
 import { dropBindingsOfInstancesGone } from './instanceBindingsBookkeeping.js';
@@ -124,5 +126,14 @@ function reduceCommandOfItsType(
     case 'updateEventRule':
     case 'recordDetectedEvents':
       return reduceEventInboxCommand(slices, command, context);
+    // The entity library (BAJAOVRLAY-19): its reducers live in the module modules/entities.
+    case 'upsertEntity':
+    case 'deleteEntity':
+    case 'importEntities':
+      return reduceEntityCommand(slices, command);
+    // The media store (BAJAOVRLAY-19): its reducers live in the module modules/media.
+    case 'recordUploadedMedia':
+    case 'deleteMedia':
+      return reduceMediaCommand(slices, command, context);
   }
 }

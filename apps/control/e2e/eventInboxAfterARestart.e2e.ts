@@ -28,14 +28,18 @@ import { once } from 'node:events';
 
 import { expect, test } from '@playwright/test';
 
+import { portOffsetOfTheBrowserTests } from './emptyTheServerState';
 import {
   type InboxEventAsTheTestsReadIt,
   readInboxStateOfTheServerOnPort,
   sendCommandOrFail,
 } from './eventInboxOnTheRealServer';
 
-/** This file's own server: away from the shared one (5187) and the page (5188). */
-const ownServerPort = 5189;
+/**
+ * This file's own server: away from the shared one (5187) and the page (5188), moved with
+ * them by BAJAOVRLAY_E2E_PORT_OFFSET so two checkouts can run their browser tests at once.
+ */
+const ownServerPort = 5189 + portOffsetOfTheBrowserTests;
 
 // Read from the repository root, in the throwaway folder playwright.config.ts empties
 // before every run, so each run starts on a new database.

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { BindingFieldValueSchema } from '../bindings/bindingFieldValue.js';
+import { EntityFieldValueSchema } from '../entities/entityFieldValue.js';
 import { EventFieldValueSchema } from '../eventInbox/eventFieldValue.js';
 
 /** Answers whether a literal was given any value at all (null counts as a value). */
@@ -46,10 +47,11 @@ export type TakeTimeFieldValue = z.infer<typeof TakeTimeFieldValueSchema>;
 
 /**
  * How one field of an item gets its value, told apart by `kind`: a `literal` typed by
- * the operator, a `takeTime` stamped by the server at the take, or a `binding` read from
- * a data source (BAJAOVRLAY-20, bindings/bindingFieldValue.ts). The entity library
- * (BAJAOVRLAY-19) adds `entity` as one more member here, and code that switches on
- * `kind` gains a branch instead of being rewritten.
+ * the operator, a `takeTime` stamped by the server at the take, a `binding` read from a
+ * data source (BAJAOVRLAY-20, bindings/bindingFieldValue.ts), or an `entity` reference
+ * read from the entity library (BAJAOVRLAY-19, entities/entityFieldValue.ts). A new kind
+ * is one more member here, and code that switches on `kind` gains a branch instead of
+ * being rewritten.
  * What could go wrong: only a literal has a `value`, so code must check `kind` before
  * reading it; the compiler refuses the read otherwise.
  */
@@ -59,6 +61,7 @@ export const FieldValueSchema = z.discriminatedUnion('kind', [
   BindingFieldValueSchema,
   // An item field filled by the event it shows (BAJAOVRLAY-44, eventInbox/eventFieldValue.ts).
   EventFieldValueSchema,
+  EntityFieldValueSchema,
 ]);
 
 /** A field value of any kind, after validation. */

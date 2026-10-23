@@ -72,6 +72,11 @@ function createSlicesWithClockLayerAndInstances(instances: Slices['instances']):
     recordings: [],
     events: [],
     eventRules: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
     eventLog: [],
   };
 }

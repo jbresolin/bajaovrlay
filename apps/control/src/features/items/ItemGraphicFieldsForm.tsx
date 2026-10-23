@@ -2,6 +2,7 @@ import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
 import { type Ref, useEffect, useImperativeHandle, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { useEntityLibrary } from '@/features/entityLibrary/useEntityLibrary';
 import {
   buildChangedItemFieldsFromSchemaForm,
   buildItemFieldsFromSchemaForm,
@@ -117,11 +118,17 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   // Watched so the note below follows the operator's choices as they are made.
   const kindsNow = useWatch({ control: form.control, name: 'kinds' });
   const bindingsNow = useWatch({ control: form.control, name: 'bindings' });
+  const entityReferencesNow = useWatch({ control: form.control, name: 'entityReferences' });
   const isSourceChangeWaitingForTheTake =
     isItemOnAir &&
     hasSourceChoiceChangedSinceOpened(
       graphicFields.description,
-      { ...graphicFields.formValues, kinds: kindsNow, bindings: bindingsNow },
+      {
+        ...graphicFields.formValues,
+        kinds: kindsNow,
+        bindings: bindingsNow,
+        entityReferences: entityReferencesNow,
+      },
       graphicFields.formValues,
     );
 
@@ -132,8 +139,10 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   }, [isFilledByAnEventNow, onIsFilledByAnEventChanged]);
 
   const hasFieldsThatCouldNotBeRead = graphicFields.labelsOfFieldsThatCouldNotBeRead.length > 0;
-  // The item editor alone lets a field read a data source (BAJAOVRLAY-20).
+  // The item editor alone lets a field read a data source (BAJAOVRLAY-20) or the entity
+  // library (BAJAOVRLAY-19).
   const bindingOptions = useBindingOptionsOfItemEditor();
+  const entityLibrary = useEntityLibrary();
 
   return (
     <>
@@ -149,6 +158,7 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
         description={graphicFields.description}
         controlIdPrefix={graphicFieldsControlIdPrefix}
         bindingOptions={bindingOptions}
+        entityLibrary={entityLibrary}
       />
       {isSourceChangeWaitingForTheTake && (
         <p role="status" className="text-sm text-muted-foreground">

@@ -13,6 +13,8 @@ graphic with two variants in one manifest (`variant`) and an on-air hold left to
 Every value a graphic draws with comes from the
 theme (`packages/theme`): tokens on the renderer page's `:root`, read as `var(--token)`
 inside the shadow root, never a colour or a size of the graphic's own.
+A media URL (`/media/<mediaId>`, a logo or a photo) is drawn with `<img>` only, never with
+`<object>`, `<embed>` or `<iframe>`: those would run the script an uploaded SVG may carry.
 
 Each graphic folder is its own workspace package (`pnpm-workspace.yaml` already lists
 `packages/graphics/*`). A graphic joins the checks without editing anything at the root:
@@ -46,7 +48,8 @@ On each property of `schema.properties` (`type` picks the control: `string` text
 - `minimum` / `maximum` — the limits of a number field.
 - `format: "date-time"` on a `string` — a date and time input, sent as ISO 8601 text.
 - `v_baja.unit: "ms"` on an `integer`/`number` — typed as `mm:ss`, sent as milliseconds.
-- `v_baja.role` — one of the four clock roles, each on its own kind of property:
+- `v_baja.role` — one of the four clock roles, or the image role, each on its own kind of
+  property:
   - `"wallClock"` on an `integer` (milliseconds since 1970): the reference moment. The
     field may be left "to the moment of the take": the server then writes its own clock's
     milliseconds into it, and refuses to do that for any field not declared exactly so.
@@ -54,6 +57,14 @@ On each property of `schema.properties` (`type` picks the control: `string` text
     reference time.
   - `"clockRunning"` on a `boolean`: whether the clock is counting.
   - `"clockMode"` on a `string` with `enum: ["elapsed", "remaining"]`: which way it counts.
+
+  - `"imageUrl"` on a `string`: an image field (a team's logo, a car photo, a sponsor's
+    logo). The value is the image's address on the server, `/media/<mediaId>`, which the
+    graphic draws with `<img src>` and nothing else (an `<img>` runs no script, even for an
+    SVG). Typed by hand, the field is an image picker that uploads the file to the media
+    store; read from the entity library ("Cadastro"), it is offered the image attributes
+    only (`logoUrl`, `carPhotoUrl`, `photoUrl`), and no text. A record with no image leaves
+    the field out, so an optional image field must draw a finished "no image" state.
 
   `wallClock` works alone. The four together (each exactly once, plus
   `v_baja.updateRule: "carryClockForward"`) are what makes the graphic a clock for the
@@ -67,6 +78,11 @@ On each property of `schema.properties` (`type` picks the control: `string` text
   plain. The path must be one the editor offers for the shape and fit the field (a whole
   list on an `array`, a text on a `string`…) and must not need a car number; a hint that
   fails those rules is ignored, never an error.
+
+Any `string` (without `enum`) or whole-number field may also read the entity library in the
+item editor ("Cadastro", BAJAOVRLAY-19): one attribute of one team (by car number), person,
+sponsor or schedule slot, always live. A text attribute fits a `string`, a whole number an
+`integer`/`number`; nothing of the library fits a `boolean` or a fixed list.
 
 `schema.required` lists the fields that cannot be left blank; every other field gets a
 "limpar" control and, once cleared, is not sent to the graphic at all (never as `null`).

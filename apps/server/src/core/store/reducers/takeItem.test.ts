@@ -364,18 +364,18 @@ describe('takeItem, when it must be refused', () => {
     ).toEqual(copyOfSlicesBefore);
   });
 
-  it('refuses an item with a field value the server cannot resolve yet, naming the entity library', () => {
-    // Arrange: an item whose session name names a team of the entity library, which only
-    // BAJAOVRLAY-19 will understand. Today's types do not allow it, so the test forces it
-    // in and calls the reducer directly. Through the running server this cannot happen
-    // yet: the command schema answers INVALID_COMMAND first, and a stored item like this
-    // one stops the boot. The refusal is a guard kept ready for the entity library.
-    const fieldsWithEntity = {
+  it('refuses an item with a field value the server cannot resolve, naming its kind', () => {
+    // Arrange: an item whose session name is a formula, a kind no server knows (rule 5
+    // forbids expressions anyway). The types do not allow it, so the test forces it in and
+    // calls the reducer directly. Through the running server this cannot happen: the
+    // command schema answers INVALID_COMMAND first, and a stored item like this one stops
+    // the boot. The refusal is a guard (entity references had it until BAJAOVRLAY-19).
+    const fieldsWithAFormula = {
       ...buildEnduroStartItem(0).fields,
-      sessionName: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
+      sessionName: { kind: 'formula', expression: 'session.sessionName.toUpperCase()' },
     } as unknown as ItemFields;
-    const itemWithEntity: Item = { ...buildEnduroStartItem(0), fields: fieldsWithEntity };
-    const slicesBefore = buildRaceDaySlicesWithRundown({ items: [itemWithEntity] });
+    const itemWithAFormula: Item = { ...buildEnduroStartItem(0), fields: fieldsWithAFormula };
+    const slicesBefore = buildRaceDaySlicesWithRundown({ items: [itemWithAFormula] });
 
     // Act: take it.
     const outcome = reduceCommand(
@@ -384,15 +384,15 @@ describe('takeItem, when it must be refused', () => {
       contextOfTheRundownCommand,
     );
 
-    // Assert: refused, nothing half-resolved goes on air, and the message names the library.
+    // Assert: refused, nothing half-resolved goes on air, and the message names the kind.
     expect(outcome, 'a field the server cannot resolve must refuse the take').toEqual({
       status: 'refused',
       error: {
         code: 'UNSUPPORTED_FIELD_KIND',
         message:
-          'O campo "sessionName" usa um valor do tipo "entity", que o servidor só vai ' +
-          'saber resolver com a biblioteca de entidades (BAJAOVRLAY-19). Por enquanto, ' +
-          'preencha o campo com um valor literal ou de uma fonte de dados.',
+          'O campo "sessionName" usa um valor do tipo "formula", que este servidor não ' +
+          'sabe resolver. Preencha o campo com um valor digitado, de uma fonte de dados ' +
+          'ou dos cadastros.',
       },
     });
   });

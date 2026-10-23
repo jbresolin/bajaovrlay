@@ -2,11 +2,19 @@
 // has it (nothing on air, nothing previewed, no layer marked "vai limpar", no item in the rundown or in any panel, no
 // macro, only the seeded panel "Atalhos", only the seeded simulator, off and with its
 // default settings, no correction of a source's value, the event rules at their defaults
-// with no item, and no event waiting), so every browser test starts from the same place whatever ran
+// with no item, no event waiting, and an empty entity library and media store), so every
+// browser test starts from the same place whatever ran
 // before it, in any order. playwright.config.ts starts that server.
 
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset. Passed on for
+// playwright.config.ts, which moves the control page's own port by it.
+export { portOffsetOfTheBrowserTests };
+
 /** The real server's port in a Playwright run; far from 3000 so it never meets `pnpm dev`. */
-export const realServerPort = 5187;
+export const realServerPort = 5187 + portOffsetOfTheBrowserTests;
 
 const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 
@@ -44,6 +52,11 @@ type StateTheResetReads = {
   dataSources: { id: string; isEnabled: boolean; isRecording: boolean }[];
   overrides: { sourceId: string; scope: string; field: string; carNumber?: number }[];
   events: { eventId: string; status: string }[];
+  teams: { carNumber: number }[];
+  people: { personId: string }[];
+  sponsors: { sponsorId: string }[];
+  scheduleSlots: { slotId: string }[];
+  media: { mediaId: string }[];
 };
 
 /** A command the reset sends: its type and the one or two fields it carries. */
@@ -66,6 +79,11 @@ type ResetCommand = {
   durationMs?: number;
   maxAgeMs?: number | null;
   eventId?: string;
+  entityType?: string;
+  personId?: string;
+  sponsorId?: string;
+  slotId?: string;
+  mediaId?: string;
 };
 
 // The event rules as a new database has them (BAJAOVRLAY-44), but with no item: the reset
@@ -220,6 +238,45 @@ async function putTheDataSourcesBackToTheSeed(state: StateTheResetReads): Promis
 }
 
 /**
+ * Empties the entity library and the media store: every team, person, sponsor and slot
+ * deleted, then every image, which the server deletes only once no record names it.
+ */
+async function emptyTheEntityLibrary(): Promise<void> {
+  const state = await readStateFromRealServer();
+  for (const team of state.teams) {
+    await sendCommandToRealServer({
+      type: 'deleteEntity',
+      entityType: 'team',
+      carNumber: team.carNumber,
+    });
+  }
+  for (const person of state.people) {
+    await sendCommandToRealServer({
+      type: 'deleteEntity',
+      entityType: 'person',
+      personId: person.personId,
+    });
+  }
+  for (const sponsor of state.sponsors) {
+    await sendCommandToRealServer({
+      type: 'deleteEntity',
+      entityType: 'sponsor',
+      sponsorId: sponsor.sponsorId,
+    });
+  }
+  for (const slot of state.scheduleSlots) {
+    await sendCommandToRealServer({
+      type: 'deleteEntity',
+      entityType: 'scheduleSlot',
+      slotId: slot.slotId,
+    });
+  }
+  for (const image of state.media) {
+    await sendCommandToRealServer({ type: 'deleteMedia', mediaId: image.mediaId });
+  }
+}
+
+/**
  * Empties the real server. First it waits for a running macro to end. Then `clearAll`
  * takes everything off air and off the preview output (it removes every instance, of
  * both outputs, and every "vai limpar" mark, so no stopPreview is needed); every item is deleted, rundown and panel alike, which also leaves the
@@ -229,8 +286,8 @@ async function putTheDataSourcesBackToTheSeed(state: StateTheResetReads): Promis
  * recording and with its default settings (putTheDataSourcesBackToTheSeed); recordings
  * stay listed. Every correction of a source's value is removed (clearOverride). The event
  * rules go back to their defaults with no item, and every waiting event is dismissed
- * (putTheEventInboxBackToItsDefaults). Each test
- * file calls this in a `test.beforeEach`, so a test never
+ * (putTheEventInboxBackToItsDefaults). The entity library and its images are emptied.
+ * Each test file calls this in a `test.beforeEach`, so a test never
  * depends on the one before it.
  * What could go wrong: it deletes whatever the server holds, so it must only ever be
  * pointed at the Playwright run's own server and SQLite file, which the port guarantees.
@@ -269,4 +326,5 @@ export async function emptyTheServerState(): Promise<void> {
   }
   await putTheDataSourcesBackToTheSeed(state);
   await putTheEventInboxBackToItsDefaults();
+  await emptyTheEntityLibrary();
 }

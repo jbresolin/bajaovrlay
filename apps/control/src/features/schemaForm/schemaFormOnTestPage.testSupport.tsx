@@ -2,6 +2,7 @@
 // the generated resolver around SchemaFormFields) and hands the test the few things an
 // operator and a panel do with it. Nothing here is shared between tests: every call
 // builds its own form.
+import type { EntityLibrary } from '@bajaovrlay/shared';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
@@ -35,6 +36,8 @@ export function renderSchemaFormOnTestPage(options: {
   textShownInUntouchedField?: TextShownInUntouchedField;
   /** The sources a field may read, as the item editor hands them; left out, no "Fonte". */
   bindingOptions?: SchemaFormBindingOptions;
+  /** The entity library, as the item editor hands it; left out, no "Cadastro". */
+  entityLibrary?: EntityLibrary;
 }): SchemaFormOnTestPage {
   // The form lives inside the page; this holder is how the test reaches it afterwards.
   const holder: {
@@ -63,6 +66,7 @@ export function renderSchemaFormOnTestPage(options: {
         isDisabled={options.isDisabled}
         textShownInUntouchedField={options.textShownInUntouchedField}
         bindingOptions={options.bindingOptions}
+        entityLibrary={options.entityLibrary}
       />
     );
   }

@@ -108,6 +108,11 @@ function buildRaceDayStateWithTheClockOnAir() {
     recordings: [],
     events: [],
     eventRules: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
   };
 }
 
@@ -257,8 +262,9 @@ describe('SliceNameSchema', () => {
     // Arrange: the slice names; the "will be cleared" markers and the bindings of each
     // instance right after the instances they speak about, quick-fire panels and macros
     // after the items, and the data sources, their snapshots, the operator's corrections
-    // of them and the recordings, then the event inbox's events and rules, just before
-    // the event log.
+    // of them and the recordings, then the event inbox's events and rules, then the
+    // entity library (teams, people, sponsors and the schedule) and its images, just
+    // before the event log.
     const expectedSliceNames = [
       'layers',
       'graphics',
@@ -276,6 +282,11 @@ describe('SliceNameSchema', () => {
       'recordings',
       'events',
       'eventRules',
+      'teams',
+      'people',
+      'sponsors',
+      'scheduleSlots',
+      'media',
       'eventLog',
     ];
 
@@ -283,7 +294,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these seventeen, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these twenty-two, in this order').toEqual(
       expectedSliceNames,
     );
   });

@@ -12,8 +12,8 @@
  *     notes, and no order or auto-out is invented for it.
  *   - A createItem with every part filled in is accepted unchanged.
  *   - A createItem is refused, with the field named, when the label is empty, the order
- *     is negative or not whole, the colour is not one of the six names, a field names an
- *     entity (BAJAOVRLAY-19) or the auto-out is zero.
+ *     is negative or not whole, the colour is not one of the six names, a field names a
+ *     team in the first draft shape of an entity reference or the auto-out is zero.
  *   - An updateItemFields may change any one thing on its own (its layer included, since
  *     BAJAOVRLAY-36), may remove the auto-out with null, and adds nothing the editor did
  *     not send.
@@ -112,16 +112,16 @@ describe('createItem', () => {
       changedPart: { color: 'purple' },
       fieldNamedInTheFailure: 'color',
     },
-    // Entity references arrive with the entity library (BAJAOVRLAY-19); the editor
-    // cannot send one today.
+    // The concept's first draft of an entity reference said entityId; as built by
+    // BAJAOVRLAY-19 a team is chosen by its car number, so that draft is refused.
     {
-      name: 'refuses a field that names a team of the entity library, naming kind',
+      name: 'refuses a team reference in the first draft shape, naming carNumber',
       changedPart: {
         fields: {
           sessionName: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
         },
       },
-      fieldNamedInTheFailure: 'kind',
+      fieldNamedInTheFailure: 'carNumber',
     },
     // "No auto-out" is said by leaving the field out; zero would clear the layer at once.
     {

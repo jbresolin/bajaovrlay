@@ -56,6 +56,11 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     recordings: changedSlices.recordings ?? slices.recordings,
     events: changedSlices.events ?? slices.events,
     eventRules: changedSlices.eventRules ?? slices.eventRules,
+    teams: changedSlices.teams ?? slices.teams,
+    people: changedSlices.people ?? slices.people,
+    sponsors: changedSlices.sponsors ?? slices.sponsors,
+    scheduleSlots: changedSlices.scheduleSlots ?? slices.scheduleSlots,
+    media: changedSlices.media ?? slices.media,
     eventLog: changedSlices.eventLog ?? slices.eventLog,
   };
 }

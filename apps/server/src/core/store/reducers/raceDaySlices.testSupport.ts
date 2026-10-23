@@ -113,6 +113,11 @@ export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesCh
     recordings: [],
     events: [],
     eventRules: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
     instanceBindings: [],
     overrides: [],
   };

@@ -25,15 +25,15 @@
  *     so each data source test restarts the race itself ("Reiniciar corrida").
  *   - With the simulator's session name corrected ("Corrigir valor…"), `emptyTheServerState`
  *     leaves no correction (BAJAOVRLAY-20).
- *   - With the fastest-lap rule set to "Perguntar" and a typed penalty waiting in
- *     "Eventos", `emptyTheServerState` puts the rule back to "Automático" and leaves no
- *     event waiting (BAJAOVRLAY-44).
+ *   - With the simulator's teams imported in Cadastros and an image uploaded,
+ *     `emptyTheServerState` leaves no team and no image (BAJAOVRLAY-19).
  *   - Called on a server that is already empty, it changes nothing and does not fail.
  *
  * What these tests deliberately do not cover:
  *   - That the other test files call it before each test; each of them does so in a
  *     `test.beforeEach` at its top, which is there to be read.
  *   - Layers and graphics: no command changes them, so there is nothing to put back.
+ *   - The event rules and waiting events (BAJAOVRLAY-44); emptyServerStateEventInbox.e2e.ts.
  *   - The event log, which keeps its rows; no browser test reads it.
  *   - A macro still running when the reset starts: the reset waits for it to end, which
  *     the macro e2e (macroTakeWaitClear.e2e.ts) leaves behind only for half a second.
@@ -60,6 +60,11 @@ import {
   turnSourceOnWithItsSwitch,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
+import {
+  openTheEntityLibraryPage,
+  readTheLibraryFromTheRealServer,
+  uploadALogoToTheRealServer,
+} from './entityLibraryTestSteps';
 import {
   chooseGraphicInTheItemEditor,
   openItemEditorWithNewGraphic,
@@ -322,39 +327,24 @@ test.describe('emptying the server state', () => {
     ).toBeHidden();
   });
 
-  test('puts the event rules back and leaves no event waiting', async ({ page }) => {
-    // Arrange: on the "Eventos" tab, a penalty typed for car 47, and the fastest-lap rule
-    // set to wait for the operator.
-    await openControlPageAndWaitUntilConnected(page);
-    await page.getByRole('tab', { name: /^Eventos/ }).click();
-    await page.getByRole('button', { name: '+ Evento' }).click();
-    const manualForm = page.getByRole('dialog');
-    await manualForm.getByLabel('Carro').fill('47');
-    await manualForm.getByLabel('Motivo').fill('Reabastecimento com o motor ligado');
-    await manualForm.getByRole('button', { name: 'Criar evento' }).click();
-    await expect(manualForm, 'the form closes once the event is stored').toBeHidden();
-    await page.getByRole('button', { name: 'Regras' }).click();
-    const fastestLapRule = page.getByRole('group', { name: 'Volta mais rápida' });
-    await fastestLapRule.getByRole('combobox', { name: 'Modo de Volta mais rápida' }).click();
-    await page.getByRole('option', { name: 'Perguntar' }).click();
-    await fastestLapRule.getByRole('button', { name: 'Salvar' }).click();
-    await page.keyboard.press('Escape');
-    const waitingEvents = page.getByRole('list', { name: 'Eventos esperando' });
-    await expect(waitingEvents.getByRole('listitem'), 'the penalty waits').toHaveCount(1);
+  test('empties the entity library and its images', async ({ page }) => {
+    // Arrange: the simulator's hundred teams imported on Cadastros, and an image uploaded.
+    await openTheEntityLibraryPage(page);
+    await page.getByRole('button', { name: 'Importar equipes do simulador' }).click();
+    await expect(
+      page.getByRole('table', { name: 'Equipes cadastradas' }).getByRole('row'),
+      'the hundred teams and the header row are listed',
+    ).toHaveCount(101);
+    await uploadALogoToTheRealServer();
 
     // Act: empty the server.
     await emptyTheServerState();
 
-    // Assert: nothing waits any more, and the rule is back to "Automático".
-    await expect(
-      waitingEvents.getByRole('listitem'),
-      'no event may wait after the reset',
-    ).toHaveCount(0);
-    await page.getByRole('button', { name: 'Regras' }).click();
-    await expect(
-      page.getByRole('combobox', { name: 'Modo de Volta mais rápida' }),
-      'the fastest-lap rule is back to its default',
-    ).toHaveText('Automático');
+    // Assert: no team on the page, no team and no image on the server.
+    await expect(page.getByText('Nenhuma equipe cadastrada.'), 'the tab is empty').toBeVisible();
+    const library = await readTheLibraryFromTheRealServer();
+    expect(library.teams, 'no team is left').toEqual([]);
+    expect(library.media, 'no image is left').toEqual([]);
   });
 
   test('changes nothing and does not fail on a server that is already empty', async ({ page }) => {

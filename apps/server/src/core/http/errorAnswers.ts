@@ -34,9 +34,11 @@ export const answerRouteNotFound: NotFoundHandler<ServerAppEnvironment> = (conte
 export const answerUnexpectedError: ErrorHandler<ServerAppEnvironment> = (error, context) => {
   // Hono's JSON body validator throws a 400 HTTPException with a plain English line when
   // the body cannot be parsed, before a route's own hook runs. Every body route takes
-  // JSON and nothing of ours throws a 400 HTTPException, so a 400 here means exactly
-  // that; it is answered in JSON with a pt-BR message like every other error. If a form
-  // body or our own 400 HTTPException is ever added, this check must look closer.
+  // JSON but the media upload, which reads its multipart form itself and answers a body
+  // it cannot read with its own 400 (modules/media/api.ts), and nothing of ours throws a
+  // 400 HTTPException, so a 400 here means exactly that; it is answered in JSON with a
+  // pt-BR message like every other error. If our own 400 HTTPException is ever added,
+  // this check must look closer.
   if (error instanceof HTTPException && error.status === 400) {
     const body: ErrorAnswerBody = {
       error: { code: 'MALFORMED_JSON_BODY', message: ptBR.errors.malformedJsonBody },

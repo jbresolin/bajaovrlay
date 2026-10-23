@@ -82,7 +82,9 @@ describe('the kind selector of the item editor with data sources', () => {
     const kindsOfTheTime = readOptionsOfDropdown('Como preencher Tempo de referência');
 
     // Assert: "Fonte" on both; the whole clock only where the time is. "Evento" closes
-    // both lists: a text and a number may also be filled by an event (BAJAOVRLAY-44).
+    // the flag's list: a text and a number may also be filled by an event (BAJAOVRLAY-44).
+    // "Cadastro" closes the time's, as on any whole-number field (BAJAOVRLAY-19), but is
+    // not on the flag, whose fixed list of values no record of the library holds.
     expect(kindsOfTheFlag, 'the flag can be typed or read from a source').toEqual([
       'Valor digitado',
       'Fonte',
@@ -93,6 +95,7 @@ describe('the kind selector of the item editor with data sources', () => {
       'Fonte',
       'Relógio da fonte',
       'Evento',
+      'Cadastro',
     ]);
   });
 

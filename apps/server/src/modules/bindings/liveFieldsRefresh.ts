@@ -1,16 +1,19 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import {
+  type EntityLibrary,
   findClockFieldKeysByRole,
   type Graphic,
   type Instance,
   type InstanceBoundField,
+  type InstanceEntityField,
   resolveBindingAgainstSources,
   type SourcesForBindings,
   wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
 import { listRequiredFieldKeysOfGraphic } from '../../core/store/graphicSchemaProperties.js';
+import { readEntityFieldValuesForRefresh } from './liveEntityFieldsRefresh.js';
 
 /** What the refresher hands buildRefreshOfLiveBoundFields for one instance. */
 export type LiveBoundFieldsRefreshRequest = {
@@ -24,6 +27,12 @@ export type LiveBoundFieldsRefreshRequest = {
   sources: SourcesForBindings;
   /** The sources whose data changed; undefined means every source (an override changed). */
   sourceIdsThatChanged: ReadonlySet<string> | undefined;
+  /** Its fields that read the entity library (its entry's entityFields, or none). */
+  entityFields: InstanceEntityField[];
+  /** The entity library now. */
+  entities: EntityLibrary;
+  /** Whether a team, person, sponsor or slot changed since the last pass. */
+  haveEntitiesChanged: boolean;
 };
 
 /**
@@ -35,7 +44,9 @@ export type LiveBoundFieldsRefreshRequest = {
  * on air is ever blanked by a failure (rule 4): a deleted source, a source with no data,
  * or a required field whose value is gone. Only an optional field whose value the source
  * no longer has leaves the air (sent as null): showing a gap the car no longer has would
- * be wrong, and the graphic is built to do without it.
+ * be wrong, and the graphic is built to do without it. The fields read from the entity
+ * library are read only when it changed (liveEntityFieldsRefresh.ts, same rules) and go
+ * in the same set.
  */
 export function buildRefreshOfLiveBoundFields(
   request: LiveBoundFieldsRefreshRequest,
@@ -74,6 +85,15 @@ export function buildRefreshOfLiveBoundFields(
     if (isOptionalValueGone) {
       valuesToSend[fieldKey] = null;
     }
+  }
+
+  if (request.haveEntitiesChanged) {
+    const entityValues = readEntityFieldValuesForRefresh(
+      request.entityFields,
+      request.entities,
+      requiredFieldKeys,
+    );
+    Object.assign(valuesToSend, entityValues);
   }
 
   const isAnyValueDifferentFromAir = Object.entries(valuesToSend).some(([fieldKey, value]) =>

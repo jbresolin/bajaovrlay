@@ -1,8 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
 // The tests open the BUILT graphic (dist/) under the same folder the server will use,
 // so they also prove that dist/ works when served from /graphics/positions-tower/.
-const builtGraphicAddress = 'http://127.0.0.1:5178/graphics/positions-tower/';
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset.
+const previewPort = 5178 + portOffsetOfTheBrowserTests;
+const builtGraphicAddress = `http://127.0.0.1:${String(previewPort)}/graphics/positions-tower/`;
 const isRunningInCI = Boolean(process.env.CI);
 
 export default defineConfig({
@@ -30,8 +35,7 @@ export default defineConfig({
     // counts), which the preview server answers with 431 and an empty page; the option
     // raises the limit to 64 KB, room for every list. Set in the command (a POSIX shell,
     // as the `&&` already assumes) so it reaches the node the pnpm shim starts.
-    command:
-      'pnpm exec vite build && NODE_OPTIONS=--max-http-header-size=65536 pnpm exec vite preview --host 127.0.0.1 --base /graphics/positions-tower/',
+    command: `pnpm exec vite build && NODE_OPTIONS=--max-http-header-size=65536 pnpm exec vite preview --host 127.0.0.1 --port ${String(previewPort)} --base /graphics/positions-tower/`,
     url: `${builtGraphicAddress}positions-tower.ograf.json`,
     reuseExistingServer: !isRunningInCI,
   },

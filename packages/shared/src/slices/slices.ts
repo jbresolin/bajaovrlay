@@ -4,10 +4,15 @@ import { InstanceBindingsSchema } from '../bindings/instanceBindings.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
+import { PeopleSchema } from '../entities/person.js';
+import { ScheduleSlotsSchema } from '../entities/scheduleSlot.js';
+import { SponsorsSchema } from '../entities/sponsor.js';
+import { TeamsSchema } from '../entities/team.js';
 import { EventRulesSchema } from '../eventInbox/eventRule.js';
 import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
+import { MediaSchema } from '../media/mediaRecord.js';
 import { OverridesSchema } from '../overrides/override.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
@@ -36,6 +41,11 @@ export const SliceNameSchema = z.enum([
   'recordings',
   'events',
   'eventRules',
+  'teams',
+  'people',
+  'sponsors',
+  'scheduleSlots',
+  'media',
   'eventLog',
 ]);
 
@@ -100,6 +110,22 @@ export const SlicesSchema = z.object({
   events: InboxEventsSchema,
   /** One rule per kind of event: ask, auto or ignore, and the item that shows it. Saved. */
   eventRules: EventRulesSchema,
+  /**
+   * The entity library (BAJAOVRLAY-19): the teams by car number, the people, the
+   * sponsors and the day's schedule, each a slice of its own so an edit of one sponsor
+   * does not resend every team. Saved; screens never receive them (graphics get resolved
+   * data only, rule 3).
+   */
+  teams: TeamsSchema,
+  people: PeopleSchema,
+  sponsors: SponsorsSchema,
+  scheduleSlots: ScheduleSlotsSchema,
+  /**
+   * The images of the media store (BAJAOVRLAY-19): one record per file under
+   * DATA_DIR/media, named by its SHA-256. Saved; screens never receive it (a graphic gets
+   * the image's URL already resolved).
+   */
+  media: MediaSchema,
   /** The newest entries of the event log only; the database keeps every entry. */
   eventLog: z.array(EventLogEntrySchema),
 });

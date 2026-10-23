@@ -104,7 +104,9 @@ describe('"Salvar no item" with fields the item reads from a source', () => {
 
     // Assert: the flag is named, the title is not.
     expect(
-      await screen.findByText('Não salvo no item, porque o item lê da fonte: Bandeira.'),
+      await screen.findByText(
+        'Não salvo no item, porque o item lê da fonte ou dos cadastros: Bandeira.',
+      ),
       'the operator must be told the flag was not saved',
     ).toBeVisible();
   });
@@ -124,7 +126,7 @@ describe('"Salvar no item" with fields the item reads from a source', () => {
     // Assert: no question was needed, and the clock fields are named.
     expect(screen.queryByRole('dialog'), 'nothing of the clock will be saved').toBeNull();
     expect(
-      await screen.findByText(/^Não salvo no item, porque o item lê da fonte: /),
+      await screen.findByText(/^Não salvo no item, porque o item lê da fonte ou dos cadastros: /),
       'the clock fields must be named',
     ).toHaveTextContent('Tempo de referência');
   });

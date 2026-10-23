@@ -288,6 +288,11 @@ export function buildRaceDaySlicesWithRundown(parts: {
     recordings: [],
     events: [],
     eventRules: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
     instanceBindings: [],
     overrides: [],
   };

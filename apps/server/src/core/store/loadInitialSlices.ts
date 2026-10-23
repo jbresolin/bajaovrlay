@@ -4,11 +4,13 @@ import {
   loadOrSeedDataSourceSlices,
   readRecordingsFromFolder,
 } from '../../modules/dataSources/index.js';
+import { loadEntitySlices } from '../../modules/entities/index.js';
 import {
   isInstanceOfAnEvent,
   loadOrSeedEventInboxSlices,
   markEventsOnAirAsShownAtBoot,
 } from '../../modules/events/index.js';
+import { loadMediaSlice } from '../../modules/media/index.js';
 import { writeBootRows } from '../db/bootRowStorage.js';
 import { readAllDataSnapshotRows } from '../db/dataSnapshotRowStorage.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
@@ -220,6 +222,10 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     recordings: readRecordingsAtBoot(options, dataSourceSlices.dataSources),
     events: eventsAtBoot.events,
     eventRules: eventInboxSlices.eventRules,
+    // The entity library (BAJAOVRLAY-19), loaded by modules/entities; nothing is seeded.
+    ...loadEntitySlices(storedRows),
+    // Its images, loaded by modules/media; the files themselves are under DATA_DIR/media.
+    media: loadMediaSlice(storedRows),
   };
 }
 

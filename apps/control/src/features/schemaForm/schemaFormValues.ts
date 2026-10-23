@@ -1,3 +1,5 @@
+import type { SchemaFormEntityReferenceValue } from './entityReferenceFormValue';
+
 /**
  * The values of a generated form as react-hook-form holds them while the operator edits.
  * Only types live here; buildSchemaFormValues.ts builds them and the files named
@@ -16,9 +18,12 @@
  * - `eventField` ("Evento", BAJAOVRLAY-44): filled by the event the item shows, the
  *   payload field `eventPaths` names. Offered only in the item editor, where some payload
  *   field fits the field.
- * The entity library (BAJAOVRLAY-19) adds `entity` here.
+ * - `entity` ("Cadastro", BAJAOVRLAY-19): one attribute of one record of the entity
+ *   library, as `entityReferences` says. Offered only in the item editor, where some
+ *   attribute fits the field (entityReferenceFormValue.ts).
  */
-export type SchemaFormFieldKind = 'literal' | 'takeTime' | 'binding' | 'wholeClock' | 'eventField';
+export type SchemaFormFieldKind =
+  'literal' | 'takeTime' | 'binding' | 'wholeClock' | 'eventField' | 'entity';
 
 /**
  * A binding as the form holds it while the operator chooses: plain texts and a switch,
@@ -81,6 +86,12 @@ export type SchemaFormValues = {
    * not listed reads as nothing chosen (eventFieldFormValue.ts).
    */
   eventPaths?: Record<string, string>;
+  /**
+   * What "Cadastro" holds, for the fields that hold a choice (BAJAOVRLAY-19). Left out
+   * until one does: a control with no entry reads it as nothing chosen, so a form that
+   * reads nothing of the library is exactly what it was before.
+   */
+  entityReferences?: Record<string, SchemaFormEntityReferenceValue>;
   unsupportedValuesAsJson: UnsupportedValueAsJson[];
 };
 

@@ -1,8 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
 // The tests open the BUILT graphic (dist/) under the same folder the server will use,
 // so they also prove that dist/ works when served from /graphics/race-clock/.
-const builtGraphicAddress = 'http://127.0.0.1:5176/graphics/race-clock/';
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset.
+const previewPort = 5176 + portOffsetOfTheBrowserTests;
+const builtGraphicAddress = `http://127.0.0.1:${String(previewPort)}/graphics/race-clock/`;
 const isRunningInCI = Boolean(process.env.CI);
 
 export default defineConfig({
@@ -25,8 +30,7 @@ export default defineConfig({
   ],
   webServer: {
     // Build first so the tests never run against a stale dist/ left from an older build.
-    command:
-      'pnpm exec vite build && pnpm exec vite preview --host 127.0.0.1 --base /graphics/race-clock/',
+    command: `pnpm exec vite build && pnpm exec vite preview --host 127.0.0.1 --port ${String(previewPort)} --base /graphics/race-clock/`,
     url: `${builtGraphicAddress}race-clock.ograf.json`,
     reuseExistingServer: !isRunningInCI,
   },
