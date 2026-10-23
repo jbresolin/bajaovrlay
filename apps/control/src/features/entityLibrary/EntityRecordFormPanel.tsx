@@ -20,6 +20,7 @@ import {
   buildUpsertCommandOfRecord,
   describeRecordOfType,
 } from './entityRecordsOfType';
+import { makeRecordId } from './recordId';
 
 const texts = ptBR.entityLibrary.form;
 
@@ -38,12 +39,13 @@ export type EntityRecordFormPanelProps = {
  * schema's pt-BR sentence under a wrong field. "Salvar" sends upsertEntity, and the panel
  * closes once the server accepts; a refusal is shown above the buttons and the form
  * stays. A team's car number is its key, so it is typed for a new team only. A new
- * person, sponsor or slot gets one id when the form opens (crypto.randomUUID), so two
+ * person, sponsor or slot gets one id when the form opens (makeRecordId, which works over
+ * plain http), so two
  * presses of "Salvar" save the same record.
  */
 export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
   const { entityType, recordAsOpened } = props;
-  const [newRecordId] = useState(() => crypto.randomUUID());
+  const [newRecordId] = useState(() => makeRecordId());
   const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);

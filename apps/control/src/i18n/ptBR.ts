@@ -33,6 +33,12 @@ export const ptBR = {
       dataSources: 'Fontes',
       entityLibrary: 'Cadastros',
     },
+    // What "Cadastros" or "Fontes" shows instead of a blank tab when it throws.
+    pageError: {
+      message:
+        'Esta página encontrou um erro e parou. Recarregue para continuar; nada do que está no ar foi afetado.',
+      reloadButton: 'Recarregar a página',
+    },
   },
   serverHealth: {
     checkButton: 'Verificar servidor',

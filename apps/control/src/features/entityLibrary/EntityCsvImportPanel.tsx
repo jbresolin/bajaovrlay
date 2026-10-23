@@ -19,6 +19,7 @@ import { useSendCommandAndReadItsRefusal } from '@/state/ControlPageStateProvide
 
 import { listCsvColumnsOfEntityType } from './entityCsvColumns';
 import { buildCsvImportPreview, listRecordsToImport } from './entityCsvImport';
+import { makeRecordId } from './recordId';
 import { useEntityLibrary } from './useEntityLibrary';
 
 const texts = ptBR.entityLibrary.csv;
@@ -49,7 +50,7 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
   const preview =
     csvText.trim() === ''
       ? undefined
-      : buildCsvImportPreview(entityType, csvText, library, () => crypto.randomUUID());
+      : buildCsvImportPreview(entityType, csvText, library, makeRecordId);
   const recordsToImport = preview === undefined ? undefined : listRecordsToImport(preview);
   const validRowCount = recordsToImport?.records.length ?? 0;
 

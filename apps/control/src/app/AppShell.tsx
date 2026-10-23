@@ -11,6 +11,7 @@ import { ptBR } from '@/i18n/ptBR';
 
 import { ConsoleView } from './ConsoleView';
 import { type ControlPageName, hashOfEachPage, useCurrentPage } from './currentPage';
+import { PageErrorBoundary } from './PageErrorBoundary';
 
 const pageLinkTexts = ptBR.app.pageLinks;
 
@@ -18,7 +19,8 @@ const pageLinkTexts = ptBR.app.pageLinks;
  * The frame of the control page: a header that is always there, and below it the page
  * the address names (currentPage.ts) — the console (ConsoleView.tsx), "Fontes de dados"
  * (features/dataSources), which the header's "Fontes" and chip open in a new tab, or
- * "Cadastros" (features/entityLibrary), which "Cadastros" opens in a new tab too. The
+ * "Cadastros" (features/entityLibrary), which "Cadastros" opens in a new tab too; each of
+ * those two in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab. The
  * header holds the product name, the links to the three pages, the data sources
  * chip ("Fontes: 2 ok · 1 atrasada"), the server check, the connection badge and the
  * "?" button, which lists every keyboard shortcut (src/keyboard/keyboardMap.ts).
@@ -54,8 +56,16 @@ export function AppShell() {
       </header>
 
       {currentPage === 'console' && <ConsoleView />}
-      {currentPage === 'dataSources' && <DataSourcesPage />}
-      {currentPage === 'entityLibrary' && <EntityLibraryPage />}
+      {currentPage === 'dataSources' && (
+        <PageErrorBoundary>
+          <DataSourcesPage />
+        </PageErrorBoundary>
+      )}
+      {currentPage === 'entityLibrary' && (
+        <PageErrorBoundary>
+          <EntityLibraryPage />
+        </PageErrorBoundary>
+      )}
     </div>
   );
 }
