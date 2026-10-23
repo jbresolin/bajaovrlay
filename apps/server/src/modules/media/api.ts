@@ -44,7 +44,8 @@ const errorAnswerContent = { 'application/json': { schema: ErrorAnswerBodySchema
 export const postMediaRoute = createRoute({
   method: 'post',
   path: '/media',
-  summary: 'Upload one image (PNG, JPEG, WebP or SVG, up to 5 MB) to the media store',
+  summary:
+    'Upload one image (PNG, JPEG, WebP or SVG, up to 5 MB) to the media store, from this server\'s own pages or a tool that sends no Origin',
   request: {
     body: {
       required: true,
@@ -65,6 +66,10 @@ export const postMediaRoute = createRoute({
       content: { 'application/json': { schema: MediaUploadAnswerSchema } },
     },
     400: { description: 'No file in the "file" field (pt-BR).', content: errorAnswerContent },
+    403: {
+      description: 'Sent by a page of another site: its Origin is not this server (pt-BR).',
+      content: errorAnswerContent,
+    },
     413: { description: 'The file is over 5 MB (pt-BR).', content: errorAnswerContent },
     415: {
       description: 'The bytes are not a PNG, JPEG, WebP or SVG, whatever the name (pt-BR).',
@@ -76,6 +81,11 @@ export const postMediaRoute = createRoute({
     },
     500: {
       description: 'The server could not record the image (pt-BR).',
+      content: errorAnswerContent,
+    },
+    507: {
+      description:
+        'The store holds 1000 images or 500 MB, or the disk would keep less than 1 GB free (pt-BR).',
       content: errorAnswerContent,
     },
   },
@@ -110,6 +120,13 @@ export async function readUploadedFile(
 /** The 400 body of an upload with no file. */
 export function buildFileMissingAnswer(): ErrorAnswerBody {
   return { error: { code: 'MEDIA_FILE_MISSING', message: ptBR.mediaErrors.fileMissing } };
+}
+
+/** The 403 body of an upload sent by a page of another site. */
+export function buildUploadFromAnotherSiteAnswer(): ErrorAnswerBody {
+  return {
+    error: { code: 'MEDIA_UPLOAD_FROM_ANOTHER_SITE', message: ptBR.mediaErrors.uploadFromAnotherSite },
+  };
 }
 
 /** The 413 body of an upload over the limit, when the body itself is too large to read. */

@@ -13,6 +13,14 @@ export const ptBRMediaErrors = {
   /** An image whose header is cut off, or an SVG that gives no size. */
   sizeUnreadable: (fileName: string) =>
     `Não consegui ler o tamanho da imagem "${fileName}"; um SVG precisa de width e height ou de viewBox.`,
+  /** An upload when the store holds 1000 images or 500 MB already. */
+  storeFull:
+    'O servidor já guarda 1000 imagens ou 500 MB; exclua imagens sem uso em Cadastros antes de enviar outra.',
+  /** An upload that would leave less than 1 GB free on the server's disk. */
+  diskNearlyFull:
+    'O disco do servidor está quase cheio (menos de 1 GB livre); libere espaço antes de enviar imagens.',
+  /** An upload sent by a page of another site (its Origin is not this server). */
+  uploadFromAnotherSite: 'Imagens só podem ser enviadas pela página Cadastros deste servidor.',
   /** GET /media/<mediaId> of an image the store does not hold. */
   mediaNotServed: 'Imagem não encontrada no servidor.',
   /** A record naming an image the store does not hold, field first: "Logo: …". */

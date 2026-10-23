@@ -24,6 +24,8 @@ import {
 import {
   buildFileMissingAnswer,
   buildFileTooLargeAnswer,
+  buildUploadFromAnotherSiteAnswer,
+  isUploadFromAnotherSite,
   largestMediaUploadBodyInBytes,
   postMediaRoute,
   readUploadedFile,
@@ -122,6 +124,10 @@ export function createApiV1Routes(options: {
       }),
     );
     apiRoutes.openapi(postMediaRoute, async (context) => {
+      // Until M4 logins, a page of another site must not upload through the operator's browser.
+      if (isUploadFromAnotherSite(context.req.header('origin'), context.req.url)) {
+        return context.json(buildUploadFromAnotherSiteAnswer(), 403);
+      }
       const upload = await readUploadedFile(context);
       if (upload === undefined) {
         return context.json(buildFileMissingAnswer(), 400);

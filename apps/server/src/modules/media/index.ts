@@ -24,6 +24,15 @@ export {
   readUploadedFile,
 } from './api.js';
 // Storing one upload: checked by its bytes, named by its SHA-256, written, recorded.
-export { storeUploadedImage } from './mediaUpload.js';
+export { type MediaUploadDependencies, storeUploadedImage } from './mediaUpload.js';
+// Until M4: the store holds 1000 images or 500 MB at most, and leaves the disk 1 GB free.
+export {
+  freeDiskMarginInBytes,
+  largestStoreSizeInBytes,
+  mostImagesInTheStore,
+} from './mediaStoreLimits.js';
+// Until M4: an upload sent by a page of another site is refused 403, and its answer.
+export { buildUploadFromAnotherSiteAnswer } from './api.js';
+export { isUploadFromAnotherSite } from './uploadOrigin.js';
 // GET /media/<mediaId>, with a year of cache, nosniff and the policy that runs nothing.
 export { contentSecurityPolicyOfImages, serveMediaFiles } from './api.js';

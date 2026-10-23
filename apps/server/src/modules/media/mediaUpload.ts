@@ -11,6 +11,7 @@ import { ptBR } from '../../core/messages/ptBR.js';
 import { mediaStoreActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import { readImageContent } from './imageContent.js';
+import { findRefusalOfTheStoreLimits, readFreeBytesOfTheDiskOf } from './mediaStoreLimits.js';
 
 /** One file as the route received it: its bytes and the name it had on the operator's machine. */
 export type UploadedFile = { bytes: Buffer; fileName: string };
@@ -18,19 +19,31 @@ export type UploadedFile = { bytes: Buffer; fileName: string };
 /** What storing an upload gives: the answer to send, or the error answer and its status. */
 export type MediaUploadOutcome =
   | { isStored: true; answer: MediaUploadAnswer }
-  | { isStored: false; httpStatus: 413 | 415 | 422 | 500; body: ErrorAnswerBody };
+  | { isStored: false; httpStatus: RefusedUploadStatus; body: ErrorAnswerBody };
+
+/** The statuses of a refused upload; 507 is the store or the disk full. */
+type RefusedUploadStatus = 413 | 415 | 422 | 500 | 507;
+
+/** Where an upload is stored; the free-space reading is replaced only by the tests. */
+export type MediaUploadDependencies = {
+  stateStore: StateStore;
+  mediaFolder: string;
+  readFreeBytesOfTheDisk?: (folder: string) => number;
+};
 
 /**
  * Stores one uploaded image, in this order: refuse a file over 5 MB (413); read what the
  * bytes are, never the name (415 for anything but PNG, JPEG, WebP or SVG, 422 when its
- * size cannot be read); name it by its SHA-256; write it to `<mediaFolder>/<mediaId>`
+ * size cannot be read); name it by its SHA-256; unless the store already lists it, refuse
+ * it when the store holds 1000 images or would pass 500 MB, or the disk would keep less
+ * than 1 GB free (507, mediaStoreLimits.ts); write it to `<mediaFolder>/<mediaId>`
  * unless that file is already there (the same bytes are the same media); record it with
  * recordUploadedMedia as `sistema:midia`, the one command path. Nothing is written for a
  * refused file, and a file written for a record the store then refused is removed again.
  */
 export function storeUploadedImage(
   upload: UploadedFile,
-  dependencies: { stateStore: StateStore; mediaFolder: string },
+  dependencies: MediaUploadDependencies,
 ): MediaUploadOutcome {
   if (upload.bytes.length > largestMediaSizeInBytes) {
     return refuseUpload(413, 'MEDIA_TOO_LARGE', ptBR.mediaErrors.fileTooLarge);
@@ -47,6 +60,16 @@ export function storeUploadedImage(
 
   const mediaId = createHash('sha256').update(upload.bytes).digest('hex');
   mkdirSync(dependencies.mediaFolder, { recursive: true });
+  const media = dependencies.stateStore.readAllSlices().media;
+  const isAlreadyListed = media.some((mediaRecord) => mediaRecord.mediaId === mediaId);
+  if (!isAlreadyListed) {
+    const readFreeBytesOfTheDisk = dependencies.readFreeBytesOfTheDisk ?? readFreeBytesOfTheDiskOf;
+    const freeBytes = readFreeBytesOfTheDisk(dependencies.mediaFolder);
+    const limitRefusal = findRefusalOfTheStoreLimits(media, upload.bytes.length, freeBytes);
+    if (limitRefusal !== undefined) {
+      return refuseUpload(507, limitRefusal.code, limitRefusal.message);
+    }
+  }
   const filePath = join(dependencies.mediaFolder, mediaId);
   const wasAlreadyOnDisk = existsSync(filePath);
   if (!wasAlreadyOnDisk) {
@@ -87,7 +110,7 @@ export function storeUploadedImage(
 
 /** The error answer of a refused upload. */
 function refuseUpload(
-  httpStatus: 413 | 415 | 422 | 500,
+  httpStatus: RefusedUploadStatus,
   code: string,
   message: string,
 ): MediaUploadOutcome {
