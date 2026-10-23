@@ -16,6 +16,10 @@
  *   - Its Prévia shows the sample fastest lap's team, and "Tomar" on it is refused.
  *   - Prévia of the penalty shows the penalty's team; "Tomar" puts it on air as the event,
  *     with the rule's duration, and the event is on air.
+ *   - An item reading both the event and the entity library (BAJAOVRLAY-19) shows the
+ *     penalty with its title from the library's schedule and its laps from the event, the
+ *     title kept live on air; with the schedule's record deleted, showing the penalty is
+ *     refused with ENTITY_NOT_RESOLVED and the penalty still waits.
  *   - An event lacking what a required field reads is refused, naming the field.
  *   - Saving an event field whose payload field does not fit is refused, naming both.
  *
@@ -48,6 +52,24 @@ const fieldsReadFromTheEvent = {
   sessionName: { kind: 'eventField' as const, path: 'teamName' as const },
   lapsCompletedByLeader: { kind: 'eventField' as const, path: 'lapNumber' as const },
 };
+
+/** Saturday's enduro, 10:00 to 14:00 in Brasília, as the Programação tab holds it. */
+const saturdayEnduroSlot = {
+  slotId: 'enduro-sabado',
+  sessionName: 'Enduro de Resistência',
+  sessionKind: 'enduro',
+  startsAtMs: Date.parse('2026-11-14T13:00:00.000Z'),
+  endsAtMs: Date.parse('2026-11-14T17:00:00.000Z'),
+  place: 'Pista principal',
+} as const;
+
+/** A field that reads the name of Saturday's enduro from the library ("Cadastro"). */
+const fieldReadFromSaturdaysEnduro = {
+  kind: 'entity',
+  entityType: 'scheduleSlot',
+  slotId: 'enduro-sabado',
+  attribute: 'sessionName',
+} as const;
 
 /**
  * An inbox whose incidents and fastest laps are shown with a race clock item filled by the
@@ -188,6 +210,79 @@ describe('an item filled by an event', () => {
         message: 'Título: o evento não traz "Punição".',
       },
     });
+  });
+
+  it('fills an item that reads both the event and the entity library', () => {
+    // Arrange: Saturday's enduro in the library's schedule, and an item whose title reads
+    // that session from the library and whose laps read the event's lap, shown for the
+    // incidents.
+    const inbox = openInboxWithATemplateItem();
+    applyOrThrow(inbox.stateStore, {
+      type: 'upsertEntity',
+      entityType: 'scheduleSlot',
+      record: saturdayEnduroSlot,
+    });
+    const itemId = createClockItemForEvents(inbox.stateStore, 'Relógio — enduro e evento', {
+      sessionName: fieldReadFromSaturdaysEnduro,
+      lapsCompletedByLeader: { kind: 'eventField', path: 'lapNumber' },
+    });
+    applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'newIncident', itemId });
+
+    // Act: "No ar" on car 47's penalty.
+    applyOrThrow(inbox.stateStore, { type: 'showEvent', eventId: startPenaltyEventId });
+
+    // Assert: the title from the library, the laps from the event, and the title kept live
+    // so an edit in Cadastros reaches the notice on air.
+    const onAir = readClockLayer(inbox, 'program');
+    expect(onAir?.resolvedData.sessionName, 'the title must read the library').toBe(
+      'Enduro de Resistência',
+    );
+    expect(onAir?.resolvedData.lapsCompletedByLeader, "the laps must read the event's lap").toBe(1);
+    const keptEntityFields = inbox.stateStore
+      .readAllSlices()
+      .instanceBindings.find((entry) => entry.instanceId === onAir?.id)?.entityFields;
+    expect(keptEntityFields, 'the title must stay live on air').toEqual([
+      { fieldKey: 'sessionName', entityReference: fieldReadFromSaturdaysEnduro },
+    ]);
+  });
+
+  it('refuses to show the event when the record the item reads is gone', () => {
+    // Arrange: the same item, with Saturday's enduro deleted from the library afterwards.
+    const inbox = openInboxWithATemplateItem();
+    applyOrThrow(inbox.stateStore, {
+      type: 'upsertEntity',
+      entityType: 'scheduleSlot',
+      record: saturdayEnduroSlot,
+    });
+    const itemId = createClockItemForEvents(inbox.stateStore, 'Relógio — enduro e evento', {
+      sessionName: fieldReadFromSaturdaysEnduro,
+      lapsCompletedByLeader: { kind: 'eventField', path: 'lapNumber' },
+    });
+    applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'newIncident', itemId });
+    applyOrThrow(inbox.stateStore, {
+      type: 'deleteEntity',
+      entityType: 'scheduleSlot',
+      slotId: 'enduro-sabado',
+    });
+
+    // Act: "No ar" on car 47's penalty.
+    const outcome = inbox.stateStore.applyCommand(
+      { type: 'showEvent', eventId: startPenaltyEventId },
+      operatorActor,
+    );
+
+    // Assert: refused as any take reading a missing record is, the title named first, and
+    // the penalty still waits.
+    expect(outcome, 'a title read from a deleted record must not go on air').toEqual({
+      ok: false,
+      error: {
+        code: 'ENTITY_NOT_RESOLVED',
+        message: 'Título: lê uma sessão excluída da programação.',
+      },
+    });
+    expect(readEvent(inbox.stateStore, startPenaltyEventId)?.status, 'the penalty waits').toBe(
+      'pending',
+    );
   });
 
   it('refuses to save an event field whose payload field does not fit', () => {
