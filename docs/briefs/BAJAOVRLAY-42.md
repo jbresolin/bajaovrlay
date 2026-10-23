@@ -195,3 +195,38 @@ Each measuring commit puts its before/after numbers in its commit message.
 
 The PR description has the before/after table, the commands João can run, "Decisions taken",
 and anything left out and why. Report and stop; João merges after gate 2.
+
+## Addendum (João, 2026-10-23): CI waits for gate 2
+
+From the latest comment on the Plane work item.
+
+From now on, PRs open as **drafts**. CI runs only when a PR is marked ready for review,
+which happens after gate 2 passes, so review rounds no longer re-run the full suite on every
+push.
+
+1. **`ci.yml`:**
+   * add `ready_for_review` to the `pull_request` types (keep `opened`, `synchronize` and
+     `reopened`);
+   * each job gets `if: github.event_name == 'push' || github.event.pull_request.draft == false`;
+   * `ci-passed`, if added, follows the same rule;
+   * the comment above the triggers explains why.
+2. **`CLAUDE.md`, under "Git and process":**
+   * Open the PR as a draft (`gh pr create --draft`).
+   * Before every push to it, run `pnpm verify` locally, or `pnpm verify --quick` plus the
+     e2e tests of the packages touched. Report the result in the round's report.
+   * The PR is marked ready (`gh pr ready`, or the button) only when João says gate 2
+     passed. That triggers CI, and it is merged only on green CI.
+3. **`docs/ci.md`:** state the same flow.
+4. **`docs/decisions.md`:** one line for this.
+
+This PR is the first to use the flow. Convert it to a draft now (`gh pr ready --undo`) if it
+is already open.
+
+### João's answer in the session: measuring a draft
+
+A draft gets no CI run, so the after numbers of this PR are 2-core local timings
+(`taskset`), step by step and per job as CI splits them, as the estimate. ci.yml also gets
+`workflow_dispatch` (its jobs allowed to run on it), with one decisions line, so later drafts
+can be measured on demand; `gh workflow run` cannot use it on this branch until main has the
+trigger. The real CI duration comes from the run when João marks the PR ready after gate 2.
+The "done when" 12-minute target is judged on that run; if it misses, that is one more round.
