@@ -1,12 +1,19 @@
 import { z } from 'zod';
 
 /**
- * The four canonical shapes a data source can produce. Every source maps its own data
- * into these, and graphics bind only to them.
+ * The five canonical shapes a data source can produce. Every source maps its own data
+ * into these, and graphics bind only to them. `incidents` (BAJAOVRLAY-44) is what the
+ * event inbox watches for penalties.
  */
-export const DataShapeKeySchema = z.enum(['session', 'positions', 'standings', 'brackets']);
+export const DataShapeKeySchema = z.enum([
+  'session',
+  'positions',
+  'standings',
+  'brackets',
+  'incidents',
+]);
 
-/** One of the four canonical shape names. */
+/** One of the five canonical shape names. */
 export type DataShapeKey = z.infer<typeof DataShapeKeySchema>;
 
 /**

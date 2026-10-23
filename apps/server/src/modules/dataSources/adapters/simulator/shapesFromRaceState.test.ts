@@ -14,6 +14,7 @@
  *     agree with the laps, intervals that agree with the line crossings.
  *   - Every car's fuelStops equals its pitStops: in the simulator's model every pit stop
  *     is a refuel (a real scoring app may count them differently).
+ *   - Every car's bestLapNumber names the lap that took its bestLapMs (BAJAOVRLAY-44).
  *   - The session clock counts down the remaining time, stops during a red and at zero.
  *   - Standings: overall points are the sum of the events, ranked high to low.
  *
@@ -223,6 +224,35 @@ describe('positions through the race', () => {
         entry.fuelStops,
         `car ${String(entry.carNumber)} must have refuelled once per pit stop`,
       ).toBe(entry.pitStops);
+    }
+  });
+
+  it("names the lap of every car's best lap, the lap whose time is its bestLapMs", () => {
+    // Arrange: the race three hours in, with every running car many laps into it.
+    const raceState = simulateEnduroAt(defaultRace, 3 * 60 * oneMinuteMs);
+
+    // Act: build the positions and, for each car, the time of the lap its entry names.
+    const positions = buildShapesFromRaceState(raceState, pollAtWallClockMs).positions;
+    const lapChecks = positions.entries.map((entry) => {
+      const car = raceState.cars.find((candidate) => candidate.carNumber === entry.carNumber);
+      const lapMoments = car?.lapCompletedAtRunningMs ?? [];
+      const lapIndex = (entry.bestLapNumber ?? 0) - 1;
+      const timeOfNamedLapMs = (lapMoments[lapIndex] ?? 0) - (lapMoments[lapIndex - 1] ?? 0);
+      return { entry, timeOfNamedLapMs };
+    });
+
+    // Assert: a car with a best lap names a lap it has run, and that lap took exactly its
+    // best lap time; a car with no lap has neither (the fastest-lap notice reads both).
+    for (const { entry, timeOfNamedLapMs } of lapChecks) {
+      const carText = `car ${String(entry.carNumber)}`;
+      if (entry.bestLapMs === undefined) {
+        expect(entry.bestLapNumber, `${carText} has no lap, so no best lap number`).toBe(undefined);
+        continue;
+      }
+      expect(entry.bestLapNumber, `${carText} must name a lap it has run`).toBeLessThanOrEqual(
+        entry.laps,
+      );
+      expect(timeOfNamedLapMs, `${carText}'s named lap must be its best lap`).toBe(entry.bestLapMs);
     }
   });
 });

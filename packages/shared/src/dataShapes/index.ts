@@ -2,7 +2,8 @@
 // package's own index.ts re-exports this file with one line; other packages import from
 // '@bajaovrlay/shared', never from here.
 
-// The four shape names (session, positions, standings, brackets) and the kinds of session.
+// The five shape names (session, positions, standings, brackets, incidents) and the kinds
+// of session.
 export {
   type DataShapeKey,
   DataShapeKeySchema,
@@ -47,6 +48,15 @@ export {
   type BracketsShape,
   BracketsShapeSchema,
 } from './bracketsShape.js';
+// The incidents shape (BAJAOVRLAY-44): penalties, warnings and incidents of one session.
+export {
+  type IncidentEntry,
+  IncidentEntrySchema,
+  type IncidentKind,
+  IncidentKindSchema,
+  type IncidentsShape,
+  IncidentsShapeSchema,
+} from './incidentsShape.js';
 // Validates a payload for one shape; on failure, a pt-BR sentence naming the path.
 export {
   type DataShape,

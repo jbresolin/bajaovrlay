@@ -32,6 +32,11 @@ export const PositionEntrySchema = z.object({
   lastLapMs: z.number().int().positive().optional(),
   /** Above zero, like lastLapMs. */
   bestLapMs: z.number().int().positive().optional(),
+  /**
+   * The lap on which bestLapMs was set, from 1 (BAJAOVRLAY-44: the fastest-lap notice
+   * says "VOLTA 34"). No rule ties it to bestLapMs or laps: a source counts its own way.
+   */
+  bestLapNumber: z.number().int().min(1).optional(),
   /** Time behind the leader, only for a car on the leader's lap. Never with gapToLeaderLaps. */
   gapToLeaderMs: z.number().int().min(0).optional(),
   /** Laps behind the leader, only for a lapped car. Never with gapToLeaderMs. */

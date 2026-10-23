@@ -9,8 +9,8 @@ import { ptBRDataShapes } from './ptBRDataShapes.js';
  * transform says which types it reads and which it gives.
  * - `text`, `integer`, `number`, `boolean`: one plain value.
  * - `stateEnum`: the session flag, exactly the race clock's flag values.
- * - `positionsEntries`, `standingsEntries`, `bracketsRounds`: a whole list, for a tower,
- *   a standings table or a bracket.
+ * - `positionsEntries`, `standingsEntries`, `bracketsRounds`, `incidentsEntries`: a whole
+ *   list, for a tower, a standings table, a bracket or a board of penalties.
  * - `clockGroup`: the whole session clock, which fills a graphic's four clock fields at
  *   once (the clock group, concept §5), so the clock never jumps between two of them.
  */
@@ -23,6 +23,7 @@ export const BindableValueTypeSchema = z.enum([
   'positionsEntries',
   'standingsEntries',
   'bracketsRounds',
+  'incidentsEntries',
   'clockGroup',
 ]);
 
@@ -104,6 +105,8 @@ export function listBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[]
       return listStandingsPaths();
     case 'brackets':
       return listBracketsPaths();
+    case 'incidents':
+      return listIncidentsPaths();
   }
 }
 
@@ -178,6 +181,7 @@ const positionsEntryFieldTypes = [
   { fieldName: 'laps', valueType: 'integer' },
   { fieldName: 'lastLapMs', valueType: 'integer' },
   { fieldName: 'bestLapMs', valueType: 'integer' },
+  { fieldName: 'bestLapNumber', valueType: 'integer' },
   { fieldName: 'gapToLeaderMs', valueType: 'integer' },
   { fieldName: 'gapToLeaderLaps', valueType: 'integer' },
   { fieldName: 'intervalMs', valueType: 'integer' },
@@ -268,6 +272,22 @@ function listBracketsPaths(): BindablePath[] {
       'rounds',
       [shapeName, ptBRDataShapes.bracketsFieldLabels.rounds],
       'bracketsRounds',
+    ),
+  ];
+}
+
+/**
+ * Incidents: the whole list only. An incident reaches the air through the event inbox,
+ * which fills the notice from the event (modules/events), not through a binding to "the
+ * 3rd incident", whose place in the list means nothing on screen (BAJAOVRLAY-44).
+ */
+function listIncidentsPaths(): BindablePath[] {
+  const shapeName = ptBRDataShapes.shapeNames.incidents;
+  return [
+    buildPathAtFixedPlace(
+      'entries',
+      [shapeName, ptBRDataShapes.wholeListLabel],
+      'incidentsEntries',
     ),
   ];
 }

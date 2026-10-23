@@ -8,7 +8,7 @@
  *   the shape requires it, and whether it belongs to the whole shape or to each entry.
  *
  * What these tests prove:
- *   - The session, positions and standings lists are fixed, field by field, required
+ *   - The session, positions, standings and incidents lists are fixed, field by field, required
  *     fields first; brackets (a draft shape) offer nothing to map in this PR.
  *   - Every listed field exists in its shape's Zod schema, and is required there exactly
  *     when the list says so.
@@ -21,6 +21,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { IncidentEntrySchema, IncidentsShapeSchema } from '../dataShapes/incidentsShape.js';
 import { PositionEntrySchema, PositionsShapeSchema } from '../dataShapes/positionsShape.js';
 import { SessionShapeSchema } from '../dataShapes/sessionShape.js';
 import { StandingsEntrySchema, StandingsShapeSchema } from '../dataShapes/standingsShape.js';
@@ -153,6 +154,12 @@ describe('listMappableFieldsOfShape', () => {
       { targetField: 'lastLapMs', label: 'Última volta', isRequired: false, level: 'entry' },
       { targetField: 'bestLapMs', label: 'Melhor volta', isRequired: false, level: 'entry' },
       {
+        targetField: 'bestLapNumber',
+        label: 'Volta da melhor volta',
+        isRequired: false,
+        level: 'entry',
+      },
+      {
         targetField: 'gapToLeaderMs',
         label: 'Diferença para o líder (tempo)',
         isRequired: false,
@@ -198,6 +205,44 @@ describe('listMappableFieldsOfShape', () => {
     ]);
   });
 
+  it('lists the incidents fields, the whole shape first, then each incident, required first', () => {
+    // Arrange: nothing to set up; the list is fixed in code.
+
+    // Act: ask for the incidents fields.
+    const incidentsFields = listMappableFieldsOfShape('incidents');
+
+    // Assert: exactly these, in this order: what the Baja app (BAJAOVRLAY-18) must send
+    // for a penalty to reach the inbox, then what makes the notice richer.
+    expect(incidentsFields, 'the incidents fields must be this fixed list').toEqual([
+      {
+        targetField: 'sessionId',
+        label: 'Identificador da sessão',
+        isRequired: true,
+        level: 'topLevel',
+      },
+      {
+        targetField: 'updatedAtMs',
+        label: 'Momento da atualização',
+        isRequired: true,
+        level: 'topLevel',
+      },
+      {
+        targetField: 'incidentId',
+        label: 'Identificador da ocorrência',
+        isRequired: true,
+        level: 'entry',
+      },
+      { targetField: 'carNumber', label: 'Carro', isRequired: true, level: 'entry' },
+      { targetField: 'teamName', label: 'Equipe', isRequired: true, level: 'entry' },
+      { targetField: 'schoolName', label: 'Escola', isRequired: true, level: 'entry' },
+      { targetField: 'kind', label: 'Tipo', isRequired: true, level: 'entry' },
+      { targetField: 'reason', label: 'Motivo', isRequired: true, level: 'entry' },
+      { targetField: 'penaltyText', label: 'Punição', isRequired: false, level: 'entry' },
+      { targetField: 'lap', label: 'Volta', isRequired: false, level: 'entry' },
+      { targetField: 'atMs', label: 'Momento', isRequired: false, level: 'entry' },
+    ]);
+  });
+
   it('offers nothing to map in the draft brackets shape', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
@@ -229,6 +274,13 @@ describe('the mappable fields match the shape schemas', () => {
       fields: listMappableFieldsOfShape('positions'),
       topLevelSchema: PositionsShapeSchema,
       entrySchema: PositionEntrySchema,
+    },
+    // Incidents: top-level fields in the shape, entry fields in one incident.
+    {
+      name: 'every incidents field exists in its schema, required as listed',
+      fields: listMappableFieldsOfShape('incidents'),
+      topLevelSchema: IncidentsShapeSchema,
+      entrySchema: IncidentEntrySchema,
     },
     // Standings: top-level fields in the shape, entry fields in one team.
     {
@@ -270,6 +322,15 @@ describe('the mappable fields match the shape schemas', () => {
       name: 'every session schema field is mappable',
       fields: listMappableFieldsOfShape('session'),
       schemaFieldNames: listFieldNamesOfSchema(SessionShapeSchema),
+    },
+    // The incidents list is filled by entriesPath, so only the incident's fields count.
+    {
+      name: 'every incidents schema field is mappable',
+      fields: listMappableFieldsOfShape('incidents'),
+      schemaFieldNames: [
+        ...listFieldNamesOfSchema(IncidentsShapeSchema).filter((name) => name !== 'entries'),
+        ...listFieldNamesOfSchema(IncidentEntrySchema),
+      ],
     },
     // The entries list itself is filled by entriesPath, so only the car's fields count.
     {

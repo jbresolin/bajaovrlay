@@ -29,6 +29,11 @@ const purposeNumbers = {
   redFlagChance: 103,
   redFlagMoment: 104,
   redFlagDuration: 105,
+  // Race-wide, per incident of the simulated race direction (the first, the second...).
+  incidentMoment: 106,
+  incidentIsPenalty: 107,
+  incidentCar: 108,
+  incidentReason: 109,
 } as const;
 
 /** The name of one purpose a draw can be for. */

@@ -7,7 +7,7 @@
  *   a path would be offered in the picker and read nothing at the take.
  *
  * What these tests prove:
- *   - For each of the four shapes, every listed path leads to a field of the shape's Zod
+ *   - For each of the five shapes, every listed path leads to a field of the shape's Zod
  *     schema, a number stepping into a list's elements and `entryOfCar` standing for one
  *     element of `entries` (how a car chosen by number is read).
  *
@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { listBindablePathsOfShape } from './bindablePaths.js';
 import { BracketsShapeSchema } from './bracketsShape.js';
 import type { DataShapeKey } from './dataShapeKey.js';
+import { IncidentsShapeSchema } from './incidentsShape.js';
 import { PositionsShapeSchema } from './positionsShape.js';
 import { SessionShapeSchema } from './sessionShape.js';
 import { StandingsShapeSchema } from './standingsShape.js';
@@ -33,6 +34,8 @@ const everyShapeScenarios: Array<{ name: string; shapeKey: DataShapeKey; schema:
   { name: 'the standings', shapeKey: 'standings', schema: StandingsShapeSchema },
   // The draft brackets, with the rounds only.
   { name: 'the brackets', shapeKey: 'brackets', schema: BracketsShapeSchema },
+  // The incidents, with the whole list only.
+  { name: 'the incidents', shapeKey: 'incidents', schema: IncidentsShapeSchema },
 ];
 
 describe('listBindablePathsOfShape against the shape schemas', () => {

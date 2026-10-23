@@ -7,7 +7,7 @@ import { buildShapesFromRaceState } from './shapesFromRaceState.js';
 import { simulateEnduroAt } from './simulateEnduro.js';
 
 // The shapes every simulator poll answers.
-const simulatorShapeKeys: DataShapeKey[] = ['session', 'positions', 'standings'];
+const simulatorShapeKeys: DataShapeKey[] = ['session', 'positions', 'standings', 'incidents'];
 
 /**
  * Simulated time since the green flag at the wall-clock moment `nowMs`: real time since
@@ -51,7 +51,7 @@ export function createSimulatorAdapter(): DataSourceAdapter<SimulatorConfig> {
         },
         elapsedSimulatedMs,
       );
-      const shapes = buildShapesFromRaceState(raceState, nowMs);
+      const shapes = buildShapesFromRaceState(raceState, nowMs, config.simulatedStartAtMs);
       return Promise.resolve({ shapes });
     },
   };

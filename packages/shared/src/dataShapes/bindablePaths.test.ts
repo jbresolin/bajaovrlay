@@ -13,10 +13,11 @@
  *   - The session list is fixed, label by label and type by type, with the whole clock
  *     ("Relógio completo", the clock group) before its four fields.
  *   - Positions offer the whole list, then one car chosen by its number, then the 1st to
- *     10th places, each with the same twelve fields and the same types.
+ *     10th places, each with the same thirteen fields and the same types (the lap of the
+ *     best lap, bestLapNumber, among them since BAJAOVRLAY-44).
  *   - Standings offer the scope, the whole list and the 1st to 10th rows, labelled
  *     "1ª linha", not "1º colocado": tied teams share a rank. Brackets (a draft) offer
- *     only their rounds.
+ *     only their rounds (incidents: incidentsBindablePaths.test.ts).
  *   - No path appears twice within a shape.
  *   - findBindablePath reads one entry back, and answers undefined for a path not listed.
  *
@@ -112,11 +113,11 @@ describe('listBindablePathsOfShape', () => {
   it('lists the whole positions list, then one car chosen by its number, field by field', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
-    // Act: ask for the positions paths and keep the first thirteen.
+    // Act: ask for the positions paths and keep the first fourteen.
     const positionsPaths = listBindablePathsOfShape('positions');
-    const wholeListAndCarChosenByNumber = positionsPaths.slice(0, 13);
+    const wholeListAndCarChosenByNumber = positionsPaths.slice(0, 14);
 
-    // Assert: the whole list first (the tower), then the twelve fields of the car whose
+    // Assert: the whole list first (the tower), then the thirteen fields of the car whose
     // number the binding names (a team card that follows car 42 wherever it runs).
     expect(
       wholeListAndCarChosenByNumber,
@@ -165,6 +166,12 @@ describe('listBindablePathsOfShape', () => {
         isCarChosenByNumber: true,
       },
       {
+        path: 'entryOfCar.bestLapNumber',
+        label: 'Posições › Carro escolhido pelo número › Volta da melhor volta',
+        valueType: 'integer',
+        isCarChosenByNumber: true,
+      },
+      {
         path: 'entryOfCar.gapToLeaderMs',
         label: 'Posições › Carro escolhido pelo número › Diferença para o líder (tempo)',
         valueType: 'integer',
@@ -204,12 +211,12 @@ describe('listBindablePathsOfShape', () => {
   });
 
   it('lists the 1st place with the same fields and types as the car chosen by number', () => {
-    // Arrange: the twelve fields of the car chosen by number, the test above checks them.
+    // Arrange: the thirteen fields of the car chosen by number, the test above checks them.
     const positionsPaths = listBindablePathsOfShape('positions');
-    const carChosenByNumberFields = positionsPaths.slice(1, 13);
+    const carChosenByNumberFields = positionsPaths.slice(1, 14);
 
-    // Act: keep the twelve paths of the 1st place, which follow the car chosen by number.
-    const firstPlaceFields = positionsPaths.slice(13, 25);
+    // Act: keep the thirteen paths of the 1st place, which follow the car chosen by number.
+    const firstPlaceFields = positionsPaths.slice(14, 27);
 
     // Assert: same fields in the same order with the same types, only labelled by place.
     expect(
@@ -227,7 +234,16 @@ describe('listBindablePathsOfShape', () => {
       valueType: 'text',
       isCarChosenByNumber: false,
     });
-    expect(firstPlaceFields[10], 'the refuels of a place are offered as a whole number').toEqual({
+    expect(
+      firstPlaceFields[6],
+      'the lap of the best lap of a place is offered as a whole number',
+    ).toEqual({
+      path: 'entries.0.bestLapNumber',
+      label: 'Posições › 1º colocado › Volta da melhor volta',
+      valueType: 'integer',
+      isCarChosenByNumber: false,
+    });
+    expect(firstPlaceFields[11], 'the refuels of a place are offered as a whole number').toEqual({
       path: 'entries.0.fuelStops',
       label: 'Posições › 1º colocado › Abastecimentos',
       valueType: 'integer',
@@ -235,14 +251,14 @@ describe('listBindablePathsOfShape', () => {
     });
   });
 
-  it('stops the positions at the 10th place, with twelve fields per place', () => {
+  it('stops the positions at the 10th place, with thirteen fields per place', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
     // Act: ask for the positions paths.
     const positionsPaths = listBindablePathsOfShape('positions');
 
-    // Assert: the whole list, the car by number and 10 places, all of 12 fields.
-    expect(positionsPaths, 'positions must offer 1 + 12 + 10 × 12 paths').toHaveLength(133);
+    // Assert: the whole list, the car by number and 10 places, all of 13 fields.
+    expect(positionsPaths, 'positions must offer 1 + 13 + 10 × 13 paths').toHaveLength(144);
     expect(positionsPaths.at(-1), 'the last path must be the 10th place status').toEqual({
       path: 'entries.9.status',
       label: 'Posições › 10º colocado › Situação',
@@ -333,6 +349,8 @@ describe('listBindablePathsOfShape', () => {
     { name: 'the standings', shapeKey: 'standings' },
     // The draft has a single path; this row keeps it honest when BAJAOVRLAY-25 adds more.
     { name: 'the brackets', shapeKey: 'brackets' },
+    // A single path too; this row keeps it honest when a penalty board needs more.
+    { name: 'the incidents', shapeKey: 'incidents' },
   ];
 
   it.each(everyShapeScenarios)('never lists a path of $name twice', ({ shapeKey }) => {

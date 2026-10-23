@@ -74,6 +74,7 @@ export function findSourceValueKindOfBinding(binding: BindingFieldValue): Source
     case 'positionsEntries':
     case 'standingsEntries':
     case 'bracketsRounds':
+    case 'incidentsEntries':
       return 'list';
     case 'text':
     case undefined:

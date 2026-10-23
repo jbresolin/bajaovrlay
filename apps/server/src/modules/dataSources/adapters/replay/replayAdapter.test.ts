@@ -311,7 +311,7 @@ describe('the replay adapter, reading recordings', () => {
 });
 
 describe('the replay adapter, described', () => {
-  it('may produce all four shapes and checks configs with the shared schema', () => {
+  it('may produce all five shapes and checks configs with the shared schema', () => {
     // Arrange: a replay adapter.
     const replayAdapter = createReplayAdapter({
       recordingsFolder: createTemporaryRecordingsFolder(),
@@ -320,13 +320,14 @@ describe('the replay adapter, described', () => {
     // Act: ask which shapes a replay of Friday produces.
     const producedShapes = replayAdapter.listProducedShapes(buildFridayReplayConfig(1));
 
-    // Assert: all four (which ones the recording holds is only known once it is read),
+    // Assert: all five (which ones the recording holds is only known once it is read),
     // and the shared schema, the same one the page's form uses (D4).
-    expect(producedShapes, 'a replay may produce any of the four shapes').toEqual([
+    expect(producedShapes, 'a replay may produce any of the five shapes').toEqual([
       'session',
       'positions',
       'standings',
       'brackets',
+      'incidents',
     ]);
     expect(replayAdapter.kind, 'the adapter must be the replay kind').toBe('replay');
     expect(replayAdapter.configSchema, 'the config schema must be the shared one').toBe(

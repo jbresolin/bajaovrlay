@@ -1,9 +1,16 @@
-// The three canonical shapes the simulator answers, built from the race state of one
-// moment: session (flag and clock), positions (order and gaps) and overall standings.
-import type { PositionsShape, SessionShape, StandingsShape } from '@bajaovrlay/shared';
+// The four canonical shapes the simulator answers, built from the race state of one
+// moment: session (flag and clock), positions (order and gaps), overall standings and
+// the incidents of the simulated race direction.
+import type {
+  IncidentsShape,
+  PositionsShape,
+  SessionShape,
+  StandingsShape,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '../../../../core/messages/ptBR.js';
 import { buildPositionEntriesInRaceOrder, orderCarsByRacePosition } from './raceOrder.js';
+import { buildSimulatedIncidents } from './simulatedIncidents.js';
 import type { CarRaceState, EnduroRaceState } from './simulateEnduro.js';
 import { buildOverallStandings } from './standingsFromRaceState.js';
 
@@ -12,18 +19,20 @@ export type SimulatedShapes = {
   session: SessionShape;
   positions: PositionsShape;
   standings: StandingsShape;
+  incidents: IncidentsShape;
 };
 
 /**
- * Builds the session, positions and overall standings of the race state, dated `nowMs`
- * (the server's wall clock at the poll).
+ * Builds the session, positions, overall standings and incidents of the race state,
+ * dated `nowMs` (the server's wall clock at the poll). `simulatedStartAtMs` is the
+ * wall-clock moment the race started, when it has one; it names the session.
  */
 export function buildShapesFromRaceState(
   raceState: EnduroRaceState,
   nowMs: number,
+  simulatedStartAtMs?: number,
 ): SimulatedShapes {
-  // One session id per seed: two simulators with different seeds are different races.
-  const sessionId = `simulador-enduro-${String(raceState.settings.seed)}`;
+  const sessionId = buildSimulatedSessionId(raceState.settings.seed, simulatedStartAtMs);
   const orderedCars = orderCarsByRacePosition(
     reportStatusesAsFinishersOnceTheSessionIsFinished(raceState),
   );
@@ -37,7 +46,23 @@ export function buildShapesFromRaceState(
       entries: buildPositionEntriesInRaceOrder(orderedCars),
     },
     standings: buildOverallStandings(raceState, nowMs),
+    incidents: buildSimulatedIncidents(raceState, sessionId, nowMs),
   };
+}
+
+/**
+ * One session id per race: the seed and the moment the race started. Two simulators with
+ * different seeds are different races, and so is the same seed after "Reiniciar corrida"
+ * (BAJAOVRLAY-44): the event inbox keys a fastest lap or a leader change by the session,
+ * so the 3rd lap of a restarted race is a new event and not one already shown. A race
+ * that never started is named by its seed alone.
+ */
+function buildSimulatedSessionId(seed: number, simulatedStartAtMs: number | undefined): string {
+  const seedPart = `simulador-enduro-${String(seed)}`;
+  if (simulatedStartAtMs === undefined) {
+    return seedPart;
+  }
+  return `${seedPart}-${String(simulatedStartAtMs)}`;
 }
 
 /**
