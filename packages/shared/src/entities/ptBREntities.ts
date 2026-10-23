@@ -95,6 +95,10 @@ export const ptBREntities = {
     person: (name: string, role: string) => `${name} (${role})`,
     sponsor: (name: string) => `Patrocinador ${name}`,
     scheduleSlot: (sessionName: string) => `Programação: ${sessionName}`,
+    // Not records, but places an image is used in (gate 2 of PR #23).
+    item: (itemLabel: string) => `Item "${itemLabel}"`,
+    instanceOnAir: (layerId: string) => `No ar, camada ${layerId}`,
+    instanceInPreview: (layerId: string) => `Em prévia, camada ${layerId}`,
   },
 
   /**

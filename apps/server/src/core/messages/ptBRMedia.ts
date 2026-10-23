@@ -20,7 +20,7 @@ export const ptBRMediaErrors = {
     `${fieldLabel}: a imagem não está no servidor; envie-a de novo.`,
   /** deleteMedia of an image some records still use, each named with its field. */
   mediaInUse: (fileName: string, uses: string[]) =>
-    `A imagem "${fileName}" é usada por: ${uses.join('; ')}. Troque ou remova a imagem nesses cadastros antes de excluí-la.`,
+    `A imagem "${fileName}" é usada por: ${uses.join('; ')}. Troque ou remova a imagem onde ela é usada antes de excluí-la.`,
   /** One use in that list: "Equipe 42 (Baja UFPR) › Logo". */
   oneUse: (recordDescription: string, fieldLabel: string) => `${recordDescription} › ${fieldLabel}`,
 };

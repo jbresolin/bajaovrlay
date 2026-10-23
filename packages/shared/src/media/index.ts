@@ -31,4 +31,5 @@ export {
   listMediaFieldsOfRecord,
   type MediaFieldOfRecord,
   type MediaUse,
+  type PlacesThatUseMedia,
 } from './mediaReferences.js';

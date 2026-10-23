@@ -10,15 +10,17 @@ const texts = ptBR.entityLibrary.media;
 /**
  * The images of the media store, above the tabs: how many and the folder's size (the
  * data-folder growth the USB backup will copy), and "Limpar imagens sem uso", which sends
- * deleteMedia for each image no team, person or sponsor names (the server refuses one
- * still in use anyway). The button is there only while some image can be cleaned.
+ * deleteMedia for each image nothing uses: no record, no item, nothing on air or in
+ * preview (the server refuses one still in use anyway). The button is there only while some image can be cleaned.
  */
 export function MediaFolderSummary() {
   const media = useServerState((state) => state.media);
   const library = useEntityLibrary();
+  const items = useServerState((state) => state.items);
+  const instances = useServerState((state) => state.instances);
   const sendCommand = useSendCommand();
 
-  const unusedMediaIds = listUnusedMediaIds(media, library);
+  const unusedMediaIds = listUnusedMediaIds(media, { ...library, items, instances });
   return (
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <span title={texts.sizeHint}>{texts.summary(media.length, writeMediaFolderSize(media))}</span>

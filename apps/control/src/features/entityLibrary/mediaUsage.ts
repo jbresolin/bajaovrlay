@@ -1,4 +1,4 @@
-import { type EntityLibrary, findUsesOfMedia, type Media } from '@bajaovrlay/shared';
+import { findUsesOfMedia, type Media, type PlacesThatUseMedia } from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -9,13 +9,15 @@ const megabytesInPortuguese = new Intl.NumberFormat('pt-BR', {
 });
 
 /**
- * The ids of the images no team, person or sponsor names any more: what "Limpar imagens
- * sem uso" deletes. An image "Remover" took off a record stays in the store until then,
- * so a removal by mistake is undone with "Trocar" and the same file.
+ * The ids of the images nothing uses: no team, person or sponsor names it, no item holds
+ * its address, no instance on air or in preview shows it (the server's own check before
+ * deleteMedia, findUsesOfMedia). What "Limpar imagens sem uso" deletes. An image
+ * "Remover" took off a record stays in the store until then, so a removal by mistake is
+ * undone with "Trocar" and the same file.
  */
-export function listUnusedMediaIds(media: Media, library: EntityLibrary): string[] {
+export function listUnusedMediaIds(media: Media, places: PlacesThatUseMedia): string[] {
   return media
-    .filter((mediaRecord) => findUsesOfMedia(library, mediaRecord.mediaId).length === 0)
+    .filter((mediaRecord) => findUsesOfMedia(places, mediaRecord.mediaId).length === 0)
     .map((mediaRecord) => mediaRecord.mediaId);
 }
 
