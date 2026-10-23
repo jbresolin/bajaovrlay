@@ -154,6 +154,8 @@ describe('the rundowns and items on a database written before they existed (M0)'
       macros: '2026-10-10T07:30:00.000Z',
       // Seeded at the first boot (BAJAOVRLAY-17), off, so a later boot leaves it alone.
       dataSources: '2026-10-09T08:00:00.000Z',
+      // The default event rules, seeded at the first boot too (BAJAOVRLAY-44).
+      eventRules: '2026-10-09T08:00:00.000Z',
     });
   });
 });

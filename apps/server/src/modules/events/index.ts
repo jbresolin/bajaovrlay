@@ -1,0 +1,17 @@
+// Public surface of the event inbox module (BAJAOVRLAY-44). Core and other modules import
+// from here, never from the files inside.
+
+// Sends each inbox command (showEvent, dismissEvent, createManualEvent, updateEventRule,
+// recordDetectedEvents) to its reducer; core's reduceCommand calls it.
+export { type EventInboxCommand, reduceEventInboxCommand } from './reducers/reduceEventCommand.js';
+// Moves events on and off the air with the program instances carrying them; core's
+// reduceCommand calls it after every command that changed the instances.
+export { followEventsOfProgramInstances } from './reducers/eventsOfInstancesBookkeeping.js';
+// Loads the events and the rules at boot, seeding the default rules when missing.
+export { type EventInboxSlicesAtBoot, loadOrSeedEventInboxSlices } from './loadEventInboxSlices.js';
+// Starts the event detection with the server; stop() when it closes.
+export {
+  type EventInboxService,
+  type EventInboxServiceOptions,
+  startEventInboxService,
+} from './service.js';

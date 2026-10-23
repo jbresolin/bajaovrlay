@@ -145,6 +145,8 @@ empty list, so a source of a kind it does not know cannot make it refuse its `he
     "dataSources": [],
     "dataSnapshots": [],
     "recordings": [],
+    "events": [],
+    "eventRules": [],
     "eventLog": []
   },
   "serverNowMs": 1791550800000,

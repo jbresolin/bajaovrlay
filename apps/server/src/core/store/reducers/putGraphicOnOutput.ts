@@ -39,6 +39,12 @@ export type GraphicOnOutputRequest = {
    * instance without one.
    */
   itemId: string;
+  /**
+   * Only when an event is shown (or previewed) with this item: the event's id and its
+   * rule's duration on air, written on the new instance (BAJAOVRLAY-44).
+   */
+  eventId?: string;
+  autoOutAfterMs?: number;
 };
 
 /**
@@ -132,6 +138,12 @@ export function putGraphicOnOutput(
   // program instance never carries the mark.
   if (isPreview) {
     newInstance.previewOrigin = 'manual';
+  }
+  if (request.eventId !== undefined) {
+    newInstance.eventId = request.eventId;
+  }
+  if (request.autoOutAfterMs !== undefined) {
+    newInstance.autoOutAfterMs = request.autoOutAfterMs;
   }
   const instancesKept = slices.instances.filter((instance) => {
     const isOnTheSameLayerAndOutput =

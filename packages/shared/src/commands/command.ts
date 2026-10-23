@@ -11,6 +11,13 @@ import { SetDataSourceEnabledCommandSchema } from '../dataSources/setDataSourceE
 import { StartRecordingCommandSchema } from '../dataSources/startRecording.js';
 import { StopRecordingCommandSchema } from '../dataSources/stopRecording.js';
 import { UpdateDataSourceCommandSchema } from '../dataSources/updateDataSource.js';
+import {
+  CreateManualEventCommandSchema,
+  DismissEventCommandSchema,
+  RecordDetectedEventsCommandSchema,
+  ShowEventCommandSchema,
+  UpdateEventRuleCommandSchema,
+} from '../eventInbox/eventCommands.js';
 import { CreateMacroCommandSchema } from '../macros/createMacro.js';
 import { DeleteMacroCommandSchema } from '../macros/deleteMacro.js';
 import {
@@ -110,6 +117,13 @@ export const CommandSchema = z.discriminatedUnion('type', [
   // Overrides (BAJAOVRLAY-20); ../overrides/. Operators only.
   SetOverrideCommandSchema,
   ClearOverrideCommandSchema,
+  // The event inbox (BAJAOVRLAY-44); ../eventInbox/. recordDetectedEvents is sent only by
+  // the server's event detection (sistema:eventos), which may also send showEvent.
+  ShowEventCommandSchema,
+  DismissEventCommandSchema,
+  CreateManualEventCommandSchema,
+  UpdateEventRuleCommandSchema,
+  RecordDetectedEventsCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

@@ -158,6 +158,8 @@ describe('loadInitialSlices on an empty database', () => {
       ['macros', '2026-10-09T08:00:00.000Z'],
       // The seeded simulator since BAJAOVRLAY-17; modules/dataSources covers it.
       ['dataSources', '2026-10-09T08:00:00.000Z'],
+      // The default event rules since BAJAOVRLAY-44; modules/events covers them.
+      ['eventRules', '2026-10-09T08:00:00.000Z'],
     ]);
     expect(slices.instances, 'nothing is on air on the first boot').toEqual([]);
   });

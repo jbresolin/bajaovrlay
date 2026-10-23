@@ -1,4 +1,5 @@
 import { ptBRBindingErrors } from './ptBRBindings.js';
+import { ptBREventErrors } from './ptBREvents.js';
 
 /**
  * pt-BR catalog for every message the server sends to people (error answers the
@@ -93,6 +94,8 @@ export const ptBR = {
   },
   // Refusals about item fields read from a data source (BAJAOVRLAY-20); see ptBRBindings.ts.
   bindingErrors: ptBRBindingErrors,
+  // Refusals about the event inbox (BAJAOVRLAY-44); see ptBREvents.ts.
+  eventErrors: ptBREventErrors,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
   // each goes with a stable code. The layer is named as the operator reads it.
   onAirChangeErrors: {

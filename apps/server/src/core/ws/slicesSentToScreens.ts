@@ -49,6 +49,8 @@ export function buildSlicesForAScreen(slices: Slices): Slices {
     dataSnapshots: [],
     overrides: [],
     recordings: [],
+    events: [],
+    eventRules: [],
     eventLog: [],
   };
 }

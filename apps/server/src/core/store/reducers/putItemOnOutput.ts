@@ -1,4 +1,4 @@
-import type { CommandError, InstanceTarget, Item } from '@bajaovrlay/shared';
+import type { CommandError, InboxEventPayload, InstanceTarget, Item } from '@bajaovrlay/shared';
 
 import { listKeysOfTakeTimeFields } from '../itemTakeTimeFields.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
@@ -9,6 +9,16 @@ import {
 } from './instanceBindingsBookkeeping.js';
 import { type GraphicOnOutputRequest, putGraphicOnOutput } from './putGraphicOnOutput.js';
 import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
+
+/**
+ * An event shown with an item (showEvent, BAJAOVRLAY-44): its id and payload, and how long
+ * its rule keeps it on air.
+ */
+export type EventShownWithItem = {
+  eventId: string;
+  payload: InboxEventPayload;
+  autoOutAfterMs: number;
+};
 
 /**
  * What putting an item on an output gives: the new slices and the item that was put
@@ -29,13 +39,15 @@ export type ItemOnOutputOutcome =
  * live ones, on preview all of them). It never touches the cursor; that is the caller's
  * decision.
  * Refused if the item does not exist, if a field cannot be resolved, or for any reason
- * putGraphicOnOutput refuses; nothing changes then.
+ * putGraphicOnOutput refuses; nothing changes then. With `eventShown`, the new instance
+ * carries the event's id and its rule's duration (showEvent).
  */
 export function putItemOnOutput(
   slices: SlicesChangedByCommands,
   itemId: string,
   target: InstanceTarget,
   context: ReducerContext,
+  eventShown?: EventShownWithItem,
 ): ItemOnOutputOutcome {
   const item = slices.items.find((candidate) => candidate.id === itemId);
   if (item === undefined) {
@@ -76,6 +88,10 @@ export function putItemOnOutput(
     takeTimeFieldKeys: keysOfTakeTimeFields,
     itemId: item.id,
   };
+  if (eventShown !== undefined) {
+    takeOfTheItemGraphic.eventId = eventShown.eventId;
+    takeOfTheItemGraphic.autoOutAfterMs = eventShown.autoOutAfterMs;
+  }
   const takeOutcome = putGraphicOnOutput(slices, takeOfTheItemGraphic, context);
   if (takeOutcome.status === 'refused') {
     return takeOutcome;

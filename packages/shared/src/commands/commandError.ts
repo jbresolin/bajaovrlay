@@ -94,6 +94,15 @@ export const CommandErrorCodeSchema = z.enum([
   'BINDING_NOT_RESOLVED',
   /** setOverride carried a value its canonical field cannot hold; the message names the field. */
   'INVALID_OVERRIDE_VALUE',
+  /** showEvent or dismissEvent named an event the inbox does not hold (BAJAOVRLAY-44). */
+  'EVENT_NOT_FOUND',
+  /**
+   * showEvent or dismissEvent named an event that is no longer waiting: already on air,
+   * shown, dismissed or expired. The message says which.
+   */
+  'EVENT_NOT_WAITING',
+  /** showEvent named an event whose rule has no item to show it with ("Regras"). */
+  'EVENT_RULE_WITHOUT_ITEM',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

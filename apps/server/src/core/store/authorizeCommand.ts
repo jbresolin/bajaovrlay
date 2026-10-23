@@ -3,6 +3,7 @@ import type { Command } from '@bajaovrlay/shared';
 import {
   bindingRefresherActor,
   dataSourceRecorderActor,
+  eventInboxActor,
   isMonitorActor,
   isRendererActor,
   isSystemActor,
@@ -47,6 +48,10 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  * - the refresher of bound fields (`sistema:vinculos`) may only send
  *   refreshBoundInstanceData, the new values of an instance's live bound fields after its
  *   source's data changed, and nobody else may send that (BAJAOVRLAY-20);
+ * - the event inbox's detection and runner (`sistema:eventos`) may only record the events
+ *   it detected (recordDetectedEvents), which nobody else may send, and show an event
+ *   (showEvent): it never dismisses, types, changes a rule or takes anything else
+ *   (BAJAOVRLAY-44);
  * - every other server timer (`sistema:`, today the auto-out) may only clear one layer:
  *   a bug in a timer must never be able to put a graphic on air or empty the screen;
  * - every other actor (an operator) may send everything else, except the runner's
@@ -55,7 +60,8 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   poll results and a recording's progress, so no page can fake race data or a count,
  *   except a stopRecording that carries a failureMessage: only the recorder says why
  *   a recording failed (gate 2 on PR #16), and except refreshBoundInstanceData: a value
- *   typed over a live field is a correction, made with setOverride.
+ *   typed over a live field is a correction, made with setOverride, and except
+ *   recordDetectedEvents: no page may fake a race event.
  * The role comes from the address the connection chose (`/ws?role=renderer`,
  * `/ws?role=monitor`), so this keeps honest pages in their lane; it is not a defence
  * against a hostile client.
@@ -68,6 +74,7 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
     command.type === 'advanceMacroRun' || command.type === 'endMacroRun';
   const isPollResult = command.type === 'recordDataSourcePoll';
   const isRefreshOfBoundFields = command.type === 'refreshBoundInstanceData';
+  const isRecordOfDetectedEvents = command.type === 'recordDetectedEvents';
   const isRecorderBookkeeping =
     command.type === 'recordRecordingProgress' ||
     (command.type === 'stopRecording' && command.failureMessage !== undefined);
@@ -91,6 +98,9 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   if (actor === bindingRefresherActor) {
     return isRefreshOfBoundFields;
   }
+  if (actor === eventInboxActor) {
+    return isRecordOfDetectedEvents || command.type === 'showEvent';
+  }
   if (actor === dataSourceRecorderActor) {
     return command.type === 'stopRecording' || command.type === 'recordRecordingProgress';
   }
@@ -102,7 +112,8 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
     !isMacroRunBookkeeping &&
     !isPollResult &&
     !isRecorderBookkeeping &&
-    !isRefreshOfBoundFields
+    !isRefreshOfBoundFields &&
+    !isRecordOfDetectedEvents
   );
 };
 

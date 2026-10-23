@@ -5,6 +5,8 @@ import { CommandErrorSchema } from '../commands/commandError.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
+import { EventRulesSchema } from '../eventInbox/eventRule.js';
+import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { OverridesSchema } from '../overrides/override.js';
@@ -128,6 +130,18 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('recordings'),
     slice: z.array(RecordingSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('events'),
+    slice: InboxEventsSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('eventRules'),
+    slice: EventRulesSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({

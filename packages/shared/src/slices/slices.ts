@@ -4,6 +4,8 @@ import { InstanceBindingsSchema } from '../bindings/instanceBindings.js';
 import { DataSnapshotSchema } from '../dataSources/dataSnapshot.js';
 import { DataSourceSchema } from '../dataSources/dataSource.js';
 import { RecordingSchema } from '../dataSources/recording.js';
+import { EventRulesSchema } from '../eventInbox/eventRule.js';
+import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { OverridesSchema } from '../overrides/override.js';
@@ -32,6 +34,8 @@ export const SliceNameSchema = z.enum([
   'dataSnapshots',
   'overrides',
   'recordings',
+  'events',
+  'eventRules',
   'eventLog',
 ]);
 
@@ -89,6 +93,13 @@ export const SlicesSchema = z.object({
    * from the recordings folder at boot.
    */
   recordings: z.array(RecordingSchema),
+  /**
+   * The event inbox (BAJAOVRLAY-44): the newest 200 events detected in the sources' data
+   * or typed by the operator, each with its status. Saved; screens never receive it.
+   */
+  events: InboxEventsSchema,
+  /** One rule per kind of event: ask, auto or ignore, and the item that shows it. Saved. */
+  eventRules: EventRulesSchema,
   /** The newest entries of the event log only; the database keeps every entry. */
   eventLog: z.array(EventLogEntrySchema),
 });

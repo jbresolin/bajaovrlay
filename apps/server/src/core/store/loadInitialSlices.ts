@@ -4,6 +4,7 @@ import {
   loadOrSeedDataSourceSlices,
   readRecordingsFromFolder,
 } from '../../modules/dataSources/index.js';
+import { loadOrSeedEventInboxSlices } from '../../modules/events/index.js';
 import { writeBootRows } from '../db/bootRowStorage.js';
 import { readAllDataSnapshotRows } from '../db/dataSnapshotRowStorage.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
@@ -133,6 +134,9 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     options.logger,
   );
+  // The event inbox's events and rules (BAJAOVRLAY-44): loaded, the rules seeded when
+  // their row is missing; see modules/events/loadEventInboxSlices.ts.
+  const eventInboxSlices = loadOrSeedEventInboxSlices(storedRows, updatedAt, options.logger);
   const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
   writeBootRows(options.database, {
     sliceRowsToWrite: [
@@ -140,6 +144,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
       ...rundownSlices.rowsToSaveAtBoot,
       ...quickFireAndMacroSlices.rowsToSaveAtBoot,
       ...dataSourceSlices.rowsToSaveAtBoot,
+      ...eventInboxSlices.rowsToSaveAtBoot,
     ],
     sliceRowNamesToDelete: dataSourceSlices.sliceRowNamesToDeleteAtBoot,
     dataSnapshotRowChanges: dataSourceSlices.dataSnapshotRowChangesAtBoot,
@@ -193,6 +198,8 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     // Rebuilt from the recordings folder at every boot, every recording closed (D13);
     // never saved in the database: the files are the truth.
     recordings: readRecordingsAtBoot(options, dataSourceSlices.dataSources),
+    events: eventInboxSlices.events,
+    eventRules: eventInboxSlices.eventRules,
   };
 }
 

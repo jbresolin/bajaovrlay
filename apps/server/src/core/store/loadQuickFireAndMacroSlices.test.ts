@@ -135,6 +135,8 @@ describe('the quick-fire panels and macros on a database written before they exi
       macros: '2026-10-16T07:30:00.000Z',
       // Seeded at the first boot (BAJAOVRLAY-17), off, so a later boot leaves it alone.
       dataSources: '2026-10-09T08:00:00.000Z',
+      // The default event rules, seeded at the first boot too (BAJAOVRLAY-44).
+      eventRules: '2026-10-09T08:00:00.000Z',
     });
   });
 });

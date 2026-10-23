@@ -112,6 +112,8 @@ function buildRaceMorningStateWithOnePreparedItem() {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    events: [],
+    eventRules: [],
     eventLog: [],
   };
 }

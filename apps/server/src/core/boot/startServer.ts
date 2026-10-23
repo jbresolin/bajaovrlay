@@ -9,6 +9,7 @@ import {
   type SourceHostAllowlist,
   startDataSourceService,
 } from '../../modules/dataSources/index.js';
+import { startEventInboxService } from '../../modules/events/index.js';
 import { readBuildId } from '../../readBuildId.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
@@ -125,6 +126,9 @@ async function startServingFromDatabase(
   // Started before the sources poll, so the first poll after a restart already refreshes
   // the bound fields of what was on air (BAJAOVRLAY-20).
   const bindingService = startBindingService({ stateStore, logger: options.logger });
+  // Started before the sources poll too, so the first poll after a restart is seen as the
+  // baseline and nothing that happened before it is replayed (BAJAOVRLAY-44).
+  const eventInboxService = startEventInboxService({ stateStore, logger: options.logger });
   // Sources left on before a restart start polling again at once; unlike a macro, a
   // source that is on is meant to keep running.
   const dataSourceService = startDataSourceService({
@@ -137,6 +141,7 @@ async function startServingFromDatabase(
   function stopTheServerActors(): void {
     dataSourceService.stop();
     bindingService.stop();
+    eventInboxService.stop();
     autoOutScheduler.stop();
     macroRunner.stop();
   }
