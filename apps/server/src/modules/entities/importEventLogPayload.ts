@@ -39,3 +39,28 @@ function readKeysOfImportedRecords(command: ImportEntitiesCommand): Array<number
       return command.records.map((slot) => slot.slotId);
   }
 }
+
+/** The payload of the failed row of an import its schema refused: no record at all. */
+export type InvalidImportEventLogPayload = {
+  type: 'importEntities';
+  entityType: unknown;
+  recordCount: number;
+};
+
+/**
+ * Trims an import the command schema refused for its failed event-log row: its type, the
+ * entityType as it was sent (it may be wrong; it is why the import failed) and how many
+ * records it carried, never the records. A refused import of a thousand teams would
+ * otherwise sit whole in the eventLog slice (gate 2 of PR #23), as a malformed poll's
+ * shapes would (trimInvalidPollForTheEventLog).
+ */
+export function trimInvalidImportForTheEventLog(
+  commandInput: Record<string, unknown>,
+): InvalidImportEventLogPayload {
+  const records = commandInput.records;
+  return {
+    type: 'importEntities',
+    entityType: commandInput.entityType,
+    recordCount: Array.isArray(records) ? records.length : 0,
+  };
+}

@@ -4,7 +4,10 @@ import {
   trimInvalidPollForTheEventLog,
   trimPollCommandForTheEventLog,
 } from '../../modules/dataSources/index.js';
-import { trimImportForTheEventLog } from '../../modules/entities/index.js';
+import {
+  trimImportForTheEventLog,
+  trimInvalidImportForTheEventLog,
+} from '../../modules/entities/index.js';
 
 // What an event-log row stores for a command: its name and its payload, for a valid
 // command, an invalid one and a data-source poll (whose shapes are left out). Used by the
@@ -15,16 +18,21 @@ import { trimImportForTheEventLog } from '../../modules/entities/index.js';
  * marker when nothing was. event_log.payload is NOT NULL and Drizzle writes a JS null as
  * SQL NULL, so storing null or undefined would make the save throw and lose the row.
  * An invalid data-source poll keeps only its type and sourceId, so a malformed one
- * carrying 60 cars of shapes does not land in the eventLog slice (gate 2 on PR #16).
+ * carrying 60 cars of shapes does not land in the eventLog slice (gate 2 on PR #16), and
+ * an invalid entity import only its type, entityType and record count (gate 2 of PR #23).
  */
 export function describePayloadAsReceived(commandInput: unknown): unknown {
   if (commandInput === null || commandInput === undefined) {
     return { commandWasMissing: true };
   }
   const isObject = typeof commandInput === 'object';
-  const isPoll = readCommandNameAsSent(commandInput) === 'recordDataSourcePoll';
-  if (isObject && isPoll) {
+  const commandName = readCommandNameAsSent(commandInput);
+  if (isObject && commandName === 'recordDataSourcePoll') {
     return trimInvalidPollForTheEventLog(commandInput as Record<string, unknown>);
+  }
+  // An invalid import keeps its type, kind and count: never a thousand records in the log.
+  if (isObject && commandName === 'importEntities') {
+    return trimInvalidImportForTheEventLog(commandInput as Record<string, unknown>);
   }
   return commandInput;
 }

@@ -18,6 +18,8 @@
  *   - A schedule line reads "14/11/2026 10:00" and "2026-11-14 10:00" in the computer's
  *     time, and refuses a start it cannot read.
  *   - A file missing a required column, and one with only the header, say so.
+ *   - A file of 1001 lines, more than one import may carry, says so and imports nothing
+ *     (gate 2 of PR #23).
  *
  * What these tests deliberately do not cover:
  *   - Splitting the text into cells; csvText.test.ts.
@@ -273,5 +275,28 @@ describe('a file the preview cannot read', () => {
     expect(preview.problemOfTheFile, 'nothing after the header').toBe(
       'O CSV não tem linhas depois da primeira (a dos nomes das colunas).',
     );
+  });
+
+  it('says a file of 1001 lines is more than one import may carry, and imports nothing', () => {
+    // Arrange: 1001 teams, one over the cap.
+    const lines = Array.from(
+      { length: 1001 },
+      (_, index) => `${String(index + 1)};Equipe ${String(index + 1)};UFPR;Curitiba;PR`,
+    );
+    const csv = `carro;equipe;escola;cidade;uf\n${lines.join('\n')}\n`;
+
+    // Act: build the preview.
+    const preview = buildCsvImportPreview(
+      'team',
+      csv,
+      buildLibraryWithTeam42AndTheNarrator(),
+      createPredictableIdMaker(),
+    );
+
+    // Assert: a problem of the whole file, and nothing to send.
+    expect(preview.problemOfTheFile, 'the cap is named').toBe(
+      'O CSV tem 1001 linhas; uma importação leva no máximo 1000. Divida o arquivo em partes.',
+    );
+    expect(listRecordsToImport(preview), 'nothing to import').toBeUndefined();
   });
 });

@@ -11,3 +11,8 @@ export { getSimulatorTeamsRoute } from './api.js';
 export { buildSimulatorTeamsAsEntities, simulatorTeamsNotice } from './simulatorTeams.js';
 // The payload of an import's event-log row: the type, the count and the keys.
 export { type ImportEventLogPayload, trimImportForTheEventLog } from './importEventLogPayload.js';
+// The payload of the failed row of an import its schema refused: type, kind as sent, count.
+export {
+  type InvalidImportEventLogPayload,
+  trimInvalidImportForTheEventLog,
+} from './importEventLogPayload.js';

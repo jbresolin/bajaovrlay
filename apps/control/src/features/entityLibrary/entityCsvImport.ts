@@ -1,4 +1,9 @@
-import { type EntityLibrary, type EntityType, ptBREntities } from '@bajaovrlay/shared';
+import {
+  type EntityLibrary,
+  type EntityType,
+  mostRecordsInOneImport,
+  ptBREntities,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -49,7 +54,8 @@ export type CsvImportPreview = {
  * no id gets one from `makeNewId`), "atualiza" (a key it has; the record's images are
  * kept, since a CSV never carries one) or "erro" with the shared schema's pt-BR reason,
  * or "O carro 42 aparece duas vezes." for a key an earlier line already used. A missing
- * required column, or a file with only the header, is a problem of the whole file.
+ * required column, a file with only the header, and a file of more lines than one import
+ * may carry (mostRecordsInOneImport) are problems of the whole file.
  * Columns it does not know are ignored. Pure: it sends nothing.
  */
 export function buildCsvImportPreview(
@@ -73,6 +79,11 @@ export function buildCsvImportPreview(
   }
   if (lineRows.length === 0) {
     return { entityType, rows: [], problemOfTheFile: csvTexts.noRowsAfterTheHeader };
+  }
+  // The server refuses an import of more records; said here, before a line is read.
+  if (lineRows.length > mostRecordsInOneImport) {
+    const problemOfTheFile = csvTexts.tooManyLines(lineRows.length, mostRecordsInOneImport);
+    return { entityType, rows: [], problemOfTheFile };
   }
 
   const keyField = readKeyFieldOfEntityType(entityType);

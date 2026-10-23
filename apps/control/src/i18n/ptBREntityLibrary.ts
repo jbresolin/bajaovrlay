@@ -124,6 +124,8 @@ export const ptBREntityLibrary = {
     closeButton: 'Fechar',
     missingColumn: (columnName: string) => `Falta a coluna "${columnName}" na primeira linha.`,
     noRowsAfterTheHeader: 'O CSV não tem linhas depois da primeira (a dos nomes das colunas).',
+    tooManyLines: (lineCount: number, mostLines: number) =>
+      `O CSV tem ${String(lineCount)} linhas; uma importação leva no máximo ${String(mostLines)}. Divida o arquivo em partes.`,
     fileNames: {
       team: 'equipes',
       person: 'pessoas',

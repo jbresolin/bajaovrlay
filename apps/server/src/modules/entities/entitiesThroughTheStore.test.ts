@@ -12,6 +12,9 @@
  *     changed.
  *   - An import's row names the type and the keys it carried, not every record, so a
  *     hundred teams do not ride along in the eventLog slice every page is sent again.
+ *   - An import the schema refuses (1001 teams, one over the cap) is logged as failed with
+ *     its type, its entityType as sent and its record count, never the records (gate 2
+ *     of PR #23).
  *   - A renderer may not send them (NOT_ALLOWED), and the refusal is logged.
  *   - Teams, people, sponsors and the schedule are back after a restart, as they were.
  *
@@ -120,6 +123,31 @@ describe('the entity commands through the store', () => {
       recordKeys: [42, 7, 13],
     });
     expect(stateStore.readAllSlices().teams, 'every imported team is stored').toHaveLength(3);
+  });
+
+  it('logs a refused import of 1001 teams by its type, kind and count only', () => {
+    // Arrange: a store, and an import one record over the cap of 1000.
+    const { stateStore } = openStoreOnANewFile();
+    const records = Array.from({ length: 1001 }, (_, index) => ({
+      ...buildTeam7(),
+      carNumber: index + 1,
+    }));
+
+    // Act: send it.
+    const outcome = stateStore.applyCommand(
+      { type: 'importEntities', entityType: 'team', records },
+      operatorActor,
+    );
+
+    // Assert: refused, and the failed row carries no record.
+    const lastRow = stateStore.readAllSlices().eventLog.at(-1);
+    expect(outcome.ok, 'the import is refused').toBe(false);
+    expect(lastRow?.result.status, 'logged as failed').toBe('failed');
+    expect(lastRow?.payload, 'the row keeps the type, the kind and the count').toEqual({
+      type: 'importEntities',
+      entityType: 'team',
+      recordCount: 1001,
+    });
   });
 
   it('refuses an upsert from a renderer and logs the refusal', () => {
