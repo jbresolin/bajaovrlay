@@ -2,15 +2,16 @@
  * Which page of the control page is shown (apps/control)
  *
  * What this module is for:
- *   The control page has three pages: the console (rundown, monitors, layers), "Fontes de
- *   dados" and "Cadastros". Which one is shown is written in the address after "#"
- *   ("#/fontes", "#/cadastros"), so the
+ *   The control page has four pages: the console (rundown, monitors, layers), "Fontes de
+ *   dados", "Cadastros" and "Eventos". Which one is shown is written in the address after
+ *   "#" ("#/fontes", "#/cadastros", "#/eventos"), so the
  *   header's links, the browser's back button and a reload all work without a router
  *   library, and the server needs no extra address for the built page.
  *
  * What these tests prove:
  *   - "#/fontes" is the data sources page and "#/cadastros" the entity library, also
- *     with a record after it ("#/cadastros/team/42"); no hash,
+ *     with a record after it ("#/cadastros/team/42"), and "#/eventos" the review of the
+ *     event inbox; no hash,
  *     "#/" and any unknown hash are the
  *     console, so a stale bookmark never shows an empty page.
  *
@@ -40,6 +41,8 @@ const hashScenarios: { name: string; hash: string; expected: ControlPageName }[]
     hash: '#/cadastros/team/42',
     expected: 'entityLibrary',
   },
+  // What the header's "Eventos" link writes: the review of the event inbox (gate 2 of PR #22).
+  { name: 'shows the event review for "#/eventos"', hash: '#/eventos', expected: 'eventReview' },
   // An old or mistyped bookmark falls back to the console rather than a blank page.
   { name: 'shows the console for an unknown hash', hash: '#/camadas', expected: 'console' },
 ];

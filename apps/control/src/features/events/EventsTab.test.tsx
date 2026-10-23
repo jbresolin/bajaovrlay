@@ -7,8 +7,10 @@
  *   waiting events (pending for the operator, queued for the automatic runner), newest
  *   first, each with its kind, the car's chip, the team, the reason and how long ago it
  *   arrived, and three buttons: "Prévia" (the rule's item filled from this event, on the
- *   preview output), "No ar" (showEvent) and "Descartar" (dismissEvent). Under them, greyed,
- *   the last 20 events that are over, each with its status.
+ *   preview output), "No ar" (showEvent) and "Descartar" (dismissEvent). The tab sits above
+ *   Camadas, so since gate 2 of PR #22 it keeps the waiting events only, in a list of
+ *   capped height that scrolls, with "Som de eventos" and a link to the "Eventos" page,
+ *   where the history, "+ Evento" and "Regras" now live.
  *
  * What these tests prove:
  *   - The waiting events are listed newest first, with kind, car, team, reason, penalty and
@@ -19,11 +21,16 @@
  *   - "No ar" and "Descartar" are off while their command waits (gate 2 of PR #22).
  *   - "Prévia" and "No ar" are off for an event whose rule has no item.
  *   - The tab's badge counts the pending events only (not the queued ones).
+ *   - The tab keeps the waiting events only: no events that are over, no "+ Evento" and
+ *     no "Regras", and a link opening "#/eventos" in a new tab; the waiting list scrolls
+ *     inside a capped height.
  *
  * What these tests deliberately do not cover:
  *   - The badge's pulse and the sound; EventsTabAlert.test.tsx.
- *   - The "+ Evento" form and the rules editor; ManualEventDialog.test.tsx and
- *     EventRulesDialog.test.tsx.
+ *   - The "+ Evento" form, the rules editor and the history; ManualEventDialog.test.tsx,
+ *     EventRulesDialog.test.tsx and EventReviewPage.test.tsx.
+ *   - That the capped list keeps Camadas on screen: jsdom lays nothing out, so the browser
+ *     test eventsTabKeepsTheLayersOnScreen.e2e.ts measures it.
  *   - What the server does with the commands; apps/server/src/modules/events.
  */
 import type { InboxEvent } from '@bajaovrlay/shared';
@@ -200,26 +207,42 @@ describe('the buttons of a waiting event', () => {
   });
 });
 
-describe('the events that are over', () => {
-  it('are listed below, greyed, the 20 newest with their status', () => {
-    // Arrange: 22 finished leader changes, from 22 to 1 minutes ago, shown, dismissed or
-    // expired in turn.
-    const statuses = ['shown', 'dismissed', 'expired'] as const;
-    const finishedEvents = Array.from({ length: 22 }, (_, index) =>
-      buildFinishedLeaderChangeOfCar52(22 - index, statuses[index % 3] ?? 'shown'),
-    );
-    renderTheEventsTabWith(finishedEvents);
+describe('the tab on the console', () => {
+  it('keeps the waiting events only, and links to the "Eventos" page', () => {
+    // Arrange: a penalty waiting and a leader change that is over.
+    renderTheEventsTabWith([
+      buildPendingPenaltyOfCar47(5),
+      buildFinishedLeaderChangeOfCar52(10, 'shown'),
+    ]);
 
-    // Act: read the list of finished events.
-    const rows = within(screen.getByRole('list', { name: 'Eventos encerrados' })).getAllByRole(
-      'listitem',
-    );
+    // Act: look for what moved to the page, and for the link.
+    const finishedList = screen.queryByRole('list', { name: 'Eventos encerrados' });
+    const addEventButton = screen.queryByRole('button', { name: '+ Evento' });
+    const rulesButton = screen.queryByRole('button', { name: 'Regras' });
+    const pageLink = screen.getByRole('link', { name: 'Abrir a página de eventos' });
 
-    // Assert: 20 rows, newest first (1 minute ago, shown; then expired, then dismissed),
-    // each with its status word.
-    expect(rows, 'only the 20 newest').toHaveLength(20);
-    expect(within(rows[0] ?? document.body).getByText('exibido'), 'the newest').toBeInTheDocument();
-    expect(within(rows[1] ?? document.body).getByText('expirado'), 'then').toBeInTheDocument();
-    expect(within(rows[2] ?? document.body).getByText('descartado'), 'then').toBeInTheDocument();
+    // Assert: only the penalty is listed; the rest is one link away, in a new tab.
+    expect(readWaitingEventRows(), 'the waiting penalty only').toHaveLength(1);
+    expect(finishedList, 'the events that are over are on the page').toBe(null);
+    expect(addEventButton, '"+ Evento" is on the page').toBe(null);
+    expect(rulesButton, '"Regras" is on the page').toBe(null);
+    expect(pageLink, 'the link leads to the page').toHaveAttribute('href', '#/eventos');
+    expect(pageLink, 'in a new tab, so the console stays').toHaveAttribute('target', '_blank');
+  });
+
+  it('scrolls the waiting events inside a capped height', () => {
+    // Arrange: three events waiting.
+    renderTheEventsTabWith([
+      buildPendingPenaltyOfCar47(5),
+      buildPendingWarningOfCar38(3),
+      buildQueuedFastestLapOfCar31(1),
+    ]);
+
+    // Act: find the list's scrolling area.
+    const scrollingArea = screen.getByRole('list', { name: 'Eventos esperando' }).parentElement;
+
+    // Assert: a capped height (16rem) that scrolls, so Camadas below is never pushed off.
+    expect(scrollingArea, 'the height is capped').toHaveClass('max-h-64');
+    expect(scrollingArea, 'and the list scrolls inside it').toHaveClass('overflow-y-auto');
   });
 });

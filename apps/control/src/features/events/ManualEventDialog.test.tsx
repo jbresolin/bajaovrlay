@@ -3,7 +3,7 @@
  *
  * What this module is for:
  *   A penalty the race direction announced on the radio, or a notice about a car, may
- *   reach the inbox by hand (BAJAOVRLAY-44): "+ Evento" in the "Eventos" tab opens a form
+ *   reach the inbox by hand (BAJAOVRLAY-44): "+ Evento" on the "Eventos" page opens a form
  *   with the kind (Penalidade or Aviso), the car number, the team and school (optional:
  *   the server reads them from the sources when left blank), the reason and, for a
  *   penalty, the penalty itself. "Criar evento" sends createManualEvent; the event then
@@ -22,7 +22,6 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { QuickFireStrip } from '@/features/quickFire/QuickFireStrip';
 import { chooseOptionInDropdown } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 import {
   letThePageFinishWhatItStarted,
@@ -30,13 +29,14 @@ import {
 } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithTheInbox } from '@/state/eventsLikeTheServerSends.testSupport';
 
-/** The strip on the "Eventos" tab, with "+ Evento" pressed. */
+import { EventReviewPage } from './EventReviewPage';
+
+/** The "Eventos" page, with "+ Evento" pressed. */
 function openTheManualEventForm() {
   const controlPage = renderOnControlPageConnectedToFakeServer(
-    <QuickFireStrip />,
+    <EventReviewPage />,
     buildSlicesWithTheInbox([]),
   );
-  fireEvent.click(screen.getByRole('tab', { name: /^Eventos/ }));
   fireEvent.click(screen.getByRole('button', { name: '+ Evento' }));
   return controlPage;
 }

@@ -44,7 +44,8 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   (the simulator at 60× on seed 227, whose first penalty comes 3 simulated minutes in: the penalty waits in "Eventos" with nothing on
   the notice layer, "No ar" shows it for its rule's 2 s; a fastest lap goes on air by itself) and `eventInboxAfterARestart.e2e.ts`
   (a server of its own on 5189, stopped and started again on its SQLite file: nothing listed before is listed again, nothing is
-  replayed).
+  replayed). `eventsTabKeepsTheLayersOnScreen.e2e.ts` (eight typed penalties waiting: Camadas stays on screen at 1600×900 and the
+  tab's list scrolls).
 
 - The entity library, on "Cadastros" `#/cadastros` (steps and a real PNG in `entityLibraryTestSteps.ts`):
   `entityLibraryWalk.e2e.ts` (BAJAOVRLAY-19, the brief's walk, three tests): "Importar equipes do simulador" lists 100 teams;

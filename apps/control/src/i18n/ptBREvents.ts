@@ -15,8 +15,8 @@ const noticeKindWords: Record<EventNoticeKind, string> = {
 
 /**
  * The control page's words for the event inbox (BAJAOVRLAY-44), reached as `ptBR.events`:
- * the "Eventos" tab, its "+ Evento" form and "Regras", the Camadas mark, and the item
- * editor's "Evento" kind of field.
+ * the console's "Eventos" tab, the "Eventos" page with its "+ Evento" form, "Regras" and
+ * history, the Camadas mark, and the item editor's "Evento" kind of field.
  */
 export const ptBREvents = {
   tabName: 'Eventos',
@@ -24,8 +24,9 @@ export const ptBREvents = {
   pendingBadgeLabel: (count: number) =>
     count === 1 ? '1 evento esperando' : `${String(count)} eventos esperando`,
   waitingListLabel: 'Eventos esperando',
-  finishedListLabel: 'Eventos encerrados',
   nothingWaiting: 'Nenhum evento esperando.',
+  /** The console tab's way to the review page, which opens in a new tab. */
+  openReviewPageLink: 'Abrir a página de eventos',
   addEventButton: '+ Evento',
   rulesButton: 'Regras',
   soundSwitchLabel: 'Som de eventos',
@@ -58,6 +59,29 @@ export const ptBREvents = {
   layerMarker: (kindWord: string, carNumber: number) =>
     `evento: ${kindWord.toLowerCase()} · carro ${String(carNumber)}`,
   layerMarkerOfAnEventGone: 'evento',
+
+  /** The "Eventos" page (#/eventos): the waiting events, the forms and the history. */
+  reviewPage: {
+    title: 'Eventos',
+    waitingHeading: 'Esperando',
+    historyHeading: 'Histórico',
+    historyTableLabel: 'Histórico de eventos',
+    noEventsYet: 'Nenhum evento ainda.',
+    columns: {
+      time: 'Hora',
+      kind: 'Tipo',
+      car: 'Carro',
+      team: 'Equipe',
+      lap: 'Volta',
+      details: 'Detalhes',
+      origin: 'Origem',
+      status: 'Situação',
+    },
+    /** The origin of an event typed with "+ Evento", which no source produced. */
+    typedOrigin: 'Digitado',
+    /** Between the reason, the penalty and the lap time in one cell. */
+    detailsSeparator: ' · ',
+  },
 
   /** "+ Evento": an event typed by the operator. */
   manualForm: {

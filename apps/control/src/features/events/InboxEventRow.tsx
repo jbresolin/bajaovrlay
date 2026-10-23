@@ -11,8 +11,8 @@ import { describeKindOfEvent } from './inboxEventText';
 const texts = ptBR.events;
 
 /**
- * One waiting event of the "Eventos" tab: what it is, the car's chip, the team, the
- * reason, the penalty or the lap time, how long ago it arrived (and "na fila" when the
+ * One waiting event, on the console's "Eventos" tab and on the "Eventos" page: what it
+ * is, the car's chip, the team, the reason, the penalty or the lap time, how long ago it arrived (and "na fila" when the
  * runner will show it), then "Prévia" (the rule's item filled from this event), "No ar"
  * and "Descartar". "Prévia" and "No ar" are off, saying why, when the rule has no item;
  * "No ar" and "Descartar" are off while one of their commands waits, so a second press
@@ -100,19 +100,6 @@ export function InboxEventRow(props: {
           {texts.dismissButton}
         </ActionButton>
       </div>
-    </li>
-  );
-}
-
-/** One event that is over, greyed: what it was, the car, the team, and its status. */
-export function FinishedEventRow(props: { event: InboxEvent }) {
-  const { event } = props;
-  return (
-    <li className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground opacity-70">
-      <span>{describeKindOfEvent(event)}</span>
-      <span className="tabular-nums">{event.payload.carNumber}</span>
-      {event.payload.teamName === undefined ? null : <span>{event.payload.teamName}</span>}
-      <span className="ml-auto">{texts.statusWords[event.status]}</span>
     </li>
   );
 }

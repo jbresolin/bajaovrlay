@@ -9,9 +9,9 @@
  *   own so that one stays under the 400-line limit.
  *
  * What these tests prove:
- *   - With the fastest-lap rule set to "Perguntar" and a typed penalty waiting in
- *     "Eventos", `emptyTheServerState` puts the rule back to "Automático" and leaves no
- *     event waiting.
+ *   - With the fastest-lap rule set to "Perguntar" and a typed penalty waiting, both done
+ *     on the "Eventos" page, `emptyTheServerState` puts the rule back to "Automático" and
+ *     leaves no event waiting.
  *
  * What these tests deliberately do not cover:
  *   - The events already shown or dismissed: the reset keeps them listed, as the event log
@@ -28,14 +28,13 @@ test.beforeEach(async () => {
 
 test.describe('emptying the event inbox', () => {
   test('puts the event rules back and leaves no event waiting', async ({ page }) => {
-    // Arrange: on the "Eventos" tab, a penalty typed for car 47, and the fastest-lap rule
+    // Arrange: on the "Eventos" page, a penalty typed for car 47, and the fastest-lap rule
     // set to wait for the operator.
-    await page.goto('/');
+    await page.goto('/#/eventos');
     await expect(
       page.getByRole('status', { name: 'Conexão com o servidor' }),
       'the page must connect to the server before anything can be typed',
     ).toHaveText('Conectado');
-    await page.getByRole('tab', { name: /^Eventos/ }).click();
     await page.getByRole('button', { name: '+ Evento' }).click();
     const manualForm = page.getByRole('dialog');
     await manualForm.getByLabel('Carro').fill('47');

@@ -153,6 +153,33 @@ export function buildFinishedLeaderChangeOfCar52(
 }
 
 /**
+ * A notice the operator typed about car 12 `minutesAgo` minutes ago ("+ Evento", no
+ * source), shown and over.
+ */
+export function buildShownManualNoticeOfCar12(minutesAgo: number): InboxEvent {
+  const detectedAtMs = minutesBeforeNowMs(minutesAgo);
+  return {
+    eventId: 'manual:aviso-carro-12',
+    kind: 'manual',
+    sourceId: null,
+    detectedAtMs,
+    payload: {
+      carNumber: 12,
+      teamName: 'Tatu Baja',
+      schoolName: 'UNESP',
+      noticeKind: 'notice',
+      reason: 'Troca de piloto no box',
+    },
+    status: 'shown',
+    statusChanges: [
+      { status: 'pending', atMs: detectedAtMs },
+      { status: 'onAir', atMs: detectedAtMs + 20_000 },
+      { status: 'shown', atMs: detectedAtMs + 30_000 },
+    ],
+  };
+}
+
+/**
  * The strip's slices (panels "Atalhos" and "Box", the macros) plus the panel "Avisos" with
  * its two notice items, the default rules, and the events given.
  */

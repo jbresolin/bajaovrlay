@@ -4,8 +4,8 @@
  * What this module is for:
  *   Each kind of event has one rule on the server (BAJAOVRLAY-44): ask the operator ("Perguntar"),
  *   go on air by itself ("Automático") or not even list it ("Ignorar"); the item that shows
- *   it; how long it stays on air; and how long it may wait before it expires. "Regras" in
- *   the "Eventos" tab lists the five rules, one row each, and "Salvar" on a row sends
+ *   it; how long it stays on air; and how long it may wait before it expires. "Regras" on
+ *   the "Eventos" page lists the five rules, one row each, and "Salvar" on a row sends
  *   updateEventRule with that row. A Super Chat is never shown without approval, so its
  *   rule offers "Perguntar" only and says why; a manual event cannot be ignored.
  *
@@ -28,7 +28,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { QuickFireStrip } from '@/features/quickFire/QuickFireStrip';
 import { chooseOptionInDropdown } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 import {
   letThePageFinishWhatItStarted,
@@ -36,13 +35,14 @@ import {
 } from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithTheInbox } from '@/state/eventsLikeTheServerSends.testSupport';
 
-/** The strip on the "Eventos" tab, with "Regras" open. */
+import { EventReviewPage } from './EventReviewPage';
+
+/** The "Eventos" page, with "Regras" open. */
 function openTheRules() {
   const controlPage = renderOnControlPageConnectedToFakeServer(
-    <QuickFireStrip />,
+    <EventReviewPage />,
     buildSlicesWithTheInbox([]),
   );
-  fireEvent.click(screen.getByRole('tab', { name: /^Eventos/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Regras' }));
   return controlPage;
 }

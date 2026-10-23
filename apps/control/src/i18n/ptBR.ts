@@ -36,6 +36,7 @@ export const ptBR = {
       console: 'Console',
       dataSources: 'Fontes',
       entityLibrary: 'Cadastros',
+      eventReview: 'Eventos',
     },
     // What "Cadastros" or "Fontes" shows instead of a blank tab when it throws.
     pageError: {
