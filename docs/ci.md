@@ -13,6 +13,16 @@ starts CI, and every push after it runs CI again. Every push to `main` runs it t
 "Run workflow" on the Actions page runs it by hand on any branch, a draft's included, once
 `main` has the `workflow_dispatch` trigger.
 
+## `pnpm verify` runs with CI's settings
+
+Every step of `pnpm verify` runs with `CI=1` (`scripts/verifySteps.js`): Vitest and
+Playwright refuse a forgotten `.only`, and Playwright starts its own servers instead of
+reusing one left running, failing if a port is taken. Since a draft gets no CI, this is the
+strict check each review round relies on. One test still tells a developer machine from
+GitHub's runner: `dataSourcesPageStaysResponsive.e2e.ts` slows the page's CPU 4 times
+everywhere but on the runner, so it reads `GITHUB_ACTIONS` (set only there) rather than
+`CI`, and keeps that slowdown under `pnpm verify`.
+
 ## The jobs
 
 | Job                                                                | What it does                                                                                                                                                                        |

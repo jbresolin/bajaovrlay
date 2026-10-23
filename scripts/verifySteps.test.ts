@@ -7,6 +7,9 @@
  *   leaves out the browser tests for a fast check before a push.
  *
  * What these tests prove:
+ *   - Every step runs with CI=1 added to this machine's environment, as on CI: a
+ *     forgotten `.only` is refused and Playwright never reuses a server left running.
+ *     It is the one check a draft gets before gate 2, so it must be as strict as CI.
  *   - A full run takes every step, in order; a quick run takes every step but the two
  *     browser-test steps.
  *   - Durations read as seconds under a minute and as minutes and seconds above.
@@ -21,11 +24,48 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildEnvironmentOfAStep,
   chooseStepsToRun,
   formatStepDuration,
   verifySteps,
   writeVerifySummary,
 } from './verifySteps.js';
+
+describe('buildEnvironmentOfAStep', () => {
+  it('adds CI=1 and keeps everything else of the machine’s environment', () => {
+    // Arrange: a developer machine's environment, with no CI and a port offset set.
+    const machineEnvironment = {
+      HOME: '/home/joao',
+      PATH: '/usr/local/bin:/usr/bin',
+      BAJAOVRLAY_E2E_PORT_OFFSET: '100',
+    };
+
+    // Act: build the environment a step runs in.
+    const stepEnvironment = buildEnvironmentOfAStep(machineEnvironment);
+
+    // Assert: CI is set, and the rest (the port offset included) is passed on.
+    expect(
+      stepEnvironment,
+      'every step must run with CI=1 and the machine’s own variables',
+    ).toEqual({
+      HOME: '/home/joao',
+      PATH: '/usr/local/bin:/usr/bin',
+      BAJAOVRLAY_E2E_PORT_OFFSET: '100',
+      CI: '1',
+    });
+  });
+
+  it('sets CI to 1 even where the machine had CI set to something else', () => {
+    // Arrange: a shell where CI was exported empty, which Playwright reads as not CI.
+    const machineEnvironment = { CI: '' };
+
+    // Act: build the environment a step runs in.
+    const stepEnvironment = buildEnvironmentOfAStep(machineEnvironment);
+
+    // Assert: CI is 1.
+    expect(stepEnvironment.CI, 'an empty CI must not switch the CI settings off').toBe('1');
+  });
+});
 
 describe('chooseStepsToRun', () => {
   it('takes every step, in order, on a full run', () => {

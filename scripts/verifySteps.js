@@ -33,6 +33,20 @@ export const verifySteps = [
 ];
 
 /**
+ * The environment every step runs in: this machine's, with CI=1 added, so the tools
+ * behave as on CI. Vitest and Playwright then refuse a forgotten `.only`, Playwright
+ * starts its own servers instead of reusing one left running (it fails if a port is
+ * taken), and the CI-only reporters write their JSON. The one test that must still tell
+ * this machine from GitHub's runner (dataSourcesPageStaysResponsive) reads
+ * GITHUB_ACTIONS, which only the runner sets.
+ * @param {NodeJS.ProcessEnv} machineEnvironment
+ * @returns {NodeJS.ProcessEnv}
+ */
+export function buildEnvironmentOfAStep(machineEnvironment) {
+  return { ...machineEnvironment, CI: '1' };
+}
+
+/**
  * The steps a run takes: all of them, or with `--quick` all but the browser tests, for a
  * fast check before a push.
  * @param {boolean} isQuick
