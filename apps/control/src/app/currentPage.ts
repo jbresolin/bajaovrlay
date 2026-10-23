@@ -19,12 +19,14 @@ export const hashOfEachPage = {
 /**
  * Reads the page from the address's hash. Anything but "#/fontes" and "#/cadastros" is
  * the console, so an old or mistyped bookmark shows the console instead of an empty page.
+ * "#/cadastros/<kind>/<key>" is Cadastros opened on one record (recordToOpen.ts).
  */
 export function readPageFromHash(hash: string): ControlPageName {
   if (hash === hashOfEachPage.dataSources) {
     return 'dataSources';
   }
-  if (hash === hashOfEachPage.entityLibrary) {
+  const isOneRecordOfTheLibrary = hash.startsWith(`${hashOfEachPage.entityLibrary}/`);
+  if (hash === hashOfEachPage.entityLibrary || isOneRecordOfTheLibrary) {
     return 'entityLibrary';
   }
   return 'console';

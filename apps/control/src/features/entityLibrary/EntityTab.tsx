@@ -9,10 +9,11 @@ import { useReadServerStateNow } from '@/state/ControlPageStateProvider';
 import { writeExampleCsvOfEntityType, writeRecordsAsCsv } from './entityCsvExport';
 import { EntityCsvImportPanel } from './EntityCsvImportPanel';
 import { EntityRecordFormPanel } from './EntityRecordFormPanel';
-import { type AnyEntityRecord, readKeyOfRecord } from './entityRecordsOfType';
+import { type AnyEntityRecord, listRecordsOfType, readKeyOfRecord } from './entityRecordsOfType';
 import { EntityTable } from './EntityTable';
 import { SimulatorTeamsImportButton } from './SimulatorTeamsImportButton';
 import { csvContentType, downloadTextFile } from './textFileDownload';
+import { useEntityLibrary } from './useEntityLibrary';
 
 const texts = ptBR.entityLibrary;
 
@@ -26,10 +27,28 @@ type SidePanel =
  * with the form or the CSV import. On a tablet the panel sits under the table; it sits
  * beside it from the `lg` width up. The panel open is this tab's own state, not the
  * server's: a reload may close it, and loses nothing saved.
+ *
+ * `recordKeyToOpen` (the page's address named a record of this tab) opens that record's
+ * form as soon as the library holds it: on a new tab the library arrives after the first
+ * draw. It opens once; closing the form keeps it closed.
  */
-export function EntityTab(props: { entityType: EntityType }) {
-  const { entityType } = props;
+export function EntityTab(props: { entityType: EntityType; recordKeyToOpen?: string | undefined }) {
+  const { entityType, recordKeyToOpen } = props;
   const [sidePanel, setSidePanel] = useState<SidePanel>(null);
+  const library = useEntityLibrary();
+  const recordToOpen =
+    recordKeyToOpen === undefined
+      ? undefined
+      : listRecordsOfType(library, entityType).find(
+          (record) => readKeyOfRecord(entityType, record) === recordKeyToOpen,
+        );
+  // Set while drawing, as React's "adjusting state when a prop changes" does, rather than
+  // in an effect: the form shows in the same draw that first finds the record.
+  const [hasOpenedTheRecord, setHasOpenedTheRecord] = useState(false);
+  if (recordToOpen !== undefined && !hasOpenedTheRecord) {
+    setHasOpenedTheRecord(true);
+    setSidePanel({ kind: 'form', recordAsOpened: recordToOpen });
+  }
   const readServerStateNow = useReadServerStateNow();
   const fileName = texts.csv.fileNames[entityType];
 

@@ -9,7 +9,8 @@
  *   library, and the server needs no extra address for the built page.
  *
  * What these tests prove:
- *   - "#/fontes" is the data sources page and "#/cadastros" the entity library; no hash,
+ *   - "#/fontes" is the data sources page and "#/cadastros" the entity library, also
+ *     with a record after it ("#/cadastros/team/42"); no hash,
  *     "#/" and any unknown hash are the
  *     console, so a stale bookmark never shows an empty page.
  *
@@ -31,6 +32,12 @@ const hashScenarios: { name: string; hash: string; expected: ControlPageName }[]
   {
     name: 'shows the entity library for "#/cadastros"',
     hash: '#/cadastros',
+    expected: 'entityLibrary',
+  },
+  // "Editar no cadastro" in "Edição rápida" opens one record of Cadastros (gate 2 of PR #23).
+  {
+    name: 'shows the entity library for the address of one of its records',
+    hash: '#/cadastros/team/42',
     expected: 'entityLibrary',
   },
   // An old or mistyped bookmark falls back to the console rather than a blank page.

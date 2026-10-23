@@ -167,6 +167,15 @@ export const ptBREntityLibrary = {
     },
   },
 
+  // A field of an instance that reads the library, in "Edição rápida" (gate 2 of PR #23).
+  onAir: {
+    whereItReads: (recordName: string, attributeLabel: string) =>
+      `Cadastro › ${recordName} › ${attributeLabel}`,
+    editInTheLibraryButton: 'Editar no cadastro',
+    editInTheLibraryButtonLabel: (fieldLabel: string) => `Editar no cadastro: ${fieldLabel}`,
+    editInTheLibraryHint: 'Abre o cadastro numa nova aba; o ar acompanha quando você salvar.',
+  },
+
   // The marker of an item that reads the library, on its rundown row and its button.
   marker: {
     readsTheLibrary: 'cadastro',

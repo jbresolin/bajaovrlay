@@ -14,6 +14,8 @@ import {
   findSourceValueKindOfClockField,
   writeSourceValueForReading,
 } from '@/features/bindings/sourceValueText';
+import { describeEntityFieldsOfInstance } from '@/features/entityLibrary/entityFieldsOfInstance';
+import { useEntityLibrary } from '@/features/entityLibrary/useEntityLibrary';
 import {
   buildSchemaFormResolver,
   buildSchemaFormValuesFromDataOnAir,
@@ -27,6 +29,7 @@ import { useServerState } from '@/state/ControlPageStateProvider';
 import { findClockFieldKeysOfGraphic } from './clockFieldsOfGraphic';
 import { QuickEditBoundField } from './QuickEditBoundField';
 import { QuickEditButtons } from './QuickEditButtons';
+import { QuickEditEntityField } from './QuickEditEntityField';
 import { useQuickEditCommands } from './useQuickEditCommands';
 import { useTimeOnScreenInQuickEdit } from './useTimeOnScreenInQuickEdit';
 
@@ -64,7 +67,10 @@ export type QuickEditFormProps = {
  * A field a source keeps up to date (the instance's entry of `instanceBindings`,
  * BAJAOVRLAY-20) is drawn read-only with where it reads and "Corrigir valor da fonte…"
  * (QuickEditBoundField.tsx): typing over it would be overwritten by the next refresh. Being
- * read-only it is never changed, so "Atualizar" never sends it.
+ * read-only it is never changed, so "Atualizar" never sends it. A field that reads the
+ * entity library (its entityFields, gate 2 of PR #23) is drawn read-only the same way,
+ * with "Editar no cadastro" (QuickEditEntityField.tsx). The server still releases a
+ * library field that an older page sends typed on air; this page no longer sends one.
  *
  * The panel draws this component with a React `key` that changes at every "Editar", so
  * each press starts a fresh form; when the loaded instance goes, the panel draws no form
@@ -122,11 +128,10 @@ export function QuickEditForm(props: QuickEditFormProps) {
     fieldsTheOperatorChanged,
   });
 
-  const readOnlyFieldContents = useBoundFieldsDrawnReadOnly(
-    graphic,
-    instanceBeingEdited,
-    description,
-  );
+  const readOnlyFieldContents = {
+    ...useEntityFieldsDrawnReadOnly(instanceBeingEdited, description),
+    ...useBoundFieldsDrawnReadOnly(graphic, instanceBeingEdited, description),
+  };
 
   const commands = useQuickEditCommands({
     description,
@@ -271,6 +276,44 @@ function useBoundFieldsDrawnReadOnly(
         />,
       ]);
     }
+  }
+  return Object.fromEntries(contentPairs);
+}
+
+/**
+ * The read-only rows of the instance's fields that read the entity library, by field
+ * key: each shows where it reads, its value on air and "Editar no cadastro".
+ */
+function useEntityFieldsDrawnReadOnly(
+  instanceBeingEdited: Instance,
+  description: ReturnType<typeof describeSchemaFormFromDataSchema>,
+): Record<string, ReactNode> {
+  const instanceBindings = useServerState((state) => state.instanceBindings);
+  const library = useEntityLibrary();
+  const entityFields = describeEntityFieldsOfInstance(
+    instanceBeingEdited.id,
+    instanceBindings,
+    library,
+  );
+  const contentPairs: Array<[string, ReactNode]> = [];
+  for (const entityField of entityFields) {
+    const fieldKey = entityField.fieldKey;
+    const fieldLabel =
+      description.fields.find((field) => field.key === fieldKey)?.label ?? fieldKey;
+    // A whole number is written as pt-BR writes numbers; a text or an image URL as it is.
+    const valueKind = entityField.valueType === 'integer' ? 'number' : 'text';
+    contentPairs.push([
+      fieldKey,
+      <QuickEditEntityField
+        key={fieldKey}
+        entityField={entityField}
+        fieldLabel={fieldLabel}
+        valueOnAirText={writeSourceValueForReading(
+          instanceBeingEdited.resolvedData[fieldKey],
+          valueKind,
+        )}
+      />,
+    ]);
   }
   return Object.fromEntries(contentPairs);
 }

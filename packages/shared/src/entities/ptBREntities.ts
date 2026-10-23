@@ -89,6 +89,17 @@ export const ptBREntities = {
     endBeforeStart: 'Fim: deve ser depois do início.',
   },
 
+  /**
+   * How a record no longer in the library is named, in words and never by its id (gate 2
+   * of PR #23): an id is a UUID the page made, which tells the operator nothing.
+   */
+  missingRecordNames: {
+    team: (carNumber: number) => `a equipe do carro ${String(carNumber)}, excluída dos cadastros`,
+    person: 'uma pessoa excluída dos cadastros',
+    sponsor: 'um patrocinador excluído dos cadastros',
+    scheduleSlot: 'uma sessão excluída da programação',
+  },
+
   /** How a refusal or a list of uses names one record. */
   recordDescriptions: {
     team: (carNumber: number, teamName: string) => `Equipe ${String(carNumber)} (${teamName})`,
