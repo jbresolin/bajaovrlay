@@ -87,7 +87,7 @@ describe('the rules editor', () => {
       screen.getAllByRole('group').map((group) => group.getAttribute('aria-label')),
       'one row per kind',
     ).toEqual([
-      'Ocorrência',
+      'Incidente',
       'Volta mais rápida',
       'Mudança de líder',
       'Evento digitado',
@@ -144,15 +144,15 @@ describe('the rules editor', () => {
   it('refuses a duration under one second, sending nothing', () => {
     // Arrange: the penalty's seconds on air emptied to 0.
     const { fakeServer } = openTheRules();
-    fireEvent.change(screen.getByLabelText('Segundos no ar de Ocorrência'), {
+    fireEvent.change(screen.getByLabelText('Segundos no ar de Incidente'), {
       target: { value: '0' },
     });
 
     // Act: save the row.
-    fireEvent.click(findRuleRow('Ocorrência').getByRole('button', { name: 'Salvar' }));
+    fireEvent.click(findRuleRow('Incidente').getByRole('button', { name: 'Salvar' }));
 
     // Assert: the problem said in the row, nothing sent.
-    expect(findRuleRow('Ocorrência').getByRole('alert').textContent, 'why it was refused').toBe(
+    expect(findRuleRow('Incidente').getByRole('alert').textContent, 'why it was refused').toBe(
       'Informe os segundos no ar, de 1 a 3600.',
     );
     expect(fakeServer.listCommandsReceived(), 'nothing may be sent').toEqual([]);

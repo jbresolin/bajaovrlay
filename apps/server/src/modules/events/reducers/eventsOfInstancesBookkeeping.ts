@@ -11,7 +11,8 @@ import { changeStatusOfEvent, readMomentMs } from './inboxEventChanges.js';
  * - A waiting event (pending or queued) whose id a program instance carries becomes
  *   onAir, naming that instance: showEvent's take, or "Tomar" on a previewed event.
  * - An onAir event whose instance is no longer on the program output becomes shown: a
- *   clear, the auto-out, a replace by another take.
+ *   clear, the auto-out, a replace by another take. One replaced by another instance of the
+ *   same event stays onAir, naming the new instance.
  * An event already shown, dismissed or expired keeps its status even if an instance
  * carrying its id goes on air again (the operator took a preview of it again by hand).
  */
@@ -32,6 +33,16 @@ export function followEventsOfProgramInstances(
   const eventsAfter = slices.events.map((event) => {
     const isWaiting = event.status === 'pending' || event.status === 'queued';
     const instanceIdShowingIt = programInstanceIdByEventId.get(event.eventId);
+    // Its notice replaced by another of the same event (its preview taken over it): still
+    // on air, now with the new instance (gate 2 of PR #22).
+    const isOnAirWithAnotherInstance =
+      event.status === 'onAir' &&
+      instanceIdShowingIt !== undefined &&
+      instanceIdShowingIt !== event.instanceId;
+    if (isOnAirWithAnotherInstance) {
+      hasAnyEventChanged = true;
+      return { ...event, instanceId: instanceIdShowingIt };
+    }
     if (isWaiting && instanceIdShowingIt !== undefined) {
       hasAnyEventChanged = true;
       return {

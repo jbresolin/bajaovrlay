@@ -14,7 +14,7 @@ export const ptBRDataShapes = {
     positions: 'Posições',
     standings: 'Pontuação',
     brackets: 'Chaves',
-    incidents: 'Ocorrências',
+    incidents: 'Incidentes',
   },
 
   /** "1º colocado", "10º colocado": positions, where every car has a place of its own. */
@@ -96,7 +96,7 @@ export const ptBRDataShapes = {
 
   /** The fields of one incident, for the flex mapping's rows and problem lines. */
   incidentsEntryFieldLabels: {
-    incidentId: 'Identificador da ocorrência',
+    incidentId: 'Identificador do incidente',
     carNumber: 'Carro',
     teamName: 'Equipe',
     schoolName: 'Escola',
@@ -146,6 +146,6 @@ export const ptBRDataShapes = {
     winnerNotInMatch: (carNumber: number) =>
       `o vencedor ${carNumber} não é nenhum dos dois carros da disputa`,
     incidentListedTwice: (incidentId: string) =>
-      `a ocorrência ${incidentId} aparece mais de uma vez`,
+      `o incidente ${incidentId} aparece mais de uma vez`,
   },
 };

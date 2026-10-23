@@ -7,9 +7,9 @@ import type {
 
 /** What an event is, in a word, by what its notice says it is. */
 const noticeKindWords: Record<EventNoticeKind, string> = {
-  penalty: 'Penalização',
+  penalty: 'Penalidade',
   warning: 'Advertência',
-  incident: 'Ocorrência',
+  incident: 'Incidente',
   notice: 'Aviso',
 };
 
@@ -50,7 +50,7 @@ export const ptBREvents = {
     expired: 'expirado',
   } satisfies Record<InboxEventStatus, string>,
 
-  /** Camadas' mark on an instance an event put on air: "evento: penalização · carro 47". */
+  /** Camadas' mark on an instance an event put on air: "evento: penalidade · carro 47". */
   layerMarker: (kindWord: string, carNumber: number) =>
     `evento: ${kindWord.toLowerCase()} · carro ${String(carNumber)}`,
   layerMarkerOfAnEventGone: 'evento',
@@ -59,7 +59,7 @@ export const ptBREvents = {
   manualForm: {
     title: 'Novo evento',
     description:
-      'Uma penalização ou um aviso sobre um carro. Equipe e escola em branco vêm das fontes.',
+      'Uma penalidade ou um aviso sobre um carro. Equipe e escola em branco vêm das fontes.',
     kindLabel: 'Tipo',
     kindOptions: { penalty: 'Penalidade', notice: 'Aviso' },
     carLabel: 'Carro',
@@ -83,7 +83,7 @@ export const ptBREvents = {
     description:
       'Para cada tipo de evento: perguntar ao operador, entrar no ar sozinho ou ignorar, com qual item e por quanto tempo.',
     kindNames: {
-      newIncident: 'Ocorrência',
+      newIncident: 'Incidente',
       fastestLap: 'Volta mais rápida',
       leaderChanged: 'Mudança de líder',
       manual: 'Evento digitado',

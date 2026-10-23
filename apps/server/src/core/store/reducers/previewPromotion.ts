@@ -7,6 +7,7 @@ import {
   listFieldKeysItemReadsFromASource,
 } from '@bajaovrlay/shared';
 
+import { findRefusalOfTakingAPreviewOfAnEvent } from '../../../modules/events/index.js';
 import { ptBR } from '../../messages/ptBR.js';
 import { refusePreviewWithoutItem } from '../onAirChangeRefusals.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
@@ -67,6 +68,15 @@ export function takePreviewInstanceToProgram(
       slices.layers.find((layer) => layer.id === previewInstance.layerId)?.name ??
       previewInstance.layerId;
     return { status: 'refused', error: refusePreviewWithoutItem(layerName) };
+  }
+  // A preview of an event goes on air only while its event still waits (gate 2 of PR #22).
+  const refusalOfTheEvent = findRefusalOfTakingAPreviewOfAnEvent(
+    slices,
+    previewInstance,
+    context.now,
+  );
+  if (refusalOfTheEvent !== undefined) {
+    return { status: 'refused', error: refusalOfTheEvent };
   }
   const previewedItem = slices.items.find((item) => item.id === previewedItemId);
   const isSampleOfAnEvent =

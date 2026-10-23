@@ -8,7 +8,7 @@
  *
  * What these tests prove:
  *   - The incidents offer the whole list only, typed incidentsEntries, labelled
- *     "Ocorrências › Lista completa".
+ *     "Incidentes › Lista completa".
  *
  * What these tests deliberately do not cover:
  *   - That the path names a field of the shape; bindablePathsMatchShapes.test.ts.
@@ -31,7 +31,7 @@ describe('listBindablePathsOfShape for the incidents', () => {
     expect(incidentsPaths, 'incidents must offer only the whole list').toEqual([
       {
         path: 'entries',
-        label: 'Ocorrências › Lista completa',
+        label: 'Incidentes › Lista completa',
         valueType: 'incidentsEntries',
         isCarChosenByNumber: false,
       },

@@ -4,11 +4,11 @@
  * What this module is for:
  *   A notice on air may come from the event inbox (BAJAOVRLAY-44): "No ar", "Tomar" on an
  *   event's Prévia, or the automatic runner. Its instance carries the event's id, and its
- *   Camadas row says so beside the item's name, "evento: penalização · carro 47", so the
+ *   Camadas row says so beside the item's name, "evento: penalidade · carro 47", so the
  *   operator knows why the notice is up and which car it is about.
  *
  * What these tests prove, one row per kind of event:
- *   - A penalty reads "evento: penalização · carro 47"; a fastest lap "evento: volta mais
+ *   - A penalty reads "evento: penalidade · carro 47"; a fastest lap "evento: volta mais
  *     rápida · carro 31"; a warning "evento: advertência · carro 38".
  *   - An event no longer in the inbox's slice (the slice keeps the newest 200) still reads
  *     "evento", without what it was.
@@ -71,7 +71,7 @@ describe('the Camadas row of a notice an event put on air', () => {
     {
       name: 'marks a penalty with its kind and car',
       event: { ...buildPendingPenaltyOfCar47(1), status: 'onAir' as const },
-      expectedMarker: 'evento: penalização · carro 47',
+      expectedMarker: 'evento: penalidade · carro 47',
     },
     // A fastest lap the runner put on air by itself.
     {
@@ -91,7 +91,7 @@ describe('the Camadas row of a notice an event put on air', () => {
     // Arrange: the notice on air, put there by this row's event.
     const slices = buildSlicesWithTheNoticeOnAir(
       [event],
-      buildNoticeOnAir('penalizacao', event.eventId),
+      buildNoticeOnAir('penalidade', event.eventId),
     );
 
     // Act: draw Camadas.
@@ -106,7 +106,7 @@ describe('the Camadas row of a notice an event put on air', () => {
     // Arrange: the notice on air for an event the slice has dropped.
     const slices = buildSlicesWithTheNoticeOnAir(
       [],
-      buildNoticeOnAir('penalizacao', 'simulador-enduro:incident:ocorrencia-0001'),
+      buildNoticeOnAir('penalidade', 'simulador-enduro:incident:ocorrencia-0001'),
     );
 
     // Act: draw Camadas.
@@ -123,7 +123,7 @@ describe('the Camadas row of a notice an event put on air', () => {
   it('marks nothing on a notice no event put on air', () => {
     // Arrange: the notice on air with no event (only through the API: a template cannot
     // be taken by itself).
-    const slices = buildSlicesWithTheNoticeOnAir([], buildNoticeOnAir('penalizacao', undefined));
+    const slices = buildSlicesWithTheNoticeOnAir([], buildNoticeOnAir('penalidade', undefined));
 
     // Act: draw Camadas.
     renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);

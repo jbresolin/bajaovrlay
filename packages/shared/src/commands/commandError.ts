@@ -116,6 +116,11 @@ export const CommandErrorCodeSchema = z.enum([
    * the graphic's field; the message starts with the field's title.
    */
   'INVALID_EVENT_FIELD',
+  /**
+   * updateEventRule named an item no event fills (no "Evento" field): it would go on air in
+   * place of a notice and leave after the rule's time (gate 2 of PR #22).
+   */
+  'ITEM_NOT_FILLED_BY_EVENT',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

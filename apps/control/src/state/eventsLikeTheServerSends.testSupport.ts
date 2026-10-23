@@ -33,12 +33,12 @@ export function buildNoticeItems(): Item[] {
       },
     },
     {
-      id: 'penalizacao',
+      id: 'penalidade',
       home: { kind: 'quickFire', panelId: 'avisos' },
       order: 1,
       graphicId: 'notice',
       layerId: 'notice',
-      label: 'Penalização',
+      label: 'Penalidade',
       color: 'danger',
       notes: '',
       fields: {
@@ -52,7 +52,7 @@ export function buildNoticeItems(): Item[] {
 /** João's default rules, with the seeded notice items. */
 export function buildDefaultEventRules(): EventRule[] {
   return [
-    { kind: 'newIncident', mode: 'ask', itemId: 'penalizacao', durationMs: 10_000, maxAgeMs: null },
+    { kind: 'newIncident', mode: 'ask', itemId: 'penalidade', durationMs: 10_000, maxAgeMs: null },
     {
       kind: 'fastestLap',
       mode: 'auto',
@@ -61,7 +61,7 @@ export function buildDefaultEventRules(): EventRule[] {
       maxAgeMs: 120_000,
     },
     { kind: 'leaderChanged', mode: 'auto', itemId: null, durationMs: 6_000, maxAgeMs: 120_000 },
-    { kind: 'manual', mode: 'ask', itemId: 'penalizacao', durationMs: 10_000, maxAgeMs: null },
+    { kind: 'manual', mode: 'ask', itemId: 'penalidade', durationMs: 10_000, maxAgeMs: null },
     { kind: 'superChat', mode: 'ask', itemId: null, durationMs: 15_000, maxAgeMs: null },
   ];
 }

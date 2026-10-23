@@ -152,7 +152,7 @@ describe('reading an event field', () => {
   });
 
   it('calls an item a template exactly when one of its fields is an event field', () => {
-    // Arrange: the "Penalização" item's fields, and a lower third's.
+    // Arrange: the "Penalidade" item's fields, and a lower third's.
     const penaltyItemFields = {
       variant: { kind: 'literal' as const, value: 'penalty' },
       carNumber: { kind: 'eventField' as const, path: 'carNumber' as const },

@@ -1,5 +1,5 @@
 /**
- * How an inbox event reads on the page: what it is in a word ("Penalização", "Volta mais
+ * How an inbox event reads on the page: what it is in a word ("Penalidade", "Volta mais
  * rápida") and Camadas' mark on the notice it put on air. Pure, from the pt-BR catalog.
  */
 import type { InboxEvent } from '@bajaovrlay/shared';
@@ -25,7 +25,7 @@ export function describeKindOfEvent(event: InboxEvent): string {
 }
 
 /**
- * Camadas' mark on an instance an event put on air: "evento: penalização · carro 47", or
+ * Camadas' mark on an instance an event put on air: "evento: penalidade · carro 47", or
  * "evento" alone when the event is no longer in the slice (it keeps the newest 200).
  */
 export function describeEventMarkOnLayer(event: InboxEvent | undefined): string {

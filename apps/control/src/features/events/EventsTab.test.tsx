@@ -84,7 +84,7 @@ describe('the waiting events', () => {
     expect(fastestLapRow?.getByText('há 1 min'), 'it arrived a minute ago').toBeInTheDocument();
     expect(warningRow?.getByText('Advertência'), 'a warning is not a penalty').toBeInTheDocument();
     expect(warningRow?.getByText('há 3 min'), 'its age').toBeInTheDocument();
-    expect(penaltyRow?.getByText('Penalização'), 'its kind').toBeInTheDocument();
+    expect(penaltyRow?.getByText('Penalidade'), 'its kind').toBeInTheDocument();
     expect(penaltyRow?.getByText('47'), 'its car').toBeInTheDocument();
     expect(penaltyRow?.getByText('Carnaúba Baja'), 'its team').toBeInTheDocument();
     expect(penaltyRow?.getByText('Queima de largada'), 'its reason').toBeInTheDocument();
@@ -110,13 +110,13 @@ describe('the waiting events', () => {
 
 describe('the buttons of a waiting event', () => {
   const buttonScenarios = [
-    // "Prévia": the rule's item ("Penalização"), filled from this very penalty.
+    // "Prévia": the rule's item ("Penalidade"), filled from this very penalty.
     {
       name: '"Prévia" previews the rule\'s item filled from the event',
       buttonName: 'Prévia',
       expectedCommand: {
         type: 'previewItem',
-        itemId: 'penalizacao',
+        itemId: 'penalidade',
         eventId: 'simulador-enduro:incident:ocorrencia-0007',
         origin: 'manual',
       },

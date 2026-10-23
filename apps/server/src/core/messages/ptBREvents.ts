@@ -7,7 +7,7 @@ import type { InboxEventKind, InboxEventStatus } from '@bajaovrlay/shared';
 export const ptBREventErrors = {
   /** The quick-fire panel seeded with the two notice items ("Eventos" is the inbox's tab). */
   seededPanelName: 'Avisos',
-  seededItemLabels: { fastestLap: 'Volta mais rápida', penalty: 'Penalização' },
+  seededItemLabels: { fastestLap: 'Volta mais rápida', penalty: 'Penalidade' },
   itemFilledByAnEvent: 'Este item é preenchido por um evento: ele entra no ar pela aba Eventos.',
   /** "Título: o evento não traz "Punição"." */
   eventFieldNotFilled: (fieldTitle: string, pathLabel: string) =>
@@ -15,6 +15,11 @@ export const ptBREventErrors = {
   /** The field's title, then shared's reason: "Título: o campo do evento …". */
   invalidEventField: (fieldTitle: string, reason: string) => `${fieldTitle}: ${reason}`,
   eventNotFound: 'Este evento não está na caixa de eventos.',
+  /** A Prévia of an event taken after its rule's maximum wait: never shown late. */
+  eventTooOld: 'Este evento não está mais esperando: passou da espera máxima da regra.',
+  /** "Regras" naming an item no event fills. */
+  itemNotFilledByEvent: (itemLabel: string) =>
+    `O item "${itemLabel}" não é preenchido por um evento: escolha um item com campos "Evento".`,
   /** "Este evento não está mais esperando: foi descartado." */
   eventNotWaiting: (status: InboxEventStatus) =>
     `Este evento não está mais esperando: ${ptBREventErrors.whyNotWaiting[status]}.`,
@@ -31,7 +36,7 @@ export const ptBREventErrors = {
     `A regra "${ptBREventErrors.kindNames[kind]}" não tem item para exibir o evento. Escolha um item em Regras.`,
   /** The name of each kind of event, as "Regras" shows it. */
   kindNames: {
-    newIncident: 'Ocorrência',
+    newIncident: 'Incidente',
     fastestLap: 'Volta mais rápida',
     leaderChanged: 'Mudança de líder',
     manual: 'Evento digitado',

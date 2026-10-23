@@ -1,5 +1,6 @@
-import type { MacroRun, RunMacroCommand } from '@bajaovrlay/shared';
+import { isItemFilledByAnEvent, type MacroRun, type RunMacroCommand } from '@bajaovrlay/shared';
 
+import { ptBR } from '../../messages/ptBR.js';
 import {
   refuseRunWhileAnotherMacroRuns,
   refuseUnknownMacro,
@@ -12,7 +13,10 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * runs no step itself: a reducer is pure and a wait takes time, so the steps are sent
  * one by one by the macro runner (../macroRunner.ts), which watches this slice.
  * Refused if the macro does not exist, or while any macro is running, this one
- * included: two runs at once would interleave their steps on the same layers.
+ * included: two runs at once would interleave their steps on the same layers. Refused
+ * too when a step takes an item filled by an event (ITEM_FILLED_BY_EVENT): such an item
+ * goes on air only through its event, and the run would stop at that step half done
+ * (gate 2 of PR #22).
  *
  * Starting a run also throws away every preview instance and "will be cleared" marker,
  * in this same state change. Two behaviours sit side by side and never mix:
@@ -30,6 +34,19 @@ export function reduceRunMacro(
   const macro = slices.macros.find((candidate) => candidate.id === command.macroId);
   if (macro === undefined) {
     return { status: 'refused', error: refuseUnknownMacro(command.macroId) };
+  }
+  const takesAnItemFilledByAnEvent = macro.steps.some((step) => {
+    if (step.kind !== 'takeItem') {
+      return false;
+    }
+    const item = slices.items.find((candidate) => candidate.id === step.itemId);
+    return item !== undefined && isItemFilledByAnEvent(item.fields);
+  });
+  if (takesAnItemFilledByAnEvent) {
+    return {
+      status: 'refused',
+      error: { code: 'ITEM_FILLED_BY_EVENT', message: ptBR.eventErrors.itemFilledByAnEvent },
+    };
   }
   const runInProgress = slices.macroRuns[0];
   if (runInProgress !== undefined) {

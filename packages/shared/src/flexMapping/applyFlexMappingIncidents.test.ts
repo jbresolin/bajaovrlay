@@ -156,7 +156,7 @@ describe('applyFlexMapping into incidents', () => {
     const problems = result.ok ? [] : result.problems;
     expect(problems, 'one problem, about the second incident').toHaveLength(1);
     expect(problems[0], 'the problem must name the shape, the car and the field').toMatch(
-      /^Ocorrências › carro 81 \(linha 2\) › Tipo: /,
+      /^Incidentes › carro 81 \(linha 2\) › Tipo: /,
     );
   });
 });

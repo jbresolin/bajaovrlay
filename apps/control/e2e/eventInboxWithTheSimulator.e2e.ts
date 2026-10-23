@@ -118,7 +118,7 @@ test.describe('the event inbox with the simulator', () => {
     const penaltyRow = page
       .getByRole('list', { name: 'Eventos esperando' })
       .getByRole('listitem')
-      .filter({ hasText: 'Penalização' })
+      .filter({ hasText: 'Penalidade' })
       .first();
     await expect(penaltyRow, 'the penalty must arrive in "Eventos"').toBeVisible({
       timeout: waitForThePenaltyInMilliseconds,

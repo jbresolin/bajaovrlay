@@ -24,7 +24,7 @@ import { writeTypedValueText } from './typedValueText';
 /** The shapes the form can map. Brackets are a draft shape whose mapping is not built. */
 export type MappableShapeKey = Exclude<DataShapeKey, 'brackets'>;
 
-/** The shapes the form offers, in the order of its "+ Sessão / + Posições / + Pontuação / + Ocorrências". */
+/** The shapes the form offers, in the order of its "+ Sessão / + Posições / + Pontuação / + Incidentes". */
 export const mappableShapeKeys: readonly MappableShapeKey[] = [
   'session',
   'positions',

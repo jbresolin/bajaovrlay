@@ -227,7 +227,7 @@ describe('refused inbox commands', () => {
       error: {
         code: 'EVENT_RULE_WITHOUT_ITEM',
         message:
-          'A regra "Ocorrência" não tem item para exibir o evento. Escolha um item em Regras.',
+          'A regra "Incidente" não tem item para exibir o evento. Escolha um item em Regras.',
       },
     });
   });

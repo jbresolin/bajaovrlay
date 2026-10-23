@@ -5,20 +5,27 @@
  *   The event detection (eventDetection.ts) watches every accepted poll. It compares a
  *   source's new snapshot with the one before it, runs the detectors, and records what
  *   they found through the one command path, as the actor `sistema:eventos`
- *   (recordDetectedEvents, one command per event). The first snapshot it sees of a source
- *   after the server starts, or after the source is turned on, is a baseline: it says
- *   what had already happened, so nothing fires, and a restart mid-race does not replay
- *   the day's penalties. The inbox keeps the ids it has seen (the `events` slice is
- *   saved), so an incident seen before a restart is never listed twice.
+ *   (recordDetectedEvents, one command per event). After a boot it starts from each
+ *   source's last saved snapshot, so what happened while the server was down arrives
+ *   (João's call at gate 2 of PR #22); the inbox keeps the ids it has seen (the `events`
+ *   slice is saved), so an incident seen before a restart is never listed twice. The first
+ *   snapshot of a source turned on, of a source whose config changed (another race,
+ *   another mapping), or of a source never polled before, is a baseline: it says what had
+ *   already happened, so nothing fires.
  *
  * What these tests prove:
- *   - The first poll after a boot fires nothing, even with a penalty in it.
+ *   - A source's first poll ever fires nothing, even with a penalty in it.
  *   - A penalty in the next poll is listed as pending (its rule asks the operator), with
  *     its arrival moment, and writes one event-log row signed sistema:eventos.
  *   - A fastest lap is listed as queued (its rule puts it on air by itself).
- *   - After a restart nothing is replayed: the first poll is a baseline again, and an
- *     incident seen before the restart is not listed a second time when it comes back.
- *   - The first poll after the source is turned off and on again is a baseline too.
+ *   - After a restart nothing is replayed: an incident seen before the restart is not
+ *     listed a second time when it comes back.
+ *   - A penalty given while the server was down is listed at the first poll after the
+ *     boot, once.
+ *   - The first poll after the source is turned off and on again is a baseline, and so is
+ *     the first after its config changed.
+ *   - A fastest lap whose rule says auto but names no item is listed as pending, for the
+ *     operator, never queued for a runner that could not show it.
  *   - An event whose rule says "ignore" is not listed and writes no row.
  *   - Polls with nothing new write no row (the poll itself writes none, as before).
  *
@@ -53,7 +60,7 @@ const startPenaltyEventId = 'simulador-enduro:incident:ocorrencia-0007';
 const blockingWarningEventId = 'simulador-enduro:incident:ocorrencia-0012';
 
 describe('the event detection on the store', () => {
-  it('records nothing from the first poll after a boot, which is the baseline', () => {
+  it("records nothing from a source's first poll, which is the baseline", () => {
     // Arrange: a fresh server with the simulator on.
     const inbox = openEventInboxOnTheStore();
 
@@ -146,17 +153,65 @@ describe('the event detection on the store', () => {
     ]);
   });
 
-  it('takes the first poll after a restart as the baseline, firing nothing', () => {
+  it('lists a penalty given while the server was down at the first poll after the boot, once', () => {
     // Arrange: the baseline before the restart, with no incident.
     const inboxBeforeRestart = openEventInboxOnTheStore();
     pollTheSimulator(inboxBeforeRestart, buildShapesWithCar31Leading([]));
 
-    // Act: restart; the first poll lists the penalty given while the server was down.
+    // Act: restart; the first poll lists the penalty given while the server was down, and
+    // the next one lists it again.
     const inbox = restartTheServer(inboxBeforeRestart);
     pollTheSimulator(inbox, buildShapesWithCar31Leading([buildStartPenaltyOfCar47()]));
+    pollTheSimulator(inbox, buildShapesWithCar31Leading([buildStartPenaltyOfCar47()]));
 
-    // Assert: nothing listed; it happened while nobody was watching, and is history now.
-    expect(inbox.stateStore.readAllSlices().events, 'nothing must be replayed').toEqual([]);
+    // Assert: listed once, waiting for the operator: the detection started from the last
+    // snapshot saved before the restart.
+    expect(
+      inbox.stateStore.readAllSlices().events.map((event) => [event.eventId, event.status]),
+      'what happened while the server was down must arrive, once',
+    ).toEqual([[startPenaltyEventId, 'pending']]);
+  });
+
+  it('takes the first poll after the source config changed as the baseline', () => {
+    // Arrange: the baseline, then the simulator set to speed 30 (another race moment, and
+    // for a flex source another mapping that could list the whole day as new).
+    const inbox = openEventInboxOnTheStore();
+    pollTheSimulator(inbox, buildShapesWithCar31Leading([]));
+    applyOrThrow(inbox.stateStore, {
+      type: 'updateDataSource',
+      sourceId: enduroSimulatorId,
+      config: { speed: 30 },
+    });
+
+    // Act: its first poll since lists a penalty.
+    pollTheSimulator(inbox, buildShapesWithCar31Leading([buildStartPenaltyOfCar47()]));
+
+    // Assert: nothing listed.
+    expect(inbox.stateStore.readAllSlices().events, 'a changed config starts a baseline').toEqual(
+      [],
+    );
+  });
+
+  it('lists a fastest lap as pending when its auto rule names no item', () => {
+    // Arrange: the fastest-lap rule left on auto with no item, and the baseline.
+    const inbox = openEventInboxOnTheStore();
+    applyOrThrow(inbox.stateStore, { type: 'updateEventRule', kind: 'fastestLap', itemId: null });
+    pollTheSimulator(inbox, buildShapesWithCar31Leading([]));
+
+    // Act: car 47 sets 4:37,900.
+    pollTheSimulator(inbox, {
+      positions: buildPositionsInOrder([
+        { carNumber: 31, laps: 35, bestLapMs: 278_291, bestLapNumber: 29 },
+        { carNumber: 38, laps: 34, bestLapMs: 279_596, bestLapNumber: 12 },
+        { carNumber: 47, laps: 34, bestLapMs: 277_900, bestLapNumber: 34 },
+      ]),
+    });
+
+    // Assert: pending, for the operator: no runner could show it without an item.
+    expect(
+      inbox.stateStore.readAllSlices().events.map((event) => event.status),
+      'an auto rule with no item asks instead',
+    ).toEqual(['pending']);
   });
 
   it('takes the first poll after the source is turned on again as the baseline', () => {

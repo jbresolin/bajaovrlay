@@ -1,4 +1,4 @@
-import type { InboxEvent, RecordDetectedEventsCommand } from '@bajaovrlay/shared';
+import type { DetectedEvent, InboxEvent, RecordDetectedEventsCommand } from '@bajaovrlay/shared';
 
 import type {
   ReducerOutcome,
@@ -6,6 +6,7 @@ import type {
 } from '../../../core/store/reducers/reducerTypes.js';
 import {
   appendInboxEvents,
+  changeStatusOfEvent,
   findInboxEvent,
   findRuleOfKind,
   findStatusOfNewEvent,
@@ -18,6 +19,10 @@ import {
  * - an event whose id the inbox already holds: the same happening seen again (a source
  *   sending an old incident again, a poll after a restart) is never listed twice;
  * - an event whose rule says ignore: nothing listed, nothing logged.
+ * A new fastest lap or leader change supersedes the older ones of the same kind and source
+ * still queued: they expire at its detection, so an outdated "Volta mais rápida" never airs
+ * after a better one (gate 2 of PR #22). Sessions are not compared: an older session's
+ * queued event is outdated too.
  * When every event is skipped the slices come back unchanged, so the store writes no row.
  */
 export function reduceRecordDetectedEvents(
@@ -44,8 +49,32 @@ export function reduceRecordDetectedEvents(
   if (newEvents.length === 0) {
     return { status: 'applied', slices };
   }
+  let eventsKept = slices.events;
+  for (const newEvent of newEvents) {
+    eventsKept = expireQueuedEventsSupersededBy(eventsKept, newEvent);
+  }
   return {
     status: 'applied',
-    slices: { ...slices, events: appendInboxEvents(slices.events, newEvents) },
+    slices: { ...slices, events: appendInboxEvents(eventsKept, newEvents) },
   };
+}
+
+// The kinds whose newer event makes an older one of its source old news.
+const kindsSupersededByANewerEvent = new Set(['fastestLap', 'leaderChanged']);
+
+/** The events with every queued one of the new event's kind and source expired. */
+function expireQueuedEventsSupersededBy(
+  events: InboxEvent[],
+  newEvent: DetectedEvent,
+): InboxEvent[] {
+  if (!kindsSupersededByANewerEvent.has(newEvent.kind)) {
+    return events;
+  }
+  return events.map((event) => {
+    const isSuperseded =
+      event.status === 'queued' &&
+      event.kind === newEvent.kind &&
+      event.sourceId === newEvent.sourceId;
+    return isSuperseded ? changeStatusOfEvent(event, 'expired', newEvent.detectedAtMs) : event;
+  });
 }

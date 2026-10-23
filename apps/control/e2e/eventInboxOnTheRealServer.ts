@@ -104,7 +104,7 @@ export async function readEventIdOnTheNoticeLayer(port: number): Promise<string 
 }
 
 /**
- * Makes the two notice items the tests show events with ("Penalização — teste" and
+ * Makes the two notice items the tests show events with ("Penalidade — teste" and
  * "Volta mais rápida — teste", on the "Atalhos" panel; the reset deletes the seeded ones),
  * and answers their ids.
  */
@@ -121,7 +121,7 @@ export async function createNoticeItemsOnTheServer(
     home: { kind: 'quickFire', panelId: 'atalhos' },
     graphicId: 'notice',
     layerId: 'notice',
-    label: 'Penalização — teste',
+    label: 'Penalidade — teste',
     fields: {
       variant: { kind: 'literal', value: 'penalty' },
       noticeKind: { kind: 'eventField', path: 'noticeKind' },

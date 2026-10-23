@@ -5,7 +5,7 @@
  *   So events have something to show from the first boot (BAJAOVRLAY-44), the server
  *   seeds a quick-fire panel "Avisos" holding two items on the notice graphic and the
  *   notice layer, every field the event fills an event field: "Volta mais rápida" (the
- *   fastest-lap variant) and "Penalização" (the penalty variant). The default rules show
+ *   fastest-lap variant) and "Penalidade" (the penalty variant). The default rules show
  *   fastest laps with the first, incidents and manual events with the second. They are
  *   seeded together with the rules, once per database: on a new database, and on one
  *   written before the inbox existed, at its first boot with the inbox. A panel the
@@ -54,14 +54,14 @@ const seededFastestLapItem: Item = {
   },
 };
 
-/** The "Penalização" item as the server seeds it. */
+/** The "Penalidade" item as the server seeds it. */
 const seededPenaltyItem: Item = {
-  id: 'penalizacao',
+  id: 'penalidade',
   home: { kind: 'quickFire', panelId: 'avisos' },
   order: 1,
   graphicId: 'notice',
   layerId: 'notice',
-  label: 'Penalização',
+  label: 'Penalidade',
   color: 'danger',
   notes: '',
   fields: {
@@ -95,10 +95,10 @@ describe('the seeded "Avisos" panel', () => {
       slices.eventRules.map((rule) => [rule.kind, rule.itemId]),
       'fastest laps, incidents and manual events have their item',
     ).toEqual([
-      ['newIncident', 'penalizacao'],
+      ['newIncident', 'penalidade'],
       ['fastestLap', 'volta-mais-rapida'],
       ['leaderChanged', null],
-      ['manual', 'penalizacao'],
+      ['manual', 'penalidade'],
       ['superChat', null],
     ]);
   });
@@ -127,7 +127,7 @@ describe('the seeded "Avisos" panel', () => {
     expect(
       slices.items.map((item) => item.id),
       'the two notice items are added',
-    ).toEqual(['volta-mais-rapida', 'penalizacao']);
+    ).toEqual(['volta-mais-rapida', 'penalidade']);
     expect(
       slices.eventRules.find((rule) => rule.kind === 'fastestLap')?.itemId,
       'the rules name them',
@@ -138,7 +138,7 @@ describe('the seeded "Avisos" panel', () => {
     // Arrange: the operator deletes the two items and the panel.
     const inbox = openEventInboxOnTheStore();
     applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'volta-mais-rapida' });
-    applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'penalizacao' });
+    applyOrThrow(inbox.stateStore, { type: 'deleteItem', itemId: 'penalidade' });
     applyOrThrow(inbox.stateStore, { type: 'deleteQuickFirePanel', panelId: 'avisos' });
 
     // Act: restart.

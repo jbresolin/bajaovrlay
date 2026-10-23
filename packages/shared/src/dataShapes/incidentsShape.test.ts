@@ -135,7 +135,7 @@ describe('validateDataShape for incidents', () => {
     expect(validation, 'an incident id listed twice must be refused at its repeat').toEqual({
       isValid: false,
       errorMessage:
-        'Dados inválidos em "incidents.entries.3.incidentId": a ocorrência ocorrencia-0007 aparece mais de uma vez.',
+        'Dados inválidos em "incidents.entries.3.incidentId": o incidente ocorrencia-0007 aparece mais de uma vez.',
     });
   });
 });

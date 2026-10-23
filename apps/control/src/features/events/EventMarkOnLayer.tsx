@@ -4,7 +4,7 @@ import { useServerState } from '@/state/ControlPageStateProvider';
 import { describeEventMarkOnLayer } from './inboxEventText';
 
 /**
- * Camadas' mark on an instance an event put on air (BAJAOVRLAY-44): "evento: penalização ·
+ * Camadas' mark on an instance an event put on air (BAJAOVRLAY-44): "evento: penalidade ·
  * carro 47", read from the event in the `events` slice; "evento" alone once the slice has
  * dropped it. Nothing for an instance no event put on air.
  */

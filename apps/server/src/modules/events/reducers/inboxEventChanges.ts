@@ -57,9 +57,15 @@ export function appendInboxEvents(events: InboxEvent[], newEvents: InboxEvent[])
   return [...events, ...newEvents].slice(-inboxEventsSliceSize);
 }
 
-/** The status a new event starts with: queued for the runner, or pending for the operator. */
+/**
+ * The status a new event starts with: queued for the runner when its rule says auto and
+ * names an item to show it with, pending for the operator otherwise. An auto rule with no
+ * item asks instead: no runner could show its events, and the operator still sees them
+ * (gate 2 of PR #22).
+ */
 export function findStatusOfNewEvent(rule: EventRule | undefined): InboxEventStatus {
-  return rule?.mode === 'auto' ? 'queued' : 'pending';
+  const canTheRunnerShowIt = rule?.mode === 'auto' && rule.itemId !== null;
+  return canTheRunnerShowIt ? 'queued' : 'pending';
 }
 
 /** A moment of the store (ISO 8601 text) in ms since 1970. */

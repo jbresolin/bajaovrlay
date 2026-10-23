@@ -14,7 +14,10 @@
  *   - A database written before the inbox existed gets them at its next boot.
  *   - updateEventRule changes only what it carries, and a restart keeps the change.
  *   - A Super Chat rule set to auto, or a manual one set to ignore, is refused by the
- *     command's schema; an item that does not exist is refused by the reducer.
+ *     command's schema; an item that does not exist, or one no event fills (the tower
+ *     picked by mistake would leave the air after the rule's time), by the reducer.
+ *   - Leader changes are seeded as ignored until a notice is designed for them (gate 2
+ *     of PR #22).
  *
  * What these tests deliberately do not cover:
  *   - What each mode does to a detected event; eventDetectionOnTheStore.test.ts and the
@@ -28,17 +31,18 @@ import { openDatabaseForTests } from '../../core/db/temporaryDatabase.testSuppor
 import {
   applyOrThrow,
   createClockItemForEvents,
+  createPlainClockItem,
   openEventInboxOnTheStore,
   operatorActor,
   restartTheServer,
 } from './eventInboxOnTheStore.testSupport.js';
 
 /**
- * João's defaults, with the two seeded notice items: "Penalização" for incidents and
+ * João's defaults, with the two seeded notice items: "Penalidade" for incidents and
  * manual events, "Volta mais rápida" for fastest laps (seededEventItems.test.ts).
  */
 const seededRules: EventRule[] = [
-  { kind: 'newIncident', mode: 'ask', itemId: 'penalizacao', durationMs: 10_000, maxAgeMs: null },
+  { kind: 'newIncident', mode: 'ask', itemId: 'penalidade', durationMs: 10_000, maxAgeMs: null },
   {
     kind: 'fastestLap',
     mode: 'auto',
@@ -46,8 +50,8 @@ const seededRules: EventRule[] = [
     durationMs: 8_000,
     maxAgeMs: 120_000,
   },
-  { kind: 'leaderChanged', mode: 'auto', itemId: null, durationMs: 6_000, maxAgeMs: 120_000 },
-  { kind: 'manual', mode: 'ask', itemId: 'penalizacao', durationMs: 10_000, maxAgeMs: null },
+  { kind: 'leaderChanged', mode: 'ignore', itemId: null, durationMs: 6_000, maxAgeMs: 120_000 },
+  { kind: 'manual', mode: 'ask', itemId: 'penalidade', durationMs: 10_000, maxAgeMs: null },
   { kind: 'superChat', mode: 'ask', itemId: null, durationMs: 15_000, maxAgeMs: null },
 ];
 
@@ -127,6 +131,17 @@ describe('updateEventRule, "Regras"', () => {
         message: 'Comando inválido: o campo "mode" está ausente ou tem um valor errado.',
       },
     },
+    // An item no event fills: a tower picked by mistake would go on air in place of a
+    // notice and leave after the rule's 10 s (gate 2 of PR #22).
+    {
+      name: 'refuses an item that no event fills',
+      command: { type: 'updateEventRule', kind: 'newIncident', itemId: 'relogio-da-prova' },
+      expectedError: {
+        code: 'ITEM_NOT_FILLED_BY_EVENT',
+        message:
+          'O item "Relógio da prova" não é preenchido por um evento: escolha um item com campos "Evento".',
+      },
+    },
     // A rule pointing at a deleted item could never show anything.
     {
       name: 'refuses an item that does not exist',
@@ -139,8 +154,10 @@ describe('updateEventRule, "Regras"', () => {
   ];
 
   it.each(refusedRuleScenarios)('$name', ({ command, expectedError }) => {
-    // Arrange: the seeded rules.
-    const inbox = openEventInboxOnTheStore();
+    // Arrange: the seeded rules, and a plain race clock, "Relógio da prova", which no event
+    // fills.
+    const inbox = openEventInboxOnTheStore(undefined, () => 'relogio-da-prova');
+    createPlainClockItem(inbox.stateStore, 'Relógio da prova');
 
     // Act: send this row's change.
     const outcome = inbox.stateStore.applyCommand(command, operatorActor);

@@ -228,7 +228,7 @@ describe('listMappableFieldsOfShape', () => {
       },
       {
         targetField: 'incidentId',
-        label: 'Identificador da ocorrência',
+        label: 'Identificador do incidente',
         isRequired: true,
         level: 'entry',
       },

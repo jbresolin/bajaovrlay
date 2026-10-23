@@ -4,7 +4,11 @@ import {
   loadOrSeedDataSourceSlices,
   readRecordingsFromFolder,
 } from '../../modules/dataSources/index.js';
-import { loadOrSeedEventInboxSlices } from '../../modules/events/index.js';
+import {
+  isInstanceOfAnEvent,
+  loadOrSeedEventInboxSlices,
+  markEventsOnAirAsShownAtBoot,
+} from '../../modules/events/index.js';
 import { writeBootRows } from '../db/bootRowStorage.js';
 import { readAllDataSnapshotRows } from '../db/dataSnapshotRowStorage.js';
 import { readNewestEventLogRows } from '../db/eventLogRowStorage.js';
@@ -75,11 +79,16 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
 
   // What was on the preview output does not survive a restart: a preview is something
   // the operator was looking at, not state the show depends on, and a stale one would
-  // sit one "Tomar" away from air with nobody remembering why. Program instances stay.
+  // sit one "Tomar" away from air with nobody remembering why. Program instances stay,
+  // except an event's notice (BAJAOVRLAY-44, gate 2 of PR #22): its auto-out is lost at a
+  // restart, so it would stay up for good; its event is marked shown below.
   const instancesKeptAcrossTheRestart = operatorSlices.instances.filter(
-    (instance) => instance.target !== 'preview',
+    (instance) => instance.target !== 'preview' && !isInstanceOfAnEvent(instance),
   );
-  const numberOfPreviewInstancesDropped =
+  const numberOfPreviewInstancesDropped = operatorSlices.instances.filter(
+    (instance) => instance.target === 'preview',
+  ).length;
+  const numberOfInstancesDropped =
     operatorSlices.instances.length - instancesKeptAcrossTheRestart.length;
 
   // The graphics row is rewritten on every boot; layers when seeded and when a layer
@@ -108,7 +117,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
   };
   const rowsOfALaterBoot =
-    numberOfPreviewInstancesDropped > 0 ? [graphicsRow, instancesRow] : [graphicsRow];
+    numberOfInstancesDropped > 0 ? [graphicsRow, instancesRow] : [graphicsRow];
   if (instanceBindingsAtBoot.wasAnyEntryDropped) {
     rowsOfALaterBoot.push(instanceBindingsRow);
   }
@@ -144,6 +153,10 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     updatedAt,
     options.logger,
   );
+  const eventsAtBoot = markEventsOnAirAsShownAtBoot(eventInboxSlices.events, updatedAt);
+  if (eventsAtBoot.wereAnyMarked) {
+    rowsOfALaterBoot.push({ name: 'events', json: eventsAtBoot.events, updatedAt });
+  }
   const layerAndGraphicRows = isFirstBoot ? seedRows : rowsOfALaterBoot;
   writeBootRows(options.database, {
     sliceRowsToWrite: [
@@ -205,7 +218,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     // Rebuilt from the recordings folder at every boot, every recording closed (D13);
     // never saved in the database: the files are the truth.
     recordings: readRecordingsAtBoot(options, dataSourceSlices.dataSources),
-    events: eventInboxSlices.events,
+    events: eventsAtBoot.events,
     eventRules: eventInboxSlices.eventRules,
   };
 }

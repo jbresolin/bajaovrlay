@@ -145,7 +145,7 @@ function buildIncidentEntry(
     (completedAtMs) => completedAtMs <= atRunningMs,
   ).length;
   const entry: IncidentEntry = {
-    incidentId: `${sessionId}-ocorrencia-${String(incident.occurrenceNumber)}`,
+    incidentId: `${sessionId}-incidente-${String(incident.occurrenceNumber)}`,
     carNumber: car.carNumber,
     teamName: car.teamName,
     schoolName: car.schoolName,

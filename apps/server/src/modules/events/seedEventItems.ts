@@ -13,7 +13,7 @@ export const eventsQuickFirePanelId = 'avisos';
 export const fastestLapItemId = 'volta-mais-rapida';
 
 /** The item the default rules show a penalty, an incident or a manual event with. */
-export const penaltyItemId = 'penalizacao';
+export const penaltyItemId = 'penalidade';
 
 /**
  * The two notice items (BAJAOVRLAY-44), on the notice graphic and the notice layer, in the

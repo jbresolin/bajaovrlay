@@ -20,13 +20,17 @@ export type EventDetectionOptions = {
 export type EventDetection = { stop: () => void };
 
 /**
- * Starts the detection. It remembers, in memory only, each source's last snapshot since
- * it started watching it. The baseline rule: the first snapshot it sees of a source after
- * the server starts, after the source is turned on, or of a new source, is only
- * remembered, and fires nothing. It says what had already happened: a restart mid-race,
- * or a source turned on mid-race, must not replay the day's penalties. Every later
+ * Starts the detection. It remembers, in memory, each source's last snapshot, starting
+ * from the snapshots saved before the server stopped: after a restart the first poll is
+ * compared with the last one saved, so what happened while the server was down arrives
+ * (João's call at gate 2 of PR #22, replacing the first rule of BAJAOVRLAY-44), and the
+ * inbox skips the ids it already holds, so nothing listed before is listed again. The
+ * baseline rule: the first snapshot of a source never polled before, of a source just
+ * turned on, or of a source whose config changed (another race, another mapping, which
+ * could list the whole day as new), is only remembered, and fires nothing. Every later
  * snapshot is compared with the remembered one (detectEventsBetweenSnapshots), dated by
- * its own receivedAtMs, and becomes the remembered one.
+ * its own receivedAtMs, and becomes the remembered one. A saved snapshot of another
+ * session (yesterday's race) is a baseline too, by the detectors' own session rule.
  * The events found are sent from a 0 ms timer, one recordDetectedEvents each (so each
  * writes its own event-log row), never from inside the store's listener: a command sent
  * while the store is still telling its listeners would run inside the one that changed
@@ -39,20 +43,31 @@ export function startEventDetection(options: EventDetectionOptions): EventDetect
   const { stateStore, logger } = options;
   const startTimer = options.startTimer ?? startNodeTimer;
   const cancelTimer = options.cancelTimer ?? cancelNodeTimer;
-  const lastShapesSeenBySourceId = new Map<string, DataSnapshotShapes>();
-  let enabledSourceIds = listEnabledSourceIds(stateStore.readAllSlices().dataSources);
+  const slicesAtStart = stateStore.readAllSlices();
+  const lastShapesSeenBySourceId = new Map<string, DataSnapshotShapes>(
+    slicesAtStart.dataSnapshots.map((snapshot) => [snapshot.sourceId, snapshot.shapes]),
+  );
+  let enabledSourceIds = listEnabledSourceIds(slicesAtStart.dataSources);
+  let configTextBySourceId = writeConfigTextOfEachSource(slicesAtStart.dataSources);
   let eventsToSend: DetectedEvent[] = [];
   let sendTimerHandle: unknown;
 
-  /** Forgets the last snapshot of each source just turned on, so its next one is a baseline. */
-  function forgetSourcesTurnedOn(dataSources: DataSource[]): void {
+  /**
+   * Forgets the last snapshot of each source just turned on, or whose config changed, so
+   * its next one is a baseline.
+   */
+  function forgetSourcesTurnedOnOrChanged(dataSources: DataSource[]): void {
     const enabledSourceIdsNow = listEnabledSourceIds(dataSources);
-    for (const sourceId of enabledSourceIdsNow) {
-      if (!enabledSourceIds.has(sourceId)) {
+    const configTextBySourceIdNow = writeConfigTextOfEachSource(dataSources);
+    for (const [sourceId, configText] of configTextBySourceIdNow) {
+      const wasTurnedOn = enabledSourceIdsNow.has(sourceId) && !enabledSourceIds.has(sourceId);
+      const hasConfigChanged = configTextBySourceId.get(sourceId) !== configText;
+      if (wasTurnedOn || hasConfigChanged) {
         lastShapesSeenBySourceId.delete(sourceId);
       }
     }
     enabledSourceIds = enabledSourceIdsNow;
+    configTextBySourceId = configTextBySourceIdNow;
   }
 
   /** Records each event waiting, one command each; a refusal is logged, never thrown. */
@@ -78,7 +93,7 @@ export function startEventDetection(options: EventDetectionOptions): EventDetect
   const stopWatchingTheStore = stateStore.subscribeToSliceChanges(
     (changedSliceNames, slices, changedDataSnapshots) => {
       if (changedSliceNames.includes('dataSources')) {
-        forgetSourcesTurnedOn(slices.dataSources);
+        forgetSourcesTurnedOnOrChanged(slices.dataSources);
       }
       for (const change of changedDataSnapshots) {
         if (change.snapshot === null) {
@@ -111,6 +126,17 @@ export function startEventDetection(options: EventDetectionOptions): EventDetect
       eventsToSend = [];
     },
   };
+}
+
+/**
+ * Each source's config as JSON text, by source id, to tell a changed config. The keys of a
+ * config always come in the same order (the server builds it from its schema), so equal
+ * configs give equal texts.
+ */
+function writeConfigTextOfEachSource(dataSources: DataSource[]): Map<string, string> {
+  return new Map(
+    dataSources.map((dataSource) => [dataSource.id, JSON.stringify(dataSource.config)]),
+  );
 }
 
 /** The ids of the sources that are on, as a set. */

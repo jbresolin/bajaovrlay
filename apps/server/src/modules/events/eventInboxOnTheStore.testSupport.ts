@@ -44,9 +44,11 @@ export type EventInboxOnTheStore = {
 /**
  * Opens a store with the event detection on a new temporary database (or the one given,
  * for a restart), its clock at 14:00 (or the clock given), and the simulator turned on.
+ * `createItemId` makes the ids of the items created (a random UUID when left out).
  */
 export function openEventInboxOnTheStore(
   restartOf?: Pick<EventInboxOnTheStore, 'databasePath' | 'graphicPackagesFolder' | 'clock'>,
+  createItemId?: () => string,
 ): EventInboxOnTheStore {
   const databasePath = restartOf?.databasePath ?? createTemporaryDatabasePath();
   const graphicPackagesFolder =
@@ -61,6 +63,7 @@ export function openEventInboxOnTheStore(
     // The store makes one for every command and only createManualEvent uses it; a fixed
     // id is enough, since no test types more than one event on a store.
     createEventId: () => typedEventId,
+    createItemId,
   });
   const detection = startEventDetection({
     stateStore,
@@ -109,15 +112,31 @@ export function pollTheSimulator(inbox: EventInboxOnTheStore, shapes: DataSnapsh
 }
 
 /**
- * Creates a race clock item on the clock layer (the only graphic these tests build), with
- * the fields given laid over a typed green enduro, and answers its id: the item the rules
- * show events with in these tests.
+ * Creates a race clock item on the clock layer (the only graphic these tests build) whose
+ * title reads the event's team, with the fields given laid over a typed green enduro, and
+ * answers its id: a template, the item the rules show events with in these tests.
  */
 export function createClockItemForEvents(
   stateStore: StateStore,
   label: string,
   fields: ItemFields = {},
 ): string {
+  return createClockItem(stateStore, label, {
+    sessionName: { kind: 'eventField', path: 'teamName' },
+    ...fields,
+  });
+}
+
+/**
+ * Creates a plain race clock item on the clock layer, every field typed: the operator's
+ * own graphic, which no event fills and which may be taken by itself.
+ */
+export function createPlainClockItem(stateStore: StateStore, label: string): string {
+  return createClockItem(stateStore, label, {});
+}
+
+/** Creates a race clock item in "Atalhos" with these fields over a typed green enduro. */
+function createClockItem(stateStore: StateStore, label: string, fields: ItemFields): string {
   const outcome = stateStore.applyCommand(
     {
       type: 'createItem',
