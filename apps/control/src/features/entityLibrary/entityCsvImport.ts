@@ -159,11 +159,22 @@ function readOneLine(
   const storedRecord = storedRecords.find(
     (record) => (record as Record<string, unknown>)[keyField] === fields[keyField],
   );
+  const storedFields = storedRecord as Record<string, unknown> | undefined;
   // A CSV never carries an image, so an update keeps the record's own.
   for (const imageField of listImageFieldsOfEntityType(entityType)) {
-    const storedImage = (storedRecord as Record<string, unknown> | undefined)?.[imageField];
+    const storedImage = storedFields?.[imageField];
     if (storedImage !== undefined) {
       fields[imageField] = storedImage;
+    }
+  }
+  // A column the file does not have says nothing about its field (gate 2 of PR #23): an
+  // entry list with no "cidade" keeps the city a team has. A column present with an empty
+  // cell does clear it.
+  for (const column of columns) {
+    const isColumnInTheFile = columnNamesInTheFile.includes(column.columnName);
+    const storedValue = storedFields?.[column.recordFieldKey];
+    if (!isColumnInTheFile && storedValue !== undefined) {
+      fields[column.recordFieldKey] = storedValue;
     }
   }
 

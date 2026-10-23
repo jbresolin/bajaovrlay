@@ -75,6 +75,25 @@ describe('readEntityFormValues for a team', () => {
     });
   });
 
+  it('reads a team typed with no city and no state', () => {
+    // Arrange: the empty form, filled in with team 13 and its place left blank.
+    const values = {
+      ...buildEntityFormValues('team', null),
+      carNumber: '13',
+      teamName: 'Mutum Off-Road',
+      schoolName: 'UFMT',
+    };
+
+    // Act: read it.
+    const reading = readEntityFormValues('team', values, null, makeIdThatMustNotBeNeeded);
+
+    // Assert: the team, with no city and no state at all.
+    expect(reading, 'the place is optional').toEqual({
+      isValid: true,
+      record: { carNumber: 13, teamName: 'Mutum Off-Road', schoolName: 'UFMT' },
+    });
+  });
+
   it('fills the form from a stored team and reads it back the same', () => {
     // Arrange: team 42, logo and all.
     const storedTeam = buildStoredTeam42();

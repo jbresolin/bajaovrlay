@@ -115,7 +115,7 @@ describe('the form', () => {
       target: { value: 'Mutum Off-Road' },
     });
     fireEvent.change(form.getByLabelText('Escola (sigla)'), { target: { value: 'UEL' } });
-    fireEvent.change(form.getByLabelText('Cidade'), { target: { value: 'Londrina' } });
+    fireEvent.change(form.getByLabelText('Cidade (opcional)'), { target: { value: 'Londrina' } });
     chooseOptionInDropdown(form.getByRole('combobox', { name: 'UF' }), 'PR');
     fireEvent.click(form.getByRole('button', { name: 'Salvar' }));
 
@@ -144,7 +144,7 @@ describe('the form', () => {
     const form = within(screen.getByRole('form', { name: 'Nova equipe' }));
     fireEvent.change(form.getByLabelText('Número do carro'), { target: { value: '13' } });
     fireEvent.change(form.getByLabelText('Escola (sigla)'), { target: { value: 'UEL' } });
-    fireEvent.change(form.getByLabelText('Cidade'), { target: { value: 'Londrina' } });
+    fireEvent.change(form.getByLabelText('Cidade (opcional)'), { target: { value: 'Londrina' } });
     chooseOptionInDropdown(form.getByRole('combobox', { name: 'UF' }), 'PR');
 
     // Act: save.

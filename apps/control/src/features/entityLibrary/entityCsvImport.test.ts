@@ -17,6 +17,9 @@
  *   - A person with no id gets a new one; one whose id is stored is an update.
  *   - A schedule line reads "14/11/2026 10:00" and "2026-11-14 10:00" in the computer's
  *     time, and refuses a start it cannot read.
+ *   - A teams CSV with no cidade and no uf columns imports (gate 2 of PR #23), and an
+ *     update by such a file keeps the city and state the library holds: a column the
+ *     file does not have says nothing about its field.
  *   - A file missing a required column, and one with only the header, say so.
  *   - A file of 1001 lines, more than one import may carry, says so and imports nothing
  *     (gate 2 of PR #23).
@@ -169,6 +172,58 @@ describe('buildCsvImportPreview of teams', () => {
   });
 });
 
+describe('buildCsvImportPreview of teams with no place', () => {
+  it('imports a teams CSV with no cidade and no uf columns', () => {
+    // Arrange: the entry list of the organisers, which names no city.
+    const csv = 'carro;equipe;escola\n13;Mutum Off-Road;UFMT\n';
+
+    // Act: build the preview and list what "Importar" would send.
+    const preview = buildCsvImportPreview(
+      'team',
+      csv,
+      buildLibraryWithTeam42AndTheNarrator(),
+      createPredictableIdMaker(),
+    );
+    const recordsToImport = listRecordsToImport(preview);
+
+    // Assert: no problem with the file, and team 13 with no place.
+    expect(preview.problemOfTheFile, 'the place columns are optional').toBeUndefined();
+    expect(recordsToImport, 'team 13 as the file has it').toEqual({
+      entityType: 'team',
+      records: [{ carNumber: 13, teamName: 'Mutum Off-Road', schoolName: 'UFMT' }],
+    });
+  });
+
+  it('keeps the city and state of a stored team when the file has no such columns', () => {
+    // Arrange: the entry list renames team 42 and names no city.
+    const csv = 'carro;equipe;escola\n42;Baja UFPR Racing;UFPR\n';
+
+    // Act: build the preview and list what "Importar" would send.
+    const preview = buildCsvImportPreview(
+      'team',
+      csv,
+      buildLibraryWithTeam42AndTheNarrator(),
+      createPredictableIdMaker(),
+    );
+    const recordsToImport = listRecordsToImport(preview);
+
+    // Assert: renamed, still from Curitiba – PR, logo kept.
+    expect(recordsToImport, 'a column the file lacks says nothing about its field').toEqual({
+      entityType: 'team',
+      records: [
+        {
+          carNumber: 42,
+          teamName: 'Baja UFPR Racing',
+          schoolName: 'UFPR',
+          city: 'Curitiba',
+          state: 'PR',
+          logoMediaId: logoOfTeam42MediaId,
+        },
+      ],
+    });
+  });
+});
+
 describe('buildCsvImportPreview of people', () => {
   it('gives a person with no id a new one, and updates one whose id is stored', () => {
     // Arrange: a new judge with no id, and the narrator's role changed.
@@ -241,8 +296,8 @@ describe('buildCsvImportPreview of the schedule', () => {
 
 describe('a file the preview cannot read', () => {
   it('says which required column is missing', () => {
-    // Arrange: a teams CSV without the state.
-    const csv = 'carro;equipe;escola;cidade\n7;Juriti Off-Road;UDESC;Joinville\n';
+    // Arrange: a teams CSV without the school.
+    const csv = 'carro;equipe;cidade;uf\n7;Juriti Off-Road;Joinville;SC\n';
 
     // Act: build the preview.
     const preview = buildCsvImportPreview(
@@ -254,7 +309,7 @@ describe('a file the preview cannot read', () => {
 
     // Assert: no row, and the reason names the column.
     expect(preview.problemOfTheFile, 'the missing column is named').toBe(
-      'Falta a coluna "uf" na primeira linha.',
+      'Falta a coluna "escola" na primeira linha.',
     );
     expect(preview.rows, 'nothing to import').toEqual([]);
   });

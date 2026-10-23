@@ -15,6 +15,7 @@ import { ptBR } from '@/i18n/ptBR';
 import type { AnyEntityRecord } from './entityRecordsOfType';
 import { writeLocalDateTimeText } from './localDateTimeText';
 import { MediaThumbnail } from './MediaThumbnail';
+import { writePlaceOfTeam } from './teamPlace';
 
 const texts = ptBR.entityLibrary;
 const columnTexts = texts.columns;
@@ -53,7 +54,7 @@ const teamColumns: EntityTableColumn[] = [
   { header: columnTexts.school, renderCell: (record) => (record as Team).schoolName },
   {
     header: columnTexts.place,
-    renderCell: (record) => texts.cityAndState((record as Team).city, (record as Team).state),
+    renderCell: (record) => writePlaceOfTeam(record as Team) ?? texts.noValue,
   },
   {
     header: columnTexts.logo,

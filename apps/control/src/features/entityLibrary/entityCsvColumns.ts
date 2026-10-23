@@ -31,8 +31,8 @@ const csvColumnsByEntityType: Record<EntityType, EntityCsvColumn[]> = {
       cellKind: 'text',
       isRequired: false,
     },
-    { columnName: 'cidade', recordFieldKey: 'city', cellKind: 'text', isRequired: true },
-    { columnName: 'uf', recordFieldKey: 'state', cellKind: 'text', isRequired: true },
+    { columnName: 'cidade', recordFieldKey: 'city', cellKind: 'text', isRequired: false },
+    { columnName: 'uf', recordFieldKey: 'state', cellKind: 'text', isRequired: false },
   ],
   person: [
     { columnName: 'id', recordFieldKey: 'personId', cellKind: 'text', isRequired: false },

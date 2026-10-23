@@ -11,7 +11,8 @@
  *
  * What these tests prove:
  *   - A complete team, person, sponsor and schedule slot are accepted as typed, and the
- *     optional parts may be left out.
+ *     optional parts may be left out, a team's city and state among them (gate 2 of
+ *     PR #23: a list of teams often has neither).
  *   - Each rule a record can break is refused with its own pt-BR sentence: a car number
  *     that is not a whole number from 1, a state that is not a Brazilian UF, a tier
  *     outside the five, a roll weight outside 1 to 10, a slot that ends before it starts,
@@ -79,6 +80,22 @@ describe('a team', () => {
 
     // Assert: accepted; the graphic shows its no-logo state for it.
     expect(result.success, 'the images and the full school name are optional').toBe(true);
+  });
+
+  it('accepts a team with no city and no state', () => {
+    // Arrange: a team from a list of entries that names no city.
+    const teamWithNoPlace = {
+      carNumber: 13,
+      teamName: 'Mutum Off-Road',
+      schoolName: 'UFMT',
+    };
+
+    // Act: check it.
+    const result = TeamSchema.safeParse(teamWithNoPlace);
+
+    // Assert: accepted as it is; the team card drops its place line for it.
+    expect(result.success, 'the city and the state are optional').toBe(true);
+    expect(result.data, 'nothing is made up for the place').toEqual(teamWithNoPlace);
   });
 
   const refusedTeams = [

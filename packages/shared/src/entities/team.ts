@@ -17,8 +17,9 @@ const labels = ptBREntities.teamFieldLabels;
  * shape uses, so a car in the race and its team join with no mapping (an item binds
  * `positions.entryOfCar.<field>` and references the team of the same car).
  * The images are optional on purpose: a CSV never carries one, and the team card still
- * looks finished without a logo. `city` and `state` are required, as the brief lists
- * them, so the card's place line is never half written.
+ * looks finished without a logo. `city` and `state` are optional too (gate 2 of PR #23,
+ * João's call): an entry list often names neither, and the team card drops its place line
+ * when they are missing rather than refusing the team.
  */
 export const TeamSchema = z.object({
   carNumber: buildCarNumberSchema(labels.carNumber),
@@ -28,8 +29,8 @@ export const TeamSchema = z.object({
   schoolName: buildRequiredTextSchema(labels.schoolName, 30),
   /** The school's full name, for a card with room for it: "Universidade Federal do Paraná". */
   schoolFullName: buildOptionalTextSchema(labels.schoolFullName, 120),
-  city: buildRequiredTextSchema(labels.city, 60),
-  state: BrazilianStateCodeSchema,
+  city: buildOptionalTextSchema(labels.city, 60),
+  state: BrazilianStateCodeSchema.optional(),
   logoMediaId: buildOptionalMediaIdSchema(labels.logoMediaId),
   carPhotoMediaId: buildOptionalMediaIdSchema(labels.carPhotoMediaId),
 });

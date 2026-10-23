@@ -88,8 +88,9 @@ describe('the CSV import panel', () => {
     // Act: press "Importar".
     fireEvent.click(screen.getByRole('button', { name: 'Importar 2 linhas válidas' }));
 
-    // Assert: one batch, the bad line left out; car 42's line replaces the stored team
-    // (its full school name is not in this CSV) and keeps its logo.
+    // Assert: one batch, the bad line left out; car 42's line updates the stored team and
+    // keeps its logo, and its full school name too: this CSV has no escola_completa
+    // column, and a column the file lacks says nothing about its field (gate 2 of PR #23).
     expect(fakeServer.listCommandsReceived(), 'one import of the valid lines').toEqual([
       {
         type: 'importEntities',
@@ -106,6 +107,7 @@ describe('the CSV import panel', () => {
             carNumber: 42,
             teamName: 'Baja UFPR Racing',
             schoolName: 'UFPR',
+            schoolFullName: 'Universidade Federal do Paraná',
             city: 'Curitiba',
             state: 'PR',
             logoMediaId: logoOfTeam42MediaId,

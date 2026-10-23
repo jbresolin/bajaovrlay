@@ -67,14 +67,14 @@ const attributesByEntityType: Record<EntityType, EntityAttribute[]> = {
       label: teamLabels.city,
       valueType: 'text',
       recordFieldKey: 'city',
-      isOptional: false,
+      isOptional: true,
     },
     {
       attributeKey: 'state',
       label: teamLabels.state,
       valueType: 'text',
       recordFieldKey: 'state',
-      isOptional: false,
+      isOptional: true,
     },
     {
       attributeKey: 'logoUrl',

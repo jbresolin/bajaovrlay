@@ -19,6 +19,13 @@ import { ptBR } from '@/i18n/ptBR';
 import { EntityImageField } from './EntityImageField';
 import type { EntityFormField } from './entityRecordForm';
 
+/**
+ * The value of the first item of an optional dropdown (a team's UF), which empties the
+ * field: Radix Select allows no item whose value is "", so the item carries this one and
+ * the change is read back as "".
+ */
+const noChoiceValue = 'sem-escolha';
+
 /** One choice of a dropdown: the value stored and the label shown. */
 type DropdownChoice = { value: string; label: string };
 
@@ -92,7 +99,10 @@ export function EntityFormFieldControl(props: EntityFormFieldControlProps) {
     case 'tier':
     case 'sessionKind':
       return (
-        <Select value={value} onValueChange={onChange}>
+        <Select
+          value={value}
+          onValueChange={(chosen) => onChange(chosen === noChoiceValue ? '' : chosen)}
+        >
           <SelectTrigger
             id={controlId}
             className="w-full"
@@ -102,6 +112,9 @@ export function EntityFormFieldControl(props: EntityFormFieldControlProps) {
             <SelectValue placeholder={ptBR.entityLibrary.form.noChoice} />
           </SelectTrigger>
           <SelectContent>
+            {field.isOptional && (
+              <SelectItem value={noChoiceValue}>{ptBR.entityLibrary.form.leaveEmpty}</SelectItem>
+            )}
             {listChoicesOfField(field).map((choice) => (
               <SelectItem key={choice.value} value={choice.value}>
                 {choice.label}

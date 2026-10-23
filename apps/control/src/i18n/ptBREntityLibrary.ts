@@ -76,6 +76,8 @@ export const ptBREntityLibrary = {
     cancelButton: 'Cancelar',
     optionalHint: '(opcional)',
     noChoice: 'Escolha…',
+    // The first item of an optional dropdown (a team's UF), which empties it.
+    leaveEmpty: '— nenhuma —',
     carNumberIsTheKey:
       'O número do carro identifica a equipe. Para outro número, cadastre outra equipe.',
     dateTimeHint: 'No horário deste computador.',

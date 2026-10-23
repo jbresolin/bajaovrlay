@@ -15,7 +15,7 @@
  *   - A record that is not in the library is unresolvable, with a pt-BR sentence naming
  *     the car (or the id).
  *   - Team 7's logo, which it does not have, is an absent value naming the team and the
- *     field: the take leaves an optional field out.
+ *     field: the take leaves an optional field out. So is the city of a team with none.
  *   - An attribute the type does not have is unresolvable.
  *
  * What these tests deliberately do not cover:
@@ -149,6 +149,24 @@ describe('resolveEntityReferenceAgainstLibrary', () => {
     expect(resolution, 'a logo not uploaded is an absent value').toEqual({
       status: 'valueAbsent',
       problem: 'Equipe 7 (Juriti Off-Road) não tem Logo.',
+    });
+  });
+
+  it('says a team with no city has none, so the card drops its place line', () => {
+    // Arrange: the library, with team 13 added from an entry list that names no city.
+    const library = buildLibraryOfTheRaceWeekend();
+    library.teams.push({ carNumber: 13, teamName: 'Mutum Off-Road', schoolName: 'UFMT' });
+
+    // Act: read team 13's city.
+    const resolution = resolveEntityReferenceAgainstLibrary(
+      { kind: 'entity', entityType: 'team', carNumber: 13, attribute: 'city' },
+      library,
+    );
+
+    // Assert: absent (gate 2 of PR #23), so an optional field is left out of the take.
+    expect(resolution, 'a city not typed is an absent value').toEqual({
+      status: 'valueAbsent',
+      problem: 'Equipe 13 (Mutum Off-Road) não tem Cidade.',
     });
   });
 

@@ -61,8 +61,8 @@ const formFieldsByEntityType: Record<EntityType, EntityFormField[]> = {
       fieldKind: 'text',
       isOptional: true,
     },
-    { recordFieldKey: 'city', label: teamLabels.city, fieldKind: 'text', isOptional: false },
-    { recordFieldKey: 'state', label: teamLabels.state, fieldKind: 'state', isOptional: false },
+    { recordFieldKey: 'city', label: teamLabels.city, fieldKind: 'text', isOptional: true },
+    { recordFieldKey: 'state', label: teamLabels.state, fieldKind: 'state', isOptional: true },
     {
       recordFieldKey: 'logoMediaId',
       label: teamLabels.logoMediaId,
