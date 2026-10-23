@@ -2,6 +2,10 @@
 // its own output as it goes, then one line per step with its duration. It stops at the
 // first step that fails and names it. `pnpm verify --quick` leaves out the browser tests.
 // Every step runs with CI=1, as on CI (buildEnvironmentOfAStep in verifySteps.js).
+// It assumes a Linux shell (WSL on Windows, as on João's machine, or Linux): `shell: true`
+// hands each command to /bin/sh, the root scripts chain commands with `&&`, and the control
+// page's Playwright server starts with `rm -rf`. From Windows' own cmd or PowerShell they
+// would not run.
 //
 // Run it from the repository root before every push (CLAUDE.md, "Git and process"). The
 // browser tests need the e2e ports free (5176-5189); a second checkout running them at the

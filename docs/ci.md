@@ -13,6 +13,10 @@ starts CI, and every push after it runs CI again. Every push to `main` runs it t
 "Run workflow" on the Actions page runs it by hand on any branch, a draft's included, once
 `main` has the `workflow_dispatch` trigger.
 
+On a draft every job, "CI passed" included, shows as **skipped** (grey). Skipped is not
+green: it means nothing was checked. A pull request is ready to merge only when "CI passed"
+is green on its latest push, after it was marked ready.
+
 ## `pnpm verify` runs with CI's settings
 
 Every step of `pnpm verify` runs with `CI=1` (`scripts/verifySteps.js`): Vitest and

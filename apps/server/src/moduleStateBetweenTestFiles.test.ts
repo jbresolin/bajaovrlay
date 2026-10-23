@@ -9,7 +9,8 @@
  *   into whichever file runs after. This test reads the code and keeps it that way.
  *
  * What these tests prove:
- *   - The search finds state kept at a module's top level: a `let`, and a Map made there.
+ *   - The search finds state kept at a module's top level: a `let`, a Map, and any object
+ *     made there with `new` (a decoder, a client), whatever its class.
  *   - The server's and the shared package's code keep no such state, except the few
  *     listed below, each with the reason it cannot change an answer.
  *   - No server test file replaces a module with vi.mock, which in a shared module cache
@@ -23,6 +24,10 @@
  *     shared.
  *   - State hidden in a dependency (Hono, Drizzle, better-sqlite3): none is known, and the
  *     whole suite passing in any order of files is the check for it.
+ *   - Live handles a test leaves open (a timer, a socket, a server or database not
+ *     closed): they hold no module state, and each test closes what it opened
+ *     (onTestFinished, close()); one left open wastes the worker's time, it does not
+ *     change another file's answer, and this scan cannot see it.
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -36,26 +41,33 @@ const serverSourceFolder = join(repositoryRoot, 'apps/server/src');
 const sharedSourceFolder = join(repositoryRoot, 'packages/shared/src');
 
 // A line that keeps state at a module's top level: it starts at the first column (inside
-// a function it would be indented) with `let` or `var`, or makes a Map, Set, array or
+// a function it would be indented) with `let` or `var`, makes any object with `new` (a
+// Map, a decoder, a client: whatever the class, it may hold state), or makes an array or
 // object that could then be changed.
 const moduleStatePatterns = [
   /^(export )?(let|var) /,
-  /^(export )?const \w+(: [^=]+)? = new (Map|Set|WeakMap|WeakSet)\b/,
+  /^(export )?const \w+(: [^=]+)? = new \w+/,
   /^(export )?const \w+(: [^=]+)? = (\[\]|\{\});/,
 ];
 
-// The module-level Maps and Sets the code has, and why each cannot carry an answer from
-// one test file to the next.
+// The module-level objects the code makes, and why each cannot carry an answer from one
+// test file to the next.
 const moduleStateThatCannotLeak = [
   // A cache of compiled JSON Schemas: an entry is reused only for the very schema object
   // it was compiled from, so it changes how fast an answer comes, never the answer.
   'apps/server/src/core/store/graphicDataValidation.ts: compiledDataSchemasByGraphicId',
-  // The four below are fixed lookup lists: filled where they are made, never changed.
+  // The five below are fixed lookup lists: filled where they are made, never changed.
   'apps/server/src/modules/media/rasterImageSizes.ts: jpegFrameHeaderMarkers',
   'apps/server/src/modules/media/rasterImageSizes.ts: jpegMarkersWithoutLength',
   'apps/server/src/modules/events/reducers/recordDetectedEvents.ts: kindsSupersededByANewerEvent',
   'packages/shared/src/dataShapes/positionsShape.ts: statusesOutOfLapOrder',
   'packages/shared/src/dataSources/httpJsonConfig.ts: headerNamesFetchSetsItself',
+  // Fixed addresses of files: a URL object is never changed after it is made.
+  'apps/server/src/readServerVersion.ts: serverPackageJsonUrl',
+  'apps/server/src/readBuildId.ts: buildIdFileUrl',
+  // A UTF-8 decoder used without `stream: true`: each decode stands alone and keeps
+  // nothing for the next.
+  'apps/server/src/modules/dataSources/adapters/httpJson/responseBodyWithinCap.ts: utf8Decoder',
 ];
 
 /** Every TypeScript file under `folder`, subfolders included, as full paths. */
@@ -95,9 +107,10 @@ function findModuleStateUnder(folder: string): string[] {
 }
 
 describe('the search for module-level state', () => {
-  it('finds a top-level let and a top-level Map, and not the same inside a function', () => {
-    // Arrange: a stand-in folder with a counter kept in a `let`, a cache kept in a Map,
-    // and a file whose `let` and Map live inside a function, made fresh at every call.
+  it('finds a top-level let, Map and object of any class, and not the same inside a function', () => {
+    // Arrange: a stand-in folder with a counter kept in a `let`, a cache kept in a Map, a
+    // timing client made with `new` at the top, and a file whose `let` and Map live inside
+    // a function, made fresh at every call.
     const standInFolder = createTemporaryDataFolder();
     mkdirSync(join(standInFolder, 'lapCounting'));
     writeFileSync(
@@ -109,6 +122,10 @@ describe('the search for module-level state', () => {
       'const teamNamesByCar = new Map<number, string>();\n',
     );
     writeFileSync(
+      join(standInFolder, 'timingClient.ts'),
+      'export const timingSystemClient = new TimingSystemClient("http://cronometragem.local");\n',
+    );
+    writeFileSync(
       join(standInFolder, 'freshEachCall.ts'),
       'export function readLaps() {\n  let laps = 0;\n  const seen = new Map();\n  return { laps, seen };\n}\n',
     );
@@ -116,10 +133,11 @@ describe('the search for module-level state', () => {
     // Act: search it.
     const found = findModuleStateUnder(standInFolder).map((entry) => entry.split(': ')[1]);
 
-    // Assert: the two top-level ones, and nothing from inside the function.
-    expect(found.sort(), 'both top-level states must be found, and only those').toEqual([
+    // Assert: the three top-level ones, and nothing from inside the function.
+    expect(found.sort(), 'every top-level state must be found, and only those').toEqual([
       'lapsCountedSoFar',
       'teamNamesByCar',
+      'timingSystemClient',
     ]);
   });
 });
@@ -166,23 +184,29 @@ describe('the server test files', () => {
 
 // The two tests below run in the order written, on purpose: the second checks what the
 // first left behind. This is the one place where a test depends on the one before it.
-describe('testSetup.ts, after a test that faked the clock and never restored it', () => {
-  it('lets a test fake the clock and end without restoring it', () => {
-    // Arrange: nothing; the clock is real.
+// { shuffle: false } keeps that order under --sequence.shuffle, where the second could
+// otherwise run first and pass without proving anything.
+describe(
+  'testSetup.ts, after a test that faked the clock and never restored it',
+  { shuffle: false },
+  () => {
+    it('lets a test fake the clock and end without restoring it', () => {
+      // Arrange: nothing; the clock is real.
 
-    // Act: fake the clock and end here, as a test that failed halfway would.
-    vi.useFakeTimers();
+      // Act: fake the clock and end here, as a test that failed halfway would.
+      vi.useFakeTimers();
 
-    // Assert: the clock is fake for the rest of this test.
-    expect(vi.isFakeTimers(), 'the clock must be fake inside the test that faked it').toBe(true);
-  });
+      // Assert: the clock is fake for the rest of this test.
+      expect(vi.isFakeTimers(), 'the clock must be fake inside the test that faked it').toBe(true);
+    });
 
-  it('gives the next test the real clock again', () => {
-    // Arrange: the test above faked the clock and did not restore it.
+    it('gives the next test the real clock again', () => {
+      // Arrange: the test above faked the clock and did not restore it.
 
-    // Act: nothing; testSetup.ts ran between the two tests.
+      // Act: nothing; testSetup.ts ran between the two tests.
 
-    // Assert: the clock is real.
-    expect(vi.isFakeTimers(), 'the next test must start on the real clock').toBe(false);
-  });
-});
+      // Assert: the clock is real.
+      expect(vi.isFakeTimers(), 'the next test must start on the real clock').toBe(false);
+    });
+  },
+);
