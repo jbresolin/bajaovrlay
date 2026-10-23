@@ -96,6 +96,8 @@ export default defineConfig({
       '/graphics': serverAddress,
       // The framed renderer page links the theme (tokens and font) from /theme/ as well.
       '/theme': serverAddress,
+      // The images of the media store: Cadastros' thumbnails and the graphics' logos.
+      '/media': serverAddress,
     },
   },
 });

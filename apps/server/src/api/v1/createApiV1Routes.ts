@@ -17,6 +17,11 @@ import {
   type SourceHostAllowlist,
 } from '../../modules/dataSources/index.js';
 import {
+  buildSimulatorTeamsAsEntities,
+  getSimulatorTeamsRoute,
+  simulatorTeamsNotice,
+} from '../../modules/entities/index.js';
+import {
   buildFileMissingAnswer,
   buildFileTooLargeAnswer,
   largestMediaUploadBodyInBytes,
@@ -96,6 +101,13 @@ export function createApiV1Routes(options: {
       return context.json(buildInvalidSampleRequestAnswer(firstIssueMessage), 400);
     },
   );
+
+  apiRoutes.openapi(getSimulatorTeamsRoute, (context) => {
+    return context.json(
+      { notice: simulatorTeamsNotice, teams: buildSimulatorTeamsAsEntities() },
+      200,
+    );
+  });
 
   const mediaFolder = options.mediaFolder;
   if (mediaFolder !== undefined) {

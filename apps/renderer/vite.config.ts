@@ -90,6 +90,8 @@ export default defineConfig({
       '/graphics': serverAddress,
       // The theme's tokens, font CSS and font file, linked by index.html.
       '/theme': serverAddress,
+      // The images a resolved field names (/media/<mediaId>), drawn by a graphic's <img>.
+      '/media': serverAddress,
       '/ws': { target: serverAddress, ws: true },
     },
   },

@@ -10,6 +10,9 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   (`modules/dataSources/api.ts`), the latest good data of one source.
 - `POST /api/v1/data-sources/http-json/sample-request` — also declared there: "Buscar da
   fonte", one flex request fetched once (10 s timeout), no state change, no event-log row.
+- `GET /api/v1/entities/simulator-teams` — declared by the entity module
+  (`modules/entities/api.ts`): the simulator's hundred fictional teams as team records, for
+  "Importar equipes do simulador"; no state change.
 - `POST /api/v1/media` — declared by the media module (`modules/media/api.ts`): one image
   as multipart form data, checked by its bytes, recorded through the command path as
   `sistema:midia`. The image itself is served outside /api/v1, at `/media/<mediaId>`.

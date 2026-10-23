@@ -1,5 +1,6 @@
 import { ptBRBindings } from './ptBRBindings';
 import { ptBRDataSources } from './ptBRDataSources';
+import { ptBREntityLibrary } from './ptBREntityLibrary';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
@@ -12,8 +13,9 @@ import { ptBRQuickFire } from './ptBRQuickFire';
  * through here like the rest: `ptBR.keyboard` (ptBRKeyboard.ts), `ptBR.quickFire`
  * (ptBRQuickFire.ts, the quick-fire panels and the macros), `ptBR.layers`
  * (ptBRLayers.ts), `ptBR.playout.quickEdit` (ptBRQuickEdit.ts, "Edição rápida"),
- * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page) and `ptBR.bindings`
- * (ptBRBindings.ts, fields read from a source and corrections of a source).
+ * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page), `ptBR.entityLibrary`
+ * (ptBREntityLibrary.ts, the "Cadastros" page) and `ptBR.bindings` (ptBRBindings.ts,
+ * fields read from a source and corrections of a source).
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,
@@ -29,6 +31,7 @@ export const ptBR = {
       navigationLabel: 'Páginas do controle',
       console: 'Console',
       dataSources: 'Fontes',
+      entityLibrary: 'Cadastros',
     },
   },
   serverHealth: {
@@ -57,6 +60,8 @@ export const ptBR = {
   layers: ptBRLayers,
   // The "Fontes de dados" page and the header chip (features/dataSources), in ptBRDataSources.ts.
   dataSources: ptBRDataSources,
+  // The "Cadastros" page (features/entityLibrary), in ptBREntityLibrary.ts.
+  entityLibrary: ptBREntityLibrary,
   // Putting graphics on air and taking them off (features/playout).
   playout: {
     // "Edição rápida" (features/playout/QuickEditPanel.tsx), in ptBRQuickEdit.ts.
