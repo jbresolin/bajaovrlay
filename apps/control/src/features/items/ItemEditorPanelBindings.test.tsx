@@ -81,15 +81,18 @@ describe('the kind selector of the item editor with data sources', () => {
     const kindsOfTheFlag = readOptionsOfDropdown('Como preencher Bandeira');
     const kindsOfTheTime = readOptionsOfDropdown('Como preencher Tempo de referência');
 
-    // Assert: "Fonte" on both; the whole clock only where the time is.
+    // Assert: "Fonte" on both; the whole clock only where the time is. "Evento" closes
+    // both lists: a text and a number may also be filled by an event (BAJAOVRLAY-44).
     expect(kindsOfTheFlag, 'the flag can be typed or read from a source').toEqual([
       'Valor digitado',
       'Fonte',
+      'Evento',
     ]);
     expect(kindsOfTheTime, 'the time can also read the whole clock').toEqual([
       'Valor digitado',
       'Fonte',
       'Relógio da fonte',
+      'Evento',
     ]);
   });
 

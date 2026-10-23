@@ -8,8 +8,9 @@ Every word the operator reads on the control page. Start reading at `ptBR.ts`.
   `ptBRQuickFire.ts` (`ptBR.quickFire`: the quick-fire strip, the macros and their editor),
   `ptBRLayers.ts` (`ptBR.layers`), `ptBRQuickEdit.ts` (`ptBR.playout.quickEdit`: "Edição
   rápida") and `ptBRDataSources.ts` (`ptBR.dataSources`: the "Fontes de dados" page and the
-  header chip; its flex HTTP/JSON form in `ptBRFlexSourceForm.ts`, `ptBR.dataSources.flexForm`) — parts kept in files of their own so `ptBR.ts` stays readable; reached through
-  `ptBR`.
+  header chip; its flex HTTP/JSON form in `ptBRFlexSourceForm.ts`, `ptBR.dataSources.flexForm`)
+  and `ptBREvents.ts` (`ptBR.events`: the event inbox) — parts kept in files of their own so
+  `ptBR.ts` stays readable; reached through `ptBR`.
 - `formatRelativeTimePtBR.ts` — the one function that writes "há 2 min"-style times.
 
 The product is pt-BR only (docs/00-concept.md §18.5), so there is no language switch and

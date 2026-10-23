@@ -3,6 +3,7 @@ import {
   type CommandError,
   findClockFieldKeysByRole,
   type Graphic,
+  type InboxEventPayload,
   type ItemFields,
   resolveBindingAgainstSources,
   type SourcesForBindings,
@@ -12,6 +13,7 @@ import {
 import { ptBR } from '../messages/ptBR.js';
 import { listRequiredFieldKeysOfGraphic } from './graphicSchemaProperties.js';
 import { readTitleOfField } from './itemBindingFields.js';
+import { resolveEventField } from './resolveEventField.js';
 import { refuseUnsupportedFieldKind } from './rundownCommandRefusals.js';
 
 /** What resolving an item's fields gives: the data for the graphic, or why it cannot be made. */
@@ -26,13 +28,16 @@ export type ItemFieldsResolution =
  *   fields are required, their titles in a refusal, and the clock fields by role;
  * - `momentOfTheTake`: the moment the store gave the command (ISO 8601), which a
  *   `takeTime` field becomes;
- * - `sources`: the data sources, their last good snapshots and the operator's overrides.
+ * - `sources`: the data sources, their last good snapshots and the operator's overrides;
+ * - `eventPayload`: only when an event is shown or previewed with the item, what fills
+ *   its event fields (BAJAOVRLAY-44).
  */
 export type ItemFieldsResolutionRequest = {
   fields: ItemFields;
   graphic: Graphic | undefined;
   momentOfTheTake: string;
   sources: SourcesForBindings;
+  eventPayload?: InboxEventPayload | undefined;
 };
 
 /**
@@ -89,6 +94,20 @@ export function resolveItemFieldsIntoGraphicData(
         }
         const destination = isWholeClock ? keysAndValuesOfTheWholeClock : resolvedKeysAndValues;
         destination.push(...fieldOutcome.keysAndValues);
+        break;
+      }
+      case 'eventField': {
+        const fieldOutcome = resolveEventField(
+          fieldKey,
+          fieldValue,
+          request.eventPayload,
+          graphic,
+          requiredFieldKeys,
+        );
+        if (fieldOutcome.status === 'refused') {
+          return fieldOutcome;
+        }
+        resolvedKeysAndValues.push(...fieldOutcome.keysAndValues);
         break;
       }
       default:

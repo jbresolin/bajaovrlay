@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { BindingFieldValueSchema } from '../bindings/bindingFieldValue.js';
+import { EventFieldValueSchema } from '../eventInbox/eventFieldValue.js';
 
 /** Answers whether a literal was given any value at all (null counts as a value). */
 function isValuePresent(value: unknown): boolean {
@@ -56,6 +57,8 @@ export const FieldValueSchema = z.discriminatedUnion('kind', [
   LiteralFieldValueSchema,
   TakeTimeFieldValueSchema,
   BindingFieldValueSchema,
+  // An item field filled by the event it shows (BAJAOVRLAY-44, eventInbox/eventFieldValue.ts).
+  EventFieldValueSchema,
 ]);
 
 /** A field value of any kind, after validation. */

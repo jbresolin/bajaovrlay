@@ -1,5 +1,6 @@
 import { ptBRBindings } from './ptBRBindings';
 import { ptBRDataSources } from './ptBRDataSources';
+import { ptBREvents } from './ptBREvents';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
@@ -13,12 +14,14 @@ import { ptBRQuickFire } from './ptBRQuickFire';
  * (ptBRQuickFire.ts, the quick-fire panels and the macros), `ptBR.layers`
  * (ptBRLayers.ts), `ptBR.playout.quickEdit` (ptBRQuickEdit.ts, "Edição rápida"),
  * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page) and `ptBR.bindings`
- * (ptBRBindings.ts, fields read from a source and corrections of a source).
+ * (ptBRBindings.ts, fields read from a source and corrections of a source) and
+ * `ptBR.events` (ptBREvents.ts, the event inbox).
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,
   bindings: ptBRBindings,
   quickFire: ptBRQuickFire,
+  events: ptBREvents,
   app: {
     title: 'BajaOvrLay',
     rundownAreaTitle: 'Rundown',
@@ -174,6 +177,7 @@ export const ptBR = {
       takeTime: 'Momento da entrada no ar',
       binding: 'Fonte',
       wholeClock: 'Relógio da fonte',
+      eventField: 'Evento',
     },
     // A list field (drawn read-only) that may also read a source: its value as it is.
     listKindAsItIs: 'Valor como está',

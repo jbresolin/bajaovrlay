@@ -58,8 +58,10 @@ export function buildInstanceUpdateFromDirtySchemaFormFields(
         break;
       // "Edição rápida" never offers "Fonte": a field bound on air is shown read-only and
       // corrected with an override, so a binding never reaches an update of what is on air.
+      // Nor does "Evento" (BAJAOVRLAY-44): it is offered in the item editor only.
       case 'binding':
       case 'filledByTheWholeClock':
+      case 'eventField':
         break;
     }
   }

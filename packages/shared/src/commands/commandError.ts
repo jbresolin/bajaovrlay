@@ -103,6 +103,19 @@ export const CommandErrorCodeSchema = z.enum([
   'EVENT_NOT_WAITING',
   /** showEvent named an event whose rule has no item to show it with ("Regras"). */
   'EVENT_RULE_WITHOUT_ITEM',
+  /**
+   * A take of an item filled by an event (an item with "Evento" fields) that no event
+   * fills: such an item goes on air only through showEvent. Also "Tomar" on its Prévia
+   * filled from a sample event.
+   */
+  'ITEM_FILLED_BY_EVENT',
+  /** An event shown on an item with a required field the event does not carry. */
+  'EVENT_FIELD_NOT_FILLED',
+  /**
+   * createItem or updateItemFields carried an event field whose payload field does not fit
+   * the graphic's field; the message starts with the field's title.
+   */
+  'INVALID_EVENT_FIELD',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

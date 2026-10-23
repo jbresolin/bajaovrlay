@@ -5,6 +5,7 @@ import type { CommandError, Item, UpdateItemFieldsCommand } from '@bajaovrlay/sh
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
 import { removeKeysFromFieldsChangedOnAirOfItem } from '../fieldsChangedOnAir.js';
 import { findRefusalOfBindingFieldsForGraphic } from '../itemBindingFields.js';
+import { findRefusalOfEventFieldsForGraphic } from '../itemEventFields.js';
 import {
   findRefusalOfTakeTimeFieldsForGraphic,
   listKeysOfTakeTimeFields,
@@ -110,7 +111,8 @@ function findRefusalOfTakeTimeFieldsInCommand(
  * graphic no longer registered refuses a command carrying a binding with
  * GRAPHIC_NOT_FOUND (no manifest to fit it to), and lets any other command through.
  * The whole-clock check reads the item as it will be stored, merged, so a takeTime sent
- * onto the moment of a clock bound whole is refused as well.
+ * onto the moment of a clock bound whole is refused as well. An event field whose payload
+ * field does not fit is refused after the bindings (BAJAOVRLAY-44).
  */
 function findRefusalOfBindingsInCommand(
   slices: SlicesChangedByCommands,
@@ -128,11 +130,13 @@ function findRefusalOfBindingsInCommand(
   if (graphicOfTheItem === undefined) {
     return commandCarriesABinding ? refuseUnknownGraphic(itemBefore.graphicId) : undefined;
   }
-  return findRefusalOfBindingFieldsForGraphic(
-    graphicOfTheItem,
-    command.fields,
-    itemAfter.fields,
-    slices.dataSources,
+  return (
+    findRefusalOfBindingFieldsForGraphic(
+      graphicOfTheItem,
+      command.fields,
+      itemAfter.fields,
+      slices.dataSources,
+    ) ?? findRefusalOfEventFieldsForGraphic(graphicOfTheItem, command.fields)
   );
 }
 

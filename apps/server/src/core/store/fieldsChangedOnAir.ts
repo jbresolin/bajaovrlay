@@ -79,6 +79,10 @@ function doesValueOnAirDifferFromTheItem(
   if (fieldOfTheItem?.kind === 'takeTime' || fieldOfTheItem?.kind === 'binding') {
     return true;
   }
+  // An event field gives "what the event says" (BAJAOVRLAY-44), as a binding does.
+  if (fieldOfTheItem?.kind === 'eventField') {
+    return true;
+  }
   const isOnAir = Object.hasOwn(dataAfterUpdate, fieldKey);
   const valueTheItemGives = fieldOfTheItem === undefined ? null : fieldOfTheItem.value;
   const doesTheItemGiveAValue = valueTheItemGives !== null;

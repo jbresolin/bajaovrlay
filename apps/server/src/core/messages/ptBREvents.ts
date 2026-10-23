@@ -5,6 +5,12 @@ import type { InboxEventKind, InboxEventStatus } from '@bajaovrlay/shared';
  * ptBR.eventErrors. Kept apart from ptBR.ts to keep that file short.
  */
 export const ptBREventErrors = {
+  itemFilledByAnEvent: 'Este item é preenchido por um evento: ele entra no ar pela aba Eventos.',
+  /** "Título: o evento não traz "Punição"." */
+  eventFieldNotFilled: (fieldTitle: string, pathLabel: string) =>
+    `${fieldTitle}: o evento não traz "${pathLabel}".`,
+  /** The field's title, then shared's reason: "Título: o campo do evento …". */
+  invalidEventField: (fieldTitle: string, reason: string) => `${fieldTitle}: ${reason}`,
   eventNotFound: 'Este evento não está na caixa de eventos.',
   /** "Este evento não está mais esperando: foi descartado." */
   eventNotWaiting: (status: InboxEventStatus) =>

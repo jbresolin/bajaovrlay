@@ -46,5 +46,21 @@ export {
   type UpdateEventRuleCommand,
   UpdateEventRuleCommandSchema,
 } from './eventCommands.js';
+// An item field filled by an event ("Evento"): the payload paths, which fit a field, why
+// one does not, reading one, and whether an item is a template filled by events.
+export {
+  type EventFieldValue,
+  EventFieldValueSchema,
+  type EventPayloadPath,
+  type EventPayloadPathChoice,
+  EventPayloadPathSchema,
+  findProblemInEventFieldForField,
+  isItemFilledByAnEvent,
+  listEventPayloadPaths,
+  listEventPayloadPathsThatFitField,
+  readEventFieldFromPayload,
+} from './eventFieldValue.js';
+// A realistic event of each kind, for "Prévia" of a template item.
+export { readSampleEventPayload } from './sampleEventPayloads.js';
 // The pt-BR reasons of the schemas above.
 export { ptBREventInbox } from './ptBREventInbox.js';

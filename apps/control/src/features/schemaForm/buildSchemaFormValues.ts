@@ -265,6 +265,7 @@ export function buildSchemaFormValuesFromItemFields(
   const valuePairs: Array<[string, SchemaFormFieldValue]> = [];
   const kindPairs: Array<[string, SchemaFormFieldKind]> = [];
   const bindingPairs: Array<[string, SchemaFormBindingValue]> = [];
+  const eventPathPairs: Array<[string, string]> = [];
   const unsupportedValuesAsJson: UnsupportedValueAsJson[] = [];
   const labelsOfFieldsThatCouldNotBeRead: string[] = [];
   const keysFilledByAStoredWholeClock = listKeysFilledByAStoredWholeClock(description, itemFields);
@@ -305,6 +306,13 @@ export function buildSchemaFormValuesFromItemFields(
       bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(storedField)]);
       continue;
     }
+    // A field filled by the event the item shows (BAJAOVRLAY-44): "Evento" and its path.
+    if (storedField?.kind === 'eventField') {
+      valuePairs.push([field.key, buildStartingValueOfField(field)]);
+      kindPairs.push([field.key, 'eventField']);
+      eventPathPairs.push([field.key, storedField.path]);
+      continue;
+    }
     if (keysFilledByAStoredWholeClock.includes(field.key)) {
       valuePairs.push([field.key, buildStartingValueOfField(field)]);
       kindPairs.push([field.key, chooseStartingKindOfField(field)]);
@@ -334,12 +342,10 @@ export function buildSchemaFormValuesFromItemFields(
   }
 
   return {
-    formValues: assembleSchemaFormValues(
-      valuePairs,
-      kindPairs,
-      unsupportedValuesAsJson,
-      bindingPairs,
-    ),
+    formValues: {
+      ...assembleSchemaFormValues(valuePairs, kindPairs, unsupportedValuesAsJson, bindingPairs),
+      eventPaths: Object.fromEntries(eventPathPairs),
+    },
     labelsOfFieldsThatCouldNotBeRead,
   };
 }

@@ -20,6 +20,12 @@ export const PreviewItemCommandSchema = z.object({
    * instance with this word (`previewOrigin`).
    */
   origin: PreviewOriginSchema.default('manual'),
+  /**
+   * Only for "Prévia" of an event in the inbox (BAJAOVRLAY-44): the event whose payload
+   * fills the item's event fields. The preview carries the event's id, so "Tomar" shows
+   * the event. Left out, an item filled by events is filled from a sample event.
+   */
+  eventId: z.string().min(1).optional(),
 });
 
 /** A previewItem command after validation (origin filled in). */

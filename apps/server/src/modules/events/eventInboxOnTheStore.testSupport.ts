@@ -3,7 +3,7 @@
 // is not started, so no poll arrives that the test did not send), and the event detection
 // watching it with a clock and timers the test moves by hand. Every function builds fresh
 // objects on each call.
-import type { DataSnapshotShapes, InboxEvent } from '@bajaovrlay/shared';
+import type { DataSnapshotShapes, InboxEvent, ItemFields } from '@bajaovrlay/shared';
 
 import {
   createTemporaryDatabasePath,
@@ -109,10 +109,15 @@ export function pollTheSimulator(inbox: EventInboxOnTheStore, shapes: DataSnapsh
 }
 
 /**
- * Creates a race clock item on the clock layer (the only graphic these tests build) and
- * answers its id: the item the rules show events with until the notice exists.
+ * Creates a race clock item on the clock layer (the only graphic these tests build), with
+ * the fields given laid over a typed green enduro, and answers its id: the item the rules
+ * show events with in these tests.
  */
-export function createClockItemForEvents(stateStore: StateStore, label: string): string {
+export function createClockItemForEvents(
+  stateStore: StateStore,
+  label: string,
+  fields: ItemFields = {},
+): string {
   const outcome = stateStore.applyCommand(
     {
       type: 'createItem',
@@ -127,6 +132,7 @@ export function createClockItemForEvents(stateStore: StateStore, label: string):
         referenceTimeMs: { kind: 'literal', value: 4_560_000 },
         referenceWallClockMs: { kind: 'literal', value: Date.parse(startOfTheTests) },
         running: { kind: 'literal', value: true },
+        ...fields,
       },
     },
     operatorActor,

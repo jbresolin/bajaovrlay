@@ -2,10 +2,12 @@ import {
   findClockFieldKeysByRole,
   type Instance,
   type InstanceBoundField,
+  isItemFilledByAnEvent,
   type ItemFields,
   listFieldKeysItemReadsFromASource,
 } from '@bajaovrlay/shared';
 
+import { ptBR } from '../../messages/ptBR.js';
 import { refusePreviewWithoutItem } from '../onAirChangeRefusals.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
 import { addBindingsOfNewInstance } from './instanceBindingsBookkeeping.js';
@@ -40,6 +42,12 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * data must still fit the schema registered now. Checking
  * again cannot put anything on air that was not seen (it can only refuse).
  *
+ * A preview of an item filled by events, filled from a sample event (it carries no event
+ * id), is refused (ITEM_FILLED_BY_EVENT): a sample is never shown. A preview of an event
+ * carries the event's id and its rule's duration to program, so the event goes on air
+ * (BAJAOVRLAY-44). What could go wrong: a sample preview whose item was deleted since
+ * cannot be told from any other preview, and goes on air.
+ *
  * A preview with no item is refused (INSTANCE_WITHOUT_ITEM): everything on air comes from
  * an item. No command makes such a preview since BAJAOVRLAY-37, and previews are dropped
  * at every boot, so this is a guard and not a case the operator meets.
@@ -59,6 +67,17 @@ export function takePreviewInstanceToProgram(
       slices.layers.find((layer) => layer.id === previewInstance.layerId)?.name ??
       previewInstance.layerId;
     return { status: 'refused', error: refusePreviewWithoutItem(layerName) };
+  }
+  const previewedItem = slices.items.find((item) => item.id === previewedItemId);
+  const isSampleOfAnEvent =
+    previewInstance.eventId === undefined &&
+    previewedItem !== undefined &&
+    isItemFilledByAnEvent(previewedItem.fields);
+  if (isSampleOfAnEvent) {
+    return {
+      status: 'refused',
+      error: { code: 'ITEM_FILLED_BY_EVENT', message: ptBR.eventErrors.itemFilledByAnEvent },
+    };
   }
   const boundFieldsOfThePreview =
     slices.instanceBindings.find((entry) => entry.instanceId === previewInstance.id)?.boundFields ??
@@ -87,6 +106,12 @@ export function takePreviewInstanceToProgram(
     takeTimeFieldKeys: previewInstance.takeTimeFieldKeys ?? [],
     itemId: previewedItemId,
   };
+  if (previewInstance.eventId !== undefined) {
+    takeOfWhatWasPreviewed.eventId = previewInstance.eventId;
+  }
+  if (previewInstance.autoOutAfterMs !== undefined) {
+    takeOfWhatWasPreviewed.autoOutAfterMs = previewInstance.autoOutAfterMs;
+  }
   const takeOutcome = putGraphicOnOutput(slices, takeOfWhatWasPreviewed, context);
   if (takeOutcome.status === 'refused') {
     return takeOutcome;
