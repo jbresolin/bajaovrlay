@@ -16,10 +16,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# A newer push to the same branch or PR makes the older run pointless; cancel it.
+# On a pull request a newer push makes the older run pointless, so it is cancelled. On main
+# every merge keeps its own run, so each merge gets its own verdict: a push is grouped by its
+# commit, since GitHub keeps only one waiting run per group and would drop the others.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -128,7 +130,8 @@ jobs:
       # Screenshots, traces and the HTML report from a failed run, for debugging and for
       # taking screenshot baselines rendered on CI's Linux.
       - name: Upload Playwright results
-        if: failure()
+        # A job past its timeout ends as cancelled, and its traces matter most then.
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-results-renderer-and-graphics
@@ -201,7 +204,8 @@ jobs:
           >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Playwright results
-        if: failure()
+        # A job past its timeout ends as cancelled, and its traces matter most then.
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-results-control-shard-${{ matrix.shard }}
@@ -221,8 +225,10 @@ jobs:
       - unit-tests
       - checks-and-browser-tests-of-renderer-and-graphics
       - browser-tests-of-control
-    # always(): it must run, and turn red, even when a job it needs failed.
-    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false)
+    # !cancelled(): it must run, and turn red, even when a job it needs failed or timed out,
+    # but not when the whole run was cancelled (a newer push replaced it). Inside ${{ }}
+    # because a YAML value cannot start with "!".
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
