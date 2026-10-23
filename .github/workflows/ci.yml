@@ -61,6 +61,17 @@ jobs:
       - name: Browser tests (Playwright)
         run: pnpm test:e2e
 
+      # The 15 slowest test files and tests of this run, on its summary page, from the JSON
+      # reports the test configs write on CI (docs/ci.md). After a failure too: a test that
+      # turned slow may be why the run failed. A report that is missing is named, not fatal.
+      - name: Report the slowest tests
+        if: always()
+        run: >-
+          node scripts/reportSlowestTests.js vitest-report.json
+          apps/*/test-results/playwright-results.json
+          packages/graphics/*/test-results/playwright-results.json
+          >> "$GITHUB_STEP_SUMMARY"
+
       # Screenshots, traces and the HTML report from a failed run, for debugging and for
       # taking screenshot baselines rendered on CI's Linux.
       - name: Upload Playwright results
