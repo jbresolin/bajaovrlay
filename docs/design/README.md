@@ -30,7 +30,16 @@ which reveal in steps), `slateCatalogueSheets.mjs` (two more reference sheets) a
 `slateCataloguePages.mjs` (assembles those pages; `slatePages.mjs` merges them with pass 1);
 their structure in `slate-cards.css` and `slate-boards.css`; and `sampleFixtures.mjs`, the
 on-air data no canonical shape carries yet (cities, notices, a schedule, messages, fictional
-sponsors), which `buildSampleData.mjs` folds into `sample-data.json`.
+sponsors), which `buildSampleData.mjs` folds into `sample-data.json` (with
+`sampleBracket64.mjs`, the 64-slot draw, and `samplePlaceholderQr.mjs`).
+
+The catalogue's motion demos are built from `slateMotionDemos.mjs` (one entry per graphic
+and per combination of its optional parts) and `slateMotionPages.mjs` (the pages and their
+index, `motion-catalogo.html`), styled by `slate-demo.css` (the controls bar), and run in the
+browser by `motionDemoCore.js` (the motion tokens read as the product's `packages/theme`
+reads them, the moves, the buttons) with `motionDemoCards.js` or `motionDemoBoards.js`. They
+load GSAP and CustomEase from the repo's `node_modules`, so `pnpm install` must have run;
+nothing comes from the network.
 
 ## What a direction holds
 
@@ -61,6 +70,7 @@ sponsors), which `buildSampleData.mjs` folds into `sample-data.json`.
 | `sheet-battle.html`, `sheet-notices.html`                                                                        | Pass 2 reference sheets: the battle card's three trends; every notice beside the clock with a red flag.                                                                                                                                                                                       |
 | `motion.md`                                                                                                      | In and out animations, the tower's position-change animation, the strip's movement, with durations; pass 2's in, out and steps.                                                                                                                                                               |
 | `motion-demo.html`                                                                                               | Optional: an animated demo of the above (CSS or the Web Animations API, nothing loaded from the network). The screenshot tool skips it. It covers pass 1.                                                                                                                                     |
+| `motion-catalogo.html`, `motion-<graphic>-<parts>.html`                                                          | Pass 2: the catalogue's motion demos, one page per graphic and per combination of its optional parts, with buttons (Entrar, Sair, Próximo, Atualizar, Novo evento) and GSAP from `node_modules`; every timing from `tokens.css`. The screenshot and layout tools skip them.                   |
 | `screenshots/`                                                                                                   | `<page>.<background>.jpg` for every page over every frame in `docs/brand/frames/`, over mid-grey and over near-black; reference sheets over grey and black only.                                                                                                                              |
 
 ## The page contract

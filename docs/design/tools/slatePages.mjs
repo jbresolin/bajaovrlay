@@ -2,6 +2,7 @@
 // the reference sheets (slateSheets.mjs) and the catalogue of pass 2 (slateCataloguePages.mjs):
 // a direction's generatePages.mjs calls buildPages() with its numbers and writes the result.
 import { buildCataloguePages } from './slateCataloguePages.mjs';
+import { buildMotionDemoPages } from './slateMotionPages.mjs';
 import { renderSheetColumns, renderSheetFlags, renderSheetStatus } from './slateSheets.mjs';
 import {
   pageShell,
@@ -129,5 +130,6 @@ export function buildPages(options) {
     'sheet-columns.html': shell('sheet columns', renderSheetColumns(name)),
     'motion-demo.html': renderMotionDemo(name, options),
     ...buildCataloguePages(options),
+    ...buildMotionDemoPages(options),
   };
 }

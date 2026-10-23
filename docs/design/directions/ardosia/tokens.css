@@ -188,4 +188,7 @@
   --motion-notice-hold: 8000ms; /* a fastest lap or a penalty leaves by itself after this */
   --motion-board-hold: 10000ms; /* a standings page stays this long */
   --motion-sponsor-hold: 5000ms; /* a sponsor, in the roll, stays this long */
+  --motion-notice-min-hold: 3000ms; /* a notice stays at least this long before the next replaces it */
+  --motion-page-stagger: 15ms; /* between pieces when a page turns in place (ticker, sponsor tiles) */
+  --motion-podium-offset: 40; /* px a podium card rises when revealed: twice the usual rise */
 }

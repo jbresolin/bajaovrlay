@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — movimento: Cartão de equipe · sem foto, sem logo, sem cidade</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title">Cartão de equipe · sem foto, sem logo, sem cidade</span>
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <div class="demo-stage" data-demo="team-card">
+      <section class="card team-card" data-graphic="team-card">
+        <div class="team-card__identity">
+          <div class="team-card__title">
+            <span class="chip chip--large">31</span>
+            <span class="team-card__name">Acauã Baja</span>
+          </div>
+          <div class="team-card__details">
+            <span class="team-card__school">Mauá</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="../../../../node_modules/.pnpm/node_modules/gsap/dist/gsap.min.js"></script>
+    <script src="../../../../node_modules/.pnpm/node_modules/gsap/dist/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/motionDemoCards.js"></script>
+  </body>
+</html>

@@ -13,10 +13,14 @@ function renderNoticeCar(car) {
 /** The fastest lap: a green "MELHOR VOLTA" badge, the car, the time in green, the lap. */
 export function renderFastestLap(fastestLap, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="fastest-lap"' : '';
+  // The lap it was set on is optional: the positions shape has no lap number for a best lap.
+  const lap =
+    fastestLap.lap === undefined
+      ? ''
+      : `\n    <span class="caption">VOLTA ${fastestLap.lap}</span>`;
   return `<section class="card notice fastest-lap"${root}>
   <header class="notice__head">
-    <span class="notice__badge notice__badge--best">MELHOR VOLTA</span>
-    <span class="caption">VOLTA ${fastestLap.lap}</span>
+    <span class="notice__badge notice__badge--best">MELHOR VOLTA</span>${lap}
   </header>
   <div class="notice__row">
     ${renderNoticeCar(fastestLap)}

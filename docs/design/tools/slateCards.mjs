@@ -12,9 +12,9 @@ function lapsWords(laps) {
 
 // ---------------------------------------------------------------- team card
 
-// The photo cell and the logo cell are written only when the team has them (the entity
-// library, BAJAOVRLAY-19, will say); without them the card is the chip, the name and the line
-// under it, and nothing is left empty.
+// The photo cell, the logo cell and the city are written only when the team has them (the
+// entity library, BAJAOVRLAY-19, will say); without them the card is the chip, the name and
+// the school under it, and nothing is left empty.
 export function renderTeamCard(team, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="team-card"' : '';
   const photo = team.photoPath
@@ -23,6 +23,9 @@ export function renderTeamCard(team, { withRoot = true } = {}) {
   const logo = team.logoInitials
     ? `\n  <div class="team-card__logo">${placeholderMark(team.logoInitials, `Logo da equipe ${team.teamName}`)}</div>`
     : '';
+  const city = team.city
+    ? `\n      <span class="team-card__city">${escapeHtml(team.city)}</span>`
+    : '';
   return `<section class="card team-card"${root}>${photo}
   <div class="team-card__identity">
     <div class="team-card__title">
@@ -30,8 +33,7 @@ export function renderTeamCard(team, { withRoot = true } = {}) {
       <span class="team-card__name">${escapeHtml(team.teamName)}</span>
     </div>
     <div class="team-card__details">
-      <span class="team-card__school">${escapeHtml(team.schoolName)}</span>
-      <span class="team-card__city">${escapeHtml(team.city)}</span>
+      <span class="team-card__school">${escapeHtml(team.schoolName)}</span>${city}
     </div>
   </div>${logo}
 </section>`;
@@ -51,18 +53,28 @@ function renderBattleCar(car) {
   </div>`;
 }
 
+/** "FECHANDO −0,7", "ABRINDO +0,6", "ESTÁVEL": the trend's word and, unless steady, its change. */
+export function writeTrendWords(trend, changeText) {
+  if (trend === 'steady') return trendWords.steady;
+  return `${trendWords[trend]} ${changeText}`;
+}
+
+/** The trend cell: its shape and its words, its colour set by its own data-trend. */
+export function renderTrendCell(trend, words) {
+  return `<span class="battle-gap__trend" data-trend="${trend}">${trendIcons[trend]}<span class="battle-gap__trend-words">${escapeHtml(words)}</span></span>`;
+}
+
 /**
  * Two cars for one place with the gap between them. The trend is one of closing, opening or
  * steady: a word, the change since a lap ago and a shape, so it reads in a still frame.
  */
 export function renderBattleCard(battle, trend, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="battle-card"' : '';
-  const change = trend === 'steady' ? '' : ` ${battle.trends[trend]}`;
-  return `<section class="battle-card"${root} data-trend="${trend}">
+  return `<section class="battle-card"${root}>
 ${renderBattleCar(battle.ahead)}
   <div class="card battle-gap">
     <span class="battle-gap__value">${battle.gapText}</span>
-    <span class="battle-gap__trend">${trendIcons[trend]}<span>${trendWords[trend]}${change}</span></span>
+    ${renderTrendCell(trend, writeTrendWords(trend, battle.trends[trend]))}
   </div>
 ${renderBattleCar(battle.behind)}
 </section>`;
@@ -115,11 +127,20 @@ export function renderCountdownCard(countdown, { withRoot = true } = {}) {
 
 // ---------------------------------------------------------------- message ticker
 
-/** The strip's bar carrying one production message per page, with the strip's clock block. */
-export function renderMessageTicker(messages, session, pageNumber, { withRoot = true } = {}) {
+/**
+ * The strip's bar carrying one production message per page, with the strip's clock block,
+ * which is optional (withClock: false when the race clock card is up, or between sessions).
+ */
+export function renderMessageTicker(
+  messages,
+  session,
+  pageNumber,
+  { withRoot = true, withClock = true } = {},
+) {
   const root = withRoot ? ' data-graphic="message-ticker"' : '';
-  return `<section class="lower-strip message-ticker"${root}>
-${renderStripClock(session)}
+  const noClockClass = withClock ? '' : ' message-ticker--no-clock';
+  const clock = withClock ? `\n${renderStripClock(session)}` : '';
+  return `<section class="lower-strip message-ticker${noClockClass}"${root}>${clock}
   <div class="message-ticker__pages">
     <div class="pill pill--head message-ticker__label"><span class="caption">AVISO</span></div>
     <div class="pill message-ticker__message">${escapeHtml(messages[pageNumber - 1])}</div>
@@ -130,15 +151,20 @@ ${renderStripClock(session)}
 
 // ---------------------------------------------------------------- sponsor roll, corner
 
+/** The corner roll's sponsor cell: one sponsor's mark and name under the sponsor line. */
+export function renderSponsorRollCornerCell(bug, sponsor) {
+  return `<div class="sponsor-roll-corner__sponsor">
+    ${placeholderMark(sponsor.initial, sponsor.name)}
+    <span class="sponsor-roll-corner__words"><span class="caption">${escapeHtml(bug.sponsorLine)}</span><span class="sponsor-bug__sponsor-name">${escapeHtml(sponsor.name)}</span></span>
+  </div>`;
+}
+
 /** The bug's card with one sponsor's mark and name in place of the sponsor line. */
 export function renderSponsorRollCorner(bug, sponsor, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="sponsor-roll-corner"' : '';
   return `<section class="card sponsor-bug sponsor-roll-corner"${root}>
   <img class="sponsor-bug__logo" src="${logoPath}" alt="Baja SAE Brasil">
   <span class="sponsor-bug__label">${escapeHtml(bug.eventLabel)}</span>
-  <div class="sponsor-roll-corner__sponsor">
-    ${placeholderMark(sponsor.initial, sponsor.name)}
-    <span class="sponsor-roll-corner__words"><span class="caption">${escapeHtml(bug.sponsorLine)}</span><span class="sponsor-bug__sponsor-name">${escapeHtml(sponsor.name)}</span></span>
-  </div>
+  ${renderSponsorRollCornerCell(bug, sponsor)}
 </section>`;
 }

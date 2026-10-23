@@ -3707,7 +3707,29 @@
       "closing": "−0,7",
       "opening": "+0,7",
       "steady": "0,0"
-    }
+    },
+    "updates": [
+      {
+        "gapText": "+8,3",
+        "trend": "closing",
+        "changeText": "−0,7"
+      },
+      {
+        "gapText": "+7,9",
+        "trend": "closing",
+        "changeText": "−0,4"
+      },
+      {
+        "gapText": "+8,6",
+        "trend": "opening",
+        "changeText": "+0,6"
+      },
+      {
+        "gapText": "+8,6",
+        "trend": "steady",
+        "changeText": "+0,0"
+      }
+    ]
   },
   "notices": {
     "penalty": {
@@ -3765,7 +3787,8 @@
   "countdown": {
     "sessionName": "Suspensão",
     "startTimeText": "13:30",
-    "remainingText": "23:45"
+    "remainingText": "23:45",
+    "remainingSeconds": 1425
   },
   "schedule": [
     {

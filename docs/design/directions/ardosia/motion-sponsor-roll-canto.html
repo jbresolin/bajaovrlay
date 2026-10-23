@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — movimento: Patrocinadores · no canto</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title">Patrocinadores · no canto</span>
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <button type="button" class="demo-controls__button" data-action="update">Atualizar</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <div class="demo-stage" data-demo="sponsor-roll-corner">
+      <section class="card sponsor-bug sponsor-roll-corner" data-graphic="sponsor-roll-corner">
+        <img class="sponsor-bug__logo" src="../../../brand/logo-branca.png" alt="Baja SAE Brasil" />
+        <span class="sponsor-bug__label">ENDURO</span>
+        <div class="sponsor-roll-corner__sponsor">
+          <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador A">
+            <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+            <text
+              x="24"
+              y="31.5"
+              text-anchor="middle"
+              font-size="22"
+              font-family="Bebas Neue, sans-serif"
+              fill="currentColor"
+            >
+              A
+            </text>
+          </svg>
+          <span class="sponsor-roll-corner__words"
+            ><span class="caption">Apresentado por</span
+            ><span class="sponsor-bug__sponsor-name">Patrocinador A</span></span
+          >
+        </div>
+      </section>
+    </div>
+    <template id="sponsor-1">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador A">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            A
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador A</span></span
+        >
+      </div>
+    </template>
+    <template id="sponsor-2">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador B">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            B
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador B</span></span
+        >
+      </div>
+    </template>
+    <template id="sponsor-3">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador C">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            C
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador C</span></span
+        >
+      </div>
+    </template>
+    <template id="sponsor-4">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador D">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            D
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador D</span></span
+        >
+      </div>
+    </template>
+    <template id="sponsor-5">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador E">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            E
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador E</span></span
+        >
+      </div>
+    </template>
+    <template id="sponsor-6">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador F">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            F
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador F</span></span
+        >
+      </div>
+    </template>
+    <template id="sponsor-7">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador G">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            G
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador G</span></span
+        >
+      </div>
+    </template>
+    <template id="sponsor-8">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador H">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            H
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador H</span></span
+        >
+      </div>
+    </template>
+    <template id="sponsor-9">
+      <div class="sponsor-roll-corner__sponsor">
+        <svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="Patrocinador I">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5" />
+          <text
+            x="24"
+            y="31.5"
+            text-anchor="middle"
+            font-size="22"
+            font-family="Bebas Neue, sans-serif"
+            fill="currentColor"
+          >
+            I
+          </text>
+        </svg>
+        <span class="sponsor-roll-corner__words"
+          ><span class="caption">Apresentado por</span
+          ><span class="sponsor-bug__sponsor-name">Patrocinador I</span></span
+        >
+      </div>
+    </template>
+    <script type="application/json" id="demo-config">
+      {
+        "sponsorTemplates": [
+          "sponsor-1",
+          "sponsor-2",
+          "sponsor-3",
+          "sponsor-4",
+          "sponsor-5",
+          "sponsor-6",
+          "sponsor-7",
+          "sponsor-8",
+          "sponsor-9"
+        ]
+      }
+    </script>
+
+    <script src="../../../../node_modules/.pnpm/node_modules/gsap/dist/gsap.min.js"></script>
+    <script src="../../../../node_modules/.pnpm/node_modules/gsap/dist/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/motionDemoCards.js"></script>
+  </body>
+</html>

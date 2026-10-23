@@ -270,13 +270,14 @@
   height: 10px;
   margin-top: calc(-1 * var(--glyph-nudge));
 }
-[data-trend='closing'] .battle-gap__trend {
+/* The cell carries its own trend, so an old and a new cell can crossfade in their colours. */
+.battle-gap__trend[data-trend='closing'] {
   color: var(--text-laps);
 }
-[data-trend='opening'] .battle-gap__trend {
+.battle-gap__trend[data-trend='opening'] {
   color: var(--cue-down-text);
 }
-[data-trend='steady'] .battle-gap__trend {
+.battle-gap__trend[data-trend='steady'] {
   color: var(--text-muted);
 }
 
@@ -326,9 +327,14 @@
    label pill in the denser slate says what it is, and no chip, no yellow and no green appear,
    so it can never be read as a standings page. */
 .message-ticker__pages {
+  position: relative;
   display: flex;
   gap: var(--row-gap);
   min-width: 0;
+}
+/* Without its clock block the bar is the label, the message and the page cell. */
+.message-ticker--no-clock {
+  grid-template-columns: 1fr auto;
 }
 .message-ticker__label {
   flex: none;

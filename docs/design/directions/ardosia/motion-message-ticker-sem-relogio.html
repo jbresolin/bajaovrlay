@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — movimento: Mensagens · sem relógio</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title">Mensagens · sem relógio</span>
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <div class="demo-stage" data-demo="message-ticker">
+      <section
+        class="lower-strip message-ticker message-ticker--no-clock"
+        data-graphic="message-ticker"
+      >
+        <div class="message-ticker__pages">
+          <div class="pill pill--head message-ticker__label">
+            <span class="caption">AVISO</span>
+          </div>
+          <div class="pill message-ticker__message">Próxima sessão às 13h30: Suspensão</div>
+        </div>
+        <div class="card lower-strip__page">1/3</div>
+      </section>
+    </div>
+
+    <script type="application/json" id="demo-config">
+      {
+        "messages": [
+          "Próxima sessão às 13h30: Suspensão",
+          "Box aberto para abastecimento",
+          "Premiação às 18h no palco principal"
+        ]
+      }
+    </script>
+
+    <script src="../../../../node_modules/.pnpm/node_modules/gsap/dist/gsap.min.js"></script>
+    <script src="../../../../node_modules/.pnpm/node_modules/gsap/dist/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/motionDemoCards.js"></script>
+  </body>
+</html>

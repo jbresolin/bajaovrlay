@@ -116,9 +116,13 @@ function renderFixtureSide(car, match, side) {
       </div>`;
 }
 
-/** One match: two stacked pills in the tree, or one score-line card on a board. */
-export function renderBracketMatch(match, { layout = 'tree', style = '' } = {}) {
-  const styleAttribute = style ? ` style="${style}"` : '';
+/**
+ * One match: two stacked pills in the tree, or one score-line card on a board. A tree match
+ * carries its round's index (data-round), so a step can reveal one round at a time.
+ */
+export function renderBracketMatch(match, { layout = 'tree', style = '', round } = {}) {
+  const roundAttribute = round === undefined ? '' : ` data-round="${round}"`;
+  const styleAttribute = `${style ? ` style="${style}"` : ''}${roundAttribute}`;
   if (layout === 'board') {
     return `    <div class="card bracket-fixture"${styleAttribute} data-match="${match.matchId}">
 ${renderFixtureSide(match.carA, match, 'left')}
@@ -137,17 +141,28 @@ ${renderTreeCar(match.carB, match)}
 // Two columns of match cards, read down the left column then the right, like a draw sheet;
 // the gutter between the columns is wider than the gap between cards, so a row is never read
 // across as one match.
-function renderBracketBoard(brackets, step, stepNumber, stepCount, root) {
-  const rowsPerColumn = Math.ceil(step.matches.length / 2);
+/** The head's line for a step: a board's round name (and page), nothing for the tree. */
+export function writeBracketStepSubtitle(step) {
+  if (step.kind !== 'board') return '';
   const pageWords = step.pageCount > 1 ? ` · página ${step.pageNumber}/${step.pageCount}` : '';
+  return `${step.round.name}${pageWords}`;
+}
+
+/** A round board's body: its match cards in two columns. */
+export function renderBracketBoardBody(step) {
+  const rowsPerColumn = Math.ceil(step.matches.length / 2);
   const matches = step.matches
     .map((match) => renderBracketMatch(match, { layout: 'board' }))
     .join('\n');
-  return `<section class="board bracket"${root} data-step="${stepNumber}">
-${renderBoardHead(brackets.title, `${step.round.name}${pageWords}`, `${stepNumber}/${stepCount}`)}
-  <div class="bracket-board" style="--bracket-board-rows: ${rowsPerColumn}">
+  return `  <div class="bracket-board" style="--bracket-board-rows: ${rowsPerColumn}">
 ${matches}
-  </div>
+  </div>`;
+}
+
+function renderBracketBoard(brackets, step, stepNumber, stepCount, root) {
+  return `<section class="board bracket"${root} data-step="${stepNumber}">
+${renderBoardHead(brackets.title, writeBracketStepSubtitle(step), `${stepNumber}/${stepCount}`)}
+${renderBracketBoardBody(step)}
 </section>`;
 }
 
@@ -179,7 +194,8 @@ function placeRounds(rounds) {
 }
 
 // The lines from each match to the match it feeds in the next round: out of the pill, half
-// way across the gap, up or down to the next match's middle, into it.
+// way across the gap, up or down to the next match's middle, into it. Each line carries the
+// round it leads into (data-round), so it can appear with that round.
 function renderBracketLines(placedRounds) {
   const paths = [];
   placedRounds.slice(0, -1).forEach((column, roundIndex) => {
@@ -190,18 +206,20 @@ function renderBracketLines(placedRounds) {
       const xOut = column.left + column.width;
       const xHalf = xOut + columnGap / 2;
       paths.push(
-        `<path d="M${xOut} ${placed.middle}H${xHalf}V${target.middle}H${nextColumn.left}"/>`,
+        `<path data-round="${roundIndex + 1}" d="M${xOut} ${placed.middle}H${xHalf}V${target.middle}H${nextColumn.left}"/>`,
       );
     });
   });
   return paths.join('');
 }
 
-// The tree at one step: every round's name from its first step, the matches of the rounds
-// reached so far, and the lines between them.
-function renderBracketTree(brackets, step, stepNumber, stepCount, root) {
-  const placedRounds = placeRounds(step.rounds);
-  const shownRounds = placedRounds.slice(0, step.roundsShown);
+/**
+ * The tree's body: every round's name, the matches of the first `roundsShown` rounds and the
+ * lines between them.
+ */
+export function renderBracketTreeBody(rounds, roundsShown) {
+  const placedRounds = placeRounds(rounds);
+  const shownRounds = placedRounds.slice(0, roundsShown);
   const names = placedRounds
     .map(
       (column) =>
@@ -209,21 +227,28 @@ function renderBracketTree(brackets, step, stepNumber, stepCount, root) {
     )
     .join('\n');
   const matches = shownRounds
-    .flatMap((column) =>
+    .flatMap((column, roundIndex) =>
       column.matches.map((placed) =>
         renderBracketMatch(placed.match, {
           style: `left: ${column.left}px; top: ${placed.top}px; width: ${column.width}px`,
+          round: roundIndex,
         }),
       ),
     )
     .join('\n');
-  return `<section class="board bracket"${root} data-step="${stepNumber}">
-${renderBoardHead(brackets.title, '', `${stepNumber}/${stepCount}`)}
-  <div class="board__stage">
+  return `  <div class="board__stage">
     <svg class="bracket__lines" viewBox="0 0 ${stageWidth} ${stageHeight}" aria-hidden="true">${renderBracketLines(shownRounds)}</svg>
 ${names}
 ${matches}
-  </div>
+  </div>`;
+}
+
+// The tree at one step: every round's name from its first step, the matches of the rounds
+// reached so far, and the lines between them.
+function renderBracketTree(brackets, step, stepNumber, stepCount, root) {
+  return `<section class="board bracket"${root} data-step="${stepNumber}">
+${renderBoardHead(brackets.title, '', `${stepNumber}/${stepCount}`)}
+${renderBracketTreeBody(step.rounds, step.roundsShown)}
 </section>`;
 }
 

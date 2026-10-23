@@ -32,6 +32,9 @@ export const battleFixture = {
   aheadCarNumber: 78,
   behindCarNumber: 52,
   intervalOneLapAgoMs: { closing: 9150, opening: 7620, steady: 8388 },
+  // The interval at the next laps, for the motion demo's Atualizar: closing again (the number
+  // changes, the word stays), then opening (the word changes), then steady.
+  laterIntervalsMs: [7962, 8640, 8655],
 };
 
 /**

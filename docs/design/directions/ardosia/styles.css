@@ -6,6 +6,7 @@
 @import url('../../tools/slate-base.css');
 @import url('../../tools/slate-cards.css');
 @import url('../../tools/slate-boards.css');
+@import url('../../tools/slate-demo.css');
 
 /* One face, Bebas Neue, which has no lowercase: everything on the page is set in caps, so no
    word ever falls back to another face. The gap unit is therefore dropped in the detailed

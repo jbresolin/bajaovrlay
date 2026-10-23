@@ -19,7 +19,9 @@ lower-third 40, fullscreen 50. One layer is proposed, **notice 45** ("Aviso"): t
 and the penalty notice must share the screen with the clock, the tower, the bug, the lower
 third and the ticker, and no existing layer allows that (on the bug layer they would replace
 the bug, which would then have to be taken again). A notice is transient: it leaves by itself
-after `--motion-notice-hold` (8 s), and a new notice replaces the one on air.
+after `--motion-notice-hold` (8 s), and a new notice replaces the one on air once that one
+has been up `--motion-notice-min-hold` (3 s), so two arriving close together are both read;
+more queue in order (`motion.md`).
 
 | Layer        | z   | Graphics                                                                                                             | Where on screen                                          |
 | ------------ | --- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
@@ -70,8 +72,10 @@ BAJAOVRLAY-19). Fields that no canonical shape carries are listed as missing.
 The lower third's slot with the car as the subject: the big blue chip, the team name at
 44 px, the school and the city under it; a photo cell at the left and a logo cell at the
 right only when the team has them. Without media the card is simply shorter, with the chip as
-its anchor, so it never shows an empty frame. The photo in the mock-up is a stream frame
-standing in for a car photo; the logo is a placeholder ring with the team's initials.
+its anchor, so it never shows an empty frame. The photo, the logo and the city are each
+optional (the motion demos show all eight combinations). The photo in the mock-up is a
+stream frame standing in for a car photo; the logo is a placeholder ring with the team's
+initials.
 
 - Reads: positions, one car chosen by its number (`entryOfCar.<n>`): `carNumber`,
   `teamName`, `schoolName`. Snapshot, or typed when the car is not in the positions.
@@ -106,7 +110,9 @@ TRAÇÃO, SUSP., MANOBR., ENDURO) and the total in green. **20 rows a page** (th
 the source does not know shows "—". The per-event table has one number per team, so it shows
 **the whole field at once in three columns of 20** (34 px pills, the tower's) and needs no
 paging; tied teams share a rank (the sample's enduro has two teams on 400,0, both ranked 1
-and both on the green chip).
+and both on the green chip). The points per event are optional in the shape: overall
+standings that come without them use the same three-column board with the total alone,
+rather than seven columns of "—" (the motion demos show both).
 
 - Reads: standings, scope `overall`: `rank`, `carNumber`, `teamName`, `schoolName`, `points`,
   `pointsByEvent` (optional per event). Per event: standings with the event's scope. Live or
@@ -231,7 +237,9 @@ board grows with the schedule up to about twelve.
 
 A narrow board for a break: the head ("INTERVALO", the event, the date), a card with what is
 next (the session at 56 px, the count at 96 px, the start time), the overall top five as
-40 px standings pills, and a sponsor line with up to four marks and names.
+40 px standings pills, and a sponsor line with up to four marks and names. The top five and
+the sponsor line are each optional (before the first standings exist, or with no sponsor to
+show); without the top five the next-session card takes the whole width, its words centred.
 
 - Reads: session `eventName` (live or typed); standings rows 1 to 5 (live); the countdown's
   fields as in 8; the sponsors as in 11.
@@ -265,8 +273,9 @@ The code in the mock-up is a placeholder pattern and does not scan.
 The strip's bar on the ticker layer with the strip's clock block, then an "AVISO" label pill
 in the denser slate and one message pill at 30 px, one message per page, the page cell at
 the right. It differs from the standings strip at a glance: one pill, a label, no chip, no
-yellow and no green. Messages page like the strip's cars (`--motion-strip-hold`, 7 s) and
-never scroll.
+yellow and no green. The clock block is optional (off when the race clock card is up, or
+between sessions); without it the label starts the bar. Messages page like the strip's cars
+(`--motion-strip-hold`, 7 s) and never scroll.
 
 - Reads: the clock block as the strip does (the clock group and the flag, live). Typed: the
   messages, a list.

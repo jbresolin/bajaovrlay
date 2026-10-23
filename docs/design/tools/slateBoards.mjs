@@ -53,6 +53,21 @@ const fixedStandingsColumns = [
   { key: 'team', label: 'EQUIPE', width: 'minmax(0, 1fr)' },
 ];
 
+/** The rows of one page of the overall standings (the motion demo swaps them page by page). */
+export function renderStandingsPageRows(standings, pageNumber, rowsPerPage) {
+  const firstIndex = (pageNumber - 1) * rowsPerPage;
+  const rows = standings.entries.slice(firstIndex, firstIndex + rowsPerPage);
+  return rows.map((entry) => renderStandingsRow(entry, standings.eventColumns)).join('\n');
+}
+
+/** "1/3 · 1º A 20º": the head's page line for one page of the overall standings. */
+export function writeStandingsPageAside(standings, pageNumber, rowsPerPage) {
+  const pageCount = Math.ceil(standings.entries.length / rowsPerPage);
+  const firstIndex = (pageNumber - 1) * rowsPerPage;
+  const lastIndex = Math.min(firstIndex + rowsPerPage, standings.entries.length);
+  return `${pageNumber}/${pageCount} · ${firstIndex + 1}º A ${lastIndex}º`;
+}
+
 /**
  * The overall standings: one row per team with its points per event and the total, in
  * pages of rowsPerPage (20: three pages for 60 teams, the tower's page size).
@@ -65,22 +80,19 @@ export function renderStandingsBoard(
   { withRoot = true } = {},
 ) {
   const root = withRoot ? ' data-graphic="standings"' : '';
-  const pageCount = Math.ceil(standings.entries.length / rowsPerPage);
-  const firstIndex = (pageNumber - 1) * rowsPerPage;
-  const rows = standings.entries.slice(firstIndex, firstIndex + rowsPerPage);
   const columns = [
     ...fixedStandingsColumns,
     ...standings.eventColumns.map((column) => ({ ...column, width: 'var(--col-points)' })),
     { key: 'total', label: 'TOTAL', width: 'var(--col-total)' },
   ];
   const grid = columns.map((column) => column.width).join(' ');
-  const aside = `${pageNumber}/${pageCount} · ${firstIndex + 1}º A ${firstIndex + rows.length}º`;
+  const aside = writeStandingsPageAside(standings, pageNumber, rowsPerPage);
   return `<section class="board standings"${root} style="--standings-columns: ${grid}" data-page="${pageNumber}">
 ${renderBoardHead(standings.title, eventName, aside)}
   <div class="board__table">
 ${renderStandingsHead(columns)}
     <ol class="board__rows">
-${rows.map((entry) => renderStandingsRow(entry, standings.eventColumns)).join('\n')}
+${renderStandingsPageRows(standings, pageNumber, rowsPerPage)}
     </ol>
   </div>
 </section>`;
@@ -133,6 +145,11 @@ ${tables.join('\n')}
 
 // ---------------------------------------------------------------- sessions board
 
+/** A slot's state cell: its shape and its word, its colour set by its own data-status. */
+export function renderSessionStatus(status, statusLabel) {
+  return `<span class="session-row__status" data-status="${status}">${scheduleIcons[status]}<span>${escapeHtml(statusLabel)}</span></span>`;
+}
+
 /** The day's schedule: one pill per slot with its time, name and state. */
 export function renderSessionsBoard(schedule, session, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="sessions-board"' : '';
@@ -141,7 +158,7 @@ export function renderSessionsBoard(schedule, session, { withRoot = true } = {})
       (slot) => `    <li class="pill session-row" data-row data-status="${slot.status}">
       <span class="session-row__time">${slot.timeText}</span>
       <span class="session-row__name">${escapeHtml(slot.sessionName)}</span>
-      <span class="session-row__status">${scheduleIcons[slot.status]}<span>${escapeHtml(slot.statusLabel)}</span></span>
+      ${renderSessionStatus(slot.status, slot.statusLabel)}
     </li>`,
     )
     .join('\n');
@@ -165,7 +182,11 @@ function renderTopFiveRow(entry) {
         </li>`;
 }
 
-/** For a break: what is next with its countdown, the top five overall and the sponsors. */
+/**
+ * For a break: what is next with its countdown, the top five overall and the sponsors. The
+ * top five and the sponsor line are optional (an empty list leaves the part out): before the
+ * first standings exist, or with no sponsor to show, the next session fills the board.
+ */
 export function renderIntermissionBoard(
   session,
   countdown,
@@ -175,32 +196,43 @@ export function renderIntermissionBoard(
 ) {
   const root = withRoot ? ' data-graphic="intermission-board"' : '';
   const grid = 'var(--column-pos) var(--chip-width) minmax(0, 1fr) var(--col-points)';
+  const hasTopFive = topFive.length > 0;
+  const bodyClass = hasTopFive
+    ? 'intermission__body'
+    : 'intermission__body intermission__body--single';
+  const table = hasTopFive
+    ? `
+    <div class="board__table" style="--standings-columns: ${grid}">
+      <header class="pill pill--head intermission__top-head"><span class="caption">CLASSIFICAÇÃO GERAL · 5 PRIMEIROS</span></header>
+      <ol class="board__rows">
+${topFive.map(renderTopFiveRow).join('\n')}
+      </ol>
+    </div>`
+    : '';
   const sponsorCells = sponsors
     .map(
       (sponsor) =>
         `    <span class="intermission__sponsor">${placeholderMark(sponsor.initial, sponsor.name)}<span>${escapeHtml(sponsor.name)}</span></span>`,
     )
     .join('\n');
+  const sponsorLine =
+    sponsors.length > 0
+      ? `
+  <div class="card intermission__sponsors">
+    <span class="caption">PATROCÍNIO</span>
+${sponsorCells}
+  </div>`
+      : '';
   return `<section class="board board--narrow intermission"${root}>
 ${renderBoardHead('Intervalo', session.eventName, session.dateText)}
-  <div class="intermission__body">
+  <div class="${bodyClass}">
     <div class="card intermission__next">
       <span class="caption">A SEGUIR</span>
       <span class="intermission__session">${escapeHtml(countdown.sessionName)}</span>
       <span class="intermission__countdown">${countdown.remainingText}</span>
       <span class="intermission__start">LARGADA ÀS ${countdown.startTimeText}</span>
-    </div>
-    <div class="board__table" style="--standings-columns: ${grid}">
-      <header class="pill pill--head intermission__top-head"><span class="caption">CLASSIFICAÇÃO GERAL · 5 PRIMEIROS</span></header>
-      <ol class="board__rows">
-${topFive.map(renderTopFiveRow).join('\n')}
-      </ol>
-    </div>
-  </div>
-  <div class="card intermission__sponsors">
-    <span class="caption">PATROCÍNIO</span>
-${sponsorCells}
-  </div>
+    </div>${table}
+  </div>${sponsorLine}
 </section>`;
 }
 
@@ -221,15 +253,8 @@ ${renderBoardHead('Próxima sessão', session.eventName, session.dateText)}
 
 // ---------------------------------------------------------------- sponsor roll, full
 
-/** The sponsors in tiles, sponsorsPerPage a page; the page cycles on air (motion.md). */
-export function renderSponsorRollBoard(
-  sponsors,
-  pageNumber,
-  sponsorsPerPage,
-  { withRoot = true } = {},
-) {
-  const root = withRoot ? ' data-graphic="sponsor-roll"' : '';
-  const pageCount = Math.ceil(sponsors.length / sponsorsPerPage);
+/** One page of the sponsor roll's tiles, as the grid the motion demo swaps page by page. */
+export function renderSponsorRollGrid(sponsors, pageNumber, sponsorsPerPage) {
   const firstIndex = (pageNumber - 1) * sponsorsPerPage;
   const tiles = sponsors
     .slice(firstIndex, firstIndex + sponsorsPerPage)
@@ -240,10 +265,22 @@ export function renderSponsorRollBoard(
     </div>`,
     )
     .join('\n');
+  return `  <div class="sponsor-roll__grid">
+${tiles}
+  </div>`;
+}
+
+/** The sponsors in tiles, sponsorsPerPage a page; the page cycles on air (motion.md). */
+export function renderSponsorRollBoard(
+  sponsors,
+  pageNumber,
+  sponsorsPerPage,
+  { withRoot = true } = {},
+) {
+  const root = withRoot ? ' data-graphic="sponsor-roll"' : '';
+  const pageCount = Math.ceil(sponsors.length / sponsorsPerPage);
   return `<section class="board board--narrow sponsor-roll"${root} data-page="${pageNumber}">
 ${renderBoardHead('Patrocinadores', '', `${pageNumber}/${pageCount}`)}
-  <div class="sponsor-roll__grid">
-${tiles}
-  </div>
+${renderSponsorRollGrid(sponsors, pageNumber, sponsorsPerPage)}
 </section>`;
 }

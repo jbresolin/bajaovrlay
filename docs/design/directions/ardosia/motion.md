@@ -4,24 +4,29 @@ The existing scoreboard slides its rows in from below, one every 300 ms, and lif
 in reverse. This direction keeps that language and makes it broadcast-fast: every piece rises
 20 px into place and fades up, and the rows cascade with a short stagger instead of a slow
 one. Every duration, offset, stagger and easing is a token in `tokens.css` (`--motion-*`,
-`--ease-*`), and the shared demo script (`../../tools/slateMotionDemo.js`, loaded by
-`motion-demo.html`) reads them from there, so the demo and this page cannot drift apart.
+`--ease-*`), and the demos read them from there, so a demo and this page cannot drift apart:
+pass 1's `motion-demo.html` (`../../tools/slateMotionDemo.js`, Web Animations API) and the
+catalogue's demo pages (`motion-catalogo.html` links them; GSAP, as the product, see "The
+demo pages" at the end).
 
-| Token                   | Value                                                  | Where                                                         |
-| ----------------------- | ------------------------------------------------------ | ------------------------------------------------------------- |
-| `--motion-in`           | 400 ms, `--ease-out` cubic-bezier(0.16, 1, 0.3, 1)     | every piece entering                                          |
-| `--motion-in-offset`    | 20 px                                                  | the rise on entry, the lift on exit                           |
-| `--motion-row-stagger`  | 30 ms per pill                                         | tower rows and strip cells, top to bottom and left to right   |
-| `--motion-lead`         | 100 ms                                                 | the tower starts this long after the clock; the bug too       |
-| `--motion-out`          | 250 ms, `--ease-in` cubic-bezier(0.7, 0, 0.84, 0)      | every piece leaving                                           |
-| `--motion-flag`         | 300 ms, `--ease-out`                                   | the new flag band fades in over the old                       |
-| `--motion-swap`         | 400 ms, `--ease-in-out` cubic-bezier(0.65, 0, 0.35, 1) | two pills trading places                                      |
-| `--motion-cue-hold`     | 2000 ms                                                | the ▲ / ▼ and the coloured position cell after a swap         |
-| `--motion-strip-page`   | 300 ms                                                 | a strip page turning                                          |
-| `--motion-strip-hold`   | 7000 ms                                                | a strip page stays still this long                            |
-| `--motion-notice-hold`  | 8000 ms                                                | a notice (fastest lap, penalty) leaves by itself after this   |
-| `--motion-board-hold`   | 10000 ms                                               | a standings page stays still this long                        |
-| `--motion-sponsor-hold` | 5000 ms                                                | a sponsor roll page, or the corner's sponsor, stays this long |
+| Token                      | Value                                                  | Where                                                             |
+| -------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------- |
+| `--motion-in`              | 400 ms, `--ease-out` cubic-bezier(0.16, 1, 0.3, 1)     | every piece entering                                              |
+| `--motion-in-offset`       | 20 px                                                  | the rise on entry, the lift on exit                               |
+| `--motion-row-stagger`     | 30 ms per pill                                         | tower rows and strip cells, top to bottom and left to right       |
+| `--motion-lead`            | 100 ms                                                 | the tower starts this long after the clock; the bug too           |
+| `--motion-out`             | 250 ms, `--ease-in` cubic-bezier(0.7, 0, 0.84, 0)      | every piece leaving                                               |
+| `--motion-flag`            | 300 ms, `--ease-out`                                   | the new flag band fades in over the old                           |
+| `--motion-swap`            | 400 ms, `--ease-in-out` cubic-bezier(0.65, 0, 0.35, 1) | two pills trading places                                          |
+| `--motion-cue-hold`        | 2000 ms                                                | the ▲ / ▼ and the coloured position cell after a swap             |
+| `--motion-strip-page`      | 300 ms                                                 | a strip page turning                                              |
+| `--motion-strip-hold`      | 7000 ms                                                | a strip page stays still this long                                |
+| `--motion-notice-hold`     | 8000 ms                                                | a notice (fastest lap, penalty) leaves by itself after this       |
+| `--motion-board-hold`      | 10000 ms                                               | a standings page stays still this long                            |
+| `--motion-sponsor-hold`    | 5000 ms                                                | a sponsor roll page, or the corner's sponsor, stays this long     |
+| `--motion-notice-min-hold` | 3000 ms                                                | a notice stays at least this long before the next replaces it     |
+| `--motion-page-stagger`    | 15 ms                                                  | between pieces when a page turns in place (ticker, sponsor tiles) |
+| `--motion-podium-offset`   | 40 px                                                  | the rise of a podium card when it is revealed                     |
 
 ## In and out, per graphic
 
@@ -85,68 +90,101 @@ cannot be read on a phone while it moves; a still page can.
 
 ## The catalogue (pass 2, BAJAOVRLAY-43)
 
-The same two motions, the rise (`--motion-in`) and the lift (`--motion-out`), serve every new
-graphic; what differs is the order of the pieces, the holds and, for the two stepped
-graphics, what a "Next" does. Nothing new is scrolled, pulsed or spun.
+The same moves serve every new graphic: the rise (each piece rises `--motion-in-offset` and
+fades up in `--motion-in`, `--ease-out`), the lift (every piece together, `--motion-out`,
+`--ease-in`), the crossfade of a state (`--motion-flag`: the new fades in over the old,
+nothing moves) and the page turning in place (`--motion-strip-page`: the old pieces lift
+away while the new rise into the same places, `--motion-page-stagger` apart, so it never
+goes empty). What differs is the order of the pieces, the holds and what a button does.
+Nothing is scrolled, pulsed or spun; a number that changes on air changes in place (read,
+not watched). Each graphic below is exactly what its demo page does, with the demo's buttons
+in brackets.
 
-- **Team card**: the card alone, as the lower third's name pill (400 ms in, 250 ms out). The
-  photo cell fades up with the card, never separately. A card without media is the same
-  motion on a shorter card.
-- **Battle card**: the car ahead's pill, the gap card 100 ms behind it (`--motion-lead`), the
-  car behind's pill 100 ms after that; out together. On air the gap number changes in place
-  (read, not watched) and the trend cell crossfades in 300 ms (`--motion-flag`) when the word
-  changes, like a flag band: a state, not an animation.
-- **Standings, overall**: the head card, then the column-head pill and each row 30 ms after the
-  one above it (the tower's cascade; 20 rows are in at 100 + 20 × 30 + 400 = 1.1 s). Pages
-  turn as the tower's do, on `--motion-board-hold` (10 s, longer than the strip's because a
-  page holds 20 teams and seven numbers each): the rows leave together and the next page's
-  rows cascade in, the head staying. Out: everything together.
-- **Standings, per event**: the three columns cascade at once, each column its own cascade
-  from the top (row n of every column enters at the same moment), so the field fills in one
-  sweep of 1.1 s. No pages.
-- **Bracket, round boards**: the head, then the match cards 30 ms apart down the left column
-  and then the right, each card whole (both cars together, never one car before the other:
-  a match arrives as a match); 32 cards are in at 100 + 32 × 30 + 400 = 1.5 s. "Next" turns
-  to the next board as a standings page turns: the cards leave together and the next round's
-  cascade in, the head staying with its new round name.
-- **Bracket, tree**: the first tree step brings the head (or keeps it, after a board), every
-  round-name pill (100 ms after the head), then the first round's pills top to bottom, 30 ms
-  apart; the lines of a round fade in (300 ms) once its last pill is in. Each "Next" adds a
-  round the same way: its pills cascade in and its lines fade; what is on screen never
-  moves. On a board or in the tree, a result arriving on air changes its match in place: the
-  winner's chip turns green, the loser dims and the result cell (a time, a count of wins or
-  the winner's mark) crossfades, in 300 ms. Out: everything together.
-- **Podium**: the head first; each "Next" raises one card from 40 px below (twice the usual
-  offset, the "three cards rising" of the README) in 400 ms: 3rd, then 2nd, then 1st. The
-  cards not yet revealed keep their room, invisible, so nothing shifts. Out: the three cards
-  together, the head with them.
-- **Fastest lap and the penalty notice**: the card rises in; it holds `--motion-notice-hold`
-  (8 s) and lifts out by itself. A notice taken while one is on air replaces it: the old one
-  out (250 ms), the new one in (400 ms), never two at once. The operator can clear it early.
-- **Countdown, card**: as the race clock; a countdown replacing the clock on the clock layer
-  follows the layer's replace policy (out, then in). The count changes in place.
-- **Countdown, full screen**: the head, then the body card 100 ms behind. The count changes
-  in place; when it reaches zero it reads "0:00" and stays until cleared.
-- **Sessions board**: the head, then each slot pill 30 ms after the one above it; out
-  together. A slot changing state (concluída, em andamento) crossfades its status cell in
-  300 ms and the row's denser slate with it.
-- **Intermission board**: the head, the two body cards 100 ms behind it (the next-session
-  card and the top-five head pill), then the five rows 30 ms apart, then the sponsor line
-  100 ms after the last row; out together. The count changes in place.
-- **Sponsor roll, full screen**: the head, then the six tiles 30 ms apart, reading order; a
-  page turns on `--motion-sponsor-hold` (5 s) as a strip page does: the tiles lift away and the
-  next page's tiles rise in. Corner: the bug's card as always; the sponsor cell crossfades
-  (300 ms) to the next sponsor on the same hold, the logo and the event word never moving.
-- **QR card**: the card alone, in and out; nothing moves while it is up, since a moving code
+- **Team card** [Entrar, Sair]: the whole card rises; its photo and logo come with it, never
+  after. Out: the card lifts. With or without photo, logo and city, the same motion on a
+  card of another width.
+- **Battle card** [Entrar, Sair, Atualizar]: the car ahead's pill, the gap card
+  `--motion-lead` behind it, the car behind's pill `--motion-lead` after that; out together.
+  Atualizar brings the next lap's reading: the gap number changes in place; the trend cell
+  crossfades only when its word changes (closing to opening, say), and when the word stays
+  only its number changes in place. A state, not an animation.
+- **Standings, overall with points per event** [Entrar, Sair]: the head card, then
+  `--motion-lead` later the column head and each row `--motion-row-stagger` after the one
+  above (20 rows are in at 100 + 20 × 30 + 400 = 1.1 s). Every `--motion-board-hold` the page
+  turns: the rows lift out together, the next page's rows cascade in, the head stays and its
+  page line changes ("2/3 · 21º A 40º"). Out: everything together.
+- **Standings in columns** (one event, or the overall total only) [Entrar, Sair]: the head,
+  then the three columns at once, each cascading from its top, so row n of every column
+  enters at the same moment and the whole field fills in one sweep. No pages.
+- **Bracket** [Entrar, Sair, Próximo]: Entrar brings the head and step 1. A round board's
+  match cards cascade `--motion-row-stagger` apart, down the left column then the right, each
+  card whole (both cars together: a match arrives as a match; 32 cards are in at
+  100 + 32 × 30 + 400 = 1.5 s). Próximo from a board: the cards lift out together, the head's
+  round name and step count change, the next board's cards (or the tree) cascade in. The
+  tree's first step brings every round name at once, then `--motion-lead` later the first
+  round's pills top to bottom; each further Próximo adds the next round's pills, and the
+  lines leading into a round fade in (`--motion-flag`) once its last pill is in. What is on
+  screen never moves. A loser, a W.O. and a bye enter in their own look (a loser rises to
+  its dimmed opacity, not past it). Out: everything together. A result arriving while a
+  match is on screen would crossfade its result cell and turn the winner's chip green in
+  `--motion-flag`; no demo has a button for it.
+- **Podium** [Entrar, Sair, Próximo]: Entrar brings the head only. Each Próximo raises one
+  card `--motion-podium-offset` in `--motion-in`: 3rd, then 2nd, then 1st. The cards not yet
+  revealed keep their room, invisible, so nothing shifts. Out: the head and the revealed
+  cards together.
+- **Fastest lap, penalty or incident** [Entrar, Sair, Novo evento]: the card rises and,
+  after `--motion-notice-hold`, lifts out by itself. Novo evento sends the next notice: with
+  the slot empty it rises at once; with a notice up, the new one waits until the one on air
+  has been up `--motion-notice-min-hold` (so it can be read), then the old one lifts out and
+  the new one rises, one after the other, never two at once. Several close together queue
+  in the order they came, each staying at least the minimum. Sair takes the notice off early
+  and drops the queue. With or without the lap number, with or without a sanction, the same
+  motion.
+- **Countdown, card** [Entrar, Sair]: the whole card, as the race clock; the count changes in
+  place every second and stops at "0:00". On air it takes the clock layer after the race
+  clock leaves (the layer's replace policy, out then in).
+- **Countdown, full screen** [Entrar, Sair]: the head, the body card `--motion-lead` behind;
+  the count as above.
+- **Sessions board** [Entrar, Sair, Atualizar]: the head, then each slot `--motion-row-stagger`
+  after the one above; out together. Atualizar ends the slot in progress and starts the
+  next: each state cell crossfades and the row's slate (the denser one marks the slot in
+  progress) follows it, both in `--motion-flag`.
+- **Intermission board** [Entrar, Sair]: the head; `--motion-lead` later the next-session
+  card and the top-five head; the five rows `--motion-row-stagger` apart after the top-five
+  head; the sponsor line `--motion-lead` after the last row starts; out together. Without the
+  top five or the sponsor line the remaining pieces keep their timing. The count changes in
+  place.
+- **Sponsor roll, full screen** [Entrar, Sair, Atualizar]: the head, then the tiles
+  `--motion-row-stagger` apart in reading order. Every `--motion-sponsor-hold` the page turns
+  in place; Atualizar turns it now and starts the hold again. The grid keeps two rows on a
+  short last page, so the board and its head never move.
+- **Sponsor roll, corner** [Entrar, Sair, Atualizar]: the bug's card rises; every
+  `--motion-sponsor-hold` its sponsor cell crossfades to the next, the logo and the event word
+  never moving; Atualizar crossfades now and starts the hold again.
+- **QR card** [Entrar, Sair]: the whole card; nothing moves while it is up, since a moving code
   does not scan.
-- **Message ticker**: as the strip: the clock block, the label pill, the message pill, then
-  the page cell, 30 ms apart; a message changes as a strip page does (300 ms, held 7 s).
+- **Message ticker** [Entrar, Sair]: as the strip: the clock block (when shown), the label, the
+  message and the page cell, `--motion-row-stagger` apart. Every `--motion-strip-hold` the
+  message turns in place and the page cell's number changes in place. Out together.
 
-## The demo page
+## The demo pages
 
-`motion-demo.html` loops: tower set in → flag to yellow → positions 3 and 4 trade → a new
-leader (1 and 2 trade) → the tower turns to page 2 (cars 21–40), page 3 (41–60, with the
-wrench and the retired icons) and back to page 1 → flag back to green → tower set out →
-strip and lower third in → two page turns → out. It shortens the 7 s page hold to 3 s so the loop stays watchable; every
-other number is the token above. Web Animations API only, nothing loaded from the network.
-The demo covers pass 1; the catalogue's motion is described above and not demonstrated.
+`motion-demo.html` (pass 1) loops: tower set in → flag to yellow → positions 3 and 4 trade →
+a new leader (1 and 2 trade) → the tower turns to page 2 (cars 21–40), page 3 (41–60, with
+the wrench and the retired icons) and back to page 1 → flag back to green → tower set out →
+strip and lower third in → two page turns → out. It shortens the 7 s page hold to 3 s so the
+loop stays watchable; every other number is the token above. Web Animations API only.
+
+The catalogue has one demo page per graphic and per combination of its optional parts
+(`motion-<graphic>-<parts>.html`, 31 pages), all linked from `motion-catalogo.html`. Each is
+the graphic over the footage with a bar above the title-safe area: the buttons named above
+and a status line saying what just moved and for how long, in the tokens' own values. They
+use GSAP 3.15 with CustomEase, as the product's graphics do, loaded from the repo's
+`node_modules` (after `pnpm install`; nothing from the network), and read every duration,
+offset and curve from `tokens.css` the way `packages/theme`'s `readMotionTokens` and
+`gsapEaseOfToken` do: milliseconds and pixels from the custom properties, each cubic-bezier
+registered as a CustomEase with exactly its curve. No hold is shortened: a standings page
+waits its real 10 s. Shared code: `../../tools/motionDemoCore.js` (the token reading, the
+moves, the buttons), `motionDemoCards.js` and `motionDemoBoards.js` (one entry per graphic);
+the pages are generated by `generatePages.mjs` through `slateMotionDemos.mjs` and
+`slateMotionPages.mjs`.

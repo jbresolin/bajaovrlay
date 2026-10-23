@@ -263,6 +263,18 @@ const seededField = entries.map((entry) => ({
 const behindEntry = positions.entries.find(
   (entry) => entry.carNumber === battleFixture.behindCarNumber,
 );
+/** A change under a tenth (what the screen can show) is steady; else closing or opening. */
+function trendOfChange(changeMs) {
+  if (Math.abs(changeMs) < 100) return 'steady';
+  return changeMs < 0 ? 'closing' : 'opening';
+}
+
+// The battle's readings lap by lap for the demo's Atualizar: a lap ago, now, then later laps.
+const battleReadingsMs = [
+  battleFixture.intervalOneLapAgoMs.closing,
+  behindEntry.intervalMs,
+  ...battleFixture.laterIntervalsMs,
+];
 const battle = {
   ahead: entryOfCar(battleFixture.aheadCarNumber),
   behind: entryOfCar(battleFixture.behindCarNumber),
@@ -273,6 +285,11 @@ const battle = {
       formatIntervalChange(behindEntry.intervalMs, oneLapAgoMs),
     ]),
   ),
+  updates: battleReadingsMs.slice(1).map((readingMs, index) => {
+    const trend = trendOfChange(readingMs - battleReadingsMs[index]);
+    const changeText = formatIntervalChange(readingMs, battleReadingsMs[index]);
+    return { gapText: `+${writeSecondsToTheTenthCut(readingMs)}`, trend, changeText };
+  }),
 };
 
 const sampleData = {
@@ -336,6 +353,7 @@ const sampleData = {
     sessionName: countdownFixture.sessionName,
     startTimeText: countdownFixture.startTimeText,
     remainingText: formatRemainingClock(countdownFixture.remainingMs),
+    remainingSeconds: Math.ceil(countdownFixture.remainingMs / 1000),
   },
   schedule: scheduleFixture.map((slot) => ({
     ...slot,

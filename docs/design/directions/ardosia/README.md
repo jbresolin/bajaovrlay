@@ -61,6 +61,16 @@ come from the same generator through `../../tools/slateCataloguePages.mjs` (mark
 them, the brackets sample, and the typed fixtures of `sampleFixtures.mjs`: cities, notices, a
 schedule, messages, fictional sponsors).
 
+**The catalogue's motion** is demonstrated, not only described: `motion-catalogo.html` links
+one demo page per graphic and per combination of its optional parts (31 pages,
+`motion-<graphic>-<parts>.html`), each with the buttons to judge it (Entrar and Sair; Próximo
+for the bracket and the podium; Atualizar for the battle card, the sponsor roll and the
+sessions board; Novo evento for the notices) and a status line saying what moved and for how
+long. They run GSAP with CustomEase as the product does, loaded from the repo's
+`node_modules` (run `pnpm install` once), with every duration, offset and curve read from
+`tokens.css`; `motion.md` describes exactly what each one does. The screenshot and layout
+tools skip them, as they skip `motion-demo.html`.
+
 ## Legibility at 720p on a phone
 
 Sizes at 1080p, with the 720p equivalent in brackets: clock time 56 px (37); lower-third name
@@ -224,7 +234,11 @@ card's and the podium's chip); `--team-photo-width`, `--team-photo-height`,
 `--podium-height`, `--podium-height-winner`; `--bracket-row-height`, `--bracket-board-gutter`,
 `--bracket-versus-width`; `--sponsor-mark-small`,
 `--sponsor-mark-large`, `--sponsor-tile-height`. Motion: `--motion-notice-hold`,
-`--motion-board-hold`, `--motion-sponsor-hold` (`motion.md`).
+`--motion-board-hold`, `--motion-sponsor-hold`, `--motion-notice-min-hold` (a notice stays at
+least 3 s before the next replaces it), `--motion-page-stagger` (15 ms between pieces when a
+page turns in place; pass 1 computed it as half the row stagger) and `--motion-podium-offset`
+(the podium cards' 40 px rise) (`motion.md`). None of these is in the product's copy
+(`packages/theme/ardosia/tokens.css`) yet; the build briefs add the ones they use.
 
 ## Open questions for João
 
@@ -282,3 +296,12 @@ Pass 2 (BAJAOVRLAY-43), the judgment calls to confirm:
 20. **Round boards** are mirrored score lines (chips outside, results inside). Seeds and
     match numbers ("J1") are not shown; the order of the cards is the draw's, so cards 1 and
     2 feed the same next match. Worth adding the match number?
+21. **Two notices close together** (the motion demos): the second waits until the first has
+    been up 3 s (`--motion-notice-min-hold`), then replaces it; several queue in order. The
+    alternatives are replacing at once (the first may be unread) or stacking two cards in the
+    slot. Is 3 s right, and is a queue right?
+22. **New optional parts** (the motion demos): the team card's city, the ticker's clock block,
+    the intermission board's top five and sponsor line. Overall standings without points per
+    event use the three-column board with the total alone rather than columns of "—".
+23. **Sessions board's Atualizar**: not in the brief's list of buttons, added because
+    `motion.md` describes a slot changing state and that is worth judging too.

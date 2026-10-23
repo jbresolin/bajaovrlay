@@ -187,20 +187,29 @@
   height: 22px;
   margin-top: calc(-1 * var(--glyph-nudge));
 }
-.session-row[data-status='done'] .session-row__status {
+/* The state cell carries its own state, so an old and a new cell can crossfade in their colours. */
+.session-row__status[data-status='done'] {
   color: var(--text-muted);
 }
 .session-row[data-status='live'] {
   background: var(--panel-head);
 }
-.session-row[data-status='live'] .session-row__status {
+.session-row__status[data-status='live'] {
   color: var(--text-laps);
 }
-.session-row[data-status='next'] .session-row__status {
+.session-row__status[data-status='next'] {
   color: var(--text);
 }
 
 /* ---- Intermission board: what is next with its countdown, the top five, the sponsors */
+/* Without the top five the next session takes the whole width, its words centred. */
+.intermission__body.intermission__body--single {
+  grid-template-columns: 1fr;
+}
+.intermission__body--single .intermission__next {
+  align-items: center;
+  text-align: center;
+}
 .intermission__body {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -282,9 +291,11 @@
 }
 
 /* ---- Sponsor roll, full: six tiles a page, each a card with the sponsor's mark and name */
+/* Two rows always, so a short last page leaves the board's size (and its head) in place. */
 .sponsor-roll__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, var(--sponsor-tile-height));
   gap: var(--stack-gap);
 }
 .sponsor-tile {
