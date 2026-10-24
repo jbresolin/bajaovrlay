@@ -136,7 +136,7 @@ describe('"Atualizar no ar" with a list of messages', () => {
     // Arrange: the morning's announcements on air, their item open in the editor.
     const { fakeServer } = renderEditorForTheAnnouncementsOnAir();
 
-    // Act: add a message over the 70 characters the bar holds, and press the button.
+    // Act: add a message over the 50 characters the bar holds, and press the button.
     pressButton('Adicionar mensagem');
     fireEvent.change(screen.getByRole('textbox', { name: 'Mensagem 3' }), {
       target: {
@@ -147,7 +147,7 @@ describe('"Atualizar no ar" with a list of messages', () => {
 
     // Assert: the reason under the list, and no command.
     expect(
-      await screen.findByText('Mensagem 3: no máximo 70 caracteres (tem 80).'),
+      await screen.findByText('Mensagem 3: no máximo 50 caracteres (tem 80).'),
       'the reason gives the line and the limit',
     ).toBeInTheDocument();
     expect(fakeServer.listCommandsReceived(), 'nothing may be sent').toEqual([]);

@@ -11,6 +11,7 @@ the template for the next one with rows.
 `notice/` is the card under the bug for a fastest lap or a race control notice, the first
 graphic with two variants in one manifest (`variant`) and an on-air hold left to the server.
 `lower-strip/` is the bar along the bottom: the clock block, the running order six cars a page.
+`message-ticker/` is the same bar with an "AVISO" label and one typed announcement a page.
 `sponsor-bug/` is the card top-left all day: the mark, the event word and one sponsor's logo.
 `kit/` (`@bajaovrlay/graphics-kit`) is not a graphic: it holds what the graphics share (the OGraf
 types, the play step rule, the page turner, timeline playback, the preview page's controls, the

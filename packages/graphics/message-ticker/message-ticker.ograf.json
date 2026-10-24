@@ -1,0 +1,135 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-message-ticker",
+  "version": "0.1.0",
+  "name": "Letreiro de avisos",
+  "description": "A faixa de baixo com o relógio, o rótulo AVISO e um aviso por página.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "message-ticker.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "ticker",
+    "category": "ticker",
+    "updateRule": "carryClockForward"
+  },
+  "actionDurations": [
+    {
+      "type": "playAction",
+      "duration": 490
+    },
+    {
+      "type": "stopAction",
+      "duration": 250
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "label": {
+        "type": "string",
+        "title": "Rótulo",
+        "description": "A pílula antes da mensagem; até 10 caracteres. Ex.: AVISO, ATENÇÃO.",
+        "gddType": "single-line",
+        "minLength": 1,
+        "maxLength": 10,
+        "default": "AVISO"
+      },
+      "messages": {
+        "type": "array",
+        "title": "Mensagens",
+        "description": "Uma mensagem por página, de 1 a 9; a faixa troca de página a cada 7 s e nunca rola o texto. Cada mensagem tem até 50 caracteres, o que cabe na faixa.",
+        "minItems": 1,
+        "maxItems": 9,
+        "items": {
+          "type": "string",
+          "title": "Mensagem",
+          "minLength": 1,
+          "maxLength": 50
+        }
+      },
+      "state": {
+        "type": "string",
+        "title": "Bandeira",
+        "enum": ["pre", "green", "yellow", "red", "checkered", "finished"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "pre": "Pré-largada",
+            "green": "Verde",
+            "yellow": "Amarela",
+            "red": "Vermelha",
+            "checkered": "Quadriculada",
+            "finished": "Encerrada"
+          }
+        },
+        "default": "pre"
+      },
+      "clockMode": {
+        "type": "string",
+        "title": "Modo do relógio",
+        "enum": ["elapsed", "remaining"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "elapsed": "Tempo decorrido",
+            "remaining": "Tempo restante"
+          }
+        },
+        "default": "elapsed",
+        "v_baja": {
+          "role": "clockMode"
+        }
+      },
+      "referenceTimeMs": {
+        "type": "integer",
+        "title": "Tempo de referência",
+        "description": "Tempo decorrido ou restante que o relógio mostrava no horário da referência.",
+        "minimum": 0,
+        "default": 0,
+        "v_baja": {
+          "unit": "ms",
+          "role": "clockTime"
+        }
+      },
+      "referenceWallClockMs": {
+        "type": "integer",
+        "title": "Horário da referência (ms desde 1970)",
+        "description": "Momento em que o tempo de referência valia; o relógio conta a partir dele.",
+        "minimum": 0,
+        "default": 0,
+        "v_baja": {
+          "role": "wallClock"
+        }
+      },
+      "running": {
+        "type": "boolean",
+        "title": "Relógio correndo",
+        "description": "Desligado, o relógio fica parado no tempo de referência.",
+        "default": false,
+        "v_baja": {
+          "role": "clockRunning"
+        }
+      },
+      "showClockBlock": {
+        "type": "boolean",
+        "title": "Mostrar o relógio",
+        "description": "Desligado (com o relógio de prova no ar, ou entre sessões), a faixa começa pelo rótulo.",
+        "default": true
+      }
+    },
+    "required": [
+      "label",
+      "messages",
+      "state",
+      "clockMode",
+      "referenceTimeMs",
+      "referenceWallClockMs",
+      "running"
+    ],
+    "additionalProperties": false
+  }
+}

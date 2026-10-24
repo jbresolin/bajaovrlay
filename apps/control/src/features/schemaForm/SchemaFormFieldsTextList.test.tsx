@@ -159,7 +159,7 @@ describe('the ticker’s messages when the form is checked', () => {
     // Assert: refused, with the pt-BR reason giving the line and the limit.
     expect(isValid, 'a message over the limit must stop the save').toBe(false);
     expect(
-      screen.getByText('Mensagem 2: no máximo 70 caracteres (tem 80).'),
+      screen.getByText('Mensagem 2: no máximo 50 caracteres (tem 80).'),
       'the reason is under the list',
     ).toBeInTheDocument();
   });

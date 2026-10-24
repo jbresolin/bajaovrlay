@@ -62,6 +62,7 @@ describe('the manifests under packages/graphics', () => {
     const shippedManifests = [
       join('lower-strip', 'lower-strip.ograf.json'),
       join('lower-third', 'lower-third.ograf.json'),
+      join('message-ticker', 'message-ticker.ograf.json'),
       join('notice', 'notice.ograf.json'),
       join('positions-tower', 'positions-tower.ograf.json'),
       join('race-clock', 'race-clock.ograf.json'),

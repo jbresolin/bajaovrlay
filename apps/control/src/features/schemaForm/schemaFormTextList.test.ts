@@ -58,11 +58,11 @@ describe('a list of texts, as the form reads the manifest', () => {
       (field) => field.key === 'messages',
     );
 
-    // Assert: a textList, each line a "Mensagem" of 1 to 70 characters, at least one line.
+    // Assert: a textList, each line a "Mensagem" of 1 to 50 characters, at least one line.
     expect(messagesField?.control, 'a list of plain texts is typed line by line').toBe('textList');
     expect(messagesField?.listItemLabel, 'a line is called by the items’ title').toBe('Mensagem');
     expect(messagesField?.minimumLength, 'each line’s shortest length').toBe(1);
-    expect(messagesField?.maximumLength, 'each line’s longest length, the bar’s limit').toBe(70);
+    expect(messagesField?.maximumLength, 'each line’s longest length, the bar’s limit').toBe(50);
     expect(messagesField?.minimumItems, 'the list needs at least one line').toBe(1);
   });
 
@@ -152,7 +152,7 @@ describe('a list of texts, as the form checks it', () => {
         'Largada do enduro às 10h00',
         'Atenção equipes: o reabastecimento fecha às 13h30 e reabre após a bandeira verde',
       ],
-      expectedMessage: 'Mensagem 2: no máximo 70 caracteres (tem 80).',
+      expectedMessage: 'Mensagem 2: no máximo 50 caracteres (tem 80).',
     },
     // An empty line left by "Adicionar mensagem": refused by its number, not dropped.
     {

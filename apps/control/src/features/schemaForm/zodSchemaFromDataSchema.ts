@@ -135,7 +135,7 @@ function countCodePoints(text: string): number {
  * The rule for a list of texts: how many lines (`minItems`, `maxItems`) and how long each
  * may be (the items' `minLength`, `maxLength`). Written as one check over the whole list,
  * not as a rule per line, so the message can name the line by its number ("Mensagem 2: no
- * máximo 70 caracteres (tem 84).") and give the limit, which is what the operator needs to
+ * máximo 50 caracteres (tem 84).") and give the limit, which is what the operator needs to
  * shorten it. The first problem found is the one reported, the list's count first.
  */
 function buildRuleForTextList(field: SchemaFormFieldDescription): z.ZodType {

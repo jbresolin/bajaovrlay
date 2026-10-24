@@ -6,11 +6,11 @@ import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSc
 import type { SchemaFormDescription } from './schemaFormDescription';
 
 /** The longest message these tests allow, the ticker's limit for its bar. */
-export const longestMessageInTheFixture = 70;
+export const longestMessageInTheFixture = 50;
 
 /**
  * The ticker's data schema: the label (a text, default "AVISO"), the messages (required,
- * at least one, each 1 to 70 characters, a line called "Mensagem") and the clock switch.
+ * at least one, each 1 to 50 characters, a line called "Mensagem") and the clock switch.
  */
 export function buildMessageTickerFixtureDataSchema(): Record<string, unknown> {
   return {

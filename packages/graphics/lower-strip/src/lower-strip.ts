@@ -298,7 +298,10 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
     await this.pageTurns.turnToTheNextPage();
   }
 
-  /** The pieces of the play-in, left to right: the clock block when shown, the cars, the page cell. */
+  /**
+   * The pieces of the play-in, left to right: the clock block when shown, the cars, the
+   * page cell.
+   */
   private listPiecesInOrder(): HTMLElement[] {
     const parts = this.requireParts();
     const clockBlockPieces = isClockBlockShown(this.requireData()) ? [parts.clockBlock.block] : [];
