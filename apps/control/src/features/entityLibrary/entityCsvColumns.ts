@@ -9,8 +9,11 @@ import type { EntityType } from '@bajaovrlay/shared';
  * the page shows, so the four never disagree.
  */
 
-/** How a cell is read into the record: as text, as a whole number, as a date and time. */
-export type CsvCellKind = 'text' | 'wholeNumber' | 'localDateTime';
+/**
+ * How a cell is read into the record: as text, as a whole number, as a date and time, or
+ * as a yes or no ("sim" / "não").
+ */
+export type CsvCellKind = 'text' | 'wholeNumber' | 'localDateTime' | 'yesNo';
 
 /** One column: its name in the header, the record field it fills, how, and whether required. */
 export type EntityCsvColumn = {
@@ -33,6 +36,12 @@ const csvColumnsByEntityType: Record<EntityType, EntityCsvColumn[]> = {
     },
     { columnName: 'cidade', recordFieldKey: 'city', cellKind: 'text', isRequired: false },
     { columnName: 'uf', recordFieldKey: 'state', cellKind: 'text', isRequired: false },
+    {
+      columnName: 'placa_clara',
+      recordFieldKey: 'logoOnLightPlate',
+      cellKind: 'yesNo',
+      isRequired: false,
+    },
   ],
   person: [
     { columnName: 'id', recordFieldKey: 'personId', cellKind: 'text', isRequired: false },

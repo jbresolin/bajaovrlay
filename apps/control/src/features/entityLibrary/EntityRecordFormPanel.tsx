@@ -1,6 +1,6 @@
 import type { EntityType } from '@bajaovrlay/shared';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { ActionButton } from '@/features/connection/ActionButton';
@@ -20,6 +20,7 @@ import {
   buildUpsertCommandOfRecord,
   describeRecordOfType,
 } from './entityRecordsOfType';
+import { LogoPlatePreview } from './LogoPlatePreview';
 import { makeRecordId } from './recordId';
 
 const texts = ptBR.entityLibrary.form;
@@ -52,6 +53,8 @@ export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
   const form = useForm<EntityFormValues>({
     defaultValues: buildEntityFormValues(entityType, recordAsOpened),
   });
+  // A team's logo as the form holds it now, for the light plate's preview.
+  const logoMediaId = useWatch({ control: form.control, name: 'logoMediaId' }) ?? '';
 
   const save = form.handleSubmit(async (values) => {
     const reading = readEntityFormValues(entityType, values, recordAsOpened, () => newRecordId);
@@ -93,11 +96,16 @@ export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
         const controlId = `${controlIdPrefix}-${field.recordFieldKey}`;
         const isTheKeyOfAStoredTeam =
           entityType === 'team' && field.recordFieldKey === 'carNumber' && recordAsOpened !== null;
-        const label = field.isOptional ? `${field.label} ${texts.optionalHint}` : field.label;
+        // An image or a checkbox is optional by its nature; the hint would only add noise.
+        const isOptionalByItsNature = field.fieldKind === 'image' || field.fieldKind === 'yesNo';
+        const label =
+          field.isOptional && !isOptionalByItsNature
+            ? `${field.label} ${texts.optionalHint}`
+            : field.label;
         return (
           <FormFieldRow
             key={field.recordFieldKey}
-            label={field.fieldKind === 'image' ? field.label : label}
+            label={label}
             controlId={controlId}
             errorMessage={form.formState.errors[field.recordFieldKey]?.message}
           >
@@ -120,6 +128,9 @@ export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
             )}
             {field.fieldKind === 'localDateTime' && (
               <p className="text-xs text-muted-foreground">{texts.dateTimeHint}</p>
+            )}
+            {field.recordFieldKey === 'logoOnLightPlate' && (
+              <LogoPlatePreview logoMediaId={logoMediaId} />
             )}
           </FormFieldRow>
         );

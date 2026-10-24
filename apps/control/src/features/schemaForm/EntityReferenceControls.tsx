@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { writeSourceValueForReading } from '@/features/bindings/sourceValueText';
 import {
   describeRecordOfType,
   readKeyOfRecord,
@@ -234,7 +235,10 @@ function EntityValueNowLine(props: {
       />
     );
   }
-  return (
-    <p className="text-sm text-muted-foreground">{texts.valueNow(String(resolution.value))}</p>
-  );
+  // A yes or no (the logo's light plate) reads "Sim" or "Não", never true or false.
+  const valueText =
+    attribute?.valueType === 'boolean'
+      ? writeSourceValueForReading(resolution.value, 'yesNo')
+      : String(resolution.value);
+  return <p className="text-sm text-muted-foreground">{texts.valueNow(valueText)}</p>;
 }

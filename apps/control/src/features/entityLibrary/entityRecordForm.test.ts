@@ -14,6 +14,8 @@
  *   - A new team typed in full reads as the team record, its images left out until one
  *     is uploaded.
  *   - An edited team is filled from the stored one, logo included, and reads back the same.
+ *   - The light plate box (logoOnLightPlate, BAJAOVRLAY-24) reads as yes when ticked and
+ *     is left out when not, and a stored yes fills the box ticked.
  *   - A blank team name and a car number of "abc" are refused under their own fields.
  *   - A new person gets the id the page makes; an edited one keeps its id.
  *   - A schedule slot reads its start from the datetime input on this computer's clock.
@@ -91,6 +93,39 @@ describe('readEntityFormValues for a team', () => {
     expect(reading, 'the place is optional').toEqual({
       isValid: true,
       record: { carNumber: 13, teamName: 'Mutum Off-Road', schoolName: 'UFMT' },
+    });
+  });
+
+  it('reads the light plate box as yes when ticked and leaves it out when not', () => {
+    // Arrange: team 42 as stored with its logo on the plate, and the same team unticked.
+    const team42OnThePlate: Team = { ...buildStoredTeam42(), logoOnLightPlate: true };
+    const tickedValues = buildEntityFormValues('team', team42OnThePlate);
+    const untickedValues = { ...tickedValues, logoOnLightPlate: '' };
+
+    // Act: read both forms.
+    const tickedReading = readEntityFormValues(
+      'team',
+      tickedValues,
+      team42OnThePlate,
+      makeIdThatMustNotBeNeeded,
+    );
+    const untickedReading = readEntityFormValues(
+      'team',
+      untickedValues,
+      team42OnThePlate,
+      makeIdThatMustNotBeNeeded,
+    );
+
+    // Assert: a stored yes fills the box ticked; ticked reads yes; unticked means no plate,
+    // so the field is simply left out.
+    expect(tickedValues.logoOnLightPlate, 'a stored yes ticks the box').toBe('true');
+    expect(tickedReading, 'ticked reads as yes').toEqual({
+      isValid: true,
+      record: team42OnThePlate,
+    });
+    expect(untickedReading, 'unticked leaves the choice out').toEqual({
+      isValid: true,
+      record: buildStoredTeam42(),
     });
   });
 

@@ -27,6 +27,7 @@ export const ptBREntities = {
     state: 'UF',
     logoMediaId: 'Logo',
     carPhotoMediaId: 'Foto do carro',
+    logoOnLightPlate: 'Logo sobre placa clara',
   },
 
   /** The label of every field of a person. */
@@ -81,6 +82,7 @@ export const ptBREntities = {
     wholeNumberFromOne: (fieldLabel: string) => `${fieldLabel}: um número inteiro a partir de 1.`,
     momentInMilliseconds: (fieldLabel: string) => `${fieldLabel}: um momento válido.`,
     notAMediaId: (fieldLabel: string) => `${fieldLabel}: não é uma imagem enviada ao servidor.`,
+    yesOrNo: (fieldLabel: string) => `${fieldLabel}: sim ou não.`,
     unknownState: 'UF: use a sigla de um estado brasileiro (por exemplo PR, SP ou DF).',
     unknownTier: 'Cota: use master, ouro, prata, bronze ou apoio.',
     rollWeightOutOfRange: 'Peso no rodízio: um número inteiro de 1 a 10.',

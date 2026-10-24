@@ -13,6 +13,8 @@
  * What these tests prove:
  *   - Car 42's team name and city are read at the take.
  *   - Car 42's logo gives the URL /media/<mediaId>.
+ *   - Car 42's choice of the light plate (logoOnLightPlate, BAJAOVRLAY-24) reaches a switch
+ *     field as yes; team 7, which made no choice, leaves the switch out (no plate).
  *   - A team that is not in the library refuses the take (ENTITY_NOT_RESOLVED), the
  *     field's title first and the car named.
  *   - Team 7's logo, not uploaded, leaves an optional logo field out, and refuses a take
@@ -73,6 +75,42 @@ describe('resolveItemFieldsIntoGraphicData with entity references', () => {
         city: 'Curitiba',
         logoUrl: `/media/${logoOfTeam42MediaId}`,
       },
+    });
+  });
+
+  it("reads car 42's light plate choice into a switch, and leaves it out for team 7", () => {
+    // Arrange: the plate switch reading the plate choice of car 42's team and of car 7's.
+    const plateOfCar = (carNumber: number): ItemFields => ({
+      teamName: { kind: 'entity', entityType: 'team', carNumber, attribute: 'teamName' },
+      logoOnLightPlate: {
+        kind: 'entity',
+        entityType: 'team',
+        carNumber,
+        attribute: 'logoOnLightPlate',
+      },
+    });
+
+    // Act: resolve both at the take.
+    const resolveFieldsOfCar = (carNumber: number) =>
+      resolveItemFieldsIntoGraphicData({
+        fields: plateOfCar(carNumber),
+        graphic: buildTeamCardGraphic(),
+        momentOfTheTake,
+        sources: buildSourcesAtLap34([]),
+        entities: buildLibraryWithTeams42And7(),
+      });
+    const resolutionOfCar42 = resolveFieldsOfCar(42);
+    const resolutionOfCar7 = resolveFieldsOfCar(7);
+
+    // Assert: yes for team 42; no switch value at all for team 7, which the card reads as
+    // no plate.
+    expect(resolutionOfCar42, 'team 42 goes on the plate').toEqual({
+      status: 'resolved',
+      data: { teamName: 'Baja UFPR', logoOnLightPlate: true },
+    });
+    expect(resolutionOfCar7, 'team 7 made no choice, so the switch is left out').toEqual({
+      status: 'resolved',
+      data: { teamName: 'Juriti Off-Road' },
     });
   });
 

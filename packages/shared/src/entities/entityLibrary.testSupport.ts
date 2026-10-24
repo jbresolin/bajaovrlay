@@ -21,6 +21,8 @@ export function buildLibraryOfTheRaceWeekend(): EntityLibrary {
         city: 'Curitiba',
         state: 'PR',
         logoMediaId: logoOfTeam42MediaId,
+        // Its dark logo goes on the light plate on air (BAJAOVRLAY-24).
+        logoOnLightPlate: true,
       },
       {
         carNumber: 7,

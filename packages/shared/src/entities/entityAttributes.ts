@@ -2,10 +2,11 @@ import type { EntityType } from './entityType.js';
 import { ptBREntities } from './ptBREntities.js';
 
 /**
- * What an attribute gives a graphic: a text, a whole number, or the URL of an image of
- * the media store (/media/<mediaId>), which only an image field takes.
+ * What an attribute gives a graphic: a text, a whole number, a yes or no (a switch field),
+ * or the URL of an image of the media store (/media/<mediaId>), which only an image field
+ * takes.
  */
-export type EntityValueType = 'text' | 'integer' | 'imageUrl';
+export type EntityValueType = 'text' | 'integer' | 'boolean' | 'imageUrl';
 
 /**
  * One attribute an entity reference may read: its key in the reference, its pt-BR label,
@@ -88,6 +89,13 @@ const attributesByEntityType: Record<EntityType, EntityAttribute[]> = {
       label: teamLabels.carPhotoMediaId,
       valueType: 'imageUrl',
       recordFieldKey: 'carPhotoMediaId',
+      isOptional: true,
+    },
+    {
+      attributeKey: 'logoOnLightPlate',
+      label: teamLabels.logoOnLightPlate,
+      valueType: 'boolean',
+      recordFieldKey: 'logoOnLightPlate',
       isOptional: true,
     },
   ],

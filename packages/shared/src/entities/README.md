@@ -8,7 +8,7 @@ once. `scheduleSlotStatus.ts` derives the status from a moment; the commands are
 `upsertEntity.ts`, `deleteEntity.ts`, `importEntities.ts`; refusals are pt-BR sentences
 naming the field (`ptBREntities.ts`). Item fields read it through `entityFieldValue.ts`
 (the kind `entity`, always live), `entityAttributes.ts`, `entityFitsGraphicField.ts` (an
-image only on a `v_baja.role: imageUrl` field) and `entityReferenceResolution.ts` (an image
+image only on a `v_baja.role: imageUrl` field, a yes or no on a `boolean` one) and `entityReferenceResolution.ts` (an image
 as its /media URL). Logos in a list (one per tower row) need a list join, which a later
 item adds as a named binding transform (`withTeamLogos`), never a free-form expression.
 `index.ts` lists every export.

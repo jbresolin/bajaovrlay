@@ -8,8 +8,8 @@ import type { EntityType } from '@bajaovrlay/shared';
  */
 export const exampleLinesOfEachTab: Record<EntityType, string[][]> = {
   team: [
-    ['42', 'Baja UFPR', 'UFPR', 'Universidade Federal do Paraná', 'Curitiba', 'PR'],
-    ['7', 'Juriti Off-Road', 'UDESC', '', 'Joinville', 'SC'],
+    ['42', 'Baja UFPR', 'UFPR', 'Universidade Federal do Paraná', 'Curitiba', 'PR', 'sim'],
+    ['7', 'Juriti Off-Road', 'UDESC', '', 'Joinville', 'SC', ''],
   ],
   person: [
     ['narrador', 'João Bresolin', 'Narrador', ''],

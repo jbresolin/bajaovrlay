@@ -82,10 +82,11 @@ On each property of `schema.properties` (`type` picks the control: `string` text
   list on an `array`, a text on a `string`…) and must not need a car number; a hint that
   fails those rules is ignored, never an error.
 
-Any `string` (without `enum`) or whole-number field may also read the entity library in the
-item editor ("Cadastro", BAJAOVRLAY-19): one attribute of one team (by car number), person,
-sponsor or schedule slot, always live. A text attribute fits a `string`, a whole number an
-`integer`/`number`; nothing of the library fits a `boolean` or a fixed list.
+Any `string` (without `enum`), whole-number or `boolean` field may also read the entity library
+in the item editor ("Cadastro", BAJAOVRLAY-19): one attribute of one team (by car number),
+person, sponsor or schedule slot, always live. A text attribute fits a `string`, a whole number
+an `integer`/`number`, a yes or no a `boolean` (a team's "Logo sobre placa clara",
+BAJAOVRLAY-24); nothing of the library fits a fixed list.
 
 `schema.required` lists the fields that cannot be left blank; every other field gets a
 "limpar" control and, once cleared, is not sent to the graphic at all (never as `null`).

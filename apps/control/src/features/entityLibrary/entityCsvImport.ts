@@ -197,7 +197,7 @@ function readOneLine(
 
 /**
  * A cell as the record field wants it: a whole number ("42"), a moment ("14/11/2026
- * 10:00"), or the text as it is. A cell that does not read is passed on as its text, so
+ * 10:00"), a yes or no ("sim", "não" or "nao", any case), or the text as it is. A cell that does not read is passed on as its text, so
  * the schema refuses it with its own pt-BR sentence ("Número do carro: um número inteiro
  * a partir de 1.").
  */
@@ -209,7 +209,24 @@ function readCell(cellText: string, column: EntityCsvColumn): unknown {
       return /^\d+$/.test(cellText) ? Number(cellText) : cellText;
     case 'localDateTime':
       return readLocalDateTimeText(cellText) ?? cellText;
+    case 'yesNo':
+      return readYesOrNoCell(cellText);
   }
+}
+
+/**
+ * "sim" as yes, "não" or "nao" (a spreadsheet saved without accents) as no, in any case;
+ * any other word is passed on as text, so the schema refuses it with its own sentence.
+ */
+function readYesOrNoCell(cellText: string): unknown {
+  const word = cellText.toLowerCase();
+  if (word === 'sim') {
+    return true;
+  }
+  if (word === 'não' || word === 'nao') {
+    return false;
+  }
+  return cellText;
 }
 
 /** The reason of a line whose key an earlier line already used. */

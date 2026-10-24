@@ -19,7 +19,7 @@ import { ptBREntities } from './ptBREntities.js';
  * Each problem is a pt-BR sentence the server puts the field's title before.
  */
 export type EntityReferenceResolution =
-  | { status: 'resolved'; value: string | number }
+  | { status: 'resolved'; value: string | number | boolean }
   | { status: 'valueAbsent'; problem: string }
   | { status: 'unresolvable'; problem: string };
 
@@ -56,8 +56,13 @@ export function resolveEntityReferenceAgainstLibrary(
     );
     return { status: 'valueAbsent', problem };
   }
-  if (typeof storedValue !== 'string' && typeof storedValue !== 'number') {
-    // The slices' schemas make every attribute a text or a number; anything else is a bug.
+  const isAValueAGraphicTakes =
+    typeof storedValue === 'string' ||
+    typeof storedValue === 'number' ||
+    typeof storedValue === 'boolean';
+  if (!isAValueAGraphicTakes) {
+    // The slices' schemas make every attribute a text, a number or a yes or no; anything
+    // else is a bug.
     const attributeLabel = labelOfEntityAttribute(reference.entityType, attribute);
     return { status: 'unresolvable', problem: attributeLabel };
   }

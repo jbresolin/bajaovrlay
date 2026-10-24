@@ -31,7 +31,11 @@ export function writeExampleCsvOfEntityType(entityType: EntityType): string {
   );
 }
 
-/** One record field as its cell: a moment as "14/11/2026 10:00", a missing value empty. */
+/**
+ * One record field as its cell: a moment as "14/11/2026 10:00", a yes or no as "sim" or
+ * "nao" (no accent, so a spreadsheet in another encoding reads it back), a missing value
+ * empty.
+ */
 function writeCell(record: AnyEntityRecord, column: EntityCsvColumn): string {
   const value = (record as Record<string, unknown>)[column.recordFieldKey];
   if (value === undefined) {
@@ -39,6 +43,9 @@ function writeCell(record: AnyEntityRecord, column: EntityCsvColumn): string {
   }
   if (column.cellKind === 'localDateTime' && typeof value === 'number') {
     return writeLocalDateTimeText(value);
+  }
+  if (column.cellKind === 'yesNo' && typeof value === 'boolean') {
+    return value ? 'sim' : 'nao';
   }
   return String(value);
 }
