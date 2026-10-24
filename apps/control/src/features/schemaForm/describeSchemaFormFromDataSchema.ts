@@ -9,6 +9,8 @@
  * and a property the form cannot edit becomes the read-only `unsupported` control instead
  * of an error.
  */
+import { ptBR } from '@/i18n/ptBR';
+
 import { isPlainRecord, readOwnValueOfRecord } from './plainRecord';
 import type {
   SchemaFormControl,
@@ -92,6 +94,32 @@ function readSelectOptions(
   return selectOptions;
 }
 
+/**
+ * Answers whether a list property is a list of plain texts the form can edit line by line:
+ * `items` is an object with `type: string` and nothing that makes a line something else
+ * (a fixed list of values, a date, a choice between shapes). A list of objects (the
+ * tower's cars) stays unsupported: it is read from a source or shown read-only.
+ */
+function isListOfPlainTexts(propertySchema: Record<string, unknown>): boolean {
+  const itemsSchema = readOwnValueOfRecord(propertySchema, 'items');
+  if (!isPlainRecord(itemsSchema)) {
+    return false;
+  }
+  const isText = readOwnValueOfRecord(itemsSchema, 'type') === 'string';
+  const hasFixedValues = Object.hasOwn(itemsSchema, 'enum');
+  const hasFormat = Object.hasOwn(itemsSchema, 'format');
+  const hasShapeChoice = keywordsOfShapesTheFormCannotEdit.some((keyword) =>
+    Object.hasOwn(itemsSchema, keyword),
+  );
+  return isText && !hasFixedValues && !hasFormat && !hasShapeChoice;
+}
+
+/** The `items` schema of a list property, or an empty object. */
+function readItemsSchema(propertySchema: Record<string, unknown>): Record<string, unknown> {
+  const itemsSchema = readOwnValueOfRecord(propertySchema, 'items');
+  return isPlainRecord(itemsSchema) ? itemsSchema : {};
+}
+
 /** Chooses the control for one property; see SchemaFormControl for what each one is. */
 function chooseControlForProperty(
   key: string,
@@ -130,7 +158,10 @@ function chooseControlForProperty(
   if (type === 'boolean') {
     return 'switch';
   }
-  // Lists, nested objects, `type` given as a list of types, or no `type` at all.
+  if (type === 'array' && isListOfPlainTexts(propertySchema)) {
+    return 'textList';
+  }
+  // Other lists, nested objects, `type` given as a list of types, or no `type` at all.
   return 'unsupported';
 }
 
@@ -147,6 +178,10 @@ function describeProperty(
   const isWallClockMoment = isWholeNumber && role === 'wallClock';
   const selectOptions = readSelectOptions(propertySchema);
   const control = chooseControlForProperty(key, propertySchema, selectOptions, isWallClockMoment);
+  // A list's length limits are its lines' own, written on `items` (JSON Schema's rule).
+  const isTextList = control === 'textList';
+  const schemaOfTheText = isTextList ? readItemsSchema(propertySchema) : propertySchema;
+  const listItemTitle = readTextOrUndefined(readOwnValueOfRecord(schemaOfTheText, 'title'));
 
   return {
     key,
@@ -158,8 +193,15 @@ function describeProperty(
     isWholeNumber,
     minimum: readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'minimum')),
     maximum: readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'maximum')),
-    minimumLength: readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'minLength')),
-    maximumLength: readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'maxLength')),
+    minimumLength: readNumberOrUndefined(readOwnValueOfRecord(schemaOfTheText, 'minLength')),
+    maximumLength: readNumberOrUndefined(readOwnValueOfRecord(schemaOfTheText, 'maxLength')),
+    minimumItems: isTextList
+      ? readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'minItems'))
+      : undefined,
+    maximumItems: isTextList
+      ? readNumberOrUndefined(readOwnValueOfRecord(propertySchema, 'maxItems'))
+      : undefined,
+    listItemLabel: isTextList ? (listItemTitle ?? ptBR.textList.defaultItemLabel) : undefined,
     offersTakeTime: control === 'number' && isWallClockMoment,
     role,
     defaultDataValue: readOwnValueOfRecord(propertySchema, 'default'),

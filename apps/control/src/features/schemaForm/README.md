@@ -13,4 +13,6 @@ reads the manifest's JSON Schema into field descriptions (`schemaFormDescription
 - Drawing: `SchemaFormFields.tsx`, `SchemaFormFieldRow.tsx`, `SchemaFormValueControl.tsx`,
   `UnsupportedValueBox.tsx`, "Fonte" (`BoundFieldControls.tsx`), "Cadastro"
   (`EntityReferenceControls.tsx`, `entityReferenceFormValue.ts`), an image field's picker
-  (`ImageUrlFieldControl.tsx`); `textShownInUntouchedField.ts` for a panel's text.
+  (`ImageUrlFieldControl.tsx`), a list of texts typed line by line (`TextListField.tsx`,
+  `TextListLineRow.tsx`, `textListDragAnnouncements.ts`; BAJAOVRLAY-23);
+  `textShownInUntouchedField.ts` for a panel's text.

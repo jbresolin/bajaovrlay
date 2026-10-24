@@ -70,10 +70,12 @@ export function buildLowerThirdFixtureDataSchema(): Record<string, unknown> {
         minimum: 100,
         maximum: 300,
       },
+      // A list of objects: the form cannot edit it (a list of plain texts it can, since
+      // BAJAOVRLAY-23), so it stays the read-only box these tests are about.
       patrocinadores: {
         type: 'array',
         title: 'Patrocinadores',
-        items: { type: 'string' },
+        items: { type: 'object', properties: { nome: { type: 'string' } } },
       },
       redesSociais: {
         type: 'object',
@@ -105,7 +107,7 @@ export function buildLowerThirdDataForCar42(): Record<string, unknown> {
     destaque: true,
     numeroDoCarro: 42,
     pesoDoCarroKg: 182.5,
-    patrocinadores: ['Oficina do Zé', 'Autopeças Curitiba'],
+    patrocinadores: [{ nome: 'Oficina do Zé' }, { nome: 'Autopeças Curitiba' }],
     redesSociais: { instagram: '@bajaufpr' },
   };
 }

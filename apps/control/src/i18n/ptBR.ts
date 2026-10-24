@@ -6,6 +6,7 @@ import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
+import { ptBRTextList } from './ptBRTextList';
 
 /**
  * pt-BR catalog: every string the operator reads on the control page comes from here,
@@ -18,13 +19,14 @@ import { ptBRQuickFire } from './ptBRQuickFire';
  * (ptBREntityLibrary.ts, the "Cadastros" page), `ptBR.bindings` (ptBRBindings.ts, fields
  * read from a source and corrections of a source) and `ptBR.events` (ptBREvents.ts, the
  * event inbox: the "Eventos" tab, its forms, the Camadas mark and the item editor's
- * "Evento").
+ * "Evento") and `ptBR.textList` (ptBRTextList.ts, the generated form's list of texts).
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,
   bindings: ptBRBindings,
   quickFire: ptBRQuickFire,
   events: ptBREvents,
+  textList: ptBRTextList,
   app: {
     title: 'BajaOvrLay',
     rundownAreaTitle: 'Rundown',

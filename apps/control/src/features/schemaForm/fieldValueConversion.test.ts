@@ -115,11 +115,11 @@ describe('convertDataValueIntoFormValue', () => {
     { name: 'a date that is not ISO 8601', key: 'horario', dataValue: '10/10/2026 09:45' },
     // No value at all (the manifest gave no default).
     { name: 'a missing value', key: 'nome', dataValue: undefined },
-    // A list is never shown in a control.
+    // A list of objects is never shown in a control.
     {
       name: 'the value of an unsupported field',
       key: 'patrocinadores',
-      dataValue: ['Oficina do Zé'],
+      dataValue: [{ nome: 'Oficina do Zé' }],
     },
   ];
 

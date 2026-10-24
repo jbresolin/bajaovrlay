@@ -16,11 +16,13 @@
  * - `number`: a number input (`type: integer` or `number`);
  * - `duration`: a text field typed as mm:ss (`integer`/`number` with `v_baja.unit: ms`);
  * - `switch`: an on/off switch (`type: boolean`);
+ * - `textList`: one text input per line, with add, remove and drag to reorder (`type:
+ *   array` whose `items` are plain `type: string`, the ticker's messages, BAJAOVRLAY-23);
  * - `unsupported`: a read-only JSON box, for every shape the form cannot edit yet
- *   (lists, nested objects, `oneOf` and the like). M3 extends this list.
+ *   (lists of anything but texts, nested objects, `oneOf` and the like).
  */
 export type SchemaFormControl =
-  'text' | 'select' | 'dateTime' | 'number' | 'duration' | 'switch' | 'unsupported';
+  'text' | 'select' | 'dateTime' | 'number' | 'duration' | 'switch' | 'textList' | 'unsupported';
 
 /** One choice of a dropdown: the value the graphic receives and the words the operator reads. */
 export type SchemaFormSelectOption = {
@@ -46,9 +48,21 @@ export type SchemaFormFieldDescription = {
   /** The manifest's `minimum` and `maximum` (numbers and durations), when given. */
   minimum: number | undefined;
   maximum: number | undefined;
-  /** The manifest's `minLength` and `maxLength` (text), when given. */
+  /**
+   * The manifest's `minLength` and `maxLength` (text), when given. For a `textList` they
+   * are its `items`' own, the limit of each line.
+   */
   minimumLength: number | undefined;
   maximumLength: number | undefined;
+  /** A `textList`'s `minItems` and `maxItems`, when given; undefined for every other control. */
+  minimumItems: number | undefined;
+  maximumItems: number | undefined;
+  /**
+   * What one line of a `textList` is called: its `items`' `title` ("Mensagem"), or
+   * "Linha" when there is none. The add button, each line's controls and its messages are
+   * named with it. Undefined for every other control.
+   */
+  listItemLabel: string | undefined;
   /**
    * Whether the operator may choose "filled by the server at the take" instead of typing
    * a value: true for an integer property whose `v_baja.role` is `wallClock`.

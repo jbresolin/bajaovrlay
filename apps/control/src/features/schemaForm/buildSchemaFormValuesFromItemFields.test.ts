@@ -204,7 +204,7 @@ describe('buildSchemaFormValuesFromItemFields', () => {
       duracaoMs: { kind: 'literal', value: 8_000 },
       destaque: { kind: 'literal', value: false },
       numeroDoCarro: { kind: 'literal', value: 42 },
-      patrocinadores: { kind: 'literal', value: ['Oficina do Zé'] },
+      patrocinadores: { kind: 'literal', value: [{ nome: 'Oficina do Zé' }] },
     };
 
     // Act: fill the form from it.
@@ -216,7 +216,7 @@ describe('buildSchemaFormValuesFromItemFields', () => {
     expect(
       formRead.formValues.unsupportedValuesAsJson,
       'the stored list must be kept as JSON text',
-    ).toEqual([{ key: 'patrocinadores', jsonText: '[\n  "Oficina do Zé"\n]' }]);
+    ).toEqual([{ key: 'patrocinadores', jsonText: '[\n  {\n    "nome": "Oficina do Zé"\n  }\n]' }]);
   });
 
   it('treats an optional text stored as the empty text as cleared, without listing it', () => {

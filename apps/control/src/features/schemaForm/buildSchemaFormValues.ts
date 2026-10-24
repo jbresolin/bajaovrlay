@@ -50,7 +50,8 @@ export type SchemaFormValuesReadFromData = {
 /**
  * What a field holds before anyone typed: the manifest's `default` when the control can
  * show it; otherwise empty text for a required typed field (the operator must fill it),
- * "off" for a required switch (a switch cannot look empty), and cleared for everything
+ * "off" for a required switch (a switch cannot look empty), one empty line for a required
+ * list of texts (a box to type the first message in), and cleared for everything
  * optional and for a dropdown with nothing to preselect.
  * An optional text whose default is the empty text starts cleared too: here and in the
  * two fill functions below, a shown value goes through clearBlankOptionalTypedFormValue,
@@ -63,6 +64,9 @@ function buildStartingValueOfField(field: SchemaFormFieldDescription): SchemaFor
   }
   if (!field.isRequired || field.control === 'select') {
     return null;
+  }
+  if (field.control === 'textList') {
+    return [{ text: '' }];
   }
   return field.control === 'switch' ? false : '';
 }

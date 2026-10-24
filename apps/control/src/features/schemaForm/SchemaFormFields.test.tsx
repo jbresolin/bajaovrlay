@@ -290,7 +290,7 @@ describe('SchemaFormFields, on the lower third fixture', () => {
     const sponsorsBox = screen.getByLabelText('Patrocinadores');
     expect(sponsorsBox, 'the box must not accept typing').toHaveAttribute('readonly');
     expect(sponsorsBox, 'the list must be shown as JSON').toHaveValue(
-      '[\n  "Oficina do Zé",\n  "Autopeças Curitiba"\n]',
+      '[\n  {\n    "nome": "Oficina do Zé"\n  },\n  {\n    "nome": "Autopeças Curitiba"\n  }\n]',
     );
     expect(sponsorsBox, 'the note must explain the box').toHaveAccessibleDescription(
       'O formulário ainda não sabe editar este campo. O valor abaixo é só para leitura e segue como está.',

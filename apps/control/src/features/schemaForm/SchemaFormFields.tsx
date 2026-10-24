@@ -14,6 +14,7 @@ import { ListFieldWithSourceChoice } from './ListFieldWithSourceChoice';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';
 import type { SchemaFormValues, UnsupportedValueAsJson } from './schemaFormValues';
+import { TextListField } from './TextListField';
 import type { TextShownInUntouchedField } from './textShownInUntouchedField';
 import { UnsupportedValueBox } from './UnsupportedValueBox';
 
@@ -45,9 +46,10 @@ function readOwnContentOfField(
   return readOnlyFieldContents[fieldKey];
 }
 
-/** Text and unsupported fields take the full width; the smaller controls sit two to a row. */
+/** Texts, lists and unsupported fields take the full width; the smaller controls sit two to a row. */
 function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
-  const takesTheFullWidth = field.control === 'text' || field.control === 'unsupported';
+  const takesTheFullWidth =
+    field.control === 'text' || field.control === 'textList' || field.control === 'unsupported';
   return takesTheFullWidth ? 'col-span-2' : 'col-span-2 sm:col-span-1';
 }
 
@@ -157,6 +159,21 @@ export function SchemaFormFields(props: {
             </div>
           );
         }
+        // A list of texts is typed line by line, and is drawn read-only like any field
+        // when the panel asks (readOnlyFieldContents).
+        const readOnlyContent = readOwnContentOfField(props.readOnlyFieldContents, field.key);
+        if (field.control === 'textList' && readOnlyContent === undefined) {
+          return (
+            <div key={field.key} className={chooseWidthClassOfField(field)}>
+              <TextListField
+                form={form}
+                field={field}
+                controlId={`${controlIdPrefix}-field-${positionInTheForm}`}
+                isDisabled={isDisabled}
+              />
+            </div>
+          );
+        }
         return (
           <div key={field.key} className={chooseWidthClassOfField(field)}>
             <SchemaFormFieldRow
@@ -173,7 +190,7 @@ export function SchemaFormFields(props: {
               bindingOptions={bindingOptions}
               entityLibrary={props.entityLibrary}
               isFilledByTheWholeClock={keysFilledByTheWholeClock.includes(field.key)}
-              readOnlyContent={readOwnContentOfField(props.readOnlyFieldContents, field.key)}
+              readOnlyContent={readOnlyContent}
             />
           </div>
         );
