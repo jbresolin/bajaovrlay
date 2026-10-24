@@ -1,14 +1,14 @@
 // Packages the ardosia pages for outside review (BAJAOVRLAY-43): copies every page and exactly
 // the files it loads (followed through src, href, @import and url()) into .scratch/review/,
-// keeping the docs/ layout so every relative path still works, and writes the review page,
-// index.html, which lists the graphics by group and shows the chosen one on a 1920×1080 stage
-// scaled to fit. The folder is published as a Claude artifact. Run from the repo root:
+// keeping the repo's layout so every relative path still works (the pages reach into
+// packages/theme for the face), and writes the review page, index.html, which lists the
+// graphics by group and shows the chosen one on a 1920×1080 stage scaled to fit. The folder is published as a Claude artifact. Run from the repo root:
 //   node docs/design/tools/packageReview.mjs
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, extname, relative, resolve } from 'node:path';
 
-const docsFolder = resolve('docs');
-const directionFolder = resolve(docsFolder, 'design/directions/ardosia');
+const repoFolder = resolve('.');
+const directionFolder = resolve(repoFolder, 'docs/design/directions/ardosia');
 const outputFolder = resolve('.scratch/review');
 
 // ---------------------------------------------------------------- the static pages, grouped
@@ -170,8 +170,8 @@ function collectNeededFiles(pagePaths) {
         const reference = match[1].trim();
         if (!isLocalReference(reference)) continue;
         const target = resolve(dirname(filePath), reference);
-        if (!target.startsWith(docsFolder))
-          throw new Error(`${filePath} loads ${reference}, outside docs/.`);
+        if (!target.startsWith(repoFolder))
+          throw new Error(`${filePath} loads ${reference}, outside the repo.`);
         toVisit.push(target);
       }
     });
@@ -246,7 +246,7 @@ const neededFiles = collectNeededFiles(
   pageNames.map((pageName) => resolve(directionFolder, `${pageName}.html`)),
 );
 neededFiles.forEach((filePath) => {
-  const target = resolve(outputFolder, relative(docsFolder, filePath));
+  const target = resolve(outputFolder, relative(repoFolder, filePath));
   mkdirSync(dirname(target), { recursive: true });
   copyFileSync(filePath, target);
 });
@@ -257,7 +257,7 @@ writeFileSync(
   resolve(outputFolder, 'index.html'),
   renderReviewPage(listMotionGroups(pageNames), builtAt),
 );
-const publishedPaths = neededFiles.map((filePath) => relative(docsFolder, filePath)).sort();
+const publishedPaths = neededFiles.map((filePath) => relative(repoFolder, filePath)).sort();
 writeFileSync(resolve(outputFolder, 'files.json'), JSON.stringify(publishedPaths, null, 2));
 console.log(
   `${outputFolder}: index.html and ${publishedPaths.length} files (listed in files.json)`,
