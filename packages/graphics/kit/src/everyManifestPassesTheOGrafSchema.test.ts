@@ -60,6 +60,7 @@ describe('the manifests under packages/graphics', () => {
   it('finds the manifest of every graphic the product ships', () => {
     // Arrange: the graphics shipped today, one manifest each.
     const shippedManifests = [
+      join('lower-strip', 'lower-strip.ograf.json'),
       join('lower-third', 'lower-third.ograf.json'),
       join('notice', 'notice.ograf.json'),
       join('positions-tower', 'positions-tower.ograf.json'),

@@ -97,6 +97,9 @@
      title-safe area (x 96..1824, y 54..1026); the column sits top-right like the
      scoreboard, the bug top-left */
   --stage-safe-top: 54px;
+  /* The title-safe edges the bars along the bottom keep (x 96..1824, bottom at y 1026). */
+  --stage-safe-side: 96px;
+  --stage-safe-bottom: 54px;
   --column-width: 420px;
   --column-left: auto;
   --column-right: 96px;
@@ -113,6 +116,10 @@
   --clock-body-height: 88px;
   --clock-logo-height: 44px;
   --flag-band-height: 40px;
+  /* The flag pill in the lower strip's and the message ticker's clock block (BAJAOVRLAY-23):
+     the design's .flag-pill, 32 px tall and at least 96 px wide. */
+  --flag-pill-height: 32px;
+  --flag-pill-min-width: 96px;
   --stack-gap: 8px;
   /* The notice slot (fastest lap, penalty): top-left under the bug, the clock's width. */
   --notice-top: 186px; /* 8 px under the bug, which ends at 178 */

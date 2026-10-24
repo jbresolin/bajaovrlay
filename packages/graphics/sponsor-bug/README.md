@@ -17,11 +17,11 @@ change).
 
 ## A typical item: the bug presented by a sponsor from Cadastros
 
-| Field (form label)     | Value in the item editor                                    |
-| ---------------------- | ----------------------------------------------------------- |
-| Palavra do evento      | Valor digitado: ENDURO (or cleared, for no word)            |
-| Legenda                | Valor digitado: Apresentado por (the default)               |
-| Logo do patrocinador   | Cadastro › Patrocinador (by name) › Logo                    |
-| Logo sobre placa clara | Cadastro › the same patrocinador › Logo sobre placa clara   |
+| Field (form label)     | Value in the item editor                                  |
+| ---------------------- | --------------------------------------------------------- |
+| Palavra do evento      | Valor digitado: ENDURO (or cleared, for no word)          |
+| Legenda                | Valor digitado: Apresentado por (the default)             |
+| Logo do patrocinador   | Cadastro › Patrocinador (by name) › Logo                  |
+| Logo sobre placa clara | Cadastro › the same patrocinador › Logo sobre placa clara |
 
 A sponsor with no logo in Cadastros leaves the logo out, and the bug draws the mark and the word.

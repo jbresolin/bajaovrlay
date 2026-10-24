@@ -14,6 +14,10 @@
     "./clockTicker": "./src/clockTicker.ts",
     "./raceClockReading": "./src/raceClockReading.ts",
     "./flagOnAir": "./src/flagOnAir.ts",
+    "./barMotion": "./src/barMotion.ts",
+    "./clockBlock": "./src/clockBlock.ts",
+    "./clockBlockStyles": "./src/clockBlockStyles.ts",
+    "./stripPageHold": "./src/stripPageHold.ts",
     "./ptBRFlagWords": "./src/ptBRFlagWords.ts",
     "./waitForImagesToSettle": "./src/waitForImagesToSettle.ts",
     "./previewControls": "./src/previewControls.ts",
@@ -31,13 +35,16 @@
   },
   "peerDependencies": {
     "gsap": "^3.15.0",
+    "lit": "^3.3.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@bajaovrlay/theme": "workspace:*",
     "@playwright/test": "catalog:",
     "ajv": "^8.20.0",
     "gsap": "^3.15.0",
     "jsdom": "^30.1.2",
+    "lit": "^3.3.3",
     "vite": "^8.3.3",
     "zod": "^4.6.5"
   }
