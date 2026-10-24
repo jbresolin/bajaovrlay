@@ -1,5 +1,6 @@
 /**
- * The per-frame loop that redraws the clock text while the graphic is on air. Only one
+ * The per-frame loop that redraws the clock text while the graphic is on air: the race
+ * clock's card, and the clock block of the lower strip and the message ticker. Only one
  * loop ever runs, and stopping it cancels the pending frame, so nothing keeps running
  * inside OBS after stop or dispose.
  */

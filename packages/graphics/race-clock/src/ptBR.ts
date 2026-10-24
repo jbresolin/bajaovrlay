@@ -3,16 +3,12 @@
  * renderer with and every label of its preview page, never written inline elsewhere.
  * The manifest's field titles are in race-clock.ograf.json, since JSON cannot import.
  */
-import type { ClockMode, FlagState } from './raceClockModel.js';
+import { flagWordsInPortuguese } from '@bajaovrlay/graphics-kit/ptBRFlagWords';
+import type { ClockMode } from '@bajaovrlay/graphics-kit/raceClockReading';
 
-const flagLabels: Record<FlagState, string> = {
-  pre: 'PRÉ-LARGADA',
-  green: 'VERDE',
-  yellow: 'AMARELA',
-  red: 'VERMELHA',
-  checkered: 'QUADRICULADA',
-  finished: 'ENCERRADA',
-};
+// The flag words are the kit's, so the band here and the strip's and ticker's flag pill
+// read the same word for a flag (BAJAOVRLAY-23).
+const flagLabels = flagWordsInPortuguese;
 
 const clockModeCaptions: Record<ClockMode, string> = {
   elapsed: 'TEMPO DE PROVA',

@@ -2,7 +2,7 @@
   "name": "@bajaovrlay/graphics-kit",
   "version": "0.1.0",
   "private": true,
-  "description": "What every OGraf graphic shares: the OGraf types, the play step rule, the page turner, timeline playback, the pt-BR data problems, the preview page's controls, and the manifest validator for tests.",
+  "description": "What every OGraf graphic shares: the OGraf types, the play step rule, the page turner, timeline playback, the clock's frame loop, reading and flag, the pt-BR data problems, the preview page's controls, and the manifest validator for tests.",
   "type": "module",
   "exports": {
     "./ografGraphicTypes": "./src/ografGraphicTypes.ts",
@@ -11,6 +11,10 @@
     "./timelinePlayback": "./src/timelinePlayback.ts",
     "./dataProblems": "./src/dataProblems.ts",
     "./textPresence": "./src/textPresence.ts",
+    "./clockTicker": "./src/clockTicker.ts",
+    "./raceClockReading": "./src/raceClockReading.ts",
+    "./flagOnAir": "./src/flagOnAir.ts",
+    "./ptBRFlagWords": "./src/ptBRFlagWords.ts",
     "./previewControls": "./src/previewControls.ts",
     "./previewStage": "./src/previewStage.ts",
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",
@@ -20,6 +24,9 @@
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@bajaovrlay/shared": "workspace:*"
   },
   "peerDependencies": {
     "gsap": "^3.15.0",

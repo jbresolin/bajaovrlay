@@ -1,8 +1,9 @@
 /**
- * Clock ticker (packages/graphics/race-clock)
+ * Clock ticker (packages/graphics/kit)
  *
  * What this module is for:
- *   While the race clock is on air, its text is redrawn once per animation frame
+ *   While a graphic with a running clock is on air (the race clock, and the clock block of
+ *   the lower strip and the message ticker), its text is redrawn once per animation frame
  *   (requestAnimationFrame). The ticker owns that loop: start it, and it calls back on
  *   every frame; stop it, and the pending frame is cancelled. A loop that survives
  *   `dispose` would keep burning CPU inside OBS after the graphic is gone.

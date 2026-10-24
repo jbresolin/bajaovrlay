@@ -1,31 +1,22 @@
 /**
  * The race clock's data: its Zod schema (the boundary check for `load` and
- * `updateAction`), the merge of partial updates, and pt-BR descriptions of bad data.
+ * `updateAction`), the merge of partial updates, and pt-BR descriptions of bad data. The
+ * flag states and clock modes are the kit's (`@bajaovrlay/graphics-kit/raceClockReading`).
  * race-clock.ograf.json describes the same data as JSON Schema for renderers and forms;
  * raceClockManifest.test.ts keeps the two in agreement.
  */
 import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
+import { raceClockReadingFieldSchemas } from '@bajaovrlay/graphics-kit/raceClockReading';
 import { z } from 'zod';
 
 import { ptBR } from './ptBR.js';
 
-/** The six flag states, in the order a session goes through them. */
-export const flagStates = ['pre', 'green', 'yellow', 'red', 'checkered', 'finished'] as const;
-
-/** Whether the clock counts time since the start or time left until the end. */
-export const clockModes = ['elapsed', 'remaining'] as const;
-
-export type FlagState = (typeof flagStates)[number];
-export type ClockMode = (typeof clockModes)[number];
-
 // Strict: a field the graphic does not know (usually a typo) is refused, not ignored.
+// The five fields of the clock's reading (flag, mode, time, moment, running) are the kit's,
+// shared with the clock block of the lower strip and the message ticker (BAJAOVRLAY-23).
 const raceClockDataSchema = z.strictObject({
   sessionName: z.string(),
-  state: z.enum(flagStates),
-  clockMode: z.enum(clockModes),
-  referenceTimeMs: z.int().min(0),
-  referenceWallClockMs: z.int().min(0),
-  running: z.boolean(),
+  ...raceClockReadingFieldSchemas,
   lapsCompletedByLeader: z.int().min(0).optional(),
   // Optional so items saved before the band switch existed keep working; see isFlagBandShown.
   showFlagBand: z.boolean().optional(),

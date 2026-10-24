@@ -14,10 +14,10 @@
  * What these tests deliberately do not cover:
  *   - Whether those words actually appear on screen; the Playwright screenshots show it.
  */
+import { flagStates } from '@bajaovrlay/graphics-kit/raceClockReading';
 import { describe, expect, it } from 'vitest';
 
 import { ptBR } from './ptBR.js';
-import { flagStates } from './raceClockModel.js';
 
 describe('flag labels', () => {
   it('has the brief’s on-air label for every flag state', () => {
