@@ -1,4 +1,7 @@
 /**
+ * Test support for the Playwright tests of the graphics (the tower's and the standings' page
+ * holds): no graphic's own module imports this file.
+ *
  * Puts theme tokens on the preview page's :root BEFORE the graphic loads. The graphic
  * reads its tokens when it builds each timeline and arms each page hold, so a test that
  * wants a shorter hold or faster motion must have its values on :root by then; a style

@@ -25,10 +25,10 @@
  *     show the end state.
  */
 import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides';
 import { expect, type Page, test } from '@playwright/test';
 
 import { readEnduroSampleEntries } from './sampleEntries.js';
-import { placeTokenOverridesBeforeTheGraphicLoads } from './tokenOverrides.js';
 
 /** The car number of the first row on air. */
 function readFirstCarNumberOnAir(page: Page): Promise<string | null> {

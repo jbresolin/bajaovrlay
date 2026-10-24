@@ -352,6 +352,9 @@ importers:
 
   packages/graphics/kit:
     devDependencies:
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.62.0
       ajv:
         specifier: ^8.20.0
         version: 8.20.0

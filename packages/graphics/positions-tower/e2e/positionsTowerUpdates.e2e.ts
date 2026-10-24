@@ -40,10 +40,10 @@
  *   - Pixel looks; positionsTowerScreenshots.e2e.ts covers the end states.
  */
 import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides';
 import { expect, type Page, test } from '@playwright/test';
 
 import { readEnduroSampleEntries, type SampleEntry, swapCarsAtPositions } from './sampleEntries.js';
-import { placeTokenOverridesBeforeTheGraphicLoads } from './tokenOverrides.js';
 
 /** Opens the preview with the sample held on page 1 and waits for the play-in to finish. */
 async function openPreviewHeldOnPageOne(page: Page): Promise<void> {

@@ -13,6 +13,7 @@ src/timelinePlayback.ts      play a paused GSAP timeline to its end, or finish i
 src/dataProblems.ts          one pt-BR sentence for the first problem in refused data
 src/previewControls.ts       preview.html's stage, buttons, answer line and data-preview-state
 src/previewAddress.ts        tests only: preview.html?data=<JSON> for the Playwright tests
+src/tokenOverrides.ts        tests only: theme tokens on :root before the graphic loads (a short hold)
 src/ografSchemaValidator.ts  tests only: the ajv validator over the vendored ograf-schema/
 ograf-schema/                the official OGraf v1 schemas, vendored once (see its README)
 ```
