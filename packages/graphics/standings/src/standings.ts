@@ -10,7 +10,8 @@
  *
  * A live update on air draws the current page again in place: the rows keep their slots,
  * nothing re-enters, and a team that moved between pages simply appears on its new page
- * (re-ranking is not animated). An update during a page turn is drawn once the turn ends.
+ * (re-ranking is not animated). An update during a page turn is drawn once the turn ends,
+ * and one during the stop-out once the rows have faded out (on page 1, for the next take).
  *
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
@@ -200,8 +201,8 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
   /**
    * OGraf updateAction: merges partial data in at any time after load (the live binding
    * sends a new list every few seconds). On air the current page is drawn again in place,
-   * with no re-entry; off air it is simply drawn, ready for play. During a page turn the
-   * data is stored and drawn once the turn has ended.
+   * with no re-entry; off air it is simply drawn, ready for play. During a page turn or
+   * the stop-out the data is stored and drawn once that motion has ended.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();

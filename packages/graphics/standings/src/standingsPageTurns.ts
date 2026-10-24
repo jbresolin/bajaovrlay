@@ -77,14 +77,20 @@ export class StandingsPageTurns {
 
   /**
    * Draws data that has just been stored. On air the page is drawn again in place; off
-   * air it is simply drawn. During a turn it is kept for the turn's end.
+   * air and settled page 1 is simply drawn. During a turn it is kept for the turn's end.
+   * During the stop-out nothing is drawn: the rows are still fading out, and the rest on
+   * page 1 that ends the stop-out draws from the latest data.
    */
   drawUpdatedData(): void {
     if (this.isTurningPage) {
       this.wasUpdateKeptForAfterTheTurn = true;
       return;
     }
-    this.drawCurrentPage(this.options.isOnAir() ? 'atOnce' : 'offAir');
+    if (this.options.isOnAir()) {
+      this.drawCurrentPage('atOnce');
+      return;
+    }
+    this.restOnPageOneOnceSettledOffAir();
   }
 
   /**

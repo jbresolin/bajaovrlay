@@ -14,6 +14,8 @@
  *   - Score parts arriving on air turn the columns board into the table at once.
  *   - An update that arrives during a page turn (while the next page cascades in) is not
  *     drawn on the moving rows; it is drawn once the turn has ended, so nothing is lost.
+ *   - An update that arrives during the stop-out (while the rows fade out) is not drawn on
+ *     the fading rows; once the stop-out ends the board rests on page 1 with the new data.
  *   - A refused update answers 400 in pt-BR and leaves the board as it was.
  *
  * What these tests deliberately do not cover:
@@ -211,5 +213,44 @@ describe('an update during a page turn', () => {
       readCarNumbersOnTheBoard(standings)[0],
       'once the turn has ended the update must be on the board',
     ).toBe(44);
+  });
+});
+
+describe('an update during the stop-out', () => {
+  it('leaves the fading rows alone, then rests on page 1 with the new data', async () => {
+    // Arrange: real motion made brief (a fade out of 250 ms), the table on air and turned
+    // to page 2, then a stop started that is still fading the rows out.
+    placeTokensOnTheRoot({
+      ...ardosiaMotionTokenDeclarations,
+      '--motion-in': '200ms',
+      '--motion-row-stagger': '5ms',
+    });
+    const standings = await createOverallStandingsOnAir();
+    await standings.turnToTheNextPageNow();
+    const stop = standings.stopAction({});
+
+    // Act: the next poll swaps the top two teams and the 21st and 22nd while the rows fade;
+    // then the stop-out ends.
+    const swappedOnBothPages = swapTeamsInRows(
+      swapTeamsInRows(createOverallStandingsEntries(), 1, 2),
+      21,
+      22,
+    );
+    const answer = await standings.updateAction({ data: { entries: swappedOnBothPages } });
+    const firstCarDuringTheStopOut = readCarNumbersOnTheBoard(standings)[0];
+    const pageLineDuringTheStopOut = readPageLine(standings);
+    await stop;
+
+    // Assert: accepted, kept off the fading rows, and drawn on page 1 once they are gone.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(firstCarDuringTheStopOut, 'the fading rows keep page 2 as it was drawn').toBe(7);
+    expect(pageLineDuringTheStopOut, 'the head keeps page 2 while it fades').toBe(
+      '2/3 · 21º A 40º',
+    );
+    expect(readPageLine(standings), 'off air the board rests on page 1').toBe('1/3 · 1º A 20º');
+    expect(
+      readCarNumbersOnTheBoard(standings)[0],
+      'page 1 must be drawn from the new data, Equipe FEI Baja (car 1) first',
+    ).toBe(1);
   });
 });
