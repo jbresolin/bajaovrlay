@@ -54,6 +54,9 @@ token names are the design's. Copied with these changes:
   `--team-logo-size`, `--logo-plate-padding`, `--board-row-height`, `--size-board`,
   `--col-points`, `--col-total`, `--motion-board-hold` and `--motion-page-stagger` (the last
   two read by `readMotionTokens` as `boardHoldMs` and `pageStaggerMs`).
+- added for the sponsor bug (BAJAOVRLAY-23): `--sponsor-logo-small-height` as the design
+  names it, and `--size-bug-label` (44 px, the event word, which the design's styles.css
+  wrote as a number).
 
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).

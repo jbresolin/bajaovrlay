@@ -1,7 +1,9 @@
 /**
- * The wait for the card's images before it is ready to play. Load waits here, so a card
- * played straight after load rises with its photo and logo already drawn (motion.md: they
- * come with the card, never after) instead of popping in a moment later on air.
+ * The wait for a graphic's images before it is ready to play: the team card's photo and
+ * logo, the sponsor bug's sponsor logo (moved here from team-card by BAJAOVRLAY-23, its
+ * second user). Load waits here, so a card played straight after load rises with its
+ * images already drawn (motion.md: they come with the card, never after) instead of
+ * popping in a moment later on air.
  *
  * What could go wrong, and why the wait cannot block play: an image settles when it has
  * loaded or failed, and a broken address fails at once, so a broken image costs nothing.

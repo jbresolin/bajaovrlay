@@ -64,6 +64,7 @@ describe('the manifests under packages/graphics', () => {
       join('notice', 'notice.ograf.json'),
       join('positions-tower', 'positions-tower.ograf.json'),
       join('race-clock', 'race-clock.ograf.json'),
+      join('sponsor-bug', 'sponsor-bug.ograf.json'),
       join('standings', 'standings.ograf.json'),
       join('team-card', 'team-card.ograf.json'),
     ];

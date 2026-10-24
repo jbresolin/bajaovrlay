@@ -15,6 +15,7 @@
     "./raceClockReading": "./src/raceClockReading.ts",
     "./flagOnAir": "./src/flagOnAir.ts",
     "./ptBRFlagWords": "./src/ptBRFlagWords.ts",
+    "./waitForImagesToSettle": "./src/waitForImagesToSettle.ts",
     "./previewControls": "./src/previewControls.ts",
     "./previewStage": "./src/previewStage.ts",
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",

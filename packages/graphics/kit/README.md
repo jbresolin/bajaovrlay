@@ -17,6 +17,7 @@ src/clockTicker.ts                       the per-frame loop that redraws a runni
 src/raceClockReading.ts                  the clock's five fields (flag, mode, time, moment, running) and its H:MM:SS text
 src/flagOnAir.ts                         a flag drawn on a band or a pill: state, word, name (checkered wordless)
 src/ptBRFlagWords.ts                     the on-air word of each flag, the kit's one pt-BR catalog
+src/waitForImagesToSettle.ts             load's wait for a graphic's images (at most 2 s; a broken one never blocks)
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests

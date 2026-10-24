@@ -104,6 +104,10 @@
   --bug-right: auto;
   --bug-width: 300px;
   --bug-logo-height: 64px;
+  /* The bug's event word ("ENDURO") and the sponsor's logo under its caption (BAJAOVRLAY-23):
+     the design's styles.css sets the word at 44px, its tokens.css the logo strip at 34px. */
+  --size-bug-label: 44px;
+  --sponsor-logo-small-height: 34px; /* as tall as two caption lines */
   --clock-height: 192px; /* 64 head + 88 body (caption line over the time) + 40 flag band */
   --clock-head-height: 64px;
   --clock-body-height: 88px;

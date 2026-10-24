@@ -6,7 +6,7 @@
  * together; the rules live in named modules: teamCardModel (data and cells), teamCardView
  * (the DOM, drawn by Lit from the data), playSteps (the OGraf step rule),
  * teamCardAnimations (GSAP timelines from the theme's motion tokens) and
- * waitForImagesToSettle (load's wait for the photo and the logo).
+ * the kit's waitForImagesToSettle (load's wait for the photo and the logo).
  *
  * Load waits for the theme's face and for the card's images (loaded or failed, at most
  * 2 s), so play brings the card in with its photo and logo already drawn. An update on
@@ -31,6 +31,7 @@ import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
 } from '@bajaovrlay/graphics-kit/timelinePlayback';
+import { waitForImagesToSettle } from '@bajaovrlay/graphics-kit/waitForImagesToSettle';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -48,7 +49,6 @@ import {
 } from './teamCardModel.js';
 import { teamCardStyles } from './teamCardStyles.js';
 import { findTeamCardPanel, renderTeamCardTemplate } from './teamCardView.js';
-import { waitForImagesToSettle } from './waitForImagesToSettle.js';
 
 /** Must match "stepCount" in team-card.ograf.json: play shows the card, stop hides it. */
 const teamCardStepCount = 1;

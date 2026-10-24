@@ -8,7 +8,7 @@ the card is narrower or shorter, never an empty frame. Start reading at `src/tea
 OGraf lifecycle, the notice's: load once, play in, stop out, update in place any time after load,
 every call answers a status, never throws); it wires `teamCardModel.ts` (Zod data, the cells and the
 width of each combination), `teamCardView.ts`, `teamCardStyles.ts`, `teamCardAnimations.ts`,
-`waitForImagesToSettle.ts` (load waits up to 2 s for the images; a broken one never blocks) and `ptBR.ts`.
+the kit's `waitForImagesToSettle` (load waits up to 2 s for the images; a broken one never blocks) and `ptBR.ts`.
 Preview: `pnpm --filter @bajaovrlay/team-card dev`, then http://localhost:5192/preview.html (add
 `?photo=off`, `?logo=off`, `?city=off`, `?plate=off`, `?stage=grey|black` or `?data=<JSON>`). Unit
 tests: `pnpm --filter @bajaovrlay/team-card test`; Playwright on the built `dist/`, with the 16
