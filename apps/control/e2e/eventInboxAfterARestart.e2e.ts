@@ -152,9 +152,7 @@ async function stopOwnServer(ownServer: OwnServer): Promise<void> {
 }
 
 /** The moment, on the server's clock, the simulator last delivered a good poll, or 0. */
-function readLastGoodPollMomentOfState(
-  state: StateTheInboxTestsRead,
-): number {
+function readLastGoodPollMomentOfState(state: StateTheInboxTestsRead): number {
   return (
     state.dataSnapshots.find((snapshot) => snapshot.sourceId === 'simulador-enduro')
       ?.receivedAtMs ?? 0
