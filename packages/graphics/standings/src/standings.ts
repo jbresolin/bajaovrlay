@@ -1,11 +1,12 @@
 /**
  * The standings OGraf graphic: the overall table with the score's parts, paging by 20, or
  * the whole field in three columns of 20, on the fullscreen layer. This file owns the OGraf
- * lifecycle (load, play, update, stop, dispose) and the page turns, and wires the rest:
+ * lifecycle (load, play, update, stop, dispose) and the motion, and wires the rest:
  * standingsModel (data and defaults), standingsLayout (which board, which teams on which
- * page, the page line), standingsView (the DOM, rows reused by slot), standingsAnimations
- * (GSAP timelines from the theme's motion tokens), standingsPageHold (the hold between
- * pages), ptBR, and from the graphics kit pageTurner, playSteps and timelinePlayback.
+ * page, the page line), standingsPageTurns (the page shown, a turn and what arrived during
+ * it), standingsView (the DOM, rows reused by slot), standingsAnimations (GSAP timelines
+ * from the theme's motion tokens), standingsPageHold (the hold between pages), ptBR, and
+ * from the graphics kit pageTurner, playSteps and timelinePlayback.
  *
  * A live update on air draws the current page again in place: the rows keep their slots,
  * nothing re-enters, and a team that moved between pages simply appears on its new page
@@ -36,34 +37,23 @@ import { LitElement } from 'lit';
 import { ptBR } from './ptBR.js';
 import {
   buildLiftOutTogetherTimeline,
-  buildPageInTimeline,
   buildPlayInTimeline,
   placePiecesOffAir,
   type StandingsTimeline,
 } from './standingsAnimations.js';
 import {
-  chooseNextPageInCycle,
-  chooseStandingsLayout,
-  countStandingsPages,
-  layOutStandingsPage,
-} from './standingsLayout.js';
-import {
   mergePartialUpdateIntoStandingsData,
   parseCompleteStandingsData,
-  readStandingsSettings,
   type StandingsData,
 } from './standingsModel.js';
 import { readBoardHoldMs } from './standingsPageHold.js';
+import { StandingsPageTurns } from './standingsPageTurns.js';
 import { standingsStyles } from './standingsStyles.js';
 import {
-  drawStandingsPage,
   findStandingsParts,
   listColumnCascades,
-  listColumnCascadesThatTurn,
-  type PiecePlacement,
   renderStandingsTemplate,
   type StandingsParts,
-  writeStandingsHead,
 } from './standingsView.js';
 
 /** Must match "stepCount" in standings.ograf.json: play shows the board, stop hides it. */
@@ -86,10 +76,6 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
   private currentStep: number | undefined = undefined;
   private data: StandingsData | undefined = undefined;
   private parts: StandingsParts | undefined = undefined;
-  private currentPageNumber = 1;
-  private isTurningPage = false;
-  /** Whether an update arrived during a turn; the turn draws it once it has ended. */
-  private wasUpdateKeptForAfterTheTurn = false;
   private runningMotionTimeline: StandingsTimeline | undefined = undefined;
   private readonly runningTimelines = new Set<StandingsTimeline>();
   private readonly pageTurner: PageTurner = createPageTurner({
@@ -97,6 +83,14 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
     readHoldMs: () => readBoardHoldMs(this),
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
+  });
+  private readonly pageTurns = new StandingsPageTurns({
+    isOnAir: () => this.lifecycle === 'onAir',
+    isOffAir: () => this.lifecycle === 'offAir',
+    isMotionRunning: () => this.runningMotionTimeline !== undefined,
+    readParts: () => this.requireParts(),
+    readData: () => this.requireData(),
+    runMotionTimeline: (timeline) => this.runMotionTimeline(timeline, false),
   });
 
   override render() {
@@ -133,7 +127,7 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
     this.parts = parts;
     this.data = dataCheck.data;
     placePiecesOffAir(parts.tokensSource, [parts.head]);
-    this.drawCurrentPage('offAir');
+    this.pageTurns.drawCurrentPage('offAir');
     this.lifecycle = 'offAir';
     return okAnswer;
   }
@@ -199,7 +193,7 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
     const everyPiece = [parts.head, ...listColumnCascades(parts).flat()];
     const stopOut = buildLiftOutTogetherTimeline(parts.tokensSource, everyPiece);
     await this.runMotionTimeline(stopOut, params.skipAnimation ?? false);
-    this.restOnPageOneOnceSettledOffAir();
+    this.pageTurns.restOnPageOneOnceSettledOffAir();
     return okAnswer;
   }
 
@@ -220,11 +214,7 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
     }
 
     this.data = dataCheck.data;
-    if (this.isTurningPage) {
-      this.wasUpdateKeptForAfterTheTurn = true;
-      return okAnswer;
-    }
-    this.drawCurrentPage(this.lifecycle === 'onAir' ? 'atOnce' : 'offAir');
+    this.pageTurns.drawUpdatedData();
     // A field taken on one page and grown past it must start turning; starting a running
     // timer does nothing.
     this.startPageTurnerWhenThereArePages();
@@ -254,91 +244,15 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
    * another turn, or with a single page.
    */
   async turnToTheNextPageNow(): Promise<void> {
-    if (this.lifecycle !== 'onAir' || this.isTurningPage) {
+    if (this.lifecycle !== 'onAir') {
       return;
     }
-    const pageCount = countStandingsPages(this.requireData().entries.length, this.readLayout());
-    if (pageCount === 1) {
-      return;
-    }
-    await this.turnToPage(chooseNextPageInCycle(this.currentPageNumber, pageCount));
-  }
-
-  /**
-   * The turn, on air: the pieces of the page lift out together, the next page is drawn on
-   * the same slots and its pieces cascade in, the head card staying and its page line
-   * changing in place. An update that arrived during the turn is drawn once it has ended.
-   * A board stopped during the lift draws nothing more; whichever ends last of the turn
-   * and the stop-out rests it on page 1.
-   */
-  private async turnToPage(pageNumber: number): Promise<void> {
-    const parts = this.requireParts();
-    this.isTurningPage = true;
-    try {
-      const piecesLeaving = listColumnCascadesThatTurn(parts).flat();
-      const pageOut = buildLiftOutTogetherTimeline(parts.tokensSource, piecesLeaving);
-      await this.runMotionTimeline(pageOut, false);
-      // Stopped or disposed during the lift: no next page, since drawing it now would
-      // change the texts of rows still fading out.
-      if (this.readLifecycleNow() === 'onAir') {
-        this.currentPageNumber = pageNumber;
-        // Drawn from the latest data: an update that arrived before this point is on it.
-        this.wasUpdateKeptForAfterTheTurn = false;
-        this.drawCurrentPage('beforeCascade');
-        const pageIn = buildPageInTimeline(parts.tokensSource, listColumnCascadesThatTurn(parts));
-        await this.runMotionTimeline(pageIn, false);
-      }
-    } finally {
-      this.isTurningPage = false;
-    }
-    if (this.wasUpdateKeptForAfterTheTurn && this.readLifecycleNow() === 'onAir') {
-      this.wasUpdateKeptForAfterTheTurn = false;
-      this.drawCurrentPage('atOnce');
-    }
-    this.restOnPageOneOnceSettledOffAir();
-  }
-
-  /**
-   * Off air the board rests on page 1, so the next take starts at the top. Done by
-   * whichever ends last of a stop-out and a turn the stop cut short, so page 1 is never
-   * drawn on rows still fading out, and never forgotten.
-   */
-  private restOnPageOneOnceSettledOffAir(): void {
-    const isSettledOffAir =
-      this.lifecycle === 'offAir' &&
-      !this.isTurningPage &&
-      this.runningMotionTimeline === undefined;
-    // Drawn even when page 1 is already there: an update kept during a cut turn is on it.
-    if (isSettledOffAir) {
-      this.currentPageNumber = 1;
-      this.drawCurrentPage('offAir');
-    }
-  }
-
-  /** Draws the current page of the stored data: the head's texts and the tables. */
-  private drawCurrentPage(placement: PiecePlacement): void {
-    const parts = this.requireParts();
-    const settings = readStandingsSettings(this.requireData());
-    const page = layOutStandingsPage(
-      this.requireData().entries,
-      this.readLayout(),
-      this.currentPageNumber,
-    );
-    // A list that shrank under the page on air lands on its last page.
-    this.currentPageNumber = page.pageNumber;
-    writeStandingsHead(parts, settings, page.pageLine);
-    drawStandingsPage(parts, page, settings.scoreParts, placement);
-  }
-
-  /** The board the stored data asks for: the table with parts, the columns without. */
-  private readLayout() {
-    return chooseStandingsLayout(readStandingsSettings(this.requireData()).scoreParts);
+    await this.pageTurns.turnToTheNextPage();
   }
 
   /** Starts the page timer, only on air and with more than one page. */
   private startPageTurnerWhenThereArePages(): void {
-    const pageCount = countStandingsPages(this.requireData().entries.length, this.readLayout());
-    if (this.lifecycle === 'onAir' && pageCount > 1) {
+    if (this.lifecycle === 'onAir' && this.pageTurns.countPages() > 1) {
       this.pageTurner.start();
     }
   }
