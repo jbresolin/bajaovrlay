@@ -55,6 +55,15 @@ through one reader per source, with no dependency:
   or opaque mark gets the plate) and writes 480 px WebP copies and `logos.json` into
   `sample_data/logos/`; a wrong guess is corrected in its `surfaceOverrides`.
 
+## Sharing for review
+
+`node docs/design/tools/packageReview.mjs` copies every ardosia page and exactly the files it
+loads into `.scratch/review/` (keeping the `docs/` layout), with a review page, `index.html`,
+built from `tools/reviewPage.html`: the pages listed by group and the chosen one on a scaled
+1920×1080 stage. That folder is published as a private Claude artifact (BAJAOVRLAY-43,
+https://claude.ai/artifact/TaBSzQ73oP3LsAtmTaWXbM), republished to the same link after each
+round. A static page missing from the script's groups stops the package.
+
 ## The timelines
 
 Two pages replay the real results so the graphics can be judged at any moment, not just the
