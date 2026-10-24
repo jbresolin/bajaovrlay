@@ -101,8 +101,8 @@ export const sponsorLevels = [
   { key: 'realizacao', heading: 'Realização' },
 ];
 
-/** The QR card's words. The address is the scoreboard the stream links to today. */
+/** The QR card's words. The address is the event's results site (João, 2026-10-23). */
 export const qrFixture = {
   callToAction: 'Acompanhe os resultados',
-  url: 'placarbaja.juansalles.com.br',
+  url: 'resultados.bajasaebrasil.net',
 };

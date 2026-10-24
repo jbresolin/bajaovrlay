@@ -276,8 +276,8 @@ Pass 2 (BAJAOVRLAY-43), the judgment calls to confirm:
     no coloured band at all, so it never reads as the clock's flag band.
 11. **Standings**: 20 rows a page (three pages, the tower's page size) rather than the 23 that
     would fit; the per-event table shows all 60 at once in three columns and does not page.
-12. The **QR card** shows the stream's scoreboard address of today
-    (placarbaja.juansalles.com.br), in caps like everything else, on the one light surface.
+12. The **QR card** shows the event's results site
+    (resultados.bajasaebrasil.net, João's choice), in caps like everything else, on the one light surface.
 13. **Wide boards** (standings, bracket, podium) are taken with the column, the notice and the
     ticker cleared, by a macro; the **narrow boards** are 1280 px centred so the bug and the
     clock card stay beside them.
