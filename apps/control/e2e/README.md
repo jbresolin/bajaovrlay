@@ -25,9 +25,9 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   `flexSourceFollowsATimingSystem.e2e.ts` (the example preset imported into "HTTP/JSON (flexível)", pointed at an imaginary
   timing system the test serves on a free port, `timingSystemTestServer.ts`: "Testar" shows 20 cars; saved and on, the table
   follows a changed answer, keeps its data "Atrasada" while the timing system answers 500, and is "Ok" again after).
-  `bindingsFollowTheSimulator.e2e.ts` (BAJAOVRLAY-20, the brief's walk, about a minute): a race clock whose title and flag read the
+  `bindingsFollowTheSimulator.e2e.ts` (BAJAOVRLAY-20, the brief's walk): a race clock whose title and flag read the
   simulator and whose time is "Relógio da fonte" goes on air with the simulator's state, turns yellow by itself at the seeded race's
-  first yellow (56,7 simulated minutes in, ~57 s at 60×), takes a correction of the session name ("Corrigir valor da fonte…") and
+  first yellow (seed 1405, set with the speed: 16 simulated minutes in, ~16 s at 60×), takes a correction of the session name ("Corrigir valor da fonte…") and
   loses it again, and shows "fonte atrasada" on its Camadas row with "Falha simulada" on, its data still on air (read from
   `GET /api/v1/state`).
   `towerFollowsTheSimulator.e2e.ts` (BAJAOVRLAY-21/22, the brief's E2E, three tests; the monitor-frame finders and the box

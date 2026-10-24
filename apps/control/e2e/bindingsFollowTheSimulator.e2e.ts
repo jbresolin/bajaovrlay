@@ -18,9 +18,13 @@
  *      stays under green for 56 simulated minutes, so the editor steps never race a
  *      flag change.
  *   2. Taken: the clock on air shows the simulator's session name, flag and clock.
- *   3. The speed set to 60× just before "Reiniciar corrida": once the simulator's own
- *      data turns yellow (56,7 simulated minutes in, about a minute of waiting, on the
- *      Console page), the flag on air turns yellow within seconds, by itself.
+ *   3. The speed set to 60× and the race's seed to 1405 just before "Reiniciar corrida":
+ *      once the simulator's own data turns yellow (16 simulated minutes in, about 16 s of
+ *      waiting, on the Console page), the flag on air turns yellow within seconds, by
+ *      itself. Seed 1405 is the earliest first yellow of the first 5 000 seeds, with no
+ *      red flag; the default seed's first yellow comes at 56,7 minutes, which made this
+ *      test wait about a minute (BAJAOVRLAY-42). It proves the same: a green race that
+ *      turns yellow by itself while the clock is on air.
  *   4. A correction of the session name changes the title on air; removed, the title
  *      goes back to the simulator's.
  *   5. "Falha simulada" on: the Camadas row shows "fonte atrasada" and the clock stays on
@@ -57,8 +61,10 @@ import { openItemEditorWithNewGraphic, saveAndTakeTheItemInTheEditor } from './p
 // The simulator names its session so that simulated data on air says it is simulated.
 const simulatedSessionName = 'Enduro de Resistência (simulado)';
 const correctedSessionName = 'Enduro — Etapa Nacional';
-// At 60× the seeded race's first yellow comes 56,7 simulated minutes in: about 57 s.
-const waitForTheFirstYellowInMilliseconds = 90_000;
+// The race of seed 1405 (step 3) has its first yellow 16,0 simulated minutes in: about
+// 16 s at 60×. The wait allows four times that, for a slow CI machine.
+const seedWithAnEarlyFirstYellowAsTyped = '1405';
+const waitForTheFirstYellowInMilliseconds = 60_000;
 // Once the source says yellow, the refresh follows its poll at once: a few seconds.
 const waitForTheYellowOnAirInMilliseconds = 5_000;
 // A refresh follows the next poll (every 0,5 s); a few seconds cover a slow machine.
@@ -156,15 +162,20 @@ async function openTheTitleCorrection(page: Page): Promise<Locator> {
 
 test.describe('a race clock bound to the simulator', () => {
   test('goes on air with the simulator session and turns yellow with it', async ({ page }) => {
-    test.setTimeout(180_000);
+    // Still past Playwright's 30 s default: the editor steps, then up to a minute of race.
+    test.setTimeout(120_000);
 
     // Arrange (steps 1 and 2): the bound clock on air, green, at speed 1.
     await putTheBoundClockOnAir(page);
 
-    // Act (step 3): speed 60× just before "Reiniciar corrida", then wait on the Console
-    // page until the simulator's own data says yellow.
+    // Act (step 3): speed 60× and the seed of an early first yellow just before
+    // "Reiniciar corrida", then wait on the Console page until the simulator's own data
+    // says yellow.
     await openDataSourcesPageAndWaitUntilConnected(page);
-    await changeSimulatorInItsEditForm(page, seededSimulatorLabel, { speedAsTyped: '60' });
+    await changeSimulatorInItsEditForm(page, seededSimulatorLabel, {
+      speedAsTyped: '60',
+      seedAsTyped: seedWithAnEarlyFirstYellowAsTyped,
+    });
     await restartTheSimulatedRaceWithItsButton(page, seededSimulatorLabel);
     await openConsoleAndWaitUntilConnected(page);
     await expect

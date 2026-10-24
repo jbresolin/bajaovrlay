@@ -1,8 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
 // The tests open the BUILT graphic (dist/) under the same folder the server will use,
 // so they also prove that dist/ works when served from /graphics/notice/.
-const builtGraphicAddress = 'http://127.0.0.1:5180/graphics/notice/';
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset. 5180 is the
+// preview port of vite.config.ts, given here so the offset can move it.
+const previewPort = 5180 + portOffsetOfTheBrowserTests;
+const builtGraphicAddress = `http://127.0.0.1:${String(previewPort)}/graphics/notice/`;
 const isRunningInCI = Boolean(process.env.CI);
 
 export default defineConfig({
@@ -11,7 +17,15 @@ export default defineConfig({
   forbidOnly: isRunningInCI,
   // No retries: a flaky test is a bug, and a retry would hide it.
   retries: 0,
-  reporter: isRunningInCI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // On CI also a JSON report, which scripts/reportSlowestTests.js turns into the
+  // slowest-tests table on the run's summary page (docs/ci.md).
+  reporter: isRunningInCI
+    ? [
+        ['list'],
+        ['html', { open: 'never' }],
+        ['json', { outputFile: 'test-results/playwright-results.json' }],
+      ]
+    : 'list',
   use: {
     baseURL: builtGraphicAddress,
     trace: 'retain-on-failure',
@@ -25,8 +39,7 @@ export default defineConfig({
   ],
   webServer: {
     // Build first so the tests never run against a stale dist/ left from an older build.
-    command:
-      'pnpm exec vite build && pnpm exec vite preview --host 127.0.0.1 --base /graphics/notice/',
+    command: `pnpm exec vite build && pnpm exec vite preview --host 127.0.0.1 --port ${String(previewPort)} --strictPort --base /graphics/notice/`,
     url: `${builtGraphicAddress}notice.ograf.json`,
     reuseExistingServer: !isRunningInCI,
   },

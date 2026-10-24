@@ -15,10 +15,10 @@
  *     1,5 s, and no task in those ten seconds held the main thread longer than 1,5 s (the
  *     browser's long-task timing).
  *
- * Why the CPU is slowed off CI only, and why these bounds:
+ * Why the CPU is slowed off GitHub's runner only, and why these bounds:
  *   The CI runner is the machine the freeze was found on (gate 2 of PR #18); the broken
  *   page's longest task took 737 ms there and 212 ms on a developer machine, so the runner
- *   is about 3,5 times slower. On CI the page runs as it is; anywhere else Chrome's CPU
+ *   is about 3,5 times slower. On the runner the page runs as it is; anywhere else Chrome's CPU
  *   throttling slows it 4 times, to about the runner's speed. On a developer machine so
  *   slowed, the frozen page took 14,7 s to answer and the fixed one 25–790 ms (its longest
  *   task 280–370 ms). The fixed page only falls behind its polls at about 8 times slower
@@ -41,9 +41,12 @@ import {
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
 
-// The page's CPU is slowed this many times (Chrome's own throttling) off CI, so a fast
-// developer machine sees what the CI runner sees; the runner is left as it is (header).
-const cpuSlowdownFactor = process.env.CI === undefined ? 4 : 1;
+// The page's CPU is slowed this many times (Chrome's own throttling) off GitHub's runner,
+// so a fast developer machine sees what the runner sees; the runner is left as it is
+// (header). GITHUB_ACTIONS, not CI: `pnpm verify` sets CI=1 on a developer machine too
+// (scripts/verifySteps.js), and the page must still be slowed there.
+const isRunningOnGitHubsRunner = process.env.GITHUB_ACTIONS === 'true';
+const cpuSlowdownFactor = isRunningOnGitHubsRunner ? 1 : 4;
 // How long the race runs before the page is measured: twenty polls of 60 cars.
 const raceRunningTimeBeforeTheMeasureInMilliseconds = 10_000;
 // The frozen page answered in 14,7 s; the fixed one in at most 790 ms (see the header).
@@ -78,7 +81,10 @@ test.describe('the "Fontes de dados" page during a 60-car race', () => {
       }).observe({ type: 'longtask', buffered: false });
     });
 
-    // Act: let the race run, then time a round trip and read the longest task.
+    // Act: let the race run, then time a round trip and read the longest task. A fixed
+    // wait on purpose (docs/ci.md, the waits policy): it waits for nothing to happen, it is
+    // the stretch of polls the long-task observer watches, and the longest task in it must
+    // stay short. Polling for an event would not shorten it.
     await page.waitForTimeout(raceRunningTimeBeforeTheMeasureInMilliseconds);
     const roundTripStartMs = Date.now();
     const longestTaskMs = await page.evaluate(() => {

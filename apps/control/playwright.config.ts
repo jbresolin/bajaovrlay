@@ -31,7 +31,15 @@ export default defineConfig({
   retries: 0,
   // One at a time: the tests share one server, and state on it is the thing under test.
   workers: 1,
-  reporter: isRunningInCI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // On CI also a JSON report, which scripts/reportSlowestTests.js turns into the
+  // slowest-tests table on the run's summary page (docs/ci.md).
+  reporter: isRunningInCI
+    ? [
+        ['list'],
+        ['html', { open: 'never' }],
+        ['json', { outputFile: 'test-results/playwright-results.json' }],
+      ]
+    : 'list',
   use: {
     baseURL: controlPageAddress,
     trace: 'retain-on-failure',

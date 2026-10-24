@@ -75,6 +75,19 @@ build.
 - Browser tests (Playwright) live in an `e2e/` folder of the package, named
   `<subject>.e2e.ts`, and run with `pnpm test:e2e`.
 
+## Before you push
+
+Run `pnpm verify` from the repository root. It runs, in order, the same commands CI runs
+(install check, lint, typecheck, Vitest, build, the browser tests), prints one line per
+step with its time, and stops at the first failure, naming the step. A draft pull request
+gets no CI run until gate 2 has passed, so this is the check every review round relies on;
+report its summary in the round's report.
+
+`pnpm verify --quick` leaves out the browser tests, for a fast check. When you use it,
+also run the browser tests of every package your change touches
+(`pnpm --filter <package> test:e2e`). A browser test waits on the thing itself, never on
+the clock: see the waits policy in `docs/ci.md`.
+
 ## The complete example
 
 This is `apps/server/src/core/http/healthRoute.test.ts`, exactly as it is in the
