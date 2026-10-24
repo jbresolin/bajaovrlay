@@ -7,13 +7,21 @@
  *   4X4, SEG., PEN.) and keeps disqualified teams in the list (BAJAOVRLAY-24). A flex
  *   source sends each team's parts as a list, each part a `label` and a `value`; the
  *   mapping turns that list into the team's `pointsByPart` (keyed by the label) and builds
- *   the standings' `scoreParts` from every label it met, in the order it met them. The
- *   disqualified flag is an ordinary field, read with mapValues from the source's word.
+ *   the standings' `scoreParts` from every label it met, a part with no value included, in
+ *   the order it met them. The disqualified flag is an ordinary field, read with mapValues
+ *   from the source's word; a disqualified team's rank is dropped, since the real export
+ *   still writes one ("51º") and the shape refuses a rank on a disqualified team.
  *
  * What these tests prove:
- *   - A classification of three teams (one disqualified, one with an unknown part) maps
- *     into standings that pass validateDataShape: the parts in the source's order, each
- *     team's points by part, the unknown part left out, the disqualified team unranked.
+ *   - A classification of three teams (one disqualified as the real export writes it, "51º"
+ *     and "Desclassificada"; one with an unknown part) maps into standings that pass
+ *     validateDataShape: the parts in the source's order, each team's points by part, the
+ *     unknown part left out, the disqualified team unranked.
+ *   - A part whose value is unknown for the first team, or for every team, keeps its
+ *     column, in the source's order: a column must not vanish or move because a cell is
+ *     blank.
+ *   - A rank the mapping cannot read on a disqualified team is no problem, since the rank
+ *     is dropped anyway.
  *   - A team whose parts are not a list fails the mapping, naming the team's car and line.
  *   - A part without a text label or with a value that is not a number fails the mapping,
  *     naming the part's place in the list.
@@ -78,7 +86,8 @@ function buildClassificationResponse() {
         ]),
       },
       {
-        colocacao: null,
+        // As the real export writes a disqualified team: a place, and the word.
+        colocacao: '51º',
         numero: 30,
         equipe: 'Caledônia Racing Baja SAE',
         escola: 'UERJ',
@@ -93,8 +102,21 @@ function buildClassificationResponse() {
   };
 }
 
-/** The mapping written for that endpoint, checked as a saved config is checked. */
-function buildClassificationMapping(): FlexMappingConfig {
+/** The rank read as the endpoint sends it, a number, with no transform. */
+const rankReadAsItIs = { targetField: 'rank', fromPath: 'colocacao' };
+
+/** The rank read from text with textToInteger, which refuses the export's "51º". */
+const rankReadFromText = {
+  targetField: 'rank',
+  fromPath: 'colocacao',
+  transformId: 'textToInteger',
+};
+
+/**
+ * The mapping written for that endpoint, checked as a saved config is checked, with the
+ * rank rule given (as it is, unless a test says otherwise).
+ */
+function buildClassificationMapping(rankRule: object = rankReadAsItIs): FlexMappingConfig {
   return FlexMappingConfigSchema.parse([
     {
       shapeKey: 'standings',
@@ -109,7 +131,7 @@ function buildClassificationMapping(): FlexMappingConfig {
         { targetField: 'teamName', fromPath: 'equipe' },
         { targetField: 'schoolName', fromPath: 'escola' },
         { targetField: 'points', fromPath: 'total' },
-        { targetField: 'rank', fromPath: 'colocacao' },
+        rankRule,
         { targetField: 'pointsByPart', fromPath: 'partes' },
         {
           targetField: 'isDisqualified',
@@ -184,6 +206,83 @@ describe('mapping an overall classification with score parts', () => {
       ],
     });
     expect(validation.isValid, 'the mapped standings must pass the shape').toBe(true);
+  });
+
+  it('reads no rank for a disqualified team, even one the rank rule cannot read', () => {
+    // Arrange: the same teams with their places written as text ("1", "38", "51º"), and
+    // the rank read with textToInteger, which refuses "51º".
+    const response = buildClassificationResponse();
+    const teamsWithPlacesAsText = response.classificacao.map((team) => ({
+      ...team,
+      colocacao: String(team.colocacao),
+    }));
+    const responseWithPlacesAsText = { classificacao: teamsWithPlacesAsText };
+    const mapping = buildClassificationMapping(rankReadFromText);
+
+    // Act: map the poll.
+    const result = applyFlexMapping(
+      mapping,
+      { resultados: responseWithPlacesAsText },
+      pollMomentMs,
+    );
+
+    // Assert: the mapping succeeds and Caledônia has no rank.
+    expect(result.ok, 'a disqualified team’s unreadable rank must not fail the poll').toBe(true);
+    const entries = result.ok
+      ? (result.shapes.standings as { entries: Array<Record<string, unknown>> }).entries
+      : [];
+    expect(entries[2], 'the disqualified team has no rank').not.toHaveProperty('rank');
+  });
+});
+
+describe('a part whose value the source does not know', () => {
+  const unknownPartScenarios = [
+    {
+      // The real overall.csv has blank 4X4 cells: the first team's blank must not move
+      // 4X4 to the end of the board.
+      name: 'keeps its column in place when the first team has no value for it',
+      valuesOfFourByFour: [null, 150],
+    },
+    {
+      // Before the 4X4 is run nobody has it: the column must still be there, all "—".
+      name: 'keeps its column when no team has a value for it',
+      valuesOfFourByFour: [null, null],
+    },
+  ];
+
+  it.each(unknownPartScenarios)('$name', ({ valuesOfFourByFour }) => {
+    // Arrange: two teams, each with PROJETO, 4X4 and ENDURO in that order, the 4X4 values
+    // from the row.
+    const response = {
+      classificacao: valuesOfFourByFour.map((fourByFour, index) => ({
+        colocacao: index + 1,
+        numero: index + 1,
+        equipe: index === 0 ? 'Baja UFMG' : 'Equipe FEI Baja',
+        escola: index === 0 ? 'UFMG' : 'FEI',
+        total: 500,
+        situacao: '',
+        partes: buildPartsList([
+          ['PROJETO', 200],
+          ['4X4', fourByFour],
+          ['ENDURO', 300],
+        ]),
+      })),
+    };
+
+    // Act: map the poll.
+    const result = applyFlexMapping(
+      buildClassificationMapping(),
+      { resultados: response },
+      pollMomentMs,
+    );
+
+    // Assert: the three parts, in the source's order, 4X4 included.
+    const standings = result.ok ? (result.shapes.standings as { scoreParts: unknown }) : undefined;
+    expect(standings?.scoreParts, 'every part named in the lists, in order').toEqual([
+      { partId: 'PROJETO', label: 'PROJETO' },
+      { partId: '4X4', label: '4X4' },
+      { partId: 'ENDURO', label: 'ENDURO' },
+    ]);
   });
 });
 

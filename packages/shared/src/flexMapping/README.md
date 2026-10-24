@@ -14,4 +14,5 @@ only, no wildcards, filters, recursion or functions; a key holding a dot or a br
 response whose top level is a list, cannot be read. **One transform per rule**, no chains.
 **Brackets** (a draft, BAJAOVRLAY-25) are not mappable yet. A standings team's **score parts** come
 as one list per team, each part `{ "label", "value" }`; the label is the part's id, and the
-standings' `scoreParts` is built from every label met, in order (`standingsScorePartLists.ts`).
+standings' `scoreParts` is built from every label met, a part with no value too, in order
+(`standingsScorePartLists.ts`). A disqualified team's mapped rank is dropped (the real export writes one).
