@@ -3,7 +3,7 @@
 // or a body card, so a board is the column's language across the whole stage. The bracket
 // and the podium, which reveal in steps, are in slateSteps.mjs.
 import { logoPath } from './slateTemplates.mjs';
-import { escapeHtml, placeholderMark, scheduleIcons } from './slateVocabulary.mjs';
+import { escapeHtml, renderLogo, scheduleIcons } from './slateVocabulary.mjs';
 
 /** The head every board starts with: the logo, the title, a subtitle, a line at the right. */
 export function renderBoardHead(title, subtitle = '', aside = '') {
@@ -31,16 +31,20 @@ ${cells}
     </header>`;
 }
 
+// A disqualified team keeps its row, dimmed like a retired car, with no rank and "DESCL." as
+// its total (the export ranks all four disqualified teams 51º, tied).
 function renderStandingsRow(entry, eventColumns) {
   const leader = entry.rank === 1 ? ' data-leader' : '';
+  const disqualified = entry.isDisqualified ? ' data-disqualified' : '';
+  const rank = entry.isDisqualified ? '—' : entry.rank;
   const points = eventColumns
     .map(
       (column) =>
         `\n        <span class="row__points">${entry.pointsByEventText[column.key]}</span>`,
     )
     .join('');
-  return `      <li class="pill row--standings" data-row${leader}>
-        <span class="row__pos">${entry.rank}</span>
+  return `      <li class="pill row--standings" data-row${leader}${disqualified}>
+        <span class="row__pos">${rank}</span>
         <span class="chip">${entry.carNumber}</span>
         <span class="row__team"><span class="row__team-name">${escapeHtml(entry.teamName)}</span><span class="row__school">${escapeHtml(entry.schoolName)}</span></span>${points}
         <span class="row__total">${entry.pointsText}</span>
@@ -210,10 +214,7 @@ ${topFive.map(renderTopFiveRow).join('\n')}
     </div>`
     : '';
   const sponsorCells = sponsors
-    .map(
-      (sponsor) =>
-        `    <span class="intermission__sponsor">${placeholderMark(sponsor.initial, sponsor.name)}<span>${escapeHtml(sponsor.name)}</span></span>`,
-    )
+    .map((sponsor) => `    ${renderLogo(sponsor.logo, 'intermission__sponsor')}`)
     .join('\n');
   const sponsorLine =
     sponsors.length > 0
@@ -253,15 +254,32 @@ ${renderBoardHead('Próxima sessão', session.eventName, session.dateText)}
 
 // ---------------------------------------------------------------- sponsor roll, full
 
+/**
+ * The sponsor roll's pages: one level at a time, in the order the sponsors come (Diamante,
+ * Ouro, Apoio), a level with more sponsors than a page holds taking several pages, so a
+ * Diamante sponsor never shares a page with an Apoio one.
+ */
+export function planSponsorPages(sponsors, sponsorsPerPage) {
+  const pages = [];
+  sponsors.forEach((sponsor) => {
+    const lastPage = pages.at(-1);
+    const isSameLevel = lastPage !== undefined && lastPage.level === sponsor.level;
+    if (isSameLevel && lastPage.sponsors.length < sponsorsPerPage) {
+      lastPage.sponsors.push(sponsor);
+      return;
+    }
+    pages.push({ level: sponsor.level, levelLabel: sponsor.levelLabel, sponsors: [sponsor] });
+  });
+  return pages;
+}
+
 /** One page of the sponsor roll's tiles, as the grid the motion demo swaps page by page. */
 export function renderSponsorRollGrid(sponsors, pageNumber, sponsorsPerPage) {
-  const firstIndex = (pageNumber - 1) * sponsorsPerPage;
-  const tiles = sponsors
-    .slice(firstIndex, firstIndex + sponsorsPerPage)
+  const page = planSponsorPages(sponsors, sponsorsPerPage)[pageNumber - 1];
+  const tiles = page.sponsors
     .map(
       (sponsor) => `    <div class="card sponsor-tile">
-      ${placeholderMark(sponsor.initial, sponsor.name)}
-      <span class="sponsor-tile__name">${escapeHtml(sponsor.name)}</span>
+      ${renderLogo(sponsor.logo, 'sponsor-tile__logo')}
     </div>`,
     )
     .join('\n');
@@ -270,7 +288,12 @@ ${tiles}
   </div>`;
 }
 
-/** The sponsors in tiles, sponsorsPerPage a page; the page cycles on air (motion.md). */
+/** The head's line for a sponsor roll page: its level ("Diamante"). */
+export function writeSponsorPageSubtitle(sponsors, pageNumber, sponsorsPerPage) {
+  return planSponsorPages(sponsors, sponsorsPerPage)[pageNumber - 1].levelLabel;
+}
+
+/** The sponsors in tiles, one level a page; the page cycles on air (motion.md). */
 export function renderSponsorRollBoard(
   sponsors,
   pageNumber,
@@ -278,9 +301,10 @@ export function renderSponsorRollBoard(
   { withRoot = true } = {},
 ) {
   const root = withRoot ? ' data-graphic="sponsor-roll"' : '';
-  const pageCount = Math.ceil(sponsors.length / sponsorsPerPage);
+  const pageCount = planSponsorPages(sponsors, sponsorsPerPage).length;
+  const subtitle = writeSponsorPageSubtitle(sponsors, pageNumber, sponsorsPerPage);
   return `<section class="board board--narrow sponsor-roll"${root} data-page="${pageNumber}">
-${renderBoardHead('Patrocinadores', '', `${pageNumber}/${pageCount}`)}
+${renderBoardHead('Patrocinadores', subtitle, `${pageNumber}/${pageCount}`)}
 ${renderSponsorRollGrid(sponsors, pageNumber, sponsorsPerPage)}
 </section>`;
 }

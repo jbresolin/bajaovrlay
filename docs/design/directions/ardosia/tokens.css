@@ -182,8 +182,14 @@
   --bracket-row-height: 48px;
   --bracket-board-gutter: 40px; /* between a round board's two columns, wider than a row gap */
   --bracket-versus-width: 40px; /* the "×" between the two cars of a board's match card */
-  --sponsor-mark-small: 44px;
-  --sponsor-mark-large: 120px;
+  /* Real logos (sample_data/logos): the box each graphic gives a logo, and the light plate's
+     padding for a logo that needs one. A logo keeps its own shape inside its box. */
+  --logo-plate-padding: 6px;
+  --sponsor-logo-small-height: 34px; /* under the bug's event word */
+  --sponsor-logo-line-width: 170px; /* the intermission board's sponsor line */
+  --sponsor-logo-line-height: 52px;
+  --sponsor-tile-logo-width: 340px; /* a sponsor roll tile */
+  --sponsor-tile-logo-height: 150px;
   --sponsor-tile-height: 240px;
   --motion-notice-hold: 8000ms; /* a fastest lap or a penalty leaves by itself after this */
   --motion-board-hold: 10000ms; /* a standings page stays this long */

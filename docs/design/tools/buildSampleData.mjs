@@ -1,377 +1,335 @@
-// Builds docs/design/sample-data.json from the real samples in packages/shared, with every
-// number already written the way it goes on air (pt-BR, gaps and laps to the tenth, cut and
-// never rounded, as docs/00-concept.md §8 rules). The mock-ups copy these strings verbatim,
-// so no page ever disagrees with another on a number. What no canonical shape carries yet
-// (cities, notices, the schedule, messages, sponsors) comes from sampleFixtures.mjs, with each
-// car's team looked up here by its number. Run from the repo root:
+// Builds docs/design/sample-data.json from the real data of the 30th Baja SAE Brasil in
+// docs/design/sample_data (BAJAOVRLAY-43): the teams and their logos, the enduro's passes, the
+// overall scores, the enduro penalties, the Super Prime bracket and the sponsors' logos. Every
+// number is already written the way it goes on air (pt-BR, tenths cut, as docs/00-concept.md
+// §8 rules) by enduroTiming.js, so no page disagrees with another on a number; the choices
+// on top of the data (the moment the static pages show, the teams some cards use, what no
+// export carries) are in sampleFixtures.mjs. Run from the repo root, after prepareLogos.mjs
+// when a logo changed:
 //   node docs/design/tools/buildSampleData.mjs
+import './enduroTiming.js';
+
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 import * as prettier from 'prettier';
 
-import { buildBracket64 } from './sampleBracket64.mjs';
+import { findBestBattle } from './sampleBattle.mjs';
+import { readEnduroPasses } from './sampleEnduroPasses.mjs';
 import {
   battleFixture,
-  bracket64Fixture,
   countdownFixture,
+  eventFixture,
   messageFixtures,
-  noticeFixtures,
+  noticePenaltyCars,
   qrFixture,
   scheduleFixture,
-  sponsorFixtures,
+  sponsorLevels,
+  sponsorNames,
   teamCardFixtures,
 } from './sampleFixtures.mjs';
 import { buildPlaceholderQrModules } from './samplePlaceholderQr.mjs';
+import {
+  overallScoreParts,
+  readOverallStandings,
+  readPenalties,
+  readTeams,
+} from './sampleResults.mjs';
+import { readSuperPrime } from './sampleSuperPrime.mjs';
 
-const toolsFolder = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(toolsFolder, '../../..');
-const samplesFolder = resolve(repoRoot, 'packages/shared/src/dataShapes/samples');
-const outputFile = resolve(toolsFolder, '../sample-data.json');
+const timing = globalThis.enduroTiming;
+const designFolder = resolve('docs/design');
+const outputFile = resolve(designFolder, 'sample-data.json');
+const logos = JSON.parse(
+  readFileSync(resolve(designFolder, 'sample_data/logos/logos.json'), 'utf8'),
+);
 
-const readSample = (name) => JSON.parse(readFileSync(resolve(samplesFolder, name), 'utf8'));
-const sessionGreen = readSample('session.enduro-green.json');
-const sessionYellow = readSample('session.enduro-yellow.json');
-const positions = readSample('positions.enduro-lap-34.json');
-const standings = readSample('standings.overall.json');
-const brackets = readSample('brackets.suspension.json');
-
-// --- formatting rules, copied from the product (clockFormatting.ts, timingScreenText.ts) ---
-
-/** A countdown rounds partial seconds up; "1:16:00", dropping the hours while zero. */
-function formatRemainingClock(clockTimeMs) {
-  const wholeSeconds = Math.ceil(Math.max(0, clockTimeMs) / 1000);
-  const hours = Math.floor(wholeSeconds / 3600);
-  const minutes = Math.floor((wholeSeconds % 3600) / 60);
-  const seconds = wholeSeconds % 60;
-  const mm = String(minutes).padStart(2, '0');
-  const ss = String(seconds).padStart(2, '0');
-  return hours === 0 ? `${minutes}:${ss}` : `${hours}:${mm}:${ss}`;
+/** A logo for a page: its path from docs/design, its size and the surface it needs. */
+function describeLogo(logo, name) {
+  if (logo === undefined) return undefined;
+  return {
+    path: `sample_data/${logo.file}`,
+    width: logo.width,
+    height: logo.height,
+    surface: logo.surface,
+    name,
+  };
 }
 
-/** 12 399 ms reads "12,3": tenths, cut, decimal comma. */
-function writeSecondsToTheTenthCut(durationMs) {
-  const wholeTenths = Math.floor(durationMs / 100);
-  const wholeSeconds = Math.floor(wholeTenths / 10);
-  const tenthDigit = wholeTenths % 10;
-  return `${wholeSeconds},${tenthDigit}`;
-}
+// ---------------------------------------------------------------- teams
 
-/** A lap time on air: "4:38,2" (minutes, seconds, one tenth, cut). */
-function formatLapTimeOnAir(lapTimeMs) {
-  const wholeTenths = Math.floor(lapTimeMs / 100);
-  const totalSeconds = Math.floor(wholeTenths / 10);
-  const tenthDigit = wholeTenths % 10;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = String(totalSeconds % 60).padStart(2, '0');
-  return `${minutes}:${seconds},${tenthDigit}`;
-}
+const teams = readTeams();
+const describeTeam = (carNumber) => {
+  const team = teams.get(carNumber);
+  if (team === undefined) throw new Error(`Car ${carNumber} is not in teams.csv.`);
+  return {
+    carNumber,
+    teamName: team.teamName,
+    teamShortName: team.teamShortName,
+    schoolName: team.schoolName,
+    city: `${team.city} · ${team.state}`,
+    logo: describeLogo(logos.teams[String(carNumber)], team.teamName),
+  };
+};
 
-/** "+12,3 s", "+1 volta", "+2 voltas", or "" when the source does not know (the leader). */
-function formatGapToLeader(entry) {
-  if (entry.gapToLeaderLaps !== undefined) {
-    return entry.gapToLeaderLaps === 1 ? '+1 volta' : `+${entry.gapToLeaderLaps} voltas`;
-  }
-  if (entry.gapToLeaderMs !== undefined) {
-    return `+${writeSecondsToTheTenthCut(entry.gapToLeaderMs)} s`;
-  }
-  return '';
-}
+// ---------------------------------------------------------------- the enduro
 
-/** The interval to the car ahead is always a time: "+6,6 s"; "" when unknown. */
-function formatInterval(entry) {
-  if (entry.intervalMs === undefined) {
-    return '';
-  }
-  return `+${writeSecondsToTheTenthCut(entry.intervalMs)} s`;
-}
-
-/** A change of interval: "−0,7" when the gap shrank, "+0,7" when it grew, "0,0" when it held. */
-function formatIntervalChange(nowMs, oneLapAgoMs) {
-  const changeMs = nowMs - oneLapAgoMs;
-  let sign = '';
-  if (changeMs < 0) sign = '−';
-  if (changeMs > 0) sign = '+';
-  return `${sign}${writeSecondsToTheTenthCut(Math.abs(changeMs))}`;
-}
-
-/** Points on air keep one decimal with a comma: 646.9 reads "646,9", 64 reads "64,0". */
-function formatPoints(points) {
-  return points.toFixed(1).replace('.', ',');
-}
-
-/** The date of a moment in pt-BR, for a board's head: "sábado, 20 de março de 2027". */
-function formatDateInPtBR(momentMs) {
-  return new Intl.DateTimeFormat('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'America/Sao_Paulo',
-  }).format(new Date(momentMs));
-}
-
+const enduro = readEnduroPasses();
+const staticMomentMs = enduro.startMs + eventFixture.staticMomentAfterStartMs;
 const statusLabels = {
   running: 'Em prova',
   inPit: 'No box',
-  stopped: 'Quebrado', // João's wording (PR #19): a stopped car is a broken car
+  stopped: 'Quebrado',
   retired: 'Abandonou',
-  disqualified: 'Desclassificado',
-  notStarted: 'Não largou',
 };
-
 const flagLabels = {
   pre: 'PRÉ-LARGADA',
   green: 'VERDE',
   yellow: 'AMARELA',
-  red: 'VERMELHA',
   checkered: 'QUADRICULADA',
-  finished: 'ENCERRADA',
 };
 
-// The dynamic events in the order a standings table lists them, with their column captions.
-const eventColumns = [
-  { key: 'acceleration', label: 'Aceleração', shortLabel: 'ACEL.' },
-  { key: 'speed', label: 'Velocidade', shortLabel: 'VELOC.' },
-  { key: 'traction', label: 'Tração', shortLabel: 'TRAÇÃO' },
-  { key: 'suspension', label: 'Suspensão', shortLabel: 'SUSP.' },
-  { key: 'maneuverability', label: 'Manobrabilidade', shortLabel: 'MANOBR.' },
-  { key: 'enduro', label: 'Enduro', shortLabel: 'ENDURO' },
-];
+/** "domingo, 30 de março de 2025": the day of the passes, for a board's head. */
+const dateText = new Intl.DateTimeFormat('pt-BR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+}).format(new Date(enduro.dayStartMs));
 
-const scheduleStatusLabels = { done: 'Concluída', live: 'Em andamento', next: 'A seguir' };
-
-function describeSession(session) {
-  const laps = session.lapsCompletedByLeader;
+function describeSession(atMs, flagOverride) {
+  const session = timing.sessionAt(
+    enduro.passes,
+    atMs,
+    enduro.startMs,
+    eventFixture.sessionDurationMs,
+  );
+  const flag = flagOverride ?? session.flag;
   return {
-    eventName: session.eventName,
-    sessionName: session.sessionName,
-    flag: session.state,
-    flagLabel: flagLabels[session.state],
+    eventName: eventFixture.eventName,
+    sessionName: eventFixture.sessionName,
+    flag,
+    flagLabel: flagLabels[flag],
     clockCaption: 'TEMPO RESTANTE',
-    timeRemaining: formatRemainingClock(session.clock.referenceTimeMs),
-    lapsCompletedByLeader: laps,
-    lapsLabel: laps === 1 ? '1 VOLTA' : `${laps} VOLTAS`,
-    dateText: formatDateInPtBR(session.updatedAtMs),
+    timeRemaining: timing.formatRemainingClock(session.remainingMs),
+    lapsCompletedByLeader: session.lapsCompletedByLeader,
+    lapsLabel: timing.writeLapsLabel(session.lapsCompletedByLeader),
+    dateText,
+    timeOfDayText: timing.formatTimeOfDay(atMs),
   };
 }
 
-const entries = positions.entries.map((entry) => ({
+const describeEntry = (entry) => ({
+  ...describeTeam(entry.carNumber),
   position: entry.position,
-  carNumber: entry.carNumber,
-  teamName: entry.teamName,
-  schoolName: entry.schoolName,
   laps: entry.laps,
   status: entry.status,
   statusLabel: statusLabels[entry.status],
-  gapText: formatGapToLeader(entry),
-  intervalText: formatInterval(entry),
-  lastLapText: entry.lastLapMs === undefined ? '' : formatLapTimeOnAir(entry.lastLapMs),
-  bestLapText: entry.bestLapMs === undefined ? '' : formatLapTimeOnAir(entry.bestLapMs),
-  pitStops: entry.pitStops ?? 0,
-}));
+  gapText: timing.formatGapToLeader(entry),
+  intervalText: timing.formatInterval(entry),
+  lastLapText: timing.formatLapTimeOnAir(entry.lastLapMs),
+  bestLapText: timing.formatLapTimeOnAir(entry.bestLapMs),
+  bestLapNumber: entry.bestLapNumber,
+});
 
-/** The on-air entry of a car a fixture names by its number; a wrong number fails loudly. */
-function entryOfCar(carNumber) {
-  const entry = entries.find((candidate) => candidate.carNumber === carNumber);
-  if (entry === undefined) {
-    throw new Error(`No car ${carNumber} in the positions sample.`);
-  }
-  return entry;
-}
-
-const fastest = positions.entries
+const staticPositions = timing.positionsAt(enduro.passes, staticMomentMs);
+const entries = staticPositions.map(describeEntry);
+const finalEntries = timing.positionsAt(enduro.passes, enduro.lastCrossingMs).map(describeEntry);
+const fastestEntry = staticPositions
   .filter((entry) => entry.bestLapMs !== undefined)
-  .sort((a, b) => a.bestLapMs - b.bestLapMs)[0];
+  .sort((first, second) => first.bestLapMs - second.bestLapMs)[0];
 
-// --- standings: the overall table with points per event, and one event's table derived
-// from it (a canonical per-event standings would come with scope "enduro"; the sample holds
-// only the overall scope, so the enduro column is ranked here, tied teams sharing a rank).
-
-function describeStandingsEntry(entry) {
+// The battle: the pair that ran closest for the most laps (sampleBattle.mjs), shown as the
+// positions stood when it began; Atualizar walks its next laps, each with its change.
+function buildBattle() {
+  const battle = findBestBattle(enduro.passes, timing.minimumLapTimeMs, battleFixture.withinMs);
+  const startedAtMs = battle.laps[0].crossedAtMs;
+  const positionsThen = timing.positionsAt(enduro.passes, startedAtMs);
+  const entryOf = (carNumber) => positionsThen.find((entry) => entry.carNumber === carNumber);
+  const readings = battle.laps
+    .slice(0, battleFixture.laterReadingsCount + 1)
+    .map((lap) => lap.gapMs);
+  const writeChange = (fromMs, toMs) => {
+    const changeMs = toMs - fromMs;
+    let sign = '';
+    if (changeMs < 0) sign = '−';
+    if (changeMs > 0) sign = '+';
+    return `${sign}${timing.writeSecondsToTheTenthCut(Math.abs(changeMs))}`;
+  };
+  const trendOf = (changeMs) => {
+    if (Math.abs(changeMs) < 100) return 'steady';
+    return changeMs < 0 ? 'closing' : 'opening';
+  };
+  const firstGapMs = readings[0];
+  const sheetChangeMs = battleFixture.sheetTrendChangeMs;
   return {
-    rank: entry.rank,
-    carNumber: entry.carNumber,
-    teamName: entry.teamName,
-    schoolName: entry.schoolName,
-    pointsText: formatPoints(entry.points),
-    pointsByEventText: Object.fromEntries(
-      eventColumns.map((column) => {
-        const points = entry.pointsByEvent?.[column.key];
-        return [column.key, points === undefined ? '—' : formatPoints(points)];
-      }),
-    ),
+    ahead: describeEntry(entryOf(battle.aheadCar)),
+    behind: describeEntry(entryOf(battle.behindCar)),
+    startedAtText: timing.formatTimeOfDay(startedAtMs),
+    gapText: `+${timing.writeSecondsToTheTenthCut(firstGapMs)}`,
+    trends: {
+      closing: writeChange(firstGapMs + sheetChangeMs, firstGapMs),
+      opening: writeChange(firstGapMs - sheetChangeMs, firstGapMs),
+      steady: '',
+    },
+    updates: readings.map((readingMs, index) => ({
+      gapText: `+${timing.writeSecondsToTheTenthCut(readingMs)}`,
+      trend: index === 0 ? 'steady' : trendOf(readingMs - readings[index - 1]),
+      changeText: index === 0 ? '' : writeChange(readings[index - 1], readingMs),
+    })),
   };
 }
 
-function rankOneEvent(eventKey) {
-  const ranked = [...standings.entries]
-    .filter((entry) => entry.pointsByEvent?.[eventKey] !== undefined)
-    .sort((a, b) => b.pointsByEvent[eventKey] - a.pointsByEvent[eventKey]);
+// ---------------------------------------------------------------- standings
+
+const overall = readOverallStandings();
+const writePoints = (points) => {
+  if (points === undefined) return '—';
+  const text = String(Math.round(points * 100) / 100).replace('.', ',');
+  return points < 0 ? text.replace('-', '−') : text;
+};
+const standingsEntries = overall.map((row) => ({
+  ...describeTeam(row.carNumber),
+  rank: row.rank,
+  pointsText: row.isDisqualified ? 'DESCL.' : writePoints(row.points),
+  pointsByEventText: Object.fromEntries(
+    overallScoreParts.map((part) => [part.key, writePoints(row.pointsByPart[part.key])]),
+  ),
+  isDisqualified: row.isDisqualified,
+}));
+
+// One part's table, from the overall export's column: the teams that scored, tied teams
+// sharing a rank (the export has no per-event standings of its own).
+function rankOnePart(partKey) {
+  const scored = overall
+    .filter((row) => (row.pointsByPart[partKey] ?? 0) > 0)
+    .sort((first, second) => second.pointsByPart[partKey] - first.pointsByPart[partKey]);
   let rank = 0;
   let previousPoints = null;
-  return ranked.map((entry, index) => {
-    const points = entry.pointsByEvent[eventKey];
+  return scored.map((row, index) => {
+    const points = row.pointsByPart[partKey];
     if (points !== previousPoints) {
       rank = index + 1;
       previousPoints = points;
     }
-    return {
-      rank,
-      carNumber: entry.carNumber,
-      teamName: entry.teamName,
-      schoolName: entry.schoolName,
-      pointsText: formatPoints(points),
-    };
+    return { ...describeTeam(row.carNumber), rank, pointsText: writePoints(points) };
   });
 }
 
-// --- brackets: every time written as a lap time; the winner left out until decided.
+// ---------------------------------------------------------------- notices and sponsors
 
-function describeBracketCar(car) {
+const penalties = readPenalties();
+function describePenaltyNotice(carNumber) {
+  const penalty = penalties.find((row) => row.carNumber === carNumber);
   return {
-    carNumber: car.carNumber,
-    teamName: car.teamName,
-    schoolName: car.schoolName,
-    timeText: car.timeMs === undefined ? '' : formatLapTimeOnAir(car.timeMs),
+    carNumber,
+    teamName: penalty.schoolName,
+    schoolName: '',
+    kind: 'penalty',
+    reason: penalty.reason,
+    penalty: `+${penalty.penaltyTime}`,
+    sector: penalty.sector === 'PRÉ' ? 'ANTES DA LARGADA' : `SETOR ${penalty.sector}`,
   };
 }
 
-const bracketRounds = brackets.rounds.map((round) => ({
-  name: round.name,
-  matches: round.matches.map((match) => ({
-    matchId: match.matchId,
-    carA: describeBracketCar(match.carA),
-    carB: describeBracketCar(match.carB),
-    winnerCarNumber: match.winnerCarNumber,
-  })),
-}));
+const levelOrder = sponsorLevels.map((level) => level.key);
+const sponsors = Object.entries(logos.sponsors)
+  .map(([key, logo]) => ({
+    key,
+    name: sponsorNames[key] ?? key,
+    level: logo.level,
+    levelLabel: sponsorLevels.find((level) => level.key === logo.level)?.label ?? logo.level,
+    logo: describeLogo(logo, sponsorNames[key] ?? key),
+  }))
+  .sort(
+    (first, second) =>
+      levelOrder.indexOf(first.level) - levelOrder.indexOf(second.level) ||
+      first.name.localeCompare(second.name),
+  );
 
-// --- the 64-slot bracket (sampleBracket64.mjs): the positions sample's 60 cars seeded by
-// their place; the four slots past the field are empty, so the top four seeds get a bye.
+// ---------------------------------------------------------------- everything
 
-const seededField = entries.map((entry) => ({
-  carNumber: entry.carNumber,
-  teamName: entry.teamName,
-  schoolName: entry.schoolName,
-}));
-
-// --- the battle card: the two cars of the fixture, the interval between them as the
-// positions sample gives it, and the three trends from the interval a lap ago.
-
-const behindEntry = positions.entries.find(
-  (entry) => entry.carNumber === battleFixture.behindCarNumber,
-);
-/** A change under a tenth (what the screen can show) is steady; else closing or opening. */
-function trendOfChange(changeMs) {
-  if (Math.abs(changeMs) < 100) return 'steady';
-  return changeMs < 0 ? 'closing' : 'opening';
-}
-
-// The battle's readings lap by lap for the demo's Atualizar: a lap ago, now, then later laps.
-const battleReadingsMs = [
-  battleFixture.intervalOneLapAgoMs.closing,
-  behindEntry.intervalMs,
-  ...battleFixture.laterIntervalsMs,
-];
-const battle = {
-  ahead: entryOfCar(battleFixture.aheadCarNumber),
-  behind: entryOfCar(battleFixture.behindCarNumber),
-  gapText: `+${writeSecondsToTheTenthCut(behindEntry.intervalMs)}`,
-  trends: Object.fromEntries(
-    Object.entries(battleFixture.intervalOneLapAgoMs).map(([trend, oneLapAgoMs]) => [
-      trend,
-      formatIntervalChange(behindEntry.intervalMs, oneLapAgoMs),
-    ]),
-  ),
-  updates: battleReadingsMs.slice(1).map((readingMs, index) => {
-    const trend = trendOfChange(readingMs - battleReadingsMs[index]);
-    const changeText = formatIntervalChange(readingMs, battleReadingsMs[index]);
-    return { gapText: `+${writeSecondsToTheTenthCut(readingMs)}`, trend, changeText };
-  }),
-};
+const timedSample = JSON.parse(
+  readFileSync(resolve('packages/shared/src/dataShapes/samples/brackets.suspension.json'), 'utf8'),
+).rounds[0].matches[0];
 
 const sampleData = {
   about:
-    'Generated by docs/design/tools/buildSampleData.mjs from packages/shared/src/dataShapes/samples and sampleFixtures.mjs. Strings are final on-air text (pt-BR). Do not edit by hand.',
-  session: describeSession(sessionGreen),
-  sessionYellow: describeSession(sessionYellow),
+    'Generated by docs/design/tools/buildSampleData.mjs from the real data in docs/design/sample_data and the choices in sampleFixtures.mjs. Strings are final on-air text (pt-BR). Do not edit by hand.',
+  session: describeSession(staticMomentMs),
+  sessionYellow: describeSession(enduro.startMs + eventFixture.yellowMomentAfterStartMs, 'yellow'),
   positions: entries,
   fastestLap: {
-    carNumber: fastest.carNumber,
-    teamName: fastest.teamName,
-    schoolName: fastest.schoolName,
-    bestLapText: formatLapTimeOnAir(fastest.bestLapMs),
-    lap: fastest.laps,
+    ...describeTeam(fastestEntry.carNumber),
+    bestLapText: timing.formatLapTimeOnAir(fastestEntry.bestLapMs),
+    lap: fastestEntry.bestLapNumber,
   },
-  standingsTop5: standings.entries.slice(0, 5).map((entry) => ({
-    rank: entry.rank,
-    carNumber: entry.carNumber,
-    teamName: entry.teamName,
-    schoolName: entry.schoolName,
-    pointsText: formatPoints(entry.points),
-  })),
+  standingsTop5: standingsEntries.slice(0, 5),
   standings: {
-    scope: standings.scope,
+    scope: 'overall',
     title: 'Classificação geral',
-    eventColumns: eventColumns.map((column) => ({ key: column.key, label: column.shortLabel })),
-    entries: standings.entries.map(describeStandingsEntry),
+    eventColumns: overallScoreParts.map((part) => ({ key: part.key, label: part.label })),
+    entries: standingsEntries,
   },
   standingsEnduro: {
     scope: 'enduro',
     title: 'Classificação · Enduro',
-    entries: rankOneEvent('enduro'),
+    entries: rankOnePart('enduro'),
   },
-  brackets: {
-    title: 'Eliminatórias · Suspensão',
-    rounds: bracketRounds,
+  brackets: readSuperPrime(teams),
+  bracketTimedSample: {
+    ...timedSample,
+    carA: { ...timedSample.carA, timeText: timing.formatLapTimeOnAir(timedSample.carA.timeMs) },
+    carB: { ...timedSample.carB, timeText: timing.formatLapTimeOnAir(timedSample.carB.timeMs) },
   },
-  bracket64: buildBracket64(seededField, bracket64Fixture),
-  podium: {
-    title: `Pódio · ${sessionGreen.sessionName}`,
-    places: entries.slice(0, 3),
-  },
+  podium: { title: `Pódio · ${eventFixture.sessionName}`, places: finalEntries.slice(0, 3) },
   teamCards: {
     withMedia: {
-      ...entryOfCar(teamCardFixtures.withMedia.carNumber),
-      ...teamCardFixtures.withMedia,
+      ...describeTeam(teamCardFixtures.withMedia.carNumber),
+      photoPath: teamCardFixtures.withMedia.photoPath,
     },
-    withoutMedia: {
-      ...entryOfCar(teamCardFixtures.withoutMedia.carNumber),
-      ...teamCardFixtures.withoutMedia,
-    },
+    withoutMedia: { ...describeTeam(teamCardFixtures.withoutMedia.carNumber), logo: undefined },
   },
-  battle,
+  battle: buildBattle(),
   notices: Object.fromEntries(
-    Object.entries(noticeFixtures).map(([name, notice]) => [
+    Object.entries(noticePenaltyCars).map(([name, carNumber]) => [
       name,
-      { ...entryOfCar(notice.carNumber), ...notice },
+      describePenaltyNotice(carNumber),
     ]),
   ),
   countdown: {
     sessionName: countdownFixture.sessionName,
     startTimeText: countdownFixture.startTimeText,
-    remainingText: formatRemainingClock(countdownFixture.remainingMs),
+    remainingText: timing.formatRemainingClock(countdownFixture.remainingMs),
     remainingSeconds: Math.ceil(countdownFixture.remainingMs / 1000),
   },
   schedule: scheduleFixture.map((slot) => ({
     ...slot,
-    statusLabel: scheduleStatusLabels[slot.status],
+    statusLabel: { done: 'Concluída', live: 'Em andamento', next: 'A seguir' }[slot.status],
   })),
   messages: messageFixtures,
-  sponsors: sponsorFixtures.map((name) => ({ name, initial: name.slice(-1) })),
+  sponsors,
   qr: { ...qrFixture, modules: buildPlaceholderQrModules(25) },
   people: [
-    { name: 'Mariana Costa', role: 'Capitã da equipe', team: 'Acauã Baja · Mauá', carNumber: 31 },
+    { name: 'Mariana Costa', role: 'Capitã da equipe', team: 'Baja UFMG · UFMG', carNumber: 2 },
     { name: 'Carlos Henrique Lima', role: 'Diretor de prova', team: '' },
     { name: 'Rafael Nogueira', role: 'Narrador', team: '' },
   ],
-  sponsorBug: {
-    eventLabel: 'ENDURO',
-    sponsorLine: 'Apresentado por',
-    sponsorName: 'Metalúrgica Serrana',
-    note: 'The sponsor name is a fictional placeholder: no sponsor artwork exists in the repo. The logo is the event logo from docs/brand/.',
+  sponsorBug: { eventLabel: 'ENDURO', sponsorLine: 'Apresentado por', sponsor: sponsors[0] },
+  enduroTimeline: {
+    startMs: enduro.startMs,
+    durationMs: eventFixture.sessionDurationMs,
+    lastCrossingMs: enduro.lastCrossingMs,
+    staticMomentMs,
+    passes: enduro.passes,
+    fastestLapEvents: timing.listFastestLapEvents(enduro.passes),
+    teams: Object.fromEntries(
+      [...new Set(enduro.passes.map((pass) => pass[0]))].map((carNumber) => [
+        carNumber,
+        describeTeam(carNumber),
+      ]),
+    ),
   },
 };
 
@@ -383,5 +341,5 @@ const json = await prettier.format(JSON.stringify(sampleData, null, 2), {
 });
 writeFileSync(outputFile, json);
 console.log(
-  `wrote ${outputFile}: ${entries.length} cars, leader on lap ${sampleData.session.lapsCompletedByLeader}, ${standings.entries.length} teams in the standings, ${bracketRounds.length} bracket rounds`,
+  `wrote ${outputFile}: ${entries.length} cars at ${sampleData.session.timeOfDayText}, ${standingsEntries.length} teams in the standings, ${sampleData.brackets.rounds.length} Super Prime rounds, ${sponsors.length} sponsors`,
 );

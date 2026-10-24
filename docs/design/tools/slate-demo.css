@@ -59,6 +59,36 @@
   color: var(--text-muted);
 }
 
+/* ---- The timelines: a second bar under the title-safe area (y 1032..1074) */
+.demo-controls--bottom {
+  top: 1032px;
+}
+.demo-controls__time {
+  flex: none;
+  min-width: 120px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.demo-controls__slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--chip-car-background);
+}
+.demo-controls--bottom .demo-controls__button {
+  padding: var(--glyph-nudge) var(--space-3) 0;
+}
+/* A car not on the tower's current page, or not in the order yet; the tower not shown. */
+.is-off-page,
+.is-hidden-view {
+  display: none !important;
+}
+/* The match the Super Prime timeline just decided, for --motion-cue-hold. */
+.is-latest {
+  outline: 3px solid var(--text-laps);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+
 /* ---- The index of the demos */
 .demo-index {
   position: absolute;

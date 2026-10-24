@@ -30,7 +30,7 @@ export function listTeamCardDemos() {
     const shownTeam = {
       ...team,
       photoPath: withPhoto ? team.photoPath : undefined,
-      logoInitials: withLogo ? team.logoInitials : undefined,
+      logo: withLogo ? team.logo : undefined,
       city: withCity ? team.city : undefined,
     };
     return {
@@ -74,15 +74,17 @@ export function listBattleCardDemos() {
 }
 
 // The notice slot: the page's own notice first, then the others Novo evento brings in turn.
+// The penalties are the enduro's real ones (penalizacoes.csv).
 const noticeEvents = [
-  { id: 'event-fastest-lap', kind: 'fastest-lap', html: renderFastestLap(sample.fastestLap) },
-  { id: 'event-penalty', kind: 'penalty', html: renderPenaltyNotice(sample.notices.penalty) },
-  { id: 'event-incident', kind: 'incident', html: renderPenaltyNotice(sample.notices.incident) },
-  { id: 'event-black-flag', kind: 'penalty', html: renderPenaltyNotice(sample.notices.blackFlag) },
+  { id: 'event-fastest-lap', html: renderFastestLap(sample.fastestLap) },
+  { id: 'event-yellow-flag', html: renderPenaltyNotice(sample.notices.yellowFlag) },
+  { id: 'event-obstacle', html: renderPenaltyNotice(sample.notices.obstacle) },
+  { id: 'event-fuel', html: renderPenaltyNotice(sample.notices.fuel) },
+  { id: 'event-before-the-race', html: renderPenaltyNotice(sample.notices.beforeTheRace) },
 ];
 
-function buildNoticeDemo({ fileName, group, variant, ownHtml, ownKind }) {
-  const others = noticeEvents.filter((event) => event.kind !== ownKind);
+function buildNoticeDemo({ fileName, group, variant, ownHtml, ownEventId }) {
+  const others = noticeEvents.filter((event) => event.id !== ownEventId);
   return {
     fileName,
     group,
@@ -102,35 +104,36 @@ function buildNoticeDemo({ fileName, group, variant, ownHtml, ownKind }) {
 // Fastest lap: the lap it was set on is optional. Penalty: the sanction is optional.
 export function listNoticeDemos() {
   const fastestLapWithoutLap = { ...sample.fastestLap, lap: undefined };
-  const penaltyWithoutSanction = { ...sample.notices.penalty, penalty: '' };
+  // Without a sanction a notice is an incident (the export has none; the yellow-flag one, stripped).
+  const penaltyWithoutSanction = { ...sample.notices.yellowFlag, penalty: '', kind: 'incident' };
   return [
     buildNoticeDemo({
       fileName: 'motion-fastest-lap-com-volta.html',
       group: 'Melhor volta',
       variant: 'com a volta',
       ownHtml: renderFastestLap(sample.fastestLap),
-      ownKind: 'fastest-lap',
+      ownEventId: 'event-fastest-lap',
     }),
     buildNoticeDemo({
       fileName: 'motion-fastest-lap-sem-volta.html',
       group: 'Melhor volta',
       variant: 'sem a volta',
       ownHtml: renderFastestLap(fastestLapWithoutLap),
-      ownKind: 'fastest-lap',
+      ownEventId: 'event-fastest-lap',
     }),
     buildNoticeDemo({
       fileName: 'motion-penalty-notice-com-sancao.html',
       group: 'Penalidade ou incidente',
       variant: 'com sanção',
-      ownHtml: renderPenaltyNotice(sample.notices.penalty),
-      ownKind: 'penalty',
+      ownHtml: renderPenaltyNotice(sample.notices.yellowFlag),
+      ownEventId: 'event-yellow-flag',
     }),
     buildNoticeDemo({
       fileName: 'motion-penalty-notice-sem-sancao.html',
       group: 'Penalidade ou incidente',
       variant: 'sem sanção',
       ownHtml: renderPenaltyNotice(penaltyWithoutSanction),
-      ownKind: 'penalty',
+      ownEventId: 'event-yellow-flag',
     }),
   ];
 }

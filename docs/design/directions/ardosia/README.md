@@ -57,12 +57,15 @@ come from the same generator through `../../tools/slateCataloguePages.mjs` (mark
 `slateNotices.mjs`, `slateCards.mjs`, `slateBoards.mjs`, `slateSteps.mjs`, sheets in
 `slateCatalogueSheets.mjs`; structure in `slate-cards.css` and `slate-boards.css`, which
 `styles.css` imports after the base sheet), and the data they show was added to
-`sample-data.json` by `buildSampleData.mjs` (the full standings, a per-event table ranked from
-them, the brackets sample, and the typed fixtures of `sampleFixtures.mjs`: cities, notices, a
-schedule, messages, fictional sponsors).
+`sample-data.json` by `buildSampleData.mjs`. Since João's real data arrived (2026-10-23),
+every team, logo, sponsor, lap, score, penalty and bracket result on the pages is the 30ª
+Competição's own (`../../README.md`, "The sample data is real"); only the schedule, the
+messages, the countdown, the QR words, the yellow flag and the session's length are typed in
+`sampleFixtures.mjs`. Logos sit on the dark panel as they are, or on a small light plate
+(`--panel-light`) when the mark is dark or comes on its own white box.
 
 **The catalogue's motion** is demonstrated, not only described: `motion-catalogo.html` links
-one demo page per graphic and per combination of its optional parts (31 pages,
+one demo page per graphic and per combination of its optional parts (30 pages, plus the two timelines;
 `motion-<graphic>-<parts>.html`), each with the buttons to judge it (Entrar and Sair; Próximo
 for the bracket and the podium; Atualizar for the battle card, the sponsor roll and the
 sessions board; Novo evento for the notices) and a status line saying what moved and for how
@@ -170,18 +173,21 @@ Computed with `node docs/design/tools/contrastRatio.mjs`; translucent slate comp
   seconds are written without the unit ("+19,0", "+1 VOLTA"): the face has no lowercase, so
   "+19,0 s" would read "+19,0 S"; the column caption (DIF., INTERV.) says what the number is,
   as on every timing board.
-- The field has 60 cars: the towers page through it (positions 1–20, 21–40, 41–60) on the
-  same hold as the strip, the head pill staying and the rows changing (`motion.md`, "More than
-  20 cars"); page 1 is what the mock-up pages show, and `motion-demo.html` turns the pages.
+- The real enduro had 34 cars (pass 1 planned for 60): the towers page through them
+  (positions 1–20, 21–34) on the same hold as the strip, the head pill staying and the rows
+  changing (`motion.md`, "More than 20 cars"); page 1 is what the mock-up pages show,
+  `motion-demo.html` turns the pages and the enduro timeline's "Pág." button shows page 2.
 
 ## The lower strip
 
 Pages, not scrolling: scrolled text smears under stream compression and cannot be read on a
 phone while it moves; a page that stays still for 7 s can. Each car is a pill (position in
 yellow with its ordinal sign, "1º", car chip, school name as the short name, 30 px caps), as
-wide as its name; the pills share the bar. The generator sets **6 cars per page** (10 pages, 70 s for the field), the most
-for which every page of the 60-car field fits with whole names (measured in Chromium: the
-widest page needs 1244 px of the 1392 available; 7 per page would need 1444). The clock
+wide as its name; the pills share the bar. The generator sets **6 cars per page** (6 pages,
+42 s for the real 34-car field), the most for which every page of pass 1's 60-car sample
+fitted with whole names (measured in Chromium: the widest page needed 1244 px of the 1392
+available; 7 per page would need 1444); the strip now names a team by its short name, which
+is never longer. The clock
 block (time 44 px and the flag pill) never moves; the page cell at the right reads "1/10".
 
 ## The catalogue (pass 2)
@@ -192,22 +198,22 @@ the small transient ones are "notices" (one card in a slot under the bug). `cata
 has the layer plan, the coexistence rules and the data needs; `motion.md` the in, out and
 steps.
 
-| Graphic              | Pages                                                                                    | Layer             | What it is                                                                                                                                                                                                |
-| -------------------- | ---------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Team card            | `team-card`, `team-card-sem-foto`                                                        | lower-third       | The big chip, the team at 44 px, school and city; photo and logo cells only when they exist                                                                                                               |
-| Battle card          | `battle-card`, `sheet-battle`                                                            | lower-third       | Two 72 px pills bottom-centre with the gap at 44 px and the trend (word, signed change, shape)                                                                                                            |
-| Standings, overall   | `standings`                                                                              | fullscreen        | 20 rows of 40 px a page, one muted column per event, the total in green; three pages for 60 teams                                                                                                         |
-| Standings, per event | `standings-por-prova`                                                                    | fullscreen        | The whole field at once, three columns of 20 tower pills; ties share a rank                                                                                                                               |
-| Bracket              | `bracket-passo-1`, `-2`, `-3`; `bracket-64-passo-1`, `-2`, `-6`; `sheet-bracket-results` | fullscreen        | A big round as a draw sheet of match cards ("2 × 1", 32 a page), the tree from the quarter-finals; the result a time, a count of wins, the winner's mark or W.O.; a bye as an empty "SEM ADVERSÁRIO" slot |
-| Podium               | `podium-passo-1`, `-2`, `-3`                                                             | fullscreen        | 2nd, 1st (taller), 3rd on one baseline; "Next" reveals 3rd, 2nd, 1st                                                                                                                                      |
-| Fastest lap          | `fastest-lap`, `combo-fastest-lap`                                                       | notice (new)      | A 420 px card under the bug: green "MELHOR VOLTA" badge, the lap, the car, the time at 44 px                                                                                                              |
-| Penalty or incident  | `penalty-notice`, `sheet-notices`                                                        | notice (new)      | The same card with a warning shape, the car, the reason and the penalty in a navy cell; no flag colour                                                                                                    |
-| Countdown            | `countdown`, `countdown-tela-cheia`                                                      | clock; fullscreen | The clock's card without the band; a narrow board with the count at 160 px                                                                                                                                |
-| Sessions board       | `sessions-board`                                                                         | fullscreen        | A narrow board, one pill per slot with the state as a shape and a word                                                                                                                                    |
-| Intermission board   | `intermission-board`                                                                     | fullscreen        | What is next with its count, the top five, a sponsor line                                                                                                                                                 |
-| Sponsor roll         | `sponsor-roll`, `sponsor-roll-canto`                                                     | fullscreen; bug   | Six tiles a page; the bug's card with a sponsor cell                                                                                                                                                      |
-| QR card              | `qr-card`                                                                                | lower-third       | The one light surface: the code, the call to action, the address                                                                                                                                          |
-| Message ticker       | `message-ticker`, `combo-ticker`                                                         | ticker            | The strip's bar with an "AVISO" label and one message per page                                                                                                                                            |
+| Graphic              | Pages                                              | Layer             | What it is                                                                                                                                                                                                                                                                 |
+| -------------------- | -------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Team card            | `team-card`, `team-card-sem-foto`                  | lower-third       | The big chip, the team at 44 px, school and city; photo and logo cells only when they exist                                                                                                                                                                                |
+| Battle card          | `battle-card`, `sheet-battle`                      | lower-third       | Two 72 px pills bottom-centre with the gap at 44 px and the trend (word, signed change, shape)                                                                                                                                                                             |
+| Standings, overall   | `standings`                                        | fullscreen        | 20 rows of 40 px a page, one muted column per score part, the total in green; three pages for 54 teams, a disqualified team dimmed with "—" as its rank                                                                                                                    |
+| Standings, per event | `standings-por-prova`                              | fullscreen        | The whole field at once, three columns of 20 tower pills; ties share a rank                                                                                                                                                                                                |
+| Bracket              | `bracket-passo-1` to `-7`; `sheet-bracket-results` | fullscreen        | The real Super Prime: a big round as a draw sheet of match cards ("2 × 1", 32 a page), the tree from the quarter-finals with the third-place match under the final; the result a time, a count of wins, the winner's mark or W.O.; a bye as an empty "SEM ADVERSÁRIO" slot |
+| Podium               | `podium-passo-1`, `-2`, `-3`                       | fullscreen        | 2nd, 1st (taller), 3rd on one baseline; "Next" reveals 3rd, 2nd, 1st                                                                                                                                                                                                       |
+| Fastest lap          | `fastest-lap`, `combo-fastest-lap`                 | notice (new)      | A 420 px card under the bug: green "MELHOR VOLTA" badge, the lap, the car, the time at 44 px                                                                                                                                                                               |
+| Penalty or incident  | `penalty-notice`, `sheet-notices`                  | notice (new)      | The same card with a warning shape, the car, the reason and the penalty in a navy cell; no flag colour                                                                                                                                                                     |
+| Countdown            | `countdown`, `countdown-tela-cheia`                | clock; fullscreen | The clock's card without the band; a narrow board with the count at 160 px                                                                                                                                                                                                 |
+| Sessions board       | `sessions-board`                                   | fullscreen        | A narrow board, one pill per slot with the state as a shape and a word                                                                                                                                                                                                     |
+| Intermission board   | `intermission-board`                               | fullscreen        | What is next with its count, the top five, a sponsor line                                                                                                                                                                                                                  |
+| Sponsor roll         | `sponsor-roll`, `sponsor-roll-canto`               | fullscreen; bug   | Up to six tiles a page, one sponsor level a page (its name in the head); the bug's card with a sponsor cell naming the level                                                                                                                                               |
+| QR card              | `qr-card`                                          | lower-third       | The one light surface: the code, the call to action, the address                                                                                                                                                                                                           |
+| Message ticker       | `message-ticker`, `combo-ticker`                   | ticker            | The strip's bar with an "AVISO" label and one message per page                                                                                                                                                                                                             |
 
 ## Type
 
@@ -233,8 +239,10 @@ card's and the podium's chip); `--team-photo-width`, `--team-photo-height`,
 `--col-points`, `--col-total` (standings); `--session-row-height`, `--session-time-width`;
 `--size-countdown`, `--size-countdown-small`; `--size-podium-position`, `--podium-width`,
 `--podium-height`, `--podium-height-winner`; `--bracket-row-height`, `--bracket-board-gutter`,
-`--bracket-versus-width`; `--sponsor-mark-small`,
-`--sponsor-mark-large`, `--sponsor-tile-height`. Motion: `--motion-notice-hold`,
+`--bracket-versus-width`; `--sponsor-tile-height`; for the real logos, `--logo-plate-padding`
+(the light plate around a dark mark), `--sponsor-logo-small-height` (the bug's sponsor cell),
+`--sponsor-logo-line-width` and `--sponsor-logo-line-height` (the intermission's sponsor
+line), `--sponsor-tile-logo-width` and `--sponsor-tile-logo-height` (the roll's tiles). Motion: `--motion-notice-hold`,
 `--motion-board-hold`, `--motion-sponsor-hold`, `--motion-notice-min-hold` (a notice stays at
 least 3 s before the next replaces it), `--motion-page-stagger` (15 ms between pieces when a
 page turns in place; pass 1 computed it as half the row stagger) and `--motion-podium-offset`

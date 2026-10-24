@@ -1,122 +1,97 @@
-// The on-air data no canonical shape carries yet (BAJAOVRLAY-43; the "data needs" of each
-// graphic are in docs/design/directions/ardosia/catalogue.md): what an operator types today,
-// or what the entity library (BAJAOVRLAY-19) and the schedule will hold later. A car is named
-// by its number only and buildSampleData.mjs looks its team up in the positions sample, so no
-// team name is typed twice. Everything here is fictional: the cities, the schedule, the
-// messages, the sponsors ("Patrocinador A": no real brand, ever).
+// The choices buildSampleData.mjs makes on top of the real data (BAJAOVRLAY-43): which moment
+// of the enduro the static pages show, which teams the team card and the notices use, and the
+// on-air data no export carries yet (the schedule, production messages, the QR card's words,
+// the sponsors' display names). Everything about the race itself (teams, laps, times,
+// scores, the bracket) comes from docs/design/sample_data; only what is listed here is chosen
+// or invented, and the invented parts say so.
+
+/** The event's name on air (super_prime.md's title) and the enduro's session. */
+export const eventFixture = {
+  eventName: '30ª Competição Baja SAE Brasil',
+  sessionName: 'Enduro de Resistência',
+  // The enduro runs four hours from the start (lap 0 at 10:01:05); the cars still finishing
+  // their lap after the end is why the last pass is at 14:10. Assumed: the export has no end.
+  sessionDurationMs: 4 * 60 * 60 * 1000,
+  // The static pages show the race three hours in, with one hour left.
+  staticMomentAfterStartMs: 3 * 60 * 60 * 1000,
+  // The yellow-flag clock of the flags sheet: invented, the export has no flags.
+  yellowMomentAfterStartMs: 3 * 60 * 60 * 1000 + 10 * 60 * 1000,
+};
 
 /**
- * The team card's extras. The card with media shows a photo cell (a stream frame stands in
- * for the car photo) and a logo cell (a placeholder mark drawn from the team's initials); the
- * card without media is the common case until the entity library exists.
+ * The team card's teams: the overall champion with a photo cell (a stream frame stands in for
+ * a car photo: no photos were given) and its logo, and another team without photo and logo.
  */
 export const teamCardFixtures = {
-  withMedia: {
-    carNumber: 31,
-    city: 'São Caetano do Sul · SP',
-    photoPath: '../../../brand/frames/3.jpg',
-    logoInitials: 'AB',
-  },
-  withoutMedia: {
-    carNumber: 38,
-    city: 'São Carlos · SP',
-  },
+  withMedia: { carNumber: 2, photoPath: '../../../brand/frames/3.jpg' },
+  withoutMedia: { carNumber: 47 },
 };
 
 /**
- * Two cars fighting for one place. The positions shape carries the interval now; a trend
- * needs the interval a lap ago too, so the three states give it as a fixture (closing: the
- * gap shrank, opening: it grew, steady: it did not move).
+ * The battle card shows the pair that stayed within 20 s of each other for the most laps
+ * (sampleBattle.mjs: the race's only close fights are in its first laps); Atualizar walks its
+ * next readings. The battle sheet's trends add and remove 0,7 s from the real gap.
  */
-export const battleFixture = {
-  aheadCarNumber: 78,
-  behindCarNumber: 52,
-  intervalOneLapAgoMs: { closing: 9150, opening: 7620, steady: 8388 },
-  // The interval at the next laps, for the motion demo's Atualizar: closing again (the number
-  // changes, the word stays), then opening (the word changes), then steady.
-  laterIntervalsMs: [7962, 8640, 8655],
-};
+export const battleFixture = { withinMs: 20000, laterReadingsCount: 4, sheetTrendChangeMs: 700 };
 
 /**
- * Notices from race direction. The reason and the penalty are typed by the operator; the
- * penalty is optional (an incident without one). "+30 segundos" is written in words because
- * the on-air face has no lowercase and "+30 s" would read as "+30 S".
+ * The penalty notices use these rows of penalizacoes.csv, by car number: a yellow flag (5 min),
+ * an obstacle (2 min), fuel spilt (5 min), and one posted before the race (15 min). The
+ * export's car numbers do not match teams.csv (car 41 there is "Centro Universitário FEI"),
+ * so a notice shows the number and the school as the export writes them.
  */
-export const noticeFixtures = {
-  penalty: { carNumber: 47, kind: 'penalty', reason: 'Queima de largada', penalty: '+30 segundos' },
-  blackFlag: {
-    carNumber: 65,
-    kind: 'penalty',
-    reason: 'Conduta antidesportiva',
-    penalty: 'Bandeira preta',
-  },
-  incident: { carNumber: 13, kind: 'incident', reason: 'Volta cancelada', penalty: '' },
-};
+export const noticePenaltyCars = { yellowFlag: 4, obstacle: 12, fuel: 43, beforeTheRace: 18 };
 
-/** The day's schedule, as production would type it: a dynamic-events day with a lunch break. */
+/** The day's schedule, invented for the boards (no export has one), before the enduro. */
 export const scheduleFixture = [
-  { timeText: '08:00', sessionName: 'Briefing das equipes', status: 'done' },
-  { timeText: '08:30', sessionName: 'Aceleração', status: 'done' },
-  { timeText: '10:00', sessionName: 'Velocidade', status: 'done' },
-  { timeText: '11:30', sessionName: 'Tração', status: 'done' },
-  { timeText: '12:30', sessionName: 'Intervalo', status: 'live' },
-  { timeText: '13:30', sessionName: 'Suspensão', status: 'next' },
-  { timeText: '15:00', sessionName: 'Manobrabilidade', status: 'next' },
-  { timeText: '16:30', sessionName: 'Eliminatórias de suspensão', status: 'next' },
-  { timeText: '18:00', sessionName: 'Cerimônia de premiação', status: 'next' },
+  { timeText: '07:30', sessionName: 'Abertura do box', status: 'done' },
+  { timeText: '08:30', sessionName: 'Briefing das equipes', status: 'done' },
+  { timeText: '09:15', sessionName: 'Alinhamento do enduro', status: 'live' },
+  { timeText: '10:00', sessionName: 'Enduro de Resistência', status: 'next' },
+  { timeText: '14:30', sessionName: 'Intervalo', status: 'next' },
+  { timeText: '16:00', sessionName: 'Cerimônia de premiação', status: 'next' },
 ];
 
-/** The next session, for the countdown and the intermission board: the first "next" above. */
+/** The next session, for the countdown and the intermission board: the enduro. */
 export const countdownFixture = {
-  sessionName: 'Suspensão',
-  startTimeText: '13:30',
+  sessionName: 'Enduro de Resistência',
+  startTimeText: '10:00',
   remainingMs: 1425000,
 };
 
-/** Free-text messages from production, for the message ticker, one per page. */
+/** Free-text messages from production, invented, for the message ticker, one per page. */
 export const messageFixtures = [
-  'Próxima sessão às 13h30: Suspensão',
+  'Largada do enduro às 10h00',
   'Box aberto para abastecimento',
-  'Premiação às 18h no palco principal',
+  'Premiação às 16h no palco principal',
 ];
 
-/** Plainly fictional sponsors; the roll shows six per page, so nine make two pages. */
-export const sponsorFixtures = [
-  'Patrocinador A',
-  'Patrocinador B',
-  'Patrocinador C',
-  'Patrocinador D',
-  'Patrocinador E',
-  'Patrocinador F',
-  'Patrocinador G',
-  'Patrocinador H',
-  'Patrocinador I',
-];
-
-/**
- * A 64-slot bracket, since the eliminations routinely reach the round of 64 and may reach
- * 128: the 60 cars of the positions sample seeded by their place, drawn in the standard order
- * (seed 1 meets seed 64, the winner meets the winner of 32 against 33, and so on), so seeds 1
- * to 4 have no opponent in the first round and advance by W.O. Every match is best of three;
- * the better seed wins except where a seed below is listed as an upset winner (in the first
- * two rounds only); in the matches listed as walkovers the opponent did not run, so the
- * winner advances by W.O. (one in the 2ª rodada, one in the quarter-finals, to show it at any
- * point). The rounds are named as the Baja app would name them; the final is still to run.
- */
-export const bracket64Fixture = {
-  title: 'Eliminatórias · Tração',
-  walkoverMatchIds: ['r2-m6', 'r4-m3'],
-  roundNames: [
-    '1ª rodada',
-    '2ª rodada',
-    'Oitavas de final',
-    'Quartas de final',
-    'Semifinal',
-    'Final',
-  ],
-  bestOf: 3,
-  upsetWinnerSeeds: [33, 40, 50, 19, 22],
+/** The sponsors' names as they are written (the logo files carry a lowercase key). */
+export const sponsorNames = {
+  bosch: 'Bosch',
+  renault: 'Renault',
+  certi: 'Certi',
+  cnh: 'CNH',
+  himix: 'Himix',
+  horse: 'Horse',
+  marcopolo: 'Marcopolo',
+  rodonunes: 'Rodonunes',
+  segula: 'Segula',
+  trp: 'TRP',
+  vetore: 'Vetore',
+  criciuma: 'Criciúma',
+  osaki: 'Osaki',
+  sae4mobility: 'SAE4Mobility',
+  satc: 'SATC',
+  schulz: 'Schulz',
 };
+
+/** The sponsor levels in the order they are shown, with their names on air. */
+export const sponsorLevels = [
+  { key: 'diamante', label: 'Diamante' },
+  { key: 'ouro', label: 'Ouro' },
+  { key: 'apoio', label: 'Apoio' },
+];
 
 /** The QR card's words. The address is the scoreboard the stream links to today. */
 export const qrFixture = {

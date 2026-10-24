@@ -16,11 +16,18 @@ import { escapeHtml, winIcon } from './slateVocabulary.mjs';
 // in two pages) and the tree. Everything is derived from the rounds and their matches.
 const treeRoundMaxMatches = 4;
 
-/** Lists the steps of a bracket: the boards of the big rounds, then the tree's rounds. */
+/**
+ * Lists the steps of a bracket: the boards of the big rounds, then the tree's rounds. A
+ * third-place match (a round with isThirdPlace) is not a column of the tree: it sits under
+ * the final, in the final's column, and gets its own step just before the final's, as it
+ * runs before the final.
+ */
 export function planBracketSteps(rounds, matchesPerPage) {
   const steps = [];
   const treeRounds = [];
+  const thirdPlaceRound = rounds.find((round) => round.isThirdPlace);
   rounds.forEach((round) => {
+    if (round.isThirdPlace) return;
     if (round.matches.length <= treeRoundMaxMatches) {
       treeRounds.push(round);
       return;
@@ -38,7 +45,12 @@ export function planBracketSteps(rounds, matchesPerPage) {
     }
   });
   treeRounds.forEach((round, index) => {
-    steps.push({ kind: 'tree', rounds: treeRounds, roundsShown: index + 1 });
+    const isFinal = index === treeRounds.length - 1;
+    const treeStep = { kind: 'tree', rounds: treeRounds, thirdPlaceRound, roundsShown: index + 1 };
+    if (isFinal && thirdPlaceRound !== undefined) {
+      steps.push({ ...treeStep, roundsShown: index, isThirdPlaceShown: true });
+    }
+    steps.push({ ...treeStep, isThirdPlaceShown: isFinal && thirdPlaceRound !== undefined });
   });
   return steps;
 }
@@ -76,8 +88,11 @@ function markWinnerOrLoser(car, match) {
   return car.carNumber === match.winnerCarNumber ? ' data-winner' : ' data-loser';
 }
 
-function renderBracketTeam(car) {
-  return `<span class="bracket-car__team"><span class="bracket-car__name">${escapeHtml(car.teamName)}</span><span class="bracket-car__school">${escapeHtml(car.schoolName)}</span></span>`;
+// A round board's card has half the width of a tree pill for each car, so it names a team by
+// its short name when it has one ("Piratas Cerrado", not "Kaizen Piratas do Cerrado").
+function renderBracketTeam(car, { isShort = false } = {}) {
+  const teamName = isShort ? (car.teamShortName ?? car.teamName) : car.teamName;
+  return `<span class="bracket-car__team"><span class="bracket-car__name">${escapeHtml(teamName)}</span><span class="bracket-car__school">${escapeHtml(car.schoolName)}</span></span>`;
 }
 
 // The empty slot of a bye: no chip, no team, a dashed outline, so it can never be read as a
@@ -86,11 +101,13 @@ const emptySlotWords = 'SEM ADVERSÁRIO';
 
 // ---------------------------------------------------------------- bracket: a match in the tree
 
-function renderTreeCar(car, match) {
+// Each car carries its slot (data-slot "a" or "b"), so the Super Prime timeline can show a slot
+// whose car is not known yet.
+function renderTreeCar(car, match, slot) {
   if (car === undefined) {
-    return `      <div class="bracket-car bracket-car--empty"><span class="bracket-empty">${emptySlotWords}</span></div>`;
+    return `      <div class="bracket-car bracket-car--empty" data-slot="${slot}"><span class="bracket-empty">${emptySlotWords}</span></div>`;
   }
-  return `      <div class="pill bracket-car" data-row${markWinnerOrLoser(car, match)}>
+  return `      <div class="pill bracket-car" data-row data-slot="${slot}"${markWinnerOrLoser(car, match)}>
         <span class="chip">${car.carNumber}</span>
         ${renderBracketTeam(car)}
         ${renderBracketResult(car, match)}
@@ -104,14 +121,15 @@ function renderTreeCar(car, match) {
 // ("2 × 1", "W.O. × —"), so who runs against whom is never in doubt.
 function renderFixtureSide(car, match, side) {
   const sideClass = `bracket-fixture__side bracket-fixture__side--${side}`;
+  const slot = side === 'left' ? 'a' : 'b';
   if (car === undefined) {
-    return `      <div class="${sideClass} bracket-fixture__side--empty"><span class="bracket-empty">${emptySlotWords}</span></div>`;
+    return `      <div class="${sideClass} bracket-fixture__side--empty" data-slot="${slot}"><span class="bracket-empty">${emptySlotWords}</span></div>`;
   }
   const chip = `<span class="chip">${car.carNumber}</span>`;
-  const team = renderBracketTeam(car);
+  const team = renderBracketTeam(car, { isShort: true });
   const result = renderBracketResult(car, match);
   const cells = side === 'left' ? [chip, team, result] : [result, team, chip];
-  return `      <div class="${sideClass}" data-row${markWinnerOrLoser(car, match)}>
+  return `      <div class="${sideClass}" data-row data-slot="${slot}"${markWinnerOrLoser(car, match)}>
         ${cells.join('\n        ')}
       </div>`;
 }
@@ -131,8 +149,8 @@ ${renderFixtureSide(match.carB, match, 'right')}
     </div>`;
   }
   return `    <div class="bracket__match"${styleAttribute} data-match="${match.matchId}">
-${renderTreeCar(match.carA, match)}
-${renderTreeCar(match.carB, match)}
+${renderTreeCar(match.carA, match, 'a')}
+${renderTreeCar(match.carB, match, 'b')}
     </div>`;
 }
 
@@ -213,13 +231,45 @@ function renderBracketLines(placedRounds) {
   return paths.join('');
 }
 
+// The third-place match sits at the foot of the final's column, its name pill above it, well
+// below the final (which is centred between the semifinals), with no line into it.
+function placeThirdPlace(placedRounds, thirdPlaceRound) {
+  const finalColumn = placedRounds.at(-1);
+  const top = stageHeight - matchHeight;
+  return {
+    round: thirdPlaceRound,
+    left: finalColumn.left,
+    width: finalColumn.width,
+    top,
+    nameTop: top - roundNameRoom,
+  };
+}
+
 /**
  * The tree's body: every round's name, the matches of the first `roundsShown` rounds and the
- * lines between them.
+ * lines between them, and the third-place match when there is one and it is shown.
  */
-export function renderBracketTreeBody(rounds, roundsShown) {
+export function renderBracketTreeBody(
+  rounds,
+  roundsShown,
+  thirdPlaceRound,
+  isThirdPlaceShown = false,
+) {
   const placedRounds = placeRounds(rounds);
   const shownRounds = placedRounds.slice(0, roundsShown);
+  const thirdPlace =
+    thirdPlaceRound === undefined ? undefined : placeThirdPlace(placedRounds, thirdPlaceRound);
+  const thirdPlaceName =
+    thirdPlace === undefined
+      ? ''
+      : `\n    <div class="pill pill--head bracket__round-name" style="left: ${thirdPlace.left}px; top: ${thirdPlace.nameTop}px; width: ${thirdPlace.width}px"><span class="caption">${escapeHtml(thirdPlace.round.name)}</span></div>`;
+  const thirdPlaceMatch =
+    thirdPlace !== undefined && isThirdPlaceShown
+      ? `\n${renderBracketMatch(thirdPlace.round.matches[0], {
+          style: `left: ${thirdPlace.left}px; top: ${thirdPlace.top}px; width: ${thirdPlace.width}px`,
+          round: 'third',
+        })}`
+      : '';
   const names = placedRounds
     .map(
       (column) =>
@@ -238,8 +288,8 @@ export function renderBracketTreeBody(rounds, roundsShown) {
     .join('\n');
   return `  <div class="board__stage">
     <svg class="bracket__lines" viewBox="0 0 ${stageWidth} ${stageHeight}" aria-hidden="true">${renderBracketLines(shownRounds)}</svg>
-${names}
-${matches}
+${names}${thirdPlaceName}
+${matches}${thirdPlaceMatch}
   </div>`;
 }
 
@@ -248,7 +298,7 @@ ${matches}
 function renderBracketTree(brackets, step, stepNumber, stepCount, root) {
   return `<section class="board bracket"${root} data-step="${stepNumber}">
 ${renderBoardHead(brackets.title, '', `${stepNumber}/${stepCount}`)}
-${renderBracketTreeBody(step.rounds, step.roundsShown)}
+${renderBracketTreeBody(step.rounds, step.roundsShown, step.thirdPlaceRound, step.isThirdPlaceShown)}
 </section>`;
 }
 

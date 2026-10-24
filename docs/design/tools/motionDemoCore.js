@@ -55,6 +55,8 @@
     lead: readSeconds('--motion-lead'),
     flag: readSeconds('--motion-flag'),
     pageTurn: readSeconds('--motion-strip-page'),
+    swap: readSeconds('--motion-swap'),
+    cueHold: readSeconds('--motion-cue-hold'),
     pageStagger: readSeconds('--motion-page-stagger'),
     stripHold: readSeconds('--motion-strip-hold'),
     noticeHold: readSeconds('--motion-notice-hold'),

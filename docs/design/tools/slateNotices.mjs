@@ -5,9 +5,14 @@
 // slateCatalogueSheets.mjs shows every variant side by side.
 import { escapeHtml, warningIcon } from './slateVocabulary.mjs';
 
+// The school caption is optional: the penalty export names a school and no team, so its
+// notices carry the school as the name and no caption.
 function renderNoticeCar(car) {
+  const school = car.schoolName
+    ? `<span class="notice__school">${escapeHtml(car.schoolName)}</span>`
+    : '';
   return `<span class="chip">${car.carNumber}</span>
-    <span class="notice__team"><span class="notice__team-name">${escapeHtml(car.teamName)}</span><span class="notice__school">${escapeHtml(car.schoolName)}</span></span>`;
+    <span class="notice__team"><span class="notice__team-name">${escapeHtml(car.teamName)}</span>${school}</span>`;
 }
 
 /** The fastest lap: a green "MELHOR VOLTA" badge, the car, the time in green, the lap. */
@@ -32,18 +37,20 @@ export function renderFastestLap(fastestLap, { withRoot = true } = {}) {
 const noticeKindWords = { penalty: 'PENALIDADE', incident: 'INCIDENTE' };
 
 /**
- * A notice from race direction: the warning shape and the kind in the head, the car, then
- * the reason with the penalty (optional) in a navy cell. No flag colour anywhere.
+ * A notice from race direction: the warning shape and the kind in the head with where it
+ * happened (the export's track sector, "SETOR J"), the car, then the reason with the penalty
+ * (optional) in a navy cell. No flag colour anywhere.
  */
 export function renderPenaltyNotice(notice, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="penalty-notice"' : '';
   const penalty = notice.penalty
     ? `\n    <span class="notice__penalty">${escapeHtml(notice.penalty)}</span>`
     : '';
+  const where = notice.sector ?? 'DIREÇÃO DE PROVA';
   return `<section class="card notice penalty-notice"${root} data-notice="${notice.kind}">
   <header class="notice__head">
     <span class="notice__badge notice__badge--warning">${warningIcon}<span>${noticeKindWords[notice.kind]}</span></span>
-    <span class="caption">DIREÇÃO DE PROVA</span>
+    <span class="caption">${escapeHtml(where)}</span>
   </header>
   <div class="notice__row">
     ${renderNoticeCar(notice)}

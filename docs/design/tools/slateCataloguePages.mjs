@@ -25,7 +25,7 @@ import {
   renderSheetNotices,
 } from './slateCatalogueSheets.mjs';
 import { renderFastestLap, renderPenaltyNotice } from './slateNotices.mjs';
-import { renderBracket, renderPodium } from './slateSteps.mjs';
+import { planBracketSteps, renderBracket, renderPodium } from './slateSteps.mjs';
 import {
   pageShell,
   renderCompactTower,
@@ -48,6 +48,23 @@ export function buildCataloguePages(options) {
   const eventName = sample.session.eventName;
   const topFive = sample.standingsTop5;
   const sponsorsOnTheBoard = sample.sponsors.slice(0, 4);
+  // The real Super Prime, one page per step: three boards (32 avos, 16 avos, oitavas), then
+  // the tree (quartas, semifinal, the third-place match, the final).
+  const bracketStepCount = planBracketSteps(sample.brackets.rounds, 32).length;
+  const bracketPages = {};
+  for (let step = 1; step <= bracketStepCount; step += 1) {
+    bracketPages[`bracket-passo-${step}.html`] = shell(
+      `bracket, step ${step}`,
+      renderBracket(sample.brackets, step),
+    );
+  }
+  // The battle card at its first closing reading, a real one (the data has no steady reading).
+  const closingReading = sample.battle.updates.find((reading) => reading.trend === 'closing');
+  const battleAtClosingReading = {
+    ...sample.battle,
+    gapText: closingReading.gapText,
+    trends: { ...sample.battle.trends, closing: closingReading.changeText },
+  };
 
   return {
     'team-card.html': shell('team card', renderTeamCard(sample.teamCards.withMedia)),
@@ -55,7 +72,7 @@ export function buildCataloguePages(options) {
       'team card without photo and logo',
       renderTeamCard(sample.teamCards.withoutMedia),
     ),
-    'battle-card.html': shell('battle card', renderBattleCard(sample.battle, 'closing')),
+    'battle-card.html': shell('battle card', renderBattleCard(battleAtClosingReading, 'closing')),
     'standings.html': shell(
       'standings',
       renderStandingsBoard(sample.standings, eventName, 1, standingsRowsPerPage),
@@ -64,26 +81,12 @@ export function buildCataloguePages(options) {
       'standings of one event',
       renderStandingsEventBoard(sample.standingsEnduro, eventName, standingsRowsPerColumn),
     ),
-    'bracket-passo-1.html': shell('bracket, step 1', renderBracket(sample.brackets, 1)),
-    'bracket-passo-2.html': shell('bracket, step 2', renderBracket(sample.brackets, 2)),
-    'bracket-passo-3.html': shell('bracket, step 3', renderBracket(sample.brackets, 3)),
-    'bracket-64-passo-1.html': shell(
-      'bracket of 64, step 1: the first round as a board, the top four seeds by W.O.',
-      renderBracket(sample.bracket64, 1),
-    ),
-    'bracket-64-passo-2.html': shell(
-      'bracket of 64, step 2: the second round as a board, one W.O.',
-      renderBracket(sample.bracket64, 2),
-    ),
-    'bracket-64-passo-6.html': shell(
-      'bracket of 64, step 6: the tree from the quarter-finals, one W.O.',
-      renderBracket(sample.bracket64, 6),
-    ),
+    ...bracketPages,
     'podium-passo-1.html': shell('podium, step 1', renderPodium(sample.podium, 1)),
     'podium-passo-2.html': shell('podium, step 2', renderPodium(sample.podium, 2)),
     'podium-passo-3.html': shell('podium, step 3', renderPodium(sample.podium, 3)),
     'fastest-lap.html': shell('fastest lap', renderFastestLap(sample.fastestLap)),
-    'penalty-notice.html': shell('penalty notice', renderPenaltyNotice(sample.notices.penalty)),
+    'penalty-notice.html': shell('penalty notice', renderPenaltyNotice(sample.notices.yellowFlag)),
     'countdown.html': shell('countdown', renderCountdownCard(sample.countdown)),
     'countdown-tela-cheia.html': shell(
       'countdown, full screen',
@@ -124,7 +127,7 @@ export function buildCataloguePages(options) {
       [
         renderRaceClock(sample.session),
         renderSponsorBug(sample.sponsorBug),
-        renderBattleCard(sample.battle, 'closing'),
+        renderBattleCard(battleAtClosingReading, 'closing'),
       ].join('\n'),
     ),
     'combo-ticker.html': shell(

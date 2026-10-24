@@ -4,6 +4,7 @@
 // cards' in the catalogue's order; the browser side is motionDemoBoards.js (and
 // motionDemoCards.js for the corner sponsor roll).
 import {
+  planSponsorPages,
   renderBoardHead,
   renderIntermissionBoard,
   renderSessionsBoard,
@@ -13,6 +14,7 @@ import {
   renderStandingsBoard,
   renderStandingsEventBoard,
   renderStandingsPageRows,
+  writeSponsorPageSubtitle,
   writeStandingsPageAside,
 } from './slateBoards.mjs';
 import { renderSponsorRollCorner, renderSponsorRollCornerCell } from './slateCards.mjs';
@@ -125,7 +127,8 @@ export function listIntermissionDemos() {
 export function listSponsorRollDemos(options) {
   const { sponsorsPerPage } = options;
   const { sponsors, sponsorBug } = sample;
-  const pageCount = Math.ceil(sponsors.length / sponsorsPerPage);
+  // One sponsor level a page, as the static pages plan them (planSponsorPages).
+  const pageCount = planSponsorPages(sponsors, sponsorsPerPage).length;
   const pageNumbers = Array.from({ length: pageCount }, (_, index) => index + 1);
   const sponsorIds = sponsors.map((_, index) => `sponsor-${index + 1}`);
   return [
@@ -147,6 +150,7 @@ export function listSponsorRollDemos(options) {
         pages: pageNumbers.map((pageNumber) => ({
           template: `sponsor-page-${pageNumber}`,
           aside: `${pageNumber}/${pageCount}`,
+          subtitle: writeSponsorPageSubtitle(sponsors, pageNumber, sponsorsPerPage),
         })),
       },
     },
@@ -167,13 +171,20 @@ export function listSponsorRollDemos(options) {
 }
 
 // A bracket's steps as the demo walks them: the boards' bodies and the whole tree as
-// templates, the head's words per step; the tree reveals one round per step.
+// templates, the head's words per step; the tree reveals one round per step (revealsRound:
+// a round's index, or "third" for the third-place match, which comes before the final).
 function buildBracketDemo(brackets, { fileName, variant }) {
   const steps = planBracketSteps(brackets.rounds, 32);
+  const revealedRoundOf = (step, index) => {
+    if (step.kind !== 'tree') return undefined;
+    const previous = steps[index - 1];
+    const isThirdPlaceStep = step.isThirdPlaceShown && !previous?.isThirdPlaceShown;
+    return isThirdPlaceStep ? 'third' : step.roundsShown - 1;
+  };
   const stepConfigs = steps.map((step, index) => ({
     kind: step.kind,
     template: step.kind === 'board' ? `bracket-step-${index + 1}` : undefined,
-    roundsShown: step.roundsShown,
+    revealsRound: revealedRoundOf(step, index),
     subtitle: writeBracketStepSubtitle(step),
     aside: `${index + 1}/${steps.length}`,
   }));
@@ -200,7 +211,12 @@ ${head}
       ...boardTemplates,
       renderTemplate(
         'bracket-tree',
-        renderBracketTreeBody(treeStep.rounds, treeStep.rounds.length),
+        renderBracketTreeBody(
+          treeStep.rounds,
+          treeStep.rounds.length,
+          treeStep.thirdPlaceRound,
+          true,
+        ),
       ),
     ],
     config: { steps: stepConfigs, treeTemplate: 'bracket-tree' },
@@ -210,12 +226,8 @@ ${head}
 export function listBracketDemos() {
   return [
     buildBracketDemo(sample.brackets, {
-      fileName: 'motion-bracket-8.html',
-      variant: '8 carros, tempos (só a árvore)',
-    }),
-    buildBracketDemo(sample.bracket64, {
-      fileName: 'motion-bracket-64.html',
-      variant: '64 vagas, melhor de 3, W.O. (listas e árvore)',
+      fileName: 'motion-bracket.html',
+      variant: 'Super Prime real: 32 avos em lista até a final, com a disputa de 3º',
     }),
   ];
 }

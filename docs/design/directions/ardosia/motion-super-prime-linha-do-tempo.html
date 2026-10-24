@@ -1,0 +1,2396 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>
+      ardosia — movimento: Linha do tempo · Super Prime real: jogo a jogo, do sorteio à final
+    </title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title"
+        >Linha do tempo · Super Prime real: jogo a jogo, do sorteio à final</span
+      >
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <nav class="demo-controls demo-controls--bottom" aria-label="Linha do tempo">
+      <span class="demo-controls__time" id="timeline-time"></span>
+      <input
+        class="demo-controls__slider"
+        id="timeline-slider"
+        type="range"
+        aria-label="Linha do tempo"
+      />
+      <button type="button" class="demo-controls__button" data-action="start">Início</button>
+      <button type="button" class="demo-controls__button" data-action="previous">‹ Anterior</button>
+      <button type="button" class="demo-controls__button" data-action="next">Próximo</button>
+      <button type="button" class="demo-controls__button" data-action="end">Fim</button>
+    </nav>
+    <div class="demo-stage" data-demo="super-prime-timeline">
+      <section class="board bracket" data-graphic="bracket">
+        <header class="card board__head">
+          <img class="board__logo" src="../../../brand/logo-branca.png" alt="Baja SAE Brasil" />
+          <h1 class="board__title">Super Prime</h1>
+          <span class="caption board__subtitle">32 avos de final</span>
+          <span class="board__aside">0/33</span>
+        </header>
+        <div class="bracket__body"></div>
+      </section>
+    </div>
+    <template id="view-board-1">
+      <div class="bracket-board" style="--bracket-board-rows: 16">
+        <div class="card bracket-fixture" data-match="r1-m1">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">2</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja UFMG</span
+              ><span class="bracket-car__school">UFMG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m2">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">32</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Corisco</span
+              ><span class="bracket-car__school">UPE</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Buffalo</span
+              ><span class="bracket-car__school">UFLA</span></span
+            >
+            <span class="chip">34</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m3">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">13</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Cactus</span
+              ><span class="bracket-car__school">UFERSA-Mos</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m4">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">12</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Piratas Cerrado</span
+              ><span class="bracket-car__school">UnB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m5">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">29</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFSC</span
+              ><span class="bracket-car__school">UFSC-Fln</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m6">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">36</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Zebu</span
+              ><span class="bracket-car__school">UFTM</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m7">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">21</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Parahybaja</span
+              ><span class="bracket-car__school">UFCG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m8">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">38</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Tatu</span
+              ><span class="bracket-car__school">IFSP-Ser</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m9">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">17</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Bombaja</span
+              ><span class="bracket-car__school">UFSM</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m10">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">6</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Rampage</span
+              ><span class="bracket-car__school">UFJF</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m11">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">51</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Sinuelo</span
+              ><span class="bracket-car__school">FAHOR</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m12">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">31</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Sagui</span
+              ><span class="bracket-car__school">UFPR</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m13">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">8</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Imperador</span
+              ><span class="bracket-car__school">UTFPR-CWB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m14">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">16</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Forja</span
+              ><span class="bracket-car__school">UFF-VR</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m15">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">28</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Tuffão</span
+              ><span class="bracket-car__school">UFF-Nit</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m16">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">23</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Cefast</span
+              ><span class="bracket-car__school">CEFET-MG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m17">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">47</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Pato</span
+              ><span class="bracket-car__school">UTFPR-PB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m18">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">39</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">CTJ</span
+              ><span class="bracket-car__school">UFSC-Jvl</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m19">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">49</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Guaicurus</span
+              ><span class="bracket-car__school">UFGD</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m20">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">7</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Reptiles</span
+              ><span class="bracket-car__school">PUC-Rio</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m21">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">9</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Caraubaja</span
+              ><span class="bracket-car__school">UFERSA-Car</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m22">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">24</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFSCar</span
+              ><span class="bracket-car__school">UFSCar</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m23">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">5</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Poli</span
+              ><span class="bracket-car__school">Poli</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m24">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">33</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Corsários</span
+              ><span class="bracket-car__school">IFMG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m25">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">1</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">FEI</span
+              ><span class="bracket-car__school">FEI</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m26">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">3</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja de Galpão</span
+              ><span class="bracket-car__school">UNISC</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m27">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">44</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFPBaja</span
+              ><span class="bracket-car__school">UFPB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m28">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">19</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Procobaja</span
+              ><span class="bracket-car__school">UTFPR-CP</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m29">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">18</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Car-Kará</span
+              ><span class="bracket-car__school">UFRN</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m30">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">50</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Mud Runner</span
+              ><span class="bracket-car__school">CEFET-RJ</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m31">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">10</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Komiketo</span
+              ><span class="bracket-car__school">UFSJ</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r1-m32">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">27</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Mud Racing</span
+              ><span class="bracket-car__school">FACENS</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--walkover"
+              ><span class="walkover-tag">W.O.</span></span
+            >
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+            data-slot="b"
+          >
+            <span class="bracket-empty">SEM ADVERSÁRIO</span>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template id="view-board-2">
+      <div class="bracket-board" style="--bracket-board-rows: 8">
+        <div class="card bracket-fixture" data-match="r2-m1">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">2</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja UFMG</span
+              ><span class="bracket-car__school">UFMG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Corisco</span
+              ><span class="bracket-car__school">UPE</span></span
+            >
+            <span class="chip">32</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m2">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">13</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Cactus</span
+              ><span class="bracket-car__school">UFERSA-Mos</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Piratas Cerrado</span
+              ><span class="bracket-car__school">UnB</span></span
+            >
+            <span class="chip">12</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m3">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">29</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFSC</span
+              ><span class="bracket-car__school">UFSC-Fln</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Zebu</span
+              ><span class="bracket-car__school">UFTM</span></span
+            >
+            <span class="chip">36</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m4">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">21</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Parahybaja</span
+              ><span class="bracket-car__school">UFCG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Tatu</span
+              ><span class="bracket-car__school">IFSP-Ser</span></span
+            >
+            <span class="chip">38</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m5">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">17</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Bombaja</span
+              ><span class="bracket-car__school">UFSM</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Rampage</span
+              ><span class="bracket-car__school">UFJF</span></span
+            >
+            <span class="chip">6</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m6">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">51</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Sinuelo</span
+              ><span class="bracket-car__school">FAHOR</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Sagui</span
+              ><span class="bracket-car__school">UFPR</span></span
+            >
+            <span class="chip">31</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m7">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">8</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Imperador</span
+              ><span class="bracket-car__school">UTFPR-CWB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Forja</span
+              ><span class="bracket-car__school">UFF-VR</span></span
+            >
+            <span class="chip">16</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m8">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">28</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Tuffão</span
+              ><span class="bracket-car__school">UFF-Nit</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Cefast</span
+              ><span class="bracket-car__school">CEFET-MG</span></span
+            >
+            <span class="chip">23</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m9">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">47</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Pato</span
+              ><span class="bracket-car__school">UTFPR-PB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">CTJ</span
+              ><span class="bracket-car__school">UFSC-Jvl</span></span
+            >
+            <span class="chip">39</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m10">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-loser
+          >
+            <span class="chip">49</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Guaicurus</span
+              ><span class="bracket-car__school">UFGD</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-winner
+          >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Reptiles</span
+              ><span class="bracket-car__school">PUC-Rio</span></span
+            >
+            <span class="chip">7</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m11">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">9</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Caraubaja</span
+              ><span class="bracket-car__school">UFERSA-Car</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFSCar</span
+              ><span class="bracket-car__school">UFSCar</span></span
+            >
+            <span class="chip">24</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m12">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">5</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Poli</span
+              ><span class="bracket-car__school">Poli</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Corsários</span
+              ><span class="bracket-car__school">IFMG</span></span
+            >
+            <span class="chip">33</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m13">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-loser
+          >
+            <span class="chip">1</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">FEI</span
+              ><span class="bracket-car__school">FEI</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-winner
+          >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja de Galpão</span
+              ><span class="bracket-car__school">UNISC</span></span
+            >
+            <span class="chip">3</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m14">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">44</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFPBaja</span
+              ><span class="bracket-car__school">UFPB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Procobaja</span
+              ><span class="bracket-car__school">UTFPR-CP</span></span
+            >
+            <span class="chip">19</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m15">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">18</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Car-Kará</span
+              ><span class="bracket-car__school">UFRN</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Mud Runner</span
+              ><span class="bracket-car__school">CEFET-RJ</span></span
+            >
+            <span class="chip">50</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r2-m16">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">10</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Komiketo</span
+              ><span class="bracket-car__school">UFSJ</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Mud Racing</span
+              ><span class="bracket-car__school">FACENS</span></span
+            >
+            <span class="chip">27</span>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template id="view-board-3">
+      <div class="bracket-board" style="--bracket-board-rows: 4">
+        <div class="card bracket-fixture" data-match="r3-m1">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">2</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja UFMG</span
+              ><span class="bracket-car__school">UFMG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Cactus</span
+              ><span class="bracket-car__school">UFERSA-Mos</span></span
+            >
+            <span class="chip">13</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r3-m2">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">29</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFSC</span
+              ><span class="bracket-car__school">UFSC-Fln</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Parahybaja</span
+              ><span class="bracket-car__school">UFCG</span></span
+            >
+            <span class="chip">21</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r3-m3">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">17</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Bombaja</span
+              ><span class="bracket-car__school">UFSM</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Sinuelo</span
+              ><span class="bracket-car__school">FAHOR</span></span
+            >
+            <span class="chip">51</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r3-m4">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">8</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Imperador</span
+              ><span class="bracket-car__school">UTFPR-CWB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Tuffão</span
+              ><span class="bracket-car__school">UFF-Nit</span></span
+            >
+            <span class="chip">28</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r3-m5">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">47</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Pato</span
+              ><span class="bracket-car__school">UTFPR-PB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Reptiles</span
+              ><span class="bracket-car__school">PUC-Rio</span></span
+            >
+            <span class="chip">7</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r3-m6">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-winner
+          >
+            <span class="chip">9</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Caraubaja</span
+              ><span class="bracket-car__school">UFERSA-Car</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-loser
+          >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Poli</span
+              ><span class="bracket-car__school">Poli</span></span
+            >
+            <span class="chip">5</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r3-m7">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-loser
+          >
+            <span class="chip">3</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja de Galpão</span
+              ><span class="bracket-car__school">UNISC</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-winner
+          >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFPBaja</span
+              ><span class="bracket-car__school">UFPB</span></span
+            >
+            <span class="chip">44</span>
+          </div>
+        </div>
+        <div class="card bracket-fixture" data-match="r3-m8">
+          <div
+            class="bracket-fixture__side bracket-fixture__side--left"
+            data-row
+            data-slot="a"
+            data-loser
+          >
+            <span class="chip">18</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Car-Kará</span
+              ><span class="bracket-car__school">UFRN</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+          </div>
+          <span class="bracket-fixture__versus">×</span>
+          <div
+            class="bracket-fixture__side bracket-fixture__side--right"
+            data-row
+            data-slot="b"
+            data-winner
+          >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Komiketo</span
+              ><span class="bracket-car__school">UFSJ</span></span
+            >
+            <span class="chip">10</span>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template id="view-tree">
+      <div class="board__stage">
+        <svg class="bracket__lines" viewBox="0 0 1728 900" aria-hidden="true">
+          <path data-round="1" d="M512 148H560V256H608" />
+          <path data-round="1" d="M512 363H560V256H608" />
+          <path data-round="1" d="M512 578H560V686H608" />
+          <path data-round="1" d="M512 793H560V686H608" />
+          <path data-round="2" d="M1120 256H1168V471H1216" />
+          <path data-round="2" d="M1120 686H1168V471H1216" />
+        </svg>
+        <div class="pill pill--head bracket__round-name" style="left: 0px; width: 512px">
+          <span class="caption">Quartas de final</span>
+        </div>
+        <div class="pill pill--head bracket__round-name" style="left: 608px; width: 512px">
+          <span class="caption">Semifinal</span>
+        </div>
+        <div class="pill pill--head bracket__round-name" style="left: 1216px; width: 512px">
+          <span class="caption">Final</span>
+        </div>
+        <div
+          class="pill pill--head bracket__round-name"
+          style="left: 1216px; top: 761px; width: 512px"
+        >
+          <span class="caption">Disputa de 3º lugar</span>
+        </div>
+        <div
+          class="bracket__match"
+          style="left: 0px; top: 98px; width: 512px"
+          data-round="0"
+          data-match="r4-m1"
+        >
+          <div class="pill bracket-car" data-row data-slot="a" data-winner>
+            <span class="chip">2</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja UFMG</span
+              ><span class="bracket-car__school">UFMG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <div class="pill bracket-car" data-row data-slot="b" data-loser>
+            <span class="chip">29</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Equipe UFSC Baja</span
+              ><span class="bracket-car__school">UFSC-Fln</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+          </div>
+        </div>
+        <div
+          class="bracket__match"
+          style="left: 0px; top: 313px; width: 512px"
+          data-round="0"
+          data-match="r4-m2"
+        >
+          <div class="pill bracket-car" data-row data-slot="a" data-winner>
+            <span class="chip">17</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Bombaja UFSM</span
+              ><span class="bracket-car__school">UFSM</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+          <div class="pill bracket-car" data-row data-slot="b" data-loser>
+            <span class="chip">8</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Imperador</span
+              ><span class="bracket-car__school">UTFPR-CWB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+          </div>
+        </div>
+        <div
+          class="bracket__match"
+          style="left: 0px; top: 528px; width: 512px"
+          data-round="0"
+          data-match="r4-m3"
+        >
+          <div class="pill bracket-car" data-row data-slot="a" data-loser>
+            <span class="chip">47</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Pato Baja</span
+              ><span class="bracket-car__school">UTFPR-PB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+          </div>
+          <div class="pill bracket-car" data-row data-slot="b" data-winner>
+            <span class="chip">9</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">CaraubajaSAE</span
+              ><span class="bracket-car__school">UFERSA-Car</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+        </div>
+        <div
+          class="bracket__match"
+          style="left: 0px; top: 743px; width: 512px"
+          data-round="0"
+          data-match="r4-m4"
+        >
+          <div class="pill bracket-car" data-row data-slot="a" data-loser>
+            <span class="chip">44</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">UFPBaja</span
+              ><span class="bracket-car__school">UFPB</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"></span>
+          </div>
+          <div class="pill bracket-car" data-row data-slot="b" data-winner>
+            <span class="chip">10</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Equipe Komiketo Baja</span
+              ><span class="bracket-car__school">UFSJ</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--win"
+              ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                <path
+                  d="M3.5 10.5 8 15 16.5 5.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+        </div>
+        <div
+          class="bracket__match"
+          style="left: 608px; top: 206px; width: 512px"
+          data-round="1"
+          data-match="r5-m1"
+        >
+          <div class="pill bracket-car" data-row data-slot="a" data-winner>
+            <span class="chip">2</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja UFMG</span
+              ><span class="bracket-car__school">UFMG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--score">2</span>
+          </div>
+          <div class="pill bracket-car" data-row data-slot="b" data-loser>
+            <span class="chip">17</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Bombaja UFSM</span
+              ><span class="bracket-car__school">UFSM</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--score">0</span>
+          </div>
+        </div>
+        <div
+          class="bracket__match"
+          style="left: 608px; top: 636px; width: 512px"
+          data-round="1"
+          data-match="r5-m2"
+        >
+          <div class="pill bracket-car" data-row data-slot="a" data-loser>
+            <span class="chip">9</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">CaraubajaSAE</span
+              ><span class="bracket-car__school">UFERSA-Car</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--score">0</span>
+          </div>
+          <div class="pill bracket-car" data-row data-slot="b" data-winner>
+            <span class="chip">10</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Equipe Komiketo Baja</span
+              ><span class="bracket-car__school">UFSJ</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--score">2</span>
+          </div>
+        </div>
+        <div
+          class="bracket__match"
+          style="left: 1216px; top: 421px; width: 512px"
+          data-round="2"
+          data-match="r6-m1"
+        >
+          <div class="pill bracket-car" data-row data-slot="a" data-winner>
+            <span class="chip">2</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Baja UFMG</span
+              ><span class="bracket-car__school">UFMG</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--score">2</span>
+          </div>
+          <div class="pill bracket-car" data-row data-slot="b" data-loser>
+            <span class="chip">10</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Equipe Komiketo Baja</span
+              ><span class="bracket-car__school">UFSJ</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--score">0</span>
+          </div>
+        </div>
+        <div
+          class="bracket__match"
+          style="left: 1216px; top: 801px; width: 512px"
+          data-round="third"
+          data-match="r7-m1"
+        >
+          <div class="pill bracket-car" data-row data-slot="a" data-winner>
+            <span class="chip">17</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">Bombaja UFSM</span
+              ><span class="bracket-car__school">UFSM</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--score">2</span>
+          </div>
+          <div class="pill bracket-car" data-row data-slot="b" data-loser>
+            <span class="chip">9</span>
+            <span class="bracket-car__team"
+              ><span class="bracket-car__name">CaraubajaSAE</span
+              ><span class="bracket-car__school">UFERSA-Car</span></span
+            >
+            <span class="bracket-car__result bracket-car__result--score">1</span>
+          </div>
+        </div>
+      </div>
+    </template>
+    <script type="application/json" id="demo-config">
+      {
+        "matches": [
+          { "id": "r1-m1", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m2", "view": "board-1", "isBye": false, "sources": { "a": null, "b": null } },
+          { "id": "r1-m3", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m4", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m5", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m6", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m7", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m8", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m9", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m10", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m11", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m12", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m13", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m14", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m15", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m16", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m17", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m18", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m19", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m20", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m21", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m22", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m23", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m24", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m25", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m26", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m27", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m28", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m29", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m30", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m31", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          { "id": "r1-m32", "view": "board-1", "isBye": true, "sources": { "a": null, "b": null } },
+          {
+            "id": "r2-m1",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m1" }, "b": { "matchId": "r1-m2" } }
+          },
+          {
+            "id": "r2-m2",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m3" }, "b": { "matchId": "r1-m4" } }
+          },
+          {
+            "id": "r2-m3",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m5" }, "b": { "matchId": "r1-m6" } }
+          },
+          {
+            "id": "r2-m4",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m7" }, "b": { "matchId": "r1-m8" } }
+          },
+          {
+            "id": "r2-m5",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m9" }, "b": { "matchId": "r1-m10" } }
+          },
+          {
+            "id": "r2-m6",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m11" }, "b": { "matchId": "r1-m12" } }
+          },
+          {
+            "id": "r2-m7",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m13" }, "b": { "matchId": "r1-m14" } }
+          },
+          {
+            "id": "r2-m8",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m15" }, "b": { "matchId": "r1-m16" } }
+          },
+          {
+            "id": "r2-m9",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m17" }, "b": { "matchId": "r1-m18" } }
+          },
+          {
+            "id": "r2-m10",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m19" }, "b": { "matchId": "r1-m20" } }
+          },
+          {
+            "id": "r2-m11",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m21" }, "b": { "matchId": "r1-m22" } }
+          },
+          {
+            "id": "r2-m12",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m23" }, "b": { "matchId": "r1-m24" } }
+          },
+          {
+            "id": "r2-m13",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m25" }, "b": { "matchId": "r1-m26" } }
+          },
+          {
+            "id": "r2-m14",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m27" }, "b": { "matchId": "r1-m28" } }
+          },
+          {
+            "id": "r2-m15",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m29" }, "b": { "matchId": "r1-m30" } }
+          },
+          {
+            "id": "r2-m16",
+            "view": "board-2",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r1-m31" }, "b": { "matchId": "r1-m32" } }
+          },
+          {
+            "id": "r3-m1",
+            "view": "board-3",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r2-m1" }, "b": { "matchId": "r2-m2" } }
+          },
+          {
+            "id": "r3-m2",
+            "view": "board-3",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r2-m3" }, "b": { "matchId": "r2-m4" } }
+          },
+          {
+            "id": "r3-m3",
+            "view": "board-3",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r2-m5" }, "b": { "matchId": "r2-m6" } }
+          },
+          {
+            "id": "r3-m4",
+            "view": "board-3",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r2-m7" }, "b": { "matchId": "r2-m8" } }
+          },
+          {
+            "id": "r3-m5",
+            "view": "board-3",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r2-m9" }, "b": { "matchId": "r2-m10" } }
+          },
+          {
+            "id": "r3-m6",
+            "view": "board-3",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r2-m11" }, "b": { "matchId": "r2-m12" } }
+          },
+          {
+            "id": "r3-m7",
+            "view": "board-3",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r2-m13" }, "b": { "matchId": "r2-m14" } }
+          },
+          {
+            "id": "r3-m8",
+            "view": "board-3",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r2-m15" }, "b": { "matchId": "r2-m16" } }
+          },
+          {
+            "id": "r4-m1",
+            "view": "tree",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r3-m1" }, "b": { "matchId": "r3-m2" } }
+          },
+          {
+            "id": "r4-m2",
+            "view": "tree",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r3-m3" }, "b": { "matchId": "r3-m4" } }
+          },
+          {
+            "id": "r4-m3",
+            "view": "tree",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r3-m5" }, "b": { "matchId": "r3-m6" } }
+          },
+          {
+            "id": "r4-m4",
+            "view": "tree",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r3-m7" }, "b": { "matchId": "r3-m8" } }
+          },
+          {
+            "id": "r5-m1",
+            "view": "tree",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r4-m1" }, "b": { "matchId": "r4-m2" } }
+          },
+          {
+            "id": "r5-m2",
+            "view": "tree",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r4-m3" }, "b": { "matchId": "r4-m4" } }
+          },
+          {
+            "id": "r6-m1",
+            "view": "tree",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r5-m1" }, "b": { "matchId": "r5-m2" } }
+          },
+          {
+            "id": "r7-m1",
+            "view": "tree",
+            "isBye": false,
+            "sources": { "a": { "matchId": "r5-m1" }, "b": { "matchId": "r5-m2" } }
+          }
+        ],
+        "views": [
+          { "id": "board-1", "template": "view-board-1", "subtitle": "32 avos de final" },
+          { "id": "board-2", "template": "view-board-2", "subtitle": "16 avos de final" },
+          { "id": "board-3", "template": "view-board-3", "subtitle": "Oitavas de final" },
+          { "id": "tree", "template": "view-tree", "subtitle": "" }
+        ],
+        "steps": [
+          {
+            "matchId": null,
+            "words": "o sorteio: 31 carros passam por W.O. sem adversário; Próximo decide o primeiro jogo"
+          },
+          {
+            "matchId": "r1-m2",
+            "words": "32 avos de final: 32 Corisco × 34 Buffalo · vence 32 Corisco"
+          },
+          {
+            "matchId": "r2-m1",
+            "words": "16 avos de final: 2 Baja UFMG × 32 Corisco · vence 2 Baja UFMG"
+          },
+          {
+            "matchId": "r2-m2",
+            "words": "16 avos de final: 13 Cactus × 12 Piratas Cerrado · vence 13 Cactus"
+          },
+          { "matchId": "r2-m3", "words": "16 avos de final: 29 UFSC × 36 Zebu · vence 29 UFSC" },
+          {
+            "matchId": "r2-m4",
+            "words": "16 avos de final: 21 Parahybaja × 38 Tatu · vence 21 Parahybaja"
+          },
+          {
+            "matchId": "r2-m5",
+            "words": "16 avos de final: 17 Bombaja × 6 Rampage · vence 17 Bombaja"
+          },
+          {
+            "matchId": "r2-m6",
+            "words": "16 avos de final: 51 Sinuelo × 31 Sagui · vence 51 Sinuelo"
+          },
+          {
+            "matchId": "r2-m7",
+            "words": "16 avos de final: 8 Imperador × 16 Forja · vence 8 Imperador"
+          },
+          {
+            "matchId": "r2-m8",
+            "words": "16 avos de final: 28 Tuffão × 23 Cefast · vence 28 Tuffão"
+          },
+          { "matchId": "r2-m9", "words": "16 avos de final: 47 Pato × 39 CTJ · vence 47 Pato" },
+          {
+            "matchId": "r2-m10",
+            "words": "16 avos de final: 49 Guaicurus × 7 Reptiles · vence 7 Reptiles"
+          },
+          {
+            "matchId": "r2-m11",
+            "words": "16 avos de final: 9 Caraubaja × 24 UFSCar · vence 9 Caraubaja"
+          },
+          {
+            "matchId": "r2-m12",
+            "words": "16 avos de final: 5 Poli × 33 Corsários · vence 5 Poli"
+          },
+          {
+            "matchId": "r2-m13",
+            "words": "16 avos de final: 1 FEI × 3 Baja de Galpão · vence 3 Baja de Galpão"
+          },
+          {
+            "matchId": "r2-m14",
+            "words": "16 avos de final: 44 UFPBaja × 19 Procobaja · vence 44 UFPBaja"
+          },
+          {
+            "matchId": "r2-m15",
+            "words": "16 avos de final: 18 Car-Kará × 50 Mud Runner · vence 18 Car-Kará"
+          },
+          {
+            "matchId": "r2-m16",
+            "words": "16 avos de final: 10 Komiketo × 27 Mud Racing · vence 10 Komiketo"
+          },
+          {
+            "matchId": "r3-m1",
+            "words": "Oitavas de final: 2 Baja UFMG × 13 Cactus · vence 2 Baja UFMG"
+          },
+          {
+            "matchId": "r3-m2",
+            "words": "Oitavas de final: 29 UFSC × 21 Parahybaja · vence 29 UFSC"
+          },
+          {
+            "matchId": "r3-m3",
+            "words": "Oitavas de final: 17 Bombaja × 51 Sinuelo · vence 17 Bombaja"
+          },
+          {
+            "matchId": "r3-m4",
+            "words": "Oitavas de final: 8 Imperador × 28 Tuffão · vence 8 Imperador"
+          },
+          { "matchId": "r3-m5", "words": "Oitavas de final: 47 Pato × 7 Reptiles · vence 47 Pato" },
+          {
+            "matchId": "r3-m6",
+            "words": "Oitavas de final: 9 Caraubaja × 5 Poli · vence 9 Caraubaja"
+          },
+          {
+            "matchId": "r3-m7",
+            "words": "Oitavas de final: 3 Baja de Galpão × 44 UFPBaja · vence 44 UFPBaja"
+          },
+          {
+            "matchId": "r3-m8",
+            "words": "Oitavas de final: 18 Car-Kará × 10 Komiketo · vence 10 Komiketo"
+          },
+          {
+            "matchId": "r4-m1",
+            "words": "Quartas de final: 2 Baja UFMG × 29 UFSC · vence 2 Baja UFMG"
+          },
+          {
+            "matchId": "r4-m2",
+            "words": "Quartas de final: 17 Bombaja × 8 Imperador · vence 17 Bombaja"
+          },
+          {
+            "matchId": "r4-m3",
+            "words": "Quartas de final: 47 Pato × 9 Caraubaja · vence 9 Caraubaja"
+          },
+          {
+            "matchId": "r4-m4",
+            "words": "Quartas de final: 44 UFPBaja × 10 Komiketo · vence 10 Komiketo"
+          },
+          {
+            "matchId": "r5-m1",
+            "words": "Semifinal: 2 Baja UFMG × 17 Bombaja · vence 2 Baja UFMG"
+          },
+          {
+            "matchId": "r5-m2",
+            "words": "Semifinal: 9 Caraubaja × 10 Komiketo · vence 10 Komiketo"
+          },
+          {
+            "matchId": "r7-m1",
+            "words": "Disputa de 3º lugar: 17 Bombaja × 9 Caraubaja · vence 17 Bombaja"
+          },
+          { "matchId": "r6-m1", "words": "Final: 2 Baja UFMG × 10 Komiketo · vence 2 Baja UFMG" }
+        ]
+      }
+    </script>
+
+    <script src="../../vendor/gsap/gsap.min.js"></script>
+    <script src="../../vendor/gsap/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/timelineSuperPrime.js"></script>
+  </body>
+</html>

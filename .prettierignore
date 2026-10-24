@@ -21,3 +21,7 @@ packages/graphics/*/ograf-schema/
 # GSAP for the design's motion demos, copied byte for byte from the installed package
 # (docs/design/vendor/gsap/README.md); reformatting would make it differ from GSAP's files.
 docs/design/vendor/
+
+# The real results and logos João handed over (docs/design/sample_data/), kept exactly as
+# delivered; the design tools read them and write their own copies.
+docs/design/sample_data/

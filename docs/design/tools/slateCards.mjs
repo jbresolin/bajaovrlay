@@ -3,7 +3,7 @@
 // or pill language of slateTemplates.mjs applied to one more graphic; the notices are in
 // slateNotices.mjs, the boards in slateBoards.mjs, the stepped graphics in slateSteps.mjs.
 import { logoPath, renderStripClock } from './slateTemplates.mjs';
-import { escapeHtml, placeholderMark, trendIcons } from './slateVocabulary.mjs';
+import { escapeHtml, renderLogo, trendIcons } from './slateVocabulary.mjs';
 
 /** "33 VOLTAS", "1 VOLTA": the laps as the clock writes them. */
 function lapsWords(laps) {
@@ -20,9 +20,7 @@ export function renderTeamCard(team, { withRoot = true } = {}) {
   const photo = team.photoPath
     ? `\n  <div class="team-card__photo" role="img" aria-label="Foto do carro ${team.carNumber}" style="background-image: url('${team.photoPath}')"></div>`
     : '';
-  const logo = team.logoInitials
-    ? `\n  <div class="team-card__logo">${placeholderMark(team.logoInitials, `Logo da equipe ${team.teamName}`)}</div>`
-    : '';
+  const logo = team.logo ? `\n  ${renderLogo(team.logo, 'team-card__logo')}` : '';
   const city = team.city
     ? `\n      <span class="team-card__city">${escapeHtml(team.city)}</span>`
     : '';
@@ -154,12 +152,12 @@ export function renderMessageTicker(
 /** The corner roll's sponsor cell: one sponsor's mark and name under the sponsor line. */
 export function renderSponsorRollCornerCell(bug, sponsor) {
   return `<div class="sponsor-roll-corner__sponsor">
-    ${placeholderMark(sponsor.initial, sponsor.name)}
-    <span class="sponsor-roll-corner__words"><span class="caption">${escapeHtml(bug.sponsorLine)}</span><span class="sponsor-bug__sponsor-name">${escapeHtml(sponsor.name)}</span></span>
+    <span class="caption">Patrocínio ${escapeHtml(sponsor.levelLabel)}</span>
+    ${renderLogo(sponsor.logo, 'sponsor-bug__sponsor-logo')}
   </div>`;
 }
 
-/** The bug's card with one sponsor's mark and name in place of the sponsor line. */
+/** The bug's card with one sponsor's level and logo in place of the sponsor line. */
 export function renderSponsorRollCorner(bug, sponsor, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="sponsor-roll-corner"' : '';
   return `<section class="card sponsor-bug sponsor-roll-corner"${root}>

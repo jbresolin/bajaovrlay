@@ -19,6 +19,7 @@ import {
   listQrDemos,
   listTeamCardDemos,
 } from './slateMotionCardDemos.mjs';
+import { listTimelineDemos } from './slateTimelineDemos.mjs';
 
 /** Every demo of the catalogue, in the catalogue's order (catalogue.md). */
 export function listMotionDemos(options) {
@@ -35,5 +36,6 @@ export function listMotionDemos(options) {
     ...listSponsorRollDemos(options),
     ...listQrDemos(),
     ...listMessageTickerDemos(),
+    ...listTimelineDemos(options),
   ];
 }

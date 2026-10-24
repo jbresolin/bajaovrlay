@@ -253,15 +253,9 @@
   padding: var(--space-3) var(--space-5);
 }
 .intermission__sponsor {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--size-row);
-  white-space: nowrap;
-}
-.intermission__sponsor .sponsor-mark {
-  width: var(--sponsor-mark-small);
-  height: var(--sponsor-mark-small);
+  flex: none;
+  width: var(--sponsor-logo-line-width);
+  height: var(--sponsor-logo-line-height);
 }
 
 /* ---- Countdown board: the waiting screen; the session to come and the time to its start */
@@ -290,30 +284,27 @@
   color: var(--text-muted);
 }
 
-/* ---- Sponsor roll, full: six tiles a page, each a card with the sponsor's mark and name */
-/* Two rows always, so a short last page leaves the board's size (and its head) in place. */
+/* ---- Sponsor roll, full: one level a page, up to six tiles, each a card holding the logo in
+   one box, so every plate on a page is the same size. A page with fewer tiles centres them;
+   the area keeps two rows' height, so the board (and its head) never moves between pages. */
 .sponsor-roll__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, var(--sponsor-tile-height));
+  height: calc(2 * var(--sponsor-tile-height) + var(--stack-gap));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
   gap: var(--stack-gap);
 }
 .sponsor-tile {
+  width: calc((100% - 2 * var(--stack-gap)) / 3);
   height: var(--sponsor-tile-height);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-4);
 }
-.sponsor-tile .sponsor-mark {
-  width: var(--sponsor-mark-large);
-  height: var(--sponsor-mark-large);
-}
-.sponsor-tile__name {
-  font-size: var(--size-title);
-  letter-spacing: var(--tracking-display);
-  line-height: 1;
+.sponsor-tile__logo {
+  width: var(--sponsor-tile-logo-width);
+  height: var(--sponsor-tile-logo-height);
 }
 
 /* ---- Bracket: one column per round, the matches of a round spread over the height and

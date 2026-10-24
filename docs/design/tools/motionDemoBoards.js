@@ -211,6 +211,8 @@
       kit.swapInPlace(grid, incoming);
       grid = incoming;
       head.querySelector('.board__aside').textContent = page.aside;
+      // Each page is one sponsor level, named in the head: the name changes in place.
+      head.querySelector('.board__subtitle').textContent = page.subtitle;
       say(
         `página ${pageIndex + 1}: os cartões trocam em ${inMs(motion.pageTurn)}, ${inMs(motion.pageStagger)} um do outro`,
       );
@@ -287,7 +289,7 @@
         });
         return;
       }
-      const round = step.roundsShown - 1;
+      const round = step.revealsRound;
       const timeline = gsap.timeline({ delay });
       if (round === 0)
         timeline.add(kit.riseIn([...body.querySelectorAll('.bracket__round-name')]), 0);

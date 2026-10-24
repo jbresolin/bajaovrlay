@@ -1,9 +1,8 @@
 // The words and icons every slate page shares: the flag words and their sheet labels, the
 // three status icons (shape carries the meaning: a P in a square for the pit, a wrench for a
 // broken car, a circle with a slash for a retired one), the catalogue's icons (a warning
-// triangle, the schedule's three states, the battle card's trend) and the placeholder mark
-// that stands in for a logo, plus the HTML escaper. Data, not page markup, so the builders
-// stay the places that write pages.
+// triangle, the schedule's three states, the battle card's trend), the real logos' markup and
+// the HTML escaper. Data, not page markup, so the builders stay the places that write pages.
 import { readFileSync } from 'node:fs';
 
 const sampleDataUrl = new URL('../sample-data.json', import.meta.url);
@@ -76,9 +75,12 @@ export const trendIcons = {
 };
 
 /**
- * A placeholder mark where a logo will go (a sponsor, a team): a ring with initials, drawn
- * in the text colour. Never a real brand; the entity library brings the real artwork.
+ * A real logo (sample_data/logos, prepared by prepareLogos.mjs) for a direction's page: on a
+ * light plate when its surface is "light" (a dark drawing, or one drawn on a white box), or
+ * straight on the slate when it is "dark". The image keeps its own shape inside the box the
+ * graphic gives it (`className`): never stretched, never padded to one ratio.
  */
-export function placeholderMark(initials, label) {
-  return `<svg class="sponsor-mark" viewBox="0 0 48 48" role="img" aria-label="${escapeHtml(label)}"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="2.5"/><text x="24" y="31.5" text-anchor="middle" font-size="22" font-family="Bebas Neue, sans-serif" fill="currentColor">${escapeHtml(initials)}</text></svg>`;
+export function renderLogo(logo, className = '') {
+  const classes = ['logo', `logo--on-${logo.surface}`, className].filter(Boolean).join(' ');
+  return `<span class="${classes}"><img class="logo__image" src="../../${logo.path}" alt="${escapeHtml(logo.name)}" width="${logo.width}" height="${logo.height}"></span>`;
 }

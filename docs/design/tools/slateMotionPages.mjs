@@ -20,16 +20,43 @@ const actionLabels = {
   next: 'Próximo',
   update: 'Atualizar',
   newEvent: 'Novo evento',
+  // The timelines' (slateTimelineDemos.mjs): the moment, the tower shown, the transport.
+  view: 'Detalhada',
+  page: 'Pág. 1',
+  start: 'Início',
+  minuteBack: '−1 min',
+  passBack: '‹ Passagem',
+  playPause: 'Play',
+  passForward: 'Passagem ›',
+  minuteForward: '+1 min',
+  end: 'Fim',
+  speed: '1×',
+  previous: '‹ Anterior',
 };
 
-function renderDemoPage(direction, demo) {
-  const title = `${demo.group} · ${demo.variant}`;
-  const buttons = demo.actions
+const renderButtons = (actions) =>
+  actions
     .map(
       (action) =>
         `  <button type="button" class="demo-controls__button" data-action="${action}">${actionLabels[action]}</button>`,
     )
     .join('\n');
+
+// A timeline's second bar, under the title-safe area (y 1032..1074): the moment it shows, the
+// slider that scrubs the day and the transport buttons.
+function renderTimelineControls(demo) {
+  if (demo.timelineActions === undefined) return '';
+  return `<nav class="demo-controls demo-controls--bottom" aria-label="Linha do tempo">
+  <span class="demo-controls__time" id="timeline-time"></span>
+  <input class="demo-controls__slider" id="timeline-slider" type="range" aria-label="Linha do tempo">
+${renderButtons(demo.timelineActions)}
+</nav>
+`;
+}
+
+function renderDemoPage(direction, demo) {
+  const title = `${demo.group} · ${demo.variant}`;
+  const buttons = renderButtons(demo.actions);
   const templates = (demo.templates ?? []).join('\n');
   const config =
     demo.config === undefined
@@ -41,15 +68,19 @@ function renderDemoPage(direction, demo) {
 ${buttons}
   <span class="demo-controls__status" id="demo-status" role="status"></span>
 </nav>
-<div class="demo-stage" data-demo="${demo.demoName}">
+${renderTimelineControls(demo)}<div class="demo-stage" data-demo="${demo.demoName}">
 ${demo.stage}
 </div>
 ${templates}
 ${config}`;
+  const scriptFiles = demo.scriptFiles ?? [`motionDemo${demo.family}.js`];
+  const familyScripts = scriptFiles
+    .map((scriptFile) => `<script src="../../tools/${scriptFile}"></script>`)
+    .join('\n');
   const scripts = `<script src="${gsapFolder}/gsap.min.js"></script>
 <script src="${gsapFolder}/CustomEase.min.js"></script>
 <script src="../../tools/motionDemoCore.js"></script>
-<script src="../../tools/motionDemo${demo.family}.js"></script>
+${familyScripts}
 `;
   return pageShell(direction, `movimento: ${title}`, body, scripts);
 }
@@ -69,7 +100,10 @@ function renderDemoIndex(direction, demos) {
     .map((group) => {
       const links = group.demos
         .map((demo) => {
-          const buttons = demo.actions.map((action) => actionLabels[action]).join(' · ');
+          const buttons = demo.actions
+            .map((action) => actionLabels[action])
+            .concat(demo.timelineActions === undefined ? [] : ['linha do tempo'])
+            .join(' · ');
           return `      <a class="demo-index__link" href="${demo.fileName}">${escapeHtml(demo.variant)}<span class="demo-index__buttons">${buttons}</span></a>`;
         })
         .join('\n');

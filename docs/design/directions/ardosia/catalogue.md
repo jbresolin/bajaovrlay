@@ -12,6 +12,12 @@ which fields do not exist yet, and whether it binds live or is typed by the oper
 
 The six graphics of pass 1 were checked against the new ones and did not change.
 
+Since 2026-10-23 the pages show the 30ª Competição's real data (`../../README.md`, "The
+sample data is real"): its teams and logos, the enduro's laps and penalties, the overall
+scores, the Super Prime bracket and the sponsors by level. Two timelines replay the enduro
+and the Super Prime at any moment of the day (`motion.md`, "The timelines"). Where the real
+data does not fit a draft shape, the entry below says so.
+
 ## The layer plan
 
 The layers as built (docs/00-concept.md §4): bug 10, ticker 20, clock 30, tower 35,
@@ -74,8 +80,9 @@ The lower third's slot with the car as the subject: the big blue chip, the team 
 right only when the team has them. Without media the card is simply shorter, with the chip as
 its anchor, so it never shows an empty frame. The photo, the logo and the city are each
 optional (the motion demos show all eight combinations). The photo in the mock-up is a
-stream frame standing in for a car photo; the logo is a placeholder ring with the team's
-initials.
+stream frame standing in for a car photo (no car photos were handed over); the logo is the
+team's real one, on the panel as it is, or on a small light plate when the mark is dark or
+comes on its own white box (decided once per logo by `prepareLogos.mjs`).
 
 - Reads: positions, one car chosen by its number (`entryOfCar.<n>`): `carNumber`,
   `teamName`, `schoolName`. Snapshot, or typed when the car is not in the positions.
@@ -103,31 +110,35 @@ blue of the "down" cue (`--cue-down-text`), "— ESTÁVEL" in the muted text.
 
 Full screen. The overall table: a head card (logo, "CLASSIFICAÇÃO GERAL", the event, the
 page), a column-head pill and 40 px pills, one per team: rank in yellow (rank 1 on the green
-chip), chip, team with the school as a caption, one muted column per event (ACEL., VELOC.,
-TRAÇÃO, SUSP., MANOBR., ENDURO) and the total in green. **20 rows a page** (three pages for
-60 teams, the tower's page size, so "page 2" means the same cars everywhere), the page held
+chip), chip, team with the school as a caption, one muted column per part of the score (the
+real export's PROJETO, DINÂM., ENDURO, 4X4, SEG. and PEN.) and the total in green; a
+disqualified team stays in the list, dimmed like a retired row, with "—" as its rank and
+"DESCL." as its total. **20 rows a page** (three pages for the real 54 teams, the tower's page
+size, so "page 2" means the same cars everywhere), the page held
 `--motion-board-hold` (10 s); 20 rows of 40 px fill the height exactly (y 54..1018). An event
 the source does not know shows "—". The per-event table has one number per team, so it shows
 **the whole field at once in three columns of 20** (34 px pills, the tower's) and needs no
-paging; tied teams share a rank (the sample's enduro has two teams on 400,0, both ranked 1
-and both on the green chip). The points per event are optional in the shape: overall
+paging; tied teams share a rank (and, when that rank is 1, the green chip). The points per event are optional in the shape: overall
 standings that come without them use the same three-column board with the total alone,
 rather than seven columns of "—" (the motion demos show both).
 
 - Reads: standings, scope `overall`: `rank`, `carNumber`, `teamName`, `schoolName`, `points`,
   `pointsByEvent` (optional per event). Per event: standings with the event's scope. Live or
   snapshot.
-- Missing: nothing. The event columns' captions are the fixed pt-BR names of the six session
-  kinds.
+- Missing: the real overall score is not a sum of session kinds. It is design (PROJETO),
+  the dynamic events together (DINÂM.), the enduro, the 4×4 bonus, safety (SEG.) and the
+  penalties (PEN., negative). `pointsByEvent` keyed by session kind cannot carry that, so the
+  shape needs its columns named by the source (a list of score parts, each with a label and a
+  value). It also needs a disqualified mark on an entry.
 
-### 4. Elimination bracket — `bracket-passo-1`, `-2`, `-3`; `bracket-64-passo-1`, `-2`, `-6`; `sheet-bracket-results`
+### 4. Elimination bracket — `bracket-passo-1` to `-7`; `sheet-bracket-results`
 
 Full screen, in steps, one per "Next". The eliminations routinely reach the round of 64 and
 may reach 128, so a bracket is shown in two forms, and the generator picks between them from
 the rounds alone. A round with more than four matches is a **round board**: a draw sheet in
 two columns, read down the left column then the right, where each match is **one card** with
 the two cars facing each other across a "×": chips on the outer edges, the results meeting
-in the middle like a football score line ("31 ACAUÃ BAJA 2 × 1 URUTAU RACING 12"), so who
+in the middle like a football score line ("2 BAJA UFMG 2 × 0 KOMIKETO 10", the real final), so who
 runs against whom is never in doubt; the gutter between the columns is wider than the gap
 between cards, so a row is never read across. 40 px cards, 32 matches a page, so a round of
 64 is one page and a round of 128 two ("1ª rodada · página 1/2"). The last rounds,
@@ -138,6 +149,10 @@ are all there from the tree's first step. An 8-car bracket is three tree steps; 
 three boards (1ª rodada, 2ª rodada, oitavas) and three tree steps; a 128-car one four boards
 (its first round in two pages) and the tree. A longer tree was tried and dropped: eight
 columns do not fit at a legible size, and a draw sheet is how a big round is read anyway.
+The real Super Prime is a 64-slot draw: three boards (32 avos, 16 avos, oitavas), then the
+quarter-finals, the semifinals and the final in the tree. The **third-place match** is not a
+column: it sits at the foot of the final's column under its own name pill, with no line into
+it, and gets its own step just before the final's, as it runs before it.
 
 A match's **result is modular**, and the match says which kind it is by what it carries: a
 count of wins per car when it is best of N (`bestOf`; "2" beside the winner, "1" or "0"
@@ -150,12 +165,12 @@ like a retired row.
 outlined "W.O." tag in its result cell, in the winner's green, and the other car "—". Two
 cases look different beside the tag. When the opponent did not run (absent, broken, out),
 it is shown as a car like any loser, dimmed. When there is no opponent, a bye in a draw
-short of a power of two (60 cars in 64 slots give seeds 1 to 4 a free first round), the
-other slot is empty: no chip, no team, a dashed outline reading "SEM ADVERSÁRIO", so it can
-never be read as a car. A W.O. reads the same in the round of 64 as in the final.
-`sheet-bracket-results` shows all six states (time, best of 3, plain win, W.O. by absence,
-W.O. without opponent, undecided) in both forms; the 64-slot sample has the four byes on its
-first board, a W.O. by absence on its second and another in the quarter-finals.
+short of a power of two, the other slot is empty: no chip, no team, a dashed outline reading
+"SEM ADVERSÁRIO", so it can never be read as a car. The real draw is the extreme case: 33
+cars in 64 slots, so the 32 avos board is 31 byes and one race. A W.O. reads the same in the
+round of 64 as in the final. `sheet-bracket-results` shows all six states (time, best of 3,
+plain win, W.O. by absence, W.O. without opponent, undecided) in both forms. The Super Prime
+had no timed results, so the time rows there use sample times.
 
 - Reads: brackets (draft shape, BAJAOVRLAY-25): `rounds[].name`, `matches[].carA` and
   `carB` (`carNumber`, `teamName`, `schoolName`, `timeMs`), `winnerCarNumber`. Live: a result
@@ -164,7 +179,8 @@ first board, a W.O. by absence on its second and another in the quarter-finals.
   and `wins` per car (the sub-wins of a best of N); a walkover mark on a match (`walkover`,
   the winner advanced without racing); and a bye, which the draft shape cannot express since
   a match needs two different cars: proposed, `carB` left out for a bye, the winner being
-  `carA` by W.O.
+  `carA` by W.O.; and a third-place match, which is not a round of the tree: proposed, a
+  round marked `isThirdPlace`, its two cars the semifinals' losers.
 
 ### 5. Podium — `podium-passo-1`, `-2`, `-3`
 
@@ -187,24 +203,30 @@ leaves by itself after `--motion-notice-hold`.
 - Reads: positions, the car with the smallest `bestLapMs` across the list: `carNumber`,
   `teamName`, `schoolName`, `bestLapMs`. Live (a new fastest lap replaces the card) or taken
   by hand.
-- Missing: which lap it was set on. `bestLapMs` carries no lap number; the sample shows the
-  car's lap count as a stand-in. A `bestLapNumber` field on the positions entry, or the
-  operator types it.
+- Missing: which lap it was set on. `bestLapMs` carries no lap number; the sample takes it
+  from the real passes. A `bestLapNumber` field on the positions entry, or the operator types
+  it. The export also credits missed laps in batches (many cars at the same second with
+  near-zero lap times), so the sample ignores any lap under 2:45 as a lap time; a real source
+  needs the same guard, or the fastest lap reads 0:00,0.
 
 ### 7. Penalty or incident notice — `penalty-notice`, `sheet-notices`
 
 The same notice slot and card: a warning triangle and the kind (PENALIDADE or INCIDENTE) in
-the head with "DIREÇÃO DE PROVA" at the right, the chip and team, then the reason and, when
-there is one, the penalty in a brand-navy cell ("+30 SEGUNDOS", "BANDEIRA PRETA"). No flag
+the head with where it happened at the right (the export's track sector, "SETOR E", or
+"ANTES DA LARGADA"; "DIREÇÃO DE PROVA" when there is none), the chip and team, then the
+reason and, when there is one, the penalty in a brand-navy cell. No flag
 colour anywhere and no coloured band, so it cannot be mistaken for the clock's flag band
-(`sheet-notices` puts the clock with a red flag beside it). A long reason pushes the penalty
-to a second line rather than being cut. The unit is written in words ("segundos") because
-the face has no lowercase and "+30 s" would read as "+30 S".
+(`sheet-notices` puts the clock with a red flag beside it). The real reasons are long
+("ULTRAPASSAGEM SOB BANDEIRA AMARELA"): the name and the reason each wrap to two lines rather
+than being cut, and a long reason pushes the penalty to its own line. The unit is written in
+words ("segundos") because the face has no lowercase and "+30 s" would read as "+30 S".
 
 - Reads: positions, the car by number: `teamName`, `schoolName`. Typed: the kind, the reason,
   the penalty (optional).
 - Missing: penalties. No shape carries them; if the Baja app exposes them (BAJAOVRLAY-18) a
-  binding can follow.
+  binding can follow, with the sector. The penalty export names a car number and a school but
+  its numbers do not match teams.csv's, so the notices show the export's school as the name,
+  with no team.
 
 ### 8. Countdown — `countdown`, `countdown-tela-cheia`
 
@@ -243,18 +265,20 @@ show); without the top five the next-session card takes the whole width, its wor
 
 - Reads: session `eventName` (live or typed); standings rows 1 to 5 (live); the countdown's
   fields as in 8; the sponsors as in 11.
-- Missing: the next session and the sponsors' artwork, as above.
+- Missing: the next session, and the sponsors, as in 11.
 
 ### 11. Sponsor roll — `sponsor-roll`, `sponsor-roll-canto`
 
-Full screen: a narrow board with six tiles a page (a 120 px mark and the name at 34 px),
-the page turning every `--motion-sponsor-hold` (5 s); nine sponsors make two pages. Corner:
-the bug's card with a sponsor cell (a 44 px mark and the name) under the event word, the cell
-changing on the same hold. Both use plainly fictional placeholders ("Patrocinador A").
+Full screen: a narrow board with up to six tiles a page (the logo in a 340 × 150 box and the
+name at 34 px), **one sponsor level a page**, the level in the head ("PATROCÍNIO DIAMANTE"),
+centred when a page has fewer than six; the page turns every `--motion-sponsor-hold` (5 s).
+The real 16 sponsors in three levels (diamante, ouro, apoio) make four pages. Corner: the
+bug's card with a sponsor cell ("PATROCÍNIO DIAMANTE" over the logo) under the event word,
+the cell changing on the same hold. Logos follow the same plate rule as the team card's.
 
-- Reads: nothing canonical. Typed: the names, until the entity library holds sponsors with
-  their logos.
-- Missing: a sponsor entity with artwork.
+- Reads: nothing canonical. Typed: the names and levels, until the entity library holds
+  sponsors with their logos.
+- Missing: a sponsor entity with artwork and a level.
 
 ### 12. QR card — `qr-card`
 

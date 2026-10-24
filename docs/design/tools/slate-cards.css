@@ -54,11 +54,12 @@
   margin-top: calc(-1 * var(--glyph-nudge));
 }
 .notice__row {
-  height: var(--notice-row-height);
+  min-height: var(--notice-row-height);
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 0 var(--space-4);
+  padding: var(--space-2) var(--space-4);
   font-size: var(--size-row);
   line-height: 1;
   white-space: nowrap;
@@ -71,11 +72,17 @@
   gap: var(--space-2);
   overflow: hidden;
 }
-.notice__team-name {
+/* A name or a reason that does not fit wraps to a second line (the penalty export's school
+   names and reasons are long), and is cut only past two. */
+.notice__team-name,
+.notice__reason {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
   letter-spacing: 0.02em;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 .notice__school {
   flex: none;
@@ -101,12 +108,8 @@
   box-sizing: border-box;
 }
 .notice__reason {
-  flex: 1 0 auto;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
-  letter-spacing: 0.02em;
+  flex: 1 1 0;
+  min-width: 0;
 }
 .notice__penalty {
   margin-left: auto;
@@ -188,12 +191,6 @@
   flex: none;
   width: var(--team-logo-size);
   height: var(--team-logo-size);
-  display: grid;
-  place-items: center;
-}
-.team-card__logo .sponsor-mark {
-  width: 100%;
-  height: 100%;
 }
 
 /* ---- Battle card: two cars for one place, bottom centre, the gap between them. The trend
@@ -356,28 +353,46 @@
   text-overflow: ellipsis;
 }
 
-/* ---- Sponsor roll, corner: the bug's card with a sponsor cell (mark and name) under the
+/* ---- Sponsor roll, corner: the bug's card with a sponsor cell (its level and logo) under the
    event word; the cell changes every few seconds (motion.md). */
 .sponsor-roll-corner__sponsor {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
-}
-.sponsor-roll-corner__sponsor .sponsor-mark {
-  flex: none;
-  width: var(--sponsor-mark-small);
-  height: var(--sponsor-mark-small);
-}
-.sponsor-roll-corner__words {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-.sponsor-mark {
+
+/* ---- Real logos (sample_data/logos): a logo keeps its own shape inside the box its graphic
+   gives it. A dark drawing, or one on a white box, sits on a light plate; a light drawing
+   sits straight on the slate (prepareLogos.mjs decides, logos.json records it). */
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.logo--on-light {
+  padding: var(--logo-plate-padding);
+  border-radius: var(--radius-chip);
+  background: var(--panel-light);
+}
+.logo__image {
   display: block;
-  color: var(--text);
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+/* The sponsor under the bug's event word: a strip as tall as two caption lines. */
+.sponsor-bug__sponsor-logo {
+  height: var(--sponsor-logo-small-height);
+  max-width: 100%;
+  justify-content: flex-start;
+}
+.sponsor-bug__sponsor-logo.logo--on-light {
+  align-self: flex-start;
 }
 
 /* ---- On a reference sheet the cards sit in the flow, not at their on-air place */

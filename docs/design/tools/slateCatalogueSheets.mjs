@@ -22,41 +22,23 @@ ${cell('estável: a diferença não mudou', 'steady')}
 </div>`;
 }
 
-// Every kind of result a match can carry, on the same quarter-final of the suspension
-// sample: the times as recorded, the same match as best of three, as a win with no number,
-// won by W.O. because the opponent did not run, won by W.O. against an empty slot (a bye),
-// and undecided. Each in the tree's stacked form and the board's score-line card.
+// Every kind of result a match can carry. The real Super Prime gives three: its only raced
+// first-round match (a win with no number), its best-of-3 third-place match, and a bye. The
+// other states use that first-round match's two cars: with times (from the packages/shared
+// suspension sample, since Super Prime records none), won by W.O. because the opponent did
+// not run (none did in the export), and undecided. Each in the tree and on a board.
 export function renderSheetBracketResults(direction) {
-  const timed = sample.brackets.rounds[0].matches[0];
-  const asBestOfThree = {
-    ...timed,
-    bestOf: 3,
-    carA: { ...timed.carA, timeText: '', wins: 2 },
-    carB: { ...timed.carB, timeText: '', wins: 1 },
+  const [firstRound] = sample.brackets.rounds;
+  const asPlainWin = firstRound.matches.find((match) => match.carB !== undefined);
+  const asBye = firstRound.matches.find((match) => match.carB === undefined);
+  const asBestOfThree = sample.brackets.rounds.find((round) => round.isThirdPlace).matches[0];
+  const timed = {
+    ...asPlainWin,
+    carA: { ...asPlainWin.carA, timeText: sample.bracketTimedSample.carA.timeText },
+    carB: { ...asPlainWin.carB, timeText: sample.bracketTimedSample.carB.timeText },
   };
-  const asPlainWin = {
-    ...timed,
-    carA: { ...timed.carA, timeText: '' },
-    carB: { ...timed.carB, timeText: '' },
-  };
-  const asNoShowWalkover = {
-    ...timed,
-    walkover: true,
-    carA: { ...timed.carA, timeText: '' },
-    carB: { ...timed.carB, timeText: '' },
-  };
-  const asBye = {
-    matchId: timed.matchId,
-    walkover: true,
-    carA: { ...timed.carA, timeText: '' },
-    winnerCarNumber: timed.carA.carNumber,
-  };
-  const undecided = {
-    ...timed,
-    winnerCarNumber: undefined,
-    carA: { ...timed.carA, timeText: '' },
-    carB: { ...timed.carB, timeText: '' },
-  };
+  const asNoShowWalkover = { ...asPlainWin, walkover: true };
+  const undecided = { ...asPlainWin, winnerCarNumber: undefined };
   const state = (label, match) => `    <div class="sheet__state">
       <div class="sheet__label">${label}</div>
       <div class="sheet__state-forms">
@@ -84,12 +66,13 @@ ${html}
     </div>`;
   const redFlagClock = renderRaceClock(sample.session, 'red', 'VERMELHA', { withRoot: false });
   return `<div class="sheet">
-  <div class="sheet__title">${direction} · avisos — melhor volta, penalidade com e sem sanção, incidente; e o relógio com bandeira vermelha ao lado, para ver que um aviso não parece uma bandeira (folha de referência, não vai ao ar)</div>
+  <div class="sheet__title">${direction} · avisos — a melhor volta e as penalidades reais do enduro (penalizacoes.csv); e o relógio com bandeira vermelha ao lado, para ver que um aviso não parece uma bandeira (folha de referência, não vai ao ar)</div>
   <div class="sheet__grid--notices">
 ${cell('melhor volta', renderFastestLap(sample.fastestLap, { withRoot: false }))}
-${cell('penalidade com sanção em tempo', renderPenaltyNotice(sample.notices.penalty, { withRoot: false }))}
-${cell('penalidade com bandeira preta', renderPenaltyNotice(sample.notices.blackFlag, { withRoot: false }))}
-${cell('incidente sem sanção', renderPenaltyNotice(sample.notices.incident, { withRoot: false }))}
+${cell('bandeira amarela não respeitada (5 min)', renderPenaltyNotice(sample.notices.yellowFlag, { withRoot: false }))}
+${cell('desvio de obstáculo (2 min)', renderPenaltyNotice(sample.notices.obstacle, { withRoot: false }))}
+${cell('combustível derramado (5 min)', renderPenaltyNotice(sample.notices.fuel, { withRoot: false }))}
+${cell('antes da largada (15 min)', renderPenaltyNotice(sample.notices.beforeTheRace, { withRoot: false }))}
 ${cell('o relógio com bandeira vermelha, para comparar', redFlagClock)}
   </div>
 </div>`;
