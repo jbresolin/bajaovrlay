@@ -1,0 +1,27 @@
+{
+  "name": "@bajaovrlay/team-card",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Team card OGraf graphic: the car's chip, team, school and city, with the team's photo and logo when it has them.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.node.json --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@bajaovrlay/graphics-kit": "workspace:*",
+    "gsap": "^3.15.0",
+    "lit": "^3.3.3",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@bajaovrlay/theme": "workspace:*",
+    "@playwright/test": "catalog:",
+    "jsdom": "^30.1.2",
+    "vite": "^8.3.3"
+  }
+}

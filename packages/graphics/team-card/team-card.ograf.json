@@ -1,0 +1,77 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-team-card",
+  "version": "0.1.0",
+  "name": "Cartão de equipe",
+  "description": "Cartão no lugar do terço inferior: o chip do carro, a equipe, a escola e a cidade, com a foto do carro e o logo da equipe quando existem.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "team-card.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "lower-third",
+    "category": "team"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "carNumber": {
+        "type": "integer",
+        "title": "Carro",
+        "description": "Número do carro, no chip azul grande.",
+        "minimum": 1
+      },
+      "teamName": {
+        "type": "string",
+        "title": "Equipe",
+        "description": "Nome da equipe, ao lado do chip.",
+        "gddType": "single-line"
+      },
+      "schoolName": {
+        "type": "string",
+        "title": "Escola",
+        "description": "Sigla da escola, sob o nome da equipe.",
+        "gddType": "single-line"
+      },
+      "city": {
+        "type": "string",
+        "title": "Cidade",
+        "description": "Opcional; aparece depois da escola, com o estado: CAMPINAS · SP.",
+        "gddType": "single-line"
+      },
+      "state": {
+        "type": "string",
+        "title": "Estado (UF)",
+        "description": "Opcional; a sigla do estado, depois da cidade.",
+        "gddType": "single-line"
+      },
+      "carPhotoUrl": {
+        "type": "string",
+        "title": "Foto do carro",
+        "description": "Opcional; ausente, o cartão fica sem a célula da foto, à esquerda.",
+        "v_baja": { "role": "imageUrl" }
+      },
+      "logoUrl": {
+        "type": "string",
+        "title": "Logo da equipe",
+        "description": "Opcional; ausente, o cartão fica sem a célula do logo, à direita.",
+        "v_baja": { "role": "imageUrl" }
+      },
+      "logoOnLightPlate": {
+        "type": "boolean",
+        "title": "Logo sobre placa clara",
+        "description": "Marque para um logo escuro, ou que vem num fundo branco próprio: ele aparece sobre uma pequena placa clara.",
+        "default": false
+      }
+    },
+    "required": ["carNumber", "teamName", "schoolName"],
+    "additionalProperties": false
+  }
+}
