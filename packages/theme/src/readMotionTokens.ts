@@ -27,6 +27,10 @@ export type MotionTokens = {
   cueHoldMs: number;
   /** `--motion-notice-hold`: how long a notice (fastest lap, penalty) is meant to stay up. */
   noticeHoldMs: number;
+  /** `--motion-board-hold`: how long a standings page stays still. */
+  boardHoldMs: number;
+  /** `--motion-page-stagger`: the delay between pieces when a page turns in place. */
+  pageStaggerMs: number;
   /** `--motion-in-offset`: how many pixels a piece rises on entry and lifts on exit. */
   inOffsetPx: number;
   /** `--ease-out`: the curve of every entry, as a CSS cubic-bezier string. */
@@ -60,6 +64,8 @@ export const motionTokenNames: Record<keyof MotionTokens, string> = {
   stripHoldMs: '--motion-strip-hold',
   cueHoldMs: '--motion-cue-hold',
   noticeHoldMs: '--motion-notice-hold',
+  boardHoldMs: '--motion-board-hold',
+  pageStaggerMs: '--motion-page-stagger',
   inOffsetPx: '--motion-in-offset',
   easeOut: '--ease-out',
   easeIn: '--ease-in',
@@ -90,6 +96,8 @@ export function readMotionTokens(element: Element): MotionTokens {
     stripHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.stripHoldMs)),
     cueHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.cueHoldMs)),
     noticeHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.noticeHoldMs)),
+    boardHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.boardHoldMs)),
+    pageStaggerMs: readDurationInMilliseconds(readToken(motionTokenNames.pageStaggerMs)),
     inOffsetPx: readLengthInPixels(readToken(motionTokenNames.inOffsetPx)),
     easeOut: readEase(readToken(motionTokenNames.easeOut)),
     easeIn: readEase(readToken(motionTokenNames.easeIn)),
