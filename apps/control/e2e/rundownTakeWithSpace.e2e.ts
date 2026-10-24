@@ -48,6 +48,7 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { chooseGraphicInTheItemEditor, raceClockGraphicName } from './previewTestSteps';
 
 // How long the test lets pass between saving the running clock and taking it. Long
 // enough that "counted from the save" (6 s or more on the clock) and "counted from the
@@ -104,10 +105,8 @@ async function createRaceClockItemInTheEditor(
   // the centre of the page, with the same labels; everything is looked up inside the
   // editor to tell them apart.
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
-  await expect(
-    itemEditor.getByRole('combobox', { name: 'Gráfico', exact: true }),
-    'a new item must start on the race clock, the one graphic the server has',
-  ).toContainText('Relógio de prova');
+  // The race clock is chosen by name: the server has the positions tower too.
+  await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
   await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemToPrepare.itemLabel);
   await itemEditor.getByLabel('Título', { exact: true }).fill(itemToPrepare.sessionName);
   if (itemToPrepare.isClockRunning) {

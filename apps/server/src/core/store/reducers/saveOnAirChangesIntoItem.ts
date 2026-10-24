@@ -80,8 +80,11 @@ export function reduceSaveOnAirChangesIntoItem(
     item.fields,
     graphic === undefined ? undefined : findClockFieldKeysByRole(graphic),
   );
+  // A field filled by an event is skipped like a bound one: saving the event's value
+  // into it would turn the template into a fixed item (BAJAOVRLAY-44).
   const keysToSave = addTheWholeClockWhenAPartOfItIsListed(keysChangedOnAir, graphic).filter(
-    (fieldKey) => !keysItemReadsFromASource.includes(fieldKey),
+    (fieldKey) =>
+      !keysItemReadsFromASource.includes(fieldKey) && item.fields[fieldKey]?.kind !== 'eventField',
   );
   if (keysToSave.length === 0) {
     return { status: 'applied', slices };

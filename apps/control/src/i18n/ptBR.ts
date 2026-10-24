@@ -1,5 +1,7 @@
 import { ptBRBindings } from './ptBRBindings';
 import { ptBRDataSources } from './ptBRDataSources';
+import { ptBREntityLibrary } from './ptBREntityLibrary';
+import { ptBREvents } from './ptBREvents';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
@@ -12,13 +14,17 @@ import { ptBRQuickFire } from './ptBRQuickFire';
  * through here like the rest: `ptBR.keyboard` (ptBRKeyboard.ts), `ptBR.quickFire`
  * (ptBRQuickFire.ts, the quick-fire panels and the macros), `ptBR.layers`
  * (ptBRLayers.ts), `ptBR.playout.quickEdit` (ptBRQuickEdit.ts, "Edição rápida"),
- * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page) and `ptBR.bindings`
- * (ptBRBindings.ts, fields read from a source and corrections of a source).
+ * `ptBR.dataSources` (ptBRDataSources.ts, the "Fontes de dados" page), `ptBR.entityLibrary`
+ * (ptBREntityLibrary.ts, the "Cadastros" page), `ptBR.bindings` (ptBRBindings.ts, fields
+ * read from a source and corrections of a source) and `ptBR.events` (ptBREvents.ts, the
+ * event inbox: the "Eventos" tab, its forms, the Camadas mark and the item editor's
+ * "Evento").
  */
 export const ptBR = {
   keyboard: ptBRKeyboard,
   bindings: ptBRBindings,
   quickFire: ptBRQuickFire,
+  events: ptBREvents,
   app: {
     title: 'BajaOvrLay',
     rundownAreaTitle: 'Rundown',
@@ -29,6 +35,14 @@ export const ptBR = {
       navigationLabel: 'Páginas do controle',
       console: 'Console',
       dataSources: 'Fontes',
+      entityLibrary: 'Cadastros',
+      eventReview: 'Eventos',
+    },
+    // What "Cadastros" or "Fontes" shows instead of a blank tab when it throws.
+    pageError: {
+      message:
+        'Esta página encontrou um erro e parou. Recarregue para continuar; nada do que está no ar foi afetado.',
+      reloadButton: 'Recarregar a página',
     },
   },
   serverHealth: {
@@ -57,6 +71,8 @@ export const ptBR = {
   layers: ptBRLayers,
   // The "Fontes de dados" page and the header chip (features/dataSources), in ptBRDataSources.ts.
   dataSources: ptBRDataSources,
+  // The "Cadastros" page (features/entityLibrary), in ptBREntityLibrary.ts.
+  entityLibrary: ptBREntityLibrary,
   // Putting graphics on air and taking them off (features/playout).
   playout: {
     // "Edição rápida" (features/playout/QuickEditPanel.tsx), in ptBRQuickEdit.ts.
@@ -108,6 +124,11 @@ export const ptBR = {
       // Where a new item goes: the rundown on screen or one of the quick-fire panels.
       home: 'Onde',
     },
+    // "Gráfico" of a new item until the operator chooses one. None is chosen for them:
+    // the order the server lists the graphics in (their package folders) means nothing.
+    graphicPlaceholder: 'Escolha um gráfico…',
+    // Beside the save buttons of a new item while they are off for want of a graphic.
+    saveNeedsAGraphic: 'Escolha um gráfico para salvar o item.',
     homeOptions: {
       rundown: (rundownName: string) => `Rundown: ${rundownName}`,
       quickFirePanel: (panelName: string) => `Painel de atalhos: ${panelName}`,
@@ -169,6 +190,8 @@ export const ptBR = {
       takeTime: 'Momento da entrada no ar',
       binding: 'Fonte',
       wholeClock: 'Relógio da fonte',
+      eventField: 'Evento',
+      entity: 'Cadastro',
     },
     // A list field (drawn read-only) that may also read a source: its value as it is.
     listKindAsItIs: 'Valor como está',

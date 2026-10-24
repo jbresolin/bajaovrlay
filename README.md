@@ -11,4 +11,9 @@ contract for how this repository is built, and it summarises the design authorit
 - `docs/` — design docs, task briefs and `testing-style.md` (how every test is written).
 
 Needs Node 22 (`.nvmrc`) and pnpm (`corepack enable` once), then `pnpm install` and
-`pnpm dev`. CI runs `pnpm lint`, `typecheck`, `test`, `build` and `test:e2e` on every PR.
+`pnpm dev`. CI runs `pnpm lint`, `typecheck`, `test`, `build` and the browser tests in
+four parallel jobs, on a PR once it is marked ready for review (`docs/ci.md`).
+
+`pnpm verify` runs the same checks on your machine, in order, and stops at the first one
+that fails, naming it; `pnpm verify --quick` leaves out the browser tests. Run it before
+every push (`docs/testing-style.md`, "Before you push").

@@ -3,7 +3,8 @@
  *
  * What this module is for:
  *   A press of "Salvar item" checks two forms one after the other: the fields every item
- *   has, and the fields generated for the chosen graphic (here the race clock's).
+ *   has, and the fields generated for the chosen graphic (here the race clock's, chosen
+ *   by name when each editor is drawn).
  *   Besides showing the messages, that check does two quieter things an operator relies
  *   on: it puts the typing cursor on the first wrong field, and from then on a message
  *   goes away as soon as its field is corrected.
@@ -29,7 +30,10 @@ import { describe, expect, it } from 'vitest';
 
 import { typeIntoField } from '@/features/schemaForm/schemaFormOnTestPage.testSupport';
 
-import { renderItemEditorPanelOnFakeServer } from './itemEditorOnFakeServer.testSupport';
+import {
+  letTheClosedDropdownGiveFocusBack,
+  renderItemEditorPanelForNewRaceClockItem,
+} from './itemEditorOnFakeServer.testSupport';
 import { raceClockReferenceTimeLabel } from './itemsLikeTheEditorSaves.testSupport';
 
 const messageOfTheMissingLabel = 'Informe o rótulo do item.';
@@ -38,7 +42,7 @@ const messageOfTheBadlyTypedTime = `Use minutos e segundos no formato mm:ss em "
 describe('the item editor panel before the first press of "Salvar item"', () => {
   it('shows no message while the operator is still typing', () => {
     // Arrange: the editor for a new item.
-    renderItemEditorPanelOnFakeServer(null);
+    renderItemEditorPanelForNewRaceClockItem();
 
     // Act: type a label and erase it again, without pressing "Salvar item".
     typeIntoField('Rótulo', 'Largada do Enduro');
@@ -55,7 +59,7 @@ describe('the item editor panel before the first press of "Salvar item"', () => 
 describe('the item editor panel after a press of "Salvar item" that found problems', () => {
   it('takes the message of the label away as soon as a label is typed', async () => {
     // Arrange: a new item saved with no label, so the label's message is on screen.
-    renderItemEditorPanelOnFakeServer(null);
+    renderItemEditorPanelForNewRaceClockItem();
     fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
     await screen.findByText(messageOfTheMissingLabel);
 
@@ -73,7 +77,7 @@ describe('the item editor panel after a press of "Salvar item" that found proble
 
   it('takes the message of the race clock time away as soon as the time is corrected', async () => {
     // Arrange: a new item with a label, saved with one hour typed as h:mm:ss.
-    renderItemEditorPanelOnFakeServer(null);
+    renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Rótulo', 'Largada do Enduro');
     typeIntoField(raceClockReferenceTimeLabel, '1:00:00');
     fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
@@ -92,8 +96,10 @@ describe('the item editor panel after a press of "Salvar item" that found proble
   });
 
   it('puts the focus on the label when both the label and the race clock time are wrong', async () => {
-    // Arrange: a new item with no label and one hour typed as h:mm:ss.
-    renderItemEditorPanelOnFakeServer(null);
+    // Arrange: a new item with no label and one hour typed as h:mm:ss, the "Gráfico"
+    // dropdown settled after the race clock was chosen in it.
+    renderItemEditorPanelForNewRaceClockItem();
+    await letTheClosedDropdownGiveFocusBack();
     typeIntoField(raceClockReferenceTimeLabel, '1:00:00');
 
     // Act: press "Salvar item" and wait until both messages are on screen.
@@ -111,8 +117,10 @@ describe('the item editor panel after a press of "Salvar item" that found proble
   });
 
   it('puts the focus on the race clock time when only that field is wrong', async () => {
-    // Arrange: a new item with a label and one hour typed as h:mm:ss.
-    renderItemEditorPanelOnFakeServer(null);
+    // Arrange: a new item with a label and one hour typed as h:mm:ss, the "Gráfico"
+    // dropdown settled after the race clock was chosen in it.
+    renderItemEditorPanelForNewRaceClockItem();
+    await letTheClosedDropdownGiveFocusBack();
     typeIntoField('Rótulo', 'Largada do Enduro');
     typeIntoField(raceClockReferenceTimeLabel, '1:00:00');
 

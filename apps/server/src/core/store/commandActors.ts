@@ -5,8 +5,9 @@
 // fourth role, `sistema:<what>`, is never given to a connection: it signs what the
 // server does by itself (the auto-out, `sistema:auto-out`, the macro runner,
 // `sistema:macro:<macroId>`, the macro watchdog, `sistema:macro-watchdog`, the poller of
-// each data source, `sistema:fonte:<sourceId>`, the recorder, `sistema:gravador`, and the
-// refresher of bound fields, `sistema:vinculos`).
+// each data source, `sistema:fonte:<sourceId>`, the recorder, `sistema:gravador`, the
+// refresher of bound fields, `sistema:vinculos`, the event inbox's detection and runner,
+// `sistema:eventos`, and the media store, `sistema:midia`).
 const rendererRolePrefix = 'renderer:';
 const monitorRolePrefix = 'monitor:';
 const operatorRolePrefix = 'operador:';
@@ -28,10 +29,24 @@ export const dataSourceRecorderActor = 'sistema:gravador';
 export const bindingRefresherActor = 'sistema:vinculos';
 
 /**
+ * The actor name the media store signs its recordUploadedMedia with (BAJAOVRLAY-19), once
+ * the upload route has written the file: "mídia" is the store of images. It may send
+ * nothing else.
+ */
+export const mediaStoreActor = 'sistema:midia';
+
+/**
  * The actor name the macro watchdog signs its endMacroRun with. The hyphen keeps it out
  * of the runner's `sistema:macro:` prefix, so it is never mistaken for a macro's runner.
  */
 export const macroWatchdogActor = 'sistema:macro-watchdog';
+
+/**
+ * The actor name the event inbox's detection and runner sign with (BAJAOVRLAY-44): it
+ * records what the detectors found (recordDetectedEvents) and shows an event whose rule
+ * says auto (showEvent). It may send nothing else.
+ */
+export const eventInboxActor = 'sistema:eventos';
 
 /** The actor name of a renderer page's connection. */
 export function buildRendererActor(connectionId: string): string {

@@ -44,11 +44,19 @@ export function buildPositionEntriesInRaceOrder(orderedCars: CarRaceState[]): Po
       schoolName: car.schoolName,
       laps: car.lapCompletedAtRunningMs.length,
       pitStops: car.pitStopCount,
+      // In the simulator's model every pit stop is a refuel, so fuelStops equals
+      // pitStops; the real scoring app may count them differently (a stop for a repair
+      // is not a refuel there).
+      fuelStops: car.pitStopCount,
       status: car.status,
     };
     if (lastLapMs !== undefined) {
+      const bestLapMs = Math.min(...lapDurationsMs);
       entry.lastLapMs = lastLapMs;
-      entry.bestLapMs = Math.min(...lapDurationsMs);
+      entry.bestLapMs = bestLapMs;
+      // The first lap that took the best time: a later lap of exactly the same ms does
+      // not beat it, as on a timing screen.
+      entry.bestLapNumber = lapDurationsMs.indexOf(bestLapMs) + 1;
     }
     if (leader !== undefined && carAhead !== undefined) {
       const gapToLeader = buildGapToLeader(car, leader);

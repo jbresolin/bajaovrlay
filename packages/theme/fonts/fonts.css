@@ -1,0 +1,17 @@
+/*
+ * The on-air type, self-hosted: Bebas Neue, SIL Open Font License 1.1 (the LICENSE file
+ * sits beside the font file), subset to Latin, which covers every pt-BR character. Nothing
+ * is loaded from a CDN: OBS may be offline at the track.
+ *
+ * Bebas Neue is an uppercase-only display face with one weight and tabular figures: every
+ * graphic sets its text in caps and never asks for bold. The renderer loads this file once,
+ * on its page; a @font-face inside a graphic's shadow root would be ignored by Chromium.
+ * The address is relative, so the file works served at /theme/fonts/ and bundled by Vite.
+ */
+@font-face {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('./bebas-neue/bebas-neue-latin-400-normal.woff2') format('woff2');
+}

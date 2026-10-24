@@ -1,8 +1,10 @@
 import {
   type BindingFieldValue,
   type CommandError,
+  type EntityLibrary,
   findClockFieldKeysByRole,
   type Graphic,
+  type InboxEventPayload,
   type ItemFields,
   resolveBindingAgainstSources,
   type SourcesForBindings,
@@ -12,6 +14,8 @@ import {
 import { ptBR } from '../messages/ptBR.js';
 import { listRequiredFieldKeysOfGraphic } from './graphicSchemaProperties.js';
 import { readTitleOfField } from './itemBindingFields.js';
+import { resolveEntityField } from './resolveEntityFields.js';
+import { resolveEventField } from './resolveEventField.js';
 import { refuseUnsupportedFieldKind } from './rundownCommandRefusals.js';
 
 /** What resolving an item's fields gives: the data for the graphic, or why it cannot be made. */
@@ -26,13 +30,18 @@ export type ItemFieldsResolution =
  *   fields are required, their titles in a refusal, and the clock fields by role;
  * - `momentOfTheTake`: the moment the store gave the command (ISO 8601), which a
  *   `takeTime` field becomes;
- * - `sources`: the data sources, their last good snapshots and the operator's overrides.
+ * - `sources`: the data sources, their last good snapshots and the operator's overrides;
+ * - `entities`: the entity library (teams, people, sponsors, schedule), for `entity` fields;
+ * - `eventPayload`: only when an event is shown or previewed with the item, what fills
+ *   its event fields (BAJAOVRLAY-44).
  */
 export type ItemFieldsResolutionRequest = {
   fields: ItemFields;
   graphic: Graphic | undefined;
   momentOfTheTake: string;
   sources: SourcesForBindings;
+  eventPayload?: InboxEventPayload | undefined;
+  entities: EntityLibrary;
 };
 
 /**
@@ -43,17 +52,21 @@ export type ItemFieldsResolutionRequest = {
  * overrides laid over it, at its path, through its transform (resolveBindingAgainstSources
  * in shared). The whole clock (the path `clock`, stored on the field with the role
  * clockTime) fills the graphic's four clock fields by role, so the clock never takes a new
- * time with an old moment.
- * One field it cannot fill refuses the whole item (BINDING_NOT_RESOLVED, the field's title
- * first): a missing source, a source with no data yet, a shape it does not send, or a
- * value absent on a required field. A value absent on an optional field leaves that field
- * out, as a cleared literal does. A graphic must never go on air with part of its data
- * missing (concept §5.1).
+ * time with an old moment. An `entity` reference reads one attribute of one record of the
+ * library, an image as its /media URL (resolveEntityFields.ts, BAJAOVRLAY-19). An
+ * `eventField` reads the payload of the event shown with the item (resolveEventField.ts,
+ * BAJAOVRLAY-44).
+ * One field it cannot fill refuses the whole item (BINDING_NOT_RESOLVED or
+ * ENTITY_NOT_RESOLVED, the field's title first): a missing source, a source with no data
+ * yet, a shape it does not send, a record not in the library, or a value absent on a
+ * required field. A value absent on an optional field leaves that field out, as a
+ * cleared literal does. A graphic must never go on air with part of its data missing
+ * (concept §5.1).
  */
 export function resolveItemFieldsIntoGraphicData(
   request: ItemFieldsResolutionRequest,
 ): ItemFieldsResolution {
-  const { fields, graphic, momentOfTheTake, sources } = request;
+  const { fields, graphic, momentOfTheTake, sources, entities } = request;
   // The store always writes the moment with toISOString, which Date.parse reads back to
   // the exact millisecond. A text that is not a date would give NaN here; a graphic whose
   // schema asks for a whole number (the race clock does) then refuses the take.
@@ -65,12 +78,13 @@ export function resolveItemFieldsIntoGraphicData(
   const keysAndValuesOfTheWholeClock: Array<[string, unknown]> = [];
 
   for (const [fieldKey, fieldValue] of Object.entries(fields)) {
-    // Read as plain text on purpose, as a guard kept ready for the entity library
-    // (BAJAOVRLAY-19): the `default` below cannot be reached through the server today. A
-    // command carrying another kind is refused earlier with INVALID_COMMAND by the command
-    // schema, and a stored items row holding one fails its schema and stops the boot. The
-    // guard stays so that the day the schema accepts a new kind before this function has
-    // its `case`, the take is refused in words instead of resolving the field to nothing.
+    // Read as plain text on purpose, as a guard kept for the next kind (the entity library
+    // had it until BAJAOVRLAY-19): the `default` below cannot be reached through the
+    // server today. A command carrying another kind is refused earlier with
+    // INVALID_COMMAND by the command schema, and a stored items row holding one fails its
+    // schema and stops the boot. The guard stays so that the day the schema accepts a new
+    // kind before this function has its `case`, the take is refused in words instead of
+    // resolving the field to nothing.
     const fieldKind: string = fieldValue.kind;
     switch (fieldValue.kind) {
       case 'literal':
@@ -89,6 +103,34 @@ export function resolveItemFieldsIntoGraphicData(
         }
         const destination = isWholeClock ? keysAndValuesOfTheWholeClock : resolvedKeysAndValues;
         destination.push(...fieldOutcome.keysAndValues);
+        break;
+      }
+      case 'eventField': {
+        const fieldOutcome = resolveEventField(
+          fieldKey,
+          fieldValue,
+          request.eventPayload,
+          graphic,
+          requiredFieldKeys,
+        );
+        if (fieldOutcome.status === 'refused') {
+          return fieldOutcome;
+        }
+        resolvedKeysAndValues.push(...fieldOutcome.keysAndValues);
+        break;
+      }
+      case 'entity': {
+        const fieldOutcome = resolveEntityField(
+          fieldKey,
+          fieldValue,
+          graphic,
+          entities,
+          requiredFieldKeys,
+        );
+        if (fieldOutcome.status === 'refused') {
+          return fieldOutcome;
+        }
+        resolvedKeysAndValues.push(...fieldOutcome.keysAndValues);
         break;
       }
       default:

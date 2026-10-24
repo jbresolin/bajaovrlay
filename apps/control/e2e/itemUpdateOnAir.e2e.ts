@@ -45,6 +45,7 @@
 import { type BrowserContext, expect, type Locator, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { chooseGraphicInTheItemEditor, raceClockGraphicName } from './previewTestSteps';
 
 /** Opens the control page and waits until it says it is connected to the server. */
 async function openControlPageAndWaitUntilConnected(page: Page): Promise<void> {
@@ -109,12 +110,10 @@ test.describe('changing an item on air from the item editor', () => {
       .getByRole('listitem', { name: 'Relógio' });
     const itemEditor = findItemEditor(page);
 
-    // Act: prepare the start of the endurance race as an item, under the green flag.
+    // Act: prepare the start of the endurance race as an item, under the green flag. The
+    // race clock is chosen by name: the server has the positions tower too.
     await page.getByRole('button', { name: '+ Item' }).click();
-    await expect(
-      itemEditor.getByRole('combobox', { name: 'Gráfico', exact: true }),
-      'a new item must start on the race clock, the one graphic the server has',
-    ).toContainText('Relógio de prova');
+    await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
     await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
     await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro — Largada');
     await chooseFlagInItemEditor(page, 'Verde');

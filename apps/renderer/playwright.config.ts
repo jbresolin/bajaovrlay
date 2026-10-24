@@ -12,7 +12,7 @@ const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 const isRunningInCI = Boolean(process.env.CI);
 
 // Both web servers read these: the real server listens there, and the renderer's Vite dev
-// server forwards /ws, /api and /graphics there (see vite.config.ts). The ports, the
+// server forwards /ws, /api, /graphics and /theme there (see vite.config.ts). The ports, the
 // database and the data folder are the test run's own, so a `pnpm dev` left running and
 // its data are untouched.
 const realServerEnvironment = {
@@ -29,7 +29,15 @@ export default defineConfig({
   forbidOnly: isRunningInCI,
   // No retries: a flaky test is a bug, and a retry would hide it.
   retries: 0,
-  reporter: isRunningInCI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // On CI also a JSON report, which scripts/reportSlowestTests.js turns into the
+  // slowest-tests table on the run's summary page (docs/ci.md).
+  reporter: isRunningInCI
+    ? [
+        ['list'],
+        ['html', { open: 'never' }],
+        ['json', { outputFile: 'test-results/playwright-results.json' }],
+      ]
+    : 'list',
   use: {
     baseURL: rendererPageAddress,
     trace: 'retain-on-failure',

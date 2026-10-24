@@ -109,6 +109,11 @@ green. CI blocks merge on lint, typecheck or any test failure.
   the pasted copy is the one to follow. Decisions the brief flags for João are not
   yours to make: pick the conservative option, state it in the PR description under
   "Decisions taken", and move on.
+- Open the PR as a draft (`gh pr create --draft`). CI does not run on a draft.
+- Before every push to it, run `pnpm verify` locally, or `pnpm verify --quick` plus the
+  e2e tests of the packages touched. Report the result in the round's report.
+- The PR is marked ready (`gh pr ready`, or the button) only when João says gate 2
+  passed. That triggers CI, and it is merged only on a green "CI passed" (docs/ci.md).
 - Do not merge your own PR unless the brief for that task explicitly says so.
 - The PR description lists: what was built, the commands João can run to see it
   working, decisions taken, and anything left out and why.

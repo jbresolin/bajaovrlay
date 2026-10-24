@@ -16,6 +16,8 @@ export {
   type DataSourceServiceOptions,
   startDataSourceService,
 } from './service.js';
+// The simulator's hundred fictional teams, car 1 first, for the entity library's import.
+export { type FictionalTeam, listFictionalTeams } from './adapters/simulator/fictionalTeams.js';
 // The REST route GET /api/v1/data-sources/{sourceId}/snapshot and the lookup it answers with.
 export { findDataSnapshotAnswer, getDataSnapshotRoute } from './api.js';
 // The REST route POST /api/v1/data-sources/http-json/sample-request and its 400 body.

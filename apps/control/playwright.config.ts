@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
-import { realServerPort as realServerPortNumber } from './e2e/emptyTheServerState';
+import {
+  portOffsetOfTheBrowserTests,
+  realServerPort as realServerPortNumber,
+} from './e2e/emptyTheServerState';
 
 // The tests drive the control page's dev server, which forwards /ws, /api, /health,
 // /render and /graphics to a REAL BajaOvrLay server started just for them. Both use
@@ -8,7 +11,8 @@ import { realServerPort as realServerPortNumber } from './e2e/emptyTheServerStat
 // disturbed. The root `pnpm test:e2e` still runs the packages' browser tests one
 // package at a time, so they do not compete for the machine.
 const realServerPort = String(realServerPortNumber);
-const controlPagePort = '5188';
+// Moved with the server's port by BAJAOVRLAY_E2E_PORT_OFFSET (e2e/emptyTheServerState.ts).
+const controlPagePort = String(5188 + portOffsetOfTheBrowserTests);
 const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 const controlPageAddress = `http://127.0.0.1:${controlPagePort}`;
 const isRunningInCI = Boolean(process.env.CI);
@@ -27,7 +31,15 @@ export default defineConfig({
   retries: 0,
   // One at a time: the tests share one server, and state on it is the thing under test.
   workers: 1,
-  reporter: isRunningInCI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // On CI also a JSON report, which scripts/reportSlowestTests.js turns into the
+  // slowest-tests table on the run's summary page (docs/ci.md).
+  reporter: isRunningInCI
+    ? [
+        ['list'],
+        ['html', { open: 'never' }],
+        ['json', { outputFile: 'test-results/playwright-results.json' }],
+      ]
+    : 'list',
   use: {
     baseURL: controlPageAddress,
     trace: 'retain-on-failure',

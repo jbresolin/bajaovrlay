@@ -40,8 +40,9 @@ export const CommandErrorCodeSchema = z.enum([
   /** takeNext was sent while the rundown's cursor is on nothing. */
   'RUNDOWN_CURSOR_EMPTY',
   /**
-   * An item has a field value of a kind the server cannot resolve yet: an entity
-   * reference, until the entity library (BAJAOVRLAY-19).
+   * An item has a field value of a kind the server cannot resolve: a guard kept for a
+   * kind added to the schema before the resolver has its case (entity references had
+   * it until BAJAOVRLAY-19).
    */
   'UNSUPPORTED_FIELD_KIND',
   /** takePreview named a layer that has nothing on its preview output. */
@@ -94,6 +95,62 @@ export const CommandErrorCodeSchema = z.enum([
   'BINDING_NOT_RESOLVED',
   /** setOverride carried a value its canonical field cannot hold; the message names the field. */
   'INVALID_OVERRIDE_VALUE',
+  /** showEvent or dismissEvent named an event the inbox does not hold (BAJAOVRLAY-44). */
+  'EVENT_NOT_FOUND',
+  /**
+   * showEvent or dismissEvent named an event that is no longer waiting: already on air,
+   * shown, dismissed or expired. The message says which.
+   */
+  'EVENT_NOT_WAITING',
+  /**
+   * restoreEvent named an event that was not dismissed (waiting, on air, shown or
+   * expired); only a dismissal can be undone. The message says its status.
+   */
+  'EVENT_NOT_DISMISSED',
+  /**
+   * restoreEvent named a dismissed event past its rule's maximum wait: it would only
+   * expire at "No ar", so it stays dismissed. A kind with no maximum wait never is.
+   */
+  'EVENT_TOO_OLD',
+  /** showEvent named an event whose rule has no item to show it with ("Regras"). */
+  'EVENT_RULE_WITHOUT_ITEM',
+  /**
+   * A take of an item filled by an event (an item with "Evento" fields) that no event
+   * fills: such an item goes on air only through showEvent. Also "Tomar" on its Prévia
+   * filled from a sample event.
+   */
+  'ITEM_FILLED_BY_EVENT',
+  /** An event shown on an item with a required field the event does not carry. */
+  'EVENT_FIELD_NOT_FILLED',
+  /**
+   * createItem or updateItemFields carried an event field whose payload field does not fit
+   * the graphic's field; the message starts with the field's title.
+   */
+  'INVALID_EVENT_FIELD',
+  /**
+   * updateEventRule named an item no event fills (no "Evento" field): it would go on air in
+   * place of a notice and leave after the rule's time (gate 2 of PR #22).
+   */
+  'ITEM_NOT_FILLED_BY_EVENT',
+  /**
+   * A record of the entity library names an image the media store does not hold; the
+   * message names the field ("Logo: …").
+   */
+  'MEDIA_NOT_FOUND',
+  /** deleteMedia named an image a record still uses; the message lists the uses. */
+  'MEDIA_IN_USE',
+  /**
+   * An item field's entity reference cannot be saved: its record is not in the library,
+   * its attribute does not exist, or its value does not fit the field. The message
+   * starts with the field's title.
+   */
+  'INVALID_ENTITY_REFERENCE',
+  /**
+   * A take or a preview could not read a field from the entity library: its record is
+   * not there (deleted), or a required field's attribute is absent (no logo). The message
+   * starts with the field's title and names the record.
+   */
+  'ENTITY_NOT_RESOLVED',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

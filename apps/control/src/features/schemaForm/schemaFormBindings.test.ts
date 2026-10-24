@@ -116,11 +116,13 @@ describe('building item fields with bindings', () => {
     // Act: build the new item's fields.
     const itemFields = buildItemFieldsFromSchemaForm(describeRaceClockForm(), formValues);
 
-    // Assert: the title typed, the two bindings, and no other clock field at all.
+    // Assert: the title typed, the two bindings, the band switch at its default (on),
+    // and no other clock field at all.
     expect(itemFields, 'the fields of the new item').toEqual({
       sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
       state: buildSimulatorSessionBinding('state'),
       referenceTimeMs: buildSimulatorSessionBinding('clock'),
+      showFlagBand: { kind: 'literal', value: true },
     });
   });
 
@@ -143,13 +145,16 @@ describe('building item fields with bindings', () => {
       storedFields,
     );
 
-    // Assert: the two bindings, and a null on each clock field the whole clock now fills.
+    // Assert: the two bindings, a null on each clock field the whole clock now fills,
+    // and the band switch, which the stored item (saved before the switch existed) had
+    // no value for and the form now holds at its default.
     expect(changedFields, 'what the save sends').toEqual({
       state: buildSimulatorSessionBinding('state'),
       referenceTimeMs: buildSimulatorSessionBinding('clock'),
       clockMode: { kind: 'literal', value: null },
       referenceWallClockMs: { kind: 'literal', value: null },
       running: { kind: 'literal', value: null },
+      showFlagBand: { kind: 'literal', value: true },
     });
   });
 

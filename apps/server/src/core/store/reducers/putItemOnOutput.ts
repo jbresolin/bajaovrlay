@@ -1,4 +1,4 @@
-import type { CommandError, InstanceTarget, Item } from '@bajaovrlay/shared';
+import type { CommandError, InboxEventPayload, InstanceTarget, Item } from '@bajaovrlay/shared';
 
 import { listKeysOfTakeTimeFields } from '../itemTakeTimeFields.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
@@ -6,9 +6,21 @@ import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import {
   addBindingsOfNewInstance,
   listBoundFieldsKeptByNewInstance,
+  listEntityFieldsKeptByNewInstance,
 } from './instanceBindingsBookkeeping.js';
 import { type GraphicOnOutputRequest, putGraphicOnOutput } from './putGraphicOnOutput.js';
 import type { ReducerContext, SlicesChangedByCommands } from './reducerTypes.js';
+
+/**
+ * What fills an item's event fields (BAJAOVRLAY-44): the payload, and, when a real event
+ * is shown or previewed (not a sample), its id and how long its rule keeps it on air,
+ * written on the new instance.
+ */
+export type EventFillOfItem = {
+  payload: InboxEventPayload;
+  eventId?: string;
+  autoOutAfterMs?: number;
+};
 
 /**
  * What putting an item on an output gives: the new slices and the item that was put
@@ -29,13 +41,16 @@ export type ItemOnOutputOutcome =
  * live ones, on preview all of them). It never touches the cursor; that is the caller's
  * decision.
  * Refused if the item does not exist, if a field cannot be resolved, or for any reason
- * putGraphicOnOutput refuses; nothing changes then.
+ * putGraphicOnOutput refuses; nothing changes then. With `eventFill`, the item's event
+ * fields read its payload, and the new instance carries the event's id and its rule's
+ * duration when it names them (showEvent, Prévia of an event).
  */
 export function putItemOnOutput(
   slices: SlicesChangedByCommands,
   itemId: string,
   target: InstanceTarget,
   context: ReducerContext,
+  eventFill?: EventFillOfItem,
 ): ItemOnOutputOutcome {
   const item = slices.items.find((candidate) => candidate.id === itemId);
   if (item === undefined) {
@@ -58,6 +73,8 @@ export function putItemOnOutput(
       dataSnapshots: slices.dataSnapshots,
       overrides: slices.overrides,
     },
+    eventPayload: eventFill?.payload,
+    entities: slices,
   });
   if (resolution.status === 'refused') {
     return { status: 'refused', error: resolution.error };
@@ -76,18 +93,26 @@ export function putItemOnOutput(
     takeTimeFieldKeys: keysOfTakeTimeFields,
     itemId: item.id,
   };
+  if (eventFill?.eventId !== undefined) {
+    takeOfTheItemGraphic.eventId = eventFill.eventId;
+  }
+  if (eventFill?.autoOutAfterMs !== undefined) {
+    takeOfTheItemGraphic.autoOutAfterMs = eventFill.autoOutAfterMs;
+  }
   const takeOutcome = putGraphicOnOutput(slices, takeOfTheItemGraphic, context);
   if (takeOutcome.status === 'refused') {
     return takeOutcome;
   }
-  // The new instance's bindings are written down now, from the item as it is at this
-  // take: the refreshes read them from here, never from the item, so an item edited or
-  // deleted later does not change what is on air (instanceBindingsBookkeeping.ts). The
-  // entry of the instance this take replaced is dropped by reduceCommand.
+  // The new instance's bindings and entity references are written down now, from the item
+  // as it is at this take: the refreshes read them from here, never from the item, so an
+  // item edited or deleted later does not change what is on air
+  // (instanceBindingsBookkeeping.ts). The entry of the instance this take replaced is
+  // dropped by reduceCommand.
   const instanceBindingsAfter = addBindingsOfNewInstance(
     takeOutcome.slices.instanceBindings,
     context.newInstanceId,
     listBoundFieldsKeptByNewInstance(item.fields, target),
+    listEntityFieldsKeptByNewInstance(item.fields),
   );
   return {
     status: 'applied',

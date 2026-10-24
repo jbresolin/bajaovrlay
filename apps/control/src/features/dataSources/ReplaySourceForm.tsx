@@ -14,6 +14,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { buildErrorAttributesForControl, FormFieldRow } from '@/features/items/FormFieldRow';
 import { ptBR } from '@/i18n/ptBR';
+import { formatDateAndTimeOfDay } from '@/i18n/timeOfDayText';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
 import { DataSourceFormCard } from './DataSourceFormCard';
@@ -24,7 +25,6 @@ import {
   type ReplaySourceFormValues,
   resolveReplaySourceForm,
 } from './replaySourceForm';
-import { formatDateAndTimeOfDay } from './timeOfDayText';
 import { useSaveDataSource } from './useSaveDataSource';
 
 const texts = ptBR.dataSources.form;

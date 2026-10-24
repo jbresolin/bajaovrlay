@@ -1,0 +1,130 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-positions-tower",
+  "version": "0.1.0",
+  "name": "Torre de posições",
+  "description": "A ordem da prova em pílulas, compacta ou detalhada, com as voltas, os tempos e a situação de cada carro; pagina o grid e desliza os carros que trocam de posição.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "positions-tower.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "tower",
+    "category": "positions"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 1000 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "entries": {
+        "type": "array",
+        "title": "Carros",
+        "description": "A lista de posições, normalmente lida da fonte (Posições › Lista completa).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "position": { "type": "integer", "minimum": 1 },
+            "carNumber": { "type": "integer", "minimum": 1 },
+            "teamName": { "type": "string" },
+            "schoolName": { "type": "string" },
+            "laps": { "type": "integer", "minimum": 0 },
+            "lastLapMs": { "type": "integer", "minimum": 1 },
+            "bestLapMs": { "type": "integer", "minimum": 1 },
+            "gapToLeaderMs": { "type": "integer", "minimum": 0 },
+            "gapToLeaderLaps": { "type": "integer", "minimum": 1 },
+            "intervalMs": { "type": "integer", "minimum": 0 },
+            "pitStops": { "type": "integer", "minimum": 0 },
+            "fuelStops": { "type": "integer", "minimum": 0 },
+            "status": {
+              "type": "string",
+              "enum": ["running", "inPit", "stopped", "retired", "disqualified", "notStarted"]
+            }
+          },
+          "required": ["position", "carNumber", "teamName", "schoolName", "laps", "status"],
+          "additionalProperties": true
+        },
+        "v_baja": {
+          "suggestedBinding": { "shapeKey": "positions", "path": "entries", "isLive": true }
+        }
+      },
+      "layout": {
+        "type": "string",
+        "title": "Leiaute",
+        "description": "Compacta: posição, carro, equipe e voltas. Detalhada: também a escola e as colunas abaixo.",
+        "enum": ["compact", "detailed"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "compact": "Compacta",
+            "detailed": "Detalhada"
+          }
+        },
+        "default": "compact"
+      },
+      "showGap": {
+        "type": "boolean",
+        "title": "Diferença para o líder",
+        "description": "Coluna DIF. do leiaute detalhado.",
+        "default": true
+      },
+      "showInterval": {
+        "type": "boolean",
+        "title": "Intervalo",
+        "description": "Coluna INTERV. do leiaute detalhado: a diferença para o carro da frente.",
+        "default": true
+      },
+      "showLastLap": {
+        "type": "boolean",
+        "title": "Última volta",
+        "description": "Coluna ÚLT. VOLTA do leiaute detalhado.",
+        "default": true
+      },
+      "showBestLap": {
+        "type": "boolean",
+        "title": "Melhor volta",
+        "description": "Coluna MELHOR do leiaute detalhado.",
+        "default": true
+      },
+      "showPitStops": {
+        "type": "boolean",
+        "title": "Paradas",
+        "description": "Coluna PARADAS do leiaute detalhado: as entradas no box.",
+        "default": true
+      },
+      "showFuelStops": {
+        "type": "boolean",
+        "title": "Abastecimentos",
+        "description": "Coluna ABAST. do leiaute detalhado; mostra \"—\" para um carro sem a contagem.",
+        "default": false
+      },
+      "showStatus": {
+        "type": "boolean",
+        "title": "Situação",
+        "description": "Coluna de ícones do leiaute detalhado: no box, quebrado, abandonou.",
+        "default": true
+      },
+      "paging": {
+        "type": "string",
+        "title": "Páginas",
+        "description": "Com mais de 20 carros, alterna as páginas ou segura os 20 primeiros.",
+        "enum": ["cycle", "firstPageOnly"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "cycle": "Alternar páginas",
+            "firstPageOnly": "Só os 20 primeiros"
+          }
+        },
+        "default": "cycle"
+      }
+    },
+    "required": ["entries"],
+    "additionalProperties": false
+  }
+}

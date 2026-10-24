@@ -1,3 +1,4 @@
+import { type EntityLibrary, isImageFieldOfDataSchema } from '@bajaovrlay/shared';
 import { type ReactNode, useState } from 'react';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 
@@ -14,7 +15,12 @@ import { ptBR } from '@/i18n/ptBR';
 
 import { canFieldBeBoundToASource, canFieldTakeTheWholeClock } from './bindingChoices';
 import { BoundFieldControls, type SchemaFormBindingOptions } from './BoundFieldControls';
+import { EntityReferenceControls } from './EntityReferenceControls';
+import { canFieldReadTheEntityLibrary } from './entityReferenceFormValue';
+import { EventFieldControls } from './EventFieldControls';
+import { canFieldBeFilledByAnEvent } from './eventFieldFormValue';
 import { clearBlankOptionalTypedFormValue } from './fieldValueConversion';
+import { ImageUrlFieldControl } from './ImageUrlFieldControl';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormValueControl } from './SchemaFormValueControl';
 import type { SchemaFormFieldKind, SchemaFormValues } from './schemaFormValues';
@@ -32,12 +38,15 @@ const controlsThatCanShowAPanelText = ['text', 'duration'];
  * The kinds the selector lists for a field, in the order the operator reads them: typed
  * always; "filled by the server at the take" where the description offers it; "Fonte"
  * where the panel handed binding options and some bindable path fits the field; "Relógio
- * da fonte" on the time field of a graphic that marks the four clock roles.
+ * da fonte" on the time field of a graphic that marks the four clock roles; "Evento" in
+ * the item editor (binding options handed) where some field of an event fits it;
+ * "Cadastro" where the panel handed the entity library and some attribute fits the field.
  */
 function listKindsOfferedForField(
   field: SchemaFormFieldDescription,
   dataSchema: unknown,
   bindingOptions: SchemaFormBindingOptions | undefined,
+  entityLibrary: EntityLibrary | undefined,
 ): SchemaFormFieldKind[] {
   const kinds: SchemaFormFieldKind[] = ['literal'];
   if (field.offersTakeTime) {
@@ -48,6 +57,12 @@ function listKindsOfferedForField(
   }
   if (bindingOptions !== undefined && canFieldTakeTheWholeClock(dataSchema, field.key)) {
     kinds.push('wholeClock');
+  }
+  if (bindingOptions !== undefined && canFieldBeFilledByAnEvent(dataSchema, field.key)) {
+    kinds.push('eventField');
+  }
+  if (entityLibrary !== undefined && canFieldReadTheEntityLibrary(dataSchema, field.key)) {
+    kinds.push('entity');
   }
   return kinds;
 }
@@ -95,6 +110,8 @@ export function SchemaFormFieldRow(props: {
   dataSchema: unknown;
   /** What the panel offers for reading a source; undefined: no "Fonte" (Edição rápida). */
   bindingOptions: SchemaFormBindingOptions | undefined;
+  /** The entity library, which the item editor hands; undefined: no "Cadastro". */
+  entityLibrary?: EntityLibrary | undefined;
   /** True while another field is "Relógio da fonte" and fills this clock field too. */
   isFilledByTheWholeClock: boolean;
   /** What the panel shows in place of the control, for a field drawn read-only. */
@@ -108,12 +125,23 @@ export function SchemaFormFieldRow(props: {
   const errorMessageId = `${controlId}-error`;
 
   const chosenKind = useWatch({ control: form.control, name: `kinds.${field.key}` });
-  const kindsOffered = listKindsOfferedForField(field, dataSchema, bindingOptions);
+  const kindsOffered = listKindsOfferedForField(
+    field,
+    dataSchema,
+    bindingOptions,
+    props.entityLibrary,
+  );
+  const isReadFromTheLibrary = chosenKind === 'entity' && kindsOffered.includes('entity');
+  const isImageField = isImageFieldOfDataSchema(dataSchema, field.key);
   const isFilledByTheServer = field.offersTakeTime && chosenKind === 'takeTime';
   const isReadFromASource =
     (chosenKind === 'binding' || chosenKind === 'wholeClock') && kindsOffered.includes(chosenKind);
+  const isFilledByAnEvent = chosenKind === 'eventField' && kindsOffered.includes(chosenKind);
   const errorMessage = form.formState.errors.values?.[field.key]?.message;
   const hasError = errorMessage !== undefined && !isFilledByTheServer && !isFilledByTheWholeClock;
+  // The one test of "the operator types this value": every other kind replaces the control.
+  const hasTypedValue =
+    !isFilledByTheServer && !isReadFromASource && !isFilledByAnEvent && !isReadFromTheLibrary;
   const describedByIds = joinIdsOfDescribingTexts([
     field.help === undefined ? undefined : helpTextId,
     hasError ? errorMessageId : undefined,
@@ -230,12 +258,45 @@ export function SchemaFormFieldRow(props: {
           isDisabled={isDisabled}
         />
       )}
+      {isFilledByAnEvent && (
+        <EventFieldControls
+          form={form}
+          field={field}
+          dataSchema={dataSchema}
+          controlId={controlId}
+          isDisabled={isDisabled}
+        />
+      )}
+      {isReadFromTheLibrary && props.entityLibrary !== undefined && (
+        <EntityReferenceControls
+          form={form}
+          field={field}
+          dataSchema={dataSchema}
+          controlId={controlId}
+          entityLibrary={props.entityLibrary}
+          isDisabled={isDisabled}
+        />
+      )}
       {isFilledByTheServer && (
         <p id={takeTimeNoteId} className="text-sm text-muted-foreground">
           {ptBR.schemaForm.takeTimeNote}
         </p>
       )}
-      {!isFilledByTheServer && !isReadFromASource && (
+      {hasTypedValue && isImageField && (
+        <Controller
+          control={form.control}
+          name={`values.${field.key}`}
+          render={({ field: valueField }) => (
+            <ImageUrlFieldControl
+              controlId={controlId}
+              label={field.label}
+              formValue={valueField.value ?? null}
+              onFormValueChange={valueField.onChange}
+            />
+          )}
+        />
+      )}
+      {hasTypedValue && !isImageField && (
         <Controller
           control={form.control}
           name={`values.${field.key}`}

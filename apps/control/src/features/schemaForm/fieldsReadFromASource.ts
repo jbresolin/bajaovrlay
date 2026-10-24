@@ -1,8 +1,9 @@
 /**
  * Which fields of a generated form read a data source now ("Fonte", "Relógio da fonte",
- * and the clock fields the whole clock fills), and whether those choices changed since
- * the form opened. "Atualizar no ar" sends typed values only: a source choice reaches the
- * air at the next take, which reads the item (gate 2 of PR #18).
+ * and the clock fields the whole clock fills) or the entity library ("Cadastro",
+ * BAJAOVRLAY-19), and whether those choices changed since the form opened. "Atualizar no
+ * ar" sends typed values only: such a choice reaches the air at the next take, which
+ * reads the item (gate 2 of PR #18).
  */
 import { areJsonValuesEqual } from '@bajaovrlay/shared';
 
@@ -11,9 +12,9 @@ import { readOwnValueOfRecord } from './plainRecord';
 import type { SchemaFormDescription } from './schemaFormDescription';
 import type { SchemaFormFieldKind, SchemaFormValues } from './schemaFormValues';
 
-/** Whether a field of this kind reads a source rather than holding a typed value. */
+/** Whether a field of this kind reads a source or the library rather than a typed value. */
 function isKindReadFromASource(kind: SchemaFormFieldKind | undefined): boolean {
-  return kind === 'binding' || kind === 'wholeClock';
+  return kind === 'binding' || kind === 'wholeClock' || kind === 'entity';
 }
 
 /**
@@ -51,6 +52,14 @@ export function hasSourceChoiceChangedSinceOpened(
     }
     if (!isReadFromASourceNow) {
       return false;
+    }
+    if (kindNow === 'entity') {
+      const referenceNow = readOwnValueOfRecord(formValuesNow.entityReferences ?? {}, field.key);
+      const referenceAsOpened = readOwnValueOfRecord(
+        formValuesAsOpened.entityReferences ?? {},
+        field.key,
+      );
+      return !areJsonValuesEqual(referenceNow, referenceAsOpened);
     }
     const bindingNow = readOwnValueOfRecord(formValuesNow.bindings, field.key);
     const bindingAsOpened = readOwnValueOfRecord(formValuesAsOpened.bindings, field.key);

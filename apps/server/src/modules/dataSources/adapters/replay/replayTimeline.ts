@@ -122,6 +122,11 @@ export function rewriteShapesOntoTheCurrentTimeline(
   if (shapes.brackets !== undefined) {
     rewrittenShapes.brackets = { ...shapes.brackets, updatedAtMs: nowMs };
   }
+  // An incident's own atMs stays as recorded: it says when it happened, and the inbox
+  // dates an event by its detection, never by atMs.
+  if (shapes.incidents !== undefined) {
+    rewrittenShapes.incidents = { ...shapes.incidents, updatedAtMs: nowMs };
+  }
   return rewrittenShapes;
 }
 

@@ -42,14 +42,15 @@ import { focusAreaAroundDisabledButton } from '@/state/controlPageOnFakeServer.t
 
 import {
   pressSaveAndWaitForCommand,
+  renderItemEditorPanelForNewRaceClockItem,
   renderItemEditorPanelOnFakeServer,
 } from './itemEditorOnFakeServer.testSupport';
 import { raceClockReferenceTimeLabel } from './itemsLikeTheEditorSaves.testSupport';
 
 describe('the item editor panel when something is wrong', () => {
   it('shows the pt-BR message under an empty label, sends nothing and stays open', async () => {
-    // Arrange: the editor for a new item, with the label left empty.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: the editor for a new race clock item, with the label left empty.
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
 
     // Act: press "Salvar item".
     fireEvent.click(screen.getByRole('button', { name: 'Salvar item' }));
@@ -75,8 +76,9 @@ describe('the item editor panel when something is wrong', () => {
   });
 
   it("shows the problems of the item fields and of the graphic's fields at the same press", async () => {
-    // Arrange: a new item with no label, an auto-out of zero and one hour typed as h:mm:ss.
-    const { fakeServer } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: a new race clock item with no label, an auto-out of zero and one hour
+    // typed as h:mm:ss.
+    const { fakeServer } = renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Saída automática (segundos, opcional)', '0');
     typeIntoField(raceClockReferenceTimeLabel, '1:00:00');
 
@@ -133,8 +135,9 @@ describe('the item editor panel when something is wrong', () => {
   });
 
   it("shows the server's pt-BR message when the save is refused, keeps the form and stays open", async () => {
-    // Arrange: a new item for the endurance start, saved and on its way to the server.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: a new race clock item for the endurance start, saved and on its way to
+    // the server.
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Rótulo', 'Largada do Enduro');
     await pressSaveAndWaitForCommand(1, fakeServer);
 
@@ -186,8 +189,8 @@ describe('the item editor panel when something is wrong', () => {
   });
 
   it('asks to be closed only once when the operator cancels while a save is still waiting', async () => {
-    // Arrange: a new item saved, with the server slow to answer.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: a new race clock item saved, with the server slow to answer.
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
     typeIntoField('Rótulo', 'Largada do Enduro');
     await pressSaveAndWaitForCommand(1, fakeServer);
 
@@ -207,8 +210,9 @@ describe('the item editor panel when something is wrong', () => {
   });
 
   it('disables "Salvar item" and says why while the connection is down, and still lets the operator cancel', async () => {
-    // Arrange: the editor for a new item on a connected page.
-    const { fakeServer, onClose } = renderItemEditorPanelOnFakeServer(null);
+    // Arrange: the editor for a new race clock item on a connected page (the graphic is
+    // chosen, so only the lost connection can be what keeps "Salvar item" off).
+    const { fakeServer, onClose } = renderItemEditorPanelForNewRaceClockItem();
 
     // Act: the line drops, the operator reaches for "Salvar item" and then cancels.
     fakeServer.dropConnection();

@@ -2,6 +2,8 @@ import type { CreateItemCommand, Item } from '@bajaovrlay/shared';
 
 import { refuseUnknownGraphic, refuseUnknownLayer } from '../commandRefusals.js';
 import { findRefusalOfBindingFieldsForGraphic } from '../itemBindingFields.js';
+import { findRefusalOfEntityFieldsForGraphic } from '../itemEntityFields.js';
+import { findRefusalOfEventFieldsForGraphic } from '../itemEventFields.js';
 import { findRefusalOfTakeTimeFieldsForGraphic } from '../itemTakeTimeFields.js';
 import { findRefusalOfUnknownItemHome } from './itemHomeExistence.js';
 import { listItemsOfHomeInOrder, numberItemsByPositionInList } from './itemOrdering.js';
@@ -56,6 +58,18 @@ export function reduceCreateItem(
   );
   if (refusalOfABinding !== undefined) {
     return { status: 'refused', error: refusalOfABinding };
+  }
+  const refusalOfAnEventField = findRefusalOfEventFieldsForGraphic(graphic, command.fields);
+  if (refusalOfAnEventField !== undefined) {
+    return { status: 'refused', error: refusalOfAnEventField };
+  }
+  const refusalOfAnEntityField = findRefusalOfEntityFieldsForGraphic(
+    graphic,
+    command.fields,
+    slices,
+  );
+  if (refusalOfAnEntityField !== undefined) {
+    return { status: 'refused', error: refusalOfAnEntityField };
   }
 
   const itemsAlreadyInHome = listItemsOfHomeInOrder(slices.items, command.home);

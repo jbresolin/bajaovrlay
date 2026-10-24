@@ -55,9 +55,10 @@ export function refuseTakeWithEmptyCursor(rundownName: string): CommandError {
 }
 
 /**
- * The refusal for an item field whose value is of a kind the server cannot resolve
- * yet (bindings and entities arrive in M2); the message names the field, the kind and M2.
- * `literal` and `takeTime` are resolved today and never get this refusal.
+ * The refusal for an item field whose value is of a kind the server cannot resolve: a
+ * guard for a kind the schema accepts before the resolver has its case; the message
+ * names the field and the kind. `literal`, `takeTime`, `binding` and `entity` are
+ * resolved and never get this refusal.
  */
 export function refuseUnsupportedFieldKind(fieldKey: string, fieldKind: string): CommandError {
   return {

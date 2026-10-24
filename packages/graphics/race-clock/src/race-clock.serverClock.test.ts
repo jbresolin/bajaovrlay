@@ -21,7 +21,8 @@
  * What these tests deliberately do not cover:
  *   - How the difference is measured and smoothed; packages/shared/src/clock tests, and
  *     apps/renderer's serverConnection.serverClock.test.ts for the renderer's side.
- *   - Real rendering; jsdom draws nothing, and displayFont.ts is replaced by a stand-in.
+ *   - Real rendering; jsdom draws nothing and has no `document.fonts`, so load's wait
+ *     for the theme's font ends at once.
  */
 import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
@@ -34,10 +35,6 @@ import {
   readShownText,
   takeControlOfFramesAndTime,
 } from './raceClockOnThePage.testSupport.js';
-
-vi.mock('./displayFont.js', () => ({
-  loadDisplayFontOnce: () => Promise.resolve(),
-}));
 
 /** How far behind the server's the OBS machine's clock was seen to be. */
 const renderMachineLagMs = 2_300;

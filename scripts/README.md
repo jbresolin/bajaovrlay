@@ -16,3 +16,20 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
   to `build-id.json`, which the server reads once at boot and sends in hello, so an open
   page from an older build reloads itself after the restart (`packages/shared/src/build`).
   Both use `buildIdFile.js`, tested by `buildIdFile.test.ts`.
+- `e2ePortOffset.ts` (not a script: every Playwright config and e2e helper imports it):
+  reads `BAJAOVRLAY_E2E_PORT_OFFSET` once, a whole number or else 0, tested by
+  `e2ePortOffset.test.ts`.
+- `reportSlowestTests.js` (CI's "Report the slowest tests" step): reads the Vitest and
+  Playwright JSON reports named on its command line and prints the 15 slowest files and
+  tests as markdown, which CI appends to the run's summary page (docs/ci.md). The reading
+  and writing are in `slowestTests.js` (tested by `slowestTests.test.ts`); reading the files,
+  never throwing on a missing or broken one, in `slowestTestsOfReportFiles.js` (tested by
+  `slowestTestsOfReportFiles.test.ts`).
+- `verify.js` (`pnpm verify`, `pnpm verify --quick`): runs CI's commands in order on
+  this machine, one line per step with its time, and stops at the first failure, naming
+  it; `--quick` leaves out the browser tests. The steps are in `verifySteps.js` (tested by
+  `verifySteps.test.ts`); `verifyMatchesCi.test.ts` reads `.github/workflows/ci.yml`
+  through `ciWorkflowCommands.js` and fails when CI and the steps drift apart.
+- `checkJobResults.sh` (CI's "CI passed" job): fails unless every result in
+  RESULTS_OF_THE_JOBS is "success" (an empty list fails too), tested by
+  `checkJobResults.test.ts`.

@@ -36,18 +36,25 @@ import {
 } from '@/state/dataSourcesLikeTheServerSends.testSupport';
 
 import {
+  chooseGraphicInTheEditor,
   pressSaveAndWaitForCommand,
+  raceClockGraphicName,
   renderItemEditorPanelOnFakeServerWithSlices,
 } from './itemEditorOnFakeServer.testSupport';
 import { buildSlicesWithTheRaceClockAndTheLowerThird } from './itemsLikeTheEditorSaves.testSupport';
 
-/** The editor for a new item on a page that knows the simulator and its lap-34 data. */
+/**
+ * The editor for a new item on a page that knows the simulator and its lap-34 data,
+ * with the race clock chosen by name as its graphic.
+ */
 function renderNewItemEditorWithTheSimulator() {
-  return renderItemEditorPanelOnFakeServerWithSlices(null, {
+  const editorOnFakeServer = renderItemEditorPanelOnFakeServerWithSlices(null, {
     ...buildSlicesWithTheRaceClockAndTheLowerThird(),
     dataSources: [buildSimulatorThatIsOk()],
     dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
   });
+  chooseGraphicInTheEditor(raceClockGraphicName);
+  return editorOnFakeServer;
 }
 
 /** The options a dropdown offers, by its accessible name, as the operator reads them. */
@@ -74,23 +81,29 @@ describe('the kind selector of the item editor with data sources', () => {
     const kindsOfTheFlag = readOptionsOfDropdown('Como preencher Bandeira');
     const kindsOfTheTime = readOptionsOfDropdown('Como preencher Tempo de referência');
 
-    // Assert: "Fonte" on both; the whole clock only where the time is.
+    // Assert: "Fonte" on both; the whole clock only where the time is. "Evento" closes
+    // the flag's list: a text and a number may also be filled by an event (BAJAOVRLAY-44).
+    // "Cadastro" closes the time's, as on any whole-number field (BAJAOVRLAY-19), but is
+    // not on the flag, whose fixed list of values no record of the library holds.
     expect(kindsOfTheFlag, 'the flag can be typed or read from a source').toEqual([
       'Valor digitado',
       'Fonte',
+      'Evento',
     ]);
     expect(kindsOfTheTime, 'the time can also read the whole clock').toEqual([
       'Valor digitado',
       'Fonte',
       'Relógio da fonte',
+      'Evento',
+      'Cadastro',
     ]);
   });
 
   it('offers nothing to read for a field no path fits', () => {
-    // Arrange: a new item of the lower third, whose social networks are an object.
+    // Arrange: the same editor; the lower third's social networks are an object.
     renderNewItemEditorWithTheSimulator();
 
-    // Act: choose the lower third.
+    // Act: choose the lower third instead of the race clock.
     chooseOptionInDropdown('Gráfico', 'Tarja de entrevista');
 
     // Assert: no kind selector for the social networks, so no "Fonte".

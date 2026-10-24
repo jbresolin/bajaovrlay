@@ -23,6 +23,13 @@ export const sliceNamesChangedByCommands = [
   'dataSnapshots',
   'overrides',
   'recordings',
+  'events',
+  'eventRules',
+  'teams',
+  'people',
+  'sponsors',
+  'scheduleSlots',
+  'media',
 ] as const;
 
 // The slice saved one row per source in its own table (data_snapshots) instead of as one
@@ -84,6 +91,13 @@ export function buildAllSlices(
     dataSnapshots: slicesOfCommands.dataSnapshots,
     overrides: slicesOfCommands.overrides,
     recordings: slicesOfCommands.recordings,
+    events: slicesOfCommands.events,
+    eventRules: slicesOfCommands.eventRules,
+    teams: slicesOfCommands.teams,
+    people: slicesOfCommands.people,
+    sponsors: slicesOfCommands.sponsors,
+    scheduleSlots: slicesOfCommands.scheduleSlots,
+    media: slicesOfCommands.media,
     eventLog,
   };
 }

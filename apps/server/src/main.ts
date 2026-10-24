@@ -22,6 +22,7 @@ const repositoryRootFolder = fileURLToPath(new URL('../../../', import.meta.url)
 const graphicPackagesFolder = fileURLToPath(
   new URL('../../../packages/graphics/', import.meta.url),
 );
+const themeFolder = fileURLToPath(new URL('../../../packages/theme/', import.meta.url));
 const databasePath = resolveDatabasePath(environment.DATABASE_PATH, repositoryRootFolder);
 const dataFolder = resolveDataFolder(environment.DATA_DIR, repositoryRootFolder);
 
@@ -45,6 +46,7 @@ try {
     databasePath,
     migrationsFolder: committedMigrationsFolder,
     graphicPackagesFolder,
+    themeFolder,
     dataFolder,
     sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
     controlPageFolder,

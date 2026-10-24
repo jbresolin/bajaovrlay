@@ -1,6 +1,5 @@
 import { ptBR } from '@/i18n/ptBR';
-
-import { formatTimeOfDay } from './timeOfDayText';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 
 /** Why the data shown is not live: the source is late, or it is turned off. */
 export type WhyTheDataIsOld = 'sourceIsLate' | 'sourceIsOff';

@@ -52,7 +52,7 @@ describe('fillGraphicFieldsOfItemEditor', () => {
     // Act: generate and fill the fields for a new item.
     const graphicFields = fillGraphicFieldsOfItemEditor(raceClockGraphic, null);
 
-    // Assert: seven fields, in the manifest's order, at the manifest's defaults; the
+    // Assert: eight fields, in the manifest's order, at the manifest's defaults; the
     // wall-clock field is "filled at the take" and every other field is typed.
     expect(
       graphicFields.description.fields.map((field) => field.key),
@@ -65,6 +65,7 @@ describe('fillGraphicFieldsOfItemEditor', () => {
       'referenceWallClockMs',
       'running',
       'lapsCompletedByLeader',
+      'showFlagBand',
     ]);
     expect(
       graphicFields.formValues.values,
@@ -76,6 +77,7 @@ describe('fillGraphicFieldsOfItemEditor', () => {
       referenceTimeMs: '0:00',
       running: false,
       lapsCompletedByLeader: null,
+      showFlagBand: true,
     });
     expect(
       graphicFields.formValues.kinds.referenceWallClockMs,

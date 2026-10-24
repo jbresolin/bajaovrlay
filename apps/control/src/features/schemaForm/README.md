@@ -2,14 +2,15 @@
 
 The form generated from a graphic's OGraf data schema, so a new graphic costs the control
 page no code. It draws fields and builds data; panels own the buttons and the commands.
-Start reading at `index.ts` (the public surface), then `describeSchemaFormFromDataSchema.ts`.
+Start at `index.ts` (the public surface), then `describeSchemaFormFromDataSchema.ts`, which
+reads the manifest's JSON Schema into field descriptions (`schemaFormDescription.ts`).
 
-- `describeSchemaFormFromDataSchema.ts` reads the manifest's JSON Schema into field
-  descriptions (`schemaFormDescription.ts`, `v_baja.role` included); `plainRecord.ts` reads safely.
-- `buildSchemaFormValues.ts` fills the form (`schemaFormValues.ts`); `fieldValueConversion.ts`
-  turns a value between data and control (`minutesAndSeconds.ts`, `localDateAndTimeText.ts`).
-- `checkSchemaFormValues.ts` checks the form with `zodSchemaFromDataSchema.ts` (pt-BR messages;
-  the server stays the authority); `schemaFormResolver.ts` hands it to react-hook-form.
-- `instanceUpdateFromSchemaForm.ts`, `itemFieldsFromSchemaForm.ts`
-  build each command's data. `SchemaFormFields.tsx` draws it (`SchemaFormFieldRow.tsx`, `SchemaFormValueControl.tsx`,
-  `UnsupportedValueBox.tsx`; `textShownInUntouchedField.ts`: a panel's text in an untouched field).
+- Filling: `buildSchemaFormValues.ts` (`schemaFormValues.ts`; `fieldValueConversion.ts`,
+  `minutesAndSeconds.ts`, `localDateAndTimeText.ts`); `suggestedBindingsOfDataSchema.ts`.
+- Checking: `checkSchemaFormValues.ts` with `zodSchemaFromDataSchema.ts` (pt-BR messages; the
+  server stays the authority) through `schemaFormResolver.ts`.
+- Building: `instanceUpdateFromSchemaForm.ts`, `itemFieldsFromSchemaForm.ts`.
+- Drawing: `SchemaFormFields.tsx`, `SchemaFormFieldRow.tsx`, `SchemaFormValueControl.tsx`,
+  `UnsupportedValueBox.tsx`, "Fonte" (`BoundFieldControls.tsx`), "Cadastro"
+  (`EntityReferenceControls.tsx`, `entityReferenceFormValue.ts`), an image field's picker
+  (`ImageUrlFieldControl.tsx`); `textShownInUntouchedField.ts` for a panel's text.

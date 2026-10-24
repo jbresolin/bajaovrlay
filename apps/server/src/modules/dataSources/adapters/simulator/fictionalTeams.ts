@@ -19,6 +19,14 @@ const FictionalTeamsFileSchema = z.object({
 const fictionalTeams: FictionalTeam[] = FictionalTeamsFileSchema.parse(teamsFile).teams;
 
 /**
+ * Every fictional team, in the order of the file: car 1 is the first. The entity library
+ * imports them as teams for walks and rehearsals ("Importar equipes do simulador").
+ */
+export function listFictionalTeams(): FictionalTeam[] {
+  return [...fictionalTeams];
+}
+
+/**
  * The team of the car at `carIndex` in the field (from 0). The field takes the first
  * `carCount` teams of the file, in order, so car 1 is always the first team.
  */

@@ -6,6 +6,7 @@ import type {
   ReadEnvironmentVariable,
   SourceHostAllowlist,
 } from '../../modules/dataSources/index.js';
+import { serveMediaFiles } from '../../modules/media/index.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
@@ -14,6 +15,7 @@ import { serveGraphicPackages } from './graphicPackages.js';
 import { createHealthRoute } from './healthRoute.js';
 import type { ServerAppEnvironment } from './httpContextVariables.js';
 import { logEachRequest } from './requestLogging.js';
+import { serveThemeFiles } from './themeFiles.js';
 
 /** Everything the server app needs; main.ts reads these from the environment. */
 export type ServerAppOptions = {
@@ -28,12 +30,19 @@ export type ServerAppOptions = {
   stateStore?: StateStore | undefined;
   /** Absolute path of packages/graphics, served at /graphics/<package>/ from each dist. */
   graphicPackagesFolder?: string | undefined;
+  /** Absolute path of packages/theme, served at /theme/ (its ardosia/, fonts/ and brand/ only). */
+  themeFolder?: string | undefined;
   /** How the flex sample route reads BAJAOVRLAY_SOURCE_ variables; process.env when left out. */
   readSourceEnvironmentVariable?: ReadEnvironmentVariable | undefined;
   /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the sample route; no list when left out. */
   sourceHostAllowlist?: SourceHostAllowlist | undefined;
   /** The flex sample route's timeout; 10 s when left out (tests shorten it). */
   sampleRequestTimeoutInMilliseconds?: number | undefined;
+  /**
+   * DATA_DIR/media: uploads (POST /api/v1/media) are written there and served at
+   * /media/<mediaId>. Both need the store; leave out in tests that touch no image.
+   */
+  mediaFolder?: string | undefined;
 };
 
 /**
@@ -59,11 +68,18 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         readSourceEnvironmentVariable: options.readSourceEnvironmentVariable,
         sourceHostAllowlist: options.sourceHostAllowlist,
         sampleRequestTimeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
+        mediaFolder: options.mediaFolder,
       }),
     );
+    if (options.mediaFolder !== undefined) {
+      serveMediaFiles(app, { stateStore: options.stateStore, mediaFolder: options.mediaFolder });
+    }
   }
   if (options.graphicPackagesFolder !== undefined) {
     serveGraphicPackages(app, options.graphicPackagesFolder);
+  }
+  if (options.themeFolder !== undefined) {
+    serveThemeFiles(app, options.themeFolder);
   }
 
   if (options.rendererPageFolder !== undefined) {

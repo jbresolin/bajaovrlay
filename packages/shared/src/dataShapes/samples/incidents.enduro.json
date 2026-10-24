@@ -1,0 +1,47 @@
+{
+  "sessionId": "enduro-2027-nacional",
+  "updatedAtMs": 1805568240948,
+  "entries": [
+    {
+      "incidentId": "ocorrencia-0007",
+      "carNumber": 47,
+      "teamName": "Carnaúba Baja",
+      "schoolName": "UFERSA",
+      "kind": "penalty",
+      "reason": "Queima de largada",
+      "penaltyText": "+30 segundos",
+      "lap": 1,
+      "atMs": 1805558761000
+    },
+    {
+      "incidentId": "ocorrencia-0012",
+      "carNumber": 81,
+      "teamName": "Sucuri Racing",
+      "schoolName": "UFMS",
+      "kind": "warning",
+      "reason": "Bloqueio de ultrapassagem",
+      "lap": 9,
+      "atMs": 1805561402000
+    },
+    {
+      "incidentId": "ocorrencia-0019",
+      "carNumber": 30,
+      "teamName": "Pampa Baja",
+      "schoolName": "UFSM",
+      "kind": "incident",
+      "reason": "Capotamento na curva do lago",
+      "lap": 17
+    },
+    {
+      "incidentId": "ocorrencia-0023",
+      "carNumber": 52,
+      "teamName": "Pequi Off-Road",
+      "schoolName": "UFG",
+      "kind": "penalty",
+      "reason": "Ultrapassagem sob bandeira amarela",
+      "penaltyText": "Volta cancelada",
+      "lap": 26,
+      "atMs": 1805566005000
+    }
+  ]
+}

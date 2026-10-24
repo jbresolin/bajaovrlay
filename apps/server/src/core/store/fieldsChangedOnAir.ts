@@ -66,7 +66,8 @@ export function listFieldsChangedOnAirAfterUpdate(change: OnAirChange): string[]
  * Whether one field on air now differs from what the item gives for it. A field the item
  * marks takeTime always differs once the operator sent it: the item gives "the moment of
  * the take", and anything sent replaced that. A bound field likewise: the item gives
- * "what the source says", and a value the operator sent replaced that. A literal is compared by content, and a
+ * "what the source says", and a value the operator sent replaced that; and a field read
+ * from the entity library, for the same reason. A literal is compared by content, and a
  * field missing on air counts as equal to a literal null and to a field the item does not
  * store at all, because a take leaves both out of the data.
  */
@@ -76,7 +77,15 @@ function doesValueOnAirDifferFromTheItem(
   dataAfterUpdate: Record<string, unknown>,
 ): boolean {
   const fieldOfTheItem = item.fields[fieldKey];
-  if (fieldOfTheItem?.kind === 'takeTime' || fieldOfTheItem?.kind === 'binding') {
+  const isFieldTheItemDoesNotType =
+    fieldOfTheItem?.kind === 'takeTime' ||
+    fieldOfTheItem?.kind === 'binding' ||
+    fieldOfTheItem?.kind === 'entity';
+  if (isFieldTheItemDoesNotType) {
+    return true;
+  }
+  // An event field gives "what the event says" (BAJAOVRLAY-44), as a binding does.
+  if (fieldOfTheItem?.kind === 'eventField') {
     return true;
   }
   const isOnAir = Object.hasOwn(dataAfterUpdate, fieldKey);

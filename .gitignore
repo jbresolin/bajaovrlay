@@ -9,6 +9,8 @@ build-id.json
 # Playwright output (CI uploads these as artifacts when a run fails)
 test-results/
 playwright-report/
+# Vitest's JSON report on CI, read by scripts/reportSlowestTests.js
+vitest-report.json
 
 # Local data and secrets
 *.sqlite

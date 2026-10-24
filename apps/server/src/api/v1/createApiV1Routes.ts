@@ -1,4 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
+import { bodyLimit } from 'hono/body-limit';
 
 import type { ErrorAnswerBody } from '../../core/http/errorAnswers.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
@@ -15,6 +16,21 @@ import {
   readServerEnvironmentVariable,
   type SourceHostAllowlist,
 } from '../../modules/dataSources/index.js';
+import {
+  buildSimulatorTeamsAsEntities,
+  getSimulatorTeamsRoute,
+  simulatorTeamsNotice,
+} from '../../modules/entities/index.js';
+import {
+  buildFileMissingAnswer,
+  buildFileTooLargeAnswer,
+  buildUploadFromAnotherSiteAnswer,
+  isUploadFromAnotherSite,
+  largestMediaUploadBodyInBytes,
+  postMediaRoute,
+  readUploadedFile,
+  storeUploadedImage,
+} from '../../modules/media/index.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
 
 /**
@@ -30,6 +46,8 @@ export function createApiV1Routes(options: {
   sourceHostAllowlist?: SourceHostAllowlist | undefined;
   /** The sample route's timeout; 10 s when left out (tests shorten it). */
   sampleRequestTimeoutInMilliseconds?: number | undefined;
+  /** DATA_DIR/media, where uploads are written; no upload route when left out. */
+  mediaFolder?: string | undefined;
 }): OpenAPIHono<ServerAppEnvironment> {
   const readSourceEnvironmentVariable =
     options.readSourceEnvironmentVariable ?? readServerEnvironmentVariable;
@@ -85,6 +103,42 @@ export function createApiV1Routes(options: {
       return context.json(buildInvalidSampleRequestAnswer(firstIssueMessage), 400);
     },
   );
+
+  apiRoutes.openapi(getSimulatorTeamsRoute, (context) => {
+    return context.json(
+      { notice: simulatorTeamsNotice, teams: buildSimulatorTeamsAsEntities() },
+      200,
+    );
+  });
+
+  const mediaFolder = options.mediaFolder;
+  if (mediaFolder !== undefined) {
+    // The body is refused before it is read in full when it is far over the limit, so a
+    // runaway upload cannot fill the server's memory; the image itself is held to 5 MB
+    // exactly by storeUploadedImage.
+    apiRoutes.use(
+      '/media',
+      bodyLimit({
+        maxSize: largestMediaUploadBodyInBytes,
+        onError: (context) => context.json(buildFileTooLargeAnswer(), 413),
+      }),
+    );
+    apiRoutes.openapi(postMediaRoute, async (context) => {
+      // Until M4 logins, a page of another site must not upload through the operator's browser.
+      if (isUploadFromAnotherSite(context.req.header('origin'), context.req.url)) {
+        return context.json(buildUploadFromAnotherSiteAnswer(), 403);
+      }
+      const upload = await readUploadedFile(context);
+      if (upload === undefined) {
+        return context.json(buildFileMissingAnswer(), 400);
+      }
+      const outcome = storeUploadedImage(upload, { stateStore: options.stateStore, mediaFolder });
+      if (!outcome.isStored) {
+        return context.json(outcome.body, outcome.httpStatus);
+      }
+      return context.json(outcome.answer, 200);
+    });
+  }
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

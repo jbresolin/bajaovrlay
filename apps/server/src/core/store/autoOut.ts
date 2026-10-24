@@ -94,22 +94,25 @@ export function startAutoOutScheduler(options: AutoOutSchedulerOptions): AutoOut
     if (newInstance.target !== 'program') {
       return;
     }
+    // An event's instance carries its rule's duration, which wins over the item's own
+    // delay (BAJAOVRLAY-44); any other instance waits as long as its item says.
     const item = slices.items.find((candidate) => candidate.id === newInstance.itemId);
-    if (item?.autoOutAfterMs === undefined) {
+    const autoOutAfterMs = newInstance.autoOutAfterMs ?? item?.autoOutAfterMs;
+    if (autoOutAfterMs === undefined) {
       return;
     }
     // Node turns a longer wait into a wait of one millisecond, which would take the
     // graphic off air at once. Leaving it on air and saying so in the log is safer.
-    if (item.autoOutAfterMs > longestDelayATimerCanWaitInMilliseconds) {
+    if (autoOutAfterMs > longestDelayATimerCanWaitInMilliseconds) {
       logger.warn(
-        { item_id: item.id, auto_out_after_ms: item.autoOutAfterMs },
+        { item_id: newInstance.itemId, auto_out_after_ms: autoOutAfterMs },
         'auto-out delay is longer than a timer can wait; the item stays on air',
       );
       return;
     }
     const timerHandle = startTimer(
       () => clearLayerWhenTimeIsUp(newInstance.id, newInstance.layerId),
-      item.autoOutAfterMs,
+      autoOutAfterMs,
     );
     pendingAutoOutByInstanceId.set(newInstance.id, { layerId: newInstance.layerId, timerHandle });
   }

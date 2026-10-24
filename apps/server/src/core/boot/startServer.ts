@@ -9,6 +9,8 @@ import {
   type SourceHostAllowlist,
   startDataSourceService,
 } from '../../modules/dataSources/index.js';
+import { startEventInboxService } from '../../modules/events/index.js';
+import { buildMediaFolderPath, startMediaService } from '../../modules/media/index.js';
 import { readBuildId } from '../../readBuildId.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
@@ -31,8 +33,14 @@ export type StartServerOptions = {
   /** packages/graphics: registered as graphics at boot and served under /graphics/. */
   graphicPackagesFolder: string;
   /**
+   * packages/theme: served under /theme/ for the renderer page and the graphics. Left out
+   * only by tests that never open a page; main.ts always passes it.
+   */
+  themeFolder?: string | undefined;
+  /**
    * DATA_DIR, absolute: the server's files other than the database. Recordings are
-   * written to, and listed at boot from, its `recordings` folder.
+   * written to, and listed at boot from, its `recordings` folder; uploaded images are
+   * kept in its `media` folder.
    */
   dataFolder: string;
   /**
@@ -120,6 +128,9 @@ async function startServingFromDatabase(
   // Started before the sources poll, so the first poll after a restart already refreshes
   // the bound fields of what was on air (BAJAOVRLAY-20).
   const bindingService = startBindingService({ stateStore, logger: options.logger });
+  // Started before the sources poll too, so the first poll after a restart is seen as the
+  // baseline and nothing that happened before it is replayed (BAJAOVRLAY-44).
+  const eventInboxService = startEventInboxService({ stateStore, logger: options.logger });
   // Sources left on before a restart start polling again at once; unlike a macro, a
   // source that is on is meant to keep running.
   const dataSourceService = startDataSourceService({
@@ -128,10 +139,15 @@ async function startServingFromDatabase(
     dataFolder: options.dataFolder,
     sourceHostAllowlist: options.sourceHostAllowlist,
   });
+  // Creates DATA_DIR/media when missing, and removes the file of a deleted image.
+  const mediaFolder = buildMediaFolderPath(options.dataFolder);
+  const mediaService = startMediaService({ stateStore, mediaFolder, logger: options.logger });
   /** Stops the server's own actors; used by close() and by a boot that fails from here. */
   function stopTheServerActors(): void {
+    mediaService.stop();
     dataSourceService.stop();
     bindingService.stop();
+    eventInboxService.stop();
     autoOutScheduler.stop();
     macroRunner.stop();
   }
@@ -144,9 +160,11 @@ async function startServingFromDatabase(
       version: options.version,
       stateStore,
       graphicPackagesFolder: options.graphicPackagesFolder,
+      themeFolder: options.themeFolder,
       controlPageFolder: options.controlPageFolder,
       rendererPageFolder: options.rendererPageFolder,
       sourceHostAllowlist: options.sourceHostAllowlist,
+      mediaFolder,
     });
     httpServer = await listen({
       fetch: app.fetch,

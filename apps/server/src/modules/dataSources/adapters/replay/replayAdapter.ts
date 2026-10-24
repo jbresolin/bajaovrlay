@@ -37,7 +37,13 @@ export type ReplayAdapterOptions = {
 
 // Every shape a recording can hold; which ones a given recording holds is only known
 // once its file is read, and listProducedShapes must answer at once.
-const allDataShapeKeys: DataShapeKey[] = ['session', 'positions', 'standings', 'brackets'];
+const allDataShapeKeys: DataShapeKey[] = [
+  'session',
+  'positions',
+  'standings',
+  'brackets',
+  'incidents',
+];
 
 // How much recording, counted in bytes of file, stays parsed in memory: 300 MB, the
 // size cap of one recording (recorder.ts), so the largest recording always fits. Parsed,

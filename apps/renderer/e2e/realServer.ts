@@ -2,11 +2,16 @@
 // test sends it a command over its WebSocket, exactly as the control page will.
 // playwright.config.ts starts that server (with its own SQLite file) before the tests.
 
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset.
+
 /** The real server's port in a Playwright run; far from 3000 so it never meets `pnpm dev`. */
-export const realServerPort = 5185;
+export const realServerPort = 5185 + portOffsetOfTheBrowserTests;
 
 /** The port of the renderer's Vite dev server in a Playwright run; it proxies to the one above. */
-export const rendererPagePort = 5184;
+export const rendererPagePort = 5184 + portOffsetOfTheBrowserTests;
 
 /** The SQLite file of the Playwright run's server, from the repository root (gitignored). */
 export const realServerDatabasePath = 'apps/renderer/.e2e-data/renderer-e2e.sqlite';

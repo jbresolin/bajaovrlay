@@ -14,6 +14,7 @@ export const ptBRDataShapes = {
     positions: 'Posições',
     standings: 'Pontuação',
     brackets: 'Chaves',
+    incidents: 'Incidentes',
   },
 
   /** "1º colocado", "10º colocado": positions, where every car has a place of its own. */
@@ -66,10 +67,12 @@ export const ptBRDataShapes = {
     laps: 'Voltas',
     lastLapMs: 'Última volta',
     bestLapMs: 'Melhor volta',
+    bestLapNumber: 'Volta da melhor volta',
     gapToLeaderMs: 'Diferença para o líder (tempo)',
     gapToLeaderLaps: 'Diferença para o líder (voltas)',
     intervalMs: 'Intervalo para o carro à frente',
     pitStops: 'Paradas nos boxes',
+    fuelStops: 'Abastecimentos',
     status: 'Situação',
   },
 
@@ -89,6 +92,19 @@ export const ptBRDataShapes = {
   /** The brackets fields a binding may point at. */
   bracketsFieldLabels: {
     rounds: 'Todas as fases',
+  },
+
+  /** The fields of one incident, for the flex mapping's rows and problem lines. */
+  incidentsEntryFieldLabels: {
+    incidentId: 'Identificador do incidente',
+    carNumber: 'Carro',
+    teamName: 'Equipe',
+    schoolName: 'Escola',
+    kind: 'Tipo',
+    reason: 'Motivo',
+    penaltyText: 'Punição',
+    lap: 'Volta',
+    atMs: 'Momento',
   },
 
   /** Why a payload was refused, naming the path of the first bad field. */
@@ -129,5 +145,7 @@ export const ptBRDataShapes = {
       `o carro ${carNumber} não pode disputar contra si mesmo`,
     winnerNotInMatch: (carNumber: number) =>
       `o vencedor ${carNumber} não é nenhum dos dois carros da disputa`,
+    incidentListedTwice: (incidentId: string) =>
+      `o incidente ${incidentId} aparece mais de uma vez`,
   },
 };

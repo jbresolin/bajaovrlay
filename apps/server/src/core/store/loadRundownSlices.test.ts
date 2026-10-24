@@ -98,11 +98,16 @@ describe('the rundowns and items on the first boot', () => {
     // Act: load the slices, as the first boot does.
     const slices = loadSlicesAtBoot(database, firstBootTime);
 
-    // Assert: one rundown, no items, and both are saved with the boot time.
+    // Assert: one rundown, no items in it, and both are saved with the boot time. The only
+    // items are the two notice items of the panel "Avisos", seeded with the event rules
+    // (BAJAOVRLAY-44; modules/events covers them).
     expect(slices.rundowns, 'the first boot must seed exactly this rundown').toEqual([
       seededMainSessionRundown,
     ]);
-    expect(slices.items, 'no item exists on the first boot').toEqual([]);
+    expect(
+      slices.items.filter((item) => item.home.kind === 'rundown'),
+      'no item exists in the rundown on the first boot',
+    ).toEqual([]);
     const storedRows = readAllSliceRows(database);
     expect(
       storedRows.find((row) => row.name === 'rundowns'),
@@ -114,8 +119,8 @@ describe('the rundowns and items on the first boot', () => {
     });
     expect(
       storedRows.find((row) => row.name === 'items'),
-      'the empty items list must be saved too',
-    ).toEqual({ name: 'items', json: [], updatedAt: '2026-10-09T08:00:00.000Z' });
+      'the items list must be saved too',
+    ).toEqual({ name: 'items', json: slices.items, updatedAt: '2026-10-09T08:00:00.000Z' });
   });
 });
 
@@ -140,7 +145,7 @@ describe('the rundowns and items on a database written before they existed (M0)'
       seededMainSessionRundown,
     ]);
     expect(slices.items, 'an M0 database starts with no items').toEqual([]);
-    expect(slices.layers.length, 'the five stored layers must load back').toBe(5);
+    expect(slices.layers.length, 'the seven stored layers must load back').toBe(7);
     expect(
       readUpdatedAtBySliceName(database),
       'only graphics (refreshed every boot) and the seeded rows may be written by this boot',
@@ -154,6 +159,8 @@ describe('the rundowns and items on a database written before they existed (M0)'
       macros: '2026-10-10T07:30:00.000Z',
       // Seeded at the first boot (BAJAOVRLAY-17), off, so a later boot leaves it alone.
       dataSources: '2026-10-09T08:00:00.000Z',
+      // The default event rules, seeded at the first boot too (BAJAOVRLAY-44).
+      eventRules: '2026-10-09T08:00:00.000Z',
     });
   });
 });

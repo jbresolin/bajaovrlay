@@ -13,9 +13,9 @@
  *     cursor must always be written, never left out.
  *   - A prepared race-clock item is accepted unchanged, with or without an auto-out.
  *   - An item is refused, with the field named, when its colour is not one of the six
- *     fixed names, when a field value is of a kind that only arrives with the entity
- *     library (BAJAOVRLAY-19), when a
- *     literal has no value, when its order is negative or its auto-out is zero.
+ *     fixed names, when a field names a team in the first draft shape of an entity
+ *     reference (entityId, not the car number of BAJAOVRLAY-19), when a literal has no
+ *     value, when its order is negative or its auto-out is zero.
  *   - The six item colours are exactly the names the control page maps to its tokens.
  *   - An instance may carry the id of the item it was taken from, and may also have none.
  *   - The state as a whole now needs the `rundowns` and `items` slices, and a `slice`
@@ -112,6 +112,13 @@ function buildRaceMorningStateWithOnePreparedItem() {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    events: [],
+    eventRules: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
     eventLog: [],
   };
 }
@@ -193,16 +200,16 @@ describe('ItemSchema', () => {
       changedPart: { color: '#ff0000' },
       fieldNamedInTheFailure: 'color',
     },
-    // Entity references arrive with the entity library (BAJAOVRLAY-19); until then no
-    // field names an entity.
+    // The concept's first draft of an entity reference said entityId; as built by
+    // BAJAOVRLAY-19 a team is chosen by its car number, so a stored draft is refused.
     {
-      name: 'refuses a field that names a team of the entity library, naming kind',
+      name: 'refuses a team reference in the first draft shape, naming carNumber',
       changedPart: {
         fields: {
           sessionName: { kind: 'entity', entityType: 'team', entityId: '42', attribute: 'name' },
         },
       },
-      fieldNamedInTheFailure: 'kind',
+      fieldNamedInTheFailure: 'carNumber',
     },
     // A literal with nothing in it would reach the graphic as a missing field.
     {

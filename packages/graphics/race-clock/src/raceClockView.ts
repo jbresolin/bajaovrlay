@@ -1,7 +1,7 @@
 /**
  * The race clock's DOM: the template Lit draws once, and the functions that afterwards
- * change only text and data-flag-state attributes in place. Nothing here rebuilds
- * elements, so an update or a clock frame touches only what really changed.
+ * change only text and data attributes in place. Nothing here rebuilds elements, so an
+ * update or a clock frame touches only what really changed.
  */
 // The clock's sum is shared with the server, which must find the same time on screen,
 // and its text with the control page's session card ("Fontes"), which must read the same.
@@ -10,13 +10,21 @@ import {
   computeClockTimeMsAtWallClock,
   formatClockTimeAsHoursMinutesSeconds,
 } from '@bajaovrlay/shared/clock';
+// The white logo lives in the theme package; Vite bundles a copy into this graphic's
+// dist/assets/, so the built clock works from the preview and from the air alike.
+import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, type TemplateResult } from 'lit';
 
 import { ptBR } from './ptBR.js';
-import { hideIncomingFlagLayer, type RaceClockAnimatedElements } from './raceClockAnimations.js';
+import {
+  clearFlagBandToggleLeftovers,
+  type FlagBandToggle,
+  hideIncomingFlagLayer,
+  type RaceClockAnimatedElements,
+} from './raceClockAnimations.js';
 import type { FlagState, RaceClockData } from './raceClockModel.js';
 
-/** The elements whose text or flag state changes after the first render. */
+/** The elements whose text or attributes change after the first render. */
 export type RaceClockParts = RaceClockAnimatedElements & {
   sessionName: HTMLElement;
   clockTime: HTMLElement;
@@ -30,23 +38,27 @@ export type RaceClockParts = RaceClockAnimatedElements & {
 /** The race clock's markup, drawn once. data-testid names are how code and tests find parts. */
 export function renderRaceClockTemplate(): TemplateResult {
   return html`
-    <section class="race-clock-panel" data-testid="race-clock-panel">
-      <div class="session-row">
-        <span class="session-name" data-testid="race-clock-session-name"></span>
-      </div>
-      <div class="clock-row">
-        <span class="clock-time" data-testid="race-clock-time"></span>
-        <div class="clock-details">
-          <span class="clock-caption" data-testid="race-clock-caption"></span>
-          <span class="laps" data-testid="race-clock-laps"></span>
-        </div>
+    <section class="race-clock-panel" data-testid="race-clock-panel" data-flag-band="shown">
+      <header class="head">
+        <img
+          class="logo"
+          src=${logoAddress}
+          alt=${ptBR.logoAlternativeText}
+          data-testid="race-clock-logo"
+        />
+        <span class="title" data-testid="race-clock-session-name"></span>
+      </header>
+      <div class="body">
+        <span class="caption" data-testid="race-clock-caption"></span>
+        <span class="laps" data-testid="race-clock-laps"></span>
+        <span class="time" data-testid="race-clock-time"></span>
       </div>
       <div class="flag-band" data-testid="race-clock-flag-band">
         <div class="flag-layer" data-testid="race-clock-current-flag-layer">
-          <span class="flag-label" data-testid="race-clock-flag-label"></span>
+          <span class="flag-word" data-testid="race-clock-flag-label"></span>
         </div>
         <div class="flag-layer incoming-flag-layer" data-testid="race-clock-incoming-flag-layer">
-          <span class="flag-label" data-testid="race-clock-incoming-flag-label"></span>
+          <span class="flag-word" data-testid="race-clock-incoming-flag-label"></span>
         </div>
       </div>
     </section>
@@ -83,7 +95,7 @@ function writeTextIfChanged(element: HTMLElement, text: string): void {
   }
 }
 
-/** Writes the session name, the clock caption and the leader laps (hidden when absent). */
+/** Writes the session title, the clock caption and the leader laps (hidden when absent). */
 export function writeSessionCaptionAndLaps(parts: RaceClockParts, data: RaceClockData): void {
   writeTextIfChanged(parts.sessionName, data.sessionName);
   writeTextIfChanged(parts.clockCaption, ptBR.clockModeCaptions[data.clockMode]);
@@ -103,15 +115,55 @@ export function writeClockTimeAt(
   writeTextIfChanged(parts.clockTime, clockText);
 }
 
+/**
+ * Dresses a band layer in a flag state: its colours (through the data attribute), its
+ * word, and the word as the layer's accessible name. The checkered band carries no
+ * word, only the pattern (the design's choice), so there the word is the name alone.
+ */
+function dressFlagLayer(layer: HTMLElement, word: HTMLElement, flagState: FlagState): void {
+  const flagWord = ptBR.flagLabels[flagState];
+  layer.dataset.flagState = flagState;
+  layer.setAttribute('aria-label', flagWord);
+  writeTextIfChanged(word, flagState === 'checkered' ? '' : flagWord);
+}
+
 /** Shows a flag state on the current layer straight away and hides the incoming one. */
 export function showFlagStateAtOnce(parts: RaceClockParts, flagState: FlagState): void {
-  parts.currentFlagLayer.dataset.flagState = flagState;
-  writeTextIfChanged(parts.currentFlagLabel, ptBR.flagLabels[flagState]);
+  dressFlagLayer(parts.currentFlagLayer, parts.currentFlagLabel, flagState);
   hideIncomingFlagLayer(parts);
 }
 
-/** Dresses the (still hidden) incoming layer in a new flag state, ready to wipe in. */
+/** Dresses the (still invisible) incoming layer in a new flag state, ready to crossfade in. */
 export function prepareIncomingFlagLayer(parts: RaceClockParts, flagState: FlagState): void {
-  parts.incomingFlagLayer.dataset.flagState = flagState;
-  writeTextIfChanged(parts.incomingFlagLabel, ptBR.flagLabels[flagState]);
+  dressFlagLayer(parts.incomingFlagLayer, parts.incomingFlagLabel, flagState);
+}
+
+/**
+ * Shows or hides the flag band straight away: the card's data-flag-band mark is what
+ * the styles lower the card by, and the band is hidden from assistive technology when
+ * off. Any inline height or opacity a toggle animation left is cleared, so the styles
+ * own both again.
+ */
+export function showFlagBandAtOnce(parts: RaceClockParts, isShown: boolean): void {
+  parts.panel.dataset.flagBand = isShown ? 'shown' : 'hidden';
+  if (isShown) {
+    parts.flagBand.removeAttribute('aria-hidden');
+  } else {
+    parts.flagBand.setAttribute('aria-hidden', 'true');
+  }
+  clearFlagBandToggleLeftovers(parts);
+}
+
+/**
+ * Switches the band at once and answers the card's heights as drawn before and after,
+ * which the on-air toggle animates between. Both are 0 where nothing is drawn (jsdom).
+ */
+export function showFlagBandAtOnceAndMeasureChange(
+  parts: RaceClockParts,
+  isShown: boolean,
+): FlagBandToggle {
+  const heightBeforePx = parts.panel.getBoundingClientRect().height;
+  showFlagBandAtOnce(parts, isShown);
+  const heightAfterPx = parts.panel.getBoundingClientRect().height;
+  return { heightBeforePx, heightAfterPx, isShowing: isShown };
 }

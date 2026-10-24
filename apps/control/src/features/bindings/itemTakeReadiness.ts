@@ -15,6 +15,8 @@ import {
 
 import { ptBR } from '@/i18n/ptBR';
 
+import { readRequiredFieldKeys, readTitleOfField } from './dataSchemaFieldFacts';
+
 /** Says whether an item reads any field from a source. */
 export function doesItemReadASource(item: Item): boolean {
   return Object.values(item.fields).some((fieldValue) => fieldValue.kind === 'binding');
@@ -44,27 +46,4 @@ export function findWhyItemCannotBeTakenNow(
     }
   }
   return undefined;
-}
-
-/** The keys a data schema lists under `required`. */
-function readRequiredFieldKeys(dataSchema: Record<string, unknown> | undefined): string[] {
-  const required = dataSchema?.required;
-  return Array.isArray(required) ? required.filter((key) => typeof key === 'string') : [];
-}
-
-/** A field's title in the data schema, or its key. */
-function readTitleOfField(
-  dataSchema: Record<string, unknown> | undefined,
-  fieldKey: string,
-): string {
-  const properties = dataSchema?.properties;
-  const property =
-    typeof properties === 'object' && properties !== null && Object.hasOwn(properties, fieldKey)
-      ? (properties as Record<string, unknown>)[fieldKey]
-      : undefined;
-  const title =
-    typeof property === 'object' && property !== null
-      ? (property as Record<string, unknown>).title
-      : undefined;
-  return typeof title === 'string' ? title : fieldKey;
 }

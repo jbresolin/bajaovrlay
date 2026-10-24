@@ -4,6 +4,7 @@ import {
   findClockFieldKeysByRole,
   type Instance,
   type InstanceBindings,
+  type InstanceBindingsEntry,
   type RefreshBoundInstanceDataCommand,
 } from '@bajaovrlay/shared';
 
@@ -153,8 +154,18 @@ function writeRefusedFieldKeys(
     return instanceBindings;
   }
   const entryAfter =
-    refusedFieldKeys.length === 0
-      ? { instanceId: entry.instanceId, boundFields: entry.boundFields }
-      : { ...entry, refusedFieldKeys };
+    refusedFieldKeys.length === 0 ? removeRefusedFieldKeys(entry) : { ...entry, refusedFieldKeys };
   return instanceBindings.map((candidate) => (candidate === entry ? entryAfter : candidate));
+}
+
+/** The entry with its refused keys taken off, its bound and entity fields kept. */
+function removeRefusedFieldKeys(entry: InstanceBindingsEntry): InstanceBindingsEntry {
+  const entryWithoutRefusals: InstanceBindingsEntry = {
+    instanceId: entry.instanceId,
+    boundFields: entry.boundFields,
+  };
+  if (entry.entityFields !== undefined) {
+    entryWithoutRefusals.entityFields = entry.entityFields;
+  }
+  return entryWithoutRefusals;
 }

@@ -15,6 +15,10 @@ export type QuickFireTabListProps = {
   tabShown: QuickFireTab;
   panels: QuickFirePanel[];
   onTabChosen: (tab: QuickFireTab) => void;
+  /** The events waiting for the operator: the "Eventos" tab's badge (none at 0). */
+  pendingEventCount: number;
+  /** True for a few seconds after a new pending event arrived (usePendingEventAlert.ts). */
+  isEventBadgePulsing: boolean;
 };
 
 /** The element ids that tie a tab to the area it shows. */
@@ -24,7 +28,8 @@ export function buildQuickFireTabId(tabPosition: number): string {
 }
 
 /**
- * The row of tabs: one per panel and "Macros", each with the F-key that opens it written
+ * The row of tabs: one per panel, "Macros" and "Eventos" (with the count of the events
+ * waiting for the operator, pulsing when one arrives), each with the F-key that opens it written
  * small beside its name (only the tabs keyboardMap.ts lists a key for, the first four,
  * have one; quickFireTabs.ts reads it from there). A click shows that tab.
  *
@@ -40,6 +45,9 @@ export function QuickFireTabList(props: QuickFireTabListProps) {
     if (tab.kind === 'macros') {
       return ptBR.quickFire.macrosTab;
     }
+    if (tab.kind === 'events') {
+      return ptBR.events.tabName;
+    }
     return panels.find((panel) => panel.id === tab.panelId)?.name ?? tab.panelId;
   }
 
@@ -50,7 +58,7 @@ export function QuickFireTabList(props: QuickFireTabListProps) {
         const functionKeyOfThisTab = findFunctionKeyForTabPosition(tabPosition);
         return (
           <button
-            key={tab.kind === 'macros' ? 'macros' : tab.panelId}
+            key={tab.kind === 'panel' ? tab.panelId : tab.kind}
             type="button"
             role="tab"
             id={buildQuickFireTabId(tabPosition)}
@@ -63,6 +71,19 @@ export function QuickFireTabList(props: QuickFireTabListProps) {
             )}
           >
             {findTabName(tab)}
+            {tab.kind === 'events' && props.pendingEventCount > 0 ? (
+              <span
+                data-testid="pending-events-badge"
+                data-pulsing={String(props.isEventBadgePulsing)}
+                aria-label={ptBR.events.pendingBadgeLabel(props.pendingEventCount)}
+                className={cn(
+                  'rounded-full bg-destructive px-1.5 text-xs font-semibold text-white tabular-nums',
+                  props.isEventBadgePulsing && 'animate-pulse',
+                )}
+              >
+                {props.pendingEventCount}
+              </span>
+            ) : null}
             {functionKeyOfThisTab === undefined ? null : (
               <kbd aria-hidden="true" className="text-xs text-muted-foreground">
                 {ptBR.quickFire.tabKey(functionKeyOfThisTab)}

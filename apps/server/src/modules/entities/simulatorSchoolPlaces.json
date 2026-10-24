@@ -1,0 +1,405 @@
+{
+  "notice": "A cidade e a UF da escola de cada equipe fictícia do simulador (teams.fictional.json), para importar essas equipes nos cadastros. As equipes são fictícias; as escolas e cidades, não. / The city and state of the school of each of the simulator's fictional teams, to import them as entities; the teams are fictional, the schools and cities are not.",
+  "places": {
+    "UNIOESTE": {
+      "city": "Cascavel",
+      "state": "PR"
+    },
+    "FURG": {
+      "city": "Rio Grande",
+      "state": "RS"
+    },
+    "UFRN": {
+      "city": "Natal",
+      "state": "RN"
+    },
+    "IFSC": {
+      "city": "Florianópolis",
+      "state": "SC"
+    },
+    "UFRR": {
+      "city": "Boa Vista",
+      "state": "RR"
+    },
+    "UFMG": {
+      "city": "Belo Horizonte",
+      "state": "MG"
+    },
+    "UDESC": {
+      "city": "Joinville",
+      "state": "SC"
+    },
+    "UNICAMP": {
+      "city": "Campinas",
+      "state": "SP"
+    },
+    "UFF": {
+      "city": "Niterói",
+      "state": "RJ"
+    },
+    "UEL": {
+      "city": "Londrina",
+      "state": "PR"
+    },
+    "PUCPR": {
+      "city": "Curitiba",
+      "state": "PR"
+    },
+    "UFBA": {
+      "city": "Salvador",
+      "state": "BA"
+    },
+    "UFAL": {
+      "city": "Maceió",
+      "state": "AL"
+    },
+    "UFPI": {
+      "city": "Teresina",
+      "state": "PI"
+    },
+    "UFES": {
+      "city": "Vitória",
+      "state": "ES"
+    },
+    "UFSM": {
+      "city": "Santa Maria",
+      "state": "RS"
+    },
+    "Mauá": {
+      "city": "São Caetano do Sul",
+      "state": "SP"
+    },
+    "UFSJ": {
+      "city": "São João del-Rei",
+      "state": "MG"
+    },
+    "UFRJ": {
+      "city": "Rio de Janeiro",
+      "state": "RJ"
+    },
+    "UNESP": {
+      "city": "Bauru",
+      "state": "SP"
+    },
+    "UFSC": {
+      "city": "Florianópolis",
+      "state": "SC"
+    },
+    "FEI": {
+      "city": "São Bernardo do Campo",
+      "state": "SP"
+    },
+    "EESC-USP": {
+      "city": "São Carlos",
+      "state": "SP"
+    },
+    "UFSCar": {
+      "city": "São Carlos",
+      "state": "SP"
+    },
+    "UFCG": {
+      "city": "Campina Grande",
+      "state": "PB"
+    },
+    "CEFET-MG": {
+      "city": "Belo Horizonte",
+      "state": "MG"
+    },
+    "UnB": {
+      "city": "Brasília",
+      "state": "DF"
+    },
+    "UFC": {
+      "city": "Fortaleza",
+      "state": "CE"
+    },
+    "UFERSA": {
+      "city": "Mossoró",
+      "state": "RN"
+    },
+    "PUC-Rio": {
+      "city": "Rio de Janeiro",
+      "state": "RJ"
+    },
+    "UFOP": {
+      "city": "Ouro Preto",
+      "state": "MG"
+    },
+    "UNIFAP": {
+      "city": "Macapá",
+      "state": "AP"
+    },
+    "UFG": {
+      "city": "Goiânia",
+      "state": "GO"
+    },
+    "UFFS": {
+      "city": "Chapecó",
+      "state": "SC"
+    },
+    "UFOB": {
+      "city": "Barreiras",
+      "state": "BA"
+    },
+    "UNIVASF": {
+      "city": "Petrolina",
+      "state": "PE"
+    },
+    "UFLA": {
+      "city": "Lavras",
+      "state": "MG"
+    },
+    "UFJF": {
+      "city": "Juiz de Fora",
+      "state": "MG"
+    },
+    "UFAM": {
+      "city": "Manaus",
+      "state": "AM"
+    },
+    "UFMT": {
+      "city": "Cuiabá",
+      "state": "MT"
+    },
+    "UEM": {
+      "city": "Maringá",
+      "state": "PR"
+    },
+    "UTFPR": {
+      "city": "Curitiba",
+      "state": "PR"
+    },
+    "UFMA": {
+      "city": "São Luís",
+      "state": "MA"
+    },
+    "UFV": {
+      "city": "Viçosa",
+      "state": "MG"
+    },
+    "UFGD": {
+      "city": "Dourados",
+      "state": "MS"
+    },
+    "UFPB": {
+      "city": "João Pessoa",
+      "state": "PB"
+    },
+    "UNIFEI": {
+      "city": "Itajubá",
+      "state": "MG"
+    },
+    "UFRB": {
+      "city": "Cruz das Almas",
+      "state": "BA"
+    },
+    "UFMS": {
+      "city": "Campo Grande",
+      "state": "MS"
+    },
+    "UFVJM": {
+      "city": "Diamantina",
+      "state": "MG"
+    },
+    "UFRRJ": {
+      "city": "Seropédica",
+      "state": "RJ"
+    },
+    "IME": {
+      "city": "Rio de Janeiro",
+      "state": "RJ"
+    },
+    "UFRGS": {
+      "city": "Porto Alegre",
+      "state": "RS"
+    },
+    "UFU": {
+      "city": "Uberlândia",
+      "state": "MG"
+    },
+    "UFT": {
+      "city": "Palmas",
+      "state": "TO"
+    },
+    "UFPel": {
+      "city": "Pelotas",
+      "state": "RS"
+    },
+    "UFPE": {
+      "city": "Recife",
+      "state": "PE"
+    },
+    "UFS": {
+      "city": "São Cristóvão",
+      "state": "SE"
+    },
+    "UFPR": {
+      "city": "Curitiba",
+      "state": "PR"
+    },
+    "UFPA": {
+      "city": "Belém",
+      "state": "PA"
+    },
+    "UFABC": {
+      "city": "Santo André",
+      "state": "SP"
+    },
+    "UEA": {
+      "city": "Manaus",
+      "state": "AM"
+    },
+    "UFTM": {
+      "city": "Uberaba",
+      "state": "MG"
+    },
+    "IFMT": {
+      "city": "Cuiabá",
+      "state": "MT"
+    },
+    "UFRPE": {
+      "city": "Recife",
+      "state": "PE"
+    },
+    "UESC": {
+      "city": "Ilhéus",
+      "state": "BA"
+    },
+    "UFCA": {
+      "city": "Juazeiro do Norte",
+      "state": "CE"
+    },
+    "UEFS": {
+      "city": "Feira de Santana",
+      "state": "BA"
+    },
+    "UFAC": {
+      "city": "Rio Branco",
+      "state": "AC"
+    },
+    "UFRA": {
+      "city": "Belém",
+      "state": "PA"
+    },
+    "UNIR": {
+      "city": "Porto Velho",
+      "state": "RO"
+    },
+    "UESPI": {
+      "city": "Teresina",
+      "state": "PI"
+    },
+    "UFCAT": {
+      "city": "Catalão",
+      "state": "GO"
+    },
+    "UFSB": {
+      "city": "Itabuna",
+      "state": "BA"
+    },
+    "UNEMAT": {
+      "city": "Cáceres",
+      "state": "MT"
+    },
+    "UTFPR-PG": {
+      "city": "Ponta Grossa",
+      "state": "PR"
+    },
+    "UNISINOS": {
+      "city": "São Leopoldo",
+      "state": "RS"
+    },
+    "UCS": {
+      "city": "Caxias do Sul",
+      "state": "RS"
+    },
+    "FURB": {
+      "city": "Blumenau",
+      "state": "SC"
+    },
+    "UNIVILLE": {
+      "city": "Joinville",
+      "state": "SC"
+    },
+    "UPF": {
+      "city": "Passo Fundo",
+      "state": "RS"
+    },
+    "UNIJUÍ": {
+      "city": "Ijuí",
+      "state": "RS"
+    },
+    "UNIT": {
+      "city": "Aracaju",
+      "state": "SE"
+    },
+    "UNEB": {
+      "city": "Salvador",
+      "state": "BA"
+    },
+    "UEPA": {
+      "city": "Belém",
+      "state": "PA"
+    },
+    "IFAM": {
+      "city": "Manaus",
+      "state": "AM"
+    },
+    "UNIFAL": {
+      "city": "Alfenas",
+      "state": "MG"
+    },
+    "UNIFESP": {
+      "city": "São José dos Campos",
+      "state": "SP"
+    },
+    "UNITAU": {
+      "city": "Taubaté",
+      "state": "SP"
+    },
+    "IFRJ": {
+      "city": "Rio de Janeiro",
+      "state": "RJ"
+    },
+    "IFSP": {
+      "city": "São Paulo",
+      "state": "SP"
+    },
+    "IFMG": {
+      "city": "Belo Horizonte",
+      "state": "MG"
+    },
+    "IFCE": {
+      "city": "Fortaleza",
+      "state": "CE"
+    },
+    "IFPE": {
+      "city": "Recife",
+      "state": "PE"
+    },
+    "IFRN": {
+      "city": "Natal",
+      "state": "RN"
+    },
+    "IFES": {
+      "city": "Vitória",
+      "state": "ES"
+    },
+    "Poli-USP": {
+      "city": "São Paulo",
+      "state": "SP"
+    },
+    "UEPG": {
+      "city": "Ponta Grossa",
+      "state": "PR"
+    },
+    "UNICENTRO": {
+      "city": "Guarapuava",
+      "state": "PR"
+    },
+    "UEPB": {
+      "city": "Campina Grande",
+      "state": "PB"
+    }
+  }
+}

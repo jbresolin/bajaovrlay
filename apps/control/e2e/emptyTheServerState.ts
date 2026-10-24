@@ -1,11 +1,20 @@
 // Test support: puts the real server of the Playwright run back to how a new database
 // has it (nothing on air, nothing previewed, no layer marked "vai limpar", no item in the rundown or in any panel, no
 // macro, only the seeded panel "Atalhos", only the seeded simulator, off and with its
-// default settings, and no correction of a source's value), so every browser test starts from the same place whatever ran
+// default settings, no correction of a source's value, the event rules at their defaults
+// with no item, no event waiting, and an empty entity library and media store), so every
+// browser test starts from the same place whatever ran
 // before it, in any order. playwright.config.ts starts that server.
 
+import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
+
+// BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset. Passed on for
+// playwright.config.ts, which moves the control page's own port by it.
+export { portOffsetOfTheBrowserTests };
+
 /** The real server's port in a Playwright run; far from 3000 so it never meets `pnpm dev`. */
-export const realServerPort = 5187;
+export const realServerPort = 5187 + portOffsetOfTheBrowserTests;
 
 const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 
@@ -42,12 +51,18 @@ type StateTheResetReads = {
   macroRuns: { macroId: string }[];
   dataSources: { id: string; isEnabled: boolean; isRecording: boolean }[];
   overrides: { sourceId: string; scope: string; field: string; carNumber?: number }[];
+  events: { eventId: string; status: string }[];
+  teams: { carNumber: number }[];
+  people: { personId: string }[];
+  sponsors: { sponsorId: string }[];
+  scheduleSlots: { slotId: string }[];
+  media: { mediaId: string }[];
 };
 
 /** A command the reset sends: its type and the one or two fields it carries. */
 type ResetCommand = {
   type: string;
-  itemId?: string;
+  itemId?: string | null;
   macroId?: string;
   panelId?: string;
   name?: string;
@@ -59,14 +74,58 @@ type ResetCommand = {
   scope?: string;
   field?: string;
   carNumber?: number;
+  kind?: string;
+  mode?: string;
+  durationMs?: number;
+  maxAgeMs?: number | null;
+  eventId?: string;
+  entityType?: string;
+  personId?: string;
+  sponsorId?: string;
+  slotId?: string;
+  mediaId?: string;
 };
+
+// The event rules as a new database has them (BAJAOVRLAY-44), but with no item: the reset
+// deletes every item, the seeded notice items included, so a rule naming one would be
+// refused at every show.
+const seededEventRulesWithoutItems = [
+  { kind: 'newIncident', mode: 'ask', durationMs: 10_000, maxAgeMs: null },
+  { kind: 'fastestLap', mode: 'auto', durationMs: 8_000, maxAgeMs: 120_000 },
+  { kind: 'leaderChanged', mode: 'ignore', durationMs: 6_000, maxAgeMs: 120_000 },
+  { kind: 'manual', mode: 'ask', durationMs: 10_000, maxAgeMs: null },
+  { kind: 'superChat', mode: 'ask', durationMs: 15_000, maxAgeMs: null },
+];
+
+/**
+ * Puts the event inbox back: every rule at its default with no item, then every event
+ * still waiting dismissed, so no test finds the last one's penalty waiting. A waiting
+ * event the automatic runner expires in between is refused as no longer waiting, which
+ * is as good as dismissed.
+ */
+async function putTheEventInboxBackToItsDefaults(): Promise<void> {
+  for (const rule of seededEventRulesWithoutItems) {
+    await sendCommandToRealServer({ type: 'updateEventRule', ...rule, itemId: null });
+  }
+  const state = await readStateFromRealServer();
+  for (const event of state.events) {
+    if (event.status === 'pending' || event.status === 'queued') {
+      await sendCommandToRealServer({ type: 'dismissEvent', eventId: event.eventId }, [
+        'EVENT_NOT_WAITING',
+      ]);
+    }
+  }
+}
 
 /**
  * Sends one command to the real server over a WebSocket of its own, exactly as the
  * control page does, and resolves once the server has answered ok. Rejects when the
  * server refuses the command or does not answer within five seconds.
  */
-function sendCommandToRealServer(command: ResetCommand): Promise<void> {
+function sendCommandToRealServer(
+  command: ResetCommand,
+  refusalCodesThatMeanItIsDone: string[] = [],
+): Promise<void> {
   const requestId = `pedido-${crypto.randomUUID()}`;
   const socket = new WebSocket(`ws://127.0.0.1:${realServerPort}/ws`);
 
@@ -93,7 +152,10 @@ function sendCommandToRealServer(command: ResetCommand): Promise<void> {
       }
       clearTimeout(giveUpTimer);
       socket.close();
-      if (message.ok === true) {
+      const isRefusedAsAlreadyDone = refusalCodesThatMeanItIsDone.includes(
+        message.error?.code ?? '',
+      );
+      if (message.ok === true || isRefusedAsAlreadyDone) {
         resolve();
       } else {
         const errorCode = message.error?.code ?? 'UNKNOWN';
@@ -176,6 +238,45 @@ async function putTheDataSourcesBackToTheSeed(state: StateTheResetReads): Promis
 }
 
 /**
+ * Empties the entity library and the media store: every team, person, sponsor and slot
+ * deleted, then every image, which the server deletes only once no record names it.
+ */
+async function emptyTheEntityLibrary(): Promise<void> {
+  const state = await readStateFromRealServer();
+  for (const team of state.teams) {
+    await sendCommandToRealServer({
+      type: 'deleteEntity',
+      entityType: 'team',
+      carNumber: team.carNumber,
+    });
+  }
+  for (const person of state.people) {
+    await sendCommandToRealServer({
+      type: 'deleteEntity',
+      entityType: 'person',
+      personId: person.personId,
+    });
+  }
+  for (const sponsor of state.sponsors) {
+    await sendCommandToRealServer({
+      type: 'deleteEntity',
+      entityType: 'sponsor',
+      sponsorId: sponsor.sponsorId,
+    });
+  }
+  for (const slot of state.scheduleSlots) {
+    await sendCommandToRealServer({
+      type: 'deleteEntity',
+      entityType: 'scheduleSlot',
+      slotId: slot.slotId,
+    });
+  }
+  for (const image of state.media) {
+    await sendCommandToRealServer({ type: 'deleteMedia', mediaId: image.mediaId });
+  }
+}
+
+/**
  * Empties the real server. First it waits for a running macro to end. Then `clearAll`
  * takes everything off air and off the preview output (it removes every instance, of
  * both outputs, and every "vai limpar" mark, so no stopPreview is needed); every item is deleted, rundown and panel alike, which also leaves the
@@ -183,8 +284,10 @@ async function putTheDataSourcesBackToTheSeed(state: StateTheResetReads): Promis
  * deleted (each is empty by then), and "Atalhos" gets its seeded name back. The seeded
  * rundown stays. The data sources go back to the seeded simulator alone, off, not
  * recording and with its default settings (putTheDataSourcesBackToTheSeed); recordings
- * stay listed. Every correction of a source's value is removed (clearOverride). Each test
- * file calls this in a `test.beforeEach`, so a test never
+ * stay listed. Every correction of a source's value is removed (clearOverride). The event
+ * rules go back to their defaults with no item, and every waiting event is dismissed
+ * (putTheEventInboxBackToItsDefaults). The entity library and its images are emptied.
+ * Each test file calls this in a `test.beforeEach`, so a test never
  * depends on the one before it.
  * What could go wrong: it deletes whatever the server holds, so it must only ever be
  * pointed at the Playwright run's own server and SQLite file, which the port guarantees.
@@ -222,4 +325,6 @@ export async function emptyTheServerState(): Promise<void> {
     });
   }
   await putTheDataSourcesBackToTheSeed(state);
+  await putTheEventInboxBackToItsDefaults();
+  await emptyTheEntityLibrary();
 }

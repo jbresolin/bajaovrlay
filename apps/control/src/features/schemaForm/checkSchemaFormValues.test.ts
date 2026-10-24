@@ -74,7 +74,7 @@ describe('checkSchemaFormValues, on a correct form', () => {
     expect(check.status, 'the manifest defaults must be valid').toBe('valid');
     expect(
       check.status === 'valid' ? check.checkedFields : [],
-      'the reference moment is the server’s to fill, and blank laps are cleared',
+      'the reference moment is the server’s to fill, blank laps are cleared, the band switch is on',
     ).toEqual([
       { key: 'sessionName', outcome: 'value', value: 'Enduro de Resistência' },
       { key: 'state', outcome: 'value', value: 'pre' },
@@ -83,6 +83,7 @@ describe('checkSchemaFormValues, on a correct form', () => {
       { key: 'referenceWallClockMs', outcome: 'takeTime' },
       { key: 'running', outcome: 'value', value: false },
       { key: 'lapsCompletedByLeader', outcome: 'cleared' },
+      { key: 'showFlagBand', outcome: 'value', value: true },
     ]);
   });
 

@@ -16,16 +16,22 @@
  *   - dispose stops the per-frame clock redraw and kills the running timelines; a play
  *     that was animating when dispose came still resolves (with 409) instead of
  *     hanging, and a dispose that lands while load is still waiting is not undone.
+ *   - load asks the page for the theme's face (the family in `--font-display`, read
+ *     through the graphic itself, so the token reaches inside its shadow root) before
+ *     it draws, through the theme's `waitForThemeFontsToBeReady`.
  *
  * What these tests deliberately do not cover:
  *   - updateAction, which race-clock.updateAction.test.ts covers.
- *   - Real rendering, fonts and timing; jsdom draws nothing. The Playwright suites in
- *     e2e/ run the built component in Chromium for the lifecycle order and screenshots.
- *   - Loading the display font: jsdom has no FontFace, so displayFont.ts is replaced
- *     by a stand-in that is ready at once.
+ *   - Real rendering, fonts and timing; jsdom draws nothing and has no `document.fonts`
+ *     (except in the one test that puts a stand-in there), so load's wait for the
+ *     theme's font ends at once, and no theme token is on the page, so every timeline
+ *     lasts 0 ms (the theme's rule for a missing token). The Playwright suites in e2e/
+ *     run the built component in Chromium for the lifecycle order, the motion and the
+ *     screenshots. How the wait itself behaves (a face that fails, a page without a
+ *     token) is the theme's waitForThemeFonts.test.ts.
  */
 import { gsap } from 'gsap';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 
 import {
   createGreenFlagEnduroData,
@@ -36,9 +42,49 @@ import {
   takeControlOfFramesAndTime,
 } from './raceClockOnThePage.testSupport.js';
 
-vi.mock('./displayFont.js', () => ({
-  loadDisplayFontOnce: () => Promise.resolve(),
-}));
+/**
+ * Puts a stand-in `document.fonts` on jsdom's page that writes down every face asked
+ * for and answers at once, and takes it off again when the test ends.
+ */
+function installStandInPageFontsThatRecordRequests(): { loadRequests: string[] } {
+  const loadRequests: string[] = [];
+  const standInFonts = {
+    load: (fontSpec: string) => {
+      loadRequests.push(fontSpec);
+      return Promise.resolve([]);
+    },
+    ready: Promise.resolve(),
+  };
+  Object.defineProperty(document, 'fonts', { value: standInFonts, configurable: true });
+  onTestFinished(() => {
+    Object.defineProperty(document, 'fonts', { value: undefined, configurable: true });
+  });
+  return { loadRequests };
+}
+
+describe('load and the theme’s face', () => {
+  it('asks the page for the face named by --font-display, read through the graphic, before it draws', async () => {
+    // Arrange: the theme's face token on :root (as the renderer page has it), a page
+    // that records font requests, and a race clock ready to load.
+    document.documentElement.style.setProperty('--font-display', "'Bebas Neue', sans-serif");
+    onTestFinished(() => {
+      document.documentElement.style.removeProperty('--font-display');
+    });
+    const pageFonts = installStandInPageFontsThatRecordRequests();
+    const raceClock = createRaceClockOnThePage();
+
+    // Act: load it, as a renderer does.
+    const answer = await loadRaceClockWithData(raceClock, createGreenFlagEnduroData());
+
+    // Assert: the load went through, and the page was asked for the theme's face by
+    // name, so a cold OBS start fetches it before the first frame.
+    expect(answer, 'load must answer 200').toEqual({ statusCode: 200 });
+    expect(
+      pageFonts.loadRequests,
+      'load must ask for the face named by --font-display, read through the shadow boundary',
+    ).toEqual(["1em 'Bebas Neue', sans-serif"]);
+  });
+});
 
 describe('calls made at the wrong moment', () => {
   it('answers 409 to playAction before load, without throwing', async () => {

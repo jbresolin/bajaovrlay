@@ -41,9 +41,10 @@ export type ItemEditorFormFieldsProps = {
  * The six fields every item has, whatever its graphic: graphic, layer, label, colour,
  * notes and auto-out. Text fields are registered with react-hook-form directly; the
  * dropdowns are shadcn/ui controls with no native input to register, so each sits in a
- * `Controller`. Choosing a graphic also moves the layer to that graphic's default.
- * For a stored item the graphic is read-only with a note; the layer stays choosable, and
- * a new layer is saved for the item's next takes (it never moves what is on air).
+ * `Controller`. A new item opens with no graphic chosen ("Escolha um gráfico…"), and
+ * choosing a graphic moves the layer to that graphic's default. For a stored item the
+ * graphic is read-only with a note; the layer stays choosable, and a new layer is saved
+ * for the item's next takes (it never moves what is on air).
  */
 export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
   const { form, graphics, layers, isEditingStoredItem } = props;
@@ -93,7 +94,7 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
                 className="w-full"
                 {...buildErrorAttributesForControl(controlIds.graphic, errorMessages.graphic)}
               >
-                <SelectValue />
+                <SelectValue placeholder={ptBR.itemEditor.graphicPlaceholder} />
               </SelectTrigger>
               <SelectContent>
                 {graphics.map((graphic) => (
@@ -122,7 +123,8 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
                 className="w-full"
                 {...buildErrorAttributesForControl(controlIds.layer, errorMessages.layer)}
               >
-                <SelectValue />
+                {/* Empty until a graphic is chosen, which brings its default layer. */}
+                <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
               </SelectTrigger>
               <SelectContent>
                 {layers.map((layer) => (

@@ -7,7 +7,8 @@
  *  1. A field set to "filled by the server at the take" is not checked at all: it has no
  *     value yet, and the server writes one. Neither is a clock field the whole clock fills
  *     ("Relógio da fonte" on the time field). A field set to "Fonte" or "Relógio da fonte"
- *     is read as its binding (bindingFormValue.ts), or gets that binding's message.
+ *     is read as its binding (bindingFormValue.ts), or gets that binding's message; one
+ *     set to "Cadastro" as its entity reference (entityReferenceFormValue.ts).
  *  2. What was typed is read as data. A number, an mm:ss time or a date that cannot be
  *     read gets its message.
  *  3. The blank rules: a required field left blank is refused (also a required text: an
@@ -17,7 +18,7 @@
  *     Zod schema built from the same JSON Schema.
  * The server's Ajv check stays the authority; see zodSchemaFromDataSchema.ts.
  */
-import type { BindingFieldValue } from '@bajaovrlay/shared';
+import type { BindingFieldValue, EntityFieldValue, EventFieldValue } from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -27,6 +28,12 @@ import {
   listClockFieldKeysFilledByTheWholeClock,
 } from './bindingChoices';
 import { emptySchemaFormBindingValue, readBindingFromSchemaFormValue } from './bindingFormValue';
+import {
+  canFieldReadTheEntityLibrary,
+  emptySchemaFormEntityReferenceValue,
+  readEntityReferenceFromSchemaFormValue,
+} from './entityReferenceFormValue';
+import { canFieldBeFilledByAnEvent, readEventFieldOfFormField } from './eventFieldFormValue';
 import { type ProblemReadingFormValue, readDataValueFromFormValue } from './fieldValueConversion';
 import { readOwnValueOfRecord } from './plainRecord';
 import type { SchemaFormDescription } from './schemaFormDescription';
@@ -39,7 +46,9 @@ export type CheckedSchemaFormField =
   | { key: string; outcome: 'cleared' }
   | { key: string; outcome: 'takeTime' }
   | { key: string; outcome: 'binding'; binding: BindingFieldValue }
-  | { key: string; outcome: 'filledByTheWholeClock' };
+  | { key: string; outcome: 'entity'; reference: EntityFieldValue }
+  | { key: string; outcome: 'filledByTheWholeClock' }
+  | { key: string; outcome: 'eventField'; eventField: EventFieldValue };
 
 /** The pt-BR message for one wrong field. */
 export type SchemaFormFieldMessage = {
@@ -116,6 +125,38 @@ export function checkSchemaFormValues(
         fieldMessages.push({ fieldKey: field.key, message: bindingRead.message });
       } else {
         checkedFields.push({ key: field.key, outcome: 'binding', binding: bindingRead.binding });
+      }
+      continue;
+    }
+
+    // "Evento" (BAJAOVRLAY-44): the payload field chosen, or the message asking for one.
+    if (kind === 'eventField' && canFieldBeFilledByAnEvent(description.dataSchema, field.key)) {
+      const eventFieldRead = readEventFieldOfFormField(field, formValues, description.dataSchema);
+      if (eventFieldRead.status === 'problem') {
+        fieldMessages.push({ fieldKey: field.key, message: eventFieldRead.message });
+      } else {
+        const eventField = eventFieldRead.eventField;
+        checkedFields.push({ key: field.key, outcome: 'eventField', eventField });
+      }
+      continue;
+    }
+    if (kind === 'entity' && canFieldReadTheEntityLibrary(description.dataSchema, field.key)) {
+      const referenceValue =
+        readOwnValueOfRecord(formValues.entityReferences ?? {}, field.key) ??
+        emptySchemaFormEntityReferenceValue;
+      const referenceRead = readEntityReferenceFromSchemaFormValue(
+        field,
+        referenceValue,
+        description.dataSchema,
+      );
+      if (referenceRead.status === 'problem') {
+        fieldMessages.push({ fieldKey: field.key, message: referenceRead.message });
+      } else {
+        checkedFields.push({
+          key: field.key,
+          outcome: 'entity',
+          reference: referenceRead.reference,
+        });
       }
       continue;
     }

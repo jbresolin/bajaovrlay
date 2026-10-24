@@ -11,7 +11,7 @@ that led to the choice, then `directions/ardosia/README.md` and its `catalogue.m
 docs/design/
   README.md               this file: what lives here and the page contract
   sample-data.json        the real sample race, every number already written as on-air text
-  fonts/                  self-hosted OFL fonts and fonts.css (see fonts/README.md)
+  fonts/                  a pointer to the product's self-hosted face (packages/theme/fonts)
   tools/                  buildSampleData, screenshot, checkLayout, contrastRatio, and what a
                           slate direction is built from: slateTemplates.mjs (the on-air
                           graphics' markup), slateSheets.mjs (the reference sheets),

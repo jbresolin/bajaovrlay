@@ -86,7 +86,10 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      '/api': serverAddress,
+      // The page's Host is kept (a string target would turn changeOrigin on), so the
+      // server's Origin check of uploads (modules/media/uploadOrigin.ts) sees the page's
+      // own address on both headers and lets the dev page upload, as the built page does.
+      '/api': { target: serverAddress, changeOrigin: false },
       '/health': serverAddress,
       '/ws': { target: serverAddress, ws: true },
       // The program monitor frames /render/?monitor=1, which loads graphics from /graphics/. Both
@@ -94,6 +97,10 @@ export default defineConfig({
       // (`pnpm build`), not the renderer's own dev server on port 5174.
       '/render': serverAddress,
       '/graphics': serverAddress,
+      // The framed renderer page links the theme (tokens and font) from /theme/ as well.
+      '/theme': serverAddress,
+      // The images of the media store: Cadastros' thumbnails and the graphics' logos.
+      '/media': serverAddress,
     },
   },
 });

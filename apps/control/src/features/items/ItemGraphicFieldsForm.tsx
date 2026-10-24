@@ -1,7 +1,8 @@
 import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
-import { type Ref, useImperativeHandle, useState } from 'react';
+import { type Ref, useEffect, useImperativeHandle, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { useEntityLibrary } from '@/features/entityLibrary/useEntityLibrary';
 import {
   buildChangedItemFieldsFromSchemaForm,
   buildItemFieldsFromSchemaForm,
@@ -12,6 +13,7 @@ import {
   type SchemaFormValues,
 } from '@/features/schemaForm';
 import { ptBR } from '@/i18n/ptBR';
+import { useServerState } from '@/state/ControlPageStateProvider';
 
 import { fillGraphicFieldsOfItemEditor } from './graphicFieldsOfItemEditor';
 import { useBindingOptionsOfItemEditor } from './useBindingOptionsOfItemEditor';
@@ -56,6 +58,11 @@ export type ItemGraphicFieldsFormProps = {
   handleRef: Ref<ItemGraphicFieldsFormHandle>;
   /** true while the stored item is on the program output ("Atualizar no ar" is offered). */
   isItemOnAir: boolean;
+  /**
+   * Told whether any field is "Evento" now, and again each time that changes: such an
+   * item goes on air only through its event, so the panel turns "Salvar e disparar" off.
+   */
+  onIsFilledByAnEventChanged: (isFilledByAnEvent: boolean) => void;
 };
 
 /**
@@ -71,9 +78,15 @@ export type ItemGraphicFieldsFormProps = {
 export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   const { graphic, fieldsToShow, whenFieldsAreChecked, handleRef, isItemOnAir } = props;
 
+  // The sources a new item's suggested "Fonte" is judged by, as the page holds them now.
+  const dataSources = useServerState((state) => state.dataSources);
+  const dataSnapshots = useServerState((state) => state.dataSnapshots);
   // Decided at the first draw and kept: a newer copy of the graphics slice (a reconnect)
-  // must not refill the form over what the operator has typed.
-  const [graphicFields] = useState(() => fillGraphicFieldsOfItemEditor(graphic, fieldsToShow));
+  // must not refill the form over what the operator has typed, and a source that comes
+  // on later must not change a "Fonte" the operator already saw.
+  const [graphicFields] = useState(() =>
+    fillGraphicFieldsOfItemEditor(graphic, fieldsToShow, { dataSources, dataSnapshots }),
+  );
   const form = useForm<SchemaFormValues>({
     defaultValues: graphicFields.formValues,
     resolver: buildSchemaFormResolver(graphicFields.description),
@@ -105,17 +118,31 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   // Watched so the note below follows the operator's choices as they are made.
   const kindsNow = useWatch({ control: form.control, name: 'kinds' });
   const bindingsNow = useWatch({ control: form.control, name: 'bindings' });
+  const entityReferencesNow = useWatch({ control: form.control, name: 'entityReferences' });
   const isSourceChangeWaitingForTheTake =
     isItemOnAir &&
     hasSourceChoiceChangedSinceOpened(
       graphicFields.description,
-      { ...graphicFields.formValues, kinds: kindsNow, bindings: bindingsNow },
+      {
+        ...graphicFields.formValues,
+        kinds: kindsNow,
+        bindings: bindingsNow,
+        entityReferences: entityReferencesNow,
+      },
       graphicFields.formValues,
     );
 
+  const isFilledByAnEventNow = Object.values(kindsNow).includes('eventField');
+  const { onIsFilledByAnEventChanged } = props;
+  useEffect(() => {
+    onIsFilledByAnEventChanged(isFilledByAnEventNow);
+  }, [isFilledByAnEventNow, onIsFilledByAnEventChanged]);
+
   const hasFieldsThatCouldNotBeRead = graphicFields.labelsOfFieldsThatCouldNotBeRead.length > 0;
-  // The item editor alone lets a field read a data source (BAJAOVRLAY-20).
+  // The item editor alone lets a field read a data source (BAJAOVRLAY-20) or the entity
+  // library (BAJAOVRLAY-19).
   const bindingOptions = useBindingOptionsOfItemEditor();
+  const entityLibrary = useEntityLibrary();
 
   return (
     <>
@@ -131,6 +158,7 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
         description={graphicFields.description}
         controlIdPrefix={graphicFieldsControlIdPrefix}
         bindingOptions={bindingOptions}
+        entityLibrary={entityLibrary}
       />
       {isSourceChangeWaitingForTheTake && (
         <p role="status" className="text-sm text-muted-foreground">

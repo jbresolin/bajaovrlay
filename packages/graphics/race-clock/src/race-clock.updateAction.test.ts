@@ -13,26 +13,26 @@
  *     its data is what the next play shows.
  *   - A partial update on air changes what it names and keeps the rest.
  *   - A bad update answers 400 naming the field and leaves the previous data shown.
+ *   - The flag band switched off and on again on air keeps the very same card and band
+ *     elements (nothing is rebuilt), marks the card so the styles lower it, and hides
+ *     or shows the band; an update that leaves the switch out changes nothing of it.
  *
  * What these tests deliberately do not cover:
- *   - The flag wipe animation; jsdom draws nothing, so e2e/raceClockOnAir.e2e.ts checks
- *     the wipe is gradual in Chromium.
- *   - Loading the display font: jsdom has no FontFace, so displayFont.ts is replaced
- *     by a stand-in that is ready at once.
+ *   - The flag crossfade and the card growing or shrinking; jsdom draws nothing, so
+ *     e2e/raceClockOnAir.e2e.ts checks both are gradual in Chromium.
+ *   - Fonts: jsdom has no `document.fonts`, so load's wait for the theme's font ends at
+ *     once.
  */
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import {
   createGreenFlagEnduroData,
   createRaceClockOnThePage,
+  findPartOfRaceClock,
   loadRaceClockWithData,
   readPanelOpacity,
   readShownText,
 } from './raceClockOnThePage.testSupport.js';
-
-vi.mock('./displayFont.js', () => ({
-  loadDisplayFontOnce: () => Promise.resolve(),
-}));
 
 describe('updateAction before load', () => {
   it('answers 409 with a pt-BR message, without throwing', async () => {
@@ -134,5 +134,83 @@ describe('updateAction on air', () => {
       readShownText(raceClock, 'race-clock-flag-label'),
       'a refused update must leave the green flag on air',
     ).toBe('VERDE');
+  });
+});
+
+describe('the flag band switched on air', () => {
+  it('lowers the card and hides the band on the same elements when switched off', async () => {
+    // Arrange: a race clock on air with its band, and its card and band elements noted.
+    const raceClock = createRaceClockOnThePage();
+    await loadRaceClockWithData(raceClock, createGreenFlagEnduroData());
+    await raceClock.playAction({ skipAnimation: true });
+    const panelBefore = findPartOfRaceClock(raceClock, 'race-clock-panel');
+    const flagBandBefore = findPartOfRaceClock(raceClock, 'race-clock-flag-band');
+
+    // Act: the operator switches the band off while the clock is on air.
+    const answer = await raceClock.updateAction({
+      data: { showFlagBand: false },
+      skipAnimation: true,
+    });
+    const panelAfter = findPartOfRaceClock(raceClock, 'race-clock-panel');
+    const flagBandAfter = findPartOfRaceClock(raceClock, 'race-clock-flag-band');
+
+    // Assert: 200; the card and the band are the same elements, the card is marked as
+    // without its band (the styles lower it by the band's height from that mark) and
+    // the band is hidden from assistive technology.
+    expect(answer, 'switching the band off must answer 200').toEqual({ statusCode: 200 });
+    expect(panelAfter, 'the card must be the same element after the switch').toBe(panelBefore);
+    expect(flagBandAfter, 'the band must be the same element after the switch').toBe(
+      flagBandBefore,
+    );
+    expect(panelAfter?.dataset.flagBand, 'the card must be marked as without its band').toBe(
+      'hidden',
+    );
+    expect(
+      flagBandAfter?.getAttribute('aria-hidden'),
+      'the band must be hidden once switched off',
+    ).toBe('true');
+  });
+
+  it('brings the band back on the same elements when switched on again', async () => {
+    // Arrange: a race clock on air whose band was switched off.
+    const raceClock = createRaceClockOnThePage();
+    await loadRaceClockWithData(raceClock, { ...createGreenFlagEnduroData(), showFlagBand: false });
+    await raceClock.playAction({ skipAnimation: true });
+    const panelBefore = findPartOfRaceClock(raceClock, 'race-clock-panel');
+
+    // Act: switch the band back on.
+    const answer = await raceClock.updateAction({
+      data: { showFlagBand: true },
+      skipAnimation: true,
+    });
+    const panelAfter = findPartOfRaceClock(raceClock, 'race-clock-panel');
+    const flagBandAfter = findPartOfRaceClock(raceClock, 'race-clock-flag-band');
+
+    // Assert: 200, the same card, marked as with its band, and the band shown, still
+    // reading the green flag it was loaded with.
+    expect(answer, 'switching the band on must answer 200').toEqual({ statusCode: 200 });
+    expect(panelAfter, 'the card must be the same element after the switch').toBe(panelBefore);
+    expect(panelAfter?.dataset.flagBand, 'the card must be marked as with its band').toBe('shown');
+    expect(flagBandAfter?.getAttribute('aria-hidden'), 'the band must be shown again').toBeNull();
+    expect(
+      readShownText(raceClock, 'race-clock-flag-label'),
+      'the band that comes back must show the flag the clock holds',
+    ).toBe('VERDE');
+  });
+
+  it('leaves the band as it is when an update does not name the switch', async () => {
+    // Arrange: a race clock on air without its band.
+    const raceClock = createRaceClockOnThePage();
+    await loadRaceClockWithData(raceClock, { ...createGreenFlagEnduroData(), showFlagBand: false });
+    await raceClock.playAction({ skipAnimation: true });
+
+    // Act: the leader completes lap 13; the update says nothing about the band.
+    await raceClock.updateAction({ data: { lapsCompletedByLeader: 13 }, skipAnimation: true });
+
+    // Assert: the card is still without its band.
+    expect(
+      findPartOfRaceClock(raceClock, 'race-clock-panel')?.dataset.flagBand,
+      'an update that leaves the switch out must not bring the band back',
+    ).toBe('hidden');
   });
 });

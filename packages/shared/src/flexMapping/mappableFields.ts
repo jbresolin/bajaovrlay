@@ -33,6 +33,8 @@ export function listMappableFieldsOfShape(shapeKey: DataShapeKey): MappableField
       return listStandingsFields();
     case 'brackets':
       return [];
+    case 'incidents':
+      return listIncidentsFields();
   }
 }
 
@@ -104,10 +106,12 @@ function listPositionsFields(): MappableField[] {
     entryField('status', carLabels.status, true),
     entryField('lastLapMs', carLabels.lastLapMs, false),
     entryField('bestLapMs', carLabels.bestLapMs, false),
+    entryField('bestLapNumber', carLabels.bestLapNumber, false),
     entryField('gapToLeaderMs', carLabels.gapToLeaderMs, false),
     entryField('gapToLeaderLaps', carLabels.gapToLeaderLaps, false),
     entryField('intervalMs', carLabels.intervalMs, false),
     entryField('pitStops', carLabels.pitStops, false),
+    entryField('fuelStops', carLabels.fuelStops, false),
   ];
 }
 
@@ -127,5 +131,27 @@ function listStandingsFields(): MappableField[] {
     entryField('teamName', teamLabels.teamName, true),
     entryField('schoolName', teamLabels.schoolName, true),
     entryField('points', teamLabels.points, true),
+  ];
+}
+
+/**
+ * The incidents' own fields, then the fields of each incident: what a source must send for
+ * a penalty to reach the inbox, then what makes the notice richer (BAJAOVRLAY-44).
+ */
+function listIncidentsFields(): MappableField[] {
+  const incidentLabels = ptBRDataShapes.incidentsEntryFieldLabels;
+  const extraLabels = ptBRFlexMapping.extraFieldLabels;
+  return [
+    topLevelField('sessionId', extraLabels.sessionId, true),
+    topLevelField('updatedAtMs', extraLabels.updatedAtMs, true),
+    entryField('incidentId', incidentLabels.incidentId, true),
+    entryField('carNumber', incidentLabels.carNumber, true),
+    entryField('teamName', incidentLabels.teamName, true),
+    entryField('schoolName', incidentLabels.schoolName, true),
+    entryField('kind', incidentLabels.kind, true),
+    entryField('reason', incidentLabels.reason, true),
+    entryField('penaltyText', incidentLabels.penaltyText, false),
+    entryField('lap', incidentLabels.lap, false),
+    entryField('atMs', incidentLabels.atMs, false),
   ];
 }

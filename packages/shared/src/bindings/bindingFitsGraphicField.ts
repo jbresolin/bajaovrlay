@@ -30,9 +30,9 @@ function readPropertiesOfDataSchema(dataSchema: unknown): Record<string, unknown
 /**
  * What a data schema says about one top-level field, or undefined when there is no schema
  * or it does not declare the field (a key such as `constructor` is not found unless the
- * manifest wrote it).
+ * manifest wrote it). Also read by the entity references' fit (entities/).
  */
-function readSchemaPropertyOfField(
+export function readSchemaPropertyOfField(
   dataSchema: unknown,
   fieldKey: string,
 ): Record<string, unknown> | undefined {
@@ -134,7 +134,7 @@ function listValueTypesOfJsonSchemaType(jsonSchemaType: unknown): BindableValueT
     case 'boolean':
       return ['boolean'];
     case 'array':
-      return ['positionsEntries', 'standingsEntries', 'bracketsRounds'];
+      return ['positionsEntries', 'standingsEntries', 'bracketsRounds', 'incidentsEntries'];
     default:
       return [];
   }

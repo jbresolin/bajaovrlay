@@ -25,12 +25,15 @@
  *     so each data source test restarts the race itself ("Reiniciar corrida").
  *   - With the simulator's session name corrected ("Corrigir valor…"), `emptyTheServerState`
  *     leaves no correction (BAJAOVRLAY-20).
+ *   - With the simulator's teams imported in Cadastros and an image uploaded,
+ *     `emptyTheServerState` leaves no team and no image (BAJAOVRLAY-19).
  *   - Called on a server that is already empty, it changes nothing and does not fail.
  *
  * What these tests deliberately do not cover:
  *   - That the other test files call it before each test; each of them does so in a
  *     `test.beforeEach` at its top, which is there to be read.
  *   - Layers and graphics: no command changes them, so there is nothing to put back.
+ *   - The event rules and waiting events (BAJAOVRLAY-44); emptyServerStateEventInbox.e2e.ts.
  *   - The event log, which keeps its rows; no browser test reads it.
  *   - A macro still running when the reset starts: the reset waits for it to end, which
  *     the macro e2e (macroTakeWaitClear.e2e.ts) leaves behind only for half a second.
@@ -57,7 +60,17 @@ import {
   turnSourceOnWithItsSwitch,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
-import { openItemEditorWithNewGraphic, saveAndTakeTheItemInTheEditor } from './previewTestSteps';
+import {
+  openTheEntityLibraryPage,
+  readTheLibraryFromTheRealServer,
+  uploadALogoToTheRealServer,
+} from './entityLibraryTestSteps';
+import {
+  chooseGraphicInTheItemEditor,
+  openItemEditorWithNewGraphic,
+  raceClockGraphicName,
+  saveAndTakeTheItemInTheEditor,
+} from './previewTestSteps';
 import { createRaceClockButtonInPanelShown, findQuickFireArea } from './quickFireTestSteps';
 
 /** Opens the control page and waits until it says it is connected to the server. */
@@ -88,6 +101,7 @@ test.describe('emptying the server state', () => {
     const quickEditArea = page.getByRole('region', { name: 'Programa e edição rápida' });
     await page.getByRole('button', { name: '+ Item' }).click();
     const itemEditor = page.getByRole('region', { name: 'Editor de item' });
+    await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
     await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
     await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro — Largada');
     await saveAndTakeTheItemInTheEditor(itemEditor);
@@ -212,8 +226,8 @@ test.describe('emptying the server state', () => {
     ).toBeVisible();
     await expect(
       quickFireArea.getByRole('tab'),
-      'after the reset only the seeded panel and the Macros tab may be left',
-    ).toHaveText([/^Atalhos/, /^Macros/]);
+      'after the reset only the seeded panel and the fixed Macros and Eventos tabs may be left',
+    ).toHaveText([/^Atalhos/, /^Macros/, /^Eventos/]);
     await quickFireArea.getByRole('tab', { name: 'Atalhos' }).click();
     await expect(
       quickFireArea.getByText('Crie um item aqui para ter um atalho'),
@@ -311,6 +325,26 @@ test.describe('emptying the server state', () => {
       page.getByText('corrigido', { exact: true }),
       'after the reset no value is corrected',
     ).toBeHidden();
+  });
+
+  test('empties the entity library and its images', async ({ page }) => {
+    // Arrange: the simulator's hundred teams imported on Cadastros, and an image uploaded.
+    await openTheEntityLibraryPage(page);
+    await page.getByRole('button', { name: 'Importar equipes do simulador' }).click();
+    await expect(
+      page.getByRole('table', { name: 'Equipes cadastradas' }).getByRole('row'),
+      'the hundred teams and the header row are listed',
+    ).toHaveCount(101);
+    await uploadALogoToTheRealServer();
+
+    // Act: empty the server.
+    await emptyTheServerState();
+
+    // Assert: no team on the page, no team and no image on the server.
+    await expect(page.getByText('Nenhuma equipe cadastrada.'), 'the tab is empty').toBeVisible();
+    const library = await readTheLibraryFromTheRealServer();
+    expect(library.teams, 'no team is left').toEqual([]);
+    expect(library.media, 'no image is left').toEqual([]);
   });
 
   test('changes nothing and does not fail on a server that is already empty', async ({ page }) => {

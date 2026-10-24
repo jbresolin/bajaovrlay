@@ -4,12 +4,13 @@
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
 import type { Graphic, Instance, Layer, Slices } from '@bajaovrlay/shared';
 
-/** The five layers the server seeds on its first boot, bottom to top. */
+/** The six layers the server seeds on its first boot, bottom to top. */
 export function buildLayersSeededByTheServer(): Layer[] {
   return [
     { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
     { id: 'ticker', name: 'Letreiro', zIndex: 20, replacePolicy: 'out-then-in', persistent: false },
     { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
+    { id: 'tower', name: 'Torre', zIndex: 35, replacePolicy: 'out-then-in', persistent: true },
     {
       id: 'lower-third',
       name: 'Tarja',
@@ -88,6 +89,13 @@ export function buildSlicesWithNothingOnAir(): Slices {
     dataSources: [],
     dataSnapshots: [],
     recordings: [],
+    events: [],
+    eventRules: [],
+    teams: [],
+    people: [],
+    sponsors: [],
+    scheduleSlots: [],
+    media: [],
     instanceBindings: [],
     overrides: [],
   };

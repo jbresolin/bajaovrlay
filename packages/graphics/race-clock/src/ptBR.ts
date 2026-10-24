@@ -23,6 +23,8 @@ export const ptBR = {
   flagLabels,
   clockModeCaptions,
   lapsCompletedByLeader: (laps: number) => (laps === 1 ? '1 VOLTA' : `${laps} VOLTAS`),
+  /** The alternative text of the logo in the card's head. */
+  logoAlternativeText: 'Baja SAE Brasil',
 
   actionProblems: {
     notLoadedYet: 'O relógio ainda não foi carregado (load).',
@@ -46,6 +48,8 @@ export const ptBR = {
     playButton: 'Entrar (play)',
     stopButton: 'Sair (stop)',
     flagButton: (flagLabel: string) => `Bandeira: ${flagLabel}`,
+    flagBandOnButton: 'Faixa: ligar',
+    flagBandOffButton: 'Faixa: desligar',
     unreadableAddressData: 'O parâmetro ?data= do endereço não é um JSON válido.',
     lastAnswer: (actionName: string, statusCode: number, statusMessage: string | undefined) => {
       const statusText = `${actionName}: ${statusCode}`;
