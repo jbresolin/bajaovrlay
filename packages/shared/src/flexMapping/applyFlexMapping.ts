@@ -11,6 +11,10 @@ import {
 } from './flexMappingProblems.js';
 import { findMappableField } from './mappableFields.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
+import {
+  listScorePartsOfMappedEntries,
+  readScorePartListIntoPointsByPart,
+} from './standingsScorePartLists.js';
 import { readValueAtPath } from './valuePath.js';
 
 /**
@@ -114,9 +118,29 @@ function mapOneShape(
     const entries = mapListEntries(mapping, mapping.entriesPath, response, pollMomentMs, problems);
     if (entries !== undefined) {
       shape.entries = entries;
+      addScorePartsOfStandings(mapping.shapeKey, shape, entries);
     }
   }
   return shape;
+}
+
+/**
+ * Gives standings their parts of the score, built from the teams' points by part (the
+ * source sends one list per team; standingsScorePartLists.ts). Other shapes, and standings
+ * whose teams have no parts, are left as they are.
+ */
+function addScorePartsOfStandings(
+  shapeKey: DataShapeKey,
+  shape: Record<string, unknown>,
+  entries: Array<Record<string, unknown>>,
+): void {
+  if (shapeKey !== 'standings') {
+    return;
+  }
+  const scoreParts = listScorePartsOfMappedEntries(entries);
+  if (scoreParts.length > 0) {
+    shape.scoreParts = scoreParts;
+  }
 }
 
 /**
@@ -173,7 +197,11 @@ function mapOneEntry(
   const entry: Record<string, unknown> = {};
   const problemsOfEntry: Array<{ fieldLabel: string; detail: string }> = [];
   for (const rule of entryRules) {
-    const ruleOutcome = applyOneRule(shapeKey, rule, element, surroundingsOfEntry);
+    const ruleOutcome = readScorePartListWhenItIsOne(
+      shapeKey,
+      rule,
+      applyOneRule(shapeKey, rule, element, surroundingsOfEntry),
+    );
     if (ruleOutcome.outcome === 'problem') {
       const fieldLabel = labelTargetField(shapeKey, rule.targetField);
       problemsOfEntry.push({ fieldLabel, detail: ruleOutcome.detail });
@@ -192,6 +220,27 @@ function mapOneEntry(
     addProblemLine(problems, lines.atEntryField(shapeName, entryLabel, fieldLabel, detail));
   }
   return entry;
+}
+
+/**
+ * A standings team's `pointsByPart` arrives as a list of parts, each a label and a value;
+ * this turns that list into the points by part the shape carries, or into a problem. Any
+ * other rule's outcome is passed on unchanged.
+ */
+function readScorePartListWhenItIsOne(
+  shapeKey: DataShapeKey,
+  rule: FlexFieldRule,
+  ruleOutcome: RuleOutcome,
+): RuleOutcome {
+  const isAScorePartList = shapeKey === 'standings' && rule.targetField === 'pointsByPart';
+  if (!isAScorePartList || ruleOutcome.outcome !== 'set') {
+    return ruleOutcome;
+  }
+  const reading = readScorePartListIntoPointsByPart(ruleOutcome.value);
+  if (!reading.ok) {
+    return { outcome: 'problem', detail: reading.reason };
+  }
+  return { outcome: 'set', value: reading.pointsByPart };
 }
 
 /**

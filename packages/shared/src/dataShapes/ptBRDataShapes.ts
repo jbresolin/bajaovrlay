@@ -79,6 +79,8 @@ export const ptBRDataShapes = {
   /** The standings fields a binding may point at. */
   standingsFieldLabels: {
     scope: 'Abrangência',
+    /** The parts of the score, the standings table's columns (PROJETO, ENDURO…). */
+    scoreParts: 'Partes da pontuação',
   },
 
   /** The fields of one team in the standings. */
@@ -141,6 +143,12 @@ export const ptBRDataShapes = {
     firstRankNotOne: 'a pontuação começa pela posição 1',
     rankOutOfOrder: (rankAbove: number) =>
       `a pontuação deve vir em ordem de classificação; o colocado acima tem a posição ${rankAbove}`,
+    unknownScorePart: (partId: string) =>
+      `a parte "${partId}" não está entre as partes da pontuação`,
+    scorePartListedTwice: (partId: string) => `a parte "${partId}" aparece mais de uma vez`,
+    disqualifiedWithRank: 'uma equipe desclassificada não tem posição',
+    rankMissingOnRankedTeam: 'falta a posição de uma equipe que não foi desclassificada',
+    rankedTeamBelowDisqualified: 'as equipes desclassificadas vêm depois de todas as classificadas',
     sameCarOnBothSides: (carNumber: number) =>
       `o carro ${carNumber} não pode disputar contra si mesmo`,
     winnerNotInMatch: (carNumber: number) =>

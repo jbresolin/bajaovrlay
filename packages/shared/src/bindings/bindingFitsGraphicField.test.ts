@@ -69,10 +69,16 @@ describe('listValueTypesThatFitGraphicField', () => {
     },
     // A list field takes any of the whole lists; the take checks the elements.
     {
-      name: 'the tower list takes the four whole lists',
+      name: 'the tower list takes the five whole lists',
       graphic: buildPositionsTowerGraphic(),
       fieldKey: 'entries',
-      expectedTypes: ['positionsEntries', 'standingsEntries', 'bracketsRounds', 'incidentsEntries'],
+      expectedTypes: [
+        'positionsEntries',
+        'standingsEntries',
+        'standingsScoreParts',
+        'bracketsRounds',
+        'incidentsEntries',
+      ],
     },
     // A decimal number takes a whole number too: 400 points is a number.
     {

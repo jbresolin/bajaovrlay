@@ -9,6 +9,8 @@ Conventions: times are integer milliseconds (durations like `lastLapMs`, moments
 `updatedAtMs` on the server's clock); every entry repeats `carNumber`, `teamName` and
 `schoolName`; optional means "the source does not know", never a placeholder. Positions take
 what a source gives (gate 2 of PR #16). **`bracketsShape.ts` is a draft** until BAJAOVRLAY-25.
+Standings carry the score's parts as the source names them (`scoreParts`, `pointsByPart`) and
+keep disqualified teams, unranked, at the end (`isDisqualified`, BAJAOVRLAY-24).
 
 `validateDataShape.ts` checks a payload (pt-BR error naming the path); `bindablePaths.ts`
 hand-lists the paths a binding may point at, each with its value type (standings by row,

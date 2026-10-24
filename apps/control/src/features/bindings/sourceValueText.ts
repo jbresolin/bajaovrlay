@@ -73,6 +73,7 @@ export function findSourceValueKindOfBinding(binding: BindingFieldValue): Source
       return 'clockReading';
     case 'positionsEntries':
     case 'standingsEntries':
+    case 'standingsScoreParts':
     case 'bracketsRounds':
     case 'incidentsEntries':
       return 'list';

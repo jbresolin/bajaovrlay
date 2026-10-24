@@ -1,6 +1,32 @@
 {
   "scope": "overall",
   "updatedAtMs": 1805568240948,
+  "scoreParts": [
+    {
+      "partId": "acceleration",
+      "label": "ACEL."
+    },
+    {
+      "partId": "speed",
+      "label": "VELOC."
+    },
+    {
+      "partId": "traction",
+      "label": "TRAÇÃO"
+    },
+    {
+      "partId": "suspension",
+      "label": "SUSP."
+    },
+    {
+      "partId": "maneuverability",
+      "label": "MANOB."
+    },
+    {
+      "partId": "enduro",
+      "label": "ENDURO"
+    }
+  ],
   "entries": [
     {
       "rank": 1,
@@ -8,7 +34,7 @@
       "teamName": "Jandaia Racing",
       "schoolName": "UFC",
       "points": 646.9,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 54.1,
         "speed": 71.2,
         "traction": 30.5,
@@ -23,7 +49,7 @@
       "teamName": "Tuiuiú Racing",
       "schoolName": "UFGD",
       "points": 644.9,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 66.1,
         "speed": 42.1,
         "traction": 58.2,
@@ -38,7 +64,7 @@
       "teamName": "Sucuri Racing",
       "schoolName": "UFMS",
       "points": 639.8,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 37.9,
         "speed": 19.3,
         "traction": 72.2,
@@ -53,7 +79,7 @@
       "teamName": "Araucária Baja",
       "schoolName": "UTFPR",
       "points": 625.4,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 72.3,
         "speed": 21.3,
         "traction": 56.8,
@@ -68,7 +94,7 @@
       "teamName": "Jequitibá Racing",
       "schoolName": "CEFET-MG",
       "points": 623.9,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 52.1,
         "speed": 45.3,
         "traction": 71.1,
@@ -83,7 +109,7 @@
       "teamName": "Acauã Baja",
       "schoolName": "Mauá",
       "points": 621.1,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 0.7,
         "speed": 15.5,
         "traction": 70.3,
@@ -98,7 +124,7 @@
       "teamName": "Caatinga Racing",
       "schoolName": "UFPB",
       "points": 609.9,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 57.6,
         "speed": 41.5,
         "traction": 56.2,
@@ -113,7 +139,7 @@
       "teamName": "Pampa Baja",
       "schoolName": "UFSM",
       "points": 602.3,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 57.7,
         "speed": 18.2,
         "traction": 50,
@@ -128,7 +154,7 @@
       "teamName": "Jacarandá Baja",
       "schoolName": "UNICAMP",
       "points": 602.2,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 51.2,
         "speed": 66.4,
         "traction": 53.4,
@@ -143,7 +169,7 @@
       "teamName": "Seriema Off-Road",
       "schoolName": "UFV",
       "points": 597.8,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 30.9,
         "speed": 64.2,
         "traction": 45.6,
@@ -158,7 +184,7 @@
       "teamName": "Sertão Baja",
       "schoolName": "UNIVASF",
       "points": 595.5,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 35.6,
         "speed": 47.3,
         "traction": 67.3,
@@ -173,7 +199,7 @@
       "teamName": "Tamanduá Racing",
       "schoolName": "UFOP",
       "points": 593.7,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 31.9,
         "speed": 33.5,
         "traction": 38,
@@ -188,7 +214,7 @@
       "teamName": "Cutia Baja",
       "schoolName": "UFRRJ",
       "points": 592.1,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 73.6,
         "speed": 10.3,
         "traction": 74.3,
@@ -203,7 +229,7 @@
       "teamName": "Arara Off-Road",
       "schoolName": "UNIFEI",
       "points": 589.9,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 20.8,
         "speed": 52.8,
         "traction": 49.4,
@@ -218,7 +244,7 @@
       "teamName": "Pequi Off-Road",
       "schoolName": "UFG",
       "points": 585.7,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 44.3,
         "speed": 59.8,
         "traction": 10.7,
@@ -233,7 +259,7 @@
       "teamName": "Juriti Off-Road",
       "schoolName": "UDESC",
       "points": 582.5,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 49.3,
         "speed": 58,
         "traction": 14.9,
@@ -248,7 +274,7 @@
       "teamName": "Lobo-Guará Off-Road",
       "schoolName": "UFU",
       "points": 582.3,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 15.5,
         "speed": 70.2,
         "traction": 51.2,
@@ -263,7 +289,7 @@
       "teamName": "Babaçu Baja",
       "schoolName": "UFMA",
       "points": 580.6,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 19,
         "speed": 61.3,
         "traction": 43.3,
@@ -278,7 +304,7 @@
       "teamName": "Coruja Racing",
       "schoolName": "EESC-USP",
       "points": 574.7,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 51,
         "speed": 4.4,
         "traction": 43.3,
@@ -293,7 +319,7 @@
       "teamName": "Quero-Quero Racing",
       "schoolName": "UFRGS",
       "points": 572.6,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 51,
         "speed": 73.6,
         "traction": 42.6,
@@ -308,7 +334,7 @@
       "teamName": "Sagui Baja",
       "schoolName": "PUC-Rio",
       "points": 571.2,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 8.5,
         "speed": 68.5,
         "traction": 71.3,
@@ -323,7 +349,7 @@
       "teamName": "Carnaúba Baja",
       "schoolName": "UFERSA",
       "points": 569.8,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 43.4,
         "speed": 16.6,
         "traction": 45.7,
@@ -338,7 +364,7 @@
       "teamName": "Tucano Racing",
       "schoolName": "UFPA",
       "points": 564.9,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 56.6,
         "speed": 44.4,
         "traction": 58.7,
@@ -353,7 +379,7 @@
       "teamName": "Graúna Baja",
       "schoolName": "UFRB",
       "points": 560.5,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 54.2,
         "speed": 35.5,
         "traction": 73.3,
@@ -368,7 +394,7 @@
       "teamName": "Tatu-Bola Racing",
       "schoolName": "UFBA",
       "points": 554.4,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 71.7,
         "speed": 53.7,
         "traction": 0.4,
@@ -383,7 +409,7 @@
       "teamName": "Socó Off-Road",
       "schoolName": "FEI",
       "points": 548.2,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 55.7,
         "speed": 71.3,
         "traction": 45.8,
@@ -398,7 +424,7 @@
       "teamName": "Mandacaru Baja",
       "schoolName": "UFCG",
       "points": 547.1,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 74.8,
         "speed": 7.6,
         "traction": 6.4,
@@ -413,7 +439,7 @@
       "teamName": "Bem-te-vi Off-Road",
       "schoolName": "UFES",
       "points": 546.4,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 73.6,
         "speed": 30.3,
         "traction": 7.2,
@@ -428,7 +454,7 @@
       "teamName": "Jabuti Racing",
       "schoolName": "UFAL",
       "points": 546.2,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 38.7,
         "speed": 60.4,
         "traction": 46.7,
@@ -443,7 +469,7 @@
       "teamName": "Maracajá Off-Road",
       "schoolName": "UFF",
       "points": 545.8,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 64,
         "speed": 50.8,
         "traction": 18.5,
@@ -458,7 +484,7 @@
       "teamName": "Buriti Baja",
       "schoolName": "UFT",
       "points": 545,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 8.9,
         "speed": 39.1,
         "traction": 40.1,
@@ -473,7 +499,7 @@
       "teamName": "Anhuma Racing",
       "schoolName": "IME",
       "points": 543.6,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 63.2,
         "speed": 54.6,
         "traction": 72,
@@ -488,7 +514,7 @@
       "teamName": "Pitanga Racing",
       "schoolName": "UFOB",
       "points": 543.2,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 45.1,
         "speed": 28.5,
         "traction": 61.2,
@@ -503,7 +529,7 @@
       "teamName": "Siriema Baja",
       "schoolName": "UFMT",
       "points": 542.4,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 15.9,
         "speed": 57.9,
         "traction": 37.7,
@@ -518,7 +544,7 @@
       "teamName": "Pirarucu Off-Road",
       "schoolName": "UNIFAP",
       "points": 537.9,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 3.6,
         "speed": 71.9,
         "traction": 67.7,
@@ -533,7 +559,7 @@
       "teamName": "Cerrado Racing",
       "schoolName": "UFJF",
       "points": 530.1,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 47,
         "speed": 23.7,
         "traction": 66.8,
@@ -548,7 +574,7 @@
       "teamName": "Carcará Baja",
       "schoolName": "UFPR",
       "points": 520.8,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 59.1,
         "speed": 5,
         "traction": 12.2,
@@ -563,7 +589,7 @@
       "teamName": "Pantanal Off-Road",
       "schoolName": "UEM",
       "points": 513.5,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 0.4,
         "speed": 71.4,
         "traction": 71.4,
@@ -578,7 +604,7 @@
       "teamName": "Cangaço Baja",
       "schoolName": "UFPE",
       "points": 510.4,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 15.5,
         "speed": 17.6,
         "traction": 21.7,
@@ -593,7 +619,7 @@
       "teamName": "Taquara Racing",
       "schoolName": "UFFS",
       "points": 509.7,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 25.6,
         "speed": 55.2,
         "traction": 62.7,
@@ -608,7 +634,7 @@
       "teamName": "Paca Racing",
       "schoolName": "IFSC",
       "points": 507.8,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 60,
         "speed": 29.7,
         "traction": 45.7,
@@ -623,7 +649,7 @@
       "teamName": "Jacu Off-Road",
       "schoolName": "UFPel",
       "points": 502,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 11.8,
         "speed": 20,
         "traction": 44.5,
@@ -638,7 +664,7 @@
       "teamName": "Gralha Azul Baja",
       "schoolName": "PUCPR",
       "points": 501.6,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 56,
         "speed": 57.7,
         "traction": 3.1,
@@ -653,7 +679,7 @@
       "teamName": "Cascavel Off-Road",
       "schoolName": "UNIOESTE",
       "points": 499.5,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 12.2,
         "speed": 65.6,
         "traction": 57.6,
@@ -668,7 +694,7 @@
       "teamName": "Capivara Off-Road",
       "schoolName": "UFSCar",
       "points": 498.4,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 4.3,
         "speed": 36.9,
         "traction": 25.7,
@@ -683,7 +709,7 @@
       "teamName": "Uirapuru Racing",
       "schoolName": "UFRR",
       "points": 488.3,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 45.8,
         "speed": 11.8,
         "traction": 5.5,
@@ -698,7 +724,7 @@
       "teamName": "Sabiá Baja",
       "schoolName": "UFMG",
       "points": 484.3,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 5.3,
         "speed": 35.2,
         "traction": 31.1,
@@ -713,7 +739,7 @@
       "teamName": "Biguá Off-Road",
       "schoolName": "FURG",
       "points": 481.2,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 21.1,
         "speed": 67.1,
         "traction": 9.4,
@@ -728,7 +754,7 @@
       "teamName": "Jaguatirica Off-Road",
       "schoolName": "UFSC",
       "points": 476,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 26.3,
         "speed": 20.8,
         "traction": 36.6,
@@ -743,7 +769,7 @@
       "teamName": "Cuíca Off-Road",
       "schoolName": "UFRJ",
       "points": 475.6,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 57,
         "speed": 18.4,
         "traction": 21.8,
@@ -758,7 +784,7 @@
       "teamName": "Gavião Off-Road",
       "schoolName": "UNESP",
       "points": 471.1,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 50.3,
         "speed": 34.1,
         "traction": 9.4,
@@ -773,7 +799,7 @@
       "teamName": "Irara Racing",
       "schoolName": "UFSJ",
       "points": 466.7,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 43.2,
         "speed": 19.7,
         "traction": 21.8,
@@ -788,7 +814,7 @@
       "teamName": "Macaúba Racing",
       "schoolName": "UFVJM",
       "points": 463.3,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 27.6,
         "speed": 29.4,
         "traction": 29,
@@ -803,7 +829,7 @@
       "teamName": "Ariranha Baja",
       "schoolName": "UFAM",
       "points": 459.8,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 0.1,
         "speed": 22.5,
         "traction": 40.2,
@@ -818,7 +844,7 @@
       "teamName": "Cajueiro Off-Road",
       "schoolName": "UFPI",
       "points": 452.2,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 20.2,
         "speed": 10.3,
         "traction": 59.9,
@@ -833,7 +859,7 @@
       "teamName": "Mutum Off-Road",
       "schoolName": "UEL",
       "points": 451.6,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 19.5,
         "speed": 12.2,
         "traction": 12.5,
@@ -848,7 +874,7 @@
       "teamName": "Ipê Amarelo Baja",
       "schoolName": "UnB",
       "points": 449.8,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 1.5,
         "speed": 47.9,
         "traction": 4.6,
@@ -863,7 +889,7 @@
       "teamName": "Jatobá Baja",
       "schoolName": "UFLA",
       "points": 439.9,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 3.5,
         "speed": 39.3,
         "traction": 18.9,
@@ -878,7 +904,7 @@
       "teamName": "Mangue Baja",
       "schoolName": "UFRN",
       "points": 429,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 19.9,
         "speed": 16.3,
         "traction": 24.9,
@@ -893,7 +919,7 @@
       "teamName": "Guará Baja",
       "schoolName": "UFS",
       "points": 284.7,
-      "pointsByEvent": {
+      "pointsByPart": {
         "acceleration": 11.9,
         "speed": 61,
         "traction": 31.9,

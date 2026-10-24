@@ -15,9 +15,8 @@
  *   - Positions offer the whole list, then one car chosen by its number, then the 1st to
  *     10th places, each with the same thirteen fields and the same types (the lap of the
  *     best lap, bestLapNumber, among them since BAJAOVRLAY-44).
- *   - Standings offer the scope, the whole list and the 1st to 10th rows, labelled
- *     "1ª linha", not "1º colocado": tied teams share a rank. Brackets (a draft) offer
- *     only their rounds (incidents: incidentsBindablePaths.test.ts).
+ *   - Brackets (a draft) offer only their rounds (standings:
+ *     standingsBindablePaths.test.ts; incidents: incidentsBindablePaths.test.ts).
  *   - No path appears twice within a shape.
  *   - findBindablePath reads one entry back, and answers undefined for a path not listed.
  *
@@ -263,62 +262,6 @@ describe('listBindablePathsOfShape', () => {
       path: 'entries.9.status',
       label: 'Posições › 10º colocado › Situação',
       valueType: 'text',
-      isCarChosenByNumber: false,
-    });
-  });
-
-  it('lists the standings scope, the whole list and the first ten rows, named as rows', () => {
-    // Arrange: nothing to set up; the list is fixed in code.
-
-    // Act: ask for the standings paths.
-    const standingsPaths = listBindablePathsOfShape('standings');
-
-    // Assert: scope and list first, then the first row's four fields, 2 + 10 × 4 in all.
-    // A row, not a place: two teams tied on points share a rank, so the 2nd row may be
-    // a 1st place (gate 2 on PR #16).
-    expect(standingsPaths.slice(0, 6), 'the standings leader paths must be fixed').toEqual([
-      {
-        path: 'scope',
-        label: 'Pontuação › Abrangência',
-        valueType: 'text',
-        isCarChosenByNumber: false,
-      },
-      {
-        path: 'entries',
-        label: 'Pontuação › Lista completa',
-        valueType: 'standingsEntries',
-        isCarChosenByNumber: false,
-      },
-      {
-        path: 'entries.0.carNumber',
-        label: 'Pontuação › 1ª linha › Carro',
-        valueType: 'integer',
-        isCarChosenByNumber: false,
-      },
-      {
-        path: 'entries.0.teamName',
-        label: 'Pontuação › 1ª linha › Equipe',
-        valueType: 'text',
-        isCarChosenByNumber: false,
-      },
-      {
-        path: 'entries.0.schoolName',
-        label: 'Pontuação › 1ª linha › Escola',
-        valueType: 'text',
-        isCarChosenByNumber: false,
-      },
-      {
-        path: 'entries.0.points',
-        label: 'Pontuação › 1ª linha › Pontos',
-        valueType: 'number',
-        isCarChosenByNumber: false,
-      },
-    ]);
-    expect(standingsPaths, 'standings must offer 2 + 10 × 4 paths').toHaveLength(42);
-    expect(standingsPaths.at(-1), 'the last path must be the 10th row points').toEqual({
-      path: 'entries.9.points',
-      label: 'Pontuação › 10ª linha › Pontos',
-      valueType: 'number',
       isCarChosenByNumber: false,
     });
   });

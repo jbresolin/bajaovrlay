@@ -16,7 +16,8 @@
  *     is a refuel (a real scoring app may count them differently).
  *   - Every car's bestLapNumber names the lap that took its bestLapMs (BAJAOVRLAY-44).
  *   - The session clock counts down the remaining time, stops during a red and at zero.
- *   - Standings: overall points are the sum of the events, ranked high to low.
+ *   - Standings: overall points are the sum of the parts, ranked high to low; the parts
+ *     are named after the session kinds the simulator scores, labelled in pt-BR.
  *
  * What these tests deliberately do not cover:
  *   - How the race itself unfolds (simulateEnduro.test.ts).
@@ -317,16 +318,16 @@ describe('the overall standings', () => {
     // Act: build the standings.
     const standings = buildShapesFromRaceState(raceState, pollAtWallClockMs).standings;
 
-    // Assert: overall scope; each total is the sum of its events; points never go up
+    // Assert: overall scope; each total is the sum of its parts; points never go up
     // down the list; the enduro winner scores the full 400.
     expect(standings.scope, 'the standings are the overall ones').toBe('overall');
     standings.entries.forEach((entry, index) => {
-      const eventPoints = Object.values(entry.pointsByEvent ?? {});
-      const sumOfEvents = eventPoints.reduce((sum, points) => sum + points, 0);
+      const partPoints = Object.values(entry.pointsByPart ?? {});
+      const sumOfParts = partPoints.reduce((sum, points) => sum + points, 0);
       expect(
         entry.points,
-        `the total of car ${String(entry.carNumber)} is its events' sum`,
-      ).toBeCloseTo(sumOfEvents, 5);
+        `the total of car ${String(entry.carNumber)} is its parts' sum`,
+      ).toBeCloseTo(sumOfParts, 5);
       const entryAbove = standings.entries[index - 1];
       if (entryAbove !== undefined) {
         expect(entry.points, 'points never go up down the standings').toBeLessThanOrEqual(
@@ -334,7 +335,39 @@ describe('the overall standings', () => {
         );
       }
     });
-    const enduroPoints = standings.entries.map((entry) => entry.pointsByEvent?.enduro ?? 0);
+    const enduroPoints = standings.entries.map((entry) => entry.pointsByPart?.enduro ?? 0);
     expect(Math.max(...enduroPoints), 'the enduro winner scores the full 400').toBe(400);
+  });
+
+  it('name their parts after the session kinds it scores, labelled in pt-BR', () => {
+    // Arrange: the 2027 race at the end.
+    const raceState = simulateEnduroAt(defaultRace, fourHoursMs + 2 * 60 * oneMinuteMs);
+
+    // Act: build the standings.
+    const standings = buildShapesFromRaceState(raceState, pollAtWallClockMs).standings;
+
+    // Assert: the six parts in the order a board shows them (the dynamic events, then the
+    // enduro), each team scoring every one of them, and the whole passes the shape.
+    expect(standings.scoreParts, 'the parts must be named after the session kinds').toEqual([
+      { partId: 'acceleration', label: 'ACEL.' },
+      { partId: 'speed', label: 'VELOC.' },
+      { partId: 'traction', label: 'TRAÇÃO' },
+      { partId: 'suspension', label: 'SUSP.' },
+      { partId: 'maneuverability', label: 'MANOB.' },
+      { partId: 'enduro', label: 'ENDURO' },
+    ]);
+    const partIdsOfTheLeader = Object.keys(standings.entries[0]?.pointsByPart ?? {}).sort();
+    expect(partIdsOfTheLeader, 'the leader must score in every part').toEqual([
+      'acceleration',
+      'enduro',
+      'maneuverability',
+      'speed',
+      'suspension',
+      'traction',
+    ]);
+    expect(
+      validateDataShape('standings', standings).isValid,
+      'the simulated standings must pass the standings shape',
+    ).toBe(true);
   });
 });

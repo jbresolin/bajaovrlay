@@ -11,7 +11,8 @@
  *   - The positions table has a row per car (60), each with its place, car, team,
  *     school, laps, last and best lap, gap and status; a lapped car's gap reads in laps
  *     and the retired car says so.
- *   - The standings table lists the teams by rank with their points.
+ *   - The standings table lists the teams by rank with their points; a disqualified team
+ *     (no rank, BAJAOVRLAY-24) reads "Desclassificada" in the rank column.
  *   - A late source shows "Dados de hh:mm:ss — fonte atrasada" above its data, which is
  *     still shown in full; a healthy one shows no banner.
  *   - A source turned off shows "Dados de hh:mm:ss — fonte desligada" above the data it
@@ -140,6 +141,36 @@ describe('the standings table', () => {
       'UFC',
       '646,9',
     ]);
+  });
+
+  it('names a disqualified team in the rank column', () => {
+    // Arrange: the same standings with the last team, car 96, disqualified (no rank).
+    const snapshot = buildEnduroSnapshotAtLap34(seededSimulatorId);
+    const standings = snapshot.shapes.standings;
+    const lastTeam = standings?.entries.at(-1);
+    if (standings === undefined || lastTeam === undefined) {
+      throw new Error('the sample snapshot must carry standings');
+    }
+    const disqualifiedLastTeam = { ...lastTeam, isDisqualified: true };
+    delete disqualifiedLastTeam.rank;
+    standings.entries[standings.entries.length - 1] = disqualifiedLastTeam;
+
+    // Act: draw the page with that snapshot.
+    renderOnControlPageConnectedToFakeServer(
+      <DataSourcesPage />,
+      buildSlicesWithDataSources({
+        dataSources: [buildSimulatorThatIsOk()],
+        dataSnapshots: [snapshot],
+      }),
+    );
+
+    // Assert: the last row says the team is disqualified where its rank would be.
+    const standingsTable = within(screen.getByRole('table', { name: 'Classificação' }));
+    const rows = standingsTable.getAllByRole('row');
+    expect(
+      readCellTexts(rows[60] as HTMLElement)[0],
+      'a disqualified team has no rank and must say so',
+    ).toBe('Desclassificada');
   });
 });
 

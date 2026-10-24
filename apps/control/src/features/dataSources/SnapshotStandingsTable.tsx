@@ -70,7 +70,7 @@ const StandingsRow = memo(function StandingsRow(props: {
   const { entry } = props;
   return (
     <TableRow>
-      <TableCell className="tabular-nums">{entry.rank}</TableCell>
+      <TableCell className="tabular-nums">{entry.rank ?? texts.disqualifiedRank}</TableCell>
       <TableCell className="tabular-nums">{entry.carNumber}</TableCell>
       <TableCell>
         <TeamValue {...props} field="teamName" />
@@ -85,7 +85,7 @@ const StandingsRow = memo(function StandingsRow(props: {
 
 /**
  * The standings of the selected source, one row per team in rank order: rank, car,
- * team, school and points. The table scrolls sideways in its own box on a narrow screen.
+ * team, school and points; a disqualified team, which has no rank, says so in its place. The table scrolls sideways in its own box on a narrow screen.
  * With `corrections` (a stored source), the standings shown are the corrected ones and a
  * team's name and school can be corrected (CorrectableValue.tsx), matched to what the
  * source sent by car number. Points are not correctable (gate 2 of PR #18): they are the

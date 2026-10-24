@@ -278,6 +278,17 @@ export const ptBR = {
     eventName: 'Baja SAE Brasil — Simulação',
     sessionName: 'Enduro de Resistência (simulado)',
   },
+  // The column heads of the simulated overall standings, one per session kind it scores
+  // (standingsFromRaceState.ts). Short caps like the real export's ("DINÂM.", "SEG."), so
+  // each fits the standings graphic's 120 px part column.
+  simulatorScorePartLabels: {
+    acceleration: 'ACEL.',
+    speed: 'VELOC.',
+    traction: 'TRAÇÃO',
+    suspension: 'SUSP.',
+    maneuverability: 'MANOB.',
+    enduro: 'ENDURO',
+  },
   // The simulated race direction's reasons (simulatedIncidents.ts): plausible, not the
   // rulebook. A penalty is written in words ("+30 segundos"), as PR #21's notice asks,
   // because the on-air face has no lowercase and "+30 s" would read "+30 S".

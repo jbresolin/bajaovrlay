@@ -11,6 +11,9 @@
  * What these tests prove (real files in a temporary folder, a fake clock in the context):
  *   - A line that is read but fails its shapes fails the poll that answers it, with a
  *     pt-BR reason naming the recording.
+ *   - A line recorded before BAJAOVRLAY-24, whose standings carry points per event
+ *     (`pointsByEvent`, since replaced by the score parts), still replays: the old field
+ *     is dropped, never a failure.
  *   - A recording of 2 000 lines of 60 cars (about 50 MB), prepared as the poller
  *     prepares a replay turned on and then polled, loads in under largestLoadTimeMs, and
  *     the server's event loop is never held meanwhile for more than a third of what the
@@ -108,6 +111,58 @@ describe('the replay adapter, checking lines and loading large recordings', () =
     // recording holds the bad line.
     await expect(polling, 'a bad recorded line must fail the poll, in pt-BR').rejects.toThrow(
       'Uma linha da gravação "simulador-enduro/2027-08-13T13-00-00.000Z.jsonl" é inválida:',
+    );
+  });
+
+  it('replays a line recorded before the score parts, dropping its points per event', async () => {
+    // Arrange: a recording whose only line holds the overall standings as they were
+    // written before BAJAOVRLAY-24: Jandaia Racing first, with points per event.
+    const [firstLine] = buildFridayRecordingLines();
+    if (firstLine === undefined) {
+      throw new Error("Friday's recording must have a line");
+    }
+    const standingsWithPointsByEvent = {
+      scope: 'overall',
+      updatedAtMs: firstLine.atMs,
+      entries: [
+        {
+          rank: 1,
+          carNumber: 45,
+          teamName: 'Jandaia Racing',
+          schoolName: 'UFC',
+          points: 646.9,
+          pointsByEvent: { enduro: 376.5, acceleration: 54.1, speed: 71.2 },
+        },
+      ],
+    };
+    // Written by hand, as the recorder wrote it then: today's types no longer allow the
+    // old field, which is exactly what this test is about.
+    const oldLine = {
+      atMs: firstLine.atMs,
+      snapshotNumber: 1,
+      shapes: { ...firstLine.shapes, standings: standingsWithPointsByEvent },
+    };
+    const lineText = `${JSON.stringify(oldLine)}\n`;
+    const replayAdapter = createReplayAdapter({
+      recordingsFolder: writeRecordingLineTextsIntoAFolder([lineText]),
+    });
+
+    // Act: poll the replay.
+    const answer = await replayAdapter.pollOnce(
+      buildFridayReplayConfig(1),
+      buildPollContextAt(replayTurnedOnAtMs),
+    );
+
+    // Assert: the standings are answered, dated now, with the team and its total but
+    // without the old points per event.
+    expect(answer.shapes.standings, 'the old standings must replay, the old field dropped').toEqual(
+      {
+        scope: 'overall',
+        updatedAtMs: replayTurnedOnAtMs,
+        entries: [
+          { rank: 1, carNumber: 45, teamName: 'Jandaia Racing', schoolName: 'UFC', points: 646.9 },
+        ],
+      },
     );
   });
 
