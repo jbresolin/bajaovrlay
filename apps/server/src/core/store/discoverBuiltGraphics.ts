@@ -19,8 +19,11 @@ export type DiscoverBuiltGraphicsOptions = {
 
 /**
  * Lists every built graphic under `graphicPackagesFolder` (one `dist/*.ograf.json` per
- * package folder), in folder-name order. A package that is not built, or whose manifest
- * is broken, is logged and left out; it never stops the boot. Each graphic's default
+ * package folder), in folder-name order. A folder with no manifest, at its root or in its
+ * dist/, is not a graphic (the graphics kit, packages/graphics/kit) and is passed over
+ * without a word. A
+ * package that is not built, or whose manifest is broken, is logged and left out; it never
+ * stops the boot. Each graphic's default
  * layer and category come from its own manifest (`v_baja`); see graphicPlacement.ts.
  * A graphic whose data schema cannot be used, or whose manifest names an update rule
  * that cannot be run, is kept, with a warning naming it.
@@ -42,6 +45,9 @@ export function discoverBuiltGraphics(options: DiscoverBuiltGraphicsOptions): Gr
 
   const graphics: Graphic[] = [];
   for (const packageName of packageNames) {
+    if (!isAGraphicPackageFolder(join(graphicPackagesFolder, packageName))) {
+      continue;
+    }
     const graphic = readBuiltGraphic({
       packageFolder: join(graphicPackagesFolder, packageName),
       packageName,
@@ -53,6 +59,21 @@ export function discoverBuiltGraphics(options: DiscoverBuiltGraphicsOptions): Gr
     }
   }
   return graphics;
+}
+
+/**
+ * Whether a folder is a graphic's: one holding an OGraf manifest at its root (its source)
+ * or in its dist/ (its build). The kit holds neither.
+ */
+function isAGraphicPackageFolder(packageFolder: string): boolean {
+  const distFolder = join(packageFolder, 'dist');
+  const foldersThatMayHoldAManifest = [packageFolder];
+  if (existsSync(distFolder)) {
+    foldersThatMayHoldAManifest.push(distFolder);
+  }
+  return foldersThatMayHoldAManifest.some((folder) =>
+    readdirSync(folder).some((fileName) => fileName.endsWith('.ograf.json')),
+  );
 }
 
 /** Reads one package's built manifest; undefined (after a log line) when it cannot. */

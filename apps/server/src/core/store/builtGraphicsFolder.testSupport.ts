@@ -88,7 +88,20 @@ export function createGraphicsFolderWithUnbuiltRaceClock(): string {
   const graphicsFolder = mkdtempSync(join(tmpdir(), 'bajaovrlay-graficos-'));
   onTestFinished(() => rmSync(graphicsFolder, { recursive: true, force: true }));
   mkdirSync(join(graphicsFolder, 'race-clock', 'src'), { recursive: true });
+  // The source manifest every graphic folder has at its root, as in the repository.
+  writeFileSync(
+    join(graphicsFolder, 'race-clock', 'race-clock.ograf.json'),
+    JSON.stringify(raceClockManifestForTests),
+  );
   return graphicsFolder;
+}
+
+/**
+ * Adds the graphics kit's folder to a graphics folder: shared code of the graphics
+ * (packages/graphics/kit), with a src/ and no manifest, so it is no graphic.
+ */
+export function addTheGraphicsKitFolderInto(graphicsFolder: string): void {
+  mkdirSync(join(graphicsFolder, 'kit', 'src'), { recursive: true });
 }
 
 /** Puts a built race-clock manifest into a graphics folder, as `pnpm build` would. */
