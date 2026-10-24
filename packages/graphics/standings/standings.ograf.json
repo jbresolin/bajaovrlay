@@ -1,0 +1,85 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-standings",
+  "version": "0.1.0",
+  "name": "Classificação",
+  "description": "A classificação em tela cheia: a geral com as partes da nota, 20 equipes por página, ou o grid inteiro em três colunas quando só há o total (por prova ou só o total geral).",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "standings.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "fullscreen",
+    "category": "standings"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 1100 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "entries": {
+        "type": "array",
+        "title": "Equipes",
+        "description": "A lista da classificação, normalmente lida da fonte (Pontuação › Lista completa); as desclassificadas por último.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "rank": { "type": "integer", "minimum": 1 },
+            "carNumber": { "type": "integer", "minimum": 1 },
+            "teamName": { "type": "string" },
+            "schoolName": { "type": "string" },
+            "points": { "type": "number" },
+            "pointsByPart": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": { "type": "number" }
+            },
+            "isDisqualified": { "type": "boolean" }
+          },
+          "required": ["carNumber", "teamName", "schoolName", "points"],
+          "additionalProperties": true
+        },
+        "v_baja": {
+          "suggestedBinding": { "shapeKey": "standings", "path": "entries", "isLive": true }
+        }
+      },
+      "scoreParts": {
+        "type": "array",
+        "title": "Partes da pontuação",
+        "description": "As colunas da geral (PROJETO, DINÂM., ENDURO…), normalmente lidas da fonte (Pontuação › Partes da pontuação); sem partes, a classificação aparece em três colunas só com o total.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "partId": { "type": "string" },
+            "label": { "type": "string" }
+          },
+          "required": ["partId", "label"],
+          "additionalProperties": true
+        },
+        "v_baja": {
+          "suggestedBinding": { "shapeKey": "standings", "path": "scoreParts", "isLive": true }
+        }
+      },
+      "title": {
+        "type": "string",
+        "title": "Título",
+        "description": "O título na cabeça do quadro.",
+        "gddType": "single-line",
+        "default": "CLASSIFICAÇÃO GERAL"
+      },
+      "eventLine": {
+        "type": "string",
+        "title": "Evento",
+        "description": "A linha ao lado do título, por exemplo \"30ª COMPETIÇÃO BAJA SAE BRASIL\".",
+        "gddType": "single-line"
+      }
+    },
+    "required": ["entries"],
+    "additionalProperties": false
+  }
+}

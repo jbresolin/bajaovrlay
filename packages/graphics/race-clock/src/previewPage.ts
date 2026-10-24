@@ -11,65 +11,18 @@
 import '@bajaovrlay/theme/ardosia/tokens.css';
 import '@bajaovrlay/theme/fonts/fonts.css';
 
+import { setUpPreviewControls } from '@bajaovrlay/graphics-kit/previewControls';
 import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 
-import type { OGrafReturnPayload } from './ografGraphicTypes.js';
 import { choosePreviewData } from './previewData.js';
 import { ptBR } from './ptBR.js';
 import RaceClockGraphic from './race-clock.js';
 import { flagStates } from './raceClockModel.js';
 
-type PreviewState = 'loading' | 'busy' | 'onAir' | 'offAir' | 'error';
-
-/** Finds an element preview.html is known to have; a missing one is a bug in the page. */
-function findPreviewElement(elementId: string): HTMLElement {
-  const element = document.getElementById(elementId);
-  if (element === null) {
-    throw new Error(`preview.html has no #${elementId}; the page and previewPage.ts disagree`);
-  }
-  return element;
-}
-
-const previewStage = findPreviewElement('preview-stage');
-const previewControls = findPreviewElement('preview-controls');
-const previewLastAnswer = findPreviewElement('preview-last-answer');
-
-function setPreviewState(previewState: PreviewState): void {
-  document.body.dataset.previewState = previewState;
-}
-
-/**
- * Runs one OGraf action, shows its answer under the buttons and sets the page state:
- * `stateOnSuccess` when the answer is 2xx, "error" otherwise.
- */
-async function runActionAndShowAnswer(
-  actionName: string,
-  runAction: () => Promise<OGrafReturnPayload>,
-  stateOnSuccess: PreviewState,
-): Promise<void> {
-  setPreviewState('busy');
-  const answer = await runAction();
-  previewLastAnswer.textContent = ptBR.preview.lastAnswer(
-    actionName,
-    answer.statusCode,
-    answer.statusMessage,
-  );
-  const isSuccess = answer.statusCode >= 200 && answer.statusCode < 300;
-  setPreviewState(isSuccess ? stateOnSuccess : 'error');
-}
-
-function addPreviewButton(label: string, onPress: () => void): void {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = label;
-  button.addEventListener('click', onPress);
-  previewControls.insertBefore(button, previewLastAnswer);
-}
+const { previewStage, addPreviewButton, runActionAndShowAnswer, showProblem, readPreviewState } =
+  setUpPreviewControls(ptBR.preview);
 
 async function startPreview(): Promise<void> {
-  document.title = ptBR.preview.pageTitle;
-  previewControls.setAttribute('aria-label', ptBR.preview.controlsLabel);
-
   customElements.define('baja-race-clock', RaceClockGraphic);
   const raceClock = document.createElement('baja-race-clock') as RaceClockGraphic;
   previewStage.append(raceClock);
@@ -112,8 +65,7 @@ async function startPreview(): Promise<void> {
   // is simply this machine's clock.
   const dataChoice = choosePreviewData(location.search, readServerAlignedTimeMs());
   if (!dataChoice.isReadable) {
-    previewLastAnswer.textContent = dataChoice.problem;
-    setPreviewState('error');
+    showProblem(dataChoice.problem);
     return;
   }
 
@@ -127,7 +79,7 @@ async function startPreview(): Promise<void> {
       }),
     'offAir',
   );
-  if (document.body.dataset.previewState === 'offAir') {
+  if (readPreviewState() === 'offAir') {
     await runActionAndShowAnswer('playAction', () => raceClock.playAction({}), 'onAir');
   }
 }

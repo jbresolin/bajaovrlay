@@ -15,6 +15,9 @@
  *   - A wrong field is refused under it in pt-BR, and nothing is sent.
  *   - "Editar" fills the form from the team, whose car number cannot be changed there,
  *     and "Salvar" sends the changed team with its logo.
+ *   - "Logo sobre placa clara" shows team 42's logo on the on-air panel and on the light
+ *     plate side by side, so the operator sees why to tick it; ticked and saved, the team
+ *     goes with the choice (BAJAOVRLAY-24). A team with no logo says to send one first.
  *   - "Excluir" asks twice: the first press sends nothing, the second deleteEntity.
  *   - Programação lists the slots by start with what each is now: concluída, em
  *     andamento, a seguir.
@@ -182,6 +185,56 @@ describe('the form', () => {
         },
       ]);
     });
+  });
+});
+
+describe('the light plate of a logo', () => {
+  it('shows team 42’s logo on the panel and on the plate, and saves the box ticked', async () => {
+    // Arrange: the page drawn, team 42's form open.
+    const { fakeServer } = renderPageWithTheLibrary();
+    const rowOfTeam42 = readRowsOfTable('Equipes cadastradas')[1] as HTMLElement;
+    fireEvent.click(within(rowOfTeam42).getByRole('button', { name: 'Editar' }));
+    const form = within(screen.getByRole('form', { name: 'Editar: Equipe 42 (Baja UFPR)' }));
+
+    // Act: tick the box and save.
+    fireEvent.click(form.getByRole('checkbox', { name: 'Logo sobre placa clara' }));
+    fireEvent.click(form.getByRole('button', { name: 'Salvar' }));
+
+    // Assert: both previews show the logo; the team goes with its logo on the plate.
+    expect(
+      form.getByRole('img', { name: 'Logo no painel, como vai ao ar sem a placa' }),
+      'the logo on the panel',
+    ).toHaveAttribute('src', `/media/${logoOfTeam42MediaId}`);
+    expect(
+      form.getByRole('img', { name: 'Logo na placa clara' }),
+      'the logo on the plate',
+    ).toHaveAttribute('src', `/media/${logoOfTeam42MediaId}`);
+    await waitFor(() => {
+      expect(fakeServer.listCommandsReceived(), 'team 42 with its logo on the plate').toEqual([
+        {
+          type: 'upsertEntity',
+          entityType: 'team',
+          record: { ...buildTeam42WithItsLogo(), logoOnLightPlate: true },
+        },
+      ]);
+    });
+  });
+
+  it('asks for the logo first on a team that has none', () => {
+    // Arrange: the page drawn.
+    renderPageWithTheLibrary();
+    const rowOfTeam7 = readRowsOfTable('Equipes cadastradas')[0] as HTMLElement;
+
+    // Act: open team 7's form (no logo).
+    fireEvent.click(within(rowOfTeam7).getByRole('button', { name: 'Editar' }));
+
+    // Assert: no preview, and a line saying what to do.
+    const form = within(screen.getByRole('form', { name: 'Editar: Equipe 7 (Juriti Off-Road)' }));
+    expect(
+      form.getByText('Envie o logo para ver como ele fica no painel e na placa clara.'),
+      'the operator is told to send the logo first',
+    ).toBeInTheDocument();
+    expect(form.queryByRole('img', { name: 'Logo na placa clara' }), 'no preview').toBeNull();
   });
 });
 

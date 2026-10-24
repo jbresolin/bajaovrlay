@@ -21,10 +21,10 @@
  *   - The page: this file runs in plain Node (the pragma on line 1) like its sibling;
  *     it draws nothing.
  */
+import { createOGrafSchemaValidator } from '@bajaovrlay/graphics-kit/ografSchemaValidator.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import raceClockManifest from '../race-clock.ograf.json';
-import { createOGrafSchemaValidator } from './ografSchemaValidator.testSupport.js';
 import { parseCompleteRaceClockData, type RaceClockData } from './raceClockModel.js';
 
 /** Builds the data the server sends when the enduro is under green flag, 1:05:00 in. */

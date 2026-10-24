@@ -1,4 +1,5 @@
 import {
+  type EntityValueType,
   findClockFieldKeysByRole,
   type Graphic,
   type Instance,
@@ -12,6 +13,7 @@ import { describeBoundFieldsOfInstance } from '@/features/bindings/boundFieldsOf
 import {
   findSourceValueKindOfBinding,
   findSourceValueKindOfClockField,
+  type SourceValueKind,
   writeSourceValueForReading,
 } from '@/features/bindings/sourceValueText';
 import { describeEntityFieldsOfInstance } from '@/features/entityLibrary/entityFieldsOfInstance';
@@ -77,6 +79,17 @@ export type QuickEditFormProps = {
  * at all. What could go wrong: a graphic whose package is rebuilt with another schema
  * while the page is open keeps the values of the old form until the next "Editar".
  */
+/** How "Edição rápida" writes a value read from the library, by its attribute's value type. */
+function findSourceValueKindOfEntityValue(valueType: EntityValueType | undefined): SourceValueKind {
+  if (valueType === 'integer') {
+    return 'number';
+  }
+  if (valueType === 'boolean') {
+    return 'yesNo';
+  }
+  return 'text';
+}
+
 export function QuickEditForm(props: QuickEditFormProps) {
   const { graphic, instanceBeingEdited } = props;
 
@@ -300,8 +313,9 @@ function useEntityFieldsDrawnReadOnly(
     const fieldKey = entityField.fieldKey;
     const fieldLabel =
       description.fields.find((field) => field.key === fieldKey)?.label ?? fieldKey;
-    // A whole number is written as pt-BR writes numbers; a text or an image URL as it is.
-    const valueKind = entityField.valueType === 'integer' ? 'number' : 'text';
+    // A whole number is written as pt-BR writes numbers, a yes or no as "Sim" or "Não", a
+    // text or an image URL as it is.
+    const valueKind = findSourceValueKindOfEntityValue(entityField.valueType);
     contentPairs.push([
       fieldKey,
       <QuickEditEntityField

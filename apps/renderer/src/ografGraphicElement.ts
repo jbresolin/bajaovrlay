@@ -2,7 +2,7 @@
  * The parts of an OGraf v1 graphic the renderer calls, restated from the informative
  * TypeScript definitions (github.com/ebu/ograf, v1/typescript-definitions,
  * src/apis/graphicsAPI.ts). Restated rather than installed to keep a dependency out of
- * the renderer; packages/graphics/race-clock/src/ografGraphicTypes.ts is the graphic's
+ * the renderer; packages/graphics/kit/src/ografGraphicTypes.ts is the graphics'
  * side of the same contract.
  */
 

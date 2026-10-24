@@ -12,8 +12,8 @@
  *     fields first; brackets (a draft shape) offer nothing to map in this PR.
  *   - Every listed field exists in its shape's Zod schema, and is required there exactly
  *     when the list says so.
- *   - Every field of the shapes' schemas is listed, except standings' pointsByEvent,
- *     which is left out on purpose (see the README).
+ *   - Every field of the shapes' schemas is listed, except the standings' own scoreParts,
+ *     which the mapping builds from each team's list of parts (see the README).
  *
  * What these tests deliberately do not cover:
  *   - Using the list to refuse a rule; flexMappingConfig.test.ts covers that.
@@ -182,13 +182,15 @@ describe('listMappableFieldsOfShape', () => {
     ]);
   });
 
-  it('lists the standings fields, the whole shape first, then each team', () => {
+  it('lists the standings fields, the whole shape first, then each team, required first', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
     // Act: ask for the standings fields.
     const standingsFields = listMappableFieldsOfShape('standings');
 
-    // Assert: exactly these, in this order, every one required.
+    // Assert: exactly these, in this order. The rank is optional since a disqualified team
+    // has none (BAJAOVRLAY-24); the parts of the score are one list per team, each part a
+    // label and a value, from which the standings' own list of parts is built.
     expect(standingsFields, 'the standings fields must be this fixed list').toEqual([
       { targetField: 'scope', label: 'Abrangência', isRequired: true, level: 'topLevel' },
       {
@@ -197,11 +199,23 @@ describe('listMappableFieldsOfShape', () => {
         isRequired: true,
         level: 'topLevel',
       },
-      { targetField: 'rank', label: 'Classificação', isRequired: true, level: 'entry' },
       { targetField: 'carNumber', label: 'Carro', isRequired: true, level: 'entry' },
       { targetField: 'teamName', label: 'Equipe', isRequired: true, level: 'entry' },
       { targetField: 'schoolName', label: 'Escola', isRequired: true, level: 'entry' },
       { targetField: 'points', label: 'Pontos', isRequired: true, level: 'entry' },
+      { targetField: 'rank', label: 'Classificação', isRequired: false, level: 'entry' },
+      {
+        targetField: 'pointsByPart',
+        label: 'Partes da pontuação (lista de rótulo e valor)',
+        isRequired: false,
+        level: 'entry',
+      },
+      {
+        targetField: 'isDisqualified',
+        label: 'Desclassificada',
+        isRequired: false,
+        level: 'entry',
+      },
     ]);
   });
 
@@ -341,14 +355,16 @@ describe('the mappable fields match the shape schemas', () => {
         ...listFieldNamesOfSchema(PositionEntrySchema),
       ],
     },
-    // pointsByEvent is left out on purpose: a table of points per event is a second
-    // mapping inside each entry, and no source sends it yet.
+    // The standings' own scoreParts is left out on purpose: it is built from the teams'
+    // lists of parts (each a label and a value), so a source never maps it by itself.
     {
-      name: 'every standings schema field but pointsByEvent is mappable',
+      name: 'every standings schema field but scoreParts is mappable',
       fields: listMappableFieldsOfShape('standings'),
       schemaFieldNames: [
-        ...listFieldNamesOfSchema(StandingsShapeSchema).filter((name) => name !== 'entries'),
-        ...listFieldNamesOfSchema(StandingsEntrySchema).filter((name) => name !== 'pointsByEvent'),
+        ...listFieldNamesOfSchema(StandingsShapeSchema).filter(
+          (name) => name !== 'entries' && name !== 'scoreParts',
+        ),
+        ...listFieldNamesOfSchema(StandingsEntrySchema),
       ],
     },
   ];

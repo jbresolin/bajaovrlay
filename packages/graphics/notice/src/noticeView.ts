@@ -4,6 +4,7 @@
  * the variant or the data has no use for is hidden (the `hidden` attribute), so an update
  * on air touches only text and attributes.
  */
+import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';
 
 import type { NoticeAnimatedElements } from './noticeAnimations.js';
@@ -105,15 +106,6 @@ export function findNoticeParts(renderRoot: ParentNode): NoticeParts {
     reason: findPart('notice-reason'),
     penalty: findPart('notice-penalty'),
   };
-}
-
-/**
- * Answers whether a text field has something to show. A text of blanks counts as
- * missing: an operator who cleared a field by typing spaces, or an event that sent an
- * empty name, must not leave an empty box on air.
- */
-function isTextGiven(text: string | undefined): text is string {
-  return text !== undefined && text.trim() !== '';
 }
 
 /** Changes an element's text only when it differs, so an update touches only what changed. */

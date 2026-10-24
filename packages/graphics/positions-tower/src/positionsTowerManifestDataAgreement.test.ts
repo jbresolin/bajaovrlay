@@ -23,11 +23,11 @@
  *   - The page: this file runs in plain Node (the pragma on line 1) like its sibling;
  *     it draws nothing.
  */
+import { createOGrafSchemaValidator } from '@bajaovrlay/graphics-kit/ografSchemaValidator.testSupport';
 import positionsSample from '@bajaovrlay/shared/samples/positions.json';
 import { describe, expect, it } from 'vitest';
 
 import positionsTowerManifest from '../positions-tower.ograf.json';
-import { createOGrafSchemaValidator } from './ografSchemaValidator.testSupport.js';
 import { parseCompletePositionsTowerData } from './positionsTowerModel.js';
 
 /** The enduro sample's 60 entries, as a binding to the positions list hands them over. */

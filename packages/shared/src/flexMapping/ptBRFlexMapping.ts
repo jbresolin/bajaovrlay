@@ -11,6 +11,16 @@ export const ptBRFlexMapping = {
     updatedAtMs: 'Momento da atualização',
     position: 'Posição',
     rank: 'Classificação',
+    /** A team's parts of the score, sent as a list of `{ label, value }` (BAJAOVRLAY-24). */
+    pointsByPart: 'Partes da pontuação (lista de rótulo e valor)',
+    isDisqualified: 'Desclassificada',
+  },
+
+  /** Why a team's list of score parts could not be read (standingsScorePartLists.ts). */
+  scorePartReasons: {
+    partsNotAList: 'era esperada uma lista de partes, cada uma com rótulo (label) e valor (value)',
+    partNotReadable: (placeInList: number) =>
+      `a parte ${placeInList} da lista precisa de um rótulo (label) em texto e de um valor (value) em número`,
   },
 
   /** Why a path was refused. Each one quotes the whole path the operator wrote. */

@@ -128,6 +128,8 @@ export const ptBRDataSources = {
       schoolName: 'Escola',
       points: 'Pontos',
     },
+    // In the rank column of a team disqualified from the competition (it has no rank).
+    disqualifiedRank: 'Desclassificada',
   },
 
   // The per-kind forms ("+ Fonte" and "Editar").

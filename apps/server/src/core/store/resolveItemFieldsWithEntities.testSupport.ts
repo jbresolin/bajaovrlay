@@ -8,8 +8,9 @@ export const logoOfTeam42MediaId =
 
 /**
  * A team card, the graphic the entity library is first for: the team's name (required),
- * its city, its logo (an image field, optional), and the laps of the car (a number the
- * positions give). Built here because the catalogue has no team card yet.
+ * its city, its logo (an image field, optional), whether the logo goes on the light plate
+ * (a switch), and the laps of the car (a number the positions give). A stand-in with only
+ * the fields these tests read, so the resolver's tests do not depend on the real package.
  */
 export function buildTeamCardGraphic(): Graphic {
   return {
@@ -24,6 +25,7 @@ export function buildTeamCardGraphic(): Graphic {
           teamName: { type: 'string', title: 'Equipe' },
           city: { type: 'string', title: 'Cidade' },
           logoUrl: { type: 'string', title: 'Logo', v_baja: { role: 'imageUrl' } },
+          logoOnLightPlate: { type: 'boolean', title: 'Logo sobre placa clara' },
           laps: { type: 'integer', title: 'Voltas' },
         },
         required: ['teamName'],
@@ -48,7 +50,10 @@ export function buildTeamCardWithARequiredLogo(): Graphic {
   };
 }
 
-/** Team 42 (Baja UFPR, Curitiba, with its logo) and team 7 (Juriti Off-Road, no logo). */
+/**
+ * Team 42 (Baja UFPR, Curitiba, with its logo on the light plate) and team 7 (Juriti
+ * Off-Road, no logo, no plate choice).
+ */
 export function buildLibraryWithTeams42And7(): EntityLibrary {
   return {
     teams: [
@@ -59,6 +64,7 @@ export function buildLibraryWithTeams42And7(): EntityLibrary {
         city: 'Curitiba',
         state: 'PR',
         logoMediaId: logoOfTeam42MediaId,
+        logoOnLightPlate: true,
       },
       {
         carNumber: 7,

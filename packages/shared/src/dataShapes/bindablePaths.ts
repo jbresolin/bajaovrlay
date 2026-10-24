@@ -11,6 +11,8 @@ import { ptBRDataShapes } from './ptBRDataShapes.js';
  * - `stateEnum`: the session flag, exactly the race clock's flag values.
  * - `positionsEntries`, `standingsEntries`, `bracketsRounds`, `incidentsEntries`: a whole
  *   list, for a tower, a standings table, a bracket or a board of penalties.
+ * - `standingsScoreParts`: the standings' parts of the score (`{ partId, label }`), a
+ *   whole list too, the columns of the standings table (BAJAOVRLAY-24).
  * - `clockGroup`: the whole session clock, which fills a graphic's four clock fields at
  *   once (the clock group, concept §5), so the clock never jumps between two of them.
  */
@@ -22,6 +24,7 @@ export const BindableValueTypeSchema = z.enum([
   'stateEnum',
   'positionsEntries',
   'standingsEntries',
+  'standingsScoreParts',
   'bracketsRounds',
   'incidentsEntries',
   'clockGroup',
@@ -231,12 +234,14 @@ const standingsEntryFieldTypes = [
   { fieldName: 'teamName', valueType: 'text' },
   { fieldName: 'schoolName', valueType: 'text' },
   { fieldName: 'points', valueType: 'number' },
+  { fieldName: 'isDisqualified', valueType: 'boolean' },
 ] as const;
 
 /**
- * The scope, the whole list, then each of the first ten rows field by field. Labelled by
- * row ("1ª linha"), not by place: tied teams share a rank, so a row's index is not its
- * place. A team chosen by its car number is offered in the positions only (brief B).
+ * The scope, the whole list, the parts of the score (the table's columns, a whole list),
+ * then each of the first ten rows field by field. Labelled by row ("1ª linha"), not by
+ * place: tied teams share a rank, so a row's index is not its place. A team chosen by its
+ * car number is offered in the positions only (brief B).
  */
 function listStandingsPaths(): BindablePath[] {
   const shapeName = ptBRDataShapes.shapeNames.standings;
@@ -246,6 +251,11 @@ function listStandingsPaths(): BindablePath[] {
       'entries',
       [shapeName, ptBRDataShapes.wholeListLabel],
       'standingsEntries',
+    ),
+    buildPathAtFixedPlace(
+      'scoreParts',
+      [shapeName, ptBRDataShapes.standingsFieldLabels.scoreParts],
+      'standingsScoreParts',
     ),
   ];
   for (let index = 0; index < firstEntriesWithTheirOwnPaths; index += 1) {

@@ -5,6 +5,7 @@ import {
   buildCarNumberSchema,
   buildOptionalMediaIdSchema,
   buildOptionalTextSchema,
+  buildOptionalYesOrNoSchema,
   buildRequiredTextSchema,
 } from './entityFieldSchemas.js';
 import { reportKeysListedTwice } from './entityKeysListedOnce.js';
@@ -33,6 +34,12 @@ export const TeamSchema = z.object({
   state: BrazilianStateCodeSchema.optional(),
   logoMediaId: buildOptionalMediaIdSchema(labels.logoMediaId),
   carPhotoMediaId: buildOptionalMediaIdSchema(labels.carPhotoMediaId),
+  /**
+   * Whether the team card draws the logo on its small light plate: for a dark logo, or one
+   * that comes on its own white box (BAJAOVRLAY-24). Chosen by hand per team, never
+   * detected; left out means no plate.
+   */
+  logoOnLightPlate: buildOptionalYesOrNoSchema(labels.logoOnLightPlate),
 });
 
 /** A team that has passed TeamSchema. */

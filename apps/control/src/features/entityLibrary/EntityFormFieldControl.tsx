@@ -66,8 +66,9 @@ export type EntityFormFieldControlProps = {
 /**
  * The control one field of a Cadastros form is typed in, by its kind: a text input (with
  * a number keyboard for a whole number), a date and time input on this computer's clock,
- * a dropdown for a state, a tier or a kind of session, or an image field that uploads at
- * once. Every control holds text; entityRecordForm.ts reads it into the record.
+ * a dropdown for a state, a tier or a kind of session, an image field that uploads at
+ * once, or a checkbox for a yes or no. Every control holds text; entityRecordForm.ts reads
+ * it into the record.
  */
 export function EntityFormFieldControl(props: EntityFormFieldControlProps) {
   const { field, controlId, value, onChange, errorMessage } = props;
@@ -122,6 +123,17 @@ export function EntityFormFieldControl(props: EntityFormFieldControlProps) {
             ))}
           </SelectContent>
         </Select>
+      );
+    case 'yesNo':
+      return (
+        <input
+          id={controlId}
+          type="checkbox"
+          className="size-4 accent-primary"
+          checked={value === 'true'}
+          onChange={(event) => onChange(event.target.checked ? 'true' : '')}
+          {...errorAttributes}
+        />
       );
     case 'image':
       return (

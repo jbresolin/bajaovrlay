@@ -83,6 +83,16 @@ export const ptBREntityLibrary = {
     dateTimeHint: 'No horário deste computador.',
   },
 
+  // The preview beside "Logo sobre placa clara": the logo on the on-air panel and on the
+  // light plate, so the operator sees why to tick it (BAJAOVRLAY-24).
+  logoPlate: {
+    onThePanelAlt: 'Logo no painel, como vai ao ar sem a placa',
+    onThePanelCaption: 'No painel',
+    onThePlateAlt: 'Logo na placa clara',
+    onThePlateCaption: 'Na placa clara',
+    sendTheLogoFirst: 'Envie o logo para ver como ele fica no painel e na placa clara.',
+  },
+
   // An image field of the form.
   image: {
     chooseButton: 'Escolher imagem',
@@ -112,6 +122,7 @@ export const ptBREntityLibrary = {
     imagesNotInTheCsv:
       'Imagens não vão no CSV: envie-as no formulário de cada cadastro. Atualizar um cadastro pelo CSV mantém as imagens dele.',
     dateTimeColumnsHint: 'Datas como 14/11/2026 10:00, no horário deste computador.',
+    yesNoColumnsHint: 'placa_clara: sim ou não (vazio é não), se o logo vai sobre a placa clara.',
     previewTableLabel: 'Prévia da importação',
     lineColumn: 'Linha',
     statusColumn: 'Situação',

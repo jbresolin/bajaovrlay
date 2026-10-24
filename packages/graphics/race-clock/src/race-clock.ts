@@ -10,11 +10,6 @@
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
-import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
-import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
-import { LitElement } from 'lit';
-
-import { type ClockTicker, createClockTicker } from './clockTicker.js';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -24,17 +19,24 @@ import type {
   OGrafReturnPayload,
   OGrafStopActionParams,
   OGrafUpdateActionParams,
-} from './ografGraphicTypes.js';
-import { choosePlayActionTarget } from './playSteps.js';
+} from '@bajaovrlay/graphics-kit/ografGraphicTypes';
+import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import {
+  finishTimelineAtOnce,
+  playTimelineToTheEnd,
+} from '@bajaovrlay/graphics-kit/timelinePlayback';
+import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
+import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
+import { LitElement } from 'lit';
+
+import { type ClockTicker, createClockTicker } from './clockTicker.js';
 import { ptBR } from './ptBR.js';
 import {
   buildFlagBandToggleTimeline,
   buildFlagChangeTimeline,
   buildPlayInTimeline,
   buildStopOutTimeline,
-  finishTimelineAtOnce,
   placePanelOffAir,
-  playTimelineToTheEnd,
   type RaceClockTimeline,
 } from './raceClockAnimations.js';
 import {

@@ -8,7 +8,7 @@
  *
  * What these tests prove:
  *   - The teams export writes the header and one line per team, in car order, with no
- *     image column.
+ *     image column, and the light plate choice as "sim" or "nao" (BAJAOVRLAY-24).
  *   - The export of each tab, imported again into the same library, gives every line as
  *     "atualiza" with the very records stored (the logo kept): a round trip loses nothing.
  *   - The schedule writes its moments as "14/11/2026 10:00" on this computer's clock.
@@ -39,6 +39,7 @@ function buildLibraryOfTheRaceWeekend(): EntityLibrary {
         city: 'Curitiba',
         state: 'PR',
         logoMediaId: logoOfTeam42MediaId,
+        logoOnLightPlate: true,
       },
       {
         carNumber: 7,
@@ -85,11 +86,12 @@ describe('writeRecordsAsCsv', () => {
     // Act: export the teams.
     const csvText = writeRecordsAsCsv('team', library);
 
-    // Assert: car 7 before car 42, the full school name where there is one.
+    // Assert: car 7 before car 42, the full school name where there is one, and the
+    // plate column empty for car 7 (no choice) and "sim" for car 42.
     expect(csvText, 'the teams export').toBe(
-      '﻿carro;equipe;escola;escola_completa;cidade;uf\r\n' +
-        '7;Juriti Off-Road;UDESC;;Joinville;SC\r\n' +
-        '42;Baja UFPR;UFPR;Universidade Federal do Paraná;Curitiba;PR\r\n',
+      '﻿carro;equipe;escola;escola_completa;cidade;uf;placa_clara\r\n' +
+        '7;Juriti Off-Road;UDESC;;Joinville;SC;\r\n' +
+        '42;Baja UFPR;UFPR;Universidade Federal do Paraná;Curitiba;PR;sim\r\n',
     );
   });
 
@@ -108,8 +110,8 @@ describe('writeRecordsAsCsv', () => {
   });
 
   const everyTab: Array<{ name: string; entityType: EntityType }> = [
-    // A team, keyed by car number, whose logo must survive the trip.
-    { name: 'round-trips the teams, the logo kept', entityType: 'team' },
+    // A team, keyed by car number, whose logo and plate choice must survive the trip.
+    { name: 'round-trips the teams, the logo and its plate kept', entityType: 'team' },
     // A person with quotes in the name and a team.
     { name: 'round-trips the people', entityType: 'person' },
     // A sponsor with its tier and weight.

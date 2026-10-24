@@ -10,6 +10,9 @@ reading at its README.md, which also says how to copy it.
 the template for the next one with rows.
 `notice/` is the card under the bug for a fastest lap or a race control notice, the first
 graphic with two variants in one manifest (`variant`) and an on-air hold left to the server.
+`kit/` (`@bajaovrlay/graphics-kit`) is not a graphic: it holds what the graphics share (the OGraf
+types, the play step rule, the page turner, timeline playback, the preview page's controls, the
+manifest validator for tests), bundled into each graphic by Vite; its README lists what is there.
 Every value a graphic draws with comes from the
 theme (`packages/theme`): tokens on the renderer page's `:root`, read as `var(--token)`
 inside the shadow root, never a colour or a size of the graphic's own.
@@ -79,10 +82,11 @@ On each property of `schema.properties` (`type` picks the control: `string` text
   list on an `array`, a text on a `string`…) and must not need a car number; a hint that
   fails those rules is ignored, never an error.
 
-Any `string` (without `enum`) or whole-number field may also read the entity library in the
-item editor ("Cadastro", BAJAOVRLAY-19): one attribute of one team (by car number), person,
-sponsor or schedule slot, always live. A text attribute fits a `string`, a whole number an
-`integer`/`number`; nothing of the library fits a `boolean` or a fixed list.
+Any `string` (without `enum`), whole-number or `boolean` field may also read the entity library
+in the item editor ("Cadastro", BAJAOVRLAY-19): one attribute of one team (by car number),
+person, sponsor or schedule slot, always live. A text attribute fits a `string`, a whole number
+an `integer`/`number`, a yes or no a `boolean` (a team's "Logo sobre placa clara",
+BAJAOVRLAY-24); nothing of the library fits a fixed list.
 
 `schema.required` lists the fields that cannot be left blank; every other field gets a
 "limpar" control and, once cleared, is not sent to the graphic at all (never as `null`).

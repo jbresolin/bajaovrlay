@@ -28,12 +28,15 @@ export {
   type PositionStatus,
   PositionStatusSchema,
 } from './positionsShape.js';
-// The standings shape: teams by rank and points, overall or for one kind of session.
+// The standings shape: teams by rank and points, overall or for one kind of session, with
+// the parts of the score as the source names them and disqualified teams at the end.
 export {
   type StandingsEntry,
   StandingsEntrySchema,
   type StandingsScope,
   StandingsScopeSchema,
+  type StandingsScorePart,
+  StandingsScorePartSchema,
   type StandingsShape,
   StandingsShapeSchema,
 } from './standingsShape.js';

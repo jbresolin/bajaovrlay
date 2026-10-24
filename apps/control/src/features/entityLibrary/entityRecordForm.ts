@@ -6,11 +6,12 @@ import { readLocalDateTimeText, writeDateTimeInputValue } from './localDateTimeT
 
 /**
  * How one field of the form is typed: a line of text, a whole number, a choice from a
- * list (a state, a tier, a kind of session), a date and time, or an image (its media id,
- * set by the upload, EntityImageField.tsx).
+ * list (a state, a tier, a kind of session), a date and time, an image (its media id,
+ * set by the upload, EntityImageField.tsx), or a yes or no (a checkbox, held as "true"
+ * when ticked and "" when not, so unticked leaves the optional field out).
  */
 export type EntityFormFieldKind =
-  'text' | 'wholeNumber' | 'state' | 'tier' | 'sessionKind' | 'localDateTime' | 'image';
+  'text' | 'wholeNumber' | 'state' | 'tier' | 'sessionKind' | 'localDateTime' | 'image' | 'yesNo';
 
 /** One field of a tab's form: the record field it fills, its label, how it is typed. */
 export type EntityFormField = {
@@ -73,6 +74,12 @@ const formFieldsByEntityType: Record<EntityType, EntityFormField[]> = {
       recordFieldKey: 'carPhotoMediaId',
       label: teamLabels.carPhotoMediaId,
       fieldKind: 'image',
+      isOptional: true,
+    },
+    {
+      recordFieldKey: 'logoOnLightPlate',
+      label: teamLabels.logoOnLightPlate,
+      fieldKind: 'yesNo',
       isOptional: true,
     },
   ],
@@ -214,6 +221,8 @@ function readFieldText(text: string, field: EntityFormField): unknown {
       return /^\d+$/.test(text) ? Number(text) : text;
     case 'localDateTime':
       return readLocalDateTimeText(text) ?? text;
+    case 'yesNo':
+      return text === 'true';
     case 'text':
     case 'state':
     case 'tier':

@@ -2,8 +2,14 @@
 // for the other events from a fixed table drawn from the seed. This is NOT the real
 // Baja SAE Brasil scoring (whose rules have many more events and penalties); it only
 // gives the standings graphics believable numbers that move with the enduro.
-import type { SessionKind, StandingsEntry, StandingsShape } from '@bajaovrlay/shared';
+import type {
+  SessionKind,
+  StandingsEntry,
+  StandingsScorePart,
+  StandingsShape,
+} from '@bajaovrlay/shared';
 
+import { ptBR } from '../../../../core/messages/ptBR.js';
 import { drawForCarAndLap, type DrawPurpose, scaleDrawBetween } from './seededRandom.js';
 import type { CarRaceState, EnduroRaceState } from './simulateEnduro.js';
 
@@ -28,8 +34,8 @@ const leastShareOfEventPoints = 0.4;
 
 /**
  * The overall standings at this moment of the race: each team's enduro points plus its
- * points in the other events, highest first; tied teams share a rank and are listed by
- * car number.
+ * points in the other events, one score part per event, highest total first; tied teams
+ * share a rank and are listed by car number. No simulated team is disqualified.
  */
 export function buildOverallStandings(raceState: EnduroRaceState, nowMs: number): StandingsShape {
   const leaderLaps = Math.max(
@@ -37,16 +43,16 @@ export function buildOverallStandings(raceState: EnduroRaceState, nowMs: number)
     ...raceState.cars.map((car) => car.lapCompletedAtRunningMs.length),
   );
   const unrankedEntries = raceState.cars.map((car, carIndex) => {
-    const pointsByEvent: Partial<Record<SessionKind, number>> = {
+    const pointsByPart: Record<string, number> = {
       enduro: computeEnduroPointsOfCar(car, leaderLaps),
     };
     for (const event of otherEvents) {
-      pointsByEvent[event.sessionKind] = drawEventPoints(raceState.settings.seed, carIndex, event);
+      pointsByPart[event.sessionKind] = drawEventPoints(raceState.settings.seed, carIndex, event);
     }
     const totalPoints = roundToOneDecimal(
-      Object.values(pointsByEvent).reduce((sum, points) => sum + points, 0),
+      Object.values(pointsByPart).reduce((sum, points) => sum + points, 0),
     );
-    return { car, totalPoints, pointsByEvent };
+    return { car, totalPoints, pointsByPart };
   });
 
   const sortedEntries = [...unrankedEntries].sort((first, second) => {
@@ -68,11 +74,28 @@ export function buildOverallStandings(raceState: EnduroRaceState, nowMs: number)
       teamName: sortedEntry.car.teamName,
       schoolName: sortedEntry.car.schoolName,
       points: sortedEntry.totalPoints,
-      pointsByEvent: sortedEntry.pointsByEvent,
+      pointsByPart: sortedEntry.pointsByPart,
     });
   });
 
-  return { scope: 'overall', updatedAtMs: nowMs, entries };
+  return { scope: 'overall', updatedAtMs: nowMs, scoreParts: listScoreParts(), entries };
+}
+
+/**
+ * The six parts of the simulated score, one per event, in the order a board shows them:
+ * the dynamic events, then the enduro (the real export also puts the enduro after the
+ * dynamics). Each part's id is its session kind, so a part reads as the event it scores.
+ */
+function listScoreParts(): StandingsScorePart[] {
+  const labels = ptBR.simulatorScorePartLabels;
+  return [
+    { partId: 'acceleration', label: labels.acceleration },
+    { partId: 'speed', label: labels.speed },
+    { partId: 'traction', label: labels.traction },
+    { partId: 'suspension', label: labels.suspension },
+    { partId: 'maneuverability', label: labels.maneuverability },
+    { partId: 'enduro', label: labels.enduro },
+  ];
 }
 
 /**

@@ -94,6 +94,19 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-on-air-panel: var(--on-air-panel);
+  --color-on-air-plate: var(--on-air-plate);
+}
+
+/*
+ * The two on-air surfaces a logo can sit on, for the Cadastros preview of "Logo sobre placa
+ * clara" (LogoPlatePreview.tsx): the graphics' slate panel and their light plate. Stand-ins
+ * for the theme's --panel-base and --panel-light (packages/theme), which the control page
+ * does not load; the same in light and dark mode, since they show what goes on air.
+ */
+:root {
+  --on-air-panel: oklch(0.25 0.04 274);
+  --on-air-plate: oklch(1 0 0 / 96%);
 }
 
 @layer base {

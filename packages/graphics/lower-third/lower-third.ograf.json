@@ -1,0 +1,48 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-lower-third",
+  "version": "0.1.0",
+  "name": "Tarja",
+  "description": "Tarja no canto inferior esquerdo: o nome de uma pessoa e, embaixo, a função e a equipe.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "lower-third.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "lower-third",
+    "category": "lowerThird"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 500 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Nome",
+        "description": "O nome da pessoa, em destaque. Ex.: Ana Paula Ribeiro.",
+        "pattern": "\\S",
+        "gddType": "single-line"
+      },
+      "role": {
+        "type": "string",
+        "title": "Função",
+        "description": "Opcional; ex.: Narradora. Ausente, a linha de baixo mostra só a equipe, ou some se também não houver equipe.",
+        "gddType": "single-line"
+      },
+      "teamLine": {
+        "type": "string",
+        "title": "Equipe",
+        "description": "Opcional; ex.: BAJA UFPR · UFPR, depois da função. Ausente, a linha de baixo mostra só a função, ou some se também não houver função.",
+        "gddType": "single-line"
+      }
+    },
+    "required": ["name"],
+    "additionalProperties": false
+  }
+}

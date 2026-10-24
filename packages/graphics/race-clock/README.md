@@ -24,4 +24,6 @@ Playwright on the built `dist/` under `/graphics/race-clock/`:
 `pnpm --filter @bajaovrlay/race-clock test:e2e`, and after a deliberate visual change delete the
 PNGs in `e2e/raceClockScreenshots.e2e.ts-snapshots/` and run it with `--update-snapshots`.
 New graphic: copy this folder, rename package, manifest id, `main`, tag and dev ports, set `v_baja`
-(layer, category, per-field form hints: ../README.md), replace model, schema, styles, template; keep the tests' shape.
+(layer, category, per-field form hints: ../README.md), take what graphics share from `../kit/`
+(OGraf types, play steps, timeline playback, preview controls, manifest validator), replace
+model, schema, styles, template; keep the tests' shape.

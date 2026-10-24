@@ -194,9 +194,14 @@ export async function changeSimulatorInItsEditForm(
 
 /**
  * Presses "Reiniciar corrida" on a simulator's row (João's ruling 3) and waits until the
- * real server has moved the race start (`config.simulatedStartAtMs`) on. The poll after
+ * real server has changed the race start (`config.simulatedStartAtMs`). The poll after
  * that answers the green flag, so a test never lands on a race already past its checkered
  * flag, whatever ran before it on the same server. The simulator must be on.
+ *
+ * Changed, not later: the start is the server's wall clock at the press, and on WSL that
+ * clock can step back (a 73 ms step once made a later start read earlier, gate 2 of PR
+ * #25). The race starting again is what matters, and the callers assert it by waiting
+ * for the green flag.
  */
 export async function restartTheSimulatedRaceWithItsButton(
   page: Page,
@@ -214,11 +219,11 @@ export async function restartTheSimulatedRaceWithItsButton(
         return source.config.simulatedStartAtMs ?? 0;
       },
       {
-        message: `"Reiniciar corrida" must move the race start of "${sourceLabel}" to now`,
+        message: `"Reiniciar corrida" must change the race start of "${sourceLabel}"`,
         timeout: waitForTheRestartInMilliseconds,
       },
     )
-    .toBeGreaterThan(raceStartBeforeMs);
+    .not.toBe(raceStartBeforeMs);
 }
 
 /**

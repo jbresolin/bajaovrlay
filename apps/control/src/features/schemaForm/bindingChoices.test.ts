@@ -64,8 +64,21 @@ describe('listBindingPathChoicesOfField', () => {
       (choice) => choice.pathKey,
     );
 
-    // Assert: the session clock's running, alone.
-    expect(pathKeys, 'only the clock running fits a switch').toEqual(['session:clock.running']);
+    // Assert: the session clock's running, then each standings row's disqualified mark
+    // (gate 2 of PR #25): yes/no paths, and nothing else.
+    expect(pathKeys, 'only yes/no paths fit a switch').toEqual([
+      'session:clock.running',
+      'standings:entries.0.isDisqualified',
+      'standings:entries.1.isDisqualified',
+      'standings:entries.2.isDisqualified',
+      'standings:entries.3.isDisqualified',
+      'standings:entries.4.isDisqualified',
+      'standings:entries.5.isDisqualified',
+      'standings:entries.6.isDisqualified',
+      'standings:entries.7.isDisqualified',
+      'standings:entries.8.isDisqualified',
+      'standings:entries.9.isDisqualified',
+    ]);
   });
 
   it('offers the leader last lap to a text through the lap-time format, and a team name as it is', () => {
@@ -88,7 +101,7 @@ describe('listBindingPathChoicesOfField', () => {
     });
   });
 
-  it('lists the four whole lists for a list field, with topN on the positions', () => {
+  it('lists the five whole lists for a list field, with topN on the positions', () => {
     // Arrange: the tower's list of cars.
     const choices = listBindingPathChoicesOfField(towerDataSchema, 'entries');
 
@@ -96,10 +109,12 @@ describe('listBindingPathChoicesOfField', () => {
     const pathKeys = choices.map((choice) => choice.pathKey);
     const positions = choices.find((choice) => choice.pathKey === 'positions:entries');
 
-    // Assert: positions, standings, rounds and incidents, and topN offered on the positions.
-    expect(pathKeys, 'the four whole lists').toEqual([
+    // Assert: positions, standings, the standings' score parts (BAJAOVRLAY-24), rounds and
+    // incidents, and topN offered on the positions.
+    expect(pathKeys, 'the five whole lists').toEqual([
       'positions:entries',
       'standings:entries',
+      'standings:scoreParts',
       'brackets:rounds',
       'incidents:entries',
     ]);

@@ -47,6 +47,13 @@ token names are the design's. Copied with these changes:
   `--notice-width`, `--notice-head-height`, `--notice-row-height` and `--motion-notice-hold`
   as the design names them, and `--notice-penalty-background` / `--notice-penalty-text`
   (the navy cell, which the design wrote as `--brand-navy` and `#ffffff`).
+- added for the lower third, the team card and the standings (BAJAOVRLAY-24, from the
+  catalogue of PR #21), `--lower-third-bottom` (the lower-third slot's bottom edge, y 940,
+  which the pages drew without a token) and, as the design names them: `--panel-light` (the logo's light plate),
+  `--chip-large-size`, `--size-chip-large`, `--team-photo-width`, `--team-photo-height`,
+  `--team-logo-size`, `--logo-plate-padding`, `--board-row-height`, `--size-board`,
+  `--col-points`, `--col-total`, `--motion-board-hold` and `--motion-page-stagger` (the last
+  two read by `readMotionTokens` as `boardHoldMs` and `pageStaggerMs`).
 
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).

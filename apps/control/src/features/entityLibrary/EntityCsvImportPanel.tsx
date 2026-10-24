@@ -100,6 +100,7 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
         {entityType === 'scheduleSlot' && (
           <p className="text-muted-foreground">{texts.dateTimeColumnsHint}</p>
         )}
+        {entityType === 'team' && <p className="text-muted-foreground">{texts.yesNoColumnsHint}</p>}
         <p className="text-muted-foreground">{texts.imagesNotInTheCsv}</p>
       </div>
 

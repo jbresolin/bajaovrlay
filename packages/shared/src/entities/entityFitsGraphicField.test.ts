@@ -4,7 +4,8 @@
  * What this module is for:
  *   An entity reference stores one attribute of a record on one field of a graphic. The
  *   attribute must fit the field (BAJAOVRLAY-19): a text attribute on a string field, a
- *   whole number on an integer or number field, and an image URL only on a string field
+ *   whole number on an integer or number field, a yes or no on a boolean field
+ *   (BAJAOVRLAY-24), and an image URL only on a string field
  *   whose manifest marks it `v_baja.role: imageUrl` (the convention for image fields,
  *   packages/graphics/README.md). The item editor lists only the attributes that fit, and
  *   the server refuses a save of one that does not, with the same sentence.
@@ -13,8 +14,9 @@
  *   - An image field is offered the team's logo and car photo and nothing else.
  *   - A plain text field is offered the team's text attributes, never its images.
  *   - An integer field is offered the car number.
- *   - A boolean field, a field with a fixed list of values (an enum) and a field the
- *     schema does not declare are offered nothing.
+ *   - A boolean field is offered the team's choice of the light plate for its logo.
+ *   - A field with a fixed list of values (an enum) and a field the schema does not
+ *     declare are offered nothing.
  *   - The save check refuses an unknown attribute and an image on a text field, naming
  *     them in pt-BR, and accepts the team name on a text field.
  *
@@ -61,8 +63,12 @@ describe('listAttributesThatFitDataSchemaField', () => {
       fieldKey: 'carNumber',
       expected: ['carNumber'],
     },
-    // Nothing of a team is yes or no.
-    { name: 'offers nothing on a boolean field', fieldKey: 'showLogo', expected: [] },
+    // The one yes or no of a team: whether its logo goes on the light plate.
+    {
+      name: 'offers the light plate choice on a boolean field',
+      fieldKey: 'showLogo',
+      expected: ['logoOnLightPlate'],
+    },
     // A fixed list (the flag) takes its own values only, which no text of a team is.
     {
       name: 'offers nothing on a field with a fixed list of values',

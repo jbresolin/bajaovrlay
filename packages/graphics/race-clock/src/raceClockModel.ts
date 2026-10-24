@@ -4,6 +4,7 @@
  * race-clock.ograf.json describes the same data as JSON Schema for renderers and forms;
  * raceClockManifest.test.ts keeps the two in agreement.
  */
+import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
 import { z } from 'zod';
 
 import { ptBR } from './ptBR.js';
@@ -53,7 +54,10 @@ export function parseCompleteRaceClockData(input: unknown): RaceClockDataCheck {
   if (parsed.success) {
     return { isValid: true, data: parsed.data };
   }
-  return { isValid: false, problem: describeFirstProblemInPortuguese(input, parsed.error) };
+  return {
+    isValid: false,
+    problem: describeFirstDataProblemInPortuguese(input, parsed.error, ptBR.validationProblems),
+  };
 }
 
 /**
@@ -68,37 +72,13 @@ export function mergePartialUpdateIntoRaceClockData(
   if (!parsedUpdate.success) {
     return {
       isValid: false,
-      problem: describeFirstProblemInPortuguese(partialInput, parsedUpdate.error),
+      problem: describeFirstDataProblemInPortuguese(
+        partialInput,
+        parsedUpdate.error,
+        ptBR.validationProblems,
+      ),
     };
   }
   const mergedData = { ...currentData, ...parsedUpdate.data };
   return parseCompleteRaceClockData(mergedData);
-}
-
-/**
- * Turns the first Zod issue into one pt-BR sentence naming the field. Only the first
- * is reported: one clear message is more useful to an operator than a list.
- */
-function describeFirstProblemInPortuguese(input: unknown, error: z.ZodError): string {
-  const isAnObject = typeof input === 'object' && input !== null && !Array.isArray(input);
-  if (!isAnObject) {
-    return ptBR.validationProblems.notAnObject;
-  }
-
-  const firstIssue = error.issues[0];
-  if (firstIssue === undefined) {
-    return ptBR.validationProblems.notAnObject;
-  }
-
-  if (firstIssue.code === 'unrecognized_keys') {
-    const firstUnknownField = firstIssue.keys[0] ?? '';
-    return ptBR.validationProblems.unknownField(firstUnknownField);
-  }
-
-  const fieldName = String(firstIssue.path[0] ?? '');
-  const fieldValue = (input as Record<string, unknown>)[fieldName];
-  if (fieldValue === undefined) {
-    return ptBR.validationProblems.missingField(fieldName);
-  }
-  return ptBR.validationProblems.invalidField(fieldName);
 }

@@ -19,6 +19,8 @@
  *     the seed is saved, stamped with the store's clock rather than the machine's.
  *   - A built race clock is registered with its manifest, under its folder name; an
  *     unbuilt one logs a warning, a broken one logs an error, and the boot carries on.
+ *   - The graphics kit's folder, which holds no manifest, is passed over without a
+ *     warning (BAJAOVRLAY-24): it is not a graphic that failed to build.
  *   - A second boot registers a race clock built since the first, and saves it, while
  *     the stored layers and instances come back untouched.
  *   - A stored slice that fails its schema, or a damaged database with no layers row,
@@ -45,6 +47,7 @@ import {
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
 import {
+  addTheGraphicsKitFolderInto,
   buildRaceClockInto,
   createGraphicsFolderWithBrokenRaceClockManifest,
   createGraphicsFolderWithBuiltRaceClock,
@@ -210,6 +213,25 @@ describe('loadInitialSlices on an empty database', () => {
         graphic_package: 'race-clock',
       }),
     );
+  });
+
+  it('passes over the graphics kit, which holds no manifest, without a warning', () => {
+    // Arrange: a brand-new database, the race clock built beside the kit, and a logger
+    // we can read.
+    const { database } = openTemporaryDatabase();
+    const { logger, readRecordedLines } = createRecordingLogger();
+    const graphicsFolder = createGraphicsFolderWithBuiltRaceClock();
+    addTheGraphicsKitFolderInto(graphicsFolder);
+
+    // Act: load the slices.
+    const slices = loadSlicesAtBoot({ database, graphicPackagesFolder: graphicsFolder, logger });
+
+    // Assert: the race clock alone, and no line about the kit.
+    expect(slices.graphics, 'the kit is not a graphic').toEqual([raceClockGraphic]);
+    expect(
+      readRecordedLines().filter((line) => line.graphic_package === 'kit'),
+      'no warning may name the kit',
+    ).toEqual([]);
   });
 
   it('boots without the race clock and logs an error when its manifest is broken', () => {

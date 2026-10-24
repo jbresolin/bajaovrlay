@@ -32,6 +32,7 @@
  *     a real browser.
  *   - Reading and parsing the tokens; packages/theme tests readMotionTokens.
  */
+import { playTimelineToTheEnd } from '@bajaovrlay/graphics-kit/timelinePlayback';
 import { gsapEaseOfToken } from '@bajaovrlay/theme/motion';
 import { gsap } from 'gsap';
 import { describe, expect, it, onTestFinished } from 'vitest';
@@ -41,7 +42,6 @@ import {
   buildFlagChangeTimeline,
   buildPlayInTimeline,
   buildStopOutTimeline,
-  playTimelineToTheEnd,
   type RaceClockAnimatedElements,
 } from './raceClockAnimations.js';
 

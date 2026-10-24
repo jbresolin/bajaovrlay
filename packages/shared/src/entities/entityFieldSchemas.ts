@@ -51,6 +51,14 @@ export function buildOptionalMediaIdSchema(fieldLabel: string) {
   return z.string({ error: message }).regex(mediaIdPattern, { error: message }).optional();
 }
 
+/**
+ * A yes or no the record may leave out (left out reads as no). The CSV reader turns
+ * "sim"/"não" into true/false and passes any other cell on as text, refused here.
+ */
+export function buildOptionalYesOrNoSchema(fieldLabel: string) {
+  return z.boolean({ error: problems.yesOrNo(fieldLabel) }).optional();
+}
+
 /** A moment in ms since 1970 (a whole number), as every moment in the shapes. */
 export function buildMomentSchema(fieldLabel: string) {
   const message = problems.momentInMilliseconds(fieldLabel);

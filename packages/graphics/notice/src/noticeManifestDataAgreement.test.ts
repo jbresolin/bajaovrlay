@@ -21,11 +21,11 @@
  *   - The page: this file runs in plain Node (the pragma on line 1) like its sibling; it
  *     draws nothing.
  */
+import { createOGrafSchemaValidator } from '@bajaovrlay/graphics-kit/ografSchemaValidator.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import noticeManifest from '../notice.ograf.json';
 import { type NoticeData, parseCompleteNoticeData } from './noticeModel.js';
-import { createOGrafSchemaValidator } from './ografSchemaValidator.testSupport.js';
 
 /** Builds the data of a fastest lap: car 31, Acauã Baja (Mauá), 4:38,2 on lap 34. */
 function createFastestLapData(): NoticeData {

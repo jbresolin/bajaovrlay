@@ -11,7 +11,8 @@
  * What these tests prove:
  *   - Car 42's team name, a person's role, a sponsor's roll weight and a slot's start are
  *     read as stored.
- *   - Team 42's logo gives the URL /media/<mediaId>.
+ *   - Team 42's logo gives the URL /media/<mediaId>, and its choice of the light plate
+ *     (logoOnLightPlate, BAJAOVRLAY-24) gives yes.
  *   - A record that is not in the library is unresolvable, with a pt-BR sentence naming
  *     the car, or for a person, sponsor or slot saying in words that it was deleted:
  *     their ids are UUIDs that tell the operator nothing (gate 2 of PR #23).
@@ -80,6 +81,17 @@ describe('resolveEntityReferenceAgainstLibrary', () => {
       name: "gives car 42's logo as its /media URL",
       reference: { kind: 'entity', entityType: 'team', carNumber: 42, attribute: 'logoUrl' },
       expected: `/media/${logoOfTeam42MediaId}`,
+    },
+    // A yes or no: the team card puts car 42's dark logo on its light plate.
+    {
+      name: "reads car 42's choice of the light plate for its logo",
+      reference: {
+        kind: 'entity',
+        entityType: 'team',
+        carNumber: 42,
+        attribute: 'logoOnLightPlate',
+      },
+      expected: true,
     },
   ];
 

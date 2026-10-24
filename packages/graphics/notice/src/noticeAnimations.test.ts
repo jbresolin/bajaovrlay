@@ -22,6 +22,7 @@
  *     and go out in Chromium.
  *   - Reading and parsing the tokens; packages/theme tests readMotionTokens.
  */
+import { playTimelineToTheEnd } from '@bajaovrlay/graphics-kit/timelinePlayback';
 import { gsapEaseOfToken } from '@bajaovrlay/theme/motion';
 import { gsap } from 'gsap';
 import { describe, expect, it, onTestFinished } from 'vitest';
@@ -30,7 +31,6 @@ import {
   buildPlayInTimeline,
   buildStopOutTimeline,
   type NoticeAnimatedElements,
-  playTimelineToTheEnd,
 } from './noticeAnimations.js';
 
 /** The motion tokens of Ardósia, as packages/theme/ardosia/tokens.css declares them. */

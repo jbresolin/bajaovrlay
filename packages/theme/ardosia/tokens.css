@@ -151,6 +151,24 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 20px;
+  /* The lower-third slot (lower third, team card): its bottom edge sits at y 940, above the
+     ticker's bar (y 954), as the design draws it. */
+  --lower-third-bottom: 140px;
+  /* The team card (lower-third slot) and the standings board (fullscreen), from the
+     catalogue of PR #21 (BAJAOVRLAY-24). */
+  --panel-light: rgb(255 255 255 / 0.96); /* the logo's light plate */
+  --chip-large-size: 64px; /* the team card's chip */
+  --size-chip-large: 40px;
+  --team-photo-width: 240px;
+  --team-photo-height: 160px;
+  --team-logo-size: 112px;
+  /* A logo keeps its own shape inside its box; a dark logo, or one on its own white box,
+     sits on the light plate with this much room around it (per team, logoOnLightPlate). */
+  --logo-plate-padding: 6px;
+  --board-row-height: 40px; /* the overall standings' rows */
+  --size-board: 30px;
+  --col-points: 120px; /* one part of the score */
+  --col-total: 160px;
 
   /* ---- Motion (docs/design/directions/ardosia/motion.md): the scoreboard's slide-in,
      faster, with the rows in cascade. Graphics read these through readMotionTokens(). */
@@ -164,6 +182,8 @@
   --motion-strip-hold: 7000ms;
   --motion-cue-hold: 2000ms;
   --motion-notice-hold: 8000ms; /* a notice's hold; the server's event rule clears it, not the graphic */
+  --motion-board-hold: 10000ms; /* a standings page stays this long */
+  --motion-page-stagger: 15ms; /* between pieces when a page turns in place */
   --motion-in-offset: 20; /* px a piece rises on entry (and lifts on exit) */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);

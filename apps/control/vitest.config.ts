@@ -29,6 +29,11 @@ export default mergeConfig(
       setupFiles: ['./src/testSetup.ts'],
       // Every test starts with a real `fetch` again, even if the previous one stubbed it.
       unstubGlobals: true,
+      // The timeout is there to catch a test that hangs, not one that is slow: shared
+      // 2-core runners can run 2-3x slower than a local machine, and two form tests that
+      // take about 2.5 s here hit the 5 s default on GitHub's runner (PR #25's CI). A
+      // slow test is cut down on its own, never hidden behind a tight timeout.
+      testTimeout: 15_000,
       // Browser tests live in e2e/ and are Playwright's, not Vitest's.
       exclude: ['e2e/**', 'node_modules/**'],
     },

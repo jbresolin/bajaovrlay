@@ -1,0 +1,26 @@
+# graphics-kit (`@bajaovrlay/graphics-kit`)
+
+What two or more OGraf graphics share, written once (BAJAOVRLAY-24). Each graphic lists it as a
+workspace dependency and Vite bundles the parts it imports into the graphic's own `dist/`: no
+graphic loads anything at run time, so rule 3 (graphics never fetch) holds. Like the theme, the
+kit is imported from its TypeScript source and has no build of its own. It is not a graphic.
+
+```
+src/ografGraphicTypes.ts                 the OGraf v1 Graphic interface and its params (start here)
+src/playSteps.ts                         which step playAction goes to (the OGraf step rule)
+src/pageTurner.ts                        hold, turn, hold again: the tower's and the standings' page timer
+src/timelinePlayback.ts                  play a paused GSAP timeline to its end, or finish it at once
+src/dataProblems.ts                      one pt-BR sentence for the first problem in refused data
+src/textPresence.ts                      whether an optional text has something to show (isTextGiven)
+src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
+src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
+src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests
+src/tokenOverrides.testSupport.ts        tests only: theme tokens on :root before the graphic loads
+src/ografSchemaValidator.testSupport.ts  tests only: the ajv validator over the vendored ograf-schema/
+ograf-schema/                            the official OGraf v1 schemas, vendored once (see its README)
+```
+
+Import each by its subpath (`@bajaovrlay/graphics-kit/pageTurner`), never a path into the folder. The
+test-only modules end in `.testSupport`, subpath included, so no graphic's own module can import
+them by mistake and Vite never bundles ajv into a graphic.
+Move something here only when a second graphic needs it; a helper with one user stays home.

@@ -11,7 +11,8 @@
  *   - The positions table has a row per car (60), each with its place, car, team,
  *     school, laps, last and best lap, gap and status; a lapped car's gap reads in laps
  *     and the retired car says so.
- *   - The standings table lists the teams by rank with their points.
+ *   - The standings table lists the teams by rank with their points; a disqualified team
+ *     (no rank, BAJAOVRLAY-24) reads "Desclassificada" in the rank column.
  *   - A late source shows "Dados de hh:mm:ss — fonte atrasada" above its data, which is
  *     still shown in full; a healthy one shows no banner.
  *   - A source turned off shows "Dados de hh:mm:ss — fonte desligada" above the data it
@@ -140,6 +141,22 @@ describe('the standings table', () => {
       'UFC',
       '646,9',
     ]);
+  });
+
+  it('names a disqualified team in the rank column', () => {
+    // Arrange: nothing beyond the simulator with the enduro at lap 34; the sample's last
+    // team, car 96, is disqualified (no rank).
+
+    // Act: draw the page.
+    renderPageWithTheSimulatorAtLap34(buildSimulatorThatIsOk);
+
+    // Assert: the last row says the team is disqualified where its rank would be.
+    const standingsTable = within(screen.getByRole('table', { name: 'Classificação' }));
+    const rows = standingsTable.getAllByRole('row');
+    expect(
+      readCellTexts(rows[60] as HTMLElement)[0],
+      'a disqualified team has no rank and must say so',
+    ).toBe('Desclassificada');
   });
 });
 

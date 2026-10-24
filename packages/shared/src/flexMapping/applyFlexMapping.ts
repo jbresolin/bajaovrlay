@@ -11,6 +11,10 @@ import {
 } from './flexMappingProblems.js';
 import { findMappableField } from './mappableFields.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
+import {
+  listScorePartsOfLabelsMet,
+  readScorePartListIntoPointsByPart,
+} from './standingsScorePartLists.js';
 import { readValueAtPath } from './valuePath.js';
 
 /**
@@ -111,13 +115,48 @@ function mapOneShape(
   }
 
   if (mapping.entriesPath !== undefined) {
-    const entries = mapListEntries(mapping, mapping.entriesPath, response, pollMomentMs, problems);
+    // Every label of the teams' score part lists, in the order met, filled while the
+    // entries are mapped: a part with no value is in it too, so its column stays.
+    const scorePartLabelsMet: string[] = [];
+    const entries = mapListEntries(mapping, mapping.entriesPath, response, {
+      pollMomentMs,
+      problems,
+      scorePartLabelsMet,
+    });
     if (entries !== undefined) {
       shape.entries = entries;
+      addScorePartsOfStandings(mapping.shapeKey, shape, scorePartLabelsMet);
     }
   }
   return shape;
 }
+
+/**
+ * Gives standings their parts of the score, one per label the teams' lists named, a part
+ * with no value included (standingsScorePartLists.ts). Other shapes, and standings whose
+ * teams have no parts, are left as they are.
+ */
+function addScorePartsOfStandings(
+  shapeKey: DataShapeKey,
+  shape: Record<string, unknown>,
+  scorePartLabelsMet: string[],
+): void {
+  if (shapeKey !== 'standings') {
+    return;
+  }
+  const scoreParts = listScorePartsOfLabelsMet(scorePartLabelsMet);
+  if (scoreParts.length > 0) {
+    shape.scoreParts = scoreParts;
+  }
+}
+
+/** What mapping the entries of a list shape works with besides the list itself. */
+type EntryMappingContext = {
+  pollMomentMs: number;
+  problems: FlexMappingProblems;
+  /** Filled with every score part label the entries' lists name, in the order met. */
+  scorePartLabelsMet: string[];
+};
 
 /**
  * Builds the entries of a list shape: finds the list at `entriesPath` in the response and
@@ -128,9 +167,9 @@ function mapListEntries(
   mapping: FlexShapeMapping,
   entriesPath: string,
   response: unknown,
-  pollMomentMs: number,
-  problems: FlexMappingProblems,
+  context: EntryMappingContext,
 ): Array<Record<string, unknown>> | undefined {
+  const problems = context.problems;
   const lines = ptBRFlexMapping.problemLines;
   const shapeName = ptBRDataShapes.shapeNames[mapping.shapeKey];
 
@@ -147,7 +186,7 @@ function mapListEntries(
   const listElements: unknown[] = listReading.value;
   const entryRules = mapping.entryFields ?? [];
   return listElements.map((element, elementIndex) =>
-    mapOneEntry(mapping.shapeKey, entryRules, element, elementIndex, pollMomentMs, problems),
+    mapOneEntry(mapping.shapeKey, entryRules, element, elementIndex, context),
   );
 }
 
@@ -162,36 +201,89 @@ function mapOneEntry(
   entryRules: FlexFieldRule[],
   element: unknown,
   elementIndex: number,
-  pollMomentMs: number,
-  problems: FlexMappingProblems,
+  context: EntryMappingContext,
 ): Record<string, unknown> {
   const lines = ptBRFlexMapping.problemLines;
   const shapeName = ptBRDataShapes.shapeNames[shapeKey];
   const lineNumber = elementIndex + 1;
-  const surroundingsOfEntry: RuleSurroundings = { pollMomentMs, placeInList: lineNumber };
+  const surroundingsOfEntry: RuleSurroundings = {
+    pollMomentMs: context.pollMomentMs,
+    placeInList: lineNumber,
+  };
 
   const entry: Record<string, unknown> = {};
-  const problemsOfEntry: Array<{ fieldLabel: string; detail: string }> = [];
+  const problemsOfEntry: Array<{ targetField: string; detail: string }> = [];
   for (const rule of entryRules) {
-    const ruleOutcome = applyOneRule(shapeKey, rule, element, surroundingsOfEntry);
+    const ruleOutcome = readScorePartListWhenItIsOne(
+      shapeKey,
+      rule,
+      applyOneRule(shapeKey, rule, element, surroundingsOfEntry),
+      context.scorePartLabelsMet,
+    );
     if (ruleOutcome.outcome === 'problem') {
-      const fieldLabel = labelTargetField(shapeKey, rule.targetField);
-      problemsOfEntry.push({ fieldLabel, detail: ruleOutcome.detail });
+      problemsOfEntry.push({ targetField: rule.targetField, detail: ruleOutcome.detail });
     }
     if (ruleOutcome.outcome === 'set') {
       setValueAtTargetField(entry, rule.targetField, ruleOutcome.value);
     }
   }
+  const problemsKept = dropTheRankOfADisqualifiedTeam(shapeKey, entry, problemsOfEntry);
 
   const carNumber = entry.carNumber;
   const entryLabel =
     typeof carNumber === 'number'
       ? lines.entryWithCar(carNumber, lineNumber)
       : lines.entryWithoutCar(lineNumber);
-  for (const { fieldLabel, detail } of problemsOfEntry) {
-    addProblemLine(problems, lines.atEntryField(shapeName, entryLabel, fieldLabel, detail));
+  for (const { targetField, detail } of problemsKept) {
+    const fieldLabel = labelTargetField(shapeKey, targetField);
+    addProblemLine(context.problems, lines.atEntryField(shapeName, entryLabel, fieldLabel, detail));
   }
   return entry;
+}
+
+/**
+ * A disqualified standings team has no rank (a rule of the shape), but the real export
+ * still writes one ("51º" beside "Desclassificada"), so a rank rule would fill it and the
+ * shape would refuse the whole poll: the source would go stale over one team. So when the
+ * mapped `isDisqualified` is true the rank is dropped, with any problem its rule had, since
+ * that value is discarded anyway (gate 2 of PR #25, João's call). Gives back the problems
+ * to report; any other entry is left as it is.
+ */
+function dropTheRankOfADisqualifiedTeam(
+  shapeKey: DataShapeKey,
+  entry: Record<string, unknown>,
+  problemsOfEntry: Array<{ targetField: string; detail: string }>,
+): Array<{ targetField: string; detail: string }> {
+  const isADisqualifiedTeam = shapeKey === 'standings' && entry.isDisqualified === true;
+  if (!isADisqualifiedTeam) {
+    return problemsOfEntry;
+  }
+  delete entry.rank;
+  return problemsOfEntry.filter((problem) => problem.targetField !== 'rank');
+}
+
+/**
+ * A standings team's `pointsByPart` arrives as a list of parts, each a label and a value;
+ * this turns that list into the points by part the shape carries, or into a problem, and
+ * adds the list's labels (a part with no value too) to `scorePartLabelsMet`. Any other
+ * rule's outcome is passed on unchanged.
+ */
+function readScorePartListWhenItIsOne(
+  shapeKey: DataShapeKey,
+  rule: FlexFieldRule,
+  ruleOutcome: RuleOutcome,
+  scorePartLabelsMet: string[],
+): RuleOutcome {
+  const isAScorePartList = shapeKey === 'standings' && rule.targetField === 'pointsByPart';
+  if (!isAScorePartList || ruleOutcome.outcome !== 'set') {
+    return ruleOutcome;
+  }
+  const reading = readScorePartListIntoPointsByPart(ruleOutcome.value);
+  if (!reading.ok) {
+    return { outcome: 'problem', detail: reading.reason };
+  }
+  scorePartLabelsMet.push(...reading.labelsInOrder);
+  return { outcome: 'set', value: reading.pointsByPart };
 }
 
 /**

@@ -116,9 +116,10 @@ function listPositionsFields(): MappableField[] {
 }
 
 /**
- * The standings' own fields, then the fields of each team. pointsByEvent is left out: a
- * table of points per event would be a second mapping inside each entry, and no source
- * sends one yet.
+ * The standings' own fields, then the fields of each team, required first. A team's parts
+ * of the score are one list per team, each part a label and a value
+ * (standingsScorePartLists.ts); the standings' own `scoreParts` is built from those lists,
+ * so it is not a field of its own. The rank is optional: a disqualified team has none.
  */
 function listStandingsFields(): MappableField[] {
   const teamLabels = ptBRDataShapes.standingsEntryFieldLabels;
@@ -126,11 +127,13 @@ function listStandingsFields(): MappableField[] {
   return [
     topLevelField('scope', ptBRDataShapes.standingsFieldLabels.scope, true),
     topLevelField('updatedAtMs', extraLabels.updatedAtMs, true),
-    entryField('rank', extraLabels.rank, true),
     entryField('carNumber', teamLabels.carNumber, true),
     entryField('teamName', teamLabels.teamName, true),
     entryField('schoolName', teamLabels.schoolName, true),
     entryField('points', teamLabels.points, true),
+    entryField('rank', extraLabels.rank, false),
+    entryField('pointsByPart', extraLabels.pointsByPart, false),
+    entryField('isDisqualified', extraLabels.isDisqualified, false),
   ];
 }
 
