@@ -186,10 +186,29 @@ function renderTopFiveRow(entry) {
         </li>`;
 }
 
+/** How many logos the intermission's sponsor line holds at once. */
+export const intermissionSponsorsPerLine = 4;
+
+/**
+ * One page of the intermission's sponsor line: its level's heading ("PATROCÍNIO DIAMANTE",
+ * "APOIO", "REALIZAÇÃO") and up to four logos of that level. On air the line turns through
+ * every page (planSponsorPages), each held its level's time.
+ */
+export function renderIntermissionSponsorLine(page) {
+  const sponsorCells = page.sponsors
+    .map((sponsor) => `    ${renderLogo(sponsor.logo, 'intermission__sponsor')}`)
+    .join('\n');
+  return `  <div class="card intermission__sponsors" data-level="${page.level}">
+    <span class="caption">${escapeHtml(page.levelHeading)}</span>
+${sponsorCells}
+  </div>`;
+}
+
 /**
  * For a break: what is next with its countdown, the top five overall and the sponsors. The
  * top five and the sponsor line are optional (an empty list leaves the part out): before the
- * first standings exist, or with no sponsor to show, the next session fills the board.
+ * first standings exist, or with no sponsor to show, the next session fills the board. The
+ * sponsor line shows the first page of the sponsors; the motion demo turns through the rest.
  */
 export function renderIntermissionBoard(
   session,
@@ -213,16 +232,9 @@ ${topFive.map(renderTopFiveRow).join('\n')}
       </ol>
     </div>`
     : '';
-  const sponsorCells = sponsors
-    .map((sponsor) => `    ${renderLogo(sponsor.logo, 'intermission__sponsor')}`)
-    .join('\n');
   const sponsorLine =
     sponsors.length > 0
-      ? `
-  <div class="card intermission__sponsors">
-    <span class="caption">PATROCÍNIO</span>
-${sponsorCells}
-  </div>`
+      ? `\n${renderIntermissionSponsorLine(planSponsorPages(sponsors, intermissionSponsorsPerLine)[0])}`
       : '';
   return `<section class="board board--narrow intermission"${root}>
 ${renderBoardHead('Intervalo', session.eventName, session.dateText)}
@@ -255,20 +267,31 @@ ${renderBoardHead('Próxima sessão', session.eventName, session.dateText)}
 // ---------------------------------------------------------------- sponsor roll, full
 
 /**
- * The sponsor roll's pages: one level at a time, in the order the sponsors come (Diamante,
- * Ouro, Apoio), a level with more sponsors than a page holds taking several pages, so a
- * Diamante sponsor never shares a page with an Apoio one.
+ * The sponsors' pages, for the sponsor roll and the intermission's sponsor line: one level
+ * at a time, in the order the sponsors come (Diamante, Ouro, Prata, Apoio, then Realização),
+ * a level with more sponsors than a page holds taking several pages, so a Diamante sponsor
+ * never shares a page with an Apoio one. A level that takes several pages shares its sponsors
+ * evenly between them (nine on pages of four make 3 + 3 + 3, not 4 + 4 + 1), so no sponsor is
+ * left alone on a page. Each page carries its level, which sets its hold.
  */
 export function planSponsorPages(sponsors, sponsorsPerPage) {
-  const pages = [];
+  const levels = [];
   sponsors.forEach((sponsor) => {
-    const lastPage = pages.at(-1);
-    const isSameLevel = lastPage !== undefined && lastPage.level === sponsor.level;
-    if (isSameLevel && lastPage.sponsors.length < sponsorsPerPage) {
-      lastPage.sponsors.push(sponsor);
+    const lastLevel = levels.at(-1);
+    if (lastLevel !== undefined && lastLevel.level === sponsor.level) {
+      lastLevel.sponsors.push(sponsor);
       return;
     }
-    pages.push({ level: sponsor.level, levelLabel: sponsor.levelLabel, sponsors: [sponsor] });
+    levels.push({ level: sponsor.level, levelHeading: sponsor.levelHeading, sponsors: [sponsor] });
+  });
+  const pages = [];
+  levels.forEach((level) => {
+    const pageCount = Math.ceil(level.sponsors.length / sponsorsPerPage);
+    const perPage = Math.ceil(level.sponsors.length / pageCount);
+    for (let first = 0; first < level.sponsors.length; first += perPage) {
+      const pageSponsors = level.sponsors.slice(first, first + perPage);
+      pages.push({ level: level.level, levelHeading: level.levelHeading, sponsors: pageSponsors });
+    }
   });
   return pages;
 }
@@ -288,9 +311,9 @@ ${tiles}
   </div>`;
 }
 
-/** The head's line for a sponsor roll page: its level ("Diamante"). */
+/** The head's line for a sponsor roll page: its level's heading ("Patrocínio Diamante"). */
 export function writeSponsorPageSubtitle(sponsors, pageNumber, sponsorsPerPage) {
-  return planSponsorPages(sponsors, sponsorsPerPage)[pageNumber - 1].levelLabel;
+  return planSponsorPages(sponsors, sponsorsPerPage)[pageNumber - 1].levelHeading;
 }
 
 /** The sponsors in tiles, one level a page; the page cycles on air (motion.md). */

@@ -252,6 +252,12 @@
   gap: var(--space-5);
   padding: var(--space-3) var(--space-5);
 }
+/* The level's heading has one width on every page, so the logos start at the same place
+   when the line turns from "PATROCÍNIO DIAMANTE" to "APOIO". */
+.intermission__sponsors .caption {
+  flex: none;
+  width: var(--sponsor-line-heading-width);
+}
 .intermission__sponsor {
   flex: none;
   width: var(--sponsor-logo-line-width);
@@ -526,12 +532,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Centred in the card's height: the winner's taller card keeps its content in the middle. */
+  justify-content: center;
   gap: var(--space-4);
   padding: var(--space-5) var(--space-4);
   text-align: center;
 }
 .podium-place--1 {
   min-height: var(--podium-height-winner);
+}
+.podium-place__logo {
+  flex: none;
+  width: var(--podium-logo-width);
+  height: var(--podium-logo-height);
 }
 .podium-place:not([data-revealed]) {
   visibility: hidden;

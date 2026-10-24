@@ -70,6 +70,15 @@
     easeInOut: readEase('--ease-in-out'),
   };
 
+  /**
+   * How long a sponsor page of `level` stays (--motion-sponsor-hold-<level>), in seconds; a
+   * level with no token of its own takes --motion-sponsor-hold.
+   */
+  function sponsorHoldOf(level) {
+    const levelHold = readSeconds(`--motion-sponsor-hold-${level}`);
+    return levelHold > 0 ? levelHold : motion.sponsorHold;
+  }
+
   /** "400 ms": a token's value as the status line says it. */
   const inMs = (seconds) => `${Math.round(seconds * 1000)} ms`;
 
@@ -205,6 +214,23 @@
     return () => call.kill();
   }
 
+  /**
+   * A timer whose wait changes from one turn to the next (a sponsor page held by its level):
+   * waits `holdOfCurrent()`, runs `action`, and starts again with the new hold. Stopped with
+   * the returned function.
+   */
+  function everyWithHold(holdOfCurrent, action) {
+    let call = null;
+    const scheduleNext = () => {
+      call = gsap.delayedCall(holdOfCurrent(), () => {
+        action();
+        scheduleNext();
+      });
+    };
+    scheduleNext();
+    return () => call.kill();
+  }
+
   /** A countdown that changes its text in place once a second, as a clock does. */
   function startCountdown(elements, startingSeconds) {
     let remaining = startingSeconds;
@@ -297,6 +323,8 @@
     wait,
     now,
     every,
+    everyWithHold,
+    sponsorHoldOf,
     startCountdown,
     onAirSwitch,
     register,

@@ -177,8 +177,10 @@
   --size-countdown-small: 96px; /* the intermission's count */
   --size-podium-position: 72px;
   --podium-width: 480px;
-  --podium-height: 320px;
-  --podium-height-winner: 400px;
+  --podium-height: 460px;
+  --podium-height-winner: 540px;
+  --podium-logo-width: 240px; /* the team's logo crowning a podium card */
+  --podium-logo-height: 112px;
   --bracket-row-height: 48px;
   --bracket-board-gutter: 40px; /* between a round board's two columns, wider than a row gap */
   --bracket-versus-width: 40px; /* the "×" between the two cars of a board's match card */
@@ -188,12 +190,20 @@
   --sponsor-logo-small-height: 34px; /* under the bug's event word */
   --sponsor-logo-line-width: 170px; /* the intermission board's sponsor line */
   --sponsor-logo-line-height: 52px;
+  --sponsor-line-heading-width: 210px; /* the intermission's sponsor line: its level's heading */
   --sponsor-tile-logo-width: 340px; /* a sponsor roll tile */
   --sponsor-tile-logo-height: 150px;
   --sponsor-tile-height: 240px;
   --motion-notice-hold: 8000ms; /* a fastest lap or a penalty leaves by itself after this */
   --motion-board-hold: 10000ms; /* a standings page stays this long */
-  --motion-sponsor-hold: 5000ms; /* a sponsor, in the roll, stays this long */
+  --motion-sponsor-hold: 5000ms; /* a sponsor, in the roll, stays this long (a level with no hold of its own) */
+  /* A sponsor page (roll, corner, intermission line) is held by its level: the higher the
+     level, the longer it stays; Prata and Apoio alike; the organiser like Ouro. */
+  --motion-sponsor-hold-diamante: 8000ms;
+  --motion-sponsor-hold-ouro: 5000ms;
+  --motion-sponsor-hold-prata: 3000ms;
+  --motion-sponsor-hold-apoio: 3000ms;
+  --motion-sponsor-hold-realizacao: 5000ms;
   --motion-notice-min-hold: 3000ms; /* a notice stays at least this long before the next replaces it */
   --motion-page-stagger: 15ms; /* between pieces when a page turns in place (ticker, sponsor tiles) */
   --motion-podium-offset: 40; /* px a podium card rises when revealed: twice the usual rise */

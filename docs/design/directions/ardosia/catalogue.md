@@ -186,8 +186,10 @@ had no timed results, so the time rows there use sample times.
 
 Full screen, three cards on one baseline, 2nd at the left, 1st in the middle and taller, 3rd
 at the right; each with the position at 72 px (yellow; the winner's on the green chip), the
-big chip, the team at 44 px and the school. "Next" reveals 3rd, then 2nd, then 1st; a place
-not yet revealed keeps its room but is invisible, so the cards already shown never move.
+big chip, the team at 44 px and the school, crowned by the team's logo (a 240 × 112 box, the
+same plate rule as the team card's) when the team has one; the content is centred in the
+card's height. "Next" reveals 3rd, then 2nd, then 1st; a place not yet revealed keeps its room
+but is invisible, so the cards already shown never move.
 
 - Reads: positions, places 1 to 3 at the end of the session (`position`, `carNumber`,
   `teamName`, `schoolName`), or standings ranks 1 to 3 for the overall podium. Snapshot at
@@ -259,7 +261,8 @@ board grows with the schedule up to about twelve.
 
 A narrow board for a break: the head ("INTERVALO", the event, the date), a card with what is
 next (the session at 56 px, the count at 96 px, the start time), the overall top five as
-40 px standings pills, and a sponsor line with up to four marks and names. The top five and
+40 px standings pills, and a sponsor line: a level's heading and up to four of its logos,
+turning through every sponsor a level at a time on air, as the sponsor roll does (11). The top five and
 the sponsor line are each optional (before the first standings exist, or with no sponsor to
 show); without the top five the next-session card takes the whole width, its words centred.
 
@@ -269,12 +272,17 @@ show); without the top five the next-session card takes the whole width, its wor
 
 ### 11. Sponsor roll — `sponsor-roll`, `sponsor-roll-canto`
 
-Full screen: a narrow board with up to six tiles a page (the logo in a 340 × 150 box and the
-name at 34 px), **one sponsor level a page**, the level in the head ("PATROCÍNIO DIAMANTE"),
-centred when a page has fewer than six; the page turns every `--motion-sponsor-hold` (5 s).
-The real 16 sponsors in three levels (diamante, ouro, apoio) make four pages. Corner: the
-bug's card with a sponsor cell ("PATROCÍNIO DIAMANTE" over the logo) under the event word,
-the cell changing on the same hold. Logos follow the same plate rule as the team card's.
+Full screen: a narrow board with up to six tiles a page (the logo in a 340 × 150 box),
+**one sponsor level a page**, the level's heading in the head, centred when a page has fewer
+than six. The headings are "PATROCÍNIO DIAMANTE", "PATROCÍNIO OURO", "PATROCÍNIO PRATA",
+"APOIO" (support is not a sponsorship level, so it is just "Apoio") and "REALIZAÇÃO": SAE
+Brasil, the organiser, closes every round of sponsors, here and in the corner and the
+intermission's line. A level that needs several pages shares its sponsors evenly between them.
+Each page stays its level's hold: Diamante longest (8 s), then Ouro (5 s), Prata and Apoio
+alike (3 s), Realização 5 s (`motion.md`). The real 17 logos make five pages (Diamante 2,
+Ouro 5 + 4, Apoio 5, Realização 1). Corner: the bug's card with a sponsor cell (the heading
+over the logo) under the event word, the cell changing on its sponsor's level hold. Logos
+follow the same plate rule as the team card's.
 
 - Reads: nothing canonical. Typed: the names and levels, until the entity library holds
   sponsors with their logos.

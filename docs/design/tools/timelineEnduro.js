@@ -99,17 +99,19 @@
 
     // The rows are one per car, keyed by number (data-car), never rebuilt: a new order moves
     // them; only the page's rows show. With `animate`, each row slides from where it was to
-    // its new place (FLIP) and a row arriving on the page rises in.
+    // its new place (FLIP) and a row arriving on the page rises in. Every place is read
+    // before any row is hidden (hiding one moves the rows under it up), and as offsetTop,
+    // the row's place in the layout, not on screen, where a row still sliding carries its
+    // slide's offset.
     function placeRows(tower, positions, animate) {
       const list = tower.querySelector('.tower__rows');
       const rowsByCar = new Map([...list.children].map((row) => [Number(row.dataset.car), row]));
       const topBefore = new Map();
       rowsByCar.forEach((row) => {
-        if (!row.classList.contains('is-off-page'))
-          topBefore.set(row, row.getBoundingClientRect().top);
-        // A car that has not crossed the line yet is not in the order: it stays off the tower.
-        row.classList.add('is-off-page');
+        if (!row.classList.contains('is-off-page')) topBefore.set(row, row.offsetTop);
       });
+      // A car that has not crossed the line yet is not in the order: it stays off the tower.
+      rowsByCar.forEach((row) => row.classList.add('is-off-page'));
       positions.forEach((entry, index) => {
         const row = rowsByCar.get(entry.carNumber);
         list.appendChild(row);
@@ -128,9 +130,15 @@
           kit.riseIn([row]);
           return;
         }
-        const shift = before - row.getBoundingClientRect().top;
-        if (shift !== 0)
-          gsap.fromTo(row, { y: shift }, { y: 0, duration: motion.swap, ease: motion.easeInOut });
+        // A row already sliding continues from where it is on screen now.
+        const shift = before - row.offsetTop;
+        if (shift === 0) return;
+        const slideOffsetNow = Number(gsap.getProperty(row, 'y')) || 0;
+        gsap.fromTo(
+          row,
+          { y: shift + slideOffsetNow },
+          { y: 0, duration: motion.swap, ease: motion.easeInOut },
+        );
       });
     }
 

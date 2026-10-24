@@ -4175,7 +4175,7 @@
       "key": "bosch",
       "name": "Bosch",
       "level": "diamante",
-      "levelLabel": "Diamante",
+      "levelHeading": "Patrocínio Diamante",
       "logo": {
         "path": "sample_data/logos/sponsors/bosch.webp",
         "width": 480,
@@ -4188,7 +4188,7 @@
       "key": "renault",
       "name": "Renault",
       "level": "diamante",
-      "levelLabel": "Diamante",
+      "levelHeading": "Patrocínio Diamante",
       "logo": {
         "path": "sample_data/logos/sponsors/renault.webp",
         "width": 150,
@@ -4201,7 +4201,7 @@
       "key": "certi",
       "name": "Certi",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/certi.webp",
         "width": 138,
@@ -4214,7 +4214,7 @@
       "key": "cnh",
       "name": "CNH",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/cnh.webp",
         "width": 480,
@@ -4227,7 +4227,7 @@
       "key": "himix",
       "name": "Himix",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/himix.webp",
         "width": 480,
@@ -4240,7 +4240,7 @@
       "key": "horse",
       "name": "Horse",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/horse.webp",
         "width": 150,
@@ -4253,7 +4253,7 @@
       "key": "marcopolo",
       "name": "Marcopolo",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/marcopolo.webp",
         "width": 480,
@@ -4266,7 +4266,7 @@
       "key": "rodonunes",
       "name": "Rodonunes",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/rodonunes.webp",
         "width": 480,
@@ -4279,7 +4279,7 @@
       "key": "segula",
       "name": "Segula",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/segula.webp",
         "width": 480,
@@ -4292,7 +4292,7 @@
       "key": "trp",
       "name": "TRP",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/trp.webp",
         "width": 480,
@@ -4305,7 +4305,7 @@
       "key": "vetore",
       "name": "Vetore",
       "level": "ouro",
-      "levelLabel": "Ouro",
+      "levelHeading": "Patrocínio Ouro",
       "logo": {
         "path": "sample_data/logos/sponsors/vetore.webp",
         "width": 480,
@@ -4318,7 +4318,7 @@
       "key": "criciuma",
       "name": "Criciúma",
       "level": "apoio",
-      "levelLabel": "Apoio",
+      "levelHeading": "Apoio",
       "logo": {
         "path": "sample_data/logos/sponsors/criciuma.webp",
         "width": 480,
@@ -4331,7 +4331,7 @@
       "key": "osaki",
       "name": "Osaki",
       "level": "apoio",
-      "levelLabel": "Apoio",
+      "levelHeading": "Apoio",
       "logo": {
         "path": "sample_data/logos/sponsors/osaki.webp",
         "width": 480,
@@ -4344,7 +4344,7 @@
       "key": "sae4mobility",
       "name": "SAE4Mobility",
       "level": "apoio",
-      "levelLabel": "Apoio",
+      "levelHeading": "Apoio",
       "logo": {
         "path": "sample_data/logos/sponsors/sae4mobility.webp",
         "width": 480,
@@ -4357,7 +4357,7 @@
       "key": "satc",
       "name": "SATC",
       "level": "apoio",
-      "levelLabel": "Apoio",
+      "levelHeading": "Apoio",
       "logo": {
         "path": "sample_data/logos/sponsors/satc.webp",
         "width": 355,
@@ -4370,13 +4370,26 @@
       "key": "schulz",
       "name": "Schulz",
       "level": "apoio",
-      "levelLabel": "Apoio",
+      "levelHeading": "Apoio",
       "logo": {
         "path": "sample_data/logos/sponsors/schulz.webp",
         "width": 187,
         "height": 31,
         "surface": "light",
         "name": "Schulz"
+      }
+    },
+    {
+      "key": "sae",
+      "name": "SAE Brasil",
+      "level": "realizacao",
+      "levelHeading": "Realização",
+      "logo": {
+        "path": "sample_data/logos/sponsors/sae.webp",
+        "width": 422,
+        "height": 82,
+        "surface": "light",
+        "name": "SAE Brasil"
       }
     }
   ],
@@ -4436,7 +4449,7 @@
       "key": "bosch",
       "name": "Bosch",
       "level": "diamante",
-      "levelLabel": "Diamante",
+      "levelHeading": "Patrocínio Diamante",
       "logo": {
         "path": "sample_data/logos/sponsors/bosch.webp",
         "width": 480,

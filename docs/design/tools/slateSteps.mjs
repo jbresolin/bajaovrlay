@@ -4,7 +4,7 @@
 // left out of the bracket or kept invisible on the podium, so nothing already shown moves
 // when the next step comes.
 import { renderBoardHead } from './slateBoards.mjs';
-import { escapeHtml, winIcon } from './slateVocabulary.mjs';
+import { escapeHtml, renderLogo, winIcon } from './slateVocabulary.mjs';
 
 // ---------------------------------------------------------------- bracket: the steps
 
@@ -333,7 +333,11 @@ export function renderPodium(podium, step, { withRoot = true } = {}) {
     .map((position) => {
       const place = podium.places.find((candidate) => candidate.position === position);
       const mark = revealed.includes(position) ? ' data-revealed' : '';
-      return `      <div class="card podium-place podium-place--${position}" data-row${mark}>
+      // The team's logo crowns the card when the team has one; without it the card is shorter
+      // at the top, its baseline unchanged.
+      const logo =
+        place.logo === undefined ? '' : `\n        ${renderLogo(place.logo, 'podium-place__logo')}`;
+      return `      <div class="card podium-place podium-place--${position}" data-row${mark}>${logo}
         <span class="podium-place__pos">${position}º</span>
         <span class="chip chip--large">${place.carNumber}</span>
         <span class="podium-place__name">${escapeHtml(place.teamName)}</span>

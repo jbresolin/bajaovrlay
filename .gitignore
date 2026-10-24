@@ -30,3 +30,6 @@ apps/renderer/.e2e-data/
 
 *.log
 .DS_Store
+
+# Windows marks files copied from a download with an alternate-stream file of this name.
+*:Zone.Identifier

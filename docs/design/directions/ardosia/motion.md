@@ -9,24 +9,29 @@ pass 1's `motion-demo.html` (`../../tools/slateMotionDemo.js`, Web Animations AP
 catalogue's demo pages (`motion-catalogo.html` links them; GSAP, as the product, see "The
 demo pages" at the end).
 
-| Token                      | Value                                                  | Where                                                             |
-| -------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------- |
-| `--motion-in`              | 400 ms, `--ease-out` cubic-bezier(0.16, 1, 0.3, 1)     | every piece entering                                              |
-| `--motion-in-offset`       | 20 px                                                  | the rise on entry, the lift on exit                               |
-| `--motion-row-stagger`     | 30 ms per pill                                         | tower rows and strip cells, top to bottom and left to right       |
-| `--motion-lead`            | 100 ms                                                 | the tower starts this long after the clock; the bug too           |
-| `--motion-out`             | 250 ms, `--ease-in` cubic-bezier(0.7, 0, 0.84, 0)      | every piece leaving                                               |
-| `--motion-flag`            | 300 ms, `--ease-out`                                   | the new flag band fades in over the old                           |
-| `--motion-swap`            | 400 ms, `--ease-in-out` cubic-bezier(0.65, 0, 0.35, 1) | two pills trading places                                          |
-| `--motion-cue-hold`        | 2000 ms                                                | the ▲ / ▼ and the coloured position cell after a swap             |
-| `--motion-strip-page`      | 300 ms                                                 | a strip page turning                                              |
-| `--motion-strip-hold`      | 7000 ms                                                | a strip page stays still this long                                |
-| `--motion-notice-hold`     | 8000 ms                                                | a notice (fastest lap, penalty) leaves by itself after this       |
-| `--motion-board-hold`      | 10000 ms                                               | a standings page stays still this long                            |
-| `--motion-sponsor-hold`    | 5000 ms                                                | a sponsor roll page, or the corner's sponsor, stays this long     |
-| `--motion-notice-min-hold` | 3000 ms                                                | a notice stays at least this long before the next replaces it     |
-| `--motion-page-stagger`    | 15 ms                                                  | between pieces when a page turns in place (ticker, sponsor tiles) |
-| `--motion-podium-offset`   | 40 px                                                  | the rise of a podium card when it is revealed                     |
+| Token                              | Value                                                  | Where                                                                     |
+| ---------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `--motion-in`                      | 400 ms, `--ease-out` cubic-bezier(0.16, 1, 0.3, 1)     | every piece entering                                                      |
+| `--motion-in-offset`               | 20 px                                                  | the rise on entry, the lift on exit                                       |
+| `--motion-row-stagger`             | 30 ms per pill                                         | tower rows and strip cells, top to bottom and left to right               |
+| `--motion-lead`                    | 100 ms                                                 | the tower starts this long after the clock; the bug too                   |
+| `--motion-out`                     | 250 ms, `--ease-in` cubic-bezier(0.7, 0, 0.84, 0)      | every piece leaving                                                       |
+| `--motion-flag`                    | 300 ms, `--ease-out`                                   | the new flag band fades in over the old                                   |
+| `--motion-swap`                    | 400 ms, `--ease-in-out` cubic-bezier(0.65, 0, 0.35, 1) | two pills trading places                                                  |
+| `--motion-cue-hold`                | 2000 ms                                                | the ▲ / ▼ and the coloured position cell after a swap                     |
+| `--motion-strip-page`              | 300 ms                                                 | a strip page turning                                                      |
+| `--motion-strip-hold`              | 7000 ms                                                | a strip page stays still this long                                        |
+| `--motion-notice-hold`             | 8000 ms                                                | a notice (fastest lap, penalty) leaves by itself after this               |
+| `--motion-board-hold`              | 10000 ms                                               | a standings page stays still this long                                    |
+| `--motion-sponsor-hold-diamante`   | 8000 ms                                                | a Diamante sponsor page (roll, corner, intermission line) stays this long |
+| `--motion-sponsor-hold-ouro`       | 5000 ms                                                | an Ouro page                                                              |
+| `--motion-sponsor-hold-prata`      | 3000 ms                                                | a Prata page (no Prata sponsor this year)                                 |
+| `--motion-sponsor-hold-apoio`      | 3000 ms                                                | an Apoio page                                                             |
+| `--motion-sponsor-hold-realizacao` | 5000 ms                                                | the organiser's page, "Realização", last in every round                   |
+| `--motion-sponsor-hold`            | 5000 ms                                                | a sponsor page of a level with no hold of its own                         |
+| `--motion-notice-min-hold`         | 3000 ms                                                | a notice stays at least this long before the next replaces it             |
+| `--motion-page-stagger`            | 15 ms                                                  | between pieces when a page turns in place (ticker, sponsor tiles)         |
+| `--motion-podium-offset`           | 40 px                                                  | the rise of a podium card when it is revealed                             |
 
 ## In and out, per graphic
 
@@ -153,15 +158,23 @@ in brackets.
   card and the top-five head; the five rows `--motion-row-stagger` apart after the top-five
   head; the sponsor line `--motion-lead` after the last row starts; out together. Without the
   top five or the sponsor line the remaining pieces keep their timing. The count changes in
-  place.
+  place. The sponsor line turns through every sponsor, a level at a time (its heading, then up
+  to four logos), the heading and logos lifting away as the next page's rise into the same
+  place in `--motion-strip-page`, `--motion-page-stagger` apart; each page stays its level's
+  hold.
+- **Every sponsor round** (the three below and the intermission's line) goes Diamante, Ouro,
+  Prata, Apoio, then "Realização" (SAE Brasil, the organiser) last, each page or sponsor held
+  by its level: `--motion-sponsor-hold-<level>`, 8 s for Diamante, 5 s for Ouro, 3 s for Prata
+  and Apoio, 5 s for Realização. A level with more sponsors than a page holds shares them
+  evenly between its pages (nine Ouro on pages of four are 3 + 3 + 3).
 - **Sponsor roll, full screen** [Entrar, Sair, Atualizar]: the head, then the tiles
-  `--motion-row-stagger` apart in reading order. Every `--motion-sponsor-hold` the page turns
-  in place; Atualizar turns it now and starts the hold again. Each page is one sponsor level:
-  the level's name in the head changes in place with the page. The grid keeps two rows on a
-  short page, so the board and its head never move.
-- **Sponsor roll, corner** [Entrar, Sair, Atualizar]: the bug's card rises; every
-  `--motion-sponsor-hold` its sponsor cell crossfades to the next, the logo and the event word
-  never moving; Atualizar crossfades now and starts the hold again.
+  `--motion-row-stagger` apart in reading order. When its level's hold is up the page turns in
+  place; Atualizar turns it now and starts the hold again. Each page is one sponsor level:
+  its heading in the head ("PATROCÍNIO OURO", "APOIO", "REALIZAÇÃO") changes in place with
+  the page. The grid keeps two rows on a short page, so the board and its head never move.
+- **Sponsor roll, corner** [Entrar, Sair, Atualizar]: the bug's card rises; when the sponsor's
+  level hold is up its sponsor cell (heading and logo) crossfades to the next, the event logo
+  and word never moving; Atualizar crossfades now and starts the hold again.
 - **QR card** [Entrar, Sair]: the whole card; nothing moves while it is up, since a moving code
   does not scan.
 - **Message ticker** [Entrar, Sair]: as the strip: the clock block (when shown), the label, the
@@ -186,7 +199,7 @@ offset and curve from `tokens.css` the way `packages/theme`'s `readMotionTokens`
 `gsapEaseOfToken` do: milliseconds and pixels from the custom properties, each cubic-bezier
 registered as a CustomEase with exactly its curve. No hold is shortened: a standings page
 waits its real 10 s. Shared code: `../../tools/motionDemoCore.js` (the token reading, the
-moves, the buttons), `motionDemoCards.js` and `motionDemoBoards.js` (one entry per graphic);
+moves, the buttons), `motionDemoCards.js`, `motionDemoBoards.js` and `motionDemoSponsors.js` (one entry per graphic);
 the pages are generated by `generatePages.mjs` through `slateMotionDemos.mjs` and
 `slateMotionPages.mjs`.
 

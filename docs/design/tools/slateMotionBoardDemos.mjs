@@ -1,12 +1,14 @@
 // The motion demos of the catalogue's boards (BAJAOVRLAY-43): standings, sessions board,
 // intermission board, sponsor roll (full screen and corner), bracket and podium, one entry
 // per combination of each graphic's optional parts. slateMotionDemos.mjs lists them with the
-// cards' in the catalogue's order; the browser side is motionDemoBoards.js (and
-// motionDemoCards.js for the corner sponsor roll).
+// cards' in the catalogue's order; the browser side is motionDemoBoards.js, and
+// motionDemoSponsors.js for the two sponsor rolls.
 import {
+  intermissionSponsorsPerLine,
   planSponsorPages,
   renderBoardHead,
   renderIntermissionBoard,
+  renderIntermissionSponsorLine,
   renderSessionsBoard,
   renderSessionStatus,
   renderSponsorRollBoard,
@@ -101,11 +103,22 @@ export function listSessionsDemos() {
   ];
 }
 
-// Intermission: the top five and the sponsor line are each optional.
+// Intermission: the top five and the sponsor line are each optional. The sponsor line turns
+// through every sponsor, a level at a time (planSponsorPages, four logos a page).
 export function listIntermissionDemos() {
   const partNames = ['classificação', 'patrocinadores'];
+  const sponsorPages = planSponsorPages(sample.sponsors, intermissionSponsorsPerLine);
+  const sponsorPageIds = sponsorPages.map((_, index) => `sponsor-line-${index + 1}`);
   return everyCombination(2).map(([withTopFive, withSponsors]) => {
     const words = describeParts(partNames, [withTopFive, withSponsors]);
+    const sponsorTemplates = withSponsors
+      ? sponsorPages.map((page, index) =>
+          renderTemplate(sponsorPageIds[index], renderIntermissionSponsorLine(page)),
+        )
+      : [];
+    const sponsorPageConfigs = withSponsors
+      ? sponsorPages.map((page, index) => ({ template: sponsorPageIds[index], level: page.level }))
+      : [];
     return {
       fileName: `motion-intermission-${slugOf(words)}.html`,
       group: 'Intervalo',
@@ -117,9 +130,13 @@ export function listIntermissionDemos() {
         sample.session,
         sample.countdown,
         withTopFive ? sample.standingsTop5 : [],
-        withSponsors ? sample.sponsors.slice(0, 4) : [],
+        withSponsors ? sample.sponsors : [],
       ),
-      config: { remainingSeconds: sample.countdown.remainingSeconds },
+      templates: sponsorTemplates,
+      config: {
+        remainingSeconds: sample.countdown.remainingSeconds,
+        sponsorPages: sponsorPageConfigs,
+      },
     };
   });
 }
@@ -137,7 +154,7 @@ export function listSponsorRollDemos(options) {
       group: 'Patrocinadores',
       variant: 'tela cheia',
       demoName: 'sponsor-roll',
-      family: 'Boards',
+      family: 'Sponsors',
       actions: ['enter', 'exit', 'update'],
       stage: renderSponsorRollBoard(sponsors, 1, sponsorsPerPage),
       templates: pageNumbers.map((pageNumber) =>
@@ -151,6 +168,7 @@ export function listSponsorRollDemos(options) {
           template: `sponsor-page-${pageNumber}`,
           aside: `${pageNumber}/${pageCount}`,
           subtitle: writeSponsorPageSubtitle(sponsors, pageNumber, sponsorsPerPage),
+          level: planSponsorPages(sponsors, sponsorsPerPage)[pageNumber - 1].level,
         })),
       },
     },
@@ -159,13 +177,16 @@ export function listSponsorRollDemos(options) {
       group: 'Patrocinadores',
       variant: 'no canto',
       demoName: 'sponsor-roll-corner',
-      family: 'Cards',
+      family: 'Sponsors',
       actions: ['enter', 'exit', 'update'],
       stage: renderSponsorRollCorner(sponsorBug, sponsors[0]),
       templates: sponsors.map((sponsor, index) =>
         renderTemplate(sponsorIds[index], renderSponsorRollCornerCell(sponsorBug, sponsor)),
       ),
-      config: { sponsorTemplates: sponsorIds },
+      config: {
+        sponsorTemplates: sponsorIds,
+        sponsorLevels: sponsors.map((sponsor) => sponsor.level),
+      },
     },
   ];
 }

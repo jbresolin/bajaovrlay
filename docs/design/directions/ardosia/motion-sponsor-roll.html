@@ -21,8 +21,8 @@
         <header class="card board__head">
           <img class="board__logo" src="../../../brand/logo-branca.png" alt="Baja SAE Brasil" />
           <h1 class="board__title">Patrocinadores</h1>
-          <span class="caption board__subtitle">Diamante</span>
-          <span class="board__aside">1/4</span>
+          <span class="caption board__subtitle">Patrocínio Diamante</span>
+          <span class="board__aside">1/5</span>
         </header>
         <div class="sponsor-roll__grid">
           <div class="card sponsor-tile">
@@ -124,6 +124,10 @@
               height="59"
           /></span>
         </div>
+      </div>
+    </template>
+    <template id="sponsor-page-3">
+      <div class="sponsor-roll__grid">
         <div class="card sponsor-tile">
           <span class="logo logo--on-light sponsor-tile__logo"
             ><img
@@ -134,10 +138,6 @@
               height="228"
           /></span>
         </div>
-      </div>
-    </template>
-    <template id="sponsor-page-3">
-      <div class="sponsor-roll__grid">
         <div class="card sponsor-tile">
           <span class="logo logo--on-light sponsor-tile__logo"
             ><img
@@ -224,13 +224,48 @@
         </div>
       </div>
     </template>
+    <template id="sponsor-page-5">
+      <div class="sponsor-roll__grid">
+        <div class="card sponsor-tile">
+          <span class="logo logo--on-light sponsor-tile__logo"
+            ><img
+              class="logo__image"
+              src="../../sample_data/logos/sponsors/sae.webp"
+              alt="SAE Brasil"
+              width="422"
+              height="82"
+          /></span>
+        </div>
+      </div>
+    </template>
     <script type="application/json" id="demo-config">
       {
         "pages": [
-          { "template": "sponsor-page-1", "aside": "1/4", "subtitle": "Diamante" },
-          { "template": "sponsor-page-2", "aside": "2/4", "subtitle": "Ouro" },
-          { "template": "sponsor-page-3", "aside": "3/4", "subtitle": "Ouro" },
-          { "template": "sponsor-page-4", "aside": "4/4", "subtitle": "Apoio" }
+          {
+            "template": "sponsor-page-1",
+            "aside": "1/5",
+            "subtitle": "Patrocínio Diamante",
+            "level": "diamante"
+          },
+          {
+            "template": "sponsor-page-2",
+            "aside": "2/5",
+            "subtitle": "Patrocínio Ouro",
+            "level": "ouro"
+          },
+          {
+            "template": "sponsor-page-3",
+            "aside": "3/5",
+            "subtitle": "Patrocínio Ouro",
+            "level": "ouro"
+          },
+          { "template": "sponsor-page-4", "aside": "4/5", "subtitle": "Apoio", "level": "apoio" },
+          {
+            "template": "sponsor-page-5",
+            "aside": "5/5",
+            "subtitle": "Realização",
+            "level": "realizacao"
+          }
         ]
       }
     </script>
@@ -238,6 +273,6 @@
     <script src="../../vendor/gsap/gsap.min.js"></script>
     <script src="../../vendor/gsap/CustomEase.min.js"></script>
     <script src="../../tools/motionDemoCore.js"></script>
-    <script src="../../tools/motionDemoBoards.js"></script>
+    <script src="../../tools/motionDemoSponsors.js"></script>
   </body>
 </html>

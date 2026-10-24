@@ -239,7 +239,7 @@ const sponsors = Object.entries(logos.sponsors)
     key,
     name: sponsorNames[key] ?? key,
     level: logo.level,
-    levelLabel: sponsorLevels.find((level) => level.key === logo.level)?.label ?? logo.level,
+    levelHeading: sponsorLevels.find((level) => level.key === logo.level)?.heading ?? logo.level,
     logo: describeLogo(logo, sponsorNames[key] ?? key),
   }))
   .sort(

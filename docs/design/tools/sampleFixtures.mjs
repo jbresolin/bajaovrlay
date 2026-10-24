@@ -84,13 +84,21 @@ export const sponsorNames = {
   sae4mobility: 'SAE4Mobility',
   satc: 'SATC',
   schulz: 'Schulz',
+  sae: 'SAE Brasil',
 };
 
-/** The sponsor levels in the order they are shown, with their names on air. */
+/**
+ * The sponsor levels in the order they are shown, each with the heading it carries on air:
+ * the sponsorship levels read "Patrocínio …", support is just "Apoio", and the organiser,
+ * SAE Brasil, closes every roll as "Realização". Prata has no sponsor this year; it is
+ * listed so a sponsor of that level would land in its place.
+ */
 export const sponsorLevels = [
-  { key: 'diamante', label: 'Diamante' },
-  { key: 'ouro', label: 'Ouro' },
-  { key: 'apoio', label: 'Apoio' },
+  { key: 'diamante', heading: 'Patrocínio Diamante' },
+  { key: 'ouro', heading: 'Patrocínio Ouro' },
+  { key: 'prata', heading: 'Patrocínio Prata' },
+  { key: 'apoio', heading: 'Apoio' },
+  { key: 'realizacao', heading: 'Realização' },
 ];
 
 /** The QR card's words. The address is the scoreboard the stream links to today. */

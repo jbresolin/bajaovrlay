@@ -69,7 +69,7 @@ The catalogue's motion demos are built from `slateMotionDemos.mjs` (one entry pe
 and per combination of its optional parts) and `slateMotionPages.mjs` (the pages and their
 index, `motion-catalogo.html`), styled by `slate-demo.css` (the controls bar), and run in the
 browser by `motionDemoCore.js` (the motion tokens read as the product's `packages/theme`
-reads them, the moves, the buttons) with `motionDemoCards.js` or `motionDemoBoards.js`. They
+reads them, the moves, the buttons) with `motionDemoCards.js`, `motionDemoBoards.js` or `motionDemoSponsors.js` (the sponsor rolls, each page held by its level). They
 load GSAP and CustomEase from `vendor/gsap/`, a byte-for-byte copy of the product's GSAP
 3.15.0. It is a copy, not a path into `node_modules`, because pnpm's symlinks cannot be
 followed by a Windows browser reading the WSL disk (`vendor/gsap/README.md`). Nothing comes

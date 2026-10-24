@@ -1,8 +1,8 @@
 // The motion demos of the catalogue's boards (BAJAOVRLAY-43): the standings (paged, and in
-// columns), the sessions board, the intermission board, the countdown board, the sponsor
-// roll, the bracket and the podium. Each registers with motionDemoCore.js by the name its
-// page carries in data-demo; every duration, offset and curve comes from `motion`, read from
-// tokens.css. motion.md describes what each one does, in the same order.
+// columns), the sessions board, the intermission board, the countdown board, the bracket and
+// the podium; the sponsor rolls are in motionDemoSponsors.js. Each registers with
+// motionDemoCore.js by the name its page carries in data-demo; every duration, offset and
+// curve comes from `motion`, read from tokens.css. motion.md describes what each one does.
 /* global window, gsap, getComputedStyle */
 (function registerBoardDemos() {
   const kit = window.ardosiaMotion;
@@ -146,12 +146,32 @@
       board.querySelector('.intermission__top-head'),
     ].filter((piece) => piece !== null);
     const rows = [...board.querySelectorAll('.row--standings')];
-    const sponsorLine = board.querySelector('.intermission__sponsors');
+    let sponsorLine = board.querySelector('.intermission__sponsors');
     const pieces = [head, ...bodyCards, ...rows, sponsorLine].filter((piece) => piece !== null);
     kit.startCountdown([board.querySelector('.intermission__countdown')], config.remainingSeconds);
     kit.placeOffAir(pieces);
+
+    // The sponsor line turns through every sponsor, a level at a time, each page held by its
+    // level (--motion-sponsor-hold-<level>): the heading and logos lift away as the next
+    // page's rise into the same place.
+    const sponsorPages = config.sponsorPages ?? [];
+    let sponsorPageIndex = 0;
+    let stopTurning = null;
+    const holdOfCurrentPage = () => kit.sponsorHoldOf(sponsorPages[sponsorPageIndex].level);
+    function turnSponsorPage() {
+      sponsorPageIndex = (sponsorPageIndex + 1) % sponsorPages.length;
+      const incoming = kit.cloneTemplate(sponsorPages[sponsorPageIndex].template);
+      kit.swapInPlace(sponsorLine, incoming);
+      sponsorLine = incoming;
+      say(
+        `patrocinadores, página ${sponsorPageIndex + 1}/${sponsorPages.length}: trocam em ${inMs(motion.pageTurn)}; fica ${inSeconds(holdOfCurrentPage())}`,
+      );
+    }
+
     return kit.onAirSwitch({
       enter() {
+        if (sponsorPages.length > 1)
+          stopTurning = kit.everyWithHold(holdOfCurrentPage, turnSponsorPage);
         kit.riseIn([head]);
         kit.riseIn(bodyCards, { delay: motion.lead });
         // The rows follow the top-five head; the sponsor line comes a lead after the last row.
@@ -166,7 +186,9 @@
         say(`entrada: a cabeça, os cartões ${inMs(motion.lead)} depois${rowsWords}${sponsorWords}`);
       },
       exit() {
-        kit.liftOut(pieces);
+        stopTurning?.();
+        const onAir = pieces.filter((piece) => piece.isConnected);
+        kit.liftOut(sponsorLine === null ? onAir : [...onAir, sponsorLine]);
         say(`saída: tudo junto em ${inMs(motion.out)}`);
       },
     });
@@ -191,58 +213,6 @@
         say(`saída: tudo junto em ${inMs(motion.out)}`);
       },
     });
-  });
-
-  // ---------------------------------------------------------------- sponsor roll, full
-
-  kit.register('sponsor-roll', (stage, config) => {
-    const board = stage.querySelector('.sponsor-roll');
-    const head = board.querySelector('.board__head');
-    let grid = board.querySelector('.sponsor-roll__grid');
-    let pageIndex = 0;
-    let stopTurning = null;
-    kit.placeOffAir([head, ...grid.children]);
-
-    // The tiles lift away as the next page's tiles rise into the same places.
-    function turnPage() {
-      pageIndex = (pageIndex + 1) % config.pages.length;
-      const page = config.pages[pageIndex];
-      const incoming = kit.cloneTemplate(page.template);
-      kit.swapInPlace(grid, incoming);
-      grid = incoming;
-      head.querySelector('.board__aside').textContent = page.aside;
-      // Each page is one sponsor level, named in the head: the name changes in place.
-      head.querySelector('.board__subtitle').textContent = page.subtitle;
-      say(
-        `página ${pageIndex + 1}: os cartões trocam em ${inMs(motion.pageTurn)}, ${inMs(motion.pageStagger)} um do outro`,
-      );
-    }
-
-    const demo = kit.onAirSwitch({
-      enter() {
-        headThenCascade(head, [...grid.children]);
-        stopTurning = kit.every(motion.sponsorHold, turnPage);
-        say(
-          `entrada: a cabeça, os cartões em cascata; a página vira a cada ${inSeconds(motion.sponsorHold)}`,
-        );
-      },
-      exit() {
-        stopTurning?.();
-        kit.liftOut([head, ...grid.children]);
-        say(`saída: tudo junto em ${inMs(motion.out)}`);
-      },
-    });
-    // Atualizar: the next page now; on air, the hold starts again from it.
-    demo.update = () => {
-      if (!demo.isOnAir()) {
-        say('use Entrar primeiro');
-        return;
-      }
-      turnPage();
-      stopTurning?.();
-      stopTurning = kit.every(motion.sponsorHold, turnPage);
-    };
-    return demo;
   });
 
   // ---------------------------------------------------------------- bracket

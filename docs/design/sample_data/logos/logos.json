@@ -468,6 +468,14 @@
       "level": "apoio",
       "source": "sae4mobility_apoio.webp"
     },
+    "sae": {
+      "file": "logos/sponsors/sae.webp",
+      "width": 422,
+      "height": 82,
+      "surface": "light",
+      "level": "realizacao",
+      "source": "sae_realizacao.webp"
+    },
     "satc": {
       "file": "logos/sponsors/satc.webp",
       "width": 355,

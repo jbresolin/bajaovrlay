@@ -1,7 +1,8 @@
 // The motion demos of the catalogue's cards (BAJAOVRLAY-43): the team card, the battle card,
-// the QR card, the countdown card, the message ticker, the corner sponsor roll and the notice
-// slot (fastest lap, penalty or incident). Each registers with motionDemoCore.js by the name
-// its page carries in data-demo; every duration, offset and curve comes from `motion`, read
+// the QR card, the countdown card, the message ticker and the notice slot (fastest lap,
+// penalty or incident); the corner sponsor roll is in motionDemoSponsors.js. Each registers
+// with motionDemoCore.js by the name its page carries in data-demo; every duration, offset
+// and curve comes from `motion`, read
 // from tokens.css. motion.md describes what each one does, in the same order.
 /* global window, gsap */
 (function registerCardDemos() {
@@ -133,46 +134,6 @@
         say(`saída: a barra inteira em ${inMs(motion.out)}`);
       },
     });
-  });
-
-  // ---------------------------------------------------------------- sponsor roll, corner
-
-  kit.register('sponsor-roll-corner', (stage, config) => {
-    const card = stage.querySelector('.sponsor-roll-corner');
-    let sponsorIndex = 0;
-    let stopCycling = null;
-    kit.placeOffAir([card]);
-
-    // The sponsor cell crossfades; the logo and the event word never move.
-    function showNextSponsor() {
-      sponsorIndex = (sponsorIndex + 1) % config.sponsorTemplates.length;
-      const current = card.querySelector('.sponsor-roll-corner__sponsor');
-      kit.crossfade(current, kit.cloneTemplate(config.sponsorTemplates[sponsorIndex]));
-      say(`patrocinador ${sponsorIndex + 1}: troca com esmaecimento de ${inMs(motion.flag)}`);
-    }
-
-    const demo = kit.onAirSwitch({
-      enter() {
-        kit.riseIn([card]);
-        stopCycling = kit.every(motion.sponsorHold, showNextSponsor);
-        say(
-          `entrada: o cartão do selo; o patrocinador troca a cada ${inSeconds(motion.sponsorHold)}`,
-        );
-      },
-      exit() {
-        stopCycling?.();
-        kit.liftOut([card]);
-        say(`saída: o cartão em ${inMs(motion.out)}`);
-      },
-    });
-    // Atualizar: the next sponsor now; on air, the hold starts again from this one.
-    demo.update = () => {
-      showNextSponsor();
-      if (!demo.isOnAir()) return;
-      stopCycling?.();
-      stopCycling = kit.every(motion.sponsorHold, showNextSponsor);
-    };
-    return demo;
   });
 
   // ---------------------------------------------------------------- the notice slot

@@ -25,16 +25,20 @@ const mimeTypes = {
   '.webp': 'image/webp',
 };
 
+// Only image files are logos: a copy from Windows can bring "<name>:Zone.Identifier" files.
+const listImageFiles = (folder) =>
+  readdirSync(folder).filter((fileName) => mimeTypes[extname(fileName).toLowerCase()]);
+
 /** The logos to prepare: where each comes from and the name it is written under. */
 function listLogoSources() {
   const teamFolder = resolve(sampleFolder, 'team_logos');
   const sponsorFolder = resolve(sampleFolder, 'sponsors');
-  const teams = readdirSync(teamFolder).map((fileName) => ({
+  const teams = listImageFiles(teamFolder).map((fileName) => ({
     kind: 'teams',
     key: String(Number(fileName.split('_')[0])),
     sourcePath: resolve(teamFolder, fileName),
   }));
-  const sponsors = readdirSync(sponsorFolder).map((fileName) => {
+  const sponsors = listImageFiles(sponsorFolder).map((fileName) => {
     const [sponsorKey, level] = basename(fileName, extname(fileName)).split('_');
     return {
       kind: 'sponsors',

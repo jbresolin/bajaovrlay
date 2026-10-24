@@ -152,7 +152,7 @@ export function renderMessageTicker(
 /** The corner roll's sponsor cell: one sponsor's mark and name under the sponsor line. */
 export function renderSponsorRollCornerCell(bug, sponsor) {
   return `<div class="sponsor-roll-corner__sponsor">
-    <span class="caption">Patrocínio ${escapeHtml(sponsor.levelLabel)}</span>
+    <span class="caption">${escapeHtml(sponsor.levelHeading)}</span>
     ${renderLogo(sponsor.logo, 'sponsor-bug__sponsor-logo')}
   </div>`;
 }

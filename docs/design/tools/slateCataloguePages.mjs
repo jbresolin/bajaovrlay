@@ -47,7 +47,7 @@ export function buildCataloguePages(options) {
   const compactCars = sample.positions.slice(0, compactRows);
   const eventName = sample.session.eventName;
   const topFive = sample.standingsTop5;
-  const sponsorsOnTheBoard = sample.sponsors.slice(0, 4);
+  const sponsorsOnTheBoard = sample.sponsors;
   // The real Super Prime, one page per step: three boards (32 avos, 16 avos, oitavas), then
   // the tree (quartas, semifinal, the third-place match, the final).
   const bracketStepCount = planBracketSteps(sample.brackets.rounds, 32).length;
