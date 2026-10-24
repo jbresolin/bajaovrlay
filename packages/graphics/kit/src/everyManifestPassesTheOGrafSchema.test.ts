@@ -24,7 +24,10 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { createOGrafSchemaValidator, ografManifestSchema } from './ografSchemaValidator.js';
+import {
+  createOGrafSchemaValidator,
+  ografManifestSchema,
+} from './ografSchemaValidator.testSupport.js';
 
 const graphicsFolder = fileURLToPath(new URL('../../', import.meta.url));
 

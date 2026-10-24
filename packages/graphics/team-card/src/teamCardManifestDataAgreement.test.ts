@@ -20,7 +20,7 @@
  *     itself); teamCardManifest.test.ts covers it.
  *   - The page: this file runs in plain Node (the pragma on line 1); it draws nothing.
  */
-import { createOGrafSchemaValidator } from '@bajaovrlay/graphics-kit/ografSchemaValidator';
+import { createOGrafSchemaValidator } from '@bajaovrlay/graphics-kit/ografSchemaValidator.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import teamCardManifest from '../team-card.ograf.json';

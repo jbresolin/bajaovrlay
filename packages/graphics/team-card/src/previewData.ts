@@ -28,9 +28,6 @@ export type SampleParts = {
   isLogoOnLightPlate: boolean;
 };
 
-/** The stage behind the card: the design's grey or black, or the footage stand-in. */
-export type PreviewStage = 'grey' | 'black' | 'footage';
-
 /** Every part on and the logo on its plate: the design's team-card page. */
 export const everySamplePartOn: SampleParts = {
   hasPhoto: true,
@@ -85,13 +82,4 @@ export function choosePreviewData(addressQuery: string): PreviewDataChoice {
   } catch {
     return { isReadable: false, problem: ptBR.preview.unreadableAddressData };
   }
-}
-
-/** Reads the stage from an address query string; anything but grey or black is the stand-in. */
-export function choosePreviewStage(addressQuery: string): PreviewStage {
-  const stageText = new URLSearchParams(addressQuery).get('stage');
-  if (stageText === 'grey' || stageText === 'black') {
-    return stageText;
-  }
-  return 'footage';
 }

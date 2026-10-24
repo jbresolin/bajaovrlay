@@ -15,9 +15,6 @@ import type { ScorePart, StandingsData, StandingsEntry } from './standingsModel.
 export type PreviewDataChoice =
   { isReadable: true; data: unknown } | { isReadable: false; problem: string };
 
-/** The stand-ins for the stream behind the graphic the design's screenshots use. */
-export type PreviewStage = 'grey' | 'black' | 'gradient';
-
 /** The overall score's parts in the export's order, labelled as the design's table heads them. */
 export const overallScoreParts: ScorePart[] = [
   { partId: 'projeto', label: 'PROJETO' },
@@ -239,13 +236,4 @@ export function choosePreviewData(addressQuery: string): PreviewDataChoice {
   } catch {
     return { isReadable: false, problem: ptBR.preview.unreadableAddressData };
   }
-}
-
-/** Reads `?stage=grey|black` (the design's two screenshot backgrounds); else the gradient. */
-export function choosePreviewStage(addressQuery: string): PreviewStage {
-  const stageText = new URLSearchParams(addressQuery).get('stage');
-  if (stageText === 'grey' || stageText === 'black') {
-    return stageText;
-  }
-  return 'gradient';
 }

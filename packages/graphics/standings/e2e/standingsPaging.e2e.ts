@@ -21,8 +21,8 @@
  * What these tests deliberately do not cover:
  *   - The cascade itself; standingsAnimations.test.ts measures the timelines.
  */
-import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
-import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides';
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 import { createOverallStandingsWithParts } from '../src/previewData.js';

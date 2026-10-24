@@ -13,10 +13,10 @@ import '@bajaovrlay/theme/ardosia/tokens.css';
 import '@bajaovrlay/theme/fonts/fonts.css';
 
 import { setUpPreviewControls } from '@bajaovrlay/graphics-kit/previewControls';
+import { choosePreviewStage } from '@bajaovrlay/graphics-kit/previewStage';
 
 import {
   choosePreviewData,
-  choosePreviewStage,
   createReptilesSample,
   everySamplePartOn,
   type SampleParts,

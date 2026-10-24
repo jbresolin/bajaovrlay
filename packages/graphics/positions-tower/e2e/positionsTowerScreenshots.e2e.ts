@@ -28,7 +28,7 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/positions-tower test:e2e --update-snapshots`.
  */
-import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 import { readEnduroSampleEntries } from './sampleEntries.js';

@@ -13,12 +13,6 @@ export type PreviewDataChoice =
   { isReadable: true; data: unknown } | { isReadable: false; problem: string };
 
 /**
- * The stage behind the graphic: the design's two screenshot backgrounds, or the gradient
- * that stands in for the stream video in every graphic's preview.
- */
-export type PreviewStageKind = 'grey' | 'black' | 'footage';
-
-/**
  * Builds the team captain sample: the design's own lower third, with role and team line.
  * The keys are all there so a button that sends it fills every field again.
  */
@@ -52,13 +46,4 @@ export function choosePreviewData(addressQuery: string): PreviewDataChoice {
   } catch {
     return { isReadable: false, problem: ptBR.preview.unreadableAddressData };
   }
-}
-
-/** Reads `?stage=grey|black` from an address query string; anything else is the footage. */
-export function choosePreviewStage(addressQuery: string): PreviewStageKind {
-  const stageText = new URLSearchParams(addressQuery).get('stage');
-  if (stageText === 'grey' || stageText === 'black') {
-    return stageText;
-  }
-  return 'footage';
 }

@@ -36,7 +36,7 @@ import { createRequire } from 'node:module';
 import {
   createOGrafSchemaValidator,
   ografManifestSchema,
-} from '@bajaovrlay/graphics-kit/ografSchemaValidator';
+} from '@bajaovrlay/graphics-kit/ografSchemaValidator.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import noticeManifest from '../notice.ograf.json';

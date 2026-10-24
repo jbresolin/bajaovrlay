@@ -9,6 +9,7 @@
  * item that reads team N from Cadastros maps each field to the attribute of the same name.
  */
 import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
+import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { z } from 'zod';
 
 import { ptBR } from './ptBR.js';
@@ -60,15 +61,6 @@ export type TeamCardSizes = {
   photoWidthPx: number;
   logoSizePx: number;
 };
-
-/**
- * Answers whether a text field has something to show. A text of blanks counts as
- * missing: an operator who cleared a field by typing spaces, or a record with an empty
- * value, must not leave an empty frame or a dangling dot on air.
- */
-export function isTextGiven(text: string | undefined): text is string {
-  return text !== undefined && text.trim() !== '';
-}
 
 /** Whether the logo sits on the light plate; a missing switch reads as false (on the panel). */
 export function isLogoOnLightPlate(data: TeamCardData): boolean {

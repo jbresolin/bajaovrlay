@@ -13,12 +13,12 @@ import '@bajaovrlay/theme/ardosia/tokens.css';
 import '@bajaovrlay/theme/fonts/fonts.css';
 
 import { setUpPreviewControls } from '@bajaovrlay/graphics-kit/previewControls';
+import { choosePreviewStage } from '@bajaovrlay/graphics-kit/previewStage';
 
 import LowerThirdGraphic from './lower-third.js';
 import type { LowerThirdData } from './lowerThirdModel.js';
 import {
   choosePreviewData,
-  choosePreviewStage,
   createNameOnlySample,
   createNarratorSample,
   createTeamCaptainSample,

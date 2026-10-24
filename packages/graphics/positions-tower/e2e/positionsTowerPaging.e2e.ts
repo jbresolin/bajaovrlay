@@ -24,8 +24,8 @@
  *   - The cascade itself; the unit tests measure the timelines and the screenshots
  *     show the end state.
  */
-import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
-import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides';
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 import { readEnduroSampleEntries } from './sampleEntries.js';

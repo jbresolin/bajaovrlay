@@ -22,7 +22,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   choosePreviewData,
-  choosePreviewStage,
   createEnduroStandings,
   createOverallStandingsEntries,
   disqualifyTeamInRow,
@@ -113,20 +112,6 @@ describe('disqualifyTeamInRow', () => {
 });
 
 describe('reading the address', () => {
-  it('reads the grey and black stages, and keeps the gradient for anything else', () => {
-    // Arrange: three address queries.
-
-    // Act: read the stage of each.
-    const greyStage = choosePreviewStage('?stage=grey');
-    const blackStage = choosePreviewStage('?stage=black');
-    const unknownStage = choosePreviewStage('?stage=verde');
-
-    // Assert: the two design backgrounds, and the gradient otherwise.
-    expect(greyStage, '?stage=grey must give the grey stage').toBe('grey');
-    expect(blackStage, '?stage=black must give the black stage').toBe('black');
-    expect(unknownStage, 'an unknown stage must keep the gradient').toBe('gradient');
-  });
-
   it('answers a pt-BR problem for ?data= that is not JSON', () => {
     // Arrange: a query whose data was cut short.
 

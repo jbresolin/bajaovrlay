@@ -29,7 +29,7 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/lower-third test:e2e --update-snapshots`.
  */
-import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** Opens the preview on the stage with the data, waits for the play-in and for the font. */

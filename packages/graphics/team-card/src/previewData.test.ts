@@ -25,7 +25,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { choosePreviewData, choosePreviewStage, createReptilesSample } from './previewData.js';
+import { choosePreviewData, createReptilesSample } from './previewData.js';
 
 describe('choosePreviewData', () => {
   it('shows car 7 with its photo, its logo on the plate and its city when the address says nothing', () => {
@@ -153,32 +153,5 @@ describe('createReptilesSample', () => {
       schoolName: 'PUC-Rio',
       logoOnLightPlate: false,
     });
-  });
-});
-
-describe('choosePreviewStage', () => {
-  const stageScenarios = [
-    // The design's screenshots over mid-grey.
-    { name: 'gives the grey stage for ?stage=grey', query: '?stage=grey', expected: 'grey' },
-    // The design's screenshots over near-black.
-    { name: 'gives the black stage for ?stage=black', query: '?stage=black', expected: 'black' },
-    // No stage asked: the gradient that stands in for the stream, as in the other previews.
-    { name: 'gives the footage stand-in without ?stage', query: '', expected: 'footage' },
-    // A stage the page does not have: the stand-in, never a blank page.
-    {
-      name: 'gives the footage stand-in for an unknown stage',
-      query: '?stage=white',
-      expected: 'footage',
-    },
-  ];
-
-  it.each(stageScenarios)('$name', ({ query, expected }) => {
-    // Arrange: the address query comes from the scenario row above.
-
-    // Act: choose the stage.
-    const stage = choosePreviewStage(query);
-
-    // Assert: the stage the address asked for, or the stand-in.
-    expect(stage, 'the stage must follow ?stage=').toBe(expected);
   });
 });

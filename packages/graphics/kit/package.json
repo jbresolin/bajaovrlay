@@ -10,10 +10,12 @@
     "./pageTurner": "./src/pageTurner.ts",
     "./timelinePlayback": "./src/timelinePlayback.ts",
     "./dataProblems": "./src/dataProblems.ts",
+    "./textPresence": "./src/textPresence.ts",
     "./previewControls": "./src/previewControls.ts",
-    "./previewAddress": "./src/previewAddress.ts",
-    "./ografSchemaValidator": "./src/ografSchemaValidator.ts",
-    "./tokenOverrides": "./src/tokenOverrides.ts"
+    "./previewStage": "./src/previewStage.ts",
+    "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",
+    "./tokenOverrides.testSupport": "./src/tokenOverrides.testSupport.ts",
+    "./ografSchemaValidator.testSupport": "./src/ografSchemaValidator.testSupport.ts"
   },
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",

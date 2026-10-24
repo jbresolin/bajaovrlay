@@ -24,7 +24,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { choosePreviewData, choosePreviewStage, createNameOnlySample } from './previewData.js';
+import { choosePreviewData, createNameOnlySample } from './previewData.js';
 
 describe('choosePreviewData', () => {
   it('uses the design’s team captain when the address has no data', () => {
@@ -88,36 +88,5 @@ describe('createNameOnlySample', () => {
       [nameOnlySample.role, nameOnlySample.teamLine],
       'the role and the team line must be undefined, the renderer’s way of clearing them',
     ).toEqual([undefined, undefined]);
-  });
-});
-
-describe('choosePreviewStage', () => {
-  const stageScenarios = [
-    // The design's grey screenshot background.
-    { name: 'chooses grey for ?stage=grey', addressQuery: '?stage=grey', expected: 'grey' },
-    // The design's black screenshot background, read together with data.
-    {
-      name: 'chooses black for ?stage=black next to ?data=',
-      addressQuery: '?data=%7B%7D&stage=black',
-      expected: 'black',
-    },
-    // No stage asked: the footage stand-in every preview uses.
-    { name: 'keeps the footage stand-in with no ?stage=', addressQuery: '', expected: 'footage' },
-    // A stage the preview does not know is not an error, just the default.
-    {
-      name: 'keeps the footage stand-in for a stage it does not know',
-      addressQuery: '?stage=verde',
-      expected: 'footage',
-    },
-  ];
-
-  it.each(stageScenarios)('$name', ({ addressQuery, expected }) => {
-    // Arrange: the address query comes from the scenario row above.
-
-    // Act: choose the stage.
-    const stage = choosePreviewStage(addressQuery);
-
-    // Assert: the stage the row expects.
-    expect(stage, 'the stage must follow ?stage=, defaulting to the footage').toBe(expected);
   });
 });

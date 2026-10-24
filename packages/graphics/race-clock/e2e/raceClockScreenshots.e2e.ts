@@ -26,7 +26,7 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/race-clock test:e2e --update-snapshots`.
  */
-import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 const flagStateScenarios = [

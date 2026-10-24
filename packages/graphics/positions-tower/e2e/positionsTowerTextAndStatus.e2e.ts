@@ -23,7 +23,7 @@
  * What these tests deliberately do not cover:
  *   - Pixel looks; positionsTowerScreenshots.e2e.ts covers them.
  */
-import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** Opens the preview with the given tower data and waits for the play-in to finish. */

@@ -21,7 +21,7 @@
  *   - The page: this file runs in plain Node (the pragma on line 1) like its sibling; it
  *     draws nothing.
  */
-import { createOGrafSchemaValidator } from '@bajaovrlay/graphics-kit/ografSchemaValidator';
+import { createOGrafSchemaValidator } from '@bajaovrlay/graphics-kit/ografSchemaValidator.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import noticeManifest from '../notice.ograf.json';

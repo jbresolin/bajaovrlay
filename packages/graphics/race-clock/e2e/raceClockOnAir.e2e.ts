@@ -24,7 +24,7 @@
  *   - Pixel-exact looks; raceClockScreenshots.e2e.ts compares screenshots.
  *   - The OGraf call order; raceClockLifecycle.e2e.ts drives the graphic like a renderer.
  */
-import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** Data for an enduro under green flag, 1:05:00 in, read "now" and held or running. */

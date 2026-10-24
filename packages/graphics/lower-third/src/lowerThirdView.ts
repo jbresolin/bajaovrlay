@@ -5,6 +5,7 @@
  * gets the `hidden` attribute, which takes it out of the layout (display: none), so a
  * missing part leaves no empty box and the pills shrink to what they hold.
  */
+import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';
 
 import type { LowerThirdAnimatedElements } from './lowerThirdAnimations.js';
@@ -48,15 +49,6 @@ export function findLowerThirdParts(renderRoot: ParentNode): LowerThirdParts {
     separator: findPart('lower-third-separator'),
     teamLine: findPart('lower-third-team-line'),
   };
-}
-
-/**
- * Answers whether a text field has something to show. A text of blanks counts as
- * missing: an operator who cleared a field by typing spaces must not leave an empty box
- * on air.
- */
-function isTextGiven(text: string | undefined): text is string {
-  return text !== undefined && text.trim() !== '';
 }
 
 /** Changes an element's text only when it differs, so an update touches only what changed. */
