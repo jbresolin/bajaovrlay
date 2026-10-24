@@ -1,0 +1,520 @@
+{
+  "teams": {
+    "1": {
+      "file": "logos/teams/1.webp",
+      "width": 396,
+      "height": 480,
+      "surface": "dark",
+      "source": "01_Equipe_FEI_Baja.jpeg"
+    },
+    "2": {
+      "file": "logos/teams/2.webp",
+      "width": 480,
+      "height": 369,
+      "surface": "light",
+      "source": "02_Baja_UFMG.png"
+    },
+    "3": {
+      "file": "logos/teams/3.webp",
+      "width": 480,
+      "height": 161,
+      "surface": "light",
+      "source": "03_Baja_de_Galpao_UNISC.png"
+    },
+    "4": {
+      "file": "logos/teams/4.webp",
+      "width": 480,
+      "height": 339,
+      "surface": "light",
+      "source": "04_Mangue_Baja.png"
+    },
+    "5": {
+      "file": "logos/teams/5.webp",
+      "width": 380,
+      "height": 418,
+      "surface": "light",
+      "source": "05_Poli_Baja.png"
+    },
+    "6": {
+      "file": "logos/teams/6.webp",
+      "width": 480,
+      "height": 228,
+      "surface": "light",
+      "source": "06_Rampage_Baja_UFJF.png"
+    },
+    "7": {
+      "file": "logos/teams/7.webp",
+      "width": 480,
+      "height": 144,
+      "surface": "light",
+      "source": "07_Reptiles_Baja_PUC-Rio.png"
+    },
+    "8": {
+      "file": "logos/teams/8.webp",
+      "width": 480,
+      "height": 204,
+      "surface": "dark",
+      "source": "08_Imperador.png"
+    },
+    "9": {
+      "file": "logos/teams/9.webp",
+      "width": 480,
+      "height": 479,
+      "surface": "dark",
+      "source": "09_CaraubajaSAE.png"
+    },
+    "10": {
+      "file": "logos/teams/10.webp",
+      "width": 480,
+      "height": 468,
+      "surface": "light",
+      "source": "10_Equipe_Komiketo_Baja.png"
+    },
+    "11": {
+      "file": "logos/teams/11.webp",
+      "width": 480,
+      "height": 228,
+      "surface": "light",
+      "source": "11_PAC_Baja.png"
+    },
+    "12": {
+      "file": "logos/teams/12.webp",
+      "width": 480,
+      "height": 480,
+      "surface": "light",
+      "source": "12_Kaizen_Piratas_do_Cerrado.png"
+    },
+    "13": {
+      "file": "logos/teams/13.webp",
+      "width": 480,
+      "height": 399,
+      "surface": "dark",
+      "source": "13_Equipe_Cactus_Baja.png"
+    },
+    "14": {
+      "file": "logos/teams/14.webp",
+      "width": 348,
+      "height": 480,
+      "surface": "light",
+      "source": "14_Tche_Baja.png"
+    },
+    "15": {
+      "file": "logos/teams/15.webp",
+      "width": 480,
+      "height": 230,
+      "surface": "light",
+      "source": "15_Unicamp_Baja_SAE.png"
+    },
+    "16": {
+      "file": "logos/teams/16.webp",
+      "width": 480,
+      "height": 433,
+      "surface": "light",
+      "source": "16_Forja_Baja.png"
+    },
+    "17": {
+      "file": "logos/teams/17.webp",
+      "width": 480,
+      "height": 379,
+      "surface": "light",
+      "source": "17_Bombaja_UFSM.png"
+    },
+    "18": {
+      "file": "logos/teams/18.webp",
+      "width": 378,
+      "height": 480,
+      "surface": "light",
+      "source": "18_Car-Kara_Baja_SAE.png"
+    },
+    "19": {
+      "file": "logos/teams/19.webp",
+      "width": 374,
+      "height": 480,
+      "surface": "light",
+      "source": "19_ProcoBaja.jpeg"
+    },
+    "20": {
+      "file": "logos/teams/20.webp",
+      "width": 480,
+      "height": 480,
+      "surface": "light",
+      "source": "20_Saci_Baja_SAE_UNIFEI.png"
+    },
+    "21": {
+      "file": "logos/teams/21.webp",
+      "width": 480,
+      "height": 160,
+      "surface": "light",
+      "source": "21_Equipe_Parahybaja.png"
+    },
+    "22": {
+      "file": "logos/teams/22.webp",
+      "width": 480,
+      "height": 480,
+      "surface": "light",
+      "source": "22_EESC_USP_TRACTIAN_Baja.png"
+    },
+    "23": {
+      "file": "logos/teams/23.webp",
+      "width": 436,
+      "height": 480,
+      "surface": "light",
+      "source": "23_CEFAST_Baja_SAE.png"
+    },
+    "24": {
+      "file": "logos/teams/24.webp",
+      "width": 480,
+      "height": 460,
+      "surface": "light",
+      "source": "24_Baja_UFSCar.png"
+    },
+    "25": {
+      "file": "logos/teams/25.webp",
+      "width": 381,
+      "height": 480,
+      "surface": "light",
+      "source": "25_Vitoria_Baja.png"
+    },
+    "27": {
+      "file": "logos/teams/27.webp",
+      "width": 480,
+      "height": 338,
+      "surface": "dark",
+      "source": "27_Baja_Mud_Racing.png"
+    },
+    "28": {
+      "file": "logos/teams/28.webp",
+      "width": 480,
+      "height": 238,
+      "surface": "light",
+      "source": "28_Tuffao_Baja_SAE.png"
+    },
+    "29": {
+      "file": "logos/teams/29.webp",
+      "width": 415,
+      "height": 480,
+      "surface": "light",
+      "source": "29_Equipe_UFSC_Baja.png"
+    },
+    "30": {
+      "file": "logos/teams/30.webp",
+      "width": 441,
+      "height": 169,
+      "surface": "dark",
+      "source": "30_Caledonia_Racing_Baja_SAE.png"
+    },
+    "31": {
+      "file": "logos/teams/31.webp",
+      "width": 480,
+      "height": 89,
+      "surface": "light",
+      "source": "31_Sagui_Baja.png"
+    },
+    "32": {
+      "file": "logos/teams/32.webp",
+      "width": 299,
+      "height": 480,
+      "surface": "light",
+      "source": "32_Corisco_Baja.png"
+    },
+    "33": {
+      "file": "logos/teams/33.webp",
+      "width": 480,
+      "height": 476,
+      "surface": "dark",
+      "source": "33_Corsarios_Baja.png"
+    },
+    "34": {
+      "file": "logos/teams/34.webp",
+      "width": 480,
+      "height": 426,
+      "surface": "dark",
+      "source": "34_Buffalo_Baja_UFLA.png"
+    },
+    "35": {
+      "file": "logos/teams/35.webp",
+      "width": 480,
+      "height": 418,
+      "surface": "light",
+      "source": "35_Piratas_do_Vale.png"
+    },
+    "36": {
+      "file": "logos/teams/36.webp",
+      "width": 480,
+      "height": 363,
+      "surface": "light",
+      "source": "36_Zebu_Baja_UFTM.png"
+    },
+    "37": {
+      "file": "logos/teams/37.webp",
+      "width": 361,
+      "height": 208,
+      "surface": "dark",
+      "source": "37_Minerva_Baja.png"
+    },
+    "38": {
+      "file": "logos/teams/38.webp",
+      "width": 447,
+      "height": 480,
+      "surface": "light",
+      "source": "38_Tatu_Baja.jpg"
+    },
+    "39": {
+      "file": "logos/teams/39.webp",
+      "width": 480,
+      "height": 408,
+      "surface": "light",
+      "source": "39_CTJ_Baja.jpg"
+    },
+    "40": {
+      "file": "logos/teams/40.webp",
+      "width": 480,
+      "height": 288,
+      "surface": "light",
+      "source": "40_Gralha_Azul.png"
+    },
+    "41": {
+      "file": "logos/teams/41.webp",
+      "width": 480,
+      "height": 373,
+      "surface": "light",
+      "source": "41_BAJAUEA.png"
+    },
+    "42": {
+      "file": "logos/teams/42.webp",
+      "width": 351,
+      "height": 480,
+      "surface": "light",
+      "source": "42_Garra_Baja.jpg"
+    },
+    "43": {
+      "file": "logos/teams/43.webp",
+      "width": 480,
+      "height": 253,
+      "surface": "light",
+      "source": "43_BAJA_Griffon.png"
+    },
+    "44": {
+      "file": "logos/teams/44.webp",
+      "width": 480,
+      "height": 122,
+      "surface": "light",
+      "source": "44_UFPBaja.png"
+    },
+    "45": {
+      "file": "logos/teams/45.webp",
+      "width": 401,
+      "height": 480,
+      "surface": "light",
+      "source": "45_Carpoeira_Baja.png"
+    },
+    "47": {
+      "file": "logos/teams/47.webp",
+      "width": 456,
+      "height": 480,
+      "surface": "light",
+      "source": "47_Pato_Baja.png"
+    },
+    "48": {
+      "file": "logos/teams/48.webp",
+      "width": 430,
+      "height": 480,
+      "surface": "dark",
+      "source": "48_Baja_Unileste.jpg"
+    },
+    "49": {
+      "file": "logos/teams/49.webp",
+      "width": 480,
+      "height": 155,
+      "surface": "light",
+      "source": "49_Baja_Guaicurus.png"
+    },
+    "50": {
+      "file": "logos/teams/50.webp",
+      "width": 480,
+      "height": 480,
+      "surface": "light",
+      "source": "50_Mud_Runner.png"
+    },
+    "51": {
+      "file": "logos/teams/51.webp",
+      "width": 480,
+      "height": 335,
+      "surface": "dark",
+      "source": "51_Sinuelo.png"
+    },
+    "52": {
+      "file": "logos/teams/52.webp",
+      "width": 480,
+      "height": 353,
+      "surface": "light",
+      "source": "52_ITA_Baja.png"
+    },
+    "54": {
+      "file": "logos/teams/54.webp",
+      "width": 480,
+      "height": 480,
+      "surface": "light",
+      "source": "54_UnBaja.png"
+    },
+    "56": {
+      "file": "logos/teams/56.webp",
+      "width": 480,
+      "height": 395,
+      "surface": "dark",
+      "source": "56_Capibaja.jpg"
+    },
+    "57": {
+      "file": "logos/teams/57.webp",
+      "width": 480,
+      "height": 478,
+      "surface": "light",
+      "source": "57_Equipistao.png"
+    },
+    "58": {
+      "file": "logos/teams/58.webp",
+      "width": 480,
+      "height": 480,
+      "surface": "dark",
+      "source": "58_CajaBaja.png"
+    }
+  },
+  "sponsors": {
+    "bosch": {
+      "file": "logos/sponsors/bosch.webp",
+      "width": 480,
+      "height": 138,
+      "surface": "light",
+      "level": "diamante",
+      "source": "bosch_diamante.png"
+    },
+    "certi": {
+      "file": "logos/sponsors/certi.webp",
+      "width": 138,
+      "height": 52,
+      "surface": "light",
+      "level": "ouro",
+      "source": "certi_ouro.png"
+    },
+    "cnh": {
+      "file": "logos/sponsors/cnh.webp",
+      "width": 480,
+      "height": 161,
+      "surface": "light",
+      "level": "ouro",
+      "source": "cnh_ouro.webp"
+    },
+    "criciuma": {
+      "file": "logos/sponsors/criciuma.webp",
+      "width": 480,
+      "height": 101,
+      "surface": "light",
+      "level": "apoio",
+      "source": "criciuma_apoio.webp"
+    },
+    "himix": {
+      "file": "logos/sponsors/himix.webp",
+      "width": 480,
+      "height": 204,
+      "surface": "light",
+      "level": "ouro",
+      "source": "himix_ouro.webp"
+    },
+    "horse": {
+      "file": "logos/sponsors/horse.webp",
+      "width": 150,
+      "height": 68,
+      "surface": "light",
+      "level": "ouro",
+      "source": "horse_ouro.png"
+    },
+    "marcopolo": {
+      "file": "logos/sponsors/marcopolo.webp",
+      "width": 480,
+      "height": 59,
+      "surface": "light",
+      "level": "ouro",
+      "source": "marcopolo_ouro.webp"
+    },
+    "osaki": {
+      "file": "logos/sponsors/osaki.webp",
+      "width": 480,
+      "height": 168,
+      "surface": "light",
+      "level": "apoio",
+      "source": "osaki_apoio.webp"
+    },
+    "renault": {
+      "file": "logos/sponsors/renault.webp",
+      "width": 150,
+      "height": 56,
+      "surface": "light",
+      "level": "diamante",
+      "source": "renault_diamante.png"
+    },
+    "rodonunes": {
+      "file": "logos/sponsors/rodonunes.webp",
+      "width": 480,
+      "height": 228,
+      "surface": "light",
+      "level": "ouro",
+      "source": "rodonunes_ouro.png"
+    },
+    "sae4mobility": {
+      "file": "logos/sponsors/sae4mobility.webp",
+      "width": 480,
+      "height": 303,
+      "surface": "light",
+      "level": "apoio",
+      "source": "sae4mobility_apoio.webp"
+    },
+    "sae": {
+      "file": "logos/sponsors/sae.webp",
+      "width": 422,
+      "height": 82,
+      "surface": "light",
+      "level": "realizacao",
+      "source": "sae_realizacao.webp"
+    },
+    "satc": {
+      "file": "logos/sponsors/satc.webp",
+      "width": 355,
+      "height": 149,
+      "surface": "light",
+      "level": "apoio",
+      "source": "satc_apoio.webp"
+    },
+    "schulz": {
+      "file": "logos/sponsors/schulz.webp",
+      "width": 187,
+      "height": 31,
+      "surface": "light",
+      "level": "apoio",
+      "source": "schulz_apoio.webp"
+    },
+    "segula": {
+      "file": "logos/sponsors/segula.webp",
+      "width": 480,
+      "height": 83,
+      "surface": "light",
+      "level": "ouro",
+      "source": "segula_ouro.png"
+    },
+    "trp": {
+      "file": "logos/sponsors/trp.webp",
+      "width": 480,
+      "height": 171,
+      "surface": "light",
+      "level": "ouro",
+      "source": "trp_ouro.png"
+    },
+    "vetore": {
+      "file": "logos/sponsors/vetore.webp",
+      "width": 480,
+      "height": 109,
+      "surface": "dark",
+      "level": "ouro",
+      "source": "vetore_ouro.jpg"
+    }
+  }
+}

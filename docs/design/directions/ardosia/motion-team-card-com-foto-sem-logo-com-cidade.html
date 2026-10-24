@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — movimento: Cartão de equipe · com foto, sem logo, com cidade</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title">Cartão de equipe · com foto, sem logo, com cidade</span>
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <div class="demo-stage" data-demo="team-card">
+      <section class="card team-card" data-graphic="team-card">
+        <div
+          class="team-card__photo"
+          role="img"
+          aria-label="Foto do carro 2"
+          style="background-image: url('../../../brand/frames/3.jpg')"
+        ></div>
+        <div class="team-card__identity">
+          <div class="team-card__title">
+            <span class="chip chip--large">2</span>
+            <span class="team-card__name">Baja UFMG</span>
+          </div>
+          <div class="team-card__details">
+            <span class="team-card__school">UFMG</span>
+            <span class="team-card__city">Belo Horizonte · MG</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="../../vendor/gsap/gsap.min.js"></script>
+    <script src="../../vendor/gsap/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/motionDemoCards.js"></script>
+  </body>
+</html>

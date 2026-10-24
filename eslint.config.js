@@ -10,7 +10,16 @@ import tseslint from 'typescript-eslint';
 export default defineConfig(
   {
     // Generated output and the gitignored agent scratch folder are never linted.
-    ignores: ['**/dist/', '**/coverage/', '**/test-results/', '**/playwright-report/', '.scratch/'],
+    // docs/design/vendor/ holds third-party files copied as their authors ship them (GSAP for
+    // the design's motion demos), never edited here.
+    ignores: [
+      '**/dist/',
+      '**/coverage/',
+      '**/test-results/',
+      '**/playwright-report/',
+      '.scratch/',
+      'docs/design/vendor/',
+    ],
   },
 
   eslint.configs.recommended,

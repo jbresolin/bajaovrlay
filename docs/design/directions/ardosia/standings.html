@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — standings</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section
+      class="board standings"
+      data-graphic="standings"
+      style="
+        --standings-columns: var(--column-pos) var(--chip-width) minmax(0, 1fr) var(--col-points)
+          var(--col-points) var(--col-points) var(--col-points) var(--col-points) var(--col-points)
+          var(--col-total);
+      "
+      data-page="1"
+    >
+      <header class="card board__head">
+        <img class="board__logo" src="../../../brand/logo-branca.png" alt="Baja SAE Brasil" />
+        <h1 class="board__title">Classificação geral</h1>
+        <span class="caption board__subtitle">30ª Competição Baja SAE Brasil</span>
+        <span class="board__aside">1/3 · 1º A 20º</span>
+      </header>
+      <div class="board__table">
+        <header class="pill pill--head standings-head">
+          <span class="caption standings-head__pos">POS</span>
+          <span class="caption standings-head__car">Nº</span>
+          <span class="caption standings-head__team">EQUIPE</span>
+          <span class="caption standings-head__projeto">PROJETO</span>
+          <span class="caption standings-head__dinamicas">DINÂM.</span>
+          <span class="caption standings-head__enduro">ENDURO</span>
+          <span class="caption standings-head__bonus4x4">4X4</span>
+          <span class="caption standings-head__seguranca">SEG.</span>
+          <span class="caption standings-head__penalidade">PEN.</span>
+          <span class="caption standings-head__total">TOTAL</span>
+        </header>
+        <ol class="board__rows">
+          <li class="pill row--standings" data-row data-leader>
+            <span class="row__pos">1</span>
+            <span class="chip">2</span>
+            <span class="row__team"
+              ><span class="row__team-name">Baja UFMG</span
+              ><span class="row__school">UFMG</span></span
+            >
+            <span class="row__points">246,81</span>
+            <span class="row__points">227,49</span>
+            <span class="row__points">312,5</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">921,8</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">2</span>
+            <span class="chip">1</span>
+            <span class="row__team"
+              ><span class="row__team-name">Equipe FEI Baja</span
+              ><span class="row__school">FEI</span></span
+            >
+            <span class="row__points">235,55</span>
+            <span class="row__points">157,93</span>
+            <span class="row__points">375</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">903,48</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">3</span>
+            <span class="chip">10</span>
+            <span class="row__team"
+              ><span class="row__team-name">Equipe Komiketo Baja</span
+              ><span class="row__school">UFSJ</span></span
+            >
+            <span class="row__points">234,37</span>
+            <span class="row__points">147,22</span>
+            <span class="row__points">375</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">891,59</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">4</span>
+            <span class="chip">47</span>
+            <span class="row__team"
+              ><span class="row__team-name">Pato Baja</span
+              ><span class="row__school">UTFPR-PB</span></span
+            >
+            <span class="row__points">211,96</span>
+            <span class="row__points">167,79</span>
+            <span class="row__points">375</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">889,75</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">5</span>
+            <span class="chip">5</span>
+            <span class="row__team"
+              ><span class="row__team-name">Poli Baja</span
+              ><span class="row__school">Poli</span></span
+            >
+            <span class="row__points">243,39</span>
+            <span class="row__points">138,39</span>
+            <span class="row__points">300</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−20</span>
+            <span class="row__points">0</span>
+            <span class="row__total">811,78</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">6</span>
+            <span class="chip">8</span>
+            <span class="row__team"
+              ><span class="row__team-name">Imperador</span
+              ><span class="row__school">UTFPR-CWB</span></span
+            >
+            <span class="row__points">217,27</span>
+            <span class="row__points">162,71</span>
+            <span class="row__points">287,5</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">802,48</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">7</span>
+            <span class="chip">51</span>
+            <span class="row__team"
+              ><span class="row__team-name">Sinuelo</span
+              ><span class="row__school">FAHOR</span></span
+            >
+            <span class="row__points">138,03</span>
+            <span class="row__points">128,24</span>
+            <span class="row__points">400</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−20</span>
+            <span class="row__points">0</span>
+            <span class="row__total">796,27</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">8</span>
+            <span class="chip">13</span>
+            <span class="row__team"
+              ><span class="row__team-name">Equipe Cactus Baja</span
+              ><span class="row__school">UFERSA-Mos</span></span
+            >
+            <span class="row__points">187,86</span>
+            <span class="row__points">109,29</span>
+            <span class="row__points">350</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−25</span>
+            <span class="row__points">0</span>
+            <span class="row__total">772,15</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">9</span>
+            <span class="chip">9</span>
+            <span class="row__team"
+              ><span class="row__team-name">CaraubajaSAE</span
+              ><span class="row__school">UFERSA-Car</span></span
+            >
+            <span class="row__points">133,54</span>
+            <span class="row__points">154,05</span>
+            <span class="row__points">312,5</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">735,09</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">10</span>
+            <span class="chip">17</span>
+            <span class="row__team"
+              ><span class="row__team-name">Bombaja UFSM</span
+              ><span class="row__school">UFSM</span></span
+            >
+            <span class="row__points">194,51</span>
+            <span class="row__points">168,94</span>
+            <span class="row__points">306,25</span>
+            <span class="row__points">80</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">734,7</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">11</span>
+            <span class="chip">21</span>
+            <span class="row__team"
+              ><span class="row__team-name">Equipe Parahybaja</span
+              ><span class="row__school">UFCG</span></span
+            >
+            <span class="row__points">153,21</span>
+            <span class="row__points">143,95</span>
+            <span class="row__points">281,25</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−30</span>
+            <span class="row__points">0</span>
+            <span class="row__total">698,41</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">12</span>
+            <span class="chip">3</span>
+            <span class="row__team"
+              ><span class="row__team-name">Baja de Galpão - UNISC</span
+              ><span class="row__school">UNISC</span></span
+            >
+            <span class="row__points">220,27</span>
+            <span class="row__points">54,65</span>
+            <span class="row__points">231,25</span>
+            <span class="row__points">150</span>
+            <span class="row__points">0</span>
+            <span class="row__points">0</span>
+            <span class="row__total">656,17</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">13</span>
+            <span class="chip">18</span>
+            <span class="row__team"
+              ><span class="row__team-name">Car-Kará Baja SAE</span
+              ><span class="row__school">UFRN</span></span
+            >
+            <span class="row__points">187,05</span>
+            <span class="row__points">151,11</span>
+            <span class="row__points">243,75</span>
+            <span class="row__points">80</span>
+            <span class="row__points">−20</span>
+            <span class="row__points">−25</span>
+            <span class="row__total">616,91</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">14</span>
+            <span class="chip">23</span>
+            <span class="row__team"
+              ><span class="row__team-name">CEFAST BAJA SAE</span
+              ><span class="row__school">CEFET-MG</span></span
+            >
+            <span class="row__points">186,6</span>
+            <span class="row__points">88,56</span>
+            <span class="row__points">181,25</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">591,41</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">15</span>
+            <span class="chip">28</span>
+            <span class="row__team"
+              ><span class="row__team-name">Tuffão Baja SAE</span
+              ><span class="row__school">UFF-Nit</span></span
+            >
+            <span class="row__points">177,7</span>
+            <span class="row__points">129,52</span>
+            <span class="row__points">143,75</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−20</span>
+            <span class="row__points">0</span>
+            <span class="row__total">580,97</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">16</span>
+            <span class="chip">24</span>
+            <span class="row__team"
+              ><span class="row__team-name">Baja UFSCar</span
+              ><span class="row__school">UFSCar</span></span
+            >
+            <span class="row__points">155,26</span>
+            <span class="row__points">66,85</span>
+            <span class="row__points">193,75</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">550,86</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">17</span>
+            <span class="chip">16</span>
+            <span class="row__team"
+              ><span class="row__team-name">Forja Baja</span
+              ><span class="row__school">UFF-VR</span></span
+            >
+            <span class="row__points">152,01</span>
+            <span class="row__points">64,83</span>
+            <span class="row__points">325</span>
+            <span class="row__points">—</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">526,84</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">18</span>
+            <span class="chip">6</span>
+            <span class="row__team"
+              ><span class="row__team-name">RAMPAGE BAJA UFJF</span
+              ><span class="row__school">UFJF</span></span
+            >
+            <span class="row__points">216,39</span>
+            <span class="row__points">59,92</span>
+            <span class="row__points">87,5</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−15</span>
+            <span class="row__points">0</span>
+            <span class="row__total">498,81</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">19</span>
+            <span class="chip">36</span>
+            <span class="row__team"
+              ><span class="row__team-name">Zebu Baja UFTM</span
+              ><span class="row__school">UFTM</span></span
+            >
+            <span class="row__points">141,35</span>
+            <span class="row__points">68,07</span>
+            <span class="row__points">137,5</span>
+            <span class="row__points">150</span>
+            <span class="row__points">−20</span>
+            <span class="row__points">0</span>
+            <span class="row__total">476,92</span>
+          </li>
+          <li class="pill row--standings" data-row>
+            <span class="row__pos">20</span>
+            <span class="chip">12</span>
+            <span class="row__team"
+              ><span class="row__team-name">Kaizen Piratas do Cerrado</span
+              ><span class="row__school">UnB</span></span
+            >
+            <span class="row__points">181,48</span>
+            <span class="row__points">104,84</span>
+            <span class="row__points">206,25</span>
+            <span class="row__points">0</span>
+            <span class="row__points">−30</span>
+            <span class="row__points">0</span>
+            <span class="row__total">462,57</span>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </body>
+</html>

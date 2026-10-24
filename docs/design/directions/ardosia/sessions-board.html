@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — sessions board</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="board board--narrow sessions-board" data-graphic="sessions-board">
+      <header class="card board__head">
+        <img class="board__logo" src="../../../brand/logo-branca.png" alt="Baja SAE Brasil" />
+        <h1 class="board__title">Programação do dia</h1>
+        <span class="caption board__subtitle">30ª Competição Baja SAE Brasil</span>
+        <span class="board__aside">domingo, 30 de março de 2025</span>
+      </header>
+      <ol class="board__rows">
+        <li class="pill session-row" data-row data-status="done">
+          <span class="session-row__time">07:30</span>
+          <span class="session-row__name">Abertura do box</span>
+          <span class="session-row__status" data-status="done"
+            ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Concluída">
+              <path
+                d="M3.5 10.5 8 15 16.5 5.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            ><span>Concluída</span></span
+          >
+        </li>
+        <li class="pill session-row" data-row data-status="done">
+          <span class="session-row__time">08:30</span>
+          <span class="session-row__name">Briefing das equipes</span>
+          <span class="session-row__status" data-status="done"
+            ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Concluída">
+              <path
+                d="M3.5 10.5 8 15 16.5 5.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            ><span>Concluída</span></span
+          >
+        </li>
+        <li class="pill session-row" data-row data-status="live">
+          <span class="session-row__time">09:15</span>
+          <span class="session-row__name">Alinhamento do enduro</span>
+          <span class="session-row__status" data-status="live"
+            ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Em andamento">
+              <path d="M5 3.5v13l11-6.5z" fill="currentColor" /></svg
+            ><span>Em andamento</span></span
+          >
+        </li>
+        <li class="pill session-row" data-row data-status="next">
+          <span class="session-row__time">10:00</span>
+          <span class="session-row__name">Enduro de Resistência</span>
+          <span class="session-row__status" data-status="next"
+            ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="A seguir">
+              <circle
+                cx="10"
+                cy="10"
+                r="7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              /></svg
+            ><span>A seguir</span></span
+          >
+        </li>
+        <li class="pill session-row" data-row data-status="next">
+          <span class="session-row__time">14:30</span>
+          <span class="session-row__name">Intervalo</span>
+          <span class="session-row__status" data-status="next"
+            ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="A seguir">
+              <circle
+                cx="10"
+                cy="10"
+                r="7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              /></svg
+            ><span>A seguir</span></span
+          >
+        </li>
+        <li class="pill session-row" data-row data-status="next">
+          <span class="session-row__time">16:00</span>
+          <span class="session-row__name">Cerimônia de premiação</span>
+          <span class="session-row__status" data-status="next"
+            ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="A seguir">
+              <circle
+                cx="10"
+                cy="10"
+                r="7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              /></svg
+            ><span>A seguir</span></span
+          >
+        </li>
+      </ol>
+    </section>
+  </body>
+</html>

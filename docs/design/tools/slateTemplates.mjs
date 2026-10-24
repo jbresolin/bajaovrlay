@@ -3,13 +3,16 @@
 // (placarbaja.juansalles.com.br): the same graphics, the same elements in the same order, so
 // a direction is its tokens.css, its styles.css and a few numbers (rows, cars per strip
 // page), never its own copy of this file. slateSheets.mjs draws the reference sheets with
-// these builders and slatePages.mjs assembles the pages a generatePages.mjs writes.
+// these builders and slatePages.mjs assembles the pages a generatePages.mjs writes. The
+// catalogue of pass 2 (BAJAOVRLAY-43) builds on these in slateNotices.mjs, slateCards.mjs,
+// slateBoards.mjs and slateSteps.mjs.
 import {
   escapeHtml,
   flagOrder,
   flagStateLabels,
   flagWords,
   largeIcon,
+  renderLogo,
   sample,
   statusIcons,
   statusShapeWords,
@@ -17,7 +20,8 @@ import {
 
 export { flagOrder, flagStateLabels, flagWords, largeIcon, sample, statusShapeWords };
 
-const logoPath = '../../../brand/logo-branca.png';
+/** The event logo every head shows, relative to a direction's page. */
+export const logoPath = '../../../brand/logo-branca.png';
 
 export function pageShell(direction, title, bodyHtml, script = '') {
   return `<!doctype html>
@@ -89,11 +93,14 @@ export function renderRaceClock(
 // (motion.md) is drawn there, so it never sits on top of a two-digit position.
 export function renderCompactRow(car) {
   const leader = car.position === 1 ? ' data-leader' : '';
-  return `    <li class="pill row" data-row data-status="${car.status}"${leader}>
+  // The compact tower names a team by its short name (the entity library's equipe_curto) when
+  // it has one: the column fits about sixteen caps, and full names run to thirty.
+  const teamName = car.teamShortName ?? car.teamName;
+  return `    <li class="pill row" data-row data-car="${car.carNumber}" data-status="${car.status}"${leader}>
       <span class="row__pos">${car.position}</span>
       <span class="row__cue"></span>
       <span class="row__car chip">${car.carNumber}</span>
-      <span class="row__team">${escapeHtml(car.teamName)}</span>
+      <span class="row__team">${escapeHtml(teamName)}</span>
       <span class="row__laps">${car.laps}</span>
       <span class="row__status">${statusIcons[car.status] ?? ''}</span>
     </li>`;
@@ -203,7 +210,7 @@ function selectDetailedColumns(optionalKeys) {
 function renderDetailedRow(car, columns) {
   const leader = car.position === 1 ? ' data-leader' : '';
   const cells = columns.map((column) => `      ${renderDetailedCell(column, car)}`).join('\n');
-  return `    <li class="pill row row--detailed" data-row data-status="${car.status}"${leader}>
+  return `    <li class="pill row row--detailed" data-row data-car="${car.carNumber}" data-status="${car.status}"${leader}>
 ${cells}
     </li>`;
 }
@@ -243,7 +250,7 @@ function renderStripCar(car) {
   return `    <li class="pill strip-car" data-row data-status="${car.status}"${leader}>
       <span class="strip-car__pos">${car.position}º</span>
       <span class="strip-car__car chip">${car.carNumber}</span>
-      <span class="strip-car__school">${escapeHtml(car.schoolName)}</span>
+      <span class="strip-car__school">${escapeHtml(car.teamShortName ?? car.schoolName)}</span>
     </li>`;
 }
 
@@ -253,13 +260,18 @@ ${cars.map(renderStripCar).join('\n')}
   </ol>`;
 }
 
+/** The strip's clock block (time and flag pill), shared with the message ticker. */
+export function renderStripClock(session) {
+  return `  <div class="card lower-strip__clock">
+    <span class="lower-strip__time">${session.timeRemaining}</span>
+    ${renderFlagPill(session.flag, session.flagLabel, 'lower-strip__flag')}
+  </div>`;
+}
+
 export function renderLowerStrip(cars, session, pageNumber, pageCount, { withRoot = true } = {}) {
   const root = withRoot ? ' data-graphic="lower-strip"' : '';
   return `<section class="lower-strip"${root}>
-  <div class="card lower-strip__clock">
-    <span class="lower-strip__time">${session.timeRemaining}</span>
-    ${renderFlagPill(session.flag, session.flagLabel, 'lower-strip__flag')}
-  </div>
+${renderStripClock(session)}
   <div class="lower-strip__pages">
 ${renderStripPage(cars)}
   </div>
@@ -286,6 +298,6 @@ export function renderSponsorBug(bug) {
   return `<section class="card sponsor-bug" data-graphic="sponsor-bug">
   <img class="sponsor-bug__logo" src="${logoPath}" alt="Baja SAE Brasil">
   <span class="sponsor-bug__label">${escapeHtml(bug.eventLabel)}</span>
-  <span class="sponsor-bug__sponsor"><span class="caption">${escapeHtml(bug.sponsorLine)}</span><span class="sponsor-bug__sponsor-name">${escapeHtml(bug.sponsorName)}</span></span>
+  <span class="sponsor-bug__sponsor"><span class="caption">${escapeHtml(bug.sponsorLine)}</span>${renderLogo(bug.sponsor.logo, 'sponsor-bug__sponsor-logo')}</span>
 </section>`;
 }

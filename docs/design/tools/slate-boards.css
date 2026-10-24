@@ -1,0 +1,576 @@
+/*
+ * The boards of the catalogue (BAJAOVRLAY-43, pass 2): the graphics that take the stage on
+ * the fullscreen layer. A board is a head card across its width (logo, title, a line at the
+ * right) and, under it, pills like the towers' or a body card. The wide boards span the
+ * title-safe width; the narrow ones sit centred. Structure only, against the tokens.
+ */
+
+/* ---- The board frame */
+.board {
+  position: absolute;
+  top: 54px;
+  left: 96px;
+  width: 1728px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-gap);
+}
+.board--narrow {
+  left: 50%;
+  top: 50%;
+  width: var(--board-width);
+  transform: translate(-50%, -50%);
+}
+.board__head {
+  height: var(--clock-head-height);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
+  background: var(--panel-head);
+}
+.board__logo {
+  height: var(--clock-logo-height);
+  width: auto;
+  flex: none;
+}
+.board__title {
+  font-size: var(--size-title);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.board__subtitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: var(--space-2);
+}
+.board__aside {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--size-row);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+/* A column head and its rows, 3 px apart like a tower's */
+.board__table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+}
+.board__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+}
+.board__stage {
+  position: relative;
+  height: var(--board-stage-height);
+}
+
+/* ---- Standings: the overall table, 20 rows a page, one column per event and the total in
+   green; the per-event table, 60 teams at once in three columns of 20, because each team has
+   one number there. The grid is written on the element by the generator from the columns. */
+.standings__columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--stack-gap);
+  align-items: start;
+}
+.standings-head,
+.row--standings {
+  display: grid;
+  grid-template-columns: var(--standings-columns);
+  align-items: center;
+  padding: 0 var(--row-padding);
+}
+.standings-head {
+  height: var(--head-height);
+}
+.standings-head .caption {
+  text-align: right;
+  padding-left: var(--space-2);
+}
+.standings-head .standings-head__pos,
+.standings-head .standings-head__car {
+  text-align: center;
+  padding-left: 0;
+}
+.standings-head .standings-head__team {
+  text-align: left;
+  padding-left: var(--space-3);
+}
+.row--standings {
+  height: var(--board-row-height);
+  font-size: var(--size-board);
+  line-height: 1;
+}
+.row--standings .chip {
+  font-size: var(--size-board);
+}
+.row--standings .row__team {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.row--standings .row__team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+.row--standings .row__school {
+  flex: none;
+  font-size: var(--size-caption);
+  color: var(--text-muted);
+}
+.row--standings .row__points {
+  text-align: right;
+  font-size: var(--size-detail);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.row--standings .row__total {
+  text-align: right;
+  color: var(--text-laps);
+  white-space: nowrap;
+}
+.standings--columns .row--standings {
+  height: var(--row-height);
+  font-size: var(--size-row);
+}
+.standings--columns .row--standings .chip {
+  font-size: var(--size-row);
+}
+
+/* ---- Sessions board: one pill per slot, the time big at the left, the session, the status
+   as a shape and a word at the right; the slot in progress on the denser slate. */
+.session-row {
+  height: var(--session-row-height);
+  display: grid;
+  grid-template-columns: var(--session-time-width) 1fr auto;
+  align-items: center;
+  column-gap: var(--space-4);
+  padding: 0 var(--space-5);
+}
+.session-row__time {
+  font-size: var(--size-name);
+  letter-spacing: var(--tracking-time);
+  line-height: 1;
+  padding-top: var(--glyph-nudge);
+}
+.session-row__name {
+  font-size: var(--size-title);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.session-row__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--size-flag);
+  letter-spacing: var(--tracking-flag);
+  line-height: 1;
+  padding-top: var(--glyph-nudge);
+  white-space: nowrap;
+}
+.session-row__status .status-icon {
+  width: 22px;
+  height: 22px;
+  margin-top: calc(-1 * var(--glyph-nudge));
+}
+/* The state cell carries its own state, so an old and a new cell can crossfade in their colours. */
+.session-row__status[data-status='done'] {
+  color: var(--text-muted);
+}
+.session-row[data-status='live'] {
+  background: var(--panel-head);
+}
+.session-row__status[data-status='live'] {
+  color: var(--text-laps);
+}
+.session-row__status[data-status='next'] {
+  color: var(--text);
+}
+
+/* ---- Intermission board: what is next with its countdown, the top five, the sponsors */
+/* Without the top five the next session takes the whole width, its words centred. */
+.intermission__body.intermission__body--single {
+  grid-template-columns: 1fr;
+}
+.intermission__body--single .intermission__next {
+  align-items: center;
+  text-align: center;
+}
+.intermission__body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--stack-gap);
+  align-items: stretch;
+}
+.intermission__next {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+.intermission__session {
+  font-size: var(--size-time);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.intermission__countdown {
+  font-size: var(--size-countdown-small);
+  letter-spacing: var(--tracking-time);
+  line-height: 1;
+  padding-top: var(--space-2);
+}
+.intermission__start {
+  font-size: var(--size-title);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-muted);
+}
+.intermission__top-head {
+  height: var(--head-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--row-padding) 0 var(--space-4);
+}
+.intermission__sponsors {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-5);
+}
+/* The level's heading has one width on every page, so the logos start at the same place
+   when the line turns from "PATROCÍNIO DIAMANTE" to "APOIO". */
+.intermission__sponsors .caption {
+  flex: none;
+  width: var(--sponsor-line-heading-width);
+}
+.intermission__sponsor {
+  flex: none;
+  width: var(--sponsor-logo-line-width);
+  height: var(--sponsor-logo-line-height);
+}
+
+/* ---- Countdown board: the waiting screen; the session to come and the time to its start */
+.countdown-board__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) calc(var(--space-5) + var(--space-2));
+  text-align: center;
+}
+.countdown-board__session {
+  font-size: var(--size-time);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
+}
+.countdown-board__time {
+  font-size: var(--size-countdown);
+  letter-spacing: var(--tracking-time);
+  line-height: 1;
+  padding-top: var(--space-2);
+}
+.countdown-board__start {
+  font-size: var(--size-title);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-muted);
+}
+
+/* ---- Sponsor roll, full: one level a page, up to six tiles, each a card holding the logo in
+   one box, so every plate on a page is the same size. A page with fewer tiles centres them;
+   the area keeps two rows' height, so the board (and its head) never moves between pages. */
+.sponsor-roll__grid {
+  height: calc(2 * var(--sponsor-tile-height) + var(--stack-gap));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: var(--stack-gap);
+}
+.sponsor-tile {
+  width: calc((100% - 2 * var(--stack-gap)) / 3);
+  height: var(--sponsor-tile-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sponsor-tile__logo {
+  width: var(--sponsor-tile-logo-width);
+  height: var(--sponsor-tile-logo-height);
+}
+
+/* ---- Bracket: one column per round, the matches of a round spread over the height and
+   each centred between the two it comes from; the generator writes every position and the
+   connecting lines from the rounds and matches alone. The winner's chip turns green and the
+   loser's pill dims, like a retired row. */
+.bracket__round-name {
+  position: absolute;
+  top: 0;
+  height: var(--head-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bracket__match {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+}
+.bracket-car {
+  height: var(--bracket-row-height);
+  display: grid;
+  grid-template-columns: var(--chip-width) 1fr auto;
+  align-items: center;
+  column-gap: var(--space-3);
+  padding: 0 var(--space-4);
+  font-size: var(--size-row);
+  line-height: 1;
+}
+.bracket-car__team {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.bracket-car__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+.bracket-car__school {
+  flex: none;
+  font-size: var(--size-caption);
+  color: var(--text-muted);
+}
+/* The result cell is modular: a time, a count of wins (best of N) or the winner's mark. */
+.bracket-car__result {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 2ch;
+  font-size: var(--size-detail);
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+.bracket-car__result--score {
+  font-size: var(--size-row);
+  color: var(--text);
+}
+.bracket-car__result--win .status-icon {
+  width: 22px;
+  height: 22px;
+}
+.bracket-car[data-winner] .chip,
+.bracket-fixture__side[data-winner] .chip {
+  background: var(--leader-background);
+}
+.bracket-car[data-winner] .bracket-car__result,
+.bracket-fixture__side[data-winner] .bracket-car__result {
+  color: var(--text-laps);
+}
+.bracket-car[data-loser],
+.bracket-fixture__side[data-loser] {
+  opacity: var(--status-retired-opacity);
+}
+
+/* W.O.: the winner advanced without racing. An outlined tag in the result cell, in the
+   winner's green, the same in the tree and on a board, in any round. */
+.walkover-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: var(--glyph-nudge) var(--space-2) 0;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-radius: var(--radius-chip);
+  font-size: var(--size-caption);
+  letter-spacing: var(--tracking-caption);
+  line-height: 1;
+}
+
+/* The empty slot of a bye: no chip, no team, a dashed outline and muted words, so it can
+   never be read as a car. */
+.bracket-empty {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--size-caption);
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.bracket-car--empty {
+  border: 2px dashed var(--bracket-line);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+  grid-template-columns: 1fr;
+}
+
+/* A round board: a draw sheet, two columns of match cards read down the left column then the
+   right; the gutter is wider than the gap between cards, so a row is never read across. */
+.bracket-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(var(--bracket-board-rows), auto);
+  grid-auto-flow: column;
+  gap: var(--stack-gap) var(--bracket-board-gutter);
+}
+/* A match on a board: one card, the cars facing each other across the "×", chips on the outer
+   edges and the results meeting in the middle like a score line. */
+.bracket-fixture {
+  height: var(--board-row-height);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--bracket-versus-width) minmax(0, 1fr);
+  align-items: center;
+  padding: 0 var(--space-3);
+  font-size: var(--size-row);
+  line-height: 1;
+}
+.bracket-fixture__side {
+  height: 100%;
+  display: grid;
+  align-items: center;
+  column-gap: var(--space-3);
+  min-width: 0;
+}
+.bracket-fixture__side--left {
+  grid-template-columns: var(--chip-width) minmax(0, 1fr) auto;
+}
+.bracket-fixture__side--right {
+  grid-template-columns: auto minmax(0, 1fr) var(--chip-width);
+}
+.bracket-fixture__side--right .bracket-car__team {
+  justify-content: flex-end;
+}
+.bracket-fixture__side--empty {
+  display: flex;
+  justify-content: flex-end;
+}
+.bracket-fixture__side--empty .bracket-empty {
+  height: var(--chip-height);
+  padding: 0 var(--space-3);
+  border: 2px dashed var(--bracket-line);
+  border-radius: var(--radius-chip);
+}
+.bracket-fixture__versus {
+  text-align: center;
+  font-size: var(--size-name);
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+/* On a reference sheet a match sits in the flow: the tree's column width, a board card's. */
+.sheet .bracket__match {
+  position: static;
+  width: 512px;
+}
+.sheet .bracket-fixture {
+  width: 854px;
+}
+.sheet__states {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.sheet__state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.sheet__state-forms {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+}
+.bracket__lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.bracket__lines path {
+  fill: none;
+  stroke: var(--bracket-line);
+  stroke-width: 3;
+}
+
+/* ---- Podium: three cards on one baseline, 2nd at the left, 1st in the middle and taller,
+   3rd at the right. A place not yet revealed keeps its room but is invisible, so the cards
+   already shown never move when the next one comes. */
+.podium__places {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-5);
+}
+.podium-place {
+  width: var(--podium-width);
+  min-height: var(--podium-height);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Centred in the card's height: the winner's taller card keeps its content in the middle. */
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+}
+.podium-place--1 {
+  min-height: var(--podium-height-winner);
+}
+.podium-place__logo {
+  flex: none;
+  width: var(--podium-logo-width);
+  height: var(--podium-logo-height);
+}
+.podium-place:not([data-revealed]) {
+  visibility: hidden;
+}
+.podium-place__pos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 96px;
+  padding: var(--glyph-nudge) var(--space-4) 0;
+  border-radius: var(--radius);
+  font-size: var(--size-podium-position);
+  line-height: 1;
+  color: var(--text-pos);
+}
+.podium-place--1 .podium-place__pos {
+  background: var(--leader-background);
+  color: var(--leader-text);
+}
+.podium-place__name {
+  font-size: var(--size-name);
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
+}
+.podium-place__school {
+  font-size: var(--size-detail);
+  letter-spacing: var(--tracking-caption);
+  color: var(--text-muted);
+}

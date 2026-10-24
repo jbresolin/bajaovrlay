@@ -1,10 +1,11 @@
-// Screenshots every mock-up page of one or more design directions at 1920x1080, over each
-// footage frame in docs/brand/frames/ and over plain mid-grey and near-black. Run from the
-// repo root (Playwright comes from the repo's node_modules):
+// Screenshots every mock-up page of one or more design directions at 1920x1080, over footage
+// frame 1 of docs/brand/frames/ and over plain mid-grey and near-black. Run from the repo
+// root (Playwright comes from the repo's node_modules):
 //   node docs/design/tools/screenshot.mjs ardosia           one direction
 //   node docs/design/tools/screenshot.mjs ardosia outra     several
 //   node docs/design/tools/screenshot.mjs --all             every folder under directions/
 //   node docs/design/tools/screenshot.mjs --png ardosia     lossless PNG instead of JPEG
+//   node docs/design/tools/screenshot.mjs --every-frame ardosia   over every footage frame
 //
 // The page contract: a mock-up page is 1920x1080, and its <body> (or a .stage element) paints
 // its background from the CSS custom property --stage-background, which this tool sets on
@@ -43,11 +44,16 @@ if (directionNames.length === 0) {
   process.exit(1);
 }
 
+// Frame 1 only, unless --every-frame (João's trim on PR #21): one footage frame shows a
+// graphic over the stream, grey and black show it against its two extremes, and every
+// frame over every page made the folder 60 MB.
+const wantsEveryFrame = arguments_.includes('--every-frame');
 const frameFiles = readdirSync(framesFolder)
   .filter((name) => name.endsWith('.jpg'))
+  .filter((name) => wantsEveryFrame || name === '1.jpg')
   .sort();
 
-/** Every background a page is shot over: the footage frames, then the two plain colours. */
+/** The backgrounds a page is shot over: the footage frame(s), then the two plain colours. */
 const backgrounds = [
   ...frameFiles.map((name) => ({
     name: `frame-${basename(name, '.jpg')}`,

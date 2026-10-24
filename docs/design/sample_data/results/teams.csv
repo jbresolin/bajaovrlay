@@ -1,0 +1,56 @@
+evento_id,equipe_id,escola,escola_curto,cidade,equipe,equipe_curto,estado,presente,desclassificado
+25BR,1,"Centro Universitário FEI",FEI,"São Bernardo do Campo ","Equipe FEI Baja",FEI,SP,1,0
+25BR,2,"Universidade Federal de Minas Gerais",UFMG,"Belo Horizonte","Baja UFMG","Baja UFMG",MG,1,0
+25BR,3,"Universidade de Santa Cruz do Sul",UNISC,"Santa Cruz do Sul","Baja de Galpão - UNISC","Baja de Galpão",RS,1,0
+25BR,4,"Universidade Federal de Pernambuco",UFPB,Recife,"Mangue Baja",Mangue,PE,1,0
+25BR,5,"Escola Politécnica da Universidade de São Paulo",Poli,"São Paulo","Poli Baja",Poli,SP,1,0
+25BR,6,"Universidade Federal de Juiz de Fora",UFJF,"Juiz de Fora","RAMPAGE BAJA UFJF",Rampage,MG,1,0
+25BR,7,"Pontifícia Universidade Católica do Rio de Janeiro",PUC-Rio,"Rio de Janeiro","Reptiles Baja PUC-Rio",Reptiles,RJ,1,0
+25BR,8,"Universidade Tecnológica Federal do Paraná",UTFPR-CWB,Curitiba,Imperador,Imperador,PR,1,0
+25BR,9,"Universidade Federal Rural do Sami-Árido (UFERSA)",UFERSA-Car,Caraúbas,CaraubajaSAE,Caraubaja,RN,1,0
+25BR,10,"Universidade Federal de São João del Rei",UFSJ,"São João Del Rei","Equipe Komiketo Baja",Komiketo,MG,1,0
+25BR,11,"Universidade Estadual Paulista "Júlio de Mesquita Filho" "UNESP"",UNESP-Bauru,Bauru,"PAC Baja",PAC,SP,1,0
+25BR,12,"Universidade de Brasilia - UnB",UnB,Brasília,"Kaizen Piratas do Cerrado","Piratas Cerrado",DF,1,0
+25BR,13,"Universidade Federal Rural do Semi - Árido - UFERSA",UFERSA-Mos,Mossoró,"Equipe Cactus Baja",Cactus,RN,1,0
+25BR,14,"Universidade Federal do Rio Grande do Sul",UFRGS,"Porto Alegre","Tchê Baja",Tchê,RS,1,0
+25BR,15,"Unicamp - Universidade Estadual de Campinas",UNICAMP,Campinas,"Unicamp Baja SAE",Unicamp,SP,1,0
+25BR,16,"Universidade Federal Fluminense",UFF-VR,"Volta Redonda","Forja Baja",Forja,RJ,1,0
+25BR,17,"UNIVERSIDADE FEDERAL DE SANTA MARIA",UFSM,"Santa Maria","Bombaja UFSM",Bombaja,RS,1,0
+25BR,18,"Universidade Federal do Rio Grande do Norte",UFRN,Natal,"Car-Kará Baja SAE",Car-Kará,RN,1,0
+25BR,19,"Universidade Tecnológica Federal do Paraná",UTFPR-CP,"Cornélio Procopio",ProcoBaja,Procobaja,PR,1,0
+25BR,20,"Universidade federal de Itajubá",UNIFEI,Itajubá,"Saci baja SAE UNIFEI",Saci,MG,1,0
+25BR,21,"Universidade Federal de Campina Grande - UFCG",UFCG,"Campina Grande","Equipe Parahybaja",Parahybaja,PB,1,0
+25BR,22,"EESC USP",EESC,"São Carlos","EESC USP TRACTIAN Baja",EESC,SP,1,0
+25BR,23,"Centro federal de educação tecnológica de Minas Gerais",CEFET-MG,"Belo Horizonte","CEFAST BAJA SAE",Cefast,MG,1,0
+25BR,24,"Universidade Federal de São Carlos",UFSCar,"São Carlos","Baja UFSCar",UFSCar,SP,1,0
+25BR,25,"Universidade Federal do Espírito Santo - UFES",UFES,Vitória,"Vitória Baja",Vitória,ES,1,0
+25BR,27,Facens,FACENS,Sorocaba,"Baja Mud Racing","Mud Racing",SP,1,0
+25BR,28,"Universidade Federal Fluminense",UFF-Nit,Niterói,"Tuffão Baja SAE",Tuffão,RJ,1,0
+25BR,29,UFSC,UFSC-Fln,Florianópolis,"Equipe UFSC Baja",UFSC,SC,1,0
+25BR,30,"Universidade do Estado do Rio de Janeiro",UERJ,"Nova Friburgo","Caledônia Racing Baja SAE",Caledônia,RJ,1,1
+25BR,31,"Universidade Federal do Paraná",UFPR,Curitiba,"Sagui Baja",Sagui,PR,1,0
+25BR,32,"Universidade de Pernambuco",UPE,Recife,"Corisco Baja",Corisco,PE,1,0
+25BR,33,"Instituto Federal de Educação Ciência e Tecnologia do Sudeste de MInas Gerais",IFMG,"Juiz de Fora","Corsários Baja",Corsários,MG,1,0
+25BR,34,"Universidade Federal de Lavras - UFLA",UFLA,Lavras,"Buffalo Baja - UFLA",Buffalo,MG,1,0
+25BR,35,"UNESP - Universidade Estadual Paulista",UNESP-Guara,Guaratinguetá,"Piratas do Vale","Piratas Vale",SP,1,0
+25BR,36,"Universidade Federal do Triângulo Mineiro",UFTM,Uberaba,"Zebu Baja UFTM",Zebu,MG,1,0
+25BR,37,"Universidade Federal do Rio de Janeiro",UFRJ,"Rio de Janeiro","Minerva Baja",Minerva,RJ,1,0
+25BR,38,"Instituto Federal de São Paulo",IFSP-Ser,Sertãozinho,"Tatu Baja",Tatu,SP,1,0
+25BR,39,UFSC,UFSC-Jvl,Joinville,"CTJ Baja",CTJ,SC,1,0
+25BR,40,"Universidade Tecnológica Federal do Paraná",UTFPR-PG,"Ponta Grossa","Gralha Azul",Gralha,PR,1,0
+25BR,41,"Universidade Estadual do Amazonas - UEA",UEA,Manaus,BAJAUEA,BAJAUEA,AM,1,0
+25BR,42,"Universidade São judas",USJT,Mooca,"Garra Baja",Garra,SP,1,1
+25BR,43,"Instituto Federal de Educação, Ciência e Tecnologia Fluminense",IFF,"Campos dos Goytacazes","BAJA Griffon",Griffon,RJ,1,0
+25BR,44,"Universidade Federal da Paraíba",UFPB,"João Pessoa",UFPBaja,UFPBaja,PB,1,0
+25BR,45,"Universidade Federal da Bahia",UFBA,Salvador,"Carpoeira Baja",Carpoeira,BA,1,0
+25BR,47,"Universidade Tecnológica Federal do Paraná",UTFPR-PB,"Pato Banco","Pato Baja",Pato,PR,1,0
+25BR,48,"Unileste (Centro Universitário Católica do Leste de Minas Gerais) - UBEC",UNILESTE,"Coronel Fabriciano","Baja Unileste",Unileste,MG,1,1
+25BR,49,"Universidade Federal da Grande Dourados",UFGD,Dourados,"Baja Guaicurus",Guaicurus,MS,1,0
+25BR,50,CEFET/RJ,CEFET-RJ,"Rio de Janeiro","Mud Runner","Mud Runner",RJ,1,0
+25BR,51,"Faculdade Horizontina",FAHOR,Horizontina,Sinuelo,Sinuelo,RS,1,0
+25BR,52,"Instituto Tecnológico de Aeronáutica",ITA,"São José dos Campos","ITA Baja",ITA,SP,1,0
+25BR,54,"Universidade  de Brasilia",UnB,Gama,UnBaja,UnBaja,DF,1,0
+25BR,56,"Universidade Estadual de Maringá - UEM",UEM,Maringá,"Equipe BAJA SAE UEM - Capibaja",Capibaja,PR,1,0
+25BR,57,UniFAJ,UniFAJ,Jaguariúna,Equipistão,Equipistão,SP,1,1
+25BR,58,IFPB,IFPB,Cajazeiras,CajaBaja,Caja,PB,1,0
+25BR,99,"Universidade Teste",NULL,NULL,"Teste Baja",NULL,DF,1,0

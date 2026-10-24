@@ -326,7 +326,8 @@ h1 {
   height: var(--status-icon-size);
   display: block;
 }
-[data-status='retired'] {
+[data-status='retired'],
+[data-disqualified] {
   opacity: var(--status-retired-opacity);
 }
 

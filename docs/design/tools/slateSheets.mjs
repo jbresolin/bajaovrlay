@@ -46,9 +46,18 @@ ${withoutFlag}
 </div>`;
 }
 
+// The real enduro export carries no car status, so the sheet gives three real cars from the
+// back of the order an illustrative one each: in the pit, broken down, retired.
+const illustrativeStatuses = [
+  { status: 'inPit', statusLabel: 'No box' },
+  { status: 'stopped', statusLabel: 'Quebrado' },
+  { status: 'retired', statusLabel: 'Abandonou' },
+];
+
 export function renderSheetStatus(direction) {
-  const byCar = (carNumber) => sample.positions.find((car) => car.carNumber === carNumber);
-  const statusCars = [byCar(69), byCar(65), byCar(96)];
+  const statusCars = sample.positions
+    .slice(-3)
+    .map((car, index) => ({ ...car, ...illustrativeStatuses[index] }));
   const icons = statusCars
     .map(
       (car) => `    <div class="card sheet__icon-cell">
@@ -64,7 +73,7 @@ ${icons}
   </div>
   <div class="sheet__rows">
     <div class="sheet__cell">
-      <div class="sheet__label">linhas da torre compacta · carro 69 no box, 65 quebrado, 96 abandonou (linha esmaecida)</div>
+      <div class="sheet__label">linhas da torre compacta · carro ${statusCars[0].carNumber} no box, ${statusCars[1].carNumber} quebrado, ${statusCars[2].carNumber} abandonou (linha esmaecida; situação ilustrativa, a exportação não traz)</div>
 ${renderCompactTower(statusCars, sample.session, { withRoot: false })}
     </div>
     <div class="sheet__cell">

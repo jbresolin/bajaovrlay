@@ -146,4 +146,65 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ---- The catalogue (pass 2, BAJAOVRLAY-43; README.md "Tokens added in pass 2" lists
+     these). Same naming as above: a size, a geometry or a hold per graphic that needed one. */
+  --cue-down-text: #7cb3f5; /* the "down" blue as text on slate (the chip blue is a field colour) */
+  --panel-light: rgb(255 255 255 / 0.96); /* the QR card, the one light surface */
+  --text-on-light: #111111;
+  --bracket-line: rgb(232 236 244 / 0.4); /* the bracket's connecting lines */
+  --notice-top: 186px; /* 8 px under the bug, which ends at 178 */
+  --notice-width: 420px; /* the clock's width, mirrored to the left */
+  --notice-head-height: 48px;
+  --notice-row-height: 56px;
+  --chip-large-size: 64px; /* the team card's and the podium's chip */
+  --size-chip-large: 40px;
+  --team-photo-width: 240px;
+  --team-photo-height: 160px;
+  --team-logo-size: 112px;
+  --battle-height: 72px; /* a two-line pill: name over school */
+  --battle-gap-width: 220px;
+  --qr-size: 176px;
+  --board-width: 1280px; /* the narrow boards: sessions, countdown, intermission, sponsor roll */
+  --board-stage-height: 900px; /* the stage under a wide board's head: 972 − 64 − 8 */
+  --board-row-height: 40px; /* the overall standings' rows */
+  --size-board: 30px;
+  --col-points: 120px; /* one event's points */
+  --col-total: 160px;
+  --session-row-height: 64px;
+  --session-time-width: 140px;
+  --size-countdown: 160px; /* the waiting screen's count */
+  --size-countdown-small: 96px; /* the intermission's count */
+  --size-podium-position: 72px;
+  --podium-width: 480px;
+  --podium-height: 460px;
+  --podium-height-winner: 540px;
+  --podium-logo-width: 240px; /* the team's logo crowning a podium card */
+  --podium-logo-height: 112px;
+  --bracket-row-height: 48px;
+  --bracket-board-gutter: 40px; /* between a round board's two columns, wider than a row gap */
+  --bracket-versus-width: 40px; /* the "×" between the two cars of a board's match card */
+  /* Real logos (sample_data/logos): the box each graphic gives a logo, and the light plate's
+     padding for a logo that needs one. A logo keeps its own shape inside its box. */
+  --logo-plate-padding: 6px;
+  --sponsor-logo-small-height: 34px; /* under the bug's event word */
+  --sponsor-logo-line-width: 170px; /* the intermission board's sponsor line */
+  --sponsor-logo-line-height: 52px;
+  --sponsor-line-heading-width: 210px; /* the intermission's sponsor line: its level's heading */
+  --sponsor-tile-logo-width: 340px; /* a sponsor roll tile */
+  --sponsor-tile-logo-height: 150px;
+  --sponsor-tile-height: 240px;
+  --motion-notice-hold: 8000ms; /* a fastest lap or a penalty leaves by itself after this */
+  --motion-board-hold: 10000ms; /* a standings page stays this long */
+  --motion-sponsor-hold: 5000ms; /* a sponsor, in the roll, stays this long (a level with no hold of its own) */
+  /* A sponsor page (roll, corner, intermission line) is held by its level: the higher the
+     level, the longer it stays; Prata and Apoio alike; the organiser like Ouro. */
+  --motion-sponsor-hold-diamante: 8000ms;
+  --motion-sponsor-hold-ouro: 5000ms;
+  --motion-sponsor-hold-prata: 3000ms;
+  --motion-sponsor-hold-apoio: 3000ms;
+  --motion-sponsor-hold-realizacao: 5000ms;
+  --motion-notice-min-hold: 3000ms; /* a notice stays at least this long before the next replaces it */
+  --motion-page-stagger: 15ms; /* between pieces when a page turns in place (ticker, sponsor tiles) */
+  --motion-podium-offset: 40; /* px a podium card rises when revealed: twice the usual rise */
 }

@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — movimento: Classificação · de uma prova, em colunas</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title">Classificação · de uma prova, em colunas</span>
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <div class="demo-stage" data-demo="standings-columns">
+      <section
+        class="board standings standings--columns"
+        data-graphic="standings-por-prova"
+        style="
+          --standings-columns: var(--column-pos) var(--chip-width) minmax(0, 1fr) var(--col-points);
+        "
+      >
+        <header class="card board__head">
+          <img class="board__logo" src="../../../brand/logo-branca.png" alt="Baja SAE Brasil" />
+          <h1 class="board__title">Classificação · Enduro</h1>
+          <span class="caption board__subtitle">30ª Competição Baja SAE Brasil</span>
+          <span class="board__aside">33 EQUIPES</span>
+        </header>
+        <div class="standings__columns">
+          <div class="board__table">
+            <header class="pill pill--head standings-head">
+              <span class="caption standings-head__pos">POS</span>
+              <span class="caption standings-head__car">Nº</span>
+              <span class="caption standings-head__team">EQUIPE</span>
+              <span class="caption standings-head__total">PONTOS</span>
+            </header>
+            <ol class="board__rows">
+              <li class="pill row--standings" data-row data-leader>
+                <span class="row__pos">1</span>
+                <span class="chip">51</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Sinuelo</span
+                  ><span class="row__school">FAHOR</span></span
+                >
+                <span class="row__total">400</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">2</span>
+                <span class="chip">1</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Equipe FEI Baja</span
+                  ><span class="row__school">FEI</span></span
+                >
+                <span class="row__total">375</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">2</span>
+                <span class="chip">10</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Equipe Komiketo Baja</span
+                  ><span class="row__school">UFSJ</span></span
+                >
+                <span class="row__total">375</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">2</span>
+                <span class="chip">47</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Pato Baja</span
+                  ><span class="row__school">UTFPR-PB</span></span
+                >
+                <span class="row__total">375</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">5</span>
+                <span class="chip">13</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Equipe Cactus Baja</span
+                  ><span class="row__school">UFERSA-Mos</span></span
+                >
+                <span class="row__total">350</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">6</span>
+                <span class="chip">16</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Forja Baja</span
+                  ><span class="row__school">UFF-VR</span></span
+                >
+                <span class="row__total">325</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">7</span>
+                <span class="chip">2</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Baja UFMG</span
+                  ><span class="row__school">UFMG</span></span
+                >
+                <span class="row__total">312,5</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">7</span>
+                <span class="chip">9</span>
+                <span class="row__team"
+                  ><span class="row__team-name">CaraubajaSAE</span
+                  ><span class="row__school">UFERSA-Car</span></span
+                >
+                <span class="row__total">312,5</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">9</span>
+                <span class="chip">17</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Bombaja UFSM</span
+                  ><span class="row__school">UFSM</span></span
+                >
+                <span class="row__total">306,25</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">10</span>
+                <span class="chip">5</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Poli Baja</span
+                  ><span class="row__school">Poli</span></span
+                >
+                <span class="row__total">300</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">11</span>
+                <span class="chip">8</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Imperador</span
+                  ><span class="row__school">UTFPR-CWB</span></span
+                >
+                <span class="row__total">287,5</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">12</span>
+                <span class="chip">21</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Equipe Parahybaja</span
+                  ><span class="row__school">UFCG</span></span
+                >
+                <span class="row__total">281,25</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">13</span>
+                <span class="chip">18</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Car-Kará Baja SAE</span
+                  ><span class="row__school">UFRN</span></span
+                >
+                <span class="row__total">243,75</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">14</span>
+                <span class="chip">3</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Baja de Galpão - UNISC</span
+                  ><span class="row__school">UNISC</span></span
+                >
+                <span class="row__total">231,25</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">15</span>
+                <span class="chip">12</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Kaizen Piratas do Cerrado</span
+                  ><span class="row__school">UnB</span></span
+                >
+                <span class="row__total">206,25</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">15</span>
+                <span class="chip">7</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Reptiles Baja PUC-Rio</span
+                  ><span class="row__school">PUC-Rio</span></span
+                >
+                <span class="row__total">206,25</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">17</span>
+                <span class="chip">27</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Baja Mud Racing</span
+                  ><span class="row__school">FACENS</span></span
+                >
+                <span class="row__total">200</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">18</span>
+                <span class="chip">24</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Baja UFSCar</span
+                  ><span class="row__school">UFSCar</span></span
+                >
+                <span class="row__total">193,75</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">19</span>
+                <span class="chip">23</span>
+                <span class="row__team"
+                  ><span class="row__team-name">CEFAST BAJA SAE</span
+                  ><span class="row__school">CEFET-MG</span></span
+                >
+                <span class="row__total">181,25</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">19</span>
+                <span class="chip">44</span>
+                <span class="row__team"
+                  ><span class="row__team-name">UFPBaja</span
+                  ><span class="row__school">UFPB</span></span
+                >
+                <span class="row__total">181,25</span>
+              </li>
+            </ol>
+          </div>
+          <div class="board__table">
+            <header class="pill pill--head standings-head">
+              <span class="caption standings-head__pos">POS</span>
+              <span class="caption standings-head__car">Nº</span>
+              <span class="caption standings-head__team">EQUIPE</span>
+              <span class="caption standings-head__total">PONTOS</span>
+            </header>
+            <ol class="board__rows">
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">19</span>
+                <span class="chip">33</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Corsários Baja</span
+                  ><span class="row__school">IFMG</span></span
+                >
+                <span class="row__total">181,25</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">22</span>
+                <span class="chip">32</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Corisco Baja</span
+                  ><span class="row__school">UPE</span></span
+                >
+                <span class="row__total">175</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">23</span>
+                <span class="chip">28</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Tuffão Baja SAE</span
+                  ><span class="row__school">UFF-Nit</span></span
+                >
+                <span class="row__total">143,75</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">24</span>
+                <span class="chip">36</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Zebu Baja UFTM</span
+                  ><span class="row__school">UFTM</span></span
+                >
+                <span class="row__total">137,5</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">25</span>
+                <span class="chip">6</span>
+                <span class="row__team"
+                  ><span class="row__team-name">RAMPAGE BAJA UFJF</span
+                  ><span class="row__school">UFJF</span></span
+                >
+                <span class="row__total">87,5</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">26</span>
+                <span class="chip">38</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Tatu Baja</span
+                  ><span class="row__school">IFSP-Ser</span></span
+                >
+                <span class="row__total">68,75</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">27</span>
+                <span class="chip">50</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Mud Runner</span
+                  ><span class="row__school">CEFET-RJ</span></span
+                >
+                <span class="row__total">50</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">28</span>
+                <span class="chip">19</span>
+                <span class="row__team"
+                  ><span class="row__team-name">ProcoBaja</span
+                  ><span class="row__school">UTFPR-CP</span></span
+                >
+                <span class="row__total">43,75</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">28</span>
+                <span class="chip">29</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Equipe UFSC Baja</span
+                  ><span class="row__school">UFSC-Fln</span></span
+                >
+                <span class="row__total">43,75</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">30</span>
+                <span class="chip">49</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Baja Guaicurus</span
+                  ><span class="row__school">UFGD</span></span
+                >
+                <span class="row__total">37,5</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">30</span>
+                <span class="chip">31</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Sagui Baja</span
+                  ><span class="row__school">UFPR</span></span
+                >
+                <span class="row__total">37,5</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">32</span>
+                <span class="chip">34</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Buffalo Baja - UFLA</span
+                  ><span class="row__school">UFLA</span></span
+                >
+                <span class="row__total">31,25</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">33</span>
+                <span class="chip">39</span>
+                <span class="row__team"
+                  ><span class="row__team-name">CTJ Baja</span
+                  ><span class="row__school">UFSC-Jvl</span></span
+                >
+                <span class="row__total">25</span>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="../../vendor/gsap/gsap.min.js"></script>
+    <script src="../../vendor/gsap/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/motionDemoBoards.js"></script>
+  </body>
+</html>

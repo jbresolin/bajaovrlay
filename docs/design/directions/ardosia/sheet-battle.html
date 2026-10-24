@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — sheet battle</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="sheet__title">
+        ardosia · disputa — a diferença fechando, abrindo e estável: palavra, variação com sinal e
+        forma, nunca só a cor (folha de referência, não vai ao ar)
+      </div>
+      <div class="sheet__grid--battle">
+        <div class="sheet__cell">
+          <div class="sheet__label">fechando: o carro de trás ganhou 0,7 na última volta</div>
+          <section class="battle-card">
+            <div class="pill battle-car" data-row>
+              <span class="row__pos">4</span>
+              <span class="chip">8</span>
+              <span class="battle-car__team"
+                ><span class="battle-car__name">Imperador</span
+                ><span class="battle-car__school">UTFPR-CWB</span></span
+              >
+              <span class="battle-car__laps">1 VOLTA</span>
+            </div>
+            <div class="card battle-gap">
+              <span class="battle-gap__value">+2,0</span>
+              <span class="battle-gap__trend" data-trend="closing"
+                ><svg viewBox="0 0 24 10" aria-hidden="true">
+                  <path d="M0 0l9 5-9 5z" fill="currentColor" />
+                  <path d="M24 0l-9 5 9 5z" fill="currentColor" /></svg
+                ><span class="battle-gap__trend-words">FECHANDO −0,7</span></span
+              >
+            </div>
+            <div class="pill battle-car" data-row>
+              <span class="row__pos">5</span>
+              <span class="chip">1</span>
+              <span class="battle-car__team"
+                ><span class="battle-car__name">Equipe FEI Baja</span
+                ><span class="battle-car__school">FEI</span></span
+              >
+              <span class="battle-car__laps">1 VOLTA</span>
+            </div>
+          </section>
+        </div>
+        <div class="sheet__cell">
+          <div class="sheet__label">abrindo: o carro da frente ganhou 0,7 na última volta</div>
+          <section class="battle-card">
+            <div class="pill battle-car" data-row>
+              <span class="row__pos">4</span>
+              <span class="chip">8</span>
+              <span class="battle-car__team"
+                ><span class="battle-car__name">Imperador</span
+                ><span class="battle-car__school">UTFPR-CWB</span></span
+              >
+              <span class="battle-car__laps">1 VOLTA</span>
+            </div>
+            <div class="card battle-gap">
+              <span class="battle-gap__value">+2,0</span>
+              <span class="battle-gap__trend" data-trend="opening"
+                ><svg viewBox="0 0 24 10" aria-hidden="true">
+                  <path d="M9 0 0 5l9 5z" fill="currentColor" />
+                  <path d="M15 0l9 5-9 5z" fill="currentColor" /></svg
+                ><span class="battle-gap__trend-words">ABRINDO +0,7</span></span
+              >
+            </div>
+            <div class="pill battle-car" data-row>
+              <span class="row__pos">5</span>
+              <span class="chip">1</span>
+              <span class="battle-car__team"
+                ><span class="battle-car__name">Equipe FEI Baja</span
+                ><span class="battle-car__school">FEI</span></span
+              >
+              <span class="battle-car__laps">1 VOLTA</span>
+            </div>
+          </section>
+        </div>
+        <div class="sheet__cell">
+          <div class="sheet__label">estável: a diferença não mudou</div>
+          <section class="battle-card">
+            <div class="pill battle-car" data-row>
+              <span class="row__pos">4</span>
+              <span class="chip">8</span>
+              <span class="battle-car__team"
+                ><span class="battle-car__name">Imperador</span
+                ><span class="battle-car__school">UTFPR-CWB</span></span
+              >
+              <span class="battle-car__laps">1 VOLTA</span>
+            </div>
+            <div class="card battle-gap">
+              <span class="battle-gap__value">+2,0</span>
+              <span class="battle-gap__trend" data-trend="steady"
+                ><svg viewBox="0 0 24 10" aria-hidden="true">
+                  <rect x="2" y="4" width="20" height="2" fill="currentColor" /></svg
+                ><span class="battle-gap__trend-words">ESTÁVEL</span></span
+              >
+            </div>
+            <div class="pill battle-car" data-row>
+              <span class="row__pos">5</span>
+              <span class="chip">1</span>
+              <span class="battle-car__team"
+                ><span class="battle-car__name">Equipe FEI Baja</span
+                ><span class="battle-car__school">FEI</span></span
+              >
+              <span class="battle-car__laps">1 VOLTA</span>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

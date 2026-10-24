@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — sheet notices</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="sheet__title">
+        ardosia · avisos — a melhor volta e as penalidades reais do enduro (penalizacoes.csv); e o
+        relógio com bandeira vermelha ao lado, para ver que um aviso não parece uma bandeira (folha
+        de referência, não vai ao ar)
+      </div>
+      <div class="sheet__grid--notices">
+        <div class="sheet__cell">
+          <div class="sheet__label">melhor volta</div>
+          <section class="card notice fastest-lap">
+            <header class="notice__head">
+              <span class="notice__badge notice__badge--best">MELHOR VOLTA</span>
+              <span class="caption">VOLTA 5</span>
+            </header>
+            <div class="notice__row">
+              <span class="chip">16</span>
+              <span class="notice__team"
+                ><span class="notice__team-name">Forja Baja</span
+                ><span class="notice__school">UFF-VR</span></span
+              >
+              <span class="notice__time">2:57,0</span>
+            </div>
+          </section>
+        </div>
+        <div class="sheet__cell">
+          <div class="sheet__label">bandeira amarela não respeitada (5 min)</div>
+          <section class="card notice penalty-notice" data-notice="penalty">
+            <header class="notice__head">
+              <span class="notice__badge notice__badge--warning"
+                ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Aviso">
+                  <path
+                    d="M10 2.4 18.6 17.2H1.4z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M10 7.6v4.2"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                  />
+                  <circle cx="10" cy="14.4" r="1.2" fill="currentColor" /></svg
+                ><span>PENALIDADE</span></span
+              >
+              <span class="caption">SETOR E</span>
+            </header>
+            <div class="notice__row">
+              <span class="chip">4</span>
+              <span class="notice__team"
+                ><span class="notice__team-name">FACULDADE HORIZONTINA</span></span
+              >
+            </div>
+            <div class="notice__row notice__row--reason">
+              <span class="notice__reason">Não respeitar bandeira amarela</span>
+              <span class="notice__penalty">+5 min</span>
+            </div>
+          </section>
+        </div>
+        <div class="sheet__cell">
+          <div class="sheet__label">desvio de obstáculo (2 min)</div>
+          <section class="card notice penalty-notice" data-notice="penalty">
+            <header class="notice__head">
+              <span class="notice__badge notice__badge--warning"
+                ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Aviso">
+                  <path
+                    d="M10 2.4 18.6 17.2H1.4z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M10 7.6v4.2"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                  />
+                  <circle cx="10" cy="14.4" r="1.2" fill="currentColor" /></svg
+                ><span>PENALIDADE</span></span
+              >
+              <span class="caption">SETOR F</span>
+            </header>
+            <div class="notice__row">
+              <span class="chip">12</span>
+              <span class="notice__team"
+                ><span class="notice__team-name"
+                  >UNIVERSIDADE TECNOLÓGICA FEDERAL DO PARANÁ - PATO BRANCO</span
+                ></span
+              >
+            </div>
+            <div class="notice__row notice__row--reason">
+              <span class="notice__reason">Desviar de obstáculo deliberadamente</span>
+              <span class="notice__penalty">+2 min</span>
+            </div>
+          </section>
+        </div>
+        <div class="sheet__cell">
+          <div class="sheet__label">combustível derramado (5 min)</div>
+          <section class="card notice penalty-notice" data-notice="penalty">
+            <header class="notice__head">
+              <span class="notice__badge notice__badge--warning"
+                ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Aviso">
+                  <path
+                    d="M10 2.4 18.6 17.2H1.4z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M10 7.6v4.2"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                  />
+                  <circle cx="10" cy="14.4" r="1.2" fill="currentColor" /></svg
+                ><span>PENALIDADE</span></span
+              >
+              <span class="caption">SETOR A</span>
+            </header>
+            <div class="notice__row">
+              <span class="chip">43</span>
+              <span class="notice__team"
+                ><span class="notice__team-name"
+                  >UNIVERSIDADE FEDERAL DO TRIÂNGULO MINEIRO</span
+                ></span
+              >
+            </div>
+            <div class="notice__row notice__row--reason">
+              <span class="notice__reason"
+                >Derramamento de combustível durante reabastecimento</span
+              >
+              <span class="notice__penalty">+5 min</span>
+            </div>
+          </section>
+        </div>
+        <div class="sheet__cell">
+          <div class="sheet__label">antes da largada (15 min)</div>
+          <section class="card notice penalty-notice" data-notice="penalty">
+            <header class="notice__head">
+              <span class="notice__badge notice__badge--warning"
+                ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Aviso">
+                  <path
+                    d="M10 2.4 18.6 17.2H1.4z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M10 7.6v4.2"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                  />
+                  <circle cx="10" cy="14.4" r="1.2" fill="currentColor" /></svg
+                ><span>PENALIDADE</span></span
+              >
+              <span class="caption">ANTES DA LARGADA</span>
+            </header>
+            <div class="notice__row">
+              <span class="chip">18</span>
+              <span class="notice__team"
+                ><span class="notice__team-name">INSTITUTO FEDERAL DE GOIÁS - GOIÂNIA</span></span
+              >
+            </div>
+            <div class="notice__row notice__row--reason">
+              <span class="notice__reason">Retirada do veículo do local da competição</span>
+              <span class="notice__penalty">+15 min</span>
+            </div>
+          </section>
+        </div>
+        <div class="sheet__cell">
+          <div class="sheet__label">o relógio com bandeira vermelha, para comparar</div>
+          <section class="card race-clock">
+            <header class="race-clock__head">
+              <img
+                class="race-clock__logo"
+                src="../../../brand/logo-branca.png"
+                alt="Baja SAE Brasil"
+              />
+              <h1 class="race-clock__title">Enduro de Resistência</h1>
+            </header>
+            <div class="race-clock__body">
+              <span class="race-clock__caption">TEMPO RESTANTE</span>
+              <span class="race-clock__time">1:00:00</span>
+              <span class="race-clock__laps">43 VOLTAS</span>
+            </div>
+            <div class="race-clock__flag flag-surface" data-flag="red">
+              <span class="flag-word">VERMELHA</span>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — movimento: Patrocinadores · no canto</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title">Patrocinadores · no canto</span>
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <button type="button" class="demo-controls__button" data-action="update">Atualizar</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <div class="demo-stage" data-demo="sponsor-roll-corner">
+      <section class="card sponsor-bug sponsor-roll-corner" data-graphic="sponsor-roll-corner">
+        <img class="sponsor-bug__logo" src="../../../brand/logo-branca.png" alt="Baja SAE Brasil" />
+        <span class="sponsor-bug__label">ENDURO</span>
+        <div class="sponsor-roll-corner__sponsor">
+          <span class="caption">Patrocínio Diamante</span>
+          <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+            ><img
+              class="logo__image"
+              src="../../sample_data/logos/sponsors/bosch.webp"
+              alt="Bosch"
+              width="480"
+              height="138"
+          /></span>
+        </div>
+      </section>
+    </div>
+    <template id="sponsor-1">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Diamante</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/bosch.webp"
+            alt="Bosch"
+            width="480"
+            height="138"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-2">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Diamante</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/renault.webp"
+            alt="Renault"
+            width="150"
+            height="56"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-3">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/certi.webp"
+            alt="Certi"
+            width="138"
+            height="52"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-4">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/cnh.webp"
+            alt="CNH"
+            width="480"
+            height="161"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-5">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/himix.webp"
+            alt="Himix"
+            width="480"
+            height="204"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-6">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/horse.webp"
+            alt="Horse"
+            width="150"
+            height="68"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-7">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/marcopolo.webp"
+            alt="Marcopolo"
+            width="480"
+            height="59"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-8">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/rodonunes.webp"
+            alt="Rodonunes"
+            width="480"
+            height="228"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-9">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/segula.webp"
+            alt="Segula"
+            width="480"
+            height="83"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-10">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/trp.webp"
+            alt="TRP"
+            width="480"
+            height="171"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-11">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-dark sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/vetore.webp"
+            alt="Vetore"
+            width="480"
+            height="109"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-12">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Apoio</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/criciuma.webp"
+            alt="Criciúma"
+            width="480"
+            height="101"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-13">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Apoio</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/osaki.webp"
+            alt="Osaki"
+            width="480"
+            height="168"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-14">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Apoio</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/sae4mobility.webp"
+            alt="SAE4Mobility"
+            width="480"
+            height="303"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-15">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Apoio</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/satc.webp"
+            alt="SATC"
+            width="355"
+            height="149"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-16">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Apoio</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/schulz.webp"
+            alt="Schulz"
+            width="187"
+            height="31"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-17">
+      <div class="sponsor-roll-corner__sponsor">
+        <span class="caption">Realização</span>
+        <span class="logo logo--on-light sponsor-bug__sponsor-logo"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/sae.webp"
+            alt="SAE Brasil"
+            width="422"
+            height="82"
+        /></span>
+      </div>
+    </template>
+    <script type="application/json" id="demo-config">
+      {
+        "sponsorTemplates": [
+          "sponsor-1",
+          "sponsor-2",
+          "sponsor-3",
+          "sponsor-4",
+          "sponsor-5",
+          "sponsor-6",
+          "sponsor-7",
+          "sponsor-8",
+          "sponsor-9",
+          "sponsor-10",
+          "sponsor-11",
+          "sponsor-12",
+          "sponsor-13",
+          "sponsor-14",
+          "sponsor-15",
+          "sponsor-16",
+          "sponsor-17"
+        ],
+        "sponsorLevels": [
+          "diamante",
+          "diamante",
+          "ouro",
+          "ouro",
+          "ouro",
+          "ouro",
+          "ouro",
+          "ouro",
+          "ouro",
+          "ouro",
+          "ouro",
+          "apoio",
+          "apoio",
+          "apoio",
+          "apoio",
+          "apoio",
+          "realizacao"
+        ]
+      }
+    </script>
+
+    <script src="../../vendor/gsap/gsap.min.js"></script>
+    <script src="../../vendor/gsap/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/motionDemoSponsors.js"></script>
+  </body>
+</html>

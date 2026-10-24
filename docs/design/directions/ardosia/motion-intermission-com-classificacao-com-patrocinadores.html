@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — movimento: Intervalo · com classificação, com patrocinadores</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title">Intervalo · com classificação, com patrocinadores</span>
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <div class="demo-stage" data-demo="intermission">
+      <section class="board board--narrow intermission" data-graphic="intermission-board">
+        <header class="card board__head">
+          <img class="board__logo" src="../../../brand/logo-branca.png" alt="Baja SAE Brasil" />
+          <h1 class="board__title">Intervalo</h1>
+          <span class="caption board__subtitle">30ª Competição Baja SAE Brasil</span>
+          <span class="board__aside">domingo, 30 de março de 2025</span>
+        </header>
+        <div class="intermission__body">
+          <div class="card intermission__next">
+            <span class="caption">A SEGUIR</span>
+            <span class="intermission__session">Enduro de Resistência</span>
+            <span class="intermission__countdown">23:45</span>
+            <span class="intermission__start">LARGADA ÀS 10:00</span>
+          </div>
+          <div
+            class="board__table"
+            style="
+              --standings-columns: var(--column-pos) var(--chip-width) minmax(0, 1fr)
+                var(--col-points);
+            "
+          >
+            <header class="pill pill--head intermission__top-head">
+              <span class="caption">CLASSIFICAÇÃO GERAL · 5 PRIMEIROS</span>
+            </header>
+            <ol class="board__rows">
+              <li class="pill row--standings" data-row data-leader>
+                <span class="row__pos">1</span>
+                <span class="chip">2</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Baja UFMG</span
+                  ><span class="row__school">UFMG</span></span
+                >
+                <span class="row__total">921,8</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">2</span>
+                <span class="chip">1</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Equipe FEI Baja</span
+                  ><span class="row__school">FEI</span></span
+                >
+                <span class="row__total">903,48</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">3</span>
+                <span class="chip">10</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Equipe Komiketo Baja</span
+                  ><span class="row__school">UFSJ</span></span
+                >
+                <span class="row__total">891,59</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">4</span>
+                <span class="chip">47</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Pato Baja</span
+                  ><span class="row__school">UTFPR-PB</span></span
+                >
+                <span class="row__total">889,75</span>
+              </li>
+              <li class="pill row--standings" data-row>
+                <span class="row__pos">5</span>
+                <span class="chip">5</span>
+                <span class="row__team"
+                  ><span class="row__team-name">Poli Baja</span
+                  ><span class="row__school">Poli</span></span
+                >
+                <span class="row__total">811,78</span>
+              </li>
+            </ol>
+          </div>
+        </div>
+        <div class="card intermission__sponsors" data-level="diamante">
+          <span class="caption">Patrocínio Diamante</span>
+          <span class="logo logo--on-light intermission__sponsor"
+            ><img
+              class="logo__image"
+              src="../../sample_data/logos/sponsors/bosch.webp"
+              alt="Bosch"
+              width="480"
+              height="138"
+          /></span>
+          <span class="logo logo--on-light intermission__sponsor"
+            ><img
+              class="logo__image"
+              src="../../sample_data/logos/sponsors/renault.webp"
+              alt="Renault"
+              width="150"
+              height="56"
+          /></span>
+        </div>
+      </section>
+    </div>
+    <template id="sponsor-line-1">
+      <div class="card intermission__sponsors" data-level="diamante">
+        <span class="caption">Patrocínio Diamante</span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/bosch.webp"
+            alt="Bosch"
+            width="480"
+            height="138"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/renault.webp"
+            alt="Renault"
+            width="150"
+            height="56"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-line-2">
+      <div class="card intermission__sponsors" data-level="ouro">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/certi.webp"
+            alt="Certi"
+            width="138"
+            height="52"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/cnh.webp"
+            alt="CNH"
+            width="480"
+            height="161"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/himix.webp"
+            alt="Himix"
+            width="480"
+            height="204"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-line-3">
+      <div class="card intermission__sponsors" data-level="ouro">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/horse.webp"
+            alt="Horse"
+            width="150"
+            height="68"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/marcopolo.webp"
+            alt="Marcopolo"
+            width="480"
+            height="59"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/rodonunes.webp"
+            alt="Rodonunes"
+            width="480"
+            height="228"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-line-4">
+      <div class="card intermission__sponsors" data-level="ouro">
+        <span class="caption">Patrocínio Ouro</span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/segula.webp"
+            alt="Segula"
+            width="480"
+            height="83"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/trp.webp"
+            alt="TRP"
+            width="480"
+            height="171"
+        /></span>
+        <span class="logo logo--on-dark intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/vetore.webp"
+            alt="Vetore"
+            width="480"
+            height="109"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-line-5">
+      <div class="card intermission__sponsors" data-level="apoio">
+        <span class="caption">Apoio</span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/criciuma.webp"
+            alt="Criciúma"
+            width="480"
+            height="101"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/osaki.webp"
+            alt="Osaki"
+            width="480"
+            height="168"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/sae4mobility.webp"
+            alt="SAE4Mobility"
+            width="480"
+            height="303"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-line-6">
+      <div class="card intermission__sponsors" data-level="apoio">
+        <span class="caption">Apoio</span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/satc.webp"
+            alt="SATC"
+            width="355"
+            height="149"
+        /></span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/schulz.webp"
+            alt="Schulz"
+            width="187"
+            height="31"
+        /></span>
+      </div>
+    </template>
+    <template id="sponsor-line-7">
+      <div class="card intermission__sponsors" data-level="realizacao">
+        <span class="caption">Realização</span>
+        <span class="logo logo--on-light intermission__sponsor"
+          ><img
+            class="logo__image"
+            src="../../sample_data/logos/sponsors/sae.webp"
+            alt="SAE Brasil"
+            width="422"
+            height="82"
+        /></span>
+      </div>
+    </template>
+    <script type="application/json" id="demo-config">
+      {
+        "remainingSeconds": 1425,
+        "sponsorPages": [
+          { "template": "sponsor-line-1", "level": "diamante" },
+          { "template": "sponsor-line-2", "level": "ouro" },
+          { "template": "sponsor-line-3", "level": "ouro" },
+          { "template": "sponsor-line-4", "level": "ouro" },
+          { "template": "sponsor-line-5", "level": "apoio" },
+          { "template": "sponsor-line-6", "level": "apoio" },
+          { "template": "sponsor-line-7", "level": "realizacao" }
+        ]
+      }
+    </script>
+
+    <script src="../../vendor/gsap/gsap.min.js"></script>
+    <script src="../../vendor/gsap/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/motionDemoBoards.js"></script>
+  </body>
+</html>

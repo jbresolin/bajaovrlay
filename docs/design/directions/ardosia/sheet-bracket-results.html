@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — sheet bracket results</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="sheet__title">
+        ardosia · resultados de uma disputa — na árvore (à esquerda) e numa rodada em lista (à
+        direita) (folha de referência, não vai ao ar)
+      </div>
+      <div class="sheet__states">
+        <div class="sheet__state">
+          <div class="sheet__label">tempo por carro: prova cronometrada</div>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="r1-m2">
+              <div class="pill bracket-car" data-row data-slot="a" data-winner>
+                <span class="chip">32</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Corisco Baja</span
+                  ><span class="bracket-car__school">UPE</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">1:11,3</span>
+              </div>
+              <div class="pill bracket-car" data-row data-slot="b" data-loser>
+                <span class="chip">34</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Buffalo Baja - UFLA</span
+                  ><span class="bracket-car__school">UFLA</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">1:14,9</span>
+              </div>
+            </div>
+            <div class="card bracket-fixture" data-match="r1-m2">
+              <div
+                class="bracket-fixture__side bracket-fixture__side--left"
+                data-row
+                data-slot="a"
+                data-winner
+              >
+                <span class="chip">32</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Corisco</span
+                  ><span class="bracket-car__school">UPE</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">1:11,3</span>
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div
+                class="bracket-fixture__side bracket-fixture__side--right"
+                data-row
+                data-slot="b"
+                data-loser
+              >
+                <span class="bracket-car__result bracket-car__result--time">1:14,9</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Buffalo</span
+                  ><span class="bracket-car__school">UFLA</span></span
+                >
+                <span class="chip">34</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet__state">
+          <div class="sheet__label">melhor de 3: a contagem de vitórias no lugar do tempo</div>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="r7-m1">
+              <div class="pill bracket-car" data-row data-slot="a" data-winner>
+                <span class="chip">17</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Bombaja UFSM</span
+                  ><span class="bracket-car__school">UFSM</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--score">2</span>
+              </div>
+              <div class="pill bracket-car" data-row data-slot="b" data-loser>
+                <span class="chip">9</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">CaraubajaSAE</span
+                  ><span class="bracket-car__school">UFERSA-Car</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--score">1</span>
+              </div>
+            </div>
+            <div class="card bracket-fixture" data-match="r7-m1">
+              <div
+                class="bracket-fixture__side bracket-fixture__side--left"
+                data-row
+                data-slot="a"
+                data-winner
+              >
+                <span class="chip">17</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Bombaja</span
+                  ><span class="bracket-car__school">UFSM</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--score">2</span>
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div
+                class="bracket-fixture__side bracket-fixture__side--right"
+                data-row
+                data-slot="b"
+                data-loser
+              >
+                <span class="bracket-car__result bracket-car__result--score">1</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Caraubaja</span
+                  ><span class="bracket-car__school">UFERSA-Car</span></span
+                >
+                <span class="chip">9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet__state">
+          <div class="sheet__label">vitória sem número: só a marca do vencedor</div>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="r1-m2">
+              <div class="pill bracket-car" data-row data-slot="a" data-winner>
+                <span class="chip">32</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Corisco Baja</span
+                  ><span class="bracket-car__school">UPE</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--win"
+                  ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                    <path
+                      d="M3.5 10.5 8 15 16.5 5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="pill bracket-car" data-row data-slot="b" data-loser>
+                <span class="chip">34</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Buffalo Baja - UFLA</span
+                  ><span class="bracket-car__school">UFLA</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--win"></span>
+              </div>
+            </div>
+            <div class="card bracket-fixture" data-match="r1-m2">
+              <div
+                class="bracket-fixture__side bracket-fixture__side--left"
+                data-row
+                data-slot="a"
+                data-winner
+              >
+                <span class="chip">32</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Corisco</span
+                  ><span class="bracket-car__school">UPE</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--win"
+                  ><svg class="status-icon" viewBox="0 0 20 20" role="img" aria-label="Venceu">
+                    <path
+                      d="M3.5 10.5 8 15 16.5 5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div
+                class="bracket-fixture__side bracket-fixture__side--right"
+                data-row
+                data-slot="b"
+                data-loser
+              >
+                <span class="bracket-car__result bracket-car__result--win"></span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Buffalo</span
+                  ><span class="bracket-car__school">UFLA</span></span
+                >
+                <span class="chip">34</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet__state">
+          <div class="sheet__label">W.O.: o adversário não correu (em qualquer rodada)</div>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="r1-m2">
+              <div class="pill bracket-car" data-row data-slot="a" data-winner>
+                <span class="chip">32</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Corisco Baja</span
+                  ><span class="bracket-car__school">UPE</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover"
+                  ><span class="walkover-tag">W.O.</span></span
+                >
+              </div>
+              <div class="pill bracket-car" data-row data-slot="b" data-loser>
+                <span class="chip">34</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Buffalo Baja - UFLA</span
+                  ><span class="bracket-car__school">UFLA</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover">—</span>
+              </div>
+            </div>
+            <div class="card bracket-fixture" data-match="r1-m2">
+              <div
+                class="bracket-fixture__side bracket-fixture__side--left"
+                data-row
+                data-slot="a"
+                data-winner
+              >
+                <span class="chip">32</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Corisco</span
+                  ><span class="bracket-car__school">UPE</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover"
+                  ><span class="walkover-tag">W.O.</span></span
+                >
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div
+                class="bracket-fixture__side bracket-fixture__side--right"
+                data-row
+                data-slot="b"
+                data-loser
+              >
+                <span class="bracket-car__result bracket-car__result--walkover">—</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Buffalo</span
+                  ><span class="bracket-car__school">UFLA</span></span
+                >
+                <span class="chip">34</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet__state">
+          <div class="sheet__label">W.O. sem adversário: a vaga vazia de uma chave incompleta</div>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="r1-m1">
+              <div class="pill bracket-car" data-row data-slot="a" data-winner>
+                <span class="chip">2</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Baja UFMG</span
+                  ><span class="bracket-car__school">UFMG</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover"
+                  ><span class="walkover-tag">W.O.</span></span
+                >
+              </div>
+              <div class="bracket-car bracket-car--empty" data-slot="b">
+                <span class="bracket-empty">SEM ADVERSÁRIO</span>
+              </div>
+            </div>
+            <div class="card bracket-fixture" data-match="r1-m1">
+              <div
+                class="bracket-fixture__side bracket-fixture__side--left"
+                data-row
+                data-slot="a"
+                data-winner
+              >
+                <span class="chip">2</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Baja UFMG</span
+                  ><span class="bracket-car__school">UFMG</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--walkover"
+                  ><span class="walkover-tag">W.O.</span></span
+                >
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div
+                class="bracket-fixture__side bracket-fixture__side--right bracket-fixture__side--empty"
+                data-slot="b"
+              >
+                <span class="bracket-empty">SEM ADVERSÁRIO</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet__state">
+          <div class="sheet__label">antes de decidir: "—" nos dois</div>
+          <div class="sheet__state-forms">
+            <div class="bracket__match" data-match="r1-m2">
+              <div class="pill bracket-car" data-row data-slot="a">
+                <span class="chip">32</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Corisco Baja</span
+                  ><span class="bracket-car__school">UPE</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">—</span>
+              </div>
+              <div class="pill bracket-car" data-row data-slot="b">
+                <span class="chip">34</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Buffalo Baja - UFLA</span
+                  ><span class="bracket-car__school">UFLA</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">—</span>
+              </div>
+            </div>
+            <div class="card bracket-fixture" data-match="r1-m2">
+              <div class="bracket-fixture__side bracket-fixture__side--left" data-row data-slot="a">
+                <span class="chip">32</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Corisco</span
+                  ><span class="bracket-car__school">UPE</span></span
+                >
+                <span class="bracket-car__result bracket-car__result--time">—</span>
+              </div>
+              <span class="bracket-fixture__versus">×</span>
+              <div
+                class="bracket-fixture__side bracket-fixture__side--right"
+                data-row
+                data-slot="b"
+              >
+                <span class="bracket-car__result bracket-car__result--time">—</span>
+                <span class="bracket-car__team"
+                  ><span class="bracket-car__name">Buffalo</span
+                  ><span class="bracket-car__school">UFLA</span></span
+                >
+                <span class="chip">34</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

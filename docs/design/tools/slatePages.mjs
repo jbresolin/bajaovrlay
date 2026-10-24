@@ -1,6 +1,8 @@
-// Assembles every page of a slate direction from the on-air builders (slateTemplates.mjs) and
-// the reference sheets (slateSheets.mjs): a direction's generatePages.mjs calls buildPages()
-// with its numbers and writes the result.
+// Assembles every page of a slate direction from the on-air builders (slateTemplates.mjs),
+// the reference sheets (slateSheets.mjs) and the catalogue of pass 2 (slateCataloguePages.mjs):
+// a direction's generatePages.mjs calls buildPages() with its numbers and writes the result.
+import { buildCataloguePages } from './slateCataloguePages.mjs';
+import { buildMotionDemoPages } from './slateMotionPages.mjs';
 import { renderSheetColumns, renderSheetFlags, renderSheetStatus } from './slateSheets.mjs';
 import {
   pageShell,
@@ -73,8 +75,9 @@ ${renderFlagBand(sample.session.flag, sample.session.flagLabel)}
 
 /**
  * Builds every page of one direction: a map of file name to HTML. Options: name (the folder
- * name), compactRows, detailedRows, stripCarsPerPage, and gapUnit ('s' keeps "+19,0 s",
- * 'none' writes "+19,0" for a caps-only face).
+ * name), compactRows, detailedRows, stripCarsPerPage, gapUnit ('s' keeps "+19,0 s", 'none'
+ * writes "+19,0" for a caps-only face), and the catalogue's numbers (standingsRowsPerPage,
+ * standingsRowsPerColumn, sponsorsPerPage; slateCataloguePages.mjs).
  */
 export function buildPages(options) {
   const { name, compactRows, detailedRows, stripCarsPerPage, gapUnit = 's' } = options;
@@ -126,5 +129,7 @@ export function buildPages(options) {
     'sheet-status.html': shell('sheet status', renderSheetStatus(name)),
     'sheet-columns.html': shell('sheet columns', renderSheetColumns(name)),
     'motion-demo.html': renderMotionDemo(name, options),
+    ...buildCataloguePages(options),
+    ...buildMotionDemoPages(options),
   };
 }

@@ -1,9 +1,12 @@
 /*
- * ardosia — what this direction adds to the shared slate structure (../../tools/slate-base.css):
- * one face for everything, in caps; the scoreboard's head (logo left, session word right).
- * Written against tokens.css only.
+ * ardosia — what this direction adds to the shared slate structure (../../tools/slate-base.css
+ * and, since pass 2, slate-cards.css and slate-boards.css): one face for everything, in caps;
+ * the scoreboard's head (logo left, session word right). Written against tokens.css only.
  */
 @import url('../../tools/slate-base.css');
+@import url('../../tools/slate-cards.css');
+@import url('../../tools/slate-boards.css');
+@import url('../../tools/slate-demo.css');
 
 /* One face, Bebas Neue, which has no lowercase: everything on the page is set in caps, so no
    word ever falls back to another face. The gap unit is therefore dropped in the detailed

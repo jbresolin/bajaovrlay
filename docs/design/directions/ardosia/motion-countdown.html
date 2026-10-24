@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ardosia — movimento: Contagem regressiva · cartão (camada do relógio)</title>
+    <link rel="stylesheet" href="../../fonts/fonts.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <nav class="demo-controls" aria-label="Controles da demonstração">
+      <a class="demo-controls__back" href="motion-catalogo.html">Catálogo</a>
+      <span class="demo-controls__title">Contagem regressiva · cartão (camada do relógio)</span>
+      <button type="button" class="demo-controls__button" data-action="enter">Entrar</button>
+      <button type="button" class="demo-controls__button" data-action="exit">Sair</button>
+      <span class="demo-controls__status" id="demo-status" role="status"></span>
+    </nav>
+    <div class="demo-stage" data-demo="countdown">
+      <section class="card race-clock race-clock--no-flag countdown" data-graphic="countdown">
+        <header class="race-clock__head">
+          <img
+            class="race-clock__logo"
+            src="../../../brand/logo-branca.png"
+            alt="Baja SAE Brasil"
+          />
+          <h1 class="race-clock__title">Enduro de Resistência</h1>
+        </header>
+        <div class="race-clock__body">
+          <span class="race-clock__caption">LARGADA EM</span>
+          <span class="race-clock__time">23:45</span>
+          <span class="race-clock__laps countdown__start">ÀS 10:00</span>
+        </div>
+      </section>
+    </div>
+
+    <script type="application/json" id="demo-config">
+      { "remainingSeconds": 1425 }
+    </script>
+
+    <script src="../../vendor/gsap/gsap.min.js"></script>
+    <script src="../../vendor/gsap/CustomEase.min.js"></script>
+    <script src="../../tools/motionDemoCore.js"></script>
+    <script src="../../tools/motionDemoCards.js"></script>
+  </body>
+</html>
