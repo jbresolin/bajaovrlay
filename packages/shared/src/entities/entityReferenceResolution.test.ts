@@ -12,7 +12,8 @@
  *   - Car 42's team name, a person's role, a sponsor's roll weight and a slot's start are
  *     read as stored.
  *   - Team 42's logo gives the URL /media/<mediaId>, and its choice of the light plate
- *     (logoOnLightPlate, BAJAOVRLAY-24) gives yes.
+ *     (logoOnLightPlate, BAJAOVRLAY-24) gives yes; so do the master sponsor's logo and its
+ *     own plate choice (BAJAOVRLAY-23), which the sponsor bug reads.
  *   - A record that is not in the library is unresolvable, with a pt-BR sentence naming
  *     the car, or for a person, sponsor or slot saying in words that it was deleted:
  *     their ids are UUIDs that tell the operator nothing (gate 2 of PR #23).
@@ -26,7 +27,11 @@
 import { describe, expect, it } from 'vitest';
 
 import type { EntityFieldValue } from './entityFieldValue.js';
-import { buildLibraryOfTheRaceWeekend, logoOfTeam42MediaId } from './entityLibrary.testSupport.js';
+import {
+  buildLibraryOfTheRaceWeekend,
+  logoOfTeam42MediaId,
+  logoOfTheMasterSponsorMediaId,
+} from './entityLibrary.testSupport.js';
 import { resolveEntityReferenceAgainstLibrary } from './entityReferenceResolution.js';
 
 describe('resolveEntityReferenceAgainstLibrary', () => {
@@ -92,6 +97,28 @@ describe('resolveEntityReferenceAgainstLibrary', () => {
         attribute: 'logoOnLightPlate',
       },
       expected: true,
+    },
+    // The sponsor's own choice (BAJAOVRLAY-23): the bug puts its logo on the light plate.
+    {
+      name: "reads the master sponsor's choice of the light plate for its logo",
+      reference: {
+        kind: 'entity',
+        entityType: 'sponsor',
+        sponsorId: 'patrocinador-master',
+        attribute: 'logoOnLightPlate',
+      },
+      expected: true,
+    },
+    // The sponsor's logo, as the bug's sponsor cell draws it.
+    {
+      name: "gives the master sponsor's logo as its /media URL",
+      reference: {
+        kind: 'entity',
+        entityType: 'sponsor',
+        sponsorId: 'patrocinador-master',
+        attribute: 'logoUrl',
+      },
+      expected: `/media/${logoOfTheMasterSponsorMediaId}`,
     },
   ];
 

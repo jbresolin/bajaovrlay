@@ -158,6 +158,13 @@ const attributesByEntityType: Record<EntityType, EntityAttribute[]> = {
       recordFieldKey: 'logoMediaId',
       isOptional: true,
     },
+    {
+      attributeKey: 'logoOnLightPlate',
+      label: sponsorLabels.logoOnLightPlate,
+      valueType: 'boolean',
+      recordFieldKey: 'logoOnLightPlate',
+      isOptional: true,
+    },
   ],
   scheduleSlot: [
     {

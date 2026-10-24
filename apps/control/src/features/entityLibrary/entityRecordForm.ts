@@ -114,6 +114,12 @@ const formFieldsByEntityType: Record<EntityType, EntityFormField[]> = {
       fieldKind: 'image',
       isOptional: true,
     },
+    {
+      recordFieldKey: 'logoOnLightPlate',
+      label: sponsorLabels.logoOnLightPlate,
+      fieldKind: 'yesNo',
+      isOptional: true,
+    },
   ],
   scheduleSlot: [
     {

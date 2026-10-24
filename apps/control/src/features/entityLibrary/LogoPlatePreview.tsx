@@ -5,10 +5,11 @@ import { ptBR } from '@/i18n/ptBR';
 const texts = ptBR.entityLibrary.logoPlate;
 
 /**
- * A team's logo twice, side by side: on the on-air panel's slate as it is, and on the
- * light plate the team card puts it on when "Logo sobre placa clara" is ticked
- * (BAJAOVRLAY-24). A dark logo, or one on its own white box, reads badly on the slate and
- * well on the plate; seeing both is how the operator decides, since nothing detects it.
+ * A team's or a sponsor's logo twice, side by side: on the on-air panel's slate as it is,
+ * and on the light plate the team card or the sponsor bug puts it on when "Logo sobre
+ * placa clara" is ticked (BAJAOVRLAY-24, and for sponsors BAJAOVRLAY-23). A dark logo, or
+ * one on its own white box, reads badly on the slate and well on the plate; seeing both is
+ * how the operator decides, since nothing detects it.
  * The two surfaces are the control page's `on-air-panel` and `on-air-plate` tokens
  * (index.css), stand-ins for the theme's `--panel-base` and `--panel-light`.
  */
