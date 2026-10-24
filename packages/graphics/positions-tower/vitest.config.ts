@@ -17,10 +17,9 @@ export default defineConfig({
     name: 'positions-tower',
     // jsdom gives the web component a document to live in; the pure modules ignore it.
     environment: 'jsdom',
-    // One VM context per file in reused workers: jsdom loads once per worker, and each file
-    // still gets a fresh global scope. Why, and the memory limit: apps/control/vitest.config.ts.
-    pool: 'vmThreads',
-    vmMemoryLimit: '512MB',
+    // The default pool, not vmThreads like apps/control: with files sharing a VM worker the
+    // graphics' GSAP and Lit globals leaked between them and a race-clock test failed 6 runs
+    // in 10 on 2 cores (gate 2 of PR #24); these projects take only seconds anyway.
     // Only unit tests; the Playwright suite in e2e/ runs with `pnpm test:e2e`.
     include: ['src/**/*.test.ts'],
     // A test that fakes requestAnimationFrame or FontFace never leaks into the next one.

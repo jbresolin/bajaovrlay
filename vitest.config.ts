@@ -7,7 +7,7 @@ const isRunningInCI = Boolean(process.env.CI);
 // (scripts/verifySteps.js), and there the workers must stay capped.
 const isRunningOnGitHubsRunner = process.env.GITHUB_ACTIONS === 'true';
 // Four at most off the runner. A vmThreads worker grows to about 512 MB before it is
-// replaced (vmMemoryLimit in the jsdom projects), and WSL gets half the host's RAM. On a
+// replaced (vmMemoryLimit in apps/control), and WSL gets half the host's RAM. On a
 // 32-thread machine 32 workers peaked at 10 GB (27 s) and four at 4,3 GB (53 s).
 const mostWorkersOffTheRunner = Math.min(availableParallelism(), 4);
 
