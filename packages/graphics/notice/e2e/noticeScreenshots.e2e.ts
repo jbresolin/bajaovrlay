@@ -26,9 +26,8 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/notice test:e2e --update-snapshots`.
  */
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
 import { expect, type Page, test } from '@playwright/test';
-
-import { buildPreviewAddressWithData } from './previewAddress.js';
 
 /** Opens the preview with the data, waits for the play-in to finish and for the font. */
 async function openPreviewOnAir(page: Page, noticeData: Record<string, unknown>): Promise<void> {

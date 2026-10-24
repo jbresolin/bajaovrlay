@@ -39,9 +39,9 @@
  * What these tests deliberately do not cover:
  *   - Pixel looks; positionsTowerScreenshots.e2e.ts covers the end states.
  */
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
 import { expect, type Page, test } from '@playwright/test';
 
-import { buildPreviewAddressWithData } from './previewAddress.js';
 import { readEnduroSampleEntries, type SampleEntry, swapCarsAtPositions } from './sampleEntries.js';
 import { placeTokenOverridesBeforeTheGraphicLoads } from './tokenOverrides.js';
 

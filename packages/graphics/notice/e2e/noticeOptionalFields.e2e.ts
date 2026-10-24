@@ -20,9 +20,8 @@
  * What these tests deliberately do not cover:
  *   - The complete cards; noticeScreenshots.e2e.ts pins both variants with every field.
  */
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
 import { expect, type Page, test } from '@playwright/test';
-
-import { buildPreviewAddressWithData } from './previewAddress.js';
 
 /** Opens the preview with the data, waits for the play-in to finish and for the font. */
 async function openPreviewOnAir(page: Page, noticeData: Record<string, unknown>): Promise<void> {

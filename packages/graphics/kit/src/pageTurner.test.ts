@@ -1,9 +1,11 @@
 /**
- * Page turner (packages/graphics/positions-tower)
+ * Page turner (packages/graphics/kit; moved from positions-tower, which the tests below
+ * still speak of, in BAJAOVRLAY-24 so the standings can share it)
  *
  * What this module is for:
  *   While the tower is on air with pages cycling, a timer turns the page every
- *   `--motion-strip-hold` (7 s in Ardósia). The turner owns that timer: start it, and
+ *   `--motion-strip-hold` (7 s in Ardósia; the standings use `--motion-board-hold`).
+ *   The turner owns that timer: start it, and
  *   after each hold it asks for a turn and waits for the turn to finish before holding
  *   again; stop it, and the pending hold is cancelled. A timer that survived stop or
  *   dispose would keep turning pages of a tower that is no longer on air.

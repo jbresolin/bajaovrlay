@@ -10,6 +10,9 @@ reading at its README.md, which also says how to copy it.
 the template for the next one with rows.
 `notice/` is the card under the bug for a fastest lap or a race control notice, the first
 graphic with two variants in one manifest (`variant`) and an on-air hold left to the server.
+`kit/` (`@bajaovrlay/graphics-kit`) is not a graphic: it holds what the graphics share (the OGraf
+types, the play step rule, the page turner, timeline playback, the preview page's controls, the
+manifest validator for tests), bundled into each graphic by Vite; its README lists what is there.
 Every value a graphic draws with comes from the
 theme (`packages/theme`): tokens on the renderer page's `:root`, read as `var(--token)`
 inside the shadow root, never a colour or a size of the graphic's own.

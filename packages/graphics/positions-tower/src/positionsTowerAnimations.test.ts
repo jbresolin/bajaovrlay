@@ -28,6 +28,7 @@
  *   - What the animations look like; the Playwright tests watch them in Chromium.
  *   - Reading and parsing the tokens; packages/theme tests readMotionTokens.
  */
+import { playTimelineToTheEnd } from '@bajaovrlay/graphics-kit/timelinePlayback';
 import { gsap } from 'gsap';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
@@ -38,7 +39,6 @@ import {
   buildRowsOutTimeline,
   buildStopOutTimeline,
   buildUpdateTimeline,
-  playTimelineToTheEnd,
 } from './positionsTowerAnimations.js';
 import {
   ardosiaMotionTokenDeclarations,

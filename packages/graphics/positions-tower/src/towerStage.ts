@@ -7,6 +7,8 @@
  * to animate. The component's tests (positions-tower.updateAction.test.ts) drive the
  * stage through the component; the view's tests cover the DOM writes.
  */
+import { finishTimelineAtOnce } from '@bajaovrlay/graphics-kit/timelinePlayback';
+
 import {
   buildCueHoldTimeline,
   buildPlayInTimeline,
@@ -14,7 +16,6 @@ import {
   buildRowsOutTimeline,
   buildStopOutTimeline,
   buildUpdateTimeline,
-  finishTimelineAtOnce,
   placePillsOffAir,
   type TowerTimeline,
 } from './positionsTowerAnimations.js';

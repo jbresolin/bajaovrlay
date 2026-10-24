@@ -6,16 +6,14 @@
  * towerStage (the page on air and its rows, moved in place and never rebuilt, on top of
  * positionsTowerView and towerRows), towerPageTurns (a turn and what arrived during it:
  * nothing sent during a turn is lost), towerPages (which cars are on which page),
- * pageTurner (the hold between pages), positionsTowerAnimations (GSAP timelines from the
- * theme's motion tokens), towerLayoutTokens (rows per page and the page hold from the
- * theme), playSteps, and the theme's own font wait (`@bajaovrlay/theme/fonts`).
+ * positionsTowerAnimations (GSAP timelines from the theme's motion tokens),
+ * towerLayoutTokens (rows per page and the page hold from the theme), the theme's own
+ * font wait (`@bajaovrlay/theme/fonts`), and from the graphics kit pageTurner (the hold
+ * between pages), playSteps and timelinePlayback.
  *
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
-import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
-import { LitElement } from 'lit';
-
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -25,14 +23,17 @@ import type {
   OGrafReturnPayload,
   OGrafStopActionParams,
   OGrafUpdateActionParams,
-} from './ografGraphicTypes.js';
-import { createPageTurner, type PageTurner } from './pageTurner.js';
-import { choosePlayActionTarget } from './playSteps.js';
+} from '@bajaovrlay/graphics-kit/ografGraphicTypes';
+import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
+import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
-  type TowerTimeline,
-} from './positionsTowerAnimations.js';
+} from '@bajaovrlay/graphics-kit/timelinePlayback';
+import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
+import { LitElement } from 'lit';
+
+import { type TowerTimeline } from './positionsTowerAnimations.js';
 import {
   haveColumnsChanged,
   mergePartialUpdateIntoPositionsTowerData,

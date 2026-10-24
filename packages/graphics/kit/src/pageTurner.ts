@@ -1,11 +1,12 @@
 /**
- * The timer that turns the tower's pages while it is on air with pages cycling: hold,
- * turn, hold again. The hold is read anew before every wait so the theme's
- * `--motion-strip-hold` is followed, and a turn is awaited before the next hold so one
- * turn's animation is never cut by the next. A turn that fails does not stop the holds:
- * a tower stuck on one page for the rest of the stream would be the worse failure. The
- * timer is local to the graphic: the program page and the preview page each turn their
- * own pages (decision 15).
+ * The timer that turns a graphic's pages while it is on air with pages cycling (the
+ * positions tower, the standings): hold, turn, hold again. The hold is read anew before
+ * every wait so the theme's hold token (`--motion-strip-hold`, `--motion-board-hold`) is
+ * followed, and a turn is awaited before the next hold so one turn's animation is never
+ * cut by the next. A turn that fails does not stop the holds: a board stuck on one page
+ * for the rest of the stream would be the worse failure. The timer is local to the
+ * graphic: the program page and the preview page each turn their own pages (decision 15
+ * of BAJAOVRLAY-22).
  */
 
 /** What the turner needs: what a turn is, how long to hold, and how to book and cancel waits. */

@@ -1,6 +1,6 @@
 /**
- * The OGraf v1 rule for which step `playAction` goes to. Written out on its own so every
- * graphic copied from this one keeps the rule, whatever its number of steps.
+ * The OGraf v1 rule for which step `playAction` goes to. Written out once, in the kit, so
+ * every graphic keeps the same rule, whatever its number of steps.
  */
 
 /** What playAction was asked, plus where the graphic is now. */

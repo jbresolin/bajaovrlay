@@ -26,9 +26,8 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/race-clock test:e2e --update-snapshots`.
  */
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
 import { expect, type Page, test } from '@playwright/test';
-
-import { buildPreviewAddressWithData } from './previewAddress.js';
 
 const flagStateScenarios = [
   // Before the start: neutral band, the clock still at zero, no laps yet.

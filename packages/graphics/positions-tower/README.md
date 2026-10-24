@@ -8,7 +8,7 @@ per visible car, reused across updates; the look comes from the theme alone (`pa
 Start at `positions-tower.ograf.json` (what a renderer and the control page read) and
 `src/positions-tower.ts` (the OGraf lifecycle; it wires `positionsTowerModel`, `towerStage` on
 `positionsTowerView` and `towerRows`, `towerPageTurns` (a turn and what arrived during it),
-`towerPages`, `pageTurner`, `positionsTowerAnimations`, `towerLayoutTokens`, `towerText`, `ptBR`).
+`towerPages`, the kit's `pageTurner`, `positionsTowerAnimations`, `towerLayoutTokens`, `towerText`, `ptBR`).
 
 Preview: `pnpm --filter @bajaovrlay/positions-tower dev`, then http://localhost:5177/preview.html
 (add `?data=<url-encoded JSON>`). Tests: `test` (unit) and `test:e2e` (Playwright on the built

@@ -1,8 +1,8 @@
 /**
- * The parts of the OGraf v1 Graphic interface this graphic uses, restated from the
+ * The parts of the OGraf v1 Graphic interface the graphics use, restated from the
  * informative TypeScript definitions (github.com/ebu/ograf, v1/typescript-definitions,
  * src/apis/graphicsAPI.ts and src/definitions/types.ts). Restated rather than installed
- * to keep a dependency out of the graphic; vendor-specific `v_*` fields are left out.
+ * to keep a dependency out of every graphic; vendor-specific `v_*` fields are left out.
  */
 
 /** What an OGraf action resolves to when it answers: an HTTP-like status, 2xx for success. */
@@ -58,8 +58,8 @@ export type OGrafCustomActionParams = {
  *
  * Every action may also resolve with nothing (`void`). The specification says: "If the
  * returned Promise resolves to `undefined`, it MUST be treated as a `{ statusCode: 200 }`."
- * The notice itself always answers with a status; the `void` is here so this copy of
- * the contract says what the specification says.
+ * Every BajaOvrLay graphic always answers with a status; the `void` is here so the contract
+ * says what the specification says.
  */
 export interface OGrafGraphic {
   load: (params: OGrafLoadParams) => Promise<OGrafReturnPayload | void>;

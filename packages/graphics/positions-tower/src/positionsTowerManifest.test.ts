@@ -34,11 +34,13 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
+import {
+  createOGrafSchemaValidator,
+  ografManifestSchema,
+} from '@bajaovrlay/graphics-kit/ografSchemaValidator';
 import { describe, expect, it } from 'vitest';
 
-import ografManifestSchema from '../ograf-schema/graphics/schema.json';
 import positionsTowerManifest from '../positions-tower.ograf.json';
-import { createOGrafSchemaValidator } from './ografSchemaValidator.testSupport.js';
 
 /**
  * The text of packages/theme/ardosia/tokens.css, found through the theme package's own

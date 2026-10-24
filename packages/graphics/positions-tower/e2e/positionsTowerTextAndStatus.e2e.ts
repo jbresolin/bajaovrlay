@@ -23,9 +23,8 @@
  * What these tests deliberately do not cover:
  *   - Pixel looks; positionsTowerScreenshots.e2e.ts covers them.
  */
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
 import { expect, type Page, test } from '@playwright/test';
-
-import { buildPreviewAddressWithData } from './previewAddress.js';
 
 /** Opens the preview with the given tower data and waits for the play-in to finish. */
 async function openPreviewWithData(page: Page, towerData: Record<string, unknown>): Promise<void> {

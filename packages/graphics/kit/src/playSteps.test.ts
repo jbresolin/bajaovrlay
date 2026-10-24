@@ -1,12 +1,12 @@
 /**
- * Choosing the step for playAction (packages/graphics/race-clock)
+ * Choosing the step for playAction (packages/graphics/kit)
  *
  * What this module is for:
  *   OGraf graphics are built from steps. `playAction` either jumps to a step (`goto`) or
  *   moves by some steps (`delta`, 1 by default), and a target past the last step means
- *   "go to the end", i.e. take the graphic off air. The race clock has one step, but
- *   every later graphic copies this file, so the rule from the OGraf v1 spec is written
- *   out once here.
+ *   "go to the end", i.e. take the graphic off air. Every graphic so far has one step,
+ *   but one with more steps needs the same rule, so the OGraf
+ *   v1 spec is written out once here, in the kit every graphic shares.
  *
  * What these tests prove:
  *   - From the start (nothing on air), a plain play shows step 0.
@@ -23,7 +23,7 @@ import { choosePlayActionTarget } from './playSteps.js';
 
 const playTargetScenarios = [
   {
-    // The everyday case: the operator takes the clock to air.
+    // The everyday case: the operator takes the graphic to air.
     name: 'shows step 0 when played from the start',
     request: { currentStep: undefined, stepCount: 1 },
     expected: { outcome: 'showStep', step: 0 },

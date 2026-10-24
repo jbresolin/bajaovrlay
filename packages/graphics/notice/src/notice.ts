@@ -18,16 +18,29 @@
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
+import type {
+  OGrafCustomActionParams,
+  OGrafGraphic,
+  OGrafLoadParams,
+  OGrafPlayActionParams,
+  OGrafPlayActionReturnPayload,
+  OGrafReturnPayload,
+  OGrafStopActionParams,
+  OGrafUpdateActionParams,
+} from '@bajaovrlay/graphics-kit/ografGraphicTypes';
+import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import {
+  finishTimelineAtOnce,
+  playTimelineToTheEnd,
+} from '@bajaovrlay/graphics-kit/timelinePlayback';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
 import {
   buildPlayInTimeline,
   buildStopOutTimeline,
-  finishTimelineAtOnce,
   type NoticeTimeline,
   placePanelOffAir,
-  playTimelineToTheEnd,
 } from './noticeAnimations.js';
 import {
   mergePartialUpdateIntoNoticeData,
@@ -41,17 +54,6 @@ import {
   renderNoticeTemplate,
   writeNoticeData,
 } from './noticeView.js';
-import type {
-  OGrafCustomActionParams,
-  OGrafGraphic,
-  OGrafLoadParams,
-  OGrafPlayActionParams,
-  OGrafPlayActionReturnPayload,
-  OGrafReturnPayload,
-  OGrafStopActionParams,
-  OGrafUpdateActionParams,
-} from './ografGraphicTypes.js';
-import { choosePlayActionTarget } from './playSteps.js';
 import { ptBR } from './ptBR.js';
 
 /** Must match "stepCount" in notice.ograf.json: play shows the notice, stop hides it. */
