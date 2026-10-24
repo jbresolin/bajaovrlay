@@ -2,6 +2,7 @@ import { type BindableValueType, findBindablePath } from '../dataShapes/bindable
 import type { Graphic } from '../slices/graphic.js';
 import type { BindingFieldValue } from './bindingFieldValue.js';
 import { findProblemInBinding, findValueTypeOfBinding } from './bindingProblems.js';
+import { doesListFitArrayField, listValueTypes } from './listItemKeys.js';
 import { ptBRBindings } from './ptBRBindings.js';
 
 /**
@@ -90,7 +91,8 @@ export function findClockFieldKeysByRoleInDataSchema(
 /**
  * Lists the value types a binding may give to one field of a graphic, read from the
  * field's JSON Schema `type`: text (and the flag) for a string, whole numbers for an
- * integer, any number for a number, yes/no for a boolean, a whole list for an array.
+ * integer, any number for a number, yes/no for a boolean, and for an array the whole
+ * lists whose elements always carry what its `items.required` names (listItemKeys.ts).
  * The clock group goes on the field with the role clockTime of a graphic that marks all
  * four clock roles, and on no other. An object field, or one the schema does not
  * declare, takes nothing.
@@ -113,7 +115,7 @@ export function listValueTypesThatFitDataSchemaField(
   if (schemaProperty === undefined) {
     return [];
   }
-  const valueTypes = listValueTypesOfJsonSchemaType(schemaProperty.type);
+  const valueTypes = listValueTypesOfSchemaProperty(schemaProperty);
   const clockFieldKeys = findClockFieldKeysByRoleInDataSchema(dataSchema);
   const isTheClockTimeOfAWholeClock = clockFieldKeys?.clockTime === fieldKey;
   if (isTheClockTimeOfAWholeClock) {
@@ -122,9 +124,14 @@ export function listValueTypesThatFitDataSchemaField(
   return valueTypes;
 }
 
-/** The value types one JSON Schema `type` takes; nothing for an object or an unknown type. */
-function listValueTypesOfJsonSchemaType(jsonSchemaType: unknown): BindableValueType[] {
-  switch (jsonSchemaType) {
+/**
+ * The value types one property of a data schema takes, by its JSON Schema `type`; an
+ * array takes the whole lists that fit its items; an object or an unknown type nothing.
+ */
+function listValueTypesOfSchemaProperty(
+  schemaProperty: Record<string, unknown>,
+): BindableValueType[] {
+  switch (schemaProperty.type) {
     case 'string':
       return ['text', 'stateEnum'];
     case 'integer':
@@ -134,13 +141,7 @@ function listValueTypesOfJsonSchemaType(jsonSchemaType: unknown): BindableValueT
     case 'boolean':
       return ['boolean'];
     case 'array':
-      return [
-        'positionsEntries',
-        'standingsEntries',
-        'standingsScoreParts',
-        'bracketsRounds',
-        'incidentsEntries',
-      ];
+      return listValueTypes.filter((listType) => doesListFitArrayField(listType, schemaProperty));
     default:
       return [];
   }

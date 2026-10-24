@@ -67,9 +67,11 @@ describe('listValueTypesThatFitGraphicField', () => {
       fieldKey: 'running',
       expectedTypes: ['boolean'],
     },
-    // A list field takes any of the whole lists; the take checks the elements.
+    // A list field that requires nothing of its elements (this stand-in's) takes any of
+    // the whole lists; one with items.required takes only those that carry them
+    // (listItemKeys.test.ts).
     {
-      name: 'the tower list takes the five whole lists',
+      name: 'a list field that requires nothing takes the five whole lists',
       graphic: buildPositionsTowerGraphic(),
       fieldKey: 'entries',
       expectedTypes: [
