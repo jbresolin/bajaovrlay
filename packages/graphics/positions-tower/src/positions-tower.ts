@@ -251,6 +251,16 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     return okAnswer;
   }
 
+  /**
+   * Lit's hook for the element leaving the page: the page timer stops, so a layer a
+   * renderer removed without dispose never goes on turning pages. Not restarted if the
+   * element comes back: a renderer loads a new element for a new layer.
+   */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.pageTurner.stop();
+  }
+
   /** OGraf customAction: the tower has none, so every id is unknown. */
   async customAction(params: OGrafCustomActionParams): Promise<OGrafReturnPayload> {
     return buildRefusalAnswer(404, ptBR.actionProblems.unknownCustomAction(params.id));
