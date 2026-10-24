@@ -19,6 +19,8 @@
  *     or one above a ranked team, is refused, and a team that is not disqualified must
  *     have a rank.
  *   - Tied teams share a rank, also at the top.
+ *   - Standings with no team, with disqualified teams only, or with an empty list of parts
+ *     pass.
  *   - Old payloads that carry `pointsByEvent` (the field this replaced) still pass, with
  *     the field dropped: old recordings must replay.
  *
@@ -138,6 +140,24 @@ const acceptedScenarios = [
         points: 891.59,
       },
     ]),
+  },
+  {
+    // Before the first ranked result, every team listed may be disqualified.
+    name: 'accepts standings whose only teams are disqualified',
+    payload: buildOverallStandings([buildCaledoniaDisqualified()]),
+  },
+  {
+    // A source that has no team yet (the morning before the first event).
+    name: 'accepts standings with no teams at all',
+    payload: buildOverallStandings([]),
+  },
+  {
+    // A source that lists no parts sends an empty list rather than leaving it out.
+    name: 'accepts an empty list of parts with no points by part',
+    payload: {
+      ...buildOverallStandings([{ ...buildBajaUfmgInFirst(), pointsByPart: undefined }]),
+      scoreParts: [],
+    },
   },
   {
     // A per-event table has no parts at all: just the total per team.

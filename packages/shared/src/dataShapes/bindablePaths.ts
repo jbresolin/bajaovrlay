@@ -234,6 +234,7 @@ const standingsEntryFieldTypes = [
   { fieldName: 'teamName', valueType: 'text' },
   { fieldName: 'schoolName', valueType: 'text' },
   { fieldName: 'points', valueType: 'number' },
+  { fieldName: 'isDisqualified', valueType: 'boolean' },
 ] as const;
 
 /**

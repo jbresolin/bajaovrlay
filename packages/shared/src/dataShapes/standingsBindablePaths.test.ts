@@ -9,7 +9,9 @@
  * What these tests prove:
  *   - Standings offer the scope, the whole list, the score parts (typed
  *     standingsScoreParts, "Pontuação › Partes da pontuação") and the 1st to 10th rows,
- *     labelled "1ª linha", not "1º colocado": tied teams share a rank.
+ *     labelled "1ª linha", not "1º colocado": tied teams share a rank. Each row offers
+ *     the car, the team, the school, the points and whether it is disqualified (a yes or
+ *     no, gate 2 of PR #25).
  *
  * What these tests deliberately do not cover:
  *   - That every path names a field of the shape; bindablePathsMatchShapes.test.ts.
@@ -28,7 +30,7 @@ describe('listBindablePathsOfShape for the standings', () => {
 
     // Assert: scope, the list and the score parts (a whole list too, the standings
     // graphic's columns, BAJAOVRLAY-24) first, then the first row's four fields,
-    // 3 + 10 × 4 in all. A row, not a place: two teams tied on points share a rank, so
+    // 3 + 10 × 5 in all. A row, not a place: two teams tied on points share a rank, so
     // the 2nd row may be a 1st place (gate 2 on PR #16).
     expect(standingsPaths.slice(0, 7), 'the standings leader paths must be fixed').toEqual([
       {
@@ -74,12 +76,14 @@ describe('listBindablePathsOfShape for the standings', () => {
         isCarChosenByNumber: false,
       },
     ]);
-    expect(standingsPaths, 'standings must offer 3 + 10 × 4 paths').toHaveLength(43);
-    expect(standingsPaths.at(-1), 'the last path must be the 10th row points').toEqual({
-      path: 'entries.9.points',
-      label: 'Pontuação › 10ª linha › Pontos',
-      valueType: 'number',
-      isCarChosenByNumber: false,
-    });
+    expect(standingsPaths, 'standings must offer 3 + 10 × 5 paths').toHaveLength(53);
+    expect(standingsPaths.at(-1), 'the last path must be the 10th row’s disqualified mark').toEqual(
+      {
+        path: 'entries.9.isDisqualified',
+        label: 'Pontuação › 10ª linha › Desclassificada',
+        valueType: 'boolean',
+        isCarChosenByNumber: false,
+      },
+    );
   });
 });

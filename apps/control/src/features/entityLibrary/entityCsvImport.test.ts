@@ -176,7 +176,7 @@ describe('buildCsvImportPreview of teams', () => {
 
 describe('buildCsvImportPreview of the light plate column', () => {
   it('reads sim as yes, não and nao as no, an empty cell as no choice, and refuses talvez', () => {
-    // Arrange: four teams, one per way of writing the cell.
+    // Arrange: five teams, one per way of writing the cell.
     const csv =
       'carro;equipe;escola;placa_clara\n' +
       '42;Baja UFPR;UFPR;sim\n' +

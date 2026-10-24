@@ -197,9 +197,9 @@ function readOneLine(
 
 /**
  * A cell as the record field wants it: a whole number ("42"), a moment ("14/11/2026
- * 10:00"), a yes or no ("sim", "não" or "nao", any case), or the text as it is. A cell that does not read is passed on as its text, so
- * the schema refuses it with its own pt-BR sentence ("Número do carro: um número inteiro
- * a partir de 1.").
+ * 10:00"), a yes or no ("sim", "não" or "nao", any case), or the text as it is. A cell
+ * that does not read is passed on as its text, so the schema refuses it with its own
+ * pt-BR sentence ("Número do carro: um número inteiro a partir de 1.").
  */
 function readCell(cellText: string, column: EntityCsvColumn): unknown {
   switch (column.cellKind) {

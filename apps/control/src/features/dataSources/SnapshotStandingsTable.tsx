@@ -24,7 +24,10 @@ const columns = texts.columns;
 // Built once: toLocaleString builds a new formatter at every call, 60 times a poll.
 const pointsFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
 
-/** Writes points the Brazilian way ("646,9"); some events score fractions, so up to two decimals. */
+/**
+ * Writes points the Brazilian way ("646,9"); some events score fractions, so up to two
+ * decimals.
+ */
 function formatPoints(points: number): string {
   return pointsFormat.format(points);
 }
@@ -85,10 +88,10 @@ const StandingsRow = memo(function StandingsRow(props: {
 
 /**
  * The standings of the selected source, one row per team in rank order: rank, car,
- * team, school and points; a disqualified team, which has no rank, says so in its place. The table scrolls sideways in its own box on a narrow screen.
- * With `corrections` (a stored source), the standings shown are the corrected ones and a
- * team's name and school can be corrected (CorrectableValue.tsx), matched to what the
- * source sent by car number. Points are not correctable (gate 2 of PR #18): they are the
+ * team, school and points; a disqualified team, which has no rank, says so in its place.
+ * The table scrolls sideways in its own box on a narrow screen. With `corrections` (a
+ * stored source), the standings shown are the corrected ones and a team's name and school
+ * can be corrected (CorrectableValue.tsx), matched to what the source sent by car number. Points are not correctable (gate 2 of PR #18): they are the
  * organisers' result, and a wrong one is fixed at the source.
  */
 export function SnapshotStandingsTable(props: {

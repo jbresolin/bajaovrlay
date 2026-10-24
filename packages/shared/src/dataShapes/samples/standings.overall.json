@@ -97,7 +97,6 @@
       "pointsByPart": {
         "acceleration": 52.1,
         "speed": 45.3,
-        "traction": 71.1,
         "suspension": 34.4,
         "maneuverability": 56.3,
         "enduro": 364.7
@@ -914,7 +913,6 @@
       }
     },
     {
-      "rank": 60,
       "carNumber": 96,
       "teamName": "Guará Baja",
       "schoolName": "UFS",
@@ -926,7 +924,8 @@
         "suspension": 8,
         "maneuverability": 30.7,
         "enduro": 141.2
-      }
+      },
+      "isDisqualified": true
     }
   ]
 }

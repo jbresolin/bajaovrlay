@@ -89,6 +89,7 @@ export const ptBRDataShapes = {
     teamName: 'Equipe',
     schoolName: 'Escola',
     points: 'Pontos',
+    isDisqualified: 'Desclassificada',
   },
 
   /** The brackets fields a binding may point at. */

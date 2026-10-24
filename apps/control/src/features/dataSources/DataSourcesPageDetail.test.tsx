@@ -144,25 +144,11 @@ describe('the standings table', () => {
   });
 
   it('names a disqualified team in the rank column', () => {
-    // Arrange: the same standings with the last team, car 96, disqualified (no rank).
-    const snapshot = buildEnduroSnapshotAtLap34(seededSimulatorId);
-    const standings = snapshot.shapes.standings;
-    const lastTeam = standings?.entries.at(-1);
-    if (standings === undefined || lastTeam === undefined) {
-      throw new Error('the sample snapshot must carry standings');
-    }
-    const disqualifiedLastTeam = { ...lastTeam, isDisqualified: true };
-    delete disqualifiedLastTeam.rank;
-    standings.entries[standings.entries.length - 1] = disqualifiedLastTeam;
+    // Arrange: nothing beyond the simulator with the enduro at lap 34; the sample's last
+    // team, car 96, is disqualified (no rank).
 
-    // Act: draw the page with that snapshot.
-    renderOnControlPageConnectedToFakeServer(
-      <DataSourcesPage />,
-      buildSlicesWithDataSources({
-        dataSources: [buildSimulatorThatIsOk()],
-        dataSnapshots: [snapshot],
-      }),
-    );
+    // Act: draw the page.
+    renderPageWithTheSimulatorAtLap34(buildSimulatorThatIsOk);
 
     // Assert: the last row says the team is disqualified where its rank would be.
     const standingsTable = within(screen.getByRole('table', { name: 'Classificação' }));

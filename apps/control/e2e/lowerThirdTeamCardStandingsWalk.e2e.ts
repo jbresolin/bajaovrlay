@@ -11,7 +11,7 @@
  *      ticked: the team keeps the logo and the choice.
  *   2. A team card made from the rundown with every field read from car 7 in Cadastros,
  *      and taken: on the server it carries the name, the city and state, the logo's
- *      address and the plate; in the program monitor it shows the name, "JOINVILLE · SC"
+ *      address and the plate; in the program monitor it shows the name, "Joinville · SC"
  *      and the logo on its light plate.
  *   3. A person typed in Cadastros, and a lower third whose name and role read that
  *      person, taken: the name and the role on air.

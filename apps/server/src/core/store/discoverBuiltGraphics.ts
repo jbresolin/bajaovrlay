@@ -21,10 +21,9 @@ export type DiscoverBuiltGraphicsOptions = {
  * Lists every built graphic under `graphicPackagesFolder` (one `dist/*.ograf.json` per
  * package folder), in folder-name order. A folder with no manifest, at its root or in its
  * dist/, is not a graphic (the graphics kit, packages/graphics/kit) and is passed over
- * without a word. A
- * package that is not built, or whose manifest is broken, is logged and left out; it never
- * stops the boot. Each graphic's default
- * layer and category come from its own manifest (`v_baja`); see graphicPlacement.ts.
+ * without a word. A package that is not built, or whose manifest is broken, is logged and
+ * left out; it never stops the boot. Each graphic's default layer and category come from
+ * its own manifest (`v_baja`); see graphicPlacement.ts.
  * A graphic whose data schema cannot be used, or whose manifest names an update rule
  * that cannot be run, is kept, with a warning naming it.
  */

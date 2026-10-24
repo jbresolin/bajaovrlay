@@ -73,7 +73,8 @@ describe('the sample payloads', () => {
       shapeKey: 'positions',
       fileName: 'positions.enduro-lap-34.json',
     },
-    // The overall standings with points per event.
+    // The overall standings with their score parts, a part one team lacks, and a
+    // disqualified team at the end.
     {
       name: 'the overall standings pass the standings shape',
       shapeKey: 'standings',
