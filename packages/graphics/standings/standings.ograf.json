@@ -69,12 +69,14 @@
         "type": "string",
         "title": "Título",
         "description": "O título na cabeça do quadro.",
+        "gddType": "single-line",
         "default": "CLASSIFICAÇÃO GERAL"
       },
       "eventLine": {
         "type": "string",
         "title": "Evento",
-        "description": "A linha ao lado do título, por exemplo \"30ª COMPETIÇÃO BAJA SAE BRASIL\"."
+        "description": "A linha ao lado do título, por exemplo \"30ª COMPETIÇÃO BAJA SAE BRASIL\".",
+        "gddType": "single-line"
       }
     },
     "required": ["entries"],

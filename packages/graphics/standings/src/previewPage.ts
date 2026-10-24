@@ -15,10 +15,10 @@ import '@bajaovrlay/theme/ardosia/tokens.css';
 import '@bajaovrlay/theme/fonts/fonts.css';
 
 import { setUpPreviewControls } from '@bajaovrlay/graphics-kit/previewControls';
+import { choosePreviewStage } from '@bajaovrlay/graphics-kit/previewStage';
 
 import {
   choosePreviewData,
-  choosePreviewStage,
   createEnduroStandings,
   createOverallStandingsTotalOnly,
   createOverallStandingsWithParts,
@@ -62,6 +62,11 @@ async function startPreview(): Promise<void> {
     void runActionAndShowAnswer('stopAction', () => standings.stopAction({}), 'offAir');
   });
   addPreviewButton(ptBR.preview.nextPageButton, () => {
+    // Off air the board rests on page 1 and turns no page; the button does nothing, so
+    // the page never says "onAir" for a board that is not.
+    if (readPreviewState() !== 'onAir') {
+      return;
+    }
     void runActionAndShowAnswer(
       'turnToTheNextPageNow',
       async () => {

@@ -39,8 +39,9 @@ export const lowerThirdStyles = css`
     gap: var(--row-gap);
     color: var(--text);
     font-family: var(--font-display);
-    /* Bebas Neue has no lowercase: every word is set in caps (packages/theme/README.md). */
-    text-transform: uppercase;
+    /* Bebas Neue has no lowercase: every word is set in caps (packages/theme/README.md),
+       through the theme's token for names, so a theme with a mixed-case face can change it. */
+    text-transform: var(--case-names);
     -webkit-font-smoothing: antialiased;
   }
 

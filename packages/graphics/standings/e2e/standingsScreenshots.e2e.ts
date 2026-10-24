@@ -18,6 +18,8 @@
  *     sharing a rank, "33 EQUIPES".
  *   - A disqualified team: page 3 of the overall table, the four disqualified teams last,
  *     dimmed, with "—" and "DESCL.".
+ *   - In every shot the board spans the wide boards' title-safe width, x 96..1824, from
+ *     y 54; a full page of the table ends at y 1018, the columns and a short page higher.
  *
  * What these tests deliberately do not cover:
  *   - Motion; the shots show the end of the play-in (or of the turns to page 3). The page
@@ -26,8 +28,8 @@
  *   - Other operating systems: baselines are rendered on Linux. After a deliberate visual
  *     change, refresh them with `pnpm --filter @bajaovrlay/standings test:e2e --update-snapshots`.
  */
-import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress';
-import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides';
+import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 import { createEnduroStandings, createOverallStandingsWithParts } from '../src/previewData.js';
@@ -69,30 +71,36 @@ async function hidePreviewControls(page: Page): Promise<void> {
 }
 
 const boardScenarios = [
-  // The overall table with its six parts, page 1 (standings.html).
+  // The overall table with its six parts, page 1 (standings.html): 20 rows of 40 px fill
+  // the title-safe height exactly.
   {
     name: 'with parts page 1',
     data: createOverallStandingsWithParts(),
     turnsBeforeTheShot: 0,
+    boardBottom: 1018,
   },
-  // One event's table, the whole field in columns (standings-por-prova.html).
+  // One event's table, the whole field in columns (standings-por-prova.html): columns of
+  // 34 px tower pills, so the board ends higher, at y 898.
   {
     name: 'in columns',
     data: createEnduroStandings(),
     turnsBeforeTheShot: 0,
+    boardBottom: 898,
   },
-  // Page 3 of the overall table ends with the four disqualified teams.
+  // Page 3 of the overall table ends with the four disqualified teams: 14 rows, so the
+  // board, sized to its rows, ends six rows of 43 px (pill and gap) higher, at y 760.
   {
     name: 'with a disqualified team',
     data: createOverallStandingsWithParts(),
     turnsBeforeTheShot: 2,
+    boardBottom: 760,
   },
 ];
 
 const stages = ['grey', 'black'];
 
 test.describe('the standings look like their baselines', () => {
-  for (const { name, data, turnsBeforeTheShot } of boardScenarios) {
+  for (const { name, data, turnsBeforeTheShot, boardBottom } of boardScenarios) {
     for (const stage of stages) {
       test(`${name} on the ${stage} stage`, async ({ page }) => {
         // Arrange: the preview on air with this board, turned to the page of the shot,
@@ -103,9 +111,23 @@ test.describe('the standings look like their baselines', () => {
         }
         await hidePreviewControls(page);
 
-        // Act and assert: the whole 1920×1080 stage matches its baseline. A 1% pixel
-        // tolerance absorbs anti-aliasing between GPU drivers without letting a colour
-        // or a text change through.
+        // Act: measure the board on the stage.
+        const boardBox = await page.getByTestId('standings').boundingBox();
+
+        // Assert: the board spans the title-safe width the design gives a wide board
+        // (x 96..1824) from its top (y 54) down to the row's bottom (y 1018 for a full page
+        // of 40 px rows), and the whole 1920×1080 stage matches its baseline. A
+        // 1% pixel tolerance absorbs anti-aliasing between GPU drivers without letting a
+        // colour or a text change through.
+        expect(
+          {
+            left: boardBox?.x,
+            top: boardBox?.y,
+            right: (boardBox?.x ?? 0) + (boardBox?.width ?? 0),
+            bottom: (boardBox?.y ?? 0) + (boardBox?.height ?? 0),
+          },
+          `the board must span x 96..1824 and y 54..${String(boardBottom)}`,
+        ).toEqual({ left: 96, top: 54, right: 1824, bottom: boardBottom });
         const baselineName = `standings-${name.replaceAll(' ', '-')}-${stage}.png`;
         await expect(
           page,
