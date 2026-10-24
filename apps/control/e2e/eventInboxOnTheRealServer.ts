@@ -13,7 +13,7 @@ export type InboxEventAsTheTestsReadIt = {
 };
 
 /** The parts of GET /api/v1/state these tests read. */
-type StateTheInboxTestsRead = {
+export type StateTheInboxTestsRead = {
   events: InboxEventAsTheTestsReadIt[];
   instances: Array<{ layerId: string; target: string; eventId?: string }>;
   dataSnapshots: Array<{ sourceId: string; receivedAtMs: number }>;

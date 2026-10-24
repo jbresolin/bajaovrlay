@@ -12,9 +12,10 @@
  * What these tests prove:
  *   - With the simulator at 60× on seed 227, the server lists the race's first penalty.
  *     After a restart, once a poll strictly later than the first one after the boot has
- *     been compared, no event detected after the restart repeats an incident or a fastest
- *     lap (car and lap) listed before it, no event is listed twice, and every event listed
- *     before is still there with its own moment.
+ *     been compared, no event detected after the last poll before the stop (a moment on the
+ *     server's clock) repeats an incident or a fastest lap (car and lap) listed before it,
+ *     no event is listed twice, and every event listed before is still there with its own
+ *     moment. The first server is gone, every process of it, before the second starts.
  *
  * What these tests deliberately do not cover:
  *   - The page: this test talks to its server as the page does (a WebSocket of its own,
@@ -33,6 +34,7 @@ import {
   type InboxEventAsTheTestsReadIt,
   readInboxStateOfTheServerOnPort,
   sendCommandOrFail,
+  type StateTheInboxTestsRead,
 } from './eventInboxOnTheRealServer';
 
 /**
@@ -115,24 +117,53 @@ async function startOwnServer(): Promise<OwnServer> {
   return { serverProcess, readHowItEnded: () => howItEnded };
 }
 
-/** Stops the server's whole process group, as Ctrl+C does, and waits for it to exit. */
+/** Answers whether any process of a process group is still alive (signal 0 sends nothing). */
+function isAnyProcessOfTheGroupAlive(processGroupId: number): boolean {
+  try {
+    process.kill(-processGroupId, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Stops the server's whole process group, as Ctrl+C does, and waits until every process of
+ * it has exited. Why not only the spawned process: it is the pnpm wrapper, which can exit
+ * before the Node server under tsx has closed its port and its SQLite file; the next server
+ * would then start beside a server still shutting down, on the same port and file (gate 2
+ * of PR #25). The group is empty only once that Node server itself is gone.
+ */
 async function stopOwnServer(ownServer: OwnServer): Promise<void> {
   const { serverProcess } = ownServer;
   if (ownServer.readHowItEnded() !== undefined || serverProcess.pid === undefined) {
     return;
   }
-  const exited = once(serverProcess, 'exit');
-  process.kill(-serverProcess.pid, 'SIGTERM');
-  await exited;
+  const processGroupId = serverProcess.pid;
+  const wrapperExited = once(serverProcess, 'exit');
+  process.kill(-processGroupId, 'SIGTERM');
+  await wrapperExited;
+  await expect
+    .poll(() => isAnyProcessOfTheGroupAlive(processGroupId), {
+      message: 'every process of the own server (pnpm, tsx and Node) must have exited',
+      timeout: waitForTheServerInMilliseconds,
+    })
+    .toBe(false);
 }
 
-/** The moment the own server's simulator last delivered a good poll, or 0. */
-async function readLastGoodPollMoment(): Promise<number> {
-  const state = await readInboxStateOfTheServerOnPort(ownServerPort);
+/** The moment, on the server's clock, the simulator last delivered a good poll, or 0. */
+function readLastGoodPollMomentOfState(
+  state: StateTheInboxTestsRead,
+): number {
   return (
     state.dataSnapshots.find((snapshot) => snapshot.sourceId === 'simulador-enduro')
       ?.receivedAtMs ?? 0
   );
+}
+
+/** The moment the own server's simulator last delivered a good poll, read now, or 0. */
+async function readLastGoodPollMoment(): Promise<number> {
+  return readLastGoodPollMomentOfState(await readInboxStateOfTheServerOnPort(ownServerPort));
 }
 
 /** What an event is about, in a word the test compares: the incident, or the car's lap. */
@@ -176,18 +207,21 @@ test.describe('the event inbox across a restart', () => {
         )
         .toBe(true);
 
-      // Act: read what is listed, restart the server with the simulator still on, and wait
-      // for the first poll after the boot and then one strictly later (compared with it).
-      const eventsBeforeTheRestart = (await readInboxStateOfTheServerOnPort(ownServerPort)).events;
+      // Act: read what is listed and, in the same read, the server's moment of its last
+      // poll; restart the server with the simulator still on, and wait for the first poll
+      // after the boot and then one strictly later (compared with it). Every moment
+      // compared is the server's own (gate 2 of PR #25): the test's clock is never one.
+      const stateBeforeTheRestart = await readInboxStateOfTheServerOnPort(ownServerPort);
+      const eventsBeforeTheRestart = stateBeforeTheRestart.events;
+      const lastPollBeforeTheStopMs = readLastGoodPollMomentOfState(stateBeforeTheRestart);
       await stopOwnServer(ownServer);
-      const restartedAtMs = Date.now();
       ownServer = await startOwnServer();
       await expect
         .poll(readLastGoodPollMoment, {
           message: 'the simulator must poll after the boot',
           timeout: waitForAPollInMilliseconds,
         })
-        .toBeGreaterThan(restartedAtMs);
+        .toBeGreaterThan(lastPollBeforeTheStopMs);
       const firstPollAfterTheBootMs = await readLastGoodPollMoment();
       await expect
         .poll(readLastGoodPollMoment, {
@@ -214,7 +248,7 @@ test.describe('the event inbox across a restart', () => {
       }
       const whatWasListedBefore = new Set(eventsBeforeTheRestart.map(describeWhatTheEventIsAbout));
       const eventsDetectedSinceTheRestart = eventsAfterTheRestart.filter(
-        (event) => event.detectedAtMs > restartedAtMs,
+        (event) => event.detectedAtMs > lastPollBeforeTheStopMs,
       );
       for (const eventSince of eventsDetectedSinceTheRestart) {
         expect(
