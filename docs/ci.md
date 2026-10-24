@@ -76,3 +76,15 @@ On WSL a connection to a closed port on 127.0.0.1 may hang for about two minutes
 being refused. Playwright checks each server's port before starting it, so a local browser
 run can sit for a while before its first test. CI does not do this; the time is the
 machine's, not the tests'.
+
+The fix, in WSL's mirrored networking mode: fewer retries of an unanswered connection
+([microsoft/WSL#40343](https://github.com/microsoft/WSL/issues/40343)). A closed port on
+127.0.0.1 then fails in about 7 seconds instead of about 127. Inside WSL:
+
+```sh
+echo 'net.ipv4.tcp_syn_retries = 2' | sudo tee /etc/sysctl.d/99-faster-connect-failure.conf
+sudo sysctl --system
+```
+
+The setting lasts across restarts. It applies to every connection from WSL, so an address
+that really is slow to answer gets about 7 seconds instead of two minutes before it fails.
