@@ -75,6 +75,25 @@ included), with every duration, offset and curve read from `tokens.css`; `motion
 describes exactly what each one does. The screenshot and layout
 tools skip them, as they skip `motion-demo.html`.
 
+## Opening the pages
+
+Every page is plain HTML that loads nothing from the network: open it from the file system,
+no server and no `pnpm install` needed. Use a desktop browser window at least 1920 px wide,
+or zoom out, since a page is the 1920×1080 frame.
+
+- **The animations:** open `motion-catalogo.html` and pick a graphic, or open a
+  `motion-<graphic>-<parts>.html` directly. Press **Entrar**, then the other buttons; the
+  line at the top right says what moved and for how long. **Sair** and **Entrar** replay.
+- **The timelines:** `motion-enduro-linha-do-tempo.html` (drag the slider, step a pass or a
+  minute, or Play at 1×, 10× or 60×) and `motion-super-prime-linha-do-tempo.html`
+  (Próximo decides the next match).
+- **The static catalogue:** any other `.html` here (the table under "The catalogue" lists
+  them), or the shots in `screenshots/` (frame 1, grey and black).
+- **From Windows with the repo in WSL:** open
+  `\\wsl.localhost\<distro>\<path to the repo>\docs\design\directions\ardosia\motion-catalogo.html`.
+- **Everything in one place, with a link per page:** the review artifact
+  (`../../README.md`, "Sharing for review").
+
 ## Legibility at 720p on a phone
 
 Sizes at 1080p, with the 720p equivalent in brackets: clock time 56 px (37); lower-third name
