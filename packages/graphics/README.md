@@ -88,12 +88,17 @@ On each property of `schema.properties` (`type` picks the control: `string` text
 Any `string` (without `enum`), whole-number or `boolean` field may also read the entity library
 in the item editor ("Cadastro", BAJAOVRLAY-19): one attribute of one team (by car number),
 person, sponsor or schedule slot, always live. A text attribute fits a `string`, a whole number
-an `integer`/`number`, a yes or no a `boolean` (a team's "Logo sobre placa clara",
-BAJAOVRLAY-24); nothing of the library fits a fixed list.
+an `integer`/`number`, a yes or no a `boolean` (a team's or a sponsor's "Logo sobre placa
+clara", BAJAOVRLAY-24 and -23); nothing of the library fits a fixed list.
 
 `schema.required` lists the fields that cannot be left blank; every other field gets a
 "limpar" control and, once cleared, is not sent to the graphic at all (never as `null`).
 
-Arrays, nested objects and `oneOf` are not typed by hand yet: such a property is shown as
-read-only JSON until M2/M3. An `array` may still read a whole list from a source ("Fonte"
-in the item editor: the positions, the standings or the bracket rounds).
+An `array` whose `items` are a plain `type: string` (no `enum`, no `format`) is a list of
+texts typed line by line (BAJAOVRLAY-23; the message ticker's messages): one input a line,
+"Adicionar <linha>" and each line's controls named after `items.title` ("Mensagem"; missing:
+"Linha"), each line checked against `items.minLength` / `items.maxLength` and the list against
+`minItems` / `maxItems`, in pt-BR, before anything is sent. It offers no "Fonte" and no
+"Cadastro". Other arrays, nested objects and `oneOf` are not typed by hand: such a property
+is shown as read-only JSON. An `array` of objects may still read a whole list from a source
+("Fonte" in the item editor: the positions, the standings or the bracket rounds).
