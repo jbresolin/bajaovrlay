@@ -106,15 +106,26 @@ export function BoundFieldControls(props: {
     form.setValue(`${bindingName}.transformId`, transformAfter, { shouldDirty: true });
     // What may follow depends on the path and the first transform, so a new path starts
     // with no second one.
-    form.setValue(`${bindingName}.thenTransformId`, '', { shouldDirty: true });
+    clearSecondTransform();
   }
 
-  /** Chooses the first transform; clearing it clears the second, which needs a first. */
+  /**
+   * Chooses the first transform. Any change of it clears the second transform and its
+   * parameter: what may follow depends on the first, and a second left from before would
+   * be hidden from the operator yet saved (gate 2 of PR #27).
+   */
   function chooseFirstTransform(transformId: string): void {
+    const isChange = transformId !== bindingValue.transformId;
     form.setValue(`${bindingName}.transformId`, transformId, { shouldDirty: true });
-    if (transformId === '') {
-      form.setValue(`${bindingName}.thenTransformId`, '', { shouldDirty: true });
+    if (isChange) {
+      clearSecondTransform();
     }
+  }
+
+  /** Takes the second transform and its parameter off the field's choices. */
+  function clearSecondTransform(): void {
+    form.setValue(`${bindingName}.thenTransformId`, '', { shouldDirty: true });
+    form.setValue(`${bindingName}.thenTransformParameterText`, '', { shouldDirty: true });
   }
 
   return (

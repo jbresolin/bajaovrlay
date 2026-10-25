@@ -15,6 +15,7 @@
  *     simulator chosen the line under the binding counts the cars it would get now.
  *   - With the first N cars chosen as the transform, a second transform is offered
  *     ("Com logos das equipes"), and with n = 3 the line counts the podium's three cars.
+ *   - Changing the first transform clears the second, so none is left hidden and saved.
  *   - The layout dropdown opens on "Compacta" and offers "Compacta" and "Detalhada".
  *   - Each column switch is drawn under its title, on or off as the manifest's default.
  *
@@ -164,6 +165,32 @@ describe('the second transform of the list of cars (BAJAOVRLAY-47)', () => {
     expect(
       screen.getByText('Valor agora: lista com 3 entradas'),
       'both transforms must run for the value of now',
+    ).toBeVisible();
+  });
+});
+
+describe('changing the first transform of the list of cars', () => {
+  it('clears the second transform, so none is left hidden and saved', () => {
+    // Arrange: the cars through the first N cars, then the logos.
+    renderEmptyTowerFormWithTheSimulator();
+    chooseOptionInDropdown('Como preencher Carros', 'Fonte');
+    chooseOptionInDropdown('Fonte de Carros', 'Simulador — Enduro');
+    chooseOptionInDropdown('O que Carros lê da fonte', 'Posições › Lista completa');
+    chooseOptionInDropdown('Transformação de Carros', 'Primeiras N entradas');
+    chooseOptionInDropdown('Segunda transformação de Carros', 'Com logos das equipes');
+
+    // Act: change the first transform to the logos.
+    chooseOptionInDropdown('Transformação de Carros', 'Com logos das equipes');
+
+    // Assert: the second transform is back to "Nenhuma" (gate 2 of PR #27), and the line
+    // under the binding reads the whole list, the logos alone.
+    expect(
+      screen.getByRole('combobox', { name: 'Segunda transformação de Carros' }),
+      'a changed first transform must clear the second',
+    ).toHaveTextContent('Nenhuma');
+    expect(
+      screen.getByText('Valor agora: lista com 60 entradas'),
+      'the logos alone keep every car',
     ).toBeVisible();
   });
 });

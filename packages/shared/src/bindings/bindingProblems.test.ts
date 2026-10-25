@@ -17,7 +17,8 @@
  *     transform, parameters without a transform, a transform with bad parameters, a
  *     mapping transform, and a transform that does not read the path's type; and for a
  *     second transform (BAJAOVRLAY-47): one with no first, parameters with no second,
- *     bad parameters, and one that does not read what the first gives.
+ *     the same transform twice, bad parameters, and one that does not read what the
+ *     first gives.
  *   - findValueTypeOfBinding gives the type of value the binding reads, after its
  *     transforms (in order) when it has them.
  *
@@ -198,6 +199,17 @@ describe('findProblemInBinding', () => {
         thenTransformParameters: { n: 0 },
       },
       expectedProblem: 'O número de entradas deve ser um inteiro de 1 a 60.',
+    },
+    // The same transform twice: withTeamLogos again adds nothing, topN again only confuses.
+    {
+      name: 'refuses the same transform as first and second',
+      binding: {
+        ...buildLiveBindingToTheSimulatorPositions('entries'),
+        transformId: 'withTeamLogos',
+        thenTransformId: 'withTeamLogos',
+      },
+      expectedProblem:
+        'A segunda transformação não pode repetir a primeira ("Com logos das equipes").',
     },
     // The second reads what the first gives: a lap written as text is no list of cars.
     {

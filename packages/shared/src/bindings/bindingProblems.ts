@@ -78,6 +78,7 @@ function findValueTypeGivenByTransform(
 
 /**
  * The transforms' problem: parameters with no transform, a second transform with no first,
+ * the same transform twice,
  * the registry's own check of each (an unknown id, a mapping transform, bad parameters),
  * or a transform that cannot read what it is handed (the path's type for the first, what
  * the first gives for the second), which would be refused on air at every refresh.
@@ -113,6 +114,11 @@ function findProblemInTransformOfBinding(
       return problems.secondParametersWithoutSecondTransform;
     }
     return undefined;
+  }
+  // The same transform twice is at best a no-op (withTeamLogos) and at worst a surprise
+  // (topN 3 then topN 6 keeps 3); the editor never offers it, an API call is refused.
+  if (binding.thenTransformId === binding.transformId) {
+    return problems.sameTransformTwice(readTransformLabel(binding.transformId));
   }
   // The first passed its check, so it is a binding transform and gives a type.
   const valueTypeAfterTheFirst =
