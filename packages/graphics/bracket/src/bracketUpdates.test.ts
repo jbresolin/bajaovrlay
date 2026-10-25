@@ -20,6 +20,9 @@
  *     last step at once, so the server's own step brought back ("goto") changes nothing.
  *   - An update off air is drawn hidden; one during the stop-out is only kept, the fading
  *     card keeping its texts, and drawn once the stop-out has ended.
+ *   - An update during Próximo's lift-out is only kept too (gate 2 of PR #30): nothing of
+ *     the next board shows and the head keeps its round; the play then draws the newer data,
+ *     and goes to the newer data's last step when it has fewer.
  *
  * What these tests deliberately do not cover:
  *   - Which cells a change is: matchResults.test.ts (the signatures).
@@ -237,5 +240,103 @@ describe('updateAction off air and during the stop-out', () => {
     expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
     expect(nameDuringTheStopOut, 'the fading card keeps its name').toBe('Baja UFMG');
     expect(readNameOfCar2(), 'once off air the board holds the new name').toBe('Equipe Baja UFMG');
+  });
+});
+
+describe('updateAction during Próximo’s lift-out', () => {
+  /**
+   * The real Super Prime on air at a step, then Próximo pressed with a minute-long lift-out,
+   * so the lift-out is surely still running when the test looks. Returns the pending play.
+   */
+  async function pressNextWithAMinuteLongLiftOut(stepIndex: number) {
+    placeTokensOnTheRoot({ ...ardosiaTreeTokenDeclarations, '--motion-out': '60000ms' });
+    const bracket = createBracketOnThePage();
+    await loadBracketWithData(bracket, createTheRealSuperPrime());
+    await bracket.playAction({ goto: stepIndex, skipAnimation: true });
+    const pendingStep = bracket.playAction({});
+    return { bracket, pendingStep };
+  }
+
+  /** The real Super Prime with Baja UFMG (car 2) renamed in every round. */
+  function createTheSuperPrimeWithCar2Renamed(): BracketData {
+    const superPrime = createTheRealSuperPrime();
+    const rounds = superPrime.rounds.map((round) => ({
+      ...round,
+      matches: round.matches.map((match) =>
+        match.carA.carNumber === 2
+          ? { ...match, carA: { ...match.carA, teamName: 'Equipe Baja UFMG' } }
+          : match,
+      ),
+    }));
+    return { ...superPrime, rounds };
+  }
+
+  it('only keeps the update: the next board does not show, the head keeps its round', async () => {
+    // Arrange: the first board on air, Próximo pressed, its cards lifting out.
+    const { bracket } = await pressNextWithAMinuteLongLiftOut(0);
+
+    // Act: a result arrives in the middle of the lift-out.
+    const answer = await bracket.updateAction({ data: createTheSuperPrimeWithCar2Renamed() });
+    const matchIdsOnTheStage = findEveryPartOfBracket(bracket, 'bracket-match-card').map(
+      (card) => card.dataset.matchId,
+    );
+
+    // Assert: accepted; still the first board's 32 cards, none of the next board's, and
+    // the head still naming the 32 avos.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(matchIdsOnTheStage, 'the lifting cards stay the first board’s').toHaveLength(32);
+    expect(
+      matchIdsOnTheStage.every((matchId) => matchId?.startsWith('r1-')),
+      'no card of the next board may pop in during the lift-out',
+    ).toBe(true);
+    expect(describeTheStage(bracket).eventLine, 'the head keeps the round on screen').toBe(
+      '32 avos de final',
+    );
+  });
+
+  it('draws the newer data once the play goes on, not the data the play started with', async () => {
+    // Arrange: the first board on air, Próximo pressed, and a result arriving during the
+    // lift-out (Baja UFMG renamed).
+    const { bracket, pendingStep } = await pressNextWithAMinuteLongLiftOut(0);
+    await bracket.updateAction({ data: createTheSuperPrimeWithCar2Renamed() });
+
+    // Act: the lift-out ends, and the play goes on to the 16 avos.
+    finishEveryRunningMotionAtOnce();
+    const answer = await pendingStep;
+    const firstCardsTeam = findEveryPartOfBracket(bracket, 'bracket-match-card')[0]?.querySelector(
+      '[data-testid="bracket-team-name"]',
+    )?.textContent;
+
+    // Assert: the 16 avos drawn with the name that arrived, nothing lost.
+    expect(answer, 'the play reports the 16 avos').toEqual({ statusCode: 200, currentStep: 1 });
+    expect(describeTheStage(bracket), 'the 16 avos on screen').toMatchObject({
+      eventLine: '16 avos de final',
+      boardCards: 16,
+    });
+    expect(firstCardsTeam, 'the result that arrived during the lift-out is on air').toBe(
+      'Equipe Baja UFMG',
+    );
+  });
+
+  it('goes to the last step the newer data has when it arrived with fewer', async () => {
+    // Arrange: the oitavas on air (step 3 of 7), Próximo pressed towards the tree, and an
+    // eight-car bracket (3 steps) arriving during the lift-out.
+    const { bracket, pendingStep } = await pressNextWithAMinuteLongLiftOut(2);
+    const eightCarRounds = buildEightCarRounds();
+    await bracket.updateAction({ data: { rounds: eightCarRounds } });
+
+    // Act: the lift-out ends and the play goes on.
+    finishEveryRunningMotionAtOnce();
+    const answer = await pendingStep;
+
+    // Assert: the last step of the newer data (index 2), drawn, as the server's clamp would.
+    expect(answer, 'the play reports the last step the new rounds have').toEqual({
+      statusCode: 200,
+      currentStep: 2,
+    });
+    expect(describeTheStage(bracket), 'the new bracket’s final on screen').toMatchObject({
+      stepLine: '3/3',
+      treeColumnsShown: ['0', '1', '2'],
+    });
   });
 });

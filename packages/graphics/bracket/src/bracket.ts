@@ -109,6 +109,9 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
   // Counts the plays and stops: a play overtaken by a later one (a double press, a stop)
   // gives the bracket up at its next await instead of drawing over the newer step.
   private moveNumber = 0;
+  // The play whose lift-out to a new view is running, if any: an update meanwhile is only
+  // kept, like one during the stop-out, and the play draws it once the old view is gone.
+  private moveLiftingOutForANewView: number | undefined = undefined;
 
   override render() {
     return renderBracketTemplate(this.onScreen);
@@ -190,22 +193,34 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     const moveKind = chooseStepMoveKind(data, { stepBefore, targetStep: target.step, isEntering });
 
     if (moveKind === 'newView') {
+      // An update during the lift-out is only kept (updateAction), drawn below once the old
+      // view is gone: drawn now, the next board would pop in over the leaving one.
+      this.moveLiftingOutForANewView = moveNumberOfThisPlay;
       await this.stepMotions.run(buildLiftOutOfThePieces(parts, false), skipAnimation);
+      if (this.moveLiftingOutForANewView === moveNumberOfThisPlay) {
+        this.moveLiftingOutForANewView = undefined;
+      }
       if (this.moveNumber !== moveNumberOfThisPlay) {
         return this.answerAfterAnotherMoveTookOver();
       }
     }
+    // The data may have changed during the lift-out: the latest is drawn, at a step it has,
+    // as the server brings its own step back (gate 2 of PR #30).
+    const dataNow = this.requireData();
+    const stepNow = Math.min(target.step, countStepsOfBracket(dataNow) - 1);
+    this.currentStep = stepNow;
     const piecesBefore = rememberPiecesOnScreen(parts);
-    await this.redrawAtStep(data, target.step);
+    await this.redrawAtStep(dataNow, stepNow);
     if (moveKind === 'atOnce') {
       showEveryPieceAtOnce(parts);
-      return { statusCode: 200, currentStep: target.step };
+      return { statusCode: 200, currentStep: stepNow };
     }
     await this.stepMotions.run(buildRiseOfTheStep(parts, moveKind, piecesBefore), skipAnimation);
     if (this.moveNumber !== moveNumberOfThisPlay) {
       return this.answerAfterAnotherMoveTookOver();
     }
-    return { statusCode: 200, currentStep: target.step };
+    // An update during the rise is drawn in place, and may have brought the step back.
+    return { statusCode: 200, currentStep: this.currentStep };
   }
 
   /**
@@ -244,7 +259,8 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
    * OGraf updateAction: merges partial data in at any time after load, and redraws the step
    * in place with no motion: what the update adds appears at once, a result arriving
    * crossfades its cells, and a step the new rounds no longer have is brought back to the
-   * last. During the stop-out the data is only kept, and drawn once the pieces are gone.
+   * last. During the stop-out, and during Próximo's lift-out to a new view, the data is
+   * only kept, and drawn once the pieces are gone.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
@@ -257,7 +273,8 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     }
     this.data = dataCheck.data;
     const isStoppingOut = this.lifecycle === 'offAir' && this.stepMotions.isRunning();
-    if (isStoppingOut) {
+    const isLiftingOutForANewView = this.moveLiftingOutForANewView !== undefined;
+    if (isStoppingOut || isLiftingOutForANewView) {
       return okAnswer;
     }
 
