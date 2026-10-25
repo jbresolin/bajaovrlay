@@ -19,6 +19,7 @@
  *   - Playing the step; instancePlayer.steps.test.ts.
  *   - The other changes of a slice; instanceReconciler.test.ts.
  */
+import type { Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { decideLayerOperations } from './instanceReconciler.js';
@@ -27,6 +28,25 @@ import {
   enduroClockInstanceId,
   layersOfTheStream,
 } from './instancesOnAir.testSupport.js';
+
+const superPrimeBracketInstanceId = 'chaveamento-super-prime';
+
+/**
+ * The Super Prime's bracket on the fullscreen layer at a step, its rounds cut to one named
+ * round so the change of data reads plainly (the renderer compares the data, never counts).
+ */
+function createSuperPrimeBracketInstance(currentStep: number, roundName: string): Instance {
+  return {
+    id: superPrimeBracketInstanceId,
+    layerId: 'fullscreen',
+    graphicId: 'bracket',
+    target: 'program',
+    resolvedData: { title: 'SUPER PRIME', rounds: [{ name: roundName, matches: [] }] },
+    currentStep,
+    status: 'on-air',
+    takenAt: '2026-10-31T18:40:00.000Z',
+  };
+}
 
 const stepChangeScenarios = [
   // "Próximo": only the step changed, so the graphic on screen plays that step.
@@ -69,23 +89,18 @@ const stepChangeScenarios = [
   // (BAJAOVRLAY-25), so the step goes down with the new data, and plays after it.
   {
     name: 'updates the data first, then plays the lower step, when the server brought the step back',
-    previousInstances: [createEnduroClockInstance({ currentStep: 5 })],
-    nextInstances: [
-      createEnduroClockInstance({
-        currentStep: 2,
-        resolvedData: { sessionName: 'Enduro de Resistência', state: 'checkered', running: true },
-      }),
-    ],
+    previousInstances: [createSuperPrimeBracketInstance(5, 'Disputa de 3º lugar')],
+    nextInstances: [createSuperPrimeBracketInstance(2, 'Final')],
     expectedLayerOperations: [
       {
-        layerId: 'clock',
+        layerId: 'fullscreen',
         operations: [
           {
             kind: 'updateData',
-            instanceId: enduroClockInstanceId,
-            changedData: { state: 'checkered' },
+            instanceId: superPrimeBracketInstanceId,
+            changedData: { rounds: [{ name: 'Final', matches: [] }] },
           },
-          { kind: 'goToStep', instanceId: enduroClockInstanceId, step: 2 },
+          { kind: 'goToStep', instanceId: superPrimeBracketInstanceId, step: 2 },
         ],
       },
     ],

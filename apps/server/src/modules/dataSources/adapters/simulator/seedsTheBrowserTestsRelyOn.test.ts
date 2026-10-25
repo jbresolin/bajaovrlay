@@ -12,7 +12,7 @@
  *   - Seed 1405's first yellow comes about 16 simulated minutes after the green flag, and
  *     its race has no red flag.
  *   - Seed 227's first incident is a penalty, about 3 simulated minutes in.
- *   - Seed 2027's ten-car Super Prime is decided 17 simulated minutes in.
+ *   - Seed 2027's ten-car Super Prime is decided 17 simulated minutes in, car 8 its champion.
  *
  * What these tests deliberately do not cover:
  *   - That the browser tests then see these events on the page: they are the check
@@ -64,10 +64,15 @@ function readMomentTheSuperPrimeIsDecided(seed: number, carCount: number) {
     const rounds = simulateBracketAt({ seed, carCount }, minute * millisecondsInAMinute);
     const final = rounds.find((round) => round.name === 'Final')?.matches[0];
     if (final?.winnerCarNumber !== undefined) {
-      return { minute, kind: 'superPrimeDecided', hasARedFlag: false };
+      return {
+        minute,
+        kind: 'superPrimeDecided',
+        hasARedFlag: false,
+        champion: final.winnerCarNumber,
+      };
     }
   }
-  return { minute: Number.NaN, kind: 'none', hasARedFlag: false };
+  return { minute: Number.NaN, kind: 'none', hasARedFlag: false, champion: undefined };
 }
 
 describe('the seeds the browser tests rely on', () => {
@@ -125,4 +130,14 @@ describe('the seeds the browser tests rely on', () => {
       }
     },
   );
+
+  it('seed 2027, 10 cars: the Super Prime’s champion is car 8 — bracketStepsWithTheSimulator checks it on the output', () => {
+    // Arrange: the seed and field of the walk.
+
+    // Act: run its Super Prime to its champion.
+    const superPrime = readMomentTheSuperPrimeIsDecided(2027, 10);
+
+    // Assert: car 8, the car the walk finds marked the winner of the final.
+    expect(superPrime.champion, 'the champion the browser test looks for').toBe(8);
+  });
 });

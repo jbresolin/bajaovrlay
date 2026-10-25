@@ -37,8 +37,9 @@ export function readStepCountOfInstance(instance: Instance, graphic: Graphic | u
 
 /**
  * The step "Próximo" moves an instance to (BAJAOVRLAY-47: the podium reveals one card per
- * step; BAJAOVRLAY-25: the bracket one board or tree round), or undefined on its last step. Steps count from 0, so a graphic of 4 steps goes
- * 0, 1, 2, 3; past the last there is nothing to go to, and leaving the air is "Limpar".
+ * step; BAJAOVRLAY-25: the bracket one board or tree round), or undefined on its last
+ * step. Steps count from 0, so a graphic of 4 steps goes 0, 1, 2, 3; past the last there
+ * is nothing to go to, and leaving the air is "Limpar".
  */
 export function findNextStepOfInstance(
   instance: Instance,

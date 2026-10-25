@@ -21,14 +21,11 @@ import { writeTypedValueText } from './typedValueText';
  * shared HttpJsonConfigSchema.
  */
 
-/** The shapes the form can map: every canonical shape, brackets too since BAJAOVRLAY-25. */
-export type MappableShapeKey = DataShapeKey;
-
 /**
- * The shapes the form offers, in the order of its "+ Sessão / + Posições / + Pontuação /
- * + Incidentes / + Chaves".
+ * The shapes the form offers, every canonical shape (brackets too since BAJAOVRLAY-25), in
+ * the order of its "+ Sessão / + Posições / + Pontuação / + Incidentes / + Chaves".
  */
-export const mappableShapeKeys: readonly MappableShapeKey[] = [
+export const mappableShapeKeys: readonly DataShapeKey[] = [
   'session',
   'positions',
   'standings',
@@ -86,7 +83,7 @@ export type FieldRuleFormValues = {
 
 /** One mapping block: one shape, the request it reads, and a row per mappable field. */
 export type FlexMappingFormValues = {
-  shapeKey: MappableShapeKey;
+  shapeKey: DataShapeKey;
   requestId: string;
   /** "Caminho da lista", for positions and standings; unused by the session. */
   entriesPath: string;
@@ -124,7 +121,7 @@ export function buildEmptyValueTableRowFormValues(): ValueTableRowFormValues {
  * order listMappableFieldsOfShape gives (required first), reading `requestId`.
  */
 export function buildEmptyMappingFormValues(
-  shapeKey: MappableShapeKey,
+  shapeKey: DataShapeKey,
   requestId: string,
 ): FlexMappingFormValues {
   const fieldRules = listMappableFieldsOfShape(shapeKey).map((field) =>
