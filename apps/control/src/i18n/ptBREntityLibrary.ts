@@ -175,6 +175,14 @@ export const ptBREntityLibrary = {
     valueNow: (valueText: string) => `Valor agora: ${valueText}`,
     noValueNow: (reason: string) => `Sem valor agora: ${reason}`,
     imageNowAlt: (fieldLabel: string) => `${fieldLabel} agora`,
+    // "Lista dos cadastros" on a list field (BAJAOVRLAY-46): which list, and how long it is now.
+    entityListSelectorLabel: (fieldLabel: string) => `Lista dos cadastros de ${fieldLabel}`,
+    entityListNames: { sponsor: 'Patrocinadores', scheduleSlot: 'Programação' },
+    entityListCount: {
+      sponsor: (count: number) =>
+        count === 1 ? '1 patrocinador' : `${String(count)} patrocinadores`,
+      scheduleSlot: (count: number) => (count === 1 ? '1 sessão' : `${String(count)} sessões`),
+    },
     // Each goes after the field's label: "Título: escolha o cadastro."
     formErrors: {
       entityTypeMissing: 'escolha o tipo de cadastro.',
@@ -187,6 +195,7 @@ export const ptBREntityLibrary = {
   onAir: {
     whereItReads: (recordName: string, attributeLabel: string) =>
       `Cadastro › ${recordName} › ${attributeLabel}`,
+    whereTheListReads: (listName: string) => `Cadastros › ${listName} (lista completa)`,
     editInTheLibraryButton: 'Editar no cadastro',
     editInTheLibraryButtonLabel: (fieldLabel: string) => `Editar no cadastro: ${fieldLabel}`,
     editInTheLibraryHint: 'Abre o cadastro numa nova aba; o ar acompanha quando você salvar.',

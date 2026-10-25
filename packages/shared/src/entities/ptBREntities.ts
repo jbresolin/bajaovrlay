@@ -59,13 +59,14 @@ export const ptBREntities = {
     place: 'Local',
   },
 
-  /** The five sponsor tiers, as the organisers sell them. */
+  /** The six sponsor levels, as the design names them (BAJAOVRLAY-46), in round order. */
   tierLabels: {
-    master: 'Master',
+    diamante: 'Diamante',
     ouro: 'Ouro',
     prata: 'Prata',
     bronze: 'Bronze',
     apoio: 'Apoio',
+    realizacao: 'Realização',
   },
 
   /** What the schedule says about a slot now (never stored; scheduleSlotStatus.ts). */
@@ -85,7 +86,7 @@ export const ptBREntities = {
     notAMediaId: (fieldLabel: string) => `${fieldLabel}: não é uma imagem enviada ao servidor.`,
     yesOrNo: (fieldLabel: string) => `${fieldLabel}: sim ou não.`,
     unknownState: 'UF: use a sigla de um estado brasileiro (por exemplo PR, SP ou DF).',
-    unknownTier: 'Cota: use master, ouro, prata, bronze ou apoio.',
+    unknownTier: 'Cota: use diamante, ouro, prata, bronze, apoio ou realizacao.',
     rollWeightOutOfRange: 'Peso no rodízio: um número inteiro de 1 a 10.',
     unknownSessionKind:
       'Prova: use enduro, acceleration, speed, traction, suspension, maneuverability ou other.',
@@ -132,6 +133,23 @@ export const ptBREntities = {
       `${recordDescription} não tem ${attributeLabel}.`,
     attributeDoesNotFitField: (attributeLabel: string) =>
       `${attributeLabel} não serve para este campo.`,
+  },
+
+  /**
+   * Why an entity list (every sponsor, every slot, BAJAOVRLAY-46) cannot fill a field. The
+   * server puts the field's title before them: "Patrocinadores: nenhum patrocinador …".
+   */
+  entityListProblems: {
+    noSponsorWithALogo: 'nenhum patrocinador com logo nos cadastros.',
+    noScheduleSlot: 'nenhuma sessão na programação dos cadastros.',
+    listDoesNotFitField: (listName: string) =>
+      `a lista de ${listName} dos cadastros não serve para este campo.`,
+  },
+
+  /** What a whole list of each kind is called in a sentence: "a lista de patrocinadores". */
+  entityListNames: {
+    sponsor: 'patrocinadores',
+    scheduleSlot: 'sessões da programação',
   },
 
   /** Why a slice or an import was refused: a key that appears twice. */

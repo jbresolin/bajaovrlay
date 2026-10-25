@@ -59,6 +59,27 @@ function readTextsOfLines(lines: SchemaFormTextListLine[]): string[] {
   return lines.map((line) => line.text.trim());
 }
 
+/**
+ * The text a date-and-time input shows for a moment: ISO 8601 text on a text field, a
+ * whole number of milliseconds since 1970 on a field marked `v_baja.unit: "epochMs"`
+ * (BAJAOVRLAY-46). Undefined for any other value.
+ */
+function convertMomentIntoLocalDateAndTimeText(
+  field: SchemaFormFieldDescription,
+  dataValue: unknown,
+): string | undefined {
+  if (field.isWholeNumber) {
+    const isMomentInMilliseconds =
+      typeof dataValue === 'number' && isNumberTheFieldCanHold(field, dataValue);
+    return isMomentInMilliseconds
+      ? convertIsoTextToLocalDateAndTimeText(new Date(dataValue).toISOString())
+      : undefined;
+  }
+  return typeof dataValue === 'string'
+    ? convertIsoTextToLocalDateAndTimeText(dataValue)
+    : undefined;
+}
+
 function isNumberTheFieldCanHold(field: SchemaFormFieldDescription, dataValue: unknown): boolean {
   if (typeof dataValue !== 'number' || !Number.isFinite(dataValue)) {
     return false;
@@ -91,8 +112,7 @@ export function convertDataValueIntoFormValue(
         : cannotBeShown;
     }
     case 'dateTime': {
-      const localText =
-        typeof dataValue === 'string' ? convertIsoTextToLocalDateAndTimeText(dataValue) : undefined;
+      const localText = convertMomentIntoLocalDateAndTimeText(field, dataValue);
       return localText === undefined ? cannotBeShown : { status: 'shown', formValue: localText };
     }
     case 'number': {
@@ -216,9 +236,11 @@ export function readDataValueFromFormValue(
     }
     case 'dateTime': {
       const isoText = convertLocalDateAndTimeTextToIsoText(typedText);
-      return isoText === undefined
-        ? { status: 'unreadable', problem: 'notADateAndTime' }
-        : { status: 'value', value: isoText };
+      if (isoText === undefined) {
+        return { status: 'unreadable', problem: 'notADateAndTime' };
+      }
+      // A moment in milliseconds (`v_baja.unit: "epochMs"`) goes as its number.
+      return { status: 'value', value: field.isWholeNumber ? Date.parse(isoText) : isoText };
     }
   }
 }

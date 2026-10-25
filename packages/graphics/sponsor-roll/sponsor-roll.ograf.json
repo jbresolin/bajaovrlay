@@ -1,0 +1,71 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-sponsor-roll",
+  "version": "0.1.0",
+  "name": "Rodízio de patrocinadores",
+  "description": "Todos os patrocinadores dos cadastros, um nível por página em tela cheia, ou um de cada vez no cartão do canto; cada página fica o tempo do seu nível.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "sponsor-roll.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "fullscreen",
+    "category": "sponsor"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 650 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "layout": {
+        "type": "string",
+        "title": "Formato",
+        "description": "Tela cheia: até seis logos por página, na camada de tela cheia. Canto: o cartão do bug, um patrocinador de cada vez, na camada do bug.",
+        "enum": ["fullscreen", "corner"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "fullscreen": "Tela cheia",
+            "corner": "Canto (no lugar do bug)"
+          }
+        },
+        "default": "fullscreen"
+      },
+      "sponsors": {
+        "type": "array",
+        "title": "Patrocinadores",
+        "description": "Em geral a lista dos patrocinadores nos cadastros; um patrocinador sem logo fica de fora.",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "level": {
+              "type": "string",
+              "enum": ["diamante", "ouro", "prata", "bronze", "apoio", "realizacao"]
+            },
+            "logoUrl": { "type": "string", "minLength": 1 },
+            "logoOnLightPlate": { "type": "boolean" },
+            "rollWeight": { "type": "integer", "minimum": 1, "maximum": 10 }
+          },
+          "required": ["name", "level", "logoUrl", "logoOnLightPlate", "rollWeight"],
+          "additionalProperties": false
+        }
+      },
+      "eventWord": {
+        "type": "string",
+        "title": "Palavra do evento",
+        "description": "Opcional, só no canto; ex.: ENDURO, ao lado da marca.",
+        "gddType": "single-line",
+        "default": "ENDURO"
+      }
+    },
+    "required": ["layout", "sponsors"],
+    "additionalProperties": false
+  }
+}

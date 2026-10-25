@@ -34,8 +34,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import {
+  buildDiamanteSponsor,
   buildLogoOfTeam42,
-  buildMasterSponsor,
   buildNarrator,
   buildSaturdaySchedule,
   buildSlicesWithTheLibrary,
@@ -48,14 +48,14 @@ import {
 
 import { EntityLibraryPage } from './EntityLibraryPage';
 
-/** Draws the page with teams 42 and 7, the narrator, the master sponsor and the schedule. */
+/** Draws the page with teams 42 and 7, the narrator, the Diamante sponsor and the schedule. */
 function renderPageWithTheLibrary() {
   return renderOnControlPageConnectedToFakeServer(
     <EntityLibraryPage />,
     buildSlicesWithTheLibrary({
       teams: [buildTeam42WithItsLogo(), buildTeam7()],
       people: [buildNarrator()],
-      sponsors: [buildMasterSponsor()],
+      sponsors: [buildDiamanteSponsor()],
       scheduleSlots: buildSaturdaySchedule(),
       media: [buildLogoOfTeam42(), buildUnusedCarPhoto()],
     }),

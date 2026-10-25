@@ -127,7 +127,10 @@ function findRefusalOfBindingsInCommand(
     return undefined;
   }
   const commandCarriesABindingOrAReference = Object.values(command.fields).some(
-    (fieldValue) => fieldValue.kind === 'binding' || fieldValue.kind === 'entity',
+    (fieldValue) =>
+      fieldValue.kind === 'binding' ||
+      fieldValue.kind === 'entity' ||
+      fieldValue.kind === 'entityList',
   );
   const graphicOfTheItem = slices.graphics.find((graphic) => graphic.id === itemBefore.graphicId);
   if (graphicOfTheItem === undefined) {

@@ -40,7 +40,11 @@ export type RaceClockParts = RaceClockAnimatedElements & {
 /** The race clock's markup, drawn once. data-testid names are how code and tests find parts. */
 export function renderRaceClockTemplate(): TemplateResult {
   return html`
-    <section class="race-clock-panel" data-testid="race-clock-panel" data-flag-band="shown">
+    <section
+      class="clock-card race-clock-panel"
+      data-testid="race-clock-panel"
+      data-flag-band="shown"
+    >
       <header class="head">
         <img
           class="logo"

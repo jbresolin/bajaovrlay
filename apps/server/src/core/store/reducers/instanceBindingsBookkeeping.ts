@@ -36,13 +36,14 @@ export function listBoundFieldsKeptByNewInstance(
 
 /**
  * The fields a new instance reads from the entity library, in the item's field order:
- * every one, on program and on preview alike, because an entity reference is always
- * live (an edit of the record refreshes it; there is nothing frozen to read again).
+ * every one, on program and on preview alike, because an entity reference and an entity
+ * list (BAJAOVRLAY-46) are always live (an edit, add or delete refreshes them; there is
+ * nothing frozen to read again).
  */
 export function listEntityFieldsKeptByNewInstance(fields: ItemFields): InstanceEntityField[] {
   const entityFields: InstanceEntityField[] = [];
   for (const [fieldKey, fieldValue] of Object.entries(fields)) {
-    if (fieldValue.kind === 'entity') {
+    if (fieldValue.kind === 'entity' || fieldValue.kind === 'entityList') {
       entityFields.push({ fieldKey, entityReference: fieldValue });
     }
   }

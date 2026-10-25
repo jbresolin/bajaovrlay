@@ -42,11 +42,11 @@ describe('EntityFieldValueSchema', () => {
     },
     // The sponsor bug's logo.
     {
-      name: "accepts the master sponsor's logo, by id",
+      name: "accepts the Diamante sponsor's logo, by id",
       reference: {
         kind: 'entity',
         entityType: 'sponsor',
-        sponsorId: 'patrocinador-master',
+        sponsorId: 'patrocinador-diamante',
         attribute: 'logoUrl',
       },
     },

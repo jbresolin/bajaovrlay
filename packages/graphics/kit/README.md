@@ -1,7 +1,9 @@
 # graphics-kit (`@bajaovrlay/graphics-kit`)
 
 What two or more OGraf graphics share, written once (BAJAOVRLAY-24; the clock's reading, ticker
-and flag since BAJAOVRLAY-23, for the race clock and the strip's and ticker's clock block). Each graphic lists it as a
+and flag since BAJAOVRLAY-23, for the race clock and the strip's and ticker's clock block; the
+sponsor round, the countdown and the narrow board since BAJAOVRLAY-46, for the countdown, the
+sessions board, the sponsor roll and the intermission board). Each graphic lists it as a
 workspace dependency and Vite bundles the parts it imports into the graphic's own `dist/`: no
 graphic loads anything at run time, so rule 3 (graphics never fetch) holds. Like the theme, the
 kit is imported from its TypeScript source and has no build of its own. It is not a graphic.
@@ -27,11 +29,28 @@ src/pageHold.ts                          a page hold (--motion-strip-hold, --mot
 src/barStyles.ts                         the bars' host, grid (one column less without the clock) and page cell
 src/barMotion.ts                         the strip's and the ticker's GSAP timelines: cascade in, out together, turn in place
 src/waitForImagesToSettle.ts             load's wait for a graphic's images (at most 2 s; a broken one never blocks)
+src/sponsorRound.ts                      every sponsor round: the level order (shared's), each level's heading and hold
+src/ptBRSponsorLevelHeadings.ts          the on-air heading of each level ("PATROCÍNIO DIAMANTE"); read through sponsorRound only
+src/sponsorPages.ts                      a round's pages: one level a page, a level shared evenly between its pages
+src/sponsorPageTurner.ts                 a round's page timer: the pageTurner, each page held by its level
+src/stackedPageLayers.ts                 two layers in one place: which page each holds through a turn or a redraw
+src/countdownText.ts                     the count to a start (m:ss, h:mm:ss, never negative) and a start's time of day
+src/countdownClock.ts                    the count on air: redrawn every frame at server time, stopped at 0:00
+src/boardHead.ts                         the narrow boards' head card: logo, title, subtitle, the line at the right
+src/boardStyles.ts                       the narrow boards' frame (--board-width, centred) and head card
+src/boardMotion.ts                       the boards' rise (each piece at its own start) and the crossfade of a state
+src/clockCardStyles.ts                   the clock card's frame, head and body: the race clock's and the countdown card's
+src/bugCardStyles.ts                     the bug's card: the sponsor bug's and the sponsor roll's corner card
+src/pointsText.ts                        a score as the boards write it ("921,8", "−15"): the standings' and the intermission's
+src/standingsRowStyles.ts                a standings row's pill and cells: the standings' and the intermission's top five
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
+src/the30thCompetitionSponsorsSample.ts  the previews' 17 real sponsors, logos in preview-sponsor-logos/
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests
 src/tokenOverrides.testSupport.ts        tests only: theme tokens on :root before the graphic loads
 src/ografSchemaValidator.testSupport.ts  tests only: the ajv validator over the vendored ograf-schema/
+src/the30thCompetitionSponsors.testSupport.ts  tests only: the same 17, each logo a /media address
+src/runningMotions.testSupport.ts        tests only: ends every running GSAP timeline at once
 ograf-schema/                            the official OGraf v1 schemas, vendored once (see its README)
 ```
 

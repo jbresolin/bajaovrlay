@@ -78,7 +78,7 @@ describe('Cadastros opened at the address of a record', () => {
 
   it('opens the tab of a record no longer in the library, with no form', () => {
     // Arrange: the address of a sponsor deleted since.
-    openTheAddress('#/cadastros/sponsor/patrocinador-master');
+    openTheAddress('#/cadastros/sponsor/patrocinador-diamante');
 
     // Act: draw Cadastros.
     renderCadastrosWithTeam42AndTheNarrator();

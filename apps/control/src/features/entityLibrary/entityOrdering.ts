@@ -1,23 +1,23 @@
-import type {
-  EntityLibrary,
-  EntityType,
-  Person,
-  ScheduleSlot,
-  Sponsor,
-  SponsorTier,
-  Team,
+import {
+  type EntityLibrary,
+  type EntityType,
+  findPlaceOfSponsorLevelInRound,
+  type Person,
+  type ScheduleSlot,
+  type Sponsor,
+  type Team,
 } from '@bajaovrlay/shared';
 
 import type { AnyEntityRecord } from './entityRecordsOfType';
 
 /**
  * The order each tab lists its records in, the table and the CSV export alike: teams by
- * car number, people by name, sponsors by tier (master first) then name, the schedule by
+ * car number, people by name, sponsors by level in round order (Diamante first, Realização
+ * last, as on air: sponsorLevels.ts in shared) then name, the schedule by
  * its start ("ordenada pelo início", the brief). Names compare as pt-BR reads them, so
  * "Ângela" sits with the A's.
  */
 
-const tierOrder: SponsorTier[] = ['master', 'ouro', 'prata', 'bronze', 'apoio'];
 const namesInPortugueseOrder = new Intl.Collator('pt-BR', { sensitivity: 'base' });
 
 /** The teams by car number. */
@@ -32,12 +32,13 @@ export function sortPeople(people: Person[]): Person[] {
   );
 }
 
-/** The sponsors by tier, master first, then by name within a tier. */
+/** The sponsors by level, Diamante first, then by name within a level. */
 export function sortSponsors(sponsors: Sponsor[]): Sponsor[] {
   return [...sponsors].sort((first, second) => {
-    const tierDifference = tierOrder.indexOf(first.tier) - tierOrder.indexOf(second.tier);
-    if (tierDifference !== 0) {
-      return tierDifference;
+    const levelDifference =
+      findPlaceOfSponsorLevelInRound(first.tier) - findPlaceOfSponsorLevelInRound(second.tier);
+    if (levelDifference !== 0) {
+      return levelDifference;
     }
     return namesInPortugueseOrder.compare(first.name, second.name);
   });

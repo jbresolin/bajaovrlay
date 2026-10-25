@@ -142,7 +142,7 @@ async function addTheSponsorWithItsLogoOnThePlate(page: Page): Promise<void> {
   const sponsorForm = page.getByRole('form', { name: 'Novo patrocinador' });
   await sponsorForm.getByLabel('Nome', { exact: true }).fill(sponsorName);
   await sponsorForm.getByRole('combobox', { name: 'Cota', exact: true }).click();
-  await page.getByRole('option', { name: 'Master', exact: true }).click();
+  await page.getByRole('option', { name: 'Diamante', exact: true }).click();
   await sponsorForm.getByLabel('Peso no rodízio', { exact: true }).fill('10');
   await sponsorForm.getByLabel('Logo', { exact: true }).setInputFiles({
     name: 'logo-serra-azul.png',

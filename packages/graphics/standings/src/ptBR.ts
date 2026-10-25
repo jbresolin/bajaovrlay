@@ -24,10 +24,6 @@ export const ptBR = {
   emptyMark: '—',
   /** The total of a disqualified team. */
   disqualifiedTotal: 'DESCL.',
-  /** The minus sign of a negative score (SEG., PEN.): the typographic one, not the hyphen. */
-  minusSign: '−',
-  /** The decimal comma of a fractional score ("903,48"). */
-  decimalSeparator: ',',
   /** The head's line with several pages: the page, then the rows it shows ("2/3 · 21º A 40º"). */
   pageLine: (
     pageNumber: number,

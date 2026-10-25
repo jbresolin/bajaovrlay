@@ -1,26 +1,13 @@
 /**
- * The words and numbers of one standings row, as the design pages write them
- * (docs/design/tools/buildSampleData.mjs, `writePoints`): a score rounded to two decimals
- * with the zeros after the comma dropped ("921,8", "312,5", "150"), the decimal comma, and
- * the typographic minus for a negative part ("−15"), never the hyphen, which Bebas Neue
- * draws short and high. No thousands separator: the design has none, and no score of the
- * competition reaches 1000. A value the source does not know is "—", never a 0.
+ * The words and numbers of one standings row, as the design pages write them: each score by
+ * the kit's writePointsAsText ("921,8", "−15"; shared with the intermission's top five), a
+ * value the source does not know as "—", never a 0, and a disqualified team's "—" and
+ * "DESCL.".
  */
+import { writePointsAsText } from '@bajaovrlay/graphics-kit/pointsText';
+
 import { ptBR } from './ptBR.js';
 import type { StandingsEntry } from './standingsModel.js';
-
-/** Writes a score the way the board shows it: 903.48 → "903,48", -15 → "−15", 150 → "150". */
-export function writePointsAsText(points: number): string {
-  const roundedToTwoDecimals = Math.round(points * 100) / 100;
-  // String() drops the zeros after the point (312.50 is "312.5") and gives "0" for -0,
-  // which the rounding of a tiny negative leaves.
-  const pointWritten = String(roundedToTwoDecimals);
-  const commaWritten = pointWritten.replace('.', ptBR.decimalSeparator);
-  if (roundedToTwoDecimals < 0) {
-    return commaWritten.replace('-', ptBR.minusSign);
-  }
-  return commaWritten;
-}
 
 /** The rank cell: the rank, or "—" for a disqualified team (which has none). */
 export function writeRankText(entry: StandingsEntry): string {

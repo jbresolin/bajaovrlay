@@ -199,7 +199,8 @@ function buildRuleForField(field: SchemaFormFieldDescription): z.ZodType | undef
     case 'select':
       return buildRuleForSelect(field);
     case 'dateTime':
-      return buildRuleForDateAndTime(field);
+      // A moment in milliseconds (`v_baja.unit: "epochMs"`) is a number in the data.
+      return field.isWholeNumber ? buildRuleForNumber(field) : buildRuleForDateAndTime(field);
     case 'number':
     case 'duration':
       return buildRuleForNumber(field);

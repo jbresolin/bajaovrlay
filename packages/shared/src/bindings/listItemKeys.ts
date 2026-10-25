@@ -51,14 +51,25 @@ function readKeysTheFieldRequiresOfEachItem(arrayField: Record<string, unknown>)
 }
 
 /**
- * Whether a whole list fits one list field: every key the field requires of an element is
- * one the list's elements always carry. A field that requires nothing takes any list.
+ * The rule every whole list follows, a source's or the entity library's (BAJAOVRLAY-46):
+ * every key the list field's `items.required` names is among the keys each element of the
+ * list always carries. A field that requires nothing takes any list.
  */
+export function doElementsCarryEveryKeyTheArrayFieldRequires(
+  keysEveryElementCarries: string[],
+  arrayField: Record<string, unknown>,
+): boolean {
+  const keysRequired = readKeysTheFieldRequiresOfEachItem(arrayField);
+  return keysRequired.every((key) => keysEveryElementCarries.includes(key));
+}
+
+/** Whether a whole list of a source fits one list field, by the rule above. */
 export function doesListFitArrayField(
   listType: ListValueType,
   arrayField: Record<string, unknown>,
 ): boolean {
-  const keysCarried = keysEveryItemOfTheListCarries[listType];
-  const keysRequired = readKeysTheFieldRequiresOfEachItem(arrayField);
-  return keysRequired.every((key) => keysCarried.includes(key));
+  return doElementsCarryEveryKeyTheArrayFieldRequires(
+    keysEveryItemOfTheListCarries[listType],
+    arrayField,
+  );
 }

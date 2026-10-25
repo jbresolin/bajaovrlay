@@ -66,5 +66,11 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   pontuação" open on the simulator (the manifest's suggestions) shows 20 rows under the six parts. The page turn is the
   standings package's component test (fake time), never a 10 s wait here.
 
+- The boards read from Cadastros (BAJAOVRLAY-46): `cadastrosBoardsWalk.e2e.ts` (the brief's walk, three tests): sponsors
+  imported from a CSV (one written "master", read as Diamante) and Bosch given a logo, a "Rodízio de patrocinadores" whose
+  list is "Lista dos cadastros" ("Valor agora: 1 patrocinador") heads its page "PATROCÍNIO DIAMANTE"; the schedule
+  imported from a CSV, a "Contagem regressiva" card whose session and start read the enduro's slot counts down on the
+  `clock` layer; a "Programação do dia" on "Lista dos cadastros" shows the three slots in order.
+
 `emptyTheServerState.ts` empties the server before each test, panels, macros, "vai limpar" marks, corrections of a source's values, waiting events and the entity library with its images included, the event rules back to their defaults, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it; `emptyServerStateEventInbox.e2e.ts` the event inbox part). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database). A second checkout running its browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (for example 100: 5287/5288), which moves every package's browser-test ports alike; it is read once, in `scripts/e2ePortOffset.ts`, and anything but a whole number counts as 0.
 `clockStoppedOnAir.e2e.ts` fails locally when the WSL clock steps (a time sync moves the wall clock); the fix is syncing the Windows clock (Settings → Time & language → Date & time → Sync now), then running `wsl --shutdown` in PowerShell and reopening the terminal, not quarantine.

@@ -1,10 +1,13 @@
-// One item field that reads the entity library, at the take or the preview: the case of
-// resolveItemFieldsIntoGraphicData for an `entity` reference, kept in its own file.
+// One item field that reads the entity library, at the take or the preview: the cases of
+// resolveItemFieldsIntoGraphicData for an `entity` reference and an `entityList`, kept in
+// their own file.
 import {
   type CommandError,
   type EntityFieldValue,
   type EntityLibrary,
+  type EntityListFieldValue,
   type Graphic,
+  resolveEntityListAgainstLibrary,
   resolveEntityReferenceAgainstLibrary,
 } from '@bajaovrlay/shared';
 
@@ -37,6 +40,36 @@ export function resolveEntityField(
   const isOptionalFieldWithoutValue =
     resolution.status === 'valueAbsent' && !requiredFieldKeys.includes(fieldKey);
   if (isOptionalFieldWithoutValue) {
+    return { status: 'filled', keysAndValues: [] };
+  }
+  const fieldTitle = graphic === undefined ? fieldKey : readTitleOfField(graphic, fieldKey);
+  return {
+    status: 'refused',
+    error: {
+      code: 'ENTITY_NOT_RESOLVED',
+      message: ptBR.bindingErrors.aboutField(fieldTitle, resolution.problem),
+    },
+  };
+}
+
+/**
+ * One field read from the library as a whole list (BAJAOVRLAY-46): every sponsor with a
+ * logo, or every slot, in the shared order. An empty list leaves an optional field out
+ * (the intermission board draws no sponsor line) and refuses a required one, naming it,
+ * as a value absent on a required entity reference does.
+ */
+export function resolveEntityListField(
+  fieldKey: string,
+  list: EntityListFieldValue,
+  graphic: Graphic | undefined,
+  entities: EntityLibrary,
+  requiredFieldKeys: string[],
+): EntityFieldOutcome {
+  const resolution = resolveEntityListAgainstLibrary(list, entities);
+  if (resolution.status === 'resolved') {
+    return { status: 'filled', keysAndValues: [[fieldKey, resolution.value]] };
+  }
+  if (!requiredFieldKeys.includes(fieldKey)) {
     return { status: 'filled', keysAndValues: [] };
   }
   const fieldTitle = graphic === undefined ? fieldKey : readTitleOfField(graphic, fieldKey);

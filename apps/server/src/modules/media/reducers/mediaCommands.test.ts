@@ -31,7 +31,7 @@ import { describe, expect, it } from 'vitest';
 import { reduceCommand } from '../../../core/store/reducers/reduceCommand.js';
 import { contextOfTheRundownCommand } from '../../../core/store/reducers/rundownSlices.testSupport.js';
 import {
-  buildMasterAndSupportSponsors,
+  buildDiamanteAndSupportSponsors,
   buildRaceDaySlicesWithEntities,
   buildTeam42,
 } from '../../entities/entitySlices.testSupport.js';
@@ -242,9 +242,9 @@ describe('a record naming an image the store does not hold', () => {
   it('refuses an upsert of a sponsor whose logo is not in the store', () => {
     // Arrange: a race day with no image.
     const slicesBefore = { ...buildRaceDaySlicesWithEntities({}), media: [] };
-    const [masterSponsor] = buildMasterAndSupportSponsors();
-    if (masterSponsor === undefined) {
-      throw new Error('the factory must build the master sponsor');
+    const [diamanteSponsor] = buildDiamanteAndSupportSponsors();
+    if (diamanteSponsor === undefined) {
+      throw new Error('the factory must build the Diamante sponsor');
     }
 
     // Act: save the sponsor with a logo id nobody uploaded.
@@ -253,7 +253,7 @@ describe('a record naming an image the store does not hold', () => {
       {
         type: 'upsertEntity',
         entityType: 'sponsor',
-        record: { ...masterSponsor, logoMediaId: logoOfTeam42MediaId },
+        record: { ...diamanteSponsor, logoMediaId: logoOfTeam42MediaId },
       },
       contextOfTheRundownCommand,
     );

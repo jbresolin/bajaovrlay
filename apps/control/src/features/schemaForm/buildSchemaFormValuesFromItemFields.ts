@@ -9,7 +9,7 @@
  * starting value instead and its label is listed, so the panel can warn the operator
  * that saving writes what the form shows.
  */
-import { type ItemFields, wholeClockBindingPath } from '@bajaovrlay/shared';
+import { type EntityListType, type ItemFields, wholeClockBindingPath } from '@bajaovrlay/shared';
 
 import {
   canFieldTakeTheWholeClock,
@@ -64,7 +64,8 @@ function listKeysFilledByAStoredWholeClock(
  * `takeTime` shows as "filled by the server at the take" where the form offers that, a
  * `binding` as "Fonte" with its choices, or as "Relógio da fonte" for the whole clock on
  * the time field (its three other clock fields are then the whole clock's, not
- * unreadable), and an `entity` reference as "Cadastro" with its choices.
+ * unreadable), an `entity` reference as "Cadastro" with its choices, and an `entityList`
+ * on a list field as "Lista dos cadastros" with its kind (BAJAOVRLAY-46).
  * - A field the item does not store, or stores as a literal null: cleared when optional;
  *   listed, and started as in an empty form (starting value and kind), when required.
  * - A literal the control cannot show, or a `takeTime` on a field that does not offer
@@ -87,6 +88,7 @@ export function buildSchemaFormValuesFromItemFields(
   const bindingPairs: Array<[string, SchemaFormBindingValue]> = [];
   const eventPathPairs: Array<[string, string]> = [];
   const entityReferencePairs: Array<[string, SchemaFormEntityReferenceValue]> = [];
+  const entityListPairs: Array<[string, EntityListType]> = [];
   const unsupportedValuesAsJson: UnsupportedValueAsJson[] = [];
   const labelsOfFieldsThatCouldNotBeRead: string[] = [];
   const keysFilledByAStoredWholeClock = listKeysFilledByAStoredWholeClock(description, itemFields);
@@ -109,6 +111,11 @@ export function buildSchemaFormValuesFromItemFields(
       if (storedField?.kind === 'binding') {
         kindPairs.push([field.key, 'binding']);
         bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(storedField)]);
+      }
+      // A list field reading every sponsor or slot shows "Lista dos cadastros" (BAJAOVRLAY-46).
+      if (storedField?.kind === 'entityList') {
+        kindPairs.push([field.key, 'entityList']);
+        entityListPairs.push([field.key, storedField.entityType]);
       }
       continue;
     }
@@ -182,6 +189,8 @@ export function buildSchemaFormValuesFromItemFields(
         entityReferencePairs,
       ),
       eventPaths: Object.fromEntries(eventPathPairs),
+      // Only a form that holds a list of Cadastros carries the key (schemaFormValues.ts).
+      ...(entityListPairs.length > 0 ? { entityLists: Object.fromEntries(entityListPairs) } : {}),
     },
     labelsOfFieldsThatCouldNotBeRead,
   };

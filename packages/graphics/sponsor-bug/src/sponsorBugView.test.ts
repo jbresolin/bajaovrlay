@@ -25,7 +25,7 @@ import { describe, expect, it } from 'vitest';
 import type { SponsorBugData } from './sponsorBugModel.js';
 import { renderSponsorBugTemplate } from './sponsorBugView.js';
 
-/** The enduro's bug presented by the master sponsor, its logo on the light plate. */
+/** The enduro's bug presented by the Diamante sponsor, its logo on the light plate. */
 function createEnduroBugWithSponsor(): SponsorBugData {
   return {
     eventWord: 'ENDURO',
