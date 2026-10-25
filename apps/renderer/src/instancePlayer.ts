@@ -7,7 +7,8 @@
  * Three rules shape this file:
  *   - Operations on one layer run strictly one after the other, each waiting for the
  *     graphic's promise. Different layers each have their own queue and never wait for
- *     one another, so a slow animation on the clock cannot hold up a lower third.
+ *     one another, so a slow animation on the clock cannot hold up a lower third
+ *     (layerOperationQueue.ts).
  *   - A graphic that fails (its module cannot be imported, its load throws or is refused)
  *     is logged and leaves its layer empty. It never stops the queue of its own layer or
  *     of any other.
@@ -24,12 +25,9 @@ import type { Graphic, Instance, InstanceStatusMessage } from '@bajaovrlay/share
 
 import type { GraphicLoader } from './graphicLoader.js';
 import { type GraphicOnLayer, loadInstanceIntoItsLayer } from './instanceLoading.js';
-import {
-  findInstanceAnOperationPutsOnAir,
-  type InstanceOperation,
-  type LayerOperations,
-} from './instanceReconciler.js';
+import type { InstanceOperation, LayerOperations } from './instanceReconciler.js';
 import type { LayerContainers } from './layerContainers.js';
+import { createLayerOperationQueue } from './layerOperationQueue.js';
 import { makeLifecycleCall } from './lifecycleCall.js';
 import { logRendererEvent } from './rendererLog.js';
 
@@ -73,40 +71,6 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
   // What is really on each layer right now, as far as the page goes. A graphic whose
   // load failed is never in this map, even though the server lists its instance.
   const graphicOnLayerByLayerId = new Map<string, GraphicOnLayer>();
-  // The end of each layer's queue: the promise of the last operation queued on it.
-  const endOfQueueByLayerId = new Map<string, Promise<void>>();
-
-  function runLayerOperations(layerOperations: LayerOperations[], graphics: Graphic[]): void {
-    for (const { layerId, operations } of layerOperations) {
-      for (const operation of operations) {
-        const endOfQueue = endOfQueueByLayerId.get(layerId) ?? Promise.resolve();
-        const thisOperation = endOfQueue
-          .then(() => runOneOperation(layerId, operation, graphics))
-          // Nothing below is expected to throw; if it does, the layer's queue must go on
-          // (instancePlayer.test.ts proves it with an element that cannot be created).
-          .catch((unexpectedError: unknown) => {
-            logEvent('error', 'renderer operation failed unexpectedly', {
-              layerId,
-              operation: operation.kind,
-              reason: String(unexpectedError),
-            });
-            // Without this report the instance would read "loading" in the layer panel
-            // for ever, with nothing on screen and nothing to say why.
-            const instanceGoingOnAir = findInstanceAnOperationPutsOnAir(operation);
-            if (instanceGoingOnAir !== undefined) {
-              reportInstanceStatus({
-                type: 'instanceStatus',
-                instanceId: instanceGoingOnAir.id,
-                status: 'failed',
-                detail: `the renderer failed unexpectedly: ${String(unexpectedError)}`,
-              });
-            }
-          });
-        endOfQueueByLayerId.set(layerId, thisOperation);
-      }
-    }
-  }
-
   async function runOneOperation(
     layerId: string,
     operation: InstanceOperation,
@@ -396,5 +360,5 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     return graphicOnLayer;
   }
 
-  return { runLayerOperations };
+  return createLayerOperationQueue({ runOneOperation, reportInstanceStatus, logEvent });
 }

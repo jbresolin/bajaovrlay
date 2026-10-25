@@ -293,19 +293,3 @@ function findChangedFields(
   }
   return changedData;
 }
-
-/**
- * The instance an operation is meant to put on air, or undefined when it puts none: what
- * the player reports as failed when such an operation throws.
- */
-export function findInstanceAnOperationPutsOnAir(
-  operation: InstanceOperation,
-): Instance | undefined {
-  if (operation.kind === 'loadAndPlay') {
-    return operation.instance;
-  }
-  if (operation.kind === 'replace') {
-    return operation.incomingInstance;
-  }
-  return undefined;
-}
