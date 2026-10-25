@@ -13,6 +13,7 @@ import {
   findClockBlockParts,
   renderClockBlockTemplate,
 } from '@bajaovrlay/graphics-kit/clockBlock';
+import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { html, type TemplateResult } from 'lit';
 
 import { ptBR } from './ptBR.js';
@@ -31,7 +32,7 @@ export type MessageTickerParts = {
 /** The bar's markup, drawn once. data-testid names are how code and tests find parts. */
 export function renderMessageTickerTemplate(): TemplateResult {
   return html`<section
-    class="message-ticker"
+    class="message-ticker bar"
     data-testid="message-ticker-bar"
     data-clock-block="shown"
   >
@@ -74,13 +75,6 @@ export function findMessageTickerParts(renderRoot: ParentNode): MessageTickerPar
     messagePills: [firstMessagePill, secondMessagePill],
     pageCell: findPart(renderRoot, 'message-ticker-page-cell'),
   };
-}
-
-/** Changes an element's text only when it differs, so an unchanged update touches nothing. */
-function writeTextIfChanged(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
 }
 
 /** Writes the label pill ("AVISO"). */

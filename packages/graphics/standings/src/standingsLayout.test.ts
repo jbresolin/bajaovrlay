@@ -28,7 +28,6 @@ import {
   overallScoreParts,
 } from './previewData.js';
 import {
-  chooseNextPageInCycle,
   chooseStandingsLayout,
   keepPageInsideTheList,
   layOutStandingsPage,
@@ -201,17 +200,5 @@ describe('keeping the page inside the list', () => {
 
     // Assert: page 2, the last there is.
     expect(pageNumber, 'a page past the end must become the last page').toBe(2);
-  });
-
-  it('goes back to page 1 after the last page of the cycle', () => {
-    // Arrange: a three-page table on its third page.
-
-    // Act: choose the next page after 3, and after 1.
-    const pageAfterTheLast = chooseNextPageInCycle(3, 3);
-    const pageAfterTheFirst = chooseNextPageInCycle(1, 3);
-
-    // Assert: 1 after 3, 2 after 1.
-    expect(pageAfterTheLast, 'the cycle must come back to page 1').toBe(1);
-    expect(pageAfterTheFirst, 'page 2 comes after page 1').toBe(2);
   });
 });

@@ -7,13 +7,14 @@
  * data, the motion and the page timer; this file keeps which page is shown, draws it
  * (standingsLayout picks the teams, standingsView writes them) and runs the turn.
  */
+import { chooseNextPageInCycle } from '@bajaovrlay/graphics-kit/pageCycle';
+
 import {
   buildLiftOutTogetherTimeline,
   buildPageInTimeline,
   type StandingsTimeline,
 } from './standingsAnimations.js';
 import {
-  chooseNextPageInCycle,
   chooseStandingsLayout,
   countStandingsPages,
   layOutStandingsPage,

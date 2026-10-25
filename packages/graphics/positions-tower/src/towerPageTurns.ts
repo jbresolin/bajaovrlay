@@ -8,8 +8,9 @@
  * these, tells it when to turn and what arrived, and keeps the lifecycle, the data and
  * the page timer; the stage (towerStage.ts) does the drawing and the motion.
  */
+import { chooseNextPageInCycle } from '@bajaovrlay/graphics-kit/pageCycle';
+
 import type { TowerEntry } from './positionsTowerModel.js';
-import { chooseNextPageInCycle } from './towerPages.js';
 import type { TowerStage } from './towerStage.js';
 
 /** What the turns need from the component; the readers are called again after every await. */

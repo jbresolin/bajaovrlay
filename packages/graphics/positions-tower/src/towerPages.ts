@@ -21,9 +21,3 @@ export function countTowerPages(entryCount: number, rowsPerPage: number): number
   const pagesNeeded = Math.ceil(entryCount / rowsPerPage);
   return Math.max(1, pagesNeeded);
 }
-
-/** The page after `currentPage` in a cycle of `pageCount` pages; the last wraps to 1. */
-export function chooseNextPageInCycle(currentPage: number, pageCount: number): number {
-  const isOnTheLastPage = currentPage >= pageCount;
-  return isOnTheLastPage ? 1 : currentPage + 1;
-}

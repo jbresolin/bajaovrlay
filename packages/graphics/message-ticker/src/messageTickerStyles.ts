@@ -1,7 +1,8 @@
 /**
  * The message ticker's look in Ardósia: the design's `.message-ticker*` rules (PR #21,
  * docs/design/tools/slate-cards.css, on the strip's `.lower-strip` bar) written against the
- * theme's tokens alone; the clock block's look is the kit's (clockBlockStyles). No fallback
+ * theme's tokens alone; the clock block's look is the kit's (clockBlockStyles), and the
+ * bar, its no-clock variant and the page cell are the kit's barStyles. No fallback
  * values, by design: without the theme the bar is unstyled, and packages/theme's
  * noHardCodedValues guard keeps it so.
  *
@@ -9,37 +10,14 @@
  * the label pill in the denser slate, the message pill and the page cell. It has no chip, no
  * yellow and no green, so it can never be read as a standings page.
  */
+import { barStyles } from '@bajaovrlay/graphics-kit/barStyles';
 import { clockBlockStyles } from '@bajaovrlay/graphics-kit/clockBlockStyles';
 import { css } from 'lit';
 
 const messageTickerOwnStyles = css`
-  :host {
-    /* The graphic covers the whole 1920x1080 stage and places the bar along the bottom. */
-    position: absolute;
-    inset: 0;
-    display: block;
-    pointer-events: none;
-  }
-
+  /* The kit's bar, its words set in the rows' case (Bebas Neue has no lowercase). */
   .message-ticker {
-    position: absolute;
-    left: var(--stage-safe-side);
-    right: var(--stage-safe-side);
-    bottom: var(--stage-safe-bottom);
-    height: var(--strip-height);
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: var(--row-gap);
-    font-family: var(--font-display);
-    color: var(--text);
     text-transform: var(--case-rows);
-    -webkit-font-smoothing: antialiased;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Without its clock block the bar is the label, the message and the page cell. */
-  .message-ticker[data-clock-block='hidden'] {
-    grid-template-columns: 1fr auto;
   }
 
   .pages {
@@ -93,18 +71,6 @@ const messageTickerOwnStyles = css`
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
-  .page-cell {
-    display: flex;
-    align-items: center;
-    padding: 0 var(--space-4);
-    border-radius: var(--radius);
-    background: var(--panel-base);
-    box-shadow: var(--shadow);
-    font-size: var(--size-strip);
-    font-weight: var(--weight-number);
-    color: var(--text-muted);
-  }
 `;
 
-export const messageTickerStyles = [clockBlockStyles, messageTickerOwnStyles];
+export const messageTickerStyles = [barStyles, clockBlockStyles, messageTickerOwnStyles];

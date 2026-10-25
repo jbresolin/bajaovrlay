@@ -5,7 +5,7 @@
  * lifecycle, the motion and the two timers, and wires messageTickerModel (data, within
  * messageLimits), messageTickerPageTurns (the message on air, a turn and what arrived
  * during it), messageTickerView (the DOM, written in place) and the kit's clock block on a
- * bar (frame loop, redraw, switch), motion runner, barMotion, pageTurner, stripPageHold and
+ * bar (frame loop, redraw, switch), motion runner, barMotion, pageTurner, pageHold and
  * playSteps.
  * Messages page every `--motion-strip-hold` and never scroll; the clock block is redrawn
  * every frame on air with the server-aligned "now".
@@ -37,9 +37,12 @@ import type {
   OGrafStopActionParams,
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
+import {
+  readHoldMsOrFallback,
+  stripHoldMsWhenTokenMissing,
+} from '@bajaovrlay/graphics-kit/pageHold';
 import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
-import { readStripHoldMs } from '@bajaovrlay/graphics-kit/stripPageHold';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -82,7 +85,7 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
   private readonly motionRunner: MotionTimelineRunner = createMotionTimelineRunner();
   private readonly pageTurner: PageTurner = createPageTurner({
     onTurn: () => this.turnToTheNextPageNow(),
-    readHoldMs: () => readStripHoldMs(this),
+    readHoldMs: () => readHoldMsOrFallback(this, 'stripHoldMs', stripHoldMsWhenTokenMissing),
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
   });

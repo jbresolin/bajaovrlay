@@ -11,6 +11,7 @@ import {
   type FlagState,
   writeRaceClockTimeTextAt,
 } from '@bajaovrlay/graphics-kit/raceClockReading';
+import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 // The white logo lives in the theme package; Vite bundles a copy into this graphic's
 // dist/assets/, so the built clock works from the preview and from the air alike.
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
@@ -87,13 +88,6 @@ export function findRaceClockParts(renderRoot: ParentNode): RaceClockParts {
     incomingFlagLayer: findPart('race-clock-incoming-flag-layer'),
     incomingFlagLabel: findPart('race-clock-incoming-flag-label'),
   };
-}
-
-/** Changes an element's text only when it differs, so unchanged frames touch nothing. */
-function writeTextIfChanged(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
 }
 
 /** Writes the session title, the clock caption and the leader laps (hidden when absent). */

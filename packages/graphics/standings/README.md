@@ -8,8 +8,8 @@ teams close the list, dimmed, "—" and "DESCL."; rank 1, tied or not, is on the
 
 Start at `standings.ograf.json` and `src/standings.ts` (the OGraf lifecycle and the motion; it
 wires `standingsModel`, `standingsPageTurns` (the page shown and a turn), `standingsLayout`,
-`standingsView`, `standingsText`, `standingsAnimations`, `standingsPageHold`, `ptBR` and the kit's
-`pageTurner`). A live update on air redraws the current page in place (same rows, no re-entry); a
+`standingsView`, `standingsText`, `standingsAnimations`, `ptBR` and the kit's `pageTurner`,
+`pageHold` and `pageCycle`). A live update on air redraws the current page in place (same rows, no re-entry); a
 team that changes place or page is simply drawn where it now is: re-ranking is not animated in this
 task (BAJAOVRLAY-24).
 

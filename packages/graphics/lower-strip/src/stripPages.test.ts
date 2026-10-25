@@ -9,7 +9,6 @@
  * What these tests prove:
  *   - The real 34-car field makes 6 pages: five of six cars and one of four, and the page
  *     cells read "1/6" to "6/6".
- *   - The pages cycle: after the last comes the first.
  *   - A page past the last, after the list shrank on air, shows the last page.
  *   - An empty list is one empty page.
  *
@@ -22,7 +21,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   carsPerStripPage,
-  chooseNextStripPage,
   countStripPages,
   listCarsOfStripPage,
   writePageCellText,
@@ -57,26 +55,6 @@ describe('the pages of the real 34-car field', () => {
       pages.map((page) => page.pageCell),
       'the page cells',
     ).toEqual(['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']);
-  });
-});
-
-describe('chooseNextStripPage', () => {
-  const turns = [
-    // The everyday turn.
-    { name: 'turns from page 2 to page 3', pageNumber: 2, expected: 3 },
-    // The strip cycles: after the last page it starts again from the leader.
-    { name: 'turns from the last page back to page 1', pageNumber: 6, expected: 1 },
-  ];
-
-  it.each(turns)('$name', ({ pageNumber, expected }) => {
-    // Arrange: the 34-car field's six pages.
-    const pageCount = 6;
-
-    // Act: choose the next page.
-    const nextPage = chooseNextStripPage(pageNumber, pageCount);
-
-    // Assert: the page of this row.
-    expect(nextPage, 'the next page in the cycle').toBe(expected);
   });
 });
 

@@ -15,6 +15,7 @@ import {
   findClockBlockParts,
   renderClockBlockTemplate,
 } from '@bajaovrlay/graphics-kit/clockBlock';
+import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { html, type TemplateResult } from 'lit';
 
 import type { StripCar } from './lowerStripModel.js';
@@ -32,7 +33,11 @@ export type LowerStripParts = {
 
 /** The bar's markup, drawn once. data-testid names are how code and tests find parts. */
 export function renderLowerStripTemplate(): TemplateResult {
-  return html`<section class="lower-strip" data-testid="lower-strip-bar" data-clock-block="shown">
+  return html`<section
+    class="lower-strip bar"
+    data-testid="lower-strip-bar"
+    data-clock-block="shown"
+  >
     ${renderClockBlockTemplate()}
     <div class="pages">
       <ol class="cars" data-testid="lower-strip-lane" aria-label=${ptBR.carListName}></ol>
@@ -59,13 +64,6 @@ export function findLowerStripParts(renderRoot: ParentNode): LowerStripParts {
     lanes: [firstLane, secondLane],
     pageCell,
   };
-}
-
-/** Changes an element's text only when it differs, so an unchanged update touches nothing. */
-function writeTextIfChanged(element: Element, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
 }
 
 /** Builds one empty cell of a car pill, with its class and test id. */

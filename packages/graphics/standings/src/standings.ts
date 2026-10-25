@@ -5,7 +5,7 @@
  * standingsModel (data and defaults), standingsLayout (which board, which teams on which
  * page, the page line), standingsPageTurns (the page shown, a turn and what arrived during
  * it), standingsView (the DOM, rows reused by slot), standingsAnimations (GSAP timelines
- * from the theme's motion tokens), standingsPageHold (the hold between pages), ptBR, and
+ * from the theme's motion tokens), the kit's pageHold (the hold between pages), ptBR, and
  * from the graphics kit pageTurner, playSteps and timelinePlayback.
  *
  * A live update on air draws the current page again in place: the rows keep their slots,
@@ -26,6 +26,10 @@ import type {
   OGrafStopActionParams,
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
+import {
+  boardHoldMsWhenTokenMissing,
+  readHoldMsOrFallback,
+} from '@bajaovrlay/graphics-kit/pageHold';
 import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
 import {
@@ -47,7 +51,6 @@ import {
   parseCompleteStandingsData,
   type StandingsData,
 } from './standingsModel.js';
-import { readBoardHoldMs } from './standingsPageHold.js';
 import { StandingsPageTurns } from './standingsPageTurns.js';
 import { standingsStyles } from './standingsStyles.js';
 import {
@@ -81,7 +84,7 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
   private readonly runningTimelines = new Set<StandingsTimeline>();
   private readonly pageTurner: PageTurner = createPageTurner({
     onTurn: () => this.turnToTheNextPageNow(),
-    readHoldMs: () => readBoardHoldMs(this),
+    readHoldMs: () => readHoldMsOrFallback(this, 'boardHoldMs', boardHoldMsWhenTokenMissing),
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
   });

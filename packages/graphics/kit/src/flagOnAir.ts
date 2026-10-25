@@ -7,6 +7,7 @@
  */
 import { flagWordsInPortuguese } from './ptBRFlagWords.js';
 import type { FlagState } from './raceClockReading.js';
+import { writeTextIfChanged } from './textInPlace.js';
 
 /** What a band or a pill shows for one flag state. */
 export type FlagOnAir = {
@@ -45,7 +46,5 @@ export function dressElementAsFlag(
   if (flagElement.getAttribute('aria-label') !== flagOnAir.accessibleName) {
     flagElement.setAttribute('aria-label', flagOnAir.accessibleName);
   }
-  if (wordElement.textContent !== flagOnAir.wordShown) {
-    wordElement.textContent = flagOnAir.wordShown;
-  }
+  writeTextIfChanged(wordElement, flagOnAir.wordShown);
 }

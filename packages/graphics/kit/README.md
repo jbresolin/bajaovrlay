@@ -9,9 +9,11 @@ kit is imported from its TypeScript source and has no build of its own. It is no
 ```
 src/ografGraphicTypes.ts                 the OGraf v1 Graphic interface and its params (start here)
 src/playSteps.ts                         which step playAction goes to (the OGraf step rule)
+src/pageCycle.ts                         which page comes after the one on air (1 after the last)
 src/pageTurner.ts                        hold, turn, hold again: the tower's and the standings' page timer
 src/timelinePlayback.ts                  play a paused GSAP timeline to its end, or finish it at once
 src/dataProblems.ts                      one pt-BR sentence for the first problem in refused data
+src/textInPlace.ts                       writeTextIfChanged: a text written on air only when it differs
 src/textPresence.ts                      whether an optional text has something to show (isTextGiven)
 src/clockTicker.ts                       the per-frame loop that redraws a running clock while on air
 src/raceClockReading.ts                  the clock's five fields (flag, mode, time, moment, running) and its H:MM:SS text
@@ -21,7 +23,8 @@ src/clockBlock.ts                        the strip's and the ticker's clock bloc
 src/clockBlockStyles.ts                  the clock block's look (the time at 44 px, the flag pill)
 src/clockBlockOnBar.ts                   a bar's clock block run: frame loop, redraw at server time, the switch
 src/motionTimelineRunner.ts              one motion at a time: run, isRunning, finishEveryTimelineAtOnce
-src/stripPageHold.ts                     --motion-strip-hold, the strip's and the ticker's page hold (7 s if missing)
+src/pageHold.ts                          a page hold (--motion-strip-hold, --motion-board-hold) or its fallback, never 0
+src/barStyles.ts                         the bars' host, grid (one column less without the clock) and page cell
 src/barMotion.ts                         the strip's and the ticker's GSAP timelines: cascade in, out together, turn in place
 src/waitForImagesToSettle.ts             load's wait for a graphic's images (at most 2 s; a broken one never blocks)
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state

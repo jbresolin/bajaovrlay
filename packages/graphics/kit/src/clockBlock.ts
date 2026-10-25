@@ -14,6 +14,7 @@ import { html, type TemplateResult } from 'lit';
 
 import { dressElementAsFlag } from './flagOnAir.js';
 import { type RaceClockReading, writeRaceClockTimeTextAt } from './raceClockReading.js';
+import { writeTextIfChanged } from './textInPlace.js';
 
 /** The elements of the block that change after the first render. */
 export type ClockBlockParts = {
@@ -60,9 +61,6 @@ export function writeClockBlockAt(
   reading: RaceClockReading,
   nowWallClockMs: number,
 ): void {
-  const timeText = writeRaceClockTimeTextAt(reading, nowWallClockMs);
-  if (parts.time.textContent !== timeText) {
-    parts.time.textContent = timeText;
-  }
+  writeTextIfChanged(parts.time, writeRaceClockTimeTextAt(reading, nowWallClockMs));
   dressElementAsFlag(parts.flagPill, parts.flagWord, reading.state);
 }

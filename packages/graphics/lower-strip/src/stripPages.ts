@@ -34,11 +34,6 @@ export function listCarsOfStripPage<Car>(cars: readonly Car[], pageNumber: numbe
   return cars.slice(firstIndex, firstIndex + carsPerStripPage);
 }
 
-/** The page after this one, back to 1 after the last: the strip cycles through the field. */
-export function chooseNextStripPage(pageNumber: number, pageCount: number): number {
-  return pageNumber >= pageCount ? 1 : pageNumber + 1;
-}
-
 /** The page cell's text: "1/6". */
 export function writePageCellText(pageNumber: number, pageCount: number): string {
   return `${pageNumber}/${pageCount}`;

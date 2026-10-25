@@ -13,14 +13,14 @@
  *     page shorter than the others holds only the cars left.
  *   - A field that fits on one page has one page, an empty list still has one page (so
  *     the tower never divides by nothing), and 60 cars make three pages of 20.
- *   - The page after the last one is page 1 again; with one page, the next page is 1.
  *
  * What these tests deliberately do not cover:
  *   - When pages turn and how they animate; pageTurner.ts and the component own that.
+ *   - Which page comes next; the kit's pageCycle.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
-import { chooseNextPageInCycle, countTowerPages, selectEntriesOnPage } from './towerPages.js';
+import { countTowerPages, selectEntriesOnPage } from './towerPages.js';
 
 /** Builds a field of `carCount` cars numbered from 1, each with its position. */
 function createFieldOfCars(carCount: number): Array<{ position: number; carNumber: number }> {
@@ -96,31 +96,5 @@ describe('countTowerPages', () => {
 
     // Assert: what this row expects.
     expect(pageCount, 'the page count must cover every car and never be zero').toBe(expected);
-  });
-});
-
-describe('chooseNextPageInCycle', () => {
-  const nextPageScenarios = [
-    // Mid-cycle: the next page.
-    { name: 'goes from page 1 to page 2 of three', currentPage: 1, pageCount: 3, expected: 2 },
-    // The last page wraps around to the first.
-    { name: 'goes from page 3 of three back to page 1', currentPage: 3, pageCount: 3, expected: 1 },
-    // One page only: the "next" page is the same one.
-    {
-      name: 'stays on page 1 when there is only one page',
-      currentPage: 1,
-      pageCount: 1,
-      expected: 1,
-    },
-  ];
-
-  it.each(nextPageScenarios)('$name', ({ currentPage, pageCount, expected }) => {
-    // Arrange: the page on air and the page count of this row.
-
-    // Act: choose the page that comes next.
-    const nextPage = chooseNextPageInCycle(currentPage, pageCount);
-
-    // Assert: what this row expects.
-    expect(nextPage, 'the next page must follow the cycle and wrap around').toBe(expected);
   });
 });

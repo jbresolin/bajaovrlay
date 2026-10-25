@@ -14,6 +14,7 @@ import {
   placeBarPiecesOffAir,
   placeBarPiecesOnAir,
 } from '@bajaovrlay/graphics-kit/barMotion';
+import { chooseNextPageInCycle } from '@bajaovrlay/graphics-kit/pageCycle';
 
 import type { LowerStripData } from './lowerStripModel.js';
 import {
@@ -24,7 +25,7 @@ import {
   markLaneOnAir,
   writePageCell,
 } from './lowerStripView.js';
-import { chooseNextStripPage, countStripPages, listCarsOfStripPage } from './stripPages.js';
+import { countStripPages, listCarsOfStripPage } from './stripPages.js';
 
 /** What the turns need from the component; the readers are called again after every await. */
 export type LowerStripPageTurnsOptions = {
@@ -119,7 +120,7 @@ export class LowerStripPageTurns {
     if (pageCount === 1) {
       return;
     }
-    await this.turnToPage(chooseNextStripPage(this.currentPageNumber, pageCount));
+    await this.turnToPage(chooseNextPageInCycle(this.currentPageNumber, pageCount));
   }
 
   /**

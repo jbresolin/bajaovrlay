@@ -6,7 +6,7 @@
  * stripPages (which cars on which page), lowerStripPageTurns (the page and lane on air, a
  * turn and what arrived during it), lowerStripView (the DOM, pills reused by slot), and
  * from the graphics kit the clock block on a bar (frame loop, redraw, switch), the motion
- * runner, barMotion, pageTurner, stripPageHold and playSteps.
+ * runner, barMotion, pageTurner, pageHold and playSteps.
  *
  * A live update on air redraws the current page in place: the pills keep their slots,
  * nothing re-enters, and a car that moved to another page is simply on that page at the
@@ -41,9 +41,12 @@ import type {
   OGrafStopActionParams,
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
+import {
+  readHoldMsOrFallback,
+  stripHoldMsWhenTokenMissing,
+} from '@bajaovrlay/graphics-kit/pageHold';
 import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
-import { readStripHoldMs } from '@bajaovrlay/graphics-kit/stripPageHold';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -86,7 +89,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
   private readonly motionRunner: MotionTimelineRunner = createMotionTimelineRunner();
   private readonly pageTurner: PageTurner = createPageTurner({
     onTurn: () => this.turnToTheNextPageNow(),
-    readHoldMs: () => readStripHoldMs(this),
+    readHoldMs: () => readHoldMsOrFallback(this, 'stripHoldMs', stripHoldMsWhenTokenMissing),
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
   });

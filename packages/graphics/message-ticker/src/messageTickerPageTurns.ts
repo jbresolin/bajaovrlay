@@ -12,6 +12,7 @@ import {
   buildBarPageTurnTimeline,
   placeBarPiecesOffAir,
 } from '@bajaovrlay/graphics-kit/barMotion';
+import { chooseNextPageInCycle } from '@bajaovrlay/graphics-kit/pageCycle';
 
 import type { MessageTickerData } from './messageTickerModel.js';
 import {
@@ -30,11 +31,6 @@ export type MessageTickerPageTurnsOptions = {
   readData: () => MessageTickerData;
   runMotionTimeline: (timeline: BarTimeline) => Promise<void>;
 };
-
-/** The page after this one, back to 1 after the last. */
-function chooseNextPage(pageNumber: number, pageCount: number): number {
-  return pageNumber >= pageCount ? 1 : pageNumber + 1;
-}
 
 /** The page turns of one ticker: the message and the pill on air, the turn, what arrived. */
 export class MessageTickerPageTurns {
@@ -97,7 +93,7 @@ export class MessageTickerPageTurns {
     if (pageCount === 1) {
       return;
     }
-    await this.turnToPage(chooseNextPage(this.currentPageNumber, pageCount));
+    await this.turnToPage(chooseNextPageInCycle(this.currentPageNumber, pageCount));
   }
 
   /**

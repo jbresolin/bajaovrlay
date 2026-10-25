@@ -60,11 +60,6 @@ export function keepPageInsideTheList(
   return Math.min(Math.max(1, pageNumber), pageCount);
 }
 
-/** The page after this one, back to page 1 after the last. */
-export function chooseNextPageInCycle(pageNumber: number, pageCount: number): number {
-  return pageNumber >= pageCount ? 1 : pageNumber + 1;
-}
-
 /**
  * The head's line: with several pages the page and the rows it shows, by row position in
  * the list counted from 1 ("2/3 · 21º A 40º", whatever the ranks, which tie); with one
