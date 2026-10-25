@@ -24,9 +24,9 @@
  *   - What the card looks like; qrCardScreenshots.e2e.ts covers that.
  */
 import { expect, type Page, test } from '@playwright/test';
-import jsQR from 'jsqr';
 
 import { buildLongestSampleAddress } from '../src/previewData.js';
+import { scanQrCodeOnScreen } from './qrCodeOnScreen.js';
 
 /**
  * Opens the graphic's folder and, inside the page, does what a renderer does: put the
@@ -53,27 +53,9 @@ async function loadGraphicFromItsManifestLikeARenderer(page: Page): Promise<stri
   });
 }
 
-/**
- * Takes a picture of the card as Chromium drew it (the code and its light surround) and
- * reads it with jsQR in Node. The PNG is turned back into pixels by the page's own canvas,
- * the one decoder at hand, and the pixels come back here.
- */
+/** Scans the card on this page as Chromium drew it (qrCodeOnScreen.ts). */
 async function scanTheCardOnScreen(page: Page): Promise<string | undefined> {
-  const pictureOfTheCard = await page.getByTestId('qr-card-panel').screenshot();
-  const picture = await page.evaluate(async (pictureAsBase64) => {
-    const image = new Image();
-    image.src = `data:image/png;base64,${pictureAsBase64}`;
-    await image.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const context = canvas.getContext('2d');
-    context?.drawImage(image, 0, 0);
-    const pixels = context?.getImageData(0, 0, canvas.width, canvas.height).data ?? [];
-    return { width: canvas.width, height: canvas.height, pixels: [...pixels] };
-  }, pictureOfTheCard.toString('base64'));
-  const code = jsQR(Uint8ClampedArray.from(picture.pixels), picture.width, picture.height);
-  return code?.data;
+  return scanQrCodeOnScreen(page, page.getByTestId('qr-card-panel'));
 }
 
 test.describe('the QR card driven like a renderer', () => {

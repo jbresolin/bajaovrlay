@@ -1,5 +1,6 @@
 // Test support for the browser tests of the "Cadastros" page (BAJAOVRLAY-19): opening the
-// page, a real PNG logo to upload, and reading the library from the real server's state.
+// page, a real PNG logo to upload, importing the simulator's teams and giving one its logo,
+// and reading the library from the real server's state.
 import { crc32, deflateSync } from 'node:zlib';
 
 import { expect, type Page } from '@playwright/test';
@@ -44,6 +45,52 @@ export async function openTheEntityLibraryPage(page: Page): Promise<void> {
     page.getByRole('status', { name: 'Conexão com o servidor' }),
     'Cadastros must connect to the server before anything can be saved',
   ).toHaveText('Conectado');
+}
+
+/** One team of the simulator's (teams.fictional.json) to give a logo, as Cadastros lists it. */
+type TeamToGiveALogo = {
+  carNumber: number;
+  teamName: string;
+  /** The file's name as the operator's computer has it ("logo-juriti.png"). */
+  logoFileName: string;
+  /** Whether to tick "Logo sobre placa clara" too. */
+  isOnLightPlate: boolean;
+};
+
+/**
+ * On "Cadastros": imports the simulator's hundred teams, then gives one of them a logo
+ * through its "Editar" form (the PNG of buildLogoOfTeam7), on the light plate if asked,
+ * and waits until the team is saved.
+ */
+export async function importTheSimulatorTeamsAndGiveOneALogo(
+  page: Page,
+  team: TeamToGiveALogo,
+): Promise<void> {
+  await openTheEntityLibraryPage(page);
+  await page.getByRole('button', { name: 'Importar equipes do simulador' }).click();
+  const teamsTable = page.getByRole('table', { name: 'Equipes cadastradas' });
+  await expect(teamsTable.getByRole('row'), 'the hundred teams and the header').toHaveCount(101);
+  await teamsTable
+    .getByRole('row', { name: new RegExp(`^${String(team.carNumber)} `) })
+    .getByRole('button', { name: 'Editar' })
+    .click();
+  const formOfTheTeam = page.getByRole('form', {
+    name: `Editar: Equipe ${String(team.carNumber)} (${team.teamName})`,
+  });
+  await formOfTheTeam.getByLabel('Logo', { exact: true }).setInputFiles({
+    name: team.logoFileName,
+    mimeType: 'image/png',
+    buffer: buildLogoOfTeam7(),
+  });
+  if (team.isOnLightPlate) {
+    await expect(
+      formOfTheTeam.getByRole('img', { name: 'Logo na placa clara' }),
+      'the form previews the logo on the plate',
+    ).toBeVisible();
+    await formOfTheTeam.getByRole('checkbox', { name: 'Logo sobre placa clara' }).check();
+  }
+  await formOfTheTeam.getByRole('button', { name: 'Salvar' }).click();
+  await expect(formOfTheTeam, 'the form closes once the team is saved').toBeHidden();
 }
 
 /** The parts of GET /api/v1/state these tests read. */
