@@ -19,6 +19,8 @@
  *   - The clock block switched off leaves the cars at the left of the bar; switched on
  *     on air it appears at once in its place.
  *   - A live update on air redraws the page in place: the same pill elements, new texts.
+ *   - A block switch that arrives during the stop-out leaves the fading block alone and is
+ *     drawn once everything has faded.
  *   - dispose ends a running play-in (409, no tween left), and a dispose during load
  *     wins.
  *
@@ -292,6 +294,32 @@ describe('a live update on air', () => {
       'the pill is rewritten, never rebuilt',
     ).toBe(firstPillBefore);
     expect(firstPillBefore?.style.opacity, 'and stays on air').toBe('1');
+  });
+});
+
+describe('an update during the stop-out', () => {
+  it('leaves the fading block alone, then draws the switch once everything has faded', async () => {
+    // Arrange: the strip on air, its stop-out lasting 250 ms (on the bar itself, since jsdom
+    // carries no custom property from :root into a shadow root), the stop started.
+    const lowerStrip = createLowerStripOnThePage();
+    await loadLowerStripWithData(lowerStrip, createRealEnduroStripData());
+    await lowerStrip.playAction({ skipAnimation: true });
+    findPartOfLowerStrip(lowerStrip, 'lower-strip-bar')?.style.setProperty('--motion-out', '250ms');
+    const stop = lowerStrip.stopAction({});
+
+    // Act: the race clock card goes up, so the block is switched off while the strip fades;
+    // then the stop-out ends.
+    const answer = await lowerStrip.updateAction({ data: { showClockBlock: false } });
+    const isBlockHiddenDuringTheStopOut = findPartOfLowerStrip(lowerStrip, 'clock-block')?.hidden;
+    const barDuringTheStopOut = findPartOfLowerStrip(lowerStrip, 'lower-strip-bar')?.dataset
+      .clockBlock;
+    await stop;
+
+    // Assert: accepted, the grid left as it was while fading, and the switch drawn after.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(isBlockHiddenDuringTheStopOut, 'the fading block is not hidden mid-fade').toBe(false);
+    expect(barDuringTheStopOut, 'the bar keeps its columns while fading').toBe('shown');
+    expect(findPartOfLowerStrip(lowerStrip, 'clock-block')?.hidden, 'hidden once faded').toBe(true);
   });
 });
 

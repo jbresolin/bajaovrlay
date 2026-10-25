@@ -58,7 +58,6 @@ import {
   findMessageTickerParts,
   type MessageTickerParts,
   renderMessageTickerTemplate,
-  writeLabel,
 } from './messageTickerView.js';
 import { ptBR } from './ptBR.js';
 
@@ -140,7 +139,6 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
     this.parts = parts;
     this.data = dataCheck.data;
     this.clockBlockOnBar.writeSwitch(isClockBlockShown(dataCheck.data), false);
-    writeLabel(parts, dataCheck.data.label);
     this.clockBlockOnBar.redraw();
     placeBarPiecesOffAir(parts.bar, [
       parts.clockBlock.block,
@@ -228,6 +226,9 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
       this.clockBlockOnBar.stopTicking();
     }
     this.pageTurns.restOnTheFirstMessageOnceSettledOffAir();
+    // A switch that arrived during the stop-out is drawn now; a play that came meanwhile
+    // has the block placed by its own play-in.
+    this.clockBlockOnBar.writeSwitch(isClockBlockShown(this.requireData()), false);
     return okAnswer;
   }
 
@@ -249,8 +250,14 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
     }
 
     this.data = dataCheck.data;
-    this.clockBlockOnBar.writeSwitch(isClockBlockShown(dataCheck.data), this.lifecycle === 'onAir');
-    writeLabel(this.requireParts(), dataCheck.data.label);
+    // During the stop-out the switch waits: hiding the block mid-fade would make the bar's
+    // grid jump; the stop writes it from the latest data once everything has faded.
+    if (!this.isFadingOut()) {
+      this.clockBlockOnBar.writeSwitch(
+        isClockBlockShown(dataCheck.data),
+        this.lifecycle === 'onAir',
+      );
+    }
     this.clockBlockOnBar.redraw();
     this.pageTurns.drawUpdatedData();
     // A ticker taken with one message and given a second must start turning; starting a
@@ -321,6 +328,11 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
     if (this.lifecycle === 'onAir' && this.pageTurns.countPages() > 1) {
       this.pageTurner.start();
     }
+  }
+
+  /** Whether the stop-out is still fading the pieces: off air with a motion running. */
+  private isFadingOut(): boolean {
+    return this.lifecycle === 'offAir' && this.motionRunner.isRunning();
   }
 
   /** Reads the lifecycle after an await, which stop or dispose may have changed meanwhile. */

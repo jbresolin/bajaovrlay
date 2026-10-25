@@ -18,6 +18,7 @@ import type { MessageTickerData } from './messageTickerModel.js';
 import {
   markMessagePillOnAir,
   type MessageTickerParts,
+  writeLabel,
   writeMessageOnPill,
   writePageCell,
 } from './messageTickerView.js';
@@ -55,12 +56,16 @@ export class MessageTickerPageTurns {
   }
 
   /**
-   * Writes the message shown now on the pill on air, in place. A list that shrank under
-   * the page on air lands on its last message.
+   * Writes the label and the message shown now on the pill on air, in place. A list that
+   * shrank under the page on air lands on its last message. The label is written here, with
+   * the message, so a new label that arrives during a turn or the stop-out waits as the
+   * message does, never rewriting a fading pill.
    */
   drawCurrentPage(): void {
     const parts = this.options.readParts();
-    const messages = this.options.readData().messages;
+    const data = this.options.readData();
+    const messages = data.messages;
+    writeLabel(parts, data.label);
     this.currentPageNumber = Math.min(this.currentPageNumber, messages.length);
     writeMessageOnPill(this.readMessagePillOnAir(), messages[this.currentPageNumber - 1] ?? '');
     markMessagePillOnAir(parts, this.pillOnAirIndex);

@@ -18,6 +18,8 @@
  *   - "Atualizar no ar" with a new list of messages rewrites the message on air in place.
  *   - Calls at the wrong moment answer a 4xx with a pt-BR message, never a throw; a
  *     message too long is refused with 400 naming the field; dispose ends a running play-in.
+ *   - A label and a block switch that arrive during the stop-out leave the fading pieces
+ *     alone and are drawn once everything has faded.
  *
  * What these tests deliberately do not cover:
  *   - Real rendering and fonts; jsdom draws nothing, and unless a test places tokens every
@@ -192,6 +194,41 @@ describe('playing, updating and stopping', () => {
       currentStep: undefined,
     });
     expect(stopOffAir, 'stop while off air must simply answer 200').toEqual({ statusCode: 200 });
+  });
+});
+
+describe('an update during the stop-out', () => {
+  it('leaves the fading label and block alone, then draws both once everything has faded', async () => {
+    // Arrange: the ticker on air, its stop-out lasting 250 ms (on the bar itself, since
+    // jsdom carries no custom property from :root into a shadow root), the stop started.
+    const ticker = createMessageTickerOnThePage();
+    await loadMessageTickerWithData(ticker, createEnduroTickerData());
+    await ticker.playAction({ skipAnimation: true });
+    findPartOfMessageTicker(ticker, 'message-ticker-bar')?.style.setProperty(
+      '--motion-out',
+      '250ms',
+    );
+    const stop = ticker.stopAction({});
+
+    // Act: a new label and the block switched off arrive while the ticker fades; then the
+    // stop-out ends.
+    const answer = await ticker.updateAction({ data: { label: 'ATENÇÃO', showClockBlock: false } });
+    const labelDuringTheStopOut = findPartOfMessageTicker(
+      ticker,
+      'message-ticker-label',
+    )?.textContent;
+    const isBlockHiddenDuringTheStopOut = findPartOfMessageTicker(ticker, 'clock-block')?.hidden;
+    await stop;
+
+    // Assert: accepted, the fading pieces untouched, both drawn once faded.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(labelDuringTheStopOut, 'the fading label keeps its word').toBe('AVISO');
+    expect(isBlockHiddenDuringTheStopOut, 'the fading block is not hidden mid-fade').toBe(false);
+    expect(
+      findPartOfMessageTicker(ticker, 'message-ticker-label')?.textContent,
+      'the new label once faded',
+    ).toBe('ATENÇÃO');
+    expect(findPartOfMessageTicker(ticker, 'clock-block')?.hidden, 'hidden once faded').toBe(true);
   });
 });
 
