@@ -22,6 +22,7 @@
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
+import { carChipStyles } from '@bajaovrlay/graphics-kit/carChipStyles';
 import { createMotionTimelineRunner } from '@bajaovrlay/graphics-kit/motionTimelineRunner';
 import type {
   OGrafCustomActionParams,
@@ -34,7 +35,9 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { teamWithSchoolStyles } from '@bajaovrlay/graphics-kit/teamWithSchoolStyles';
 import { waitForImagesToSettle } from '@bajaovrlay/graphics-kit/waitForImagesToSettle';
+import { wideBoardFrameStyles } from '@bajaovrlay/graphics-kit/wideBoardFrameStyles';
 import { writeWideBoardHead } from '@bajaovrlay/graphics-kit/wideBoardHead';
 import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
@@ -87,7 +90,10 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 /** The bracket graphic; the default export a renderer registers as a custom element. */
 export default class BracketGraphic extends LitElement implements OGrafGraphic {
   static override styles = [
+    wideBoardFrameStyles,
     wideBoardHeadStyles,
+    carChipStyles,
+    teamWithSchoolStyles,
     bracketStyles,
     roundBoardStyles,
     bracketTreeStyles,

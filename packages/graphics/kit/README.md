@@ -49,6 +49,9 @@ src/teamLogoCell.ts                      a team's logo cell (team card, podium):
 src/teamLogoCellStyles.ts                the logo cell's look; each graphic sizes it with --team-logo-cell-width/height
 src/carChipLargeStyles.ts                the large car chip (team card, podium)
 src/checkMarkShape.ts                    the check mark's SVG path (sessions board's finished slot, bracket's winner)
+src/carChipStyles.ts                     the car's blue chip (standings row, bracket)
+src/teamWithSchoolStyles.ts              a team's name cut with an ellipsis, its school after it (standings row, bracket)
+src/wideBoardFrameStyles.ts              the wide full-screen board's host, frame and stage (podium, bracket)
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/the30thCompetitionSponsorsSample.ts  the previews' 17 real sponsors, logos in preview-sponsor-logos/

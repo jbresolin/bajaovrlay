@@ -1,9 +1,9 @@
 /**
- * The podium's look in Ardósia: the design's `.board`, `.podium__places` and
- * `.podium-place*` rules (PR #21, docs/design/tools/slate-boards.css) written against the
- * theme's tokens alone; the head card, the large chip and the logo cell are the kit's
- * (wideBoardHeadStyles, carChipLargeStyles, teamLogoCellStyles), which podium.ts adds before
- * these, the logo cell sized here through `--team-logo-cell-*`. Every colour, size, face and corner is
+ * The podium's look in Ardósia: the design's `.podium__places` and `.podium-place*` rules
+ * (PR #21, docs/design/tools/slate-boards.css) written against the theme's tokens alone;
+ * the board's frame, the head card, the large chip and the logo cell are the kit's
+ * (wideBoardFrameStyles, wideBoardHeadStyles, carChipLargeStyles, teamLogoCellStyles), which
+ * podium.ts adds before these, the logo cell sized here through `--team-logo-cell-*`. Every colour, size, face and corner is
  * a `var(--token)` the renderer page sets on its :root (packages/theme/ardosia/tokens.css).
  * No fallback values, by design: without the theme the board is unstyled, and
  * packages/theme's noHardCodedValues guard keeps it so.
@@ -16,37 +16,9 @@ import { css } from 'lit';
 
 export const podiumStyles = css`
   :host {
-    /* The graphic covers the whole 1920x1080 stage and places the board in it. */
-    position: absolute;
-    inset: 0;
-    display: block;
-    pointer-events: none;
     /* The kit's logo cell (teamLogoCellStyles.ts): the podium's 240 × 112 box. */
     --team-logo-cell-width: var(--podium-logo-width);
     --team-logo-cell-height: var(--podium-logo-height);
-  }
-
-  .board {
-    position: absolute;
-    top: var(--stage-safe-top);
-    bottom: var(--stage-safe-bottom);
-    left: var(--column-right);
-    right: var(--column-right);
-    display: flex;
-    flex-direction: column;
-    gap: var(--stack-gap);
-    color: var(--text);
-    font-family: var(--font-display);
-    /* Bebas Neue has no lowercase: every word is set in caps, through the theme's token. */
-    text-transform: var(--case-names);
-    font-variant-numeric: tabular-nums;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* The room under the head; the cards stand on its bottom edge. */
-  .stage {
-    position: relative;
-    flex: 1;
   }
 
   .cards {

@@ -38,6 +38,7 @@ import {
   playTimelineToTheEnd,
 } from '@bajaovrlay/graphics-kit/timelinePlayback';
 import { waitForImagesToSettle } from '@bajaovrlay/graphics-kit/waitForImagesToSettle';
+import { wideBoardFrameStyles } from '@bajaovrlay/graphics-kit/wideBoardFrameStyles';
 import { writeWideBoardHead } from '@bajaovrlay/graphics-kit/wideBoardHead';
 import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
@@ -77,6 +78,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 /** The podium graphic; the default export a renderer registers as a custom element. */
 export default class PodiumGraphic extends LitElement implements OGrafGraphic {
   static override styles = [
+    wideBoardFrameStyles,
     wideBoardHeadStyles,
     teamLogoCellStyles,
     carChipLargeStyles,
