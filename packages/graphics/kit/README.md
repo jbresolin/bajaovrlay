@@ -27,6 +27,8 @@ src/pageHold.ts                          a page hold (--motion-strip-hold, --mot
 src/barStyles.ts                         the bars' host, grid (one column less without the clock) and page cell
 src/barMotion.ts                         the strip's and the ticker's GSAP timelines: cascade in, out together, turn in place
 src/waitForImagesToSettle.ts             load's wait for a graphic's images (at most 2 s; a broken one never blocks)
+src/boardHead.ts                         a wide board's head card (standings, podium): markup, parts, writer
+src/boardHeadStyles.ts                   the head card's look (logo, title, event line, the line at the right)
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests

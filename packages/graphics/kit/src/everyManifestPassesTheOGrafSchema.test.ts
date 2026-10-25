@@ -97,6 +97,7 @@ describe('the manifests under packages/graphics', () => {
       join('lower-third', 'lower-third.ograf.json'),
       join('message-ticker', 'message-ticker.ograf.json'),
       join('notice', 'notice.ograf.json'),
+      join('podium', 'podium.ograf.json'),
       join('positions-tower', 'positions-tower.ograf.json'),
       join('race-clock', 'race-clock.ograf.json'),
       join('sponsor-bug', 'sponsor-bug.ograf.json'),

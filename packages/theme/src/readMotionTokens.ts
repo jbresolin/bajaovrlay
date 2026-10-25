@@ -33,6 +33,8 @@ export type MotionTokens = {
   pageStaggerMs: number;
   /** `--motion-in-offset`: how many pixels a piece rises on entry and lifts on exit. */
   inOffsetPx: number;
+  /** `--motion-podium-offset`: how many pixels a podium card rises when it is revealed. */
+  podiumOffsetPx: number;
   /** `--ease-out`: the curve of every entry, as a CSS cubic-bezier string. */
   easeOut: string;
   /** `--ease-in`: the curve of every exit. */
@@ -67,6 +69,7 @@ export const motionTokenNames: Record<keyof MotionTokens, string> = {
   boardHoldMs: '--motion-board-hold',
   pageStaggerMs: '--motion-page-stagger',
   inOffsetPx: '--motion-in-offset',
+  podiumOffsetPx: '--motion-podium-offset',
   easeOut: '--ease-out',
   easeIn: '--ease-in',
   easeInOut: '--ease-in-out',
@@ -99,6 +102,7 @@ export function readMotionTokens(element: Element): MotionTokens {
     boardHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.boardHoldMs)),
     pageStaggerMs: readDurationInMilliseconds(readToken(motionTokenNames.pageStaggerMs)),
     inOffsetPx: readLengthInPixels(readToken(motionTokenNames.inOffsetPx)),
+    podiumOffsetPx: readLengthInPixels(readToken(motionTokenNames.podiumOffsetPx)),
     easeOut: readEase(readToken(motionTokenNames.easeOut)),
     easeIn: readEase(readToken(motionTokenNames.easeIn)),
     easeInOut: readEase(readToken(motionTokenNames.easeInOut)),

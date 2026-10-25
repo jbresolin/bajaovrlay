@@ -25,6 +25,8 @@
     "./pageHold": "./src/pageHold.ts",
     "./ptBRFlagWords": "./src/ptBRFlagWords.ts",
     "./waitForImagesToSettle": "./src/waitForImagesToSettle.ts",
+    "./boardHead": "./src/boardHead.ts",
+    "./boardHeadStyles": "./src/boardHeadStyles.ts",
     "./previewControls": "./src/previewControls.ts",
     "./previewStage": "./src/previewStage.ts",
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",

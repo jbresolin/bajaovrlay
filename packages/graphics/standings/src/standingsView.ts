@@ -7,9 +7,11 @@
  * is never rebuilt, never re-enters, and a cascade running on it goes on. Only the slots
  * the page gains or loses are created or removed.
  */
-// The white logo lives in the theme package; Vite bundles a copy into this graphic's
-// dist/assets/, so the built graphic works from the preview and from the air alike.
-import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
+import {
+  findBoardHeadParts,
+  renderBoardHeadTemplate,
+  writeBoardHead,
+} from '@bajaovrlay/graphics-kit/boardHead';
 import { html, type TemplateResult } from 'lit';
 
 import { ptBR } from './ptBR.js';
@@ -50,16 +52,14 @@ export type StandingsParts = {
  */
 export type PiecePlacement = 'offAir' | 'atOnce' | 'beforeCascade';
 
-/** The board's markup, drawn once. data-testid names are how code and tests find parts. */
+/**
+ * The board's markup, drawn once: the kit's head card, then the place for the tables.
+ * data-testid names are how code and tests find parts.
+ */
 export function renderStandingsTemplate(): TemplateResult {
   return html`
     <section class="board" data-testid="standings" data-layout="table">
-      <header class="card head" data-testid="standings-head">
-        <img class="logo" src=${logoAddress} alt=${ptBR.logoAlternativeText} />
-        <h1 class="title" data-testid="standings-title"></h1>
-        <span class="caption event-line" data-testid="standings-event-line"></span>
-        <span class="page-line" data-testid="standings-page-line"></span>
-      </header>
+      ${renderBoardHeadTemplate('standings', ptBR.logoAlternativeText)}
       <div class="tables" data-testid="standings-tables"></div>
     </section>
   `;
@@ -77,10 +77,7 @@ export function findStandingsParts(renderRoot: ParentNode, tokensSource: Element
   return {
     tokensSource,
     board: findPart('standings'),
-    head: findPart('standings-head'),
-    title: findPart('standings-title'),
-    eventLine: findPart('standings-event-line'),
-    pageLine: findPart('standings-page-line'),
+    ...findBoardHeadParts(renderRoot, 'standings'),
     tables: findPart('standings-tables'),
   };
 }
@@ -94,10 +91,7 @@ export function writeStandingsHead(
   settings: StandingsSettings,
   pageLine: string,
 ): void {
-  parts.title.textContent = settings.title;
-  parts.eventLine.textContent = settings.eventLine;
-  parts.eventLine.hidden = settings.eventLine === '';
-  parts.pageLine.textContent = pageLine;
+  writeBoardHead(parts, { title: settings.title, eventLine: settings.eventLine, pageLine });
 }
 
 /**
