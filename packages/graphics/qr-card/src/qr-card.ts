@@ -149,6 +149,13 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
       return { statusCode: 200, currentStep: target.step };
     }
 
+    // A play that cut a stop-out short draws the data stored meanwhile first, still off air,
+    // so the card rises with it and nothing redraws during the play-in (gate 2 of PR #27).
+    this.isStoppingOut = false;
+    if (this.hasDataNotYetDrawn) {
+      this.hasDataNotYetDrawn = false;
+      await this.redrawWithData(this.requireData());
+    }
     this.lifecycle = 'onAir';
     this.currentStep = target.step;
     await this.runPanelTimeline(buildPlayInTimeline({ panel: this.requirePanel() }), skipAnimation);
@@ -185,7 +192,8 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
       params.skipAnimation ?? false,
     );
     this.isStoppingOut = false;
-    if (this.hasDataNotYetDrawn && this.readLifecycleNow() !== 'disposed') {
+    // Only a card still off air is redrawn: a play that came meanwhile drew it already.
+    if (this.hasDataNotYetDrawn && this.readLifecycleNow() === 'offAir') {
       this.hasDataNotYetDrawn = false;
       await this.redrawWithData(this.requireData());
     }

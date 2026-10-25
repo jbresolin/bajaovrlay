@@ -18,6 +18,8 @@
  *   - updateAction on air redraws in place with no motion: a new address gives a new code
  *     at once, in the same card element, which stays on air and has no tween running; a bad
  *     update answers 400 and leaves the code as it was.
+ *   - A play that cuts a stop-out short draws the stored address before its play-in, still
+ *     off air, and nothing redraws while the card rises (gate 2 of PR #27).
  *   - An update that arrives during the stop-out is only stored: the fading card keeps the
  *     code it had, and the new code is drawn once the card is off screen.
  *   - dispose ends a running play-in: the pending play resolves with 409 instead of
@@ -314,6 +316,40 @@ describe('an update during the stop-out', () => {
       'resultados.bajasaebrasil.net',
     );
     expect(scanTheCodeOnTheCard(qrCard), 'the new code must be drawn once off screen').toBe(
+      'bajasaebrasil.net/ao-vivo',
+    );
+  });
+});
+
+describe('a play that cuts the stop-out short (gate 2 of PR #27)', () => {
+  it('draws the stored address before the play-in, and nothing redraws while it rises', async () => {
+    // Arrange: the card on air, a stop-out that cannot end by itself (a minute), a new
+    // address stored during it, and a watch on every redraw with the lifecycle it came in.
+    // The lifecycle is read through a cast: it is private, and the test needs to know only
+    // whether the card was on air when Lit was asked to redraw.
+    const qrCard = createQrCardOnThePage();
+    await loadQrCardWithData(qrCard, createResultsSample());
+    await qrCard.playAction({ skipAnimation: true });
+    const panel = findPartOfQrCard(qrCard, 'qr-card-panel');
+    panel?.style.setProperty('--motion-out', '60000ms');
+    const stop = qrCard.stopAction({});
+    await qrCard.updateAction({ data: { address: 'bajasaebrasil.net/ao-vivo' } });
+    const lifecyclesOfRedraws: string[] = [];
+    const originalRequestUpdate = qrCard.requestUpdate.bind(qrCard);
+    qrCard.requestUpdate = (...requestArguments: Parameters<typeof qrCard.requestUpdate>) => {
+      lifecyclesOfRedraws.push((qrCard as unknown as { lifecycle: string }).lifecycle);
+      originalRequestUpdate(...requestArguments);
+    };
+
+    // Act: the operator takes it again before the stop-out ends.
+    await qrCard.playAction({ skipAnimation: true });
+    await stop;
+
+    // Assert: drawn once, while still off air, with the new address; never during the rise.
+    expect(lifecyclesOfRedraws, 'one redraw, before the play-in, none while on air').toEqual([
+      'offAir',
+    ]);
+    expect(scanTheCodeOnTheCard(qrCard), 'the card rose with the new code').toBe(
       'bajasaebrasil.net/ao-vivo',
     );
   });
