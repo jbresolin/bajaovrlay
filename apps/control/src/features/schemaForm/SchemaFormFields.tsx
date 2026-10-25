@@ -46,7 +46,7 @@ function readOwnContentOfField(
   return readOnlyFieldContents[fieldKey];
 }
 
-/** Texts, lists and unsupported fields take the full width; the smaller controls sit two to a row. */
+/** Texts, lists and unsupported fields take the full width; smaller controls sit two to a row. */
 function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
   const takesTheFullWidth =
     field.control === 'text' || field.control === 'textList' || field.control === 'unsupported';

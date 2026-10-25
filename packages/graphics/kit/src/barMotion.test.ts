@@ -30,7 +30,7 @@ import {
   buildBarStopOutTimeline,
 } from './barMotion.js';
 
-/** The motion tokens of Ardósia the bars read, as packages/theme/ardosia/tokens.css declares them. */
+/** Ardósia's motion tokens the bars read, as packages/theme/ardosia/tokens.css declares them. */
 const ardosiaBarMotionTokens: Record<string, string> = {
   '--motion-in': '400ms',
   '--motion-out': '250ms',

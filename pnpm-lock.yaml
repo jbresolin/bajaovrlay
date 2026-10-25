@@ -364,10 +364,10 @@ importers:
       '@bajaovrlay/shared':
         specifier: workspace:*
         version: link:../../shared
-    devDependencies:
       '@bajaovrlay/theme':
         specifier: workspace:*
         version: link:../../theme
+    devDependencies:
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.62.0

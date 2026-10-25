@@ -110,8 +110,8 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
 
   /**
    * OGraf load: checks the data, waits for the first render and the theme's font, draws
-   * the first message, the label and the clock block off air. Loaded once; a second load answers 409. Bad data
-   * leaves it unloaded, so load can be tried again.
+   * the first message, the label and the clock block off air. Loaded once; a second load
+   * answers 409. Bad data leaves it unloaded, so load can be tried again.
    */
   async load(params: OGrafLoadParams): Promise<OGrafReturnPayload> {
     if (this.lifecycle === 'disposed') {

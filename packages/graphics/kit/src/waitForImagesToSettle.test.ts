@@ -3,9 +3,9 @@
  *
  * What this module is for:
  *   Before the team card or the sponsor bug is ready to play, load waits for its images
- *   (a photo, a team's or a sponsor's logo), so the card rises with them already drawn. A broken image or a server that never answers must
- *   never keep the card off air, so the wait ends on load, on failure, or after a
- *   longest wait.
+ *   (a photo, a team's or a sponsor's logo), so the card rises with them already drawn.
+ *   A broken image or a server that never answers must never keep the card off air, so
+ *   the wait ends on load, on failure, or after a longest wait.
  *
  * What these tests prove:
  *   - With no image there is nothing to wait for.

@@ -74,7 +74,7 @@
   --weight-number: 400;
   --weight-row: 400;
   --weight-caption: 400;
-  --size-title: 34px; /* session name in the clock head, event word on the bug */
+  --size-title: 34px; /* session name in the clock head (the bug's event word is --size-bug-label) */
   --size-time: 56px;
   --size-row: 28px; /* tower rows: positions, car chips, names, laps (Bebas caps) */
   --size-detail: 26px; /* detailed tower's times and gaps */

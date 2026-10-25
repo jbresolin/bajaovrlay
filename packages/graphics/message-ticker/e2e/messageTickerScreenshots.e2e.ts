@@ -45,7 +45,8 @@ test.describe('the message ticker looks like its baseline', () => {
           controls.style.visibility = 'hidden';
         });
 
-        // Assert: the first message and its look against the baseline (1% tolerance for anti-aliasing).
+        // Assert: the first message and its look against the baseline (1% tolerance for
+        // anti-aliasing).
         await expect(page.getByTestId('message-ticker-page-cell'), 'the first message').toHaveText(
           '1/3',
         );

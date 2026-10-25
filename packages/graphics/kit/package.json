@@ -36,7 +36,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@bajaovrlay/shared": "workspace:*"
+    "@bajaovrlay/shared": "workspace:*",
+    "@bajaovrlay/theme": "workspace:*"
   },
   "peerDependencies": {
     "gsap": "^3.15.0",
@@ -44,7 +45,6 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@bajaovrlay/theme": "workspace:*",
     "@playwright/test": "catalog:",
     "ajv": "^8.20.0",
     "gsap": "^3.15.0",

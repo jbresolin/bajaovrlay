@@ -4,8 +4,9 @@
  * What this module is for:
  *   The sponsor bug rises in whole on play, the mark and the sponsor's logo with it, and
  *   lifts out on stop (the design's motion.md, "Sponsor bug"); it never pulses or cycles.
- *   The GSAP timelines live here and take every duration, offset and ease from the theme's motion tokens (`--motion-*`,
- *   `--ease-*`), read from the page through `@bajaovrlay/theme/motion`.
+ *   The GSAP timelines live here and take every duration, offset and ease from the
+ *   theme's motion tokens (`--motion-*`, `--ease-*`), read from the page through
+ *   `@bajaovrlay/theme/motion`.
  *
  * What these tests prove:
  *   - The play-in lasts `--motion-in`, rises from `--motion-in-offset` below its place and

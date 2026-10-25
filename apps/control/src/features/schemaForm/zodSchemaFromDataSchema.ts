@@ -206,7 +206,8 @@ function buildRuleForField(field: SchemaFormFieldDescription): z.ZodType | undef
  * Builds the Zod schema of a graphic's data from its manifest's JSON Schema. It checks
  * an object of data (not what the controls hold): text, option, ISO 8601 date and time,
  * whole or decimal number with its minimum and maximum, true/false, a list of texts with
- * its count and each line's length, and whether each required key is there. Every message is pt-BR and names the field by its label.
+ * its count and each line's length, and whether each required key is there. Every
+ * message is pt-BR and names the field by its label.
  * Keys it does not know, and properties the form cannot edit, pass unchecked; a missing
  * or unsupported schema accepts any object.
  */
