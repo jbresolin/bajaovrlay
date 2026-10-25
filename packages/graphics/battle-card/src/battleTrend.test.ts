@@ -5,9 +5,8 @@
  *   No data source says what the gap was a lap ago, so the battle card remembers it: the
  *   gap it saw when the car behind last completed a lap. When the car behind completes
  *   another lap, the new gap is compared with that one and the card shows "FECHANDO −0,7"
- *   (closing, green), "ABRINDO +0,7" (opening, blue) or "ESTÁVEL" (steady). The operator
- *   may also set the trend by hand, and then that one is shown. battleTrend.ts holds these
- *   rules as pure functions.
+ *   (closing, green), "ABRINDO +0,7" (opening, blue) or "ESTÁVEL" (steady). battleTrend.ts
+ *   holds these rules as pure functions.
  *
  * What these tests prove:
  *   - The first reading shows "ESTÁVEL" with no number, since there is nothing to compare.
@@ -18,13 +17,12 @@
  *   - Another pair of cars, laps that went down, or laps that jumped by two start the
  *     memory again (steady with no number); the next single lap compares with that reading.
  *   - Gate 2 of PR #27: once the car behind passes the car ahead, or a car runs between
- *     them, or the gap disappears, there is no trend at all (the card shows "—"), even one
- *     set by hand, and the memory is emptied, so the battle starts again from nothing.
- *   - A trend set by hand otherwise always wins, its change signed by its word.
- *   - The words use the decimal comma, the tenth cut (never rounded) and the typographic
- *     minus (U+2212), never the hyphen.
+ *     them, or the gap disappears, there is no trend at all (the card shows "—") and the
+ *     memory is emptied, so the battle starts again from nothing; isGapOfTheseTwoCars is
+ *     that check.
  *
  * What these tests deliberately do not cover:
+ *   - A trend set by hand, and the words of the cell: battleTrendShown.test.ts.
  *   - Drawing the words, the shape and the colour, and the crossfade when the word
  *     changes: battleCardView.test.ts and battle-card.trendOnAir.test.ts cover those.
  *   - A renderer reload, which starts the memory again by design (the trade-off is written
@@ -34,49 +32,22 @@ import { describe, expect, it } from 'vitest';
 
 import {
   chooseTrendToShow,
-  emptyTrendMemory,
   followGapReading,
   type GapReading,
   isGapOfTheseTwoCars,
-  type TrendMemory,
   type TrendShown,
-  writeTrendWords,
 } from './battleTrend.js';
-
-/** Car 1 (Equipe FEI Baja, P5) right behind car 8 (Imperador, P4), at the given lap and gap. */
-function readFeiBehindImperador(behindLaps: number, gapMs: number): GapReading {
-  return {
-    aheadCarNumber: 8,
-    aheadPosition: 4,
-    behindCarNumber: 1,
-    behindPosition: 5,
-    behindLaps,
-    gapMs,
-  };
-}
-
-/**
- * Car 1 has passed car 8: the item still names car 8 ahead and car 1 behind, but car 1 now
- * runs P4 and car 8 P5, and car 1's interval is to a third car, the P3.
- */
-function readFeiAfterPassingImperador(behindLaps: number, gapMs: number): GapReading {
-  return { ...readFeiBehindImperador(behindLaps, gapMs), aheadPosition: 5, behindPosition: 4 };
-}
+import {
+  followReadings,
+  readFeiAfterPassingImperador,
+  readFeiBehindImperador,
+} from './battleTrendReadings.testSupport.js';
 
 /** The trend a graphic would show after the last of these readings, with nothing by hand. */
 function chooseTrendAfterReadings(readings: GapReading[]): TrendShown {
   const lastReading = readings.at(-1);
   const isGapShown = lastReading !== undefined && isGapOfTheseTwoCars(lastReading);
   return chooseTrendToShow(followReadings(readings), {}, isGapShown);
-}
-
-/** Follows a list of readings from an empty memory, as a graphic does from its load. */
-function followReadings(readings: GapReading[]): TrendMemory {
-  let memory = emptyTrendMemory;
-  for (const reading of readings) {
-    memory = followGapReading(memory, reading);
-  }
-  return memory;
 }
 
 describe('the trend worked out from the gap', () => {
@@ -249,64 +220,6 @@ describe('the trend worked out from the gap', () => {
   });
 });
 
-describe('a trend set by hand', () => {
-  const manualScenarios = [
-    // The worked-out trend is opening; the operator says closing by 0,7 s: hand wins.
-    {
-      name: 'wins over the worked-out trend, its change shown as a closing minus',
-      setByHand: { manualTrend: 'closing' as const, manualTrendChangeMs: 700 },
-      expected: { word: 'closing', changeMs: -700 },
-    },
-    // The change typed is a size; opening shows it with a plus.
-    {
-      name: 'shows an opening change with a plus',
-      setByHand: { manualTrend: 'opening' as const, manualTrendChangeMs: 700 },
-      expected: { word: 'opening', changeMs: 700 },
-    },
-    // A trend by hand without a change shows the word alone.
-    {
-      name: 'shows the word alone when no change is typed',
-      setByHand: { manualTrend: 'closing' as const },
-      expected: { word: 'closing', changeMs: undefined },
-    },
-    // Steady never carries a number, even if one was typed.
-    {
-      name: 'never shows a number on steady',
-      setByHand: { manualTrend: 'steady' as const, manualTrendChangeMs: 300 },
-      expected: { word: 'steady', changeMs: undefined },
-    },
-  ];
-
-  it.each(manualScenarios)('$name', ({ setByHand, expected }) => {
-    // Arrange: a memory whose worked-out trend is opening by 0,7 s.
-    const memory = followReadings([
-      readFeiBehindImperador(1, 2000),
-      readFeiBehindImperador(2, 2700),
-    ]);
-
-    // Act: choose the trend with this row's trend set by hand.
-    const trend = chooseTrendToShow(memory, setByHand, true);
-
-    // Assert: the hand's trend, never the worked-out one.
-    expect(trend, 'a trend set by hand must always win').toEqual(expected);
-  });
-
-  it('shows no trend beside a gap of "—", even one set by hand', () => {
-    // Arrange: car 1 has passed car 8, and the operator had set closing by 0,7 s.
-    const memory = followReadings([readFeiAfterPassingImperador(3, 6000)]);
-
-    // Act: choose the trend with the gap not shown.
-    const trend = chooseTrendToShow(
-      memory,
-      { manualTrend: 'closing', manualTrendChangeMs: 700 },
-      false,
-    );
-
-    // Assert: no trend; beside no gap a trend would say what the card cannot show.
-    expect(trend, 'no trend at all beside "—"').toEqual({ word: 'none', changeMs: undefined });
-  });
-});
-
 describe('isGapOfTheseTwoCars', () => {
   const gapScenarios = [
     // The battle as the item means it: car 1 one place behind car 8.
@@ -339,61 +252,5 @@ describe('isGapOfTheseTwoCars', () => {
 
     // Assert: as the row says.
     expect(isTheirs, 'the gap belongs to these two cars only one place apart').toBe(expected);
-  });
-});
-
-describe('the words of the trend cell', () => {
-  const wordScenarios: Array<{ name: string; trend: TrendShown; expected: string }> = [
-    // The design's closing words, with the typographic minus.
-    {
-      name: 'writes closing by 0,7 s as "FECHANDO −0,7"',
-      trend: { word: 'closing', changeMs: -700 },
-      expected: 'FECHANDO −0,7',
-    },
-    // The design's opening words, with a plus.
-    {
-      name: 'writes opening by 0,7 s as "ABRINDO +0,7"',
-      trend: { word: 'opening', changeMs: 700 },
-      expected: 'ABRINDO +0,7',
-    },
-    // The tenth is cut like every race time: 0,79 s reads 0,7, never 0,8.
-    {
-      name: 'cuts the tenth: closing by 790 ms reads "FECHANDO −0,7"',
-      trend: { word: 'closing', changeMs: -790 },
-      expected: 'FECHANDO −0,7',
-    },
-    // A change past ten seconds keeps the comma (the design's "+11,0").
-    {
-      name: 'writes opening by 11 s as "ABRINDO +11,0"',
-      trend: { word: 'opening', changeMs: 11_000 },
-      expected: 'ABRINDO +11,0',
-    },
-    // Steady is the word alone.
-    {
-      name: 'writes steady as "ESTÁVEL"',
-      trend: { word: 'steady', changeMs: undefined },
-      expected: 'ESTÁVEL',
-    },
-  ];
-
-  it.each(wordScenarios)('$name', ({ trend, expected }) => {
-    // Arrange: the trend of this row.
-
-    // Act: write its words.
-    const words = writeTrendWords(trend);
-
-    // Assert: the design's words, the comma and the right sign.
-    expect(words, 'the trend words must be written as the design writes them').toBe(expected);
-  });
-
-  it('never writes the hyphen as the minus', () => {
-    // Arrange: a closing trend.
-    const closing: TrendShown = { word: 'closing', changeMs: -700 };
-
-    // Act: write its words.
-    const words = writeTrendWords(closing);
-
-    // Assert: no hyphen, which Bebas Neue draws short and high.
-    expect(words.includes('-'), 'the minus must be U+2212, never the hyphen').toBe(false);
   });
 });
