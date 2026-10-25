@@ -137,6 +137,19 @@ export function createGraphicsFolderWithBuiltScoreboard(scoreboardManifest: obje
   return graphicsFolder;
 }
 
+/**
+ * Creates a graphics folder holding one built package, `folderName`, with the given
+ * manifest (and the race clock's source without a build). Returns the folder's path. For
+ * tests that take a real package's manifest, read from packages/graphics.
+ */
+export function createGraphicsFolderWithBuiltPackage(folderName: string, manifest: object): string {
+  const graphicsFolder = createGraphicsFolderWithUnbuiltRaceClock();
+  const distFolder = join(graphicsFolder, folderName, 'dist');
+  mkdirSync(distFolder, { recursive: true });
+  writeFileSync(join(distFolder, `${folderName}.ograf.json`), JSON.stringify(manifest));
+  return graphicsFolder;
+}
+
 /** Creates a graphics folder whose race-clock manifest is cut off half way; returns its path. */
 export function createGraphicsFolderWithBrokenRaceClockManifest(): string {
   const graphicsFolder = createGraphicsFolderWithUnbuiltRaceClock();

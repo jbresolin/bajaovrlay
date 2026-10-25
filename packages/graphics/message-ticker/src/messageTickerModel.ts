@@ -28,7 +28,12 @@ import { ptBR } from './ptBR.js';
 // face cannot draw anyway, would count twice here).
 const messageTickerDataSchema = z.strictObject({
   label: z.string().min(1).max(longestLabelInCharacters),
-  messages: z.array(z.string().min(1).max(longestMessageInCharacters)).min(1).max(mostMessages),
+  // A message holds at least one character that is not a space, as the manifest's pattern
+  // "\S" says; the item form trims each line, so it names a line of spaces as empty.
+  messages: z
+    .array(z.string().min(1).max(longestMessageInCharacters).regex(/\S/))
+    .min(1)
+    .max(mostMessages),
   ...raceClockReadingFieldSchemas,
   showClockBlock: z.boolean().optional(),
 });

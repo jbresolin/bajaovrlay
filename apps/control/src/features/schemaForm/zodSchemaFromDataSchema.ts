@@ -160,6 +160,16 @@ function buildRuleForTextList(field: SchemaFormFieldDescription): z.ZodType {
     }
     for (const [index, text] of texts.entries()) {
       const lineNumber = index + 1;
+      // The lines arrive trimmed (fieldValueConversion.ts), so a line of spaces is empty
+      // here: refused whatever minLength says, as the server's pattern "\S" would.
+      if (text === '') {
+        context.addIssue({
+          code: 'custom',
+          path: [index],
+          message: textListErrors.lineBlank(itemLabel, lineNumber),
+        });
+        return;
+      }
       const length = countCodePoints(text);
       if (field.minimumLength !== undefined && length < field.minimumLength) {
         context.addIssue({

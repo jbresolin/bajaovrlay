@@ -16,8 +16,9 @@
  *   - A list of objects, and a list of texts from a fixed set, stay unsupported.
  *   - A new form starts the required list with one empty line; a form filled from the
  *     air shows each message as a line; the checked form sends the texts, trimmed.
- *   - A line over the limit is refused naming the line, the limit and its length; a list
- *     with no line is refused as required; an empty line names its number.
+ *   - A line over the limit is refused naming the line, the limit and its length; a line
+ *     under the items' minLength gives the minimum; a list with no line is refused as
+ *     required; a blank line (spaces, or empty) is refused by its number.
  *   - An optional list emptied of every line is cleared, not sent.
  *
  * What these tests deliberately do not cover:
@@ -154,11 +155,12 @@ describe('a list of texts, as the form checks it', () => {
       ],
       expectedMessage: 'Mensagem 2: no máximo 50 caracteres (tem 80).',
     },
-    // An empty line left by "Adicionar mensagem": refused by its number, not dropped.
+    // A line of spaces, or one left empty by "Adicionar mensagem": refused by its number,
+    // never dropped (the server's pattern "\S" would refuse it too).
     {
-      name: 'refuses an empty line, naming it',
+      name: 'refuses a blank line, naming it',
       messages: ['Largada do enduro às 10h00', '   '],
-      expectedMessage: 'Mensagem 2: escreva pelo menos 1 caractere.',
+      expectedMessage: 'Mensagem 2: está em branco; escreva o texto ou remova a linha.',
     },
     // Every line removed from a required list.
     {
@@ -179,6 +181,29 @@ describe('a list of texts, as the form checks it', () => {
     expect(check, 'the list must be refused with its reason').toEqual({
       status: 'invalid',
       fieldMessages: [{ fieldKey: 'messages', message: expectedMessage }],
+    });
+  });
+
+  it('refuses a line shorter than the items’ minLength, giving the minimum', () => {
+    // Arrange: a schema whose lines need at least 5 characters, and a line of 3.
+    const dataSchema = {
+      type: 'object',
+      properties: {
+        avisos: { type: 'array', title: 'Avisos', items: { type: 'string', minLength: 5 } },
+      },
+    };
+    const description = describeSchemaFormFromDataSchema(dataSchema);
+    const formValues = buildSchemaFormValuesFromDataOnAir(description, {
+      avisos: ['Box'],
+    }).formValues;
+
+    // Act: check it.
+    const check = checkSchemaFormValues(description, formValues);
+
+    // Assert: refused, naming the line (a "Linha", the items have no title) and the minimum.
+    expect(check, 'three characters are too few').toEqual({
+      status: 'invalid',
+      fieldMessages: [{ fieldKey: 'avisos', message: 'Linha 1: escreva pelo menos 5 caracteres.' }],
     });
   });
 

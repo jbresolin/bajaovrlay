@@ -48,7 +48,8 @@
           "type": "string",
           "title": "Mensagem",
           "minLength": 1,
-          "maxLength": 50
+          "maxLength": 50,
+          "pattern": "\\S"
         }
       },
       "state": {

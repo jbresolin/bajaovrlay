@@ -156,6 +156,7 @@ describe('message-ticker.ograf.json settings', () => {
       itemTitle: messagesField.items.title,
       minLength: messagesField.items.minLength,
       maxLength: messagesField.items.maxLength,
+      pattern: messagesField.items.pattern,
     };
 
     // Assert: the package's own numbers, which the item editor checks before sending.
@@ -167,6 +168,8 @@ describe('message-ticker.ograf.json settings', () => {
       itemTitle: 'Mensagem',
       minLength: 1,
       maxLength: longestMessageInCharacters,
+      // At least one character that is not a space.
+      pattern: '\\S',
     });
     expect(longestMessageInCharacters, 'the measured limit').toBe(50);
   });

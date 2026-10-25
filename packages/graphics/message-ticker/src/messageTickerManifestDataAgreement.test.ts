@@ -12,7 +12,7 @@
  * What these tests prove:
  *   - The same payloads pass or fail both checks: three messages; one; nine; a message of
  *     exactly 50 characters (accents included); and no message, ten messages, an empty
- *     message, one of 51 characters, a label of 11, and an unknown field.
+ *     message, a message of spaces, one of 51 characters, a label of 11, and an unknown field.
  *
  * What these tests deliberately do not cover:
  *   - The rest of the manifest; messageTickerManifest.test.ts covers it.
@@ -73,6 +73,12 @@ const dataAgreementScenarios = [
   {
     name: 'both refuse an empty message',
     data: { ...createEnduroTickerData(), messages: ['Largada do enduro às 10h00', ''] },
+    isValid: false,
+  },
+  // A message of spaces, which a script might send: the pattern "\S" refuses it.
+  {
+    name: 'both refuse a message of spaces',
+    data: { ...createEnduroTickerData(), messages: ['Largada do enduro às 10h00', '   '] },
     isValid: false,
   },
   // One character over the bar.

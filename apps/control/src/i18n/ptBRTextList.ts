@@ -38,6 +38,9 @@ export const ptBRTextList = {
       maximumLines === 1
         ? `O campo "${fieldLabel}" pode ter no máximo 1 linha.`
         : `O campo "${fieldLabel}" pode ter no máximo ${maximumLines} linhas.`,
+    // A line of spaces, or left empty after "Adicionar": never a text a graphic can show.
+    lineBlank: (itemLabel: string, lineNumber: number) =>
+      `${itemLabel} ${lineNumber}: está em branco; escreva o texto ou remova a linha.`,
     lineTooShort: (itemLabel: string, lineNumber: number, minimumLength: number) =>
       minimumLength === 1
         ? `${itemLabel} ${lineNumber}: escreva pelo menos 1 caractere.`
