@@ -18,6 +18,8 @@
  *   - The real Super Prime's plan step by step: three boards, then the quarter-finals, the
  *     semifinals, the third place and the final, each tree step adding to the last.
  *   - A round of 64 is split into two pages of 32, page by page.
+ *   - A third place listed after the final is on air takes the final's step (contract C:
+ *     sources list it no later than the final).
  *   - Brackets with no round still count one step (the head alone), never zero.
  *
  * What these tests deliberately do not cover:
@@ -172,6 +174,33 @@ describe('planBracketSteps', () => {
       { kind: 'tree', treeRoundsShown: 2, isThirdPlaceShown: true },
       { kind: 'tree', treeRoundsShown: 3, isThirdPlaceShown: true },
     ]);
+  });
+
+  it('gives the final’s step to a third place listed after the final is on air, which is why sources list it no later (contract C)', () => {
+    // Arrange: a tree of three rounds on air at its last step, the final (index 2); then
+    // the same brackets with a third place listed after the final.
+    const roundsWithTheFinal = buildRoundsOfAnElimination(8);
+    const roundsWithTheThirdPlaceAfter = [...buildRoundsOfAnElimination(8), buildThirdPlaceRound()];
+
+    // Act: plan both, and read what step 2 shows in each.
+    const stepTwoBefore = planBracketSteps(roundsWithTheFinal)[2];
+    const stepTwoAfter = planBracketSteps(roundsWithTheThirdPlaceAfter)[2];
+
+    // Assert: the final's step becomes the third place's; the final moves to step 3. The
+    // plan puts the third place before the final wherever it is listed, so a late third
+    // place takes the step on screen: the server keeps the step index, and the operator on
+    // the final would see the third place instead (gate 2 of PR #30, recorded in decisions).
+    expect(stepTwoBefore, 'step 2 is the final').toEqual({
+      kind: 'tree',
+      treeRoundsShown: 3,
+      isThirdPlaceShown: false,
+    });
+    expect(stepTwoAfter, 'step 2 becomes the third place').toEqual({
+      kind: 'tree',
+      treeRoundsShown: 2,
+      isThirdPlaceShown: true,
+    });
+    expect(planBracketSteps(roundsWithTheThirdPlaceAfter), 'four steps now').toHaveLength(4);
   });
 
   it('splits a round of 64 matches into two board pages of 32', () => {
