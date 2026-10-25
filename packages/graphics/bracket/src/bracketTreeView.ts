@@ -72,18 +72,14 @@ function renderTreeMatch(
 }
 
 /** A round's name pill. */
-function renderRoundName(
-  round: BracketRoundData,
-  column: string,
-  placement: string,
-): TemplateResult {
+function renderRoundName(roundName: string, column: string, placement: string): TemplateResult {
   return html`<div
     class="round-name"
     data-testid="bracket-round-name"
     data-column=${column}
     style=${placement}
   >
-    ${round.name}
+    ${roundName}
   </div>`;
 }
 
@@ -109,12 +105,13 @@ export function renderBracketTree(
   const linesShown = layout.lines.filter((line) => line.intoColumnIndex < shown.treeRoundsShown);
   const viewBox = `0 0 ${String(stageSize.widthPx)} ${String(stageSize.heightPx)}`;
 
-  const names = tree.columnRounds.map((round, columnIndex) => {
+  // Every column's name from the first step, a round still to come's included (contract B).
+  const names = tree.columnNames.map((roundName, columnIndex) => {
     const column = layout.columns[columnIndex];
     return column === undefined
       ? nothing
       : renderRoundName(
-          round,
+          roundName,
           String(columnIndex),
           writePlacement(column.leftPx, 0, column.widthPx),
         );
@@ -133,7 +130,7 @@ export function renderBracketTree(
     thirdPlace === undefined || thirdPlaceRound === undefined
       ? nothing
       : renderRoundName(
-          thirdPlaceRound,
+          thirdPlaceRound.name,
           'third',
           writePlacement(thirdPlace.leftPx, thirdPlace.nameTopPx, thirdPlace.widthPx),
         );

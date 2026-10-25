@@ -24,6 +24,15 @@ export const ptBR = {
   walkoverTag: 'W.O.',
   /** The empty slot of a bye, which must never read as a car. */
   noOpponent: 'SEM ADVERSÁRIO',
+  /**
+   * The name pill of a tree round not listed yet, by the matches it will have (gate 2 of
+   * PR #30, contract B): every round name shows from the tree's first step.
+   */
+  roundsStillToCome: {
+    quarterFinals: 'Quartas de final',
+    semifinal: 'Semifinal',
+    final: 'Final',
+  },
   /** The winner's mark of a plain win, named for a screen reader. */
   winnerMarkLabel: 'Venceu',
 

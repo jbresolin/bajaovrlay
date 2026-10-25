@@ -15,7 +15,8 @@
  *   - A round of 64 matches is two pages, the head saying which ("64 avos de final ·
  *     página 1/2"), each page holding its 32 matches in order.
  *   - The tree's rounds: its columns (the third place apart) and the columns it keeps for
- *     rounds still to come.
+ *     rounds still to come, each named from the first step, a round not listed yet by the
+ *     size it will have (gate 2 of PR #30, contract B).
  *   - A step past the last (data that shrank) is drawn as the last step; brackets with no
  *     round are the head alone, step "1/1".
  *
@@ -179,8 +180,13 @@ describe('describeTreeOfBracket', () => {
     // Act: describe its tree.
     const tree = describeTreeOfBracket(bracket);
 
-    // Assert: one round listed, three columns kept.
+    // Assert: one round listed, three columns kept, each already named (contract B).
     expect(tree.columnRounds, 'one round so far').toHaveLength(1);
     expect(tree.columnCount, 'room for the semifinals and the final').toBe(3);
+    expect(tree.columnNames, 'every round named from the first step').toEqual([
+      'Quartas de final',
+      'Semifinal',
+      'Final',
+    ]);
   });
 });

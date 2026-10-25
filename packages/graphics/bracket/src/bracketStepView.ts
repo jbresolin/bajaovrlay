@@ -34,6 +34,12 @@ export type TreeOfBracket = {
   thirdPlaceRound: BracketRoundData | undefined;
   /** The columns drawn: the rounds listed, or more, kept for the rounds still to come. */
   columnCount: number;
+  /**
+   * Every column's name, from the tree's first step: a listed round's own, or, for a round
+   * still to come, the name its size implies ("Semifinal", "Final"; gate 2 of PR #30,
+   * contract B). A round still to come has its name and no match and no step.
+   */
+  columnNames: string[];
 };
 
 /** How many steps the bracket has: the server's count, from the same shared function. */
@@ -90,9 +96,27 @@ export function describeTreeOfBracket(data: BracketData): TreeOfBracket {
   const thirdPlaceRound =
     tree.thirdPlaceRoundIndex === undefined ? undefined : data.rounds[tree.thirdPlaceRoundIndex];
   const firstRoundMatchCount = columnRounds[0]?.matches.length ?? 0;
-  return {
-    columnRounds,
-    thirdPlaceRound,
-    columnCount: countColumnsOfTree(firstRoundMatchCount, columnRounds.length),
-  };
+  const columnCount = countColumnsOfTree(firstRoundMatchCount, columnRounds.length);
+  const columnNames: string[] = [];
+  let impliedMatchCount = firstRoundMatchCount;
+  for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+    const listedRound = columnRounds[columnIndex];
+    columnNames.push(listedRound?.name ?? nameRoundByTheSizeItWillHave(impliedMatchCount));
+    impliedMatchCount = Math.ceil(impliedMatchCount / 2);
+  }
+  return { columnRounds, thirdPlaceRound, columnCount, columnNames };
+}
+
+/**
+ * The name a tree round still to come is drawn with, from the matches it will have: one is
+ * the final, two the semifinals, more (a tree starts at four at most) the quarter-finals.
+ */
+function nameRoundByTheSizeItWillHave(matchCount: number): string {
+  if (matchCount <= 1) {
+    return ptBR.roundsStillToCome.final;
+  }
+  if (matchCount === 2) {
+    return ptBR.roundsStillToCome.semifinal;
+  }
+  return ptBR.roundsStillToCome.quarterFinals;
 }

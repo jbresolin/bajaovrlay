@@ -15,8 +15,9 @@
  *     chip, "— × —"; each car marked winner, loser or undecided.
  *   - The board's cards come in the round's order, two columns of half the page each.
  *   - The tree's first step draws every round's name, the third place's included, and the
- *     first round's matches only, with no line; the semifinals' step adds their matches and
- *     the lines into them, each line a path through its four points.
+ *     first round's matches only, with no line; rounds not listed yet are named by the size
+ *     they will have; the semifinals' step adds their matches and the lines into them,
+ *     each line a path through its four points.
  *   - Brackets with no round draw the head alone, nothing on the stage.
  *
  * What these tests deliberately do not cover:
@@ -129,6 +130,32 @@ describe('the tree', () => {
     ]);
     expect(matchColumns, 'the quarter-finals alone').toEqual(['0', '0', '0', '0']);
     expect(lines, 'no line runs into a round not shown').toHaveLength(0);
+  });
+
+  it('names the rounds still to come from the tree’s first step, with no match and no line', () => {
+    // Arrange: a live bracket whose source has listed only the quarter-finals.
+    const superPrime = createTheRealSuperPrime();
+    const quarterFinalsOnly = {
+      rounds: superPrime.rounds.filter((round) => round.name === 'Quartas de final'),
+    };
+    const host = renderBracketAtStep(quarterFinalsOnly, 0);
+
+    // Act: read the names and the matches' columns.
+    const names = [...host.querySelectorAll('[data-testid="bracket-round-name"]')].map((name) =>
+      name.textContent?.trim(),
+    );
+    const matchColumns = [
+      ...host.querySelectorAll<HTMLElement>('[data-testid="bracket-tree-match"]'),
+    ].map((match) => match.dataset.column);
+
+    // Assert: the semifinals and the final named by the size they will have; their
+    // columns empty until they are listed (gate 2 of PR #30, contract B).
+    expect(names, 'every round name from the first step').toEqual([
+      'Quartas de final',
+      'Semifinal',
+      'Final',
+    ]);
+    expect(matchColumns, 'only the quarter-finals have matches').toEqual(['0', '0', '0', '0']);
   });
 
   it('adds the semifinals and the lines into them, each line through its four points', () => {
