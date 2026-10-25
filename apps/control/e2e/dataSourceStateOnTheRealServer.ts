@@ -35,6 +35,7 @@ type InstanceAsTheTestsReadIt = {
 /** One car of the positions a source sent, as the tests read it: its number alone. */
 export type PositionEntryAsTheTestsReadIt = {
   carNumber: number;
+  teamName: string;
   /** The interval to the car ahead, once the leader has a lap (the battle card's gap). */
   intervalMs?: number;
 };

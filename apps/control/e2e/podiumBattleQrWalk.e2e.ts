@@ -13,9 +13,10 @@
  *      and then "Com logos das equipes", frozen at the take, taken: the server has the
  *      three cars on air with car 1's logo address.
  *   3. "Próximo" pressed three times on the Camadas row: "Passo 4 de 4", the three cards
- *      shown on the output, and car 1's card shows its logo.
- *   4. A battle card whose eleven fields read cars 1 and 2 by number, live, taken: the
- *      output shows both teams and a gap ("+1,2").
+ *      shown on the output, car 1's card shows its logo and car 2's has none.
+ *   4. A battle card whose eleven fields read the race's first two cars by number, live,
+ *      bound with the simulator off and its last data still, taken: the output shows both
+ *      teams and a gap ("+1,2").
  *   5. A QR card typed and taken: its code on the output scans back to the address.
  *
  * What these tests deliberately do not cover:
@@ -46,6 +47,7 @@ import {
   seededSimulatorLabel,
   startTheSeededSimulatorFastFromTheGreenFlag,
   startTheSeededSimulatorFromTheGreenFlag,
+  turnSourceOffWithItsSwitch,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
 import {
@@ -59,9 +61,8 @@ import {
   saveAndTakeTheItemInTheEditor,
 } from './previewTestSteps';
 
-// Cars 1 and 2 of the simulator's teams (teams.fictional.json).
+// Car 1 of the simulator's teams (teams.fictional.json).
 const teamOfCar1 = 'Cascavel Off-Road';
-const teamOfCar2 = 'Biguá Off-Road';
 // The podium's list field, as its manifest titles it.
 const podiumTeamsField = 'Equipes do pódio';
 // The QR card's address: the results page the stream points phones at.
@@ -203,43 +204,59 @@ test.describe('the podium, the battle card and the QR card', () => {
     const winnersCard = podium.locator('[data-testid="podium-card"][data-slot="first"]');
     await expect(winnersCard.getByTestId('podium-team-name'), 'car 1 wins').toHaveText(teamOfCar1);
     await expect(winnersCard.getByTestId('podium-logo'), 'car 1 shows its logo').toBeVisible();
+    const secondsCard = podium.locator('[data-testid="podium-card"][data-slot="second"]');
+    await expect(secondsCard.getByTestId('podium-team-name'), 'car 2 is 2nd').toHaveText(
+      'Biguá Off-Road',
+    );
+    await expect(
+      secondsCard.getByTestId('podium-logo'),
+      'car 2’s team has no logo, so its card has none',
+    ).toHaveCount(0);
   });
 
-  test('a battle card for cars 1 and 2, read live by number, shows both teams and the gap', async ({
+  test('a battle card for the first two cars, read live by number, shows both teams and the gap', async ({
     page,
   }) => {
-    // Eleven fields bound by hand, four choices each, plus the wait for the first lap: far
-    // past Playwright's 30 s, as the other walks that bind many fields (bindings, tower).
+    // Eleven fields bound by hand, four choices each, after the race's first lap: past
+    // Playwright's 30 s on a slow runner, as the other walks that bind many fields.
     test.setTimeout(120_000);
 
-    // Arrange: the simulator fast, and car 2 with an interval to the car ahead of it (the
-    // shape leaves it out before the leader's first lap).
+    // Arrange: the race run fast until the 2nd car has an interval to the leader (the shape
+    // leaves it out before the leader's first lap), then the simulator switched off, so its
+    // last data stays still while the fields are bound. Binding live fields while the race
+    // runs at speed 60 slows the editor to a crawl (BAJAOVRLAY-45), which is not this walk.
     await openDataSourcesPageAndWaitUntilConnected(page);
     await startTheSeededSimulatorFastFromTheGreenFlag(page);
     await expect
       .poll(
         async () => {
           const positions = await readPositionsOfSourceFromTheRealServer(seededSimulatorLabel);
-          return positions.find((entry) => entry.carNumber === 2)?.intervalMs;
+          return positions[1]?.intervalMs;
         },
         {
-          message: 'car 2 must have an interval once the leader has a lap',
+          message: 'the 2nd car must have an interval once the leader has a lap',
           timeout: waitForTheFirstLapInMilliseconds,
         },
       )
       .toBeGreaterThan(0);
+    await turnSourceOffWithItsSwitch(page, seededSimulatorLabel);
+    const positionsOnceStill = await readPositionsOfSourceFromTheRealServer(seededSimulatorLabel);
+    const leader = positionsOnceStill[0];
+    const second = positionsOnceStill[1];
+    expect(second?.intervalMs, "the last data keeps the 2nd car's interval").toBeGreaterThan(0);
     const outputPage = await openOutputInItsOwnPage(page.context(), '/render/');
 
-    // Act (step 4): the battle card, every field reading car 1 (ahead) or car 2 (behind).
+    // Act (step 4): the battle card, every field reading the leader (ahead) or the 2nd car
+    // (behind) by number, live; saved and taken.
     await openControlPageAndWaitUntilConnected(page);
     const itemEditor = await openItemEditorWithNewGraphic(
       page,
-      'Disputa — carros 1 e 2',
+      'Disputa — os dois primeiros',
       'Disputa de posição',
     );
     const valuesOfEachCar = [
-      { side: 'da frente', carNumber: 1 },
-      { side: 'de trás', carNumber: 2 },
+      { side: 'da frente', carNumber: leader?.carNumber ?? 0 },
+      { side: 'de trás', carNumber: second?.carNumber ?? 0 },
     ];
     const fieldsAndPaths = [
       { field: 'Posição do carro', pathLabel: 'Posição' },
@@ -260,16 +277,19 @@ test.describe('the podium, the battle card and the QR card', () => {
     await readFieldFromCarChosenByNumber(page, itemEditor, {
       title: 'Diferença entre os carros (ms)',
       pathLabel: 'Intervalo para o carro à frente',
-      carNumber: 2,
+      carNumber: second?.carNumber ?? 0,
     });
     await saveAndTakeTheItemInTheEditor(itemEditor);
 
     // Assert (step 4): both teams and a gap written "+s,d" on the output.
     const battleCard = findGraphicOnOutputPage(outputPage, 'lower-third', 'battle-card');
-    await expect(battleCard.getByTestId('battle-card'), 'the car ahead').toContainText(teamOfCar1, {
-      timeout: waitForTheAirInMilliseconds,
-    });
-    await expect(battleCard.getByTestId('battle-card'), 'the car behind').toContainText(teamOfCar2);
+    await expect(battleCard.getByTestId('battle-card'), 'the car ahead').toContainText(
+      leader?.teamName ?? 'no leader',
+      { timeout: waitForTheAirInMilliseconds },
+    );
+    await expect(battleCard.getByTestId('battle-card'), 'the car behind').toContainText(
+      second?.teamName ?? 'no 2nd car',
+    );
     await expect(battleCard.getByTestId('battle-card-gap'), 'the gap in seconds').toHaveText(
       /^\+\d+,\d$/,
     );
