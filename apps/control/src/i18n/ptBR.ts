@@ -194,6 +194,7 @@ export const ptBR = {
       wholeClock: 'Relógio da fonte',
       eventField: 'Evento',
       entity: 'Cadastro',
+      entityList: 'Lista dos cadastros',
     },
     // A list field (drawn read-only) that may also read a source: its value as it is.
     listKindAsItIs: 'Valor como está',

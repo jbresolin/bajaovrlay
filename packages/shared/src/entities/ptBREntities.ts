@@ -135,6 +135,23 @@ export const ptBREntities = {
       `${attributeLabel} não serve para este campo.`,
   },
 
+  /**
+   * Why an entity list (every sponsor, every slot, BAJAOVRLAY-46) cannot fill a field. The
+   * server puts the field's title before them: "Patrocinadores: nenhum patrocinador …".
+   */
+  entityListProblems: {
+    noSponsorWithALogo: 'nenhum patrocinador com logo nos cadastros.',
+    noScheduleSlot: 'nenhuma sessão na programação dos cadastros.',
+    listDoesNotFitField: (listName: string) =>
+      `a lista de ${listName} dos cadastros não serve para este campo.`,
+  },
+
+  /** What a whole list of each kind is called in a sentence: "a lista de patrocinadores". */
+  entityListNames: {
+    sponsor: 'patrocinadores',
+    scheduleSlot: 'sessões da programação',
+  },
+
   /** Why a slice or an import was refused: a key that appears twice. */
   sliceProblems: {
     carListedTwice: (carNumber: number) => `O carro ${String(carNumber)} aparece duas vezes.`,

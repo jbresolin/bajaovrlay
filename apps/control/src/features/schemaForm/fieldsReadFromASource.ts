@@ -1,7 +1,7 @@
 /**
  * Which fields of a generated form read a data source now ("Fonte", "Relógio da fonte",
  * and the clock fields the whole clock fills) or the entity library ("Cadastro",
- * BAJAOVRLAY-19), and whether those choices changed since the form opened. "Atualizar no
+ * BAJAOVRLAY-19; "Lista dos cadastros", BAJAOVRLAY-46), and whether those choices changed since the form opened. "Atualizar no
  * ar" sends typed values only: such a choice reaches the air at the next take, which
  * reads the item (gate 2 of PR #18).
  */
@@ -14,7 +14,7 @@ import type { SchemaFormFieldKind, SchemaFormValues } from './schemaFormValues';
 
 /** Whether a field of this kind reads a source or the library rather than a typed value. */
 function isKindReadFromASource(kind: SchemaFormFieldKind | undefined): boolean {
-  return kind === 'binding' || kind === 'wholeClock' || kind === 'entity';
+  return kind === 'binding' || kind === 'wholeClock' || kind === 'entity' || kind === 'entityList';
 }
 
 /**
@@ -52,6 +52,11 @@ export function hasSourceChoiceChangedSinceOpened(
     }
     if (!isReadFromASourceNow) {
       return false;
+    }
+    if (kindNow === 'entityList') {
+      const listNow = readOwnValueOfRecord(formValuesNow.entityLists ?? {}, field.key);
+      const listAsOpened = readOwnValueOfRecord(formValuesAsOpened.entityLists ?? {}, field.key);
+      return listNow !== listAsOpened;
     }
     if (kindNow === 'entity') {
       const referenceNow = readOwnValueOfRecord(formValuesNow.entityReferences ?? {}, field.key);

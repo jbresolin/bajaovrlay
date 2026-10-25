@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { EntityFieldValueSchema } from '../entities/entityFieldValue.js';
+import { EntityListFieldValueSchema } from '../entities/entityListFieldValue.js';
 import { BindingFieldValueSchema } from './bindingFieldValue.js';
 
 /** One bound field of an instance: its key in the graphic's data, and how it is read. */
@@ -14,11 +15,13 @@ export type InstanceBoundField = z.infer<typeof InstanceBoundFieldSchema>;
 
 /**
  * One field of an instance that reads the entity library (BAJAOVRLAY-19): its key in the
- * graphic's data, and the reference. Always live, on program and on preview alike.
+ * graphic's data, and the reference: one attribute of one record, or a whole list of
+ * sponsors or schedule slots (an `entityList`, BAJAOVRLAY-46). Always live, on program
+ * and on preview alike.
  */
 export const InstanceEntityFieldSchema = z.object({
   fieldKey: z.string().min(1),
-  entityReference: EntityFieldValueSchema,
+  entityReference: z.union([EntityFieldValueSchema, EntityListFieldValueSchema]),
 });
 
 /** One entity field of an instance, after validation. */

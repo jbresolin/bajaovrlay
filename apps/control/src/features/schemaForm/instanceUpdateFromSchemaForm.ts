@@ -80,6 +80,7 @@ export function buildInstanceUpdateFromDirtySchemaFormFields(
       // (BAJAOVRLAY-44): it is offered in the item editor only.
       case 'binding':
       case 'entity':
+      case 'entityList':
       case 'filledByTheWholeClock':
       case 'eventField':
         break;

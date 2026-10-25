@@ -57,6 +57,31 @@ export {
 export { type UpsertEntityCommand, UpsertEntityCommandSchema } from './upsertEntity.js';
 // The entity reference, a FieldValue that reads one attribute of one record (always live).
 export { type EntityFieldValue, EntityFieldValueSchema } from './entityFieldValue.js';
+// The entity list, a FieldValue that reads every sponsor or every schedule slot (always live).
+export {
+  type EntityListFieldValue,
+  EntityListFieldValueSchema,
+  type EntityListType,
+  EntityListTypeSchema,
+} from './entityListFieldValue.js';
+// What one item of each list is, and the keys each list's items carry (written by hand).
+export {
+  type EntityListItemKey,
+  listKeysEveryItemOfEntityListCarries,
+  listKeysOfTheItemsOfEntityList,
+  type ScheduleSlotListItem,
+  type SponsorListItem,
+} from './entityListItems.js';
+// Which fields a list fits (an array of objects whose items.required it carries), and the save check.
+export {
+  findProblemInEntityListForDataSchemaField,
+  listEntityListTypesThatFitDataSchemaField,
+} from './entityListFitsGraphicField.js';
+// Reading one list against the library: the items in order, or why the list is empty.
+export {
+  type EntityListResolution,
+  resolveEntityListAgainstLibrary,
+} from './entityListResolution.js';
 // Every attribute a reference may read, by kind of record, with its label and value type.
 export {
   type EntityAttribute,

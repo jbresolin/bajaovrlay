@@ -67,7 +67,7 @@ export function listFieldsChangedOnAirAfterUpdate(change: OnAirChange): string[]
  * marks takeTime always differs once the operator sent it: the item gives "the moment of
  * the take", and anything sent replaced that. A bound field likewise: the item gives
  * "what the source says", and a value the operator sent replaced that; and a field read
- * from the entity library, for the same reason. A literal is compared by content, and a
+ * from the entity library (one attribute or a whole list), for the same reason. A literal is compared by content, and a
  * field missing on air counts as equal to a literal null and to a field the item does not
  * store at all, because a take leaves both out of the data.
  */
@@ -80,7 +80,8 @@ function doesValueOnAirDifferFromTheItem(
   const isFieldTheItemDoesNotType =
     fieldOfTheItem?.kind === 'takeTime' ||
     fieldOfTheItem?.kind === 'binding' ||
-    fieldOfTheItem?.kind === 'entity';
+    fieldOfTheItem?.kind === 'entity' ||
+    fieldOfTheItem?.kind === 'entityList';
   if (isFieldTheItemDoesNotType) {
     return true;
   }

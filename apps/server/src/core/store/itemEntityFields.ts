@@ -3,6 +3,7 @@
 import {
   type CommandError,
   type EntityLibrary,
+  findProblemInEntityListForDataSchemaField,
   findProblemInEntityReferenceForDataSchemaField,
   type Graphic,
   type ItemFields,
@@ -18,6 +19,8 @@ import { readTitleOfField } from './itemBindingFields.js';
  * the attribute must exist for its kind of record and fit the field (the shared check
  * the item editor runs too), and the record must be in the library now. So a mistake is
  * heard while preparing the show, not at the take on air.
+ * An entity list (BAJAOVRLAY-46) must fit its field (the shared check); whether it has
+ * records is judged at the take, so a roll can be prepared before Cadastros is filled.
  * What could go wrong: it judges by the library of now. A record deleted after the save
  * is found missing at the take instead, which refuses that take, naming it.
  */
@@ -27,6 +30,17 @@ export function findRefusalOfEntityFieldsForGraphic(
   entities: EntityLibrary,
 ): CommandError | undefined {
   for (const [fieldKey, fieldValue] of Object.entries(fieldsInTheCommand)) {
+    if (fieldValue.kind === 'entityList') {
+      const problemOfTheList = findProblemInEntityListForDataSchemaField(
+        fieldValue,
+        graphic.manifest.schema,
+        fieldKey,
+      );
+      if (problemOfTheList !== undefined) {
+        return refuseEntityReferenceOfField(readTitleOfField(graphic, fieldKey), problemOfTheList);
+      }
+      continue;
+    }
     if (fieldValue.kind !== 'entity') {
       continue;
     }

@@ -1,3 +1,5 @@
+import type { EntityListType } from '@bajaovrlay/shared';
+
 import type { SchemaFormEntityReferenceValue } from './entityReferenceFormValue';
 
 /**
@@ -21,9 +23,12 @@ import type { SchemaFormEntityReferenceValue } from './entityReferenceFormValue'
  * - `entity` ("Cadastro", BAJAOVRLAY-19): one attribute of one record of the entity
  *   library, as `entityReferences` says. Offered only in the item editor, where some
  *   attribute fits the field (entityReferenceFormValue.ts).
+ * - `entityList` ("Lista dos cadastros", BAJAOVRLAY-46): every sponsor or every slot of the
+ *   schedule, as `entityLists` says. Offered only in the item editor, on a list field some
+ *   list of the library fits (entityListFormValue.ts).
  */
 export type SchemaFormFieldKind =
-  'literal' | 'takeTime' | 'binding' | 'wholeClock' | 'eventField' | 'entity';
+  'literal' | 'takeTime' | 'binding' | 'wholeClock' | 'eventField' | 'entity' | 'entityList';
 
 /**
  * A binding as the form holds it while the operator chooses: plain texts and a switch,
@@ -99,6 +104,11 @@ export type SchemaFormValues = {
    * reads nothing of the library is exactly what it was before.
    */
   entityReferences?: Record<string, SchemaFormEntityReferenceValue>;
+  /**
+   * What "Lista dos cadastros" reads, by field key (BAJAOVRLAY-46): the sponsors or the
+   * schedule. Left out until a list field holds one, as `entityReferences` is.
+   */
+  entityLists?: Record<string, EntityListType>;
   unsupportedValuesAsJson: UnsupportedValueAsJson[];
 };
 
