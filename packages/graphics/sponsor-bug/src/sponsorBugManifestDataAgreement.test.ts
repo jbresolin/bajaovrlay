@@ -25,7 +25,7 @@ import { describe, expect, it } from 'vitest';
 import sponsorBugManifest from '../sponsor-bug.ograf.json';
 import { parseCompleteSponsorBugData, type SponsorBugData } from './sponsorBugModel.js';
 
-/** Builds the enduro's bug presented by the master sponsor, as an item from Cadastros gives it. */
+/** Builds the enduro's bug presented by the Diamante sponsor, as an item from Cadastros gives it. */
 function createEnduroBugData(): SponsorBugData {
   return {
     eventWord: 'ENDURO',

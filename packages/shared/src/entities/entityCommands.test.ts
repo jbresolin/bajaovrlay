@@ -70,7 +70,7 @@ describe('the entity commands in the command union', () => {
     // "Excluir" twice on a sponsor's row.
     {
       name: 'accepts deleting a sponsor by its id',
-      command: { type: 'deleteEntity', entityType: 'sponsor', sponsorId: 'patrocinador-master' },
+      command: { type: 'deleteEntity', entityType: 'sponsor', sponsorId: 'patrocinador-diamante' },
     },
     // "Importar" with the two valid rows of a CSV.
     {

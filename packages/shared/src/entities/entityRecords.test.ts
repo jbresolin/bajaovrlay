@@ -256,19 +256,19 @@ describe('a person', () => {
 });
 
 describe('a sponsor', () => {
-  /** The master sponsor, in every roll more often than anyone. */
-  function buildMasterSponsor() {
+  /** The Diamante sponsor, in every roll more often than anyone. */
+  function buildDiamanteSponsor() {
     return {
-      sponsorId: 'patrocinador-master',
+      sponsorId: 'patrocinador-diamante',
       name: 'Mineradora Serra Azul',
       tier: 'diamante',
       rollWeight: 10,
     };
   }
 
-  it('accepts the master sponsor with no logo yet', () => {
+  it('accepts the Diamante sponsor with no logo yet', () => {
     // Arrange: the sponsor, imported from CSV before its logo was uploaded.
-    const sponsor = buildMasterSponsor();
+    const sponsor = buildDiamanteSponsor();
 
     // Act: check it.
     const result = SponsorSchema.safeParse(sponsor);
@@ -290,7 +290,7 @@ describe('a sponsor', () => {
       change: { rollWeight: 0 },
       expectedMessage: 'Peso no rodízio: um número inteiro de 1 a 10.',
     },
-    // The scale stops at 10, so the master sponsor is not drowned by a typo of 100.
+    // The scale stops at 10, so the Diamante sponsor is not drowned by a typo of 100.
     {
       name: 'refuses a roll weight of 11',
       change: { rollWeight: 11 },
@@ -305,8 +305,8 @@ describe('a sponsor', () => {
   ];
 
   it.each(refusedSponsors)('$name', ({ change, expectedMessage }) => {
-    // Arrange: the master sponsor with one part broken.
-    const brokenSponsor = { ...buildMasterSponsor(), ...change };
+    // Arrange: the Diamante sponsor with one part broken.
+    const brokenSponsor = { ...buildDiamanteSponsor(), ...change };
 
     // Act: check it.
     const result = SponsorSchema.safeParse(brokenSponsor);

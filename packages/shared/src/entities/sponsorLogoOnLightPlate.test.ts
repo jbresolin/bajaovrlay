@@ -23,10 +23,10 @@ import { describe, expect, it } from 'vitest';
 import { listAttributesOfEntityType } from './entityAttributes.js';
 import { SponsorSchema } from './sponsor.js';
 
-/** The master sponsor, Mineradora Serra Azul, with its logo. */
-function buildMasterSponsor() {
+/** The Diamante sponsor, Mineradora Serra Azul, with its logo. */
+function buildDiamanteSponsor() {
   return {
-    sponsorId: 'patrocinador-master',
+    sponsorId: 'patrocinador-diamante',
     name: 'Mineradora Serra Azul',
     tier: 'diamante',
     rollWeight: 10,
@@ -41,9 +41,9 @@ function readFirstMessage(result: { success: boolean; error?: { issues: { messag
 
 describe("a sponsor's light plate choice", () => {
   it('accepts a sponsor whose logo goes on the light plate, and one that says nothing', () => {
-    // Arrange: the master sponsor marked for the plate, and a support sponsor as a row
+    // Arrange: the Diamante sponsor marked for the plate, and a support sponsor as a row
     // stored before the choice existed holds it.
-    const masterOnThePlate = { ...buildMasterSponsor(), logoOnLightPlate: true };
+    const diamanteOnThePlate = { ...buildDiamanteSponsor(), logoOnLightPlate: true };
     const supportStoredBefore = {
       sponsorId: 'apoio-pneus',
       name: 'Pneus Trilha',
@@ -52,7 +52,7 @@ describe("a sponsor's light plate choice", () => {
     };
 
     // Act: check both.
-    const resultOnThePlate = SponsorSchema.safeParse(masterOnThePlate);
+    const resultOnThePlate = SponsorSchema.safeParse(diamanteOnThePlate);
     const resultSayingNothing = SponsorSchema.safeParse(supportStoredBefore);
 
     // Assert: both accepted; leaving it out means no plate, so nothing is made up.
@@ -64,7 +64,7 @@ describe("a sponsor's light plate choice", () => {
 
   it('refuses a plate choice that is not yes or no, naming the field', () => {
     // Arrange: a CSV cell "talvez" passed on as text.
-    const sponsorWithAWord = { ...buildMasterSponsor(), logoOnLightPlate: 'talvez' };
+    const sponsorWithAWord = { ...buildDiamanteSponsor(), logoOnLightPlate: 'talvez' };
 
     // Act: check it.
     const result = SponsorSchema.safeParse(sponsorWithAWord);

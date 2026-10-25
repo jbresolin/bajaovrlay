@@ -20,7 +20,7 @@ export function createEnduroBugDataWithoutSponsor(): SponsorBugData {
   return { eventWord: 'ENDURO', caption: 'Apresentado por' };
 }
 
-/** Builds the enduro's bug presented by the master sponsor, its logo on the light plate. */
+/** Builds the enduro's bug presented by the Diamante sponsor, its logo on the light plate. */
 export function createEnduroBugDataWithSponsor(): SponsorBugData {
   return {
     ...createEnduroBugDataWithoutSponsor(),

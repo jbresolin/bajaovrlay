@@ -48,11 +48,11 @@ export function buildNarratorAndJudge(): People {
   ];
 }
 
-/** The master sponsor and a supporter, as the Patrocinadores tab holds them. */
-export function buildMasterAndSupportSponsors(): Sponsors {
+/** The Diamante sponsor and a supporter, as the Patrocinadores tab holds them. */
+export function buildDiamanteAndSupportSponsors(): Sponsors {
   return [
     {
-      sponsorId: 'patrocinador-master',
+      sponsorId: 'patrocinador-diamante',
       name: 'Mineradora Serra Azul',
       tier: 'diamante',
       rollWeight: 10,

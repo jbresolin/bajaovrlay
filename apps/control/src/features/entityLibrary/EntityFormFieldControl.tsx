@@ -29,7 +29,7 @@ const noChoiceValue = 'sem-escolha';
 /** One choice of a dropdown: the value stored and the label shown. */
 type DropdownChoice = { value: string; label: string };
 
-/** The choices of each dropdown kind of field: the 27 UFs, the five tiers, the kinds. */
+/** The choices of each dropdown kind of field: the 27 UFs, the six sponsor levels, the kinds. */
 function listChoicesOfField(field: EntityFormField): DropdownChoice[] {
   switch (field.fieldKind) {
     case 'state':

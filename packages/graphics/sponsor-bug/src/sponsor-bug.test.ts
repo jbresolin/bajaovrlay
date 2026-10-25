@@ -281,7 +281,7 @@ describe('updateAction', () => {
     await sponsorBug.playAction({ skipAnimation: true });
     const cardBefore = findPartOfSponsorBug(sponsorBug, 'sponsor-bug-panel');
 
-    // Act: the operator reads the master sponsor's logo and plate from Cadastros.
+    // Act: the operator reads the Diamante sponsor's logo and plate from Cadastros.
     const answer = await sponsorBug.updateAction({
       data: { sponsorLogoUrl: '/media/7d1e3a5c-logo-serra-azul', sponsorLogoOnLightPlate: true },
     });

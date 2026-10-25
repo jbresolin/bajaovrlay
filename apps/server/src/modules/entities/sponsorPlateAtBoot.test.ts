@@ -43,7 +43,7 @@ function loadSlicesAtBoot(database: ServerDatabase) {
 function buildSponsorsSavedBeforeThePlate() {
   return [
     {
-      sponsorId: 'patrocinador-master',
+      sponsorId: 'patrocinador-diamante',
       name: 'Mineradora Serra Azul',
       tier: 'diamante',
       rollWeight: 10,
@@ -77,12 +77,12 @@ describe('the sponsors slice at boot', () => {
   });
 
   it('boots a sponsors row with the plate choice and keeps it', () => {
-    // Arrange: a database booted once, with the master sponsor's logo then marked for the
+    // Arrange: a database booted once, with the Diamante sponsor's logo then marked for the
     // light plate in Cadastros.
     const { database } = openTemporaryDatabase();
     loadSlicesAtBoot(database);
-    const [masterSponsor, supportSponsor] = buildSponsorsSavedBeforeThePlate();
-    const sponsorsWithThePlate = [{ ...masterSponsor, logoOnLightPlate: true }, supportSponsor];
+    const [diamanteSponsor, supportSponsor] = buildSponsorsSavedBeforeThePlate();
+    const sponsorsWithThePlate = [{ ...diamanteSponsor, logoOnLightPlate: true }, supportSponsor];
     writeSliceRows(database, [
       { name: 'sponsors', json: sponsorsWithThePlate, updatedAt: '2026-10-24T07:00:00.000Z' },
     ]);

@@ -9,7 +9,7 @@
  *   component).
  *
  * What these tests prove:
- *   - The master sponsor's form opens with its logo on the panel and on the plate.
+ *   - The Diamante sponsor's form opens with its logo on the panel and on the plate.
  *   - "Logo sobre placa clara" ticked and saved sends the sponsor with the choice.
  *   - A sponsor with no logo is told to send one first, and no preview is drawn.
  *
@@ -22,24 +22,24 @@ import { describe, expect, it } from 'vitest';
 
 import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
 import {
-  buildLogoOfTheMasterSponsor,
-  buildMasterSponsorWithItsLogo,
+  buildDiamanteSponsorWithItsLogo,
+  buildLogoOfTheDiamanteSponsor,
   buildSlicesWithTheLibrary,
-  logoOfTheMasterSponsorMediaId,
+  logoOfTheDiamanteSponsorMediaId,
 } from '@/state/entitiesLikeTheServerSends.testSupport';
 
 import { EntityLibraryPage } from './EntityLibraryPage';
 
-/** Draws the page with the master sponsor (and its logo) and a support sponsor with none. */
+/** Draws the page with the Diamante sponsor (and its logo) and a support sponsor with none. */
 function renderPageWithTwoSponsors() {
   return renderOnControlPageConnectedToFakeServer(
     <EntityLibraryPage />,
     buildSlicesWithTheLibrary({
       sponsors: [
-        buildMasterSponsorWithItsLogo(),
+        buildDiamanteSponsorWithItsLogo(),
         { sponsorId: 'apoio-pneus', name: 'Pneus Trilha', tier: 'apoio', rollWeight: 2 },
       ],
-      media: [buildLogoOfTheMasterSponsor()],
+      media: [buildLogoOfTheDiamanteSponsor()],
     }),
   );
 }
@@ -54,26 +54,26 @@ function openTheFormOfSponsorInRow(rowIndex: number) {
 }
 
 describe("the light plate of a sponsor's logo", () => {
-  it('shows the master sponsor’s logo on the panel and on the plate when its form opens', () => {
+  it('shows the Diamante sponsor’s logo on the panel and on the plate when its form opens', () => {
     // Arrange: the page drawn.
     renderPageWithTwoSponsors();
 
-    // Act: open the master sponsor's form.
+    // Act: open the Diamante sponsor's form.
     const form = openTheFormOfSponsorInRow(0);
 
     // Assert: both previews show the logo, before anything is ticked.
     expect(
       form.getByRole('img', { name: 'Logo no painel, como vai ao ar sem a placa' }),
       'the logo on the panel',
-    ).toHaveAttribute('src', `/media/${logoOfTheMasterSponsorMediaId}`);
+    ).toHaveAttribute('src', `/media/${logoOfTheDiamanteSponsorMediaId}`);
     expect(
       form.getByRole('img', { name: 'Logo na placa clara' }),
       'the logo on the plate',
-    ).toHaveAttribute('src', `/media/${logoOfTheMasterSponsorMediaId}`);
+    ).toHaveAttribute('src', `/media/${logoOfTheDiamanteSponsorMediaId}`);
   });
 
-  it('saves the master sponsor with "Logo sobre placa clara" ticked', async () => {
-    // Arrange: the page drawn, the master sponsor's form open.
+  it('saves the Diamante sponsor with "Logo sobre placa clara" ticked', async () => {
+    // Arrange: the page drawn, the Diamante sponsor's form open.
     const { fakeServer } = renderPageWithTwoSponsors();
     const form = openTheFormOfSponsorInRow(0);
 
@@ -87,7 +87,7 @@ describe("the light plate of a sponsor's logo", () => {
         {
           type: 'upsertEntity',
           entityType: 'sponsor',
-          record: { ...buildMasterSponsorWithItsLogo(), logoOnLightPlate: true },
+          record: { ...buildDiamanteSponsorWithItsLogo(), logoOnLightPlate: true },
         },
       ]);
     });
