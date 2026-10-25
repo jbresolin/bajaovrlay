@@ -12,8 +12,11 @@ reads the manifest's JSON Schema into field descriptions (`schemaFormDescription
 - Checking: `checkSchemaFormValues.ts` with `zodSchemaFromDataSchema.ts` (pt-BR messages; the
   server stays the authority) through `schemaFormResolver.ts`.
 - Building: `instanceUpdateFromSchemaForm.ts`, `itemFieldsFromSchemaForm.ts`.
-- Drawing: `SchemaFormFields.tsx`, `SchemaFormFieldRow.tsx`, `SchemaFormValueControl.tsx`,
-  `UnsupportedValueBox.tsx`, "Fonte" (`BoundFieldControls.tsx`), "Cadastro"
+- Drawing: `SchemaFormFields.tsx`, `SchemaFormFieldRow.tsx` (what it offers in
+  `fieldKindsOffered.ts`, its "Como preencher …" in `FieldKindSelect.tsx`),
+  `SchemaFormValueControl.tsx`, `UnsupportedValueBox.tsx`, "Fonte" (`BoundFieldControls.tsx`,
+  its transforms in `BindingTransformControls.tsx`, what a panel hands it in
+  `schemaFormBindingOptions.ts`), "Cadastro"
   (`EntityReferenceControls.tsx`, `entityReferenceFormValue.ts`), an image field's picker
   (`ImageUrlFieldControl.tsx`), a list of texts typed line by line (`TextListField.tsx`,
   `TextListLineRow.tsx`, `textListDragAnnouncements.ts`; BAJAOVRLAY-23);

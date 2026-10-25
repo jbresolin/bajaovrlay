@@ -8,8 +8,8 @@ import {
   canFieldTakeTheWholeClock,
   listClockFieldKeysFilledByTheWholeClock,
 } from './bindingChoices';
-import type { SchemaFormBindingOptions } from './BoundFieldControls';
 import { doesListFieldOfferAChoice, ListFieldWithSourceChoice } from './ListFieldWithSourceChoice';
+import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';
 import type { SchemaFormValues, UnsupportedValueAsJson } from './schemaFormValues';

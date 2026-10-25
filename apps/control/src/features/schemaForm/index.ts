@@ -84,7 +84,7 @@ export {
 // Draws the fields of a generated form for a react-hook-form `form`.
 export { SchemaFormFields } from './SchemaFormFields';
 // What a panel hands the form so fields can read a data source ("Fonte", "Relógio da fonte").
-export type { SchemaFormBindingOptions } from './BoundFieldControls';
+export type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 // The "Fonte" a manifest suggests for a new item's field, when exactly one source fits it.
 export {
   buildSuggestedBindingsForNewItem,

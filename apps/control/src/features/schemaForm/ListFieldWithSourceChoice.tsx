@@ -13,9 +13,10 @@ import { ptBR } from '@/i18n/ptBR';
 
 import { canFieldBeBoundToASource } from './bindingChoices';
 import { emptySchemaFormBindingValue } from './bindingFormValue';
-import { BoundFieldControls, type SchemaFormBindingOptions } from './BoundFieldControls';
+import { BoundFieldControls } from './BoundFieldControls';
 import { EntityListControls } from './EntityListControls';
 import { canFieldReadAnEntityList } from './entityListFormValue';
+import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import type { SchemaFormFieldKind, SchemaFormValues } from './schemaFormValues';
 import { UnsupportedValueBox } from './UnsupportedValueBox';

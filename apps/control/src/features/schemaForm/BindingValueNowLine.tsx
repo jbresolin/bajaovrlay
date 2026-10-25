@@ -2,7 +2,7 @@ import type { BindingFieldValue } from '@bajaovrlay/shared';
 import { useSyncExternalStore } from 'react';
 
 import { describeBindingValueNow } from './bindingValueNowText';
-import type { SchemaFormBindingOptions } from './BoundFieldControls';
+import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 
 /**
  * The "Valor agora" line under a field set to "Fonte": what the field would get if the
