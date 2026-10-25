@@ -10,6 +10,10 @@ import {
 const rendererPageAddress = `http://127.0.0.1:${rendererPagePort}`;
 const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 const isRunningInCI = Boolean(process.env.CI);
+// The real-server projects keep the baselines' names of the one "chromium" project they
+// came from, so the race clock's existing baseline is still found.
+const snapshotPathOfTheChromiumProject =
+  '{testDir}/{testFilePath}-snapshots/{arg}-chromium{-snapshotSuffix}{ext}';
 
 // Both web servers read these: the real server listens there, and the renderer's Vite dev
 // server forwards /ws, /api, /graphics and /theme there (see vite.config.ts). The ports, the
@@ -42,21 +46,43 @@ export default defineConfig({
     baseURL: rendererPageAddress,
     trace: 'retain-on-failure',
   },
+  // Two files drive the one real server (a take, a clearAll), so they must never run at the
+  // same time: in two workers one test's clearAll took the other's graphic off air. Each
+  // has a project of its own, the combos waiting for the race clock (`dependencies`); every
+  // other file talks to a stand-in server inside its page and runs in parallel with them.
   projects: [
     {
       name: 'chromium',
+      testIgnore: ['**/raceClockOnAir.e2e.ts', '**/combosOnAir.e2e.ts'],
       // OBS's browser source is Chromium, at the 1920x1080 size of the stream canvas.
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
+    },
+    {
+      name: 'real server: race clock',
+      testMatch: '**/raceClockOnAir.e2e.ts',
+      snapshotPathTemplate: snapshotPathOfTheChromiumProject,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
+    },
+    {
+      name: 'real server: combos',
+      testMatch: '**/combosOnAir.e2e.ts',
+      // What could go wrong: Playwright skips a project whose dependency failed, so a red
+      // race clock test also skips the combos (reported "did not run", not failed). Read
+      // the race clock's failure first; the combos say nothing until it is fixed.
+      dependencies: ['real server: race clock'],
+      snapshotPathTemplate: snapshotPathOfTheChromiumProject,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },
   ],
   webServer: [
     {
-      // The real server, from source, serving the real race-clock build. The build runs
-      // first so the smoke test never meets a missing or stale dist/. Nothing else builds
-      // that folder meanwhile: the race-clock package is a devDependency of the renderer,
-      // so pnpm finishes race-clock's own browser tests before starting these.
+      // The real server, from source, serving the real builds of the graphics the tests
+      // take: the race clock, and the strip, the ticker and the lower third the combo
+      // screenshots compose (BAJAOVRLAY-23). The builds run first so no test meets a missing
+      // or stale dist/. Nothing else builds those folders meanwhile: each package is a
+      // devDependency of the renderer, so pnpm finishes its own browser tests before these.
       command:
-        'pnpm --filter @bajaovrlay/race-clock build && pnpm --filter @bajaovrlay/server exec tsx --conditions=@bajaovrlay/source src/main.ts',
+        'pnpm --filter @bajaovrlay/race-clock --filter @bajaovrlay/lower-strip --filter @bajaovrlay/message-ticker --filter @bajaovrlay/lower-third build && pnpm --filter @bajaovrlay/server exec tsx --conditions=@bajaovrlay/source src/main.ts',
       url: `${realServerAddress}/health`,
       env: realServerEnvironment,
       reuseExistingServer: !isRunningInCI,

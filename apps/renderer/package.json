@@ -16,6 +16,9 @@
     "@bajaovrlay/shared": "workspace:*"
   },
   "devDependencies": {
+    "@bajaovrlay/lower-strip": "workspace:*",
+    "@bajaovrlay/lower-third": "workspace:*",
+    "@bajaovrlay/message-ticker": "workspace:*",
     "@bajaovrlay/race-clock": "workspace:*",
     "@playwright/test": "catalog:",
     "jsdom": "^30.1.2",

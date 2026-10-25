@@ -65,6 +65,7 @@ import {
   readTheLibraryFromTheRealServer,
   uploadALogoToTheRealServer,
 } from './entityLibraryTestSteps';
+import { findItemEditorOwnTextField } from './itemEditorOwnFields';
 import {
   chooseGraphicInTheItemEditor,
   openItemEditorWithNewGraphic,
@@ -102,7 +103,7 @@ test.describe('emptying the server state', () => {
     await page.getByRole('button', { name: '+ Item' }).click();
     const itemEditor = page.getByRole('region', { name: 'Editor de item' });
     await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
-    await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
+    await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill('Largada do enduro');
     await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro — Largada');
     await saveAndTakeTheItemInTheEditor(itemEditor);
     await expect(clockLayerRow, 'the clock must be on its layer before the reset').toContainText(

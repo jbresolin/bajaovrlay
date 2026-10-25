@@ -12,12 +12,12 @@ import '@bajaovrlay/theme/ardosia/tokens.css';
 import '@bajaovrlay/theme/fonts/fonts.css';
 
 import { setUpPreviewControls } from '@bajaovrlay/graphics-kit/previewControls';
+import { flagStates } from '@bajaovrlay/graphics-kit/raceClockReading';
 import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 
 import { choosePreviewData } from './previewData.js';
 import { ptBR } from './ptBR.js';
 import RaceClockGraphic from './race-clock.js';
-import { flagStates } from './raceClockModel.js';
 
 const { previewStage, addPreviewButton, runActionAndShowAnswer, showProblem, readPreviewState } =
   setUpPreviewControls(ptBR.preview);

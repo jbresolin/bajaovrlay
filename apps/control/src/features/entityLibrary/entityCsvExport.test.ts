@@ -8,7 +8,8 @@
  *
  * What these tests prove:
  *   - The teams export writes the header and one line per team, in car order, with no
- *     image column, and the light plate choice as "sim" or "nao" (BAJAOVRLAY-24).
+ *     image column, and the light plate choice as "sim" or "nao" (BAJAOVRLAY-24); the
+ *     sponsors export writes the same column (BAJAOVRLAY-23).
  *   - The export of each tab, imported again into the same library, gives every line as
  *     "atualiza" with the very records stored (the logo kept): a round trip loses nothing.
  *   - The schedule writes its moments as "14/11/2026 10:00" on this computer's clock.
@@ -58,7 +59,10 @@ function buildLibraryOfTheRaceWeekend(): EntityLibrary {
         name: 'Mineradora Serra Azul',
         tier: 'master',
         rollWeight: 10,
+        // Its logo goes on the light plate (BAJAOVRLAY-23).
+        logoOnLightPlate: true,
       },
+      { sponsorId: 'apoio-pneus', name: 'Pneus Trilha', tier: 'apoio', rollWeight: 2 },
     ],
     scheduleSlots: [
       {
@@ -95,6 +99,22 @@ describe('writeRecordsAsCsv', () => {
     );
   });
 
+  it('writes the sponsors with the plate column, "sim" or empty', () => {
+    // Arrange: the library of the race weekend.
+    const library = buildLibraryOfTheRaceWeekend();
+
+    // Act: export the sponsors.
+    const csvText = writeRecordsAsCsv('sponsor', library);
+
+    // Assert: the master sponsor's plate written "sim", the support sponsor's left empty
+    // (no choice), as the teams' column is.
+    expect(csvText, 'the sponsors export').toBe(
+      '﻿id;nome;cota;peso;placa_clara\r\n' +
+        'patrocinador-master;Mineradora Serra Azul;master;10;sim\r\n' +
+        'apoio-pneus;Pneus Trilha;apoio;2;\r\n',
+    );
+  });
+
   it('writes the schedule with its moments on this computer’s clock', () => {
     // Arrange: the library of the race weekend.
     const library = buildLibraryOfTheRaceWeekend();
@@ -114,8 +134,8 @@ describe('writeRecordsAsCsv', () => {
     { name: 'round-trips the teams, the logo and its plate kept', entityType: 'team' },
     // A person with quotes in the name and a team.
     { name: 'round-trips the people', entityType: 'person' },
-    // A sponsor with its tier and weight.
-    { name: 'round-trips the sponsors', entityType: 'sponsor' },
+    // Sponsors with their tier and weight, one with its plate choice, one with none.
+    { name: 'round-trips the sponsors, the plate kept', entityType: 'sponsor' },
     // A slot with a start, an end and a place holding a ";".
     { name: 'round-trips the schedule', entityType: 'scheduleSlot' },
   ];

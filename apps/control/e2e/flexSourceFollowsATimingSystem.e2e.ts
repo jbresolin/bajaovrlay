@@ -48,7 +48,6 @@ import {
   pollIntervalOfTheTestsAsTyped,
   readFirstRowsOfPositionsTable,
   turnSourceOnWithItsSwitch,
-  waitUntilFirstRowsOfPositionsTableDiffer,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
 import {
@@ -193,20 +192,23 @@ test.describe('a flex source made from the example preset', () => {
       findStatusChipOfSourceRow(flexRow),
       'a timing system answering must read "Ok"',
     ).toHaveText('Ok', { timeout: waitForTheNextPollsInMilliseconds });
-    const firstData = await readFirstRowsOfPositionsTable(page, flexSourceLabel, carsInTheExample);
 
     // Act (1): the timing system's answer changes: car 6 takes the lead.
     timingSystem.answerWithResponse(buildResponseWhereSabiaBajaTakesTheLead());
 
-    // Assert (1): the table follows at a next poll, with Sabiá Baja first.
-    const changedData = await waitUntilFirstRowsOfPositionsTableDiffer(page, {
-      sourceLabel: flexSourceLabel,
-      rowCount: carsInTheExample,
-      earlierRead: firstData,
-      failureMessage: 'the table must follow the changed answer of the timing system',
-      timeoutInMilliseconds: waitForTheNextPollsInMilliseconds,
-    });
-    expect(changedData[0], 'the new leader must be first in the table').toContain('Sabiá Baja');
+    // Assert (1): the table follows at a next poll, with Sabiá Baja first. The check is
+    // retried until then (web-first): the first table that differs in any way is not
+    // always the new answer, and a check made once on it failed now and then (PR #17).
+    // The settled rows are read after it.
+    await expect(
+      findCarRowsOfPositionsTable(positionsTable).first(),
+      'the table must follow the changed answer, the new leader first',
+    ).toContainText('Sabiá Baja', { timeout: waitForTheNextPollsInMilliseconds });
+    const changedData = await readFirstRowsOfPositionsTable(
+      page,
+      flexSourceLabel,
+      carsInTheExample,
+    );
 
     // Act (2): the timing system breaks and answers 500.
     timingSystem.answerWithServerError();
@@ -250,16 +252,11 @@ test.describe('a flex source made from the example preset', () => {
       page.getByText(/fonte atrasada$/),
       'a recovered source must lose the "fonte atrasada" banner',
     ).toBeHidden();
-    const recoveredData = await waitUntilFirstRowsOfPositionsTableDiffer(page, {
-      sourceLabel: flexSourceLabel,
-      rowCount: carsInTheExample,
-      earlierRead: changedData,
-      failureMessage: 'the recovered source must show the fresh answer, not the kept data',
-      timeoutInMilliseconds: waitForTheNextPollsInMilliseconds,
-    });
-    expect(recoveredData[0], 'Acauã Baja must lead again in the fresh data').toContain(
-      'Acauã Baja',
-    );
+    // Retried until the fresh answer is shown (web-first), as in (1).
+    await expect(
+      findCarRowsOfPositionsTable(positionsTable).first(),
+      'the recovered source must show the fresh answer, Acauã Baja leading again',
+    ).toContainText('Acauã Baja', { timeout: waitForTheNextPollsInMilliseconds });
     await expect(
       findCarRowsOfPositionsTable(positionsTable),
       'the recovered source must show its 20 cars',

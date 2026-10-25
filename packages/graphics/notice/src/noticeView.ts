@@ -4,6 +4,7 @@
  * the variant or the data has no use for is hidden (the `hidden` attribute), so an update
  * on air touches only text and attributes.
  */
+import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';
 
@@ -106,13 +107,6 @@ export function findNoticeParts(renderRoot: ParentNode): NoticeParts {
     reason: findPart('notice-reason'),
     penalty: findPart('notice-penalty'),
   };
-}
-
-/** Changes an element's text only when it differs, so an update touches only what changed. */
-function writeTextIfChanged(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
 }
 
 /** Shows an element with the text, or hides it (and empties it) when there is none. */

@@ -3,13 +3,14 @@
  * laps and the optional flag band. This file owns the OGraf lifecycle (load, play,
  * update, stop, dispose) and only wires the pieces together; the rules live in named
  * modules: raceClockModel (data), raceClockView (the DOM, changed in place, never
- * rebuilt), playSteps (the OGraf step rule), clockTicker (the frame loop) and
+ * rebuilt), playSteps (the OGraf step rule), the kit's clockTicker (the frame loop) and
  * raceClockAnimations (GSAP timelines from the theme's motion tokens). The wait for the
  * theme's face before the first draw is the theme's own (`@bajaovrlay/theme/fonts`).
  *
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
+import { type ClockTicker, createClockTicker } from '@bajaovrlay/graphics-kit/clockTicker';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -21,6 +22,7 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import type { FlagState } from '@bajaovrlay/graphics-kit/raceClockReading';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -29,7 +31,6 @@ import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
-import { type ClockTicker, createClockTicker } from './clockTicker.js';
 import { ptBR } from './ptBR.js';
 import {
   buildFlagBandToggleTimeline,
@@ -40,7 +41,6 @@ import {
   type RaceClockTimeline,
 } from './raceClockAnimations.js';
 import {
-  type FlagState,
   isFlagBandShown,
   mergePartialUpdateIntoRaceClockData,
   parseCompleteRaceClockData,

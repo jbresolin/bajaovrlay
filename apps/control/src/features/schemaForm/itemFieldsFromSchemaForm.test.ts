@@ -29,10 +29,8 @@ import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
 import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildEmptySchemaFormValues,
-  buildSchemaFormValuesFromItemFields,
-} from './buildSchemaFormValues';
+import { buildEmptySchemaFormValues } from './buildSchemaFormValues';
+import { buildSchemaFormValuesFromItemFields } from './buildSchemaFormValuesFromItemFields';
 import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSchema';
 import {
   buildChangedItemFieldsFromSchemaForm,

@@ -6,7 +6,10 @@ race time, and the optional flag band. `race-clock.ograf.json` is what a rendere
 `main` points at the default export of `src/race-clock.ts` (a Lit element), which only wires
 the pure modules beside it: data model, time (the sum, its H:MM:SS text — shared with the
 control page's session card — and the server-aligned "now" it counts with, never `Date.now()`,
-are `@bajaovrlay/shared/clock`), frame loop, GSAP animations, `ptBR.ts`.
+are `@bajaovrlay/shared/clock`), GSAP animations, `ptBR.ts`. The clock's reading (the five
+fields, the time text), the frame loop and the flag's look are the kit's (`../kit/`:
+`raceClockReading`, `clockTicker`, `flagOnAir`), shared with the strip's and ticker's clock
+block; the card's markup and styles stay here.
 Lifecycle: `load` once with complete data; `playAction` animates in, `stopAction` out;
 `updateAction` is accepted any time after load, on air or off, and refused only before it;
 every call answers a status code, never throws. Two fields are optional: `lapsCompletedByLeader`

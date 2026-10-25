@@ -1,27 +1,21 @@
 /**
- * The three ways a generated form gets filled: empty (a new item, or a graphic that is
- * not on air), from the data of an instance on air, and from the stored fields of an
- * item. Each answers the whole `SchemaFormValues`, ready for react-hook-form's
- * `defaultValues` or `reset`.
+ * Two of the three ways a generated form gets filled: empty (a new item, or a graphic
+ * that is not on air) and from the data of an instance on air; the third, from the stored
+ * fields of an item, is buildSchemaFormValuesFromItemFields.ts, which builds on the
+ * starting values and the assembly exported here. Each answers the whole
+ * `SchemaFormValues`, ready for react-hook-form's `defaultValues` or `reset`.
  *
  * A value the form cannot show never stops the form from opening: the field takes its
  * starting value instead and its label is listed, so the panel can warn the operator
  * that saving or taking writes what the form shows.
  */
-import { type BindingFieldValue, type ItemFields, wholeClockBindingPath } from '@bajaovrlay/shared';
+import type { BindingFieldValue } from '@bajaovrlay/shared';
 
-import {
-  canFieldTakeTheWholeClock,
-  listClockFieldKeysFilledByTheWholeClock,
-} from './bindingChoices';
 import {
   buildSchemaFormBindingValueFromBinding,
   emptySchemaFormBindingValue,
 } from './bindingFormValue';
-import {
-  buildSchemaFormEntityReferenceValueFromReference,
-  type SchemaFormEntityReferenceValue,
-} from './entityReferenceFormValue';
+import type { SchemaFormEntityReferenceValue } from './entityReferenceFormValue';
 import {
   clearBlankOptionalTypedFormValue,
   convertDataValueIntoFormValue,
@@ -50,19 +44,23 @@ export type SchemaFormValuesReadFromData = {
 /**
  * What a field holds before anyone typed: the manifest's `default` when the control can
  * show it; otherwise empty text for a required typed field (the operator must fill it),
- * "off" for a required switch (a switch cannot look empty), and cleared for everything
+ * "off" for a required switch (a switch cannot look empty), one empty line for a required
+ * list of texts (a box to type the first message in), and cleared for everything
  * optional and for a dropdown with nothing to preselect.
  * An optional text whose default is the empty text starts cleared too: here and in the
  * two fill functions below, a shown value goes through clearBlankOptionalTypedFormValue,
  * so the form never holds '' where emptying the field by hand would leave null.
  */
-function buildStartingValueOfField(field: SchemaFormFieldDescription): SchemaFormFieldValue {
+export function buildStartingValueOfField(field: SchemaFormFieldDescription): SchemaFormFieldValue {
   const defaultShown = convertDataValueIntoFormValue(field, field.defaultDataValue);
   if (defaultShown.status === 'shown') {
     return clearBlankOptionalTypedFormValue(field, defaultShown.formValue);
   }
   if (!field.isRequired || field.control === 'select') {
     return null;
+  }
+  if (field.control === 'textList') {
+    return [{ text: '' }];
   }
   return field.control === 'switch' ? false : '';
 }
@@ -73,7 +71,7 @@ function buildStartingValueOfField(field: SchemaFormFieldDescription): SchemaFor
  * a new item stores a wall-clock reference as `takeTime`, so a clock prepared the evening
  * before counts from the moment it is fired.
  */
-function chooseStartingKindOfField(field: SchemaFormFieldDescription): SchemaFormFieldKind {
+export function chooseStartingKindOfField(field: SchemaFormFieldDescription): SchemaFormFieldKind {
   return field.offersTakeTime ? 'takeTime' : 'literal';
 }
 
@@ -81,7 +79,7 @@ function chooseStartingKindOfField(field: SchemaFormFieldDescription): SchemaFor
  * Writes a value the form cannot edit as JSON text: a list with that one entry, or an
  * empty list for a value JSON cannot hold (so the caller can simply add what comes back).
  */
-function writeUnsupportedValueAsJson(key: string, value: unknown): UnsupportedValueAsJson[] {
+export function writeUnsupportedValueAsJson(key: string, value: unknown): UnsupportedValueAsJson[] {
   const jsonText = JSON.stringify(value, null, 2);
   // JSON.stringify answers undefined (not text) for a value JSON cannot hold.
   return typeof jsonText === 'string' ? [{ key, jsonText }] : [];
@@ -97,7 +95,7 @@ function listFieldsTheFormCanEdit(description: SchemaFormDescription) {
  * with no binding pair gets the empty "Fonte" (nothing chosen, live), so every editable
  * field has one for the kind selector to switch to.
  */
-function assembleSchemaFormValues(
+export function assembleSchemaFormValues(
   valuePairs: Array<[string, SchemaFormFieldValue]>,
   kindPairs: Array<[string, SchemaFormFieldKind]>,
   unsupportedValuesAsJson: UnsupportedValueAsJson[],
@@ -227,153 +225,6 @@ export function buildSchemaFormValuesFromDataOnAir(
 
   return {
     formValues: assembleSchemaFormValues(valuePairs, kindPairs, unsupportedValuesAsJson),
-    labelsOfFieldsThatCouldNotBeRead,
-  };
-}
-
-/**
- * The three clock fields an item's stored whole clock fills (none when the item stores
- * no whole clock). The item stores nothing, or a literal null, on them; the form must not
- * read that as "missing".
- */
-function listKeysFilledByAStoredWholeClock(
-  description: SchemaFormDescription,
-  itemFields: ItemFields,
-): string[] {
-  const clockTimeField = description.fields.find((field) =>
-    canFieldTakeTheWholeClock(description.dataSchema, field.key),
-  );
-  const storedClockTime =
-    clockTimeField === undefined ? undefined : readOwnValueOfRecord(itemFields, clockTimeField.key);
-  const isWholeClockStored =
-    storedClockTime?.kind === 'binding' && storedClockTime.path === wholeClockBindingPath;
-  return isWholeClockStored ? listClockFieldKeysFilledByTheWholeClock(description.dataSchema) : [];
-}
-
-/**
- * Fills a form from the stored fields of an item. A `literal` shows its value, a
- * `takeTime` shows as "filled by the server at the take" where the form offers that, a
- * `binding` as "Fonte" with its choices, or as "Relógio da fonte" for the whole clock on
- * the time field (its three other clock fields are then the whole clock's, not
- * unreadable), and an `entity` reference as "Cadastro" with its choices.
- * - A field the item does not store, or stores as a literal null: cleared when optional;
- *   listed, and started as in an empty form (starting value and kind), when required.
- * - A literal the control cannot show, or a `takeTime` on a field that does not offer
- *   it: listed, and started as in an empty form. Only a wall-clock field starts as
- *   "filled by the server" there; every other field starts as a typed value.
- * - A property the form cannot edit: its literal value kept as JSON text, for reading
- *   only. When the whole schema is unsupported, every stored literal is kept that way.
- * - A stored field the schema does not declare is not kept here (unlike data on air): a
- *   save sends only the fields that changed and the server merges them key by key, so
- *   the stored field stays where it is.
- * What could go wrong: a listed field differs from what is stored, so the next save
- * writes what the form shows. The panel's warning must say so.
- */
-export function buildSchemaFormValuesFromItemFields(
-  description: SchemaFormDescription,
-  itemFields: ItemFields,
-): SchemaFormValuesReadFromData {
-  const valuePairs: Array<[string, SchemaFormFieldValue]> = [];
-  const kindPairs: Array<[string, SchemaFormFieldKind]> = [];
-  const bindingPairs: Array<[string, SchemaFormBindingValue]> = [];
-  const eventPathPairs: Array<[string, string]> = [];
-  const entityReferencePairs: Array<[string, SchemaFormEntityReferenceValue]> = [];
-  const unsupportedValuesAsJson: UnsupportedValueAsJson[] = [];
-  const labelsOfFieldsThatCouldNotBeRead: string[] = [];
-  const keysFilledByAStoredWholeClock = listKeysFilledByAStoredWholeClock(description, itemFields);
-
-  if (description.isWholeDataSchemaUnsupported) {
-    for (const [key, storedField] of Object.entries(itemFields)) {
-      if (storedField.kind === 'literal') {
-        unsupportedValuesAsJson.push(...writeUnsupportedValueAsJson(key, storedField.value));
-      }
-    }
-  }
-
-  for (const field of description.fields) {
-    const storedField = readOwnValueOfRecord(itemFields, field.key);
-    if (field.control === 'unsupported') {
-      if (storedField?.kind === 'literal') {
-        unsupportedValuesAsJson.push(...writeUnsupportedValueAsJson(field.key, storedField.value));
-      }
-      // A list field bound to a source (a tower's cars) shows its "Fonte" choices.
-      if (storedField?.kind === 'binding') {
-        kindPairs.push([field.key, 'binding']);
-        bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(storedField)]);
-      }
-      continue;
-    }
-
-    if (storedField?.kind === 'takeTime' && field.offersTakeTime) {
-      valuePairs.push([field.key, buildStartingValueOfField(field)]);
-      kindPairs.push([field.key, 'takeTime']);
-      continue;
-    }
-    if (storedField?.kind === 'binding') {
-      const isWholeClock =
-        storedField.path === wholeClockBindingPath &&
-        canFieldTakeTheWholeClock(description.dataSchema, field.key);
-      valuePairs.push([field.key, buildStartingValueOfField(field)]);
-      kindPairs.push([field.key, isWholeClock ? 'wholeClock' : 'binding']);
-      bindingPairs.push([field.key, buildSchemaFormBindingValueFromBinding(storedField)]);
-      continue;
-    }
-    // A field filled by the event the item shows (BAJAOVRLAY-44): "Evento" and its path.
-    if (storedField?.kind === 'eventField') {
-      valuePairs.push([field.key, buildStartingValueOfField(field)]);
-      kindPairs.push([field.key, 'eventField']);
-      eventPathPairs.push([field.key, storedField.path]);
-      continue;
-    }
-    // A field read from the entity library shows as "Cadastro" with its choices.
-    if (storedField?.kind === 'entity') {
-      valuePairs.push([field.key, buildStartingValueOfField(field)]);
-      kindPairs.push([field.key, 'entity']);
-      entityReferencePairs.push([
-        field.key,
-        buildSchemaFormEntityReferenceValueFromReference(storedField),
-      ]);
-      continue;
-    }
-    if (keysFilledByAStoredWholeClock.includes(field.key)) {
-      valuePairs.push([field.key, buildStartingValueOfField(field)]);
-      kindPairs.push([field.key, chooseStartingKindOfField(field)]);
-      continue;
-    }
-    if (storedField?.kind === 'literal') {
-      const valueShown = convertDataValueIntoFormValue(field, storedField.value);
-      if (valueShown.status === 'shown') {
-        valuePairs.push([field.key, clearBlankOptionalTypedFormValue(field, valueShown.formValue)]);
-        kindPairs.push([field.key, 'literal']);
-        continue;
-      }
-    }
-
-    const hasNoStoredValue =
-      storedField === undefined || (storedField.kind === 'literal' && storedField.value === null);
-    if (hasNoStoredValue && !field.isRequired) {
-      valuePairs.push([field.key, null]);
-      kindPairs.push([field.key, 'literal']);
-      continue;
-    }
-    // A field that could not be read starts as it does in an empty form, so a missing or
-    // unreadable wall-clock reference becomes "filled at the take" at the next save.
-    valuePairs.push([field.key, buildStartingValueOfField(field)]);
-    kindPairs.push([field.key, chooseStartingKindOfField(field)]);
-    labelsOfFieldsThatCouldNotBeRead.push(field.label);
-  }
-
-  return {
-    formValues: {
-      ...assembleSchemaFormValues(
-        valuePairs,
-        kindPairs,
-        unsupportedValuesAsJson,
-        bindingPairs,
-        entityReferencePairs,
-      ),
-      eventPaths: Object.fromEntries(eventPathPairs),
-    },
     labelsOfFieldsThatCouldNotBeRead,
   };
 }

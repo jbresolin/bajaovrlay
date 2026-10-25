@@ -39,6 +39,7 @@ import {
   openTheEntityLibraryPage,
   readTheLibraryFromTheRealServer,
 } from './entityLibraryTestSteps';
+import { findItemEditorOwnTextField } from './itemEditorOwnFields';
 import {
   chooseGraphicInTheItemEditor,
   openControlPageAndWaitUntilConnected,
@@ -92,7 +93,7 @@ async function putTheClockReadingTeam7OnAir(page: Page): Promise<void> {
   await page.getByRole('button', { name: '+ Item' }).click();
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
   await chooseGraphicInTheItemEditor(page, itemEditor, 'Relógio de prova');
-  await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
+  await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill(itemLabel);
   await chooseInEditorDropdown(page, itemEditor, 'Como preencher Título', 'Cadastro');
   await chooseInEditorDropdown(page, itemEditor, 'Tipo de cadastro de Título', 'Equipe');
   await itemEditor.getByLabel('Buscar cadastro de Título', { exact: true }).fill('7');

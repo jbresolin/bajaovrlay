@@ -100,7 +100,10 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
         {entityType === 'scheduleSlot' && (
           <p className="text-muted-foreground">{texts.dateTimeColumnsHint}</p>
         )}
-        {entityType === 'team' && <p className="text-muted-foreground">{texts.yesNoColumnsHint}</p>}
+        {/* Teams and sponsors both have the placa_clara column (BAJAOVRLAY-24, -23). */}
+        {(entityType === 'team' || entityType === 'sponsor') && (
+          <p className="text-muted-foreground">{texts.yesNoColumnsHint}</p>
+        )}
         <p className="text-muted-foreground">{texts.imagesNotInTheCsv}</p>
       </div>
 

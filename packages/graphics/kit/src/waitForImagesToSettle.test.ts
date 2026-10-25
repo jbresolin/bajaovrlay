@@ -1,11 +1,11 @@
 /**
- * The wait for the card's images (packages/graphics/team-card)
+ * The wait for a graphic's images (packages/graphics/kit)
  *
  * What this module is for:
- *   Before the team card is ready to play, load waits for its photo and logo, so the card
- *   rises with them already drawn. A broken image or a server that never answers must
- *   never keep the card off air, so the wait ends on load, on failure, or after a
- *   longest wait.
+ *   Before the team card or the sponsor bug is ready to play, load waits for its images
+ *   (a photo, a team's or a sponsor's logo), so the card rises with them already drawn.
+ *   A broken image or a server that never answers must never keep the card off air, so
+ *   the wait ends on load, on failure, or after a longest wait.
  *
  * What these tests prove:
  *   - With no image there is nothing to wait for.
@@ -17,7 +17,7 @@
  *
  * What these tests deliberately do not cover:
  *   - Real image files; jsdom loads nothing, so the tests fire the image's own load and
- *     error events by hand. e2e/teamCardScreenshots.e2e.ts loads real files in Chromium.
+ *     error events by hand. The team card's and the bug's screenshot tests load real files.
  */
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 

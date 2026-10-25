@@ -3,13 +3,15 @@
  * change only text and data attributes in place. Nothing here rebuilds elements, so an
  * update or a clock frame touches only what really changed.
  */
-// The clock's sum is shared with the server, which must find the same time on screen,
-// and its text with the control page's session card ("Fontes"), which must read the same.
-// Only the `/clock` entry is imported: it carries no Zod and nothing else of shared.
+// The clock's text is the kit's (shared/clock's sum and H:MM:SS), so the server, the
+// control page's session card and the strip's and ticker's clock block read the same time.
+// The flag is drawn as the kit draws it on every clock (the checkered flag wordless).
+import { dressElementAsFlag } from '@bajaovrlay/graphics-kit/flagOnAir';
 import {
-  computeClockTimeMsAtWallClock,
-  formatClockTimeAsHoursMinutesSeconds,
-} from '@bajaovrlay/shared/clock';
+  type FlagState,
+  writeRaceClockTimeTextAt,
+} from '@bajaovrlay/graphics-kit/raceClockReading';
+import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 // The white logo lives in the theme package; Vite bundles a copy into this graphic's
 // dist/assets/, so the built clock works from the preview and from the air alike.
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
@@ -22,7 +24,7 @@ import {
   hideIncomingFlagLayer,
   type RaceClockAnimatedElements,
 } from './raceClockAnimations.js';
-import type { FlagState, RaceClockData } from './raceClockModel.js';
+import type { RaceClockData } from './raceClockModel.js';
 
 /** The elements whose text or attributes change after the first render. */
 export type RaceClockParts = RaceClockAnimatedElements & {
@@ -88,13 +90,6 @@ export function findRaceClockParts(renderRoot: ParentNode): RaceClockParts {
   };
 }
 
-/** Changes an element's text only when it differs, so unchanged frames touch nothing. */
-function writeTextIfChanged(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
-}
-
 /** Writes the session title, the clock caption and the leader laps (hidden when absent). */
 export function writeSessionCaptionAndLaps(parts: RaceClockParts, data: RaceClockData): void {
   writeTextIfChanged(parts.sessionName, data.sessionName);
@@ -110,32 +105,19 @@ export function writeClockTimeAt(
   data: RaceClockData,
   nowWallClockMs: number,
 ): void {
-  const clockTimeMs = computeClockTimeMsAtWallClock(data, nowWallClockMs);
-  const clockText = formatClockTimeAsHoursMinutesSeconds(clockTimeMs, data.clockMode);
+  const clockText = writeRaceClockTimeTextAt(data, nowWallClockMs);
   writeTextIfChanged(parts.clockTime, clockText);
-}
-
-/**
- * Dresses a band layer in a flag state: its colours (through the data attribute), its
- * word, and the word as the layer's accessible name. The checkered band carries no
- * word, only the pattern (the design's choice), so there the word is the name alone.
- */
-function dressFlagLayer(layer: HTMLElement, word: HTMLElement, flagState: FlagState): void {
-  const flagWord = ptBR.flagLabels[flagState];
-  layer.dataset.flagState = flagState;
-  layer.setAttribute('aria-label', flagWord);
-  writeTextIfChanged(word, flagState === 'checkered' ? '' : flagWord);
 }
 
 /** Shows a flag state on the current layer straight away and hides the incoming one. */
 export function showFlagStateAtOnce(parts: RaceClockParts, flagState: FlagState): void {
-  dressFlagLayer(parts.currentFlagLayer, parts.currentFlagLabel, flagState);
+  dressElementAsFlag(parts.currentFlagLayer, parts.currentFlagLabel, flagState);
   hideIncomingFlagLayer(parts);
 }
 
 /** Dresses the (still invisible) incoming layer in a new flag state, ready to crossfade in. */
 export function prepareIncomingFlagLayer(parts: RaceClockParts, flagState: FlagState): void {
-  dressFlagLayer(parts.incomingFlagLayer, parts.incomingFlagLabel, flagState);
+  dressElementAsFlag(parts.incomingFlagLayer, parts.incomingFlagLabel, flagState);
 }
 
 /**

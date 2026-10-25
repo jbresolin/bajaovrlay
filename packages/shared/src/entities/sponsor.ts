@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   buildOptionalMediaIdSchema,
+  buildOptionalYesOrNoSchema,
   buildRecordIdSchema,
   buildRequiredTextSchema,
 } from './entityFieldSchemas.js';
@@ -35,6 +36,12 @@ export const SponsorSchema = z.object({
     .int({ error: problems.rollWeightOutOfRange })
     .min(1, { error: problems.rollWeightOutOfRange })
     .max(10, { error: problems.rollWeightOutOfRange }),
+  /**
+   * Whether a graphic draws the logo on its small light plate: for a dark logo, or one that
+   * comes on its own white box, the team's rule (BAJAOVRLAY-23). Chosen by hand per sponsor,
+   * never detected; left out means no plate, so a sponsor stored before it boots unchanged.
+   */
+  logoOnLightPlate: buildOptionalYesOrNoSchema(labels.logoOnLightPlate),
 });
 
 /** A sponsor that has passed SponsorSchema. */

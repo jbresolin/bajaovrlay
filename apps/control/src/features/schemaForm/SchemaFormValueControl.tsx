@@ -35,7 +35,8 @@ export type SchemaFormValueControlProps = {
  * time input, a number input, an mm:ss text field or a switch, as the field's
  * description says. It holds nothing itself: the value comes in and every change goes
  * out, so react-hook-form stays the only place the form's values live.
- * An unsupported field draws nothing here; UnsupportedValueBox.tsx shows those.
+ * An unsupported field and a list of texts draw nothing here; UnsupportedValueBox.tsx and
+ * TextListField.tsx show those.
  * What could go wrong: a browser's number input hands over an empty text while what is
  * typed is not a number ("1e", "--"), so in a real browser such a field reads as blank
  * (refused when required, cleared when optional) instead of "not a number".
@@ -146,6 +147,9 @@ export function SchemaFormValueControl(props: SchemaFormValueControlProps) {
           {...attributesForScreenReaders}
         />
       );
+    // A list of texts draws its own lines (TextListField.tsx); the read-only JSON box
+    // draws an unsupported field (UnsupportedValueBox.tsx).
+    case 'textList':
     case 'unsupported':
       return null;
   }

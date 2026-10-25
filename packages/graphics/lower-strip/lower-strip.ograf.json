@@ -1,0 +1,142 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-lower-strip",
+  "version": "0.1.0",
+  "name": "Faixa de classificação",
+  "description": "Faixa ao longo da parte de baixo: o relógio e a bandeira, a ordem de corrida seis carros por página e a página.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "lower-strip.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "ticker",
+    "category": "positions",
+    "updateRule": "carryClockForward"
+  },
+  "actionDurations": [
+    {
+      "type": "playAction",
+      "duration": 610
+    },
+    {
+      "type": "stopAction",
+      "duration": 250
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "entries": {
+        "type": "array",
+        "title": "Carros",
+        "description": "A ordem de corrida, normalmente lida ao vivo da fonte (Posições › Lista completa); seis carros por página.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "position": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "carNumber": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "schoolName": {
+              "type": "string"
+            }
+          },
+          "required": ["position", "carNumber", "schoolName"],
+          "additionalProperties": true
+        },
+        "v_baja": {
+          "suggestedBinding": {
+            "shapeKey": "positions",
+            "path": "entries",
+            "isLive": true
+          }
+        }
+      },
+      "state": {
+        "type": "string",
+        "title": "Bandeira",
+        "enum": ["pre", "green", "yellow", "red", "checkered", "finished"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "pre": "Pré-largada",
+            "green": "Verde",
+            "yellow": "Amarela",
+            "red": "Vermelha",
+            "checkered": "Quadriculada",
+            "finished": "Encerrada"
+          }
+        },
+        "default": "pre"
+      },
+      "clockMode": {
+        "type": "string",
+        "title": "Modo do relógio",
+        "enum": ["elapsed", "remaining"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "elapsed": "Tempo decorrido",
+            "remaining": "Tempo restante"
+          }
+        },
+        "default": "elapsed",
+        "v_baja": {
+          "role": "clockMode"
+        }
+      },
+      "referenceTimeMs": {
+        "type": "integer",
+        "title": "Tempo de referência",
+        "description": "Tempo decorrido ou restante que o relógio mostrava no horário da referência.",
+        "minimum": 0,
+        "default": 0,
+        "v_baja": {
+          "unit": "ms",
+          "role": "clockTime"
+        }
+      },
+      "referenceWallClockMs": {
+        "type": "integer",
+        "title": "Horário da referência (ms desde 1970)",
+        "description": "Momento em que o tempo de referência valia; o relógio conta a partir dele.",
+        "minimum": 0,
+        "default": 0,
+        "v_baja": {
+          "role": "wallClock"
+        }
+      },
+      "running": {
+        "type": "boolean",
+        "title": "Relógio correndo",
+        "description": "Desligado, o relógio fica parado no tempo de referência.",
+        "default": false,
+        "v_baja": {
+          "role": "clockRunning"
+        }
+      },
+      "showClockBlock": {
+        "type": "boolean",
+        "title": "Mostrar o relógio",
+        "description": "Desligado, a faixa começa pelos carros, sem o bloco do tempo e da bandeira.",
+        "default": true
+      }
+    },
+    "required": [
+      "entries",
+      "state",
+      "clockMode",
+      "referenceTimeMs",
+      "referenceWallClockMs",
+      "running"
+    ],
+    "additionalProperties": false
+  }
+}

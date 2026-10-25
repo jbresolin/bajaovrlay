@@ -10,7 +10,7 @@
  *     is read as its binding (bindingFormValue.ts), or gets that binding's message; one
  *     set to "Cadastro" as its entity reference (entityReferenceFormValue.ts).
  *  2. What was typed is read as data. A number, an mm:ss time or a date that cannot be
- *     read gets its message.
+ *     read gets its message. A list of texts is read line by line.
  *  3. The blank rules: a required field left blank is refused (also a required text: an
  *     empty required text counts as missing, which is stricter than JSON Schema); an
  *     optional field left blank or cleared with "limpar" is cleared.
@@ -34,7 +34,11 @@ import {
   readEntityReferenceFromSchemaFormValue,
 } from './entityReferenceFormValue';
 import { canFieldBeFilledByAnEvent, readEventFieldOfFormField } from './eventFieldFormValue';
-import { type ProblemReadingFormValue, readDataValueFromFormValue } from './fieldValueConversion';
+import {
+  type DataValueOfSchemaFormField,
+  type ProblemReadingFormValue,
+  readDataValueFromFormValue,
+} from './fieldValueConversion';
 import { readOwnValueOfRecord } from './plainRecord';
 import type { SchemaFormDescription } from './schemaFormDescription';
 import type { SchemaFormValues } from './schemaFormValues';
@@ -42,7 +46,7 @@ import { buildZodSchemaFromDataSchema } from './zodSchemaFromDataSchema';
 
 /** One field of a form that passed the check, as the commands need it. */
 export type CheckedSchemaFormField =
-  | { key: string; outcome: 'value'; value: string | number | boolean }
+  | { key: string; outcome: 'value'; value: DataValueOfSchemaFormField }
   | { key: string; outcome: 'cleared' }
   | { key: string; outcome: 'takeTime' }
   | { key: string; outcome: 'binding'; binding: BindingFieldValue }
@@ -86,7 +90,7 @@ export function checkSchemaFormValues(
 ): SchemaFormCheck {
   const checkedFields: CheckedSchemaFormField[] = [];
   const fieldMessages: SchemaFormFieldMessage[] = [];
-  const dataPairsToCheckAgainstTheLimits: Array<[string, string | number | boolean]> = [];
+  const dataPairsToCheckAgainstTheLimits: Array<[string, DataValueOfSchemaFormField]> = [];
   const keysFilledByTheWholeClock = listKeysFilledByAChosenWholeClock(description, formValues);
 
   for (const field of description.fields) {

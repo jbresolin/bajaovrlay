@@ -5,6 +5,8 @@
 // item. Functions only; nothing here remembers anything between calls or between tests.
 import { type BrowserContext, expect, type Locator, type Page } from '@playwright/test';
 
+import { findItemEditorOwnDropdown, findItemEditorOwnTextField } from './itemEditorOwnFields';
+
 /** Opens the control page and waits until it says it is connected to the server. */
 export async function openControlPageAndWaitUntilConnected(page: Page): Promise<void> {
   await page.goto('/');
@@ -69,11 +71,11 @@ export async function chooseGraphicInTheItemEditor(
   itemEditor: Locator,
   graphicName: string,
 ): Promise<void> {
-  await itemEditor.getByRole('combobox', { name: 'Gráfico', exact: true }).click();
+  await findItemEditorOwnDropdown(itemEditor, 'Gráfico').click();
   // The list of options is drawn outside the editor, at the end of the page.
   await page.getByRole('option', { name: graphicName, exact: true }).click();
   await expect(
-    itemEditor.getByRole('combobox', { name: 'Gráfico', exact: true }),
+    findItemEditorOwnDropdown(itemEditor, 'Gráfico'),
     `the editor must show "${graphicName}" as the graphic of the new item`,
   ).toContainText(graphicName);
 }
@@ -97,11 +99,11 @@ export async function createRaceClockItemInTheEditor(
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
   await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
   if (layerName !== undefined) {
-    await itemEditor.getByRole('combobox', { name: 'Camada', exact: true }).click();
+    await findItemEditorOwnDropdown(itemEditor, 'Camada').click();
     // The list of options is drawn outside the editor, at the end of the page.
     await page.getByRole('option', { name: layerName, exact: true }).click();
   }
-  await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
+  await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill(itemLabel);
   await itemEditor.getByLabel('Título', { exact: true }).fill(sessionName);
   await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
   await expect(
@@ -137,7 +139,7 @@ export async function openItemEditorWithNewGraphic(
   await findCentreArea(page).getByRole('button', { name: 'Novo gráfico…' }).click();
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
   await chooseGraphicInTheItemEditor(page, itemEditor, graphicName);
-  await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
+  await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill(itemLabel);
   return itemEditor;
 }
 

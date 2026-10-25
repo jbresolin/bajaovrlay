@@ -54,6 +54,11 @@ token names are the design's. Copied with these changes:
   `--team-logo-size`, `--logo-plate-padding`, `--board-row-height`, `--size-board`,
   `--col-points`, `--col-total`, `--motion-board-hold` and `--motion-page-stagger` (the last
   two read by `readMotionTokens` as `boardHoldMs` and `pageStaggerMs`).
+- added for the sponsor bug, the lower strip and the message ticker (BAJAOVRLAY-23):
+  `--sponsor-logo-small-height` as the design names it, and, for values the design's styles
+  wrote as numbers, `--size-bug-label` (44 px, the bug's event word), `--flag-pill-height`
+  and `--flag-pill-min-width` (32 and 96 px, the clock block's flag pill), `--stage-safe-side`
+  and `--stage-safe-bottom` (96 and 54 px, the title-safe edges of the bars along the bottom).
 
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).

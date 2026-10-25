@@ -47,15 +47,22 @@ export type SchemaFormBindingValue = {
 };
 
 /**
+ * One line of a list of texts as the form holds it. An object, not the bare text, because
+ * react-hook-form's useFieldArray keeps a list of objects (it adds its own id to each).
+ */
+export type SchemaFormTextListLine = { text: string };
+
+/**
  * What one control holds:
  * - text, number, duration and date-time controls hold the text in the input (a number
  *   stays text until the form is checked, so "12:3" can be shown back with a message);
  * - a dropdown holds the chosen option's value;
  * - a switch holds true or false;
+ * - a list of texts holds its lines, in order (BAJAOVRLAY-23);
  * - null means "cleared": the field has no value and is not sent (or, on an update of
  *   what is on air, is taken off).
  */
-export type SchemaFormFieldValue = string | boolean | null;
+export type SchemaFormFieldValue = string | boolean | SchemaFormTextListLine[] | null;
 
 /** The value of a property the form cannot edit, kept as JSON text so it is never altered. */
 export type UnsupportedValueAsJson = {
@@ -101,7 +108,11 @@ export type SchemaFormValues = {
  * of a `useForm<SchemaFormValues>()` can be passed as it is.
  */
 export type SchemaFormDirtyFields = {
-  values?: Partial<Record<string, boolean>>;
+  /**
+   * True for a changed value; for a list of texts, react-hook-form marks each line instead
+   * (`[{ text: true }]`), which instanceUpdateFromSchemaForm.ts reads as changed.
+   */
+  values?: Partial<Record<string, unknown>>;
   kinds?: Partial<Record<string, boolean>>;
   bindings?: Partial<Record<string, unknown>>;
   eventPaths?: Partial<Record<string, boolean>>;

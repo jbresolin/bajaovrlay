@@ -17,11 +17,15 @@ import {
   formatMillisecondsAsMinutesAndSeconds,
 } from './minutesAndSeconds';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
-import type { SchemaFormFieldValue } from './schemaFormValues';
+import type { SchemaFormFieldValue, SchemaFormTextListLine } from './schemaFormValues';
 
 /** What showing a data value in a control gives: what the control holds, or "cannot". */
 export type FormValueShownForDataValue =
-  { status: 'shown'; formValue: string | boolean } | { status: 'cannotBeShown' };
+  | { status: 'shown'; formValue: string | boolean | SchemaFormTextListLine[] }
+  | { status: 'cannotBeShown' };
+
+/** A value a graphic receives from a field the form edits. */
+export type DataValueOfSchemaFormField = string | number | boolean | string[];
 
 /** Why a typed text could not be read as data. */
 export type ProblemReadingFormValue = 'notANumber' | 'notMinutesAndSeconds' | 'notADateAndTime';
@@ -29,7 +33,7 @@ export type ProblemReadingFormValue = 'notANumber' | 'notMinutesAndSeconds' | 'n
 /** What reading a control's value gives: nothing typed, a data value, or why not. */
 export type DataValueReadFromFormValue =
   | { status: 'blank' }
-  | { status: 'value'; value: string | number | boolean }
+  | { status: 'value'; value: DataValueOfSchemaFormField }
   | { status: 'unreadable'; problem: ProblemReadingFormValue };
 
 // A plain decimal number, as a number input hands it over, with a comma also accepted
@@ -40,6 +44,20 @@ const plainNumberPattern = /^-?\d+([.,]\d+)?$/;
 const longestDurationShownInMilliseconds = (999 * 60 + 59) * 1_000 + 999;
 
 const cannotBeShown: FormValueShownForDataValue = { status: 'cannotBeShown' };
+
+/** Answers whether a data value is a list in which every entry is a text. */
+function isListOfTexts(dataValue: unknown): dataValue is string[] {
+  return Array.isArray(dataValue) && dataValue.every((entry) => typeof entry === 'string');
+}
+
+/**
+ * Reads the lines of a list of texts into the data a graphic receives: each line without
+ * the spaces around it, in order. An empty line is kept (as ''), so the check can name it
+ * by its number instead of the list quietly losing a line the operator added.
+ */
+function readTextsOfLines(lines: SchemaFormTextListLine[]): string[] {
+  return lines.map((line) => line.text.trim());
+}
 
 function isNumberTheFieldCanHold(field: SchemaFormFieldDescription, dataValue: unknown): boolean {
   if (typeof dataValue !== 'number' || !Number.isFinite(dataValue)) {
@@ -104,6 +122,10 @@ export function convertDataValueIntoFormValue(
       return typeof dataValue === 'boolean'
         ? { status: 'shown', formValue: dataValue }
         : cannotBeShown;
+    case 'textList':
+      return isListOfTexts(dataValue)
+        ? { status: 'shown', formValue: dataValue.map((text) => ({ text })) }
+        : cannotBeShown;
     case 'unsupported':
       return cannotBeShown;
   }
@@ -131,13 +153,18 @@ export function clearBlankOptionalTypedFormValue(
     field.control === 'dateTime';
   const isBlankText = typeof formValue === 'string' && formValue.trim() === '';
   const isBlankOptionalTypedField = isBlankText && isTypedControl && !field.isRequired;
-  return isBlankOptionalTypedField ? null : formValue;
+  // A list with no line left is blank too: an optional list emptied by its last
+  // "Remover" is cleared, as an emptied optional text is.
+  const isEmptyList = Array.isArray(formValue) && formValue.length === 0;
+  const isEmptyOptionalList = isEmptyList && field.control === 'textList' && !field.isRequired;
+  return isBlankOptionalTypedField || isEmptyOptionalList ? null : formValue;
 }
 
 /**
  * Turns what a field's control holds into the data value the graphic receives.
  * - Cleared (null), nothing typed, or only spaces: `blank`. Whether a blank is allowed
- *   is the caller's question (checkSchemaFormValues.ts).
+ *   is the caller's question (checkSchemaFormValues.ts). A list of texts with no line is
+ *   blank; with lines, it is their texts, each trimmed, an empty line kept as ''.
  * - Typed text is sent without the spaces around it; a chosen option is sent as it is.
  * - A number, an mm:ss time or a date typed in a shape that cannot be read: `unreadable`
  *   with the reason, so the form can put a message under that field.
@@ -149,6 +176,13 @@ export function readDataValueFromFormValue(
 ): DataValueReadFromFormValue {
   if (formValue === null || formValue === undefined || field.control === 'unsupported') {
     return { status: 'blank' };
+  }
+  // Only a list of texts holds lines, and it holds nothing else.
+  if (Array.isArray(formValue) || field.control === 'textList') {
+    const isListWithLines = Array.isArray(formValue) && formValue.length > 0;
+    return isListWithLines && field.control === 'textList'
+      ? { status: 'value', value: readTextsOfLines(formValue) }
+      : { status: 'blank' };
   }
   if (typeof formValue === 'boolean') {
     // Only a switch holds true or false; anywhere else it is not a typed value.

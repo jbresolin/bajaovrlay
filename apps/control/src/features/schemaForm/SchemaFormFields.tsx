@@ -14,6 +14,7 @@ import { ListFieldWithSourceChoice } from './ListFieldWithSourceChoice';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';
 import type { SchemaFormValues, UnsupportedValueAsJson } from './schemaFormValues';
+import { TextListField } from './TextListField';
 import type { TextShownInUntouchedField } from './textShownInUntouchedField';
 import { UnsupportedValueBox } from './UnsupportedValueBox';
 
@@ -45,9 +46,10 @@ function readOwnContentOfField(
   return readOnlyFieldContents[fieldKey];
 }
 
-/** Text and unsupported fields take the full width; the smaller controls sit two to a row. */
+/** Texts, lists and unsupported fields take the full width; smaller controls sit two to a row. */
 function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
-  const takesTheFullWidth = field.control === 'text' || field.control === 'unsupported';
+  const takesTheFullWidth =
+    field.control === 'text' || field.control === 'textList' || field.control === 'unsupported';
   return takesTheFullWidth ? 'col-span-2' : 'col-span-2 sm:col-span-1';
 }
 
@@ -103,12 +105,14 @@ export function SchemaFormFields(props: {
 
   if (description.isWholeDataSchemaUnsupported) {
     return (
-      <UnsupportedValueBox
-        controlId={`${controlIdPrefix}-whole-data`}
-        label={ptBR.schemaForm.unsupportedWholeDataLabel}
-        note={ptBR.schemaForm.unsupportedWholeDataNote}
-        jsonText={writeAllUnsupportedValuesAsOneJsonText(unsupportedValuesAsJson)}
-      />
+      <GeneratedFieldsGroup>
+        <UnsupportedValueBox
+          controlId={`${controlIdPrefix}-whole-data`}
+          label={ptBR.schemaForm.unsupportedWholeDataLabel}
+          note={ptBR.schemaForm.unsupportedWholeDataNote}
+          jsonText={writeAllUnsupportedValuesAsOneJsonText(unsupportedValuesAsJson)}
+        />
+      </GeneratedFieldsGroup>
     );
   }
   if (description.fields.length === 0) {
@@ -116,27 +120,58 @@ export function SchemaFormFields(props: {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4">
-      {description.fields.map((field, positionInTheForm) => {
-        // The position in the form, not the key, makes every element id. A key is whatever
-        // the graphic's author wrote: one with a space would break `aria-describedby`
-        // (a list of ids separated by spaces), and "titulo-help" next to "titulo" would
-        // give two elements the id of the first one's help text.
-        if (field.control === 'unsupported') {
-          const keptValue = unsupportedValuesAsJson.find((entry) => entry.key === field.key);
-          const canReadASource =
-            bindingOptions !== undefined &&
-            canFieldBeBoundToASource(description.dataSchema, field.key);
-          if (canReadASource) {
+    <GeneratedFieldsGroup>
+      <div className="grid grid-cols-2 gap-4">
+        {description.fields.map((field, positionInTheForm) => {
+          // The position in the form, not the key, makes every element id. A key is whatever
+          // the graphic's author wrote: one with a space would break `aria-describedby`
+          // (a list of ids separated by spaces), and "titulo-help" next to "titulo" would
+          // give two elements the id of the first one's help text.
+          if (field.control === 'unsupported') {
+            const keptValue = unsupportedValuesAsJson.find((entry) => entry.key === field.key);
+            const canReadASource =
+              bindingOptions !== undefined &&
+              canFieldBeBoundToASource(description.dataSchema, field.key);
+            if (canReadASource) {
+              return (
+                <div key={field.key} className={chooseWidthClassOfField(field)}>
+                  <ListFieldWithSourceChoice
+                    form={form}
+                    field={field}
+                    dataSchema={description.dataSchema}
+                    controlId={`${controlIdPrefix}-unsupported-${positionInTheForm}`}
+                    keptJsonText={keptValue?.jsonText}
+                    bindingOptions={bindingOptions}
+                    isDisabled={isDisabled}
+                  />
+                </div>
+              );
+            }
             return (
               <div key={field.key} className={chooseWidthClassOfField(field)}>
-                <ListFieldWithSourceChoice
+                <UnsupportedValueBox
+                  controlId={`${controlIdPrefix}-unsupported-${positionInTheForm}`}
+                  label={field.label}
+                  note={
+                    keptValue === undefined
+                      ? ptBR.schemaForm.unsupportedPropertyWithoutValueNote
+                      : ptBR.schemaForm.unsupportedPropertyNote
+                  }
+                  jsonText={keptValue?.jsonText}
+                />
+              </div>
+            );
+          }
+          // A list of texts is typed line by line, and is drawn read-only like any field
+          // when the panel asks (readOnlyFieldContents).
+          const readOnlyContent = readOwnContentOfField(props.readOnlyFieldContents, field.key);
+          if (field.control === 'textList' && readOnlyContent === undefined) {
+            return (
+              <div key={field.key} className={chooseWidthClassOfField(field)}>
+                <TextListField
                   form={form}
                   field={field}
-                  dataSchema={description.dataSchema}
-                  controlId={`${controlIdPrefix}-unsupported-${positionInTheForm}`}
-                  keptJsonText={keptValue?.jsonText}
-                  bindingOptions={bindingOptions}
+                  controlId={`${controlIdPrefix}-field-${positionInTheForm}`}
                   isDisabled={isDisabled}
                 />
               </div>
@@ -144,40 +179,41 @@ export function SchemaFormFields(props: {
           }
           return (
             <div key={field.key} className={chooseWidthClassOfField(field)}>
-              <UnsupportedValueBox
-                controlId={`${controlIdPrefix}-unsupported-${positionInTheForm}`}
-                label={field.label}
-                note={
-                  keptValue === undefined
-                    ? ptBR.schemaForm.unsupportedPropertyWithoutValueNote
-                    : ptBR.schemaForm.unsupportedPropertyNote
+              <SchemaFormFieldRow
+                form={form}
+                field={field}
+                controlId={`${controlIdPrefix}-field-${positionInTheForm}`}
+                isDisabled={isDisabled}
+                textShownWhileUntouched={
+                  textShownInUntouchedField?.fieldKey === field.key
+                    ? textShownInUntouchedField
+                    : undefined
                 }
-                jsonText={keptValue?.jsonText}
+                dataSchema={description.dataSchema}
+                bindingOptions={bindingOptions}
+                entityLibrary={props.entityLibrary}
+                isFilledByTheWholeClock={keysFilledByTheWholeClock.includes(field.key)}
+                readOnlyContent={readOnlyContent}
               />
             </div>
           );
-        }
-        return (
-          <div key={field.key} className={chooseWidthClassOfField(field)}>
-            <SchemaFormFieldRow
-              form={form}
-              field={field}
-              controlId={`${controlIdPrefix}-field-${positionInTheForm}`}
-              isDisabled={isDisabled}
-              textShownWhileUntouched={
-                textShownInUntouchedField?.fieldKey === field.key
-                  ? textShownInUntouchedField
-                  : undefined
-              }
-              dataSchema={description.dataSchema}
-              bindingOptions={bindingOptions}
-              entityLibrary={props.entityLibrary}
-              isFilledByTheWholeClock={keysFilledByTheWholeClock.includes(field.key)}
-              readOnlyContent={readOwnContentOfField(props.readOnlyFieldContents, field.key)}
-            />
-          </div>
-        );
-      })}
-    </div>
+        })}
+      </div>
+    </GeneratedFieldsGroup>
+  );
+}
+
+/**
+ * The fieldset around the generated fields, named "Campos do gráfico". A graphic may title
+ * a field like one of the editor's own ("Rótulo", "Cor"); inside this group a screen reader
+ * says whose field it is, and a test finds the editor's own by looking outside it. The
+ * name is read, not shown: the panel's heading already says these are the graphic's.
+ */
+function GeneratedFieldsGroup(props: { children: ReactNode }) {
+  return (
+    <fieldset className="min-w-0" data-testid="generated-fields">
+      <legend className="sr-only">{ptBR.schemaForm.generatedFieldsGroupName}</legend>
+      {props.children}
+    </fieldset>
   );
 }

@@ -59,6 +59,12 @@ const csvColumnsByEntityType: Record<EntityType, EntityCsvColumn[]> = {
     { columnName: 'nome', recordFieldKey: 'name', cellKind: 'text', isRequired: true },
     { columnName: 'cota', recordFieldKey: 'tier', cellKind: 'text', isRequired: true },
     { columnName: 'peso', recordFieldKey: 'rollWeight', cellKind: 'wholeNumber', isRequired: true },
+    {
+      columnName: 'placa_clara',
+      recordFieldKey: 'logoOnLightPlate',
+      cellKind: 'yesNo',
+      isRequired: false,
+    },
   ],
   scheduleSlot: [
     { columnName: 'id', recordFieldKey: 'slotId', cellKind: 'text', isRequired: false },

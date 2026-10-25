@@ -158,7 +158,11 @@ describe('buildSchemaFormValuesFromDataOnAir', () => {
       formRead.formValues.unsupportedValuesAsJson,
       'the list and the nested object must be kept exactly, as JSON text',
     ).toEqual([
-      { key: 'patrocinadores', jsonText: '[\n  "Oficina do Zé",\n  "Autopeças Curitiba"\n]' },
+      {
+        key: 'patrocinadores',
+        jsonText:
+          '[\n  {\n    "nome": "Oficina do Zé"\n  },\n  {\n    "nome": "Autopeças Curitiba"\n  }\n]',
+      },
       { key: 'redesSociais', jsonText: '{\n  "instagram": "@bajaufpr"\n}' },
     ]);
     expect(formRead.labelsOfFieldsThatCouldNotBeRead, 'every field could be shown').toEqual([]);

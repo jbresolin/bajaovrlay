@@ -23,6 +23,7 @@ import { formatMillisecondsAsMinutesAndSeconds } from './minutesAndSeconds';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 
 const fieldErrors = ptBR.schemaForm.fieldErrors;
+const textListErrors = ptBR.textList.errors;
 
 /** What Zod hands a message function: the value that was refused (undefined when missing). */
 type RefusedValue = { input?: unknown };
@@ -122,6 +123,74 @@ function buildRuleForSwitch(field: SchemaFormFieldDescription): z.ZodType {
   });
 }
 
+/**
+ * Counts a text's length the way JSON Schema does (and the server's Ajv): in code points,
+ * so an accented letter or an emoji counts once.
+ */
+function countCodePoints(text: string): number {
+  return [...text].length;
+}
+
+/**
+ * The rule for a list of texts: how many lines (`minItems`, `maxItems`) and how long each
+ * may be (the items' `minLength`, `maxLength`). Written as one check over the whole list,
+ * not as a rule per line, so the message can name the line by its number ("Mensagem 2: no
+ * máximo 50 caracteres (tem 84).") and give the limit, which is what the operator needs to
+ * shorten it. The first problem found is the one reported, the list's count first.
+ */
+function buildRuleForTextList(field: SchemaFormFieldDescription): z.ZodType {
+  const itemLabel = field.listItemLabel ?? ptBR.textList.defaultItemLabel;
+  const listOfTexts = z.array(z.string(), {
+    error: chooseMessageForMissingOrWrongType(field, fieldErrors.notText(field.label)),
+  });
+  return listOfTexts.superRefine((texts, context) => {
+    if (field.minimumItems !== undefined && texts.length < field.minimumItems) {
+      context.addIssue({
+        code: 'custom',
+        message: textListErrors.tooFewLines(field.label, field.minimumItems),
+      });
+      return;
+    }
+    if (field.maximumItems !== undefined && texts.length > field.maximumItems) {
+      context.addIssue({
+        code: 'custom',
+        message: textListErrors.tooManyLines(field.label, field.maximumItems),
+      });
+      return;
+    }
+    for (const [index, text] of texts.entries()) {
+      const lineNumber = index + 1;
+      // The lines arrive trimmed (fieldValueConversion.ts), so a line of spaces is empty
+      // here: refused whatever minLength says, as the server's pattern "\S" would.
+      if (text === '') {
+        context.addIssue({
+          code: 'custom',
+          path: [index],
+          message: textListErrors.lineBlank(itemLabel, lineNumber),
+        });
+        return;
+      }
+      const length = countCodePoints(text);
+      if (field.minimumLength !== undefined && length < field.minimumLength) {
+        context.addIssue({
+          code: 'custom',
+          path: [index],
+          message: textListErrors.lineTooShort(itemLabel, lineNumber, field.minimumLength),
+        });
+        return;
+      }
+      if (field.maximumLength !== undefined && length > field.maximumLength) {
+        context.addIssue({
+          code: 'custom',
+          path: [index],
+          message: textListErrors.lineTooLong(itemLabel, lineNumber, field.maximumLength, length),
+        });
+        return;
+      }
+    }
+  });
+}
+
 /** The rule for one field the form can edit, before "required or optional" is applied. */
 function buildRuleForField(field: SchemaFormFieldDescription): z.ZodType | undefined {
   switch (field.control) {
@@ -136,6 +205,8 @@ function buildRuleForField(field: SchemaFormFieldDescription): z.ZodType | undef
       return buildRuleForNumber(field);
     case 'switch':
       return buildRuleForSwitch(field);
+    case 'textList':
+      return buildRuleForTextList(field);
     case 'unsupported':
       return undefined;
   }
@@ -144,8 +215,9 @@ function buildRuleForField(field: SchemaFormFieldDescription): z.ZodType | undef
 /**
  * Builds the Zod schema of a graphic's data from its manifest's JSON Schema. It checks
  * an object of data (not what the controls hold): text, option, ISO 8601 date and time,
- * whole or decimal number with its minimum and maximum, true/false, and whether each
- * required key is there. Every message is pt-BR and names the field by its label.
+ * whole or decimal number with its minimum and maximum, true/false, a list of texts with
+ * its count and each line's length, and whether each required key is there. Every
+ * message is pt-BR and names the field by its label.
  * Keys it does not know, and properties the form cannot edit, pass unchecked; a missing
  * or unsupported schema accepts any object.
  */

@@ -13,6 +13,10 @@
  *   - Each of those manifests passes the official manifest schema, and its data schema
  *     compiles on its own (as each graphic's ManifestDataAgreement test compiles it).
  *   - A manifest with a required field removed fails, so the check has teeth.
+ *   - No field of a manifest is titled like one of the item editor's own fields
+ *     ("Gráfico", "Camada", "Rótulo", "Cor", "Observações", "Onde"); a manifest that did
+ *     would be caught. The editor tells them apart anyway (its "Campos do gráfico" group),
+ *     but an operator reading two "Rótulo" boxes would not.
  *
  * What these tests deliberately do not cover:
  *   - What each manifest says (ids, layers, titles, durations): each graphic's own
@@ -56,14 +60,46 @@ function readManifest(manifestPath: string): Record<string, unknown> {
   >;
 }
 
+/**
+ * The item editor's own field names (apps/control's ptBR.itemEditor.fields). A graphic's field
+ * with one of these titles reads as two boxes of the same name to the operator.
+ */
+const itemEditorOwnFieldNames = ['Gráfico', 'Camada', 'Rótulo', 'Cor', 'Observações', 'Onde'];
+
+/**
+ * The titles of a data schema's fields that equal an editor field name, ignoring case and
+ * the spaces around them, as an operator reads them.
+ */
+function listFieldTitlesNamedLikeTheEditors(dataSchema: unknown): string[] {
+  const properties = (dataSchema as { properties?: Record<string, { title?: unknown }> })
+    .properties;
+  const clashingTitles: string[] = [];
+  for (const property of Object.values(properties ?? {})) {
+    if (typeof property.title !== 'string') {
+      continue;
+    }
+    const titleAsRead = property.title.trim().toLocaleLowerCase('pt-BR');
+    const isAnEditorFieldName = itemEditorOwnFieldNames.some(
+      (editorFieldName) => editorFieldName.toLocaleLowerCase('pt-BR') === titleAsRead,
+    );
+    if (isAnEditorFieldName) {
+      clashingTitles.push(property.title);
+    }
+  }
+  return clashingTitles;
+}
+
 describe('the manifests under packages/graphics', () => {
   it('finds the manifest of every graphic the product ships', () => {
     // Arrange: the graphics shipped today, one manifest each.
     const shippedManifests = [
+      join('lower-strip', 'lower-strip.ograf.json'),
       join('lower-third', 'lower-third.ograf.json'),
+      join('message-ticker', 'message-ticker.ograf.json'),
       join('notice', 'notice.ograf.json'),
       join('positions-tower', 'positions-tower.ograf.json'),
       join('race-clock', 'race-clock.ograf.json'),
+      join('sponsor-bug', 'sponsor-bug.ograf.json'),
       join('standings', 'standings.ograf.json'),
       join('team-card', 'team-card.ograf.json'),
     ];
@@ -113,5 +149,37 @@ describe('the manifests under packages/graphics', () => {
 
     // Assert: it fails, so a pass above means something.
     expect(isManifestValid, 'a manifest without "main" must fail the schema').toBe(false);
+  });
+
+  it.each(listEveryGraphicManifestPath())(
+    '%s titles no field like one of the item editor’s own',
+    (path) => {
+      // Arrange: the manifest's data schema.
+      const dataSchema = readManifest(path).schema;
+
+      // Act: find the field titles that equal an editor field name.
+      const clashingTitles = listFieldTitlesNamedLikeTheEditors(dataSchema);
+
+      // Assert: none, so the operator never sees two boxes of the same name.
+      expect(clashingTitles, `${path} must not title a field like the editor's own`).toEqual([]);
+    },
+  );
+
+  it('catches a field titled like one of the item editor’s own', () => {
+    // Arrange: the ticker's data schema with its label field titled plainly "Rótulo", as
+    // it was before the walk caught the clash, and a colour field titled " cor ".
+    const tickerSchema = readManifest(join('message-ticker', 'message-ticker.ograf.json'))
+      .schema as { properties: Record<string, Record<string, unknown>> };
+    tickerSchema.properties.label = { ...tickerSchema.properties.label, title: 'Rótulo' };
+    tickerSchema.properties.pillColor = { type: 'string', title: ' cor ' };
+
+    // Act: find the field titles that equal an editor field name.
+    const clashingTitles = listFieldTitlesNamedLikeTheEditors(tickerSchema);
+
+    // Assert: both are caught, so a pass above means something.
+    expect(clashingTitles, 'both titles must be caught, whatever their case').toEqual([
+      'Rótulo',
+      ' cor ',
+    ]);
   });
 });

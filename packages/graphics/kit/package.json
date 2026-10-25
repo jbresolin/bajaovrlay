@@ -2,15 +2,29 @@
   "name": "@bajaovrlay/graphics-kit",
   "version": "0.1.0",
   "private": true,
-  "description": "What every OGraf graphic shares: the OGraf types, the play step rule, the page turner, timeline playback, the pt-BR data problems, the preview page's controls, and the manifest validator for tests.",
+  "description": "What every OGraf graphic shares: the OGraf types, the play step rule, the page turner, timeline playback, the clock's frame loop, reading and flag, the pt-BR data problems, the preview page's controls, and the manifest validator for tests.",
   "type": "module",
   "exports": {
     "./ografGraphicTypes": "./src/ografGraphicTypes.ts",
     "./playSteps": "./src/playSteps.ts",
     "./pageTurner": "./src/pageTurner.ts",
+    "./pageCycle": "./src/pageCycle.ts",
     "./timelinePlayback": "./src/timelinePlayback.ts",
     "./dataProblems": "./src/dataProblems.ts",
     "./textPresence": "./src/textPresence.ts",
+    "./textInPlace": "./src/textInPlace.ts",
+    "./clockTicker": "./src/clockTicker.ts",
+    "./raceClockReading": "./src/raceClockReading.ts",
+    "./flagOnAir": "./src/flagOnAir.ts",
+    "./barMotion": "./src/barMotion.ts",
+    "./barStyles": "./src/barStyles.ts",
+    "./clockBlock": "./src/clockBlock.ts",
+    "./clockBlockOnBar": "./src/clockBlockOnBar.ts",
+    "./motionTimelineRunner": "./src/motionTimelineRunner.ts",
+    "./clockBlockStyles": "./src/clockBlockStyles.ts",
+    "./pageHold": "./src/pageHold.ts",
+    "./ptBRFlagWords": "./src/ptBRFlagWords.ts",
+    "./waitForImagesToSettle": "./src/waitForImagesToSettle.ts",
     "./previewControls": "./src/previewControls.ts",
     "./previewStage": "./src/previewStage.ts",
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",
@@ -21,8 +35,13 @@
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@bajaovrlay/shared": "workspace:*",
+    "@bajaovrlay/theme": "workspace:*"
+  },
   "peerDependencies": {
     "gsap": "^3.15.0",
+    "lit": "^3.3.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -30,6 +49,7 @@
     "ajv": "^8.20.0",
     "gsap": "^3.15.0",
     "jsdom": "^30.1.2",
+    "lit": "^3.3.3",
     "vite": "^8.3.3",
     "zod": "^4.6.5"
   }

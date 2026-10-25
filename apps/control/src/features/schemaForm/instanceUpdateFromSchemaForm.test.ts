@@ -12,6 +12,8 @@
  *   - An update carries only the changed fields: a value, null for a cleared field, or
  *     the key of a field now filled by the server; a change of kind counts as a change.
  *   - An update with nothing changed says so, so the panel sends no command.
+ *   - A list of texts that react-hook-form marks line by line is a changed field, sent
+ *     whole (BAJAOVRLAY-23).
  *   - The builder does not accept a form that did not pass the check.
  *
  * What these tests deliberately do not cover:
@@ -31,6 +33,10 @@ import {
   buildLowerThirdFormValuesForCar42,
   describeLowerThirdFixtureForm,
 } from './lowerThirdFixtureSchema.testSupport';
+import {
+  buildTwoEnduroMorningMessages,
+  describeMessageTickerFixtureForm,
+} from './messageTickerFixtureSchema.testSupport';
 import type { SchemaFormDirtyFields, SchemaFormFieldValue } from './schemaFormValues';
 
 describe('buildInstanceUpdateFromDirtySchemaFormFields, on the lower third of car 42 on air', () => {
@@ -202,6 +208,32 @@ describe('buildInstanceUpdateFromDirtySchemaFormFields, on the race clock on air
     // Assert: null is how an update removes a field (the gap of PR #7 is closed).
     expect(update.data, 'cleared laps must be sent as null').toEqual({
       lapsCompletedByLeader: null,
+    });
+  });
+});
+
+describe('buildInstanceUpdateFromDirtySchemaFormFields, on the message ticker on air', () => {
+  it('sends a list of messages that react-hook-form marks line by line as changed', () => {
+    // Arrange: the ticker on air with the two morning messages; the operator added a
+    // third, which react-hook-form reports as a mark on that line alone.
+    const description = describeMessageTickerFixtureForm();
+    const { formValues } = buildSchemaFormValuesFromDataOnAir(description, {
+      label: 'AVISO',
+      messages: buildTwoEnduroMorningMessages(),
+    });
+    formValues.values.messages = [
+      ...buildTwoEnduroMorningMessages().map((text) => ({ text })),
+      { text: 'Premiação às 18h00 no palco' },
+    ];
+
+    // Act: build the update with the marks react-hook-form gives a field array.
+    const update = buildInstanceUpdateFromDirtySchemaFormFields(description, formValues, {
+      values: { messages: [undefined, undefined, { text: true }] },
+    });
+
+    // Assert: the whole new list goes on air, and nothing else.
+    expect(update.data, 'the three messages must be sent as the new list').toEqual({
+      messages: [...buildTwoEnduroMorningMessages(), 'Premiação às 18h00 no palco'],
     });
   });
 });

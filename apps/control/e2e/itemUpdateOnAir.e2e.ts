@@ -45,6 +45,7 @@
 import { type BrowserContext, expect, type Locator, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { findItemEditorOwnTextField } from './itemEditorOwnFields';
 import { chooseGraphicInTheItemEditor, raceClockGraphicName } from './previewTestSteps';
 
 /** Opens the control page and waits until it says it is connected to the server. */
@@ -114,7 +115,7 @@ test.describe('changing an item on air from the item editor', () => {
     // race clock is chosen by name: the server has the positions tower too.
     await page.getByRole('button', { name: '+ Item' }).click();
     await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
-    await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Largada do enduro');
+    await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill('Largada do enduro');
     await itemEditor.getByLabel('Título', { exact: true }).fill('Enduro — Largada');
     await chooseFlagInItemEditor(page, 'Verde');
     await itemEditor.getByRole('button', { name: 'Salvar item' }).click();

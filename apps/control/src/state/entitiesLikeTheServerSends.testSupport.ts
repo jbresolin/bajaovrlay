@@ -52,6 +52,28 @@ export function buildMasterSponsor(): Sponsor {
   };
 }
 
+/** The media id of the master sponsor's logo (the SHA-256 of its file). */
+export const logoOfTheMasterSponsorMediaId =
+  '7d1e3a5c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e2d';
+
+/** The master sponsor with its logo, which comes on its own white box (BAJAOVRLAY-23). */
+export function buildMasterSponsorWithItsLogo(): Sponsor {
+  return { ...buildMasterSponsor(), logoMediaId: logoOfTheMasterSponsorMediaId };
+}
+
+/** The master sponsor's logo as the media slice records it: 340 kB, a 480×138 WebP. */
+export function buildLogoOfTheMasterSponsor(): MediaRecord {
+  return {
+    mediaId: logoOfTheMasterSponsorMediaId,
+    fileName: 'serra-azul.webp',
+    contentType: 'image/webp',
+    sizeBytes: 340 * 1024,
+    widthPx: 480,
+    heightPx: 138,
+    uploadedAt: '2026-11-13T21:45:00.000Z',
+  };
+}
+
 /**
  * Saturday's schedule on this computer's clock: the briefing at 08:00 (no end), the
  * enduro 10:00 to 14:00, the awards at 18:00, listed out of order on purpose.

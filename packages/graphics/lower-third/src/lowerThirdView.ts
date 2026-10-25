@@ -5,6 +5,7 @@
  * gets the `hidden` attribute, which takes it out of the layout (display: none), so a
  * missing part leaves no empty box and the pills shrink to what they hold.
  */
+import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';
 
@@ -49,13 +50,6 @@ export function findLowerThirdParts(renderRoot: ParentNode): LowerThirdParts {
     separator: findPart('lower-third-separator'),
     teamLine: findPart('lower-third-team-line'),
   };
-}
-
-/** Changes an element's text only when it differs, so an update touches only what changed. */
-function writeTextIfChanged(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
 }
 
 /** Shows an element with the text, or hides it (and empties it) when there is none. */

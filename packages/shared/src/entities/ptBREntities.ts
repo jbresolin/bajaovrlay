@@ -46,6 +46,7 @@ export const ptBREntities = {
     tier: 'Cota',
     logoMediaId: 'Logo',
     rollWeight: 'Peso no rodízio',
+    logoOnLightPlate: 'Logo sobre placa clara',
   },
 
   /** The label of every field of a schedule slot. */

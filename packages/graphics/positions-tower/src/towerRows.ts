@@ -7,6 +7,7 @@
  * cells of the columns that changed on the same row; a status cell made again this way
  * draws the row's icon at once, since the status itself did not change.
  */
+import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { nothing, render } from 'lit';
 
 import { type CueDirection, renderCueArrow } from './cueArrows.js';
@@ -114,13 +115,6 @@ function createCellOfColumn(row: TowerRow, columnKey: TowerColumnKey): HTMLEleme
     cell.append(row.teamName, row.schoolName);
   }
   return cell;
-}
-
-/** Changes an element's text only when it differs, so an unchanged value touches nothing. */
-function writeTextIfChanged(element: HTMLElement, text: string): void {
-  if (element.textContent !== text) {
-    element.textContent = text;
-  }
 }
 
 /** The text of one cell for an entry; the cue and status lanes carry no text. */

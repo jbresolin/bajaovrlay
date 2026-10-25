@@ -1,0 +1,54 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-sponsor-bug",
+  "version": "0.1.0",
+  "name": "Bug do patrocinador",
+  "description": "Cartão no canto superior esquerdo o dia todo: a marca Baja SAE Brasil, a palavra do evento e o logo de um patrocinador.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "sponsor-bug.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "bug",
+    "category": "sponsor"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "eventWord": {
+        "type": "string",
+        "title": "Palavra do evento",
+        "description": "Opcional; ex.: ENDURO, ao lado da marca. Ausente, o cartão fica só com a marca e o patrocinador.",
+        "gddType": "single-line",
+        "default": "ENDURO"
+      },
+      "caption": {
+        "type": "string",
+        "title": "Legenda",
+        "description": "Opcional; o texto sobre o logo do patrocinador. Ausente, o logo aparece sozinho.",
+        "gddType": "single-line",
+        "default": "Apresentado por"
+      },
+      "sponsorLogoUrl": {
+        "type": "string",
+        "title": "Logo do patrocinador",
+        "description": "Opcional; em geral o logo de um patrocinador dos cadastros. Ausente, o cartão fica só com a marca e a palavra do evento, sem célula vazia.",
+        "v_baja": { "role": "imageUrl" }
+      },
+      "sponsorLogoOnLightPlate": {
+        "type": "boolean",
+        "title": "Logo sobre placa clara",
+        "description": "Marque para um logo escuro, ou que vem num fundo branco próprio; em geral a escolha do patrocinador nos cadastros.",
+        "default": false
+      }
+    },
+    "additionalProperties": false
+  }
+}

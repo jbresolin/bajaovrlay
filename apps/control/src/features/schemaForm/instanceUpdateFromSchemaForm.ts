@@ -13,9 +13,27 @@ export type InstanceUpdateFromSchemaForm = {
   hasNothingToSend: boolean;
 };
 
+/**
+ * Answers whether one of react-hook-form's dirty marks says "changed". A field's mark is
+ * `true`; a list of texts is marked line by line (`[{ text: true }, undefined]`), and a
+ * list is changed when any of its lines is.
+ */
+function isMarkedAsChanged(dirtyMark: unknown): boolean {
+  if (dirtyMark === true) {
+    return true;
+  }
+  if (Array.isArray(dirtyMark)) {
+    return dirtyMark.some((lineMark) => isMarkedAsChanged(lineMark));
+  }
+  if (typeof dirtyMark === 'object' && dirtyMark !== null) {
+    return Object.values(dirtyMark).some((partMark) => isMarkedAsChanged(partMark));
+  }
+  return false;
+}
+
 /** Answers whether react-hook-form marks a field's value or its kind as changed. */
 function isFieldDirty(dirtyFields: SchemaFormDirtyFields, fieldKey: string): boolean {
-  const isValueDirty = readOwnValueOfRecord(dirtyFields.values ?? {}, fieldKey) === true;
+  const isValueDirty = isMarkedAsChanged(readOwnValueOfRecord(dirtyFields.values ?? {}, fieldKey));
   const isKindDirty = readOwnValueOfRecord(dirtyFields.kinds ?? {}, fieldKey) === true;
   return isValueDirty || isKindDirty;
 }

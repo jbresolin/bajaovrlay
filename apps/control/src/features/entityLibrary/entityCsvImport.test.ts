@@ -20,14 +20,13 @@
  *   - A teams CSV with no cidade and no uf columns imports (gate 2 of PR #23), and an
  *     update by such a file keeps the city and state the library holds: a column the
  *     file does not have says nothing about its field.
- *   - The placa_clara column (BAJAOVRLAY-24) reads "sim" as yes and "não" or "nao" as no,
- *     an empty cell leaves the choice out, and "talvez" is an error naming the field.
  *   - A file missing a required column, and one with only the header, say so.
  *   - A file of 1001 lines, more than one import may carry, says so and imports nothing
  *     (gate 2 of PR #23).
  *
  * What these tests deliberately do not cover:
  *   - Splitting the text into cells; csvText.test.ts.
+ *   - The placa_clara column of teams and sponsors; entityCsvImportLightPlate.test.ts.
  *   - The panel's buttons; EntityCsvImportPanel.test.tsx.
  */
 import type { EntityLibrary } from '@bajaovrlay/shared';
@@ -171,38 +170,6 @@ describe('buildCsvImportPreview of teams', () => {
       state: 'PR',
       logoMediaId: logoOfTeam42MediaId,
     });
-  });
-});
-
-describe('buildCsvImportPreview of the light plate column', () => {
-  it('reads sim as yes, não and nao as no, an empty cell as no choice, and refuses talvez', () => {
-    // Arrange: five teams, one per way of writing the cell.
-    const csv =
-      'carro;equipe;escola;placa_clara\n' +
-      '42;Baja UFPR;UFPR;sim\n' +
-      '7;Juriti Off-Road;UDESC;não\n' +
-      '13;Mutum Off-Road;UFMT;nao\n' +
-      '21;Gralha Azul Baja;UTFPR;\n' +
-      '30;Caledônia Racing;UERJ;talvez\n';
-
-    // Act: build the preview.
-    const preview = buildCsvImportPreview(
-      'team',
-      csv,
-      buildLibraryWithTeam42AndTheNarrator(),
-      createPredictableIdMaker(),
-    );
-
-    // Assert: yes, no, no, left out, and an error in pt-BR naming the field.
-    expect(
-      preview.rows.map(
-        (row) => (row.record as { logoOnLightPlate?: boolean } | undefined)?.logoOnLightPlate,
-      ),
-      'what each line says about the plate',
-    ).toEqual([true, false, false, undefined, undefined]);
-    expect(preview.rows[4]?.reason, 'a word other than sim or não is refused').toBe(
-      'Logo sobre placa clara: sim ou não.',
-    );
   });
 });
 
