@@ -248,6 +248,9 @@ importers:
       '@bajaovrlay/message-ticker':
         specifier: workspace:*
         version: link:../../packages/graphics/message-ticker
+      '@bajaovrlay/qr-card':
+        specifier: workspace:*
+        version: link:../../packages/graphics/qr-card
       '@bajaovrlay/race-clock':
         specifier: workspace:*
         version: link:../../packages/graphics/race-clock

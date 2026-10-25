@@ -16,6 +16,7 @@ graphic with two variants in one manifest (`variant`) and an on-air hold left to
 `podium/` is the full-screen podium, three cards revealed one per step (3rd, 2nd, 1st), each
 crowned by its team's logo through the `withTeamLogos` binding transform.
 `battle-card/` is two cars fighting for one place, bottom-centre, with the gap and its trend.
+`qr-card/` is the one light card: a QR code made from the address in the graphic, nothing fetched.
 `kit/` (`@bajaovrlay/graphics-kit`) is not a graphic: it holds what the graphics share (the OGraf
 types, the play step rule, the page turner, timeline playback, the preview page's controls, the
 manifest validator for tests), bundled into each graphic by Vite; its README lists what is there.
