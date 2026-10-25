@@ -12,7 +12,8 @@ lifecycle); it wires `bracketModel.ts` (Zod data), `bracketStepView.ts` (what a 
 the shared plan `@bajaovrlay/shared/bracketSteps` the server counts with), `matchResults.ts`,
 `treeLayout.ts` (pure geometry), `bracketView.ts` with `roundBoardView.ts`,
 `bracketTreeView.ts` and `bracketCarView.ts`, the three style files, `bracketStepMoves.ts`
-on `bracketAnimations.ts`, and `ptBR.ts`. It has no timer: nothing on it moves by itself.
+and `bracketLiveUpdates.ts` (what an update changed on screen) on `bracketAnimations.ts`, and
+`ptBR.ts`. It has no timer: nothing on it moves by itself.
 
 **Steps** (`stepCount` -1, `v_baja.stepCounter` `bracketSteps`): counted from the rounds, one per
 board page, one per tree round, one for the third place (just before the final's). The real

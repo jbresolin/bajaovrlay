@@ -20,7 +20,7 @@ import {
   renderResultCell,
   writeCarKey,
 } from './bracketCarView.js';
-import type { BracketMatchData, BracketRoundData } from './bracketModel.js';
+import type { BracketMatchData } from './bracketModel.js';
 import type { TreeOfBracket } from './bracketStepView.js';
 import { type CarSide, describeResultOfCar } from './matchResults.js';
 import type { TreeLayout, TreeLine } from './treeLayout.js';

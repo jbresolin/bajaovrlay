@@ -40,7 +40,8 @@ import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyle
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
-import { buildResultCrossfadeTimeline, placeHeadOffAir } from './bracketAnimations.js';
+import { placeHeadOffAir } from './bracketAnimations.js';
+import { showWhatTheUpdateChanged, takeSnapshotOfTheStage } from './bracketLiveUpdates.js';
 import {
   type BracketData,
   mergePartialUpdateIntoBracketData,
@@ -51,11 +52,9 @@ import {
   buildLiftOutOfThePieces,
   buildRiseOfTheStep,
   chooseStepMoveKind,
-  findResultChangesOnScreen,
   hideEveryPieceAtOnce,
   rememberPiecesOnScreen,
   showEveryPieceAtOnce,
-  showPiecesAddedByAnUpdate,
   stepBeforeTheStart,
 } from './bracketStepMoves.js';
 import {
@@ -69,7 +68,6 @@ import {
   type BracketOnScreen,
   type BracketParts,
   findBracketParts,
-  readResultSignaturesOnScreen,
   renderBracketTemplate,
 } from './bracketView.js';
 import { ptBR } from './ptBR.js';
@@ -272,21 +270,12 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     const lastStep = countStepsOfBracket(dataCheck.data) - 1;
     const stepOnAir = Math.min(this.currentStep ?? 0, lastStep);
     this.currentStep = stepOnAir;
-    const signaturesBefore = readResultSignaturesOnScreen(parts);
-    const piecesBefore = rememberPiecesOnScreen(parts);
+    const stageBefore = takeSnapshotOfTheStage(parts);
     await this.redrawAtStep(dataCheck.data, stepOnAir);
-    showPiecesAddedByAnUpdate(parts, piecesBefore);
-    const changes = findResultChangesOnScreen(
-      parts,
-      signaturesBefore,
-      readResultSignaturesOnScreen(parts),
-    );
-    if (changes.resultCells.length > 0) {
+    const crossfade = showWhatTheUpdateChanged(parts, stageBefore);
+    if (crossfade !== undefined) {
       // Not awaited: the update is on screen now; the crossfade only softens it.
-      void this.resultCrossfades.run(
-        buildResultCrossfadeTimeline(parts.tokensSource, changes),
-        false,
-      );
+      void this.resultCrossfades.run(crossfade, false);
     }
     return okAnswer;
   }

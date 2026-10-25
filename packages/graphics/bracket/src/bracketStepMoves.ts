@@ -20,18 +20,11 @@ import {
   buildCascadeInTimeline,
   buildLiftOutTogetherTimeline,
   hidePiecesAtOnce,
-  type ResultChangesOnScreen,
   showPiecesAtOnce,
 } from './bracketAnimations.js';
 import type { BracketData } from './bracketModel.js';
 import { describeStepOnScreen } from './bracketStepView.js';
-import {
-  type BracketParts,
-  findResultCellOfCar,
-  listEveryPieceOnScreen,
-  listPiecesOnScreen,
-} from './bracketView.js';
-import { readOutcomeOfSignature } from './matchResults.js';
+import { type BracketParts, listEveryPieceOnScreen, listPiecesOnScreen } from './bracketView.js';
 
 /** How a step comes on screen. */
 export type StepMoveKind = 'enter' | 'newView' | 'addToTheView' | 'atOnce';
@@ -107,51 +100,4 @@ export function showEveryPieceAtOnce(parts: BracketParts): void {
 /** Hides every piece on the stage at once: off air, ready for the next take. */
 export function hideEveryPieceAtOnce(parts: BracketParts): void {
   hidePiecesAtOnce(parts.tokensSource, listEveryPieceOnScreen(parts));
-}
-
-/**
- * After an update redrawn on air: the pieces it added (a match listed in a round on
- * screen) are shown at once, in their place; nothing else changes.
- */
-export function showPiecesAddedByAnUpdate(parts: BracketParts, piecesBefore: Set<Element>): void {
-  const piecesAdded = listEveryPieceOnScreen(parts).filter((piece) => !piecesBefore.has(piece));
-  showPiecesAtOnce(piecesAdded);
-}
-
-/**
- * The results an update changed on screen, from each car's result signature before and
- * after: their cells, the chips of the cars that became winners, and the cars (the board's
- * card side or the tree's pill) that became losers. A car that was not drawn before is
- * not a change: it is new, and appears with its piece.
- */
-export function findResultChangesOnScreen(
-  parts: BracketParts,
-  signaturesBefore: Map<string, string>,
-  signaturesAfter: Map<string, string>,
-): ResultChangesOnScreen {
-  const changes: ResultChangesOnScreen = { resultCells: [], winnerChipFills: [], losers: [] };
-  for (const [carKey, signatureAfter] of signaturesAfter) {
-    const signatureBefore = signaturesBefore.get(carKey);
-    if (signatureBefore === undefined || signatureBefore === signatureAfter) {
-      continue;
-    }
-    const cell = findResultCellOfCar(parts, carKey);
-    const car = cell?.closest<HTMLElement>('[data-outcome]');
-    if (cell === undefined || car === null || car === undefined) {
-      continue;
-    }
-    changes.resultCells.push(cell);
-    const outcomeBefore = readOutcomeOfSignature(signatureBefore);
-    const outcomeAfter = car.dataset.outcome;
-    if (outcomeAfter === 'winner' && outcomeBefore !== 'winner') {
-      const fill = car.querySelector('[data-testid="bracket-chip-winner-fill"]');
-      if (fill !== null) {
-        changes.winnerChipFills.push(fill);
-      }
-    }
-    if (outcomeAfter === 'loser' && outcomeBefore !== 'loser') {
-      changes.losers.push(car);
-    }
-  }
-  return changes;
 }
