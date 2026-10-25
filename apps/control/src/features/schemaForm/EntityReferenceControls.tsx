@@ -24,6 +24,7 @@ import {
   describeRecordOfType,
   readKeyOfRecord,
 } from '@/features/entityLibrary/entityRecordsOfType';
+import { writeLocalDateTimeText } from '@/features/entityLibrary/localDateTimeText';
 import { MediaThumbnail } from '@/features/entityLibrary/MediaThumbnail';
 import { listRecordsFoundBySearch } from '@/features/entityLibrary/recordSearch';
 import { ptBR } from '@/i18n/ptBR';
@@ -235,10 +236,26 @@ function EntityValueNowLine(props: {
       />
     );
   }
-  // A yes or no (the logo's light plate) reads "Sim" or "Não", never true or false.
-  const valueText =
-    attribute?.valueType === 'boolean'
-      ? writeSourceValueForReading(resolution.value, 'yesNo')
-      : String(resolution.value);
+  const valueText = writeValueNowForReading(props.field, attribute?.valueType, resolution.value);
   return <p className="text-sm text-muted-foreground">{texts.valueNow(valueText)}</p>;
+}
+
+/**
+ * The value now as the operator reads it: a yes or no (the logo's light plate) as "Sim" or
+ * "Não", never true or false; a moment on a date-and-time field (a slot's start on a
+ * field marked `v_baja.unit: "epochMs"`) as "30/03/2025 10:00", as Cadastros writes it,
+ * never thirteen digits of milliseconds; anything else as it is.
+ */
+function writeValueNowForReading(
+  field: SchemaFormFieldDescription,
+  attributeValueType: string | undefined,
+  value: unknown,
+): string {
+  if (attributeValueType === 'boolean') {
+    return writeSourceValueForReading(value, 'yesNo');
+  }
+  if (field.control === 'dateTime' && typeof value === 'number') {
+    return writeLocalDateTimeText(value);
+  }
+  return String(value);
 }
