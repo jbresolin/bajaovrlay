@@ -23,6 +23,7 @@
  *   - Every rule of the config schema: packages/shared/src/dataSources/httpJsonConfig.test.ts.
  *   - The form on the page and the command it sends: DataSourcesPageFlexForm.test.tsx.
  */
+import type { HttpJsonConfig } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { readFlexConfigFormValues, readFlexSourceForm } from './flexSourceFormReading';
@@ -200,7 +201,7 @@ describe('readFlexSourceForm, on a valid form', () => {
   it('keeps a brackets mapping through the form, as the Baja app source will carry one', () => {
     // Arrange: a stored config mapping the Baja app's flat list of matches into brackets
     // (BAJAOVRLAY-25), put into the form as "Editar" does.
-    const bracketsConfig = {
+    const bracketsConfig: HttpJsonConfig = {
       requests: [
         {
           requestId: 'torneio',
@@ -211,7 +212,7 @@ describe('readFlexSourceForm, on a valid form', () => {
       ],
       mappings: [
         {
-          shapeKey: 'brackets' as const,
+          shapeKey: 'brackets',
           requestId: 'torneio',
           entriesPath: 'partidas',
           fields: [
