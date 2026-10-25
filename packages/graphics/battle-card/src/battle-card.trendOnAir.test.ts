@@ -28,6 +28,7 @@
  *   - The rule that picks the trend; battleTrend.test.ts.
  *   - The look of the crossfade; e2e/battleCardLifecycle.e2e.ts watches it in Chromium.
  */
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/finishEveryRunningMotion.testSupport';
 import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
 
@@ -73,6 +74,18 @@ async function putBattleCardOnAirClosing(): Promise<BattleCardGraphic> {
     skipAnimation: true,
   });
   return battleCard;
+}
+
+/**
+ * Starts the card's stop-out with a fade that lasts a minute, so it is surely still running
+ * while a test looks at the card "during the stop-out"; finishEveryRunningMotionAtOnce ends
+ * it. A real 250 ms fade may already be over on a loaded CI runner (gate 2 of PR #27).
+ */
+function startAStopOutThatCannotEndByItself(battleCard: BattleCardGraphic): Promise<unknown> {
+  for (const testId of ['battle-card-ahead', 'battle-card-trend']) {
+    findPartOfBattleCard(battleCard, testId)?.style.setProperty('--motion-out', '60000ms');
+  }
+  return battleCard.stopAction({});
 }
 
 /** The next lap's reading after lap 2: the gap 0,7 s larger again, so opening. */
@@ -236,7 +249,7 @@ describe('an update during the stop-out', () => {
   it('never reaches the card fading out, whatever asks Lit to redraw (gate 2 of PR #27)', async () => {
     // Arrange: a card on air closing by 0,7 s, its stop-out started and lap 3 stored.
     const battleCard = await putBattleCardOnAirClosing();
-    const pendingStop = battleCard.stopAction({});
+    const pendingStop = startAStopOutThatCannotEndByItself(battleCard);
     await letThePageCatchUp();
     await battleCard.updateAction({ data: openingAtLapThree });
 
@@ -244,6 +257,7 @@ describe('an update during the stop-out', () => {
     battleCard.requestUpdate();
     await battleCard.updateComplete;
     const gapWhileFadingOut = readShownText(battleCard, 'battle-card-gap');
+    finishEveryRunningMotionAtOnce();
     await pendingStop;
 
     // Assert: the fading card still shows what was on air; the new gap only after it.
@@ -256,12 +270,13 @@ describe('an update during the stop-out', () => {
   it('is drawn before the play-in when a play cuts the stop-out short', async () => {
     // Arrange: a card on air, its stop-out started and lap 3 stored meanwhile.
     const battleCard = await putBattleCardOnAirClosing();
-    const pendingStop = battleCard.stopAction({});
+    const pendingStop = startAStopOutThatCannotEndByItself(battleCard);
     await letThePageCatchUp();
     await battleCard.updateAction({ data: openingAtLapThree });
 
     // Act: the operator takes it again before the stop-out ends.
     await battleCard.playAction({ skipAnimation: true });
+    finishEveryRunningMotionAtOnce();
     await pendingStop;
 
     // Assert: it comes back in with lap 3's gap and trend, not the stale ones.
@@ -270,9 +285,9 @@ describe('an update during the stop-out', () => {
   });
 
   it('only stores the data, and the card is drawn with it once off screen', async () => {
-    // Arrange: a card on air closing by 0,7 s, its stop-out started (250 ms).
+    // Arrange: a card on air closing by 0,7 s, its stop-out started (a minute long).
     const battleCard = await putBattleCardOnAirClosing();
-    const pendingStop = battleCard.stopAction({});
+    const pendingStop = startAStopOutThatCannotEndByItself(battleCard);
     await letThePageCatchUp();
 
     // Act: lap 3 arrives during the stop-out; look at once, then after the stop.
@@ -283,6 +298,7 @@ describe('an update during the stop-out', () => {
       words: readShownText(battleCard, 'battle-card-trend-words'),
       isCrossfadeRunning: isTrendCrossfadeRunning(battleCard),
     };
+    finishEveryRunningMotionAtOnce();
     await pendingStop;
 
     // Assert: accepted but nothing on screen moved; drawn at rest after the stop.

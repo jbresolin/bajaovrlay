@@ -48,6 +48,7 @@
     "./previewStage": "./src/previewStage.ts",
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",
     "./tokenOverrides.testSupport": "./src/tokenOverrides.testSupport.ts",
+    "./finishEveryRunningMotion.testSupport": "./src/finishEveryRunningMotion.testSupport.ts",
     "./ografSchemaValidator.testSupport": "./src/ografSchemaValidator.testSupport.ts",
     "./the30thCompetitionSponsors.testSupport": "./src/the30thCompetitionSponsors.testSupport.ts",
     "./runningMotions.testSupport": "./src/runningMotions.testSupport.ts"

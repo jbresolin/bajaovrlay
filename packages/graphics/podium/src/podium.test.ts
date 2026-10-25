@@ -33,6 +33,7 @@
  *     e2e/podiumLifecycle.e2e.ts measures the boxes in Chromium.
  *   - The timelines' lengths and curves; podiumAnimations.test.ts covers them.
  */
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/finishEveryRunningMotion.testSupport';
 import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
 
@@ -302,9 +303,9 @@ describe('updateAction', () => {
   });
 
   it('only keeps an update during the stop-out, drawing it once the cards are gone', async () => {
-    // Arrange: real motion on the page, the whole podium shown, then a stop started that is
-    // still fading the cards out.
-    placeTokensOnTheRoot(ardosiaMotionTokenDeclarations);
+    // Arrange: real motion on the page, the whole podium shown, then a stop started whose
+    // fade lasts a minute, so it is surely still running when the test looks.
+    placeTokensOnTheRoot({ ...ardosiaMotionTokenDeclarations, '--motion-out': '60000ms' });
     const podium = await createLoadedEnduroPodium();
     await podium.playAction({ goto: 3, skipAnimation: true });
     const stop = podium.stopAction({});
@@ -318,6 +319,7 @@ describe('updateAction', () => {
       findCardOfSlot(podium, 'first')?.querySelector('[data-testid="podium-team-name"]')
         ?.textContent;
     const winnerNameDuringTheStopOut = readWinnerName();
+    finishEveryRunningMotionAtOnce();
     await stop;
 
     // Assert: accepted, kept off the fading card, drawn once it is gone.

@@ -20,6 +20,7 @@
  *   - Load, the calls at the wrong moment, play, stop and dispose: qr-card.test.ts.
  *   - Real rendering and timing; the Playwright suites in e2e/ run the built component.
  */
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/finishEveryRunningMotion.testSupport';
 import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
 
@@ -90,17 +91,19 @@ describe('updateAction', () => {
 
 describe('an update during the stop-out', () => {
   it('leaves the fading code alone, then draws the new one once the card is off screen', async () => {
-    // Arrange: the design's card on air, its stop-out lasting 250 ms (on the card itself,
-    // since jsdom carries no custom property from :root into a shadow root), the stop started.
+    // Arrange: the design's card on air, its stop-out lasting a minute (on the card itself,
+    // since jsdom carries no custom property from :root into a shadow root), so it is surely
+    // still running when the test looks; the stop started.
     const qrCard = createQrCardOnThePage();
     await loadQrCardWithData(qrCard, createResultsSample());
     await qrCard.playAction({ skipAnimation: true });
-    findPartOfQrCard(qrCard, 'qr-card-panel')?.style.setProperty('--motion-out', '250ms');
+    findPartOfQrCard(qrCard, 'qr-card-panel')?.style.setProperty('--motion-out', '60000ms');
     const stop = qrCard.stopAction({});
 
     // Act: a new address arrives while the card fades; then the stop-out ends.
     const answer = await qrCard.updateAction({ data: { address: 'bajasaebrasil.net/ao-vivo' } });
     const codeDuringTheStopOut = scanTheCodeOnTheCard(qrCard);
+    finishEveryRunningMotionAtOnce();
     await stop;
 
     // Assert: accepted, the old code kept while fading, the new one drawn after.
