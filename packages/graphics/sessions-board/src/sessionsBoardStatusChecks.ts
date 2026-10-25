@@ -26,6 +26,13 @@ import {
   type SlotOnTheBoard,
 } from './sessionsBoardWindow.js';
 
+/**
+ * The longest a check waits, even when the next start or end is further off. A browser
+ * runs a setTimeout longer than about 24.8 days at once, so a slot typed a year ahead would
+ * otherwise re-check without pause in OBS; an hourly check that finds nothing changes nothing.
+ */
+export const longestWaitBetweenStatusChecksMs = 3_600_000;
+
 /** What the status checks need from the graphic; each reader is called anew. */
 export type SessionsBoardStatusChecksOptions = {
   readRenderRoot: () => ParentNode;
@@ -87,8 +94,8 @@ export class SessionsBoardStatusChecks {
   }
 
   /**
-   * Books the check for the next moment a status changes, cancelling the one booked before;
-   * none off air or when nothing will change.
+   * Books the check for the next moment a status changes, at most an hour away, cancelling
+   * the one booked before; none off air or when nothing will change.
    */
   bookTheNextStatusCheck(): void {
     this.cancelTheStatusCheck();
@@ -100,9 +107,10 @@ export class SessionsBoardStatusChecks {
     if (nextChangeMs === undefined) {
       return;
     }
+    const waitMs = Math.min(nextChangeMs - nowMs, longestWaitBetweenStatusChecksMs);
     this.pendingCheckTimerId = window.setTimeout(() => {
       void this.checkTheStatusesNow();
-    }, nextChangeMs - nowMs);
+    }, waitMs);
   }
 
   /** Cancels the booked check, if there is one. */
