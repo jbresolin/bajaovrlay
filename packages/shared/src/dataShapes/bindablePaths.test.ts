@@ -112,12 +112,13 @@ describe('listBindablePathsOfShape', () => {
   it('lists the whole positions list, then one car chosen by its number, field by field', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
-    // Act: ask for the positions paths and keep the first fourteen.
+    // Act: ask for the positions paths and keep the first fifteen.
     const positionsPaths = listBindablePathsOfShape('positions');
-    const wholeListAndCarChosenByNumber = positionsPaths.slice(0, 14);
+    const wholeListAndCarChosenByNumber = positionsPaths.slice(0, 15);
 
-    // Assert: the whole list first (the tower), then the thirteen fields of the car whose
-    // number the binding names (a team card that follows car 42 wherever it runs).
+    // Assert: the whole list first (the tower), then the car whose number the binding
+    // names: where it runs now (the battle card's two cars, BAJAOVRLAY-47), then its
+    // thirteen fields (a team card that follows car 42 wherever it runs).
     expect(
       wholeListAndCarChosenByNumber,
       'the whole list and the car chosen by number must be this fixed list',
@@ -127,6 +128,12 @@ describe('listBindablePathsOfShape', () => {
         label: 'Posições › Lista completa',
         valueType: 'positionsEntries',
         isCarChosenByNumber: false,
+      },
+      {
+        path: 'entryOfCar.position',
+        label: 'Posições › Carro escolhido pelo número › Posição',
+        valueType: 'integer',
+        isCarChosenByNumber: true,
       },
       {
         path: 'entryOfCar.carNumber',
@@ -210,12 +217,13 @@ describe('listBindablePathsOfShape', () => {
   });
 
   it('lists the 1st place with the same fields and types as the car chosen by number', () => {
-    // Arrange: the thirteen fields of the car chosen by number, the test above checks them.
+    // Arrange: the thirteen fields of the car chosen by number, the test above checks them;
+    // its position, offered first, has no place counterpart (at a place it is the place).
     const positionsPaths = listBindablePathsOfShape('positions');
-    const carChosenByNumberFields = positionsPaths.slice(1, 14);
+    const carChosenByNumberFields = positionsPaths.slice(2, 15);
 
     // Act: keep the thirteen paths of the 1st place, which follow the car chosen by number.
-    const firstPlaceFields = positionsPaths.slice(14, 27);
+    const firstPlaceFields = positionsPaths.slice(15, 28);
 
     // Assert: same fields in the same order with the same types, only labelled by place.
     expect(
@@ -256,8 +264,9 @@ describe('listBindablePathsOfShape', () => {
     // Act: ask for the positions paths.
     const positionsPaths = listBindablePathsOfShape('positions');
 
-    // Assert: the whole list, the car by number and 10 places, all of 13 fields.
-    expect(positionsPaths, 'positions must offer 1 + 13 + 10 × 13 paths').toHaveLength(144);
+    // Assert: the whole list, the car by number (its position and 13 fields) and 10
+    // places of 13 fields.
+    expect(positionsPaths, 'positions must offer 1 + 14 + 10 × 13 paths').toHaveLength(145);
     expect(positionsPaths.at(-1), 'the last path must be the 10th place status').toEqual({
       path: 'entries.9.status',
       label: 'Posições › 10º colocado › Situação',
