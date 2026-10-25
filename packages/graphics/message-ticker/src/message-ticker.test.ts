@@ -11,6 +11,7 @@
  *   - With three messages, load draws the first off air in pt-BR: "1:00:00" and VERDE in
  *     the block, "AVISO", "Largada do enduro às 10h00", "1/3".
  *   - With one message the page cell reads "1/1".
+ *   - With the switch left out the block is off (João, gate 2).
  *   - The clock block switched off leaves the label at the left of the bar; switched on
  *     on air it appears at once in its place.
  *   - The play-in cascades the block, the label, the message and the page cell
@@ -83,6 +84,22 @@ describe('what the ticker shows', () => {
     // Assert: the message and a page cell of one.
     expect(readMessageOnAir(ticker), 'the one message').toBe('Box aberto para abastecimento');
     expect(readPageCell(ticker), 'one page').toBe('1/1');
+  });
+
+  it('leaves the clock block off when the switch is left out', async () => {
+    // Arrange: a ticker, and the announcements with no word on the block, as a new item
+    // taken between sessions sends them.
+    const ticker = createMessageTickerOnThePage();
+    const dataWithoutTheSwitch: Record<string, unknown> = { ...createEnduroTickerData() };
+    delete dataWithoutTheSwitch.showClockBlock;
+
+    // Act: load it.
+    await loadMessageTickerWithData(ticker, dataWithoutTheSwitch);
+
+    // Assert: no block; the label starts the bar.
+    expect(findPartOfMessageTicker(ticker, 'clock-block')?.hidden, 'no block by default').toBe(
+      true,
+    );
   });
 
   it('starts the bar with the label when the clock block is off', async () => {

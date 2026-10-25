@@ -169,6 +169,8 @@ test.describe('the design’s combinations on the renderer', () => {
         'Premiação às 16h no palco principal',
       ],
       ...heldEnduroClock,
+      // The design's combo-ticker shows the clock block, which is off by default.
+      showClockBlock: true,
     });
     await prepareAndTake('lower-third', 'lower-third', {
       name: 'Carlos Henrique Lima',

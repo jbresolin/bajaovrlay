@@ -22,4 +22,6 @@ longest message fitting the bar, screenshots): `pnpm --filter @bajaovrlay/messag
 | Mensagens           | Valor digitado: one line per message ("Adicionar mensagem"); during the event, add one and press "Atualizar no ar" |
 | Tempo de referência | Relógio da fonte › the session source (fills the four clock fields)                                                |
 | Bandeira            | Fonte › the session source › Bandeira, ao vivo                                                                     |
-| Mostrar o relógio   | Valor digitado: on (off with the race clock card up, or between sessions)                                          |
+| Mostrar o relógio   | Valor digitado: off by default; on during a session, when the race clock card is not up                            |
+
+Entre sessões sem fonte de sessão, deixe os campos do relógio como Valor digitado.

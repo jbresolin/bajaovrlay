@@ -15,7 +15,10 @@ customElements.define('baja-message-ticker-under-test', MessageTickerGraphic);
 // 14:00:00 on the enduro's day, as the server's clock read it.
 export const twoInTheAfternoonMs = Date.UTC(2026, 2, 8, 17, 0, 0);
 
-/** The enduro's three announcements under "AVISO", the clock held at 1:00:00, green. */
+/**
+ * The enduro's three announcements under "AVISO", the clock held at 1:00:00, green, and the
+ * clock block switched on (the design's message-ticker page; the block is off by default).
+ */
 export function createEnduroTickerData(): MessageTickerData {
   return {
     label: 'AVISO',
@@ -25,6 +28,7 @@ export function createEnduroTickerData(): MessageTickerData {
     referenceTimeMs: 3_600_000,
     referenceWallClockMs: twoInTheAfternoonMs,
     running: false,
+    showClockBlock: true,
   };
 }
 

@@ -172,7 +172,7 @@ describe('lower-strip.ograf.json settings', () => {
     expect(allowsOtherFields, 'a positions entry fits with all its fields').toBe(true);
   });
 
-  it('declares the race clock’s five clock fields word for word', () => {
+  it('declares the race clock’s clock fields (four with roles, and the flag) word for word', () => {
     // Arrange: the clock fields of both manifests.
     const clockFieldKeys = [
       'state',

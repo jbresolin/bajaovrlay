@@ -5,10 +5,11 @@
  * lowerStripManifestDataAgreement.test.ts keeps the two in agreement.
  *
  * Three groups of fields: the running order (`entries`, bound live to the positions, as
- * the tower's are), the clock group (the race clock's five reading fields, the kit's, so
- * the item editor's "Relógio da fonte" and the server's carryClockForward treat it as a
- * clock), and the clock block's switch. The clock fields are required even with the block
- * off, as the race clock's are: carryClockForward assumes all four clock roles are there.
+ * the tower's are), the clock (the race clock's four clock fields, known by role, and the
+ * flag; the kit's, so the item editor's "Relógio da fonte" and the server's
+ * carryClockForward treat them as a clock), and the clock block's switch. The clock fields
+ * are required with typed defaults, as the race clock's are, even with the block off: the
+ * conservative choice, which keeps every strip a complete clock.
  */
 import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
 import { raceClockReadingFieldSchemas } from '@bajaovrlay/graphics-kit/raceClockReading';

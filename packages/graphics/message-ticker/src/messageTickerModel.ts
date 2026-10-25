@@ -5,9 +5,11 @@
  * messageTickerManifestDataAgreement.test.ts keeps the two in agreement.
  *
  * The label and the messages are typed (the messages are the item form's list of texts,
- * BAJAOVRLAY-23), within the limits of messageLimits.ts. The clock group is the race
- * clock's five reading fields (the kit's), required as on the strip because the server's
- * carryClockForward assumes them; the switch only hides the block.
+ * BAJAOVRLAY-23), within the limits of messageLimits.ts. The clock is the race clock's
+ * four clock fields and the flag (the kit's), required with typed defaults as on the strip,
+ * the conservative choice. The block is off unless switched on (decided at gate 2 of
+ * PR #26): a ticker taken between sessions would otherwise show a stopped 0:00 under
+ * "Pré-largada".
  */
 import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
 import { raceClockReadingFieldSchemas } from '@bajaovrlay/graphics-kit/raceClockReading';
@@ -40,9 +42,12 @@ export type MessageTickerData = z.infer<typeof messageTickerDataSchema>;
 export type MessageTickerDataCheck =
   { isValid: true; data: MessageTickerData } | { isValid: false; problem: string };
 
-/** Whether the clock block is shown; a missing switch means shown, as on the strip. */
+/**
+ * Whether the clock block is shown; a missing switch means hidden, unlike the strip's: the
+ * ticker is often up between sessions, when the clock has nothing to show.
+ */
 export function isClockBlockShown(data: MessageTickerData): boolean {
-  return data.showClockBlock ?? true;
+  return data.showClockBlock ?? false;
 }
 
 /** Checks the complete data `load` receives. Never throws; bad data gives a pt-BR problem. */

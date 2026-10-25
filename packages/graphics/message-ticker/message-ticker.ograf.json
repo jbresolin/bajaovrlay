@@ -117,8 +117,8 @@
       "showClockBlock": {
         "type": "boolean",
         "title": "Mostrar o relógio",
-        "description": "Desligado (com o relógio de prova no ar, ou entre sessões), a faixa começa pelo rótulo.",
-        "default": true
+        "description": "Ligado, a faixa começa pelo tempo e a bandeira da sessão; desligado (o padrão: entre sessões, ou com o relógio de prova no ar), começa pelo rótulo.",
+        "default": false
       }
     },
     "required": [

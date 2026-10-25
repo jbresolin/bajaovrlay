@@ -19,7 +19,9 @@
  *     to `longestMessageInCharacters` characters, a line called "Mensagem": the numbers of
  *     messageLimits.ts, which the item editor checks with these keywords. The label starts
  *     as "AVISO", at most `longestLabelInCharacters`.
- *   - The clock fields are the race clock's own, word for word; the block's switch starts on.
+ *   - The clock fields (four with roles, and the flag) are the race clock's own, word for
+ *     word; the block's switch starts off (João, gate 2: a ticker between sessions would
+ *     show a stopped 0:00).
  *
  * What these tests deliberately do not cover:
  *   - That the data schema and the graphic's Zod validation agree;
@@ -191,7 +193,7 @@ describe('message-ticker.ograf.json settings', () => {
     });
   });
 
-  it('declares the race clock’s five clock fields word for word, and the block on by default', () => {
+  it('declares the race clock’s clock fields word for word, and the block off by default', () => {
     // Arrange: the clock fields of both manifests.
     const clockFieldKeys = [
       'state',
@@ -208,13 +210,13 @@ describe('message-ticker.ograf.json settings', () => {
     const raceClockFields = clockFieldKeys.map((key) => raceClockManifest.schema.properties[key]);
     const clockBlockSwitch = messageTickerManifest.schema.properties.showClockBlock;
 
-    // Assert: identical clock fields, required; the block on unless switched off.
+    // Assert: identical clock fields, required; the block off unless switched on.
     expect(tickerClockFields, 'the ticker’s clock is the race clock’s').toEqual(raceClockFields);
     expect(messageTickerManifest.schema.required, 'the words and the clock are required').toEqual([
       'label',
       'messages',
       ...clockFieldKeys,
     ]);
-    expect(clockBlockSwitch.default, 'the block starts on').toBe(true);
+    expect(clockBlockSwitch.default, 'the block starts off').toBe(false);
   });
 });

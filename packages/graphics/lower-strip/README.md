@@ -22,3 +22,5 @@ page of the real field fitting the bar, screenshots): `pnpm --filter @bajaovrlay
 | Tempo de referência | Relógio da fonte › the session source (fills the four clock fields) |
 | Bandeira            | Fonte › the session source › Bandeira, ao vivo                      |
 | Mostrar o relógio   | Valor digitado: on (off while the race clock card is up)            |
+
+Entre sessões sem fonte de sessão, deixe os campos do relógio como Valor digitado.
