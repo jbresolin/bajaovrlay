@@ -33,7 +33,7 @@
  *     e2e/podiumLifecycle.e2e.ts measures the boxes in Chromium.
  *   - The timelines' lengths and curves; podiumAnimations.test.ts covers them.
  */
-import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/finishEveryRunningMotion.testSupport';
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
 

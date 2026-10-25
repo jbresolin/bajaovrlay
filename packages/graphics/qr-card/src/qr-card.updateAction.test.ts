@@ -20,7 +20,7 @@
  *   - Load, the calls at the wrong moment, play, stop and dispose: qr-card.test.ts.
  *   - Real rendering and timing; the Playwright suites in e2e/ run the built component.
  */
-import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/finishEveryRunningMotion.testSupport';
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
 

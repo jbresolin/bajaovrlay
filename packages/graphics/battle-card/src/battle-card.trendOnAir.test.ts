@@ -28,7 +28,7 @@
  *   - The rule that picks the trend; battleTrend.test.ts.
  *   - The look of the crossfade; e2e/battleCardLifecycle.e2e.ts watches it in Chromium.
  */
-import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/finishEveryRunningMotion.testSupport';
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
 
