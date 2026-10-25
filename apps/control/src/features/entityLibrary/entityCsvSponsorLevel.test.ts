@@ -9,7 +9,8 @@
  *
  * What these tests prove:
  *   - "master" in the cota column imports as diamante; "diamante" and "realizacao" import
- *     as they are.
+ *     as they are; any case, accents and spaces around read the same ("Master", "MASTER",
+ *     "Diamante", "Realização", " ouro ").
  *   - A level that is neither is an error with the shared pt-BR sentence listing the six.
  *   - The export writes "diamante", never "master".
  *
@@ -65,6 +66,39 @@ describe('buildCsvImportPreview of the cota column', () => {
       preview.rows.map((row) => row.status),
       'every line is a new sponsor',
     ).toEqual(['new', 'new', 'new']);
+  });
+
+  const levelSpellings = [
+    // The old name capitalised, as a spreadsheet's autocorrect leaves it.
+    { name: 'reads "Master" as diamante', cell: 'Master', expected: 'diamante' },
+    // The old name in capitals, as an older file typed it.
+    { name: 'reads "MASTER" as diamante', cell: 'MASTER', expected: 'diamante' },
+    // The level as Cadastros shows it.
+    { name: 'reads "Diamante" as diamante', cell: 'Diamante', expected: 'diamante' },
+    // The organiser as Cadastros shows it, with its cedilla and tilde.
+    { name: 'reads "Realização" as realizacao', cell: 'Realização', expected: 'realizacao' },
+    // Spaces around a cell, as a hand-typed file leaves them.
+    { name: 'reads " ouro " as ouro', cell: ' ouro ', expected: 'ouro' },
+  ];
+
+  it.each(levelSpellings)('$name', ({ cell, expected }) => {
+    // Arrange: one sponsor whose cota is spelled this row's way.
+    const csv = `id;nome;cota;peso\nbosch;Bosch;${cell};10\n`;
+
+    // Act: build the preview.
+    const preview = buildCsvImportPreview(
+      'sponsor',
+      csv,
+      buildLibraryWithoutSponsors(),
+      createPredictableIdMaker(),
+    );
+
+    // Assert: a new sponsor at the level key.
+    const [row] = preview.rows;
+    expect(
+      { status: row?.status, tier: (row?.record as { tier?: string } | undefined)?.tier },
+      `"${cell}" must import as ${expected}`,
+    ).toEqual({ status: 'new', tier: expected });
   });
 
   it('refuses a level that is neither the old name nor a new one, listing the six', () => {
