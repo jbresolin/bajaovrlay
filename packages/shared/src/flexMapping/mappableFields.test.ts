@@ -8,8 +8,8 @@
  *   the shape requires it, and whether it belongs to the whole shape or to each entry.
  *
  * What these tests prove:
- *   - The session, positions, standings and incidents lists are fixed, field by field, required
- *     fields first; brackets (a draft shape) offer nothing to map in this PR.
+ *   - The session, positions, standings and incidents lists are fixed, field by field,
+ *     required fields first.
  *   - Every listed field exists in its shape's Zod schema, and is required there exactly
  *     when the list says so.
  *   - Every field of the shapes' schemas is listed, except the standings' own scoreParts,
@@ -17,49 +17,17 @@
  *
  * What these tests deliberately do not cover:
  *   - Using the list to refuse a rule; flexMappingConfig.test.ts covers that.
+ *   - The brackets' fields: mappableBracketsFields.test.ts.
  */
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 import { IncidentEntrySchema, IncidentsShapeSchema } from '../dataShapes/incidentsShape.js';
 import { PositionEntrySchema, PositionsShapeSchema } from '../dataShapes/positionsShape.js';
 import { SessionShapeSchema } from '../dataShapes/sessionShape.js';
 import { StandingsEntrySchema, StandingsShapeSchema } from '../dataShapes/standingsShape.js';
 import { listMappableFieldsOfShape, type MappableField } from './mappableFields.js';
-
-/**
- * Finds the Zod schema of a field by its target name, walking into nested objects for a
- * dotted name such as "clock.running". Undefined when the schema has no such field.
- */
-function findFieldSchema(objectSchema: z.ZodObject, targetField: string): z.ZodType | undefined {
-  const [firstName, ...restOfNames] = targetField.split('.');
-  if (firstName === undefined) {
-    return undefined;
-  }
-  const fieldSchema = objectSchema.shape[firstName];
-  if (restOfNames.length === 0) {
-    return fieldSchema;
-  }
-  if (!(fieldSchema instanceof z.ZodObject)) {
-    return undefined;
-  }
-  return findFieldSchema(fieldSchema, restOfNames.join('.'));
-}
-
-/** Lists a schema's field names, nested objects as dotted names ("clock.running"). */
-function listFieldNamesOfSchema(objectSchema: z.ZodObject): string[] {
-  const fieldNames: string[] = [];
-  for (const [fieldName, fieldSchema] of Object.entries(objectSchema.shape)) {
-    if (fieldSchema instanceof z.ZodObject) {
-      for (const nestedName of listFieldNamesOfSchema(fieldSchema)) {
-        fieldNames.push(`${fieldName}.${nestedName}`);
-      }
-    } else {
-      fieldNames.push(fieldName);
-    }
-  }
-  return fieldNames;
-}
+import { findFieldSchema, listFieldNamesOfSchema } from './shapeSchemaFields.testSupport.js';
 
 describe('listMappableFieldsOfShape', () => {
   it('lists the session fields, required ones first, all for the whole shape', () => {
@@ -256,16 +224,6 @@ describe('listMappableFieldsOfShape', () => {
       { targetField: 'atMs', label: 'Momento', isRequired: false, level: 'entry' },
     ]);
   });
-
-  it('offers nothing to map in the draft brackets shape', () => {
-    // Arrange: nothing to set up; the list is fixed in code.
-
-    // Act: ask for the brackets fields.
-    const bracketsFields = listMappableFieldsOfShape('brackets');
-
-    // Assert: none, until BAJAOVRLAY-25 settles the shape.
-    expect(bracketsFields, 'brackets must offer no field to map in this PR').toEqual([]);
-  });
 });
 
 describe('the mappable fields match the shape schemas', () => {
@@ -311,16 +269,15 @@ describe('the mappable fields match the shape schemas', () => {
     // Act: find each field's own schema, at its level.
     const fieldChecks = fields.map((field) => {
       const objectSchema = field.level === 'topLevel' ? topLevelSchema : entrySchema;
-      const fieldSchema = objectSchema && findFieldSchema(objectSchema, field.targetField);
-      return { field, fieldSchema };
+      const fieldFound = objectSchema && findFieldSchema(objectSchema, field.targetField);
+      return { field, fieldFound };
     });
 
     // Assert: every field exists, and a missing value is refused exactly when it is required.
-    for (const { field, fieldSchema } of fieldChecks) {
-      expect(fieldSchema, `${field.targetField} must exist in its shape schema`).toBeDefined();
-      const isRefusedWhenMissing = fieldSchema?.safeParse(undefined).success === false;
+    for (const { field, fieldFound } of fieldChecks) {
+      expect(fieldFound, `${field.targetField} must exist in its shape schema`).toBeDefined();
       expect(
-        isRefusedWhenMissing,
+        fieldFound?.isRequiredAlongItsPath,
         `${field.targetField} must be required in its schema exactly when the list says so`,
       ).toBe(field.isRequired);
     }

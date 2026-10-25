@@ -16,6 +16,23 @@ export const ptBRFlexMapping = {
     isDisqualified: 'Desclassificada',
   },
 
+  /** The fields of one bracket match, as a flat list of matches sends them (BAJAOVRLAY-25). */
+  bracketsMatchFieldLabels: {
+    roundName: 'Fase',
+    roundIsThirdPlace: 'Fase é a disputa de 3º lugar',
+    matchId: 'Identificador da disputa',
+    bestOf: 'Melhor de N',
+    walkover: 'Vitória por W.O.',
+    winnerCarNumber: 'Vencedor (carro)',
+    carNumber: 'Carro',
+    teamName: 'Equipe',
+    schoolName: 'Escola',
+    timeMs: 'Tempo',
+    wins: 'Vitórias',
+    /** "Carro A › Equipe": a field of one of the match's two cars. */
+    carOfSlot: (slot: 'A' | 'B', fieldLabel: string) => `Carro ${slot} › ${fieldLabel}`,
+  },
+
   /** Why a team's list of score parts could not be read (standingsScorePartLists.ts). */
   scorePartReasons: {
     partsNotAList: 'era esperada uma lista de partes, cada uma com rótulo (label) e valor (value)',
@@ -51,8 +68,6 @@ export const ptBRFlexMapping = {
     unknownKeysInMapping: (keys: string[]) => `O mapeamento tem ${describeUnknownKeys(keys)}.`,
     shapeMappedTwice: (shapeName: string) =>
       `${shapeName} está mapeada mais de uma vez; cada formato vem de um só mapeamento.`,
-    bracketsNotBuilt:
-      'Mapear as Chaves ainda não foi construído: o formato das chaves ainda é um rascunho.',
     sessionHasNoList:
       'A Sessão não é uma lista: ela não tem "Caminho da lista" nem campos de cada item.',
     listShapeNeedsEntriesPath: (shapeName: string) =>
@@ -87,12 +102,15 @@ export const ptBRFlexMapping = {
     entryWithCar: (carNumber: number, lineNumber: number) =>
       `carro ${carNumber} (linha ${lineNumber})`,
     entryWithoutCar: (lineNumber: number) => `linha ${lineNumber}`,
+    /** A bracket match has two cars, so it is named by its id: "disputa r1-m2 (linha 2)". */
+    entryWithMatch: (matchId: string, lineNumber: number) =>
+      `disputa ${matchId} (linha ${lineNumber})`,
+    matchWithoutRoundName: 'falta o nome da fase, que diz em que fase a disputa entra',
     couldNotReadAtPath: (path: string, reason: string) => `não consegui ler "${path}": ${reason}`,
     noResponseForRequest: (shapeName: string, requestId: string) =>
       `${shapeName}: não há resposta da requisição "${requestId}"`,
     noListAtPath: (shapeName: string, entriesPath: string, requestId: string) =>
       `${shapeName}: não há uma lista em "${entriesPath}" na resposta de ${requestId}`,
-    bracketsNotBuilt: (shapeName: string) => `${shapeName}: mapear este formato ainda não existe`,
   },
 
   /** The poll error: the first problem, then how many more there are. */

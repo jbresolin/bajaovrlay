@@ -48,6 +48,7 @@ export const ptBRFlexSourceForm = {
     positions: 'Posições',
     standings: 'Pontuação',
     incidents: 'Incidentes',
+    brackets: 'Chaves',
   },
   noMappings: 'Nenhum formato mapeado ainda. Escolha abaixo o que esta fonte produz.',
   addMappingButton: (shapeName: string) => `+ ${shapeName}`,

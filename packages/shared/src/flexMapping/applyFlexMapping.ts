@@ -1,7 +1,13 @@
 import type { DataShapeKey } from '../dataShapes/dataShapeKey.js';
 import { ptBRDataShapes } from '../dataShapes/ptBRDataShapes.js';
-import { ptBRTransforms } from '../transforms/ptBRTransforms.js';
-import { findTransform } from '../transforms/transformRegistry.js';
+import { groupMappedMatchesIntoRounds } from './bracketRoundsOfMappedMatches.js';
+import {
+  applyOneRule,
+  labelTargetField,
+  type RuleOutcome,
+  type RuleSurroundings,
+  setValueAtTargetField,
+} from './flexFieldRuleApplication.js';
 import type { FlexFieldRule, FlexMappingConfig, FlexShapeMapping } from './flexMappingConfig.js';
 import {
   addProblemLine,
@@ -9,7 +15,6 @@ import {
   startFlexMappingProblems,
   summarizeFlexMappingProblems,
 } from './flexMappingProblems.js';
-import { findMappableField } from './mappableFields.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
 import {
   listScorePartsOfLabelsMet,
@@ -25,19 +30,6 @@ export type FlexMappingResult =
   | { ok: true; shapes: Partial<Record<DataShapeKey, unknown>> }
   | { ok: false; problems: string[]; summary: string };
 
-/** What a rule needs besides the value it reads: the poll moment, and the place in the list. */
-type RuleSurroundings = {
-  pollMomentMs: number;
-  /** The element's 1-based place in its list; undefined for a shape's own fields. */
-  placeInList: number | undefined;
-};
-
-/** What one rule gave: a value to set, nothing to set, or a pt-BR problem. */
-type RuleOutcome =
-  | { outcome: 'set'; value: unknown }
-  | { outcome: 'leftOut' }
-  | { outcome: 'problem'; detail: string };
-
 /**
  * Maps the responses of one poll into the canonical shapes with a flex source's mapping
  * config. Pure: the poll moment is handed in, so the server and the "Testar" panel get the
@@ -50,7 +42,7 @@ type RuleOutcome =
  * - every problem is counted, the first 20 are listed, and the summary is the first one
  *   plus "(e mais N problemas)".
  * The config is expected to have passed FlexMappingConfigSchema; what it would refuse
- * (an unknown target, brackets, an unknown transform) is still a problem here, never a throw.
+ * (an unknown target, an unknown transform) is still a problem here, never a throw.
  */
 export function applyFlexMapping(
   mappings: FlexMappingConfig,
@@ -79,8 +71,8 @@ export function applyFlexMapping(
 
 /**
  * Builds one shape from its request's response: its own fields first, then, for a list
- * shape, one entry per element of the list. Undefined when the shape could not even
- * start (no response, brackets); its problem is already counted.
+ * shape, one entry per element of the list (for brackets, one match, grouped into rounds).
+ * Undefined when the shape could not even start (no response); its problem is counted.
  */
 function mapOneShape(
   mapping: FlexShapeMapping,
@@ -91,10 +83,6 @@ function mapOneShape(
   const lines = ptBRFlexMapping.problemLines;
   const shapeName = ptBRDataShapes.shapeNames[mapping.shapeKey];
 
-  if (mapping.shapeKey === 'brackets') {
-    addProblemLine(problems, lines.bracketsNotBuilt(shapeName));
-    return undefined;
-  }
   if (!Object.hasOwn(responsesByRequestId, mapping.requestId)) {
     addProblemLine(problems, lines.noResponseForRequest(shapeName, mapping.requestId));
     return undefined;
@@ -124,27 +112,47 @@ function mapOneShape(
       scorePartLabelsMet,
     });
     if (entries !== undefined) {
-      shape.entries = entries;
-      addScorePartsOfStandings(mapping.shapeKey, shape, scorePartLabelsMet);
+      placeMappedEntriesInTheirShape(mapping.shapeKey, shape, entries, {
+        scorePartLabelsMet,
+        problems,
+      });
     }
   }
   return shape;
 }
 
 /**
- * Gives standings their parts of the score, one per label the teams' lists named, a part
- * with no value included (standingsScorePartLists.ts). Other shapes, and standings whose
- * teams have no parts, are left as they are.
+ * Puts a list shape's mapped entries where its shape holds them: brackets group their
+ * matches into rounds (bracketRoundsOfMappedMatches.ts), a match naming no round being a
+ * problem; every other list shape keeps them as `entries`, and standings get their parts
+ * of the score, one per label the teams' lists named, a part with no value included.
  */
-function addScorePartsOfStandings(
+function placeMappedEntriesInTheirShape(
   shapeKey: DataShapeKey,
   shape: Record<string, unknown>,
-  scorePartLabelsMet: string[],
+  entries: Array<Record<string, unknown>>,
+  context: { scorePartLabelsMet: string[]; problems: FlexMappingProblems },
 ): void {
+  if (shapeKey === 'brackets') {
+    const grouping = groupMappedMatchesIntoRounds(entries);
+    shape.rounds = grouping.rounds;
+    const lines = ptBRFlexMapping.problemLines;
+    const roundNameLabel = labelTargetField(shapeKey, 'roundName');
+    for (const lineNumber of grouping.linesWithoutRoundName) {
+      const entryLabel = labelEntryOfList(entries[lineNumber - 1] ?? {}, lineNumber);
+      const detail = lines.matchWithoutRoundName;
+      addProblemLine(
+        context.problems,
+        lines.atEntryField(ptBRDataShapes.shapeNames.brackets, entryLabel, roundNameLabel, detail),
+      );
+    }
+    return;
+  }
+  shape.entries = entries;
   if (shapeKey !== 'standings') {
     return;
   }
-  const scoreParts = listScorePartsOfLabelsMet(scorePartLabelsMet);
+  const scoreParts = listScorePartsOfLabelsMet(context.scorePartLabelsMet);
   if (scoreParts.length > 0) {
     shape.scoreParts = scoreParts;
   }
@@ -229,16 +237,28 @@ function mapOneEntry(
   }
   const problemsKept = dropTheRankOfADisqualifiedTeam(shapeKey, entry, problemsOfEntry);
 
-  const carNumber = entry.carNumber;
-  const entryLabel =
-    typeof carNumber === 'number'
-      ? lines.entryWithCar(carNumber, lineNumber)
-      : lines.entryWithoutCar(lineNumber);
+  const entryLabel = labelEntryOfList(entry, lineNumber);
   for (const { targetField, detail } of problemsKept) {
     const fieldLabel = labelTargetField(shapeKey, targetField);
     addProblemLine(context.problems, lines.atEntryField(shapeName, entryLabel, fieldLabel, detail));
   }
   return entry;
+}
+
+/**
+ * How a problem line names an entry: a bracket match by its id ("disputa r1-m2 (linha 2)"),
+ * since it has two cars; any other entry by its car ("carro 7 (linha 3)"); by its line
+ * alone when neither could be read.
+ */
+function labelEntryOfList(entry: Record<string, unknown>, lineNumber: number): string {
+  const lines = ptBRFlexMapping.problemLines;
+  if (typeof entry.matchId === 'string') {
+    return lines.entryWithMatch(entry.matchId, lineNumber);
+  }
+  if (typeof entry.carNumber === 'number') {
+    return lines.entryWithCar(entry.carNumber, lineNumber);
+  }
+  return lines.entryWithoutCar(lineNumber);
 }
 
 /**
@@ -284,116 +304,4 @@ function readScorePartListWhenItIsOne(
   }
   scorePartLabelsMet.push(...reading.labelsInOrder);
   return { outcome: 'set', value: reading.pointsByPart };
-}
-
-/**
- * Applies one rule to its source (the response, or one element of the list): a fixed
- * value, the poll moment, the place in the list, or the value at its path through its
- * transform. A target the shape does not list is a problem, so nothing but a canonical
- * field is ever written.
- */
-function applyOneRule(
-  shapeKey: DataShapeKey,
-  rule: FlexFieldRule,
-  source: unknown,
-  surroundings: RuleSurroundings,
-): RuleOutcome {
-  const configReasons = ptBRFlexMapping.configReasons;
-  const mappableField = findMappableField(shapeKey, rule.targetField);
-  if (mappableField === undefined) {
-    const shapeName = ptBRDataShapes.shapeNames[shapeKey];
-    return {
-      outcome: 'problem',
-      detail: configReasons.unknownTargetField(shapeName, rule.targetField),
-    };
-  }
-
-  if (rule.constantValue !== undefined) {
-    return { outcome: 'set', value: rule.constantValue };
-  }
-  if (rule.fromPollMoment !== undefined) {
-    return { outcome: 'set', value: surroundings.pollMomentMs };
-  }
-  if (rule.fromListOrder !== undefined) {
-    if (surroundings.placeInList === undefined) {
-      return {
-        outcome: 'problem',
-        detail: configReasons.listOrderOnlyForEntries(mappableField.label),
-      };
-    }
-    return { outcome: 'set', value: surroundings.placeInList };
-  }
-  if (rule.fromPath !== undefined) {
-    return readRuleValueAtPath(rule, rule.fromPath, source);
-  }
-  // A rule with no source is refused by the config schema; unchecked, it maps nothing.
-  return { outcome: 'leftOut' };
-}
-
-/**
- * Reads a rule's value at its path and runs its transform, if it has one. Nothing there,
- * or a null, leaves the field out; a refused path or a refused value is a problem quoting
- * the path ("não consegui ler "ultima_volta": …").
- */
-function readRuleValueAtPath(rule: FlexFieldRule, path: string, source: unknown): RuleOutcome {
-  const lines = ptBRFlexMapping.problemLines;
-  const reading = readValueAtPath(source, path);
-  if (reading.outcome === 'pathRefused') {
-    return { outcome: 'problem', detail: reading.reason };
-  }
-  if (reading.outcome === 'nothingThere' || reading.value === null) {
-    return { outcome: 'leftOut' };
-  }
-  if (rule.transformId === undefined) {
-    return { outcome: 'set', value: reading.value };
-  }
-
-  const transform = findTransform(rule.transformId);
-  // The config's schema already refused a binding transform here; this keeps apply typed.
-  if (transform?.family !== 'mapping') {
-    const reason = ptBRTransforms.parameterReasons.unknownTransform(rule.transformId);
-    return { outcome: 'problem', detail: lines.couldNotReadAtPath(path, reason) };
-  }
-  const transformResult = transform.apply(reading.value, rule.transformParameters);
-  if (!transformResult.ok) {
-    return { outcome: 'problem', detail: lines.couldNotReadAtPath(path, transformResult.reason) };
-  }
-  return { outcome: 'set', value: transformResult.value };
-}
-
-/** The pt-BR label a problem line shows for a target, or the target itself if unlisted. */
-function labelTargetField(shapeKey: DataShapeKey, targetField: string): string {
-  return findMappableField(shapeKey, targetField)?.label ?? targetField;
-}
-
-/**
- * Writes a value at a target field, creating the nested object of a dotted target:
- * "clock.running" writes `running` inside `clock`, which the earlier clock rules may
- * already have started.
- */
-function setValueAtTargetField(
-  target: Record<string, unknown>,
-  targetField: string,
-  value: unknown,
-): void {
-  const fieldNames = targetField.split('.');
-  const lastFieldName = fieldNames.pop();
-  if (lastFieldName === undefined) {
-    return;
-  }
-
-  let container = target;
-  for (const fieldName of fieldNames) {
-    const existingValue = container[fieldName];
-    const isExistingObject =
-      typeof existingValue === 'object' && existingValue !== null && !Array.isArray(existingValue);
-    if (isExistingObject) {
-      container = existingValue as Record<string, unknown>;
-    } else {
-      const nestedObject: Record<string, unknown> = {};
-      container[fieldName] = nestedObject;
-      container = nestedObject;
-    }
-  }
-  container[lastFieldName] = value;
 }

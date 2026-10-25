@@ -21,7 +21,6 @@ export type MappableField = {
  * each level, top-level fields before entry fields. Written out by hand like
  * bindablePaths.ts: deriving it from the Zod schemas would need type-level code a reviewer
  * runs in their head. mappableFields.test.ts proves each field exists in its schema.
- * Brackets give an empty list: mapping that draft shape is not built (see the README).
  */
 export function listMappableFieldsOfShape(shapeKey: DataShapeKey): MappableField[] {
   switch (shapeKey) {
@@ -32,7 +31,7 @@ export function listMappableFieldsOfShape(shapeKey: DataShapeKey): MappableField
     case 'standings':
       return listStandingsFields();
     case 'brackets':
-      return [];
+      return listBracketsFields();
     case 'incidents':
       return listIncidentsFields();
   }
@@ -134,6 +133,38 @@ function listStandingsFields(): MappableField[] {
     entryField('rank', extraLabels.rank, false),
     entryField('pointsByPart', extraLabels.pointsByPart, false),
     entryField('isDisqualified', extraLabels.isDisqualified, false),
+  ];
+}
+
+/**
+ * The brackets' own fields, then the fields of each match. A source lists its matches flat,
+ * one element per match as the Baja app's `tournament` table does, and each names its round
+ * (`roundName`, and `roundIsThirdPlace` for the third place); the mapping groups them into
+ * rounds in the order met (bracketRoundsOfMappedMatches.ts). carB is all optional: a bye has
+ * none (BAJAOVRLAY-25).
+ */
+function listBracketsFields(): MappableField[] {
+  const matchLabels = ptBRFlexMapping.bracketsMatchFieldLabels;
+  const extraLabels = ptBRFlexMapping.extraFieldLabels;
+  return [
+    topLevelField('sessionId', extraLabels.sessionId, true),
+    topLevelField('updatedAtMs', extraLabels.updatedAtMs, true),
+    entryField('roundName', matchLabels.roundName, true),
+    entryField('matchId', matchLabels.matchId, true),
+    entryField('carA.carNumber', matchLabels.carOfSlot('A', matchLabels.carNumber), true),
+    entryField('carA.teamName', matchLabels.carOfSlot('A', matchLabels.teamName), true),
+    entryField('carA.schoolName', matchLabels.carOfSlot('A', matchLabels.schoolName), true),
+    entryField('roundIsThirdPlace', matchLabels.roundIsThirdPlace, false),
+    entryField('bestOf', matchLabels.bestOf, false),
+    entryField('walkover', matchLabels.walkover, false),
+    entryField('winnerCarNumber', matchLabels.winnerCarNumber, false),
+    entryField('carA.timeMs', matchLabels.carOfSlot('A', matchLabels.timeMs), false),
+    entryField('carA.wins', matchLabels.carOfSlot('A', matchLabels.wins), false),
+    entryField('carB.carNumber', matchLabels.carOfSlot('B', matchLabels.carNumber), false),
+    entryField('carB.teamName', matchLabels.carOfSlot('B', matchLabels.teamName), false),
+    entryField('carB.schoolName', matchLabels.carOfSlot('B', matchLabels.schoolName), false),
+    entryField('carB.timeMs', matchLabels.carOfSlot('B', matchLabels.timeMs), false),
+    entryField('carB.wins', matchLabels.carOfSlot('B', matchLabels.wins), false),
   ];
 }
 

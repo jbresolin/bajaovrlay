@@ -286,7 +286,7 @@ function listStandingsPaths(): BindablePath[] {
   return paths;
 }
 
-/** Brackets are a draft (BAJAOVRLAY-25): only the whole list of rounds for now. */
+/** Brackets: the whole list of rounds only, which the bracket graphic draws (BAJAOVRLAY-25). */
 function listBracketsPaths(): BindablePath[] {
   const shapeName = ptBRDataShapes.shapeNames.brackets;
   return [

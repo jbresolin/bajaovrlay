@@ -51,9 +51,9 @@ export type FlexFieldRule = z.infer<typeof FlexFieldRuleSchema>;
  * rules read that one response only: there are no joins across requests (see the README).
  * - `fields` fill the shape's own fields (all of the session's; `sessionId`, `updatedAtMs`
  *   and standings' `scope` for the lists);
- * - `entriesPath` and `entryFields`, for positions and standings only: the path to the
- *   list in the response, and the rules applied to each element of it.
- * Brackets, a draft shape, are refused: their mapping is not built in this PR.
+ * - `entriesPath` and `entryFields`, for every shape but the session: the path to the
+ *   list in the response, and the rules applied to each element of it. For brackets the
+ *   list is the matches, each naming its round (BAJAOVRLAY-25).
  */
 export const FlexShapeMappingSchema = z
   .strictObject(
@@ -191,18 +191,12 @@ function checkOneFieldRule(rule: FlexFieldRule, context: z.RefinementCtx): void 
 }
 
 /**
- * Checks one shape's mapping: brackets are not built; the session has no list, and the
- * lists have their path and their entry rules; every target is a field of this shape at
- * this level, named once.
+ * Checks one shape's mapping: the session has no list, and the lists have their path and
+ * their entry rules; every target is a field of this shape at this level, named once.
  */
 function checkOneShapeMapping(mapping: FlexShapeMapping, context: z.RefinementCtx): void {
   const reasons = ptBRFlexMapping.configReasons;
   const shapeName = ptBRDataShapes.shapeNames[mapping.shapeKey];
-
-  if (mapping.shapeKey === 'brackets') {
-    context.addIssue({ code: 'custom', path: ['shapeKey'], message: reasons.bracketsNotBuilt });
-    return;
-  }
 
   if (mapping.shapeKey === 'session') {
     if (mapping.entriesPath !== undefined) {
@@ -229,7 +223,7 @@ function checkOneShapeMapping(mapping: FlexShapeMapping, context: z.RefinementCt
   }
 }
 
-/** Checks that positions or standings have their list's path, readable, and entry rules. */
+/** Checks that a list shape has its list's path, readable, and entry rules. */
 function checkListPathOfMapping(
   mapping: FlexShapeMapping,
   shapeName: string,
