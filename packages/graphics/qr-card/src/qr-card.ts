@@ -235,12 +235,26 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
    */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.finishRunningPanelTimelineAtOnce();
+    return okAnswer;
+  }
+
+  /**
+   * Lit's hook for the element leaving the page: a running in or out is ended, so a card a
+   * renderer removed without dispose leaves nothing animating behind it.
+   */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.finishRunningPanelTimelineAtOnce();
+  }
+
+  /** Ends the running in or out at once, if any; its action then resolves. */
+  private finishRunningPanelTimelineAtOnce(): void {
     const runningTimeline = this.runningPanelTimeline;
     this.runningPanelTimeline = undefined;
     if (runningTimeline !== undefined) {
       finishTimelineAtOnce(runningTimeline);
     }
-    return okAnswer;
   }
 
   /**

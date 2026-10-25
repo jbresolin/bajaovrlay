@@ -266,6 +266,15 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     return okAnswer;
   }
 
+  /**
+   * Lit's hook for the element leaving the page: a running rise or lift is ended, so a
+   * podium a renderer removed without dispose leaves nothing animating behind it.
+   */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.finishRunningMotionAtOnce();
+  }
+
   /** Keeps the data on screen, waits until Lit has drawn it, and writes the head. */
   private async redrawWithData(data: PodiumData): Promise<void> {
     this.dataOnScreen = data;

@@ -260,21 +260,27 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.trendCrossfade.finish();
+    this.finishRunningPiecesTimelineAtOnce();
+    return okAnswer;
+  }
+
+  /**
+   * Lit's hook for the element leaving the page: a running crossfade and a running in or
+   * out are ended, so a card a renderer removed without dispose leaves nothing animating.
+   */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.trendCrossfade.finish();
+    this.finishRunningPiecesTimelineAtOnce();
+  }
+
+  /** Ends the running in or out at once, if any; its action then resolves. */
+  private finishRunningPiecesTimelineAtOnce(): void {
     const runningTimeline = this.runningPiecesTimeline;
     this.runningPiecesTimeline = undefined;
     if (runningTimeline !== undefined) {
       finishTimelineAtOnce(runningTimeline);
     }
-    return okAnswer;
-  }
-
-  /**
-   * Lit's hook for the element leaving the page: a running crossfade is ended, so a layer
-   * a renderer removed without dispose leaves nothing animating behind it.
-   */
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.trendCrossfade.finish();
   }
 
   /** Keeps the data and lets the trend's memory follow it as one more reading. */

@@ -26,7 +26,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { buildLongestSampleAddress } from '../src/previewData.js';
-import { scanQrCodeOnScreen } from './qrCodeOnScreen.js';
+import { scanQrCodeOnScreen } from './qrCodeOnScreen.testSupport.js';
 
 /**
  * Opens the graphic's folder and, inside the page, does what a renderer does: put the
@@ -53,7 +53,7 @@ async function loadGraphicFromItsManifestLikeARenderer(page: Page): Promise<stri
   });
 }
 
-/** Scans the card on this page as Chromium drew it (qrCodeOnScreen.ts). */
+/** Scans the card on this page as Chromium drew it (qrCodeOnScreen.testSupport.ts). */
 async function scanTheCardOnScreen(page: Page): Promise<string | undefined> {
   return scanQrCodeOnScreen(page, page.getByTestId('qr-card-panel'));
 }

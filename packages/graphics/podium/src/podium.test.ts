@@ -23,7 +23,9 @@
  *     gains its entry is shown at once.
  *   - An update during the stop-out is only kept: the fading card keeps its texts, and once
  *     the stop-out has ended the board holds the new data.
- *   - A dispose during a step's rise lets the play resolve.
+ *   - An update at step 2 keeps the step: the next Próximo reveals the 1st.
+ *   - A dispose during a step's rise lets the play resolve; the element leaving the page
+ *     without dispose ends the rise too.
  *
  * What these tests deliberately do not cover:
  *   - Timers: the podium has none (nothing on it moves by itself).
@@ -276,6 +278,29 @@ describe('updateAction', () => {
     expect(listShownSlots(podium), 'the 3rd place appears at once').toEqual(['third']);
   });
 
+  it('keeps the step on an update at step 2, so the next Próximo reveals the 1st', async () => {
+    // Arrange: the podium on air with the 3rd and the 2nd shown (step 2).
+    const podium = await createLoadedEnduroPodium();
+    await podium.playAction({ goto: 2, skipAnimation: true });
+
+    // Act: the item is corrected on air, then the operator presses Próximo.
+    const entries = createEnduroPodiumEntries(false).map((entry) =>
+      entry.carNumber === 10 ? { ...entry, schoolName: 'UFSJ — São João del-Rei' } : entry,
+    );
+    await podium.updateAction({ data: { entries } });
+    const stepLineAfterTheUpdate = readStepLine(podium);
+    const nextAnswer = await podium.playAction({ delta: 1, skipAnimation: true });
+
+    // Assert: the update left the podium at step 2; Próximo then went to step 3, the 1st.
+    expect(stepLineAfterTheUpdate, 'the update keeps the step').toBe('2/3');
+    expect(nextAnswer, 'Próximo goes to step 3').toEqual({ statusCode: 200, currentStep: 3 });
+    expect(listShownSlots(podium), 'the 1st place is revealed').toEqual([
+      'second',
+      'first',
+      'third',
+    ]);
+  });
+
   it('only keeps an update during the stop-out, drawing it once the cards are gone', async () => {
     // Arrange: real motion on the page, the whole podium shown, then a stop started that is
     // still fading the cards out.
@@ -303,6 +328,27 @@ describe('updateAction', () => {
 });
 
 describe('dispose', () => {
+  it('ends a running rise when the element leaves the page without dispose', async () => {
+    // Arrange: a rise that lasts a minute (so it cannot end by itself while the test
+    // looks), the head on air and the 3rd place's rise started.
+    placeTokensOnTheRoot({ ...ardosiaMotionTokenDeclarations, '--motion-in': '60000ms' });
+    const podium = await createLoadedEnduroPodium();
+    await podium.playAction({ skipAnimation: true });
+    const pendingStep = podium.playAction({});
+    const thirdCard = findCardOfSlot(podium, 'third');
+    const isRisingBefore = gsap.getTweensOf(thirdCard ?? []).length > 0;
+
+    // Act: a renderer removes the element and never calls dispose.
+    podium.remove();
+
+    // Assert: it was rising, and nothing animates it any more; the play resolves.
+    expect(isRisingBefore, 'the 3rd place was rising first').toBe(true);
+    expect(gsap.getTweensOf(thirdCard ?? []), 'leaving the page must end the rise').toEqual([]);
+    await expect(pendingStep, 'the play must not hang').resolves.toMatchObject({
+      statusCode: 200,
+    });
+  });
+
   it('lets a play resolve when it comes during a step’s rise', async () => {
     // Arrange: real motion on the page, the head on air, the 3rd place's rise started.
     placeTokensOnTheRoot(ardosiaMotionTokenDeclarations);

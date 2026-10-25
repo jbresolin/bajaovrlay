@@ -18,7 +18,8 @@
  *   - updateAction on air changes the gap and the laps in the same elements, which stay on
  *     air; the next lap's reading turns the trend into "FECHANDO −0,7"; off air an update
  *     is drawn at once; a bad update answers 400 and leaves the card as it was.
- *   - dispose ends a running play-in: the pending play resolves with 409 instead of hanging.
+ *   - dispose ends a running play-in: the pending play resolves with 409 instead of hanging;
+ *     the element leaving the page without dispose ends it too (gate 2 of PR #27).
  *
  * What these tests deliberately do not cover:
  *   - The crossfade of the trend, an update during the stop-out and the ends of the
@@ -26,6 +27,7 @@
  *   - Real rendering, fonts and timing; jsdom draws nothing and, with no theme token on the
  *     page, every timeline lasts 0 ms. e2e/ runs the built component in Chromium.
  */
+import { gsap } from 'gsap';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -253,5 +255,27 @@ describe('dispose', () => {
 
     // Assert: the play resolved, with the dispose's 409.
     expect(playAnswer.statusCode, 'a play ended by dispose must answer 409').toBe(409);
+  });
+
+  it('ends a running play-in when the element leaves the page without dispose', async () => {
+    // Arrange: a loaded card whose play-in lasts a minute (so it cannot end by itself while
+    // the test looks), its play-in started.
+    const battleCard = createBattleCardOnThePage();
+    await loadBattleCardWithData(battleCard, createImperadorAheadOfFeiData());
+    placeArdosiaMotionTokensOnTheParts(battleCard);
+    const carAheadPill = findPartOfBattleCard(battleCard, 'battle-card-ahead');
+    carAheadPill?.style.setProperty('--motion-in', '60000ms');
+    const pendingPlay = battleCard.playAction({});
+    const isRisingBefore = gsap.getTweensOf(carAheadPill ?? []).length > 0;
+
+    // Act: a renderer removes the element and never calls dispose.
+    battleCard.remove();
+
+    // Assert: it was rising, nothing animates it any more, and the play resolves.
+    expect(isRisingBefore, 'the car ahead was rising first').toBe(true);
+    expect(gsap.getTweensOf(carAheadPill ?? []), 'leaving the page must end the in').toEqual([]);
+    await expect(pendingPlay, 'the play must not hang').resolves.toMatchObject({
+      statusCode: 200,
+    });
   });
 });

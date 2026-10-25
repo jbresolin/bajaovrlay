@@ -37,7 +37,7 @@
  */
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
-import { scanQrCodeOnScreen } from '../../../packages/graphics/qr-card/e2e/qrCodeOnScreen';
+import { scanQrCodeOnScreen } from '../../../packages/graphics/qr-card/e2e/qrCodeOnScreen.testSupport';
 import {
   readDataOnAirOfLayerFromTheRealServer,
   readPositionsOfSourceFromTheRealServer,
