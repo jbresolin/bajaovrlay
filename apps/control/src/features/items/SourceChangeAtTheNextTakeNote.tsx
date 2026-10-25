@@ -28,17 +28,11 @@ export function SourceChangeAtTheNextTakeNote(props: {
   // when the answer changes, not at every keystroke or pick.
   const hasSourceChoiceChanged = useWatch({
     control: form.control,
+    // The form whole, so every kind of source choice is compared: a "Lista dos cadastros"
+    // switched to the other list went unnoticed while only three parts were passed (from
+    // PR #28 to gate 2 round 1 of PR #29).
     compute: (formValuesNow: SchemaFormValues) =>
-      hasSourceChoiceChangedSinceOpened(
-        description,
-        {
-          ...formValuesAsOpened,
-          kinds: formValuesNow.kinds,
-          bindings: formValuesNow.bindings,
-          entityReferences: formValuesNow.entityReferences,
-        },
-        formValuesAsOpened,
-      ),
+      hasSourceChoiceChangedSinceOpened(description, formValuesNow, formValuesAsOpened),
   });
 
   if (!hasSourceChoiceChanged) {

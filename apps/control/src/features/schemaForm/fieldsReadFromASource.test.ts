@@ -15,6 +15,8 @@
  *   - After a switch of the flag to "Fonte" the update sends the typed title only.
  *   - A source choice changed since the editor opened is noticed (a field switched to or
  *     from a source, or another path); a typed change alone is not.
+ *   - A list field on "Lista dos cadastros" switched to the other list is noticed too, and
+ *     the same list kept is not (gate 2 round 1 of PR #29: it was missed since PR #28).
  *
  * What these tests deliberately do not cover:
  *   - The item save, which does store the binding and the clock nulls;
@@ -198,5 +200,53 @@ describe('hasSourceChoiceChangedSinceOpened', () => {
 
     // Assert: a new path is a source change too.
     expect(answer, 'another path is a source change').toBe(true);
+  });
+});
+
+/**
+ * An intermission board whose one list takes any record of the library: its items are
+ * objects that name no required key, so both the sponsors and the schedule fit it.
+ */
+function describeBoardOfAnyListForm() {
+  return describeSchemaFormFromDataSchema({
+    type: 'object',
+    properties: {
+      boardItems: { type: 'array', title: 'Itens do quadro', items: { type: 'object' } },
+    },
+  });
+}
+
+/** The board's form as opened on its list reading the sponsors from Cadastros. */
+function openBoardFormOnTheSponsors(): SchemaFormValues {
+  return buildSchemaFormValuesFromItemFields(describeBoardOfAnyListForm(), {
+    boardItems: { kind: 'entityList', entityType: 'sponsor' },
+  }).formValues;
+}
+
+describe('hasSourceChoiceChangedSinceOpened on a list read from Cadastros', () => {
+  const scenarios = [
+    // The bug of PR #28: the kind stays "Lista dos cadastros" while the list changes.
+    { name: 'notices the switch to the schedule', listNow: 'scheduleSlot', hasChanged: true },
+    // The same list chosen again is no change at all.
+    { name: 'ignores the same list kept', listNow: 'sponsor', hasChanged: false },
+  ] as const;
+
+  it.each(scenarios)('$name', ({ listNow, hasChanged }) => {
+    // Arrange: the board as opened on the sponsors, and the form with this row's list.
+    const formAsOpened = openBoardFormOnTheSponsors();
+    const formNow: SchemaFormValues = {
+      ...formAsOpened,
+      entityLists: { ...formAsOpened.entityLists, boardItems: listNow },
+    };
+
+    // Act: ask whether a source choice changed.
+    const answer = hasSourceChoiceChangedSinceOpened(
+      describeBoardOfAnyListForm(),
+      formNow,
+      formAsOpened,
+    );
+
+    // Assert: another list waits for the next take; the same one does not.
+    expect(answer, 'whether the list change waits for the next take').toBe(hasChanged);
   });
 });
