@@ -167,8 +167,8 @@ export async function turnSourceOffWithItsSwitch(page: Page, sourceLabel: string
 }
 
 /**
- * Changes a simulator through its "Editar" form: the poll interval, the speed and the
- * race's seed typed as the operator types them ("0,5", "60", "227"), and the "Falha
+ * Changes a simulator through its "Editar" form: the poll interval, the speed, the race's
+ * seed and its cars typed as the operator types them ("0,5", "60", "227", "10"), and the "Falha
  * simulada" switch put on or off when asked; then "Salvar fonte", and waits for the form
  * to close, which it does once the server has accepted the edit.
  */
@@ -179,6 +179,7 @@ export async function changeSimulatorInItsEditForm(
     pollIntervalAsTyped?: string;
     speedAsTyped?: string;
     seedAsTyped?: string;
+    carCountAsTyped?: string;
     isFailing?: boolean;
   },
 ): Promise<void> {
@@ -192,6 +193,9 @@ export async function changeSimulatorInItsEditForm(
   }
   if (change.seedAsTyped !== undefined) {
     await editForm.getByLabel('Semente da corrida').fill(change.seedAsTyped);
+  }
+  if (change.carCountAsTyped !== undefined) {
+    await editForm.getByLabel('Carros', { exact: true }).fill(change.carCountAsTyped);
   }
   if (change.isFailing !== undefined) {
     const isFailingSwitch = editForm.getByRole('switch', { name: 'Falha simulada' });

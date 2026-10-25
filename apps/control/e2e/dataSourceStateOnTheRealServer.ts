@@ -40,12 +40,22 @@ export type PositionEntryAsTheTestsReadIt = {
   intervalMs?: number;
 };
 
-/** The parts of a source's last good data the tests read: its session's flag and its positions. */
+/** One round of a source's brackets, as the tests read it: its name and its winners. */
+export type BracketRoundAsTheTestsReadIt = {
+  name: string;
+  matches: Array<{ winnerCarNumber?: number }>;
+};
+
+/**
+ * The parts of a source's last good data the tests read: its session's flag, its positions
+ * and the rounds of its brackets (the simulator's Super Prime, BAJAOVRLAY-25).
+ */
 type DataSnapshotAsTheTestsReadIt = {
   sourceId: string;
   shapes: {
     session?: { state: string };
     positions?: { entries: PositionEntryAsTheTestsReadIt[] };
+    brackets?: { rounds: BracketRoundAsTheTestsReadIt[] };
   };
 };
 
@@ -132,6 +142,19 @@ export async function readPositionsOfSourceFromTheRealServer(
   const source = state.dataSources.find((dataSource) => dataSource.label === sourceLabel);
   const snapshot = state.dataSnapshots.find((candidate) => candidate.sourceId === source?.id);
   return snapshot?.shapes.positions?.entries ?? [];
+}
+
+/**
+ * Reads the rounds of the brackets a source last sent, as the real server holds them; an
+ * empty list before its first good poll or for a source without brackets.
+ */
+export async function readBracketRoundsOfSourceFromTheRealServer(
+  sourceLabel: string,
+): Promise<BracketRoundAsTheTestsReadIt[]> {
+  const state = await readStateFromTheRealServer();
+  const source = state.dataSources.find((dataSource) => dataSource.label === sourceLabel);
+  const snapshot = state.dataSnapshots.find((candidate) => candidate.sourceId === source?.id);
+  return snapshot?.shapes.brackets?.rounds ?? [];
 }
 
 /**
