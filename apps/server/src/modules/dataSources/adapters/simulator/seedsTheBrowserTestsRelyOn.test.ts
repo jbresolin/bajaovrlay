@@ -12,16 +12,19 @@
  *   - Seed 1405's first yellow comes about 16 simulated minutes after the green flag, and
  *     its race has no red flag.
  *   - Seed 227's first incident is a penalty, about 3 simulated minutes in.
+ *   - Seed 2027's ten-car Super Prime is decided 17 simulated minutes in.
  *
  * What these tests deliberately do not cover:
  *   - That the browser tests then see these events on the page: they are the check
- *     (bindingsFollowTheSimulator.e2e.ts and eventInboxWithTheSimulator.e2e.ts).
+ *     (bindingsFollowTheSimulator.e2e.ts, eventInboxWithTheSimulator.e2e.ts and
+ *     bracketStepsWithTheSimulator.e2e.ts).
  *   - How yellows and incidents are drawn in general: flags.test.ts and
  *     simulatedIncidents.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
 import { buildFlagScheduleOfRace } from './flags.js';
+import { simulateBracketAt } from './simulatedBracket.js';
 import { drawIncidentScheduleOfRace } from './simulatedIncidents.js';
 
 // The seeded simulator's own settings (an empty config): 60 cars, a four-hour session.
@@ -55,6 +58,18 @@ function readFirstIncidentOfRace(seed: number) {
   };
 }
 
+/** The simulated minute the Super Prime of a seed and field has its champion. */
+function readMomentTheSuperPrimeIsDecided(seed: number, carCount: number) {
+  for (let minute = 0; minute <= 120; minute += 1) {
+    const rounds = simulateBracketAt({ seed, carCount }, minute * millisecondsInAMinute);
+    const final = rounds.find((round) => round.name === 'Final')?.matches[0];
+    if (final?.winnerCarNumber !== undefined) {
+      return { minute, kind: 'superPrimeDecided', hasARedFlag: false };
+    }
+  }
+  return { minute: Number.NaN, kind: 'none', hasARedFlag: false };
+}
+
 describe('the seeds the browser tests rely on', () => {
   const seedScenarios = [
     // bindingsFollowTheSimulator.e2e.ts sets seed 1405 before "Reiniciar corrida" and
@@ -74,6 +89,15 @@ describe('the seeds the browser tests rely on', () => {
       readFirstEvent: () => readFirstIncidentOfRace(227),
       expectedKind: 'penalty',
       expectedMinute: 3,
+      mustHaveNoRedFlag: false,
+    },
+    // bracketStepsWithTheSimulator.e2e.ts starts the simulator on seed 2027 with ten cars at
+    // 60× and waits for the Super Prime's champion, about 17 s, before stepping through it.
+    {
+      name: 'seed 2027, 10 cars: the Super Prime decided at about 17 min — bracketStepsWithTheSimulator relies on it',
+      readFirstEvent: () => readMomentTheSuperPrimeIsDecided(2027, 10),
+      expectedKind: 'superPrimeDecided',
+      expectedMinute: 17,
       mustHaveNoRedFlag: false,
     },
   ];

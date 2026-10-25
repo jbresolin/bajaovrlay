@@ -1,7 +1,8 @@
-// The four canonical shapes the simulator answers, built from the race state of one
-// moment: session (flag and clock), positions (order and gaps), overall standings and
-// the incidents of the simulated race direction.
+// The canonical shapes the simulator answers, built from the race state of one moment:
+// session (flag and clock), positions (order and gaps), overall standings, the incidents
+// of the simulated race direction, and the brackets of its Super Prime (BAJAOVRLAY-25).
 import type {
+  BracketsShape,
   IncidentsShape,
   PositionsShape,
   SessionShape,
@@ -10,6 +11,7 @@ import type {
 
 import { ptBR } from '../../../../core/messages/ptBR.js';
 import { buildPositionEntriesInRaceOrder, orderCarsByRacePosition } from './raceOrder.js';
+import { simulateBracketAt } from './simulatedBracket.js';
 import { buildSimulatedIncidents } from './simulatedIncidents.js';
 import type { CarRaceState, EnduroRaceState } from './simulateEnduro.js';
 import { buildOverallStandings } from './standingsFromRaceState.js';
@@ -20,12 +22,14 @@ export type SimulatedShapes = {
   positions: PositionsShape;
   standings: StandingsShape;
   incidents: IncidentsShape;
+  brackets: BracketsShape;
 };
 
 /**
- * Builds the session, positions, overall standings and incidents of the race state,
- * dated `nowMs` (the server's wall clock at the poll). `simulatedStartAtMs` is the
- * wall-clock moment the race started, when it has one; it names the session.
+ * Builds the session, positions, overall standings, incidents and Super Prime of the race
+ * state, dated `nowMs` (the server's wall clock at the poll). `simulatedStartAtMs` is the
+ * wall-clock moment the race started, when it has one; it names the session. The Super
+ * Prime runs on the same simulated clock (reds included), so a restart restarts it too.
  */
 export function buildShapesFromRaceState(
   raceState: EnduroRaceState,
@@ -47,6 +51,14 @@ export function buildShapesFromRaceState(
     },
     standings: buildOverallStandings(raceState, nowMs),
     incidents: buildSimulatedIncidents(raceState, sessionId, nowMs),
+    brackets: {
+      sessionId: `${sessionId}-super-prime`,
+      updatedAtMs: nowMs,
+      rounds: simulateBracketAt(
+        { seed: raceState.settings.seed, carCount: raceState.settings.carCount },
+        raceState.elapsedSimulatedMs,
+      ),
+    },
   };
 }
 
