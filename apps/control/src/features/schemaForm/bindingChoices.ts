@@ -16,6 +16,11 @@ import {
   wholeClockBindingPath,
 } from '@bajaovrlay/shared';
 
+import {
+  findKeptBindingPathChoices,
+  keepBindingPathChoices,
+} from './bindingPathChoicesKeptPerSchema';
+
 /** One path a field may read, as its dropdown offers it. */
 export type BindingPathChoice = {
   /** "positions:entries.0.teamName": the shape and the path, the dropdown's value. */
@@ -57,9 +62,29 @@ export function readBindingPathKey(
  * Lists the paths a field may read, shape by shape in the order the picker shows them
  * (session, positions, standings, brackets): every path whose type fits the field
  * directly or through a binding transform. The whole clock is left out: it is offered
- * as its own kind, "Relógio da fonte".
+ * as its own kind, "Relógio da fonte". Worked out once per schema object and field, and
+ * handed back from bindingPathChoicesKeptPerSchema.ts after that: every field asks at
+ * every draw (BAJAOVRLAY-45).
  */
 export function listBindingPathChoicesOfField(
+  dataSchema: unknown,
+  fieldKey: string,
+): readonly BindingPathChoice[] {
+  // A schema that is not an object (a graphic without one) has nothing to key on.
+  if (typeof dataSchema !== 'object' || dataSchema === null) {
+    return workOutBindingPathChoicesOfField(dataSchema, fieldKey);
+  }
+  const keptChoices = findKeptBindingPathChoices(dataSchema, fieldKey);
+  if (keptChoices !== undefined) {
+    return keptChoices;
+  }
+  const choices = Object.freeze(workOutBindingPathChoicesOfField(dataSchema, fieldKey));
+  keepBindingPathChoices(dataSchema, fieldKey, choices);
+  return choices;
+}
+
+/** Works the choices of listBindingPathChoicesOfField out, from the schema and the shapes. */
+function workOutBindingPathChoicesOfField(
   dataSchema: unknown,
   fieldKey: string,
 ): BindingPathChoice[] {

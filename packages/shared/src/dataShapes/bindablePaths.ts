@@ -92,13 +92,33 @@ export function findClockRoleOfSessionPath(path: string): ClockFieldRole | undef
     : undefined;
 }
 
+// Each shape's list, built the first time it is asked for. The paths are written in code
+// and never change with the data a source sends, while a race resolves bindings many times
+// a second, each resolution looking its path up here (BAJAOVRLAY-45). Frozen, so a caller
+// that tried to change a list would be refused instead of spoiling it for the next one.
+const pathsListedForEachShape = new Map<DataShapeKey, readonly BindablePath[]>();
+
 /**
  * Lists the paths a binding may point at in one shape, with their pt-BR labels and value
- * types, in the order the picker shows them. Written out by hand on purpose (readability
- * law): deriving it from the Zod schemas would need type-level code a reviewer has to run
- * in their head, and it would offer fields no graphic should show (ids, `updatedAtMs`).
+ * types, in the order the picker shows them: the same list at every call (above).
  */
-export function listBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[] {
+export function listBindablePathsOfShape(shapeKey: DataShapeKey): readonly BindablePath[] {
+  const listedBefore = pathsListedForEachShape.get(shapeKey);
+  if (listedBefore !== undefined) {
+    return listedBefore;
+  }
+  const frozenPaths = buildBindablePathsOfShape(shapeKey).map((path) => Object.freeze(path));
+  const paths = Object.freeze(frozenPaths);
+  pathsListedForEachShape.set(shapeKey, paths);
+  return paths;
+}
+
+/**
+ * Builds the paths of one shape. Written out by hand on purpose (readability law):
+ * deriving it from the Zod schemas would need type-level code a reviewer has to run in
+ * their head, and it would offer fields no graphic should show (ids, `updatedAtMs`).
+ */
+function buildBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[] {
   switch (shapeKey) {
     case 'session':
       return listSessionPaths();
