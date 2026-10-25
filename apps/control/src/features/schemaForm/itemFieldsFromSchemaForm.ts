@@ -20,7 +20,8 @@ import type { SchemaFormValues } from './schemaFormValues';
  * - a field set to "Fonte" or "Relógio da fonte" is stored as its binding, and the three
  *   clock fields the whole clock fills are left out;
  * - a field set to "Evento" is stored as its event field (BAJAOVRLAY-44);
- * - a field set to "Cadastro" is stored as its entity reference;
+ * - a field set to "Cadastro" is stored as its entity reference, and a list field set to
+ *   "Lista dos cadastros" as its entity list (BAJAOVRLAY-46);
  * - a property the form cannot edit is stored as a literal exactly as it was where the
  *   form was filled from (a new, empty form has none).
  */
@@ -50,6 +51,9 @@ export function buildItemFieldsFromSchemaForm(
     }
     if (checkedField.outcome === 'entity') {
       fieldPairs.push([checkedField.key, checkedField.reference]);
+    }
+    if (checkedField.outcome === 'entityList') {
+      fieldPairs.push([checkedField.key, checkedField.list]);
     }
   }
   return Object.fromEntries(fieldPairs);
@@ -159,6 +163,15 @@ export function buildChangedItemFieldsFromSchemaForm(
         }
         break;
       }
+      case 'entityList': {
+        const isStoredAsTheSameList =
+          storedField?.kind === 'entityList' &&
+          storedField.entityType === checkedField.list.entityType;
+        if (!isStoredAsTheSameList) {
+          changedFieldPairs.push([checkedField.key, checkedField.list]);
+        }
+        break;
+      }
       case 'filledByTheWholeClock':
       case 'cleared': {
         const fieldOfTheForm = description.fields.find((field) => field.key === checkedField.key);
@@ -170,14 +183,19 @@ export function buildChangedItemFieldsFromSchemaForm(
       }
     }
   }
-  // A list field switched from "Fonte" back to "Valor como está" has no value of its own
-  // to keep (the binding was all it held), so it is cleared rather than left bound.
+  // A list field switched from "Fonte" or "Lista dos cadastros" back to "Valor como está"
+  // has no value of its own to keep (the binding or the list was all it held), so it is
+  // cleared rather than left reading. Only back to "as it is": a switch from one reading
+  // kind to the other already pushed the new binding or list above, which a null pushed
+  // after it would overwrite (gate 2 of PR #28).
   for (const field of description.fields) {
     const storedField = readOwnValueOfRecord(storedItemFields, field.key);
+    const kindNow = readOwnValueOfRecord(formValues.kinds, field.key);
+    const isStoredReadingSomething =
+      storedField?.kind === 'binding' || storedField?.kind === 'entityList';
+    const isNowAsItIs = kindNow === undefined || kindNow === 'literal';
     const isListFieldUnbound =
-      field.control === 'unsupported' &&
-      storedField?.kind === 'binding' &&
-      readOwnValueOfRecord(formValues.kinds, field.key) !== 'binding';
+      field.control === 'unsupported' && isStoredReadingSomething && isNowAsItIs;
     if (isListFieldUnbound) {
       changedFieldPairs.push([field.key, { kind: 'literal', value: null }]);
     }

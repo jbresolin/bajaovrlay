@@ -8,10 +8,10 @@
  * the page gains or loses are created or removed.
  */
 import {
-  findBoardHeadParts,
-  renderBoardHeadTemplate,
-  writeBoardHead,
-} from '@bajaovrlay/graphics-kit/boardHead';
+  findWideBoardHeadParts,
+  renderWideBoardHeadTemplate,
+  writeWideBoardHead,
+} from '@bajaovrlay/graphics-kit/wideBoardHead';
 import { html, type TemplateResult } from 'lit';
 
 import { ptBR } from './ptBR.js';
@@ -59,7 +59,7 @@ export type PiecePlacement = 'offAir' | 'atOnce' | 'beforeCascade';
 export function renderStandingsTemplate(): TemplateResult {
   return html`
     <section class="board" data-testid="standings" data-layout="table">
-      ${renderBoardHeadTemplate('standings', ptBR.logoAlternativeText)}
+      ${renderWideBoardHeadTemplate('standings', ptBR.logoAlternativeText)}
       <div class="tables" data-testid="standings-tables"></div>
     </section>
   `;
@@ -77,7 +77,7 @@ export function findStandingsParts(renderRoot: ParentNode, tokensSource: Element
   return {
     tokensSource,
     board: findPart('standings'),
-    ...findBoardHeadParts(renderRoot, 'standings'),
+    ...findWideBoardHeadParts(renderRoot, 'standings'),
     tables: findPart('standings-tables'),
   };
 }
@@ -91,7 +91,7 @@ export function writeStandingsHead(
   settings: StandingsSettings,
   pageLine: string,
 ): void {
-  writeBoardHead(parts, { title: settings.title, eventLine: settings.eventLine, pageLine });
+  writeWideBoardHead(parts, { title: settings.title, eventLine: settings.eventLine, pageLine });
 }
 
 /**

@@ -31,6 +31,18 @@ export type MotionTokens = {
   boardHoldMs: number;
   /** `--motion-page-stagger`: the delay between pieces when a page turns in place. */
   pageStaggerMs: number;
+  /** `--motion-sponsor-hold`: a sponsor page of a level with no hold of its own (Bronze). */
+  sponsorHoldMs: number;
+  /** `--motion-sponsor-hold-diamante`: how long a Diamante sponsor page stays (BAJAOVRLAY-46). */
+  sponsorHoldDiamanteMs: number;
+  /** `--motion-sponsor-hold-ouro`: an Ouro page. */
+  sponsorHoldOuroMs: number;
+  /** `--motion-sponsor-hold-prata`: a Prata page. */
+  sponsorHoldPrataMs: number;
+  /** `--motion-sponsor-hold-apoio`: an Apoio page. */
+  sponsorHoldApoioMs: number;
+  /** `--motion-sponsor-hold-realizacao`: the organiser's page, last in every round. */
+  sponsorHoldRealizacaoMs: number;
   /** `--motion-in-offset`: how many pixels a piece rises on entry and lifts on exit. */
   inOffsetPx: number;
   /** `--motion-podium-offset`: how many pixels a podium card rises when it is revealed. */
@@ -68,6 +80,12 @@ export const motionTokenNames: Record<keyof MotionTokens, string> = {
   noticeHoldMs: '--motion-notice-hold',
   boardHoldMs: '--motion-board-hold',
   pageStaggerMs: '--motion-page-stagger',
+  sponsorHoldMs: '--motion-sponsor-hold',
+  sponsorHoldDiamanteMs: '--motion-sponsor-hold-diamante',
+  sponsorHoldOuroMs: '--motion-sponsor-hold-ouro',
+  sponsorHoldPrataMs: '--motion-sponsor-hold-prata',
+  sponsorHoldApoioMs: '--motion-sponsor-hold-apoio',
+  sponsorHoldRealizacaoMs: '--motion-sponsor-hold-realizacao',
   inOffsetPx: '--motion-in-offset',
   podiumOffsetPx: '--motion-podium-offset',
   easeOut: '--ease-out',
@@ -101,6 +119,16 @@ export function readMotionTokens(element: Element): MotionTokens {
     noticeHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.noticeHoldMs)),
     boardHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.boardHoldMs)),
     pageStaggerMs: readDurationInMilliseconds(readToken(motionTokenNames.pageStaggerMs)),
+    sponsorHoldMs: readDurationInMilliseconds(readToken(motionTokenNames.sponsorHoldMs)),
+    sponsorHoldDiamanteMs: readDurationInMilliseconds(
+      readToken(motionTokenNames.sponsorHoldDiamanteMs),
+    ),
+    sponsorHoldOuroMs: readDurationInMilliseconds(readToken(motionTokenNames.sponsorHoldOuroMs)),
+    sponsorHoldPrataMs: readDurationInMilliseconds(readToken(motionTokenNames.sponsorHoldPrataMs)),
+    sponsorHoldApoioMs: readDurationInMilliseconds(readToken(motionTokenNames.sponsorHoldApoioMs)),
+    sponsorHoldRealizacaoMs: readDurationInMilliseconds(
+      readToken(motionTokenNames.sponsorHoldRealizacaoMs),
+    ),
     inOffsetPx: readLengthInPixels(readToken(motionTokenNames.inOffsetPx)),
     podiumOffsetPx: readLengthInPixels(readToken(motionTokenNames.podiumOffsetPx)),
     easeOut: readEase(readToken(motionTokenNames.easeOut)),

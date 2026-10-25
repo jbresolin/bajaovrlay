@@ -2,7 +2,7 @@
  * The podium OGraf graphic: the first three on one baseline, on the fullscreen layer,
  * revealed one place per step. This file owns the OGraf lifecycle (load, play, update,
  * stop, dispose) and wires the rest: podiumModel (data, cards, steps), podiumView (the DOM,
- * drawn by Lit from the data), the kit's boardHead (the head card), podiumStepMoves (which
+ * drawn by Lit from the data), the kit's wideBoardHead (the head card), podiumStepMoves (which
  * cards a step reveals, hides or lifts out) on podiumAnimations (GSAP timelines from the
  * theme's motion tokens), the kit's playSteps (the OGraf step rule),
  * timelinePlayback and waitForImagesToSettle, and ptBR.
@@ -20,8 +20,8 @@
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
-import { writeBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
-import { boardHeadStyles } from '@bajaovrlay/graphics-kit/boardHeadStyles';
+import { writeWideBoardHead } from '@bajaovrlay/graphics-kit/wideBoardHead';
+import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
 import { carChipLargeStyles } from '@bajaovrlay/graphics-kit/carChipLargeStyles';
 import type {
   OGrafCustomActionParams,
@@ -76,7 +76,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The podium graphic; the default export a renderer registers as a custom element. */
 export default class PodiumGraphic extends LitElement implements OGrafGraphic {
-  static override styles = [boardHeadStyles, teamLogoCellStyles, carChipLargeStyles, podiumStyles];
+  static override styles = [wideBoardHeadStyles, teamLogoCellStyles, carChipLargeStyles, podiumStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -286,7 +286,7 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
   /** Writes the head from the data on screen and the step on air (no step line off air). */
   private writeHeadNow(): void {
     const settings = readPodiumSettings(this.requireDataOnScreen());
-    writeBoardHead(this.requireParts(), {
+    writeWideBoardHead(this.requireParts(), {
       title: settings.title,
       eventLine: settings.eventLine,
       pageLine: writeStepLine(this.currentStep ?? 0),

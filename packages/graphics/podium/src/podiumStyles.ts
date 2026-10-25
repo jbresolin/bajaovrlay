@@ -2,7 +2,7 @@
  * The podium's look in Ardósia: the design's `.board`, `.podium__places` and
  * `.podium-place*` rules (PR #21, docs/design/tools/slate-boards.css) written against the
  * theme's tokens alone; the head card, the large chip and the logo cell are the kit's
- * (boardHeadStyles, carChipLargeStyles, teamLogoCellStyles), which podium.ts adds before
+ * (wideBoardHeadStyles, carChipLargeStyles, teamLogoCellStyles), which podium.ts adds before
  * these, the logo cell sized here through `--team-logo-cell-*`. Every colour, size, face and corner is
  * a `var(--token)` the renderer page sets on its :root (packages/theme/ardosia/tokens.css).
  * No fallback values, by design: without the theme the board is unstyled, and

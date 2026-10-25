@@ -1,74 +1,62 @@
 /**
- * The head card of a wide board (the standings, the podium): the organiser's logo, the
- * title, the event line and a line at the right (the standings' page, the podium's step),
- * the design's `.board__head` (docs/design/tools/slate-boards.css). Two graphics draw it,
- * so its markup and writer live here and its look in boardHeadStyles.ts; each graphic
- * keeps its own board around it.
+ * The narrow boards' head card (BAJAOVRLAY-46): the waiting screen, the sessions board, the
+ * intermission and the sponsor roll open with the design's `board__head` (PR #21,
+ * docs/design/tools/slateBoards.mjs's renderBoardHead): the white Baja SAE Brasil logo, the
+ * title, a subtitle and a line at the right. A part with nothing to show is not in the
+ * template, never an empty box. Lit keeps the head element across redraws, so the
+ * animations' inline styles on it survive an update on air, and a changed subtitle (the
+ * sponsor roll's level, page by page) changes in place. Its look is boardStyles.ts's.
  *
- * The test ids carry the graphic's own prefix (`standings-head`, `podium-head`), so each
- * graphic's tests and e2e find the head by the names they always used.
+ * What could go wrong: GSAP, reading the transform of an element that has no offsetParent
+ * (always in jsdom; in Chromium under a hidden ancestor), takes it out of the page and puts
+ * it back before its next element sibling, which skips Lit's comment markers and corrupts
+ * the template's parts. So the head card GSAP animates sits alone inside a wrapper
+ * (`display: contents`, no box of its own), and the wrapper is what a board's template
+ * holds.
+ *
+ * The logo is `<img src>` and nothing else, bundled from the theme package by Vite into
+ * each graphic's dist/.
  */
-// The white logo lives in the theme package; Vite bundles a copy into the dist/assets/ of
-// each graphic that draws the head, so the built graphic works from the preview and the air.
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
-import { html, type TemplateResult } from 'lit';
+import { html, nothing, type TemplateResult } from 'lit';
 
-/** The elements of the head that change after the first render. */
-export type BoardHeadParts = {
-  head: HTMLElement;
-  title: HTMLElement;
-  eventLine: HTMLElement;
-  pageLine: HTMLElement;
-};
-
-/** What a graphic's head says: the title, the event line ('' for none), the line at the right. */
-export type BoardHeadTexts = {
+/** What a board's head shows; `testIdPrefix` starts every part's data-testid. */
+export type BoardHeadContent = {
+  /** The board's name in test ids: "sessions-board" gives "sessions-board-title". */
+  testIdPrefix: string;
+  /** The logo's alternative text, from the board's pt-BR catalog. */
+  logoAlternativeText: string;
+  /** "PROGRAMAÇÃO DO DIA", "INTERVALO", "PATROCINADORES". */
   title: string;
-  eventLine: string;
-  pageLine: string;
+  /** The event line, or the page's sponsor level; left out, no subtitle. */
+  subtitle?: string | undefined;
+  /** The date, or the page line ("1/5"); left out, nothing at the right. */
+  aside?: string | undefined;
 };
 
-/**
- * The head's markup, drawn once inside the graphic's board. `testIdPrefix` names the
- * graphic ("standings"); `logoAlternativeText` comes from the graphic's pt-BR catalog.
- */
-export function renderBoardHeadTemplate(
-  testIdPrefix: string,
-  logoAlternativeText: string,
-): TemplateResult {
-  return html`<header class="board-head" data-testid=${`${testIdPrefix}-head`}>
-    <img class="board-head-logo" src=${logoAddress} alt=${logoAlternativeText} />
-    <h1 class="board-head-title" data-testid=${`${testIdPrefix}-title`}></h1>
-    <span class="board-head-event-line" data-testid=${`${testIdPrefix}-event-line`}></span>
-    <span class="board-head-page-line" data-testid=${`${testIdPrefix}-page-line`}></span>
-  </header>`;
-}
-
-/** Finds the head's parts in the rendered template; a missing one is a bug in the template. */
-export function findBoardHeadParts(renderRoot: ParentNode, testIdPrefix: string): BoardHeadParts {
-  const findPart = (testIdSuffix: string): HTMLElement => {
-    const testId = `${testIdPrefix}-${testIdSuffix}`;
-    const part = renderRoot.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
-    if (part === null) {
-      throw new Error(`board head part "${testId}" is missing from the template; this is a bug`);
-    }
-    return part;
-  };
-  return {
-    head: findPart('head'),
-    title: findPart('title'),
-    eventLine: findPart('event-line'),
-    pageLine: findPart('page-line'),
-  };
-}
-
-/**
- * Writes the head's texts: the event line is left out when it is empty, so the line at the
- * right keeps its place at the right. The card itself never moves.
- */
-export function writeBoardHead(parts: BoardHeadParts, texts: BoardHeadTexts): void {
-  parts.title.textContent = texts.title;
-  parts.eventLine.textContent = texts.eventLine;
-  parts.eventLine.hidden = texts.eventLine === '';
-  parts.pageLine.textContent = texts.pageLine;
+/** The head card's markup for this content. */
+export function renderBoardHead(content: BoardHeadContent): TemplateResult {
+  const prefix = content.testIdPrefix;
+  const subtitle =
+    content.subtitle === undefined
+      ? nothing
+      : html`<span class="caption board-subtitle" data-testid="${prefix}-subtitle"
+          >${content.subtitle}</span
+        >`;
+  const aside =
+    content.aside === undefined
+      ? nothing
+      : html`<span class="board-aside" data-testid="${prefix}-aside">${content.aside}</span>`;
+  return html`<div class="board-head-place">
+    <header class="card board-head" data-testid="${prefix}-head">
+      <img
+        class="board-logo"
+        src=${logoAddress}
+        alt=${content.logoAlternativeText}
+        data-testid="${prefix}-logo"
+      />
+      <h1 class="board-title" data-testid="${prefix}-title">${content.title}</h1>
+      ${subtitle}${aside}
+    </header>
+  </div>`;
 }

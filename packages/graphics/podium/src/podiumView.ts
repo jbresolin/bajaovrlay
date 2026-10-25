@@ -11,10 +11,10 @@
  * Images are `<img src>` and nothing else: an `<img>` runs no script, even for an SVG.
  */
 import {
-  type BoardHeadParts,
-  findBoardHeadParts,
-  renderBoardHeadTemplate,
-} from '@bajaovrlay/graphics-kit/boardHead';
+  type WideBoardHeadParts,
+  findWideBoardHeadParts,
+  renderWideBoardHeadTemplate,
+} from '@bajaovrlay/graphics-kit/wideBoardHead';
 import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
 import { html, nothing, type TemplateResult } from 'lit';
 
@@ -32,7 +32,7 @@ import {
 import { ptBR } from './ptBR.js';
 
 /** The elements the template draws once, and the element the theme's tokens are read from. */
-export type PodiumParts = BoardHeadParts & {
+export type PodiumParts = WideBoardHeadParts & {
   /**
    * The host element, in the page's light DOM: every token is read from its computed
    * style (jsdom does not inherit custom properties across the shadow boundary, so the
@@ -86,7 +86,7 @@ function renderCard(card: PodiumCard): TemplateResult {
 export function renderPodiumTemplate(data: PodiumData | undefined): TemplateResult {
   const cards = listPodiumCardsLeftToRight(data?.entries ?? []);
   return html`<section class="board" data-testid="podium">
-    ${renderBoardHeadTemplate('podium', ptBR.logoAlternativeText)}
+    ${renderWideBoardHeadTemplate('podium', ptBR.logoAlternativeText)}
     <div class="stage">
       <div class="cards" data-testid="podium-cards">${cards.map((card) => renderCard(card))}</div>
     </div>
@@ -111,7 +111,7 @@ export function findPodiumParts(renderRoot: ParentNode, tokensSource: Element): 
   return {
     tokensSource,
     board,
-    ...findBoardHeadParts(renderRoot, 'podium'),
+    ...findWideBoardHeadParts(renderRoot, 'podium'),
     cardsBySlot: { second: findCard('second'), first: findCard('first'), third: findCard('third') },
   };
 }

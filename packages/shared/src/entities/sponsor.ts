@@ -8,12 +8,18 @@ import {
 } from './entityFieldSchemas.js';
 import { reportKeysListedTwice } from './entityKeysListedOnce.js';
 import { ptBREntities } from './ptBREntities.js';
+import { sponsorLevelsInRoundOrder } from './sponsorLevels.js';
 
 const labels = ptBREntities.sponsorFieldLabels;
 const problems = ptBREntities.recordProblems;
 
-/** The five sponsor tiers the organisers sell, from the top. */
-export const SponsorTierSchema = z.enum(['master', 'ouro', 'prata', 'bronze', 'apoio'], {
+/**
+ * A sponsor's level, as the design names it (BAJAOVRLAY-46), in round order: diamante,
+ * ouro, prata, bronze, apoio, realizacao (sponsorLevels.ts). The field keeps its name,
+ * `tier`, so an item that reads the attribute `tier` keeps working; a row stored with the
+ * old top level, `master`, is read as `diamante` at boot (the server's sponsorLevelMigration).
+ */
+export const SponsorTierSchema = z.enum(sponsorLevelsInRoundOrder, {
   error: problems.unknownTier,
 });
 

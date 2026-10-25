@@ -13,6 +13,9 @@ graphic with two variants in one manifest (`variant`) and an on-air hold left to
 `lower-strip/` is the bar along the bottom: the clock block, the running order six cars a page.
 `message-ticker/` is the same bar with an "AVISO" label and one typed announcement a page.
 `sponsor-bug/` is the card top-left all day: the mark, the event word and one sponsor's logo.
+`countdown/`, `sessions-board/`, `sponsor-roll/` and `intermission-board/` (BAJAOVRLAY-46) are the
+narrow boards and cards that read whole lists from Cadastros ("Lista dos cadastros"); each README
+ends with a typical item, field by field.
 `podium/` is the full-screen podium, three cards revealed one per step (3rd, 2nd, 1st), each
 crowned by its team's logo through the `withTeamLogos` binding transform.
 `battle-card/` is two cars fighting for one place, bottom-centre, with the gap and its trend.
@@ -58,6 +61,9 @@ On each property of `schema.properties` (`type` picks the control: `string` text
 - `minimum` / `maximum` — the limits of a number field.
 - `format: "date-time"` on a `string` — a date and time input, sent as ISO 8601 text.
 - `v_baja.unit: "ms"` on an `integer`/`number` — typed as `mm:ss`, sent as milliseconds.
+- `v_baja.unit: "epochMs"` on an `integer` — a moment (a session's start), typed with the
+  date and time input on the operator's clock, sent as milliseconds since 1970 (BAJAOVRLAY-46).
+  A schedule slot's `startsAtMs` from Cadastros fits it.
 - `v_baja.role` — one of the four clock roles, or the image role, each on its own kind of
   property:
   - `"wallClock"` on an `integer` (milliseconds since 1970): the reference moment. The

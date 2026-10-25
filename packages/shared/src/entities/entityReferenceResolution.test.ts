@@ -12,7 +12,7 @@
  *   - Car 42's team name, a person's role, a sponsor's roll weight and a slot's start are
  *     read as stored.
  *   - Team 42's logo gives the URL /media/<mediaId>, and its choice of the light plate
- *     (logoOnLightPlate, BAJAOVRLAY-24) gives yes; so do the master sponsor's logo and its
+ *     (logoOnLightPlate, BAJAOVRLAY-24) gives yes; so do the Diamante sponsor's logo and its
  *     own plate choice (BAJAOVRLAY-23), which the sponsor bug reads.
  *   - A record that is not in the library is unresolvable, with a pt-BR sentence naming
  *     the car, or for a person, sponsor or slot saying in words that it was deleted:
@@ -30,7 +30,7 @@ import type { EntityFieldValue } from './entityFieldValue.js';
 import {
   buildLibraryOfTheRaceWeekend,
   logoOfTeam42MediaId,
-  logoOfTheMasterSponsorMediaId,
+  logoOfTheDiamanteSponsorMediaId,
 } from './entityLibrary.testSupport.js';
 import { resolveEntityReferenceAgainstLibrary } from './entityReferenceResolution.js';
 
@@ -61,11 +61,11 @@ describe('resolveEntityReferenceAgainstLibrary', () => {
     },
     // A whole number from a sponsor.
     {
-      name: "reads the master sponsor's roll weight",
+      name: "reads the Diamante sponsor's roll weight",
       reference: {
         kind: 'entity',
         entityType: 'sponsor',
-        sponsorId: 'patrocinador-master',
+        sponsorId: 'patrocinador-diamante',
         attribute: 'rollWeight',
       },
       expected: 10,
@@ -100,25 +100,25 @@ describe('resolveEntityReferenceAgainstLibrary', () => {
     },
     // The sponsor's own choice (BAJAOVRLAY-23): the bug puts its logo on the light plate.
     {
-      name: "reads the master sponsor's choice of the light plate for its logo",
+      name: "reads the Diamante sponsor's choice of the light plate for its logo",
       reference: {
         kind: 'entity',
         entityType: 'sponsor',
-        sponsorId: 'patrocinador-master',
+        sponsorId: 'patrocinador-diamante',
         attribute: 'logoOnLightPlate',
       },
       expected: true,
     },
     // The sponsor's logo, as the bug's sponsor cell draws it.
     {
-      name: "gives the master sponsor's logo as its /media URL",
+      name: "gives the Diamante sponsor's logo as its /media URL",
       reference: {
         kind: 'entity',
         entityType: 'sponsor',
-        sponsorId: 'patrocinador-master',
+        sponsorId: 'patrocinador-diamante',
         attribute: 'logoUrl',
       },
-      expected: `/media/${logoOfTheMasterSponsorMediaId}`,
+      expected: `/media/${logoOfTheDiamanteSponsorMediaId}`,
     },
   ];
 

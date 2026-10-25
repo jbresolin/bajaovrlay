@@ -27,7 +27,7 @@ import { describe, expect, it } from 'vitest';
 import { reduceCommand } from '../../../core/store/reducers/reduceCommand.js';
 import { contextOfTheRundownCommand } from '../../../core/store/reducers/rundownSlices.testSupport.js';
 import {
-  buildMasterAndSupportSponsors,
+  buildDiamanteAndSupportSponsors,
   buildNarratorAndJudge,
   buildRaceDaySlicesWithEntities,
   buildSaturdayEnduroSlots,
@@ -82,9 +82,9 @@ describe('upsertEntity', () => {
     // Arrange: an empty library.
     const slicesBefore = buildRaceDaySlicesWithEntities({});
     const [narrator] = buildNarratorAndJudge();
-    const [masterSponsor] = buildMasterAndSupportSponsors();
+    const [diamanteSponsor] = buildDiamanteAndSupportSponsors();
     const [enduroSlot] = buildSaturdayEnduroSlots();
-    if (narrator === undefined || masterSponsor === undefined || enduroSlot === undefined) {
+    if (narrator === undefined || diamanteSponsor === undefined || enduroSlot === undefined) {
       throw new Error('the factories must build one record each');
     }
 
@@ -92,7 +92,7 @@ describe('upsertEntity', () => {
     let slices = slicesBefore;
     const upserts = [
       { type: 'upsertEntity' as const, entityType: 'person' as const, record: narrator },
-      { type: 'upsertEntity' as const, entityType: 'sponsor' as const, record: masterSponsor },
+      { type: 'upsertEntity' as const, entityType: 'sponsor' as const, record: diamanteSponsor },
       { type: 'upsertEntity' as const, entityType: 'scheduleSlot' as const, record: enduroSlot },
     ];
     for (const upsert of upserts) {
@@ -105,7 +105,7 @@ describe('upsertEntity', () => {
 
     // Assert: each record in its slice, and the teams untouched.
     expect(slices.people, 'the narrator goes to people').toEqual([narrator]);
-    expect(slices.sponsors, 'the sponsor goes to sponsors').toEqual([masterSponsor]);
+    expect(slices.sponsors, 'the sponsor goes to sponsors').toEqual([diamanteSponsor]);
     expect(slices.scheduleSlots, 'the slot goes to scheduleSlots').toEqual([enduroSlot]);
     expect(slices.teams, 'the teams must be the very same list').toBe(slicesBefore.teams);
   });

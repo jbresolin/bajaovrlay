@@ -16,7 +16,7 @@
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
-import { boardHeadStyles } from '@bajaovrlay/graphics-kit/boardHeadStyles';
+import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -75,7 +75,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The standings graphic; the default export a renderer registers as a custom element. */
 export default class StandingsGraphic extends LitElement implements OGrafGraphic {
-  static override styles = [boardHeadStyles, standingsStyles];
+  static override styles = [wideBoardHeadStyles, standingsStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;

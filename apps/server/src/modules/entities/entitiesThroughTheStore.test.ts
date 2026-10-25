@@ -32,7 +32,7 @@ import { createLogger } from '../../core/logger/createLogger.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { createStateStore, type StateStore } from '../../core/store/createStateStore.js';
 import {
-  buildMasterAndSupportSponsors,
+  buildDiamanteAndSupportSponsors,
   buildNarratorAndJudge,
   buildSaturdayEnduroSlots,
   buildTeam7,
@@ -186,7 +186,7 @@ describe('the entity commands through the store', () => {
     applyAsTheOperator(stateStore, {
       type: 'importEntities',
       entityType: 'sponsor',
-      records: buildMasterAndSupportSponsors(),
+      records: buildDiamanteAndSupportSponsors(),
     });
     applyAsTheOperator(stateStore, {
       type: 'importEntities',
@@ -205,7 +205,7 @@ describe('the entity commands through the store', () => {
     ]);
     expect(slicesAfterRestart.people, 'the people must survive').toEqual(buildNarratorAndJudge());
     expect(slicesAfterRestart.sponsors, 'the sponsors must survive').toEqual(
-      buildMasterAndSupportSponsors(),
+      buildDiamanteAndSupportSponsors(),
     );
     expect(slicesAfterRestart.scheduleSlots, 'the schedule must survive').toEqual(
       buildSaturdayEnduroSlots(),

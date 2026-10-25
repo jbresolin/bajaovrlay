@@ -42,29 +42,29 @@ export function buildNarrator(): Person {
   return { personId: 'narrador-joao', name: 'João Bresolin', role: 'Narrador' };
 }
 
-/** The master sponsor. */
-export function buildMasterSponsor(): Sponsor {
+/** The Diamante sponsor. */
+export function buildDiamanteSponsor(): Sponsor {
   return {
-    sponsorId: 'patrocinador-master',
+    sponsorId: 'patrocinador-diamante',
     name: 'Mineradora Serra Azul',
-    tier: 'master',
+    tier: 'diamante',
     rollWeight: 10,
   };
 }
 
-/** The media id of the master sponsor's logo (the SHA-256 of its file). */
-export const logoOfTheMasterSponsorMediaId =
+/** The media id of the Diamante sponsor's logo (the SHA-256 of its file). */
+export const logoOfTheDiamanteSponsorMediaId =
   '7d1e3a5c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e2d';
 
-/** The master sponsor with its logo, which comes on its own white box (BAJAOVRLAY-23). */
-export function buildMasterSponsorWithItsLogo(): Sponsor {
-  return { ...buildMasterSponsor(), logoMediaId: logoOfTheMasterSponsorMediaId };
+/** The Diamante sponsor with its logo, which comes on its own white box (BAJAOVRLAY-23). */
+export function buildDiamanteSponsorWithItsLogo(): Sponsor {
+  return { ...buildDiamanteSponsor(), logoMediaId: logoOfTheDiamanteSponsorMediaId };
 }
 
-/** The master sponsor's logo as the media slice records it: 340 kB, a 480×138 WebP. */
-export function buildLogoOfTheMasterSponsor(): MediaRecord {
+/** The Diamante sponsor's logo as the media slice records it: 340 kB, a 480×138 WebP. */
+export function buildLogoOfTheDiamanteSponsor(): MediaRecord {
   return {
-    mediaId: logoOfTheMasterSponsorMediaId,
+    mediaId: logoOfTheDiamanteSponsorMediaId,
     fileName: 'serra-azul.webp',
     contentType: 'image/webp',
     sizeBytes: 340 * 1024,

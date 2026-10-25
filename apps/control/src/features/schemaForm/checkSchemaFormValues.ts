@@ -8,7 +8,8 @@
  *     value yet, and the server writes one. Neither is a clock field the whole clock fills
  *     ("Relógio da fonte" on the time field). A field set to "Fonte" or "Relógio da fonte"
  *     is read as its binding (bindingFormValue.ts), or gets that binding's message; one
- *     set to "Cadastro" as its entity reference (entityReferenceFormValue.ts).
+ *     set to "Cadastro" as its entity reference (entityReferenceFormValue.ts); a list
+ *     field set to "Lista dos cadastros" as its entity list (entityListFormValue.ts).
  *  2. What was typed is read as data. A number, an mm:ss time or a date that cannot be
  *     read gets its message. A list of texts is read line by line.
  *  3. The blank rules: a required field left blank is refused (also a required text: an
@@ -18,7 +19,12 @@
  *     Zod schema built from the same JSON Schema.
  * The server's Ajv check stays the authority; see zodSchemaFromDataSchema.ts.
  */
-import type { BindingFieldValue, EntityFieldValue, EventFieldValue } from '@bajaovrlay/shared';
+import type {
+  BindingFieldValue,
+  EntityFieldValue,
+  EntityListFieldValue,
+  EventFieldValue,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -28,6 +34,7 @@ import {
   listClockFieldKeysFilledByTheWholeClock,
 } from './bindingChoices';
 import { emptySchemaFormBindingValue, readBindingFromSchemaFormValue } from './bindingFormValue';
+import { readEntityListOfFormField } from './entityListFormValue';
 import {
   canFieldReadTheEntityLibrary,
   emptySchemaFormEntityReferenceValue,
@@ -51,6 +58,7 @@ export type CheckedSchemaFormField =
   | { key: string; outcome: 'takeTime' }
   | { key: string; outcome: 'binding'; binding: BindingFieldValue }
   | { key: string; outcome: 'entity'; reference: EntityFieldValue }
+  | { key: string; outcome: 'entityList'; list: EntityListFieldValue }
   | { key: string; outcome: 'filledByTheWholeClock' }
   | { key: string; outcome: 'eventField'; eventField: EventFieldValue };
 
@@ -94,6 +102,19 @@ export function checkSchemaFormValues(
   const keysFilledByTheWholeClock = listKeysFilledByAChosenWholeClock(description, formValues);
 
   for (const field of description.fields) {
+    // A list field set to "Lista dos cadastros" reads every sponsor or every slot
+    // (BAJAOVRLAY-46); the choice is the list's kind, which the offer keeps fitting.
+    const isListFieldReadingTheLibrary =
+      field.control === 'unsupported' &&
+      readOwnValueOfRecord(formValues.kinds, field.key) === 'entityList';
+    if (isListFieldReadingTheLibrary) {
+      const chosenListType = readOwnValueOfRecord(formValues.entityLists ?? {}, field.key);
+      const list = readEntityListOfFormField(description.dataSchema, field.key, chosenListType);
+      if (list !== undefined) {
+        checkedFields.push({ key: field.key, outcome: 'entityList', list });
+      }
+      continue;
+    }
     // A field the form cannot edit is not checked, unless it reads a source (a list).
     const isListFieldReadingASource =
       field.control === 'unsupported' &&

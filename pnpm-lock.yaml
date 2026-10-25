@@ -396,6 +396,68 @@ importers:
         specifier: ^8.3.3
         version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
+  packages/graphics/countdown:
+    dependencies:
+      '@bajaovrlay/graphics-kit':
+        specifier: workspace:*
+        version: link:../kit
+      '@bajaovrlay/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
+      lit:
+        specifier: ^3.3.3
+        version: 3.3.3
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@bajaovrlay/theme':
+        specifier: workspace:*
+        version: link:../../theme
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.62.0
+      jsdom:
+        specifier: ^30.1.2
+        version: 30.1.2
+      vite:
+        specifier: ^8.3.3
+        version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+
+  packages/graphics/intermission-board:
+    dependencies:
+      '@bajaovrlay/graphics-kit':
+        specifier: workspace:*
+        version: link:../kit
+      '@bajaovrlay/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
+      lit:
+        specifier: ^3.3.3
+        version: 3.3.3
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@bajaovrlay/theme':
+        specifier: workspace:*
+        version: link:../../theme
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.62.0
+      jsdom:
+        specifier: ^30.1.2
+        version: 30.1.2
+      vite:
+        specifier: ^8.3.3
+        version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+
   packages/graphics/kit:
     dependencies:
       '@bajaovrlay/shared':
@@ -678,11 +740,73 @@ importers:
         specifier: ^8.3.3
         version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
+  packages/graphics/sessions-board:
+    dependencies:
+      '@bajaovrlay/graphics-kit':
+        specifier: workspace:*
+        version: link:../kit
+      '@bajaovrlay/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
+      lit:
+        specifier: ^3.3.3
+        version: 3.3.3
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@bajaovrlay/theme':
+        specifier: workspace:*
+        version: link:../../theme
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.62.0
+      jsdom:
+        specifier: ^30.1.2
+        version: 30.1.2
+      vite:
+        specifier: ^8.3.3
+        version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+
   packages/graphics/sponsor-bug:
     dependencies:
       '@bajaovrlay/graphics-kit':
         specifier: workspace:*
         version: link:../kit
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
+      lit:
+        specifier: ^3.3.3
+        version: 3.3.3
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@bajaovrlay/theme':
+        specifier: workspace:*
+        version: link:../../theme
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.62.0
+      jsdom:
+        specifier: ^30.1.2
+        version: 30.1.2
+      vite:
+        specifier: ^8.3.3
+        version: 8.3.3(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+
+  packages/graphics/sponsor-roll:
+    dependencies:
+      '@bajaovrlay/graphics-kit':
+        specifier: workspace:*
+        version: link:../kit
+      '@bajaovrlay/shared':
+        specifier: workspace:*
+        version: link:../../shared
       gsap:
         specifier: ^3.15.0
         version: 3.15.0

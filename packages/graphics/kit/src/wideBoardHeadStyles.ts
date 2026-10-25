@@ -1,5 +1,5 @@
 /**
- * The look of a wide board's head card (boardHead.ts) in Ardósia: the design's
+ * The look of a wide board's head card (wideBoardHead.ts) in Ardósia: the design's
  * `.board__head`, `.board__logo`, `.board__title`, `.board__subtitle` and `.board__aside`
  * (docs/design/tools/slate-boards.css), against the theme's tokens alone, as the standings
  * drew it before it moved here. A graphic adds these to its own styles; the head starts
@@ -7,9 +7,9 @@
  */
 import { css } from 'lit';
 
-export const boardHeadStyles = css`
+export const wideBoardHeadStyles = css`
   /* The head card: the logo, the title, the event, the line at the right. */
-  .board-head {
+  .wide-board-head {
     height: var(--clock-head-height);
     flex: none;
     display: flex;
@@ -25,13 +25,13 @@ export const boardHeadStyles = css`
     opacity: 0;
   }
 
-  .board-head-logo {
+  .wide-board-head-logo {
     height: var(--clock-logo-height);
     width: auto;
     flex: none;
   }
 
-  .board-head-title {
+  .wide-board-head-title {
     margin: 0;
     font-family: var(--font-display);
     font-weight: var(--weight-display);
@@ -43,7 +43,7 @@ export const boardHeadStyles = css`
   }
 
   /* The event line, in the caption's look, cut with an ellipsis before the line at the right. */
-  .board-head-event-line {
+  .wide-board-head-event-line {
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -58,7 +58,7 @@ export const boardHeadStyles = css`
     white-space: nowrap;
   }
 
-  .board-head-page-line {
+  .wide-board-head-page-line {
     flex: none;
     margin-left: auto;
     font-size: var(--size-row);

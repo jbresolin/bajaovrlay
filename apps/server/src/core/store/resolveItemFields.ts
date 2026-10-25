@@ -15,7 +15,7 @@ import {
 import { ptBR } from '../messages/ptBR.js';
 import { listRequiredFieldKeysOfGraphic } from './graphicSchemaProperties.js';
 import { readTitleOfField } from './itemBindingFields.js';
-import { resolveEntityField } from './resolveEntityFields.js';
+import { resolveEntityField, resolveEntityListField } from './resolveEntityFields.js';
 import { resolveEventField } from './resolveEventField.js';
 import { refuseUnsupportedFieldKind } from './rundownCommandRefusals.js';
 
@@ -54,7 +54,8 @@ export type ItemFieldsResolutionRequest = {
  * library's teams (resolveBindingAgainstSources in shared). The whole clock (the path `clock`, stored on the field with the role
  * clockTime) fills the graphic's four clock fields by role, so the clock never takes a new
  * time with an old moment. An `entity` reference reads one attribute of one record of the
- * library, an image as its /media URL (resolveEntityFields.ts, BAJAOVRLAY-19). An
+ * library, an image as its /media URL (resolveEntityFields.ts, BAJAOVRLAY-19); an
+ * `entityList` every sponsor or every schedule slot of it (the same file, BAJAOVRLAY-46). An
  * `eventField` reads the payload of the event shown with the item (resolveEventField.ts,
  * BAJAOVRLAY-44).
  * One field it cannot fill refuses the whole item (BINDING_NOT_RESOLVED or
@@ -128,6 +129,20 @@ export function resolveItemFieldsIntoGraphicData(
       }
       case 'entity': {
         const fieldOutcome = resolveEntityField(
+          fieldKey,
+          fieldValue,
+          graphic,
+          entities,
+          requiredFieldKeys,
+        );
+        if (fieldOutcome.status === 'refused') {
+          return fieldOutcome;
+        }
+        resolvedKeysAndValues.push(...fieldOutcome.keysAndValues);
+        break;
+      }
+      case 'entityList': {
+        const fieldOutcome = resolveEntityListField(
           fieldKey,
           fieldValue,
           graphic,

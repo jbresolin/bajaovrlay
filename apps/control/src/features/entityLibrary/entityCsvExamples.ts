@@ -17,8 +17,9 @@ export const exampleLinesOfEachTab: Record<EntityType, string[][]> = {
     ['capita-42', 'Ana Souza', 'Capitã', '42'],
   ],
   sponsor: [
-    ['master', 'Mineradora Serra Azul', 'master', '10', 'sim'],
+    ['bosch', 'Bosch', 'diamante', '10', 'sim'],
     ['apoio-pneus', 'Pneus Trilha', 'apoio', '2', ''],
+    ['sae-brasil', 'SAE Brasil', 'realizacao', '5', ''],
   ],
   scheduleSlot: [
     ['briefing', 'Briefing das equipes', 'other', '14/11/2026 08:00', '', 'Tenda central'],

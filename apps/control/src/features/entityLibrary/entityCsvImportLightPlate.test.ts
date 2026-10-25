@@ -78,10 +78,10 @@ describe('buildCsvImportPreview of the light plate column', () => {
 
 describe('buildCsvImportPreview of the sponsors’ light plate column', () => {
   it('reads sim as yes and an empty cell as no choice for a sponsor too', () => {
-    // Arrange: two sponsors, the master's logo on the plate, the support's with no choice.
+    // Arrange: two sponsors, the Diamante sponsor's logo on the plate, the support's with no choice.
     const csv =
       'id;nome;cota;peso;placa_clara\n' +
-      'master;Mineradora Serra Azul;master;10;sim\n' +
+      'patrocinador-diamante;Mineradora Serra Azul;diamante;10;sim\n' +
       'apoio-pneus;Pneus Trilha;apoio;2;\n';
 
     // Act: build the preview.
@@ -92,7 +92,7 @@ describe('buildCsvImportPreview of the sponsors’ light plate column', () => {
       createPredictableIdMaker(),
     );
 
-    // Assert: yes for the master sponsor, left out for the support sponsor.
+    // Assert: yes for the Diamante sponsor, left out for the support sponsor.
     expect(
       preview.rows.map(
         (row) => (row.record as { logoOnLightPlate?: boolean } | undefined)?.logoOnLightPlate,
@@ -103,22 +103,22 @@ describe('buildCsvImportPreview of the sponsors’ light plate column', () => {
 });
 
 describe('buildCsvImportPreview of an older sponsors file, without the column', () => {
-  it('keeps the plate the stored master sponsor already has', () => {
-    // Arrange: the master sponsor stored with its logo on the plate, and a sponsors file
+  it('keeps the plate the stored Diamante sponsor already has', () => {
+    // Arrange: the Diamante sponsor stored with its logo on the plate, and a sponsors file
     // from before BAJAOVRLAY-23, with only its four columns, that lowers the weight.
     const library: EntityLibrary = {
       ...buildLibraryWithTeam42AndTheNarrator(),
       sponsors: [
         {
-          sponsorId: 'master',
+          sponsorId: 'patrocinador-diamante',
           name: 'Mineradora Serra Azul',
-          tier: 'master',
+          tier: 'diamante',
           rollWeight: 10,
           logoOnLightPlate: true,
         },
       ],
     };
-    const csv = 'id;nome;cota;peso\n' + 'master;Mineradora Serra Azul;master;8\n';
+    const csv = 'id;nome;cota;peso\n' + 'patrocinador-diamante;Mineradora Serra Azul;diamante;8\n';
 
     // Act: build the preview.
     const preview = buildCsvImportPreview('sponsor', csv, library, createPredictableIdMaker());
@@ -126,9 +126,9 @@ describe('buildCsvImportPreview of an older sponsors file, without the column', 
     // Assert: an update with the new weight, and the plate still on.
     expect(preview.rows[0]?.status, 'the stored sponsor is updated').toBe('update');
     expect(preview.rows[0]?.record, 'the new weight, and the stored plate kept').toEqual({
-      sponsorId: 'master',
+      sponsorId: 'patrocinador-diamante',
       name: 'Mineradora Serra Azul',
-      tier: 'master',
+      tier: 'diamante',
       rollWeight: 8,
       logoOnLightPlate: true,
     });

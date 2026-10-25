@@ -97,7 +97,7 @@ export async function importTheSimulatorTeamsAndGiveOneALogo(
 type LibraryAsTheTestsReadIt = {
   teams: { carNumber: number; teamName: string; logoMediaId?: string }[];
   people: { personId: string }[];
-  sponsors: { name: string; logoMediaId?: string; logoOnLightPlate?: boolean }[];
+  sponsors: { name: string; tier: string; logoMediaId?: string; logoOnLightPlate?: boolean }[];
   media: { mediaId: string }[];
 };
 

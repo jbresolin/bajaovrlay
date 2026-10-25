@@ -5,12 +5,11 @@ import { type UseFormReturn, useWatch } from 'react-hook-form';
 import { ptBR } from '@/i18n/ptBR';
 
 import {
-  canFieldBeBoundToASource,
   canFieldTakeTheWholeClock,
   listClockFieldKeysFilledByTheWholeClock,
 } from './bindingChoices';
 import type { SchemaFormBindingOptions } from './BoundFieldControls';
-import { ListFieldWithSourceChoice } from './ListFieldWithSourceChoice';
+import { doesListFieldOfferAChoice, ListFieldWithSourceChoice } from './ListFieldWithSourceChoice';
 import type { SchemaFormDescription, SchemaFormFieldDescription } from './schemaFormDescription';
 import { SchemaFormFieldRow } from './SchemaFormFieldRow';
 import type { SchemaFormValues, UnsupportedValueAsJson } from './schemaFormValues';
@@ -69,7 +68,8 @@ function chooseWidthClassOfField(field: SchemaFormFieldDescription): string {
  * bindable path fits it, "Relógio da fonte" on a clock's time field, which then fills the
  * three other clock fields; a field the form draws read-only (a list) may read one too.
  * `entityLibrary` (the item editor only) lets a field read the library: "Cadastro" where
- * an attribute fits it (BAJAOVRLAY-19).
+ * an attribute fits it (BAJAOVRLAY-19), and a list field "Lista dos cadastros" where every
+ * sponsor or every slot fits it (BAJAOVRLAY-46).
  */
 export function SchemaFormFields(props: {
   form: UseFormReturn<SchemaFormValues>;
@@ -129,10 +129,13 @@ export function SchemaFormFields(props: {
           // give two elements the id of the first one's help text.
           if (field.control === 'unsupported') {
             const keptValue = unsupportedValuesAsJson.find((entry) => entry.key === field.key);
-            const canReadASource =
-              bindingOptions !== undefined &&
-              canFieldBeBoundToASource(description.dataSchema, field.key);
-            if (canReadASource) {
+            const offersAChoice = doesListFieldOfferAChoice(
+              description.dataSchema,
+              field.key,
+              bindingOptions,
+              props.entityLibrary,
+            );
+            if (offersAChoice) {
               return (
                 <div key={field.key} className={chooseWidthClassOfField(field)}>
                   <ListFieldWithSourceChoice
@@ -142,6 +145,7 @@ export function SchemaFormFields(props: {
                     controlId={`${controlIdPrefix}-unsupported-${positionInTheForm}`}
                     keptJsonText={keptValue?.jsonText}
                     bindingOptions={bindingOptions}
+                    entityLibrary={props.entityLibrary}
                     isDisabled={isDisabled}
                   />
                 </div>

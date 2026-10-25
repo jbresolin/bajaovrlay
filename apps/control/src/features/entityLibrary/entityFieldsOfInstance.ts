@@ -1,7 +1,8 @@
 /**
  * What the page says about the fields of one instance that read the entity library: where
- * each reads ("Cadastro › Equipe 42 › Número do carro") and which record "Editar no
- * cadastro" opens. Read from the instance's entry of `instanceBindings`, never from its
+ * each reads ("Cadastro › Equipe 42 › Número do carro", or "Cadastros › Patrocinadores
+ * (lista completa)" for an entity list, BAJAOVRLAY-46) and which record "Editar no
+ * cadastro" opens (none, for a list). Read from the instance's entry of `instanceBindings`, never from its
  * item, as the server's refreshes are (gate 2 of PR #23).
  */
 import {
@@ -36,6 +37,15 @@ export function describeEntityFieldsOfInstance(
   const entry = instanceBindings.find((candidate) => candidate.instanceId === instanceId);
   const entityFields = entry?.entityFields ?? [];
   return entityFields.map(({ fieldKey, entityReference }) => {
+    if (entityReference.kind === 'entityList') {
+      const listName = ptBR.entityLibrary.editor.entityListNames[entityReference.entityType];
+      return {
+        fieldKey,
+        whereItReadsText: ptBR.entityLibrary.onAir.whereTheListReads(listName),
+        valueType: undefined,
+        recordToOpen: undefined,
+      };
+    }
     const attribute = findEntityAttribute(entityReference.entityType, entityReference.attribute);
     const recordFound = findRecordNameOfReference(entityReference, library);
     return {

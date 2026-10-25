@@ -8,7 +8,7 @@ or on the light plate with `logoOnLightPlate`, the team card's rule) when it has
 `src/podium.ts` (the OGraf lifecycle); it wires `podiumModel.ts` (Zod data, which entry stands where,
 the places, the steps), `podiumStepMoves.ts` (which cards a step reveals, hides or lifts out),
 `podiumView.ts`, `podiumStyles.ts`, `podiumAnimations.ts`, the kit's
-`boardHead` and `ptBR.ts`. The podium has no timer: nothing on it moves by itself.
+`wideBoardHead` and `ptBR.ts`. The podium has no timer: nothing on it moves by itself.
 
 **Steps** (`stepCount` 4): play from off air is step 0, the head alone (Entrar); each further play
 (Próximo) reveals one card: step 1 the 3rd, step 2 the 2nd, step 3 the 1st, each rising

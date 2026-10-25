@@ -17,6 +17,13 @@ export {
   type SponsorTier,
   SponsorTierSchema,
 } from './sponsor.js';
+// The six sponsor levels in round order (Diamante first, Realização last), with no Zod, so
+// graphics bundle the same list from `@bajaovrlay/shared/sponsorLevels`.
+export {
+  findPlaceOfSponsorLevelInRound,
+  type SponsorLevel,
+  sponsorLevelsInRoundOrder,
+} from './sponsorLevels.js';
 // A slot of the schedule, and the scheduleSlots slice (each id once).
 export {
   type ScheduleSlot,
@@ -25,11 +32,15 @@ export {
   ScheduleSlotsSchema,
 } from './scheduleSlot.js';
 // What the schedule says about a slot at a moment (never stored), and its pt-BR word.
+// The rule carries no import, so the sessions board bundles it from
+// `@bajaovrlay/shared/scheduleSlotStatus`.
 export {
+  findEndOfScheduleSlot,
   findStatusOfScheduleSlot,
-  labelOfScheduleSlotStatus,
   type ScheduleSlotStatus,
+  type ScheduleSlotTiming,
 } from './scheduleSlotStatus.js';
+export { labelOfScheduleSlotStatus } from './scheduleSlotStatusLabel.js';
 // The four slices together, and how a refusal names one record ("Equipe 42 (Baja UFPR)").
 export {
   describePerson,
@@ -50,6 +61,31 @@ export {
 export { type UpsertEntityCommand, UpsertEntityCommandSchema } from './upsertEntity.js';
 // The entity reference, a FieldValue that reads one attribute of one record (always live).
 export { type EntityFieldValue, EntityFieldValueSchema } from './entityFieldValue.js';
+// The entity list, a FieldValue that reads every sponsor or every schedule slot (always live).
+export {
+  type EntityListFieldValue,
+  EntityListFieldValueSchema,
+  type EntityListType,
+  EntityListTypeSchema,
+} from './entityListFieldValue.js';
+// What one item of each list is, and the keys each list's items carry (written by hand).
+export {
+  type EntityListItemKey,
+  listKeysEveryItemOfEntityListCarries,
+  listKeysOfTheItemsOfEntityList,
+  type ScheduleSlotListItem,
+  type SponsorListItem,
+} from './entityListItems.js';
+// Which fields a list fits (an array of objects whose items.required it carries), and the save check.
+export {
+  findProblemInEntityListForDataSchemaField,
+  listEntityListTypesThatFitDataSchemaField,
+} from './entityListFitsGraphicField.js';
+// Reading one list against the library: the items in order, or why the list is empty.
+export {
+  type EntityListResolution,
+  resolveEntityListAgainstLibrary,
+} from './entityListResolution.js';
 // Every attribute a reference may read, by kind of record, with its label and value type.
 export {
   type EntityAttribute,

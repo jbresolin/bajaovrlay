@@ -151,8 +151,14 @@ function chooseControlForProperty(
     if (hasEnum) {
       return 'unsupported';
     }
+    // A moment typed as a date and time, sent as milliseconds since 1970 (a session's start,
+    // BAJAOVRLAY-46): `v_baja.unit: "epochMs"` on a whole number.
+    const unit = readBajaVendorKeywords(propertySchema).unit;
+    if (type === 'integer' && unit === 'epochMs' && !isWallClockMoment) {
+      return 'dateTime';
+    }
     // A wall-clock moment is thirteen digits of milliseconds since 1970, never an mm:ss.
-    const isInMilliseconds = readBajaVendorKeywords(propertySchema).unit === 'ms';
+    const isInMilliseconds = unit === 'ms';
     return isInMilliseconds && !isWallClockMoment ? 'duration' : 'number';
   }
   if (type === 'boolean') {
