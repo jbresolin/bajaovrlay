@@ -4,6 +4,11 @@
  * row, made a name by mapValues); the brackets shape holds rounds of matches. This groups
  * the mapped matches into rounds, in the order each round is first met, and keeps each
  * match's own order inside its round: the source's order is the draw's.
+ *
+ * It is lenient where real tables are, so the shape can stay strict (gate 2 of PR #30): a
+ * table with integer defaults writes 0 wins on every row and fills a bye's empty slot with
+ * nothing but those wins. Wins on a match that is not a best of N are dropped, and so is a
+ * carB with no car number (a bye), rather than refusing the whole snapshot for them.
  */
 
 /** One round built from the matches: its name, the third-place mark, its matches. */
@@ -47,8 +52,44 @@ export function groupMappedMatchesIntoRounds(
     if (roundIsThirdPlace === true) {
       round.isThirdPlace = true;
     }
-    round.matches.push(match);
+    round.matches.push(dropWhatATableWritesByDefault(match));
   });
 
   return { rounds, linesWithoutRoundName };
+}
+
+/** One car of a mapped match, when it is an object (the mapping builds it from its rules). */
+function readMappedCar(
+  match: Record<string, unknown>,
+  side: 'carA' | 'carB',
+): Record<string, unknown> | undefined {
+  const car = match[side];
+  const isAnObject = typeof car === 'object' && car !== null && !Array.isArray(car);
+  return isAnObject ? (car as Record<string, unknown>) : undefined;
+}
+
+/**
+ * A mapped match without what a table writes by default: the cars' wins when the match has
+ * no bestOf, and a carB with no carNumber (a bye's empty slot). Anything else is passed on
+ * as mapped, for the shape to judge.
+ */
+function dropWhatATableWritesByDefault(match: Record<string, unknown>): Record<string, unknown> {
+  const tidied: Record<string, unknown> = { ...match };
+  const isASeries = match.bestOf !== undefined;
+  for (const side of ['carA', 'carB'] as const) {
+    const car = readMappedCar(match, side);
+    if (car === undefined) {
+      continue;
+    }
+    const tidiedCar = { ...car };
+    if (!isASeries) {
+      delete tidiedCar.wins;
+    }
+    tidied[side] = tidiedCar;
+  }
+  const carB = readMappedCar(tidied, 'carB');
+  if (carB !== undefined && carB.carNumber === undefined) {
+    delete tidied.carB;
+  }
+  return tidied;
 }

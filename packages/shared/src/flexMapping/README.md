@@ -14,7 +14,8 @@ only, no wildcards, filters, recursion or functions; a key holding a dot or a br
 response whose top level is a list, cannot be read. **One transform per rule**, no chains.
 **Brackets** (BAJAOVRLAY-25) are mapped from a flat list of matches, one element per match as
 the Baja app's `tournament` table keeps them, each naming its round (`roundName`, and
-`roundIsThirdPlace`); the rounds are built in the order first met (`bracketRoundsOfMappedMatches.ts`).
+`roundIsThirdPlace`); the rounds are built in the order first met (`bracketRoundsOfMappedMatches.ts`),
+which drops a plain match's wins and a bye's half-filled carB, as tables with integer defaults send them.
 `flexFieldRuleApplication.ts` applies one rule to its source. A standings team's **score parts** come
 as one list per team, each part `{ "label", "value" }`; the label is the part's id, and the
 standings' `scoreParts` is built from every label met, a part with no value too, in order

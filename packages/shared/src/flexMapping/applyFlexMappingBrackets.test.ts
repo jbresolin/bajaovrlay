@@ -16,6 +16,9 @@
  *   - A match whose round code the table cannot name fails the whole mapping, naming the
  *     match by its id and line; one with no round at all fails it too, as the grouping
  *     cannot place it.
+ *   - Lenient where real tables are (gate 2 of PR #30), the shape staying strict: a plain
+ *     match's wins (a column default of 0) are dropped, and so is a carB with no car number
+ *     (a bye's row filling only its win column), so the snapshot is not refused for them.
  *
  * What these tests deliberately do not cover:
  *   - The general rules of a mapping (missing paths, problem lists, list order);
@@ -231,6 +234,63 @@ describe('applyFlexMapping into brackets', () => {
     expect(result.ok, 'a match with no round must fail the mapping').toBe(false);
     expect(result.ok ? [] : result.problems, 'the problem must say the round is missing').toEqual([
       'Chaves › disputa J127 (linha 3) › Fase: falta o nome da fase, que diz em que fase a disputa entra',
+    ]);
+  });
+
+  it('drops the wins of a plain match and the empty carB of a bye, as a table with integer defaults sends them', () => {
+    // Arrange: the semifinals as a table whose win columns default to 0 on every row and
+    // whose bye rows fill only those columns: a plain semifinal with "wins: 0" on both cars
+    // and no series, and a bye whose empty slot is { wins: 0 } and nothing else.
+    const response = {
+      partidas: [
+        {
+          id: 'J117',
+          rodada: 1,
+          melhorDe: null,
+          wo: false,
+          slot1: buildTeamSlot(2, 'Baja UFMG', 'UFMG', 0),
+          slot2: buildTeamSlot(29, 'UFSC', 'UFSC-Fln', 0),
+          vencedor: 2,
+        },
+        {
+          id: 'J118',
+          rodada: 1,
+          melhorDe: null,
+          wo: true,
+          slot1: buildTeamSlot(17, 'Bombaja', 'UFSM', 0),
+          slot2: { kind: 'bye', wins: 0 },
+          vencedor: 17,
+        },
+      ],
+    };
+    const mappings = buildTournamentMapping();
+
+    // Act: map it, then validate the brackets exactly as the store does.
+    const result = applyFlexMapping(mappings, { torneio: response }, pollMomentMs);
+    const brackets = result.ok
+      ? (result.shapes.brackets as { rounds: Array<{ matches: unknown[] }> })
+      : undefined;
+    const validation = validateDataShape('brackets', brackets);
+
+    // Assert: valid; the plain match carries no wins, the bye no carB at all.
+    expect(result.ok, 'the mapping must work').toBe(true);
+    expect(validation.isValid, 'the brackets must pass the shape, not refuse the snapshot').toBe(
+      true,
+    );
+    expect(brackets?.rounds[0]?.matches, 'the wins and the empty slot dropped').toEqual([
+      {
+        matchId: 'J117',
+        walkover: false,
+        winnerCarNumber: 2,
+        carA: { carNumber: 2, teamName: 'Baja UFMG', schoolName: 'UFMG' },
+        carB: { carNumber: 29, teamName: 'UFSC', schoolName: 'UFSC-Fln' },
+      },
+      {
+        matchId: 'J118',
+        walkover: true,
+        winnerCarNumber: 17,
+        carA: { carNumber: 17, teamName: 'Bombaja', schoolName: 'UFSM' },
+      },
     ]);
   });
 });
