@@ -124,7 +124,12 @@ export function LayerStatusPanel() {
                   instanceOnProgram === undefined ||
                   findNextStepOfInstance(instanceOnProgram, graphicOnProgram) === undefined
                     ? undefined
-                    : () => void sendCommand({ type: 'nextOnLayer', layerId: layer.id })
+                    : () =>
+                        void sendCommand({
+                          type: 'nextOnLayer',
+                          layerId: layer.id,
+                          fromStep: instanceOnProgram.currentStep,
+                        })
                 }
               />
             );

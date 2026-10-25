@@ -10,7 +10,7 @@
  *
  * What these tests prove:
  *   - The podium's row at its head reads "Passo 1 de 4", and "Próximo" sends nextOnLayer
- *     for the fullscreen layer and nothing else.
+ *     for the fullscreen layer from step 0 (the step on screen) and nothing else.
  *   - At its last step the row reads "Passo 4 de 4" and "Próximo" is off.
  *   - A graphic of one step (the race clock) shows neither the step nor "Próximo".
  *   - A refused nextOnLayer is shown under the rows, in the server's words.
@@ -84,7 +84,7 @@ describe('"Próximo" on the rows of the layer status panel', () => {
     expect(
       fakeServer.listCommandsReceived(),
       '"Próximo" must ask for the next step of that layer only',
-    ).toEqual([{ type: 'nextOnLayer', layerId: 'fullscreen' }]);
+    ).toEqual([{ type: 'nextOnLayer', layerId: 'fullscreen', fromStep: 0 }]);
     fakeServer.acceptLastCommand();
   });
 

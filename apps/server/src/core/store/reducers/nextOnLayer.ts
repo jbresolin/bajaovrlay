@@ -1,6 +1,7 @@
 import { findNextStepOfInstance, type NextOnLayerCommand } from '@bajaovrlay/shared';
 
 import {
+  refuseNextFromAnOldStep,
   refuseNextOnEmptyLayer,
   refuseNextWithoutAStep,
   refuseUnknownLayer,
@@ -11,7 +12,9 @@ import type { ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js'
  * nextOnLayer ("Próximo", BAJAOVRLAY-47): moves the instance on the layer's program output
  * to its next OGraf step, keeping its id, data and status, so the renderer plays that step
  * on the graphic already on screen. The preview output is never stepped. Refused when the
- * layer does not exist, when its program is empty, and when the graphic has no next step
+ * layer does not exist, when its program is empty, when the graphic is no longer on the
+ * step the press came from (a double press reveals one place, not two), and when the
+ * graphic has no next step
  * (one step, or the last one): past the last step the operator takes it off with "Limpar",
  * deliberately, rather than the press doing it, since a press too many must never empty
  * the screen.
@@ -31,9 +34,16 @@ export function reduceNextOnLayer(
     return { status: 'refused', error: refuseNextOnEmptyLayer(layer.name) };
   }
   const graphic = slices.graphics.find((candidate) => candidate.id === instanceOnAir.graphicId);
+  const graphicName = graphic?.manifest.name ?? instanceOnAir.graphicId;
+  if (instanceOnAir.currentStep !== command.fromStep) {
+    const stepNumberNow = instanceOnAir.currentStep + 1;
+    return {
+      status: 'refused',
+      error: refuseNextFromAnOldStep(graphicName, layer.name, stepNumberNow),
+    };
+  }
   const nextStep = findNextStepOfInstance(instanceOnAir, graphic);
   if (nextStep === undefined) {
-    const graphicName = graphic?.manifest.name ?? instanceOnAir.graphicId;
     return { status: 'refused', error: refuseNextWithoutAStep(graphicName, layer.name) };
   }
 

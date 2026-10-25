@@ -13,6 +13,8 @@
  *     preview on the same layer is not stepped.
  *   - The podium's three Próximos bring it to step 3, and a fourth is refused with
  *     NO_NEXT_STEP: leaving the air is "Limpar".
+ *   - Two presses sent from the same step reveal one place: the second is refused with
+ *     STEP_ALREADY_MOVED (gate 2 of PR #27).
  *   - A graphic of one step (the race clock) is refused with NO_NEXT_STEP.
  *   - A layer whose program is empty is refused with NOTHING_ON_AIR_ON_LAYER, even with
  *     something in preview; a layer that does not exist with LAYER_NOT_FOUND.
@@ -86,7 +88,7 @@ describe('nextOnLayer', () => {
     // Act: press Próximo on the fullscreen layer.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'nextOnLayer', layerId: 'fullscreen' },
+      { type: 'nextOnLayer', layerId: 'fullscreen', fromStep: 0 },
       contextOfTheCommand,
     );
 
@@ -106,7 +108,7 @@ describe('nextOnLayer', () => {
     for (let press = 1; press <= 3; press += 1) {
       const outcome = reduceCommand(
         slices,
-        { type: 'nextOnLayer', layerId: 'fullscreen' },
+        { type: 'nextOnLayer', layerId: 'fullscreen', fromStep: press - 1 },
         contextOfTheCommand,
       );
       if (outcome.status === 'applied') {
@@ -115,7 +117,7 @@ describe('nextOnLayer', () => {
     }
     const fourthPress = reduceCommand(
       slices,
-      { type: 'nextOnLayer', layerId: 'fullscreen' },
+      { type: 'nextOnLayer', layerId: 'fullscreen', fromStep: 3 },
       contextOfTheCommand,
     );
 
@@ -130,6 +132,37 @@ describe('nextOnLayer', () => {
     });
   });
 
+  it('reveals one place, not two, when Próximo is pressed twice from the same step', () => {
+    // Arrange: the podium on air at its head; two presses (a double click, or two
+    // operators) both sent from step 0.
+    const slicesBefore = buildRaceDayWithThePodium([buildPodiumInstance('program', 0)]);
+    const firstPress = reduceCommand(
+      slicesBefore,
+      { type: 'nextOnLayer', layerId: 'fullscreen', fromStep: 0 },
+      contextOfTheCommand,
+    );
+    const slicesAfterTheFirstPress =
+      firstPress.status === 'applied' ? firstPress.slices : slicesBefore;
+
+    // Act: the second press arrives, still saying step 0.
+    const secondPress = reduceCommand(
+      slicesAfterTheFirstPress,
+      { type: 'nextOnLayer', layerId: 'fullscreen', fromStep: 0 },
+      contextOfTheCommand,
+    );
+
+    // Assert: the podium stays at step 1, and the second press is refused in pt-BR.
+    expect(readStepOnAirOfThePodium(slicesAfterTheFirstPress), 'one place revealed').toBe(1);
+    expect(secondPress, 'the second press came from a step the podium has left').toEqual({
+      status: 'refused',
+      error: {
+        code: 'STEP_ALREADY_MOVED',
+        message:
+          '"Pódio" em "Tela cheia" já passou para o passo 2; o Próximo anterior já foi aplicado.',
+      },
+    });
+  });
+
   it('refuses a graphic of one step', () => {
     // Arrange: the race clock on air; its manifest gives no stepCount.
     const slicesBefore = buildRaceDayWithThePodium([buildRaceClockInstanceWithStatus('on-air')]);
@@ -137,7 +170,7 @@ describe('nextOnLayer', () => {
     // Act: press Próximo on the clock layer.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'nextOnLayer', layerId: 'clock' },
+      { type: 'nextOnLayer', layerId: 'clock', fromStep: 0 },
       contextOfTheCommand,
     );
 
@@ -154,7 +187,7 @@ describe('nextOnLayer', () => {
     // Act: press Próximo there.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'nextOnLayer', layerId: 'fullscreen' },
+      { type: 'nextOnLayer', layerId: 'fullscreen', fromStep: 0 },
       contextOfTheCommand,
     );
 
@@ -175,7 +208,7 @@ describe('nextOnLayer', () => {
     // Act: press Próximo on a layer nobody made.
     const outcome = reduceCommand(
       slicesBefore,
-      { type: 'nextOnLayer', layerId: 'palco' },
+      { type: 'nextOnLayer', layerId: 'palco', fromStep: 0 },
       contextOfTheCommand,
     );
 

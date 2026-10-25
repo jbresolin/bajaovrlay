@@ -36,6 +36,8 @@ export const ptBR = {
     // "Próximo" on a layer with nothing on air, or on a graphic with no step left
     // (BAJAOVRLAY-47).
     nothingOnAirOnLayer: (layerName: string) => `Não há nada no ar na camada "${layerName}".`,
+    stepAlreadyMoved: (graphicName: string, layerName: string, stepNumber: number) =>
+      `"${graphicName}" em "${layerName}" já passou para o passo ${stepNumber}; o Próximo anterior já foi aplicado.`,
     noNextStep: (graphicName: string, layerName: string) =>
       `"${graphicName}" já está no último passo em "${layerName}". Use Limpar para tirá-lo do ar.`,
     // The four ways a take's or an update's data can fail the graphic's manifest

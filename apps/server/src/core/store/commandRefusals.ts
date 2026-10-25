@@ -35,6 +35,21 @@ export function refuseNextOnEmptyLayer(layerName: string): CommandError {
   };
 }
 
+/**
+ * The refusal for a "Próximo" pressed from a step the graphic has already left (a double
+ * press, or two operators); `stepNumber` is the step it is on now, counted from 1.
+ */
+export function refuseNextFromAnOldStep(
+  graphicName: string,
+  layerName: string,
+  stepNumber: number,
+): CommandError {
+  return {
+    code: 'STEP_ALREADY_MOVED',
+    message: ptBR.commandErrors.stepAlreadyMoved(graphicName, layerName, stepNumber),
+  };
+}
+
 /** The refusal for a "Próximo" on a graphic of one step, or one on its last step. */
 export function refuseNextWithoutAStep(graphicName: string, layerName: string): CommandError {
   return { code: 'NO_NEXT_STEP', message: ptBR.commandErrors.noNextStep(graphicName, layerName) };

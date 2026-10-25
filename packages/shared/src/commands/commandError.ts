@@ -53,6 +53,8 @@ export const CommandErrorCodeSchema = z.enum([
   'NOTHING_ON_AIR_ON_LAYER',
   /** nextOnLayer named a layer whose graphic has one step, or is on its last step. */
   'NO_NEXT_STEP',
+  /** nextOnLayer's fromStep is not the step the graphic is on: another press moved it first. */
+  'STEP_ALREADY_MOVED',
   /** The command names a quick-fire panel that does not exist. */
   'QUICK_FIRE_PANEL_NOT_FOUND',
   /** deleteQuickFirePanel named a panel that still has items. */
