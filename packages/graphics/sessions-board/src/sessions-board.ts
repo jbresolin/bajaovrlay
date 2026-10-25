@@ -74,6 +74,8 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
   // Read by render(); not Lit reactive properties, so the board is redrawn only when this
   // file asks, never by surprise.
   private data: SessionsBoardData | undefined = undefined;
+  // An update that came on air during a motion (the play-in, a crossfade), drawn after it.
+  private isRedrawWaitingForTheMotion = false;
   private readonly motions: MotionTimelineRunner = createMotionTimelineRunner();
   private readonly statusChecks = new SessionsBoardStatusChecks({
     readRenderRoot: () => this.renderRoot,
@@ -83,7 +85,10 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
       this.requestUpdate();
       await this.updateComplete;
     },
-    runMotion: (timeline) => this.motions.run(timeline, false),
+    runMotion: async (timeline) => {
+      await this.motions.run(timeline, false);
+      await this.drawTheWaitingUpdate();
+    },
   });
 
   override render() {
@@ -157,6 +162,7 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
       findSessionsBoardRows(this.renderRoot).map((rowParts) => rowParts.row),
     );
     await this.motions.run(playIn, skipAnimation);
+    await this.drawTheWaitingUpdate();
 
     if (this.readLifecycleNow() === 'disposed') {
       return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
@@ -197,7 +203,8 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
    * OGraf updateAction: merges partial data in at any time after load (the live refresh
    * sends every slot after an edit of the schedule). On air the slots are redrawn in place,
    * a row that came in is placed on air at once, the statuses that changed crossfade, and
-   * the next check is booked again; off air the data is drawn, every piece off air; during
+   * the next check is booked again; during a motion on air (the play-in, a crossfade), once
+   * it has ended; off air the data is drawn, every piece off air; during
    * the stop-out it is only stored, and drawn once the board has faded.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
@@ -222,6 +229,10 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
       return okAnswer;
     }
     this.data = dataCheck.data;
+    if (this.motions.isRunning()) {
+      this.isRedrawWaitingForTheMotion = true;
+      return okAnswer;
+    }
     await this.statusChecks.redrawOnAirAndCrossfadeTheChanges(dataCheck.data);
     this.statusChecks.bookTheNextStatusCheck();
     return okAnswer;
@@ -248,6 +259,19 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
     this.statusChecks.cancelTheStatusCheck();
     this.motions.finishEveryTimelineAtOnce();
     return okAnswer;
+  }
+
+  /**
+   * Draws, once a motion has ended, the update that came on air during it: redrawn in place,
+   * the changed statuses crossfading, the next check booked again. Nothing off air.
+   */
+  private async drawTheWaitingUpdate(): Promise<void> {
+    if (!this.isRedrawWaitingForTheMotion || this.lifecycle !== 'onAir') {
+      return;
+    }
+    this.isRedrawWaitingForTheMotion = false;
+    await this.statusChecks.redrawOnAirAndCrossfadeTheChanges(this.requireData());
+    this.statusChecks.bookTheNextStatusCheck();
   }
 
   /** Keeps the data and draws its slots with their statuses now, at once. */

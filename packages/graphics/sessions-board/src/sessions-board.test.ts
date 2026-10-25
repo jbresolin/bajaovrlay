@@ -17,14 +17,17 @@
  *     slot in progress now crossfades the two that changed.
  *   - stop, dispose and removal from the page each cancel the status check: no timer is
  *     left, and the boundary passing changes nothing (these fail if the cancel is removed).
+ *   - The statuses are the server's clock's, not the machine's.
  *   - An update off air only stores and draws, and books no check; one during the stop-out
- *     leaves the fading board alone and is drawn once it has faded.
+ *     leaves the fading board alone and is drawn once it has faded; one during the play-in
+ *     is drawn once the board is up.
  *
  * What these tests deliberately do not cover:
  *   - The status rule and the window; sessionsBoardWindow.test.ts on shared's own table.
  *   - Real rendering and motion; e2e/ runs the built graphic in Chromium.
  */
-import { describe, expect, it } from 'vitest';
+import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
+import { describe, expect, it, onTestFinished } from 'vitest';
 
 import {
   atSundayBrasiliaTime,
@@ -143,6 +146,28 @@ describe('the states on air', () => {
     expect(isLiveSlateShownOn(board, 'Alinhamento do enduro'), 'and leaves the old row').toBe(
       false,
     );
+  });
+
+  it('works the statuses out on the server’s clock, not the machine’s', async () => {
+    // Arrange: the machine at 09:58, the server's clock three minutes ahead of it (10:01).
+    takeControlOfTimeAndTimers(atSundayBrasiliaTime('09:58'));
+    forgetServerClockSamples();
+    onTestFinished(() => forgetServerClockSamples());
+    recordServerClockSample(Date.now() + 3 * 60_000, Date.now());
+    const board = createSessionsBoardOnThePage();
+
+    // Act: load and play the board.
+    await loadSessionsBoardWithData(board, createSundaySessionsBoardData());
+    await board.playAction({ skipAnimation: true });
+
+    // Assert: at the server's 10:01 the enduro runs and the alignment is over.
+    expect(
+      [
+        readStatusShownOf(board, 'Alinhamento do enduro'),
+        readStatusShownOf(board, 'Enduro de Resistência'),
+      ],
+      'the states at the server’s 10:01',
+    ).toEqual(['finished', 'inProgress']);
   });
 
   it('changes nothing a second before the boundary', async () => {
@@ -291,5 +316,34 @@ describe('an update during the stop-out', () => {
     expect(titleDuringTheStopOut, 'the fading board keeps its title').toBe('PROGRAMAÇÃO DO DIA');
     expect(readTitle(board), 'drawn once faded').toBe('PROGRAMAÇÃO DE DOMINGO');
     expect(timeAndTimers.countPendingTimers(), 'no check off air').toBe(0);
+  });
+});
+
+describe('an update during the play-in', () => {
+  it('leaves the rising board alone, then draws the update once it is up', async () => {
+    // Arrange: Sunday's board loaded at 09:20, its play-in lasting 400 ms (on the board
+    // itself, since jsdom carries no custom property from :root into a shadow root), the
+    // play started and 100 ms into the rise.
+    const timeAndTimers = takeControlOfTimeAndTimers(atSundayBrasiliaTime('09:20'));
+    const board = createSessionsBoardOnThePage();
+    await loadSessionsBoardWithData(board, createSundaySessionsBoardData());
+    board.shadowRoot
+      ?.querySelector<HTMLElement>('[data-testid="sessions-board"]')
+      ?.style.setProperty('--motion-in', '400ms');
+    const pendingPlay = board.playAction({});
+    await timeAndTimers.letTimePass(100);
+
+    // Act: the title changes while the board rises; then the play-in runs to its end.
+    const answer = await board.updateAction({ data: { title: 'PROGRAMAÇÃO DE DOMINGO' } });
+    const titleDuringThePlayIn = readTitle(board);
+    await timeAndTimers.letTimePass(1000);
+    await pendingPlay;
+
+    // Assert: accepted, the rising board unchanged, the new title once it is up, and one
+    // check booked for the enduro's start.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(titleDuringThePlayIn, 'the rising board keeps its title').toBe('PROGRAMAÇÃO DO DIA');
+    expect(readTitle(board), 'drawn once up').toBe('PROGRAMAÇÃO DE DOMINGO');
+    expect(timeAndTimers.countPendingTimers(), 'one check booked').toBe(1);
   });
 });

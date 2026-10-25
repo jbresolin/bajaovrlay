@@ -11,8 +11,8 @@
  *     same statuses through the board: the board cannot drift from the Programação tab.
  *   - Slots are shown by start, whatever the order they come in.
  *   - Twelve slots or fewer are all shown; with twenty the window starts two before the
- *     slot in progress, holds at the list's start and end, and with none in progress
- *     anchors on the next to start.
+ *     slot in progress, holds at the list's start and end, with none in progress anchors
+ *     on the next to start, and with none in progress or to come holds the last twelve.
  *   - The next change is the earliest start or end still to come, an end being the next
  *     slot's start when a slot has none; none once nothing will change.
  *
@@ -137,6 +137,29 @@ describe('listSlotsOnTheBoardAt', () => {
       expectedFirst,
       expectedLast,
     ]);
+  });
+  it('holds the last twelve once every slot has finished, none in progress or to come', () => {
+    // Arrange: the twenty heats, the last one given an end at 18:00, so that from then on
+    // nothing runs and nothing is still to start.
+    const heats = buildTwentyHeats();
+    const lastHeat = heats[heats.length - 1];
+    if (lastHeat === undefined) {
+      throw new Error('the twenty heats have a last one');
+    }
+    lastHeat.endsAtMs = atSaturdayBrasiliaTime('18:00');
+
+    // Act: list what the board shows at 19:00, after the day.
+    const slotsOnTheBoard = listSlotsOnTheBoardAt(heats, atSaturdayBrasiliaTime('19:00'));
+
+    // Assert: the last twelve, every one finished.
+    const names = readNames(slotsOnTheBoard);
+    expect([names[0], names.at(-1)], 'the window after the day').toEqual([
+      'Bateria 9',
+      'Bateria 20',
+    ]);
+    expect(new Set(slotsOnTheBoard.map((entry) => entry.status)), 'all twelve finished').toEqual(
+      new Set(['finished']),
+    );
   });
 });
 
