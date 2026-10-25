@@ -31,7 +31,7 @@
     "properties": {
       "label": {
         "type": "string",
-        "title": "Rótulo",
+        "title": "Rótulo do aviso",
         "description": "A pílula antes da mensagem; até 10 caracteres. Ex.: AVISO, ATENÇÃO.",
         "gddType": "single-line",
         "minLength": 1,

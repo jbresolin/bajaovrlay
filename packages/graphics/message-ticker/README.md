@@ -18,7 +18,7 @@ longest message fitting the bar, screenshots): `pnpm --filter @bajaovrlay/messag
 
 | Field (form label)  | Value in the item editor                                                                                           |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Rótulo              | Valor digitado: AVISO (the default)                                                                                |
+| Rótulo do aviso     | Valor digitado: AVISO (the default)                                                                                |
 | Mensagens           | Valor digitado: one line per message ("Adicionar mensagem"); during the event, add one and press "Atualizar no ar" |
 | Tempo de referência | Relógio da fonte › the session source (fills the four clock fields)                                                |
 | Bandeira            | Fonte › the session source › Bandeira, ao vivo                                                                     |

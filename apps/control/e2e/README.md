@@ -30,6 +30,11 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   first yellow (seed 1405, set with the speed: 16 simulated minutes in, ~16 s at 60×), takes a correction of the session name ("Corrigir valor da fonte…") and
   loses it again, and shows "fonte atrasada" on its Camadas row with "Falha simulada" on, its data still on air (read from
   `GET /api/v1/state`).
+  `bugStripTickerWalk.e2e.ts` (BAJAOVRLAY-23, the brief's walk, three tests): the simulator's teams imported and the
+  simulator on; a strip from "Novo gráfico…" with "Carros" already on "Fonte", its time on "Relógio da fonte" and its flag
+  on the session's: 60 cars and a running clock on the `ticker` layer, six pills, "1/10" and the time in the monitor; a
+  sponsor typed with its logo on the light plate and a bug reading both: the logo on its plate under "Apresentado por";
+  a ticker of two typed messages, a third added with "Adicionar mensagem" and "Atualizar no ar": the same instance, "1/3".
   `towerFollowsTheSimulator.e2e.ts` (BAJAOVRLAY-21/22, the brief's E2E, three tests; the monitor-frame finders and the box
   measure in `towerInProgramMonitor.ts`): the simulator at 60×, "Novo gráfico…" with
   "Torre de posições" opens with "Carros" already on "Fonte" (the manifest's suggestion), "Só os 20 primeiros", "Salvar e disparar":

@@ -175,13 +175,16 @@ describe('message-ticker.ograf.json settings', () => {
 
     // Act: read its default and limits.
     const label = {
+      title: labelField.title,
       default: labelField.default,
       minLength: labelField.minLength,
       maxLength: labelField.maxLength,
     };
 
-    // Assert: "AVISO", 1 to 10 characters.
+    // Assert: "AVISO", 1 to 10 characters, titled apart from the item's own "Rótulo" (the
+    // item editor shows both in one form).
     expect(label, 'the label as the design writes it').toEqual({
+      title: 'Rótulo do aviso',
       default: 'AVISO',
       minLength: 1,
       maxLength: longestLabelInCharacters,

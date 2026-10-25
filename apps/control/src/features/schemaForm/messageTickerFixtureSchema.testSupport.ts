@@ -16,7 +16,7 @@ export function buildMessageTickerFixtureDataSchema(): Record<string, unknown> {
   return {
     type: 'object',
     properties: {
-      label: { type: 'string', title: 'Rótulo', default: 'AVISO' },
+      label: { type: 'string', title: 'Rótulo do aviso', default: 'AVISO' },
       messages: {
         type: 'array',
         title: 'Mensagens',
