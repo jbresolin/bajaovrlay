@@ -278,6 +278,9 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
   /**
    * Plays another step ("Próximo") of this instance's graphic, if it is on its layer. A
    * refused step is only logged: the graphic stays at the step it was showing.
+   * What could go wrong: the server has already moved currentStep, so Camadas then shows a
+   * step ahead of the screen ("Passo 3 de 4" over a podium showing two places); the log
+   * line says so, and the next "Próximo" plays the step after that, catching up.
    */
   async function playStepOfInstance(
     layerId: string,

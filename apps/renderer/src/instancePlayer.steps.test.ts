@@ -16,6 +16,7 @@
  *     in-animation, and loads nothing again.
  *   - A rebuild of an instance at step 2 plays step 2, with no animation.
  *   - `goToStep` for an instance that is not on its layer (it failed to load) does nothing.
+ *   - A graphic that refuses a step stays on its layer, and the layer's queue goes on.
  *
  * What these tests deliberately do not cover:
  *   - Which operations a change of `currentStep` produces; instanceReconciler.test.ts.
@@ -29,6 +30,7 @@ import {
   createStageWithPlayer,
   createTakeOf,
   graphicsOfTheStream,
+  readInstanceIdsOnLayer,
   waitForQueuedOperations,
 } from './stageWithPlayer.testSupport.js';
 
@@ -46,13 +48,16 @@ const graphicsWithThePodium: Graphic[] = [
 ];
 
 /** The enduro's podium on the fullscreen layer, at the step given. */
-function createPodiumInstance(currentStep: number): Instance {
+function createPodiumInstance(
+  currentStep: number,
+  extraData: Record<string, unknown> = {},
+): Instance {
   return {
     id: 'podio-do-enduro',
     layerId: 'fullscreen',
     graphicId: 'podium',
     target: 'program',
-    resolvedData: { title: 'PÓDIO' },
+    resolvedData: { title: 'PÓDIO', ...extraData },
     currentStep,
     status: 'on-air',
     takenAt: '2026-11-14T19:30:00.000Z',
@@ -123,5 +128,45 @@ describe('the steps of a graphic', () => {
 
     // Assert: no call at all; there is no graphic to step.
     expect(recording.lifecycleCalls, 'nothing to play').toEqual([]);
+  });
+
+  it('keeps a graphic that refuses a step on its layer, and carries on with the queue', async () => {
+    // Arrange: the podium taken, drawn by a graphic that refuses any step past its head.
+    const { stage, instancePlayer, recording } = createStageWithPlayer();
+    const podiumThatRefusesSteps = createPodiumInstance(0, { fakeGraphicStepOutcome: 'refuses' });
+    instancePlayer.runLayerOperations(createTakeOf(podiumThatRefusesSteps), graphicsWithThePodium);
+    await waitForQueuedOperations();
+
+    // Act: "Próximo" asks for step 1, then a refresh changes its title.
+    instancePlayer.runLayerOperations(createGoToStepOfThePodium(1), graphicsWithThePodium);
+    instancePlayer.runLayerOperations(
+      [
+        {
+          layerId: 'fullscreen',
+          operations: [
+            {
+              kind: 'updateData',
+              instanceId: 'podio-do-enduro',
+              changedData: { title: 'PÓDIO DO ENDURO' },
+            },
+          ],
+        },
+      ],
+      graphicsWithThePodium,
+    );
+    await waitForQueuedOperations();
+
+    // Assert: the refused step changed nothing else; the update ran after it, and the
+    // graphic is still on its layer.
+    expect(recording.lifecycleCalls, 'the queue must go on past a refused step').toEqual([
+      'podio-do-enduro: load',
+      'podio-do-enduro: playAction',
+      'podio-do-enduro: playAction',
+      'podio-do-enduro: updateAction',
+    ]);
+    expect(
+      readInstanceIdsOnLayer(stage, 'fullscreen'),
+      'a refused step never takes the graphic off its layer',
+    ).toEqual(['podio-do-enduro']);
   });
 });

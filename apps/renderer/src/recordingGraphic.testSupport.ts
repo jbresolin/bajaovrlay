@@ -42,7 +42,9 @@ let numberOfLoadersBuilt = 0;
  *     calls `releaseLoadsThatWait`, standing in for a slow graphic,
  *   - `fakeGraphicPlayOutcome: 'rejects'` makes playAction throw,
  *   - `fakeGraphicPlayOutcome: 'waits-to-be-released'` keeps playAction pending until the
- *     test calls `releasePlaysThatWait`, standing in for a long in-animation.
+ *     test calls `releasePlaysThatWait`, standing in for a long in-animation,
+ *   - `fakeGraphicStepOutcome: 'refuses'` answers 400 to a playAction past step 0 (a step
+ *     the graphic will not play), while step 0 plays as usual.
  */
 export function createRecordingGraphicLoader(
   nameByInstanceId: Record<string, string>,
@@ -62,6 +64,8 @@ export function createRecordingGraphicLoader(
   class RecordingGraphic extends HTMLElement {
     /** How the data given to load said playAction must go; read when it is played. */
     playOutcome: unknown = undefined;
+    /** How the data given to load said a step past 0 must go. */
+    stepOutcome: unknown = undefined;
 
     /** Writes the call down under the name of the instance this element draws. */
     recordCall(action: string, params: { skipAnimation?: boolean }): void {
@@ -75,6 +79,7 @@ export function createRecordingGraphicLoader(
       this.recordCall('load', {});
       loadParams.push(params);
       this.playOutcome = params.data.fakeGraphicPlayOutcome;
+      this.stepOutcome = params.data.fakeGraphicStepOutcome;
       const loadOutcome = params.data.fakeGraphicLoadOutcome;
       if (loadOutcome === 'rejects') {
         throw new Error('O gráfico de teste foi instruído a falhar no load.');
@@ -97,7 +102,11 @@ export function createRecordingGraphicLoader(
       if (this.playOutcome === 'waits-to-be-released') {
         await playsMayFinish;
       }
-      return { statusCode: 200, currentStep: 0 };
+      const stepAsked = params.goto ?? 0;
+      if (this.stepOutcome === 'refuses' && stepAsked > 0) {
+        return { statusCode: 400, statusMessage: 'Passo recusado pelo gráfico de teste.' };
+      }
+      return { statusCode: 200, currentStep: stepAsked };
     }
 
     async updateAction(): Promise<unknown> {
