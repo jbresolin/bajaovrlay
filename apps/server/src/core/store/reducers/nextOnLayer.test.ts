@@ -20,8 +20,8 @@
  *     something in preview; a layer that does not exist with LAYER_NOT_FOUND.
  *
  * What these tests deliberately do not cover:
- *   - Who may send it (operators, not the screens or the server's jobs): the
- *     authorisation tests.
+ *   - Who may send it (operators, not the screens or the server's jobs):
+ *     ../authorizeNextOnLayer.test.ts.
  *   - Playing the step on screen: the renderer's reconciler and player tests.
  */
 import type { Graphic, Instance } from '@bajaovrlay/shared';
