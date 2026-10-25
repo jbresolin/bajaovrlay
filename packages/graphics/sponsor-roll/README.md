@@ -19,3 +19,7 @@ heading over one logo) crossfading on each sponsor's level hold. Start reading a
 | Formato            | Valor digitado: Tela cheia, or Canto (no lugar do bug)                  |
 | Patrocinadores     | Lista dos cadastros › Patrocinadores ("Valor agora: 17 patrocinadores") |
 | Palavra do evento  | Valor digitado: ENDURO (the corner only)                                |
+
+The layer does not follow "Formato": a new item opens on the package's one default layer,
+Tela cheia (`fullscreen`). For the corner choose "Bug" in Camada yourself, or the corner card
+sits on the full-screen layer instead of the sponsor bug's (decided at gate 2 of PR #28).

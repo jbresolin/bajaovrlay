@@ -22,3 +22,7 @@ screenshots: `pnpm --filter @bajaovrlay/countdown test:e2e`.
 | Largada            | Cadastro › the same sessão › Início (or typed as date and time)   |
 | Linha do evento    | Valor digitado: 30ª Competição Baja SAE Brasil (tela cheia only)  |
 | Linha da data      | Valor digitado: domingo, 30 de março de 2025 (tela cheia only)    |
+
+The layer does not follow "Formato": a new item opens on the package's one default layer,
+Relógio (`clock`). For the waiting screen choose "Tela cheia" in Camada yourself, or the
+full-screen countdown replaces the race clock (decided at gate 2 of PR #28).
