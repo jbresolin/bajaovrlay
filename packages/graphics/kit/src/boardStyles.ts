@@ -95,14 +95,9 @@ export const narrowBoardStyles = css`
     white-space: nowrap;
   }
 
-  /* Two classes, so a graphic's own .caption rule that comes later cannot undo it. */
-  .board-head .board-subtitle {
+  .board-subtitle {
     flex: 1;
     min-width: 0;
-    /* The title's line box, whatever another caption rule of the graphic says (the bug
-       card's sets 1): the subtitle clips its overflow, and a tighter line cuts the accents
-       Bebas Neue puts above the cap height ("PATROCÍNIO"). */
-    line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
     padding-left: var(--space-2);
