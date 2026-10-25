@@ -14,6 +14,9 @@
  * What these tests prove:
  *   - Space sends `takePreview` for the previewed layer when the preview shows the cursor
  *     item, and `takeNext` when the preview shows another item.
+ *   - Space reads what is on the outputs at the press: a preview that arrived after the
+ *     page was drawn is taken (BAJAOVRLAY-45: the key reads the instances then, and no
+ *     longer subscribes to them).
  *   - A refused `takePreview` is explained once, under the "Prévia" monitor's lines.
  *   - Shift+Space sends `previewItem` for the cursor item (origin `manual`) and keeps the
  *     browser from scrolling the page; with the cursor on nothing it sends nothing and shows no error.
@@ -92,6 +95,27 @@ describe('the Space key with something on the preview output', () => {
       fakeServer.listCommandsReceived(),
       'Space must fire the item at the cursor, not whatever happens to be previewed',
     ).toEqual([{ type: 'takeNext', rundownId: 'sessao-principal' }]);
+    fakeServer.acceptLastCommand();
+  });
+
+  it('takes a preview that arrived after the page was drawn', () => {
+    // Arrange: nothing previewed when the page is drawn, the cursor on the start; then the
+    // server sends the instances with the start on the preview output.
+    const { fakeServer } = renderRundownPanelWithThesePreviews('item-largada-do-enduro', []);
+    fakeServer.sendMessage({
+      type: 'slice',
+      name: 'instances',
+      slice: [buildRaceClockPreviewOfItem('item-largada-do-enduro', momentOfThePreview)],
+    });
+
+    // Act: press Space on the page.
+    fireEvent.keyDown(document.body, { key: ' ' });
+
+    // Assert: the preview the server sent last is what goes on air.
+    expect(
+      fakeServer.listCommandsReceived(),
+      'Space must read what is on the preview output at the moment of the press',
+    ).toEqual([{ type: 'takePreview', layerId: 'clock' }]);
     fakeServer.acceptLastCommand();
   });
 
