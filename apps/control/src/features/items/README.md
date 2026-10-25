@@ -17,3 +17,11 @@ and changing a stored one, for any graphic. Start at `ItemEditorPanel.tsx`; the 
 - `itemCommandsFromEditor.ts` — the three commands; `itemsTheServerMayStore.ts`,
   `storedItemAfterAcceptedSave.ts` — what the next save compares with.
 - `ItemColorChip.tsx`, `itemColorChip.ts`, `itemColorButton.ts` — an item's colour, dot or button.
+
+What redraws when (BAJAOVRLAY-45, `ItemEditorPanelRenders.test.tsx` counts it): a poll of a source redraws
+no field row, only the "Valor agora" line whose text it changed; a pick or a keystroke redraws its own
+field only. So nothing in or above the editor subscribes to what changes at every poll (the rundown's and the
+console's keyboard shortcuts read the instances at the press): the panel selects
+"is this item on air" (a yes or no), the graphic's form reads the sources once at opening, and
+`useBindingOptionsOfItemEditor.ts` hands the sources' ids and names (compared text by text) and the store's
+subscription for "Valor agora". The guard in a real browser is `e2e/itemEditorStaysFastDuringARace.e2e.ts`.

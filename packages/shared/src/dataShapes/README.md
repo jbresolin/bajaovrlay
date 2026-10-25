@@ -15,6 +15,7 @@ keep disqualified teams, unranked, at the end (`isDisqualified`, BAJAOVRLAY-24).
 `validateDataShape.ts` checks a payload (pt-BR error naming the path); `bindablePaths.ts`
 hand-lists the paths a binding may point at, each with its value type (standings by row,
 "1ª linha", since tied teams share a rank; a positions car chosen by its number under
-`entryOfCar.`; the whole session clock as `clock`, the clock group);
+`entryOfCar.`; the whole session clock as `clock`, the clock group; each shape's list is built
+once and kept, frozen, since every resolution looks a path up in it, BAJAOVRLAY-45);
 `ptBRDataShapes.ts` holds the pt-BR texts;
 `samples/` holds realistic payloads, also the test fixtures. `index.ts` lists every export.
