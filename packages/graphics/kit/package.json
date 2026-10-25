@@ -32,6 +32,8 @@
     "./countdownClock": "./src/countdownClock.ts",
     "./boardHead": "./src/boardHead.ts",
     "./boardStyles": "./src/boardStyles.ts",
+    "./boardMotion": "./src/boardMotion.ts",
+    "./clockCardStyles": "./src/clockCardStyles.ts",
     "./previewControls": "./src/previewControls.ts",
     "./previewStage": "./src/previewStage.ts",
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",

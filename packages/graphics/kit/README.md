@@ -36,6 +36,8 @@ src/countdownText.ts                     the count to a start (m:ss, h:mm:ss, ne
 src/countdownClock.ts                    the count on air: redrawn every frame at server time, stopped at 0:00
 src/boardHead.ts                         the narrow boards' head card: logo, title, subtitle, the line at the right
 src/boardStyles.ts                       the narrow boards' frame (--board-width, centred) and head card
+src/boardMotion.ts                       the boards' rise (each piece at its own start) and the crossfade of a state
+src/clockCardStyles.ts                   the clock card's frame, head and body: the race clock's and the countdown card's
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests

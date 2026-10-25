@@ -1,0 +1,70 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-countdown",
+  "version": "0.1.0",
+  "name": "Contagem regressiva",
+  "description": "A contagem até a largada de uma sessão: o cartão do relógio sem a faixa, ou o quadro da tela de espera.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "countdown.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "clock",
+    "category": "clock"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 500 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "layout": {
+        "type": "string",
+        "title": "Formato",
+        "description": "Cartão: no lugar do relógio, na camada do relógio. Tela cheia: o quadro da tela de espera, na camada de tela cheia.",
+        "enum": ["card", "fullscreen"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "card": "Cartão (no lugar do relógio)",
+            "fullscreen": "Tela cheia (espera)"
+          }
+        },
+        "default": "card"
+      },
+      "sessionName": {
+        "type": "string",
+        "title": "Sessão",
+        "description": "A sessão que vai começar; em geral a sessão da programação nos cadastros.",
+        "gddType": "single-line",
+        "minLength": 1,
+        "default": "Enduro de Resistência"
+      },
+      "startsAtMs": {
+        "type": "integer",
+        "title": "Largada",
+        "description": "O momento da largada; em geral o início da sessão da programação nos cadastros. A contagem para em 0:00.",
+        "minimum": 0,
+        "v_baja": { "unit": "epochMs" }
+      },
+      "eventLine": {
+        "type": "string",
+        "title": "Linha do evento",
+        "description": "Opcional, só na tela cheia; ex.: 30ª Competição Baja SAE Brasil.",
+        "gddType": "single-line"
+      },
+      "dateLine": {
+        "type": "string",
+        "title": "Linha da data",
+        "description": "Opcional, só na tela cheia, à direita do título; ex.: domingo, 30 de março de 2025.",
+        "gddType": "single-line"
+      }
+    },
+    "required": ["layout", "sessionName", "startsAtMs"],
+    "additionalProperties": false
+  }
+}

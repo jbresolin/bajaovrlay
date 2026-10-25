@@ -54,6 +54,9 @@ On each property of `schema.properties` (`type` picks the control: `string` text
 - `minimum` / `maximum` — the limits of a number field.
 - `format: "date-time"` on a `string` — a date and time input, sent as ISO 8601 text.
 - `v_baja.unit: "ms"` on an `integer`/`number` — typed as `mm:ss`, sent as milliseconds.
+- `v_baja.unit: "epochMs"` on an `integer` — a moment (a session's start), typed with the
+  date and time input on the operator's clock, sent as milliseconds since 1970 (BAJAOVRLAY-46).
+  A schedule slot's `startsAtMs` from Cadastros fits it.
 - `v_baja.role` — one of the four clock roles, or the image role, each on its own kind of
   property:
   - `"wallClock"` on an `integer` (milliseconds since 1970): the reference moment. The
