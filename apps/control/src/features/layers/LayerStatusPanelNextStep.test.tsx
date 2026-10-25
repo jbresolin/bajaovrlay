@@ -11,7 +11,8 @@
  * What these tests prove:
  *   - The podium's row at its head reads "Passo 1 de 4", and "Próximo" sends nextOnLayer
  *     for the fullscreen layer from step 0 (the step on screen) and nothing else.
- *   - At its last step the row reads "Passo 4 de 4" and "Próximo" is off.
+ *   - At its last step the row reads "Passo 4 de 4" and "Próximo" is off, its tooltip
+ *     saying "Último passo: use Limpar.".
  *   - A graphic of one step (the race clock) shows neither the step nor "Próximo".
  *   - A refused nextOnLayer is shown under the rows, in the server's words.
  *
@@ -88,20 +89,27 @@ describe('"Próximo" on the rows of the layer status panel', () => {
     fakeServer.acceptLastCommand();
   });
 
-  it('turns "Próximo" off on the last step', () => {
+  it('turns "Próximo" off on the last step, saying to use Limpar', async () => {
     // Arrange: the podium with all three places revealed.
     const slices = buildSlicesWithThePodiumAtStep(3);
 
     // Act: draw the panel.
     renderOnControlPageConnectedToFakeServer(<LayerStatusPanel />, slices);
 
-    // Assert: step 4 of 4, and the button off.
+    // Assert: step 4 of 4, and the button off with the reason in its tooltip.
     const fullscreenRow = within(screen.getByRole('listitem', { name: 'Tela cheia' }));
     expect(fullscreenRow.getByText('Passo 4 de 4'), 'the last step is 4 of 4').toBeVisible();
     expect(
       fullscreenRow.getByRole('button', { name: 'Próximo' }),
       'nothing comes after the last step',
     ).toBeDisabled();
+    fireEvent.focus(
+      fullscreenRow.getByRole('button', { name: 'Próximo' }).parentElement ?? document.body,
+    );
+    expect(
+      await screen.findByRole('tooltip'),
+      'the off button says what to do instead',
+    ).toHaveTextContent('Último passo: use Limpar.');
   });
 
   it('shows neither the step nor "Próximo" for a graphic of one step', () => {

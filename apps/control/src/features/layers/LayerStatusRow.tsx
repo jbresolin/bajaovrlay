@@ -180,7 +180,11 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           <ActionButton
             variant="outline"
             size="sm"
-            disabled={props.onNextStepPressed === undefined}
+            disabledReason={
+              props.onNextStepPressed === undefined
+                ? ptBR.layers.nextStepOffOnTheLastStep
+                : undefined
+            }
             onClick={props.onNextStepPressed}
           >
             {ptBR.layers.nextStepButton}
