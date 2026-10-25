@@ -12,13 +12,14 @@
  *   2. A strip made with "Novo gráfico…", its cars bound live to the positions (the
  *      manifest's suggestion), its clock to the session ("Relógio da fonte") and its flag
  *      to the session's flag, and taken: on the server it carries the 60 cars and a running
- *      clock; in the program monitor page 1 shows six cars, "1/10" and the race time.
+ *      clock; in the program monitor a page shows six cars, "N/10" and the race time.
  *   3. A sponsor with a logo, its plate ticked in Cadastros, and a bug whose logo and plate
  *      read that sponsor, taken: the logo's address and the plate are on air, and the
  *      monitor draws the logo on its light plate under "Apresentado por".
- *   4. A ticker with two messages typed in the item form, taken ("1/2"); a third added with
+ *   4. A ticker with two messages typed in the item form, taken ("N/2"); a third added with
  *      "Adicionar mensagem" and sent with "Atualizar no ar": the same instance now holds
- *      three messages and the page cell reads "1/3".
+ *      three messages and the page cell counts three ("N/3"). The page shown is not
+ *      checked: the bars turn every 7 s, and a slow runner reads page 2.
  *
  * What these tests deliberately do not cover:
  *   - The page turns: component tests with fake time prove them in each package, since a
@@ -158,7 +159,7 @@ async function addTheSponsorWithItsLogoOnThePlate(page: Page): Promise<void> {
 }
 
 test.describe('the sponsor bug, the lower strip and the message ticker', () => {
-  test('a strip bound live to the simulator shows page 1 of the running order and the clock', async ({
+  test('a strip bound live to the simulator shows a page of the running order and the clock', async ({
     page,
   }) => {
     // Arrange (step 1): the simulator's teams imported and the simulator on.
@@ -192,7 +193,7 @@ test.describe('the sponsor bug, the lower strip and the message ticker', () => {
     await saveAndTakeTheItemInTheEditor(itemEditor);
 
     // Assert (step 2): the server has the 60 cars and a running green clock on the ticker
-    // layer; the monitor draws page 1 (six cars, "1/10") and the race time.
+    // layer; the monitor draws a page (six cars, "N/10") and the race time.
     await expect
       .poll(
         async () => {
@@ -208,11 +209,12 @@ test.describe('the sponsor bug, the lower strip and the message ticker', () => {
       .toEqual({ carCount: 60, state: 'green', running: true });
     const strip = findGraphicInProgramMonitor(page, 'ticker', 'lower-strip');
     const laneOnAir = strip.locator('[data-testid="lower-strip-lane"]:not([aria-hidden="true"])');
-    await expect(laneOnAir.getByTestId('lower-strip-car'), 'page 1 shows six cars').toHaveCount(6);
+    await expect(laneOnAir.getByTestId('lower-strip-car'), 'a page shows six cars').toHaveCount(6);
+    // The count, not the page: the strip turns every 7 s, so a slow runner may read "2/10".
     await expect(
       strip.getByTestId('lower-strip-page-cell'),
       'sixty cars make ten pages',
-    ).toHaveText('1/10');
+    ).toHaveText(/^\d{1,2}\/10$/);
     await expect(
       strip.getByTestId('clock-block-time'),
       'the clock block shows the race time',
@@ -269,7 +271,7 @@ test.describe('the sponsor bug, the lower strip and the message ticker', () => {
     ).toHaveClass(/on-light-plate/);
   });
 
-  test('a ticker of two messages takes a third with "Atualizar no ar", reading 1/3', async ({
+  test('a ticker of two messages takes a third with "Atualizar no ar", counting three pages', async ({
     page,
   }) => {
     // Arrange (step 4): a ticker with two messages typed in the item form, taken.
@@ -284,9 +286,12 @@ test.describe('the sponsor bug, the lower strip and the message ticker', () => {
     await itemEditor.getByRole('textbox', { name: 'Mensagem 2' }).fill(firstTwoMessages[1] ?? '');
     await saveAndTakeTheItemInTheEditor(itemEditor);
     const ticker = findGraphicInProgramMonitor(page, 'ticker', 'message-ticker');
-    await expect(ticker.getByTestId('message-ticker-page-cell'), 'two messages').toHaveText('1/2', {
-      timeout: waitForTheAirInMilliseconds,
-    });
+    // The count, not the page: the ticker turns every 7 s and keeps its page on an update,
+    // so a slow runner may read "2/2" here and "2/3" below.
+    await expect(ticker.getByTestId('message-ticker-page-cell'), 'two messages').toHaveText(
+      /^\d\/2$/,
+      { timeout: waitForTheAirInMilliseconds },
+    );
     const instanceBefore = await readInstanceOnAirOfLayerFromTheRealServer('ticker');
 
     // Act (step 4): open the item from its button in "Atalhos", add the third message and
@@ -305,7 +310,7 @@ test.describe('the sponsor bug, the lower strip and the message ticker', () => {
     ).toBeHidden();
 
     // Assert (step 4): the same instance holds the three messages, and the monitor's
-    // page cell reads 1/3.
+    // page cell counts three pages.
     await expect
       .poll(
         async () => {
@@ -316,7 +321,7 @@ test.describe('the sponsor bug, the lower strip and the message ticker', () => {
       )
       .toEqual({ id: instanceBefore?.id, messages: [...firstTwoMessages, thirdMessage] });
     await expect(ticker.getByTestId('message-ticker-page-cell'), 'three messages').toHaveText(
-      '1/3',
+      /^\d\/3$/,
     );
   });
 });
