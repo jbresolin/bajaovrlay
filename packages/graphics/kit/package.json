@@ -30,7 +30,6 @@
     "./sponsorPageTurner": "./src/sponsorPageTurner.ts",
     "./stackedPageLayers": "./src/stackedPageLayers.ts",
     "./the30thCompetitionSponsorsSample": "./src/the30thCompetitionSponsorsSample.ts",
-    "./ptBRSponsorLevelHeadings": "./src/ptBRSponsorLevelHeadings.ts",
     "./countdownText": "./src/countdownText.ts",
     "./countdownClock": "./src/countdownClock.ts",
     "./boardHead": "./src/boardHead.ts",

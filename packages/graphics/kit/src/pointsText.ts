@@ -7,6 +7,10 @@
  * separator: the design has none, and no score of the competition reaches 1000.
  */
 
+// These two are typography, not words, so they stay here rather than in a pt-BR catalog:
+// the operator never reads or translates them, and they are how every board writes a
+// number on air whatever the text around it says.
+
 /** The minus sign of a negative score (SEG., PEN.): the typographic one, not the hyphen. */
 const minusSign = '−';
 

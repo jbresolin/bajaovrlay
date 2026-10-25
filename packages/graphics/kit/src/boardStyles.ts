@@ -54,7 +54,7 @@ export const narrowBoardStyles = css`
     font-weight: var(--weight-caption);
     font-size: var(--size-caption);
     letter-spacing: var(--tracking-caption);
-    text-transform: uppercase;
+    text-transform: var(--case-rows);
     color: var(--text-muted);
     white-space: nowrap;
   }

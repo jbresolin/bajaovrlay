@@ -30,7 +30,7 @@ src/barStyles.ts                         the bars' host, grid (one column less w
 src/barMotion.ts                         the strip's and the ticker's GSAP timelines: cascade in, out together, turn in place
 src/waitForImagesToSettle.ts             load's wait for a graphic's images (at most 2 s; a broken one never blocks)
 src/sponsorRound.ts                      every sponsor round: the level order (shared's), each level's heading and hold
-src/ptBRSponsorLevelHeadings.ts          the on-air heading of each level ("PATROCÍNIO DIAMANTE", "APOIO", "REALIZAÇÃO")
+src/ptBRSponsorLevelHeadings.ts          the on-air heading of each level ("PATROCÍNIO DIAMANTE"); read through sponsorRound only
 src/sponsorPages.ts                      a round's pages: one level a page, a level shared evenly between its pages
 src/sponsorPageTurner.ts                 a round's page timer: the pageTurner, each page held by its level
 src/stackedPageLayers.ts                 two layers in one place: which page each holds through a turn or a redraw
