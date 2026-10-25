@@ -100,7 +100,10 @@ describe('a round board', () => {
     ].map((card) => card.dataset.matchId);
 
     // Assert: 16 rows a column (the grid flows down the left column first), r1-m1 to r1-m32.
-    expect(board?.style.getPropertyValue('--round-board-rows'), 'two columns of 16').toBe('16');
+    expect(
+      board?.style.getPropertyValue('--round-board-rows'),
+      'a page of 32 must be laid in two columns of 16',
+    ).toBe('16');
     expect(matchIds, 'the matches in their order').toEqual(
       Array.from({ length: 32 }, (_unused, index) => `r1-m${String(index + 1)}`),
     );
@@ -185,7 +188,10 @@ describe('brackets with no round', () => {
     const stage = host.querySelector('[data-testid="bracket-stage"]');
 
     // Assert: the head is there, the stage empty.
-    expect(host.querySelector('[data-testid="bracket-head"]'), 'the head').not.toBeNull();
+    expect(
+      host.querySelector('[data-testid="bracket-head"]'),
+      'the head must be drawn even with no round',
+    ).not.toBeNull();
     expect(stage?.children, 'nothing on the stage').toHaveLength(0);
   });
 });

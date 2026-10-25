@@ -18,8 +18,9 @@
  *     `bracketSteps` counter, one the shared registry knows.
  *   - The rounds suggest the brackets' whole rounds, live; and the brackets' rounds fit the
  *     field by the item editor's own rule, while the standings list does not.
- *   - The durations are the theme's: a play is a board's whole cascade (`--motion-lead` +
- *     31 × `--motion-row-stagger` + `--motion-in`, the longest step), stop `--motion-out`.
+ *   - The durations are the theme's: a play is the longest step, a board lifting out and the
+ *     next board of 32 cascading in (`--motion-out` + `--motion-lead` + 31 ×
+ *     `--motion-row-stagger` + `--motion-in`), stop `--motion-out`.
  *   - Every field has a pt-BR title, the rounds alone are required, the title defaults to
  *     "CHAVEAMENTO", and an unknown field is refused at the top.
  *
@@ -189,7 +190,7 @@ describe('bracket.ograf.json settings', () => {
     ).toBe(fits);
   });
 
-  it('declares a play as a whole board’s cascade and stop as --motion-out', () => {
+  it('declares a play as a board’s lift-out then the next board’s whole cascade, and stop as --motion-out', () => {
     // Arrange: the tokens as tokens.css writes them.
     const leadMs = readDurationTokenMs('--motion-lead');
     const rowStaggerMs = readDurationTokenMs('--motion-row-stagger');
@@ -199,9 +200,10 @@ describe('bracket.ograf.json settings', () => {
     // Act: read what the manifest promises a renderer.
     const declaredDurations = bracketManifest.actionDurations;
 
-    // Assert: 100 + 31 × 30 + 400 = 1430 and 250 in Ardósia: the longest step, a board of 32.
+    // Assert: 250 + 100 + 31 × 30 + 400 = 1680 and 250 in Ardósia: the longest step, Próximo
+    // from a board to the next board of 32 (the old cards lift out, then the new cascade in).
     expect(declaredDurations, 'the manifest durations must be the theme’s motion tokens').toEqual([
-      { type: 'playAction', duration: leadMs + 31 * rowStaggerMs + motionInMs },
+      { type: 'playAction', duration: motionOutMs + leadMs + 31 * rowStaggerMs + motionInMs },
       { type: 'stopAction', duration: motionOutMs },
     ]);
   });

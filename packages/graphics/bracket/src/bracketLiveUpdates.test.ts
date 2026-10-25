@@ -80,7 +80,7 @@ describe('a result for a match not on screen', () => {
     );
 
     // Assert: still page 1, the same 32 card elements, the same cells, no motion anywhere.
-    expect(describeTheStage(bracket).eventLine, 'still page 1').toBe(
+    expect(describeTheStage(bracket).eventLine, 'a result on page 2 must not turn the page').toBe(
       '64 avos de final · página 1/2',
     );
     expect(cardsAfter, 'every card element of page 1 is kept').toEqual(cardsBefore);

@@ -323,6 +323,8 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
    */
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    // A play pending on a motion ended here gives the bracket up rather than drawing on.
+    this.moveNumber += 1;
     this.stepMotions.finishEveryTimelineAtOnce();
     this.resultCrossfades.finishEveryTimelineAtOnce();
   }

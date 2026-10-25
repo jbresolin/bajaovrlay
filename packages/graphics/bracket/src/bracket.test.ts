@@ -72,9 +72,10 @@ describe('load and the answers around it', () => {
       findEveryPartOfBracket(bracket, 'bracket-match-card').some(isPieceShown),
       'every card waits hidden',
     ).toBe(false);
-    expect(findPartOfBracket(bracket, 'bracket-title')?.textContent, 'the title').toBe(
-      'SUPER PRIME',
-    );
+    expect(
+      findPartOfBracket(bracket, 'bracket-title')?.textContent,
+      'the head must write the item’s title',
+    ).toBe('SUPER PRIME');
   });
 
   it('answers 400 in pt-BR to bad data, and 409 to a second load', async () => {
@@ -212,7 +213,10 @@ describe('the steps', () => {
 
     // Assert: step 0, the 32 cards shown, none of them moving.
     expect(answer, 'the step back reports step 0').toEqual({ statusCode: 200, currentStep: 0 });
-    expect(describeTheStage(bracket), 'the first board again').toMatchObject({
+    expect(
+      describeTheStage(bracket),
+      'a step back must draw the first board again, whole',
+    ).toMatchObject({
       stepLine: '1/7',
       eventLine: '32 avos de final',
       boardCards: 32,
@@ -266,6 +270,9 @@ describe('stop', () => {
       statusCode: 200,
       currentStep: 0,
     });
-    expect(describeTheStage(bracket), 'the first board').toMatchObject({ boardCards: 32 });
+    expect(
+      describeTheStage(bracket),
+      'the next take must start at the first board, whole',
+    ).toMatchObject({ boardCards: 32 });
   });
 });

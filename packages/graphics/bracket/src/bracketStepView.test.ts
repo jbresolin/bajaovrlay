@@ -109,12 +109,14 @@ describe('describeStepOnScreen', () => {
     const secondPage = describeStepOnScreen(bracket, 1);
 
     // Assert: matches 1 to 32, then 33 to 64, each page named.
-    expect(firstPage.kind === 'board' && firstPage.eventLine, 'page 1 named').toBe(
-      '64 avos de final · página 1/2',
-    );
-    expect(secondPage.kind === 'board' && secondPage.eventLine, 'page 2 named').toBe(
-      '64 avos de final · página 2/2',
-    );
+    expect(
+      firstPage.kind === 'board' && firstPage.eventLine,
+      'the head must name the round and its first page',
+    ).toBe('64 avos de final · página 1/2');
+    expect(
+      secondPage.kind === 'board' && secondPage.eventLine,
+      'the head must name the round and its second page',
+    ).toBe('64 avos de final · página 2/2');
     expect(
       firstPage.kind === 'board' && [
         firstPage.matches[0]?.matchId,
@@ -151,8 +153,10 @@ describe('describeStepOnScreen', () => {
     const stepCount = countStepsOfBracket(emptyBracket);
 
     // Assert: the head alone, one step.
-    expect(step, 'nothing but the head').toEqual({ kind: 'headAlone' });
-    expect(writeStepLineOfBracket(0, stepCount), 'one step').toBe('1/1');
+    expect(step, 'brackets with no round must show the head alone').toEqual({ kind: 'headAlone' });
+    expect(writeStepLineOfBracket(0, stepCount), 'brackets with no round must count one step').toBe(
+      '1/1',
+    );
   });
 });
 
@@ -169,8 +173,10 @@ describe('describeTreeOfBracket', () => {
       tree.columnRounds.map((round) => round.name),
       'the tree’s three rounds',
     ).toEqual(['Quartas de final', 'Semifinal', 'Final']);
-    expect(tree.thirdPlaceRound?.name, 'the third place apart').toBe('Disputa de 3º lugar');
-    expect(tree.columnCount, 'three columns').toBe(3);
+    expect(tree.thirdPlaceRound?.name, 'the third place must be kept out of the columns').toBe(
+      'Disputa de 3º lugar',
+    );
+    expect(tree.columnCount, 'the tree must keep a column per round down to the final').toBe(3);
   });
 
   it('keeps the columns of the rounds still to come', () => {
@@ -181,7 +187,7 @@ describe('describeTreeOfBracket', () => {
     const tree = describeTreeOfBracket(bracket);
 
     // Assert: one round listed, three columns kept, each already named (contract B).
-    expect(tree.columnRounds, 'one round so far').toHaveLength(1);
+    expect(tree.columnRounds, 'only the round the source listed may have matches').toHaveLength(1);
     expect(tree.columnCount, 'room for the semifinals and the final').toBe(3);
     expect(tree.columnNames, 'every round named from the first step').toEqual([
       'Quartas de final',

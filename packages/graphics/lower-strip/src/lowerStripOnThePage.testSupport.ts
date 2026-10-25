@@ -90,21 +90,8 @@ export function readPageCell(lowerStrip: LowerStripGraphic): string | null | und
   return findPartOfLowerStrip(lowerStrip, 'lower-strip-page-cell')?.textContent;
 }
 
-/**
- * Puts theme tokens on :root, as the renderer page does, and takes them off again when the
- * test ends so a test without a theme reads nothing.
- */
-export function placeTokensOnTheRoot(tokenDeclarations: Record<string, string>): void {
-  const root = document.documentElement;
-  for (const [tokenName, value] of Object.entries(tokenDeclarations)) {
-    root.style.setProperty(tokenName, value);
-  }
-  onTestFinished(() => {
-    for (const tokenName of Object.keys(tokenDeclarations)) {
-      root.style.removeProperty(tokenName);
-    }
-  });
-}
+/** Puts tokens on :root for one test (the kit's, shared by every graphic's tests). */
+export { placeTokensOnTheRoot } from '@bajaovrlay/graphics-kit/themeTokensOnThePage.testSupport';
 
 /** Fakes setTimeout so the test decides when the page hold ends; real timers come back after. */
 export function takeControlOfTimers(): void {

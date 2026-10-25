@@ -120,11 +120,10 @@ describe('a second Próximo during the first’s cascade', () => {
       { statusCode: 200, currentStep: 5 },
       { statusCode: 200, currentStep: 5 },
     ]);
-    expect(describeTheStage(bracket).treeColumnsShown, 'the third place on air').toEqual([
-      '0',
-      '1',
-      'third',
-    ]);
+    expect(
+      describeTheStage(bracket).treeColumnsShown,
+      'the third place must be what is on air',
+    ).toEqual(['0', '1', 'third']);
   });
 
   it('answers 409 for the pending play when the bracket is disposed during its cascade', async () => {

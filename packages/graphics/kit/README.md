@@ -57,6 +57,7 @@ src/previewStage.ts                      ?stage=grey|black, the design's screens
 src/the30thCompetitionSponsorsSample.ts  the previews' 17 real sponsors, logos in preview-sponsor-logos/
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests
 src/tokenOverrides.testSupport.ts        tests only: theme tokens on :root before the graphic loads
+src/themeTokensOnThePage.testSupport.ts  tests only (jsdom): theme tokens on :root for one test
 src/ografSchemaValidator.testSupport.ts  tests only: the ajv validator over the vendored ograf-schema/
 src/the30thCompetitionSponsors.testSupport.ts  tests only: the same 17, each logo a /media address
 src/runningMotions.testSupport.ts        tests only: ends every running GSAP timeline at once

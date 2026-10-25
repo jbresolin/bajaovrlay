@@ -15,7 +15,8 @@
  *   - A result arriving on a board crossfades: the two cells fade in, the winner's green
  *     fill fades up and the loser fades to its dimmed look, each over `--motion-flag`, and
  *     nothing moves; once the crossfade ends the styles hold the end look.
- *   - A match listed in a round on screen appears at once, in its place.
+ *   - A match drawn anew in a round on screen (a correction renumbering it) appears at once,
+ *     in its place.
  *   - Rounds that leave the bracket fewer steps than the one on screen bring it back to its
  *     last step at once, so the server's own step brought back ("goto") changes nothing.
  *   - An update off air is drawn hidden; one during the stop-out is only kept, the fading
@@ -108,7 +109,7 @@ describe('updateAction on air', () => {
     // Assert: 200, the same elements, no tween on any, the new name drawn.
     expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
     expect(cardsAfter, 'every card element is kept').toEqual(cardsBefore);
-    expect(gsap.getTweensOf(cardsAfter), 'no card moves').toEqual([]);
+    expect(gsap.getTweensOf(cardsAfter), 'no card may move on an update').toEqual([]);
     expect(
       cardsAfter[0]?.querySelector('[data-testid="bracket-team-name"]')?.textContent,
       'the card shows the corrected name',
@@ -140,8 +141,10 @@ describe('updateAction on air', () => {
     // Assert: the winner and the loser marked; each change fades over --motion-flag (300 ms)
     // without moving; the cards themselves untouched; at the end the styles hold the look.
     const crossfade = [{ durationMs: 300, movesIt: false }];
-    expect(corisco?.getAttribute('data-outcome'), 'Corisco won').toBe('winner');
-    expect(buffalo?.getAttribute('data-outcome'), 'Buffalo lost').toBe('loser');
+    expect(corisco?.getAttribute('data-outcome'), 'Corisco must be marked the winner').toBe(
+      'winner',
+    );
+    expect(buffalo?.getAttribute('data-outcome'), 'Buffalo must be marked the loser').toBe('loser');
     expect(tweensDuringTheCrossfade, 'each change crossfades, nothing moves').toEqual({
       coriscoCell: crossfade,
       buffaloCell: crossfade,
@@ -155,24 +158,37 @@ describe('updateAction on air', () => {
     ).toBe('');
   });
 
-  it('shows a match listed in a round on screen at once, in its place', async () => {
-    // Arrange: an eight-car tree on air at its quarter-finals, one match not listed yet.
+  it('shows at once, in its place, a match the source renumbered in a round on screen', async () => {
+    // Arrange: an eight-car tree on air at its quarter-finals (a round is listed whole,
+    // contract A, so a correction is how a new match element comes: the source renumbers
+    // the fourth quarter-final, and Lit draws it as a new element).
     const eightCarRounds = buildEightCarRounds();
-    const withoutTheLastQuarterFinal = eightCarRounds.map((round, roundIndex) =>
-      roundIndex === 0 ? { ...round, matches: round.matches.slice(0, 3) } : round,
+    const bracket = await createBracketOnAirAtStep({ rounds: eightCarRounds }, 0);
+    const renumbered = eightCarRounds.map((round, roundIndex) =>
+      roundIndex === 0
+        ? {
+            ...round,
+            matches: round.matches.map((match, matchIndex) =>
+              matchIndex === 3 ? { ...match, matchId: 'quartas-4-corrigida' } : match,
+            ),
+          }
+        : round,
     );
-    const bracket = await createBracketOnAirAtStep({ rounds: withoutTheLastQuarterFinal }, 0);
 
-    // Act: the source lists the fourth quarter-final.
-    await bracket.updateAction({ data: { rounds: eightCarRounds } });
+    // Act: the correction arrives.
+    await bracket.updateAction({ data: { rounds: renumbered } });
     const quarterFinalSlots = findEveryPartOfBracket(bracket, 'bracket-tree-car-slot').filter(
       (slot) => slot.dataset.column === '0',
     );
 
     // Assert: eight car slots in the quarter-finals, every one shown, none moving.
     expect(quarterFinalSlots, 'four matches of two cars').toHaveLength(8);
-    expect(quarterFinalSlots.every(isPieceShown), 'the new match is shown at once').toBe(true);
-    expect(gsap.getTweensOf(quarterFinalSlots), 'nothing moves').toEqual([]);
+    expect(quarterFinalSlots.every(isPieceShown), 'the renumbered match is shown at once').toBe(
+      true,
+    );
+    expect(gsap.getTweensOf(quarterFinalSlots), 'nothing may move when a match is redrawn').toEqual(
+      [],
+    );
   });
 
   it('brings the bracket back to its last step when the new rounds have fewer steps', async () => {
@@ -190,7 +206,10 @@ describe('updateAction on air', () => {
       stepLine: '3/3',
       treeColumnsShown: ['0', '1', '2'],
     });
-    expect(answerToTheServersStep, 'already there').toEqual({ statusCode: 200, currentStep: 2 });
+    expect(
+      answerToTheServersStep,
+      'the server’s step back must find the bracket already on it',
+    ).toEqual({ statusCode: 200, currentStep: 2 });
   });
 });
 
@@ -206,7 +225,7 @@ describe('updateAction off air and during the stop-out', () => {
 
     // Assert: drawn (six cards), every one hidden.
     const cards = findEveryPartOfBracket(bracket, 'bracket-match-card');
-    expect(cards, 'the new board is drawn').toHaveLength(6);
+    expect(cards, 'an update off air must still draw the new board').toHaveLength(6);
     expect(cards.some(isPieceShown), 'and waits hidden for the take').toBe(false);
   });
 
@@ -309,7 +328,7 @@ describe('updateAction during Próximo’s lift-out', () => {
 
     // Assert: the 16 avos drawn with the name that arrived, nothing lost.
     expect(answer, 'the play reports the 16 avos').toEqual({ statusCode: 200, currentStep: 1 });
-    expect(describeTheStage(bracket), 'the 16 avos on screen').toMatchObject({
+    expect(describeTheStage(bracket), 'the play must go on to the 16 avos, whole').toMatchObject({
       eventLine: '16 avos de final',
       boardCards: 16,
     });

@@ -19,7 +19,7 @@
   "actionDurations": [
     {
       "type": "playAction",
-      "duration": 1430
+      "duration": 1680
     },
     {
       "type": "stopAction",

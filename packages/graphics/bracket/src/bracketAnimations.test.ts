@@ -10,7 +10,7 @@
  *
  * What these tests prove, with Ardósia's tokens on the page:
  *   - Entrar on a board of 32: the head at 0; the cards from 100 ms, 30 ms apart, the last
- *     ending at 1430 ms (motion.md's 1.5 s, and the manifest's play duration).
+ *     ending at 1430 ms (motion.md's 1.5 s; the manifest's play adds the lift-out before it).
  *   - A tree round added: its pills from 0, 30 ms apart, and its lines from the moment the
  *     last pill is in, over 300 ms; the lines never move, they only fade.
  *   - The lift-out: every piece together, 250 ms, rising its offset.

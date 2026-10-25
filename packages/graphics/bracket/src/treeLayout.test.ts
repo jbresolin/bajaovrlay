@@ -43,10 +43,11 @@ const ardosiaTreeGeometry: TreeGeometry = {
 
 describe('layOutBracketTree', () => {
   it('stands the quarter-finals, semifinals and final where bracket-passo-7 draws them', () => {
-    // Arrange: the real Super Prime's tree: 4, 2 and 1 matches.
+    // Arrange: the real Super Prime's tree: 4, 2 and 1 matches, three columns, no third place.
+    const matchCountsOfTheColumns = [4, 2, 1];
 
     // Act: lay it out.
-    const layout = layOutBracketTree([4, 2, 1], 3, false, ardosiaTreeGeometry);
+    const layout = layOutBracketTree(matchCountsOfTheColumns, 3, false, ardosiaTreeGeometry);
 
     // Assert: the columns' places and widths, and the first column's tops.
     expect(
@@ -108,9 +109,16 @@ describe('layOutBracketTree', () => {
 
   it('stands the third place at the foot of the final’s column, under its own name pill', () => {
     // Arrange: the same tree, with a third place.
+    const matchCountsOfTheColumns = [4, 2, 1];
+    const hasThirdPlace = true;
 
     // Act: lay it out.
-    const layout = layOutBracketTree([4, 2, 1], 3, true, ardosiaTreeGeometry);
+    const layout = layOutBracketTree(
+      matchCountsOfTheColumns,
+      3,
+      hasThirdPlace,
+      ardosiaTreeGeometry,
+    );
 
     // Assert: in the final's column, on the stage's bottom edge, the name 40 px above.
     expect(layout.thirdPlace, 'the third place under the final').toEqual({
@@ -122,10 +130,12 @@ describe('layOutBracketTree', () => {
   });
 
   it('keeps room for the rounds to come, and draws no line into a round not listed', () => {
-    // Arrange: only the quarter-finals are listed, in a tree of three columns.
+    // Arrange: only the quarter-finals are listed, in a tree that keeps three columns.
+    const matchCountsListed = [4];
+    const columnsKept = 3;
 
     // Act: lay it out.
-    const layout = layOutBracketTree([4], 3, false, ardosiaTreeGeometry);
+    const layout = layOutBracketTree(matchCountsListed, columnsKept, false, ardosiaTreeGeometry);
 
     // Assert: the quarter-finals already at their final width and tops; nothing else.
     expect(layout.columns[0], 'the quarter-finals where they will stay').toMatchObject({
@@ -172,10 +182,12 @@ describe('countColumnsOfTree', () => {
   ];
 
   it.each(columnScenarios)('$name', ({ first, listed, expected }) => {
-    // Arrange: the row's first tree round and the rounds listed.
+    // Arrange: the row's first tree round and how many rounds the source listed.
+    const firstRoundMatchCount = first;
+    const listedColumnCount = listed;
 
     // Act: count the columns.
-    const columnCount = countColumnsOfTree(first, listed);
+    const columnCount = countColumnsOfTree(firstRoundMatchCount, listedColumnCount);
 
     // Assert: the row's count.
     expect(columnCount, 'the tree must keep this many columns').toBe(expected);

@@ -11,9 +11,10 @@
  *
  * What these tests prove (every motion made a minute long, so it cannot end by itself
  * while the test looks):
- *   - dispose during a step's cascade ends it, and the pending play resolves with 409;
- *   - the element leaving the page without dispose ends a step's cascade, and the play
- *     resolves;
+ *   - dispose during Próximo's lift-out (a board's cards leaving for the next) ends it, and
+ *     the pending play resolves with 409;
+ *   - the element leaving the page without dispose ends that lift-out, and the play
+ *     resolves (a dispose during a cascade is bracketOverlappingMoves.test.ts);
  *   - dispose ends a running crossfade; the element leaving the page ends one too;
  *   - a stop ends a running crossfade at once, before its own lift-out.
  *
@@ -75,7 +76,7 @@ async function createResultsBoardInTheMiddleOfACrossfade(): Promise<{
 }
 
 describe("a step's motion", () => {
-  it('ends when the bracket is disposed in the middle of a cascade, and the play resolves', async () => {
+  it('ends when the bracket is disposed in the middle of Próximo’s lift-out, and the play resolves', async () => {
     // Arrange: the first board on air, and Próximo's lift-out to the 16 avos started.
     const bracket = await createSuperPrimeOnAirWithMinuteLongMotion();
     const pendingStep = bracket.playAction({});
@@ -94,7 +95,7 @@ describe("a step's motion", () => {
     });
   });
 
-  it('ends when the element leaves the page without dispose, and the play resolves', async () => {
+  it('ends when the element leaves the page without dispose during Próximo’s lift-out, and the play resolves', async () => {
     // Arrange: the first board on air, and Próximo's lift-out started.
     const bracket = await createSuperPrimeOnAirWithMinuteLongMotion();
     const pendingStep = bracket.playAction({});
