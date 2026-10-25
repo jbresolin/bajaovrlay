@@ -1,6 +1,7 @@
 // Reading stored sponsors written before BAJAOVRLAY-46, when the top level was `master`,
 // in the design's levels (`diamante`). Run at boot on the stored sponsors row, before that
-// row is checked against its schema.
+// row is checked against its schema. The row itself is not written back: it is read this
+// way at every boot until a sponsor command saves the slice again, which is harmless.
 //
 // Why at load, before the schema check: the shared SponsorTierSchema has the design's six
 // levels only, so clients never see the old name and no code but this file (and the CSV's
