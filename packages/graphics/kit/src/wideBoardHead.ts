@@ -45,7 +45,10 @@ export function renderWideBoardHeadTemplate(
 }
 
 /** Finds the head's parts in the rendered template; a missing one is a bug in the template. */
-export function findWideBoardHeadParts(renderRoot: ParentNode, testIdPrefix: string): WideBoardHeadParts {
+export function findWideBoardHeadParts(
+  renderRoot: ParentNode,
+  testIdPrefix: string,
+): WideBoardHeadParts {
   const findPart = (testIdSuffix: string): HTMLElement => {
     const testId = `${testIdPrefix}-${testIdSuffix}`;
     const part = renderRoot.querySelector<HTMLElement>(`[data-testid="${testId}"]`);

@@ -16,7 +16,6 @@
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
-import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -37,6 +36,7 @@ import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
 } from '@bajaovrlay/graphics-kit/timelinePlayback';
+import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 

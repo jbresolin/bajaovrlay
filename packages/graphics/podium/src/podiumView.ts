@@ -10,12 +10,12 @@
  * without it the card's content is simply shorter and stays centred in the card's height.
  * Images are `<img src>` and nothing else: an `<img>` runs no script, even for an SVG.
  */
+import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
 import {
-  type WideBoardHeadParts,
   findWideBoardHeadParts,
   renderWideBoardHeadTemplate,
+  type WideBoardHeadParts,
 } from '@bajaovrlay/graphics-kit/wideBoardHead';
-import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
 import { html, nothing, type TemplateResult } from 'lit';
 
 import {

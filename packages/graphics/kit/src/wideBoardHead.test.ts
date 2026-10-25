@@ -19,7 +19,11 @@
 import { html, render } from 'lit';
 import { describe, expect, it } from 'vitest';
 
-import { findWideBoardHeadParts, renderWideBoardHeadTemplate, writeWideBoardHead } from './wideBoardHead.js';
+import {
+  findWideBoardHeadParts,
+  renderWideBoardHeadTemplate,
+  writeWideBoardHead,
+} from './wideBoardHead.js';
 
 /** Draws the podium's head into a fresh element and returns the element. */
 function drawThePodiumHead(): HTMLElement {
