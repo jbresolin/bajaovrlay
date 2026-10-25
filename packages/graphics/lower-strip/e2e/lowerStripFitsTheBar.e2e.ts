@@ -9,8 +9,9 @@
  *   and measures each of its six pages, with the clock block and without it.
  *
  * What these tests prove:
- *   - With the clock block, each of the six pages ends inside the bar's pages box (the
- *     bar is x 96..1824, the page cell after it), and no school name is cut.
+ *   - With the clock block, each of the six pages' pills at their natural width (not
+ *     stretched) fit the bar's pages box (the bar is x 96..1824, the page cell after it),
+ *     and no school name is cut.
  *   - Without the block, the same.
  *   - The bar sits in its slot: x 96 to 1824, bottom at y 1026, 72 px tall.
  *
@@ -25,8 +26,8 @@ import { expect, type Page, test } from '@playwright/test';
 type PageMeasurement = {
   pageCell: string;
   carCount: number;
-  lastPillRightEdgePx: number;
-  pagesBoxRightEdgePx: number;
+  naturalWidthPx: number;
+  pagesBoxWidthPx: number;
   namesCut: string[];
 };
 
@@ -42,7 +43,10 @@ async function openPreviewOnAir(page: Page, query: string): Promise<void> {
 
 /**
  * Measures the page on air, then turns to the next one (the strip's own method, which the
- * preview's "Próxima página" calls), six times: the whole field.
+ * preview's "Próxima página" calls), six times: the whole field. The pills stretch to fill
+ * the bar (flex: 1 1 auto), so their drawn edge always meets the box's; what the page needs
+ * is their natural width, measured with each pill set to flex: none for a moment, plus the
+ * gaps between them.
  */
 async function measureEveryPage(page: Page): Promise<PageMeasurement[]> {
   return page.evaluate(async () => {
@@ -55,16 +59,24 @@ async function measureEveryPage(page: Page): Promise<PageMeasurement[]> {
         (lane) => lane.getAttribute('aria-hidden') !== 'true',
       ) as HTMLElement;
       const pills = [...laneOnAir.querySelectorAll<HTMLElement>('[data-testid="lower-strip-car"]')];
-      const lastPill = pills[pills.length - 1] as HTMLElement;
       const pagesBox = laneOnAir.parentElement as HTMLElement;
+      for (const pill of pills) {
+        pill.style.flex = 'none';
+      }
+      const pillsWidthPx = pills.reduce((sum, pill) => sum + pill.getBoundingClientRect().width, 0);
+      for (const pill of pills) {
+        pill.style.flex = '';
+      }
+      const gapPx = Number.parseFloat(getComputedStyle(laneOnAir).columnGap);
+      const naturalWidthPx = pillsWidthPx + gapPx * (pills.length - 1);
       const schools = [
         ...laneOnAir.querySelectorAll<HTMLElement>('[data-testid="lower-strip-car-school"]'),
       ];
       measurements.push({
         pageCell: root.querySelector('[data-testid="lower-strip-page-cell"]')?.textContent ?? '',
         carCount: pills.length,
-        lastPillRightEdgePx: lastPill.getBoundingClientRect().right,
-        pagesBoxRightEdgePx: pagesBox.getBoundingClientRect().right,
+        naturalWidthPx,
+        pagesBoxWidthPx: pagesBox.getBoundingClientRect().width,
         namesCut: schools
           .filter((school) => school.scrollWidth > school.clientWidth)
           .map((school) => school.textContent ?? ''),
@@ -87,8 +99,8 @@ test.describe('the real 34-car field on the strip', () => {
       // Act: measure the six pages.
       const measurements = await measureEveryPage(page);
 
-      // Assert: six pages of six (the last of four), each ending inside the pages box,
-      // and no school name wider than its cell.
+      // Assert: six pages of six (the last of four), each page's pills at their natural
+      // width no wider than the pages box, and no school name wider than its cell.
       expect(
         measurements.map((measurement) => [measurement.pageCell, measurement.carCount]),
         'the six pages and their cars',
@@ -102,9 +114,9 @@ test.describe('the real 34-car field on the strip', () => {
       ]);
       for (const measurement of measurements) {
         expect(
-          measurement.lastPillRightEdgePx,
-          `page ${measurement.pageCell} must end inside the bar`,
-        ).toBeLessThanOrEqual(measurement.pagesBoxRightEdgePx);
+          measurement.naturalWidthPx,
+          `page ${measurement.pageCell} must fit the bar at its natural width`,
+        ).toBeLessThanOrEqual(measurement.pagesBoxWidthPx);
         expect(measurement.namesCut, `no name may be cut on page ${measurement.pageCell}`).toEqual(
           [],
         );
