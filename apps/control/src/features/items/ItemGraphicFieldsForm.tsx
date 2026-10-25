@@ -13,7 +13,7 @@ import {
   type SchemaFormValues,
 } from '@/features/schemaForm';
 import { ptBR } from '@/i18n/ptBR';
-import { useServerState } from '@/state/ControlPageStateProvider';
+import { useReadServerStateNow } from '@/state/ControlPageStateProvider';
 
 import { fillGraphicFieldsOfItemEditor } from './graphicFieldsOfItemEditor';
 import { useBindingOptionsOfItemEditor } from './useBindingOptionsOfItemEditor';
@@ -78,15 +78,17 @@ export type ItemGraphicFieldsFormProps = {
 export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   const { graphic, fieldsToShow, whenFieldsAreChecked, handleRef, isItemOnAir } = props;
 
-  // The sources a new item's suggested "Fonte" is judged by, as the page holds them now.
-  const dataSources = useServerState((state) => state.dataSources);
-  const dataSnapshots = useServerState((state) => state.dataSnapshots);
   // Decided at the first draw and kept: a newer copy of the graphics slice (a reconnect)
   // must not refill the form over what the operator has typed, and a source that comes
-  // on later must not change a "Fonte" the operator already saw.
-  const [graphicFields] = useState(() =>
-    fillGraphicFieldsOfItemEditor(graphic, fieldsToShow, { dataSources, dataSnapshots }),
-  );
+  // on later must not change a "Fonte" the operator already saw. So the sources a new
+  // item's suggested "Fonte" is judged by are read once, as the page holds them then, and
+  // not subscribed to: a subscription would redraw the whole form at every poll of a
+  // source (BAJAOVRLAY-45).
+  const readServerStateNow = useReadServerStateNow();
+  const [graphicFields] = useState(() => {
+    const { dataSources, dataSnapshots } = readServerStateNow();
+    return fillGraphicFieldsOfItemEditor(graphic, fieldsToShow, { dataSources, dataSnapshots });
+  });
   const form = useForm<SchemaFormValues>({
     defaultValues: graphicFields.formValues,
     resolver: buildSchemaFormResolver(graphicFields.description),

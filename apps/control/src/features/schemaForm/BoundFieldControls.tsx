@@ -22,19 +22,28 @@ import {
   parameterOfEachBindingTransform,
   readBindingFromSchemaFormValue,
 } from './bindingFormValue';
-import { describeBindingValueNow } from './bindingValueNowText';
+import { BindingValueNowLine } from './BindingValueNowLine';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import type { SchemaFormValues } from './schemaFormValues';
 
 /**
  * What a panel hands the generated form so its fields can read a data source: the
- * sources to offer, and how to read a binding against the page's slices now (the shared
- * resolveBindingAgainstSources, for the "Valor agora" line). Only the item editor hands
- * it; without it no field offers "Fonte".
+ * sources to offer, how to read a binding against the page's slices now (the shared
+ * resolveBindingAgainstSources, for the "Valor agora" line), and how to be told when
+ * what it reads may have changed. Only the item editor hands it; without it no field
+ * offers "Fonte".
  */
 export type SchemaFormBindingOptions = {
+  /** The sources the "Fonte de …" dropdown lists. */
   dataSources: Array<{ id: string; label: string }>;
+  /** Reads a binding against the page's slices as they are at the moment of the call. */
   readValueNow: (binding: BindingFieldValue) => BindingResolution;
+  /**
+   * Calls `onValuesChanged` after every change that may change what readValueNow reads (a
+   * poll, a correction, a team), and returns the way to stop. Only "Valor agora" listens
+   * (BindingValueNowLine.tsx), so a poll redraws that line and nothing else.
+   */
+  subscribeToValuesNow: (onValuesChanged: () => void) => () => void;
 };
 
 const editorTexts = ptBR.bindings.editor;
@@ -84,13 +93,6 @@ export function BoundFieldControls(props: {
 
   // What the field would get now, once the choices make a binding the field can take.
   const bindingRead = readBindingFromSchemaFormValue(field, bindingValue, dataSchema, isWholeClock);
-  const valueNowText =
-    bindingRead.status === 'binding'
-      ? describeBindingValueNow(
-          bindingOptions.readValueNow(bindingRead.binding),
-          bindingRead.binding,
-        )
-      : editorTexts.chooseToSeeTheValue;
 
   /** Chooses a path, and a transform that makes it fit when it fits through one only. */
   function choosePath(pathKey: string): void {
@@ -312,7 +314,11 @@ export function BoundFieldControls(props: {
         />
       )}
 
-      <p className="text-xs text-muted-foreground">{valueNowText}</p>
+      {bindingRead.status === 'binding' ? (
+        <BindingValueNowLine binding={bindingRead.binding} bindingOptions={bindingOptions} />
+      ) : (
+        <p className="text-xs text-muted-foreground">{editorTexts.chooseToSeeTheValue}</p>
+      )}
     </div>
   );
 }

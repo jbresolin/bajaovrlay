@@ -6,8 +6,8 @@ import { isPressOfShortcut, keyboardMap } from '@/keyboard/keyboardMap';
 import { type KeyPress, useKeyboardShortcut } from '@/keyboard/useKeyboardShortcut';
 import {
   useIsConnectedToServer,
+  useReadServerStateNow,
   useSendCommand,
-  useServerState,
 } from '@/state/ControlPageStateProvider';
 
 import { findItemIdAfterCursor } from './itemAfterCursor';
@@ -47,7 +47,10 @@ export function useRundownKeyboardShortcuts(
 ): void {
   const sendCommand = useSendCommand();
   const isConnected = useIsConnectedToServer();
-  const instances = useServerState((state) => state.instances);
+  // Read at the press, not subscribed to: what is on air changes at every live refresh,
+  // and a subscription here would redraw the whole rundown column, the item editor in it
+  // included, at every poll of a source (BAJAOVRLAY-45).
+  const readServerStateNow = useReadServerStateNow();
 
   // Null means the key has nothing to send (Shift+Space with the cursor on nothing).
   // Plain Space is sent even when the cursor is empty: the server owns the cursor, so
@@ -57,7 +60,11 @@ export function useRundownKeyboardShortcuts(
     // of the space bar is plain Space.
     const isShiftSpace = isPressOfShortcut(keyPress, keyboardMap.previewCursorItem);
     const operatorKey = isShiftSpace ? 'shiftSpace' : 'space';
-    const command = chooseCommandForOperatorKey(operatorKey, rundown, instances);
+    const command = chooseCommandForOperatorKey(
+      operatorKey,
+      rundown,
+      readServerStateNow().instances,
+    );
     if (command === null) {
       return;
     }

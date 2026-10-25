@@ -67,6 +67,17 @@ export function useReadServerStateNow(): () => ServerState {
   return serverStateStore.getState;
 }
 
+/**
+ * Returns a function that calls `onStateChanged` after every change of the server state,
+ * and returns the way to stop. For a value computed from several slices that a component
+ * reads with React's useSyncExternalStore, so it redraws only when that value changes (the
+ * item editor's "Valor agora", BAJAOVRLAY-45). To draw a slice, use `useServerState`.
+ */
+export function useSubscribeToServerState(): (onStateChanged: () => void) => () => void {
+  const { serverStateStore } = useControlPageState();
+  return serverStateStore.subscribe;
+}
+
 /** Whether the page can send commands right now (it holds a hello from the server). */
 export function useIsConnectedToServer(): boolean {
   return useServerState((state) => state.connectionStatus === 'connected');

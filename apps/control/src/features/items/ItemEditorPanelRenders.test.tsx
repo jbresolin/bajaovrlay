@@ -88,8 +88,7 @@ function findRowOfField(fieldLabel: string): HTMLElement {
 }
 
 describe('the item editor on a battle card read live, when a poll arrives', () => {
-  // Fails on main (BAJAOVRLAY-45): flipped to `it` by the fix.
-  it.fails('redraws no field row when the poll changes nothing the card shows', () => {
+  it('redraws no field row when the poll changes nothing the card shows', () => {
     // Arrange: the editor open on the battle card, every draw so far forgotten.
     const { fakeServer, serverStateStore } = renderEditorOnTheBattleCardOfTheLeaders();
     startCountingLabelDraws();
@@ -108,38 +107,34 @@ describe('the item editor on a battle card read live, when a poll arrives', () =
     ).toEqual(buildNoDrawForEach(battleCardFieldLabels));
   });
 
-  // Fails on main (BAJAOVRLAY-45): flipped to `it` by the fix.
-  it.fails(
-    'redraws at most the row whose value the poll changed, and that row says the new value',
-    () => {
-      // Arrange: the editor open on the battle card, car 38 19,1 s behind the leader.
-      const { fakeServer, serverStateStore } = renderEditorOnTheBattleCardOfTheLeaders();
-      startCountingLabelDraws();
+  it('redraws at most the row whose value the poll changed, and that row says the new value', () => {
+    // Arrange: the editor open on the battle card, car 38 19,1 s behind the leader.
+    const { fakeServer, serverStateStore } = renderEditorOnTheBattleCardOfTheLeaders();
+    startCountingLabelDraws();
 
-      // Act: the next poll, in which car 38 closes to 18,4 s.
-      fakeServer.sendMessage(buildNextPollWhereTheSecondCarCloses());
+    // Act: the next poll, in which car 38 closes to 18,4 s.
+    fakeServer.sendMessage(buildNextPollWhereTheSecondCarCloses());
 
-      // Assert: the page took the poll; no other row drawn; the gap's row at most once,
-      // reading the new gap.
-      expect(
-        readMomentOfTheSimulatorsData(serverStateStore),
-        'the page must have taken the next poll, or nothing was tested',
-      ).toBe(momentOfTheNextPollMs);
-      const otherLabels = listFieldLabelsOtherThan([gapLabel]);
-      expect(
-        countDrawsOfEachLabel(otherLabels),
-        'a poll must redraw no row whose value it did not change',
-      ).toEqual(buildNoDrawForEach(otherLabels));
-      expect(
-        countDrawsOfEachLabel([gapLabel])[gapLabel],
-        'the row of the changed value is drawn at most once',
-      ).toBeLessThanOrEqual(1);
-      expect(
-        within(findRowOfField(gapLabel)).getByText('Valor agora: 18.400'),
-        '"Valor agora" of the gap must say the new gap',
-      ).toBeInTheDocument();
-    },
-  );
+    // Assert: the page took the poll; no other row drawn; the gap's row at most once,
+    // reading the new gap.
+    expect(
+      readMomentOfTheSimulatorsData(serverStateStore),
+      'the page must have taken the next poll, or nothing was tested',
+    ).toBe(momentOfTheNextPollMs);
+    const otherLabels = listFieldLabelsOtherThan([gapLabel]);
+    expect(
+      countDrawsOfEachLabel(otherLabels),
+      'a poll must redraw no row whose value it did not change',
+    ).toEqual(buildNoDrawForEach(otherLabels));
+    expect(
+      countDrawsOfEachLabel([gapLabel])[gapLabel],
+      'the row of the changed value is drawn at most once',
+    ).toBeLessThanOrEqual(1);
+    expect(
+      within(findRowOfField(gapLabel)).getByText('Valor agora: 18.400'),
+      '"Valor agora" of the gap must say the new gap',
+    ).toBeInTheDocument();
+  });
 });
 
 describe('the item editor on a battle card read live, when the operator works', () => {

@@ -77,7 +77,6 @@ function buildKeyOfTheFormForThisOpening(props: ItemEditorPanelProps): string {
 function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   const graphics = useServerState((state) => state.graphics);
   const layers = useServerState((state) => state.layers);
-  const instances = useServerState((state) => state.instances);
   const rundowns = useServerState((state) => state.rundowns);
   const panels = useServerState((state) => state.quickFirePanels);
 
@@ -155,9 +154,14 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
     refusalsToShowAtOpening: props.refusalsToShowAtOpening ?? [],
   });
 
-  const isItemOnAir =
-    itemAsItWasWhenOpened !== null &&
-    findInstanceOfItemOnProgram(instances, itemAsItWasWhenOpened.id) !== undefined;
+  // A yes or no, not the instances: those change at every live refresh of anything on
+  // air, and the editor would redraw at every poll of a source (BAJAOVRLAY-45).
+  const idOfItemAsOpened = itemAsItWasWhenOpened?.id;
+  const isItemOnAir = useServerState(
+    (state) =>
+      idOfItemAsOpened !== undefined &&
+      findInstanceOfItemOnProgram(state.instances, idOfItemAsOpened) !== undefined,
+  );
   // An empty list of graphics means the server has not answered yet, not that the
   // graphic is gone, so the notice waits for a list that lacks the item's graphic.
   const isGraphicOfStoredItemGone =
