@@ -185,14 +185,17 @@ export function buildChangedItemFieldsFromSchemaForm(
   }
   // A list field switched from "Fonte" or "Lista dos cadastros" back to "Valor como está"
   // has no value of its own to keep (the binding or the list was all it held), so it is
-  // cleared rather than left reading.
+  // cleared rather than left reading. Only back to "as it is": a switch from one reading
+  // kind to the other already pushed the new binding or list above, which a null pushed
+  // after it would overwrite (gate 2 of PR #28).
   for (const field of description.fields) {
     const storedField = readOwnValueOfRecord(storedItemFields, field.key);
     const kindNow = readOwnValueOfRecord(formValues.kinds, field.key);
+    const isStoredReadingSomething =
+      storedField?.kind === 'binding' || storedField?.kind === 'entityList';
+    const isNowAsItIs = kindNow === undefined || kindNow === 'literal';
     const isListFieldUnbound =
-      field.control === 'unsupported' &&
-      ((storedField?.kind === 'binding' && kindNow !== 'binding') ||
-        (storedField?.kind === 'entityList' && kindNow !== 'entityList'));
+      field.control === 'unsupported' && isStoredReadingSomething && isNowAsItIs;
     if (isListFieldUnbound) {
       changedFieldPairs.push([field.key, { kind: 'literal', value: null }]);
     }

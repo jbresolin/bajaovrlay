@@ -16,6 +16,8 @@
  *     counted), 1 patrocinador, 6 sessões, 1 sessão, and the reason when the list is empty.
  *   - A stored entity list opens as "Lista dos cadastros" with its kind, and the checked
  *     form stores it back unchanged.
+ *   - Switching "Fonte" to "Lista dos cadastros" saves the list (no null pushed after it,
+ *     gate 2 of PR #28); switching the list back to "Valor como está" clears the field.
  *
  * What these tests deliberately do not cover:
  *   - Drawing the controls; SchemaFormFieldsEntityList.test.tsx.
@@ -33,7 +35,10 @@ import {
   listEntityListTypesOfferedToField,
   writeEntityListValueNowText,
 } from './entityListFormValue';
-import { buildItemFieldsFromSchemaForm } from './itemFieldsFromSchemaForm';
+import {
+  buildChangedItemFieldsFromSchemaForm,
+  buildItemFieldsFromSchemaForm,
+} from './itemFieldsFromSchemaForm';
 
 describe('listEntityListTypesOfferedToField', () => {
   const fieldScenarios = [
@@ -166,5 +171,65 @@ describe('an entity list stored on an item', () => {
       slots: 'scheduleSlot',
     });
     expect(fieldsBack, 'the item stores the lists back unchanged').toEqual(storedFields);
+  });
+});
+
+describe('switching a list field between its kinds', () => {
+  /** A board item whose sponsors read a source's list ("Fonte"), as before this task. */
+  function buildStoredFieldsReadingASource(): ItemFields {
+    return {
+      title: { kind: 'literal', value: 'Intervalo' },
+      sponsors: {
+        kind: 'binding',
+        sourceId: 'simulador-semeado',
+        shapeKey: 'standings',
+        path: 'entries',
+        isLive: true,
+      },
+    };
+  }
+
+  it('stores the list when "Fonte" is switched to "Lista dos cadastros", not a null after it', () => {
+    // Arrange: the item opened in the form, its sponsors switched to the sponsors of
+    // Cadastros.
+    const description = describeBoardWithEntityListsForm();
+    const storedFields = buildStoredFieldsReadingASource();
+    const { formValues } = buildSchemaFormValuesFromItemFields(description, storedFields);
+    formValues.kinds.sponsors = 'entityList';
+    formValues.entityLists = { ...formValues.entityLists, sponsors: 'sponsor' };
+
+    // Act: work out what the save changes.
+    const changedFields = buildChangedItemFieldsFromSchemaForm(
+      description,
+      formValues,
+      storedFields,
+    );
+
+    // Assert: the sponsors now read the list of Cadastros.
+    expect(changedFields.sponsors, 'the new list is what the item saves').toEqual({
+      kind: 'entityList',
+      entityType: 'sponsor',
+    });
+  });
+
+  it('clears the field when "Lista dos cadastros" is switched back to "Valor como está"', () => {
+    // Arrange: an item reading every sponsor, opened in the form and switched back.
+    const description = describeBoardWithEntityListsForm();
+    const storedFields: ItemFields = { sponsors: { kind: 'entityList', entityType: 'sponsor' } };
+    const { formValues } = buildSchemaFormValuesFromItemFields(description, storedFields);
+    formValues.kinds.sponsors = 'literal';
+
+    // Act: work out what the save changes.
+    const changedFields = buildChangedItemFieldsFromSchemaForm(
+      description,
+      formValues,
+      storedFields,
+    );
+
+    // Assert: the field is cleared, reading nothing.
+    expect(changedFields.sponsors, 'back to as it is clears the field').toEqual({
+      kind: 'literal',
+      value: null,
+    });
   });
 });
