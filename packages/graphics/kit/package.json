@@ -27,6 +27,7 @@
     "./waitForImagesToSettle": "./src/waitForImagesToSettle.ts",
     "./sponsorRound": "./src/sponsorRound.ts",
     "./sponsorPages": "./src/sponsorPages.ts",
+    "./sponsorPageTurner": "./src/sponsorPageTurner.ts",
     "./ptBRSponsorLevelHeadings": "./src/ptBRSponsorLevelHeadings.ts",
     "./countdownText": "./src/countdownText.ts",
     "./countdownClock": "./src/countdownClock.ts",

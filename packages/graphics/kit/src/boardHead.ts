@@ -7,6 +7,13 @@
  * animations' inline styles on it survive an update on air, and a changed subtitle (the
  * sponsor roll's level, page by page) changes in place. Its look is boardStyles.ts's.
  *
+ * What could go wrong: GSAP, reading the transform of an element that has no offsetParent
+ * (always in jsdom; in Chromium under a hidden ancestor), takes it out of the page and puts
+ * it back before its next element sibling, which skips Lit's comment markers and corrupts
+ * the template's parts. So the head card GSAP animates sits alone inside a wrapper
+ * (`display: contents`, no box of its own), and the wrapper is what a board's template
+ * holds.
+ *
  * The logo is `<img src>` and nothing else, bundled from the theme package by Vite into
  * each graphic's dist/.
  */
@@ -40,14 +47,16 @@ export function renderBoardHead(content: BoardHeadContent): TemplateResult {
     content.aside === undefined
       ? nothing
       : html`<span class="board-aside" data-testid="${prefix}-aside">${content.aside}</span>`;
-  return html`<header class="card board-head" data-testid="${prefix}-head">
-    <img
-      class="board-logo"
-      src=${logoAddress}
-      alt=${content.logoAlternativeText}
-      data-testid="${prefix}-logo"
-    />
-    <h1 class="board-title" data-testid="${prefix}-title">${content.title}</h1>
-    ${subtitle}${aside}
-  </header>`;
+  return html`<div class="board-head-place">
+    <header class="card board-head" data-testid="${prefix}-head">
+      <img
+        class="board-logo"
+        src=${logoAddress}
+        alt=${content.logoAlternativeText}
+        data-testid="${prefix}-logo"
+      />
+      <h1 class="board-title" data-testid="${prefix}-title">${content.title}</h1>
+      ${subtitle}${aside}
+    </header>
+  </div>`;
 }

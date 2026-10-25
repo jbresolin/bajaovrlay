@@ -59,6 +59,11 @@ export const narrowBoardStyles = css`
     white-space: nowrap;
   }
 
+  /* The head's wrapper has no box of its own (boardHead.ts says why it exists). */
+  .board-head-place {
+    display: contents;
+  }
+
   /* The head card: the logo, the title, the subtitle, the line at the right. */
   .board-head {
     height: var(--clock-head-height);

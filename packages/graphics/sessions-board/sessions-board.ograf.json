@@ -1,0 +1,68 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-sessions-board",
+  "version": "0.1.0",
+  "name": "Programação do dia",
+  "description": "Quadro com as sessões do dia, cada uma com o seu estado (concluída, em andamento, a seguir), calculado no ar pelo relógio.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "sessions-board.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "fullscreen",
+    "category": "schedule"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 830 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "title": "Título do quadro",
+        "description": "O título no cabeçalho do quadro.",
+        "gddType": "single-line",
+        "minLength": 1,
+        "default": "PROGRAMAÇÃO DO DIA"
+      },
+      "eventLine": {
+        "type": "string",
+        "title": "Linha do evento",
+        "description": "Opcional; ex.: 30ª Competição Baja SAE Brasil, ao lado do título.",
+        "gddType": "single-line"
+      },
+      "dateLine": {
+        "type": "string",
+        "title": "Linha da data",
+        "description": "Opcional; ex.: domingo, 30 de março de 2025, à direita do título.",
+        "gddType": "single-line"
+      },
+      "slots": {
+        "type": "array",
+        "title": "Sessões",
+        "description": "Em geral a lista da programação nos cadastros. Até 12 cabem no quadro; com mais, aparecem as 12 em torno da sessão em andamento.",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "properties": {
+            "slotId": { "type": "string", "minLength": 1 },
+            "sessionName": { "type": "string", "minLength": 1 },
+            "sessionKind": { "type": "string" },
+            "startsAtMs": { "type": "integer", "minimum": 0 },
+            "endsAtMs": { "type": "integer", "minimum": 0 },
+            "place": { "type": "string" }
+          },
+          "required": ["slotId", "sessionName", "startsAtMs"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["title", "slots"],
+    "additionalProperties": false
+  }
+}
