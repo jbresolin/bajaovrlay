@@ -15,8 +15,9 @@
  *   3. "Próximo" pressed three times on the Camadas row: "Passo 4 de 4", the three cards
  *      shown on the output, car 1's card shows its logo and car 2's has none.
  *   4. A battle card whose eleven fields read the race's first two cars by number, live,
- *      bound with the simulator off and its last data still, taken: the output shows both
- *      teams and a gap ("+1,2").
+ *      bound while the simulator runs at 60×, as an operator binds one during a race
+ *      (BAJAOVRLAY-45), taken: the output shows both teams, and a gap ("+1,2") while the
+ *      two cars run side by side, "—" while they do not.
  *   5. A QR card typed and taken: its code on the output scans back to the address.
  *
  * What these tests deliberately do not cover:
@@ -47,7 +48,6 @@ import {
   seededSimulatorLabel,
   startTheSeededSimulatorFastFromTheGreenFlag,
   startTheSeededSimulatorFromTheGreenFlag,
-  turnSourceOffWithItsSwitch,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
 import {
@@ -222,9 +222,8 @@ test.describe('the podium, the battle card and the QR card', () => {
     test.setTimeout(120_000);
 
     // Arrange: the race run fast until the 2nd car has an interval to the leader (the shape
-    // leaves it out before the leader's first lap), then the simulator switched off, so its
-    // last data stays still while the fields are bound. Binding live fields while the race
-    // runs at speed 60 slows the editor to a crawl (BAJAOVRLAY-45), which is not this walk.
+    // leaves it out before the leader's first lap); the two cars then leading are the ones
+    // the card follows. The simulator keeps running while the fields are bound.
     await openDataSourcesPageAndWaitUntilConnected(page);
     await startTheSeededSimulatorFastFromTheGreenFlag(page);
     await expect
@@ -239,11 +238,9 @@ test.describe('the podium, the battle card and the QR card', () => {
         },
       )
       .toBeGreaterThan(0);
-    await turnSourceOffWithItsSwitch(page, seededSimulatorLabel);
-    const positionsOnceStill = await readPositionsOfSourceFromTheRealServer(seededSimulatorLabel);
-    const leader = positionsOnceStill[0];
-    const second = positionsOnceStill[1];
-    expect(second?.intervalMs, "the last data keeps the 2nd car's interval").toBeGreaterThan(0);
+    const positionsAtTheStart = await readPositionsOfSourceFromTheRealServer(seededSimulatorLabel);
+    const leader = positionsAtTheStart[0];
+    const second = positionsAtTheStart[1];
     const outputPage = await openOutputInItsOwnPage(page.context(), '/render/');
 
     // Act (step 4): the battle card, every field reading the leader (ahead) or the 2nd car
@@ -281,7 +278,9 @@ test.describe('the podium, the battle card and the QR card', () => {
     });
     await saveAndTakeTheItemInTheEditor(itemEditor);
 
-    // Assert (step 4): both teams and a gap written "+s,d" on the output.
+    // Assert (step 4): both teams on the output, and the gap cell following the race: the
+    // gap written "+s,d" while the server lists the two cars side by side, "—" while it
+    // does not (the race kept running, so another car may have come between them).
     const battleCard = findGraphicOnOutputPage(outputPage, 'lower-third', 'battle-card');
     await expect(battleCard.getByTestId('battle-card'), 'the car ahead').toContainText(
       leader?.teamName ?? 'no leader',
@@ -290,9 +289,27 @@ test.describe('the podium, the battle card and the QR card', () => {
     await expect(battleCard.getByTestId('battle-card'), 'the car behind').toContainText(
       second?.teamName ?? 'no 2nd car',
     );
-    await expect(battleCard.getByTestId('battle-card-gap'), 'the gap in seconds').toHaveText(
-      /^\+\d+,\d$/,
-    );
+    const gapCell = battleCard.getByTestId('battle-card-gap');
+    await expect
+      .poll(
+        async () => {
+          const gapText = (await gapCell.textContent()) ?? '';
+          const positionsNow = await readPositionsOfSourceFromTheRealServer(seededSimulatorLabel);
+          const placeOfTheCarAhead = positionsNow.findIndex(
+            (entry) => entry.carNumber === leader?.carNumber,
+          );
+          const placeOfTheCarBehind = positionsNow.findIndex(
+            (entry) => entry.carNumber === second?.carNumber,
+          );
+          const areTheCarsSideBySide = placeOfTheCarBehind === placeOfTheCarAhead + 1;
+          return areTheCarsSideBySide ? /^\+\d+,\d$/.test(gapText) : gapText === '—';
+        },
+        {
+          message: 'the gap cell must show the gap while the cars run side by side, "—" if not',
+          timeout: waitForTheAirInMilliseconds,
+        },
+      )
+      .toBe(true);
   });
 
   test('a QR card shows a code that scans back to its address', async ({ page }) => {
