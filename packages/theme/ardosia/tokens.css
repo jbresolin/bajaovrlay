@@ -180,6 +180,21 @@
   --size-board: 30px;
   --col-points: 120px; /* one part of the score */
   --col-total: 160px;
+  /* The narrow boards (countdown, sessions board, intermission, sponsor roll; BAJAOVRLAY-46,
+     from the catalogue of PR #21): 1280 px wide and centred, so the bug and the clock card
+     stay visible beside them. */
+  --board-width: 1280px;
+  --session-row-height: 64px;
+  --session-time-width: 140px;
+  --session-status-icon-size: 22px; /* the slot's state shape, beside its 26 px word */
+  --size-countdown: 160px; /* the waiting screen's count */
+  --size-countdown-small: 96px; /* the intermission's count */
+  --sponsor-tile-height: 240px; /* a sponsor roll tile */
+  --sponsor-tile-logo-width: 340px;
+  --sponsor-tile-logo-height: 150px;
+  --sponsor-logo-line-width: 170px; /* the intermission board's sponsor line */
+  --sponsor-logo-line-height: 52px;
+  --sponsor-line-heading-width: 210px; /* the line's level heading, one width on every page */
 
   /* ---- Motion (docs/design/directions/ardosia/motion.md): the scoreboard's slide-in,
      faster, with the rows in cascade. Graphics read these through readMotionTokens(). */
@@ -195,6 +210,14 @@
   --motion-notice-hold: 8000ms; /* a notice's hold; the server's event rule clears it, not the graphic */
   --motion-board-hold: 10000ms; /* a standings page stays this long */
   --motion-page-stagger: 15ms; /* between pieces when a page turns in place */
+  /* A sponsor page (the roll, its corner card, the intermission's line) is held by its
+     level, the higher the longer; Bronze has none of its own and takes --motion-sponsor-hold. */
+  --motion-sponsor-hold: 5000ms;
+  --motion-sponsor-hold-diamante: 8000ms;
+  --motion-sponsor-hold-ouro: 5000ms;
+  --motion-sponsor-hold-prata: 3000ms;
+  --motion-sponsor-hold-apoio: 3000ms;
+  --motion-sponsor-hold-realizacao: 5000ms;
   --motion-in-offset: 20; /* px a piece rises on entry (and lifts on exit) */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);

@@ -59,6 +59,14 @@ token names are the design's. Copied with these changes:
   wrote as numbers, `--size-bug-label` (44 px, the bug's event word), `--flag-pill-height`
   and `--flag-pill-min-width` (32 and 96 px, the clock block's flag pill), `--stage-safe-side`
   and `--stage-safe-bottom` (96 and 54 px, the title-safe edges of the bars along the bottom).
+- added for the countdown, the sessions board, the sponsor roll and the intermission board
+  (BAJAOVRLAY-46), as the design names them: `--board-width`, `--session-row-height`,
+  `--session-time-width`, `--size-countdown`, `--size-countdown-small`, `--sponsor-tile-height`,
+  `--sponsor-tile-logo-width`, `--sponsor-tile-logo-height`, `--sponsor-logo-line-width`,
+  `--sponsor-logo-line-height`, `--sponsor-line-heading-width`, `--motion-sponsor-hold` and the
+  five `--motion-sponsor-hold-<level>` (read by `readMotionTokens` as `sponsorHoldMs` and
+  `sponsorHold<Level>Ms`); and `--session-status-icon-size` (22 px, the slot's state shape,
+  which the design's styles wrote as a number).
 
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).

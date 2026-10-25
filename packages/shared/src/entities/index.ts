@@ -32,11 +32,15 @@ export {
   ScheduleSlotsSchema,
 } from './scheduleSlot.js';
 // What the schedule says about a slot at a moment (never stored), and its pt-BR word.
+// The rule carries no import, so the sessions board bundles it from
+// `@bajaovrlay/shared/scheduleSlotStatus`.
 export {
+  findEndOfScheduleSlot,
   findStatusOfScheduleSlot,
-  labelOfScheduleSlotStatus,
   type ScheduleSlotStatus,
+  type ScheduleSlotTiming,
 } from './scheduleSlotStatus.js';
+export { labelOfScheduleSlotStatus } from './scheduleSlotStatusLabel.js';
 // The four slices together, and how a refusal names one record ("Equipe 42 (Baja UFPR)").
 export {
   describePerson,

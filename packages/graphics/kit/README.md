@@ -1,7 +1,9 @@
 # graphics-kit (`@bajaovrlay/graphics-kit`)
 
 What two or more OGraf graphics share, written once (BAJAOVRLAY-24; the clock's reading, ticker
-and flag since BAJAOVRLAY-23, for the race clock and the strip's and ticker's clock block). Each graphic lists it as a
+and flag since BAJAOVRLAY-23, for the race clock and the strip's and ticker's clock block; the
+sponsor round, the countdown and the narrow board since BAJAOVRLAY-46, for the countdown, the
+sessions board, the sponsor roll and the intermission board). Each graphic lists it as a
 workspace dependency and Vite bundles the parts it imports into the graphic's own `dist/`: no
 graphic loads anything at run time, so rule 3 (graphics never fetch) holds. Like the theme, the
 kit is imported from its TypeScript source and has no build of its own. It is not a graphic.
@@ -27,6 +29,13 @@ src/pageHold.ts                          a page hold (--motion-strip-hold, --mot
 src/barStyles.ts                         the bars' host, grid (one column less without the clock) and page cell
 src/barMotion.ts                         the strip's and the ticker's GSAP timelines: cascade in, out together, turn in place
 src/waitForImagesToSettle.ts             load's wait for a graphic's images (at most 2 s; a broken one never blocks)
+src/sponsorRound.ts                      every sponsor round: the level order (shared's), each level's heading and hold
+src/ptBRSponsorLevelHeadings.ts          the on-air heading of each level ("PATROCÍNIO DIAMANTE", "APOIO", "REALIZAÇÃO")
+src/sponsorPages.ts                      a round's pages: one level a page, a level shared evenly between its pages
+src/countdownText.ts                     the count to a start (m:ss, h:mm:ss, never negative) and a start's time of day
+src/countdownClock.ts                    the count on air: redrawn every frame at server time, stopped at 0:00
+src/boardHead.ts                         the narrow boards' head card: logo, title, subtitle, the line at the right
+src/boardStyles.ts                       the narrow boards' frame (--board-width, centred) and head card
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests
