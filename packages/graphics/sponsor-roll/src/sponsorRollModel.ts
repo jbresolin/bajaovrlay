@@ -66,14 +66,6 @@ export function planSponsorRollPages(data: SponsorRollData): SponsorRollPage[] {
   return planSponsorPages(data.sponsors, sponsorsPerPage);
 }
 
-/**
- * Where the roll stands after its list changed on air: the same page when it still exists,
- * page 1 when the list shrank under it. The roll never jumps to a page that is not there.
- */
-export function keepPageIndexWithin(pageIndex: number, pageCount: number): number {
-  return pageIndex < pageCount ? pageIndex : 0;
-}
-
 /** Whether the corner shows the event word: only when it has something to show. */
 export function hasEventWord(data: SponsorRollData): boolean {
   return isTextGiven(data.eventWord);

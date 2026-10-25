@@ -5,7 +5,17 @@
  * turn draws the next page on the other, then turns the tiles in place or crossfades the
  * cell; the head's words change in place. It also draws page 1 off air (load, after a stop)
  * and redraws the page on air in place after an edit (page 1 when the list shrank under it).
+ * Which page each layer holds is the kit's plan (stackedPageLayers), shared with the
+ * intermission's sponsor line.
  */
+import {
+  type LayerIndex,
+  otherLayerThan,
+  planLayersOnPageOne,
+  planTheRedrawInPlace,
+  planTheTurnToTheNextPage,
+  type StackedPageLayers,
+} from '@bajaovrlay/graphics-kit/stackedPageLayers';
 import type { GraphicTimeline } from '@bajaovrlay/graphics-kit/timelinePlayback';
 
 import {
@@ -18,7 +28,6 @@ import {
   showCornerCellAtOnce,
 } from './sponsorRollAnimations.js';
 import {
-  keepPageIndexWithin,
   planSponsorRollPages,
   type SponsorRollData,
   type SponsorRollPage,
@@ -30,14 +39,6 @@ import {
   findTilesOfLayer,
   type SponsorRollViewState,
 } from './sponsorRollView.js';
-
-/** One of the two layers each layout stacks in one place. */
-type LayerIndex = 0 | 1;
-
-/** The other of the two layers. */
-function otherLayerThan(layerIndex: LayerIndex): LayerIndex {
-  return layerIndex === 0 ? 1 : 0;
-}
 
 /** What the page turns need from the graphic; each reader is called anew. */
 export type SponsorRollPageTurnsOptions = {
@@ -51,38 +52,34 @@ export type SponsorRollPageTurnsOptions = {
 
 /** The pages of one sponsor roll and the layer the page on air is drawn on. */
 export class SponsorRollPageTurns {
-  private viewState: SponsorRollViewState = {
-    pages: [],
-    pageIndexOfLayer: [0, undefined],
-    pageIndexOnAir: 0,
-  };
-  private layerOnAir: LayerIndex = 0;
+  private pages: SponsorRollPage[] = [];
+  // The kit's plan of the two layers: the page each holds, the layer and the page on air.
+  private layers: StackedPageLayers = planLayersOnPageOne();
 
   constructor(private readonly options: SponsorRollPageTurnsOptions) {}
 
   /** What the view draws now. */
   readViewState(): SponsorRollViewState {
-    return this.viewState;
+    return {
+      pages: this.pages,
+      pageIndexOfLayer: this.layers.pageIndexOfLayer,
+      pageIndexOnAir: this.layers.pageIndexOnAir,
+    };
   }
 
   /** How many pages the round has now. */
   countPages(): number {
-    return this.viewState.pages.length;
+    return this.pages.length;
   }
 
   /** The page on air; undefined before load. */
   readPageOnAir(): SponsorRollPage | undefined {
-    return this.viewState.pages[this.viewState.pageIndexOnAir];
+    return this.pages[this.layers.pageIndexOnAir];
   }
 
   /** Draws the data from page 1, on the first layer, every piece off air. */
   async drawFromPageOneOffAir(data: SponsorRollData): Promise<void> {
-    this.layerOnAir = 0;
-    await this.redraw({
-      pages: planSponsorRollPages(data),
-      pageIndexOfLayer: [0, undefined],
-      pageIndexOnAir: 0,
-    });
+    await this.redraw(planSponsorRollPages(data), planLayersOnPageOne());
     const renderRoot = this.options.readRenderRoot();
     const panel = findSponsorRollPanel(renderRoot);
     if (data.layout === 'corner') {
@@ -107,15 +104,13 @@ export class SponsorRollPageTurns {
   async redrawThePageOnAirInPlace(): Promise<void> {
     const data = this.options.readData();
     const pages = planSponsorRollPages(data);
-    const pageIndexOnAir = keepPageIndexWithin(this.viewState.pageIndexOnAir, pages.length);
-    const pageIndexOfLayer: [number | undefined, number | undefined] = [undefined, undefined];
-    pageIndexOfLayer[this.layerOnAir] = pageIndexOnAir;
-    await this.redraw({ pages, pageIndexOfLayer, pageIndexOnAir });
+    await this.redraw(pages, planTheRedrawInPlace(this.layers, pages.length));
     const renderRoot = this.options.readRenderRoot();
+    const layerOnAir = this.layers.layerOnAir;
     if (data.layout === 'corner') {
       showCornerCellAtOnce(
-        findSponsorCellOfLayer(renderRoot, this.layerOnAir),
-        findSponsorCellOfLayer(renderRoot, otherLayerThan(this.layerOnAir)),
+        findSponsorCellOfLayer(renderRoot, layerOnAir),
+        findSponsorCellOfLayer(renderRoot, otherLayerThan(layerOnAir)),
       );
       return;
     }
@@ -127,16 +122,10 @@ export class SponsorRollPageTurns {
    * runs the turn (the tiles in place, or the corner's cell crossfading).
    */
   async turnToTheNextPage(): Promise<void> {
-    const layerLeaving = this.layerOnAir;
-    const layerArriving = otherLayerThan(layerLeaving);
-    const nextPageIndex = (this.viewState.pageIndexOnAir + 1) % this.countPages();
-    const pageIndexOfLayer: [number | undefined, number | undefined] = [
-      ...this.viewState.pageIndexOfLayer,
-    ];
-    pageIndexOfLayer[layerArriving] = nextPageIndex;
-    await this.redraw({ ...this.viewState, pageIndexOfLayer, pageIndexOnAir: nextPageIndex });
-    await this.options.runMotion(this.buildTurnTimeline(layerLeaving, layerArriving));
-    this.layerOnAir = layerArriving;
+    const turn = planTheTurnToTheNextPage(this.layers, this.countPages());
+    await this.redraw(this.pages, turn.layersDuringTheTurn);
+    await this.options.runMotion(this.buildTurnTimeline(turn.layerLeaving, turn.layerArriving));
+    this.layers = turn.layersAfterTheTurn;
   }
 
   /** The play-in of the layout: the head then the tiles, or the corner's card whole. */
@@ -149,7 +138,7 @@ export class SponsorRollPageTurns {
     return buildFullscreenPlayInTimeline(
       panel,
       findSponsorRollHead(renderRoot),
-      findTilesOfLayer(renderRoot, this.layerOnAir),
+      findTilesOfLayer(renderRoot, this.layers.layerOnAir),
     );
   }
 
@@ -159,7 +148,10 @@ export class SponsorRollPageTurns {
     if (this.options.readData().layout === 'corner') {
       return [findSponsorRollPanel(renderRoot)];
     }
-    return [findSponsorRollHead(renderRoot), ...findTilesOfLayer(renderRoot, this.layerOnAir)];
+    return [
+      findSponsorRollHead(renderRoot),
+      ...findTilesOfLayer(renderRoot, this.layers.layerOnAir),
+    ];
   }
 
   /** The turn of the layout, from the layer leaving to the layer arriving. */
@@ -182,8 +174,9 @@ export class SponsorRollPageTurns {
     );
   }
 
-  private async redraw(viewState: SponsorRollViewState): Promise<void> {
-    this.viewState = viewState;
+  private async redraw(pages: SponsorRollPage[], layers: StackedPageLayers): Promise<void> {
+    this.pages = pages;
+    this.layers = layers;
     await this.options.redrawNow();
   }
 }

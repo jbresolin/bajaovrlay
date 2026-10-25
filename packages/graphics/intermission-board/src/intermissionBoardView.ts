@@ -17,6 +17,7 @@ import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { writeTimeOfDayText } from '@bajaovrlay/graphics-kit/countdownText';
 import { writePointsAsText } from '@bajaovrlay/graphics-kit/pointsText';
 import { headingOfSponsorLevel } from '@bajaovrlay/graphics-kit/sponsorRound';
+import type { PageIndexOfEachLayer } from '@bajaovrlay/graphics-kit/stackedPageLayers';
 import { html, nothing, type TemplateResult } from 'lit';
 
 import {
@@ -28,9 +29,6 @@ import {
   writeRankOfTeam,
 } from './intermissionBoardModel.js';
 import { ptBR } from './ptBR.js';
-
-/** Which page of the sponsor line each of its two layers shows; undefined for an empty one. */
-export type SponsorLineLayers = [number | undefined, number | undefined];
 
 /** The next-session card: the caption, the session, the count and the start time. */
 function renderNextSessionCard(data: IntermissionBoardData): TemplateResult {
@@ -113,7 +111,7 @@ function renderSponsorLineLayer(
 }
 
 /** The sponsor line: the card and its two layers stacked in one place. */
-function renderSponsorLine(pages: SponsorLinePage[], layers: SponsorLineLayers): TemplateResult {
+function renderSponsorLine(pages: SponsorLinePage[], layers: PageIndexOfEachLayer): TemplateResult {
   const [firstLayerPageIndex, secondLayerPageIndex] = layers;
   const findPage = (pageIndex: number | undefined) =>
     pageIndex === undefined ? undefined : pages[pageIndex];
@@ -131,7 +129,7 @@ function renderSponsorLine(pages: SponsorLinePage[], layers: SponsorLineLayers):
  */
 export function renderIntermissionBoardTemplate(
   data: IntermissionBoardData | undefined,
-  sponsorLineLayers: SponsorLineLayers,
+  sponsorLineLayers: PageIndexOfEachLayer,
 ): TemplateResult {
   if (data === undefined) {
     return html`<section class="board" data-testid="intermission-board"></section>`;

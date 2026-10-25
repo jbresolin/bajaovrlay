@@ -19,6 +19,7 @@
  */
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { headingOfSponsorLevel } from '@bajaovrlay/graphics-kit/sponsorRound';
+import type { PageIndexOfEachLayer } from '@bajaovrlay/graphics-kit/stackedPageLayers';
 // The white mark lives in the theme package; Vite bundles a copy into this graphic's dist/.
 import markAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, nothing, type TemplateResult } from 'lit';
@@ -35,7 +36,7 @@ import {
 export type SponsorRollViewState = {
   pages: SponsorRollPage[];
   /** The page index each of the two layers shows; undefined for an empty layer. */
-  pageIndexOfLayer: [number | undefined, number | undefined];
+  pageIndexOfLayer: PageIndexOfEachLayer;
   /** The page on air, which the head names. */
   pageIndexOnAir: number;
 };

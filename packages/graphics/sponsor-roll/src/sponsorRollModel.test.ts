@@ -11,7 +11,6 @@
  *     Apoio 5, Realização 1; in the corner, seventeen, one sponsor each, in round order.
  *   - Nine Ouro on the full screen share 5 + 4, never 6 + 3; seven Apoio 4 + 3.
  *   - Each page's hold is its level's (8, 5, 5, 3, 5 s with Ardósia's tokens).
- *   - A page index past a shrunk list goes back to page 1; one still there stays.
  *   - A partial update replaces the list and keeps the rest; a bad one changes nothing.
  *
  * What these tests deliberately do not cover:
@@ -21,7 +20,6 @@ import { readSponsorHoldMsOfLevel } from '@bajaovrlay/graphics-kit/sponsorRound'
 import { describe, expect, it } from 'vitest';
 
 import {
-  keepPageIndexWithin,
   mergePartialUpdateIntoSponsorRollData,
   planSponsorRollPages,
   type SponsorRollData,
@@ -112,25 +110,6 @@ describe('planSponsorRollPages', () => {
 
     // Assert: 8 s for Diamante, 5 s each Ouro page, 3 s Apoio, 5 s Realização.
     expect(holdsMs, 'each page its level’s time').toEqual([8000, 5000, 5000, 3000, 5000]);
-  });
-});
-
-describe('keepPageIndexWithin', () => {
-  const pageIndexScenarios = [
-    // Page 4 of a round that shrank to three pages: back to page 1.
-    { name: 'goes back to page 1 past a shrunk list', pageIndex: 3, pageCount: 3, expected: 0 },
-    // Page 2 is still there: it stays.
-    { name: 'keeps a page that is still there', pageIndex: 1, pageCount: 3, expected: 1 },
-  ];
-
-  it.each(pageIndexScenarios)('$name', ({ pageIndex, pageCount, expected }) => {
-    // Arrange: the page and the count of this row.
-
-    // Act: keep the index within the round.
-    const kept = keepPageIndexWithin(pageIndex, pageCount);
-
-    // Assert: the page the roll shows.
-    expect(kept, 'never a page that is not there').toBe(expected);
   });
 });
 

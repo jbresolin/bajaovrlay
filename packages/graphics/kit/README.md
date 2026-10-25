@@ -33,6 +33,7 @@ src/sponsorRound.ts                      every sponsor round: the level order (s
 src/ptBRSponsorLevelHeadings.ts          the on-air heading of each level ("PATROCÍNIO DIAMANTE", "APOIO", "REALIZAÇÃO")
 src/sponsorPages.ts                      a round's pages: one level a page, a level shared evenly between its pages
 src/sponsorPageTurner.ts                 a round's page timer: the pageTurner, each page held by its level
+src/stackedPageLayers.ts                 two layers in one place: which page each holds through a turn or a redraw
 src/countdownText.ts                     the count to a start (m:ss, h:mm:ss, never negative) and a start's time of day
 src/countdownClock.ts                    the count on air: redrawn every frame at server time, stopped at 0:00
 src/boardHead.ts                         the narrow boards' head card: logo, title, subtitle, the line at the right
