@@ -1,0 +1,44 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-qr-card",
+  "version": "0.1.0",
+  "name": "Cartão de QR",
+  "description": "Cartão claro no lugar do terço inferior: um código QR feito do endereço, a chamada e o endereço. Nada se mexe enquanto está no ar, para o código ser lido.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "qr-card.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "lower-third",
+    "category": "lowerThird"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "callToAction": {
+        "type": "string",
+        "title": "Chamada",
+        "description": "A frase ao lado do código, ex.: Acompanhe os resultados.",
+        "gddType": "single-line"
+      },
+      "address": {
+        "type": "string",
+        "title": "Endereço do QR",
+        "description": "O endereço que o código abre no celular, ex.: resultados.bajasaebrasil.net. Sem acentos nem espaços; no máximo 106 caracteres.",
+        "gddType": "single-line",
+        "minLength": 1,
+        "maxLength": 106,
+        "pattern": "^[!-~]*$"
+      }
+    },
+    "required": ["callToAction", "address"],
+    "additionalProperties": false
+  }
+}

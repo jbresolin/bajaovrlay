@@ -8,10 +8,14 @@ export const finalClockInstanceId = 'b84f6c1e-0a3d-4c59-8e7b-5d2a9f31c602';
 export const ufprLowerThirdInstanceId = '2c9e7f40-6b1a-4d83-9f25-e1a0c4b7d915';
 export const feiLowerThirdInstanceId = '91d0a3b7-5e2c-47f6-a8c4-3b6e0f2d7a48';
 
-/** The two layers the tests use: the clock animates out then in, the lower third cuts. */
+/**
+ * The layers the tests use: the clock animates out then in, the lower third cuts, and the
+ * full screen (the podium's, whose steps instancePlayer.steps.test.ts plays) cuts too.
+ */
 export const layersOfTheStream: Layer[] = [
   { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
   { id: 'lower-third', name: 'Legenda', zIndex: 40, replacePolicy: 'cut', persistent: false },
+  { id: 'fullscreen', name: 'Tela cheia', zIndex: 50, replacePolicy: 'cut', persistent: false },
 ];
 
 /** Builds the race clock of the enduro, on air on the clock layer under green flag. */

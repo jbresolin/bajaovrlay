@@ -18,6 +18,11 @@ export const ptBRBindings = {
     transformLabel: (fieldLabel: string) => `Transformação de ${fieldLabel}`,
     noTransform: 'Nenhuma',
     transformParameterLabel: (fieldLabel: string) => `Parâmetro da transformação de ${fieldLabel}`,
+    // A second transform, applied to what the first gave (BAJAOVRLAY-47: topN, then
+    // withTeamLogos for the podium).
+    thenTransformLabel: (fieldLabel: string) => `Segunda transformação de ${fieldLabel}`,
+    thenTransformParameterLabel: (fieldLabel: string) =>
+      `Parâmetro da segunda transformação de ${fieldLabel}`,
     // The one parameter of each binding transform that takes one.
     transformParameterNames: {
       topN: 'Quantas entradas (1 a 60)',

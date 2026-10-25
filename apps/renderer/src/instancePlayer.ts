@@ -7,7 +7,8 @@
  * Three rules shape this file:
  *   - Operations on one layer run strictly one after the other, each waiting for the
  *     graphic's promise. Different layers each have their own queue and never wait for
- *     one another, so a slow animation on the clock cannot hold up a lower third.
+ *     one another, so a slow animation on the clock cannot hold up a lower third
+ *     (layerOperationQueue.ts).
  *   - A graphic that fails (its module cannot be imported, its load throws or is refused)
  *     is logged and leaves its layer empty. It never stops the queue of its own layer or
  *     of any other.
@@ -26,6 +27,7 @@ import type { GraphicLoader } from './graphicLoader.js';
 import { type GraphicOnLayer, loadInstanceIntoItsLayer } from './instanceLoading.js';
 import type { InstanceOperation, LayerOperations } from './instanceReconciler.js';
 import type { LayerContainers } from './layerContainers.js';
+import { createLayerOperationQueue } from './layerOperationQueue.js';
 import { makeLifecycleCall } from './lifecycleCall.js';
 import { logRendererEvent } from './rendererLog.js';
 
@@ -69,40 +71,6 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
   // What is really on each layer right now, as far as the page goes. A graphic whose
   // load failed is never in this map, even though the server lists its instance.
   const graphicOnLayerByLayerId = new Map<string, GraphicOnLayer>();
-  // The end of each layer's queue: the promise of the last operation queued on it.
-  const endOfQueueByLayerId = new Map<string, Promise<void>>();
-
-  function runLayerOperations(layerOperations: LayerOperations[], graphics: Graphic[]): void {
-    for (const { layerId, operations } of layerOperations) {
-      for (const operation of operations) {
-        const endOfQueue = endOfQueueByLayerId.get(layerId) ?? Promise.resolve();
-        const thisOperation = endOfQueue
-          .then(() => runOneOperation(layerId, operation, graphics))
-          // Nothing below is expected to throw; if it does, the layer's queue must go on
-          // (instancePlayer.test.ts proves it with an element that cannot be created).
-          .catch((unexpectedError: unknown) => {
-            logEvent('error', 'renderer operation failed unexpectedly', {
-              layerId,
-              operation: operation.kind,
-              reason: String(unexpectedError),
-            });
-            // Without this report the instance would read "loading" in the layer panel
-            // for ever, with nothing on screen and nothing to say why.
-            const instanceGoingOnAir = findInstanceAnOperationPutsOnAir(operation);
-            if (instanceGoingOnAir !== undefined) {
-              reportInstanceStatus({
-                type: 'instanceStatus',
-                instanceId: instanceGoingOnAir.id,
-                status: 'failed',
-                detail: `the renderer failed unexpectedly: ${String(unexpectedError)}`,
-              });
-            }
-          });
-        endOfQueueByLayerId.set(layerId, thisOperation);
-      }
-    }
-  }
-
   async function runOneOperation(
     layerId: string,
     operation: InstanceOperation,
@@ -114,6 +82,10 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     }
     if (operation.kind === 'updateData') {
       await updateDataOfInstance(layerId, operation.instanceId, operation.changedData);
+      return;
+    }
+    if (operation.kind === 'goToStep') {
+      await playStepOfInstance(layerId, operation.instanceId, operation.step);
       return;
     }
     if (operation.kind === 'stopAndDispose') {
@@ -166,7 +138,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
       return;
     }
     graphicOnLayerByLayerId.set(instance.layerId, graphicOnLayer);
-    await playGraphicAndReportHowItWent(graphicOnLayer, skipAnimation);
+    await playGraphicAndReportHowItWent(graphicOnLayer, skipAnimation, instance.currentStep);
   }
 
   /**
@@ -207,7 +179,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     // that draws nothing until it is played shows nothing until the play below is done.
     incomingGraphic.element.style.removeProperty('visibility');
     graphicOnLayerByLayerId.set(layerId, incomingGraphic);
-    await playGraphicAndReportHowItWent(incomingGraphic, true);
+    await playGraphicAndReportHowItWent(incomingGraphic, true, incomingInstance.currentStep);
   }
 
   /**
@@ -244,12 +216,14 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
   }
 
   /**
-   * Plays step 0 of a loaded graphic and tells the server how it ended: `on-air` once the
-   * playAction has resolved and was accepted, `failed` with the reason otherwise.
+   * Plays the instance's step of a loaded graphic (0 at a take; later on a rebuild after
+   * "Próximo", so a reloaded podium keeps its places) and tells the server how it ended:
+   * `on-air` once the playAction resolved and was accepted, `failed` with the reason otherwise.
    */
   async function playGraphicAndReportHowItWent(
     graphicOnLayer: GraphicOnLayer,
     skipAnimation: boolean,
+    step: number,
   ): Promise<void> {
     const { subject, element } = graphicOnLayer;
     const playOutcome = await makeLifecycleCall(
@@ -258,7 +232,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
         action: 'playAction',
         skipAnimation,
         run: () =>
-          element.playAction(skipAnimation ? { goto: 0, skipAnimation: true } : { goto: 0 }),
+          element.playAction(skipAnimation ? { goto: step, skipAnimation: true } : { goto: step }),
       },
       logEvent,
     );
@@ -296,6 +270,33 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
         action: 'updateAction',
         skipAnimation: false,
         run: () => graphicOnLayer.element.updateAction({ data: changedData }),
+      },
+      logEvent,
+    );
+  }
+
+  /**
+   * Plays another step ("Próximo") of this instance's graphic, if it is on its layer. A
+   * refused step is only logged: the graphic stays at the step it was showing.
+   * What could go wrong: the server has already moved currentStep, so Camadas then shows a
+   * step ahead of the screen ("Passo 3 de 4" over a podium showing two places); the log
+   * line says so, and the next "Próximo" plays the step after that, catching up.
+   */
+  async function playStepOfInstance(
+    layerId: string,
+    instanceId: string,
+    step: number,
+  ): Promise<void> {
+    const graphicOnLayer = findGraphicOfInstance(layerId, instanceId, 'goToStep');
+    if (graphicOnLayer === undefined) {
+      return;
+    }
+    await makeLifecycleCall(
+      graphicOnLayer.subject,
+      {
+        action: 'playAction',
+        skipAnimation: false,
+        run: () => graphicOnLayer.element.playAction({ goto: step }),
       },
       logEvent,
     );
@@ -362,16 +363,5 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     return graphicOnLayer;
   }
 
-  return { runLayerOperations };
-}
-
-/** The instance an operation is meant to put on air, or undefined when it puts none. */
-function findInstanceAnOperationPutsOnAir(operation: InstanceOperation): Instance | undefined {
-  if (operation.kind === 'loadAndPlay') {
-    return operation.instance;
-  }
-  if (operation.kind === 'replace') {
-    return operation.incomingInstance;
-  }
-  return undefined;
+  return createLayerOperationQueue({ runOneOperation, reportInstanceStatus, logEvent });
 }

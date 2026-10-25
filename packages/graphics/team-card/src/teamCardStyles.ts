@@ -1,7 +1,8 @@
 /**
- * The team card's look in Ardósia: the design's `.team-card*`, `.chip--large` and `.logo*`
- * rules (PR #21, docs/design/tools/slate-cards.css, with `.card` and `.chip` of
- * slate-base.css) written against the theme's tokens alone. Every colour, size, face,
+ * The team card's look in Ardósia: the design's `.team-card*` rules (PR #21,
+ * docs/design/tools/slate-cards.css, with `.card` of slate-base.css) written against the
+ * theme's tokens alone; the large chip and the logo cell are the kit's (carChipLargeStyles,
+ * teamLogoCellStyles, since gate 2 of PR #27), sized here through `--team-logo-cell-*`. Every colour, size, face,
  * corner and duration is a `var(--token)` the renderer page sets on its :root
  * (packages/theme/ardosia/tokens.css); custom properties reach inside this shadow root.
  * No fallback values, by design: without the theme the card is unstyled, and
@@ -21,6 +22,9 @@ export const teamCardStyles = css`
     inset: 0;
     display: block;
     pointer-events: none;
+    /* The kit's logo cell (teamLogoCellStyles.ts): the team card's square box. */
+    --team-logo-cell-width: var(--team-logo-size);
+    --team-logo-cell-height: var(--team-logo-size);
   }
 
   /* The card: bottom-left, where the lower third goes. */
@@ -72,26 +76,6 @@ export const teamCardStyles = css`
     gap: var(--space-4);
   }
 
-  /* The big chip: the card's anchor. */
-  .chip {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--chip-large-size);
-    height: var(--chip-large-size);
-    /* The face's digits sit high in their line box; the nudge centres their ink. */
-    padding-top: var(--glyph-nudge);
-    box-sizing: border-box;
-    border-radius: var(--radius);
-    background: var(--chip-car-background);
-    color: var(--chip-car-text);
-    font-weight: var(--weight-number);
-    font-size: var(--size-chip-large);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-
   .team-name {
     font-weight: var(--weight-display);
     font-size: var(--size-name);
@@ -115,32 +99,5 @@ export const teamCardStyles = css`
   .details-separator,
   .place-line {
     color: var(--text-muted);
-  }
-
-  /* The logo's box: the logo whole inside it, keeping its own shape. */
-  .logo {
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    width: var(--team-logo-size);
-    height: var(--team-logo-size);
-  }
-
-  /* A dark logo, or one on its own white box, sits on the small light plate. */
-  .logo.on-light-plate {
-    padding: var(--logo-plate-padding);
-    border-radius: var(--radius-chip);
-    background: var(--panel-light);
-  }
-
-  .logo-image {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
   }
 `;

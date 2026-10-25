@@ -9,7 +9,7 @@ import type { DataSnapshot, DataSnapshotShapes } from '../dataSources/dataSnapsh
 import type { DataSource } from '../dataSources/dataSource.js';
 import { applyOverridesToSnapshotShapes } from '../overrides/applyOverrides.js';
 import type { Override } from '../overrides/override.js';
-import type { JsonValue } from '../transforms/transform.js';
+import type { BindingTransformContext, JsonValue } from '../transforms/transform.js';
 import { findTransform } from '../transforms/transformRegistry.js';
 import type { BindingFieldValue } from './bindingFieldValue.js';
 import { findProblemInBinding } from './bindingProblems.js';
@@ -50,12 +50,15 @@ type ValueReadAtPath =
 /**
  * Reads the value one binding gives now: the source's last good snapshot (a stale one
  * too: staleness is a badge, never a refusal, concept §5.4), with the operator's
- * overrides of that source laid over it, at the binding's path, through its transform.
+ * overrides of that source laid over it, at the binding's path, through its transforms in
+ * order. `transformContext` is the entity library's teams, which withTeamLogos reads
+ * (BAJAOVRLAY-47); every caller passes the library as it is now.
  * Pure: it never throws and reads nothing but what it is given.
  */
 export function resolveBindingAgainstSources(
   binding: BindingFieldValue,
   sources: SourcesForBindings,
+  transformContext: BindingTransformContext,
 ): BindingResolution {
   const problems = ptBRBindings.resolutionProblems;
   const dataSource = sources.dataSources.find((candidate) => candidate.id === binding.sourceId);
@@ -96,24 +99,47 @@ export function resolveBindingAgainstSources(
     !readingAsTheSourceSent.isFound ||
     !areJsonValuesEqual(readingAsTheSourceSent.value, readingWithOverrides.value);
 
-  return applyTransformOfBinding(binding, readingWithOverrides.value as JsonValue, isOverridden);
+  const firstStep = applyOneTransform(
+    binding.transformId,
+    binding.transformParameters,
+    readingWithOverrides.value as JsonValue,
+    transformContext,
+  );
+  if (firstStep.status !== 'resolved') {
+    return firstStep;
+  }
+  const secondStep = applyOneTransform(
+    binding.thenTransformId,
+    binding.thenTransformParameters,
+    firstStep.value,
+    transformContext,
+  );
+  if (secondStep.status !== 'resolved') {
+    return secondStep;
+  }
+  return { status: 'resolved', value: secondStep.value, isOverridden };
 }
 
-/** Runs the binding's transform, if any, over the value read. */
-function applyTransformOfBinding(
-  binding: BindingFieldValue,
-  valueRead: JsonValue,
-  isOverridden: boolean,
-): BindingResolution {
-  if (binding.transformId === undefined) {
-    return { status: 'resolved', value: valueRead, isOverridden };
+/** What one transform step gives: the value, or why the binding cannot be read. */
+type TransformStepResult =
+  { status: 'resolved'; value: JsonValue } | { status: 'unresolvable'; problem: string };
+
+/** Runs one of the binding's transforms, if it has one, over the value handed to it. */
+function applyOneTransform(
+  transformId: string | undefined,
+  transformParameters: unknown,
+  valueHandedIn: JsonValue,
+  transformContext: BindingTransformContext,
+): TransformStepResult {
+  if (transformId === undefined) {
+    return { status: 'resolved', value: valueHandedIn };
   }
   // findProblemInBinding already checked that the transform exists in the binding family.
-  const transform = findTransform(binding.transformId);
-  if (transform === undefined) {
-    return { status: 'unresolvable', problem: binding.transformId };
+  const transform = findTransform(transformId);
+  if (transform?.family !== 'binding') {
+    return { status: 'unresolvable', problem: transformId };
   }
-  const transformResult = transform.apply(valueRead, binding.transformParameters);
+  const transformResult = transform.apply(valueHandedIn, transformParameters, transformContext);
   if (!transformResult.ok) {
     return {
       status: 'unresolvable',
@@ -123,7 +149,19 @@ function applyTransformOfBinding(
       ),
     };
   }
-  return { status: 'resolved', value: transformResult.value, isOverridden };
+  return { status: 'resolved', value: transformResult.value };
+}
+
+/**
+ * Whether a binding's answer depends on the entity library's teams (one of its transforms
+ * reads them: withTeamLogos), so the live refresh reads it again after a team edit.
+ */
+export function doesBindingReadTheTeams(binding: BindingFieldValue): boolean {
+  const transformIds = [binding.transformId, binding.thenTransformId];
+  return transformIds.some((transformId) => {
+    const transform = transformId === undefined ? undefined : findTransform(transformId);
+    return transform?.family === 'binding' && transform.readsTheTeams === true;
+  });
 }
 
 /** Says whether a value read from a shape is a plain object, so its fields can be read. */

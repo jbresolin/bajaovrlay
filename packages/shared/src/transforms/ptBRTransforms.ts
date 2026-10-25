@@ -71,6 +71,11 @@ export const ptBRTransforms = {
       description:
         'Corta um nome comprido no tamanho máximo, na última palavra inteira que couber, com "…": nunca inventa uma sigla.',
     },
+    withTeamLogos: {
+      label: 'Com logos das equipes',
+      description:
+        'Junta a cada carro da lista o logo da sua equipe nos Cadastros: um carro sem equipe ou sem logo fica sem logo.',
+    },
   },
 
   /** Why a transform could not read the value it was given. */

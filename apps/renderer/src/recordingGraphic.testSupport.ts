@@ -16,6 +16,8 @@ export type RecordingGraphicLoader = {
   lifecycleCalls: string[];
   /** What each `load` was given, oldest first. */
   loadParams: OGrafLoadParams[];
+  /** The step each `playAction` was asked to go to (`goto`), oldest first (BAJAOVRLAY-47). */
+  stepsPlayed: Array<number | undefined>;
   /** Lets every load that was told to wait (see below) finish. */
   releaseLoadsThatWait: () => void;
   /** Lets every play that was told to wait (see below) finish. */
@@ -40,13 +42,16 @@ let numberOfLoadersBuilt = 0;
  *     calls `releaseLoadsThatWait`, standing in for a slow graphic,
  *   - `fakeGraphicPlayOutcome: 'rejects'` makes playAction throw,
  *   - `fakeGraphicPlayOutcome: 'waits-to-be-released'` keeps playAction pending until the
- *     test calls `releasePlaysThatWait`, standing in for a long in-animation.
+ *     test calls `releasePlaysThatWait`, standing in for a long in-animation,
+ *   - `fakeGraphicStepOutcome: 'refuses'` answers 400 to a playAction past step 0 (a step
+ *     the graphic will not play), while step 0 plays as usual.
  */
 export function createRecordingGraphicLoader(
   nameByInstanceId: Record<string, string>,
 ): RecordingGraphicLoader {
   const lifecycleCalls: string[] = [];
   const loadParams: OGrafLoadParams[] = [];
+  const stepsPlayed: Array<number | undefined> = [];
   let releaseLoadsThatWait: () => void = () => undefined;
   const loadsMayFinish = new Promise<void>((resolve) => {
     releaseLoadsThatWait = resolve;
@@ -59,6 +64,8 @@ export function createRecordingGraphicLoader(
   class RecordingGraphic extends HTMLElement {
     /** How the data given to load said playAction must go; read when it is played. */
     playOutcome: unknown = undefined;
+    /** How the data given to load said a step past 0 must go. */
+    stepOutcome: unknown = undefined;
 
     /** Writes the call down under the name of the instance this element draws. */
     recordCall(action: string, params: { skipAnimation?: boolean }): void {
@@ -72,6 +79,7 @@ export function createRecordingGraphicLoader(
       this.recordCall('load', {});
       loadParams.push(params);
       this.playOutcome = params.data.fakeGraphicPlayOutcome;
+      this.stepOutcome = params.data.fakeGraphicStepOutcome;
       const loadOutcome = params.data.fakeGraphicLoadOutcome;
       if (loadOutcome === 'rejects') {
         throw new Error('O gráfico de teste foi instruído a falhar no load.');
@@ -85,15 +93,20 @@ export function createRecordingGraphicLoader(
       return { statusCode: 200 };
     }
 
-    async playAction(params: { skipAnimation?: boolean }): Promise<unknown> {
+    async playAction(params: { skipAnimation?: boolean; goto?: number }): Promise<unknown> {
       this.recordCall('playAction', params);
+      stepsPlayed.push(params.goto);
       if (this.playOutcome === 'rejects') {
         throw new Error('O gráfico de teste foi instruído a falhar no playAction.');
       }
       if (this.playOutcome === 'waits-to-be-released') {
         await playsMayFinish;
       }
-      return { statusCode: 200, currentStep: 0 };
+      const stepAsked = params.goto ?? 0;
+      if (this.stepOutcome === 'refuses' && stepAsked > 0) {
+        return { statusCode: 400, statusMessage: 'Passo recusado pelo gráfico de teste.' };
+      }
+      return { statusCode: 200, currentStep: stepAsked };
     }
 
     async updateAction(): Promise<unknown> {
@@ -121,6 +134,7 @@ export function createRecordingGraphicLoader(
     graphicLoader: { defineGraphicElement: async () => tagName },
     lifecycleCalls,
     loadParams,
+    stepsPlayed,
     releaseLoadsThatWait: () => releaseLoadsThatWait(),
     releasePlaysThatWait: () => releasePlaysThatWait(),
   };

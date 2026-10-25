@@ -11,6 +11,8 @@ Two families, each offered by one form only: **mapping** transforms bring a sour
 into the canonical shapes (number, duration, moment and text files, `mapValuesTransform.ts`);
 **binding** transforms shape canonical data for a graphic and say which value types they
 read and give (`topNTransform.ts`, `raceTimeTextTransforms.ts` for lap times and gaps cut to
-the tenth, `schoolNameTransforms.ts`). `checkTransformParameters.ts` is what a config or an
+the tenth, `schoolNameTransforms.ts`, `withTeamLogosTransform.ts`). A binding transform is
+handed a read-only context, the entity library's teams, which only withTeamLogos reads: it
+adds each car's team logo to a positions or standings list by car number (BAJAOVRLAY-47). `checkTransformParameters.ts` is what a config or an
 item save runs, so an unknown id, the wrong family or bad parameters are refused when
 saved; `ptBRTransforms.ts` holds every text.

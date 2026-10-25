@@ -93,13 +93,16 @@ describe('the manifests under packages/graphics', () => {
   it('finds the manifest of every graphic the product ships', () => {
     // Arrange: the graphics shipped today, one manifest each.
     const shippedManifests = [
+      join('battle-card', 'battle-card.ograf.json'),
       join('countdown', 'countdown.ograf.json'),
       join('intermission-board', 'intermission-board.ograf.json'),
       join('lower-strip', 'lower-strip.ograf.json'),
       join('lower-third', 'lower-third.ograf.json'),
       join('message-ticker', 'message-ticker.ograf.json'),
       join('notice', 'notice.ograf.json'),
+      join('podium', 'podium.ograf.json'),
       join('positions-tower', 'positions-tower.ograf.json'),
+      join('qr-card', 'qr-card.ograf.json'),
       join('race-clock', 'race-clock.ograf.json'),
       join('sessions-board', 'sessions-board.ograf.json'),
       join('sponsor-bug', 'sponsor-bug.ograf.json'),

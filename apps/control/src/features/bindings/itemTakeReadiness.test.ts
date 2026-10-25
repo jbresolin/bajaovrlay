@@ -136,11 +136,12 @@ const readinessScenarios = [
 
 describe('findWhyItemCannotBeTakenNow', () => {
   it.each(readinessScenarios)('$name', ({ item, sources, expected }) => {
-    // Arrange: the item and sources of this row, and the race clock.
+    // Arrange: the item and sources of this row, and the race clock (no teams: none of
+    // these items reads the library).
     const graphic = buildRaceClockGraphic();
 
     // Act: ask whether it can be taken now.
-    const reason = findWhyItemCannotBeTakenNow(item, graphic, sources);
+    const reason = findWhyItemCannotBeTakenNow(item, graphic, sources, { teams: [] });
 
     // Assert: no reason, or the server's reason.
     expect(reason, 'the reason must be this one').toBe(expected);

@@ -1,0 +1,119 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-battle-card",
+  "version": "0.1.0",
+  "name": "Disputa de posição",
+  "description": "Dois carros brigando por uma posição, no centro embaixo: posição, carro, equipe, escola e voltas de cada um, a diferença entre eles e a tendência (fechando, abrindo ou estável).",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "battle-card.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "lower-third",
+    "category": "positions"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 600 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "aheadPosition": {
+        "type": "integer",
+        "title": "Posição do carro da frente",
+        "description": "A posição na corrida, em amarelo; a 1ª fica no chip verde.",
+        "minimum": 1
+      },
+      "aheadCarNumber": {
+        "type": "integer",
+        "title": "Número do carro da frente",
+        "description": "Número do carro, no chip azul.",
+        "minimum": 1
+      },
+      "aheadTeamName": {
+        "type": "string",
+        "title": "Equipe do carro da frente",
+        "gddType": "single-line"
+      },
+      "aheadSchoolName": {
+        "type": "string",
+        "title": "Escola do carro da frente",
+        "gddType": "single-line"
+      },
+      "aheadLaps": {
+        "type": "integer",
+        "title": "Voltas do carro da frente",
+        "minimum": 0
+      },
+      "behindPosition": {
+        "type": "integer",
+        "title": "Posição do carro de trás",
+        "minimum": 1
+      },
+      "behindCarNumber": {
+        "type": "integer",
+        "title": "Número do carro de trás",
+        "minimum": 1
+      },
+      "behindTeamName": {
+        "type": "string",
+        "title": "Equipe do carro de trás",
+        "gddType": "single-line"
+      },
+      "behindSchoolName": {
+        "type": "string",
+        "title": "Escola do carro de trás",
+        "gddType": "single-line"
+      },
+      "behindLaps": {
+        "type": "integer",
+        "title": "Voltas do carro de trás",
+        "description": "Quando cresce, o gráfico compara a diferença nova com a da volta anterior e mostra a tendência.",
+        "minimum": 0
+      },
+      "gapMs": {
+        "type": "integer",
+        "title": "Diferença entre os carros (ms)",
+        "description": "Opcional; o intervalo do carro de trás para o da frente, em milissegundos: 2000 aparece como +2,0. Sem ele, ou com os carros a mais de uma posição, o cartão mostra — sem tendência.",
+        "minimum": 0
+      },
+      "manualTrend": {
+        "type": "string",
+        "title": "Tendência à mão",
+        "description": "Opcional; escolhida, vale sempre no lugar da calculada a cada volta.",
+        "enum": ["closing", "opening", "steady"],
+        "gddType": "select",
+        "gddOptions": {
+          "labels": {
+            "closing": "Fechando",
+            "opening": "Abrindo",
+            "steady": "Estável"
+          }
+        }
+      },
+      "manualTrendChangeMs": {
+        "type": "integer",
+        "title": "Variação à mão (ms)",
+        "description": "Opcional, com a tendência à mão: quanto a diferença mudou, em milissegundos, sem sinal (700 aparece como −0,7 fechando e +0,7 abrindo).",
+        "minimum": 0
+      }
+    },
+    "required": [
+      "aheadPosition",
+      "aheadCarNumber",
+      "aheadTeamName",
+      "aheadSchoolName",
+      "aheadLaps",
+      "behindPosition",
+      "behindCarNumber",
+      "behindTeamName",
+      "behindSchoolName",
+      "behindLaps"
+    ],
+    "additionalProperties": false
+  }
+}

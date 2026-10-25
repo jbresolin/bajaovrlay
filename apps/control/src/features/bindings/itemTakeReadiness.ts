@@ -7,6 +7,7 @@
  * as the server writes it, the field's title first.
  */
 import {
+  type BindingTransformContext,
   type Graphic,
   type Item,
   resolveBindingAgainstSources,
@@ -22,11 +23,15 @@ export function doesItemReadASource(item: Item): boolean {
   return Object.values(item.fields).some((fieldValue) => fieldValue.kind === 'binding');
 }
 
-/** The first reason the item cannot be taken now, or undefined when it can. */
+/**
+ * The first reason the item cannot be taken now, or undefined when it can. `transformContext`
+ * is the library's teams, as the server's take hands them to the transforms.
+ */
 export function findWhyItemCannotBeTakenNow(
   item: Item,
   graphic: Graphic | undefined,
   sources: SourcesForBindings,
+  transformContext: BindingTransformContext,
 ): string | undefined {
   const dataSchema = graphic?.manifest.schema;
   const requiredFieldKeys = readRequiredFieldKeys(dataSchema);
@@ -34,7 +39,7 @@ export function findWhyItemCannotBeTakenNow(
     if (fieldValue.kind !== 'binding') {
       continue;
     }
-    const resolution = resolveBindingAgainstSources(fieldValue, sources);
+    const resolution = resolveBindingAgainstSources(fieldValue, sources, transformContext);
     const isRefused =
       resolution.status === 'unresolvable' ||
       (resolution.status === 'valueAbsent' && requiredFieldKeys.includes(fieldKey));

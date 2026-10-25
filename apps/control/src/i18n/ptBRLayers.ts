@@ -12,6 +12,10 @@ export const ptBRLayers = {
   // already shows it empty.
   willClearChip: 'vai limpar',
   clearLayerButton: 'Limpar',
+  // A graphic shown in steps (the podium, BAJAOVRLAY-47): the next step, and where it is.
+  nextStepButton: 'Próximo',
+  nextStepOffOnTheLastStep: 'Último passo: use Limpar.',
+  stepOfSteps: (stepNumber: number, stepCount: number) => `Passo ${stepNumber} de ${stepCount}`,
   // On a layer with something on air: show in Prévia what the screen looks like once
   // this layer is cleared, without clearing it yet.
   previewClearLayerButton: 'Prévia: limpar',

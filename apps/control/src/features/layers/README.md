@@ -5,7 +5,8 @@ docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
 
 - `LayerStatusPanel.tsx` — one row per layer in z-order, from the `layers`, `graphics`, `instances`
   and `previewClearedLayerIds` slices; "Limpar" sends `clearLayer`, "Prévia: limpar"
-  `previewClearLayer`, and "Editar" / "Editar prévia" load that instance into "Edição rápida".
+  `previewClearLayer`, "Próximo" `nextOnLayer` for a graphic shown in steps (the podium,
+  BAJAOVRLAY-47), and "Editar" / "Editar prévia" load that instance into "Edição rápida".
 - `LayerStatusRow.tsx` — one row: layer (+ chips "em prévia", "vai limpar"), graphic, "há 2 min", badge, buttons.
 - `InstanceStatusBadge.tsx` — green "No ar", grey "Carregando", red "Falhou" + why (tooltip).
 - `useCurrentTime.ts` — redraws the rows every 10 s so the relative times keep up.

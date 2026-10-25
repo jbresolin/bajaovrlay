@@ -44,7 +44,7 @@ import {
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
 import {
-  buildLogoOfTeam7,
+  importTheSimulatorTeamsAndGiveOneALogo,
   openTheEntityLibraryPage,
   readTheLibraryFromTheRealServer,
 } from './entityLibraryTestSteps';
@@ -115,31 +115,6 @@ async function readFieldFromTheLibrary(
   );
 }
 
-/** Step 1: the simulator's teams imported, and car 7 given a logo on the light plate. */
-async function giveCar7ALogoOnTheLightPlate(page: Page): Promise<void> {
-  await openTheEntityLibraryPage(page);
-  await page.getByRole('button', { name: 'Importar equipes do simulador' }).click();
-  const teamsTable = page.getByRole('table', { name: 'Equipes cadastradas' });
-  await expect(teamsTable.getByRole('row'), 'the hundred teams and the header').toHaveCount(101);
-  await teamsTable
-    .getByRole('row', { name: /^7 / })
-    .getByRole('button', { name: 'Editar' })
-    .click();
-  const formOfCar7 = page.getByRole('form', { name: `Editar: ${recordOfCar7}` });
-  await formOfCar7.getByLabel('Logo', { exact: true }).setInputFiles({
-    name: 'logo-juriti.png',
-    mimeType: 'image/png',
-    buffer: buildLogoOfTeam7(),
-  });
-  await expect(
-    formOfCar7.getByRole('img', { name: 'Logo na placa clara' }),
-    'the form previews the logo on the plate',
-  ).toBeVisible();
-  await formOfCar7.getByRole('checkbox', { name: 'Logo sobre placa clara' }).check();
-  await formOfCar7.getByRole('button', { name: 'Salvar' }).click();
-  await expect(formOfCar7, 'the form closes once the team is saved').toBeHidden();
-}
-
 /** Finds a graphic's element on a layer inside the "Programa" monitor frame. */
 function findGraphicInProgramMonitor(page: Page, layerId: string, packageName: string): Locator {
   return page
@@ -152,7 +127,12 @@ test.describe('the lower third, the team card and the standings', () => {
     page,
   }) => {
     // Arrange (step 1): car 7 with its logo on the light plate.
-    await giveCar7ALogoOnTheLightPlate(page);
+    await importTheSimulatorTeamsAndGiveOneALogo(page, {
+      carNumber: 7,
+      teamName: teamOfCar7,
+      logoFileName: 'logo-juriti.png',
+      isOnLightPlate: true,
+    });
     const teamOfCar7InTheLibrary = (await readTheLibraryFromTheRealServer()).teams.find(
       (team) => team.carNumber === 7,
     );

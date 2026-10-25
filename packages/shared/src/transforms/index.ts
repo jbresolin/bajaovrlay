@@ -2,10 +2,11 @@
 // own index.ts re-exports this file with one line; other packages import from
 // '@bajaovrlay/shared', never from here.
 
-// What a transform is (of the mapping or the binding family), what it answers, and the
-// JSON values it hands back.
+// What a transform is (of the mapping or the binding family), what it answers, the JSON
+// values it hands back, and the read-only context a binding transform is handed (the teams).
 export {
   type BindingTransform,
+  type BindingTransformContext,
   type JsonValue,
   type MappingTransform,
   type Transform,

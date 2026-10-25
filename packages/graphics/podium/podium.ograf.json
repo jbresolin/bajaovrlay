@@ -1,0 +1,65 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-podium",
+  "version": "0.1.0",
+  "name": "Pódio",
+  "description": "O pódio em tela cheia: os três primeiros numa base só, o 2º à esquerda, o 1º no meio e mais alto, o 3º à direita, cada um com o logo da equipe quando existe. Entrar mostra só a cabeça; cada Próximo revela um lugar: o 3º, o 2º e o 1º.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "podium.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 4,
+  "v_baja": {
+    "defaultLayerId": "fullscreen",
+    "category": "standings"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "entries": {
+        "type": "array",
+        "title": "Equipes do pódio",
+        "description": "Os três primeiros, em ordem: normalmente as Posições (ou a Pontuação) da fonte com Primeiras N entradas (3) e depois Com logos das equipes, congelado na entrada. O primeiro da lista é o cartão do meio.",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "properties": {
+            "position": { "type": "integer", "minimum": 1 },
+            "rank": { "type": "integer", "minimum": 1 },
+            "carNumber": { "type": "integer", "minimum": 1 },
+            "teamName": { "type": "string" },
+            "schoolName": { "type": "string" },
+            "logoUrl": { "type": "string" },
+            "logoOnLightPlate": { "type": "boolean" }
+          },
+          "required": ["carNumber", "teamName", "schoolName"],
+          "additionalProperties": true
+        },
+        "v_baja": {
+          "suggestedBinding": { "shapeKey": "positions", "path": "entries", "isLive": false }
+        }
+      },
+      "title": {
+        "type": "string",
+        "title": "Título",
+        "description": "O título na cabeça do quadro.",
+        "gddType": "single-line",
+        "default": "PÓDIO"
+      },
+      "eventLine": {
+        "type": "string",
+        "title": "Evento",
+        "description": "A linha ao lado do título, por exemplo \"ENDURO DE RESISTÊNCIA\".",
+        "gddType": "single-line"
+      }
+    },
+    "required": ["entries"],
+    "additionalProperties": false
+  }
+}

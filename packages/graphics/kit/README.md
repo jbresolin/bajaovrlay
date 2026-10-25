@@ -43,6 +43,11 @@ src/clockCardStyles.ts                   the clock card's frame, head and body: 
 src/bugCardStyles.ts                     the bug's card: the sponsor bug's and the sponsor roll's corner card
 src/pointsText.ts                        a score as the boards write it ("921,8", "−15"): the standings' and the intermission's
 src/standingsRowStyles.ts                a standings row's pill and cells: the standings' and the intermission's top five
+src/wideBoardHead.ts                     the wide boards' head card (standings, podium): markup, parts, writer
+src/wideBoardHeadStyles.ts               the wide head card's look (logo, title, event line, the line at the right)
+src/teamLogoCell.ts                      a team's logo cell (team card, podium): the logo in its box, on the plate or not
+src/teamLogoCellStyles.ts                the logo cell's look; each graphic sizes it with --team-logo-cell-width/height
+src/carChipLargeStyles.ts                the large car chip (team card, podium)
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/the30thCompetitionSponsorsSample.ts  the previews' 17 real sponsors, logos in preview-sponsor-logos/

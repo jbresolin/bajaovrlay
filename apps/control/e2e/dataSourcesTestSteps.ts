@@ -152,6 +152,21 @@ export async function turnSourceOnWithItsSwitch(page: Page, sourceLabel: string)
 }
 
 /**
+ * Turns a source off with the switch "Ligada" of its row, and waits until the switch shows
+ * it off: its polls stop and its last good data stays as it was.
+ */
+export async function turnSourceOffWithItsSwitch(page: Page, sourceLabel: string): Promise<void> {
+  const enabledSwitch = findDataSourceRow(page, sourceLabel).getByRole('switch', {
+    name: 'Ligada',
+  });
+  await enabledSwitch.click();
+  await expect(
+    enabledSwitch,
+    `the source "${sourceLabel}" must be off after the switch`,
+  ).not.toBeChecked();
+}
+
+/**
  * Changes a simulator through its "Editar" form: the poll interval, the speed and the
  * race's seed typed as the operator types them ("0,5", "60", "227"), and the "Falha
  * simulada" switch put on or off when asked; then "Salvar fonte", and waits for the form

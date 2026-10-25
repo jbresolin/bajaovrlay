@@ -195,6 +195,19 @@
   --sponsor-logo-line-width: 170px; /* the intermission board's sponsor line */
   --sponsor-logo-line-height: 52px;
   --sponsor-line-heading-width: 210px; /* the line's level heading, one width on every page */
+  /* The podium (fullscreen), the battle card and the QR card (lower-third slot), from the
+     catalogue of PR #21 (BAJAOVRLAY-47). */
+  --cue-down-text: #7cb3f5; /* the "down" blue as text on slate (the chip blue is a field colour) */
+  --text-on-light: #111111; /* the QR card's text on its light surface */
+  --battle-height: 72px; /* a two-line pill: name over school */
+  --battle-gap-width: 220px;
+  --qr-size: 176px; /* the code's box; its cells are this divided by the code's modules */
+  --size-podium-position: 72px;
+  --podium-width: 480px;
+  --podium-height: 460px;
+  --podium-height-winner: 540px;
+  --podium-logo-width: 240px; /* the team's logo crowning a podium card */
+  --podium-logo-height: 112px;
 
   /* ---- Motion (docs/design/directions/ardosia/motion.md): the scoreboard's slide-in,
      faster, with the rows in cascade. Graphics read these through readMotionTokens(). */
@@ -219,6 +232,7 @@
   --motion-sponsor-hold-apoio: 3000ms;
   --motion-sponsor-hold-realizacao: 5000ms;
   --motion-in-offset: 20; /* px a piece rises on entry (and lifts on exit) */
+  --motion-podium-offset: 40; /* px a podium card rises when revealed: twice the usual rise */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);

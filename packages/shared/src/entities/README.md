@@ -10,4 +10,6 @@ attribute of one record reaches an item through `entityFieldValue.ts` (kind `ent
 `entityAttributes.ts`, `entityFitsGraphicField.ts` and `entityReferenceResolution.ts` (an image as
 its /media URL); a whole list (every sponsor or slot, kind `entityList`, BAJAOVRLAY-46) through
 `entityListFieldValue.ts`, `entityListItems.ts` (listed by hand), `entityListFitsGraphicField.ts`
-and `entityListResolution.ts`. Both are always live. `index.ts` lists every export.
+and `entityListResolution.ts`. Both are always live. Logos in a list (the podium's cars) come through the named binding
+transform `withTeamLogos` (`../transforms`, BAJAOVRLAY-47), never a free-form expression.
+`index.ts` lists every export.

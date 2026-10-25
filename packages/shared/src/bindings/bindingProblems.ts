@@ -35,55 +35,133 @@ export function findProblemInBinding(binding: BindingFieldValue): string | undef
 }
 
 /**
- * The type of value the binding gives its field: its path's type, or what its transform
- * makes of it (a lap in ms written as text is text; topN gives back the list it read).
- * Undefined when its path is not listed or its transform is not a binding transform. This
- * is what decides which graphic fields it may fill (bindingFitsGraphicField.ts).
+ * The type of value the binding gives its field: its path's type, or what its transforms
+ * make of it, in order (a lap in ms written as text is text; topN and withTeamLogos give
+ * back the list they read). Undefined when its path is not listed or a transform is not a
+ * binding transform. This is what decides which graphic fields it may fill
+ * (bindingFitsGraphicField.ts).
  */
 export function findValueTypeOfBinding(binding: BindingFieldValue): BindableValueType | undefined {
   const valueTypeOfThePath = findBindablePath(binding.shapeKey, binding.path)?.valueType;
-  if (valueTypeOfThePath === undefined || binding.transformId === undefined) {
-    return valueTypeOfThePath;
+  if (valueTypeOfThePath === undefined) {
+    return undefined;
   }
-  const transform = findTransform(binding.transformId);
+  const valueTypeAfterTheFirst = findValueTypeGivenByTransform(
+    binding.transformId,
+    valueTypeOfThePath,
+  );
+  if (valueTypeAfterTheFirst === undefined) {
+    return undefined;
+  }
+  return findValueTypeGivenByTransform(binding.thenTransformId, valueTypeAfterTheFirst);
+}
+
+/**
+ * The type a binding transform gives when it reads `valueTypeRead`; the type read itself
+ * when there is no transform; undefined for an id that is not a binding transform.
+ */
+function findValueTypeGivenByTransform(
+  transformId: string | undefined,
+  valueTypeRead: BindableValueType,
+): BindableValueType | undefined {
+  if (transformId === undefined) {
+    return valueTypeRead;
+  }
+  const transform = findTransform(transformId);
   if (transform?.family !== 'binding') {
     return undefined;
   }
   return transform.valueTypeGiven === 'sameAsTheValueRead'
-    ? valueTypeOfThePath
+    ? valueTypeRead
     : transform.valueTypeGiven;
 }
 
 /**
- * The transform's problem: parameters with no transform, the registry's own check (an
- * unknown id, a mapping transform, bad parameters), or a transform that cannot read the
- * type found at the path, which would be refused on air at every refresh.
+ * The transforms' problem: parameters with no transform, a second transform with no first,
+ * the same transform twice,
+ * the registry's own check of each (an unknown id, a mapping transform, bad parameters),
+ * or a transform that cannot read what it is handed (the path's type for the first, what
+ * the first gives for the second), which would be refused on air at every refresh.
  */
 function findProblemInTransformOfBinding(
   binding: BindingFieldValue,
   valueTypeOfThePath: BindableValueType,
   labelOfThePath: string,
 ): string | undefined {
+  const problems = ptBRBindings.bindingProblems;
   if (binding.transformId === undefined) {
     if (binding.transformParameters !== undefined) {
-      return ptBRBindings.bindingProblems.parametersWithoutTransform;
+      return problems.parametersWithoutTransform;
+    }
+    if (binding.thenTransformId !== undefined) {
+      return problems.secondTransformWithoutFirst;
     }
     return undefined;
   }
-  const parametersCheck = checkTransformParameters(
+  const problemOfTheFirst = findProblemInOneTransform(
     binding.transformId,
     binding.transformParameters,
-    'binding',
+    valueTypeOfThePath,
+    () =>
+      problems.transformDoesNotReadPath(readTransformLabel(binding.transformId), labelOfThePath),
   );
+  if (problemOfTheFirst !== undefined) {
+    return problemOfTheFirst;
+  }
+
+  if (binding.thenTransformId === undefined) {
+    if (binding.thenTransformParameters !== undefined) {
+      return problems.secondParametersWithoutSecondTransform;
+    }
+    return undefined;
+  }
+  // The same transform twice is at best a no-op (withTeamLogos) and at worst a surprise
+  // (topN 3 then topN 6 keeps 3); the editor never offers it, an API call is refused.
+  if (binding.thenTransformId === binding.transformId) {
+    return problems.sameTransformTwice(readTransformLabel(binding.transformId));
+  }
+  // The first passed its check, so it is a binding transform and gives a type.
+  const valueTypeAfterTheFirst =
+    findValueTypeGivenByTransform(binding.transformId, valueTypeOfThePath) ?? valueTypeOfThePath;
+  return findProblemInOneTransform(
+    binding.thenTransformId,
+    binding.thenTransformParameters,
+    valueTypeAfterTheFirst,
+    () =>
+      problems.secondTransformDoesNotReadFirst(
+        readTransformLabel(binding.thenTransformId),
+        readTransformLabel(binding.transformId),
+      ),
+  );
+}
+
+/**
+ * One transform's problem: the registry's check of its id and parameters, then whether it
+ * reads the type it is handed (`describeTypeMismatch` writes that sentence).
+ */
+function findProblemInOneTransform(
+  transformId: string,
+  transformParameters: unknown,
+  valueTypeHandedToIt: BindableValueType,
+  describeTypeMismatch: () => string,
+): string | undefined {
+  const parametersCheck = checkTransformParameters(transformId, transformParameters, 'binding');
   if (!parametersCheck.ok) {
     return parametersCheck.reason;
   }
-  const transform = findTransform(binding.transformId);
-  const canReadThePath =
-    transform?.family === 'binding' && transform.valueTypesRead.includes(valueTypeOfThePath);
-  if (!canReadThePath) {
-    const transformLabel = transform?.label ?? binding.transformId;
-    return ptBRBindings.bindingProblems.transformDoesNotReadPath(transformLabel, labelOfThePath);
+  const transform = findTransform(transformId);
+  const canReadTheValue =
+    transform?.family === 'binding' && transform.valueTypesRead.includes(valueTypeHandedToIt);
+  if (!canReadTheValue) {
+    return describeTypeMismatch();
   }
   return undefined;
+}
+
+/** A transform's pt-BR label, or its id when the registry does not have it. */
+function readTransformLabel(transformId: string | undefined): string {
+  if (transformId === undefined) {
+    return '';
+  }
+  return findTransform(transformId)?.label ?? transformId;
 }

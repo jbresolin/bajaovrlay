@@ -59,6 +59,9 @@ export const ptBRDataShapes = {
     running: 'Correndo',
   },
 
+  /** The position of a car chosen by its number (BAJAOVRLAY-47, the battle card). */
+  positionOfCarChosenByNumberLabel: 'Posição',
+
   /** The fields of one car in the positions. */
   positionsEntryFieldLabels: {
     carNumber: 'Carro',

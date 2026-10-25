@@ -15,9 +15,12 @@
  *   - Each mistake is refused with its own sentence: a path not listed for the shape, a
  *     car path without a car number, a car number on a fixed place, an unknown
  *     transform, parameters without a transform, a transform with bad parameters, a
- *     mapping transform, and a transform that does not read the path's type.
+ *     mapping transform, and a transform that does not read the path's type; and for a
+ *     second transform (BAJAOVRLAY-47): one with no first, parameters with no second,
+ *     the same transform twice, bad parameters, and one that does not read what the
+ *     first gives.
  *   - findValueTypeOfBinding gives the type of value the binding reads, after its
- *     transform when it has one.
+ *     transforms (in order) when it has them.
  *
  * What these tests deliberately do not cover:
  *   - Whether the source exists; that needs the dataSources slice, the server checks it.
@@ -59,6 +62,17 @@ describe('findProblemInBinding', () => {
     {
       name: 'the laps of car 42 chosen by its number',
       binding: { ...buildLiveBindingToTheSimulatorPositions('entryOfCar.laps'), carNumber: 42 },
+    },
+    // The podium: the first three cars, then each crowned by its team's logo (BAJAOVRLAY-47).
+    {
+      name: 'the first three cars, then their teams’ logos, frozen at the take',
+      binding: {
+        ...buildLiveBindingToTheSimulatorPositions('entries'),
+        isLive: false,
+        transformId: 'topN',
+        transformParameters: { n: 3 },
+        thenTransformId: 'withTeamLogos',
+      },
     },
   ];
 
@@ -153,6 +167,61 @@ describe('findProblemInBinding', () => {
       expectedProblem:
         'A transformação "Tempo de volta como texto" não se aplica a Sessão › Nome da sessão.',
     },
+    // A second transform alone: a single transform is always written as the first, so a
+    // stored binding says one thing one way only.
+    {
+      name: 'refuses a second transform with no first',
+      binding: {
+        ...buildLiveBindingToTheSimulatorPositions('entries'),
+        thenTransformId: 'withTeamLogos',
+      },
+      expectedProblem: 'Há uma segunda transformação, mas nenhuma primeira.',
+    },
+    // Parameters for a second transform that is not there would be ignored.
+    {
+      name: 'refuses second-transform parameters with no second transform',
+      binding: {
+        ...buildLiveBindingToTheSimulatorPositions('entries'),
+        transformId: 'topN',
+        transformParameters: { n: 3 },
+        thenTransformParameters: { n: 3 },
+      },
+      expectedProblem:
+        'Há parâmetros da segunda transformação, mas nenhuma segunda transformação escolhida.',
+    },
+    // The second transform's parameters get the registry's check too.
+    {
+      name: 'refuses a second transform with bad parameters',
+      binding: {
+        ...buildLiveBindingToTheSimulatorPositions('entries'),
+        transformId: 'withTeamLogos',
+        thenTransformId: 'topN',
+        thenTransformParameters: { n: 0 },
+      },
+      expectedProblem: 'O número de entradas deve ser um inteiro de 1 a 60.',
+    },
+    // The same transform twice: withTeamLogos again adds nothing, topN again only confuses.
+    {
+      name: 'refuses the same transform as first and second',
+      binding: {
+        ...buildLiveBindingToTheSimulatorPositions('entries'),
+        transformId: 'withTeamLogos',
+        thenTransformId: 'withTeamLogos',
+      },
+      expectedProblem:
+        'A segunda transformação não pode repetir a primeira ("Com logos das equipes").',
+    },
+    // The second reads what the first gives: a lap written as text is no list of cars.
+    {
+      name: 'refuses a second transform that does not read what the first gives',
+      binding: {
+        ...buildLiveBindingToTheSimulatorPositions('entries.0.lastLapMs'),
+        transformId: 'formatLapTimeAsText',
+        thenTransformId: 'withTeamLogos',
+      },
+      expectedProblem:
+        'A transformação "Com logos das equipes" não se aplica ao que "Tempo de volta como texto" entrega.',
+    },
   ];
 
   it.each(bindingsWithAProblem)('$name', ({ binding, expectedProblem }) => {
@@ -200,6 +269,31 @@ describe('findValueTypeOfBinding', () => {
     // Assert: a text for the lap, and still the positions list for the top six.
     expect(lastLapType, 'a formatted lap time is text').toBe('text');
     expect(topSixType, 'topN gives back the list it read').toBe('positionsEntries');
+  });
+
+  it('follows both transforms in order', () => {
+    // Arrange: the leader's last lap written as text then shortened, and the podium's
+    // first three cars with their logos.
+    const lastLapShortened: BindingFieldValue = {
+      ...buildLiveBindingToTheSimulatorPositions('entries.0.lastLapMs'),
+      transformId: 'formatLapTimeAsText',
+      thenTransformId: 'shortenSchoolName',
+      thenTransformParameters: { maxLength: 12 },
+    };
+    const podiumWithLogos: BindingFieldValue = {
+      ...buildLiveBindingToTheSimulatorPositions('entries'),
+      transformId: 'topN',
+      transformParameters: { n: 3 },
+      thenTransformId: 'withTeamLogos',
+    };
+
+    // Act: ask the type of each.
+    const lastLapType = findValueTypeOfBinding(lastLapShortened);
+    const podiumType = findValueTypeOfBinding(podiumWithLogos);
+
+    // Assert: text after text, and still the positions list after two list transforms.
+    expect(lastLapType, 'text shortened is still text').toBe('text');
+    expect(podiumType, 'topN then withTeamLogos give back the list read').toBe('positionsEntries');
   });
 
   it('answers undefined for a path that is not listed', () => {

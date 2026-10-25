@@ -55,6 +55,7 @@ import { SaveOnAirChangesIntoItemCommandSchema } from '../rundown/saveOnAirChang
 import { TakeItemCommandSchema } from '../rundown/takeItem.js';
 import { TakeNextCommandSchema } from '../rundown/takeNext.js';
 import { UpdateItemFieldsCommandSchema } from '../rundown/updateItemFields.js';
+import { NextOnLayerCommandSchema } from '../steps/nextOnLayer.js';
 import { ClearAllCommandSchema } from './clearAll.js';
 import { ClearLayerCommandSchema } from './clearLayer.js';
 import { ReportInstanceStatusCommandSchema } from './reportInstanceStatus.js';
@@ -72,6 +73,8 @@ export const CommandSchema = z.discriminatedUnion('type', [
   ReportInstanceStatusCommandSchema,
   ClearLayerCommandSchema,
   ClearAllCommandSchema,
+  // "Próximo": the next OGraf step of what is on air on a layer (BAJAOVRLAY-47); ../steps/.
+  NextOnLayerCommandSchema,
   // The item and rundown commands (BAJAOVRLAY-13); their schemas live in ../rundown/.
   CreateItemCommandSchema,
   UpdateItemFieldsCommandSchema,

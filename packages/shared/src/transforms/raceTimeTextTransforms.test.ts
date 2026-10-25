@@ -29,6 +29,9 @@ import {
 } from './raceTimeTextTransforms.js';
 import type { TransformResult } from './transform.js';
 
+// The context every binding transform is handed since BAJAOVRLAY-47; this one ignores it.
+const contextWithNoTeams = { teams: [] };
+
 type RaceTimeScenario = { name: string; value: unknown; expected: TransformResult };
 
 describe('formatLapTimeAsText', () => {
@@ -75,7 +78,7 @@ describe('formatLapTimeAsText', () => {
     // Arrange: the lap time of this row.
 
     // Act: write it for the screen.
-    const result = formatLapTimeAsTextTransform.apply(value, undefined);
+    const result = formatLapTimeAsTextTransform.apply(value, undefined, contextWithNoTeams);
 
     // Assert: the text, or the refusal with its pt-BR reason.
     expect(result, 'the lap time must be written as this row says').toEqual(expected);
@@ -132,7 +135,7 @@ describe('formatGapAsText', () => {
     // Arrange: the gap and unit of this row.
 
     // Act: write it for the screen.
-    const result = formatGapAsTextTransform.apply(value, { unit });
+    const result = formatGapAsTextTransform.apply(value, { unit }, contextWithNoTeams);
 
     // Assert: the text, or the refusal with its pt-BR reason.
     expect(result, 'the gap must be written as this row says').toEqual(expected);

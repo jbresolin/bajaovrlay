@@ -40,6 +40,16 @@ export type ReplaceOperation = {
   replacePolicy: Layer['replacePolicy'];
 };
 
+/**
+ * The same instance moved to another OGraf step ("Próximo", BAJAOVRLAY-47): play that step
+ * on the graphic already on screen.
+ */
+export type GoToStepOperation = {
+  kind: 'goToStep';
+  instanceId: string;
+  step: number;
+};
+
 /** The instance is gone from the slice: animate it out, then throw it away. */
 export type StopAndDisposeOperation = {
   kind: 'stopAndDispose';
@@ -56,6 +66,7 @@ export type DisposeAtOnceOperation = {
 export type InstanceOperation =
   | LoadAndPlayOperation
   | UpdateDataOperation
+  | GoToStepOperation
   | ReplaceOperation
   | StopAndDisposeOperation
   | DisposeAtOnceOperation;
@@ -117,13 +128,13 @@ export function decideLayerOperations(
       change.drawnOutput === 'preview'
         ? replacePolicyOnThePreviewOutput
         : findReplacePolicyOfLayer(layerId, change.layers);
-    const operation = decideOperationForOneLayer(
+    const operations = decideOperationsForOneLayer(
       previousByLayer.get(layerId),
       nextByLayer.get(layerId),
       replacePolicy,
     );
-    if (operation !== undefined) {
-      layerOperations.push({ layerId, operations: [operation] });
+    if (operations.length > 0) {
+      layerOperations.push({ layerId, operations });
     }
   }
   return layerOperations;
@@ -165,39 +176,49 @@ export function decideRebuildOperations(change: TwoDeliveries): LayerOperations[
 }
 
 /** The four cases of one layer: nothing, new, gone, or same-or-replaced. */
-function decideOperationForOneLayer(
+function decideOperationsForOneLayer(
   previousInstance: Instance | undefined,
   nextInstance: Instance | undefined,
   replacePolicy: Layer['replacePolicy'],
-): InstanceOperation | undefined {
+): InstanceOperation[] {
   if (previousInstance === undefined) {
     if (nextInstance === undefined) {
-      return undefined;
+      return [];
     }
-    return { kind: 'loadAndPlay', instance: nextInstance, skipAnimation: false };
+    return [{ kind: 'loadAndPlay', instance: nextInstance, skipAnimation: false }];
   }
   if (nextInstance === undefined) {
-    return { kind: 'stopAndDispose', instanceId: previousInstance.id };
+    return [{ kind: 'stopAndDispose', instanceId: previousInstance.id }];
   }
 
   if (previousInstance.id !== nextInstance.id) {
-    return {
-      kind: 'replace',
-      outgoingInstanceId: previousInstance.id,
-      incomingInstance: nextInstance,
-      replacePolicy,
-    };
+    return [
+      {
+        kind: 'replace',
+        outgoingInstanceId: previousInstance.id,
+        incomingInstance: nextInstance,
+        replacePolicy,
+      },
+    ];
   }
 
-  // The same instance. Only its data is compared. A change of `status` is the server
-  // repeating what a renderer reported (this page, or another one whose failure turned
-  // an on-air instance to failed), so there is nothing to do about it here; a change of
-  // `currentStep` (stepping through a graphic) is a later task and is ignored for now.
+  // The same instance: its data and its step are compared. A change of `status` is the
+  // server repeating what a renderer reported (this page, or another one whose failure
+  // turned an on-air instance to failed), so there is nothing to do about it here. When
+  // both changed in one delivery the data goes first, so the step plays with it.
+  const operations: InstanceOperation[] = [];
   const changedData = findChangedFields(previousInstance.resolvedData, nextInstance.resolvedData);
-  if (Object.keys(changedData).length === 0) {
-    return undefined;
+  if (Object.keys(changedData).length > 0) {
+    operations.push({ kind: 'updateData', instanceId: nextInstance.id, changedData });
   }
-  return { kind: 'updateData', instanceId: nextInstance.id, changedData };
+  if (nextInstance.currentStep !== previousInstance.currentStep) {
+    operations.push({
+      kind: 'goToStep',
+      instanceId: nextInstance.id,
+      step: nextInstance.currentStep,
+    });
+  }
+  return operations;
 }
 
 /**

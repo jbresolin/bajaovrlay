@@ -203,6 +203,18 @@ function listPositionsPaths(): BindablePath[] {
       'positionsEntries',
     ),
   ];
+  // Where a car chosen by number runs now (the battle card's two cars, BAJAOVRLAY-47). Only
+  // for that car: at a fixed place the position is the place itself.
+  paths.push({
+    path: `${entryOfCarPathPrefix}position`,
+    label: joinLabelParts([
+      shapeName,
+      ptBRDataShapes.carChosenByNumberLabel,
+      ptBRDataShapes.positionOfCarChosenByNumberLabel,
+    ]),
+    valueType: 'integer',
+    isCarChosenByNumber: true,
+  });
   for (const { fieldName, valueType } of positionsEntryFieldTypes) {
     const fieldLabel = ptBRDataShapes.positionsEntryFieldLabels[fieldName];
     paths.push({

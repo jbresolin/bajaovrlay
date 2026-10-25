@@ -16,6 +16,13 @@ export const ptBRBindings = {
       'Há parâmetros de transformação, mas nenhuma transformação escolhida.',
     transformDoesNotReadPath: (transformLabel: string, pathLabel: string) =>
       `A transformação "${transformLabel}" não se aplica a ${pathLabel}.`,
+    secondTransformWithoutFirst: 'Há uma segunda transformação, mas nenhuma primeira.',
+    secondParametersWithoutSecondTransform:
+      'Há parâmetros da segunda transformação, mas nenhuma segunda transformação escolhida.',
+    sameTransformTwice: (transformLabel: string) =>
+      `A segunda transformação não pode repetir a primeira ("${transformLabel}").`,
+    secondTransformDoesNotReadFirst: (secondLabel: string, firstLabel: string) =>
+      `A transformação "${secondLabel}" não se aplica ao que "${firstLabel}" entrega.`,
   },
 
   /**

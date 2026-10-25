@@ -27,6 +27,34 @@ export function refuseTakeOfEmptyPreview(layerName: string): CommandError {
   return { code: 'LAYER_PREVIEW_EMPTY', message: ptBR.commandErrors.layerPreviewEmpty(layerName) };
 }
 
+/** The refusal for a "Próximo" on a layer whose program output is empty. */
+export function refuseNextOnEmptyLayer(layerName: string): CommandError {
+  return {
+    code: 'NOTHING_ON_AIR_ON_LAYER',
+    message: ptBR.commandErrors.nothingOnAirOnLayer(layerName),
+  };
+}
+
+/**
+ * The refusal for a "Próximo" pressed from a step the graphic has already left (a double
+ * press, or two operators); `stepNumber` is the step it is on now, counted from 1.
+ */
+export function refuseNextFromAnOldStep(
+  graphicName: string,
+  layerName: string,
+  stepNumber: number,
+): CommandError {
+  return {
+    code: 'STEP_ALREADY_MOVED',
+    message: ptBR.commandErrors.stepAlreadyMoved(graphicName, layerName, stepNumber),
+  };
+}
+
+/** The refusal for a "Próximo" on a graphic of one step, or one on its last step. */
+export function refuseNextWithoutAStep(graphicName: string, layerName: string): CommandError {
+  return { code: 'NO_NEXT_STEP', message: ptBR.commandErrors.noNextStep(graphicName, layerName) };
+}
+
 /**
  * The refusal for a command the authorisation hook said no to. The older code
  * UNAUTHORIZED_COMMAND is no longer answered; it stays in the shared list only so

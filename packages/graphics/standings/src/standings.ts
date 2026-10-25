@@ -36,6 +36,7 @@ import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
 } from '@bajaovrlay/graphics-kit/timelinePlayback';
+import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -74,7 +75,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The standings graphic; the default export a renderer registers as a custom element. */
 export default class StandingsGraphic extends LitElement implements OGrafGraphic {
-  static override styles = standingsStyles;
+  static override styles = [wideBoardHeadStyles, standingsStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
