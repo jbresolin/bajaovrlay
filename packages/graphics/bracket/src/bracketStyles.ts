@@ -37,6 +37,11 @@ export const bracketStyles = css`
     -webkit-font-smoothing: antialiased;
   }
 
+  /* A moving piece's holder has no box of its own (roundBoardView.ts says why it exists). */
+  .piece-holder {
+    display: contents;
+  }
+
   /* The room under the head: a round board's cards, or the tree's stage. */
   .stage {
     position: relative;

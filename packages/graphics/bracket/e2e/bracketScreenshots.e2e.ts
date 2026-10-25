@@ -55,9 +55,9 @@ async function hidePreviewControls(page: Page): Promise<void> {
   });
 }
 
-/** The box of the first element of a locator, rounded to whole pixels, edges named. */
-async function measureFirst(page: Page, selector: string) {
-  const box = await page.locator(selector).first().boundingBox();
+/** The box of the element at `index` (the first by default), rounded, edges named. */
+async function measureFirst(page: Page, selector: string, index = 0) {
+  const box = await page.locator(selector).nth(index).boundingBox();
   return {
     left: Math.round(box?.x ?? 0),
     right: Math.round((box?.x ?? 0) + (box?.width ?? 0)),
@@ -121,9 +121,11 @@ test.describe('the real Super Prime looks like bracket-passo-1 to -7', () => {
 
     // Act: measure the first card of each column, then go to the final and measure the tree.
     const firstCard = await measureFirst(page, '[data-testid="bracket-match-card"]');
+    // The 17th card is the right column's first: the grid fills the left column's 16 first.
     const firstCardOfTheRightColumn = await measureFirst(
       page,
-      '[data-testid="bracket-match-card"]:nth-child(17)',
+      '[data-testid="bracket-match-card"]',
+      16,
     );
     for (let press = 1; press < 7; press += 1) {
       await pressNext(page);

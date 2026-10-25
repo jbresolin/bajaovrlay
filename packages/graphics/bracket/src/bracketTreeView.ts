@@ -49,8 +49,11 @@ function renderTreeCar(match: BracketMatchData, side: CarSide, column: string): 
           ${renderCarChip(car)} ${renderCarTeam(car)}
           ${renderResultCell(writeCarKey(match.matchId, side), result)}
         </div>`;
-  return html`<div class="tree-car-slot" data-testid="bracket-tree-car-slot" data-column=${column}>
-    ${pill}
+  // In a holder with no box of its own, as the board's cards are (roundBoardView.ts says why).
+  return html`<div class="piece-holder">
+    <div class="tree-car-slot" data-testid="bracket-tree-car-slot" data-column=${column}>
+      ${pill}
+    </div>
   </div>`;
 }
 
@@ -73,13 +76,16 @@ function renderTreeMatch(
 
 /** A round's name pill. */
 function renderRoundName(roundName: string, column: string, placement: string): TemplateResult {
-  return html`<div
-    class="round-name"
-    data-testid="bracket-round-name"
-    data-column=${column}
-    style=${placement}
-  >
-    ${roundName}
+  // In a holder with no box of its own, as the board's cards are (roundBoardView.ts says why).
+  return html`<div class="piece-holder">
+    <div
+      class="round-name"
+      data-testid="bracket-round-name"
+      data-column=${column}
+      style=${placement}
+    >
+      ${roundName}
+    </div>
   </div>`;
 }
 

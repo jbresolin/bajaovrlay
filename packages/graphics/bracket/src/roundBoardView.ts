@@ -50,14 +50,18 @@ function renderCardSide(match: BracketMatchData, side: CarSide): TemplateResult 
 
 /** One match card: the two sides across the "×". */
 function renderMatchCard(match: BracketMatchData): TemplateResult {
-  return html`<div
-    class="match-card"
-    data-testid="bracket-match-card"
-    data-match-id=${match.matchId}
-  >
-    ${renderCardSide(match, 'carA')}
-    <span class="versus">${ptBR.versus}</span>
-    ${renderCardSide(match, 'carB')}
+  // The card GSAP moves sits alone in a holder with no box of its own (display: contents),
+  // and the holder is what the repeat keeps: GSAP takes an element it thinks is off the page
+  // (in jsdom always, in Chromium under a hidden ancestor) out to measure it and puts it
+  // back before its next element sibling; a board's last card has none, so held directly it
+  // went back past Lit's end marker and a redraw left it behind (gate 2 of PR #30). The
+  // kit's boardHead.ts does the same for its head.
+  return html`<div class="piece-holder">
+    <div class="match-card" data-testid="bracket-match-card" data-match-id=${match.matchId}>
+      ${renderCardSide(match, 'carA')}
+      <span class="versus">${ptBR.versus}</span>
+      ${renderCardSide(match, 'carB')}
+    </div>
   </div>`;
 }
 

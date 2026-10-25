@@ -11,20 +11,6 @@ import BracketGraphic from './bracket.js';
 // The renderer, not the graphic, picks the tag name; these tests pick their own.
 customElements.define('baja-bracket-under-test', BracketGraphic);
 
-// jsdom lays nothing out, so every element's offsetParent is null. GSAP reads that as "not
-// in the page" the first time it parses an element's transform (the rise's `y`), moves the
-// element to the document to measure it and puts it back before its next element sibling;
-// the last card of a board has none, so it went back after Lit's end marker, out of Lit's
-// reach, and a redraw left it behind (17 cards on a board of 16). In Chromium a card on the
-// page always has an offsetParent and GSAP never moves it. Answering the parent, as a laid
-// out page would, keeps the DOM the tests read the one Lit drew.
-Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
-  configurable: true,
-  get(this: HTMLElement) {
-    return this.parentElement;
-  },
-});
-
 /**
  * Puts a fresh bracket element on the page, as a renderer does before calling load. When
  * the test ends it is disposed and removed, so nothing runs into the next test.

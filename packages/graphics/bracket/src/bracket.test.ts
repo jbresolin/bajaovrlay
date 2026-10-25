@@ -221,6 +221,28 @@ describe('the steps', () => {
   });
 });
 
+describe('a redraw where GSAP moves the pieces it measures', () => {
+  it('leaves exactly the 16 cards of the 16 avos after the 32 of the 32 avos', async () => {
+    // Arrange: the real Super Prime on air at its first board. jsdom lays nothing out, as
+    // Chromium does not under a hidden ancestor (the control's monitor frame can be one), so
+    // GSAP takes each card out of the page to read its transform the first time it moves it
+    // and puts it back before its next element sibling, skipping Lit's markers.
+    const bracket = await createLoadedSuperPrime();
+    await bracket.playAction({});
+
+    // Act: Próximo to the 16 avos, then to the oitavas.
+    await bracket.playAction({});
+    const cardsOfThe16Avos = findEveryPartOfBracket(bracket, 'bracket-match-card').length;
+    await bracket.playAction({});
+    const cardsOfTheOitavas = findEveryPartOfBracket(bracket, 'bracket-match-card').length;
+
+    // Assert: each board holds its own cards and no card of the board before (each card sits
+    // alone in a display: contents holder, so GSAP putting it back keeps it in Lit's reach).
+    expect(cardsOfThe16Avos, 'the 16 avos are 16 cards, none left of the 32 avos').toBe(16);
+    expect(cardsOfTheOitavas, 'the oitavas are 8 cards').toBe(8);
+  });
+});
+
 describe('stop', () => {
   it('takes everything off, and the next take starts at the first board', async () => {
     // Arrange: the bracket on air at its semifinals.
