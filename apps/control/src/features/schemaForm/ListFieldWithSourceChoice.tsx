@@ -63,8 +63,13 @@ export function ListFieldWithSourceChoice(props: {
   const { form, field, dataSchema, controlId, keptJsonText, bindingOptions, isDisabled } = props;
   const { entityLibrary } = props;
   const chosenKind = useWatch({ control: form.control, name: `kinds.${field.key}` });
-  // This field's errors only, by name; `form.formState` would subscribe the whole form.
-  const stateOfThisField = useFormState({ control: form.control, name: `values.${field.key}` });
+  // This field's errors only, by exact name (a name is otherwise matched by its start);
+  // `form.formState` would subscribe the whole form.
+  const stateOfThisField = useFormState({
+    control: form.control,
+    name: `values.${field.key}`,
+    exact: true,
+  });
   const errorMessage = stateOfThisField.errors.values?.[field.key]?.message;
 
   const kindsOffered: ListFieldKind[] = ['literal'];

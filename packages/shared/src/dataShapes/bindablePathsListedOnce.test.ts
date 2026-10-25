@@ -7,12 +7,14 @@
  *   and each resolution looks its path up in the list (findBindablePath). The paths of a
  *   shape are written in code and never change with the data a source sends, so the list
  *   of each shape is built the first time it is asked for and kept (BAJAOVRLAY-45; before,
- *   the positions' list of some two hundred paths was built anew at every lookup).
+ *   the positions' list of 145 paths was built anew at every lookup).
  *
  * What these tests prove:
  *   - Two calls for the same shape hand back the very same list.
  *   - Each shape has a list of its own.
  *   - The list kept cannot be changed by a caller, so no caller can spoil it for the next.
+ *   - findBindablePath hands back the list's own entry for a path, and nothing for a path
+ *     the shape does not list.
  *
  * What these tests deliberately do not cover:
  *   - Which paths each shape lists: bindablePaths.test.ts and the shape-by-shape files.
@@ -65,5 +67,20 @@ describe('listBindablePathsOfShape, asked again', () => {
       listBindablePathsOfShape('standings'),
       'the next caller must get the list unchanged',
     ).toHaveLength(lengthBefore);
+  });
+
+  it('finds a path as the very entry of the list, and nothing for a path not listed', () => {
+    // Arrange: the positions' entry for the team of a car chosen by number, in the list.
+    const entryInTheList = listBindablePathsOfShape('positions').find(
+      (bindablePath) => bindablePath.path === 'entryOfCar.teamName',
+    );
+
+    // Act: look that path up, and one the positions do not list.
+    const entryFound = findBindablePath('positions', 'entryOfCar.teamName');
+    const entryNotListed = findBindablePath('positions', 'entries.10.teamName');
+
+    // Assert: the same entry, and nothing for the 11th place (only ten have paths).
+    expect(entryFound, 'the lookup must hand back the list’s own entry').toBe(entryInTheList);
+    expect(entryNotListed, 'a path not listed is not found').toBeUndefined();
   });
 });

@@ -78,7 +78,12 @@ export function listBindingPathChoicesOfField(
   if (keptChoices !== undefined) {
     return keptChoices;
   }
-  const choices = Object.freeze(workOutBindingPathChoicesOfField(dataSchema, fieldKey));
+  // Frozen, the list and each choice, as the shapes' own paths are: a kept list is handed
+  // to every draw, and a caller that changed it would spoil it for the next.
+  const frozenChoices = workOutBindingPathChoicesOfField(dataSchema, fieldKey).map((choice) =>
+    Object.freeze(choice),
+  );
+  const choices = Object.freeze(frozenChoices);
   keepBindingPathChoices(dataSchema, fieldKey, choices);
   return choices;
 }

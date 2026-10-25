@@ -15,6 +15,7 @@
  *   - Another schema object (a graphic registered again after a reconnect, an equal copy)
  *     gets its list worked out again, with the same choices.
  *   - A schema that is not an object is worked out at every call and kept nowhere.
+ *   - A kept list and each choice in it refuse a change, so no draw spoils it for the next.
  *
  * What these tests deliberately do not cover:
  *   - Which paths fit which field: bindingChoices.test.ts.
@@ -95,5 +96,22 @@ describe('listBindingPathChoicesOfField, asked again', () => {
     // Assert: nothing to read either time, and nothing kept between the two.
     expect(choicesFirst, 'no schema, no field to read into').toEqual([]);
     expect(choicesAgain, 'nothing is kept without a schema object').not.toBe(choicesFirst);
+  });
+
+  it('refuses a change to a kept list or to a choice in it', () => {
+    // Arrange: the leader's team's choices, kept.
+    const choices = listBindingPathChoicesOfField(copyBattleCardDataSchema(), 'aheadTeamName');
+    const firstChoice = choices[0];
+
+    // Act: a careless caller tries to add a choice, and to rename the first one.
+    const addAChoice = () =>
+      (choices as unknown as Array<{ pathKey: string }>).push({ pathKey: 'session:state' });
+    const renameTheFirst = () => {
+      (firstChoice as unknown as { label: string }).label = 'Equipe da frente';
+    };
+
+    // Assert: both refused.
+    expect(addAChoice, 'the kept list must not take a change').toThrow(TypeError);
+    expect(renameTheFirst, 'a kept choice must not take a change').toThrow(TypeError);
   });
 });
