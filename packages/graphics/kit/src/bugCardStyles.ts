@@ -78,7 +78,8 @@ export const bugCardStyles = css`
     font-size: var(--size-caption);
     letter-spacing: var(--tracking-caption);
     color: var(--text-muted);
-    line-height: 1;
+    /* No line-height of its own: the face's normal line, as the design's caption has it
+       (a line of 1 made the card 5 px shorter than the design page, 126 px for 131). */
     white-space: nowrap;
   }
 

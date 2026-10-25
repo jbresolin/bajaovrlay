@@ -1247,3 +1247,4 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-10-25 — PR #28 — The intermission board's screenshots cover the full board on grey and black and the two combinations without the top five on grey only; the fourth combination (top five, no sponsors) is checked by the view tests.
 - 2026-10-25 — PR #28 — The four new graphics' dev and preview servers use ports 5210–5217.
 - 2026-10-25 — PR #28 — Correcting the subtitle line-box line above: the clipped "Í" came from the bug card's bare `.caption` rule leaking into the sponsor roll's board head, so every bug-card rule is now scoped under `.sponsor-bug` and the board subtitle has no line-height override of its own.
+- 2026-10-25 — PR #28 — The bug card's caption takes the face's normal line height, as the design does, instead of 1, so the sponsor bug and the roll's corner card are the design's 131 px tall (they were 126 px); their baselines are refreshed.
