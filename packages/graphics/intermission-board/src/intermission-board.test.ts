@@ -17,14 +17,17 @@
  *     leave, and with one line page left its timer stops.
  *   - stop, dispose and removal each stop both the count and the line's timer: nothing is
  *     left booked (these fail if the stop is removed).
- *   - An update during the stop-out leaves the fading board alone and is drawn once it has
- *     faded.
+ *   - With the real 17 (seven line pages), a list that shrinks to three under page 5 goes
+ *     back to page 1 in place.
+ *   - An update off air is drawn from page 1 and books nothing; one during the stop-out
+ *     leaves the fading board alone and is drawn once it has faded.
  *
  * What these tests deliberately do not cover:
  *   - Which parts each combination draws, and the motion's timing; the view and
  *     animations tests.
  *   - Real rendering; e2e/ runs the built graphic in Chromium.
  */
+import { createThe30thCompetitionSponsors } from '@bajaovrlay/graphics-kit/the30thCompetitionSponsors.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -172,6 +175,61 @@ describe('on air', () => {
     ).toBe('1');
     expect(readSponsorLineShown(board).heading, 'one page left').toBe('PATROCÍNIO DIAMANTE');
     expect(time.countPendingTimers(), 'only the count’s frame is left').toBe(1);
+  });
+});
+
+describe('the real 17 on the line', () => {
+  it('goes back to page 1 in place when the list shrinks under the page shown', async () => {
+    // Arrange: the break on air with the real 17 (seven line pages: Diamante 2, Ouro
+    // 3 + 3 + 3, Apoio 3 + 2, Realização 1), turned to page 5, the first Apoio page.
+    placeTheSponsorHoldsOnTheRoot();
+    const board = createIntermissionBoardOnThePage();
+    await loadIntermissionBoardWithData(board, {
+      ...createBreakBeforeTheEnduro({ hasTopFive: true, hasSponsors: false }),
+      sponsors: createThe30thCompetitionSponsors(),
+    });
+    const time = takeControlOfTime();
+    await board.playAction({ skipAnimation: true });
+    for (const holdMs of [8000, 5000, 5000, 5000]) {
+      await time.letTimePass(holdMs);
+    }
+    const lineBeforeTheEdit = readSponsorLineShown(board);
+
+    // Act: Cadastros keeps the nine Ouro sponsors only (three line pages).
+    const theNineOuro = createThe30thCompetitionSponsors().filter(
+      (sponsor) => sponsor.level === 'ouro',
+    );
+    await board.updateAction({ data: { sponsors: theNineOuro } });
+
+    // Assert: page 5 was the first Apoio page; now page 1 of three, the first Ouro logos.
+    expect(lineBeforeTheEdit, 'page 5 of 7 before the edit').toEqual({
+      heading: 'APOIO',
+      names: ['Criciúma', 'Osaki', 'SAE4Mobility'],
+    });
+    expect(readSponsorLineShown(board), 'back to page 1, in place').toEqual({
+      heading: 'PATROCÍNIO OURO',
+      names: ['Certi', 'CNH', 'Himix'],
+    });
+  });
+});
+
+describe('an update off air', () => {
+  it('draws the new data off air from page 1 and books nothing', async () => {
+    // Arrange: the break played, its line turned to the first Ouro page, then stopped.
+    const { board, time } = await putTheFullBreakOnAir();
+    await time.letTimePass(8000);
+    await board.stopAction({ skipAnimation: true });
+
+    // Act: the session is renamed and the organiser deleted while off air.
+    const answer = await board.updateAction({
+      data: { nextSessionName: 'Super Prime', sponsors: createEightSponsors().slice(0, 7) },
+    });
+
+    // Assert: accepted, drawn (the new session, the line from page 1), nothing running.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(readShownText(board, 'intermission-session'), 'the new session').toBe('Super Prime');
+    expect(readSponsorLineShown(board).heading, 'the line from page 1').toBe('PATROCÍNIO DIAMANTE');
+    expect(time.countPendingTimers(), 'an update off air books nothing').toBe(0);
   });
 });
 
