@@ -12,19 +12,20 @@
  * What these tests prove:
  *   - With the simulator at 60×, read every 0,5 s, and a battle card on air whose eleven
  *     fields read cars 1 and 2 by number, live, opened in the item editor:
- *     - a click on a bound field's "O que … lê da fonte" shows its options within 2 s;
- *     - "Salvar item" after a new label is accepted, and the editor closed, within 2 s.
+ *     - a click on a bound field's "O que … lê da fonte" shows its options within 5 s;
+ *     - "Salvar item" after a new label is accepted, and the editor closed, within 5 s.
  *
- * Why these bounds (measured pinned to two cores, `taskset -c 0,1`, server and browser on
- * the same two; the table is in the PR of BAJAOVRLAY-45):
- *   - Before the fix the dropdown took 8,5–11,3 s and the save 2,1–2,4 s; after it,
- *     0,29–0,33 s and 0,37–0,43 s. The brief aims at 300 ms and 1 s.
- *   - 2 s is about six times the fixed dropdown and five times the fixed save, room for
- *     CI's runner (about 3,5 times slower than a developer machine for this page,
- *     dataSourcesPageStaysResponsive.e2e.ts) and React's development build (the control
- *     page's dev server), and still under what the broken editor took for both.
- *   - The brief's example bounds (1 s and 3 s) were not taken: 1 s leaves the runner too
- *     little room, and 3 s would let the old save through.
+ * Why these bounds (João's ruling, gate 2 round 1 of PR #29):
+ *   - Pinned to two cores here (`taskset -c 0,1`, server and browser on the same two) the
+ *     broken editor took 8,5–11,3 s to open the dropdown and 2,1–2,4 s to save; the fixed
+ *     one takes 0,29–0,33 s and 0,37–0,43 s. On a 2-core box about three times slower the
+ *     review measured the fixed one at 0,6–0,95 s and 1,0–1,4 s, too close to a 2 s bound.
+ *   - 5 s leaves CI's runner and React's development build (the control page's dev
+ *     server) room. The broken editor took more than 5 s for the dropdown on every machine
+ *     measured, so the dropdown still catches it.
+ *   - The save's bound does not catch the old save (2,1–2,4 s): it guards against a stall
+ *     like gate 2 of PR #27's 71 s. Redraws themselves are counted exactly by the component
+ *     tests (ItemEditorPanelRenders.test.tsx), which fail at the first extra row.
  *   - About half of the fixed dropdown's time is not the editor's: a dropdown of three
  *     options opens in 130–160 ms here (Radix placing the list, the browser's layout and
  *     Playwright's own checks before a click).
@@ -53,9 +54,12 @@ import { openControlPageAndWaitUntilConnected } from './previewTestSteps';
 const seededSimulatorId = 'simulador-enduro';
 const mainSessionRundownId = 'sessao-principal';
 const battleCardItemLabel = 'Disputa — carros 1 e 2';
-// About six and five times the fixed editor, under the broken one (header).
-const slowestDropdownOpeningAllowedInMilliseconds = 2_000;
-const slowestSaveAllowedInMilliseconds = 2_000;
+// João's ruling: room for a runner three times slower, under the broken dropdown (header).
+const slowestDropdownOpeningAllowedInMilliseconds = 5_000;
+const slowestSaveAllowedInMilliseconds = 5_000;
+// How long a wait inside a timed action may last: past every bound, so a slow editor
+// fails with the bound's message below, not as the test's own timeout.
+const longestWaitInATimedActionInMilliseconds = 60_000;
 // A take reaches the server at once; a few seconds cover a slow machine.
 const waitForTheAirInMilliseconds = 10_000;
 
@@ -119,8 +123,9 @@ test.beforeEach(async () => {
 });
 
 test.describe('the item editor on a battle card read live while the race runs at 60×', () => {
-  test('opens a bound field’s path dropdown within 2 s and saves within 2 s', async ({ page }) => {
-    test.setTimeout(90_000);
+  test('opens a bound field’s path dropdown within 5 s and saves within 5 s', async ({ page }) => {
+    // The arrange (about 15 s) and both timed actions at their longest wait (header).
+    test.setTimeout(150_000);
 
     // Arrange: the race at 60×, read every 0,5 s; the battle card of cars 1 and 2 stored
     // and on air, so its eleven live fields refresh at every poll; the editor open on it.
@@ -154,8 +159,15 @@ test.describe('the item editor on a battle card read live while the race runs at
         exact: true,
       }),
       'the dropdown must list the path the field reads',
-    ).toBeVisible();
+    ).toBeVisible({ timeout: longestWaitInATimedActionInMilliseconds });
     const dropdownOpeningMs = performance.now() - dropdownClickedAtMs;
+    recordMeasuredTime('dropdownOpeningMs', dropdownOpeningMs);
+
+    // Assert 1: the dropdown opened in time, checked at once so a slow one fails here.
+    expect(
+      dropdownOpeningMs,
+      `the dropdown must open within ${slowestDropdownOpeningAllowedInMilliseconds} ms during the race`,
+    ).toBeLessThan(slowestDropdownOpeningAllowedInMilliseconds);
     await page.keyboard.press('Escape');
 
     // Act 2: give the item a new label and press "Salvar item"; the editor closes once the
@@ -163,20 +175,13 @@ test.describe('the item editor on a battle card read live while the race runs at
     await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill(`${battleCardItemLabel} (final)`);
     const saveClickedAtMs = performance.now();
     await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
-    // Waited for up to a minute: the broken editor took about that long in the walk, and
-    // the bound below must fail with its own message rather than as a timeout here.
     await expect(itemEditor, 'the editor must close once the server accepted the save').toBeHidden({
-      timeout: 60_000,
+      timeout: longestWaitInATimedActionInMilliseconds,
     });
     const saveMs = performance.now() - saveClickedAtMs;
-    recordMeasuredTime('dropdownOpeningMs', dropdownOpeningMs);
     recordMeasuredTime('saveMs', saveMs);
 
-    // Assert: both well within an operator's patience, with the race still running.
-    expect(
-      dropdownOpeningMs,
-      `the dropdown must open within ${slowestDropdownOpeningAllowedInMilliseconds} ms during the race`,
-    ).toBeLessThan(slowestDropdownOpeningAllowedInMilliseconds);
+    // Assert 2: the save registered in time, and the rundown shows the new label.
     expect(
       saveMs,
       `the save must register within ${slowestSaveAllowedInMilliseconds} ms during the race`,
