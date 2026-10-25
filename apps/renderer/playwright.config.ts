@@ -10,6 +10,10 @@ import {
 const rendererPageAddress = `http://127.0.0.1:${rendererPagePort}`;
 const realServerAddress = `http://127.0.0.1:${realServerPort}`;
 const isRunningInCI = Boolean(process.env.CI);
+// The real-server projects keep the baselines' names of the one "chromium" project they
+// came from, so the race clock's existing baseline is still found.
+const snapshotPathOfTheChromiumProject =
+  '{testDir}/{testFilePath}-snapshots/{arg}-chromium{-snapshotSuffix}{ext}';
 
 // Both web servers read these: the real server listens there, and the renderer's Vite dev
 // server forwards /ws, /api, /graphics and /theme there (see vite.config.ts). The ports, the
@@ -42,10 +46,28 @@ export default defineConfig({
     baseURL: rendererPageAddress,
     trace: 'retain-on-failure',
   },
+  // Two files drive the one real server (a take, a clearAll), so they must never run at the
+  // same time: in two workers one test's clearAll took the other's graphic off air. Each
+  // has a project of its own, the combos waiting for the race clock (`dependencies`); every
+  // other file talks to a stand-in server inside its page and runs in parallel with them.
   projects: [
     {
       name: 'chromium',
+      testIgnore: ['**/raceClockOnAir.e2e.ts', '**/combosOnAir.e2e.ts'],
       // OBS's browser source is Chromium, at the 1920x1080 size of the stream canvas.
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
+    },
+    {
+      name: 'real server: race clock',
+      testMatch: '**/raceClockOnAir.e2e.ts',
+      snapshotPathTemplate: snapshotPathOfTheChromiumProject,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
+    },
+    {
+      name: 'real server: combos',
+      testMatch: '**/combosOnAir.e2e.ts',
+      dependencies: ['real server: race clock'],
+      snapshotPathTemplate: snapshotPathOfTheChromiumProject,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },
   ],
