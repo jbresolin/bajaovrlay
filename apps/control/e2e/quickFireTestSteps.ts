@@ -5,6 +5,7 @@
 // or between tests.
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { findItemEditorOwnTextField } from './itemEditorOwnFields';
 import { chooseGraphicInTheItemEditor, raceClockGraphicName } from './previewTestSteps';
 
 /** Finds the quick-fire strip, in the right column above the layer panel. */
@@ -30,7 +31,7 @@ export async function createRaceClockButtonInPanelShown(
   // up inside the editor.
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
   await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
-  await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemLabel);
+  await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill(itemLabel);
   await itemEditor.getByLabel('Título', { exact: true }).fill(sessionName);
   await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
   await expect(

@@ -48,6 +48,7 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { findItemEditorOwnTextField } from './itemEditorOwnFields';
 import { chooseGraphicInTheItemEditor, raceClockGraphicName } from './previewTestSteps';
 
 // How long the test lets pass between saving the running clock and taking it. Long
@@ -107,7 +108,7 @@ async function createRaceClockItemInTheEditor(
   const itemEditor = page.getByRole('region', { name: 'Editor de item' });
   // The race clock is chosen by name: the server has the positions tower too.
   await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
-  await itemEditor.getByLabel('Rótulo', { exact: true }).fill(itemToPrepare.itemLabel);
+  await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill(itemToPrepare.itemLabel);
   await itemEditor.getByLabel('Título', { exact: true }).fill(itemToPrepare.sessionName);
   if (itemToPrepare.isClockRunning) {
     await itemEditor.getByRole('switch', { name: 'Relógio correndo' }).click();

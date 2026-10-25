@@ -202,6 +202,9 @@ export const ptBR = {
       'O formulário ainda não sabe editar este campo. O valor abaixo é só para leitura e segue como está.',
     unsupportedPropertyWithoutValueNote:
       'O formulário ainda não sabe editar este campo, e ele está sem valor.',
+    // The group around the generated fields, so a graphic's field named like one of the
+    // editor's own ("Rótulo", "Cor") is still told apart by a screen reader and a test.
+    generatedFieldsGroupName: 'Campos do gráfico',
     unsupportedWholeDataLabel: 'Dados do gráfico',
     unsupportedWholeDataNote:
       'O formulário ainda não sabe editar os dados deste gráfico. O que aparece abaixo é só para leitura e segue como está.',

@@ -46,6 +46,7 @@
 import { type BrowserContext, expect, type Locator, type Page, test } from '@playwright/test';
 
 import { emptyTheServerState } from './emptyTheServerState';
+import { findItemEditorOwnTextField } from './itemEditorOwnFields';
 import {
   chooseGraphicInTheItemEditor,
   openItemEditorWithNewGraphic,
@@ -230,7 +231,7 @@ test.describe('stopping a running race clock that is on air', () => {
     const itemEditor = findItemEditor(page);
     await page.getByRole('button', { name: '+ Item' }).click();
     await chooseGraphicInTheItemEditor(page, itemEditor, raceClockGraphicName);
-    await itemEditor.getByLabel('Rótulo', { exact: true }).fill('Enduro em andamento');
+    await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill('Enduro em andamento');
     await fillClockFormRunningFromTwelveThirtyFour(itemEditor);
     await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
     await expect(
