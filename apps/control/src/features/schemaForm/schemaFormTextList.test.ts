@@ -18,7 +18,8 @@
  *     air shows each message as a line; the checked form sends the texts, trimmed.
  *   - A line over the limit is refused naming the line, the limit and its length; a line
  *     under the items' minLength gives the minimum; a list with no line is refused as
- *     required; a blank line (spaces, or empty) is refused by its number.
+ *     required; ten lines are refused with the maximum of 9; a blank line (spaces, or
+ *     empty) is refused by its number.
  *   - An optional list emptied of every line is cleared, not sent.
  *
  * What these tests deliberately do not cover:
@@ -59,12 +60,13 @@ describe('a list of texts, as the form reads the manifest', () => {
       (field) => field.key === 'messages',
     );
 
-    // Assert: a textList, each line a "Mensagem" of 1 to 50 characters, at least one line.
+    // Assert: a textList, each line a "Mensagem" of 1 to 50 characters, 1 to 9 lines.
     expect(messagesField?.control, 'a list of plain texts is typed line by line').toBe('textList');
     expect(messagesField?.listItemLabel, 'a line is called by the items’ title').toBe('Mensagem');
     expect(messagesField?.minimumLength, 'each line’s shortest length').toBe(1);
     expect(messagesField?.maximumLength, 'each line’s longest length, the bar’s limit').toBe(50);
     expect(messagesField?.minimumItems, 'the list needs at least one line').toBe(1);
+    expect(messagesField?.maximumItems, 'the list holds at most nine lines').toBe(9);
   });
 
   const listShapes = [
@@ -161,6 +163,24 @@ describe('a list of texts, as the form checks it', () => {
       name: 'refuses a blank line, naming it',
       messages: ['Largada do enduro às 10h00', '   '],
       expectedMessage: 'Mensagem 2: está em branco; escreva o texto ou remova a linha.',
+    },
+    // Ten messages: one more than the manifest's maxItems of 9, the most pages the
+    // ticker's page cell is drawn for.
+    {
+      name: 'refuses more lines than the manifest allows, giving the maximum',
+      messages: [
+        'Largada do enduro às 10h00',
+        'Briefing dos pilotos na tenda central',
+        'Reabastecimento fecha às 13h30',
+        'Equipe 42, Baja UFPR: compareça aos boxes',
+        'Almoço das equipes a partir das 12h00',
+        'Inspeção técnica na tenda 3',
+        'Bandeira amarela na curva do lago',
+        'Resultado parcial às 14h00',
+        'Premiação no palco principal às 17h00',
+        'Obrigado por acompanhar a Baja SAE Brasil',
+      ],
+      expectedMessage: 'O campo "Mensagens" pode ter no máximo 9 linhas.',
     },
     // Every line removed from a required list.
     {

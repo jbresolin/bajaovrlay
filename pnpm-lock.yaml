@@ -245,6 +245,9 @@ importers:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)
     devDependencies:
+      '@bajaovrlay/message-ticker':
+        specifier: workspace:*
+        version: link:../../packages/graphics/message-ticker
       '@bajaovrlay/race-clock':
         specifier: workspace:*
         version: link:../../packages/graphics/race-clock
