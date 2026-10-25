@@ -16,7 +16,8 @@
  *   - The count reads the server's clock: on a machine 30 s behind it is 30 s shorter.
  *   - stop, dispose and removal from the page each stop the count: no frame is left
  *     booked, and time passing changes nothing (these fail if the stop is removed).
- *   - An update off air (also during the stop-out) stores and draws the data but books no
+ *   - An update during the stop-out leaves the fading card alone and is drawn once it has
+ *     faded; one off air stores and draws the data but books no
  *     frame; the count starts again at the next play.
  *   - A change of layout on air draws the waiting board in place of the card, on air.
  *
@@ -26,7 +27,7 @@
  *   - Which parts each layout shows; countdownView.test.ts.
  */
 import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
-import { describe, expect, it, onTestFinished, vi } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 
 import {
   createCountdownOnThePage,
@@ -244,20 +245,27 @@ describe('the count stopped', () => {
     expect(framesAndTime.countPendingFrames(), 'play starts the count again').toBe(1);
   });
 
-  it('only stores an update that comes during the stop-out', async () => {
-    // Arrange: the card on air, and a stop started but not ended (the timeline runs on).
+  it('leaves the fading card alone during the stop-out, then draws the update', async () => {
+    // Arrange: the card on air, its stop-out lasting 250 ms (on the panel itself, since jsdom
+    // carries no custom property from :root into a shadow root), the stop started.
     const { countdown, framesAndTime } = await putTheEnduroCountdownOnAir();
-    vi.useFakeTimers({ toFake: ['Date'] });
+    findPartOfCountdown(countdown, 'countdown-panel')?.style.setProperty('--motion-out', '250ms');
     const pendingStop = countdown.stopAction({});
 
-    // Act: an update lands while the card leaves.
-    await countdown.updateAction({ data: { sessionName: 'Super Prime' } });
+    // Act: the session is renamed while the card fades; then the stop-out runs to its end.
+    const answer = await countdown.updateAction({ data: { sessionName: 'Super Prime' } });
+    const sessionDuringTheStopOut = readShownText(countdown, 'countdown-session');
+    framesAndTime.letTimePass(300);
+    framesAndTime.runPendingFrames();
     await pendingStop;
 
-    // Assert: the new session is drawn, and nothing ticks.
-    expect(readShownText(countdown, 'countdown-session'), 'the update is stored').toBe(
-      'Super Prime',
+    // Assert: accepted, the fading card unchanged, the new session drawn once faded, and
+    // nothing ticking.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(sessionDuringTheStopOut, 'the fading card keeps its session').toBe(
+      'Enduro de Resistência',
     );
+    expect(readShownText(countdown, 'countdown-session'), 'drawn once faded').toBe('Super Prime');
     expect(framesAndTime.countPendingFrames(), 'no frame during or after the stop-out').toBe(0);
   });
 });

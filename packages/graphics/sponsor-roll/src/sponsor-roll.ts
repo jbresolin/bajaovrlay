@@ -187,7 +187,8 @@ export default class SponsorRollGraphic extends LitElement implements OGrafGraph
    * OGraf updateAction: merges partial data in at any time after load (the live refresh
    * sends every sponsor after an edit in Cadastros). On air, the page on air is drawn again
    * in place (page 1 when the list shrank under it) and the timer goes on, or stops with a
-   * single page left; during a motion, once it has ended; off air, from page 1.
+   * single page left; during a motion, once it has ended; off air, from page 1; during the
+   * stop-out only stored, and drawn from page 1 once the roll has faded.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
@@ -201,6 +202,11 @@ export default class SponsorRollGraphic extends LitElement implements OGrafGraph
 
     if (this.lifecycle !== 'onAir') {
       this.data = dataCheck.data;
+      // During the stop-out the fading pieces are left alone: stopAction draws the data
+      // stored here once they have faded.
+      if (this.motions.isRunning()) {
+        return okAnswer;
+      }
       await this.pageTurns.drawFromPageOneOffAir(dataCheck.data);
       return okAnswer;
     }

@@ -17,7 +17,8 @@
  *     page left, the timer stops.
  *   - stop, dispose and removal from the page each stop the page timer: no timer is left
  *     and the holds passing turn nothing (these fail if the stop is removed); an update off
- *     air draws page 1 and books nothing.
+ *     air draws page 1 and books nothing; one during the stop-out leaves the fading page
+ *     alone and is drawn from page 1 once the roll has faded.
  *
  * What these tests deliberately do not cover:
  *   - The paging rules themselves; the kit's sponsorPages test and sponsorRollModel.test.ts.
@@ -264,5 +265,38 @@ describe('the page timer stopped', () => {
       pageLine: '1/3',
     });
     expect(timers.countPendingTimers(), 'an update off air books nothing').toBe(0);
+  });
+});
+
+describe('an update during the stop-out', () => {
+  it('leaves the fading page alone, then draws page 1 of the new round once it has faded', async () => {
+    // Arrange: the 17 on air, turned to page 2 (Ouro), the stop-out lasting 250 ms (on the
+    // panel itself, since jsdom carries no custom property from :root into a shadow root),
+    // the stop started.
+    const { roll, timers } = await putTheRollOnAir('fullscreen');
+    await timers.letTimePass(8000);
+    roll.shadowRoot
+      ?.querySelector<HTMLElement>('[data-testid="sponsor-roll-panel"]')
+      ?.style.setProperty('--motion-out', '250ms');
+    const pendingStop = roll.stopAction({});
+
+    // Act: Cadastros changes the list while the roll fades; then the stop-out ends.
+    const answer = await roll.updateAction({
+      data: { sponsors: createThe30thCompetitionSponsors().slice(0, 11) },
+    });
+    const headDuringTheStopOut = readHead(roll);
+    await pendingStop;
+
+    // Assert: accepted, the fading page unchanged, page 1 of the new round drawn once faded.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(headDuringTheStopOut, 'the fading page keeps its head').toEqual({
+      heading: 'PATROCÍNIO OURO',
+      pageLine: '2/5',
+    });
+    expect(readHead(roll), 'page 1 of the new round once faded').toEqual({
+      heading: 'PATROCÍNIO DIAMANTE',
+      pageLine: '1/3',
+    });
+    expect(timers.countPendingTimers(), 'nothing booked off air').toBe(0);
   });
 });

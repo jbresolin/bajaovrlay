@@ -17,7 +17,8 @@
  *     slot in progress now crossfades the two that changed.
  *   - stop, dispose and removal from the page each cancel the status check: no timer is
  *     left, and the boundary passing changes nothing (these fail if the cancel is removed).
- *   - An update off air only stores and draws, and books no check.
+ *   - An update off air only stores and draws, and books no check; one during the stop-out
+ *     leaves the fading board alone and is drawn once it has faded.
  *
  * What these tests deliberately do not cover:
  *   - The status rule and the window; sessionsBoardWindow.test.ts on shared's own table.
@@ -43,6 +44,11 @@ async function putSundaysBoardOnAirAt0920() {
   await loadSessionsBoardWithData(board, createSundaySessionsBoardData());
   await board.playAction({ skipAnimation: true });
   return { board, timeAndTimers };
+}
+
+/** The board's title as drawn. */
+function readTitle(board: HTMLElement): string | null | undefined {
+  return board.shadowRoot?.querySelector('[data-testid="sessions-board-title"]')?.textContent;
 }
 
 /** Forty minutes, from 09:20 to the enduro's start at 10:00. */
@@ -260,5 +266,30 @@ describe('the status check stopped', () => {
       'the update is drawn',
     ).toBe('PROGRAMAÇÃO DE DOMINGO');
     expect(timeAndTimers.countPendingTimers(), 'an update off air books no check').toBe(0);
+  });
+});
+
+describe('an update during the stop-out', () => {
+  it('leaves the fading board alone, then draws the update once it has faded', async () => {
+    // Arrange: the board on air at 09:20, its stop-out lasting 250 ms (on the board itself,
+    // since jsdom carries no custom property from :root into a shadow root), the stop started.
+    const { board, timeAndTimers } = await putSundaysBoardOnAirAt0920();
+    board.shadowRoot
+      ?.querySelector<HTMLElement>('[data-testid="sessions-board"]')
+      ?.style.setProperty('--motion-out', '250ms');
+    const pendingStop = board.stopAction({});
+
+    // Act: the title changes while the board fades; then the stop-out runs to its end.
+    const answer = await board.updateAction({ data: { title: 'PROGRAMAÇÃO DE DOMINGO' } });
+    const titleDuringTheStopOut = readTitle(board);
+    await timeAndTimers.letTimePass(300);
+    await pendingStop;
+
+    // Assert: accepted, the fading board unchanged, the new title drawn once faded, and no
+    // check booked off air.
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(titleDuringTheStopOut, 'the fading board keeps its title').toBe('PROGRAMAÇÃO DO DIA');
+    expect(readTitle(board), 'drawn once faded').toBe('PROGRAMAÇÃO DE DOMINGO');
+    expect(timeAndTimers.countPendingTimers(), 'no check off air').toBe(0);
   });
 });

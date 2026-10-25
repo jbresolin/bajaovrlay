@@ -44,6 +44,7 @@ import {
 } from './countdownAnimations.js';
 import {
   type CountdownData,
+  type CountdownLayout,
   mergePartialUpdateIntoCountdownData,
   parseCompleteCountdownData,
 } from './countdownModel.js';
@@ -78,6 +79,8 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
   // this file asks (redrawWithData), never by surprise.
   private data: CountdownData | undefined = undefined;
   private pieces: CountdownPieces | undefined = undefined;
+  // The layout on the page, which an update stored during the stop-out may not match yet.
+  private layoutDrawn: CountdownLayout | undefined = undefined;
   private readonly motions: MotionTimelineRunner = createMotionTimelineRunner();
   private readonly countdownClock: CountdownClock = createCountdownClock({
     readStartsAtMs: () => this.data?.startsAtMs,
@@ -183,6 +186,10 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
       buildCountdownStopOutTimeline(this.requirePieces()),
       params.skipAnimation ?? false,
     );
+    // An update that came during the stop-out was only stored; drawn now, off air.
+    if (this.readLifecycleNow() === 'offAir') {
+      await this.drawTheStoredDataOffAir();
+    }
     return okAnswer;
   }
 
@@ -190,8 +197,8 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
    * OGraf updateAction: merges partial data in at any time after load and redraws in
    * place with no animation (a session renamed, a start moved by an edit of the schedule).
    * On air the count reads the new start at once and ticks again (a later start counts
-   * again after "0:00"); off air, and during the stop-out, the data is only stored and
-   * drawn. A change of layout draws the other layout in the countdown's place, on air or
+   * again after "0:00"); off air the data is drawn; during the stop-out it is only
+   * stored, and drawn once the countdown has faded. A change of layout draws the other layout in the countdown's place, on air or
    * off as it was. Refused only before load and after dispose.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
@@ -204,7 +211,13 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
       return buildRefusalAnswer(400, dataCheck.problem);
     }
 
-    const layoutBefore = this.requireData().layout;
+    if (this.lifecycle !== 'onAir' && this.motions.isRunning()) {
+      // During the stop-out the fading pieces are left alone: stopAction draws the data
+      // stored here once they have faded.
+      this.data = dataCheck.data;
+      return okAnswer;
+    }
+    const layoutBefore = this.layoutDrawn;
     await this.redrawWithData(dataCheck.data);
     if (dataCheck.data.layout !== layoutBefore) {
       this.placeNewLayoutAsTheOldOneWas();
@@ -245,6 +258,14 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
     this.requestUpdate();
     await this.updateComplete;
     this.pieces = findCountdownPieces(this.renderRoot);
+    this.layoutDrawn = data.layout;
+  }
+
+  /** Draws the data stored during the stop-out, every piece off air, the count rewritten. */
+  private async drawTheStoredDataOffAir(): Promise<void> {
+    await this.redrawWithData(this.requireData());
+    placeCountdownOffAir(this.requirePieces());
+    this.countdownClock.redraw();
   }
 
   /** The other layout's pieces, new on the page, put on air at once or left off air. */

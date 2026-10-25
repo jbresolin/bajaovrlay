@@ -12,8 +12,8 @@
  * a timer booked for the next start or end of any slot, never every frame. At the check the
  * changed rows crossfade. The timer is stopped on stop, dispose and removal from the page.
  * An update (an edit of the schedule) redraws the slots; on air the changed statuses
- * crossfade and the timer is booked again; off air (also during the stop-out) the data is
- * only stored and drawn.
+ * crossfade and the timer is booked again; off air the data is drawn; during the stop-out
+ * it is only stored, and drawn once the board has faded.
  */
 import {
   createMotionTimelineRunner,
@@ -185,6 +185,11 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
       this.listEveryPiece(),
     );
     await this.motions.run(stopOut, params.skipAnimation ?? false);
+    // An update that came during the stop-out was only stored; drawn now, off air.
+    if (this.readLifecycleNow() === 'offAir') {
+      await this.storeAndDrawTheStatusesNow(this.requireData());
+      this.placeEveryPieceOffAir();
+    }
     return okAnswer;
   }
 
@@ -192,8 +197,8 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
    * OGraf updateAction: merges partial data in at any time after load (the live refresh
    * sends every slot after an edit of the schedule). On air the slots are redrawn in place,
    * a row that came in is placed on air at once, the statuses that changed crossfade, and
-   * the next check is booked again; off air (also during the stop-out) the data is only
-   * stored and drawn.
+   * the next check is booked again; off air the data is drawn, every piece off air; during
+   * the stop-out it is only stored, and drawn once the board has faded.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
@@ -206,6 +211,12 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
     }
 
     if (this.lifecycle !== 'onAir') {
+      this.data = dataCheck.data;
+      // During the stop-out the fading pieces are left alone: stopAction draws the data
+      // stored here once they have faded.
+      if (this.motions.isRunning()) {
+        return okAnswer;
+      }
       await this.storeAndDrawTheStatusesNow(dataCheck.data);
       this.placeEveryPieceOffAir();
       return okAnswer;

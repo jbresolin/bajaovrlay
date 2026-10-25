@@ -206,7 +206,8 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
    * OGraf updateAction: merges partial data in at any time after load. On air the board is
    * redrawn in place (a part that came in, a top five or a sponsor line, placed on air at
    * once), the count reads the new start and ticks again, the line keeps its page (page 1
-   * when it shrank under it); during a motion, once it has ended. Off air, only drawn.
+   * when it shrank under it); during a motion, once it has ended. Off air, only drawn; during
+   * the stop-out only stored, and drawn once the board has faded.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
     const refusal = this.refuseUnlessLoaded();
@@ -219,6 +220,12 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
     }
 
     if (this.lifecycle !== 'onAir') {
+      this.data = dataCheck.data;
+      // During the stop-out the fading pieces are left alone: stopAction draws the data
+      // stored here once they have faded.
+      if (this.motions.isRunning()) {
+        return okAnswer;
+      }
       await this.drawOffAir(dataCheck.data);
       return okAnswer;
     }

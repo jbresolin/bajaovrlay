@@ -17,6 +17,8 @@
  *     leave, and with one line page left its timer stops.
  *   - stop, dispose and removal each stop both the count and the line's timer: nothing is
  *     left booked (these fail if the stop is removed).
+ *   - An update during the stop-out leaves the fading board alone and is drawn once it has
+ *     faded.
  *
  * What these tests deliberately do not cover:
  *   - Which parts each combination draws, and the motion's timing; the view and
@@ -202,5 +204,44 @@ describe('stopped', () => {
 
     // Assert: no frame and no timer left.
     expect(time.countPendingTimers(), 'nothing keeps running in OBS').toBe(0);
+  });
+});
+
+describe('an update during the stop-out', () => {
+  it('leaves the fading line alone, then draws the new line once the board has faded', async () => {
+    // Arrange: the break on air, its line turned to the first Ouro page, the stop-out
+    // lasting 250 ms (on the board itself, since jsdom carries no custom property from
+    // :root into a shadow root), the stop started.
+    const { board, time } = await putTheFullBreakOnAir();
+    await time.letTimePass(8000);
+    board.shadowRoot
+      ?.querySelector<HTMLElement>('[data-testid="intermission-board"]')
+      ?.style.setProperty('--motion-out', '250ms');
+    const pendingStop = board.stopAction({});
+
+    // Act: the organiser is deleted in Cadastros while the board fades (three line pages
+    // left); then the stop-out runs to its end, and a Diamante hold passes off air.
+    const answer = await board.updateAction({
+      data: { sponsors: createEightSponsors().slice(0, 7) },
+    });
+    const lineDuringTheStopOut = readSponsorLineShown(board);
+    await time.letTimePass(300);
+    await pendingStop;
+    const lineOnceFaded = readSponsorLineShown(board);
+    await time.letTimePass(8000);
+
+    // Assert: accepted, the fading line unchanged, the new line drawn once faded, and it
+    // does not turn off air. (No timer count here: GSAP's own frame may still be booked
+    // just after a real stop-out; the "stopped" tests count the board's timers.)
+    expect(answer, 'the update must answer 200').toEqual({ statusCode: 200 });
+    expect(lineDuringTheStopOut, 'the fading line keeps its page').toEqual({
+      heading: 'PATROCÍNIO OURO',
+      names: ['Certi', 'CNH', 'Himix'],
+    });
+    expect(lineOnceFaded, 'the new line once faded').toEqual({
+      heading: 'PATROCÍNIO DIAMANTE',
+      names: ['Bosch', 'Renault'],
+    });
+    expect(readSponsorLineShown(board), 'the line does not turn off air').toEqual(lineOnceFaded);
   });
 });
