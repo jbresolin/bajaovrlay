@@ -1220,3 +1220,29 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-10-24 — PR #26 — combo-strip and combo-ticker are composed on the real renderer page from takes on the real server, on the design's grey under the transparent page; the renderer's e2e server builds the strip, the ticker and the lower third too, listed as its devDependencies.
 - 2026-10-24 — PR #26 — The renderer's two test files that drive the one real server (the race clock, the combos) run one after the other, each in a Playwright project of its own with the combos depending on the race clock, keeping the "chromium" baseline names; every other renderer test file still runs in parallel.
 - 2026-10-24 — PR #26 — The generated fields sit in a fieldset named "Campos do gráfico" with its legend read but not shown (the panel already says whose fields these are), e2e lookups of the editor's own fields look outside it, and the kit's manifest test refuses a field titled like one of the editor's six.
+- 2026-10-25 — PR #28 — The sponsor record keeps its field `tier`, only its values becoming the six levels (diamante, ouro, prata, bronze, apoio, realizacao), since renaming it would break every stored item reading the attribute `tier`; the entity list names it `level`.
+- 2026-10-25 — PR #28 — A stored sponsor at `master` becomes `diamante` at boot, its row written again once, and the CSV's cota column keeps reading "master" as diamante.
+- 2026-10-25 — PR #28 — The round order lives in shared (`@bajaovrlay/shared/sponsorLevels`), because the server sorts the list by it and cannot import the graphics kit; the kit's sponsorRound holds the headings and holds.
+- 2026-10-25 — PR #28 — An entity list is offered only on an array field whose items are objects and whose items.required names keys every item carries, so a list of texts (the ticker) is never offered sponsors.
+- 2026-10-25 — PR #28 — Sponsors of one level sort by roll weight, heavier first, then by name in pt-BR order; slots by start, Cadastros' order on a tie.
+- 2026-10-25 — PR #28 — An entity list refreshed on air and found empty is sent as null on an optional field (the part leaves) and not sent on a required one (the last good list stays, rule 4).
+- 2026-10-25 — PR #28 — The six sponsor holds are theme tokens read through readMotionTokens, a level without its own token falling back to --motion-sponsor-hold.
+- 2026-10-25 — PR #28 — "Shared evenly" pages of a level differ by one sponsor at most, fuller pages first (13 on pages of six: 5 + 4 + 4).
+- 2026-10-25 — PR #28 — Level headings are stored in capitals in the kit ("PATROCÍNIO DIAMANTE"), so the text reads the same with or without the face's text-transform.
+- 2026-10-25 — PR #28 — Times of day on the boards are the OBS machine's local clock, the clock Cadastros types in; tests and screenshots pin America/Sao_Paulo.
+- 2026-10-25 — PR #28 — findStatusOfScheduleSlot takes `{ startsAtMs, endsAtMs? }` and lives in an import-free shared module so a graphic can run it on air; its label moved to scheduleSlotStatusLabel.ts.
+- 2026-10-25 — PR #28 — The narrow boards' head and frame are kit parts (boardHead, boardStyles); the standings keeps its own wide head for now, a follow-up moving it onto boardHead.
+- 2026-10-25 — PR #28 — An integer marked `v_baja.unit: "epochMs"` gets the item editor's date-and-time input and is sent as milliseconds.
+- 2026-10-25 — PR #28 — Each new manifest declares its longest play-in as the playAction duration (the sessions board's twelve rows: 830 ms), as the standings does.
+- 2026-10-25 — PR #28 — With more than twelve slots the sessions board shows twelve from two before the slot in progress (or the next to start; with none to come, the last twelve), the window moving with no motion and only changed statuses crossfading.
+- 2026-10-25 — PR #28 — A slot's state crossfades with three stacked state layers, so the colours are exactly the design's tokens with no class swap mid-fade.
+- 2026-10-25 — PR #28 — Graphics that count are screenshot with Playwright's page clock installed and paused at the design's moment, never a frozen clock, since GSAP reads the clock and would hang a play-in.
+- 2026-10-25 — PR #28 — The bug card's and the clock card's styles move into the kit (bugCardStyles, clockCardStyles), shared with the roll's corner and the countdown card, the sponsor bug's and the race clock's screenshots unchanged.
+- 2026-10-25 — PR #28 — Every element GSAP moves is the only child of a wrapper Lit renders, because GSAP moves an element without an offsetParent out and back past Lit's markers.
+- 2026-10-25 — PR #28 — A sponsor list that shrinks on air under the page shown goes back to page 1 in place, an update during a motion is drawn when the motion ends, and one page left stops the timer.
+- 2026-10-25 — PR #28 — Board subtitles keep a 1.3 line box so accents above the cap height are never clipped; the baselines were rewritten with --update-snapshots=all because the 1% tolerance had hidden a missing "Í".
+- 2026-10-25 — PR #28 — The intermission's top five shows the first five of any list it is given, so a binding without "Primeiras N entradas" still draws five; a disqualified team shows "—" and never the leader's chip.
+- 2026-10-25 — PR #28 — The intermission's sponsor line pages by the roll's rule at four logos a page, on the same per-level holds.
+- 2026-10-25 — PR #28 — The standings' points text and row pills move into the kit (pointsText, standingsRowStyles), shared with the intermission's top five, the standings' screenshots unchanged.
+- 2026-10-25 — PR #28 — The intermission board's screenshots cover the full board on grey and black and the two combinations without the top five on grey only; the fourth combination (top five, no sponsors) is checked by the view tests.
+- 2026-10-25 — PR #28 — The four new graphics' dev and preview servers use ports 5210–5217.

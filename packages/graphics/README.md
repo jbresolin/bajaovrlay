@@ -13,6 +13,9 @@ graphic with two variants in one manifest (`variant`) and an on-air hold left to
 `lower-strip/` is the bar along the bottom: the clock block, the running order six cars a page.
 `message-ticker/` is the same bar with an "AVISO" label and one typed announcement a page.
 `sponsor-bug/` is the card top-left all day: the mark, the event word and one sponsor's logo.
+`countdown/`, `sessions-board/`, `sponsor-roll/` and `intermission-board/` (BAJAOVRLAY-46) are the
+narrow boards and cards that read whole lists from Cadastros ("Lista dos cadastros"); each README
+ends with a typical item, field by field.
 `kit/` (`@bajaovrlay/graphics-kit`) is not a graphic: it holds what the graphics share (the OGraf
 types, the play step rule, the page turner, timeline playback, the preview page's controls, the
 manifest validator for tests), bundled into each graphic by Vite; its README lists what is there.

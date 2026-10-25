@@ -11,7 +11,7 @@ whole width, its words centred; without sponsors there is no line. Start reading
 `intermissionBoardStyles.ts`, `intermissionBoardAnimations.ts`, `intermissionSponsorLine.ts` and
 `ptBR.ts`. Preview: `pnpm --filter @bajaovrlay/intermission-board dev`, then
 http://localhost:5216/preview.html (`?topFive=off`, `?sponsors=off`, `?stage=grey|black`,
-`?data=<JSON>`). Tests: `… test`; Playwright with the screenshots: `… test:e2e`.
+`?nextStartsAtMs=` to fix the start, `?data=<JSON>`). Tests: `… test`; Playwright with the screenshots: `… test:e2e`.
 
 ## A typical item: the break after the briefing
 
