@@ -54,7 +54,7 @@ export function buildMasterAndSupportSponsors(): Sponsors {
     {
       sponsorId: 'patrocinador-master',
       name: 'Mineradora Serra Azul',
-      tier: 'master',
+      tier: 'diamante',
       rollWeight: 10,
     },
     { sponsorId: 'apoio-pneus', name: 'Pneus Trilha', tier: 'apoio', rollWeight: 2 },

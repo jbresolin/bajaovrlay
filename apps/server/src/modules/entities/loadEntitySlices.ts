@@ -2,6 +2,7 @@
 import { type Slices, SlicesSchema } from '@bajaovrlay/shared';
 
 import type { SliceRow } from '../../core/db/tables.js';
+import { readStoredSponsorsInTheDesignsLevels } from './sponsorLevelMigration.js';
 
 /** The four slices of the entity library, as the store starts with them. */
 export type EntitySlicesAtBoot = Pick<Slices, 'teams' | 'people' | 'sponsors' | 'scheduleSlots'>;
@@ -12,6 +13,8 @@ export type EntitySlicesAtBoot = Pick<Slices, 'teams' | 'people' | 'sponsors' | 
  * nothing is seeded, because the library is the operator's own data. A row that fails
  * its schema (two teams with one car number, a team with no UF) stops the boot, as the
  * items row does: an item would otherwise resolve against a record nobody can read.
+ * The sponsors are read in the design's levels first (`master` becomes `diamante`,
+ * BAJAOVRLAY-46), because the check refuses the old name.
  */
 export function loadEntitySlices(storedRows: SliceRow[]): EntitySlicesAtBoot {
   const readStoredJson = (sliceName: keyof EntitySlicesAtBoot) =>
@@ -19,7 +22,9 @@ export function loadEntitySlices(storedRows: SliceRow[]): EntitySlicesAtBoot {
   return {
     teams: SlicesSchema.shape.teams.parse(readStoredJson('teams')),
     people: SlicesSchema.shape.people.parse(readStoredJson('people')),
-    sponsors: SlicesSchema.shape.sponsors.parse(readStoredJson('sponsors')),
+    sponsors: SlicesSchema.shape.sponsors.parse(
+      readStoredSponsorsInTheDesignsLevels(readStoredJson('sponsors')),
+    ),
     scheduleSlots: SlicesSchema.shape.scheduleSlots.parse(readStoredJson('scheduleSlots')),
   };
 }

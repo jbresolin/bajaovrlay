@@ -47,7 +47,7 @@ export function buildMasterSponsor(): Sponsor {
   return {
     sponsorId: 'patrocinador-master',
     name: 'Mineradora Serra Azul',
-    tier: 'master',
+    tier: 'diamante',
     rollWeight: 10,
   };
 }

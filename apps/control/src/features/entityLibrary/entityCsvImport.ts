@@ -197,7 +197,8 @@ function readOneLine(
 
 /**
  * A cell as the record field wants it: a whole number ("42"), a moment ("14/11/2026
- * 10:00"), a yes or no ("sim", "não" or "nao", any case), or the text as it is. A cell
+ * 10:00"), a yes or no ("sim", "não" or "nao", any case), a sponsor's level ("master"
+ * read as "diamante"), or the text as it is. A cell
  * that does not read is passed on as its text, so the schema refuses it with its own
  * pt-BR sentence ("Número do carro: um número inteiro a partir de 1.").
  */
@@ -211,7 +212,19 @@ function readCell(cellText: string, column: EntityCsvColumn): unknown {
       return readLocalDateTimeText(cellText) ?? cellText;
     case 'yesNo':
       return readYesOrNoCell(cellText);
+    case 'sponsorLevel':
+      return readSponsorLevelCell(cellText);
   }
+}
+
+/**
+ * A sponsor's level as written in a spreadsheet: "master", the top level's name before the
+ * design renamed it (BAJAOVRLAY-46), is "diamante", so the organisers' older files import;
+ * any other text is passed on, for the schema to accept or refuse with its own sentence.
+ * The export writes "diamante", so a file the page wrote never says "master".
+ */
+function readSponsorLevelCell(cellText: string): string {
+  return cellText === 'master' ? 'diamante' : cellText;
 }
 
 /**

@@ -17,6 +17,13 @@ export {
   type SponsorTier,
   SponsorTierSchema,
 } from './sponsor.js';
+// The six sponsor levels in round order (Diamante first, Realização last), with no Zod, so
+// graphics bundle the same list from `@bajaovrlay/shared/sponsorLevels`.
+export {
+  findPlaceOfSponsorLevelInRound,
+  type SponsorLevel,
+  sponsorLevelsInRoundOrder,
+} from './sponsorLevels.js';
 // A slot of the schedule, and the scheduleSlots slice (each id once).
 export {
   type ScheduleSlot,

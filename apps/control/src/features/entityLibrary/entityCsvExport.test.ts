@@ -57,7 +57,7 @@ function buildLibraryOfTheRaceWeekend(): EntityLibrary {
       {
         sponsorId: 'patrocinador-master',
         name: 'Mineradora Serra Azul',
-        tier: 'master',
+        tier: 'diamante',
         rollWeight: 10,
         // Its logo goes on the light plate (BAJAOVRLAY-23).
         logoOnLightPlate: true,
@@ -110,7 +110,7 @@ describe('writeRecordsAsCsv', () => {
     // (no choice), as the teams' column is.
     expect(csvText, 'the sponsors export').toBe(
       '﻿id;nome;cota;peso;placa_clara\r\n' +
-        'patrocinador-master;Mineradora Serra Azul;master;10;sim\r\n' +
+        'patrocinador-master;Mineradora Serra Azul;diamante;10;sim\r\n' +
         'apoio-pneus;Pneus Trilha;apoio;2;\r\n',
     );
   });

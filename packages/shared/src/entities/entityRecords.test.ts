@@ -261,7 +261,7 @@ describe('a sponsor', () => {
     return {
       sponsorId: 'patrocinador-master',
       name: 'Mineradora Serra Azul',
-      tier: 'master',
+      tier: 'diamante',
       rollWeight: 10,
     };
   }
@@ -278,11 +278,11 @@ describe('a sponsor', () => {
   });
 
   const refusedSponsors = [
-    // The tiers are the five the organisers sell; "diamante" is not one.
+    // The levels are the design's six (sponsorLevels.ts); "platina" is not one.
     {
-      name: 'refuses a tier outside the five',
-      change: { tier: 'diamante' },
-      expectedMessage: 'Cota: use master, ouro, prata, bronze ou apoio.',
+      name: 'refuses a level outside the six',
+      change: { tier: 'platina' },
+      expectedMessage: 'Cota: use diamante, ouro, prata, bronze, apoio ou realizacao.',
     },
     // A weight of 0 would mean "never in the roll"; deleting the sponsor says that.
     {

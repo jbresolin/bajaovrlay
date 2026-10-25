@@ -41,7 +41,7 @@ export function buildLibraryOfTheRaceWeekend(): EntityLibrary {
       {
         sponsorId: 'patrocinador-master',
         name: 'Mineradora Serra Azul',
-        tier: 'master',
+        tier: 'diamante',
         rollWeight: 10,
         logoMediaId: logoOfTheMasterSponsorMediaId,
         // Its logo comes on its own white box, so it goes on the light plate (BAJAOVRLAY-23).

@@ -28,7 +28,7 @@ function buildMasterSponsor() {
   return {
     sponsorId: 'patrocinador-master',
     name: 'Mineradora Serra Azul',
-    tier: 'master',
+    tier: 'diamante',
     rollWeight: 10,
     logoMediaId: '7d1e3a5c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e2d',
   };

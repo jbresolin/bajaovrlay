@@ -81,7 +81,7 @@ describe('buildCsvImportPreview of the sponsors’ light plate column', () => {
     // Arrange: two sponsors, the master's logo on the plate, the support's with no choice.
     const csv =
       'id;nome;cota;peso;placa_clara\n' +
-      'master;Mineradora Serra Azul;master;10;sim\n' +
+      'master;Mineradora Serra Azul;diamante;10;sim\n' +
       'apoio-pneus;Pneus Trilha;apoio;2;\n';
 
     // Act: build the preview.
@@ -112,13 +112,13 @@ describe('buildCsvImportPreview of an older sponsors file, without the column', 
         {
           sponsorId: 'master',
           name: 'Mineradora Serra Azul',
-          tier: 'master',
+          tier: 'diamante',
           rollWeight: 10,
           logoOnLightPlate: true,
         },
       ],
     };
-    const csv = 'id;nome;cota;peso\n' + 'master;Mineradora Serra Azul;master;8\n';
+    const csv = 'id;nome;cota;peso\n' + 'master;Mineradora Serra Azul;diamante;8\n';
 
     // Act: build the preview.
     const preview = buildCsvImportPreview('sponsor', csv, library, createPredictableIdMaker());
@@ -128,7 +128,7 @@ describe('buildCsvImportPreview of an older sponsors file, without the column', 
     expect(preview.rows[0]?.record, 'the new weight, and the stored plate kept').toEqual({
       sponsorId: 'master',
       name: 'Mineradora Serra Azul',
-      tier: 'master',
+      tier: 'diamante',
       rollWeight: 8,
       logoOnLightPlate: true,
     });

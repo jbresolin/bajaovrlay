@@ -8,7 +8,7 @@ are `entityRecordForm.ts`; an image uploads at once (`EntityImageField.tsx`, `im
 
 CSV columns (`entityCsvColumns.ts`, `;` or `,`, header first, images never): Equipes `carro*`,
 `equipe*`, `escola*`, `escola_completa`, `cidade`, `uf`; Pessoas `id`, `nome*`, `funcao*`,
-`carro`; Patrocinadores `id`, `nome*`, `cota*` (master, ouro, prata, bronze, apoio), `peso*`
+`carro`; Patrocinadores `id`, `nome*`, `cota*` (diamante, ouro, prata, bronze, apoio, realizacao; "master" read as diamante), `peso*`
 (1–10); Programação `id`, `sessao*`, `prova*`, `inicio*`, `fim`, `local` (dates "14/11/2026
 10:00", this computer's clock). A known key updates, keeping images and any field whose
 column the file lacks; a blank id is new.

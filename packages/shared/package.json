@@ -15,6 +15,11 @@
       "types": "./dist/clock/index.d.ts",
       "default": "./dist/clock/index.js"
     },
+    "./sponsorLevels": {
+      "@bajaovrlay/source": "./src/entities/sponsorLevels.ts",
+      "types": "./dist/entities/sponsorLevels.d.ts",
+      "default": "./dist/entities/sponsorLevels.js"
+    },
     "./raceTimeText": {
       "@bajaovrlay/source": "./src/raceTimeText/index.ts",
       "types": "./dist/raceTimeText/index.d.ts",

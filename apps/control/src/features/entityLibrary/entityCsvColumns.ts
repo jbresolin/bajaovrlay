@@ -10,10 +10,11 @@ import type { EntityType } from '@bajaovrlay/shared';
  */
 
 /**
- * How a cell is read into the record: as text, as a whole number, as a date and time, or
- * as a yes or no ("sim" / "não").
+ * How a cell is read into the record: as text, as a whole number, as a date and time, as
+ * a yes or no ("sim" / "não"), or as a sponsor's level (the text, with the old top level
+ * "master" read as "diamante", BAJAOVRLAY-46).
  */
-export type CsvCellKind = 'text' | 'wholeNumber' | 'localDateTime' | 'yesNo';
+export type CsvCellKind = 'text' | 'wholeNumber' | 'localDateTime' | 'yesNo' | 'sponsorLevel';
 
 /** One column: its name in the header, the record field it fills, how, and whether required. */
 export type EntityCsvColumn = {
@@ -57,7 +58,7 @@ const csvColumnsByEntityType: Record<EntityType, EntityCsvColumn[]> = {
   sponsor: [
     { columnName: 'id', recordFieldKey: 'sponsorId', cellKind: 'text', isRequired: false },
     { columnName: 'nome', recordFieldKey: 'name', cellKind: 'text', isRequired: true },
-    { columnName: 'cota', recordFieldKey: 'tier', cellKind: 'text', isRequired: true },
+    { columnName: 'cota', recordFieldKey: 'tier', cellKind: 'sponsorLevel', isRequired: true },
     { columnName: 'peso', recordFieldKey: 'rollWeight', cellKind: 'wholeNumber', isRequired: true },
     {
       columnName: 'placa_clara',
