@@ -20,8 +20,9 @@
  *   - stopAction, dispose and leaving the page each end a running crossfade at once: the
  *     current layer wears the new trend and nothing is animating any more. Each test fails
  *     if the finish is taken out of that path.
- *   - An update during the stop-out changes nothing on screen and starts no crossfade; the
- *     card is drawn with it once it is off screen.
+ *   - An update during the stop-out changes nothing on screen and starts no crossfade, even
+ *     when something asks Lit to redraw; the card is drawn with it once it is off screen,
+ *     or before the play-in when a play cuts the stop-out short.
  *
  * What these tests deliberately do not cover:
  *   - The rule that picks the trend; battleTrend.test.ts.
@@ -232,6 +233,42 @@ describe('the ends of a running crossfade', () => {
 });
 
 describe('an update during the stop-out', () => {
+  it('never reaches the card fading out, whatever asks Lit to redraw (gate 2 of PR #27)', async () => {
+    // Arrange: a card on air closing by 0,7 s, its stop-out started and lap 3 stored.
+    const battleCard = await putBattleCardOnAirClosing();
+    const pendingStop = battleCard.stopAction({});
+    await letThePageCatchUp();
+    await battleCard.updateAction({ data: openingAtLapThree });
+
+    // Act: something else asks Lit to redraw the card while it fades out.
+    battleCard.requestUpdate();
+    await battleCard.updateComplete;
+    const gapWhileFadingOut = readShownText(battleCard, 'battle-card-gap');
+    await pendingStop;
+
+    // Assert: the fading card still shows what was on air; the new gap only after it.
+    expect(gapWhileFadingOut, 'a redraw during the stop-out must draw the data on air').toBe(
+      '+1,3',
+    );
+    expect(readShownText(battleCard, 'battle-card-gap'), 'drawn after the stop').toBe('+2,0');
+  });
+
+  it('is drawn before the play-in when a play cuts the stop-out short', async () => {
+    // Arrange: a card on air, its stop-out started and lap 3 stored meanwhile.
+    const battleCard = await putBattleCardOnAirClosing();
+    const pendingStop = battleCard.stopAction({});
+    await letThePageCatchUp();
+    await battleCard.updateAction({ data: openingAtLapThree });
+
+    // Act: the operator takes it again before the stop-out ends.
+    await battleCard.playAction({ skipAnimation: true });
+    await pendingStop;
+
+    // Assert: it comes back in with lap 3's gap and trend, not the stale ones.
+    expect(readShownText(battleCard, 'battle-card-gap'), 'the gap stored meanwhile').toBe('+2,0');
+    expect(readShownText(battleCard, 'battle-card-trend-words'), 'its trend').toBe('ABRINDO +0,7');
+  });
+
   it('only stores the data, and the card is drawn with it once off screen', async () => {
     // Arrange: a card on air closing by 0,7 s, its stop-out started (250 ms).
     const battleCard = await putBattleCardOnAirClosing();

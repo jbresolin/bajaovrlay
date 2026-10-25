@@ -89,9 +89,11 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
-  // Read by render(); not Lit reactive properties, so the card is redrawn only when this
-  // file asks (redraw), never by surprise.
+  // The latest data, and the data drawn on screen, which render() reads: an update during
+  // the stop-out changes only the first, so no redraw can reach the card fading out (gate
+  // 2 of PR #27). Not Lit reactive properties: the card is redrawn only when asked.
   private data: BattleCardData | undefined = undefined;
+  private dataOnScreen: BattleCardData | undefined = undefined;
   private trendOnScreen: TrendShown | undefined = undefined;
   private incomingTrend: TrendShown | undefined = undefined;
   private trendMemory: TrendMemory = emptyTrendMemory;
@@ -102,7 +104,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
   private runningTrendCrossfade: RunningTrendCrossfade | undefined = undefined;
 
   override render() {
-    const data = this.data;
+    const data = this.dataOnScreen;
     const trendOnScreen = this.trendOnScreen;
     if (data === undefined || trendOnScreen === undefined) {
       return renderBattleCardTemplate(undefined);
@@ -177,6 +179,10 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'onAir';
     this.currentStep = target.step;
+    // A play that cut a stop-out short comes in with the data stored meanwhile.
+    if (this.dataOnScreen !== this.data) {
+      await this.redrawAtRest();
+    }
     await this.runPiecesTimeline(buildPlayInTimeline(this.requireParts()), skipAnimation);
 
     if (this.readLifecycleNow() === 'disposed') {
@@ -285,6 +291,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
 
   /** Draws the data with the trend wanted on both layers, and waits until Lit has drawn it. */
   private async redrawAtRest(): Promise<void> {
+    this.dataOnScreen = this.data;
     const trendWanted = this.chooseTrendWanted();
     this.trendOnScreen = trendWanted;
     this.incomingTrend = trendWanted;
@@ -304,6 +311,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
       return;
     }
 
+    this.dataOnScreen = this.data;
     this.incomingTrend = trendWanted;
     this.requestUpdate();
     await this.updateComplete;
