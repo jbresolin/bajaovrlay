@@ -84,6 +84,10 @@ export {
 } from './commands/reportInstanceStatus.js';
 // clearLayer: take everything off one layer.
 export { type ClearLayerCommand, ClearLayerCommandSchema } from './commands/clearLayer.js';
+// nextOnLayer ("Próximo"): the next OGraf step of what is on air on a layer, and the shared
+// step rule: a graphic's step count and the step an instance goes to next (BAJAOVRLAY-47).
+export { type NextOnLayerCommand, NextOnLayerCommandSchema } from './steps/nextOnLayer.js';
+export { findNextStepOfInstance, readStepCountOfGraphic } from './steps/graphicSteps.js';
 // clearAll: take everything off every layer.
 export { type ClearAllCommand, ClearAllCommandSchema } from './commands/clearAll.js';
 // Every command, told apart by `type`; the only way state changes.

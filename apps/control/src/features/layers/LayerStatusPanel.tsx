@@ -1,4 +1,9 @@
-import type { Graphic, Instance } from '@bajaovrlay/shared';
+import {
+  findNextStepOfInstance,
+  type Graphic,
+  type Instance,
+  readStepCountOfGraphic,
+} from '@bajaovrlay/shared';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
@@ -25,7 +30,8 @@ const relativeTimeRefreshIntervalInMilliseconds = 10_000;
  * changes when the server's next instances slice arrives, not before.
  * A row whose instance was changed on air offers "Salvar no item" and one with no item
  * "Salvar como item" (useSavesFromCamadas.ts); either may first ask about a clock's
- * moment (WallClockChoiceDialog.tsx).
+ * moment (WallClockChoiceDialog.tsx). A graphic shown in steps offers "Próximo"
+ * (`nextOnLayer`, BAJAOVRLAY-47).
  */
 export function LayerStatusPanel() {
   const layers = useServerState((state) => state.layers);
@@ -113,12 +119,21 @@ export function LayerStatusPanel() {
                     ? undefined
                     : () => saves.pressSaveAsItem(instanceOnProgram, homeOfItemSavedFromCamadas)
                 }
+                stepOnProgram={describeStepOnProgram(instanceOnProgram, graphicOnProgram)}
+                onNextStepPressed={
+                  instanceOnProgram === undefined ||
+                  findNextStepOfInstance(instanceOnProgram, graphicOnProgram) === undefined
+                    ? undefined
+                    : () => void sendCommand({ type: 'nextOnLayer', layerId: layer.id })
+                }
               />
             );
           })}
         </ul>
         {/* "Limpar" and "Limpar tudo" show their refusals below the panel (AppShell.tsx). */}
-        <CommandErrorMessage commandTypes={['previewClearLayer', 'saveOnAirChangesIntoItem']} />
+        <CommandErrorMessage
+          commandTypes={['previewClearLayer', 'saveOnAirChangesIntoItem', 'nextOnLayer']}
+        />
         {saves.noteAboutTheLastSave !== null && (
           <p role="status" className="text-sm text-muted-foreground">
             {saves.noteAboutTheLastSave}
@@ -132,6 +147,21 @@ export function LayerStatusPanel() {
       </CardContent>
     </Card>
   );
+}
+
+/**
+ * Where the instance on air stands among its graphic's steps, counted from 1 as the
+ * operator reads it; undefined for an empty layer or a graphic of one step.
+ */
+function describeStepOnProgram(
+  instanceOnProgram: Instance | undefined,
+  graphicOnProgram: Graphic | undefined,
+): { stepNumber: number; stepCount: number } | undefined {
+  const stepCount = readStepCountOfGraphic(graphicOnProgram);
+  if (instanceOnProgram === undefined || stepCount === 1) {
+    return undefined;
+  }
+  return { stepNumber: instanceOnProgram.currentStep + 1, stepCount };
 }
 
 /** The instance on air on a layer: the one on the program output. */

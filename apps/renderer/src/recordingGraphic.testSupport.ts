@@ -16,6 +16,8 @@ export type RecordingGraphicLoader = {
   lifecycleCalls: string[];
   /** What each `load` was given, oldest first. */
   loadParams: OGrafLoadParams[];
+  /** The step each `playAction` was asked to go to (`goto`), oldest first (BAJAOVRLAY-47). */
+  stepsPlayed: Array<number | undefined>;
   /** Lets every load that was told to wait (see below) finish. */
   releaseLoadsThatWait: () => void;
   /** Lets every play that was told to wait (see below) finish. */
@@ -47,6 +49,7 @@ export function createRecordingGraphicLoader(
 ): RecordingGraphicLoader {
   const lifecycleCalls: string[] = [];
   const loadParams: OGrafLoadParams[] = [];
+  const stepsPlayed: Array<number | undefined> = [];
   let releaseLoadsThatWait: () => void = () => undefined;
   const loadsMayFinish = new Promise<void>((resolve) => {
     releaseLoadsThatWait = resolve;
@@ -85,8 +88,9 @@ export function createRecordingGraphicLoader(
       return { statusCode: 200 };
     }
 
-    async playAction(params: { skipAnimation?: boolean }): Promise<unknown> {
+    async playAction(params: { skipAnimation?: boolean; goto?: number }): Promise<unknown> {
       this.recordCall('playAction', params);
+      stepsPlayed.push(params.goto);
       if (this.playOutcome === 'rejects') {
         throw new Error('O gráfico de teste foi instruído a falhar no playAction.');
       }
@@ -121,6 +125,7 @@ export function createRecordingGraphicLoader(
     graphicLoader: { defineGraphicElement: async () => tagName },
     lifecycleCalls,
     loadParams,
+    stepsPlayed,
     releaseLoadsThatWait: () => releaseLoadsThatWait(),
     releasePlaysThatWait: () => releasePlaysThatWait(),
   };

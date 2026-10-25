@@ -33,7 +33,8 @@
  *     stage built by stageWithPlayer.testSupport.ts.
  *   - What each call logs and what counts as "accepted"; lifecycleCall.test.ts.
  *   - Which operations a change of the slice produces; instanceReconciler.test.ts.
- *   - Two of the five operation kinds: `updateData` (updateAction on the graphic already
+ *   - Playing another step of a graphic (`goToStep`); instancePlayer.steps.test.ts.
+ *   - Two of the other five operation kinds: `updateData` (updateAction on the graphic already
  *     on air) and `disposeAtOnce` (the clear before the stage is rebuilt after a
  *     reconnect). e2e/lifecycle.e2e.ts covers both in Chromium, in its "update" and
  *     "reconnect" tests.

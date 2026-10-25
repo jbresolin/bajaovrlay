@@ -58,6 +58,13 @@ export type LayerStatusRowProps = {
   onSaveIntoItemPressed: (() => void) | undefined;
   /** "Salvar como item": only for an instance on program with no item ("sem item"). */
   onSaveAsItemPressed: (() => void) | undefined;
+  /**
+   * Where a graphic shown in steps is ("Passo 2 de 4", counting from 1), for the instance
+   * on program; undefined for a graphic of one step or an empty layer (BAJAOVRLAY-47).
+   */
+  stepOnProgram: { stepNumber: number; stepCount: number } | undefined;
+  /** "Próximo": the next step; undefined on the last one, where the button is off. */
+  onNextStepPressed: (() => void) | undefined;
 };
 
 /**
@@ -78,6 +85,8 @@ export type LayerStatusRowProps = {
  * carries the chip beside "em prévia", for information only. A row whose instance reads a
  * source live says when that source is late, failing or deleted, and when a correction
  * changed a bound value (features/bindings/BoundSourceChips.tsx, BAJAOVRLAY-20).
+ * A graphic shown in steps (the podium) says where it is, "Passo 2 de 4", and offers
+ * "Próximo" (nextOnLayer, BAJAOVRLAY-47), off on its last step.
  * Deliberate: the preview gets no status badge, because its status stays "loading" for
  * good (the pages that draw previews never report), so a badge would read "Carregando"
  * and mean nothing.
@@ -121,6 +130,14 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
               statusDetail={instanceOnProgram.statusDetail}
             />
             <BoundSourceChips instance={instanceOnProgram} graphic={props.graphicOnProgram} />
+            {props.stepOnProgram === undefined ? null : (
+              <span className="text-muted-foreground">
+                {ptBR.layers.stepOfSteps(
+                  props.stepOnProgram.stepNumber,
+                  props.stepOnProgram.stepCount,
+                )}
+              </span>
+            )}
           </span>
         )}
         <span className="flex flex-wrap items-center gap-1">
@@ -156,11 +173,25 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           )}
         </span>
       </div>
-      {/* Always pressable when connected, even on an empty layer: clearing an empty
-          layer is harmless, and a panic press must never find a dead button. */}
-      <ActionButton variant="outline" size="sm" onClick={onClearPressed}>
-        {ptBR.layers.clearLayerButton}
-      </ActionButton>
+      <span className="flex items-center gap-2">
+        {/* Off on the last step rather than gone, so the operator sees the graphic is done
+            and that "Limpar" is what comes next. */}
+        {props.stepOnProgram === undefined ? null : (
+          <ActionButton
+            variant="outline"
+            size="sm"
+            disabled={props.onNextStepPressed === undefined}
+            onClick={props.onNextStepPressed}
+          >
+            {ptBR.layers.nextStepButton}
+          </ActionButton>
+        )}
+        {/* Always pressable when connected, even on an empty layer: clearing an empty
+            layer is harmless, and a panic press must never find a dead button. */}
+        <ActionButton variant="outline" size="sm" onClick={onClearPressed}>
+          {ptBR.layers.clearLayerButton}
+        </ActionButton>
+      </span>
     </li>
   );
 }

@@ -33,6 +33,11 @@ export const ptBR = {
     // "Tomar" was pressed for a layer whose preview is empty (already taken or discarded).
     layerPreviewEmpty: (layerName: string) =>
       `Não há nada em prévia na camada "${layerName}" para colocar no ar.`,
+    // "Próximo" on a layer with nothing on air, or on a graphic with no step left
+    // (BAJAOVRLAY-47).
+    nothingOnAirOnLayer: (layerName: string) => `Não há nada no ar na camada "${layerName}".`,
+    noNextStep: (graphicName: string, layerName: string) =>
+      `"${graphicName}" já está no último passo em "${layerName}". Use Limpar para tirá-lo do ar.`,
     // The four ways a take's or an update's data can fail the graphic's manifest
     // schema. The first three name the field, so the operator knows what to correct.
     graphicDataFieldMissing: (graphicId: string, fieldPath: string) =>

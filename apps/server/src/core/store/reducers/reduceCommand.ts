@@ -11,6 +11,7 @@ import { reduceMediaCommand } from '../../../modules/media/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
 import { dropBindingsOfInstancesGone } from './instanceBindingsBookkeeping.js';
+import { reduceNextOnLayer } from './nextOnLayer.js';
 import { reducePreviewClearLayer } from './previewClearLayer.js';
 import { reducePreviewItem } from './previewItem.js';
 import { reducePreviewMacro } from './previewMacro.js';
@@ -64,6 +65,9 @@ function reduceCommandOfItsType(
       return reduceClearLayer(slices, command);
     case 'clearAll':
       return reduceClearAll(slices);
+    // "Próximo": the next step of the graphic on air on a layer (BAJAOVRLAY-47).
+    case 'nextOnLayer':
+      return reduceNextOnLayer(slices, command);
     // The three commands of the preview output.
     case 'previewItem':
       return reducePreviewItem(slices, command, context);

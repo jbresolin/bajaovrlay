@@ -49,6 +49,10 @@ export const CommandErrorCodeSchema = z.enum([
   'LAYER_PREVIEW_EMPTY',
   /** takeAllPreviews ("Tomar tudo") found no preview instance and no "will be cleared" marker. */
   'NOTHING_IN_PREVIEW',
+  /** nextOnLayer ("Próximo") named a layer with nothing on its program output (BAJAOVRLAY-47). */
+  'NOTHING_ON_AIR_ON_LAYER',
+  /** nextOnLayer named a layer whose graphic has one step, or is on its last step. */
+  'NO_NEXT_STEP',
   /** The command names a quick-fire panel that does not exist. */
   'QUICK_FIRE_PANEL_NOT_FOUND',
   /** deleteQuickFirePanel named a panel that still has items. */

@@ -25,9 +25,9 @@
  *   - A page told to draw the `preview` output instead (`/render/?target=preview`);
  *     instanceReconciler.preview.test.ts. Every test here draws `program`.
  *   - Rebuilding the whole stage after a reconnect; instanceReconciler.rebuild.test.ts.
+ *   - A change of `currentStep` ("Próximo"); instanceReconciler.steps.test.ts.
  *   - Calling the graphics (load, playAction, ...); e2e/lifecycle.e2e.ts checks that in
  *     a real browser.
- *   - A change of `currentStep`; stepping through a graphic is a later task.
  */
 import { describe, expect, it } from 'vitest';
 

@@ -24,7 +24,11 @@ import type { Graphic, Instance, InstanceStatusMessage } from '@bajaovrlay/share
 
 import type { GraphicLoader } from './graphicLoader.js';
 import { type GraphicOnLayer, loadInstanceIntoItsLayer } from './instanceLoading.js';
-import type { InstanceOperation, LayerOperations } from './instanceReconciler.js';
+import {
+  findInstanceAnOperationPutsOnAir,
+  type InstanceOperation,
+  type LayerOperations,
+} from './instanceReconciler.js';
 import type { LayerContainers } from './layerContainers.js';
 import { makeLifecycleCall } from './lifecycleCall.js';
 import { logRendererEvent } from './rendererLog.js';
@@ -116,6 +120,10 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
       await updateDataOfInstance(layerId, operation.instanceId, operation.changedData);
       return;
     }
+    if (operation.kind === 'goToStep') {
+      await playStepOfInstance(layerId, operation.instanceId, operation.step);
+      return;
+    }
     if (operation.kind === 'stopAndDispose') {
       await stopAndDisposeInstance(layerId, operation.instanceId, false);
       return;
@@ -166,7 +174,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
       return;
     }
     graphicOnLayerByLayerId.set(instance.layerId, graphicOnLayer);
-    await playGraphicAndReportHowItWent(graphicOnLayer, skipAnimation);
+    await playGraphicAndReportHowItWent(graphicOnLayer, skipAnimation, instance.currentStep);
   }
 
   /**
@@ -207,7 +215,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
     // that draws nothing until it is played shows nothing until the play below is done.
     incomingGraphic.element.style.removeProperty('visibility');
     graphicOnLayerByLayerId.set(layerId, incomingGraphic);
-    await playGraphicAndReportHowItWent(incomingGraphic, true);
+    await playGraphicAndReportHowItWent(incomingGraphic, true, incomingInstance.currentStep);
   }
 
   /**
@@ -244,12 +252,14 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
   }
 
   /**
-   * Plays step 0 of a loaded graphic and tells the server how it ended: `on-air` once the
-   * playAction has resolved and was accepted, `failed` with the reason otherwise.
+   * Plays the instance's step of a loaded graphic (0 at a take; later on a rebuild after
+   * "Próximo", so a reloaded podium keeps its places) and tells the server how it ended:
+   * `on-air` once the playAction resolved and was accepted, `failed` with the reason otherwise.
    */
   async function playGraphicAndReportHowItWent(
     graphicOnLayer: GraphicOnLayer,
     skipAnimation: boolean,
+    step: number,
   ): Promise<void> {
     const { subject, element } = graphicOnLayer;
     const playOutcome = await makeLifecycleCall(
@@ -258,7 +268,7 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
         action: 'playAction',
         skipAnimation,
         run: () =>
-          element.playAction(skipAnimation ? { goto: 0, skipAnimation: true } : { goto: 0 }),
+          element.playAction(skipAnimation ? { goto: step, skipAnimation: true } : { goto: step }),
       },
       logEvent,
     );
@@ -296,6 +306,30 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
         action: 'updateAction',
         skipAnimation: false,
         run: () => graphicOnLayer.element.updateAction({ data: changedData }),
+      },
+      logEvent,
+    );
+  }
+
+  /**
+   * Plays another step ("Próximo") of this instance's graphic, if it is on its layer. A
+   * refused step is only logged: the graphic stays at the step it was showing.
+   */
+  async function playStepOfInstance(
+    layerId: string,
+    instanceId: string,
+    step: number,
+  ): Promise<void> {
+    const graphicOnLayer = findGraphicOfInstance(layerId, instanceId, 'goToStep');
+    if (graphicOnLayer === undefined) {
+      return;
+    }
+    await makeLifecycleCall(
+      graphicOnLayer.subject,
+      {
+        action: 'playAction',
+        skipAnimation: false,
+        run: () => graphicOnLayer.element.playAction({ goto: step }),
       },
       logEvent,
     );
@@ -363,15 +397,4 @@ export function createInstancePlayer(options: InstancePlayerOptions): InstancePl
   }
 
   return { runLayerOperations };
-}
-
-/** The instance an operation is meant to put on air, or undefined when it puts none. */
-function findInstanceAnOperationPutsOnAir(operation: InstanceOperation): Instance | undefined {
-  if (operation.kind === 'loadAndPlay') {
-    return operation.instance;
-  }
-  if (operation.kind === 'replace') {
-    return operation.incomingInstance;
-  }
-  return undefined;
 }
