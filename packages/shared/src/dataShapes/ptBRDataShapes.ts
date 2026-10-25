@@ -171,6 +171,18 @@ export const ptBRDataShapes = {
       `numa melhor de ${bestOf} o vencedor tem ${winsNeeded} vitórias, aqui ${wins}`,
     loserWithTheWins: (bestOf: number, winsNeeded: number, wins: number) =>
       `numa melhor de ${bestOf} quem perde tem menos de ${winsNeeded} vitórias, aqui ${wins}`,
+    seriesWonWithoutWinner: (bestOf: number, winsNeeded: number, carNumber: number) =>
+      `com ${winsNeeded} vitórias numa melhor de ${bestOf} o carro ${carNumber} já venceu; falta o vencedor`,
+    roundOfTheWrongSize: (
+      roundName: string,
+      matchCount: number,
+      matchCountBefore: number,
+      expectedMatchCount: number,
+    ) =>
+      `a fase "${roundName}" tem ${matchCount} disputas, mas depois de uma fase de ${matchCountBefore} precisa de ${expectedMatchCount} (uma fase só é listada inteira)`,
+    thirdPlaceOfOtherThanOneMatch: (matchCount: number) =>
+      `a disputa de 3º lugar é uma disputa só, aqui ${matchCount}`,
+    matchIdListedTwice: (matchId: string) => `a disputa "${matchId}" aparece mais de uma vez`,
     thirdPlaceListedTwice: 'só uma fase pode ser a disputa de 3º lugar',
     thirdPlaceBeforeSemifinals:
       'a disputa de 3º lugar vem depois das semifinais (a fase de duas disputas)',

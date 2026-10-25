@@ -778,28 +778,6 @@
       ]
     },
     {
-      "name": "Final",
-      "matches": [
-        {
-          "matchId": "r6-m1",
-          "bestOf": 3,
-          "carA": {
-            "carNumber": 2,
-            "teamName": "Baja UFMG",
-            "schoolName": "UFMG",
-            "wins": 2
-          },
-          "carB": {
-            "carNumber": 10,
-            "teamName": "Komiketo",
-            "schoolName": "UFSJ",
-            "wins": 0
-          },
-          "winnerCarNumber": 2
-        }
-      ]
-    },
-    {
       "name": "Disputa de 3º lugar",
       "isThirdPlace": true,
       "matches": [
@@ -819,6 +797,28 @@
             "wins": 1
           },
           "winnerCarNumber": 17
+        }
+      ]
+    },
+    {
+      "name": "Final",
+      "matches": [
+        {
+          "matchId": "r6-m1",
+          "bestOf": 3,
+          "carA": {
+            "carNumber": 2,
+            "teamName": "Baja UFMG",
+            "schoolName": "UFMG",
+            "wins": 2
+          },
+          "carB": {
+            "carNumber": 10,
+            "teamName": "Komiketo",
+            "schoolName": "UFSJ",
+            "wins": 0
+          },
+          "winnerCarNumber": 2
         }
       ]
     }

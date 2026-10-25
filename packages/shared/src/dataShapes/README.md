@@ -9,7 +9,8 @@ Conventions: times are integer milliseconds (durations like `lastLapMs`, moments
 `updatedAtMs` on the server's clock); every entry repeats `carNumber`, `teamName` and
 `schoolName`; optional means "the source does not know", never a placeholder. Positions take
 what a source gives (gate 2 of PR #16). Brackets (`bracketsShape.ts`, BAJAOVRLAY-25) carry
-best of N (`bestOf`, `wins`), W.O. (`walkover`), byes (no `carB`) and one third-place round;
+best of N (`bestOf`, `wins`), W.O. (`walkover`), byes (no `carB`) and one third-place round,
+checked by `bracketMatchRules.ts` and `bracketRoundsRules.ts` (a round is listed whole);
 `samples/brackets.super-prime.json` is the real Super Prime of the 30ª Competição.
 Standings carry the score's parts as the source names them (`scoreParts`, `pointsByPart`) and
 keep disqualified teams, unranked, at the end (`isDisqualified`, BAJAOVRLAY-24).

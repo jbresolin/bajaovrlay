@@ -17,13 +17,15 @@
  *   - Each rule refuses its mistake with the exact pt-BR sentence the operator reads on
  *     "Fontes", at the path of the bad field: times and wins mixed in one match, wins
  *     without a best of N, an even best of N, wins over what the series needs, a decided
- *     best of N whose winner lacks the wins (or whose loser has them too), a bye that is
- *     not carA's W.O., and a W.O. with no winner.
+ *     best of N whose winner lacks the wins (or whose loser has them too), an undecided one
+ *     where a car already has them, a bye that is not carA's W.O. (or whose series is
+ *     wrong in the same ways as any match's), and a W.O. with no winner.
  *
  * What these tests deliberately do not cover:
  *   - The two rules the draft already had (two different cars, a winner who is one of
  *     them); dataShapes.test.ts keeps them with the other shapes' refusals.
- *   - The rounds (the third place, the real Super Prime): bracketsShapeRounds.test.ts.
+ *   - The rounds (their sizes, the third place, a car or a match id listed twice, the real
+ *     Super Prime): bracketsShapeRounds.test.ts.
  *   - Pending slots ("Vencedor J12", "A DEFINIR"): the shape has none, so a source lists a
  *     match only once both its cars are known (the simulator's rule, simulatedBracket.ts).
  */
@@ -252,6 +254,37 @@ describe('a match that contradicts itself', () => {
       match: { matchId: 'r1-m2', walkover: true, carA: corisco, carB: buffalo },
       expectedErrorMessage:
         'Dados inválidos em "brackets.rounds.0.matches.0.winnerCarNumber": uma vitória por W.O. precisa do vencedor.',
+    },
+    // Two wins in a best of 3 end the series: a winner must be named with them.
+    {
+      name: 'refuses an undecided best of 3 where a car already has two wins',
+      match: {
+        matchId: 'final-1',
+        bestOf: 3,
+        carA: { ...bajaUfmg, wins: 2 },
+        carB: { ...komiketo, wins: 1 },
+      },
+      expectedErrorMessage:
+        'Dados inválidos em "brackets.rounds.0.matches.0.carA.wins": com 2 vitórias numa melhor de 3 o carro 2 já venceu; falta o vencedor.',
+    },
+    // A bye goes through the series checks too: an even best of N is a typo there as well.
+    {
+      name: 'refuses a bye with a best of an even number',
+      match: { matchId: 'r1-m1', bestOf: 2, walkover: true, carA: bajaUfmg, winnerCarNumber: 2 },
+      expectedErrorMessage:
+        'Dados inválidos em "brackets.rounds.0.matches.0.bestOf": uma disputa melhor de N precisa de N ímpar, aqui 2.',
+    },
+    // ...and its car's wins need a series to count in.
+    {
+      name: 'refuses wins on a bye that is not a best of N',
+      match: {
+        matchId: 'r1-m1',
+        walkover: true,
+        carA: { ...bajaUfmg, wins: 0 },
+        winnerCarNumber: 2,
+      },
+      expectedErrorMessage:
+        'Dados inválidos em "brackets.rounds.0.matches.0.carA.wins": vitórias só existem numa disputa melhor de N (bestOf).',
     },
   ];
 

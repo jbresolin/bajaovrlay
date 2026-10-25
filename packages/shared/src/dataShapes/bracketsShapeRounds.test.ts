@@ -6,17 +6,27 @@
  *   first. One of them may be the third-place match (`isThirdPlace`), run by the
  *   semifinals' losers, which the graphic draws at the foot of the final's column.
  *   bracketsShape.test.ts covers one match's rules; this file covers the rounds.
+ *   A source lists a round only once every match in it is known (gate 2 of PR #30,
+ *   contract A), so each round after the first has half the matches of the one before,
+ *   rounded up, whatever was decided; and it lists the third place no later than the
+ *   final (contract C), which the step plan's tests cover.
  *
  * What these tests prove:
- *   - A third place after the semifinals passes, after the final too (the real export's
- *     order); a second third place, one before the semifinals, and one in brackets with
- *     no semifinals are refused at that round, with the pt-BR sentence the operator reads.
+ *   - Every round after the first has exactly ceil(previous ÷ 2) matches: a round listed
+ *     part way (4 of 8 oitavas) and rounds listed in reverse (an endpoint ordered by its
+ *     round code) are refused at the round that breaks it; the first round may have any
+ *     number, and the third place stands outside the count.
+ *   - A third place before the final passes, and so does one after it (the shape does not
+ *     refuse it; the contract asks for it before); a second third place, one before the
+ *     semifinals, one in brackets with no semifinals and one of two matches are refused.
+ *   - A car appears at most once in a round, and a match id once in the whole brackets.
  *   - The real Super Prime of the 30ª Competição (33 cars in 64 slots) passes as a whole,
- *     and reads like the real draw: 31 byes, best of 3 from the semifinals on.
+ *     and reads like the real draw: 31 byes, best of 3 from the semifinals on, the third
+ *     place listed before the final.
  *
  * What these tests deliberately do not cover:
  *   - Whether a round's winners are really the next round's cars: progression is the
- *     source's, and a source mid-update may list a round before the last one is written.
+ *     source's; the shape checks the sizes, not who advanced.
  */
 import { readFileSync } from 'node:fs';
 
@@ -54,14 +64,89 @@ function readSamplePayload(fileName: string): unknown {
   return JSON.parse(readFileSync(sampleUrl, 'utf8')) as unknown;
 }
 
-describe('the third-place round', () => {
-  it('accepts a third place listed after the final, as the real export does', () => {
-    // Arrange: semifinals, the final, then the third place.
+describe('the size of each round', () => {
+  it('accepts rounds of 8, 4, 2 and 1, the third place outside the count', () => {
+    // Arrange: an elimination from the oitavas, the third place before the final.
     const brackets = buildBracketsWithRounds([
+      buildRoundOfMatches('Oitavas de final', 8),
+      buildRoundOfMatches('Quartas de final', 4),
       buildRoundOfMatches('Semifinal', 2),
-      buildRoundOfMatches('Final', 1),
       buildRoundOfMatches('Disputa de 3º lugar', 1, { isThirdPlace: true }),
+      buildRoundOfMatches('Final', 1),
     ]);
+
+    // Act: validate them.
+    const validation = validateDataShape('brackets', brackets);
+
+    // Assert: accepted.
+    expect(validation.isValid, 'each round half the one before must pass').toBe(true);
+  });
+
+  const refusedSizeScenarios = [
+    // A source listing a round match by match: 4 of the 8 oitavas would be drawn as a tree
+    // column, then as a board at the 5th (contract A).
+    {
+      name: 'refuses a round listed part way, 4 of its 8 matches',
+      rounds: [
+        buildRoundOfMatches('16 avos de final', 16),
+        buildRoundOfMatches('Oitavas de final', 4),
+      ],
+      expectedErrorMessage:
+        'Dados inválidos em "brackets.rounds.1.matches": a fase "Oitavas de final" tem 4 disputas, mas depois de uma fase de 16 precisa de 8 (uma fase só é listada inteira).',
+    },
+    // An endpoint ordered by the Baja app's round code (0 the final … 6) lists them in reverse.
+    {
+      name: 'refuses rounds listed in reverse, the final first',
+      rounds: [
+        buildRoundOfMatches('Final', 1),
+        buildRoundOfMatches('Semifinal', 2),
+        buildRoundOfMatches('Quartas de final', 4),
+      ],
+      expectedErrorMessage:
+        'Dados inválidos em "brackets.rounds.1.matches": a fase "Semifinal" tem 2 disputas, mas depois de uma fase de 1 precisa de 1 (uma fase só é listada inteira).',
+    },
+  ];
+
+  it.each(refusedSizeScenarios)('$name', ({ rounds, expectedErrorMessage }) => {
+    // Arrange: brackets with this row's rounds.
+    const brackets = buildBracketsWithRounds(rounds);
+
+    // Act: validate them.
+    const validation = validateDataShape('brackets', brackets);
+
+    // Assert: refused at the round that breaks the size, with this row's reason.
+    expect(validation, 'the rounds must be refused for their size').toEqual({
+      isValid: false,
+      errorMessage: expectedErrorMessage,
+    });
+  });
+});
+
+describe('the third-place round', () => {
+  const acceptedThirdPlaceScenarios = [
+    // The contract's order (C), the simulator's too: the third place runs before the final.
+    {
+      name: 'accepts a third place listed before the final',
+      rounds: [
+        buildRoundOfMatches('Semifinal', 2),
+        buildRoundOfMatches('Disputa de 3º lugar', 1, { isThirdPlace: true }),
+        buildRoundOfMatches('Final', 1),
+      ],
+    },
+    // After the final the shape does not refuse it; the step plan's tests say what happens.
+    {
+      name: 'accepts a third place listed after the final, which the contract asks sources not to do',
+      rounds: [
+        buildRoundOfMatches('Semifinal', 2),
+        buildRoundOfMatches('Final', 1),
+        buildRoundOfMatches('Disputa de 3º lugar', 1, { isThirdPlace: true }),
+      ],
+    },
+  ];
+
+  it.each(acceptedThirdPlaceScenarios)('$name', ({ rounds }) => {
+    // Arrange: the row's rounds.
+    const brackets = buildBracketsWithRounds(rounds);
 
     // Act: validate them.
     const validation = validateDataShape('brackets', brackets);
@@ -105,6 +190,17 @@ describe('the third-place round', () => {
       expectedErrorMessage:
         'Dados inválidos em "brackets.rounds.1.isThirdPlace": a disputa de 3º lugar vem depois das semifinais (a fase de duas disputas).',
     },
+    // One bronze, one match: a second would leave the tree two places to put them.
+    {
+      name: 'refuses a third place of two matches',
+      rounds: [
+        buildRoundOfMatches('Semifinal', 2),
+        buildRoundOfMatches('Disputa de 3º lugar', 2, { isThirdPlace: true }),
+        buildRoundOfMatches('Final', 1),
+      ],
+      expectedErrorMessage:
+        'Dados inválidos em "brackets.rounds.1.matches": a disputa de 3º lugar é uma disputa só, aqui 2.',
+    },
   ];
 
   it.each(refusedThirdPlaceScenarios)('$name', ({ rounds, expectedErrorMessage }) => {
@@ -116,6 +212,61 @@ describe('the third-place round', () => {
 
     // Assert: refused at the third-place round, with this row's reason.
     expect(validation, 'the rounds must be refused for the rule this row breaks').toEqual({
+      isValid: false,
+      errorMessage: expectedErrorMessage,
+    });
+  });
+});
+
+describe('a car or a match listed twice', () => {
+  /** Quarter-finals of four matches, then the semifinals, with one change made by `change`. */
+  function buildQuarterFinalsWithOneChange(
+    change: (rounds: ReturnType<typeof buildRoundOfMatches>[]) => void,
+  ) {
+    const rounds = [
+      buildRoundOfMatches('Quartas de final', 4),
+      buildRoundOfMatches('Semifinal', 2),
+    ];
+    change(rounds);
+    return buildBracketsWithRounds(rounds);
+  }
+
+  const listedTwiceScenarios = [
+    // A typo putting car 100 in two quarter-finals would draw one car in two places.
+    {
+      name: 'refuses a car in two matches of one round',
+      brackets: buildQuarterFinalsWithOneChange((rounds) => {
+        const secondMatch = rounds[0]?.matches[1];
+        if (secondMatch !== undefined) {
+          secondMatch.carA = buildBracketCar(100, 'Equipe 100', 'UFPR');
+          secondMatch.winnerCarNumber = 100;
+        }
+      }),
+      expectedErrorMessage:
+        'Dados inválidos em "brackets.rounds.0.matches.1.carA.carNumber": o carro 100 aparece mais de uma vez.',
+    },
+    // The tree and the crossfade find a match by its id, so two matches may not share one.
+    {
+      name: 'refuses a match id used twice in the brackets',
+      brackets: buildQuarterFinalsWithOneChange((rounds) => {
+        const semifinal = rounds[1]?.matches[0];
+        if (semifinal !== undefined) {
+          semifinal.matchId = 'Quartas de final-1';
+        }
+      }),
+      expectedErrorMessage:
+        'Dados inválidos em "brackets.rounds.1.matches.0.matchId": a disputa "Quartas de final-1" aparece mais de uma vez.',
+    },
+  ];
+
+  it.each(listedTwiceScenarios)('$name', ({ brackets, expectedErrorMessage }) => {
+    // Arrange: nothing more; the row built its brackets.
+
+    // Act: validate them.
+    const validation = validateDataShape('brackets', brackets);
+
+    // Assert: refused at the second appearance, with this row's reason.
+    expect(validation, 'what is listed twice must be refused').toEqual({
       isValid: false,
       errorMessage: expectedErrorMessage,
     });
@@ -137,7 +288,7 @@ describe('the real Super Prime of the 30ª Competição', () => {
     });
   });
 
-  it('reads like the real draw: 33 cars in 64 slots, 31 byes, best of 3 from the semifinals on', () => {
+  it('reads like the real draw: 33 cars in 64 slots, 31 byes, best of 3 from the semifinals on, the third place before the final', () => {
     // Arrange: the same sample, read as plain JSON.
     const superPrime = readSamplePayload('brackets.super-prime.json') as {
       rounds: Array<{
@@ -159,14 +310,17 @@ describe('the real Super Prime of the 30ª Competição', () => {
     // Assert: the draw and the series are the real ones.
     expect(
       matchCountsByRound,
-      'six rounds from 32 avos to the final, then the third place',
+      'the rounds from 32 avos to the semifinals, the third place, the final',
     ).toEqual([32, 16, 8, 4, 2, 1, 1]);
     expect(byeCount, 'the 32 avos must be 31 byes and one race').toBe(31);
     expect(carsInTheDraw, '33 cars entered the Super Prime').toBe(33);
     expect(
       roundsPlayedAsBestOfThree,
       'only the semifinals, the final and the third place are best of 3',
-    ).toEqual(['Semifinal', 'Final', 'Disputa de 3º lugar']);
-    expect(superPrime.rounds.at(-1)?.isThirdPlace, 'the third place is the last round').toBe(true);
+    ).toEqual(['Semifinal', 'Disputa de 3º lugar', 'Final']);
+    expect(
+      superPrime.rounds.map((round) => round.isThirdPlace === true),
+      'the third place is listed before the final (contract C)',
+    ).toEqual([false, false, false, false, false, true, false]);
   });
 });
