@@ -13,7 +13,7 @@ import { createEnduroAnnouncements } from './previewData.js';
 customElements.define('baja-message-ticker-under-test', MessageTickerGraphic);
 
 // 14:00:00 on the enduro's day, as the server's clock read it.
-const twoInTheAfternoonMs = Date.UTC(2026, 2, 8, 17, 0, 0);
+export const twoInTheAfternoonMs = Date.UTC(2026, 2, 8, 17, 0, 0);
 
 /** The enduro's three announcements under "AVISO", the clock held at 1:00:00, green. */
 export function createEnduroTickerData(): MessageTickerData {

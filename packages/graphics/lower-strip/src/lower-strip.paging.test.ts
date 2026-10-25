@@ -15,13 +15,13 @@
  *     is on page 2 at the next turn.
  *   - An update that arrives during a turn is drawn once the turn has ended.
  *   - A field of five cars (one page) never turns; grown to seven on air, it starts.
- *   - The timer is stopped on stop, on dispose and when the element leaves the page: no
- *     page turns after any of them, however long the holds; a re-take starts on page 1.
+ *   - After stop the strip rests on page 1, and a re-take starts at the leader.
  *
  * What these tests deliberately do not cover:
  *   - What the turn looks like; the kit's barMotion.test.ts gives its timing, and
  *     e2e/lowerStripLifecycle.e2e.ts watches a turn in Chromium.
  *   - Which cars a page holds as a rule; stripPages.test.ts.
+ *   - That no timer is left after stop, dispose or removal; lower-strip.timersStopped.test.ts.
  */
 import { describe, expect, it, vi } from 'vitest';
 
@@ -194,8 +194,8 @@ describe('live updates between turns', () => {
   });
 });
 
-describe('the page timer stopped', () => {
-  it('turns no page after stop, and a re-take starts on page 1', async () => {
+describe('after stop', () => {
+  it('rests on page 1 off air, and a re-take starts at the leader', async () => {
     // Arrange: the real field on air, turned to page 2, then taken off.
     placeArdosiaStripHoldOnTheRoot();
     takeControlOfTimers();
@@ -213,39 +213,5 @@ describe('the page timer stopped', () => {
     // Assert: off air it rests on page 1, and the re-take starts at the leader.
     expect(pageCellOffAir, 'off air the strip rests on page 1').toBe('1/6');
     expect(readCarNumbersOnAir(lowerStrip)[0], 'the re-take starts with the leader').toBe(51);
-  });
-
-  it('turns no page after dispose', async () => {
-    // Arrange: the real field on air with the timer armed, then disposed.
-    placeArdosiaStripHoldOnTheRoot();
-    takeControlOfTimers();
-    const lowerStrip = createLowerStripOnThePage();
-    await loadLowerStripWithData(lowerStrip, createRealEnduroStripData());
-    await lowerStrip.playAction({ skipAnimation: true });
-    const answer = await lowerStrip.dispose();
-
-    // Act: let three holds pass.
-    await vi.advanceTimersByTimeAsync(3 * 7000);
-
-    // Assert: dispose answered 200, and the page never changed.
-    expect(answer, 'dispose must answer 200').toEqual({ statusCode: 200 });
-    expect(readPageCell(lowerStrip), 'no page may turn after dispose').toBe('1/6');
-  });
-
-  it('turns no page once the element leaves the page while on air', async () => {
-    // Arrange: the real field on air with the timer armed.
-    placeArdosiaStripHoldOnTheRoot();
-    takeControlOfTimers();
-    const lowerStrip = createLowerStripOnThePage();
-    await loadLowerStripWithData(lowerStrip, createRealEnduroStripData());
-    await lowerStrip.playAction({ skipAnimation: true });
-
-    // Act: the renderer takes the layer out of the page without dispose; one hold passes
-    // (a single hold: more would cycle and could hide a turn).
-    lowerStrip.remove();
-    await vi.advanceTimersByTimeAsync(7000);
-
-    // Assert: still page 1, so no timer is left turning a strip nobody sees.
-    expect(readPageCell(lowerStrip), 'no page may turn once the strip is removed').toBe('1/6');
   });
 });

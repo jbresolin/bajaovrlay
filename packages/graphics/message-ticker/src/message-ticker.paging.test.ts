@@ -10,10 +10,11 @@
  *   - With three messages: after one hold the second ("2/3"), after three the first again.
  *   - One message never turns; given a second on air with "Atualizar no ar", it starts.
  *   - An update that arrives during a turn is drawn once the turn has ended.
- *   - The timer is stopped on stop, on dispose and when the element leaves the page; a
- *     re-take starts on the first message.
+ *   - After stop the ticker rests on its first message, and a re-take starts there.
  *
  * What these tests deliberately do not cover:
+ *   - That no timer is left after stop, dispose or removal;
+ *     message-ticker.timersStopped.test.ts.
  *   - What the turn looks like; the kit's barMotion.test.ts gives its timing, and
  *     e2e/messageTickerLifecycle.e2e.ts watches it in Chromium.
  */
@@ -111,8 +112,8 @@ describe('a turn on air', () => {
   });
 });
 
-describe('the page timer stopped', () => {
-  it('turns no page after stop, and a re-take starts on the first message', async () => {
+describe('after stop', () => {
+  it('rests on the first message off air, and a re-take starts there', async () => {
     // Arrange: three messages on air turned to the second, then taken off.
     placeArdosiaStripHoldOnTheRoot();
     takeControlOfTimers();
@@ -132,26 +133,5 @@ describe('the page timer stopped', () => {
     expect(readMessageOnAir(ticker), 'the re-take starts on the first').toBe(
       'Largada do enduro às 10h00',
     );
-  });
-
-  it('turns no page after dispose, nor once removed from the page', async () => {
-    // Arrange: two tickers on air with their timers armed.
-    placeArdosiaStripHoldOnTheRoot();
-    takeControlOfTimers();
-    const disposedTicker = createMessageTickerOnThePage();
-    const removedTicker = createMessageTickerOnThePage();
-    for (const ticker of [disposedTicker, removedTicker]) {
-      await loadMessageTickerWithData(ticker, createEnduroTickerData());
-      await ticker.playAction({ skipAnimation: true });
-    }
-
-    // Act: dispose one, take the other out of the page; one hold passes.
-    await disposedTicker.dispose();
-    removedTicker.remove();
-    await vi.advanceTimersByTimeAsync(7000);
-
-    // Assert: both still on their first message.
-    expect(readPageCell(disposedTicker), 'no turn after dispose').toBe('1/3');
-    expect(readPageCell(removedTicker), 'no turn once removed').toBe('1/3');
   });
 });
