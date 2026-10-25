@@ -117,24 +117,31 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
     [form, graphicFields],
   );
 
-  // Watched so the note below follows the operator's choices as they are made.
-  const kindsNow = useWatch({ control: form.control, name: 'kinds' });
-  const bindingsNow = useWatch({ control: form.control, name: 'bindings' });
-  const entityReferencesNow = useWatch({ control: form.control, name: 'entityReferences' });
-  const isSourceChangeWaitingForTheTake =
-    isItemOnAir &&
-    hasSourceChoiceChangedSinceOpened(
-      graphicFields.description,
-      {
-        ...graphicFields.formValues,
-        kinds: kindsNow,
-        bindings: bindingsNow,
-        entityReferences: entityReferencesNow,
-      },
-      graphicFields.formValues,
-    );
+  // Watched so the note below follows the operator's choices as they are made. Each watch
+  // computes a yes or no (`compute`), and react-hook-form redraws this form only when the
+  // answer changes: a watch of the whole `bindings` redrew it, and with it every field
+  // row, at every pick in any field (BAJAOVRLAY-45).
+  const hasSourceChoiceChanged = useWatch({
+    control: form.control,
+    compute: (formValuesNow: SchemaFormValues) =>
+      hasSourceChoiceChangedSinceOpened(
+        graphicFields.description,
+        {
+          ...graphicFields.formValues,
+          kinds: formValuesNow.kinds,
+          bindings: formValuesNow.bindings,
+          entityReferences: formValuesNow.entityReferences,
+        },
+        graphicFields.formValues,
+      ),
+  });
+  const isSourceChangeWaitingForTheTake = isItemOnAir && hasSourceChoiceChanged;
 
-  const isFilledByAnEventNow = Object.values(kindsNow).includes('eventField');
+  const isFilledByAnEventNow = useWatch({
+    control: form.control,
+    name: 'kinds',
+    compute: (kindsNow) => Object.values(kindsNow).includes('eventField'),
+  });
   const { onIsFilledByAnEventChanged } = props;
   useEffect(() => {
     onIsFilledByAnEventChanged(isFilledByAnEventNow);

@@ -13,7 +13,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useState } from 'react';
-import { type Control, useFieldArray, type UseFormReturn } from 'react-hook-form';
+import { type Control, useFieldArray, type UseFormReturn, useFormState } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { useEscapeBelongsToTheDragWhileDragging } from '@/features/rundown/useEscapeBelongsToTheDragWhileDragging';
@@ -65,7 +65,9 @@ export function TextListField(props: {
   const itemLabel = field.listItemLabel ?? texts.defaultItemLabel;
   const helpTextId = `${controlId}-help`;
   const errorMessageId = `${controlId}-error`;
-  const errorMessage = form.formState.errors.values?.[field.key]?.message;
+  // This field's errors only, by name; `form.formState` would subscribe the whole form.
+  const stateOfThisField = useFormState({ control: form.control, name: `values.${field.key}` });
+  const errorMessage = stateOfThisField.errors.values?.[field.key]?.message;
 
   const {
     fields: lines,

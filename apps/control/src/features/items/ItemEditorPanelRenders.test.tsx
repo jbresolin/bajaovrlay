@@ -138,8 +138,7 @@ describe('the item editor on a battle card read live, when a poll arrives', () =
 });
 
 describe('the item editor on a battle card read live, when the operator works', () => {
-  // Fails on main (BAJAOVRLAY-45): flipped to `it` by the fix.
-  it.fails('redraws only the field picked in', () => {
+  it('redraws only the field picked in', () => {
     // Arrange: the editor open on the battle card, every draw so far forgotten.
     renderEditorOnTheBattleCardOfTheLeaders();
     startCountingLabelDraws();
@@ -155,8 +154,7 @@ describe('the item editor on a battle card read live, when the operator works', 
     ).toEqual(buildNoDrawForEach(otherLabels));
   });
 
-  // Fails on main (BAJAOVRLAY-45): flipped to `it` by the fix.
-  it.fails('redraws no other row while the operator types in the one typed field', () => {
+  it('redraws no other row while the operator types in the one typed field', () => {
     // Arrange: the editor open on the battle card, every draw so far forgotten.
     renderEditorOnTheBattleCardOfTheLeaders();
     startCountingLabelDraws();

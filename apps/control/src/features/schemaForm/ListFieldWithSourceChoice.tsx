@@ -1,5 +1,5 @@
 import type { EntityLibrary } from '@bajaovrlay/shared';
-import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
+import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { Label } from '@/components/ui/label';
 import {
@@ -62,7 +62,9 @@ export function ListFieldWithSourceChoice(props: {
   const { form, field, dataSchema, controlId, keptJsonText, bindingOptions, isDisabled } = props;
   const { entityLibrary } = props;
   const chosenKind = useWatch({ control: form.control, name: `kinds.${field.key}` });
-  const errorMessage = form.formState.errors.values?.[field.key]?.message;
+  // This field's errors only, by name; `form.formState` would subscribe the whole form.
+  const stateOfThisField = useFormState({ control: form.control, name: `values.${field.key}` });
+  const errorMessage = stateOfThisField.errors.values?.[field.key]?.message;
 
   const kindsOffered: ListFieldKind[] = ['literal'];
   if (bindingOptions !== undefined && canFieldBeBoundToASource(dataSchema, field.key)) {

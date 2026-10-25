@@ -1,6 +1,6 @@
 import { type EntityLibrary, isImageFieldOfDataSchema } from '@bajaovrlay/shared';
-import { type ReactNode, useState } from 'react';
-import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
+import { memo, type ReactNode, useState } from 'react';
+import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -97,8 +97,16 @@ function joinIdsOfDescribingTexts(idsOrNothing: Array<string | undefined>): stri
  * What could go wrong: a browser sends no "cursor left" when a control is switched off
  * while the cursor is in it, so a panel that uses both `isDisabled` and such a text
  * could leave the text frozen. No panel does today.
+ *
+ * Wrapped in React's `memo`, so the row is drawn again only when one of its props changes
+ * or when what it watches of its own field does (its kind, its value, its errors): a pick
+ * or a keystroke in another field leaves it alone (BAJAOVRLAY-45). That holds only while
+ * the panel hands the same props from one draw to the next; the item editor does (the
+ * form, the description it keeps, memoised binding options and library). What could go
+ * wrong: a prop built anew at every draw (an inline object or function) would silently
+ * bring every row's redraw back; ItemEditorPanelRenders.test.tsx fails if it does.
  */
-export function SchemaFormFieldRow(props: {
+export const SchemaFormFieldRow = memo(function SchemaFormFieldRow(props: {
   form: UseFormReturn<SchemaFormValues>;
   field: SchemaFormFieldDescription;
   /** The element id of this field's control; the other ids of the row start with it. */
@@ -137,7 +145,17 @@ export function SchemaFormFieldRow(props: {
   const isReadFromASource =
     (chosenKind === 'binding' || chosenKind === 'wholeClock') && kindsOffered.includes(chosenKind);
   const isFilledByAnEvent = chosenKind === 'eventField' && kindsOffered.includes(chosenKind);
-  const errorMessage = form.formState.errors.values?.[field.key]?.message;
+  // This field's own state, read through useFormState with its name, never through
+  // `form.formState`: a read there makes the whole form redraw on every change of that
+  // state anywhere, the first keystroke in any field included (BAJAOVRLAY-45). `exact`,
+  // because names are otherwise matched by their start: "manualTrend" would redraw at
+  // every keystroke in "manualTrendChangeMs".
+  const stateOfThisField = useFormState({
+    control: form.control,
+    name: `values.${field.key}`,
+    exact: true,
+  });
+  const errorMessage = stateOfThisField.errors.values?.[field.key]?.message;
   const hasError = errorMessage !== undefined && !isFilledByTheServer && !isFilledByTheWholeClock;
   // The one test of "the operator types this value": every other kind replaces the control.
   const hasTypedValue =
@@ -153,7 +171,7 @@ export function SchemaFormFieldRow(props: {
   const canControlShowAPanelText = controlsThatCanShowAPanelText.includes(field.control);
   const textShownInPlaceOfTheValue = chooseTextShownInPlaceOfFieldValue({
     textFromThePanel: canControlShowAPanelText ? textShownWhileUntouched?.text : undefined,
-    hasOperatorChangedTheValue: form.formState.dirtyFields.values?.[field.key] === true,
+    hasOperatorChangedTheValue: stateOfThisField.dirtyFields.values?.[field.key] === true,
     cursorVisit,
   });
 
@@ -361,4 +379,4 @@ export function SchemaFormFieldRow(props: {
       )}
     </div>
   );
-}
+});

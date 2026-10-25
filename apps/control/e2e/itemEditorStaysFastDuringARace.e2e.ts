@@ -12,14 +12,22 @@
  * What these tests prove:
  *   - With the simulator at 60×, read every 0,5 s, and a battle card on air whose eleven
  *     fields read cars 1 and 2 by number, live, opened in the item editor:
- *     - a click on a bound field's "O que … lê da fonte" shows its options within 1 s;
- *     - "Salvar item" after a new label is accepted, and the editor closed, within 3 s.
+ *     - a click on a bound field's "O que … lê da fonte" shows its options within 2 s;
+ *     - "Salvar item" after a new label is accepted, and the editor closed, within 2 s.
  *
- * Why these bounds:
- *   The brief's targets are 300 ms for a dropdown and 1 s for a save on two cores. The
- *   bounds are about three times those, so CI's 2-core runner and React's development
- *   build (the control page's dev server) have room, and still far under what the broken
- *   editor took (the baseline in the PR, measured with `taskset -c 0,1`).
+ * Why these bounds (measured pinned to two cores, `taskset -c 0,1`, server and browser on
+ * the same two; the table is in the PR of BAJAOVRLAY-45):
+ *   - Before the fix the dropdown took 8,5–11,3 s and the save 2,1–2,4 s; after it,
+ *     0,29–0,33 s and 0,37–0,43 s. The brief aims at 300 ms and 1 s.
+ *   - 2 s is about six times the fixed dropdown and five times the fixed save, room for
+ *     CI's runner (about 3,5 times slower than a developer machine for this page,
+ *     dataSourcesPageStaysResponsive.e2e.ts) and React's development build (the control
+ *     page's dev server), and still under what the broken editor took for both.
+ *   - The brief's example bounds (1 s and 3 s) were not taken: 1 s leaves the runner too
+ *     little room, and 3 s would let the old save through.
+ *   - About half of the fixed dropdown's time is not the editor's: a dropdown of three
+ *     options opens in 130–160 ms here (Radix placing the list, the browser's layout and
+ *     Playwright's own checks before a click).
  *
  * What these tests deliberately do not cover:
  *   - Which field rows redraw when a snapshot arrives: the component tests
@@ -45,9 +53,9 @@ import { openControlPageAndWaitUntilConnected } from './previewTestSteps';
 const seededSimulatorId = 'simulador-enduro';
 const mainSessionRundownId = 'sessao-principal';
 const battleCardItemLabel = 'Disputa — carros 1 e 2';
-// The brief's 300 ms and 1 s, about three times over (header).
-const slowestDropdownOpeningAllowedInMilliseconds = 1_000;
-const slowestSaveAllowedInMilliseconds = 3_000;
+// About six and five times the fixed editor, under the broken one (header).
+const slowestDropdownOpeningAllowedInMilliseconds = 2_000;
+const slowestSaveAllowedInMilliseconds = 2_000;
 // A take reaches the server at once; a few seconds cover a slow machine.
 const waitForTheAirInMilliseconds = 10_000;
 
@@ -111,9 +119,7 @@ test.beforeEach(async () => {
 });
 
 test.describe('the item editor on a battle card read live while the race runs at 60×', () => {
-  test('opens a bound field’s path dropdown within 1 s and saves within 3 s', async ({ page }) => {
-    // Fails on main (BAJAOVRLAY-45): the fix removes this line.
-    test.fail();
+  test('opens a bound field’s path dropdown within 2 s and saves within 2 s', async ({ page }) => {
     test.setTimeout(90_000);
 
     // Arrange: the race at 60×, read every 0,5 s; the battle card of cars 1 and 2 stored
@@ -157,8 +163,10 @@ test.describe('the item editor on a battle card read live while the race runs at
     await findItemEditorOwnTextField(itemEditor, 'Rótulo').fill(`${battleCardItemLabel} (final)`);
     const saveClickedAtMs = performance.now();
     await itemEditor.getByRole('button', { name: 'Salvar item' }).click();
+    // Waited for up to a minute: the broken editor took about that long in the walk, and
+    // the bound below must fail with its own message rather than as a timeout here.
     await expect(itemEditor, 'the editor must close once the server accepted the save').toBeHidden({
-      timeout: 120_000,
+      timeout: 60_000,
     });
     const saveMs = performance.now() - saveClickedAtMs;
     recordMeasuredTime('dropdownOpeningMs', dropdownOpeningMs);

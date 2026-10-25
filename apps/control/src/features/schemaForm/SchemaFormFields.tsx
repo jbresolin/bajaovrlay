@@ -93,12 +93,18 @@ export function SchemaFormFields(props: {
   const isDisabled = props.isDisabled ?? false;
   const unsupportedValuesAsJson =
     useWatch({ control: form.control, name: 'unsupportedValuesAsJson' }) ?? [];
-  const kinds = useWatch({ control: form.control, name: 'kinds' }) ?? {};
-  const isWholeClockChosen = description.fields.some(
-    (field) =>
-      kinds[field.key] === 'wholeClock' &&
-      canFieldTakeTheWholeClock(description.dataSchema, field.key),
-  );
+  // A yes or no, computed in the watch (`compute`): react-hook-form then redraws these
+  // fields only when the answer changes, not at every pick of a kind (BAJAOVRLAY-45).
+  const isWholeClockChosen = useWatch({
+    control: form.control,
+    name: 'kinds',
+    compute: (kinds) =>
+      description.fields.some(
+        (field) =>
+          (kinds ?? {})[field.key] === 'wholeClock' &&
+          canFieldTakeTheWholeClock(description.dataSchema, field.key),
+      ),
+  });
   const keysFilledByTheWholeClock = isWholeClockChosen
     ? listClockFieldKeysFilledByTheWholeClock(description.dataSchema)
     : [];
