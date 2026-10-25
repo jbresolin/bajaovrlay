@@ -6,7 +6,8 @@ the kit's head card ("PÓDIO", the event, "2/3"), then three cards on the title-
 on the green chip), the big chip, the team and the school, crowned by the team's logo (on the panel,
 or on the light plate with `logoOnLightPlate`, the team card's rule) when it has one. Start reading at
 `src/podium.ts` (the OGraf lifecycle); it wires `podiumModel.ts` (Zod data, which entry stands where,
-the places, the steps), `podiumView.ts`, `podiumStyles.ts`, `podiumAnimations.ts`, the kit's
+the places, the steps), `podiumStepMoves.ts` (which cards a step reveals, hides or lifts out),
+`podiumView.ts`, `podiumStyles.ts`, `podiumAnimations.ts`, the kit's
 `boardHead` and `ptBR.ts`. The podium has no timer: nothing on it moves by itself.
 
 **Steps** (`stepCount` 4): play from off air is step 0, the head alone (Entrar); each further play

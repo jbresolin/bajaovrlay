@@ -8,7 +8,8 @@ over school, laps), and between them the gap at 44 px over its trend, "▸◂ FE
 load, every call answers a status, never throws); it wires `battleCardModel.ts` (Zod data, the gap
 text), `battleTrend.ts` (the trend remembered from lap to lap, and its trade-off), `battleCardView.ts`,
 `battleCardStyles.ts`, `battleCardAnimations.ts` (in one lead apart, out together, the trend's
-crossfade) and `ptBR.ts`. Preview: `pnpm --filter @bajaovrlay/battle-card dev`, then
+crossfade), `battleTrendCrossfade.ts` (the crossfade on air, ended at once by stop, dispose or
+leaving the page) and `ptBR.ts`. Preview: `pnpm --filter @bajaovrlay/battle-card dev`, then
 http://localhost:5212/preview.html ("Atualizar" sends the next lap; add `?trend=closing|opening|steady`,
 `?stage=grey|black` or `?data=<JSON>`). Unit tests: `pnpm --filter @bajaovrlay/battle-card test`;
 Playwright on the built `dist/`, with the 6 screenshots: `pnpm --filter @bajaovrlay/battle-card test:e2e`.

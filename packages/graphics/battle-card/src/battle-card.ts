@@ -4,8 +4,9 @@
  * lifecycle (load, play, update, stop, dispose) in the team card's shape and wires the
  * pieces together; the rules live in named modules: battleCardModel (data and texts),
  * battleTrend (the trend remembered from lap to lap), battleCardView (the DOM, drawn by Lit
- * from what is on screen), playSteps (the OGraf step rule) and battleCardAnimations (GSAP
- * timelines from the theme's motion tokens).
+ * from what is on screen), playSteps (the OGraf step rule), battleCardAnimations (GSAP
+ * timelines from the theme's motion tokens) and battleTrendCrossfade (the trend cell's
+ * crossfade on air, kept so it can be ended at once).
  *
  * Every update is a reading the trend follows (battleTrend.ts), on air or off. On air the
  * gap and the laps change in place; the trend cell crossfades only when its word changes,
@@ -39,7 +40,6 @@ import {
   type BattleCardTimeline,
   buildPlayInTimeline,
   buildStopOutTimeline,
-  buildTrendCrossfadeTimeline,
   placePiecesOffAir,
   placeTrendLayersAtRest,
 } from './battleCardAnimations.js';
@@ -66,15 +66,13 @@ import {
   type TrendMemory,
   type TrendShown,
 } from './battleTrend.js';
+import { BattleTrendCrossfade } from './battleTrendCrossfade.js';
 import { ptBR } from './ptBR.js';
 
 /** Must match "stepCount" in battle-card.ograf.json: play shows the card, stop hides it. */
 const battleCardStepCount = 1;
 
 type LifecycleStage = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
-
-/** A trend crossfade on air, with the trend the current layer wears once it ends. */
-type RunningTrendCrossfade = { timeline: BattleCardTimeline; trendWanted: TrendShown };
 
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 
@@ -101,7 +99,9 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
   // The card has one in or out at a time, so one timeline is all there is to end.
   private runningPiecesTimeline: BattleCardTimeline | undefined = undefined;
   private isStoppingOut = false;
-  private runningTrendCrossfade: RunningTrendCrossfade | undefined = undefined;
+  private readonly trendCrossfade = new BattleTrendCrossfade((trend) => {
+    this.putTrendAtRest(trend);
+  });
 
   override render() {
     const data = this.dataOnScreen;
@@ -210,7 +210,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.finishRunningTrendCrossfade();
+    this.trendCrossfade.finish();
     this.isStoppingOut = true;
     await this.runPiecesTimeline(
       buildStopOutTimeline(this.requireParts()),
@@ -259,7 +259,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
   /** OGraf dispose: ends every timeline, the crossfade included; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
-    this.finishRunningTrendCrossfade();
+    this.trendCrossfade.finish();
     const runningTimeline = this.runningPiecesTimeline;
     this.runningPiecesTimeline = undefined;
     if (runningTimeline !== undefined) {
@@ -274,7 +274,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
    */
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.finishRunningTrendCrossfade();
+    this.trendCrossfade.finish();
   }
 
   /** Keeps the data and lets the trend's memory follow it as one more reading. */
@@ -304,7 +304,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
    * new word is dressed on the incoming layer and crossfaded in over the current one.
    */
   private async showTrendWantedOnAir(skipAnimation: boolean): Promise<void> {
-    this.finishRunningTrendCrossfade();
+    this.trendCrossfade.finish();
     const trendWanted = this.chooseTrendWanted();
     if (this.trendOnScreen?.word === trendWanted.word) {
       await this.redrawAtRest();
@@ -315,28 +315,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
     this.incomingTrend = trendWanted;
     this.requestUpdate();
     await this.updateComplete;
-    const crossfade: RunningTrendCrossfade = {
-      timeline: buildTrendCrossfadeTimeline(this.requireParts()),
-      trendWanted,
-    };
-    this.runningTrendCrossfade = crossfade;
-    await playTimelineToTheEnd(crossfade.timeline, { skipAnimation });
-    // Stop, dispose or a newer update may have ended it first and settled it already.
-    if (this.runningTrendCrossfade === crossfade) {
-      this.runningTrendCrossfade = undefined;
-      this.putTrendAtRest(trendWanted);
-    }
-  }
-
-  /** Ends a running crossfade at once and leaves the current layer wearing its new trend. */
-  private finishRunningTrendCrossfade(): void {
-    const crossfade = this.runningTrendCrossfade;
-    if (crossfade === undefined) {
-      return;
-    }
-    this.runningTrendCrossfade = undefined;
-    finishTimelineAtOnce(crossfade.timeline);
-    this.putTrendAtRest(crossfade.trendWanted);
+    await this.trendCrossfade.run(this.requireParts(), trendWanted, skipAnimation);
   }
 
   /**

@@ -2,8 +2,9 @@
  * The podium OGraf graphic: the first three on one baseline, on the fullscreen layer,
  * revealed one place per step. This file owns the OGraf lifecycle (load, play, update,
  * stop, dispose) and wires the rest: podiumModel (data, cards, steps), podiumView (the DOM,
- * drawn by Lit from the data), the kit's boardHead (the head card), podiumAnimations (GSAP
- * timelines from the theme's motion tokens), the kit's playSteps (the OGraf step rule),
+ * drawn by Lit from the data), the kit's boardHead (the head card), podiumStepMoves (which
+ * cards a step reveals, hides or lifts out) on podiumAnimations (GSAP timelines from the
+ * theme's motion tokens), the kit's playSteps (the OGraf step rule),
  * timelinePlayback and waitForImagesToSettle, and ptBR.
  *
  * The steps (stepCount 4 in the manifest): play from off air goes to step 0, the head alone
@@ -40,41 +41,29 @@ import { waitForImagesToSettle } from '@bajaovrlay/graphics-kit/waitForImagesToS
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
+import { placeHeadOffAir, type PodiumTimeline } from './podiumAnimations.js';
 import {
-  buildLiftOutTogetherTimeline,
-  buildRiseInTimeline,
-  hideCardsAtOnce,
-  placeHeadOffAir,
-  type PodiumTimeline,
-  showCardsAtOnce,
-} from './podiumAnimations.js';
-import {
-  listSlotsRevealedBetweenSteps,
   mergePartialUpdateIntoPodiumData,
   parseCompletePodiumData,
   type PodiumData,
-  type PodiumSlot,
   podiumStepCount,
   readPodiumSettings,
-  revealStepOfSlot,
   writeStepLine,
 } from './podiumModel.js';
-import { podiumStyles } from './podiumStyles.js';
 import {
-  findPodiumParts,
-  isCardOfSlotFilled,
-  type PodiumParts,
-  renderPodiumTemplate,
-} from './podiumView.js';
+  buildRevealTimeline,
+  buildStopOutTimeline,
+  hideCardsPastStep,
+  hideEveryCardAtOnce,
+  listFilledSlots,
+  showOrHideRevealedSlotsThatChanged,
+  stepBeforeTheStart,
+} from './podiumStepMoves.js';
+import { podiumStyles } from './podiumStyles.js';
+import { findPodiumParts, type PodiumParts, renderPodiumTemplate } from './podiumView.js';
 import { ptBR } from './ptBR.js';
 
 type LifecycleStage = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
-
-/** Every slot, for the moves that touch all three cards. */
-const everySlot: PodiumSlot[] = ['second', 'first', 'third'];
-
-/** The step before the first: what "off air" counts as when choosing the cards to reveal. */
-const stepBeforeTheStart = -1;
 
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 
@@ -130,7 +119,7 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     this.parts = parts;
     this.writeHeadNow();
     placeHeadOffAir(parts.tokensSource, parts.head);
-    hideCardsAtOnce(parts.tokensSource, this.listCardsOfSlots(everySlot));
+    hideEveryCardAtOnce(parts);
     await waitForThemeFontsToBeReady(this);
     await waitForImagesToSettle(this.renderRoot);
 
@@ -184,18 +173,11 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     const parts = this.requireParts();
 
     if (target.step < stepBefore) {
-      const slotsToHide = listSlotsRevealedBetweenSteps(target.step, stepBefore);
-      hideCardsAtOnce(parts.tokensSource, this.listCardsOfSlots(slotsToHide));
+      hideCardsPastStep(parts, target.step, stepBefore);
       return { statusCode: 200, currentStep: target.step };
     }
 
-    const slotsToReveal = listSlotsRevealedBetweenSteps(stepBefore, target.step).filter((slot) =>
-      isCardOfSlotFilled(parts, slot),
-    );
-    const riseIn = buildRiseInTimeline(parts.tokensSource, {
-      head: isEntering ? parts.head : undefined,
-      cards: this.listCardsOfSlots(slotsToReveal),
-    });
+    const riseIn = buildRevealTimeline(parts, { stepBefore, targetStep: target.step, isEntering });
     await this.runMotionTimeline(riseIn, skipAnimation);
 
     if (this.readLifecycleNow() === 'disposed') {
@@ -225,18 +207,14 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     const parts = this.requireParts();
-    const revealedSlots = listSlotsRevealedBetweenSteps(stepBeforeTheStart, stepOnAir).filter(
-      (slot) => isCardOfSlotFilled(parts, slot),
-    );
-    const piecesOnAir = [parts.head, ...this.listCardsOfSlots(revealedSlots)];
-    const stopOut = buildLiftOutTogetherTimeline(parts.tokensSource, piecesOnAir);
+    const stopOut = buildStopOutTimeline(parts, stepOnAir);
     await this.runMotionTimeline(stopOut, params.skipAnimation ?? false);
 
     // A play that came during the stop-out cut it short and owns the podium now.
     if (this.readLifecycleNow() !== 'offAir' || this.runningMotionTimeline !== undefined) {
       return okAnswer;
     }
-    hideCardsAtOnce(parts.tokensSource, this.listCardsOfSlots(everySlot));
+    hideEveryCardAtOnce(parts);
     if (this.dataOnScreen !== this.data) {
       await this.redrawWithData(this.requireData());
     }
@@ -266,10 +244,10 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     }
 
     const parts = this.requireParts();
-    const slotsFilledBefore = everySlot.filter((slot) => isCardOfSlotFilled(parts, slot));
+    const slotsFilledBefore = listFilledSlots(parts);
     await this.redrawWithData(dataCheck.data);
     if (this.lifecycle === 'onAir') {
-      this.showOrHideRevealedSlotsThatChanged(slotsFilledBefore);
+      showOrHideRevealedSlotsThatChanged(parts, this.currentStep ?? 0, slotsFilledBefore);
     }
     return okAnswer;
   }
@@ -284,30 +262,6 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     this.lifecycle = 'disposed';
     this.finishRunningMotionAtOnce();
     return okAnswer;
-  }
-
-  /**
-   * After an update on air: a revealed slot that gained an entry shows its card at once,
-   * one that lost its entry hides it at once. Slots not yet revealed stay hidden.
-   */
-  private showOrHideRevealedSlotsThatChanged(slotsFilledBefore: PodiumSlot[]): void {
-    const parts = this.requireParts();
-    const stepOnAir = this.currentStep ?? 0;
-    const cardsToShow: HTMLElement[] = [];
-    const cardsToHide: HTMLElement[] = [];
-    for (const slot of everySlot) {
-      const wasFilled = slotsFilledBefore.includes(slot);
-      const isFilled = isCardOfSlotFilled(parts, slot);
-      const isRevealed = stepOnAir >= revealStepOfSlot[slot];
-      if (isRevealed && isFilled && !wasFilled) {
-        cardsToShow.push(parts.cardsBySlot[slot]);
-      }
-      if (wasFilled && !isFilled) {
-        cardsToHide.push(parts.cardsBySlot[slot]);
-      }
-    }
-    showCardsAtOnce(cardsToShow);
-    hideCardsAtOnce(parts.tokensSource, cardsToHide);
   }
 
   /** Keeps the data on screen, waits until Lit has drawn it, and writes the head. */
@@ -326,11 +280,6 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
       eventLine: settings.eventLine,
       pageLine: writeStepLine(this.currentStep ?? 0),
     });
-  }
-
-  private listCardsOfSlots(slots: PodiumSlot[]): HTMLElement[] {
-    const parts = this.requireParts();
-    return slots.map((slot) => parts.cardsBySlot[slot]);
   }
 
   /** Reads the lifecycle after an await, which stop or dispose may have changed meanwhile. */
