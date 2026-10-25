@@ -11,6 +11,8 @@
  * What these tests prove (fake time decides when a hold ends):
  *   - After one hold page 2 is on air (positions 7 to 12, "2/6"), and after six holds the
  *     cycle is back on page 1; during a turn both pages are drawn, so the bar never empties.
+ *   - A list that shrinks under the last page on air lands on the new last page ("5/5"),
+ *     never blank and never past the count.
  *   - A car that drops from page 1 to page 2 leaves page 1 at once (redrawn in place) and
  *     is on page 2 at the next turn.
  *   - An update that arrives during a turn is drawn once the turn has ended.
@@ -146,6 +148,32 @@ describe('a turn on air', () => {
     // Assert: the update was taken, and page 2 shows the new order with car 51 first.
     expect(answer, 'an update during a turn is taken').toEqual({ statusCode: 200 });
     expect(readCarNumbersOnAir(lowerStrip)[0], 'car 51 is now 7th, the first of page 2').toBe(51);
+  });
+});
+
+describe('the list shrinking under the last page on air', () => {
+  it('lands on the new last page, never blank and never past the count', async () => {
+    // Arrange: the 7 s hold, timers under the test's control, the real field on air and
+    // turned to its sixth and last page (positions 31 to 34).
+    placeArdosiaStripHoldOnTheRoot();
+    takeControlOfTimers();
+    const lowerStrip = createLowerStripOnThePage();
+    await loadLowerStripWithData(lowerStrip, createRealEnduroStripData());
+    await lowerStrip.playAction({ skipAnimation: true });
+    await vi.advanceTimersByTimeAsync(5 * 7000);
+    const pageCellBefore = readPageCell(lowerStrip);
+
+    // Act: four cars leave the list (30 left, five pages), as the source sends it.
+    await lowerStrip.updateAction({ data: { entries: createRealEnduroField().slice(0, 30) } });
+
+    // Assert: page 5 of 5, with positions 25 to 30.
+    expect(pageCellBefore, 'the last page was on air').toBe('6/6');
+    expect(readPageCell(lowerStrip), 'the strip lands on the new last page').toBe('5/5');
+    expect(readCarNumbersOnAir(lowerStrip), 'the new last page holds the last six cars').toEqual(
+      createRealEnduroField()
+        .slice(24, 30)
+        .map((car) => car.carNumber),
+    );
   });
 });
 

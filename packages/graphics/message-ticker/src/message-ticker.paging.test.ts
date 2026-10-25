@@ -8,6 +8,8 @@
  *
  * What these tests prove (fake time decides when a hold ends):
  *   - With three messages: after one hold the second ("2/3"), after three the first again.
+ *   - A list that shrinks under the last page on air lands on the new last page ("2/2"),
+ *     never blank and never past the count.
  *   - One message never turns; given a second on air with "Atualizar no ar", it starts.
  *   - An update that arrives during a turn is drawn once the turn has ended.
  *   - After stop the ticker rests on its first message, and a re-take starts there.
@@ -76,6 +78,30 @@ describe('the page timer', () => {
     // Assert: one page that never turned; with two the ticker turns.
     expect(pageCellWithOneMessage, 'one message never turns').toBe('1/1');
     expect(readPageCell(ticker), 'two messages turn').toBe('2/2');
+  });
+});
+
+describe('the list shrinking under the last message on air', () => {
+  it('lands on the new last message, never blank and never past the count', async () => {
+    // Arrange: the 7 s hold, timers under the test's control, three messages on air and
+    // turned to the third.
+    placeArdosiaStripHoldOnTheRoot();
+    takeControlOfTimers();
+    const ticker = createMessageTickerOnThePage();
+    await loadMessageTickerWithData(ticker, createEnduroTickerData());
+    await ticker.playAction({ skipAnimation: true });
+    await vi.advanceTimersByTimeAsync(2 * 7000);
+    const pageCellBefore = readPageCell(ticker);
+
+    // Act: "Atualizar no ar" removes the last message.
+    await ticker.updateAction({
+      data: { messages: ['Largada do enduro às 10h00', 'Box aberto para abastecimento'] },
+    });
+
+    // Assert: the second message, "2/2".
+    expect(pageCellBefore, 'the third message was on air').toBe('3/3');
+    expect(readPageCell(ticker), 'the ticker lands on the new last message').toBe('2/2');
+    expect(readMessageOnAir(ticker), 'never a blank pill').toBe('Box aberto para abastecimento');
   });
 });
 
