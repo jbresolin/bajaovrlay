@@ -1,0 +1,97 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-intermission-board",
+  "version": "0.1.0",
+  "name": "Quadro do intervalo",
+  "description": "Para o intervalo: a próxima sessão com a contagem, os cinco primeiros da geral e uma linha de patrocinadores; os dois últimos são opcionais.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "intermission-board.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "fullscreen",
+    "category": "break"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 750 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "eventLine": {
+        "type": "string",
+        "title": "Linha do evento",
+        "description": "Opcional; ex.: 30ª Competição Baja SAE Brasil, ao lado do título.",
+        "gddType": "single-line"
+      },
+      "dateLine": {
+        "type": "string",
+        "title": "Linha da data",
+        "description": "Opcional; ex.: domingo, 30 de março de 2025, à direita do título.",
+        "gddType": "single-line"
+      },
+      "nextSessionName": {
+        "type": "string",
+        "title": "Próxima sessão",
+        "description": "A sessão depois do intervalo; em geral a sessão da programação nos cadastros.",
+        "gddType": "single-line",
+        "minLength": 1,
+        "default": "Enduro de Resistência"
+      },
+      "nextStartsAtMs": {
+        "type": "integer",
+        "title": "Largada da próxima sessão",
+        "description": "O momento da largada; em geral o início da sessão nos cadastros. A contagem para em 0:00.",
+        "minimum": 0,
+        "v_baja": { "unit": "epochMs" }
+      },
+      "topFive": {
+        "type": "array",
+        "title": "Cinco primeiros",
+        "description": "Opcional; a classificação geral lida da fonte com a transformação “Primeiras N entradas” (5). Sem ela, a próxima sessão ocupa a largura toda.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "rank": { "type": "integer", "minimum": 1 },
+            "carNumber": { "type": "integer", "minimum": 1 },
+            "teamName": { "type": "string" },
+            "schoolName": { "type": "string" },
+            "points": { "type": "number" },
+            "isDisqualified": { "type": "boolean" }
+          },
+          "required": ["carNumber", "teamName", "schoolName", "points"],
+          "additionalProperties": true
+        },
+        "v_baja": {
+          "suggestedBinding": { "shapeKey": "standings", "path": "entries", "isLive": true }
+        }
+      },
+      "sponsors": {
+        "type": "array",
+        "title": "Patrocinadores",
+        "description": "Opcional; em geral a lista dos patrocinadores nos cadastros. Sem ela, não há linha de patrocinadores.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "level": {
+              "type": "string",
+              "enum": ["diamante", "ouro", "prata", "bronze", "apoio", "realizacao"]
+            },
+            "logoUrl": { "type": "string", "minLength": 1 },
+            "logoOnLightPlate": { "type": "boolean" },
+            "rollWeight": { "type": "integer", "minimum": 1, "maximum": 10 }
+          },
+          "required": ["name", "level", "logoUrl", "logoOnLightPlate", "rollWeight"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["nextSessionName", "nextStartsAtMs"],
+    "additionalProperties": false
+  }
+}

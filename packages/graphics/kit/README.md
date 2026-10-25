@@ -40,6 +40,8 @@ src/boardStyles.ts                       the narrow boards' frame (--board-width
 src/boardMotion.ts                       the boards' rise (each piece at its own start) and the crossfade of a state
 src/clockCardStyles.ts                   the clock card's frame, head and body: the race clock's and the countdown card's
 src/bugCardStyles.ts                     the bug's card: the sponsor bug's and the sponsor roll's corner card
+src/pointsText.ts                        a score as the boards write it ("921,8", "−15"): the standings' and the intermission's
+src/standingsRowStyles.ts                a standings row's pill and cells: the standings' and the intermission's top five
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests

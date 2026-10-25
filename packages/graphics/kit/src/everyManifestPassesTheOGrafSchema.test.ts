@@ -94,6 +94,7 @@ describe('the manifests under packages/graphics', () => {
     // Arrange: the graphics shipped today, one manifest each.
     const shippedManifests = [
       join('countdown', 'countdown.ograf.json'),
+      join('intermission-board', 'intermission-board.ograf.json'),
       join('lower-strip', 'lower-strip.ograf.json'),
       join('lower-third', 'lower-third.ograf.json'),
       join('message-ticker', 'message-ticker.ograf.json'),
