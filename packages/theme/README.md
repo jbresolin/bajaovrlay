@@ -15,6 +15,7 @@ src/gsapEaseOfToken.ts    turns an ease token into a GSAP ease name (CustomEase,
 src/waitForThemeFonts.ts  the `@bajaovrlay/theme/fonts` entry: the wait for the display face every graphic does before its first draw
 src/noHardCodedValues.test.ts  the guard: no colour (hex, rgb, hsl) or px font size in a graphic's source (preview.html is excluded on purpose)
 src/motionTokensDeclaredInTheme.test.ts  every token readMotionTokens reads is declared in tokens.css
+src/onAirFontCoversPtBR.test.ts  the guard: the woff2 maps every pt-BR on-air character (read by woff2CharacterMap.testSupport.ts)
 ```
 
 **Who reads what.** The server serves this folder at `/theme/` (tokens, font CSS, font file,
