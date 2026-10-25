@@ -51,12 +51,13 @@ export default defineConfig({
   ],
   webServer: [
     {
-      // The real server, from source, serving the real race-clock build. The build runs
-      // first so the smoke test never meets a missing or stale dist/. Nothing else builds
-      // that folder meanwhile: the race-clock package is a devDependency of the renderer,
-      // so pnpm finishes race-clock's own browser tests before starting these.
+      // The real server, from source, serving the real builds of the graphics the tests
+      // take: the race clock, and the strip, the ticker and the lower third the combo
+      // screenshots compose (BAJAOVRLAY-23). The builds run first so no test meets a missing
+      // or stale dist/. Nothing else builds those folders meanwhile: each package is a
+      // devDependency of the renderer, so pnpm finishes its own browser tests before these.
       command:
-        'pnpm --filter @bajaovrlay/race-clock build && pnpm --filter @bajaovrlay/server exec tsx --conditions=@bajaovrlay/source src/main.ts',
+        'pnpm --filter @bajaovrlay/race-clock --filter @bajaovrlay/lower-strip --filter @bajaovrlay/message-ticker --filter @bajaovrlay/lower-third build && pnpm --filter @bajaovrlay/server exec tsx --conditions=@bajaovrlay/source src/main.ts',
       url: `${realServerAddress}/health`,
       env: realServerEnvironment,
       reuseExistingServer: !isRunningInCI,

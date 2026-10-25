@@ -288,6 +288,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared
     devDependencies:
+      '@bajaovrlay/lower-strip':
+        specifier: workspace:*
+        version: link:../../packages/graphics/lower-strip
+      '@bajaovrlay/lower-third':
+        specifier: workspace:*
+        version: link:../../packages/graphics/lower-third
+      '@bajaovrlay/message-ticker':
+        specifier: workspace:*
+        version: link:../../packages/graphics/message-ticker
       '@bajaovrlay/race-clock':
         specifier: workspace:*
         version: link:../../packages/graphics/race-clock
