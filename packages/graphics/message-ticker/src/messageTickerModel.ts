@@ -10,10 +10,7 @@
  * carryClockForward assumes them; the switch only hides the block.
  */
 import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
-import {
-  type RaceClockReading,
-  raceClockReadingFieldSchemas,
-} from '@bajaovrlay/graphics-kit/raceClockReading';
+import { raceClockReadingFieldSchemas } from '@bajaovrlay/graphics-kit/raceClockReading';
 import { z } from 'zod';
 
 import {
@@ -46,17 +43,6 @@ export type MessageTickerDataCheck =
 /** Whether the clock block is shown; a missing switch means shown, as on the strip. */
 export function isClockBlockShown(data: MessageTickerData): boolean {
   return data.showClockBlock ?? true;
-}
-
-/** The clock's reading out of the ticker's data, for the kit's clock block. */
-export function readClockReadingOfTicker(data: MessageTickerData): RaceClockReading {
-  return {
-    state: data.state,
-    clockMode: data.clockMode,
-    referenceTimeMs: data.referenceTimeMs,
-    referenceWallClockMs: data.referenceWallClockMs,
-    running: data.running,
-  };
 }
 
 /** Checks the complete data `load` receives. Never throws; bad data gives a pt-BR problem. */

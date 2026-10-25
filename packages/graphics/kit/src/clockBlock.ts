@@ -66,11 +66,3 @@ export function writeClockBlockAt(
   }
   dressElementAsFlag(parts.flagPill, parts.flagWord, reading.state);
 }
-
-/**
- * Shows or hides the block. Hidden, it takes no room in the bar (the bar's grid starts at
- * the next piece) and is left out for assistive technology.
- */
-export function showClockBlock(parts: ClockBlockParts, isShown: boolean): void {
-  parts.block.hidden = !isShown;
-}

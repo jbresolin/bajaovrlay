@@ -4,8 +4,9 @@
  * layer: the lower strip with a message in place of the cars. This file owns the OGraf
  * lifecycle, the motion and the two timers, and wires messageTickerModel (data, within
  * messageLimits), messageTickerPageTurns (the message on air, a turn and what arrived
- * during it), messageTickerView (the DOM, written in place) and the kit's clock block,
- * barMotion, clockTicker, pageTurner, stripPageHold, playSteps and timelinePlayback.
+ * during it), messageTickerView (the DOM, written in place) and the kit's clock block on a
+ * bar (frame loop, redraw, switch), motion runner, barMotion, pageTurner, stripPageHold and
+ * playSteps.
  * Messages page every `--motion-strip-hold` and never scroll; the clock block is redrawn
  * every frame on air with the server-aligned "now".
  *
@@ -13,14 +14,19 @@
  * OGraf v1 expects of a graphic's default export.
  */
 import {
-  type BarTimeline,
   buildBarPlayInTimeline,
   buildBarStopOutTimeline,
   placeBarPiecesOffAir,
-  placeBarPiecesOnAir,
 } from '@bajaovrlay/graphics-kit/barMotion';
-import { writeClockBlockAt } from '@bajaovrlay/graphics-kit/clockBlock';
-import { type ClockTicker, createClockTicker } from '@bajaovrlay/graphics-kit/clockTicker';
+import {
+  type ClockBlockOnBar,
+  createClockBlockOnBar,
+  readClockReadingFrom,
+} from '@bajaovrlay/graphics-kit/clockBlockOnBar';
+import {
+  createMotionTimelineRunner,
+  type MotionTimelineRunner,
+} from '@bajaovrlay/graphics-kit/motionTimelineRunner';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -34,11 +40,6 @@ import type {
 import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
 import { readStripHoldMs } from '@bajaovrlay/graphics-kit/stripPageHold';
-import {
-  finishTimelineAtOnce,
-  playTimelineToTheEnd,
-} from '@bajaovrlay/graphics-kit/timelinePlayback';
-import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -47,7 +48,6 @@ import {
   mergePartialUpdateIntoMessageTickerData,
   type MessageTickerData,
   parseCompleteMessageTickerData,
-  readClockReadingOfTicker,
 } from './messageTickerModel.js';
 import { MessageTickerPageTurns } from './messageTickerPageTurns.js';
 import { messageTickerStyles } from './messageTickerStyles.js';
@@ -55,7 +55,6 @@ import {
   findMessageTickerParts,
   type MessageTickerParts,
   renderMessageTickerTemplate,
-  writeClockBlockSwitch,
   writeLabel,
 } from './messageTickerView.js';
 import { ptBR } from './ptBR.js';
@@ -80,26 +79,27 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
   private currentStep: number | undefined = undefined;
   private data: MessageTickerData | undefined = undefined;
   private parts: MessageTickerParts | undefined = undefined;
-  private runningMotionTimeline: BarTimeline | undefined = undefined;
-  private readonly runningTimelines = new Set<BarTimeline>();
+  private readonly motionRunner: MotionTimelineRunner = createMotionTimelineRunner();
   private readonly pageTurner: PageTurner = createPageTurner({
     onTurn: () => this.turnToTheNextPageNow(),
     readHoldMs: () => readStripHoldMs(this),
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
   });
-  private readonly clockTicker: ClockTicker = createClockTicker({
-    onFrame: () => this.redrawClockBlock(),
+  private readonly clockBlockOnBar: ClockBlockOnBar = createClockBlockOnBar({
+    readBar: () => this.parts?.bar,
+    readClockBlock: () => this.parts?.clockBlock,
+    readReading: () => (this.data === undefined ? undefined : readClockReadingFrom(this.data)),
     requestFrame: (callback) => requestAnimationFrame(callback),
     cancelFrame: (frameId) => cancelAnimationFrame(frameId),
   });
   private readonly pageTurns = new MessageTickerPageTurns({
     isOnAir: () => this.lifecycle === 'onAir',
     isOffAir: () => this.lifecycle === 'offAir',
-    isMotionRunning: () => this.runningMotionTimeline !== undefined,
+    isMotionRunning: () => this.motionRunner.isRunning(),
     readParts: () => this.requireParts(),
     readData: () => this.requireData(),
-    runMotionTimeline: (timeline) => this.runMotionTimeline(timeline, false),
+    runMotionTimeline: (timeline) => this.motionRunner.run(timeline, false),
   });
 
   override render() {
@@ -136,9 +136,9 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
     const parts = findMessageTickerParts(this.renderRoot);
     this.parts = parts;
     this.data = dataCheck.data;
-    writeClockBlockSwitch(parts, isClockBlockShown(dataCheck.data));
+    this.clockBlockOnBar.writeSwitch(isClockBlockShown(dataCheck.data), false);
     writeLabel(parts, dataCheck.data.label);
-    this.redrawClockBlock();
+    this.clockBlockOnBar.redraw();
     placeBarPiecesOffAir(parts.bar, [
       parts.clockBlock.block,
       parts.labelPill,
@@ -176,11 +176,11 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
 
     this.lifecycle = 'onAir';
     this.currentStep = target.step;
-    this.redrawClockBlock();
-    this.clockTicker.start();
+    this.clockBlockOnBar.redraw();
+    this.clockBlockOnBar.startTicking();
     const parts = this.requireParts();
     const playIn = buildBarPlayInTimeline(parts.bar, this.listPiecesInOrder());
-    await this.runMotionTimeline(playIn, skipAnimation);
+    await this.motionRunner.run(playIn, skipAnimation);
 
     if (this.readLifecycleNow() === 'disposed') {
       return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
@@ -219,10 +219,10 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
       parts.pageCell,
     ];
     const stopOut = buildBarStopOutTimeline(parts.bar, everyPiece);
-    await this.runMotionTimeline(stopOut, params.skipAnimation ?? false);
+    await this.motionRunner.run(stopOut, params.skipAnimation ?? false);
     // A play may have arrived during the out animation; only then keep the clock ticking.
     if (this.readLifecycleNow() !== 'onAir') {
-      this.clockTicker.stop();
+      this.clockBlockOnBar.stopTicking();
     }
     this.pageTurns.restOnTheFirstMessageOnceSettledOffAir();
     return okAnswer;
@@ -246,9 +246,9 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
     }
 
     this.data = dataCheck.data;
-    this.drawClockBlockSwitch();
+    this.clockBlockOnBar.writeSwitch(isClockBlockShown(dataCheck.data), this.lifecycle === 'onAir');
     writeLabel(this.requireParts(), dataCheck.data.label);
-    this.redrawClockBlock();
+    this.clockBlockOnBar.redraw();
     this.pageTurns.drawUpdatedData();
     // A ticker taken with one message and given a second must start turning; starting a
     // running timer does nothing.
@@ -265,7 +265,7 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.pageTurner.stop();
-    this.clockTicker.stop();
+    this.clockBlockOnBar.stopTicking();
   }
 
   /** OGraf customAction: the message ticker has none, so every id is unknown. */
@@ -280,11 +280,8 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.pageTurner.stop();
-    this.clockTicker.stop();
-    for (const timeline of [...this.runningTimelines]) {
-      finishTimelineAtOnce(timeline);
-    }
-    this.runningTimelines.clear();
+    this.clockBlockOnBar.stopTicking();
+    this.motionRunner.finishEveryTimelineAtOnce();
     return okAnswer;
   }
 
@@ -314,35 +311,6 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
       this.pageTurns.readMessagePillOnAir(),
       parts.pageCell,
     ];
-  }
-
-  /**
-   * Writes the clock block's switch. A block switched on while on air appears at once in
-   * its place (a change on air is read, not watched); off air the next play brings it in.
-   */
-  private drawClockBlockSwitch(): void {
-    const parts = this.requireParts();
-    const isShown = isClockBlockShown(this.requireData());
-    writeClockBlockSwitch(parts, isShown);
-    if (isShown && this.lifecycle === 'onAir') {
-      placeBarPiecesOnAir([parts.clockBlock.block]);
-    }
-  }
-
-  /**
-   * Writes the clock block as the reading is now, on every frame while on air. "Now" is
-   * the shared server-aligned time, never Date.now(), as for the race clock's card, so the
-   * two show the same time.
-   */
-  private redrawClockBlock(): void {
-    if (this.data === undefined || this.parts === undefined) {
-      return;
-    }
-    writeClockBlockAt(
-      this.parts.clockBlock,
-      readClockReadingOfTicker(this.data),
-      readServerAlignedTimeMs(),
-    );
   }
 
   /** Starts the page timer, only on air and with more than one page. */
@@ -379,22 +347,5 @@ export default class MessageTickerGraphic extends LitElement implements OGrafGra
       throw new Error('data is read only after load; a bug in message-ticker.ts');
     }
     return this.data;
-  }
-
-  /**
-   * Runs an in, out or page motion; one still running is finished at once first, so a
-   * stop during the play-in or a turn ends that motion and the stop-out starts settled.
-   */
-  private async runMotionTimeline(timeline: BarTimeline, skipAnimation: boolean): Promise<void> {
-    if (this.runningMotionTimeline !== undefined) {
-      finishTimelineAtOnce(this.runningMotionTimeline);
-    }
-    this.runningMotionTimeline = timeline;
-    this.runningTimelines.add(timeline);
-    await playTimelineToTheEnd(timeline, { skipAnimation });
-    this.runningTimelines.delete(timeline);
-    if (this.runningMotionTimeline === timeline) {
-      this.runningMotionTimeline = undefined;
-    }
   }
 }

@@ -9,7 +9,6 @@
  *
  * What these tests prove:
  *   - The clock block is shown unless the data switches it off.
- *   - The clock's reading is the five clock fields, for the kit's clock block.
  *   - A positions entry with every field the source sends (laps, gaps, status…) fits.
  *   - A new running order replaces the whole list and keeps the clock; a bad update is
  *     refused with a pt-BR sentence naming the field, the data left as it was.
@@ -25,7 +24,6 @@ import {
   type LowerStripData,
   mergePartialUpdateIntoLowerStripData,
   parseCompleteLowerStripData,
-  readClockReadingOfStrip,
 } from './lowerStripModel.js';
 import { createRealEnduroStripData } from './lowerStripOnThePage.testSupport.js';
 
@@ -52,25 +50,6 @@ describe('isClockBlockShown', () => {
 
     // Assert: the answer of this row.
     expect(isShown, 'the block follows its switch, on by default').toBe(expected);
-  });
-});
-
-describe('readClockReadingOfStrip', () => {
-  it('reads the clock’s five fields out of the strip’s data', () => {
-    // Arrange: the real enduro's strip.
-    const data = createRealEnduroStripData();
-
-    // Act: read its clock.
-    const reading = readClockReadingOfStrip(data);
-
-    // Assert: the reading the race clock would get, and nothing of the cars.
-    expect(reading, 'the reading is the five clock fields').toEqual({
-      state: 'green',
-      clockMode: 'elapsed',
-      referenceTimeMs: 3_600_000,
-      referenceWallClockMs: data.referenceWallClockMs,
-      running: false,
-    });
   });
 });
 

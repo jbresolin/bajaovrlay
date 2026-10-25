@@ -16,6 +16,8 @@
     "./flagOnAir": "./src/flagOnAir.ts",
     "./barMotion": "./src/barMotion.ts",
     "./clockBlock": "./src/clockBlock.ts",
+    "./clockBlockOnBar": "./src/clockBlockOnBar.ts",
+    "./motionTimelineRunner": "./src/motionTimelineRunner.ts",
     "./clockBlockStyles": "./src/clockBlockStyles.ts",
     "./stripPageHold": "./src/stripPageHold.ts",
     "./ptBRFlagWords": "./src/ptBRFlagWords.ts",

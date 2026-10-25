@@ -11,10 +11,7 @@
  * off, as the race clock's are: carryClockForward assumes all four clock roles are there.
  */
 import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/dataProblems';
-import {
-  type RaceClockReading,
-  raceClockReadingFieldSchemas,
-} from '@bajaovrlay/graphics-kit/raceClockReading';
+import { raceClockReadingFieldSchemas } from '@bajaovrlay/graphics-kit/raceClockReading';
 import { z } from 'zod';
 
 import { ptBR } from './ptBR.js';
@@ -52,17 +49,6 @@ export type LowerStripDataCheck =
 /** Whether the clock block is shown; a missing switch means shown, the everyday look. */
 export function isClockBlockShown(data: LowerStripData): boolean {
   return data.showClockBlock ?? true;
-}
-
-/** The clock's reading out of the strip's data, for the kit's clock block. */
-export function readClockReadingOfStrip(data: LowerStripData): RaceClockReading {
-  return {
-    state: data.state,
-    clockMode: data.clockMode,
-    referenceTimeMs: data.referenceTimeMs,
-    referenceWallClockMs: data.referenceWallClockMs,
-    running: data.running,
-  };
 }
 
 /** Checks the complete data `load` receives. Never throws; bad data gives a pt-BR problem. */

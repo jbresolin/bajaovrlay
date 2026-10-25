@@ -109,12 +109,3 @@ export function writePageCell(parts: MessageTickerParts, pageNumber: number, pag
   writeTextIfChanged(parts.pageCell, `${pageNumber}/${pageCount}`);
   parts.pageCell.setAttribute('aria-label', ptBR.pageCellName(pageNumber, pageCount));
 }
-
-/**
- * Marks whether the bar starts with the clock block: the styles give the bar's grid one
- * column less without it, so the label starts the bar.
- */
-export function writeClockBlockSwitch(parts: MessageTickerParts, isShown: boolean): void {
-  parts.bar.dataset.clockBlock = isShown ? 'shown' : 'hidden';
-  parts.clockBlock.block.hidden = !isShown;
-}

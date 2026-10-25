@@ -151,12 +151,3 @@ export function writePageCell(parts: LowerStripParts, pageNumber: number, pageCo
   writeTextIfChanged(parts.pageCell, writePageCellText(pageNumber, pageCount));
   parts.pageCell.setAttribute('aria-label', ptBR.pageCellName(pageNumber, pageCount));
 }
-
-/**
- * Marks whether the bar starts with the clock block: the styles give the bar's grid one
- * column less without it, so the cars start at the left of the bar.
- */
-export function writeClockBlockSwitch(parts: LowerStripParts, isShown: boolean): void {
-  parts.bar.dataset.clockBlock = isShown ? 'shown' : 'hidden';
-  parts.clockBlock.block.hidden = !isShown;
-}

@@ -5,8 +5,8 @@
  * dispose), the motion and the two timers, and wires the rest: lowerStripModel (data),
  * stripPages (which cars on which page), lowerStripPageTurns (the page and lane on air, a
  * turn and what arrived during it), lowerStripView (the DOM, pills reused by slot), and
- * from the graphics kit the clock block, barMotion, clockTicker, pageTurner,
- * stripPageHold, playSteps and timelinePlayback.
+ * from the graphics kit the clock block on a bar (frame loop, redraw, switch), the motion
+ * runner, barMotion, pageTurner, stripPageHold and playSteps.
  *
  * A live update on air redraws the current page in place: the pills keep their slots,
  * nothing re-enters, and a car that moved to another page is simply on that page at the
@@ -18,14 +18,19 @@
  * OGraf v1 expects of a graphic's default export.
  */
 import {
-  type BarTimeline,
   buildBarPlayInTimeline,
   buildBarStopOutTimeline,
   placeBarPiecesOffAir,
-  placeBarPiecesOnAir,
 } from '@bajaovrlay/graphics-kit/barMotion';
-import { writeClockBlockAt } from '@bajaovrlay/graphics-kit/clockBlock';
-import { type ClockTicker, createClockTicker } from '@bajaovrlay/graphics-kit/clockTicker';
+import {
+  type ClockBlockOnBar,
+  createClockBlockOnBar,
+  readClockReadingFrom,
+} from '@bajaovrlay/graphics-kit/clockBlockOnBar';
+import {
+  createMotionTimelineRunner,
+  type MotionTimelineRunner,
+} from '@bajaovrlay/graphics-kit/motionTimelineRunner';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -39,11 +44,6 @@ import type {
 import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
 import { readStripHoldMs } from '@bajaovrlay/graphics-kit/stripPageHold';
-import {
-  finishTimelineAtOnce,
-  playTimelineToTheEnd,
-} from '@bajaovrlay/graphics-kit/timelinePlayback';
-import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -52,7 +52,6 @@ import {
   type LowerStripData,
   mergePartialUpdateIntoLowerStripData,
   parseCompleteLowerStripData,
-  readClockReadingOfStrip,
 } from './lowerStripModel.js';
 import { LowerStripPageTurns } from './lowerStripPageTurns.js';
 import { lowerStripStyles } from './lowerStripStyles.js';
@@ -61,7 +60,6 @@ import {
   listPillsOfLane,
   type LowerStripParts,
   renderLowerStripTemplate,
-  writeClockBlockSwitch,
 } from './lowerStripView.js';
 import { ptBR } from './ptBR.js';
 
@@ -85,26 +83,27 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
   private currentStep: number | undefined = undefined;
   private data: LowerStripData | undefined = undefined;
   private parts: LowerStripParts | undefined = undefined;
-  private runningMotionTimeline: BarTimeline | undefined = undefined;
-  private readonly runningTimelines = new Set<BarTimeline>();
+  private readonly motionRunner: MotionTimelineRunner = createMotionTimelineRunner();
   private readonly pageTurner: PageTurner = createPageTurner({
     onTurn: () => this.turnToTheNextPageNow(),
     readHoldMs: () => readStripHoldMs(this),
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
   });
-  private readonly clockTicker: ClockTicker = createClockTicker({
-    onFrame: () => this.redrawClockBlock(),
+  private readonly clockBlockOnBar: ClockBlockOnBar = createClockBlockOnBar({
+    readBar: () => this.parts?.bar,
+    readClockBlock: () => this.parts?.clockBlock,
+    readReading: () => (this.data === undefined ? undefined : readClockReadingFrom(this.data)),
     requestFrame: (callback) => requestAnimationFrame(callback),
     cancelFrame: (frameId) => cancelAnimationFrame(frameId),
   });
   private readonly pageTurns = new LowerStripPageTurns({
     isOnAir: () => this.lifecycle === 'onAir',
     isOffAir: () => this.lifecycle === 'offAir',
-    isMotionRunning: () => this.runningMotionTimeline !== undefined,
+    isMotionRunning: () => this.motionRunner.isRunning(),
     readParts: () => this.requireParts(),
     readData: () => this.requireData(),
-    runMotionTimeline: (timeline) => this.runMotionTimeline(timeline, false),
+    runMotionTimeline: (timeline) => this.motionRunner.run(timeline, false),
   });
 
   override render() {
@@ -141,8 +140,8 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
     const parts = findLowerStripParts(this.renderRoot);
     this.parts = parts;
     this.data = dataCheck.data;
-    writeClockBlockSwitch(parts, isClockBlockShown(dataCheck.data));
-    this.redrawClockBlock();
+    this.clockBlockOnBar.writeSwitch(isClockBlockShown(dataCheck.data), false);
+    this.clockBlockOnBar.redraw();
     placeBarPiecesOffAir(parts.bar, [parts.clockBlock.block, parts.pageCell]);
     this.pageTurns.drawCurrentPage('offAir');
     this.lifecycle = 'offAir';
@@ -175,11 +174,11 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'onAir';
     this.currentStep = target.step;
-    this.redrawClockBlock();
-    this.clockTicker.start();
+    this.clockBlockOnBar.redraw();
+    this.clockBlockOnBar.startTicking();
     const parts = this.requireParts();
     const playIn = buildBarPlayInTimeline(parts.bar, this.listPiecesInOrder());
-    await this.runMotionTimeline(playIn, skipAnimation);
+    await this.motionRunner.run(playIn, skipAnimation);
 
     if (this.readLifecycleNow() === 'disposed') {
       return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
@@ -217,10 +216,10 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
       parts.pageCell,
     ];
     const stopOut = buildBarStopOutTimeline(parts.bar, everyPiece);
-    await this.runMotionTimeline(stopOut, params.skipAnimation ?? false);
+    await this.motionRunner.run(stopOut, params.skipAnimation ?? false);
     // A play may have arrived during the out animation; only then keep the clock ticking.
     if (this.readLifecycleNow() !== 'onAir') {
-      this.clockTicker.stop();
+      this.clockBlockOnBar.stopTicking();
     }
     this.pageTurns.restOnPageOneOnceSettledOffAir();
     return okAnswer;
@@ -244,8 +243,8 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
     }
 
     this.data = dataCheck.data;
-    this.drawClockBlockSwitch();
-    this.redrawClockBlock();
+    this.clockBlockOnBar.writeSwitch(isClockBlockShown(dataCheck.data), this.lifecycle === 'onAir');
+    this.clockBlockOnBar.redraw();
     this.pageTurns.drawUpdatedData();
     // A field taken on one page and grown past it must start turning; starting a running
     // timer does nothing.
@@ -262,7 +261,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.pageTurner.stop();
-    this.clockTicker.stop();
+    this.clockBlockOnBar.stopTicking();
   }
 
   /** OGraf customAction: the lower strip has none, so every id is unknown. */
@@ -277,11 +276,8 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.pageTurner.stop();
-    this.clockTicker.stop();
-    for (const timeline of [...this.runningTimelines]) {
-      finishTimelineAtOnce(timeline);
-    }
-    this.runningTimelines.clear();
+    this.clockBlockOnBar.stopTicking();
+    this.motionRunner.finishEveryTimelineAtOnce();
     return okAnswer;
   }
 
@@ -306,35 +302,6 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
     const parts = this.requireParts();
     const clockBlockPieces = isClockBlockShown(this.requireData()) ? [parts.clockBlock.block] : [];
     return [...clockBlockPieces, ...this.pageTurns.listPillsOnAir(), parts.pageCell];
-  }
-
-  /**
-   * Writes the clock block's switch. A block switched on while on air appears at once in
-   * its place (a change on air is read, not watched); off air the next play brings it in.
-   */
-  private drawClockBlockSwitch(): void {
-    const parts = this.requireParts();
-    const isShown = isClockBlockShown(this.requireData());
-    writeClockBlockSwitch(parts, isShown);
-    if (isShown && this.lifecycle === 'onAir') {
-      placeBarPiecesOnAir([parts.clockBlock.block]);
-    }
-  }
-
-  /**
-   * Writes the clock block as the reading is now, on every frame while on air. "Now" is
-   * the shared server-aligned time, never Date.now(), as for the race clock's card, so the
-   * two show the same time.
-   */
-  private redrawClockBlock(): void {
-    if (this.data === undefined || this.parts === undefined) {
-      return;
-    }
-    writeClockBlockAt(
-      this.parts.clockBlock,
-      readClockReadingOfStrip(this.data),
-      readServerAlignedTimeMs(),
-    );
   }
 
   /** Starts the page timer, only on air and with more than one page. */
@@ -371,22 +338,5 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
       throw new Error('data is read only after load; a bug in lower-strip.ts');
     }
     return this.data;
-  }
-
-  /**
-   * Runs an in, out or page motion; one still running is finished at once first, so a
-   * stop during the play-in or a turn ends that motion and the stop-out starts settled.
-   */
-  private async runMotionTimeline(timeline: BarTimeline, skipAnimation: boolean): Promise<void> {
-    if (this.runningMotionTimeline !== undefined) {
-      finishTimelineAtOnce(this.runningMotionTimeline);
-    }
-    this.runningMotionTimeline = timeline;
-    this.runningTimelines.add(timeline);
-    await playTimelineToTheEnd(timeline, { skipAnimation });
-    this.runningTimelines.delete(timeline);
-    if (this.runningMotionTimeline === timeline) {
-      this.runningMotionTimeline = undefined;
-    }
   }
 }

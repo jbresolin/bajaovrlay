@@ -19,6 +19,8 @@ src/flagOnAir.ts                         a flag drawn on a band or a pill: state
 src/ptBRFlagWords.ts                     the on-air word of each flag, the kit's one pt-BR catalog
 src/clockBlock.ts                        the strip's and the ticker's clock block: markup, parts, writer
 src/clockBlockStyles.ts                  the clock block's look (the time at 44 px, the flag pill)
+src/clockBlockOnBar.ts                   a bar's clock block run: frame loop, redraw at server time, the switch
+src/motionTimelineRunner.ts              one motion at a time: run, isRunning, finishEveryTimelineAtOnce
 src/stripPageHold.ts                     --motion-strip-hold, the strip's and the ticker's page hold (7 s if missing)
 src/barMotion.ts                         the strip's and the ticker's GSAP timelines: cascade in, out together, turn in place
 src/waitForImagesToSettle.ts             load's wait for a graphic's images (at most 2 s; a broken one never blocks)

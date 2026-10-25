@@ -10,7 +10,6 @@
  *   - The block shows the kit's time text for the reading at the moment given, and the
  *     flag pill dressed as the flag (the checkered one wordless, but named).
  *   - A later frame changes the time in place, on the same elements.
- *   - Hidden, the block is marked hidden (the bar then starts at the next piece).
  *
  * What these tests deliberately do not cover:
  *   - The look; the bars' screenshot tests show it on the grey and black stages.
@@ -20,12 +19,7 @@
 import { render } from 'lit';
 import { describe, expect, it } from 'vitest';
 
-import {
-  findClockBlockParts,
-  renderClockBlockTemplate,
-  showClockBlock,
-  writeClockBlockAt,
-} from './clockBlock.js';
+import { findClockBlockParts, renderClockBlockTemplate, writeClockBlockAt } from './clockBlock.js';
 import type { RaceClockReading } from './raceClockReading.js';
 
 // 14:00:00 on the enduro's day, as the server's clock read it.
@@ -81,21 +75,5 @@ describe('writeClockBlockAt', () => {
     expect(parts.time.textContent, 'the time moved on by a second').toBe('1:00:01');
     expect(parts.flagWord.textContent, 'the checkered pill shows no word').toBe('');
     expect(parts.flagPill.getAttribute('aria-label'), 'but is named').toBe('QUADRICULADA');
-  });
-});
-
-describe('showClockBlock', () => {
-  it('hides the block and shows it again', () => {
-    // Arrange: the block, drawn.
-    const parts = drawClockBlock();
-
-    // Act: hide it, then note it, then show it again.
-    showClockBlock(parts, false);
-    const isHiddenWhenOff = parts.block.hidden;
-    showClockBlock(parts, true);
-
-    // Assert: hidden while off, back when on.
-    expect(isHiddenWhenOff, 'switched off, the block is hidden').toBe(true);
-    expect(parts.block.hidden, 'switched on again, the block is shown').toBe(false);
   });
 });
