@@ -2,9 +2,10 @@
  * The sessions board OGraf graphic (BAJAOVRLAY-46): the day's schedule on a narrow board,
  * one pill per slot with its state ("CONCLUÍDA", "EM ANDAMENTO", "A SEGUIR"). This file owns
  * the OGraf lifecycle (load, play, update, stop, dispose) in the countdown's shape and only
- * wires the pieces together: sessionsBoardModel (data), sessionsBoardWindow (each slot's
- * status by shared's findStatusOfScheduleSlot, the twelve-slot window, the next change),
- * sessionsBoardView (the DOM), sessionsBoardAnimations (GSAP from the theme's tokens).
+ * wires the pieces together: sessionsBoardModel (data), sessionsBoardStatusChecks (the
+ * slots on the board with their statuses, the re-check timer, the crossfade of a change, on
+ * sessionsBoardWindow), sessionsBoardView (the DOM), sessionsBoardAnimations (GSAP from the
+ * theme's tokens).
  *
  * A slot's status changes with the clock, and nothing refreshes the air when only time
  * passes, so the board works it out itself on the server-aligned clock and re-checks it on
@@ -29,8 +30,6 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
-import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
-import type { ScheduleSlotStatus } from '@bajaovrlay/shared/scheduleSlotStatus';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -38,17 +37,14 @@ import { ptBR } from './ptBR.js';
 import {
   buildSessionsBoardPlayInTimeline,
   buildSessionsBoardStopOutTimeline,
-  buildStatusCrossfadeTimeline,
   placeSessionsBoardPiecesOffAir,
-  placeSessionsBoardPiecesOnAir,
-  showStatusOfRowAtOnce,
-  type SlotStatusChange,
 } from './sessionsBoardAnimations.js';
 import {
   mergePartialUpdateIntoSessionsBoardData,
   parseCompleteSessionsBoardData,
   type SessionsBoardData,
 } from './sessionsBoardModel.js';
+import { SessionsBoardStatusChecks } from './sessionsBoardStatusChecks.js';
 import { sessionsBoardStyles } from './sessionsBoardStyles.js';
 import {
   findSessionsBoard,
@@ -56,11 +52,6 @@ import {
   findSessionsBoardRows,
   renderSessionsBoardTemplate,
 } from './sessionsBoardView.js';
-import {
-  findNextStatusChangeAfter,
-  listSlotsOnTheBoardAt,
-  type SlotOnTheBoard,
-} from './sessionsBoardWindow.js';
 
 /** Must match "stepCount" in sessions-board.ograf.json: play shows the board, stop hides it. */
 const sessionsBoardStepCount = 1;
@@ -83,12 +74,20 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
   // Read by render(); not Lit reactive properties, so the board is redrawn only when this
   // file asks, never by surprise.
   private data: SessionsBoardData | undefined = undefined;
-  private slotsOnTheBoard: SlotOnTheBoard[] = [];
   private readonly motions: MotionTimelineRunner = createMotionTimelineRunner();
-  private pendingCheckTimerId: number | undefined = undefined;
+  private readonly statusChecks = new SessionsBoardStatusChecks({
+    readRenderRoot: () => this.renderRoot,
+    readData: () => this.requireData(),
+    isOnAir: () => this.lifecycle === 'onAir',
+    redrawNow: async () => {
+      this.requestUpdate();
+      await this.updateComplete;
+    },
+    runMotion: (timeline) => this.motions.run(timeline, false),
+  });
 
   override render() {
-    return renderSessionsBoardTemplate(this.data, this.slotsOnTheBoard);
+    return renderSessionsBoardTemplate(this.data, this.statusChecks.readSlotsOnTheBoard());
   }
 
   /**
@@ -110,7 +109,7 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
 
     // Lit renders only connected elements: a load on an element not yet in the page waits
     // here until it is added.
-    await this.redrawSlotsAt(dataCheck.data, readServerAlignedTimeMs());
+    await this.storeAndDrawTheStatusesNow(dataCheck.data);
     this.placeEveryPieceOffAir();
     await waitForThemeFontsToBeReady(this);
 
@@ -148,9 +147,9 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
     this.lifecycle = 'onAir';
     this.currentStep = target.step;
     // The statuses as they are at the take, drawn at once before the board rises.
-    await this.redrawSlotsAt(this.requireData(), readServerAlignedTimeMs());
+    await this.storeAndDrawTheStatusesNow(this.requireData());
     this.placeEveryPieceOffAir();
-    this.bookTheNextStatusCheck();
+    this.statusChecks.bookTheNextStatusCheck();
     const board = findSessionsBoard(this.renderRoot);
     const playIn = buildSessionsBoardPlayInTimeline(
       board,
@@ -180,7 +179,7 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.cancelTheStatusCheck();
+    this.statusChecks.cancelTheStatusCheck();
     const stopOut = buildSessionsBoardStopOutTimeline(
       findSessionsBoard(this.renderRoot),
       this.listEveryPiece(),
@@ -207,12 +206,13 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
     }
 
     if (this.lifecycle !== 'onAir') {
-      await this.redrawSlotsAt(dataCheck.data, readServerAlignedTimeMs());
+      await this.storeAndDrawTheStatusesNow(dataCheck.data);
       this.placeEveryPieceOffAir();
       return okAnswer;
     }
-    await this.redrawOnAirAndCrossfadeTheChanges(dataCheck.data);
-    this.bookTheNextStatusCheck();
+    this.data = dataCheck.data;
+    await this.statusChecks.redrawOnAirAndCrossfadeTheChanges(dataCheck.data);
+    this.statusChecks.bookTheNextStatusCheck();
     return okAnswer;
   }
 
@@ -228,113 +228,21 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
    */
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.cancelTheStatusCheck();
+    this.statusChecks.cancelTheStatusCheck();
   }
 
   /** OGraf dispose: cancels the status check and ends every timeline; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
-    this.cancelTheStatusCheck();
+    this.statusChecks.cancelTheStatusCheck();
     this.motions.finishEveryTimelineAtOnce();
     return okAnswer;
   }
 
-  /**
-   * The status check: at the next start or end, the statuses are worked out again, the
-   * changed rows crossfade, and the following check is booked. What the timer calls; the
-   * tests call it through fake time.
-   */
-  private async checkTheStatusesNow(): Promise<void> {
-    this.pendingCheckTimerId = undefined;
-    if (this.lifecycle !== 'onAir') {
-      return;
-    }
-    await this.redrawOnAirAndCrossfadeTheChanges(this.requireData());
-    this.bookTheNextStatusCheck();
-  }
-
-  /** Books the check for the next moment a status changes; none when nothing will change. */
-  private bookTheNextStatusCheck(): void {
-    this.cancelTheStatusCheck();
-    if (this.lifecycle !== 'onAir') {
-      return;
-    }
-    const nowMs = readServerAlignedTimeMs();
-    const nextChangeMs = findNextStatusChangeAfter(this.requireData().slots, nowMs);
-    if (nextChangeMs === undefined) {
-      return;
-    }
-    this.pendingCheckTimerId = window.setTimeout(() => {
-      void this.checkTheStatusesNow();
-    }, nextChangeMs - nowMs);
-  }
-
-  private cancelTheStatusCheck(): void {
-    if (this.pendingCheckTimerId === undefined) {
-      return;
-    }
-    window.clearTimeout(this.pendingCheckTimerId);
-    this.pendingCheckTimerId = undefined;
-  }
-
-  /**
-   * Redraws the slots as they are now while on air: rows kept by slot id keep their look,
-   * a row new on the board (an added slot, the window moving on) is placed on air at once,
-   * and every slot whose status changed crossfades.
-   */
-  private async redrawOnAirAndCrossfadeTheChanges(data: SessionsBoardData): Promise<void> {
-    const statusesBefore = new Map(
-      this.slotsOnTheBoard.map((entry) => [entry.slot.slotId, entry.status]),
-    );
-    const rowsBefore = new Set(findSessionsBoardRows(this.renderRoot).map((parts) => parts.row));
-    await this.redrawSlotsAt(data, readServerAlignedTimeMs(), statusesBefore);
-
-    const changes: SlotStatusChange[] = [];
-    for (const rowParts of findSessionsBoardRows(this.renderRoot)) {
-      const statusAfter = this.readStatusOfSlot(rowParts.slotId);
-      const statusBefore = statusesBefore.get(rowParts.slotId);
-      if (!rowsBefore.has(rowParts.row) || statusBefore === undefined) {
-        placeSessionsBoardPiecesOnAir([rowParts.row]);
-        showStatusOfRowAtOnce(rowParts, statusAfter);
-        continue;
-      }
-      if (statusBefore !== statusAfter) {
-        changes.push({ rowParts, statusBefore, statusAfter });
-      }
-    }
-    if (changes.length > 0) {
-      const crossfade = buildStatusCrossfadeTimeline(findSessionsBoard(this.renderRoot), changes);
-      await this.motions.run(crossfade, false);
-    }
-  }
-
-  /**
-   * Keeps the data and the slots on the board at `nowMs`, waits until Lit has drawn them,
-   * and shows each row's status at once, except the rows given a status to keep (on air,
-   * where the change crossfades instead).
-   */
-  private async redrawSlotsAt(
-    data: SessionsBoardData,
-    nowMs: number,
-    statusesToKeep: Map<string, ScheduleSlotStatus> = new Map(),
-  ): Promise<void> {
+  /** Keeps the data and draws its slots with their statuses now, at once. */
+  private async storeAndDrawTheStatusesNow(data: SessionsBoardData): Promise<void> {
     this.data = data;
-    this.slotsOnTheBoard = listSlotsOnTheBoardAt(data.slots, nowMs);
-    this.requestUpdate();
-    await this.updateComplete;
-    for (const rowParts of findSessionsBoardRows(this.renderRoot)) {
-      const statusKept = statusesToKeep.get(rowParts.slotId);
-      showStatusOfRowAtOnce(rowParts, statusKept ?? this.readStatusOfSlot(rowParts.slotId));
-    }
-  }
-
-  /** The status a slot on the board has now; a row with no slot is a bug in the view. */
-  private readStatusOfSlot(slotId: string): ScheduleSlotStatus {
-    const entry = this.slotsOnTheBoard.find((candidate) => candidate.slot.slotId === slotId);
-    if (entry === undefined) {
-      throw new Error(`a row of slot "${slotId}" has no slot on the board; a bug in the view`);
-    }
-    return entry.status;
+    await this.statusChecks.drawTheStatusesNowAtOnce(data);
   }
 
   /** The head and every row: the pieces that come and go. */
