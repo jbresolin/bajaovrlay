@@ -14,10 +14,11 @@
  *     the form and marks the list as changed.
  *   - "Remover mensagem 1" takes that line out and the others move up.
  *   - The keyboard drag (Space, ArrowDown, Space on "Mover mensagem 1") puts the first
- *     message second.
+ *     message second, and the drop is announced as "Mensagem 1", not "Linha 1".
+ *   - The count under a line leaves out the spaces around it, as the form sends it.
  *   - When the form is checked, a message over the limit shows its pt-BR reason under the
  *     list, giving the line and the limit; a list emptied of its last message says it is
- *     required.
+ *     required, and the empty list says "Ainda não há mensagem.".
  *   - A list of objects beside it is still the read-only box.
  *
  * What these tests deliberately do not cover:
@@ -26,7 +27,7 @@
  *     the keyboard drag runs the same code.
  */
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { buildSchemaFormValuesFromDataOnAir } from './buildSchemaFormValues';
 import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSchema';
@@ -56,6 +57,13 @@ function readMessagesOnScreen(): string[] {
 }
 
 describe('the ticker’s messages on screen', () => {
+  // The drag test takes the timers and the layout; whatever happens in it, the next test
+  // gets real ones back.
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
   it('draws each message on air as one named line', () => {
     // Arrange and act: the ticker's form with the two morning messages.
     renderTickerFormWithMessages(buildTwoEnduroMorningMessages());
@@ -131,14 +139,35 @@ describe('the ticker’s messages on screen', () => {
         await vi.advanceTimersByTimeAsync(20);
       });
     }
-    vi.useRealTimers();
-    vi.restoreAllMocks();
 
-    // Assert: the briefing comes first now, on screen and in the form.
+    // Assert: the briefing comes first now in the form, and a screen reader heard the
+    // message named as the list names it.
     expect(page.readFormValues().values.messages, 'the order follows the drag').toEqual([
       { text: 'Briefing dos pilotos na tenda central' },
       { text: 'Largada do enduro às 10h00' },
     ]);
+    expect(
+      screen.getByText('Mensagem 1 na posição nova.'),
+      'the drop is announced with the line named by the item title',
+    ).toBeInTheDocument();
+  });
+});
+
+describe('the count under a message', () => {
+  it('counts the message as it will be sent, without the spaces at its end', () => {
+    // Arrange: the ticker with the start message.
+    renderTickerFormWithMessages(['Largada do enduro às 10h00']);
+
+    // Act: type two spaces after it, as an operator does before thinking of more.
+    fireEvent.change(screen.getByRole('textbox', { name: 'Mensagem 1' }), {
+      target: { value: 'Largada do enduro às 10h00  ' },
+    });
+
+    // Assert: 26 of 50, the length that is sent, not 28.
+    expect(
+      screen.getByText('26/50'),
+      'the count must leave out the spaces the form trims',
+    ).toBeInTheDocument();
   });
 });
 
@@ -178,7 +207,10 @@ describe('the ticker’s messages when the form is checked', () => {
       screen.getByText('O campo "Mensagens" é obrigatório.'),
       'the reason is under the list',
     ).toBeInTheDocument();
-    expect(screen.getByText('Nenhuma linha.'), 'the empty list says so').toBeInTheDocument();
+    expect(
+      screen.getByText('Ainda não há mensagem.'),
+      'the empty list says so',
+    ).toBeInTheDocument();
   });
 });
 

@@ -119,7 +119,7 @@ export function TextListField(props: {
       </legend>
 
       {lines.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{texts.noLines}</p>
+        <p className="text-sm text-muted-foreground">{texts.noLines(itemLabel)}</p>
       ) : (
         <DndContext
           sensors={dragSensors}
@@ -130,7 +130,7 @@ export function TextListField(props: {
           onDragCancel={() => setIsDragActiveOrPending(false)}
           onDragAbort={() => setIsDragActiveOrPending(false)}
           accessibility={{
-            announcements: buildTextListDragAnnouncements(lineIdsInOrder),
+            announcements: buildTextListDragAnnouncements(itemLabel, lineIdsInOrder),
             screenReaderInstructions: textListDragInstructionsForScreenReaders,
           }}
         >

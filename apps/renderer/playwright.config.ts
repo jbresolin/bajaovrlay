@@ -66,6 +66,9 @@ export default defineConfig({
     {
       name: 'real server: combos',
       testMatch: '**/combosOnAir.e2e.ts',
+      // What could go wrong: Playwright skips a project whose dependency failed, so a red
+      // race clock test also skips the combos (reported "did not run", not failed). Read
+      // the race clock's failure first; the combos say nothing until it is fixed.
       dependencies: ['real server: race clock'],
       snapshotPathTemplate: snapshotPathOfTheChromiumProject,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },

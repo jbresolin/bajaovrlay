@@ -23,8 +23,9 @@ export const ptBRTextList = {
   removeLineSymbol: '×',
   moveLineHandle: (itemLabel: string, lineNumber: number) =>
     `Mover ${writeInsideASentence(itemLabel)} ${lineNumber}`,
-  // Shown in place of the lines when the list has none.
-  noLines: 'Nenhuma linha.',
+  // Shown in place of the lines when the list has none. "Ainda não há" agrees with an
+  // item title of either gender ("mensagem", "título"), which "Nenhuma" would not.
+  noLines: (itemLabel: string) => `Ainda não há ${writeInsideASentence(itemLabel)}.`,
   // The count under a line with a limit, so the operator sees the room left while typing.
   charactersUsed: (used: number, limit: number) => `${used}/${limit}`,
 
@@ -50,16 +51,22 @@ export const ptBRTextList = {
   },
 
   // What a screen reader hears while a line is dragged (dnd-kit's own words are English).
+  // A line is named by the item title ("Mensagem 2"); the sentences carry no adjective
+  // that would have to agree with its gender.
   dragAndDrop: {
     handleRoleDescription: 'linha que pode mudar de posição',
     keyboardInstructions:
       'Para mudar uma linha de posição, pressione Espaço ou Enter, mova com as setas para cima e para baixo e pressione Espaço ou Enter de novo para soltar. Esc cancela.',
-    pickedUp: (lineNumber: number) => `Linha ${lineNumber} levantada.`,
-    movedOver: (lineNumber: number, otherLineNumber: number) =>
-      `Linha ${lineNumber} sobre a posição da linha ${otherLineNumber}.`,
-    overItsOwnPlace: (lineNumber: number) => `Linha ${lineNumber} no lugar de onde saiu.`,
-    movedOutsideTheList: (lineNumber: number) => `Linha ${lineNumber} fora da lista.`,
-    dropped: (lineNumber: number) => `Linha ${lineNumber} solta na nova posição.`,
-    leftWhereItWas: (lineNumber: number) => `Linha ${lineNumber} continua onde estava.`,
+    pickedUp: (itemLabel: string, lineNumber: number) => `${itemLabel} ${lineNumber} em movimento.`,
+    movedOver: (itemLabel: string, lineNumber: number, otherLineNumber: number) =>
+      `${itemLabel} ${lineNumber} sobre a posição ${otherLineNumber}.`,
+    overItsOwnPlace: (itemLabel: string, lineNumber: number) =>
+      `${itemLabel} ${lineNumber} no lugar de onde saiu.`,
+    movedOutsideTheList: (itemLabel: string, lineNumber: number) =>
+      `${itemLabel} ${lineNumber} fora da lista.`,
+    dropped: (itemLabel: string, lineNumber: number) =>
+      `${itemLabel} ${lineNumber} na posição nova.`,
+    leftWhereItWas: (itemLabel: string, lineNumber: number) =>
+      `${itemLabel} ${lineNumber} continua onde estava.`,
   },
 } as const;

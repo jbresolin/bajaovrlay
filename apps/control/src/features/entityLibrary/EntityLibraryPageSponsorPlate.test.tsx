@@ -9,8 +9,8 @@
  *   component).
  *
  * What these tests prove:
- *   - The master sponsor's form shows its logo on the panel and on the plate; "Logo sobre
- *     placa clara" ticked and saved sends the sponsor with the choice.
+ *   - The master sponsor's form opens with its logo on the panel and on the plate.
+ *   - "Logo sobre placa clara" ticked and saved sends the sponsor with the choice.
  *   - A sponsor with no logo is told to send one first, and no preview is drawn.
  *
  * What these tests deliberately do not cover:
@@ -54,16 +54,14 @@ function openTheFormOfSponsorInRow(rowIndex: number) {
 }
 
 describe("the light plate of a sponsor's logo", () => {
-  it('shows the master sponsor’s logo on the panel and on the plate, and saves the box ticked', async () => {
-    // Arrange: the page drawn, the master sponsor's form open.
-    const { fakeServer } = renderPageWithTwoSponsors();
+  it('shows the master sponsor’s logo on the panel and on the plate when its form opens', () => {
+    // Arrange: the page drawn.
+    renderPageWithTwoSponsors();
+
+    // Act: open the master sponsor's form.
     const form = openTheFormOfSponsorInRow(0);
 
-    // Act: tick the box and save.
-    fireEvent.click(form.getByRole('checkbox', { name: 'Logo sobre placa clara' }));
-    fireEvent.click(form.getByRole('button', { name: 'Salvar' }));
-
-    // Assert: both previews show the logo; the sponsor goes with its logo on the plate.
+    // Assert: both previews show the logo, before anything is ticked.
     expect(
       form.getByRole('img', { name: 'Logo no painel, como vai ao ar sem a placa' }),
       'the logo on the panel',
@@ -72,6 +70,18 @@ describe("the light plate of a sponsor's logo", () => {
       form.getByRole('img', { name: 'Logo na placa clara' }),
       'the logo on the plate',
     ).toHaveAttribute('src', `/media/${logoOfTheMasterSponsorMediaId}`);
+  });
+
+  it('saves the master sponsor with "Logo sobre placa clara" ticked', async () => {
+    // Arrange: the page drawn, the master sponsor's form open.
+    const { fakeServer } = renderPageWithTwoSponsors();
+    const form = openTheFormOfSponsorInRow(0);
+
+    // Act: tick the box and save.
+    fireEvent.click(form.getByRole('checkbox', { name: 'Logo sobre placa clara' }));
+    fireEvent.click(form.getByRole('button', { name: 'Salvar' }));
+
+    // Assert: the sponsor goes with its logo on the plate.
     await waitFor(() => {
       expect(fakeServer.listCommandsReceived(), 'the sponsor with its logo on the plate').toEqual([
         {

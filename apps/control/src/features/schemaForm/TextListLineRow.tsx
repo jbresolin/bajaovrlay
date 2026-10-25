@@ -82,9 +82,10 @@ export function TextListLineRow(props: TextListLineRowProps) {
         {...form.register(textName)}
       />
       {field.maximumLength !== undefined && (
-        // Counted in code points, as the check and the server count it.
+        // Counted trimmed and in code points, as the check and the server count it: a space
+        // typed at the end is not sent, so it does not use up the room left.
         <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-          {texts.charactersUsed([...textNow].length, field.maximumLength)}
+          {texts.charactersUsed([...textNow.trim()].length, field.maximumLength)}
         </span>
       )}
       <Button

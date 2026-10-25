@@ -26,7 +26,7 @@ import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { emptySchemaFormBindingValue } from './bindingFormValue';
-import { buildSchemaFormValuesFromItemFields } from './buildSchemaFormValues';
+import { buildSchemaFormValuesFromItemFields } from './buildSchemaFormValuesFromItemFields';
 import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSchema';
 import {
   hasSourceChoiceChangedSinceOpened,

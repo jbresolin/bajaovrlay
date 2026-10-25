@@ -44,9 +44,9 @@ export {
   buildEmptySchemaFormValues,
   // The values of a form showing the resolvedData of an instance on air.
   buildSchemaFormValuesFromDataOnAir,
-  // The values of a form showing the stored fields of an item.
-  buildSchemaFormValuesFromItemFields,
 } from './buildSchemaFormValues';
+// The values of a form showing the stored fields of an item.
+export { buildSchemaFormValuesFromItemFields } from './buildSchemaFormValuesFromItemFields';
 export type {
   // One field of a form that passed the check: its value, "cleared", or "filled at the take".
   CheckedSchemaFormField,

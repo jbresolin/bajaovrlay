@@ -28,10 +28,8 @@ import type { ItemFields } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { emptySchemaFormBindingValue } from './bindingFormValue';
-import {
-  buildEmptySchemaFormValues,
-  buildSchemaFormValuesFromItemFields,
-} from './buildSchemaFormValues';
+import { buildEmptySchemaFormValues } from './buildSchemaFormValues';
+import { buildSchemaFormValuesFromItemFields } from './buildSchemaFormValuesFromItemFields';
 import { checkSchemaFormValues } from './checkSchemaFormValues';
 import { describeSchemaFormFromDataSchema } from './describeSchemaFormFromDataSchema';
 import {
