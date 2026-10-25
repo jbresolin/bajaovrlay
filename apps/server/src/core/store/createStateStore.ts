@@ -175,6 +175,19 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     if (!isAnySliceChanged) {
       return { ok: true };
     }
+    // A step the command's new data no longer has was moved by the reducer itself: the
+    // event-log row names only the command, so this line says which step moved and why.
+    for (const stepBroughtBack of reducerOutcome.stepsBroughtBack ?? []) {
+      options.logger.info(
+        {
+          command: command.type,
+          instance_id: stepBroughtBack.instanceId,
+          step_before: stepBroughtBack.stepBefore,
+          step_after: stepBroughtBack.stepAfter,
+        },
+        'instance brought back to the last step its data has',
+      );
+    }
 
     // The one exception to "every command is logged" (decision D11): a data-source poll
     // that left its source's health as it was (the reducer says so) is saved and

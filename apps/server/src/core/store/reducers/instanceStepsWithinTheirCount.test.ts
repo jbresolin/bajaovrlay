@@ -10,15 +10,18 @@
  *   on its last step, in the same change, and the renderer plays that step.
  *
  * What these tests prove:
- *   - A refresh that shrinks the real Super Prime (7 steps) to an eight-car bracket (3)
- *     while it is on its 6th step puts it on its last, the 3rd, keeping its id and data.
+ *   - A refresh, or an operator's update, that shrinks the real Super Prime (7 steps) to an
+ *     eight-car bracket (3) while it is on its 6th step puts it on its last, the 3rd,
+ *     keeping its id and data, and the outcome names the move for the store's log line.
  *   - A refresh that keeps the step within the count leaves the step alone, and so does
  *     one that adds steps.
  *   - "Próximo" on the bracket's last counted step is refused with NO_NEXT_STEP, as on the
- *     podium's last.
+ *     podium's last; one pressed from the step the bracket had before a clamp is refused
+ *     with STEP_ALREADY_MOVED.
  *
  * What these tests deliberately do not cover:
  *   - How the steps are counted: packages/shared/src/steps (bracketSteps, graphicSteps).
+ *   - The log line and the clamp at boot: ../storeStepsBroughtBack.test.ts.
  *   - The renderer playing the lower step: its reconciler tests.
  */
 import { readFileSync } from 'node:fs';
@@ -107,33 +110,55 @@ function readBracketAfter(outcome: ReturnType<typeof reduceCommand>): Instance |
     : undefined;
 }
 
-describe('a live refresh that changes how many steps the bracket has', () => {
-  it('puts the bracket on its last step when the new rounds have fewer steps than the one on screen', () => {
-    // Arrange: the real Super Prime on air at its 6th step (the third place), index 5.
-    const slicesBefore = buildRaceDayWithTheBracket(
-      buildBracketOnAirAtStep(5, readTheRealSuperPrimeRounds()),
-    );
-
-    // Act: the source's next poll brings an eight-car bracket (3 steps) instead.
-    const outcome = reduceCommand(
-      slicesBefore,
-      {
-        type: 'refreshBoundInstanceData',
+describe('an update that changes how many steps the bracket has', () => {
+  const shrinkingUpdateScenarios = [
+    // The source's next poll: the refresher's command (BAJAOVRLAY-20).
+    {
+      name: 'a live refresh',
+      command: {
+        type: 'refreshBoundInstanceData' as const,
         instanceId: bracketOnAirId,
         data: { rounds: buildEightCarRounds() },
       },
-      contextOfTheCommand,
-    );
-    const bracketAfter = readBracketAfter(outcome);
+    },
+    // An operator's "Edição rápida" sending new rounds by hand.
+    {
+      name: 'an operator’s update',
+      command: {
+        type: 'updateInstanceData' as const,
+        instanceId: bracketOnAirId,
+        data: { rounds: buildEightCarRounds() },
+        takeTimeFieldKeys: [],
+      },
+    },
+  ];
 
-    // Assert: applied, the new rounds on air, the step brought back to the last, index 2.
-    expect(outcome.status, 'the refresh must be applied').toBe('applied');
-    expect(bracketAfter?.resolvedData.rounds, 'the new rounds are on air').toEqual(
-      buildEightCarRounds(),
-    );
-    expect(bracketAfter?.currentStep, 'the step must be the last one the rounds have').toBe(2);
-    expect(bracketAfter?.id, 'it is the same instance, updated in place').toBe(bracketOnAirId);
-  });
+  it.each(shrinkingUpdateScenarios)(
+    'puts the bracket on its last step when $name leaves it fewer steps than the one on screen, and says so',
+    ({ command }) => {
+      // Arrange: the real Super Prime on air at its 6th step (the third place), index 5.
+      const slicesBefore = buildRaceDayWithTheBracket(
+        buildBracketOnAirAtStep(5, readTheRealSuperPrimeRounds()),
+      );
+
+      // Act: the row's command brings an eight-car bracket (3 steps) instead.
+      const outcome = reduceCommand(slicesBefore, command, contextOfTheCommand);
+      const bracketAfter = readBracketAfter(outcome);
+
+      // Assert: applied, the new rounds on air, the step brought back to the last (index
+      // 2), the same instance, and the outcome naming the move for the store's log line.
+      expect(outcome.status, 'the update must be applied').toBe('applied');
+      expect(bracketAfter?.resolvedData.rounds, 'the new rounds are on air').toEqual(
+        buildEightCarRounds(),
+      );
+      expect(bracketAfter?.currentStep, 'the step must be the last one the rounds have').toBe(2);
+      expect(bracketAfter?.id, 'it is the same instance, updated in place').toBe(bracketOnAirId);
+      expect(
+        outcome.status === 'applied' ? outcome.stepsBroughtBack : undefined,
+        'the outcome says which step moved, from what to what',
+      ).toEqual([{ instanceId: bracketOnAirId, stepBefore: 5, stepAfter: 2 }]);
+    },
+  );
 
   const stepKeptScenarios = [
     // Fewer steps, but still more than the one on screen: nothing to bring back.
@@ -175,6 +200,37 @@ describe('a live refresh that changes how many steps the bracket has', () => {
 });
 
 describe('"Próximo" on the bracket', () => {
+  it('is refused with STEP_ALREADY_MOVED when pressed from the step the bracket had before a clamp', () => {
+    // Arrange: the real Super Prime on air at index 5, then a refresh shrinks it to three
+    // steps, which brings it back to index 2; the operator's page still showed index 5.
+    const slicesOnAir = buildRaceDayWithTheBracket(
+      buildBracketOnAirAtStep(5, readTheRealSuperPrimeRounds()),
+    );
+    const refresh = reduceCommand(
+      slicesOnAir,
+      {
+        type: 'refreshBoundInstanceData',
+        instanceId: bracketOnAirId,
+        data: { rounds: buildEightCarRounds() },
+      },
+      contextOfTheCommand,
+    );
+    const slicesAfterTheClamp = refresh.status === 'applied' ? refresh.slices : slicesOnAir;
+
+    // Act: "Próximo" pressed from the step the page showed before the clamp.
+    const outcome = reduceCommand(
+      slicesAfterTheClamp,
+      { type: 'nextOnLayer', layerId: 'fullscreen', fromStep: 5 },
+      contextOfTheCommand,
+    );
+
+    // Assert: refused, so a press made on the old count reveals nothing.
+    expect(
+      outcome.status === 'refused' ? outcome.error.code : outcome.status,
+      'a press from a step the bracket has left is refused',
+    ).toBe('STEP_ALREADY_MOVED');
+  });
+
   it('is refused with NO_NEXT_STEP on the last step its rounds give', () => {
     // Arrange: an eight-car bracket on air at its 3rd and last step (the final).
     const slicesBefore = buildRaceDayWithTheBracket(

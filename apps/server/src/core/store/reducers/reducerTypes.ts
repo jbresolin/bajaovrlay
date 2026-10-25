@@ -1,6 +1,7 @@
 import type { CommandError, Slices } from '@bajaovrlay/shared';
 
 import type { SourceHostAllowlist } from '../../../modules/dataSources/index.js';
+import type { StepBroughtBack } from './instanceStepsWithinTheirCount.js';
 
 /**
  * The slices a command may change. The event log is not among them: the store appends
@@ -87,5 +88,11 @@ export type ReducerOutcome =
        * failed with this reason, once per spell (gate 2 of PR #18).
        */
       refusalWrittenToTheEventLog?: CommandError;
+      /**
+       * Set by reduceCommand when the change left an instance past its step count and it
+       * was put on its last step (instanceStepsWithinTheirCount.ts, BAJAOVRLAY-25); the
+       * store writes a log line for each, so a step that moved by itself leaves a trace.
+       */
+      stepsBroughtBack?: StepBroughtBack[];
     }
   | { status: 'refused'; error: CommandError };

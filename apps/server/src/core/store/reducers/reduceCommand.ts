@@ -47,11 +47,12 @@ export function reduceCommand(
     return outcome;
   }
   const slicesWithBindingsKept = dropBindingsOfInstancesGone(outcome.slices);
-  const slicesWithStepsKept = keepCurrentStepsWithinTheirStepCount(slicesWithBindingsKept);
-  return {
-    ...outcome,
-    slices: followEventsOfProgramInstances(slicesWithStepsKept, context.now),
-  };
+  const stepsKept = keepCurrentStepsWithinTheirStepCount(slicesWithBindingsKept);
+  const slicesAfter = followEventsOfProgramInstances(stepsKept.slices, context.now);
+  if (stepsKept.stepsBroughtBack.length === 0) {
+    return { ...outcome, slices: slicesAfter };
+  }
+  return { ...outcome, slices: slicesAfter, stepsBroughtBack: stepsKept.stepsBroughtBack };
 }
 
 /** The switch from a command's type to its reducer. */
