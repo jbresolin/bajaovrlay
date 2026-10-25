@@ -19,6 +19,12 @@ export const BajaVendorManifestFieldsSchema = z.looseObject({
    * checks that it knows the name; this schema only checks that it is a text.
    */
   updateRule: z.string().min(1).optional(),
+  /**
+   * The name of the step counter that counts this graphic's steps from its data, read when
+   * `stepCount` is -1 (OGraf's "dynamic"; the bracket's `bracketSteps`, BAJAOVRLAY-25). The
+   * server warns at boot about a name it does not know; this schema only checks the text.
+   */
+  stepCounter: z.string().min(1).optional(),
 });
 
 /** A manifest's `v_baja` field after validation. */

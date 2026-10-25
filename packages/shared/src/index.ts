@@ -85,9 +85,16 @@ export {
 // clearLayer: take everything off one layer.
 export { type ClearLayerCommand, ClearLayerCommandSchema } from './commands/clearLayer.js';
 // nextOnLayer ("Próximo"): the next OGraf step of what is on air on a layer, and the shared
-// step rule: a graphic's step count and the step an instance goes to next (BAJAOVRLAY-47).
-export { findNextStepOfInstance, readStepCountOfGraphic } from './steps/graphicSteps.js';
+// step rule: a graphic's step count (BAJAOVRLAY-47), an instance's, counted from its data
+// for a manifest with a step counter (BAJAOVRLAY-25), and the step it goes to next.
+export {
+  findNextStepOfInstance,
+  readStepCountOfGraphic,
+  readStepCountOfInstance,
+} from './steps/graphicSteps.js';
 export { type NextOnLayerCommand, NextOnLayerCommandSchema } from './steps/nextOnLayer.js';
+// The step counters a manifest names in v_baja.stepCounter (BAJAOVRLAY-25: the bracket's).
+export { findStepCounter, type StepCounter } from './steps/stepCounters.js';
 // clearAll: take everything off every layer.
 export { type ClearAllCommand, ClearAllCommandSchema } from './commands/clearAll.js';
 // Every command, told apart by `type`; the only way state changes.

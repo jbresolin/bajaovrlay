@@ -11,6 +11,9 @@
  *   - The same instance at another step, with the same data, gets one goToStep.
  *   - The same instance with new data and another step gets the update first, then the
  *     step, so the step plays with the data it belongs to.
+ *   - A step that goes back with new data (the server keeping a bracket within the steps
+ *     its new rounds have, BAJAOVRLAY-25) is played the same way: the data, then the
+ *     lower step.
  *
  * What these tests deliberately do not cover:
  *   - Playing the step; instancePlayer.steps.test.ts.
@@ -58,6 +61,31 @@ const stepChangeScenarios = [
             changedData: { state: 'yellow' },
           },
           { kind: 'goToStep', instanceId: enduroClockInstanceId, step: 1 },
+        ],
+      },
+    ],
+  },
+  // A refresh that shrank a bracket's rounds: the server put it back on its last step
+  // (BAJAOVRLAY-25), so the step goes down with the new data, and plays after it.
+  {
+    name: 'updates the data first, then plays the lower step, when the server brought the step back',
+    previousInstances: [createEnduroClockInstance({ currentStep: 5 })],
+    nextInstances: [
+      createEnduroClockInstance({
+        currentStep: 2,
+        resolvedData: { sessionName: 'Enduro de Resistência', state: 'checkered', running: true },
+      }),
+    ],
+    expectedLayerOperations: [
+      {
+        layerId: 'clock',
+        operations: [
+          {
+            kind: 'updateData',
+            instanceId: enduroClockInstanceId,
+            changedData: { state: 'checkered' },
+          },
+          { kind: 'goToStep', instanceId: enduroClockInstanceId, step: 2 },
         ],
       },
     ],

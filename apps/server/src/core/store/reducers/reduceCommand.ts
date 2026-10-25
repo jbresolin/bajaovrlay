@@ -11,6 +11,7 @@ import { reduceMediaCommand } from '../../../modules/media/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
 import { dropBindingsOfInstancesGone } from './instanceBindingsBookkeeping.js';
+import { keepCurrentStepsWithinTheirStepCount } from './instanceStepsWithinTheirCount.js';
 import { reduceNextOnLayer } from './nextOnLayer.js';
 import { reducePreviewClearLayer } from './previewClearLayer.js';
 import { reducePreviewItem } from './previewItem.js';
@@ -27,10 +28,12 @@ import { reduceUpdateInstanceData } from './updateInstanceData.js';
 /**
  * Sends a valid command to its reducer (one file per command), then, when the instances
  * changed, drops the bindings of any instance the command removed
- * (instanceBindingsBookkeeping.ts) and moves the inbox's events on or off the air with the
- * instances carrying them (modules/events, BAJAOVRLAY-44), in this one place so no
- * reducer has to remember. Pure: same slices, command and context always give the same
- * outcome, and nothing is read or written.
+ * (instanceBindingsBookkeeping.ts), puts an instance whose new data has fewer steps than
+ * the one it is on on its last step (instanceStepsWithinTheirCount.ts, BAJAOVRLAY-25), and
+ * moves the inbox's events on or off the air with the instances carrying them
+ * (modules/events, BAJAOVRLAY-44), in this one place so no reducer has to remember. Pure:
+ * same slices, command and context always give the same outcome, and nothing is read or
+ * written.
  */
 export function reduceCommand(
   slices: SlicesChangedByCommands,
@@ -44,9 +47,10 @@ export function reduceCommand(
     return outcome;
   }
   const slicesWithBindingsKept = dropBindingsOfInstancesGone(outcome.slices);
+  const slicesWithStepsKept = keepCurrentStepsWithinTheirStepCount(slicesWithBindingsKept);
   return {
     ...outcome,
-    slices: followEventsOfProgramInstances(slicesWithBindingsKept, context.now),
+    slices: followEventsOfProgramInstances(slicesWithStepsKept, context.now),
   };
 }
 
