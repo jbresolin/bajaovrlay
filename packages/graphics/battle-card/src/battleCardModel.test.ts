@@ -9,9 +9,11 @@
  * What these tests prove:
  *   - The gap is written as the design writes it: a plus, seconds to the tenth cut (never
  *     rounded), a decimal comma and no unit ("+2,0"); a gap past a minute stays in seconds.
+ *   - The gap cell shows "—" when the gap is not these two cars' (gate 2 of PR #27): after
+ *     the car behind passed the car ahead, with a car between them, or with no gap.
  *   - Each car is read from its own five fields, and only position 1 is the leader.
- *   - The reading the trend follows carries both car numbers, the laps of the car behind
- *     and the gap.
+ *   - The reading the trend follows carries both cars with their places, the laps of the
+ *     car behind and the gap.
  *   - Complete data passes; a missing required field, an unknown field and a trend that is
  *     not one of the three are refused with a pt-BR sentence naming the field.
  *   - A partial update changes only what it sends, and a trend set by hand sent as
@@ -32,6 +34,7 @@ import {
   readCarAhead,
   readCarBehind,
   readGapReading,
+  writeGapCellText,
   writeGapText,
 } from './battleCardModel.js';
 
@@ -73,6 +76,36 @@ describe('the gap text', () => {
     // Assert: the design's text.
     expect(text, 'the gap must be a plus, seconds to the tenth cut, and a comma').toBe(expected);
   });
+
+  const gapCellScenarios = [
+    // The battle as the item means it: car 1 (P5) right behind car 8 (P4).
+    { name: 'writes the gap of two cars one place apart', change: {}, expected: '+2,0' },
+    // Car 1 passed car 8: its interval is to a third car (gate 2 of PR #27).
+    {
+      name: 'writes "—" once the car behind has passed the car ahead',
+      change: { aheadPosition: 5, behindPosition: 4 },
+      expected: '—',
+    },
+    // A car runs between them: car 1's interval is to that car.
+    {
+      name: 'writes "—" with a car between them',
+      change: { behindPosition: 6 },
+      expected: '—',
+    },
+    // Car 1 became leader, or the leader has no lap yet: no interval sent.
+    { name: 'writes "—" with no gap', change: { gapMs: undefined }, expected: '—' },
+  ];
+
+  it.each(gapCellScenarios)('$name', ({ change, expected }) => {
+    // Arrange: the battle with this row's change.
+    const data: BattleCardData = { ...createImperadorAheadOfFeiData(), ...change };
+
+    // Act: write the gap cell.
+    const text = writeGapCellText(data);
+
+    // Assert: the gap, or the dash.
+    expect(text, 'the gap cell shows only the gap of these two cars').toBe(expected);
+  });
 });
 
 describe('the two cars', () => {
@@ -107,7 +140,7 @@ describe('the two cars', () => {
     expect(leaders, 'only position 1 is the leader').toEqual([true, false]);
   });
 
-  it('gives the trend both car numbers, the laps of the car behind and the gap', () => {
+  it('gives the trend both cars with their places, the laps of the car behind and the gap', () => {
     // Arrange: the battle's data.
     const data = createImperadorAheadOfFeiData();
 
@@ -117,7 +150,9 @@ describe('the two cars', () => {
     // Assert: what the trend compares from lap to lap.
     expect(reading, 'the reading must carry what the trend follows').toEqual({
       aheadCarNumber: 8,
+      aheadPosition: 4,
       behindCarNumber: 1,
+      behindPosition: 5,
       behindLaps: 1,
       gapMs: 2000,
     });
@@ -144,11 +179,11 @@ describe('the data check', () => {
   });
 
   const refusalScenarios = [
-    // The gap is what the card is about.
+    // Every car field is required: a pill without its school would be half drawn.
     {
-      name: 'refuses data without the gap',
-      data: { ...createImperadorAheadOfFeiData(), gapMs: undefined },
-      problem: 'Falta o campo obrigatório "gapMs".',
+      name: 'refuses data without the school of the car behind',
+      data: { ...createImperadorAheadOfFeiData(), behindSchoolName: undefined },
+      problem: 'Falta o campo obrigatório "behindSchoolName".',
     },
     // A typo'd field must not be dropped silently.
     {

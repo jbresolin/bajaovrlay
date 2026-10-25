@@ -15,7 +15,7 @@
  *   - The play length is `--motion-in` + 2 × `--motion-lead` (the car behind starts two
  *     leads after the car ahead) and the stop length `--motion-out`, read from the text of
  *     packages/theme/ardosia/tokens.css.
- *   - Both cars' five fields and the gap are required, the trend set by hand and its change
+ *   - Both cars' five fields are required; the gap, the trend set by hand and its change
  *     are not; every field has a pt-BR title; every text field is a single line.
  *   - The trend set by hand is a select of the three trends with pt-BR labels, and the
  *     whole numbers (positions, car numbers, laps, gap, change) can never be negative.
@@ -139,15 +139,16 @@ describe('battle-card.ograf.json settings', () => {
 });
 
 describe('battle-card.ograf.json data fields', () => {
-  it('requires both cars and the gap, and refuses fields it does not know', () => {
+  it('requires both cars, leaves the gap optional, and refuses fields it does not know', () => {
     // Arrange: nothing to set up; the manifest is read from disk.
 
     // Act: read the required list and whether unknown fields are allowed.
     const requiredFields = battleCardManifest.schema.required;
     const allowsUnknownFields = battleCardManifest.schema.additionalProperties;
 
-    // Assert: the trend set by hand and its change are the only optional fields.
-    expect(requiredFields, 'both cars’ five fields and the gap must be required').toEqual([
+    // Assert: the gap (optional since gate 2 of PR #27: the leader has none), the trend set
+    // by hand and its change are the only optional fields.
+    expect(requiredFields, 'both cars’ five fields must be required').toEqual([
       'aheadPosition',
       'aheadCarNumber',
       'aheadTeamName',
@@ -158,7 +159,6 @@ describe('battle-card.ograf.json data fields', () => {
       'behindTeamName',
       'behindSchoolName',
       'behindLaps',
-      'gapMs',
     ]);
     expect(allowsUnknownFields, 'a field the graphic does not know must be refused').toBe(false);
   });

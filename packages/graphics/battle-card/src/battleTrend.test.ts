@@ -15,8 +15,12 @@
  *     opening, exactly at the threshold too; anything less is steady with no number.
  *   - An update without a lap of the car behind compares nothing: the trend and the
  *     remembered gap stay as they were, however the gap moved within the lap.
- *   - Another pair of cars, or laps that went down, start the memory again.
- *   - A trend set by hand always wins, its change signed by its word.
+ *   - Another pair of cars, laps that went down, or laps that jumped by two start the
+ *     memory again (steady with no number); the next single lap compares with that reading.
+ *   - Gate 2 of PR #27: once the car behind passes the car ahead, or a car runs between
+ *     them, or the gap disappears, there is no trend at all (the card shows "—"), even one
+ *     set by hand, and the memory is emptied, so the battle starts again from nothing.
+ *   - A trend set by hand otherwise always wins, its change signed by its word.
  *   - The words use the decimal comma, the tenth cut (never rounded) and the typographic
  *     minus (U+2212), never the hyphen.
  *
@@ -33,14 +37,37 @@ import {
   emptyTrendMemory,
   followGapReading,
   type GapReading,
+  isGapOfTheseTwoCars,
   type TrendMemory,
   type TrendShown,
   writeTrendWords,
 } from './battleTrend.js';
 
-/** Car 1 (Equipe FEI Baja) behind car 8 (Imperador), at the given lap and gap. */
+/** Car 1 (Equipe FEI Baja, P5) right behind car 8 (Imperador, P4), at the given lap and gap. */
 function readFeiBehindImperador(behindLaps: number, gapMs: number): GapReading {
-  return { aheadCarNumber: 8, behindCarNumber: 1, behindLaps, gapMs };
+  return {
+    aheadCarNumber: 8,
+    aheadPosition: 4,
+    behindCarNumber: 1,
+    behindPosition: 5,
+    behindLaps,
+    gapMs,
+  };
+}
+
+/**
+ * Car 1 has passed car 8: the item still names car 8 ahead and car 1 behind, but car 1 now
+ * runs P4 and car 8 P5, and car 1's interval is to a third car, the P3.
+ */
+function readFeiAfterPassingImperador(behindLaps: number, gapMs: number): GapReading {
+  return { ...readFeiBehindImperador(behindLaps, gapMs), aheadPosition: 5, behindPosition: 4 };
+}
+
+/** The trend a graphic would show after the last of these readings, with nothing by hand. */
+function chooseTrendAfterReadings(readings: GapReading[]): TrendShown {
+  const lastReading = readings.at(-1);
+  const isGapShown = lastReading !== undefined && isGapOfTheseTwoCars(lastReading);
+  return chooseTrendToShow(followReadings(readings), {}, isGapShown);
 }
 
 /** Follows a list of readings from an empty memory, as a graphic does from its load. */
@@ -126,7 +153,7 @@ describe('the trend worked out from the gap', () => {
       readings: [
         readFeiBehindImperador(1, 2000),
         readFeiBehindImperador(2, 1300),
-        { aheadCarNumber: 8, behindCarNumber: 47, behindLaps: 3, gapMs: 900 },
+        { ...readFeiBehindImperador(3, 900), behindCarNumber: 47 },
       ],
       expected: { word: 'steady', changeMs: undefined },
     },
@@ -140,14 +167,66 @@ describe('the trend worked out from the gap', () => {
       ],
       expected: { word: 'steady', changeMs: undefined },
     },
+    // Gate 2 of PR #27: a missed poll, or a correction, made the laps jump by two; the gap
+    // of two laps ago says nothing about one lap, so nothing is compared.
+    {
+      name: 'starts again when the laps of the car behind jumped by two',
+      readings: [
+        readFeiBehindImperador(1, 2000),
+        readFeiBehindImperador(2, 1300),
+        readFeiBehindImperador(4, 600),
+      ],
+      expected: { word: 'steady', changeMs: undefined },
+    },
+    // After a lap jump the new reading is kept, so the next single lap compares with it.
+    {
+      name: 'compares again at the next single lap after a jump',
+      readings: [
+        readFeiBehindImperador(1, 2000),
+        readFeiBehindImperador(3, 1300),
+        readFeiBehindImperador(4, 600),
+      ],
+      expected: { word: 'closing', changeMs: -700 },
+    },
+    // Car 1 passed car 8: its interval is now to a third car, so there is no trend at all
+    // (the card shows "—" as the gap), never an "ABRINDO +4,7" across cars.
+    {
+      name: 'shows no trend once the car behind has passed the car ahead',
+      readings: [
+        readFeiBehindImperador(1, 2000),
+        readFeiBehindImperador(2, 1300),
+        readFeiAfterPassingImperador(3, 6000),
+      ],
+      expected: { word: 'none', changeMs: undefined },
+    },
+    // Car 1 became leader: the source sends it no interval.
+    {
+      name: 'shows no trend when the gap disappears',
+      readings: [
+        readFeiBehindImperador(1, 2000),
+        readFeiBehindImperador(2, 1300),
+        { ...readFeiBehindImperador(3, 0), gapMs: undefined },
+      ],
+      expected: { word: 'none', changeMs: undefined },
+    },
+    // Car 8 passes car 1 back: the memory was emptied at the pass, so the first reading of
+    // the battle again shows steady with no number, not a comparison with before the pass.
+    {
+      name: 'starts again from nothing when the cars are one place apart again',
+      readings: [
+        readFeiBehindImperador(1, 2000),
+        readFeiAfterPassingImperador(2, 6000),
+        readFeiBehindImperador(3, 1300),
+      ],
+      expected: { word: 'steady', changeMs: undefined },
+    },
   ];
 
   it.each(trendScenarios)('$name', ({ readings, expected }) => {
     // Arrange: the readings of this row, one per update, from the load on.
 
     // Act: follow them all and choose the trend with nothing set by hand.
-    const memory = followReadings(readings);
-    const trend = chooseTrendToShow(memory, {});
+    const trend = chooseTrendAfterReadings(readings);
 
     // Assert: the trend this row expects.
     expect(trend, 'the trend must be the one this row expects').toEqual(expected);
@@ -206,10 +285,60 @@ describe('a trend set by hand', () => {
     ]);
 
     // Act: choose the trend with this row's trend set by hand.
-    const trend = chooseTrendToShow(memory, setByHand);
+    const trend = chooseTrendToShow(memory, setByHand, true);
 
     // Assert: the hand's trend, never the worked-out one.
     expect(trend, 'a trend set by hand must always win').toEqual(expected);
+  });
+
+  it('shows no trend beside a gap of "—", even one set by hand', () => {
+    // Arrange: car 1 has passed car 8, and the operator had set closing by 0,7 s.
+    const memory = followReadings([readFeiAfterPassingImperador(3, 6000)]);
+
+    // Act: choose the trend with the gap not shown.
+    const trend = chooseTrendToShow(
+      memory,
+      { manualTrend: 'closing', manualTrendChangeMs: 700 },
+      false,
+    );
+
+    // Assert: no trend; beside no gap a trend would say what the card cannot show.
+    expect(trend, 'no trend at all beside "—"').toEqual({ word: 'none', changeMs: undefined });
+  });
+});
+
+describe('isGapOfTheseTwoCars', () => {
+  const gapScenarios = [
+    // The battle as the item means it: car 1 one place behind car 8.
+    { name: 'is true one place behind', reading: readFeiBehindImperador(2, 1300), expected: true },
+    // Car 1 passed car 8: its interval is to someone else.
+    {
+      name: 'is false after the pass',
+      reading: readFeiAfterPassingImperador(2, 6000),
+      expected: false,
+    },
+    // A car between them (car 1 fell to P6): its interval is to that car.
+    {
+      name: 'is false with a car between them',
+      reading: { ...readFeiBehindImperador(2, 900), behindPosition: 6 },
+      expected: false,
+    },
+    // No interval sent (car 1 leads, or the leader has no lap yet).
+    {
+      name: 'is false with no gap',
+      reading: { ...readFeiBehindImperador(2, 0), gapMs: undefined },
+      expected: false,
+    },
+  ];
+
+  it.each(gapScenarios)('$name', ({ reading, expected }) => {
+    // Arrange: the reading of this row.
+
+    // Act: ask whether its gap is these two cars'.
+    const isTheirs = isGapOfTheseTwoCars(reading);
+
+    // Assert: as the row says.
+    expect(isTheirs, 'the gap belongs to these two cars only one place apart').toBe(expected);
   });
 });
 

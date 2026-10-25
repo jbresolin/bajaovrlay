@@ -2,11 +2,19 @@
  * The battle card's trend: whether the car behind is closing on the car ahead, opening the
  * gap, or holding it, and by how much since a lap ago (BAJAOVRLAY-47, decided in the brief).
  * No canonical shape carries the gap of a lap ago, so the graphic remembers it: the gap it
- * saw when the car behind last completed a lap. When the car behind's laps grow, the new
- * gap is compared with that one: 0,1 s or more smaller is closing, 0,1 s or more larger is
- * opening, anything in between is steady; then the new reading is the one remembered.
- * Until there are two readings the card says steady with no number. A trend the operator
- * set by hand always wins over this one.
+ * saw when the car behind last completed a lap. When the car behind's laps grow by exactly
+ * one, the new gap is compared with that one: 0,1 s or more smaller is closing, 0,1 s or
+ * more larger is opening, anything in between is steady; then the new reading is the one
+ * remembered. Until there are two readings the card says steady with no number. A trend
+ * the operator set by hand wins over this one.
+ *
+ * Gate 2 of PR #27 (decided, conservative): the gap is the car behind's interval to the car
+ * right in front of it, so it is the gap of these two cars only while the car behind is
+ * exactly one place behind the car ahead. When it is not (a pass, a car between them) or
+ * when there is no gap (the car behind became leader), the card shows "—" with no trend at
+ * all, set by hand or not, and the memory starts again: comparing across cars would invent
+ * a trend. A lap count that jumps by more than one (a missed poll, a correction) or goes
+ * down keeps the new reading and shows "— ESTÁVEL" with no number.
  *
  * Deliberate trade-off: this memory lives in the graphic, not on the server, so a renderer
  * reload (or a new take, which loads a new element) starts it again, and the first lap
@@ -19,8 +27,11 @@ import { writeSecondsToTheTenthCutAsText } from '@bajaovrlay/shared/raceTimeText
 
 import { ptBR } from './ptBR.js';
 
-/** The three trends the design draws, each with its own word, shape and colour. */
-export type TrendWord = 'closing' | 'opening' | 'steady';
+/**
+ * The three trends the design draws, each with its own word, shape and colour, and `none`:
+ * the empty cell beside a gap of "—", when the gap is not these two cars' (see above).
+ */
+export type TrendWord = 'closing' | 'opening' | 'steady' | 'none';
 
 /**
  * What the trend cell shows: the word, and the change of the gap in ms (negative when
@@ -28,12 +39,17 @@ export type TrendWord = 'closing' | 'opening' | 'steady';
  */
 export type TrendShown = { word: TrendWord; changeMs: number | undefined };
 
-/** One reading of the battle the trend is followed from: who fights, the laps and the gap. */
+/**
+ * One reading of the battle the trend is followed from: who fights and where they run, the
+ * car behind's laps, and the gap (absent when the source has none for the car behind).
+ */
 export type GapReading = {
   aheadCarNumber: number;
+  aheadPosition: number;
   behindCarNumber: number;
+  behindPosition: number;
   behindLaps: number;
-  gapMs: number;
+  gapMs: number | undefined;
 };
 
 /**
@@ -56,6 +72,20 @@ export const trendThresholdMs = 100;
 
 /** "— ESTÁVEL" with no number: before two readings, and for every steady comparison. */
 const steadyWithNoNumber: TrendShown = { word: 'steady', changeMs: undefined };
+
+/** The empty trend cell beside a gap of "—". */
+export const noTrend: TrendShown = { word: 'none', changeMs: undefined };
+
+/**
+ * Whether the reading's gap is the gap between these two cars: there is one, and the car
+ * behind runs exactly one place behind the car ahead (its interval is to the car right in
+ * front of it). Otherwise the card shows "—" and no trend.
+ */
+export function isGapOfTheseTwoCars(reading: GapReading): reading is GapReading & {
+  gapMs: number;
+} {
+  return reading.gapMs !== undefined && reading.behindPosition === reading.aheadPosition + 1;
+}
 
 /** The memory of a graphic that has seen nothing yet. */
 export const emptyTrendMemory: TrendMemory = {
@@ -80,28 +110,33 @@ export function compareGapWithTheLapBefore(gapLapBeforeMs: number, gapNowMs: num
 
 /**
  * Takes one more reading into the memory:
- * - the first reading, another pair of cars, or laps that went down (a timing correction)
- *   start the memory again: this reading is kept and the trend is steady with no number;
+ * - a gap that is not these two cars' (none, or the cars not one place apart) empties the
+ *   memory: nothing is kept, so the next good reading is a first one;
+ * - the first reading, another pair of cars, or laps that changed by anything but one
+ *   (gone down in a correction, or jumped past a missed lap) start the memory again: this
+ *   reading is kept and the trend is steady with no number;
  * - the car behind's laps unchanged: nothing is compared and the memory stays as it was,
  *   so the trend on screen holds until the next lap;
- * - the car behind's laps grew: the new gap is compared with the remembered one, and the
- *   new reading becomes the one remembered.
+ * - the car behind's laps grew by exactly one: the new gap is compared with the remembered
+ *   one, and the new reading becomes the one remembered.
  */
 export function followGapReading(memory: TrendMemory, reading: GapReading): TrendMemory {
+  if (!isGapOfTheseTwoCars(reading)) {
+    return emptyTrendMemory;
+  }
   const remembered = memory.readingAtLastLapChange;
-  const isFirstReading = remembered === undefined;
-  const isAnotherBattle =
-    !isFirstReading &&
-    (remembered.aheadCarNumber !== reading.aheadCarNumber ||
-      remembered.behindCarNumber !== reading.behindCarNumber);
-  const haveLapsGoneDown = !isFirstReading && reading.behindLaps < remembered.behindLaps;
-  if (isFirstReading || isAnotherBattle || haveLapsGoneDown) {
+  if (remembered?.gapMs === undefined) {
     return { readingAtLastLapChange: reading, trendFromTheGap: steadyWithNoNumber };
   }
-
-  const hasCompletedALap = reading.behindLaps > remembered.behindLaps;
-  if (!hasCompletedALap) {
+  const isAnotherBattle =
+    remembered.aheadCarNumber !== reading.aheadCarNumber ||
+    remembered.behindCarNumber !== reading.behindCarNumber;
+  const lapsCompletedSinceThen = reading.behindLaps - remembered.behindLaps;
+  if (lapsCompletedSinceThen === 0 && !isAnotherBattle) {
     return memory;
+  }
+  if (isAnotherBattle || lapsCompletedSinceThen !== 1) {
+    return { readingAtLastLapChange: reading, trendFromTheGap: steadyWithNoNumber };
   }
   return {
     readingAtLastLapChange: reading,
@@ -110,10 +145,19 @@ export function followGapReading(memory: TrendMemory, reading: GapReading): Tren
 }
 
 /**
- * The trend to put on air: the one set by hand when there is one (its change shown as a
- * closing minus or an opening plus, never on a steady), otherwise the one from the gap.
+ * The trend to put on air: none beside a gap of "—" (`isGapShown` false), even one set by
+ * hand, since a trend beside no gap would say something the card cannot show; otherwise the
+ * one set by hand when there is one (its change shown as a closing minus or an opening
+ * plus, never on a steady), otherwise the one from the gap.
  */
-export function chooseTrendToShow(memory: TrendMemory, setByHand: TrendSetByHand): TrendShown {
+export function chooseTrendToShow(
+  memory: TrendMemory,
+  setByHand: TrendSetByHand,
+  isGapShown: boolean,
+): TrendShown {
+  if (!isGapShown) {
+    return noTrend;
+  }
   const manualTrend = setByHand.manualTrend;
   if (manualTrend === undefined) {
     return memory.trendFromTheGap;
@@ -135,10 +179,10 @@ export function writeTrendChangeText(changeMs: number): string {
   return `${sign}${writeSecondsToTheTenthCutAsText(Math.abs(changeMs))}`;
 }
 
-/** The words of the trend cell: "FECHANDO −0,7", "ABRINDO +0,7", "ESTÁVEL". */
+/** The words of the trend cell: "FECHANDO −0,7", "ABRINDO +0,7", "ESTÁVEL", or none. */
 export function writeTrendWords(trend: TrendShown): string {
   const word = ptBR.trendWords[trend.word];
-  if (trend.word === 'steady' || trend.changeMs === undefined) {
+  if (trend.word === 'steady' || trend.word === 'none' || trend.changeMs === undefined) {
     return word;
   }
   return `${word} ${writeTrendChangeText(trend.changeMs)}`;

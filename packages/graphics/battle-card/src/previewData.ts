@@ -59,7 +59,9 @@ export function listPreviewLapReadings(): PreviewLapReading[] {
 }
 
 /** Reads the trend set by hand from the address, or undefined for the one worked out. */
-function readTrendFromAddress(searchParameters: URLSearchParams): TrendWord | undefined {
+function readTrendFromAddress(
+  searchParameters: URLSearchParams,
+): Exclude<TrendWord, 'none'> | undefined {
   const trend = searchParameters.get('trend');
   if (trend === 'closing' || trend === 'opening' || trend === 'steady') {
     return trend;

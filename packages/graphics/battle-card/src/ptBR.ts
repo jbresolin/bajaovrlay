@@ -13,12 +13,18 @@ export const ptBR = {
    * draws short and high (the standings' rule).
    */
   minusSign: '−',
-  /** The trend's word, in the design's caps. */
+  /** The trend's word, in the design's caps; none beside a gap of "—". */
   trendWords: {
     closing: 'FECHANDO',
     opening: 'ABRINDO',
     steady: 'ESTÁVEL',
+    none: '',
   },
+  /**
+   * The gap when it is not these two cars' (none sent, or the cars not one place apart):
+   * the dash every graphic writes for a missing value.
+   */
+  noGapText: '—',
 
   actionProblems: {
     notLoadedYet: 'A disputa de posição ainda não foi carregada (load).',

@@ -99,7 +99,9 @@ describe('listPreviewLapReadings', () => {
     const sample = createImperadorAndFeiSample();
     let memory = followGapReading(emptyTrendMemory, {
       aheadCarNumber: 8,
+      aheadPosition: sample.aheadPosition,
       behindCarNumber: 1,
+      behindPosition: sample.behindPosition,
       behindLaps: sample.behindLaps,
       gapMs: sample.gapMs,
     });
@@ -110,11 +112,13 @@ describe('listPreviewLapReadings', () => {
     for (const reading of listPreviewLapReadings()) {
       memory = followGapReading(memory, {
         aheadCarNumber: 8,
+        aheadPosition: sample.aheadPosition,
         behindCarNumber: 1,
+        behindPosition: sample.behindPosition,
         behindLaps: reading.behindLaps,
         gapMs: reading.gapMs,
       });
-      trendWords.push(chooseTrendToShow(memory, {}).word);
+      trendWords.push(chooseTrendToShow(memory, {}, true).word);
       behindLaps.push(reading.behindLaps);
     }
 

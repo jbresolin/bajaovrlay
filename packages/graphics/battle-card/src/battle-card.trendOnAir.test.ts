@@ -15,6 +15,8 @@
  *     when the crossfade ends, the current layer wears the new trend and the incoming layer
  *     is invisible again.
  *   - The same word with a new number starts no crossfade: the number changes in place.
+ *   - A pass on air shows "—" with an empty trend cell, and when the cars are one place
+ *     apart again the trend starts from nothing (gate 2 of PR #27).
  *   - stopAction, dispose and leaving the page each end a running crossfade at once: the
  *     current layer wears the new trend and nothing is animating any more. Each test fails
  *     if the finish is taken out of that path.
@@ -149,6 +151,37 @@ describe('a new reading on air', () => {
     expect(readShownText(battleCard, 'battle-card-trend-words'), 'the new number').toBe(
       'FECHANDO −0,4',
     );
+  });
+});
+
+describe('a pass on air (gate 2 of PR #27)', () => {
+  it('shows "—" with an empty trend cell once the car behind passes, and starts again after', async () => {
+    // Arrange: a card on air closing by 0,7 s (car 1 at P5 behind car 8 at P4).
+    const battleCard = await putBattleCardOnAirClosing();
+
+    // Act: car 1 passes car 8 (P4 and P5 swap; its interval is now to the P3), then car 8
+    // passes back and car 1 completes its next lap one place behind again.
+    await battleCard.updateAction({
+      data: { aheadPosition: 5, behindPosition: 4, behindLaps: 3, gapMs: 6000 },
+      skipAnimation: true,
+    });
+    const afterThePass = {
+      gap: readShownText(battleCard, 'battle-card-gap'),
+      words: readShownText(battleCard, 'battle-card-trend-words'),
+    };
+    await battleCard.updateAction({
+      data: { aheadPosition: 4, behindPosition: 5, aheadLaps: 4, behindLaps: 4, gapMs: 900 },
+      skipAnimation: true,
+    });
+
+    // Assert: a dash and no trend after the pass, never a trend across cars; back one place
+    // apart, the battle starts again from nothing: steady with no number.
+    expect(afterThePass, 'after the pass the gap is not these two cars').toEqual({
+      gap: '—',
+      words: '',
+    });
+    expect(readShownText(battleCard, 'battle-card-gap'), 'the gap again').toBe('+0,9');
+    expect(readShownText(battleCard, 'battle-card-trend-words'), 'started again').toBe('ESTÁVEL');
   });
 });
 

@@ -78,7 +78,7 @@
       "gapMs": {
         "type": "integer",
         "title": "Diferença entre os carros (ms)",
-        "description": "O intervalo do carro de trás para o da frente, em milissegundos: 2000 aparece como +2,0.",
+        "description": "Opcional; o intervalo do carro de trás para o da frente, em milissegundos: 2000 aparece como +2,0. Sem ele, ou com os carros a mais de uma posição, o cartão mostra — sem tendência.",
         "minimum": 0
       },
       "manualTrend": {
@@ -112,8 +112,7 @@
       "behindCarNumber",
       "behindTeamName",
       "behindSchoolName",
-      "behindLaps",
-      "gapMs"
+      "behindLaps"
     ],
     "additionalProperties": false
   }

@@ -50,7 +50,7 @@ import {
   readCarAhead,
   readCarBehind,
   readGapReading,
-  writeGapText,
+  writeGapCellText,
 } from './battleCardModel.js';
 import { battleCardStyles } from './battleCardStyles.js';
 import {
@@ -62,6 +62,7 @@ import {
   chooseTrendToShow,
   emptyTrendMemory,
   followGapReading,
+  isGapOfTheseTwoCars,
   type TrendMemory,
   type TrendShown,
 } from './battleTrend.js';
@@ -109,7 +110,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
     return renderBattleCardTemplate({
       carAhead: readCarAhead(data),
       carBehind: readCarBehind(data),
-      gapText: writeGapText(data.gapMs),
+      gapText: writeGapCellText(data),
       trendOnScreen,
       incomingTrend: this.incomingTrend ?? trendOnScreen,
     });
@@ -278,7 +279,8 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
 
   /** The trend the data asks for now: set by hand, or the one from the gap. */
   private chooseTrendWanted(): TrendShown {
-    return chooseTrendToShow(this.trendMemory, this.requireData());
+    const data = this.requireData();
+    return chooseTrendToShow(this.trendMemory, data, isGapOfTheseTwoCars(readGapReading(data)));
   }
 
   /** Draws the data with the trend wanted on both layers, and waits until Lit has drawn it. */

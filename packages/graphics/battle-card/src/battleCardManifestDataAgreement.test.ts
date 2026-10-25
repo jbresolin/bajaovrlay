@@ -63,11 +63,11 @@ const dataAgreementScenarios = [
     data: { ...createImperadorAheadOfFeiData(), aheadPosition: 1, behindPosition: 2 },
     isValid: true,
   },
-  // The gap is required in both.
+  // The gap is optional in both since gate 2 of PR #27: the leader has none.
   {
-    name: 'both refuse a battle without the gap',
+    name: 'both accept a battle without the gap',
     data: { ...createImperadorAheadOfFeiData(), gapMs: undefined },
-    isValid: false,
+    isValid: true,
   },
   // Every car field is required in both.
   {

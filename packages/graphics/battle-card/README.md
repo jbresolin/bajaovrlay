@@ -37,3 +37,9 @@ number (Posições › Carro escolhido pelo número › …), car 8 ahead and ca
 The trend is remembered by the graphic itself, so a renderer reload or a new take starts it again:
 the first lap after that shows "ESTÁVEL" with no number. Choose a "Tendência à mão" (and its change
 in ms, without sign) to override it; clearing it gives the worked-out trend back.
+
+The gap is optional (gate 2 of PR #27). It is shown only while it is the gap of these two cars:
+the car behind exactly one place behind the car ahead, with an interval. After a pass, with a car
+between them, or when the car behind leads (no interval), the card shows "—" with no trend at all,
+even one set by hand, and the remembered gap is forgotten. A lap count that jumps by more than one
+shows "ESTÁVEL" with no number and the next single lap compares again.

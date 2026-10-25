@@ -65,18 +65,18 @@ describe('load', () => {
   });
 
   it('answers 400 with a pt-BR message naming the bad field', async () => {
-    // Arrange: a battle card and data without the gap.
+    // Arrange: a battle card and data without the school of the car behind.
     const battleCard = createBattleCardOnThePage();
-    const dataWithoutGap: Record<string, unknown> = { ...createImperadorAheadOfFeiData() };
-    delete dataWithoutGap.gapMs;
+    const dataWithoutSchool: Record<string, unknown> = { ...createImperadorAheadOfFeiData() };
+    delete dataWithoutSchool.behindSchoolName;
 
     // Act: load it with that data.
-    const answer = await loadBattleCardWithData(battleCard, dataWithoutGap);
+    const answer = await loadBattleCardWithData(battleCard, dataWithoutSchool);
 
     // Assert: a 400 naming the field.
     expect(answer, 'bad load data must answer 400 naming the field').toEqual({
       statusCode: 400,
-      statusMessage: 'Falta o campo obrigatório "gapMs".',
+      statusMessage: 'Falta o campo obrigatório "behindSchoolName".',
     });
   });
 });

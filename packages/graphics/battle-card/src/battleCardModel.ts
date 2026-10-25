@@ -13,7 +13,7 @@ import { describeFirstDataProblemInPortuguese } from '@bajaovrlay/graphics-kit/d
 import { writeSecondsToTheTenthCutAsText } from '@bajaovrlay/shared/raceTimeText';
 import { z } from 'zod';
 
-import type { GapReading } from './battleTrend.js';
+import { type GapReading, isGapOfTheseTwoCars } from './battleTrend.js';
 import { ptBR } from './ptBR.js';
 
 // Strict: a field the graphic does not know (usually a typo) is refused, not ignored.
@@ -28,7 +28,9 @@ const battleCardDataSchema = z.strictObject({
   behindTeamName: z.string(),
   behindSchoolName: z.string(),
   behindLaps: z.int().min(0),
-  gapMs: z.int().min(0),
+  // Optional since gate 2 of PR #27: the leader has no interval, and a required gap would
+  // keep a stale one on air (the server keeps a required field that loses its value).
+  gapMs: z.int().min(0).optional(),
   manualTrend: z.enum(['closing', 'opening', 'steady']).optional(),
   manualTrendChangeMs: z.int().min(0).optional(),
 });
@@ -90,10 +92,24 @@ export function writeGapText(gapMs: number): string {
 export function readGapReading(data: BattleCardData): GapReading {
   return {
     aheadCarNumber: data.aheadCarNumber,
+    aheadPosition: data.aheadPosition,
     behindCarNumber: data.behindCarNumber,
+    behindPosition: data.behindPosition,
     behindLaps: data.behindLaps,
     gapMs: data.gapMs,
   };
+}
+
+/**
+ * The gap cell's text: "+2,0" while the gap is these two cars' (battleTrend.ts,
+ * isGapOfTheseTwoCars), "—" otherwise (no gap, or the cars not one place apart).
+ */
+export function writeGapCellText(data: BattleCardData): string {
+  const reading = readGapReading(data);
+  if (!isGapOfTheseTwoCars(reading)) {
+    return ptBR.noGapText;
+  }
+  return writeGapText(reading.gapMs);
 }
 
 /** Checks the complete data `load` receives. Never throws; bad data gives a pt-BR problem. */

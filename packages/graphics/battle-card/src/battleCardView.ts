@@ -37,7 +37,7 @@ export type BattleCardParts = {
 /**
  * The shape of each trend (the design's trendIcons): ▸◂ pointing in for closing, ◂▸
  * pointing out for opening, a dash for steady, so the trend reads in a still frame and
- * never by colour alone.
+ * never by colour alone; nothing beside a gap of "—".
  */
 function renderTrendShape(word: TrendWord): TemplateResult {
   if (word === 'closing') {
@@ -49,6 +49,9 @@ function renderTrendShape(word: TrendWord): TemplateResult {
     return html`<svg class="trend-shape" viewBox="0 0 24 10" aria-hidden="true">
       ${svg`<path d="M9 0 0 5l9 5z" fill="currentColor" /><path d="M15 0l9 5-9 5z" fill="currentColor" />`}
     </svg>`;
+  }
+  if (word === 'none') {
+    return html``;
   }
   return html`<svg class="trend-shape" viewBox="0 0 24 10" aria-hidden="true">
     ${svg`<rect x="2" y="4" width="20" height="2" fill="currentColor" />`}
