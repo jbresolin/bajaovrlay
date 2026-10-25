@@ -1,0 +1,143 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-bracket",
+  "version": "0.1.0",
+  "name": "Chaveamento",
+  "description": "O chaveamento de uma eliminatória em tela cheia, como o Super Prime: as fases grandes em quadros de disputas, as últimas numa árvore com a disputa de 3º lugar sob a final. Cada Próximo mostra um quadro ou uma fase da árvore; o número de passos vem das fases.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "bracket.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": -1,
+  "v_baja": {
+    "defaultLayerId": "fullscreen",
+    "category": "standings",
+    "stepCounter": "bracketSteps"
+  },
+  "actionDurations": [
+    {
+      "type": "playAction",
+      "duration": 1430
+    },
+    {
+      "type": "stopAction",
+      "duration": 250
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "rounds": {
+        "type": "array",
+        "title": "Fases",
+        "description": "Todas as fases das chaves da fonte (Chaves › Todas as fases), ao vivo: um resultado que chega entra no ar sozinho. Cada fase grande vira um quadro de disputas; das quartas de final em diante, a árvore.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "isThirdPlace": {
+              "type": "boolean"
+            },
+            "matches": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "matchId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "bestOf": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "walkover": {
+                    "type": "boolean"
+                  },
+                  "carA": {
+                    "type": "object",
+                    "properties": {
+                      "carNumber": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "teamName": {
+                        "type": "string"
+                      },
+                      "schoolName": {
+                        "type": "string"
+                      },
+                      "timeMs": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "wins": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["carNumber", "teamName", "schoolName"],
+                    "additionalProperties": true
+                  },
+                  "carB": {
+                    "type": "object",
+                    "properties": {
+                      "carNumber": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "teamName": {
+                        "type": "string"
+                      },
+                      "schoolName": {
+                        "type": "string"
+                      },
+                      "timeMs": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "wins": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["carNumber", "teamName", "schoolName"],
+                    "additionalProperties": true
+                  },
+                  "winnerCarNumber": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": ["matchId", "carA"],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": ["name", "matches"],
+          "additionalProperties": true
+        },
+        "v_baja": {
+          "suggestedBinding": {
+            "shapeKey": "brackets",
+            "path": "rounds",
+            "isLive": true
+          }
+        }
+      },
+      "title": {
+        "type": "string",
+        "title": "Título",
+        "description": "O título na cabeça do quadro, por exemplo \"SUPER PRIME\".",
+        "gddType": "single-line",
+        "default": "CHAVEAMENTO"
+      }
+    },
+    "required": ["rounds"],
+    "additionalProperties": false
+  }
+}

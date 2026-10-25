@@ -16,6 +16,7 @@
  * assistive technology.
  */
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
+import { checkMarkShape } from '@bajaovrlay/graphics-kit/checkMarkShape';
 import { writeTimeOfDayText } from '@bajaovrlay/graphics-kit/countdownText';
 import type { ScheduleSlotStatus } from '@bajaovrlay/shared/scheduleSlotStatus';
 import { html, svg, type TemplateResult } from 'lit';
@@ -30,7 +31,8 @@ export const sessionsBoardStatuses: ScheduleSlotStatus[] = ['finished', 'inProgr
 
 /** The shape of each state, as the design draws it (docs/design/tools/slateVocabulary.mjs). */
 const statusShapes: Record<ScheduleSlotStatus, TemplateResult> = {
-  finished: svg`<path d="M3.5 10.5 8 15 16.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />`,
+  // The check mark is the kit's, shared with the bracket's winner (BAJAOVRLAY-25).
+  finished: checkMarkShape,
   inProgress: svg`<path d="M5 3.5v13l11-6.5z" fill="currentColor" />`,
   upcoming: svg`<circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2.2" />`,
 };

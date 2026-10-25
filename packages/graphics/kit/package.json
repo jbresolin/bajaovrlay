@@ -7,6 +7,7 @@
   "exports": {
     "./ografGraphicTypes": "./src/ografGraphicTypes.ts",
     "./playSteps": "./src/playSteps.ts",
+    "./checkMarkShape": "./src/checkMarkShape.ts",
     "./pageTurner": "./src/pageTurner.ts",
     "./pageCycle": "./src/pageCycle.ts",
     "./timelinePlayback": "./src/timelinePlayback.ts",
