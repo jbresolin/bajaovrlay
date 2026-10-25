@@ -11,8 +11,9 @@
  *
  * What these tests prove:
  *   - A change of word dresses the incoming layer in the new trend and fades it in over the
- *     current one; when the crossfade ends, the current layer wears the new trend and the
- *     incoming layer is invisible again.
+ *     current one (watched on a crossfade too long to end by itself while the test looks);
+ *     when the crossfade ends, the current layer wears the new trend and the incoming layer
+ *     is invisible again.
  *   - The same word with a new number starts no crossfade: the number changes in place.
  *   - stopAction, dispose and leaving the page each end a running crossfade at once: the
  *     current layer wears the new trend and nothing is animating any more. Each test fails
@@ -93,31 +94,36 @@ async function startACrossfadeThatCannotEndByItself(
 }
 
 describe('a new reading on air', () => {
-  it('crossfades the trend cell when the word changes, and settles on the new word', async () => {
+  it('crossfades the trend cell when the word changes, the new word fading in over the old', async () => {
     // Arrange: a card on air closing by 0,7 s.
     const battleCard = await putBattleCardOnAirClosing();
 
-    // Act: send lap 3, opening, and look while the crossfade runs, then after it ends.
-    const pendingUpdate = battleCard.updateAction({ data: openingAtLapThree });
-    await letThePageCatchUp();
-    const whileRunning = {
-      isRunning: isTrendCrossfadeRunning(battleCard),
-      incomingWords: readShownText(battleCard, 'battle-card-incoming-trend-words'),
-      currentWords: readShownText(battleCard, 'battle-card-trend-words'),
-    };
-    await pendingUpdate;
+    // Act: send lap 3, opening, with a crossfade too long to end while the test looks.
+    await startACrossfadeThatCannotEndByItself(battleCard);
+
+    // Assert: the new words are on the incoming layer, over the old ones still current.
+    expect(
+      {
+        incomingWords: readShownText(battleCard, 'battle-card-incoming-trend-words'),
+        currentWords: readShownText(battleCard, 'battle-card-trend-words'),
+      },
+      'during the crossfade the new trend fades in over the old',
+    ).toEqual({ incomingWords: 'ABRINDO +0,7', currentWords: 'FECHANDO −0,7' });
+  });
+
+  it('settles on the new word once the crossfade has ended', async () => {
+    // Arrange: a card on air closing by 0,7 s, with the real 300 ms crossfade.
+    const battleCard = await putBattleCardOnAirClosing();
+
+    // Act: send lap 3, opening, and wait until the update (and its crossfade) has ended.
+    await battleCard.updateAction({ data: openingAtLapThree });
     await letThePageCatchUp();
 
-    // Assert: the new words came in on the incoming layer over the old ones, and at the
-    // end the current layer wears them and the incoming one is invisible again.
-    expect(whileRunning, 'during the crossfade the new trend fades in over the old').toEqual({
-      isRunning: true,
-      incomingWords: 'ABRINDO +0,7',
-      currentWords: 'FECHANDO −0,7',
-    });
+    // Assert: the current layer wears the new word and the incoming one is invisible again.
     expect(readShownText(battleCard, 'battle-card-trend-words'), 'settled on the new word').toBe(
       'ABRINDO +0,7',
     );
+    expect(isTrendCrossfadeRunning(battleCard), 'nothing animates any more').toBe(false);
     expect(readPartOpacity(battleCard, 'battle-card-trend'), 'current layer visible').toBe('1');
     expect(readPartOpacity(battleCard, 'battle-card-incoming-trend'), 'incoming hidden').toBe('0');
   });
