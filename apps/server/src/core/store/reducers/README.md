@@ -3,7 +3,7 @@
 One pure reducer per command: slices + a valid command + a context (ids and time made by the store) in, new
 slices or a pt-BR refusal out; no I/O, no clock, no random ids. Start reading at `reduceCommand.ts`, the switch.
 
-- On air: `updateInstanceData.ts` (runs `../updateRules/`), `clearLayer.ts`, `clearAll.ts`. Preview: `previewItem.ts`,
+- On air: `updateInstanceData.ts` (runs `../updateRules/`), `clearLayer.ts`, `clearAll.ts`, `nextOnLayer.ts` ("Próximo"). Preview: `previewItem.ts`,
   `stopPreview.ts`, `takePreview.ts`, `previewClearLayer.ts` (the "will be cleared" marker), `takeAllPreviews.ts`
   ("Tomar tudo", one change), `previewMacro.ts` (a macro's end state on preview).
 - Rundown and items, via `reduceItemOrRundownCommand.ts`: `createItem.ts`, `updateItemFields.ts`, `deleteItem.ts`,
