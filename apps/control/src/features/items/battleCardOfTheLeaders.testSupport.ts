@@ -8,9 +8,11 @@ import type {
   DataSnapshot,
   Graphic,
   Item,
+  Override,
   ServerMessage,
   Slices,
 } from '@bajaovrlay/shared';
+import { screen } from '@testing-library/react';
 
 import {
   buildEnduroSnapshotAtLap34,
@@ -147,6 +149,63 @@ export function buildNextPollWhereTheSecondCarCloses(): ServerMessage {
     type: 'dataSnapshot',
     sourceId: seededSimulatorId,
     snapshot: buildNextPollWithIntervalOf(secondCarNumber, 18_400),
+    serverNowMs: momentOfTheNextPollMs,
+  };
+}
+
+/**
+ * The row of one field of the editor, found from its label up to the row's own box, so a
+ * test can read that row's "Valor agora" and nobody else's.
+ */
+export function findRowOfField(fieldLabel: string): HTMLElement {
+  const label = screen.getByText(fieldLabel, { selector: 'label' });
+  const row = label.closest<HTMLElement>('.flex.flex-col.gap-2');
+  if (row === null) {
+    throw new Error(`the row of ${fieldLabel} is not on the page`);
+  }
+  return row;
+}
+
+/** The operator's correction of car 38's team name, as the inscription spells it. */
+export function buildCorrectionOfTheSecondCarsTeam(): Override {
+  return {
+    sourceId: seededSimulatorId,
+    scope: 'car',
+    carNumber: secondCarNumber,
+    field: 'teamName',
+    value: 'Coruja Racing EESC',
+    reason: 'Nome oficial da inscrição.',
+    setBy: 'operador:3f2a9c1e',
+    setAt: '2027-03-20T19:25:00.000Z',
+  };
+}
+
+/** The message that hands the page the corrections slice with that one correction. */
+export function buildOverridesSliceWithTheSecondCarsTeamCorrected(): ServerMessage {
+  return {
+    type: 'slice',
+    name: 'overrides',
+    slice: [buildCorrectionOfTheSecondCarsTeam()],
+    serverNowMs: momentOfTheNextPollMs,
+  };
+}
+
+/** The message that hands the page the sources slice with the simulator renamed. */
+export function buildDataSourcesSliceWithTheSimulatorRenamed(newLabel: string): ServerMessage {
+  return {
+    type: 'slice',
+    name: 'dataSources',
+    slice: [{ ...buildSimulatorThatIsOk(), label: newLabel }],
+    serverNowMs: momentOfTheNextPollMs,
+  };
+}
+
+/** The message that hands the page the sources slice once the simulator was deleted. */
+export function buildDataSourcesSliceWithNoSourceLeft(): ServerMessage {
+  return {
+    type: 'slice',
+    name: 'dataSources',
+    slice: [],
     serverNowMs: momentOfTheNextPollMs,
   };
 }

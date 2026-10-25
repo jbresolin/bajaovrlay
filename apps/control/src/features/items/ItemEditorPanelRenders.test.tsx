@@ -37,6 +37,7 @@ import {
   buildNextPollWhereOnlyACarOffTheCardMoves,
   buildNextPollWhereTheSecondCarCloses,
   buildSlicesWithTheBattleCardOfTheLeaders,
+  findRowOfField,
   momentOfTheNextPollMs,
 } from './battleCardOfTheLeaders.testSupport';
 import { renderItemEditorPanelOnFakeServerWithSlices } from './itemEditorOnFakeServer.testSupport';
@@ -75,16 +76,6 @@ function renderEditorOnTheBattleCardOfTheLeaders() {
 /** When the simulator's data the page holds was received. */
 function readMomentOfTheSimulatorsData(serverStateStore: ServerStateStore): number | undefined {
   return serverStateStore.getState().dataSnapshots[0]?.receivedAtMs;
-}
-
-/** The row of one field, found from its label up to the row's own box. */
-function findRowOfField(fieldLabel: string): HTMLElement {
-  const label = screen.getByText(fieldLabel, { selector: 'label' });
-  const row = label.closest<HTMLElement>('.flex.flex-col.gap-2');
-  if (row === null) {
-    throw new Error(`the row of ${fieldLabel} is not on the page`);
-  }
-  return row;
 }
 
 describe('the item editor on a battle card read live, when a poll arrives', () => {
