@@ -3,6 +3,7 @@
  * readers for what it shows, and control over frames and time. No theme token is placed on
  * the page here, so every timeline lasts 0 ms and a test never waits on real motion.
  */
+import { putGsapsFrameLoopToSleep } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { onTestFinished, vi } from 'vitest';
 
 import CountdownGraphic from './countdown.js';
@@ -98,8 +99,9 @@ export function takeControlOfFramesAndTime(startingMomentMs = designsMomentBefor
         callback(performance.now());
       }
     },
-    /** How many frames are booked: 0 once nothing ticks any more. */
+    /** How many of the countdown's frames are booked (GSAP's loop put to sleep first). */
     countPendingFrames(): number {
+      putGsapsFrameLoopToSleep();
       return pendingCallbacks.size;
     },
     letTimePass(milliseconds: number): void {

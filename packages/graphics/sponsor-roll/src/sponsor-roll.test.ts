@@ -24,6 +24,7 @@
  *   - The paging rules themselves; the kit's sponsorPages test and sponsorRollModel.test.ts.
  *   - Real rendering and motion; e2e/ runs the built graphic in Chromium.
  */
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -280,11 +281,13 @@ describe('an update during the stop-out', () => {
       ?.style.setProperty('--motion-out', '250ms');
     const pendingStop = roll.stopAction({});
 
-    // Act: Cadastros changes the list while the roll fades; then the stop-out ends.
+    // Act: Cadastros changes the list while the roll fades; then the stop-out is ended at
+    // once (never waited for: on a loaded runner a real motion may outlast the timeout).
     const answer = await roll.updateAction({
       data: { sponsors: createThe30thCompetitionSponsors().slice(0, 11) },
     });
     const headDuringTheStopOut = readHead(roll);
+    finishEveryRunningMotionAtOnce();
     await pendingStop;
 
     // Assert: accepted, the fading page unchanged, page 1 of the new round drawn once faded.

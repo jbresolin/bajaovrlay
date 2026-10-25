@@ -3,6 +3,7 @@
  * schedule, readers for what it shows, and control over time and timers. No theme token is
  * placed on the page here, so every timeline lasts 0 ms and a test never waits on motion.
  */
+import { putGsapsFrameLoopToSleep } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { onTestFinished, vi } from 'vitest';
 
 import SessionsBoardGraphic from './sessions-board.js';
@@ -113,7 +114,11 @@ export function takeControlOfTimeAndTimers(startingMomentMs: number) {
   });
   return {
     /** How many timers are pending: the board's status check, or none. */
-    countPendingTimers: () => vi.getTimerCount(),
+    /** The graphic's own pending timers: GSAP's frame loop is put to sleep first. */
+    countPendingTimers: () => {
+      putGsapsFrameLoopToSleep();
+      return vi.getTimerCount();
+    },
     /** Lets time pass, running every timer due, and the promises they start. */
     letTimePass: (milliseconds: number) => vi.advanceTimersByTimeAsync(milliseconds),
   };

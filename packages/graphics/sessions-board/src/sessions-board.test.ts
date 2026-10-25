@@ -26,6 +26,7 @@
  *   - The status rule and the window; sessionsBoardWindow.test.ts on shared's own table.
  *   - Real rendering and motion; e2e/ runs the built graphic in Chromium.
  */
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
@@ -304,10 +305,11 @@ describe('an update during the stop-out', () => {
       ?.style.setProperty('--motion-out', '250ms');
     const pendingStop = board.stopAction({});
 
-    // Act: the title changes while the board fades; then the stop-out runs to its end.
+    // Act: the title changes while the board fades; then the stop-out is ended at once
+    // (never waited for: a real motion under fake time may outlast the test's timeout).
     const answer = await board.updateAction({ data: { title: 'PROGRAMAÇÃO DE DOMINGO' } });
     const titleDuringTheStopOut = readTitle(board);
-    await timeAndTimers.letTimePass(300);
+    finishEveryRunningMotionAtOnce();
     await pendingStop;
 
     // Assert: accepted, the fading board unchanged, the new title drawn once faded, and no
@@ -333,10 +335,10 @@ describe('an update during the play-in', () => {
     const pendingPlay = board.playAction({});
     await timeAndTimers.letTimePass(100);
 
-    // Act: the title changes while the board rises; then the play-in runs to its end.
+    // Act: the title changes while the board rises; then the play-in is ended at once.
     const answer = await board.updateAction({ data: { title: 'PROGRAMAÇÃO DE DOMINGO' } });
     const titleDuringThePlayIn = readTitle(board);
-    await timeAndTimers.letTimePass(1000);
+    finishEveryRunningMotionAtOnce();
     await pendingPlay;
 
     // Assert: accepted, the rising board unchanged, the new title once it is up, and one

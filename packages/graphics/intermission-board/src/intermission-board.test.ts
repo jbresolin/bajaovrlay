@@ -27,6 +27,7 @@
  *     animations tests.
  *   - Real rendering; e2e/ runs the built graphic in Chromium.
  */
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { createThe30thCompetitionSponsors } from '@bajaovrlay/graphics-kit/the30thCompetitionSponsors.testSupport';
 import { describe, expect, it } from 'vitest';
 
@@ -278,12 +279,13 @@ describe('an update during the stop-out', () => {
     const pendingStop = board.stopAction({});
 
     // Act: the organiser is deleted in Cadastros while the board fades (three line pages
-    // left); then the stop-out runs to its end, and a Diamante hold passes off air.
+    // left); then the stop-out is ended at once (never waited for: a real motion under
+    // fake time may outlast the test's timeout), and a Diamante hold passes off air.
     const answer = await board.updateAction({
       data: { sponsors: createEightSponsors().slice(0, 7) },
     });
     const lineDuringTheStopOut = readSponsorLineShown(board);
-    await time.letTimePass(300);
+    finishEveryRunningMotionAtOnce();
     await pendingStop;
     const lineOnceFaded = readSponsorLineShown(board);
     await time.letTimePass(8000);

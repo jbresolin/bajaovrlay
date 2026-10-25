@@ -4,6 +4,7 @@
  * and control over timers. No motion token is placed on the page, so every timeline lasts
  * 0 ms and a test never waits on real motion; only the holds are set.
  */
+import { putGsapsFrameLoopToSleep } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { createThe30thCompetitionSponsors } from '@bajaovrlay/graphics-kit/the30thCompetitionSponsors.testSupport';
 import { onTestFinished, vi } from 'vitest';
 
@@ -117,7 +118,11 @@ export function takeControlOfTimers() {
     vi.useRealTimers();
   });
   return {
-    countPendingTimers: () => vi.getTimerCount(),
+    /** The graphic's own pending timers: GSAP's frame loop is put to sleep first. */
+    countPendingTimers: () => {
+      putGsapsFrameLoopToSleep();
+      return vi.getTimerCount();
+    },
     letTimePass: (milliseconds: number) => vi.advanceTimersByTimeAsync(milliseconds),
   };
 }

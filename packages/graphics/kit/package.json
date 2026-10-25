@@ -44,7 +44,8 @@
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",
     "./tokenOverrides.testSupport": "./src/tokenOverrides.testSupport.ts",
     "./ografSchemaValidator.testSupport": "./src/ografSchemaValidator.testSupport.ts",
-    "./the30thCompetitionSponsors.testSupport": "./src/the30thCompetitionSponsors.testSupport.ts"
+    "./the30thCompetitionSponsors.testSupport": "./src/the30thCompetitionSponsors.testSupport.ts",
+    "./runningMotions.testSupport": "./src/runningMotions.testSupport.ts"
   },
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",

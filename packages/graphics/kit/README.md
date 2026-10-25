@@ -50,6 +50,7 @@ src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> fo
 src/tokenOverrides.testSupport.ts        tests only: theme tokens on :root before the graphic loads
 src/ografSchemaValidator.testSupport.ts  tests only: the ajv validator over the vendored ograf-schema/
 src/the30thCompetitionSponsors.testSupport.ts  tests only: the same 17, each logo a /media address
+src/runningMotions.testSupport.ts        tests only: ends every running GSAP timeline at once
 ograf-schema/                            the official OGraf v1 schemas, vendored once (see its README)
 ```
 

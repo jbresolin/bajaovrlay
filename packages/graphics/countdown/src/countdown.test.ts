@@ -26,6 +26,7 @@
  *     so every timeline lasts 0 ms. e2e/ runs the built graphic in Chromium.
  *   - Which parts each layout shows; countdownView.test.ts.
  */
+import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
@@ -252,11 +253,11 @@ describe('the count stopped', () => {
     findPartOfCountdown(countdown, 'countdown-panel')?.style.setProperty('--motion-out', '250ms');
     const pendingStop = countdown.stopAction({});
 
-    // Act: the session is renamed while the card fades; then the stop-out runs to its end.
+    // Act: the session is renamed while the card fades; then the stop-out is ended at once
+    // (never waited for: a real motion under fake time may outlast the test's timeout).
     const answer = await countdown.updateAction({ data: { sessionName: 'Super Prime' } });
     const sessionDuringTheStopOut = readShownText(countdown, 'countdown-session');
-    framesAndTime.letTimePass(300);
-    framesAndTime.runPendingFrames();
+    finishEveryRunningMotionAtOnce();
     await pendingStop;
 
     // Assert: accepted, the fading card unchanged, the new session drawn once faded, and

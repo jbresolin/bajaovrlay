@@ -4,6 +4,7 @@
  * sponsor holds on the page, and control over time. No motion token is placed on the page,
  * so every timeline lasts 0 ms and a test never waits on real motion.
  */
+import { putGsapsFrameLoopToSleep } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import { onTestFinished, vi } from 'vitest';
 
 import IntermissionBoardGraphic from './intermission-board.js';
@@ -166,7 +167,11 @@ export function takeControlOfTime(startingMomentMs = designsMomentMs) {
     vi.useRealTimers();
   });
   return {
-    countPendingTimers: () => vi.getTimerCount(),
+    /** The graphic's own pending timers: GSAP's frame loop is put to sleep first. */
+    countPendingTimers: () => {
+      putGsapsFrameLoopToSleep();
+      return vi.getTimerCount();
+    },
     letTimePass: (milliseconds: number) => vi.advanceTimersByTimeAsync(milliseconds),
     /**
      * Moves the clock on at once, then lets two frames run: for the count, without running
