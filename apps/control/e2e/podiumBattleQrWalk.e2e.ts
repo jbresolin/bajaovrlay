@@ -281,7 +281,11 @@ test.describe('the podium, the battle card and the QR card', () => {
 
     // Act (step 5): the QR card with the call to action and the address typed, taken.
     await openControlPageAndWaitUntilConnected(page);
-    const itemEditor = await openItemEditorWithNewGraphic(page, 'QR dos resultados', 'Cartão de QR');
+    const itemEditor = await openItemEditorWithNewGraphic(
+      page,
+      'QR dos resultados',
+      'Cartão de QR',
+    );
     await itemEditor.getByLabel('Chamada', { exact: true }).fill('Acompanhe os resultados');
     await itemEditor.getByLabel('Endereço do QR', { exact: true }).fill(resultsAddress);
     await saveAndTakeTheItemInTheEditor(itemEditor);
