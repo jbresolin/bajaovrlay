@@ -7,7 +7,6 @@ import {
   buildChangedItemFieldsFromSchemaForm,
   buildItemFieldsFromSchemaForm,
   buildSchemaFormResolver,
-  hasSourceChoiceChangedSinceOpened,
   listFieldKeysReadFromASource,
   SchemaFormFields,
   type SchemaFormValues,
@@ -16,6 +15,7 @@ import { ptBR } from '@/i18n/ptBR';
 import { useReadServerStateNow } from '@/state/ControlPageStateProvider';
 
 import { fillGraphicFieldsOfItemEditor } from './graphicFieldsOfItemEditor';
+import { SourceChangeAtTheNextTakeNote } from './SourceChangeAtTheNextTakeNote';
 import { useBindingOptionsOfItemEditor } from './useBindingOptionsOfItemEditor';
 
 // "Edição rápida" draws generated fields too, and is on the page at the same time. This
@@ -117,26 +117,8 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
     [form, graphicFields],
   );
 
-  // Watched so the note below follows the operator's choices as they are made. Each watch
-  // computes a yes or no (`compute`), and react-hook-form redraws this form only when the
-  // answer changes: a watch of the whole `bindings` redrew it, and with it every field
-  // row, at every pick in any field (BAJAOVRLAY-45).
-  const hasSourceChoiceChanged = useWatch({
-    control: form.control,
-    compute: (formValuesNow: SchemaFormValues) =>
-      hasSourceChoiceChangedSinceOpened(
-        graphicFields.description,
-        {
-          ...graphicFields.formValues,
-          kinds: formValuesNow.kinds,
-          bindings: formValuesNow.bindings,
-          entityReferences: formValuesNow.entityReferences,
-        },
-        graphicFields.formValues,
-      ),
-  });
-  const isSourceChangeWaitingForTheTake = isItemOnAir && hasSourceChoiceChanged;
-
+  // A yes or no computed in the watch (`compute`): react-hook-form redraws this form only
+  // when the answer changes, not at every pick in any field (BAJAOVRLAY-45).
   const isFilledByAnEventNow = useWatch({
     control: form.control,
     name: 'kinds',
@@ -169,10 +151,12 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
         bindingOptions={bindingOptions}
         entityLibrary={entityLibrary}
       />
-      {isSourceChangeWaitingForTheTake && (
-        <p role="status" className="text-sm text-muted-foreground">
-          {ptBR.bindings.editor.sourceChangeAtTheNextTake}
-        </p>
+      {isItemOnAir && (
+        <SourceChangeAtTheNextTakeNote
+          form={form}
+          description={graphicFields.description}
+          formValuesAsOpened={graphicFields.formValues}
+        />
       )}
     </>
   );
