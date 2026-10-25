@@ -111,11 +111,11 @@ describe('the cards', () => {
       '[data-testid="podium-logo"]',
     );
     expect(
-      komiketoLogoCell?.classList.contains('on-light-plate'),
+      komiketoLogoCell?.classList.contains('team-logo-cell--on-light-plate'),
       "Komiketo's dark mark sits on the light plate",
     ).toBe(true);
     expect(
-      sinueloLogoCell?.classList.contains('on-light-plate'),
+      sinueloLogoCell?.classList.contains('team-logo-cell--on-light-plate'),
       "Sinuelo's white mark stands on the panel",
     ).toBe(false);
     expect(sinueloLogo?.alt, 'the logo is named for its team').toBe('Logo da equipe Sinuelo');

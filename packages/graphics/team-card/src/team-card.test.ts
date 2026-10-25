@@ -288,7 +288,9 @@ describe('updateAction', () => {
     expect(answer, 'adding a logo must answer 200').toEqual({ statusCode: 200 });
     expect(findPartOfTeamCard(teamCard, 'team-card-logo'), 'the logo must be drawn').toBeDefined();
     expect(
-      findPartOfTeamCard(teamCard, 'team-card-logo-cell')?.classList.contains('on-light-plate'),
+      findPartOfTeamCard(teamCard, 'team-card-logo-cell')?.classList.contains(
+        'team-logo-cell--on-light-plate',
+      ),
       'the logo must sit on its plate',
     ).toBe(true);
     expect(findPartOfTeamCard(teamCard, 'team-card-panel'), 'the card must not be rebuilt').toBe(

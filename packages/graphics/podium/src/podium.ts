@@ -22,6 +22,7 @@
  */
 import { writeBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { boardHeadStyles } from '@bajaovrlay/graphics-kit/boardHeadStyles';
+import { carChipLargeStyles } from '@bajaovrlay/graphics-kit/carChipLargeStyles';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -33,6 +34,7 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { teamLogoCellStyles } from '@bajaovrlay/graphics-kit/teamLogoCellStyles';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -74,7 +76,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The podium graphic; the default export a renderer registers as a custom element. */
 export default class PodiumGraphic extends LitElement implements OGrafGraphic {
-  static override styles = [boardHeadStyles, podiumStyles];
+  static override styles = [boardHeadStyles, teamLogoCellStyles, carChipLargeStyles, podiumStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;

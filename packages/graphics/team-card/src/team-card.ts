@@ -16,6 +16,7 @@
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
  */
+import { carChipLargeStyles } from '@bajaovrlay/graphics-kit/carChipLargeStyles';
 import type {
   OGrafCustomActionParams,
   OGrafGraphic,
@@ -27,6 +28,7 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { teamLogoCellStyles } from '@bajaovrlay/graphics-kit/teamLogoCellStyles';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -64,7 +66,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The team card graphic; the default export a renderer registers as a custom element. */
 export default class TeamCardGraphic extends LitElement implements OGrafGraphic {
-  static override styles = teamCardStyles;
+  static override styles = [teamLogoCellStyles, carChipLargeStyles, teamCardStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;

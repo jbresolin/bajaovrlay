@@ -231,7 +231,7 @@ describe('the logo’s light plate', () => {
 
     // Assert: the plate class is there exactly when asked for.
     expect(
-      logoCell?.classList.contains('on-light-plate'),
+      logoCell?.classList.contains('team-logo-cell--on-light-plate'),
       'the logo cell must carry the plate class only with logoOnLightPlate',
     ).toBe(expected);
   });

@@ -10,6 +10,7 @@
  * Images are `<img src>` and nothing else: the address is a `/media/<id>` the server
  * serves, and an `<img>` runs no script even when the file is an SVG.
  */
+import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
 import { html, nothing, type TemplateResult } from 'lit';
 
 import { ptBR } from './ptBR.js';
@@ -25,16 +26,15 @@ function renderPhotoCell(data: TeamCardData): TemplateResult {
   />`;
 }
 
-/** The logo cell: the logo whole inside its box, on the panel or on the light plate. */
+/** The logo cell: the kit's, the logo whole inside its box, on the panel or on the plate. */
 function renderLogoCell(data: TeamCardData, isOnLightPlate: boolean): TemplateResult {
-  const logoCellClass = isOnLightPlate ? 'logo on-light-plate' : 'logo';
-  return html`<span class=${logoCellClass} data-testid="team-card-logo-cell"
-    ><img
-      class="logo-image"
-      data-testid="team-card-logo"
-      src=${data.logoUrl ?? ''}
-      alt=${ptBR.logoAlternativeText(data.teamName)}
-  /></span>`;
+  return renderTeamLogoCell({
+    logoUrl: data.logoUrl ?? '',
+    alternativeText: ptBR.logoAlternativeText(data.teamName),
+    isOnLightPlate,
+    cellTestId: 'team-card-logo-cell',
+    imageTestId: 'team-card-logo',
+  });
 }
 
 /** The place line after the school, led by the design's middle dot. */
@@ -52,7 +52,7 @@ function renderIdentity(data: TeamCardData): TemplateResult {
   const placeLine = writePlaceLine(data);
   return html`<div class="identity" data-testid="team-card-identity">
     <div class="title">
-      <span class="chip" data-testid="team-card-car-number">${data.carNumber}</span>
+      <span class="car-chip-large" data-testid="team-card-car-number">${data.carNumber}</span>
       <span class="team-name" data-testid="team-card-team-name">${data.teamName}</span>
     </div>
     <div class="details">

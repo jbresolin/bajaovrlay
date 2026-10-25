@@ -29,6 +29,9 @@ src/barMotion.ts                         the strip's and the ticker's GSAP timel
 src/waitForImagesToSettle.ts             load's wait for a graphic's images (at most 2 s; a broken one never blocks)
 src/boardHead.ts                         a wide board's head card (standings, podium): markup, parts, writer
 src/boardHeadStyles.ts                   the head card's look (logo, title, event line, the line at the right)
+src/teamLogoCell.ts                      a team's logo cell (team card, podium): the logo in its box, on the plate or not
+src/teamLogoCellStyles.ts                the logo cell's look; each graphic sizes it with --team-logo-cell-width/height
+src/carChipLargeStyles.ts                the large car chip (team card, podium)
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests

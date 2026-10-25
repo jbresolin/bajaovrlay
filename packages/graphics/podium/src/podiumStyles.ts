@@ -1,8 +1,9 @@
 /**
- * The podium's look in Ardósia: the design's `.board`, `.podium__places`, `.podium-place*`
- * and `.chip--large` rules (PR #21, docs/design/tools/slate-boards.css and slate-cards.css)
- * written against the theme's tokens alone; the head card's look is the kit's
- * boardHeadStyles, which podium.ts adds before these. Every colour, size, face and corner is
+ * The podium's look in Ardósia: the design's `.board`, `.podium__places` and
+ * `.podium-place*` rules (PR #21, docs/design/tools/slate-boards.css) written against the
+ * theme's tokens alone; the head card, the large chip and the logo cell are the kit's
+ * (boardHeadStyles, carChipLargeStyles, teamLogoCellStyles), which podium.ts adds before
+ * these, the logo cell sized here through `--team-logo-cell-*`. Every colour, size, face and corner is
  * a `var(--token)` the renderer page sets on its :root (packages/theme/ardosia/tokens.css).
  * No fallback values, by design: without the theme the board is unstyled, and
  * packages/theme's noHardCodedValues guard keeps it so.
@@ -20,6 +21,9 @@ export const podiumStyles = css`
     inset: 0;
     display: block;
     pointer-events: none;
+    /* The kit's logo cell (teamLogoCellStyles.ts): the podium's 240 × 112 box. */
+    --team-logo-cell-width: var(--podium-logo-width);
+    --team-logo-cell-height: var(--podium-logo-height);
   }
 
   .board {
@@ -80,33 +84,6 @@ export const podiumStyles = css`
     min-height: var(--podium-height-winner);
   }
 
-  /* The logo's box: the logo whole inside it, keeping its own shape (the team card's rule). */
-  .logo {
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    width: var(--podium-logo-width);
-    height: var(--podium-logo-height);
-  }
-
-  /* A dark logo, or one on its own white box, sits on the light plate. */
-  .logo.on-light-plate {
-    padding: var(--logo-plate-padding);
-    border-radius: var(--radius-chip);
-    background: var(--panel-light);
-  }
-
-  .logo-image {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-  }
-
   /* The place: yellow text, no field; the 1st on the green chip. */
   .place {
     display: inline-flex;
@@ -125,25 +102,6 @@ export const podiumStyles = css`
   .place[data-leader] {
     background: var(--leader-background);
     color: var(--leader-text);
-  }
-
-  /* The big chip, as on the team card. */
-  .chip {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--chip-large-size);
-    height: var(--chip-large-size);
-    /* The face's digits sit high in their line box; the nudge centres their ink. */
-    padding-top: var(--glyph-nudge);
-    box-sizing: border-box;
-    border-radius: var(--radius);
-    background: var(--chip-car-background);
-    color: var(--chip-car-text);
-    font-weight: var(--weight-number);
-    font-size: var(--size-chip-large);
-    line-height: 1;
   }
 
   /* The team: a long name wraps inside the card rather than spill past it. */

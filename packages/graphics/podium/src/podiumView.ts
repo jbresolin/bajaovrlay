@@ -15,6 +15,7 @@ import {
   findBoardHeadParts,
   renderBoardHeadTemplate,
 } from '@bajaovrlay/graphics-kit/boardHead';
+import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
 import { html, nothing, type TemplateResult } from 'lit';
 
 import {
@@ -42,16 +43,15 @@ export type PodiumParts = BoardHeadParts & {
   cardsBySlot: Record<PodiumSlot, HTMLElement>;
 };
 
-/** The logo row: the logo whole inside its box, on the panel or on the light plate. */
+/** The logo row: the kit's logo cell, the logo whole inside its box, on the plate or not. */
 function renderLogoRow(entry: PodiumEntry): TemplateResult {
-  const logoClass = isLogoOnLightPlate(entry) ? 'logo on-light-plate' : 'logo';
-  return html`<span class=${logoClass} data-testid="podium-logo-cell"
-    ><img
-      class="logo-image"
-      data-testid="podium-logo"
-      src=${entry.logoUrl ?? ''}
-      alt=${ptBR.teamLogoAlternativeText(entry.teamName)}
-  /></span>`;
+  return renderTeamLogoCell({
+    logoUrl: entry.logoUrl ?? '',
+    alternativeText: ptBR.teamLogoAlternativeText(entry.teamName),
+    isOnLightPlate: isLogoOnLightPlate(entry),
+    cellTestId: 'podium-logo-cell',
+    imageTestId: 'podium-logo',
+  });
 }
 
 /** A card's content: the logo row when there is a logo, the place, the chip, the team, the school. */
@@ -60,7 +60,7 @@ function renderCardContent(entry: PodiumEntry): TemplateResult {
     <span class="place" data-testid="podium-place" ?data-leader=${isPlaceOnTheLeaderChip(entry)}
       >${writePlaceText(entry)}</span
     >
-    <span class="chip" data-testid="podium-car-number">${entry.carNumber}</span>
+    <span class="car-chip-large" data-testid="podium-car-number">${entry.carNumber}</span>
     <span class="team-name" data-testid="podium-team-name">${entry.teamName}</span>
     <span class="school-name" data-testid="podium-school-name">${entry.schoolName}</span>`;
 }
