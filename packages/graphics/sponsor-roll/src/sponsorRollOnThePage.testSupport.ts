@@ -4,34 +4,17 @@
  * and control over timers. No motion token is placed on the page, so every timeline lasts
  * 0 ms and a test never waits on real motion; only the holds are set.
  */
+import { createThe30thCompetitionSponsors } from '@bajaovrlay/graphics-kit/the30thCompetitionSponsors.testSupport';
 import { onTestFinished, vi } from 'vitest';
 
 import SponsorRollGraphic from './sponsor-roll.js';
-import type { SponsorRollData, SponsorRollLayout, SponsorRollSponsor } from './sponsorRollModel.js';
+import type { SponsorRollData, SponsorRollLayout } from './sponsorRollModel.js';
 
 // The renderer, not the graphic, picks the tag name; these tests pick their own.
 customElements.define('baja-sponsor-roll-under-test', SponsorRollGraphic);
 
-/** The 30ª Competição's 17 sponsors by level, as the design's sample data lists them. */
-const namesByLevel: Array<[SponsorRollSponsor['level'], string[]]> = [
-  ['diamante', ['Bosch', 'Renault']],
-  ['ouro', ['Certi', 'CNH', 'Himix', 'Horse', 'Marcopolo', 'Rodonunes', 'Segula', 'TRP', 'Vetore']],
-  ['apoio', ['Criciúma', 'Osaki', 'SAE4Mobility', 'SATC', 'Schulz']],
-  ['realizacao', ['SAE Brasil']],
-];
-
-/** The 17 sponsors as the entity list gives them, each logo a /media address. */
-export function createThe30thCompetitionSponsors(): SponsorRollSponsor[] {
-  return namesByLevel.flatMap(([level, names]) =>
-    names.map((name) => ({
-      name,
-      level,
-      logoUrl: `/media/logo-${name.toLowerCase()}`,
-      logoOnLightPlate: name !== 'Vetore',
-      rollWeight: 5,
-    })),
-  );
-}
+// The 30ª Competição's 17, each logo a /media address: the kit's one copy of the round.
+export { createThe30thCompetitionSponsors };
 
 /** The roll of the 17 in a layout, with the enduro's word for the corner. */
 export function createThe30thCompetitionRoll(layout: SponsorRollLayout): SponsorRollData {

@@ -28,23 +28,10 @@ import { describe, expect, it } from 'vitest';
 
 import { planSponsorPages, type SponsorPage } from './sponsorPages.js';
 import type { SponsorLevel } from './sponsorRound.js';
+import { createThe30thCompetitionSponsors } from './the30thCompetitionSponsors.testSupport.js';
 
 /** A sponsor as the pages need it: its name and its level. */
 type SponsorOfTheTests = { name: string; level: SponsorLevel };
-
-/** The 30ª Competição's 17 sponsors by level, as the design's sample data lists them. */
-function buildTheReal17Sponsors(): SponsorOfTheTests[] {
-  const namesByLevel: Array<[SponsorLevel, string[]]> = [
-    ['diamante', ['Bosch', 'Renault']],
-    [
-      'ouro',
-      ['Certi', 'CNH', 'Himix', 'Horse', 'Marcopolo', 'Rodonunes', 'Segula', 'TRP', 'Vetore'],
-    ],
-    ['apoio', ['Criciúma', 'Osaki', 'SAE4Mobility', 'SATC', 'Schulz']],
-    ['realizacao', ['SAE Brasil']],
-  ];
-  return namesByLevel.flatMap(([level, names]) => names.map((name) => ({ name, level })));
-}
 
 /** `count` Ouro sponsors, "Ouro 1", "Ouro 2"… */
 function buildOuroSponsors(count: number): SponsorOfTheTests[] {
@@ -63,14 +50,14 @@ const pagingScenarios = [
   // The design's sponsor roll: the real 17 make five pages.
   {
     name: 'pages the real 17 sponsors in five pages of up to six',
-    sponsors: buildTheReal17Sponsors(),
+    sponsors: createThe30thCompetitionSponsors(),
     sponsorsPerPage: 6,
     expected: ['diamante 2', 'ouro 5', 'ouro 4', 'apoio 5', 'realizacao 1'],
   },
   // The intermission's line holds four: Ouro and Apoio take more pages.
   {
     name: 'pages the real 17 sponsors in seven lines of up to four',
-    sponsors: buildTheReal17Sponsors(),
+    sponsors: createThe30thCompetitionSponsors(),
     sponsorsPerPage: 4,
     expected: ['diamante 2', 'ouro 3', 'ouro 3', 'ouro 3', 'apoio 3', 'apoio 2', 'realizacao 1'],
   },

@@ -16,6 +16,7 @@
  * What these tests deliberately do not cover:
  *   - Which payloads pass; intermissionBoardManifestDataAgreement.test.ts.
  */
+import { createThe30thCompetitionSponsors } from '@bajaovrlay/graphics-kit/the30thCompetitionSponsors.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -23,39 +24,16 @@ import {
   isTeamOnTheLeaderChip,
   listIntermissionBoardParts,
   mergePartialUpdateIntoIntermissionBoardData,
-  type SponsorLineSponsor,
   writeRankOfTeam,
 } from './intermissionBoardModel.js';
 import { createBreakBeforeTheEnduro } from './intermissionBoardOnThePage.testSupport.js';
-
-/** The 30ª Competição's 17 sponsors by level, as the design's sample data lists them. */
-function createThe17Sponsors(): SponsorLineSponsor[] {
-  const namesByLevel: Array<[SponsorLineSponsor['level'], string[]]> = [
-    ['diamante', ['Bosch', 'Renault']],
-    [
-      'ouro',
-      ['Certi', 'CNH', 'Himix', 'Horse', 'Marcopolo', 'Rodonunes', 'Segula', 'TRP', 'Vetore'],
-    ],
-    ['apoio', ['Criciúma', 'Osaki', 'SAE4Mobility', 'SATC', 'Schulz']],
-    ['realizacao', ['SAE Brasil']],
-  ];
-  return namesByLevel.flatMap(([level, names]) =>
-    names.map((name) => ({
-      name,
-      level,
-      logoUrl: `/media/logo-${name.toLowerCase()}`,
-      logoOnLightPlate: true,
-      rollWeight: 5,
-    })),
-  );
-}
 
 describe('listIntermissionBoardParts', () => {
   it('pages the real 17 on lines of four: Diamante 2, Ouro 3 + 3 + 3, Apoio 3 + 2, Realização 1', () => {
     // Arrange: the break with the 17.
     const data: IntermissionBoardData = {
       ...createBreakBeforeTheEnduro({ hasTopFive: false, hasSponsors: false }),
-      sponsors: createThe17Sponsors(),
+      sponsors: createThe30thCompetitionSponsors(),
     };
 
     // Act: list its parts.

@@ -12,13 +12,10 @@ import '@bajaovrlay/theme/fonts/fonts.css';
 
 import { setUpPreviewControls } from '@bajaovrlay/graphics-kit/previewControls';
 import { choosePreviewStage } from '@bajaovrlay/graphics-kit/previewStage';
+import { createThe30thCompetitionSponsorsSample } from '@bajaovrlay/graphics-kit/the30thCompetitionSponsorsSample';
 
 import IntermissionBoardGraphic from './intermission-board.js';
-import {
-  choosePreviewData,
-  createThe30thCompetitionSponsors,
-  createThe30thCompetitionTopFive,
-} from './previewData.js';
+import { choosePreviewData, createThe30thCompetitionTopFive } from './previewData.js';
 import { ptBR } from './ptBR.js';
 
 const { previewStage, addPreviewButton, runActionAndShowAnswer, showProblem, readPreviewState } =
@@ -38,7 +35,7 @@ function addPartButtons(board: IntermissionBoardGraphic): void {
   const partButtons: Array<[string, Record<string, unknown>]> = [
     [ptBR.preview.topFiveOnButton, { topFive: createThe30thCompetitionTopFive() }],
     [ptBR.preview.topFiveOffButton, { topFive: undefined }],
-    [ptBR.preview.sponsorsOnButton, { sponsors: createThe30thCompetitionSponsors() }],
+    [ptBR.preview.sponsorsOnButton, { sponsors: createThe30thCompetitionSponsorsSample() }],
     [ptBR.preview.sponsorsOffButton, { sponsors: undefined }],
   ];
   for (const [label, data] of partButtons) {

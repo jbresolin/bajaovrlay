@@ -29,6 +29,7 @@
     "./sponsorPages": "./src/sponsorPages.ts",
     "./sponsorPageTurner": "./src/sponsorPageTurner.ts",
     "./stackedPageLayers": "./src/stackedPageLayers.ts",
+    "./the30thCompetitionSponsorsSample": "./src/the30thCompetitionSponsorsSample.ts",
     "./ptBRSponsorLevelHeadings": "./src/ptBRSponsorLevelHeadings.ts",
     "./countdownText": "./src/countdownText.ts",
     "./countdownClock": "./src/countdownClock.ts",
@@ -43,7 +44,8 @@
     "./previewStage": "./src/previewStage.ts",
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",
     "./tokenOverrides.testSupport": "./src/tokenOverrides.testSupport.ts",
-    "./ografSchemaValidator.testSupport": "./src/ografSchemaValidator.testSupport.ts"
+    "./ografSchemaValidator.testSupport": "./src/ografSchemaValidator.testSupport.ts",
+    "./the30thCompetitionSponsors.testSupport": "./src/the30thCompetitionSponsors.testSupport.ts"
   },
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",

@@ -7,31 +7,12 @@
  * screenshots, whose page clock is set). Whether the data is valid is left to the graphic's own
  * load(). The stage behind it is the kit's `?stage=grey|black`.
  *
- * The logos are files of this package (copies of docs/design/sample_data/logos/sponsors),
- * imported through Vite so they land in dist/ with the preview.
+ * The 17 and their logos are the kit's sample (the30thCompetitionSponsorsSample), shared
+ * with the sponsor roll's preview.
  */
-import boschLogoUrl from '../preview-images/bosch.webp';
-import certiLogoUrl from '../preview-images/certi.webp';
-import cnhLogoUrl from '../preview-images/cnh.webp';
-import criciumaLogoUrl from '../preview-images/criciuma.webp';
-import himixLogoUrl from '../preview-images/himix.webp';
-import horseLogoUrl from '../preview-images/horse.webp';
-import marcopoloLogoUrl from '../preview-images/marcopolo.webp';
-import osakiLogoUrl from '../preview-images/osaki.webp';
-import renaultLogoUrl from '../preview-images/renault.webp';
-import rodonunesLogoUrl from '../preview-images/rodonunes.webp';
-import saeLogoUrl from '../preview-images/sae.webp';
-import sae4mobilityLogoUrl from '../preview-images/sae4mobility.webp';
-import satcLogoUrl from '../preview-images/satc.webp';
-import schulzLogoUrl from '../preview-images/schulz.webp';
-import segulaLogoUrl from '../preview-images/segula.webp';
-import trpLogoUrl from '../preview-images/trp.webp';
-import vetoreLogoUrl from '../preview-images/vetore.webp';
-import type {
-  IntermissionBoardData,
-  SponsorLineSponsor,
-  TopFiveEntry,
-} from './intermissionBoardModel.js';
+import { createThe30thCompetitionSponsorsSample } from '@bajaovrlay/graphics-kit/the30thCompetitionSponsorsSample';
+
+import type { IntermissionBoardData, TopFiveEntry } from './intermissionBoardModel.js';
 import { ptBR } from './ptBR.js';
 
 /** Either data to load, or a pt-BR sentence saying why the address could not be read. */
@@ -61,39 +42,6 @@ export function createThe30thCompetitionTopFive(): TopFiveEntry[] {
   ];
 }
 
-/** One sponsor of the sample, on the light plate unless the design says its logo is light. */
-function buildSponsor(
-  name: string,
-  level: SponsorLineSponsor['level'],
-  logoUrl: string,
-  logoOnLightPlate = true,
-): SponsorLineSponsor {
-  return { name, level, logoUrl, logoOnLightPlate, rollWeight: 5 };
-}
-
-/** The 30ª Competição's 17 sponsors in the server's order. */
-export function createThe30thCompetitionSponsors(): SponsorLineSponsor[] {
-  return [
-    buildSponsor('Bosch', 'diamante', boschLogoUrl),
-    buildSponsor('Renault', 'diamante', renaultLogoUrl),
-    buildSponsor('Certi', 'ouro', certiLogoUrl),
-    buildSponsor('CNH', 'ouro', cnhLogoUrl),
-    buildSponsor('Himix', 'ouro', himixLogoUrl),
-    buildSponsor('Horse', 'ouro', horseLogoUrl),
-    buildSponsor('Marcopolo', 'ouro', marcopoloLogoUrl),
-    buildSponsor('Rodonunes', 'ouro', rodonunesLogoUrl),
-    buildSponsor('Segula', 'ouro', segulaLogoUrl),
-    buildSponsor('TRP', 'ouro', trpLogoUrl),
-    buildSponsor('Vetore', 'ouro', vetoreLogoUrl, false),
-    buildSponsor('Criciúma', 'apoio', criciumaLogoUrl),
-    buildSponsor('Osaki', 'apoio', osakiLogoUrl),
-    buildSponsor('SAE4Mobility', 'apoio', sae4mobilityLogoUrl),
-    buildSponsor('SATC', 'apoio', satcLogoUrl),
-    buildSponsor('Schulz', 'apoio', schulzLogoUrl),
-    buildSponsor('SAE Brasil', 'realizacao', saeLogoUrl),
-  ];
-}
-
 /** Builds the design's break with the chosen parts, its start 23:45 after `nowMs`. */
 export function createBreakBeforeTheEnduroSample(
   parts: SampleParts,
@@ -109,7 +57,7 @@ export function createBreakBeforeTheEnduroSample(
     sample.topFive = createThe30thCompetitionTopFive();
   }
   if (parts.hasSponsors) {
-    sample.sponsors = createThe30thCompetitionSponsors();
+    sample.sponsors = createThe30thCompetitionSponsorsSample();
   }
   return sample;
 }
