@@ -26,6 +26,8 @@ export const emptySchemaFormBindingValue: SchemaFormBindingValue = {
   isLive: true,
   transformId: '',
   transformParameterText: '',
+  thenTransformId: '',
+  thenTransformParameterText: '',
 };
 
 /**
@@ -47,15 +49,6 @@ export const parameterOfEachBindingTransform: Record<
 export function buildSchemaFormBindingValueFromBinding(
   binding: BindingFieldValue,
 ): SchemaFormBindingValue {
-  const parameter =
-    binding.transformId === undefined
-      ? undefined
-      : parameterOfEachBindingTransform[binding.transformId];
-  const storedParameters = binding.transformParameters;
-  const storedParameter =
-    parameter !== undefined && typeof storedParameters === 'object' && storedParameters !== null
-      ? (storedParameters as Record<string, unknown>)[parameter.parameterName]
-      : undefined;
   return {
     sourceId: binding.sourceId,
     pathKey:
@@ -65,8 +58,30 @@ export function buildSchemaFormBindingValueFromBinding(
     carNumberText: binding.carNumber === undefined ? '' : String(binding.carNumber),
     isLive: binding.isLive,
     transformId: binding.transformId ?? '',
-    transformParameterText: storedParameter === undefined ? '' : String(storedParameter),
+    transformParameterText: readStoredParameterText(
+      binding.transformId,
+      binding.transformParameters,
+    ),
+    thenTransformId: binding.thenTransformId ?? '',
+    thenTransformParameterText: readStoredParameterText(
+      binding.thenTransformId,
+      binding.thenTransformParameters,
+    ),
   };
+}
+
+/** The one parameter a stored transform holds, as the form's text ('' for none). */
+function readStoredParameterText(
+  transformId: string | undefined,
+  storedParameters: unknown,
+): string {
+  const parameter =
+    transformId === undefined ? undefined : parameterOfEachBindingTransform[transformId];
+  const storedParameter =
+    parameter !== undefined && typeof storedParameters === 'object' && storedParameters !== null
+      ? (storedParameters as Record<string, unknown>)[parameter.parameterName]
+      : undefined;
+  return storedParameter === undefined ? '' : String(storedParameter);
 }
 
 /** What reading a field's "Fonte" out of the form gives: the binding, or why not. */
@@ -115,14 +130,24 @@ export function readBindingFromSchemaFormValue(
   }
   if (!isWholeClock && bindingValue.transformId !== '') {
     binding.transformId = bindingValue.transformId;
-    const parameter = parameterOfEachBindingTransform[bindingValue.transformId];
-    if (parameter !== undefined) {
-      binding.transformParameters = {
-        [parameter.parameterName]: readParameterText(
-          bindingValue.transformParameterText,
-          parameter,
-        ),
-      };
+    const parameters = buildParametersFromText(
+      bindingValue.transformId,
+      bindingValue.transformParameterText,
+    );
+    if (parameters !== undefined) {
+      binding.transformParameters = parameters;
+    }
+  }
+  // A second transform only after a first; one left without a first is dropped, as the
+  // form clears it when the first is cleared.
+  if (!isWholeClock && bindingValue.transformId !== '' && bindingValue.thenTransformId !== '') {
+    binding.thenTransformId = bindingValue.thenTransformId;
+    const thenParameters = buildParametersFromText(
+      bindingValue.thenTransformId,
+      bindingValue.thenTransformParameterText,
+    );
+    if (thenParameters !== undefined) {
+      binding.thenTransformParameters = thenParameters;
     }
   }
 
@@ -131,6 +156,21 @@ export function readBindingFromSchemaFormValue(
     return { status: 'problem', message: formErrors.aboutField(field.label, problem) };
   }
   return { status: 'binding', binding };
+}
+
+/**
+ * A transform's parameters from the text typed for its one parameter, or undefined for a
+ * transform that takes none (so no `transformParameters` key is stored at all).
+ */
+function buildParametersFromText(
+  transformId: string,
+  parameterText: string,
+): Record<string, string | number> | undefined {
+  const parameter = parameterOfEachBindingTransform[transformId];
+  if (parameter === undefined) {
+    return undefined;
+  }
+  return { [parameter.parameterName]: readParameterText(parameterText, parameter) };
 }
 
 /**

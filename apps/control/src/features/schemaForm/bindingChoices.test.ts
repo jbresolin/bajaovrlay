@@ -14,7 +14,11 @@
  *     its running switch lists only yes/no paths.
  *   - A text field lists the leader's last lap, which fits through "Tempo de volta como
  *     texto", and that transform alone is offered for it; the team name fits as it is.
- *   - A list field lists the three whole lists, and topN is offered on the positions.
+ *   - A list field lists the whole lists, and topN and withTeamLogos are offered on the
+ *     positions.
+ *   - After a first transform, the second offered is one that reads what the first gives
+ *     and fits the field (withTeamLogos after topN on the podium's cars), never the first
+ *     again; a text transform offers nothing to follow on a list (BAJAOVRLAY-47).
  *   - An object field has nothing to read: "Fonte" is not offered.
  *   - The whole clock is offered on the race clock's time field and on no other.
  *
@@ -28,6 +32,7 @@ import {
   canFieldBeBoundToASource,
   canFieldTakeTheWholeClock,
   listBindingPathChoicesOfField,
+  listSecondTransformIdsThatFit,
 } from './bindingChoices';
 
 /** A positions tower: a title, the list of cars and a theme object. */
@@ -110,7 +115,7 @@ describe('listBindingPathChoicesOfField', () => {
     const positions = choices.find((choice) => choice.pathKey === 'positions:entries');
 
     // Assert: positions, standings, the standings' score parts (BAJAOVRLAY-24), rounds and
-    // incidents, and topN offered on the positions.
+    // incidents, and topN and withTeamLogos (BAJAOVRLAY-47) offered on the positions.
     expect(pathKeys, 'the five whole lists').toEqual([
       'positions:entries',
       'standings:entries',
@@ -118,8 +123,66 @@ describe('listBindingPathChoicesOfField', () => {
       'brackets:rounds',
       'incidents:entries',
     ]);
-    expect(positions?.transformIdsThatFit, 'the first N cars').toEqual(['topN']);
+    expect(positions?.transformIdsThatFit, 'the first N cars, or the cars with logos').toEqual([
+      'topN',
+      'withTeamLogos',
+    ]);
   });
+});
+
+describe('listSecondTransformIdsThatFit', () => {
+  const secondTransformScenarios = [
+    // The podium's recipe: the first three cars, then each with its team's logo.
+    {
+      name: 'offers withTeamLogos after topN on the positions list',
+      fieldKey: 'entries',
+      valueTypeOfThePath: 'positionsEntries' as const,
+      firstTransformId: 'topN',
+      expected: ['withTeamLogos'],
+    },
+    // The same two the other way round give the same list, so it is offered too.
+    {
+      name: 'offers topN after withTeamLogos on the standings list',
+      fieldKey: 'entries',
+      valueTypeOfThePath: 'standingsEntries' as const,
+      firstTransformId: 'withTeamLogos',
+      expected: ['topN'],
+    },
+    // A lap written as text has nothing to follow it that a title takes but shortening.
+    {
+      name: 'offers the school-name shortening after a lap written as text on a title',
+      fieldKey: 'title',
+      valueTypeOfThePath: 'integer' as const,
+      firstTransformId: 'formatLapTimeAsText',
+      expected: ['shortenSchoolName'],
+    },
+    // An id the registry does not have: nothing can follow what nobody can make.
+    {
+      name: 'offers nothing after a transform the registry does not have',
+      fieldKey: 'entries',
+      valueTypeOfThePath: 'positionsEntries' as const,
+      firstTransformId: 'maiusculas',
+      expected: [],
+    },
+  ];
+
+  it.each(secondTransformScenarios)(
+    '$name',
+    ({ fieldKey, valueTypeOfThePath, firstTransformId, expected }) => {
+      // Arrange: the tower-like schema and the path and first transform of this row.
+
+      // Act: list what may follow the first transform.
+      const transformIds = listSecondTransformIdsThatFit(
+        towerDataSchema,
+        fieldKey,
+        valueTypeOfThePath,
+        firstTransformId,
+      );
+
+      // Assert: exactly the transforms of this row.
+      expect(transformIds, 'the second transforms offered must be these').toEqual(expected);
+    },
+  );
 });
 
 describe('canFieldBeBoundToASource and canFieldTakeTheWholeClock', () => {

@@ -21,6 +21,8 @@
  *     cannot be read, named in pt-BR, and neither can a stored binding whose transform
  *     does not read its path.
  *   - A value an override changed says so (isOverridden), and one it did not does not.
+ *   - Two transforms run in order (topN, then withTeamLogos), and the teams the caller
+ *     hands in are what withTeamLogos reads (BAJAOVRLAY-47).
  *
  * What these tests deliberately do not cover:
  *   - Filling a graphic's fields, required ones refusing and the clock group;
@@ -38,6 +40,26 @@ import {
   readSimulatorSnapshotAtLap34,
   simulatorSourceId,
 } from './sourcesForBindingTests.testSupport.js';
+
+// The teams handed to the transforms; these bindings read none (BAJAOVRLAY-47).
+const contextWithNoTeams = { teams: [] };
+
+/** The SHA-256 media id of Acauã Baja's logo, as the media store names the file. */
+const logoOfAcauaBajaMediaId = '9e1d3c5b7a9f1e3d5c7b9a1f3e5d7c9b1a3f5e7d9c1b3a5f7e9d1c3b5a7f9e1d';
+
+/** The podium's binding: the first three cars, then each with its team's logo. */
+function buildPodiumBinding(): BindingFieldValue {
+  return {
+    kind: 'binding',
+    sourceId: simulatorSourceId,
+    shapeKey: 'positions',
+    path: 'entries',
+    isLive: false,
+    transformId: 'topN',
+    transformParameters: { n: 3 },
+    thenTransformId: 'withTeamLogos',
+  };
+}
 
 /** A live binding to the simulator, in the shape and at the path given. */
 function buildBinding(
@@ -146,7 +168,7 @@ describe('resolveBindingAgainstSources', () => {
     const sources = buildSourcesWithTheSimulatorAtLap34([]);
 
     // Act: resolve the binding of this row.
-    const resolution = resolveBindingAgainstSources(binding, sources);
+    const resolution = resolveBindingAgainstSources(binding, sources, contextWithNoTeams);
 
     // Assert: the value, or why there is none.
     expect(resolution, 'the binding must resolve as this row says').toEqual(expected);
@@ -157,7 +179,11 @@ describe('resolveBindingAgainstSources', () => {
     const sources = { dataSources: [], dataSnapshots: [], overrides: [] };
 
     // Act: resolve the flag.
-    const resolution = resolveBindingAgainstSources(buildBinding('session', 'state'), sources);
+    const resolution = resolveBindingAgainstSources(
+      buildBinding('session', 'state'),
+      sources,
+      contextWithNoTeams,
+    );
 
     // Assert: it says the source does not exist, by its id.
     expect(resolution, 'a missing source must be named').toEqual({
@@ -175,7 +201,11 @@ describe('resolveBindingAgainstSources', () => {
     };
 
     // Act: resolve the flag.
-    const resolution = resolveBindingAgainstSources(buildBinding('session', 'state'), sources);
+    const resolution = resolveBindingAgainstSources(
+      buildBinding('session', 'state'),
+      sources,
+      contextWithNoTeams,
+    );
 
     // Assert: the brief's sentence.
     expect(resolution, 'a source with no data must be named').toEqual({
@@ -194,8 +224,13 @@ describe('resolveBindingAgainstSources', () => {
     const nameResolution = resolveBindingAgainstSources(
       buildBinding('session', 'sessionName'),
       sources,
+      contextWithNoTeams,
     );
-    const flagResolution = resolveBindingAgainstSources(buildBinding('session', 'state'), sources);
+    const flagResolution = resolveBindingAgainstSources(
+      buildBinding('session', 'state'),
+      sources,
+      contextWithNoTeams,
+    );
 
     // Assert: the name is the corrected one and says so; the flag is untouched.
     expect(nameResolution, 'the corrected name must say it was corrected').toEqual({
@@ -222,6 +257,7 @@ describe('resolveBindingAgainstSources', () => {
     const resolution = resolveBindingAgainstSources(
       buildBinding('positions', 'entryOfCar.schoolName', 42),
       sources,
+      contextWithNoTeams,
     );
 
     // Assert: read like any other; staleness is shown as a badge, never as a refusal.
@@ -230,5 +266,52 @@ describe('resolveBindingAgainstSources', () => {
       value: 'CEFET Minas',
       isOverridden: true,
     });
+  });
+  it('applies both transforms in order: the first three cars, then their teams’ logos', () => {
+    // Arrange: the simulator at lap 34 (31, 38 and 25 lead), and a library in which only
+    // car 31's team, Acauã Baja, has a logo.
+    const sources = buildSourcesWithTheSimulatorAtLap34([]);
+    const teams = [
+      {
+        carNumber: 31,
+        teamName: 'Acauã Baja',
+        schoolName: 'Mauá',
+        logoMediaId: logoOfAcauaBajaMediaId,
+      },
+    ];
+
+    // Act: resolve the podium's binding with those teams as the context.
+    const resolution = resolveBindingAgainstSources(buildPodiumBinding(), sources, { teams });
+
+    // Assert: three cars, the leader with its logo, the other two as the source sent them.
+    const podiumEntries =
+      resolution.status === 'resolved'
+        ? (resolution.value as Array<{ carNumber: number; logoUrl?: string }>)
+        : [];
+    const carsAndLogos = podiumEntries.map((entry) => [entry.carNumber, entry.logoUrl]);
+    expect(carsAndLogos, 'topN must keep three cars, then withTeamLogos add car 31’s logo').toEqual(
+      [
+        [31, `/media/${logoOfAcauaBajaMediaId}`],
+        [38, undefined],
+        [25, undefined],
+      ],
+    );
+  });
+
+  it('hands the transforms the teams it is given, and nothing else', () => {
+    // Arrange: the simulator at lap 34, and the podium's binding.
+    const sources = buildSourcesWithTheSimulatorAtLap34([]);
+
+    // Act: resolve it with no teams.
+    const resolution = resolveBindingAgainstSources(buildPodiumBinding(), sources, {
+      teams: [],
+    });
+
+    // Assert: no logo anywhere, since no team was handed in.
+    const podiumEntries =
+      resolution.status === 'resolved' ? (resolution.value as Array<Record<string, unknown>>) : [];
+    const entriesWithALogo = podiumEntries.filter((entry) => Object.hasOwn(entry, 'logoUrl'));
+    expect(podiumEntries.length, 'the three cars must still be read').toBe(3);
+    expect(entriesWithALogo, 'without teams no car may get a logo').toEqual([]);
   });
 });

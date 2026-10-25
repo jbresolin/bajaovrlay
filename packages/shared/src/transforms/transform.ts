@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 
 import type { BindableValueType } from '../dataShapes/bindablePaths.js';
+import type { Team } from '../entities/team.js';
 
 /**
  * Any value JSON can hold. A transform hands one of these back, because whatever it gives
@@ -27,6 +28,17 @@ export type TransformResult = { ok: true; value: JsonValue } | { ok: false; reas
 export type TransformFamily = 'mapping' | 'binding';
 
 /**
+ * What a binding transform may read besides its value and parameters: the entity library's
+ * teams, read-only (BAJAOVRLAY-47, for withTeamLogos). It is handed in as plain data by
+ * whoever resolves the binding (the take, the preview, the live refresh, the item editor),
+ * so a transform that reads it is still pure: the same value, parameters and teams always
+ * give the same answer. The other binding transforms ignore it.
+ */
+export type BindingTransformContext = {
+  teams: readonly Team[];
+};
+
+/**
  * What every transform of the registry has (architecture rule 5). `apply` reads no clock,
  * keeps no memory and never throws, so the same value and parameters always give the
  * same answer, on the server and in the browser alike.
@@ -42,12 +54,14 @@ type TransformOfEitherFamily = {
   description: string;
   /** The shape of the parameters, for a transform that takes any (mapValues, topN…). */
   parametersSchema?: z.ZodType;
-  /** Turns one value into one value. */
-  apply: (value: unknown, parameters: unknown) => TransformResult;
 };
 
 /** A transform that brings a source's data into a canonical shape (a flex mapping's). */
-export type MappingTransform = TransformOfEitherFamily & { family: 'mapping' };
+export type MappingTransform = TransformOfEitherFamily & {
+  family: 'mapping';
+  /** Turns one value into one value. */
+  apply: (value: unknown, parameters: unknown) => TransformResult;
+};
 
 /**
  * A transform that shapes canonical data for a graphic (an item binding's). It says which
@@ -59,6 +73,13 @@ export type BindingTransform = TransformOfEitherFamily & {
   family: 'binding';
   valueTypesRead: BindableValueType[];
   valueTypeGiven: BindableValueType | 'sameAsTheValueRead';
+  /**
+   * True for a transform whose answer depends on the teams of the context (withTeamLogos):
+   * a team edit in Cadastros then refreshes the live fields that use it. Left out: no.
+   */
+  readsTheTeams?: boolean;
+  /** Turns one value into one value; `context` is read only by a transform that needs it. */
+  apply: (value: unknown, parameters: unknown, context: BindingTransformContext) => TransformResult;
 };
 
 /** Any transform of the registry, told apart by `family`. */

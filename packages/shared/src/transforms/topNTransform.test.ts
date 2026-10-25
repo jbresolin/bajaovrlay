@@ -19,6 +19,9 @@ import { describe, expect, it } from 'vitest';
 import { checkTransformParameters } from './checkTransformParameters.js';
 import { topNTransform } from './topNTransform.js';
 
+// The context every binding transform is handed since BAJAOVRLAY-47; this one ignores it.
+const contextWithNoTeams = { teams: [] };
+
 /** The first four cars of the enduro at lap 34, as the positions shape lists them. */
 function buildFirstFourCarsOfTheEnduro() {
   return [
@@ -35,7 +38,7 @@ describe('topN', () => {
     const cars = buildFirstFourCarsOfTheEnduro();
 
     // Act: keep the first three.
-    const result = topNTransform.apply(cars, { n: 3 });
+    const result = topNTransform.apply(cars, { n: 3 }, contextWithNoTeams);
 
     // Assert: cars 31, 38 and 25, the leader first.
     expect(result, 'the first three cars must be kept in order').toEqual({
@@ -49,7 +52,7 @@ describe('topN', () => {
     const cars = buildFirstFourCarsOfTheEnduro();
 
     // Act: keep the first ten.
-    const result = topNTransform.apply(cars, { n: 10 });
+    const result = topNTransform.apply(cars, { n: 10 }, contextWithNoTeams);
 
     // Assert: all four, nothing invented.
     expect(result, 'a short list must be kept as it is').toEqual({ ok: true, value: cars });
@@ -60,7 +63,7 @@ describe('topN', () => {
     const sessionName = 'Enduro de Resistência';
 
     // Act: run topN on it.
-    const result = topNTransform.apply(sessionName, { n: 6 });
+    const result = topNTransform.apply(sessionName, { n: 6 }, contextWithNoTeams);
 
     // Assert: refused with the reason the operator reads.
     expect(result, 'a text must be refused').toEqual({

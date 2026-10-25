@@ -23,6 +23,9 @@ import { checkTransformParameters } from './checkTransformParameters.js';
 import { shortenSchoolNameTransform } from './schoolNameTransforms.js';
 import type { TransformResult } from './transform.js';
 
+// The context every binding transform is handed since BAJAOVRLAY-47; this one ignores it.
+const contextWithNoTeams = { teams: [] };
+
 describe('shortenSchoolName', () => {
   const schoolNameScenarios: Array<{
     name: string;
@@ -78,7 +81,7 @@ describe('shortenSchoolName', () => {
     // Arrange: the school name and the room of this row.
 
     // Act: shorten it.
-    const result = shortenSchoolNameTransform.apply(value, { maxLength });
+    const result = shortenSchoolNameTransform.apply(value, { maxLength }, contextWithNoTeams);
 
     // Assert: the name as it goes on air, or the refusal.
     expect(result, 'the name must be shortened as this row says').toEqual(expected);

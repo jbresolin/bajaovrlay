@@ -75,7 +75,9 @@ export function describeBoundFieldsOfInstance(
     const snapshot = slices.dataSnapshots.find(
       (candidate) => candidate.sourceId === binding.sourceId,
     );
-    const resolution = resolveBindingAgainstSources(binding, slices);
+    // Only whether a correction changed the value is read here, and the teams a transform
+    // reads (withTeamLogos) never change that, so none are handed in.
+    const resolution = resolveBindingAgainstSources(binding, slices, { teams: [] });
     const overrideKey = findOverrideKeyOfBinding(binding, snapshot?.shapes);
     const overrideInForce =
       overrideKey === undefined ? undefined : findOverrideInForce(slices.overrides, overrideKey);

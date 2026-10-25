@@ -18,16 +18,18 @@ export function ItemSourceMarker(props: { item: Item }) {
   const dataSources = useServerState((state) => state.dataSources);
   const dataSnapshots = useServerState((state) => state.dataSnapshots);
   const overrides = useServerState((state) => state.overrides);
+  const teams = useServerState((state) => state.teams);
   if (!doesItemReadASource(props.item)) {
     return null;
   }
   const texts = ptBR.bindings.marker;
   const graphic = graphics.find((candidate) => candidate.id === props.item.graphicId);
-  const reason = findWhyItemCannotBeTakenNow(props.item, graphic, {
-    dataSources,
-    dataSnapshots,
-    overrides,
-  });
+  const reason = findWhyItemCannotBeTakenNow(
+    props.item,
+    graphic,
+    { dataSources, dataSnapshots, overrides },
+    { teams },
+  );
   if (reason === undefined) {
     return (
       <Badge variant="outline" title={texts.readsASourceHint}>

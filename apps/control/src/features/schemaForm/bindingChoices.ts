@@ -9,6 +9,7 @@ import {
   type DataShapeKey,
   DataShapeKeySchema,
   findClockFieldKeysByRoleInDataSchema,
+  findTransform,
   listBindablePathsOfShape,
   listTransformsOfFamily,
   listValueTypesThatFitDataSchemaField,
@@ -110,6 +111,31 @@ function listTransformIdsThatFit(
     }
   }
   return transformIds;
+}
+
+/**
+ * The binding transforms that may follow the first one chosen on a path (BAJAOVRLAY-47):
+ * those that read what the first gives and give a type the field takes, the first itself
+ * left out. The paths offered stay those that fit with at most one transform; the second
+ * only shapes further a value that already fits (withTeamLogos after topN on the podium).
+ */
+export function listSecondTransformIdsThatFit(
+  dataSchema: unknown,
+  fieldKey: string,
+  valueTypeOfThePath: BindableValueType,
+  firstTransformId: string,
+): string[] {
+  const firstTransform = findTransform(firstTransformId);
+  if (firstTransform?.family !== 'binding') {
+    return [];
+  }
+  const valueTypeAfterTheFirst =
+    firstTransform.valueTypeGiven === 'sameAsTheValueRead'
+      ? valueTypeOfThePath
+      : firstTransform.valueTypeGiven;
+  const typesTheFieldTakes = listValueTypesThatFitDataSchemaField(dataSchema, fieldKey);
+  const transformIdsThatFit = listTransformIdsThatFit(valueTypeAfterTheFirst, typesTheFieldTakes);
+  return transformIdsThatFit.filter((transformId) => transformId !== firstTransformId);
 }
 
 /** Whether "Fonte" is offered for a field: some bindable path fits it. */

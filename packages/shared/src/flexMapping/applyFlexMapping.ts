@@ -349,7 +349,8 @@ function readRuleValueAtPath(rule: FlexFieldRule, path: string, source: unknown)
   }
 
   const transform = findTransform(rule.transformId);
-  if (transform === undefined) {
+  // The config's schema already refused a binding transform here; this keeps apply typed.
+  if (transform?.family !== 'mapping') {
     const reason = ptBRTransforms.parameterReasons.unknownTransform(rule.transformId);
     return { outcome: 'problem', detail: lines.couldNotReadAtPath(path, reason) };
   }

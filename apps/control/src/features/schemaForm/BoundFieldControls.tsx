@@ -12,7 +12,11 @@ import {
 } from '@/components/ui/select';
 import { ptBR } from '@/i18n/ptBR';
 
-import { listBindingPathChoicesOfField, readBindingPathKey } from './bindingChoices';
+import {
+  listBindingPathChoicesOfField,
+  listSecondTransformIdsThatFit,
+  readBindingPathKey,
+} from './bindingChoices';
 import {
   emptySchemaFormBindingValue,
   parameterOfEachBindingTransform,
@@ -40,8 +44,9 @@ const noTransformValue = 'nenhuma';
 /**
  * The controls of a field set to "Fonte" (or "Relógio da fonte", `isWholeClock`): the
  * source, what to read (the paths that fit the field, a car number for a car chosen by
- * number), "Ao vivo / Congelado na entrada", the transform and its one parameter, and
- * the line saying what the field would get now. Everything lives in react-hook-form under
+ * number), "Ao vivo / Congelado na entrada", the transform and its one parameter, a
+ * second transform once a first is chosen (BAJAOVRLAY-47) with its parameter, and the line
+ * saying what the field would get now. Everything lives in react-hook-form under
  * `bindings.<key>`; choosing a path that only fits through a transform picks the first
  * such transform, so the form never holds a binding the field cannot take.
  * The whole clock reads the session clock whole, so it has no path and no transform.
@@ -64,6 +69,18 @@ export function BoundFieldControls(props: {
   const chosenShapeAndPath = readBindingPathKey(bindingValue.pathKey);
   const isCarChosenByNumber = chosenShapeAndPath?.path.startsWith('entryOfCar.') ?? false;
   const parameterOfTheTransform = parameterOfEachBindingTransform[bindingValue.transformId];
+  // The second transform is offered once a first is chosen and something can follow it.
+  const secondTransformIdsThatFit =
+    chosenPath === undefined || bindingValue.transformId === ''
+      ? []
+      : listSecondTransformIdsThatFit(
+          dataSchema,
+          field.key,
+          chosenPath.valueType,
+          bindingValue.transformId,
+        );
+  const parameterOfTheSecondTransform =
+    parameterOfEachBindingTransform[bindingValue.thenTransformId];
 
   // What the field would get now, once the choices make a binding the field can take.
   const bindingRead = readBindingFromSchemaFormValue(field, bindingValue, dataSchema, isWholeClock);
@@ -87,6 +104,17 @@ export function BoundFieldControls(props: {
         ? (newChoice.transformIdsThatFit[0] ?? '')
         : transformToKeep;
     form.setValue(`${bindingName}.transformId`, transformAfter, { shouldDirty: true });
+    // What may follow depends on the path and the first transform, so a new path starts
+    // with no second one.
+    form.setValue(`${bindingName}.thenTransformId`, '', { shouldDirty: true });
+  }
+
+  /** Chooses the first transform; clearing it clears the second, which needs a first. */
+  function chooseFirstTransform(transformId: string): void {
+    form.setValue(`${bindingName}.transformId`, transformId, { shouldDirty: true });
+    if (transformId === '') {
+      form.setValue(`${bindingName}.thenTransformId`, '', { shouldDirty: true });
+    }
   }
 
   return (
@@ -189,7 +217,7 @@ export function BoundFieldControls(props: {
             <Select
               value={transformField.value === '' ? noTransformValue : transformField.value}
               onValueChange={(choice) =>
-                transformField.onChange(choice === noTransformValue ? '' : choice)
+                chooseFirstTransform(choice === noTransformValue ? '' : choice)
               }
               disabled={isDisabled}
             >
@@ -218,11 +246,57 @@ export function BoundFieldControls(props: {
       {parameterOfTheTransform !== undefined && (
         <TransformParameterControl
           form={form}
-          bindingName={bindingName}
+          parameterTextName={`${bindingName}.transformParameterText`}
           controlId={`${controlId}-transform-parameter`}
-          fieldLabel={field.label}
+          accessibleName={editorTexts.transformParameterLabel(field.label)}
           transformId={bindingValue.transformId}
           isWholeNumber={parameterOfTheTransform.isWholeNumber}
+          isDisabled={isDisabled}
+        />
+      )}
+
+      {secondTransformIdsThatFit.length > 0 && (
+        <Controller
+          control={form.control}
+          name={`${bindingName}.thenTransformId`}
+          render={({ field: secondTransformField }) => (
+            <Select
+              value={
+                secondTransformField.value === '' ? noTransformValue : secondTransformField.value
+              }
+              onValueChange={(choice) =>
+                secondTransformField.onChange(choice === noTransformValue ? '' : choice)
+              }
+              disabled={isDisabled}
+            >
+              <SelectTrigger
+                size="sm"
+                className="w-full"
+                aria-label={editorTexts.thenTransformLabel(field.label)}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={noTransformValue}>{editorTexts.noTransform}</SelectItem>
+                {secondTransformIdsThatFit.map((transformId) => (
+                  <SelectItem key={transformId} value={transformId}>
+                    {findTransform(transformId)?.label ?? transformId}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      )}
+
+      {secondTransformIdsThatFit.length > 0 && parameterOfTheSecondTransform !== undefined && (
+        <TransformParameterControl
+          form={form}
+          parameterTextName={`${bindingName}.thenTransformParameterText`}
+          controlId={`${controlId}-then-transform-parameter`}
+          accessibleName={editorTexts.thenTransformParameterLabel(field.label)}
+          transformId={bindingValue.thenTransformId}
+          isWholeNumber={parameterOfTheSecondTransform.isWholeNumber}
           isDisabled={isDisabled}
         />
       )}
@@ -232,18 +306,22 @@ export function BoundFieldControls(props: {
   );
 }
 
-/** The one parameter of the chosen transform: digits, or formatGapAsText's unit. */
+/**
+ * The one parameter of a chosen transform (the first or the second, by `parameterTextName`):
+ * digits, or formatGapAsText's unit.
+ */
 function TransformParameterControl(props: {
   form: UseFormReturn<SchemaFormValues>;
-  bindingName: `bindings.${string}`;
+  parameterTextName:
+    `bindings.${string}.transformParameterText` | `bindings.${string}.thenTransformParameterText`;
   controlId: string;
-  fieldLabel: string;
+  accessibleName: string;
   transformId: string;
   isWholeNumber: boolean;
   isDisabled: boolean;
 }) {
-  const { form, bindingName, controlId, fieldLabel, transformId, isWholeNumber, isDisabled } =
-    props;
+  const { form, parameterTextName, controlId, accessibleName, transformId } = props;
+  const { isWholeNumber, isDisabled } = props;
   const parameterName = editorTexts.transformParameterNames[transformId] ?? transformId;
   return (
     <div className="flex flex-col gap-1">
@@ -253,14 +331,14 @@ function TransformParameterControl(props: {
           id={controlId}
           inputMode="numeric"
           autoComplete="off"
-          aria-label={editorTexts.transformParameterLabel(fieldLabel)}
+          aria-label={accessibleName}
           disabled={isDisabled}
-          {...form.register(`${bindingName}.transformParameterText`)}
+          {...form.register(parameterTextName)}
         />
       ) : (
         <Controller
           control={form.control}
-          name={`${bindingName}.transformParameterText`}
+          name={parameterTextName}
           render={({ field: unitField }) => (
             <Select
               value={unitField.value}
@@ -271,7 +349,7 @@ function TransformParameterControl(props: {
                 id={controlId}
                 size="sm"
                 className="w-full"
-                aria-label={editorTexts.transformParameterLabel(fieldLabel)}
+                aria-label={accessibleName}
               >
                 <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
               </SelectTrigger>

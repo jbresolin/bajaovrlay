@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import {
+  doesBindingReadTheTeams,
   type EntityLibrary,
   findClockFieldKeysByRole,
   type Graphic,
@@ -42,7 +43,8 @@ export type LiveBoundFieldsRefreshRequest = {
  * set whenever any of them differs from what is on air, so the whole clock always moves
  * as one reading. A field that cannot be read now is kept on air as it is, because nothing
  * on air is ever blanked by a failure (rule 4): a deleted source, a source with no data,
- * or a required field whose value is gone. Only an optional field whose value the source
+ * or a required field whose value is gone. A live binding whose transform reads the teams
+ * (withTeamLogos) is read again when the library changed, even if its source did not. Only an optional field whose value the source
  * no longer has leaves the air (sent as null): showing a gap the car no longer has would
  * be wrong, and the graphic is built to do without it. The fields read from the entity
  * library are read only when it changed (liveEntityFieldsRefresh.ts, same rules) and go
@@ -56,14 +58,20 @@ export function buildRefreshOfLiveBoundFields(
   const clockFieldKeys = graphic === undefined ? undefined : findClockFieldKeysByRole(graphic);
   const valuesToSend: Record<string, unknown> = {};
 
+  // The teams the transforms read (withTeamLogos): the library as it is now.
+  const transformContext = { teams: request.entities.teams };
+
   for (const { fieldKey, binding } of boundFields) {
-    const isReadNow =
-      binding.isLive &&
-      (sourceIdsThatChanged === undefined || sourceIdsThatChanged.has(binding.sourceId));
+    const hasItsSourceChanged =
+      sourceIdsThatChanged === undefined || sourceIdsThatChanged.has(binding.sourceId);
+    // A team edit changes what a binding through withTeamLogos gives (a new logo, a plate)
+    // even when its source sent nothing new (BAJAOVRLAY-47).
+    const haveItsTeamsChanged = request.haveEntitiesChanged && doesBindingReadTheTeams(binding);
+    const isReadNow = binding.isLive && (hasItsSourceChanged || haveItsTeamsChanged);
     if (!isReadNow) {
       continue;
     }
-    const resolution = resolveBindingAgainstSources(binding, sources);
+    const resolution = resolveBindingAgainstSources(binding, sources, transformContext);
     if (binding.path === wholeClockBindingPath) {
       const clockReading = resolution.status === 'resolved' ? resolution.value : undefined;
       const isClockReading =

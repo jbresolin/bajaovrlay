@@ -1,5 +1,6 @@
 import {
   type BindingFieldValue,
+  type BindingTransformContext,
   type CommandError,
   type EntityLibrary,
   findClockFieldKeysByRole,
@@ -49,8 +50,8 @@ export type ItemFieldsResolutionRequest = {
  * the preview. Pure: the same request always gives the same data. A `literal` passes
  * through as typed; a `takeTime` becomes the moment of the take in wall-clock ms; a
  * `binding` reads its source's last good snapshot (a stale one too, concept §5.4) with the
- * overrides laid over it, at its path, through its transform (resolveBindingAgainstSources
- * in shared). The whole clock (the path `clock`, stored on the field with the role
+ * overrides laid over it, at its path, through its transforms, which are handed the
+ * library's teams (resolveBindingAgainstSources in shared). The whole clock (the path `clock`, stored on the field with the role
  * clockTime) fills the graphic's four clock fields by role, so the clock never takes a new
  * time with an old moment. An `entity` reference reads one attribute of one record of the
  * library, an image as its /media URL (resolveEntityFields.ts, BAJAOVRLAY-19). An
@@ -72,6 +73,9 @@ export function resolveItemFieldsIntoGraphicData(
   // schema asks for a whole number (the race clock does) then refuses the take.
   const momentOfTheTakeInMilliseconds = Date.parse(momentOfTheTake);
   const requiredFieldKeys = graphic === undefined ? [] : listRequiredFieldKeysOfGraphic(graphic);
+  // What a binding transform may read besides its value: the library's teams, for
+  // withTeamLogos (BAJAOVRLAY-47). The same library the entity fields read.
+  const transformContext: BindingTransformContext = { teams: entities.teams };
   const resolvedKeysAndValues: Array<[string, unknown]> = [];
   // Filled after every other field, so a cleared literal on a clock field never takes
   // off what the whole clock wrote there.
@@ -96,8 +100,11 @@ export function resolveItemFieldsIntoGraphicData(
       case 'binding': {
         const isWholeClock = fieldValue.path === wholeClockBindingPath;
         const fieldOutcome = isWholeClock
-          ? resolveWholeClock(fieldKey, fieldValue, graphic, sources)
-          : resolveOneBoundField(fieldKey, fieldValue, graphic, sources, requiredFieldKeys);
+          ? resolveWholeClock(fieldKey, fieldValue, graphic, sources, transformContext)
+          : resolveOneBoundField(fieldKey, fieldValue, graphic, sources, {
+              requiredFieldKeys,
+              transformContext,
+            });
         if (fieldOutcome.status === 'refused') {
           return fieldOutcome;
         }
@@ -159,9 +166,15 @@ function resolveOneBoundField(
   binding: BindingFieldValue,
   graphic: Graphic | undefined,
   sources: SourcesForBindings,
-  requiredFieldKeys: string[],
+  {
+    requiredFieldKeys,
+    transformContext,
+  }: {
+    requiredFieldKeys: string[];
+    transformContext: BindingTransformContext;
+  },
 ): BoundFieldOutcome {
-  const resolution = resolveBindingAgainstSources(binding, sources);
+  const resolution = resolveBindingAgainstSources(binding, sources, transformContext);
   if (resolution.status === 'resolved') {
     return { status: 'filled', keysAndValues: [[fieldKey, resolution.value]] };
   }
@@ -184,9 +197,10 @@ function resolveWholeClock(
   binding: BindingFieldValue,
   graphic: Graphic | undefined,
   sources: SourcesForBindings,
+  transformContext: BindingTransformContext,
 ): BoundFieldOutcome {
   const clockFieldKeys = graphic === undefined ? undefined : findClockFieldKeysByRole(graphic);
-  const resolution = resolveBindingAgainstSources(binding, sources);
+  const resolution = resolveBindingAgainstSources(binding, sources, transformContext);
   if (resolution.status !== 'resolved') {
     return refuseBoundField(graphic, fieldKey, resolution.problem);
   }

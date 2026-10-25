@@ -13,6 +13,8 @@
  *   - Once "Fonte" is chosen, the paths offered hold the whole positions list
  *     ("Posições › Lista completa") and none of the single-car values, and with the
  *     simulator chosen the line under the binding counts the cars it would get now.
+ *   - With the first N cars chosen as the transform, a second transform is offered
+ *     ("Com logos das equipes"), and with n = 3 the line counts the podium's three cars.
  *   - The layout dropdown opens on "Compacta" and offers "Compacta" and "Detalhada".
  *   - Each column switch is drawn under its title, on or off as the manifest's default.
  *
@@ -49,11 +51,15 @@ function renderEmptyTowerFormWithTheSimulator() {
     bindingOptions: {
       dataSources: [{ id: simulator.id, label: simulator.label }],
       readValueNow: (binding) =>
-        resolveBindingAgainstSources(binding, {
-          dataSources: [simulator],
-          dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
-          overrides: [],
-        }),
+        resolveBindingAgainstSources(
+          binding,
+          {
+            dataSources: [simulator],
+            dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
+            overrides: [],
+          },
+          { teams: [] },
+        ),
     },
   });
 }
@@ -111,6 +117,53 @@ describe('the list of cars of the tower form', () => {
     expect(
       screen.getByText('Valor agora: lista com 60 entradas'),
       'the value of now must count the cars of the simulator',
+    ).toBeVisible();
+  });
+});
+
+describe('the second transform of the list of cars (BAJAOVRLAY-47)', () => {
+  it('offers withTeamLogos once topN is chosen, and nothing before', () => {
+    // Arrange: the cars reading the simulator's whole positions list.
+    renderEmptyTowerFormWithTheSimulator();
+    chooseOptionInDropdown('Como preencher Carros', 'Fonte');
+    chooseOptionInDropdown('Fonte de Carros', 'Simulador — Enduro');
+    chooseOptionInDropdown('O que Carros lê da fonte', 'Posições › Lista completa');
+    const isOfferedBeforeAFirst =
+      screen.queryByRole('combobox', { name: 'Segunda transformação de Carros' }) !== null;
+
+    // Act: choose the first N cars as the first transform.
+    chooseOptionInDropdown('Transformação de Carros', 'Primeiras N entradas');
+    const secondTransformsOffered = readOptionsOfDropdown('Segunda transformação de Carros');
+
+    // Assert: no second transform before a first; then "Nenhuma" or the logos.
+    expect(isOfferedBeforeAFirst, 'a second transform needs a first').toBe(false);
+    expect(secondTransformsOffered, 'the logos may follow the first N cars').toEqual([
+      'Nenhuma',
+      'Com logos das equipes',
+    ]);
+  });
+
+  it('counts the three cars it would get now with topN 3 then the logos', () => {
+    // Arrange: the cars reading the whole positions list through the first N cars.
+    renderEmptyTowerFormWithTheSimulator();
+    chooseOptionInDropdown('Como preencher Carros', 'Fonte');
+    chooseOptionInDropdown('Fonte de Carros', 'Simulador — Enduro');
+    chooseOptionInDropdown('O que Carros lê da fonte', 'Posições › Lista completa');
+    chooseOptionInDropdown('Transformação de Carros', 'Primeiras N entradas');
+
+    // Act: type 3 and choose the logos as the second transform.
+    fireEvent.change(
+      screen.getByRole('textbox', { name: 'Parâmetro da transformação de Carros' }),
+      {
+        target: { value: '3' },
+      },
+    );
+    chooseOptionInDropdown('Segunda transformação de Carros', 'Com logos das equipes');
+
+    // Assert: the line under the binding reads the podium's three cars.
+    expect(
+      screen.getByText('Valor agora: lista com 3 entradas'),
+      'both transforms must run for the value of now',
     ).toBeVisible();
   });
 });

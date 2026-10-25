@@ -17,9 +17,11 @@ export {
   listValueTypesThatFitDataSchemaField,
   listValueTypesThatFitGraphicField,
 } from './bindingFitsGraphicField.js';
-// Reading one binding against the sources: snapshot, overrides, path, transform.
+// Reading one binding against the sources: snapshot, overrides, path, transforms (with the
+// teams as their context), and whether a binding reads the teams (a team edit refreshes it).
 export {
   type BindingResolution,
+  doesBindingReadTheTeams,
   resolveBindingAgainstSources,
   type SourcesForBindings,
 } from './bindingResolution.js';

@@ -44,6 +44,9 @@ export type SchemaFormBindingValue = {
   isLive: boolean;
   transformId: string;
   transformParameterText: string;
+  /** The second transform ('' for none), offered once a first is chosen (BAJAOVRLAY-47). */
+  thenTransformId: string;
+  thenTransformParameterText: string;
 };
 
 /**

@@ -6,8 +6,10 @@ import { DataShapeKeySchema } from '../dataShapes/dataShapeKey.js';
  * A field value read from a data source instead of typed (concept §2, "binding"): which
  * source, which of its canonical shapes, which path in it (one that
  * listBindablePathsOfShape lists), whether it keeps updating while on air, and at most
- * one transform from the registry. `carNumber` goes with the paths that read a car by its
- * number (`entryOfCar.…`) and with no other.
+ * two transforms from the registry, applied in order: `transformId`, then `thenTransformId`
+ * (BAJAOVRLAY-47: the podium keeps the first three cars, then adds their teams' logos).
+ * `carNumber` goes with the paths that read a car by its number (`entryOfCar.…`) and with
+ * no other.
  *
  * This schema checks the shape of the value only. Whether its parts make sense together
  * (the path is listed, the transform exists and its parameters are right) is
@@ -34,6 +36,14 @@ export const BindingFieldValueSchema = z.strictObject({
   transformId: z.string().min(1).optional(),
   /** The transform's parameters, checked against its own schema by findProblemInBinding. */
   transformParameters: z.unknown().optional(),
+  /**
+   * A second binding transform, applied to what the first gave (topN, then withTeamLogos).
+   * Only after a first one, so a single transform is always written as `transformId`.
+   * Two and no more: a chain of any length would be a small language (architecture rule 5).
+   */
+  thenTransformId: z.string().min(1).optional(),
+  /** The second transform's parameters, checked like the first's. */
+  thenTransformParameters: z.unknown().optional(),
 });
 
 /** A binding field value that has passed BindingFieldValueSchema. */
