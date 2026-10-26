@@ -5,9 +5,9 @@ import { portOffsetOfTheBrowserTests } from '../../../scripts/e2ePortOffset.js';
 // The tests open the BUILT graphic (dist/) under the same folder the server will use,
 // so they also prove that dist/ works when served from /graphics/podium/.
 // BAJAOVRLAY_E2E_PORT_OFFSET moves every port of the browser tests by the same amount
-// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset. 5211 is the
+// (scripts/e2ePortOffset.ts, the one place it is read); CI leaves it unset. 5203 is the
 // preview port of vite.config.ts, given here so the offset can move it.
-const previewPort = 5211 + portOffsetOfTheBrowserTests;
+const previewPort = 5203 + portOffsetOfTheBrowserTests;
 const builtGraphicAddress = `http://127.0.0.1:${String(previewPort)}/graphics/podium/`;
 const isRunningInCI = Boolean(process.env.CI);
 

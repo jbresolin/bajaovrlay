@@ -10,7 +10,7 @@ place any time after load, every call answers a status, never throws); it wires 
 (Zod data, the address's rules), `qrCodeEncoding.ts` (the squares, and the longest address, 106),
 `qrCodeLayout.ts` (whole px a module in the 176 px `--qr-size` box), `qrCardView.ts`,
 `qrCardStyles.ts`, `qrCardAnimations.ts` and `ptBR.ts`. Preview: `pnpm --filter @bajaovrlay/qr-card
-dev`, then http://localhost:5214/preview.html (add `?address=longest`, `?stage=grey|black` or
+dev`, then http://localhost:5206/preview.html (add `?address=longest`, `?stage=grey|black` or
 `?data=<JSON>`). Unit tests: `pnpm --filter @bajaovrlay/qr-card test`; Playwright on the built
 `dist/`, with the scan of the code on screen and the 4 screenshots: `pnpm --filter
 @bajaovrlay/qr-card test:e2e` (add `--update-snapshots` after a deliberate visual change).

@@ -10,7 +10,7 @@ text), `battleTrend.ts` (the trend remembered from lap to lap, and its trade-off
 `battleCardStyles.ts`, `battleCardAnimations.ts` (in one lead apart, out together, the trend's
 crossfade), `battleTrendCrossfade.ts` (the crossfade on air, ended at once by stop, dispose or
 leaving the page) and `ptBR.ts`. Preview: `pnpm --filter @bajaovrlay/battle-card dev`, then
-http://localhost:5212/preview.html ("Atualizar" sends the next lap; add `?trend=closing|opening|steady`,
+http://localhost:5204/preview.html ("Atualizar" sends the next lap; add `?trend=closing|opening|steady`,
 `?stage=grey|black` or `?data=<JSON>`). Unit tests: `pnpm --filter @bajaovrlay/battle-card test`;
 Playwright on the built `dist/`, with the 6 screenshots: `pnpm --filter @bajaovrlay/battle-card test:e2e`.
 
