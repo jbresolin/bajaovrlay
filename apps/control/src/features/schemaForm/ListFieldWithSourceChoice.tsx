@@ -1,5 +1,5 @@
 import type { EntityLibrary } from '@bajaovrlay/shared';
-import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
+import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import { Label } from '@/components/ui/label';
 import {
@@ -13,9 +13,10 @@ import { ptBR } from '@/i18n/ptBR';
 
 import { canFieldBeBoundToASource } from './bindingChoices';
 import { emptySchemaFormBindingValue } from './bindingFormValue';
-import { BoundFieldControls, type SchemaFormBindingOptions } from './BoundFieldControls';
+import { BoundFieldControls } from './BoundFieldControls';
 import { EntityListControls } from './EntityListControls';
 import { canFieldReadAnEntityList } from './entityListFormValue';
+import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import type { SchemaFormFieldKind, SchemaFormValues } from './schemaFormValues';
 import { UnsupportedValueBox } from './UnsupportedValueBox';
@@ -62,7 +63,14 @@ export function ListFieldWithSourceChoice(props: {
   const { form, field, dataSchema, controlId, keptJsonText, bindingOptions, isDisabled } = props;
   const { entityLibrary } = props;
   const chosenKind = useWatch({ control: form.control, name: `kinds.${field.key}` });
-  const errorMessage = form.formState.errors.values?.[field.key]?.message;
+  // This field's errors only, by exact name (a name is otherwise matched by its start);
+  // `form.formState` would subscribe the whole form.
+  const stateOfThisField = useFormState({
+    control: form.control,
+    name: `values.${field.key}`,
+    exact: true,
+  });
+  const errorMessage = stateOfThisField.errors.values?.[field.key]?.message;
 
   const kindsOffered: ListFieldKind[] = ['literal'];
   if (bindingOptions !== undefined && canFieldBeBoundToASource(dataSchema, field.key)) {

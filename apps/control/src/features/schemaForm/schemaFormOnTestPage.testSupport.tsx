@@ -7,7 +7,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 
-import type { SchemaFormBindingOptions } from './BoundFieldControls';
+import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormDescription } from './schemaFormDescription';
 import { SchemaFormFields } from './SchemaFormFields';
 import { buildSchemaFormResolver } from './schemaFormResolver';

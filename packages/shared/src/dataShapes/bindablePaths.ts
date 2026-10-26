@@ -92,13 +92,49 @@ export function findClockRoleOfSessionPath(path: string): ClockFieldRole | undef
     : undefined;
 }
 
+// Each shape's list, built the first time it is asked for, with the same paths by their
+// name for findBindablePath. The paths are written in code and never change with the data
+// a source sends, while a race resolves bindings many times a second, each resolution
+// looking its path up here (BAJAOVRLAY-45). Frozen, so a caller that tried to change a
+// list would be refused instead of spoiling it for the next one.
+const pathsListedForEachShape = new Map<DataShapeKey, PathsOfOneShape>();
+
+/** One shape's paths, as a list in the picker's order and by their dotted name. */
+type PathsOfOneShape = {
+  list: readonly BindablePath[];
+  byPath: ReadonlyMap<string, BindablePath>;
+};
+
+/** The paths of one shape, built and kept the first time they are asked for. */
+function readPathsOfShape(shapeKey: DataShapeKey): PathsOfOneShape {
+  const listedBefore = pathsListedForEachShape.get(shapeKey);
+  if (listedBefore !== undefined) {
+    return listedBefore;
+  }
+  const frozenPaths = buildBindablePathsOfShape(shapeKey).map((path) => Object.freeze(path));
+  const byPath = new Map<string, BindablePath>();
+  for (const bindablePath of frozenPaths) {
+    byPath.set(bindablePath.path, bindablePath);
+  }
+  const pathsOfTheShape = { list: Object.freeze(frozenPaths), byPath };
+  pathsListedForEachShape.set(shapeKey, pathsOfTheShape);
+  return pathsOfTheShape;
+}
+
 /**
  * Lists the paths a binding may point at in one shape, with their pt-BR labels and value
- * types, in the order the picker shows them. Written out by hand on purpose (readability
- * law): deriving it from the Zod schemas would need type-level code a reviewer has to run
- * in their head, and it would offer fields no graphic should show (ids, `updatedAtMs`).
+ * types, in the order the picker shows them: the same list at every call (above).
  */
-export function listBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[] {
+export function listBindablePathsOfShape(shapeKey: DataShapeKey): readonly BindablePath[] {
+  return readPathsOfShape(shapeKey).list;
+}
+
+/**
+ * Builds the paths of one shape. Written out by hand on purpose (readability law):
+ * deriving it from the Zod schemas would need type-level code a reviewer has to run in
+ * their head, and it would offer fields no graphic should show (ids, `updatedAtMs`).
+ */
+function buildBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[] {
   switch (shapeKey) {
     case 'session':
       return listSessionPaths();
@@ -113,9 +149,12 @@ export function listBindablePathsOfShape(shapeKey: DataShapeKey): BindablePath[]
   }
 }
 
-/** The listed entry of this path in this shape, or undefined when the path is not listed. */
+/**
+ * The listed entry of this path in this shape, or undefined when the path is not listed:
+ * one lookup by name, since every resolution asks.
+ */
 export function findBindablePath(shapeKey: DataShapeKey, path: string): BindablePath | undefined {
-  return listBindablePathsOfShape(shapeKey).find((bindablePath) => bindablePath.path === path);
+  return readPathsOfShape(shapeKey).byPath.get(path);
 }
 
 /** Joins label parts with the catalog's separator: "Sessão › Bandeira". */

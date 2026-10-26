@@ -3,8 +3,8 @@ import { keyboardMap } from '@/keyboard/keyboardMap';
 import { useKeyboardShortcut } from '@/keyboard/useKeyboardShortcut';
 import {
   useIsConnectedToServer,
+  useReadServerStateNow,
   useSendCommand,
-  useServerState,
 } from '@/state/ControlPageStateProvider';
 
 /**
@@ -24,11 +24,18 @@ import {
 export function useBackspaceToStopPreview(): void {
   const sendCommand = useSendCommand();
   const isConnected = useIsConnectedToServer();
-  const instances = useServerState((state) => state.instances);
+  // Read at the press, not subscribed to: what is on air changes at every live refresh,
+  // and a subscription here would redraw the whole console, the item editor included,
+  // at every poll of a source (BAJAOVRLAY-45).
+  const readServerStateNow = useReadServerStateNow();
 
   function discardTheMostRecentPreview(): void {
     // Backspace needs no rundown: it reads only what is on the preview output.
-    const command = chooseCommandForOperatorKey('backspace', undefined, instances);
+    const command = chooseCommandForOperatorKey(
+      'backspace',
+      undefined,
+      readServerStateNow().instances,
+    );
     if (command === null) {
       return;
     }

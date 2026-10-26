@@ -7,15 +7,15 @@ import {
   buildChangedItemFieldsFromSchemaForm,
   buildItemFieldsFromSchemaForm,
   buildSchemaFormResolver,
-  hasSourceChoiceChangedSinceOpened,
   listFieldKeysReadFromASource,
   SchemaFormFields,
   type SchemaFormValues,
 } from '@/features/schemaForm';
 import { ptBR } from '@/i18n/ptBR';
-import { useServerState } from '@/state/ControlPageStateProvider';
+import { useReadServerStateNow } from '@/state/ControlPageStateProvider';
 
 import { fillGraphicFieldsOfItemEditor } from './graphicFieldsOfItemEditor';
+import { SourceChangeAtTheNextTakeNote } from './SourceChangeAtTheNextTakeNote';
 import { useBindingOptionsOfItemEditor } from './useBindingOptionsOfItemEditor';
 
 // "Edição rápida" draws generated fields too, and is on the page at the same time. This
@@ -78,15 +78,17 @@ export type ItemGraphicFieldsFormProps = {
 export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
   const { graphic, fieldsToShow, whenFieldsAreChecked, handleRef, isItemOnAir } = props;
 
-  // The sources a new item's suggested "Fonte" is judged by, as the page holds them now.
-  const dataSources = useServerState((state) => state.dataSources);
-  const dataSnapshots = useServerState((state) => state.dataSnapshots);
   // Decided at the first draw and kept: a newer copy of the graphics slice (a reconnect)
   // must not refill the form over what the operator has typed, and a source that comes
-  // on later must not change a "Fonte" the operator already saw.
-  const [graphicFields] = useState(() =>
-    fillGraphicFieldsOfItemEditor(graphic, fieldsToShow, { dataSources, dataSnapshots }),
-  );
+  // on later must not change a "Fonte" the operator already saw. So the sources a new
+  // item's suggested "Fonte" is judged by are read once, as the page holds them then, and
+  // not subscribed to: a subscription would redraw the whole form at every poll of a
+  // source (BAJAOVRLAY-45).
+  const readServerStateNow = useReadServerStateNow();
+  const [graphicFields] = useState(() => {
+    const { dataSources, dataSnapshots } = readServerStateNow();
+    return fillGraphicFieldsOfItemEditor(graphic, fieldsToShow, { dataSources, dataSnapshots });
+  });
   const form = useForm<SchemaFormValues>({
     defaultValues: graphicFields.formValues,
     resolver: buildSchemaFormResolver(graphicFields.description),
@@ -115,24 +117,13 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
     [form, graphicFields],
   );
 
-  // Watched so the note below follows the operator's choices as they are made.
-  const kindsNow = useWatch({ control: form.control, name: 'kinds' });
-  const bindingsNow = useWatch({ control: form.control, name: 'bindings' });
-  const entityReferencesNow = useWatch({ control: form.control, name: 'entityReferences' });
-  const isSourceChangeWaitingForTheTake =
-    isItemOnAir &&
-    hasSourceChoiceChangedSinceOpened(
-      graphicFields.description,
-      {
-        ...graphicFields.formValues,
-        kinds: kindsNow,
-        bindings: bindingsNow,
-        entityReferences: entityReferencesNow,
-      },
-      graphicFields.formValues,
-    );
-
-  const isFilledByAnEventNow = Object.values(kindsNow).includes('eventField');
+  // A yes or no computed in the watch (`compute`): react-hook-form redraws this form only
+  // when the answer changes, not at every pick in any field (BAJAOVRLAY-45).
+  const isFilledByAnEventNow = useWatch({
+    control: form.control,
+    name: 'kinds',
+    compute: (kindsNow) => Object.values(kindsNow).includes('eventField'),
+  });
   const { onIsFilledByAnEventChanged } = props;
   useEffect(() => {
     onIsFilledByAnEventChanged(isFilledByAnEventNow);
@@ -160,10 +151,12 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
         bindingOptions={bindingOptions}
         entityLibrary={entityLibrary}
       />
-      {isSourceChangeWaitingForTheTake && (
-        <p role="status" className="text-sm text-muted-foreground">
-          {ptBR.bindings.editor.sourceChangeAtTheNextTake}
-        </p>
+      {isItemOnAir && (
+        <SourceChangeAtTheNextTakeNote
+          form={form}
+          description={graphicFields.description}
+          formValuesAsOpened={graphicFields.formValues}
+        />
       )}
     </>
   );

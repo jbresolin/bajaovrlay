@@ -61,6 +61,8 @@ function renderEmptyTowerFormWithTheSimulator() {
           },
           { teams: [] },
         ),
+      // The data of this page never changes, so there is nothing to be told of.
+      subscribeToValuesNow: () => () => undefined,
     },
   });
 }

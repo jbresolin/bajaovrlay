@@ -27,6 +27,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@bajaovrlay/battle-card": "workspace:*",
     "@bajaovrlay/message-ticker": "workspace:*",
     "@bajaovrlay/qr-card": "workspace:*",
     "@bajaovrlay/race-clock": "workspace:*",
