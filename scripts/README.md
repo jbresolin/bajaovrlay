@@ -19,6 +19,9 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
 - `e2ePortOffset.ts` (not a script: every Playwright config and e2e helper imports it):
   reads `BAJAOVRLAY_E2E_PORT_OFFSET` once, a whole number or else 0, tested by
   `e2ePortOffset.test.ts`.
+- `uniqueDevPorts.test.ts` (a test, no script): reads every `vite.config.ts` and
+  `playwright.config.ts` under `apps/` and `packages/` and fails when two packages write
+  the same port, which made `pnpm dev` fail as a whole after PRs #27 and #28.
 - `reportSlowestTests.js` (CI's "Report the slowest tests" step): reads the Vitest and
   Playwright JSON reports named on its command line and prints the 15 slowest files and
   tests as markdown, which CI appends to the run's summary page (docs/ci.md). The reading

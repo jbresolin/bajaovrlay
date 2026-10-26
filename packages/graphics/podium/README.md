@@ -18,7 +18,7 @@ first entry is the middle card); each card writes its own position or rank, so a
 shared rank on both cards. A list shorter than three leaves the cards past its end empty; entries
 past the third are not drawn.
 
-Preview: `pnpm --filter @bajaovrlay/podium dev`, then http://localhost:5210/preview.html (add
+Preview: `pnpm --filter @bajaovrlay/podium dev`, then http://localhost:5202/preview.html (add
 `?logos=off`, `?tie=on`, `?stage=grey|black` or `?data=<JSON>`). Unit tests:
 `pnpm --filter @bajaovrlay/podium test`; Playwright on the built `dist/`, with the 6 screenshots:
 `pnpm --filter @bajaovrlay/podium test:e2e` (add `--update-snapshots` after a deliberate visual change).

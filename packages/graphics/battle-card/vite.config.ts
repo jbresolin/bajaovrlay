@@ -30,11 +30,11 @@ export default defineConfig({
     conditions: ['@bajaovrlay/source', ...defaultClientConditions],
   },
   server: {
-    port: 5212,
+    port: 5204,
     strictPort: true,
   },
   preview: {
-    port: 5213,
+    port: 5205,
     strictPort: true,
   },
   build: {

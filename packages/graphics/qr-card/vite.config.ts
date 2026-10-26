@@ -25,11 +25,11 @@ export default defineConfig({
   base: './',
   plugins: [copyOGrafManifestIntoDist()],
   server: {
-    port: 5214,
+    port: 5206,
     strictPort: true,
   },
   preview: {
-    port: 5215,
+    port: 5207,
     strictPort: true,
   },
   build: {
