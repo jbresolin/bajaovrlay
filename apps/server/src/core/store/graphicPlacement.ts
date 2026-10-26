@@ -12,9 +12,12 @@ export type GraphicPlacementDecision = {
   reasonForUsingFullscreen: string | undefined;
 };
 
-// A graphic with no usable default layer goes to the top layer: there it can never
-// replace the logo, the clock or a lower third that is on air.
-const layerIdOfUnplacedGraphics = 'fullscreen';
+/**
+ * A graphic with no usable default layer goes to the top layer: there it can never
+ * replace the logo, the clock or a lower third that is on air. Used at boot, and by
+ * deleteLayer for a graphic whose default layer the operator deleted (BAJAOVRLAY-49).
+ */
+export const layerIdOfUnplacedGraphics = 'fullscreen';
 
 // The category is optional in a manifest; this is the group for graphics without one.
 const categoryOfUngroupedGraphics = 'other';

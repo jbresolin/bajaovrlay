@@ -95,5 +95,11 @@ export type ReducerOutcome =
        * store writes a log line for each, so a step that moved by itself leaves a trace.
        */
       stepsBroughtBack?: StepBroughtBack[];
+      /**
+       * Set by deleteLayer only (BAJAOVRLAY-49): the graphics whose default layer was the
+       * one deleted, now defaulting to the fullscreen layer. The store logs a warning, as
+       * the boot does for a manifest naming a layer that does not exist.
+       */
+      graphicsPlacedOnTheFallbackLayer?: string[];
     }
   | { status: 'refused'; error: CommandError };

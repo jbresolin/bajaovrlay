@@ -35,6 +35,15 @@ import {
   DeleteMediaCommandSchema,
   RecordUploadedMediaCommandSchema,
 } from '../media/mediaCommands.js';
+import { CreateLayerCommandSchema } from '../outputs/createLayer.js';
+import { CreateOutputCommandSchema } from '../outputs/createOutput.js';
+import { DeleteLayerCommandSchema } from '../outputs/deleteLayer.js';
+import { DeleteOutputCommandSchema } from '../outputs/deleteOutput.js';
+import { MoveLayerToOutputCommandSchema } from '../outputs/moveLayerToOutput.js';
+import { RenameOutputCommandSchema } from '../outputs/renameOutput.js';
+import { ReorderLayersCommandSchema } from '../outputs/reorderLayers.js';
+import { ReorderOutputsCommandSchema } from '../outputs/reorderOutputs.js';
+import { UpdateLayerCommandSchema } from '../outputs/updateLayer.js';
 import { ClearOverrideCommandSchema } from '../overrides/clearOverride.js';
 import { SetOverrideCommandSchema } from '../overrides/setOverride.js';
 import { PreviewClearLayerCommandSchema } from '../preview/previewClearLayer.js';
@@ -145,6 +154,16 @@ export const CommandSchema = z.discriminatedUnion('type', [
   // server's media store (sistema:midia) after the upload route wrote the file.
   RecordUploadedMediaCommandSchema,
   DeleteMediaCommandSchema,
+  // Outputs and the editing of layers (BAJAOVRLAY-49); ../outputs/. Operators only.
+  CreateOutputCommandSchema,
+  RenameOutputCommandSchema,
+  DeleteOutputCommandSchema,
+  ReorderOutputsCommandSchema,
+  CreateLayerCommandSchema,
+  UpdateLayerCommandSchema,
+  MoveLayerToOutputCommandSchema,
+  ReorderLayersCommandSchema,
+  DeleteLayerCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

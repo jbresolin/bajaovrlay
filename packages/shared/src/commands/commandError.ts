@@ -157,6 +157,32 @@ export const CommandErrorCodeSchema = z.enum([
    * starts with the field's title and names the record.
    */
   'ENTITY_NOT_RESOLVED',
+  /** The command names an output that does not exist (BAJAOVRLAY-49). */
+  'OUTPUT_NOT_FOUND',
+  /** createOutput named an id another output already has. */
+  'OUTPUT_ALREADY_EXISTS',
+  /** deleteOutput named program, which always exists. */
+  'PROGRAM_OUTPUT_KEPT',
+  /** deleteOutput named an output that still has layers; the message lists them. */
+  'OUTPUT_HAS_LAYERS',
+  /** reorderOutputs sent a list that is not exactly the outputs, once each. */
+  'OUTPUTS_NOT_A_PERMUTATION',
+  /** createLayer named an id another layer already has. */
+  'LAYER_ALREADY_EXISTS',
+  /** A layer would sit at the zIndex of another layer of the same output. */
+  'LAYER_ZINDEX_TAKEN',
+  /**
+   * deleteLayer or moveLayerToOutput named a layer with something on it: on air, in
+   * preview or marked "vai limpar". The message says which.
+   */
+  'LAYER_NOT_EMPTY',
+  /**
+   * deleteLayer named a layer that items, quick-fire buttons, macro steps or event rules
+   * name; the message lists them.
+   */
+  'LAYER_IN_USE',
+  /** reorderLayers sent a list that is not exactly the output's layers, once each. */
+  'LAYERS_NOT_A_PERMUTATION',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */
