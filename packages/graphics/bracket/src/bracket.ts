@@ -3,16 +3,13 @@
  * "Próximo" (catalogue entry 4). This file owns the OGraf lifecycle (load, play, update,
  * stop, dispose) and wires the rest: bracketModel (data), bracketStepView (what a step
  * shows, on the shared step plan the server counts with), bracketView (the DOM, drawn by
- * Lit from the data and the step), bracketStepMoves (which pieces a step brings in, lifts
- * out or shows at once) on bracketAnimations (GSAP timelines from the theme's motion
- * tokens), the kit's wideBoardHead, playSteps (the OGraf step rule) and motion timeline
- * runner, and ptBR.
+ * Lit from the data and the step), bracketPlayBookkeeping (what a play asks for, and the
+ * count of moves that lets an overtaken one give up), bracketStepMoves (which pieces a step
+ * brings in, lifts out or shows at once) on bracketAnimations (GSAP timelines from the
+ * theme's motion tokens), the kit's wideBoardHead and motion timeline runner, and ptBR.
  *
- * The steps (stepCount -1 in the manifest, counted from the rounds: one per round-board
- * page, one per tree round, one for the third place): play from off air goes to step 0
- * (Entrar), each further play to the next (Próximo); a play past the last is the end and
- * takes the bracket off air. A `goto` forward brings the steps' pieces in; a `goto` back
- * draws the step at once, with no motion.
+ * The steps (stepCount -1 in the manifest, counted from the rounds) and what a play does
+ * with them: bracketPlayBookkeeping.ts.
  *
  * The bracket has no timer: nothing on it moves by itself. An update on air redraws the
  * step in place: what it adds appears at once, a result arriving crossfades its cells, and
@@ -34,11 +31,9 @@ import type {
   OGrafStopActionParams,
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
-import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
 import { teamWithSchoolStyles } from '@bajaovrlay/graphics-kit/teamWithSchoolStyles';
 import { waitForImagesToSettle } from '@bajaovrlay/graphics-kit/waitForImagesToSettle';
 import { wideBoardFrameStyles } from '@bajaovrlay/graphics-kit/wideBoardFrameStyles';
-import { writeWideBoardHead } from '@bajaovrlay/graphics-kit/wideBoardHead';
 import { wideBoardHeadStyles } from '@bajaovrlay/graphics-kit/wideBoardHeadStyles';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
@@ -49,22 +44,25 @@ import {
   type BracketData,
   mergePartialUpdateIntoBracketData,
   parseCompleteBracketData,
-  readBracketTitle,
 } from './bracketModel.js';
+import {
+  answerAfterAnotherMoveTookOver,
+  bringTheStepWithinTheData,
+  buildRefusalAnswer,
+  createMoveBookkeeping,
+  type LifecycleStage,
+  planThePlay,
+  refuseASecondLoad,
+  refuseUnlessLoaded,
+} from './bracketPlayBookkeeping.js';
 import {
   buildLiftOutOfThePieces,
   buildRiseOfTheStep,
-  chooseStepMoveKind,
   hideEveryPieceAtOnce,
   rememberPiecesOnScreen,
   showEveryPieceAtOnce,
-  stepBeforeTheStart,
+  writeHeadOfTheStep,
 } from './bracketStepMoves.js';
-import {
-  countStepsOfBracket,
-  describeStepOnScreen,
-  writeStepLineOfBracket,
-} from './bracketStepView.js';
 import { bracketStyles } from './bracketStyles.js';
 import { bracketTreeStyles } from './bracketTreeStyles.js';
 import {
@@ -78,14 +76,7 @@ import { roundBoardStyles } from './roundBoardStyles.js';
 import { readTreeGeometryOfTheTheme } from './treeGeometryTokens.js';
 import type { TreeGeometry } from './treeLayout.js';
 
-type LifecycleStage = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
-
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
-
-/** Builds a 4xx answer with a pt-BR message; OGraf actions answer errors, never throw. */
-function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafReturnPayload {
-  return { statusCode, statusMessage };
-}
 
 /** The bracket graphic; the default export a renderer registers as a custom element. */
 export default class BracketGraphic extends LitElement implements OGrafGraphic {
@@ -113,11 +104,10 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
   private readonly stepMotions = createMotionTimelineRunner();
   private readonly resultCrossfades = createMotionTimelineRunner();
   // Counts the plays and stops: a play overtaken by a later one (a double press, a stop)
-  // gives the bracket up at its next await instead of drawing over the newer step.
-  private moveNumber = 0;
-  // The play whose lift-out to a new view is running, if any: an update meanwhile is only
-  // kept, like one during the stop-out, and the play draws it once the old view is gone.
-  private moveLiftingOutForANewView: number | undefined = undefined;
+  // gives the bracket up at its next await instead of drawing over the newer step. It also
+  // marks Próximo's lift-out to a new view: an update meanwhile is only kept, like one
+  // during the stop-out, and the play draws it once the old view is gone.
+  private readonly moves = createMoveBookkeeping();
 
   override render() {
     return renderBracketTemplate(this.onScreen);
@@ -129,11 +119,9 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
    * leaves the bracket off air. Loaded once; a second load answers 409.
    */
   async load(params: OGrafLoadParams): Promise<OGrafReturnPayload> {
-    if (this.lifecycle === 'disposed') {
-      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
-    }
-    if (this.lifecycle !== 'unloaded') {
-      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyLoaded);
+    const refusal = refuseASecondLoad(this.lifecycle);
+    if (refusal !== undefined) {
+      return refusal;
     }
     const dataCheck = parseCompleteBracketData(params.data);
     if (!dataCheck.isValid) {
@@ -165,65 +153,61 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
    * step asked (the next one by default). A step past the last means stop.
    */
   async playAction(params: OGrafPlayActionParams): Promise<OGrafPlayActionReturnPayload> {
-    const refusal = this.refuseUnlessLoaded();
+    const refusal = refuseUnlessLoaded(this.lifecycle);
     if (refusal !== undefined) {
       return refusal;
     }
     const skipAnimation = params.skipAnimation ?? false;
-    const data = this.requireData();
-    const target = choosePlayActionTarget({
+    const plan = planThePlay({
+      data: this.requireData(),
       currentStep: this.currentStep,
-      stepCount: countStepsOfBracket(data),
+      isOnAir: this.lifecycle === 'onAir',
       goto: params.goto,
       delta: params.delta,
     });
-    if (target.outcome === 'invalidStep') {
+    if (plan.kind === 'invalidStep') {
       return buildRefusalAnswer(400, ptBR.actionProblems.invalidPlayStep);
     }
-    if (target.outcome === 'goToEnd') {
+    if (plan.kind === 'toTheEnd') {
       const stopAnswer = await this.stopAction({ skipAnimation });
       return { ...stopAnswer, currentStep: undefined };
     }
-
-    const isEntering = this.lifecycle !== 'onAir';
-    const stepBefore = isEntering ? stepBeforeTheStart : (this.currentStep ?? 0);
-    if (target.step === stepBefore) {
-      return { statusCode: 200, currentStep: target.step };
+    if (plan.kind === 'alreadyOnIt') {
+      return { statusCode: 200, currentStep: plan.step };
     }
-    this.moveNumber += 1;
-    const moveNumberOfThisPlay = this.moveNumber;
+    const moveNumberOfThisPlay = this.moves.startAMove();
     this.resultCrossfades.finishEveryTimelineAtOnce();
     this.lifecycle = 'onAir';
-    this.currentStep = target.step;
+    this.currentStep = plan.targetStep;
     const parts = this.requireParts();
-    const moveKind = chooseStepMoveKind(data, { stepBefore, targetStep: target.step, isEntering });
 
-    if (moveKind === 'newView') {
+    if (plan.moveKind === 'newView') {
       // An update during the lift-out is only kept (updateAction), drawn below once the old
       // view is gone: drawn now, the next board would pop in over the leaving one.
-      this.moveLiftingOutForANewView = moveNumberOfThisPlay;
+      this.moves.startLiftOut(moveNumberOfThisPlay);
       await this.stepMotions.run(buildLiftOutOfThePieces(parts, false), skipAnimation);
-      if (this.moveLiftingOutForANewView === moveNumberOfThisPlay) {
-        this.moveLiftingOutForANewView = undefined;
-      }
-      if (this.moveNumber !== moveNumberOfThisPlay) {
-        return this.answerAfterAnotherMoveTookOver();
+      this.moves.endLiftOut(moveNumberOfThisPlay);
+      if (this.moves.isOvertaken(moveNumberOfThisPlay)) {
+        return answerAfterAnotherMoveTookOver(this.readLifecycleNow(), this.currentStep);
       }
     }
     // The data may have changed during the lift-out: the latest is drawn, at a step it has,
     // as the server brings its own step back (gate 2 of PR #30).
     const dataNow = this.requireData();
-    const stepNow = Math.min(target.step, countStepsOfBracket(dataNow) - 1);
+    const stepNow = bringTheStepWithinTheData(plan.targetStep, dataNow);
     this.currentStep = stepNow;
     const piecesBefore = rememberPiecesOnScreen(parts);
     await this.redrawAtStep(dataNow, stepNow);
-    if (moveKind === 'atOnce') {
+    if (plan.moveKind === 'atOnce') {
       showEveryPieceAtOnce(parts);
       return { statusCode: 200, currentStep: stepNow };
     }
-    await this.stepMotions.run(buildRiseOfTheStep(parts, moveKind, piecesBefore), skipAnimation);
-    if (this.moveNumber !== moveNumberOfThisPlay) {
-      return this.answerAfterAnotherMoveTookOver();
+    await this.stepMotions.run(
+      buildRiseOfTheStep(parts, plan.moveKind, piecesBefore),
+      skipAnimation,
+    );
+    if (this.moves.isOvertaken(moveNumberOfThisPlay)) {
+      return answerAfterAnotherMoveTookOver(this.readLifecycleNow(), this.currentStep);
     }
     // An update during the rise is drawn in place, and may have brought the step back.
     return { statusCode: 200, currentStep: this.currentStep };
@@ -234,15 +218,14 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
    * they are gone, with every piece hidden for the next take.
    */
   async stopAction(params: OGrafStopActionParams): Promise<OGrafReturnPayload> {
-    const refusal = this.refuseUnlessLoaded();
+    const refusal = refuseUnlessLoaded(this.lifecycle);
     if (refusal !== undefined) {
       return refusal;
     }
     if (this.lifecycle === 'offAir') {
       return okAnswer;
     }
-    this.moveNumber += 1;
-    const moveNumberOfThisStop = this.moveNumber;
+    const moveNumberOfThisStop = this.moves.startAMove();
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.resultCrossfades.finishEveryTimelineAtOnce();
@@ -250,7 +233,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     await this.stepMotions.run(buildLiftOutOfThePieces(parts, true), params.skipAnimation ?? false);
 
     // A play that came during the stop-out cut it short and owns the bracket now.
-    if (this.moveNumber !== moveNumberOfThisStop || this.readLifecycleNow() !== 'offAir') {
+    if (this.moves.isOvertaken(moveNumberOfThisStop) || this.readLifecycleNow() !== 'offAir') {
       return okAnswer;
     }
     hideEveryPieceAtOnce(parts);
@@ -269,7 +252,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
    * only kept, and drawn once the pieces are gone.
    */
   async updateAction(params: OGrafUpdateActionParams): Promise<OGrafReturnPayload> {
-    const refusal = this.refuseUnlessLoaded();
+    const refusal = refuseUnlessLoaded(this.lifecycle);
     if (refusal !== undefined) {
       return refusal;
     }
@@ -279,8 +262,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     }
     this.data = dataCheck.data;
     const isStoppingOut = this.lifecycle === 'offAir' && this.stepMotions.isRunning();
-    const isLiftingOutForANewView = this.moveLiftingOutForANewView !== undefined;
-    if (isStoppingOut || isLiftingOutForANewView) {
+    if (isStoppingOut || this.moves.isLiftingOutForANewView()) {
       return okAnswer;
     }
 
@@ -290,8 +272,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
       hideEveryPieceAtOnce(parts);
       return okAnswer;
     }
-    const lastStep = countStepsOfBracket(dataCheck.data) - 1;
-    const stepOnAir = Math.min(this.currentStep ?? 0, lastStep);
+    const stepOnAir = bringTheStepWithinTheData(this.currentStep ?? 0, dataCheck.data);
     this.currentStep = stepOnAir;
     const stageBefore = takeSnapshotOfTheStage(parts);
     await this.redrawAtStep(dataCheck.data, stepOnAir);
@@ -311,7 +292,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
   /** OGraf dispose: ends every running motion and crossfade; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
-    this.moveNumber += 1;
+    this.moves.overtakeEveryMove();
     this.stepMotions.finishEveryTimelineAtOnce();
     this.resultCrossfades.finishEveryTimelineAtOnce();
     return okAnswer;
@@ -324,7 +305,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     // A play pending on a motion ended here gives the bracket up rather than drawing on.
-    this.moveNumber += 1;
+    this.moves.overtakeEveryMove();
     this.stepMotions.finishEveryTimelineAtOnce();
     this.resultCrossfades.finishEveryTimelineAtOnce();
   }
@@ -335,40 +316,12 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     this.requestUpdate();
     await this.updateComplete;
     this.parts ??= findBracketParts(this.renderRoot, this);
-    this.writeHeadNow(data, stepIndex);
-  }
-
-  /** Writes the head: the title, the board's round (none for the tree), the step line. */
-  private writeHeadNow(data: BracketData, stepIndex: number): void {
-    const step = describeStepOnScreen(data, stepIndex);
-    writeWideBoardHead(this.requireParts(), {
-      title: readBracketTitle(data),
-      eventLine: step.kind === 'board' ? step.eventLine : '',
-      pageLine: writeStepLineOfBracket(stepIndex, countStepsOfBracket(data)),
-    });
-  }
-
-  /** The answer of a play another play or a stop took over: the step on air now. */
-  private answerAfterAnotherMoveTookOver(): OGrafPlayActionReturnPayload {
-    if (this.readLifecycleNow() === 'disposed') {
-      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
-    }
-    return { statusCode: 200, currentStep: this.currentStep };
+    writeHeadOfTheStep(this.requireParts(), data, stepIndex);
   }
 
   /** Reads the lifecycle after an await, which stop or dispose may have changed meanwhile. */
   private readLifecycleNow(): LifecycleStage {
     return this.lifecycle;
-  }
-
-  private refuseUnlessLoaded(): OGrafReturnPayload | undefined {
-    if (this.lifecycle === 'unloaded' || this.lifecycle === 'loading') {
-      return buildRefusalAnswer(409, ptBR.actionProblems.notLoadedYet);
-    }
-    if (this.lifecycle === 'disposed') {
-      return buildRefusalAnswer(409, ptBR.actionProblems.alreadyDisposed);
-    }
-    return undefined;
   }
 
   private requireParts(): BracketParts {

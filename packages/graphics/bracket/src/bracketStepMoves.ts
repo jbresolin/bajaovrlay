@@ -2,7 +2,7 @@
  * The bracket's step moves: how a step comes on screen, and which pieces it brings in,
  * lifts out or shows at once, as GSAP timelines or at-once changes on the parts
  * (bracketAnimations.ts does the motion itself). bracket.ts owns the lifecycle and calls
- * these around each redraw; nothing here keeps any state.
+ * these around each redraw, and writeHeadOfTheStep after it; nothing here keeps any state.
  *
  * The four moves (motion.md, "Bracket"):
  * - enter: from off air, the head and the step's pieces come in (Entrar, or a take at a
@@ -15,6 +15,8 @@
  * - at once: a step back (a goto, or the server bringing the step within a bracket that
  *   shrank): the step is drawn with no motion.
  */
+import { writeWideBoardHead } from '@bajaovrlay/graphics-kit/wideBoardHead';
+
 import {
   type BracketTimeline,
   buildCascadeInTimeline,
@@ -22,8 +24,12 @@ import {
   hidePiecesAtOnce,
   showPiecesAtOnce,
 } from './bracketAnimations.js';
-import type { BracketData } from './bracketModel.js';
-import { describeStepOnScreen } from './bracketStepView.js';
+import { type BracketData, readBracketTitle } from './bracketModel.js';
+import {
+  countStepsOfBracket,
+  describeStepOnScreen,
+  writeStepLineOfBracket,
+} from './bracketStepView.js';
 import { type BracketParts, listEveryPieceOnScreen, listPiecesOnScreen } from './bracketView.js';
 
 /** How a step comes on screen. */
@@ -100,4 +106,18 @@ export function showEveryPieceAtOnce(parts: BracketParts): void {
 /** Hides every piece on the stage at once: off air, ready for the next take. */
 export function hideEveryPieceAtOnce(parts: BracketParts): void {
   hidePiecesAtOnce(parts.tokensSource, listEveryPieceOnScreen(parts));
+}
+
+/** Writes the head for a step: the title, the board's round (none for the tree), the step line. */
+export function writeHeadOfTheStep(
+  parts: BracketParts,
+  data: BracketData,
+  stepIndex: number,
+): void {
+  const step = describeStepOnScreen(data, stepIndex);
+  writeWideBoardHead(parts, {
+    title: readBracketTitle(data),
+    eventLine: step.kind === 'board' ? step.eventLine : '',
+    pageLine: writeStepLineOfBracket(stepIndex, countStepsOfBracket(data)),
+  });
 }

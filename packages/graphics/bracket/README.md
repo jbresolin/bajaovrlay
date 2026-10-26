@@ -8,8 +8,9 @@ match cards (32 a page, one step a page); the rounds from the quarter-finals dow
 from, the lines between them, the third place at the foot of the final's column. A match's
 result is a time, a count of wins (best of N), the winner's mark, or the outlined "W.O."; a
 bye's empty side is the dashed "SEM ADVERSÁRIO". Start reading at `src/bracket.ts` (the OGraf
-lifecycle); it wires `bracketModel.ts` (Zod data), `bracketStepView.ts` (what a step shows, on
-the shared plan `@bajaovrlay/shared/bracketSteps` the server counts with), `matchResults.ts`,
+lifecycle); it wires `bracketPlayBookkeeping.ts` (what a play asks for, the count of moves that
+lets an overtaken one give up, the lifecycle's answers), `bracketModel.ts` (Zod data),
+`bracketStepView.ts` (what a step shows, on the shared plan `@bajaovrlay/shared/bracketSteps` the server counts with), `matchResults.ts`,
 `treeLayout.ts` (pure geometry), `bracketView.ts` with `roundBoardView.ts`,
 `bracketTreeView.ts` and `bracketCarView.ts`, the three style files, `bracketStepMoves.ts`
 and `bracketLiveUpdates.ts` (what an update changed on screen) on `bracketAnimations.ts`, and
