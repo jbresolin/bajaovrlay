@@ -13,8 +13,9 @@ the restart), then `src/core/boot/startServer.ts` (the boot steps),
 then `src/core/store/createStateStore.ts` (the single command path).
 
 - `src/core/` — the server's building blocks, one folder per concept (see its README).
-- `src/modules/` — feature modules: `dataSources/` (polled sources, recordings) and `bindings/`
-  (live refresh of bound fields, the operator's corrections); each has a README.
+- `src/modules/` — feature modules: `dataSources/` (polled sources, recordings), `bindings/`
+  (live refresh of bound fields, the operator's corrections), and `outputs/` (outputs and
+  the editing of layers, BAJAOVRLAY-49), among others; each has a README.
 - `src/api/v1/` — thin REST routes and the generated OpenAPI document.
 - `drizzle/` — committed SQL migrations, applied at boot.
 - `/.env.example` — every setting. Run the server with `pnpm dev` from the repo root.
