@@ -11,6 +11,7 @@ import type { StepBroughtBack } from './instanceStepsWithinTheirCount.js';
  */
 export type SlicesChangedByCommands = Pick<
   Slices,
+  | 'outputs'
   | 'layers'
   | 'graphics'
   | 'instances'

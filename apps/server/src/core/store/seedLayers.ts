@@ -1,9 +1,10 @@
-import type { Layer } from '@bajaovrlay/shared';
+import { type Layer, programOutputId } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
 
 /**
- * The fixed layers seeded on the first boot, bottom to top. The z-indexes leave gaps of
+ * The layers seeded on the first boot, bottom to top, all on the program output; since
+ * BAJAOVRLAY-49 the operator edits them on "Saídas e camadas". The z-indexes leave gaps of
  * ten so a layer can be slotted in between later without renumbering the others; the
  * tower (BAJAOVRLAY-22) is the first to use a gap, at 35: it stacks under the clock on
  * the same right-hand column, so it sits next to the clock in the z-order, between the
@@ -15,12 +16,15 @@ import { ptBR } from '../messages/ptBR.js';
  * overlap on the same layer. The logo, the clock and the tower are `persistent`, the
  * things meant to stay on screen across rundown items (the flag has no effect until M1).
  *
- * A layer added here after a database was first seeded is added to that database on
- * its next boot (addSeededLayersMissingFromStoredLayers, called by loadInitialSlices).
+ * A layer added here after a database was first seeded reaches that database only if it
+ * was written before outputs existed (addSeededLayersMissingFromStoredLayers, called by
+ * modules/outputs at boot): from then on the layers are the operator's, and a seeded
+ * layer the operator deleted must stay deleted.
  */
 export const seededLayers: Layer[] = [
   {
     id: 'bug',
+    outputId: programOutputId,
     name: ptBR.seededLayerNames.bug,
     zIndex: 10,
     replacePolicy: 'out-then-in',
@@ -28,6 +32,7 @@ export const seededLayers: Layer[] = [
   },
   {
     id: 'ticker',
+    outputId: programOutputId,
     name: ptBR.seededLayerNames.ticker,
     zIndex: 20,
     replacePolicy: 'out-then-in',
@@ -35,6 +40,7 @@ export const seededLayers: Layer[] = [
   },
   {
     id: 'clock',
+    outputId: programOutputId,
     name: ptBR.seededLayerNames.clock,
     zIndex: 30,
     replacePolicy: 'out-then-in',
@@ -42,6 +48,7 @@ export const seededLayers: Layer[] = [
   },
   {
     id: 'tower',
+    outputId: programOutputId,
     name: ptBR.seededLayerNames.tower,
     zIndex: 35,
     replacePolicy: 'out-then-in',
@@ -49,6 +56,7 @@ export const seededLayers: Layer[] = [
   },
   {
     id: 'lower-third',
+    outputId: programOutputId,
     name: ptBR.seededLayerNames.lowerThird,
     zIndex: 40,
     replacePolicy: 'out-then-in',
@@ -56,6 +64,7 @@ export const seededLayers: Layer[] = [
   },
   {
     id: 'notice',
+    outputId: programOutputId,
     name: ptBR.seededLayerNames.notice,
     zIndex: 45,
     replacePolicy: 'out-then-in',
@@ -63,6 +72,7 @@ export const seededLayers: Layer[] = [
   },
   {
     id: 'fullscreen',
+    outputId: programOutputId,
     name: ptBR.seededLayerNames.fullscreen,
     zIndex: 50,
     replacePolicy: 'out-then-in',

@@ -1,6 +1,7 @@
 import { ptBRBindingErrors } from './ptBRBindings.js';
 import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
+import { ptBROutputs } from './ptBROutputs.js';
 
 /**
  * pt-BR catalog for every message the server sends to people (error answers the
@@ -107,6 +108,8 @@ export const ptBR = {
   eventErrors: ptBREventErrors,
   // Refusals about the media store: uploads, serving, deleting (BAJAOVRLAY-19); ptBRMedia.ts.
   mediaErrors: ptBRMediaErrors,
+  // Outputs and the editing of layers: names and refusals (BAJAOVRLAY-49); ptBROutputs.ts.
+  outputs: ptBROutputs,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
   // each goes with a stable code. The layer is named as the operator reads it.
   onAirChangeErrors: {

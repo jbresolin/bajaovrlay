@@ -13,9 +13,30 @@ export const feiLowerThirdInstanceId = '91d0a3b7-5e2c-47f6-a8c4-3b6e0f2d7a48';
  * full screen (the podium's, whose steps instancePlayer.steps.test.ts plays) cuts too.
  */
 export const layersOfTheStream: Layer[] = [
-  { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
-  { id: 'lower-third', name: 'Legenda', zIndex: 40, replacePolicy: 'cut', persistent: false },
-  { id: 'fullscreen', name: 'Tela cheia', zIndex: 50, replacePolicy: 'cut', persistent: false },
+  {
+    id: 'clock',
+    outputId: 'program',
+    name: 'Relógio',
+    zIndex: 30,
+    replacePolicy: 'out-then-in',
+    persistent: true,
+  },
+  {
+    id: 'lower-third',
+    outputId: 'program',
+    name: 'Legenda',
+    zIndex: 40,
+    replacePolicy: 'cut',
+    persistent: false,
+  },
+  {
+    id: 'fullscreen',
+    outputId: 'program',
+    name: 'Tela cheia',
+    zIndex: 50,
+    replacePolicy: 'cut',
+    persistent: false,
+  },
 ];
 
 /** Builds the race clock of the enduro, on air on the clock layer under green flag. */

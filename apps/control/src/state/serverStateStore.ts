@@ -52,6 +52,7 @@ export type ServerStateStore = StoreApi<ServerState>;
  */
 export function createServerStateStore(): ServerStateStore {
   return createStore<ServerState>()((set) => ({
+    outputs: [],
     layers: [],
     graphics: [],
     instances: [],

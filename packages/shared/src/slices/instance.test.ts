@@ -19,6 +19,8 @@
  *   - A list holding an empty key, or a single text instead of a list, is refused.
  *   - A preview instance marked 'auto' or 'manual' is accepted unchanged; any other word
  *     is refused.
+ *   - An instance may carry the id of the item it was taken from, and may also have none;
+ *     an empty item id is refused.
  *
  * What these tests deliberately do not cover:
  *   - Who writes the list and the origin and who reads them; the previewItem,
@@ -28,6 +30,7 @@
  *   - The other fields of an instance; slices.test.ts covers status and statusDetail.
  */
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import { InstanceSchema } from './instance.js';
 
@@ -46,6 +49,20 @@ function buildEnduroClockOnPreview() {
     currentStep: 0,
     status: 'loading',
     takenAt: '2026-10-09T14:32:05.000Z',
+  };
+}
+
+/** Builds the race clock on air on the clock layer, as a take leaves it. */
+function buildRaceClockInstanceOnAir() {
+  return {
+    id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
+    layerId: 'clock',
+    graphicId: 'race-clock',
+    target: 'program',
+    resolvedData: { sessionName: 'Enduro de Resistência', state: 'green' },
+    currentStep: 0,
+    status: 'loading',
+    takenAt: '2026-10-11T12:00:00.000Z',
   };
 }
 
@@ -133,5 +150,51 @@ describe('InstanceSchema and previewOrigin', () => {
 
     // Assert: it is refused, so no page ever has to guess what an unknown origin means.
     expect(result.success, 'an unknown preview origin must be refused').toBe(false);
+  });
+});
+
+describe('InstanceSchema and the item it came from', () => {
+  it('keeps the id of the item an instance was taken from', () => {
+    // Arrange: the race clock on air, taken from the enduro clock item.
+    const instanceTakenFromAnItem = {
+      ...buildRaceClockInstanceOnAir(),
+      itemId: 'b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10',
+    };
+
+    // Act: check it against the schema.
+    const result = InstanceSchema.safeParse(instanceTakenFromAnItem);
+
+    // Assert: it is accepted and the item id is still there for the layer panel to read.
+    expect(result.success, 'an instance may say which item it came from').toBe(true);
+    expect(result.data, 'the item id must be kept on the instance').toEqual(
+      instanceTakenFromAnItem,
+    );
+  });
+
+  it('accepts an instance taken by hand, which came from no item', () => {
+    // Arrange: the race clock taken from the quick take panel, so it has no item.
+    const instanceTakenByHand = buildRaceClockInstanceOnAir();
+
+    // Act: check it against the schema.
+    const result = InstanceSchema.safeParse(instanceTakenByHand);
+
+    // Assert: it is accepted, and no item id is invented for it.
+    expect(result.success, 'an instance without an item must still be accepted').toBe(true);
+    expect(result.data, 'no item id may be added to a take made by hand').not.toHaveProperty(
+      'itemId',
+    );
+  });
+
+  it('refuses an instance whose item id is an empty text, naming itemId', () => {
+    // Arrange: an instance that claims to come from an item but names none.
+    const instanceWithEmptyItemId = { ...buildRaceClockInstanceOnAir(), itemId: '' };
+
+    // Act: check it and turn the failure into readable text.
+    const result = InstanceSchema.safeParse(instanceWithEmptyItemId);
+    const failureMessage = result.error ? z.prettifyError(result.error) : '';
+
+    // Assert: it is refused; "no item" is said by leaving the field out.
+    expect(result.success, 'an empty item id must be refused').toBe(false);
+    expect(failureMessage, 'the failure must name the bad field').toContain('itemId');
   });
 });

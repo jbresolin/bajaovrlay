@@ -58,8 +58,16 @@ function createFakeServerSocket(address: string): FakeServerSocket {
  */
 export function createSlicesWithInstances(instances: Instance[]): Slices {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: [
-      { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
+      {
+        id: 'clock',
+        outputId: 'program',
+        name: 'Relógio',
+        zIndex: 30,
+        replacePolicy: 'out-then-in',
+        persistent: true,
+      },
     ],
     graphics: [
       {

@@ -3,7 +3,9 @@
 // or "Prévia" monitor (`/ws?role=monitor`). A screen draws four slices and reads no
 // other: the layers, the graphics, the instances on air and the layers Prévia shows as
 // "vai limpar". So it is sent those four and nothing else (João's ruling at gate 2 of
-// PR #17): an allowlist, not a list of what to hide, so a slice added later reaches the
+// PR #17), plus the outputs (BAJAOVRLAY-49): a few rows that change only when the
+// operator edits them, sent because the schema requires `program` in that slice, so it
+// cannot be sent empty as the others are. An allowlist, not a list of what to hide, so a slice added later reaches the
 // screens only when someone decides it should. Two reasons:
 //   - graphics receive resolved data only (architecture rule 3), and parsing a 60-car
 //     snapshot every two seconds per source is a frame-drop risk inside OBS;
@@ -19,6 +21,7 @@ import type { SliceNameSentWhole, Slices } from '@bajaovrlay/shared';
 
 /** The slices a screen draws: the only ones it is sent with something in them. */
 export const sliceNamesScreensReceive: readonly SliceNameSentWhole[] = [
+  'outputs',
   'layers',
   'graphics',
   'instances',
@@ -30,10 +33,11 @@ export const sliceNamesScreensReceive: readonly SliceNameSentWhole[] = [
  * every slice, so each slice a screen does not draw is there but empty: empty on purpose
  * for a screen, not "no data". Written out slice by slice on purpose: a slice added to
  * the schema later fails typecheck here until someone decides what a screen gets of it.
- * Keep the four drawn ones in step with sliceNamesScreensReceive above.
+ * Keep the five sent ones in step with sliceNamesScreensReceive above.
  */
 export function buildSlicesForAScreen(slices: Slices): Slices {
   return {
+    outputs: slices.outputs,
     layers: slices.layers,
     graphics: slices.graphics,
     instances: slices.instances,

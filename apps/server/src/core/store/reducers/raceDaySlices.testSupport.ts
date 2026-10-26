@@ -82,6 +82,7 @@ export function buildTeam42LowerThirdOnAir(): Instance {
  */
 export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesChangedByCommands {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: seededLayers,
     graphics: [
       {

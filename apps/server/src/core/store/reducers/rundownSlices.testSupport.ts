@@ -256,6 +256,7 @@ export function buildRaceDaySlicesWithRundown(parts: {
   macroRuns?: MacroRun[];
 }): SlicesChangedByCommands {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: seededLayers,
     graphics: [
       {

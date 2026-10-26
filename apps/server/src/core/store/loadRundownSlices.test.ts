@@ -150,6 +150,8 @@ describe('the rundowns and items on a database written before they existed (M0)'
       readUpdatedAtBySliceName(database),
       'only graphics (refreshed every boot) and the seeded rows may be written by this boot',
     ).toEqual({
+      // Seeded at the first boot (BAJAOVRLAY-49) with the layers, left alone afterwards.
+      outputs: '2026-10-09T08:00:00.000Z',
       layers: '2026-10-09T08:00:00.000Z',
       graphics: '2026-10-10T07:30:00.000Z',
       instances: '2026-10-09T08:00:00.000Z',

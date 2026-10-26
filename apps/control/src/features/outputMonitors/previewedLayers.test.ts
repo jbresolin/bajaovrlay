@@ -31,6 +31,7 @@ const momentOfThePreview = '2026-10-10T13:00:00.000Z';
 function buildClockLayer(): Layer {
   return {
     id: 'clock',
+    outputId: 'program',
     name: 'Relógio',
     zIndex: 30,
     replacePolicy: 'out-then-in',

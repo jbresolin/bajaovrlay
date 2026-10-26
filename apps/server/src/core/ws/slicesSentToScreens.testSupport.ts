@@ -4,8 +4,12 @@
 // repeating it. Nothing here keeps state between calls.
 import type { SliceName, Slices } from '@bajaovrlay/shared';
 
-/** The slices a screen draws, the only ones it is ever sent with something in them. */
+/**
+ * The slices a screen is sent with something in them: the four it draws, and the outputs,
+ * which the schema requires to hold program (BAJAOVRLAY-49).
+ */
 export const sliceNamesAScreenDraws: SliceName[] = [
+  'outputs',
   'layers',
   'graphics',
   'instances',
@@ -13,11 +17,13 @@ export const sliceNamesAScreenDraws: SliceName[] = [
 ];
 
 /**
- * The copy of the server's slices a screen should get: the four it draws as they are,
- * every other slice an empty list. Written out slice by slice so the reader sees each one.
+ * The copy of the server's slices a screen should get: the outputs and the four it draws
+ * as they are, every other slice an empty list. Written out slice by slice so the reader
+ * sees each one.
  */
 export function buildTheCopyAScreenShouldGet(slicesOnTheServer: Slices): Slices {
   return {
+    outputs: slicesOnTheServer.outputs,
     layers: slicesOnTheServer.layers,
     graphics: slicesOnTheServer.graphics,
     instances: slicesOnTheServer.instances,

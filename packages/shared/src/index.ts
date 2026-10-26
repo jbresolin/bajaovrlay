@@ -13,8 +13,9 @@ export {
   formatClockTimeAsHoursMinutesSeconds,
 } from './clock/index.js';
 
-// The `layers` slice: fixed screen slots, and how a layer swaps one graphic for the next.
-export { type Layer, LayerReplacePolicySchema, LayerSchema } from './slices/layer.js';
+// The `layers` slice: the slots of each output's screen, how a layer swaps one graphic for
+// the next, and the slice's check (ids once, a zIndex once per output).
+export { type Layer, LayerReplacePolicySchema, LayerSchema, LayersSchema } from './slices/layer.js';
 // The `graphics` slice: registered OGraf packages, the manifest fields the server reads
 // (including the data `schema`), and our `v_baja` vendor field (default layer, category,
 // update rule).
@@ -202,3 +203,7 @@ export * from './flexMapping/index.js';
 // The event inbox (BAJAOVRLAY-44): events detected in a source's data or typed by the
 // operator, the rules that show them, and the inbox commands.
 export * from './eventInbox/index.js';
+
+// Outputs (BAJAOVRLAY-49): the renderer addresses OBS loads, `program` always among them,
+// and the commands that edit outputs and layers.
+export * from './outputs/index.js';
