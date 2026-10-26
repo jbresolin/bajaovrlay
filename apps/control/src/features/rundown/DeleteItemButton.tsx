@@ -15,6 +15,12 @@ export type DeleteItemButtonProps = {
    * macro editor's "Excluir macro"). Left out: "Excluir" and "Confirmar: excluir".
    */
   texts?: { deleteButton: string; confirmButton: string };
+  /**
+   * A line shown beside the button while it is armed, what the confirm will also do (on
+   * "Saídas e camadas": "1 gráfico usa esta camada como padrão…", BAJAOVRLAY-49). Left out:
+   * nothing is shown.
+   */
+  warningWhileArmed?: string | undefined;
 };
 
 /**
@@ -57,7 +63,7 @@ export function DeleteItemButton(props: DeleteItemButtonProps) {
     deleteButton: ptBR.rundown.deleteItemButton,
     confirmButton: ptBR.rundown.deleteItemConfirmButton,
   };
-  return (
+  const button = (
     <ActionButton
       size="xs"
       variant={isAwaitingConfirmation ? 'destructive' : 'ghost'}
@@ -65,5 +71,15 @@ export function DeleteItemButton(props: DeleteItemButtonProps) {
     >
       {isAwaitingConfirmation ? texts.confirmButton : texts.deleteButton}
     </ActionButton>
+  );
+  const isWarningShown = isAwaitingConfirmation && props.warningWhileArmed !== undefined;
+  if (!isWarningShown) {
+    return button;
+  }
+  return (
+    <span className="inline-flex items-center gap-2">
+      {button}
+      <span className="text-destructive text-xs">{props.warningWhileArmed}</span>
+    </span>
   );
 }

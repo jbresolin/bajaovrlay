@@ -4,6 +4,7 @@ import { ptBREntityLibrary } from './ptBREntityLibrary';
 import { ptBREvents } from './ptBREvents';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
+import { ptBROutputs } from './ptBROutputs';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
 import { ptBRTextList } from './ptBRTextList';
@@ -39,6 +40,7 @@ export const ptBR = {
       dataSources: 'Fontes',
       entityLibrary: 'Cadastros',
       eventReview: 'Eventos',
+      outputs: 'Saídas',
     },
     // What "Cadastros" or "Fontes" shows instead of a blank tab when it throws.
     pageError: {
@@ -71,6 +73,9 @@ export const ptBR = {
   },
   // The layer panel, "Camadas" (features/layers), in ptBRLayers.ts.
   layers: ptBRLayers,
+  // The "Saídas e camadas" page and the output choices (features/outputsAndLayers), in
+  // ptBROutputs.ts (BAJAOVRLAY-49).
+  outputs: ptBROutputs,
   // The "Fontes de dados" page and the header chip (features/dataSources), in ptBRDataSources.ts.
   dataSources: ptBRDataSources,
   // The "Cadastros" page (features/entityLibrary), in ptBREntityLibrary.ts.

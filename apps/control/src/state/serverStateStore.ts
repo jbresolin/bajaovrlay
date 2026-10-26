@@ -80,6 +80,7 @@ export function createServerStateStore(): ServerStateStore {
 
     replaceEverySlice: (slices) => {
       set({
+        outputs: slices.outputs,
         layers: slices.layers,
         graphics: slices.graphics,
         instances: slices.instances,
@@ -110,6 +111,9 @@ export function createServerStateStore(): ServerStateStore {
     // server sent replaces what was there, because the server owns the truth.
     replaceOneSlice: (message) => {
       switch (message.name) {
+        case 'outputs':
+          set({ outputs: message.slice });
+          break;
         case 'layers':
           set({ layers: message.slice });
           break;
@@ -173,6 +177,13 @@ export function createServerStateStore(): ServerStateStore {
         case 'eventLog':
           set({ eventLog: message.slice });
           break;
+        default: {
+          // A slice added to the protocol without its case here stops the build: its
+          // changes would otherwise never reach the page (the outputs slice of
+          // BAJAOVRLAY-49 was missed this way until a test of its page found it).
+          const sliceNameWithoutItsCase: never = message;
+          throw new Error(`no case for slice ${JSON.stringify(sliceNameWithoutItsCase)}`);
+        }
       }
     },
 
