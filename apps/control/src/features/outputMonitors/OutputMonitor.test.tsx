@@ -37,6 +37,9 @@ import { describe, expect, it } from 'vitest';
 
 import { OutputMonitor } from './OutputMonitor';
 
+/** The one output of a show without a PiP: these tests are about program's frame. */
+const programOutput = { outputId: 'program', name: 'Programa', order: 0 };
+
 const monitorScenarios = [
   // What is on air. The address is the one OBS loads plus the monitor mark, and nothing
   // else: without `target` the renderer page draws the program output.
@@ -62,7 +65,7 @@ describe('an output monitor', () => {
     // Arrange: nothing to prepare; a monitor needs no data of its own.
 
     // Act: draw the monitor of this output.
-    render(<OutputMonitor output={output} widthInPixels={480} />);
+    render(<OutputMonitor output={output} widthInPixels={480} outputs={[programOutput]} />);
 
     // Assert: the frame opens exactly the address of this row.
     expect(
@@ -75,7 +78,7 @@ describe('an output monitor', () => {
     // Arrange: nothing to prepare; a monitor needs no data of its own.
 
     // Act: draw the monitor of this output.
-    render(<OutputMonitor output={output} widthInPixels={480} />);
+    render(<OutputMonitor output={output} widthInPixels={480} outputs={[programOutput]} />);
 
     // Assert: the box has its heading, so the operator can tell the two boxes apart.
     expect(
@@ -97,7 +100,9 @@ describe('the size of an output monitor', () => {
     // Arrange: nothing to prepare; the width is all a monitor is told.
 
     // Act: draw the program monitor at the width of this row.
-    render(<OutputMonitor output="program" widthInPixels={widthInPixels} />);
+    render(
+      <OutputMonitor output="program" widthInPixels={widthInPixels} outputs={[programOutput]} />,
+    );
 
     // Assert: the box around the frame has that width, and the frame is still laid out
     // at the stream's size, so the graphics inside are drawn as OBS draws them.

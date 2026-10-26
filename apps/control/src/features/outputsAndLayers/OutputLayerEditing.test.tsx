@@ -12,7 +12,7 @@
  *   - "Adicionar camada" sends createLayer on that output, on top of it (ten above its
  *     top layer), with an id made on the page.
  *   - "Salvar nome" sends updateLayer with the new name; the switch sends the new
- *     "persistent".
+ *     "persistent"; the replace-policy dropdown sends the policy chosen.
  *   - "Excluir" sends deleteLayer at the second press only; while armed it warns how many
  *     graphics default to the layer.
  *   - A refusal of a delete shows the server's reason, which names what uses the layer.
@@ -26,8 +26,6 @@
  *   dnd-kit's own timers instead of waiting.
  *
  * What these tests deliberately do not cover:
- *   - The replace-policy select (a Radix menu jsdom cannot open); its command is the same
- *     updateLayer as the name's.
  *   - The outputs themselves; OutputsAndLayersPage.test.tsx.
  */
 import { act, fireEvent, screen, within } from '@testing-library/react';
@@ -143,6 +141,25 @@ describe('adding and editing a layer', () => {
     expect(fakeServer.listCommandsReceived(), 'the name, then the persistence').toEqual([
       { type: 'updateLayer', layerId: 'legenda-pip', name: 'Legenda ao vivo' },
       { type: 'updateLayer', layerId: 'legenda-pip', persistent: true },
+    ]);
+  });
+});
+
+describe('the replace policy of a layer', () => {
+  it('sends updateLayer with the policy chosen', () => {
+    // Arrange: the page; the caption swaps "out-then-in".
+    const { fakeServer } = renderThePageWithThePip();
+    const captionRow = findRowOfLayer('PiP', 'Legenda');
+
+    // Act: choose "Corte seco" in the caption's dropdown.
+    fireEvent.keyDown(captionRow.getByRole('combobox', { name: 'Troca de gráfico em Legenda' }), {
+      key: 'Enter',
+    });
+    fireEvent.click(screen.getByRole('option', { name: 'Corte seco' }));
+
+    // Assert: one updateLayer carrying the cut.
+    expect(fakeServer.listCommandsReceived(), 'the policy chosen').toEqual([
+      { type: 'updateLayer', layerId: 'legenda-pip', replacePolicy: 'cut' },
     ]);
   });
 });

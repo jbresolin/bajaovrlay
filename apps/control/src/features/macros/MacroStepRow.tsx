@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { LayerChoiceOptions } from '@/features/outputsAndLayers/LayerChoiceOptions';
 import { ptBR } from '@/i18n/ptBR';
 
 import type { ItemChoiceForMacroStep } from './macroStepChoices';
@@ -148,11 +149,7 @@ export function MacroStepRow(props: MacroStepRowProps) {
             <SelectValue placeholder={texts.nothingChosenPlaceholder} />
           </SelectTrigger>
           <SelectContent>
-            {layers.map((layer) => (
-              <SelectItem key={layer.id} value={layer.id}>
-                {layer.name}
-              </SelectItem>
-            ))}
+            <LayerChoiceOptions layers={layers} />
           </SelectContent>
         </Select>
       ) : null}

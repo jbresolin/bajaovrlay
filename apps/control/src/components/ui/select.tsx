@@ -2,8 +2,8 @@
 // the original so later shadcn updates diff cleanly. Local changes: `cn` comes from the
 // cn package; the three icons (chevron down, chevron up, check) are small inline SVGs at
 // the bottom of this file instead of imports from lucide-react, which would be a new
-// dependency for three shapes; the parts this app does not use (group, label, separator)
-// are left out. The `animate-in`/`fade-in` classes belong to the tw-animate-css plugin,
+// dependency for three shapes; the part this app does not use (separator) is left out.
+// Group and label joined with BAJAOVRLAY-49, for the layer pickers grouped by output. The `animate-in`/`fade-in` classes belong to the tw-animate-css plugin,
 // which is not installed: without it they do nothing and the list simply appears.
 import { cn } from 'cn';
 import { Select as SelectPrimitive } from 'radix-ui';
@@ -110,6 +110,22 @@ function SelectItem({
 }
 
 /** Shown at the top of a list too long to fit, to scroll up. */
+/** A group of options under one label (the layers of one output). */
+function SelectGroup({ ...props }: React.ComponentProps<typeof SelectPrimitive.Group>) {
+  return <SelectPrimitive.Group data-slot="select-group" {...props} />;
+}
+
+/** The label of a group of options; not an option itself. */
+function SelectLabel({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Label>) {
+  return (
+    <SelectPrimitive.Label
+      data-slot="select-label"
+      className={cn('text-muted-foreground px-2 py-1.5 text-xs', className)}
+      {...props}
+    />
+  );
+}
+
 function SelectScrollUpButton({
   className,
   ...props
@@ -180,7 +196,9 @@ function CheckIcon(props: React.ComponentProps<'svg'>) {
 export {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectScrollDownButton,
   SelectScrollUpButton,
   SelectTrigger,

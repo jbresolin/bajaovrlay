@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { LayerChoiceOptions } from '@/features/outputsAndLayers/LayerChoiceOptions';
 import { ptBR } from '@/i18n/ptBR';
 
 import { buildErrorAttributesForControl, FormFieldRow } from './FormFieldRow';
@@ -63,11 +64,16 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
   // operator picks afterwards stays, until another graphic is chosen. `shouldValidate`
   // re-checks the layer alone, which removes a "choose the layer" message left by an
   // earlier press now that the layer has a value.
+  // A default layer the operator deleted on "Saídas e camadas" (BAJAOVRLAY-49) is not
+  // chosen: "Camada" is left empty, and the check says it must be chosen.
   function moveLayerToTheDefaultOfGraphic(graphicId: string): void {
     const chosenGraphic = graphics.find((graphic) => graphic.id === graphicId);
-    if (chosenGraphic !== undefined) {
-      setValue('layerId', chosenGraphic.defaultLayerId, { shouldValidate: true });
+    if (chosenGraphic === undefined) {
+      return;
     }
+    const isDefaultLayerListed = layers.some((layer) => layer.id === chosenGraphic.defaultLayerId);
+    const layerIdToChoose = isDefaultLayerListed ? chosenGraphic.defaultLayerId : '';
+    setValue('layerId', layerIdToChoose, { shouldValidate: true });
   }
 
   return (
@@ -127,11 +133,7 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
                 <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
               </SelectTrigger>
               <SelectContent>
-                {layers.map((layer) => (
-                  <SelectItem key={layer.id} value={layer.id}>
-                    {layer.name}
-                  </SelectItem>
-                ))}
+                <LayerChoiceOptions layers={layers} />
               </SelectContent>
             </Select>
           )}

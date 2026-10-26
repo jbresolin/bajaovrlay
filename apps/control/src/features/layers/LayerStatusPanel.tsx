@@ -2,6 +2,9 @@ import {
   findNextStepOfInstance,
   type Graphic,
   type Instance,
+  type Layer,
+  listLayersOfOutputBottomToTop,
+  listOutputsProgramFirst,
   readStepCountOfInstance,
 } from '@bajaovrlay/shared';
 
@@ -12,6 +15,7 @@ import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider
 
 import { nameFieldsByTheirTitles } from './fieldsOfInstanceOnAir';
 import { chooseHomeOfItemSavedFromCamadas } from './itemSavedFromInstanceWithoutItem';
+import { LayerGroupOfOutput } from './LayerGroupOfOutput';
 import { LayerStatusRow } from './LayerStatusRow';
 import { useCurrentTime } from './useCurrentTime';
 import { useSavesFromCamadas } from './useSavesFromCamadas';
@@ -34,6 +38,7 @@ const relativeTimeRefreshIntervalInMilliseconds = 10_000;
  * (`nextOnLayer`, BAJAOVRLAY-47).
  */
 export function LayerStatusPanel() {
+  const outputs = useServerState((state) => state.outputs);
   const layers = useServerState((state) => state.layers);
   const graphics = useServerState((state) => state.graphics);
   const instances = useServerState((state) => state.instances);
@@ -48,93 +53,101 @@ export function LayerStatusPanel() {
   // Where "Salvar como item" puts a new item; with no rundown and no panel it is not offered.
   const homeOfItemSavedFromCamadas = chooseHomeOfItemSavedFromCamadas(rundowns, panels);
 
+  // With program alone the rows are listed as they always were; with more outputs
+  // (BAJAOVRLAY-49) each output is a group, program first (LayerGroupOfOutput.tsx).
+  const isOneOutputOnly = outputs.length <= 1;
   // Copied before sorting: the list in the store belongs to the store.
   const layersFromBottomToTop = [...layers].sort(
     (oneLayer, otherLayer) => oneLayer.zIndex - otherLayer.zIndex,
   );
 
+  // One row of Camadas; the same for every output, so a PiP's row offers what program's does.
+  function drawRowOfLayer(layer: Layer) {
+    const instanceOnProgram = findInstanceOnProgram(instances, layer.id);
+    const instanceInPreview = findInstanceInPreview(instances, layer.id);
+    const programInstanceToEdit = keepIfItsGraphicIsListed(instanceOnProgram, graphics);
+    const previewInstanceToEdit = keepIfItsGraphicIsListed(instanceInPreview, graphics);
+    const graphicOnProgram = graphics.find(
+      (graphic) => graphic.id === instanceOnProgram?.graphicId,
+    );
+    const keysChangedOnAir = instanceOnProgram?.fieldsChangedOnAir ?? [];
+    const graphicInPreview = graphics.find(
+      (graphic) => graphic.id === instanceInPreview?.graphicId,
+    );
+    const keysChangedInPreview = instanceInPreview?.fieldsChangedOnAir ?? [];
+    const isItemOnProgramStored = items.some((item) => item.id === instanceOnProgram?.itemId);
+    return (
+      <LayerStatusRow
+        key={layer.id}
+        layer={layer}
+        instanceOnProgram={instanceOnProgram}
+        isHoldingAPreview={instanceInPreview !== undefined}
+        isMarkedToBeCleared={previewClearedLayerIds.includes(layer.id)}
+        graphicName={findGraphicName(graphics, instanceOnProgram?.graphicId)}
+        graphicOnProgram={graphicOnProgram}
+        currentTime={currentTime}
+        onClearPressed={() => void sendCommand({ type: 'clearLayer', layerId: layer.id })}
+        onPreviewClearPressed={() =>
+          void sendCommand({ type: 'previewClearLayer', layerId: layer.id })
+        }
+        onEditProgramInstancePressed={
+          programInstanceToEdit === undefined
+            ? undefined
+            : () => editInstanceInQuickEdit(programInstanceToEdit)
+        }
+        onEditPreviewInstancePressed={
+          previewInstanceToEdit === undefined
+            ? undefined
+            : () => editInstanceInQuickEdit(previewInstanceToEdit)
+        }
+        changedFieldTitles={nameFieldsByTheirTitles(graphicOnProgram, keysChangedOnAir)}
+        changedInPreviewFieldTitles={nameFieldsByTheirTitles(
+          graphicInPreview,
+          keysChangedInPreview,
+        )}
+        isSaveIntoItemWaiting={
+          instanceOnProgram !== undefined && saves.isSavingIntoItem(instanceOnProgram.id)
+        }
+        onSaveIntoItemPressed={
+          instanceOnProgram === undefined || keysChangedOnAir.length === 0 || !isItemOnProgramStored
+            ? undefined
+            : () => saves.pressSaveIntoItem(instanceOnProgram)
+        }
+        onSaveAsItemPressed={
+          instanceOnProgram === undefined ||
+          instanceOnProgram.itemId !== undefined ||
+          homeOfItemSavedFromCamadas === undefined
+            ? undefined
+            : () => saves.pressSaveAsItem(instanceOnProgram, homeOfItemSavedFromCamadas)
+        }
+        stepOnProgram={describeStepOnProgram(instanceOnProgram, graphicOnProgram)}
+        onNextStepPressed={
+          instanceOnProgram === undefined ||
+          findNextStepOfInstance(instanceOnProgram, graphicOnProgram) === undefined
+            ? undefined
+            : () =>
+                void sendCommand({
+                  type: 'nextOnLayer',
+                  layerId: layer.id,
+                  fromStep: instanceOnProgram.currentStep,
+                })
+        }
+      />
+    );
+  }
+
   return (
     <Card className="py-2">
       <CardContent>
-        <ul className="flex flex-col divide-y">
-          {layersFromBottomToTop.map((layer) => {
-            const instanceOnProgram = findInstanceOnProgram(instances, layer.id);
-            const instanceInPreview = findInstanceInPreview(instances, layer.id);
-            const programInstanceToEdit = keepIfItsGraphicIsListed(instanceOnProgram, graphics);
-            const previewInstanceToEdit = keepIfItsGraphicIsListed(instanceInPreview, graphics);
-            const graphicOnProgram = graphics.find(
-              (graphic) => graphic.id === instanceOnProgram?.graphicId,
-            );
-            const keysChangedOnAir = instanceOnProgram?.fieldsChangedOnAir ?? [];
-            const graphicInPreview = graphics.find(
-              (graphic) => graphic.id === instanceInPreview?.graphicId,
-            );
-            const keysChangedInPreview = instanceInPreview?.fieldsChangedOnAir ?? [];
-            const isItemOnProgramStored = items.some(
-              (item) => item.id === instanceOnProgram?.itemId,
-            );
-            return (
-              <LayerStatusRow
-                key={layer.id}
-                layer={layer}
-                instanceOnProgram={instanceOnProgram}
-                isHoldingAPreview={instanceInPreview !== undefined}
-                isMarkedToBeCleared={previewClearedLayerIds.includes(layer.id)}
-                graphicName={findGraphicName(graphics, instanceOnProgram?.graphicId)}
-                graphicOnProgram={graphicOnProgram}
-                currentTime={currentTime}
-                onClearPressed={() => void sendCommand({ type: 'clearLayer', layerId: layer.id })}
-                onPreviewClearPressed={() =>
-                  void sendCommand({ type: 'previewClearLayer', layerId: layer.id })
-                }
-                onEditProgramInstancePressed={
-                  programInstanceToEdit === undefined
-                    ? undefined
-                    : () => editInstanceInQuickEdit(programInstanceToEdit)
-                }
-                onEditPreviewInstancePressed={
-                  previewInstanceToEdit === undefined
-                    ? undefined
-                    : () => editInstanceInQuickEdit(previewInstanceToEdit)
-                }
-                changedFieldTitles={nameFieldsByTheirTitles(graphicOnProgram, keysChangedOnAir)}
-                changedInPreviewFieldTitles={nameFieldsByTheirTitles(
-                  graphicInPreview,
-                  keysChangedInPreview,
-                )}
-                isSaveIntoItemWaiting={
-                  instanceOnProgram !== undefined && saves.isSavingIntoItem(instanceOnProgram.id)
-                }
-                onSaveIntoItemPressed={
-                  instanceOnProgram === undefined ||
-                  keysChangedOnAir.length === 0 ||
-                  !isItemOnProgramStored
-                    ? undefined
-                    : () => saves.pressSaveIntoItem(instanceOnProgram)
-                }
-                onSaveAsItemPressed={
-                  instanceOnProgram === undefined ||
-                  instanceOnProgram.itemId !== undefined ||
-                  homeOfItemSavedFromCamadas === undefined
-                    ? undefined
-                    : () => saves.pressSaveAsItem(instanceOnProgram, homeOfItemSavedFromCamadas)
-                }
-                stepOnProgram={describeStepOnProgram(instanceOnProgram, graphicOnProgram)}
-                onNextStepPressed={
-                  instanceOnProgram === undefined ||
-                  findNextStepOfInstance(instanceOnProgram, graphicOnProgram) === undefined
-                    ? undefined
-                    : () =>
-                        void sendCommand({
-                          type: 'nextOnLayer',
-                          layerId: layer.id,
-                          fromStep: instanceOnProgram.currentStep,
-                        })
-                }
-              />
-            );
-          })}
-        </ul>
+        {isOneOutputOnly ? (
+          <ul className="flex flex-col divide-y">{layersFromBottomToTop.map(drawRowOfLayer)}</ul>
+        ) : (
+          listOutputsProgramFirst(outputs).map((output) => (
+            <LayerGroupOfOutput key={output.outputId} output={output}>
+              {listLayersOfOutputBottomToTop(layers, output.outputId).map(drawRowOfLayer)}
+            </LayerGroupOfOutput>
+          ))
+        )}
         {/* "Limpar" and "Limpar tudo" show their refusals below the panel (AppShell.tsx). */}
         <CommandErrorMessage
           commandTypes={['previewClearLayer', 'saveOnAirChangesIntoItem', 'nextOnLayer']}

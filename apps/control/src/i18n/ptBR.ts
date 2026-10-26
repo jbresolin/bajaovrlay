@@ -88,6 +88,8 @@ export const ptBR = {
     updateButton: 'Atualizar',
     clearAllButton: 'Limpar tudo',
     clearAllConfirmButton: 'Confirmar: limpar tudo',
+    // With a second output (BAJAOVRLAY-49) the armed button says the PiP goes too.
+    clearAllEveryOutputConfirmButton: 'Confirmar: limpar tudo, todas as saídas',
   },
   // The two monitors in the centre and the lines under "Prévia" (features/outputMonitors).
   outputMonitors: {

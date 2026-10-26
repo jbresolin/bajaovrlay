@@ -12,3 +12,6 @@ Start at `OutputsAndLayersPage.tsx`: `AddOutputForm.tsx` (the address follows th
 (drag to reorder, as the rundown) of `OutputLayerRow.tsx` rows, and `AddLayerForm.tsx`
 (a new layer goes on top, `heightOfANewLayer.ts`). Each card shows the refusal of its own
 newest command. The server's rules live in apps/server/src/modules/outputs.
+
+`LayerChoiceOptions.tsx` is shared with the item editor's "Camada" and a macro step's layer
+picker: the layers grouped by output, program first, once there is more than one output.
