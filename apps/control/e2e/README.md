@@ -79,8 +79,8 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   the simulator runs at 60×, shows both teams and a gap that follows the race ("+s,d" side by side, "—" if not); a "Cartão de QR" shows a code that scans back to its address. Car 1, not car 7: until the first lap the
   simulator lists its cars by number, so cars 1, 2 and 3 are the podium right after the green flag.
 - The elimination bracket (BAJAOVRLAY-25): `bracketStepsWithTheSimulator.e2e.ts` (the brief's walk, on the real program
-  output `/render/`): the simulator on seed 2027 with ten cars at 60× run until its Super Prime has a champion (~17 s), then
-  switched off; a "Chaveamento" whose "Fases" read "Chaves › Todas as fases", live, taken; "Próximo" on the Camadas row from
+  output `/render/`): the simulator on seed 2027 with ten cars at 60× run until its Super Prime has a champion (~17 s), and
+  left running; a "Chaveamento" whose "Fases" open on "Chaves › Todas as fases" (the manifest's suggestion), live, taken; "Próximo" on the Camadas row from
   "Passo 1 de 5" to "Passo 5 de 5", then off; the output draws the final with car 8 the winner.
 
 - The item editor during a race (BAJAOVRLAY-45): `itemEditorStaysFastDuringARace.e2e.ts` (a battle card on air whose eleven

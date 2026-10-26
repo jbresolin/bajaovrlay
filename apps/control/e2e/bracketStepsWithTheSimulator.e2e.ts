@@ -16,8 +16,9 @@
  * What these tests prove (the brief's three E2E steps):
  *   1. The simulator started on seed 2027 with ten cars, run until its Super Prime has a
  *      champion.
- *   2. A bracket item whose rounds read the simulator's brackets ("Chaves › Todas as fases"),
- *      live, taken: the server has its five rounds on air.
+ *   2. A bracket item whose rounds open on the simulator's brackets ("Chaves › Todas as
+ *      fases", the manifest's suggestion), live, made while the race runs and taken: the
+ *      server has its five rounds on air.
  *   3. "Próximo" pressed through every step on the Camadas row: "Passo 1 de 5" to "Passo 5
  *      de 5", each press once the row shows the step before it; on the last step "Próximo"
  *      is off; the output draws the final with its champion.
@@ -28,11 +29,9 @@
  *   - What the bracket looks like: packages/graphics/bracket's screenshot tests.
  *   - OBS itself: the output page is the built renderer OBS loads.
  *
- * Why the simulator is switched off before the item is made: binding a field while a race
- * runs at 60× slows the item editor to a crawl (BAJAOVRLAY-45, another agent's task), which
- * is not this walk; the source's last data stays, and a live binding reads it. The editor
- * suggests the manifest's binding only from a source that is on, so the rounds are bound by
- * hand ("Fonte", the simulator, "Chaves › Todas as fases"), as the operator would.
+ * The item is made with the simulator running at 60×, as on the day: the item editor stays
+ * fast during a race since BAJAOVRLAY-45 (#29), and with the source on it opens the rounds
+ * on the manifest's suggestion, "Chaves › Todas as fases" of the simulator, live.
  *
  * What it needs: `pnpm build` (the server registers built graphics only, and the output
  * page is the built renderer).
@@ -41,7 +40,7 @@
  * (nothing on air, no item, the simulator off with its default settings), so this test
  * passes whatever ran before it.
  */
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
 import {
   readBracketRoundsOfSourceFromTheRealServer,
@@ -53,7 +52,6 @@ import {
   pollIntervalOfTheTestsAsTyped,
   restartTheSimulatedRaceWithItsButton,
   seededSimulatorLabel,
-  turnSourceOffWithItsSwitch,
   turnSourceOnWithItsSwitch,
 } from './dataSourcesTestSteps';
 import { emptyTheServerState } from './emptyTheServerState';
@@ -79,21 +77,9 @@ test.beforeEach(async () => {
   await emptyTheServerState();
 });
 
-/** Picks an option in one of the item editor's dropdowns, by the dropdown's name. */
-async function chooseInEditorDropdown(
-  page: Page,
-  itemEditor: Locator,
-  dropdownName: string,
-  optionName: string,
-): Promise<void> {
-  await itemEditor.getByRole('combobox', { name: dropdownName, exact: true }).click();
-  // The list of options is drawn outside the editor, at the end of the page.
-  await page.getByRole('option', { name: optionName, exact: true }).click();
-}
-
 /**
  * Starts the seeded simulator on seed 2027 with ten cars at 60×, read every 0,5 s, from the
- * green flag; waits for its Super Prime's champion; then switches it off, its data kept.
+ * green flag, and waits for its Super Prime's champion; the simulator keeps running.
  */
 async function runTheSimulatorsSuperPrimeToItsChampion(page: Page): Promise<void> {
   await openDataSourcesPageAndWaitUntilConnected(page);
@@ -118,7 +104,6 @@ async function runTheSimulatorsSuperPrimeToItsChampion(page: Page): Promise<void
       },
     )
     .toBe(championOfTheSuperPrime);
-  await turnSourceOffWithItsSwitch(page, seededSimulatorLabel);
 }
 
 test.describe('the bracket with the simulator’s Super Prime', () => {
@@ -132,23 +117,21 @@ test.describe('the bracket with the simulator’s Super Prime', () => {
     await runTheSimulatorsSuperPrimeToItsChampion(page);
     const outputPage = await openOutputInItsOwnPage(page.context(), '/render/');
 
-    // Act (step 2): the bracket item, its rounds read from the simulator's brackets, live
-    // (the editor's default for "Fonte"), titled, saved and taken.
+    // Act (step 2): with the race still running at 60×, the bracket item: its rounds open on
+    // the simulator's brackets, live (the manifest's suggestion); titled, saved and taken.
     await openControlPageAndWaitUntilConnected(page);
     const itemEditor = await openItemEditorWithNewGraphic(page, 'Super Prime', 'Chaveamento');
-    await chooseInEditorDropdown(page, itemEditor, `Como preencher ${bracketRoundsField}`, 'Fonte');
-    await chooseInEditorDropdown(
-      page,
-      itemEditor,
-      `Fonte de ${bracketRoundsField}`,
-      seededSimulatorLabel,
-    );
-    await chooseInEditorDropdown(
-      page,
-      itemEditor,
-      `O que ${bracketRoundsField} lê da fonte`,
-      'Chaves › Todas as fases',
-    );
+    await expect(
+      itemEditor.getByRole('combobox', { name: `Fonte de ${bracketRoundsField}`, exact: true }),
+      'the rounds must open reading the running simulator, as the manifest suggests',
+    ).toHaveText(seededSimulatorLabel);
+    await expect(
+      itemEditor.getByRole('combobox', {
+        name: `O que ${bracketRoundsField} lê da fonte`,
+        exact: true,
+      }),
+      'the rounds must open on the whole brackets',
+    ).toHaveText('Chaves › Todas as fases');
     await itemEditor.getByLabel('Título', { exact: true }).fill('SUPER PRIME');
     await saveAndTakeTheItemInTheEditor(itemEditor);
 
