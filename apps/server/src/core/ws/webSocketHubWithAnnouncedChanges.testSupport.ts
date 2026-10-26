@@ -90,7 +90,7 @@ export async function waitUntilTheScreenHasEverythingSentSoFar(
 /** Connects a client and waits for its hello, so it is surely in the hub's client list. */
 export async function connectAndWaitForHello(
   port: number,
-  options: { role?: 'renderer' | 'monitor' } = {},
+  options: { role?: 'renderer' | 'monitor'; output?: string } = {},
 ): Promise<{ client: WebSocketTestClient; hello: ServerMessage }> {
   const client = await connectWebSocketTestClient(port, options);
   const hello = await client.waitForMessage('hello', (message) => message.type === 'hello');

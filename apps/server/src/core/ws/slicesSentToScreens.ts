@@ -12,6 +12,10 @@
 //   - a page opened before an upgrade keeps its old schemas and refuses a hello they
 //     refuse (a data source of a kind they do not know, such as `httpJson`); a slice it
 //     never receives can never do that.
+// Since BAJAOVRLAY-49 a screen draws one output (`&output=pip`, program when left out),
+// and of the layers, the instances and the marks it gets only those of that output's
+// layers: OBS's PiP source never parses program's graphics, and the renderer stays as
+// dumb as it was, drawing whatever it is sent.
 // Operator connections (the control page itself) still receive every slice. The hub
 // applies this to the hello and to every change; GET /api/v1/state applies it when asked
 // with `?role=`. What could go wrong: the role is not proven (anyone may connect as an
@@ -29,19 +33,25 @@ export const sliceNamesScreensReceive: readonly SliceNameSentWhole[] = [
 ];
 
 /**
- * A screen's copy of every slice, for its hello or its state read. The schema requires
- * every slice, so each slice a screen does not draw is there but empty: empty on purpose
- * for a screen, not "no data". Written out slice by slice on purpose: a slice added to
- * the schema later fails typecheck here until someone decides what a screen gets of it.
- * Keep the five sent ones in step with sliceNamesScreensReceive above.
+ * A screen's copy of every slice, for its hello, its state read and every change: the
+ * outputs and graphics whole, the layers of its output, and the instances and "vai limpar"
+ * marks of those layers. The schema requires every slice, so each slice a screen does not
+ * draw is there but empty: empty on purpose for a screen, not "no data". Written out slice
+ * by slice on purpose: a slice added to the schema later fails typecheck here until
+ * someone decides what a screen gets of it. Keep the five sent ones in step with
+ * sliceNamesScreensReceive above.
  */
-export function buildSlicesForAScreen(slices: Slices): Slices {
+export function buildSlicesForAScreen(slices: Slices, outputId: string): Slices {
+  const layersOfTheOutput = slices.layers.filter((layer) => layer.outputId === outputId);
+  const layerIdsOfTheOutput = new Set(layersOfTheOutput.map((layer) => layer.id));
   return {
     outputs: slices.outputs,
-    layers: slices.layers,
+    layers: layersOfTheOutput,
     graphics: slices.graphics,
-    instances: slices.instances,
-    previewClearedLayerIds: slices.previewClearedLayerIds,
+    instances: slices.instances.filter((instance) => layerIdsOfTheOutput.has(instance.layerId)),
+    previewClearedLayerIds: slices.previewClearedLayerIds.filter((layerId) =>
+      layerIdsOfTheOutput.has(layerId),
+    ),
     // The bindings behind what is on air: graphics get resolved data only (rule 3).
     instanceBindings: [],
     rundowns: [],

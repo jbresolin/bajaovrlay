@@ -36,7 +36,8 @@ function startRenderer(stage: HTMLElement): void {
   // tells the program output from every other page: only it may report what is on screen.
   // The copies the control page frames (`?monitor=1`, `?target=preview`) dial
   // `role=monitor`. Both roles are left out of the race data and the event log, on the
-  // WebSocket and on the state read alike.
+  // WebSocket and on the state read alike. A page loaded at /render/?output=pip passes its
+  // output on in both, and the server sends it only the PiP's layers (BAJAOVRLAY-49).
   const pageRole = decideRendererPageRole(location.search);
   const webSocketScheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const connection = connectToServer({
@@ -72,6 +73,7 @@ function startRenderer(stage: HTMLElement): void {
   });
 
   logRendererEvent('info', 'renderer ready', {
+    outputId: pageRole.outputId,
     drawnOutput: pageRole.drawnOutput,
     reportsInstanceStatus: pageRole.reportsInstanceStatus,
     stageWidth: stage.offsetWidth,

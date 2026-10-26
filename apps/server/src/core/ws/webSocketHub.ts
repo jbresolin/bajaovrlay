@@ -9,6 +9,7 @@ import type { StateStore } from '../store/createStateStore.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
 import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
 import { startHeartbeat } from './heartbeat.js';
+import { readOutputIdFromRequestTarget } from './screenOutput.js';
 import {
   buildDataSnapshotMessage,
   buildHelloMessage,
@@ -69,9 +70,10 @@ export type WebSocketHub = { close: () => Promise<void> };
  * `time` message, so a page keeps learning the server's clock while nothing changes. A
  * connection to `/ws?role=renderer` acts as a renderer, one to `/ws?role=monitor` as a
  * monitor, any other as an operator. A screen (a renderer or a monitor) is sent only the
- * slices it draws (layers, graphics, instances, previewClearedLayerIds): every other
- * slice is empty in its hello and left out of every change, it gets no `dataSnapshot`
- * message, and no message at all for a change of other slices alone (see
+ * slices it draws (outputs, graphics, and the layers, instances and previewClearedLayerIds
+ * of its own output, named by `&output=` in its address, program by default): every
+ * other slice is empty in its hello and left out of every change, it gets no
+ * `dataSnapshot` message, and no message at all for a change of other slices alone (see
  * slicesSentToScreens.ts). Any other upgrade path is refused.
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
@@ -90,9 +92,10 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     startRepeatingTimer: options.startRepeatingTimer,
     cancelRepeatingTimer: options.cancelRepeatingTimer,
   });
-  // The open screen connections (`/ws?role=renderer` or `/ws?role=monitor`); each leaves
-  // on close. They are sent only the slices listed in slicesSentToScreens.ts.
-  const screenClients = new Set<WebSocket>();
+  // The open screen connections (`/ws?role=renderer` or `/ws?role=monitor`), each with the
+  // output it draws (BAJAOVRLAY-49); each leaves on close. They are sent only the slices
+  // listed in slicesSentToScreens.ts, filtered to their output.
+  const outputIdOfEachScreen = new Map<WebSocket, string>();
 
   httpServer.on('upgrade', (request, socket, head) => {
     const requestPath = readUpgradeRequestPath(request.url);
@@ -122,11 +125,14 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
 
     heartbeat.trackClient(client);
     const isScreen = isScreenConnectionActor(actor);
+    const outputIdOfTheScreen = readOutputIdFromRequestTarget(request.url);
     if (isScreen) {
-      screenClients.add(client);
+      outputIdOfEachScreen.set(client, outputIdOfTheScreen);
     }
     const allSlices = stateStore.readAllSlices();
-    const slicesForThisClient = isScreen ? buildSlicesForAScreen(allSlices) : allSlices;
+    const slicesForThisClient = isScreen
+      ? buildSlicesForAScreen(allSlices, outputIdOfTheScreen)
+      : allSlices;
     const helloMessage = buildHelloMessage(
       slicesForThisClient,
       readCurrentTime().getTime(),
@@ -147,7 +153,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       connectionLogger.warn({ err: socketError }, 'websocket client error');
     });
     client.on('close', () => {
-      screenClients.delete(client);
+      outputIdOfEachScreen.delete(client);
       connectionLogger.info('websocket client disconnected');
     });
   });
@@ -187,18 +193,30 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
         slices,
         serverNowMs,
       );
-      const sliceTextForScreens = serializeChangeOfSlicesOrNothing(
-        sliceNamesForScreens,
-        slices,
-        serverNowMs,
-      );
+      // The screens' text is built once per output, the first time a screen of that
+      // output is met, and only when the change touches a slice screens draw at all.
+      const sliceTextForScreensByOutputId = new Map<string, string | undefined>();
+      const readSliceTextForScreensOf = (outputId: string): string | undefined => {
+        if (!sliceTextForScreensByOutputId.has(outputId)) {
+          const slicesOfTheOutput = buildSlicesForAScreen(slices, outputId);
+          const text = serializeChangeOfSlicesOrNothing(
+            sliceNamesForScreens,
+            slicesOfTheOutput,
+            serverNowMs,
+          );
+          sliceTextForScreensByOutputId.set(outputId, text);
+        }
+        return sliceTextForScreensByOutputId.get(outputId);
+      };
       for (const client of webSocketServer.clients) {
         if (client.readyState !== client.OPEN) {
           continue;
         }
-        const isScreen = screenClients.has(client);
-        if (isScreen) {
-          sendIfThereIsSomething(client, sliceTextForScreens);
+        const outputIdOfTheScreen = outputIdOfEachScreen.get(client);
+        if (outputIdOfTheScreen !== undefined) {
+          if (sliceNamesForScreens.length > 0) {
+            sendIfThereIsSomething(client, readSliceTextForScreensOf(outputIdOfTheScreen));
+          }
           continue;
         }
         for (const snapshotText of snapshotTextsForOperators) {

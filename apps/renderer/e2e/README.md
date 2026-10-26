@@ -12,6 +12,10 @@ Browser tests of the renderer page (Playwright, Chromium). Start at `lifecycle.e
   the fake graphic notes the token it saw at `load` (`themeTokenAtLoad`). Its last test
   routes the tokens file to a 404 inside the page: the renderer logs "theme not loaded on
   :root" and still builds its layers (nothing is blanked).
+- `outputsOnAir.e2e.ts` — one page per output on the REAL server (BAJAOVRLAY-49): a run's
+  own output (`pip-<time>`) and its layers, `/render/?output=…` against `/render/`, a layer
+  added on air, the Prévia frames per output. It runs after the combos (a project of its
+  own) and clears only its own layers.
 - `raceClockOnAir.e2e.ts` — the one file that drives the REAL server's state (`realServer.ts`,
   port 5185, or 5185 plus `BAJAOVRLAY_E2E_PORT_OFFSET`, so a second checkout can run at the
   same time) and the built race clock; it holds the screenshot baseline. `themeOnRoot` reads
