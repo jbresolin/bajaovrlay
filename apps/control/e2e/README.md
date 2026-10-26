@@ -4,6 +4,9 @@ Browser tests of the control page (Playwright, Chromium). Labels are the manifes
 graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so every step that makes a race clock chooses
 "Relógio de prova" in "Gráfico" (`chooseGraphicInTheItemEditor` in `previewTestSteps.ts`).
 
+- `outputsAndLayersWalk.e2e.ts` (BAJAOVRLAY-49, the brief's E2E) — "PiP" and its "Moldura" added on "Saídas e camadas"
+  (`#/saidas`), a "Tarja" on "Moldura" taken: drawn by `/render/?output=pip`, not by `/render/`; "Excluir" of the layer
+  refused while the item names it, done once it is deleted. `emptyTheServerState.ts` removes every output but program.
 - `takeAndClear.e2e.ts` (start here) — a page at `/render/` as OBS: "Novo gráfico…" + "Salvar e disparar" ("No ar"
   within 3 s), "Editar" + "Atualizar", reload, "Limpar"; with no OBS the layer stays "Carregando" (the monitor never reports).
 - `onAirFromItems.e2e.ts` — everything on air comes from an item: Camadas names the new item; "alterado no ar",
