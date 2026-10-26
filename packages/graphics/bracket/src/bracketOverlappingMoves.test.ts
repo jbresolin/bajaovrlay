@@ -4,16 +4,23 @@
  * What this module is for:
  *   A renderer calls the bracket's actions as the server's state changes, and it does not
  *   wait for a motion to end: Entrar can come during Sair's stop-out (an operator taking
- *   the item again), a second Próximo during the first's cascade (a double press the server
- *   let through), Próximo during a result's crossfade. bracket.ts guards each case with one
- *   line; each test here fails without its line (gate 2 of PR #30).
+ *   the item again), a second Próximo during the first's lift-out or cascade (a double press
+ *   the server let through), Próximo during a result's crossfade. bracket.ts guards each case
+ *   with one line (gate 2 of PR #30); which test fails without which line is listed below.
  *
  * What these tests prove (every motion a minute long, so it cannot end by itself while the
  * test looks):
  *   - Entrar during Sair's stop-out ends on air with the head and every card shown: the
  *     stop, cut short, leaves the bracket to the play.
+ *   - A second Próximo during the first's lift-out between boards: the overtaken play draws
+ *     nothing (the 16 avos never appear over the leaving 32 avos), and both answer the
+ *     oitavas. Fails without the play's give-up after the lift-out (in bracket.ts's
+ *     playAction, the isOvertaken check right after the lift-out).
  *   - A second Próximo during the first's cascade: both answer the step on air, the third
- *     place's; and a dispose during a cascade makes the pending play answer 409.
+ *     place's. This one proves the behaviour, not a guard: after the cascade, the overtaken
+ *     play's answer is the step on air whether it gives up or not, so the test passes
+ *     without the give-up after the rise. The test that fails without that line is the
+ *     next: a dispose during a cascade makes the pending play answer 409.
  *   - Próximo during a result's crossfade ends the crossfade at once.
  *
  * What these tests deliberately do not cover:
@@ -100,7 +107,53 @@ describe('Entrar during Sair', () => {
   });
 });
 
+/** Lets every pending await run (Lit's redraws are microtasks), with no motion ended. */
+async function letThePendingAwaitsRun(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+describe('a second Próximo during the first’s lift-out', () => {
+  it('never draws the board the first was going to, and gives both plays the third board', async () => {
+    // Arrange: the Super Prime's first board (32 avos) on air, and Próximo's lift-out of its
+    // cards started, on the way to the 16 avos.
+    const bracket = await createBracketOnAirWithMinuteLongMotion(createTheRealSuperPrime(), 0);
+    const firstPress = bracket.playAction({});
+
+    // Act: a second Próximo during the lift-out; the first play's await ends (the second's
+    // lift-out took the motion over), and everything pending runs; then the lift-out ends,
+    // and the oitavas' cascade that follows it.
+    const secondPress = bracket.playAction({});
+    await letThePendingAwaitsRun();
+    const stageWhileTheSecondLiftsOut = describeTheStage(bracket);
+    const cardsWhileTheSecondLiftsOut = findEveryPartOfBracket(bracket, 'bracket-match-card');
+    finishEveryRunningMotionAtOnce();
+    await letThePendingAwaitsRun();
+    finishEveryRunningMotionAtOnce();
+    const answers = [await firstPress, await secondPress];
+
+    // Assert: while the second lifts out, the first board's 32 cards and head are still
+    // there (the overtaken play drew nothing); both answer the oitavas (index 2), on air.
+    expect(
+      cardsWhileTheSecondLiftsOut,
+      'the overtaken play must not draw the 16 avos over the leaving board',
+    ).toHaveLength(32);
+    expect(stageWhileTheSecondLiftsOut.stepLine, 'the head must not jump to the 16 avos').toBe(
+      '1/7',
+    );
+    expect(answers, 'both answer the step on air').toEqual([
+      { statusCode: 200, currentStep: 2 },
+      { statusCode: 200, currentStep: 2 },
+    ]);
+    expect(describeTheStage(bracket), 'the oitavas board must be what is on air').toMatchObject({
+      stepLine: '3/7',
+      boardCards: 8,
+    });
+  });
+});
+
 describe('a second Próximo during the first’s cascade', () => {
+  // Passes with or without the play's give-up after the rise (see the header): the 409 test
+  // below is the one that proves that line.
   it('gives both plays the step on air, the third place’s', async () => {
     // Arrange: the Super Prime's tree at its quarter-finals, and Próximo's cascade of the
     // semifinals started.
