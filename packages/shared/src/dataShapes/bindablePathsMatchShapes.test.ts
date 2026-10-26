@@ -32,7 +32,7 @@ const everyShapeScenarios: Array<{ name: string; shapeKey: DataShapeKey; schema:
   { name: 'the positions', shapeKey: 'positions', schema: PositionsShapeSchema },
   // The standings, with the scope, the whole list and ten rows.
   { name: 'the standings', shapeKey: 'standings', schema: StandingsShapeSchema },
-  // The draft brackets, with the rounds only.
+  // The brackets, with the rounds only.
   { name: 'the brackets', shapeKey: 'brackets', schema: BracketsShapeSchema },
   // The incidents, with the whole list only.
   { name: 'the incidents', shapeKey: 'incidents', schema: IncidentsShapeSchema },

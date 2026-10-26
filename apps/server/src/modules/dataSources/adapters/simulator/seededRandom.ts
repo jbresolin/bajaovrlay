@@ -23,6 +23,8 @@ const purposeNumbers = {
   tractionPoints: 11,
   suspensionPoints: 12,
   maneuverabilityPoints: 13,
+  // Per car (lap 0) of the simulated Super Prime (BAJAOVRLAY-25): its place in the draw.
+  bracketDrawOrder: 14,
   // Race-wide, per occurrence (the first yellow, the second...).
   yellowStart: 101,
   yellowDuration: 102,
@@ -34,6 +36,8 @@ const purposeNumbers = {
   incidentIsPenalty: 107,
   incidentCar: 108,
   incidentReason: 109,
+  // Race-wide, per heat of the simulated Super Prime (the first heat, the second...).
+  bracketHeatWinner: 110,
 } as const;
 
 /** The name of one purpose a draw can be for. */

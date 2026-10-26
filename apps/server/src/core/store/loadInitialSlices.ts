@@ -23,6 +23,7 @@ import type { ServerLogger } from '../logger/createLogger.js';
 import { discoverBuiltGraphics } from './discoverBuiltGraphics.js';
 import { loadOrSeedQuickFireAndMacroSlices } from './loadQuickFireAndMacroSlices.js';
 import { loadOrSeedRundownSlices } from './loadRundownSlices.js';
+import { bringStepsWithinTheirCount } from './reducers/instanceStepsWithinTheirCount.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 import { addSeededLayersMissingFromStoredLayers, seededLayers } from './seedLayers.js';
 
@@ -87,6 +88,13 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const instancesKeptAcrossTheRestart = operatorSlices.instances.filter(
     (instance) => instance.target !== 'preview' && !isInstanceOfAnEvent(instance),
   );
+  // A graphic rebuilt with fewer steps since the stop (or data counted again by a newer
+  // step counter) would leave an instance past its count: "Passo 6 de 3" on Camadas. It is
+  // put on its last step now, with a log line, and the row written again (BAJAOVRLAY-25).
+  const instancesWithinTheirSteps = bringStepsWithinTheirCount(
+    instancesKeptAcrossTheRestart,
+    graphics,
+  );
   const numberOfPreviewInstancesDropped = operatorSlices.instances.filter(
     (instance) => instance.target === 'preview',
   ).length;
@@ -103,7 +111,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   const graphicsRow: SliceRow = { name: 'graphics', json: graphics, updatedAt };
   const instancesRow: SliceRow = {
     name: 'instances',
-    json: instancesKeptAcrossTheRestart,
+    json: instancesWithinTheirSteps.instances,
     updatedAt,
   };
   const seedRows: SliceRow[] = [layersRow, graphicsRow, instancesRow];
@@ -118,8 +126,9 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     json: instanceBindingsAtBoot.instanceBindings,
     updatedAt,
   };
-  const rowsOfALaterBoot =
-    numberOfInstancesDropped > 0 ? [graphicsRow, instancesRow] : [graphicsRow];
+  const isAnyInstanceChangedAtBoot =
+    numberOfInstancesDropped > 0 || instancesWithinTheirSteps.stepsBroughtBack.length > 0;
+  const rowsOfALaterBoot = isAnyInstanceChangedAtBoot ? [graphicsRow, instancesRow] : [graphicsRow];
   if (instanceBindingsAtBoot.wasAnyEntryDropped) {
     rowsOfALaterBoot.push(instanceBindingsRow);
   }
@@ -186,6 +195,16 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
       'preview instances dropped at boot',
     );
   }
+  for (const stepBroughtBack of instancesWithinTheirSteps.stepsBroughtBack) {
+    options.logger.info(
+      {
+        instance_id: stepBroughtBack.instanceId,
+        step_before: stepBroughtBack.stepBefore,
+        step_after: stepBroughtBack.stepAfter,
+      },
+      'instance brought back at boot to the last step its graphic has',
+    );
+  }
   options.logger.info(
     { graphics: graphics.map((graphic) => graphic.id) },
     'graphics registered from the built packages',
@@ -197,7 +216,7 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
   return {
     layers: operatorSlices.layers,
     graphics,
-    instances: instancesKeptAcrossTheRestart,
+    instances: instancesWithinTheirSteps.instances,
     // The "will be cleared" markers are never stored, like the macro runs: every boot
     // starts with none, as it starts with no preview instance. A row of that name in the
     // database (only a bug could have written one) is not read and is left where it is.

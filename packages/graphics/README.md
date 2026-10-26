@@ -18,6 +18,8 @@ narrow boards and cards that read whole lists from Cadastros ("Lista dos cadastr
 ends with a typical item, field by field.
 `podium/` is the full-screen podium, three cards revealed one per step (3rd, 2nd, 1st), each
 crowned by its team's logo through the `withTeamLogos` binding transform.
+`bracket/` is the full-screen elimination bracket: round boards for the big rounds, the tree from
+the quarter-finals, its steps counted from the rounds (`stepCount` -1 and `v_baja.stepCounter`).
 `battle-card/` is two cars fighting for one place, bottom-centre, with the gap and its trend.
 `qr-card/` is the one light card: a QR code made from the address in the graphic, nothing fetched.
 `kit/` (`@bajaovrlay/graphics-kit`) is not a graphic: it holds what the graphics share (the OGraf
@@ -44,6 +46,10 @@ On the manifest itself:
 - `v_baja.defaultLayerId` — the layer the graphic is offered on (missing or unknown:
   fullscreen, with a logged warning).
 - `v_baja.category` — the group it is listed under (missing: `other`).
+- `v_baja.stepCounter` — with `stepCount: -1` (OGraf's "dynamic"), the named step counter the
+  server counts the graphic's steps with, from its data (`bracketSteps`, the bracket's;
+  packages/shared/src/steps/stepCounters.ts). An unknown name is warned about at boot and
+  gives the graphic one step.
 - `v_baja.updateRule` — the named rule the server runs every update of the graphic on
   air through (`carryClockForward` keeps a clock from jumping). An unknown name, or a
   schema without the fields the rule needs, is warned about at boot and makes every

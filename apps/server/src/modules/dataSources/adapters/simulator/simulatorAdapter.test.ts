@@ -4,7 +4,7 @@
  * What this module is for:
  *   A source of kind `simulator` answers each poll with the session, positions, overall
  *   standings and incidents (penalties and warnings, BAJAOVRLAY-44) of a simulated enduro
- *   at "now". The adapter only turns wall time
+ *   at "now", and the brackets of a simulated Super Prime (BAJAOVRLAY-25). The adapter only turns wall time
  *   into simulated time (from simulatedStartAtMs, at the configured speed) and hands
  *   the race state to shapesFromRaceState.ts. With isFailing on, every poll fails with
  *   "Falha simulada.", so the operator can rehearse a late source on purpose.
@@ -12,7 +12,9 @@
  * What these tests prove:
  *   - Wall time becomes simulated time with the speed: at 60×, one real minute is one
  *     simulated hour; before the start, or with no start, the race is at its green flag.
- *   - A poll answers the four shapes, dated now, and they are valid.
+ *   - A poll answers the five shapes, dated now, and they are valid.
+ *   - "Reiniciar corrida" restarts the Super Prime too: a bracket decided before the
+ *     restart is back at its draw, under a new session id.
  *   - The session id names the seed and the race's start, so "Reiniciar corrida" is a new
  *     session: the event inbox keys fastest laps and leader changes by it, and the same
  *     lap of a restarted race is a new event.
@@ -107,7 +109,7 @@ describe('wall time into simulated time', () => {
 });
 
 describe('a poll of the simulator', () => {
-  it('answers a valid session, positions, standings and incidents dated now', async () => {
+  it('answers a valid session, positions, standings, incidents and brackets dated now', async () => {
     // Arrange: the simulator at 60×, polled at 13:02 (two simulated hours in).
     const adapter = createSimulatorAdapter();
     const config = buildSimulatorConfigStartedAt1300(60);
@@ -116,14 +118,16 @@ describe('a poll of the simulator', () => {
     // Act: poll once.
     const answer = await adapter.pollOnce(config, buildPollContextAt(pollAtMs));
 
-    // Assert: four valid shapes, each dated at the poll.
-    expect(Object.keys(answer.shapes).sort(), 'the simulator answers four shapes').toEqual([
+    // Assert: five valid shapes, each dated at the poll.
+    expect(Object.keys(answer.shapes).sort(), 'the simulator answers five shapes').toEqual([
+      'brackets',
       'incidents',
       'positions',
       'session',
       'standings',
     ]);
-    for (const shapeKey of ['session', 'positions', 'standings', 'incidents'] as const) {
+    const everyShapeKey = ['session', 'positions', 'standings', 'incidents', 'brackets'] as const;
+    for (const shapeKey of everyShapeKey) {
       const validation = validateDataShape(shapeKey, answer.shapes[shapeKey]);
       expect(
         validation.isValid ? 'valid' : validation.errorMessage,
@@ -134,8 +138,51 @@ describe('a poll of the simulator', () => {
     }
     expect(
       adapter.listProducedShapes(config),
-      'the simulator says it produces session, positions, standings and incidents',
-    ).toEqual(['session', 'positions', 'standings', 'incidents']);
+      'the simulator says it produces session, positions, standings, incidents and brackets',
+    ).toEqual(['session', 'positions', 'standings', 'incidents', 'brackets']);
+  });
+
+  it('restarts the Super Prime with the race: back at its draw, a session of its own', async () => {
+    // Arrange: the seeded simulator at 60× started at 13:00, so its 60-car Super Prime is
+    // over by 13:30; then restarted at 13:30 ("Reiniciar corrida" moves the start).
+    const adapter = createSimulatorAdapter();
+    const firstRace = buildSimulatorConfigStartedAt1300(60);
+    const restartedRace = { ...firstRace, simulatedStartAtMs: turnedOnAtMs + 30 * oneMinuteMs };
+
+    // Act: poll the first race at 13:30, and the restarted one at the same moment.
+    const pollAtMs = turnedOnAtMs + 30 * oneMinuteMs;
+    const beforeRestart = await adapter.pollOnce(firstRace, buildPollContextAt(pollAtMs));
+    const afterRestart = await adapter.pollOnce(restartedRace, buildPollContextAt(pollAtMs));
+    const readRounds = (shape: unknown) =>
+      (
+        shape as {
+          rounds: Array<{
+            name: string;
+            matches: Array<{ carB?: unknown; winnerCarNumber?: number }>;
+          }>;
+        }
+      ).rounds;
+
+    // Assert: before, every round down to a decided final; after, the first round alone,
+    // its races not run, named by the new start.
+    const roundsBefore = readRounds(beforeRestart.shapes.brackets);
+    const roundsAfter = readRounds(afterRestart.shapes.brackets);
+    expect(
+      roundsBefore.at(-1)?.matches[0]?.winnerCarNumber,
+      'the first Super Prime has a champion by 13:30',
+    ).toBeDefined();
+    expect(
+      roundsAfter.map((round) => round.name),
+      'the restart is back at the draw',
+    ).toEqual(['32 avos de final']);
+    expect(
+      roundsAfter[0]?.matches.filter((match) => match.carB !== undefined && match.winnerCarNumber),
+      'no race of the restarted Super Prime is run yet',
+    ).toEqual([]);
+    expect(
+      readSessionIdOfShape(afterRestart.shapes.brackets),
+      'the restarted Super Prime is a session of its own',
+    ).toBe(`simulador-enduro-2027-${String(pollAtMs)}-super-prime`);
   });
 
   it('names the session by its seed and its start, so a restarted race is a new session', async () => {

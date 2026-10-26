@@ -1,0 +1,123 @@
+/**
+ * The bracket's step moves: how a step comes on screen, and which pieces it brings in,
+ * lifts out or shows at once, as GSAP timelines or at-once changes on the parts
+ * (bracketAnimations.ts does the motion itself). bracket.ts owns the lifecycle and calls
+ * these around each redraw, and writeHeadOfTheStep after it; nothing here keeps any state.
+ *
+ * The four moves (motion.md, "Bracket"):
+ * - enter: from off air, the head and the step's pieces come in (Entrar, or a take at a
+ *   later step);
+ * - new view: from a board to the next board page, or to the tree: the pieces on screen lift
+ *   out together first, then the new view's come in, `--motion-lead` behind;
+ * - add to the view: from one tree step to a later one: only what the step adds comes in
+ *   (the next round's pills, the third place's), the lines into a round once its pills are
+ *   in; what is on screen never moves;
+ * - at once: a step back (a goto, or the server bringing the step within a bracket that
+ *   shrank): the step is drawn with no motion.
+ */
+import { writeWideBoardHead } from '@bajaovrlay/graphics-kit/wideBoardHead';
+
+import {
+  type BracketTimeline,
+  buildCascadeInTimeline,
+  buildLiftOutTogetherTimeline,
+  hidePiecesAtOnce,
+  showPiecesAtOnce,
+} from './bracketAnimations.js';
+import { type BracketData, readBracketTitle } from './bracketModel.js';
+import {
+  countStepsOfBracket,
+  describeStepOnScreen,
+  writeStepLineOfBracket,
+} from './bracketStepView.js';
+import { type BracketParts, listEveryPieceOnScreen, listPiecesOnScreen } from './bracketView.js';
+
+/** How a step comes on screen. */
+export type StepMoveKind = 'enter' | 'newView' | 'addToTheView' | 'atOnce';
+
+/** The step before the first: what "off air" counts as when a step is chosen. */
+export const stepBeforeTheStart = -1;
+
+/**
+ * Chooses the move from the step on screen to the target: enter from off air, at once for
+ * a step back, add to the view from one tree step to a later one, a new view otherwise.
+ */
+export function chooseStepMoveKind(
+  data: BracketData,
+  move: { stepBefore: number; targetStep: number; isEntering: boolean },
+): StepMoveKind {
+  if (move.isEntering) {
+    return 'enter';
+  }
+  if (move.targetStep < move.stepBefore) {
+    return 'atOnce';
+  }
+  const stepOnScreenBefore = describeStepOnScreen(data, move.stepBefore);
+  const stepOnScreenAfter = describeStepOnScreen(data, move.targetStep);
+  const isStayingInTheTree =
+    stepOnScreenBefore.kind === 'tree' && stepOnScreenAfter.kind === 'tree';
+  return isStayingInTheTree ? 'addToTheView' : 'newView';
+}
+
+/** The pieces on screen now, to tell, after a redraw, which ones the redraw added. */
+export function rememberPiecesOnScreen(parts: BracketParts): Set<Element> {
+  return new Set(listEveryPieceOnScreen(parts));
+}
+
+/** The lift-out of everything on the stage, and of the head too when it is leaving. */
+export function buildLiftOutOfThePieces(parts: BracketParts, withHead: boolean): BracketTimeline {
+  const pieces = listEveryPieceOnScreen(parts);
+  return buildLiftOutTogetherTimeline(
+    parts.tokensSource,
+    withHead ? [parts.head, ...pieces] : pieces,
+  );
+}
+
+/**
+ * After the redraw of a step: hides the pieces that come in and builds their rise. On
+ * "add to the view" only the pieces the redraw added come in (those not in
+ * `piecesBefore`); on any other move every piece on the stage does.
+ */
+export function buildRiseOfTheStep(
+  parts: BracketParts,
+  moveKind: Exclude<StepMoveKind, 'atOnce'>,
+  piecesBefore: Set<Element>,
+): BracketTimeline {
+  const isComingIn = (piece: Element) => moveKind !== 'addToTheView' || !piecesBefore.has(piece);
+  const pieces = listPiecesOnScreen(parts);
+  const atOnce = pieces.roundNames.filter(isComingIn);
+  const cascade = [...pieces.matchCards, ...pieces.treeCarSlots].filter(isComingIn);
+  const linesAfter = pieces.treeLines.filter(isComingIn);
+  hidePiecesAtOnce(parts.tokensSource, [...atOnce, ...cascade, ...linesAfter]);
+  return buildCascadeInTimeline(parts.tokensSource, {
+    head: moveKind === 'enter' ? parts.head : undefined,
+    atOnce,
+    cascade,
+    linesAfter,
+    isCascadeLed: moveKind !== 'addToTheView',
+  });
+}
+
+/** Shows every piece on the stage at once: a step drawn with no motion. */
+export function showEveryPieceAtOnce(parts: BracketParts): void {
+  showPiecesAtOnce(listEveryPieceOnScreen(parts));
+}
+
+/** Hides every piece on the stage at once: off air, ready for the next take. */
+export function hideEveryPieceAtOnce(parts: BracketParts): void {
+  hidePiecesAtOnce(parts.tokensSource, listEveryPieceOnScreen(parts));
+}
+
+/** Writes the head for a step: the title, the board's round (none for the tree), the step line. */
+export function writeHeadOfTheStep(
+  parts: BracketParts,
+  data: BracketData,
+  stepIndex: number,
+): void {
+  const step = describeStepOnScreen(data, stepIndex);
+  writeWideBoardHead(parts, {
+    title: readBracketTitle(data),
+    eventLine: step.kind === 'board' ? step.eventLine : '',
+    pageLine: writeStepLineOfBracket(stepIndex, countStepsOfBracket(data)),
+  });
+}

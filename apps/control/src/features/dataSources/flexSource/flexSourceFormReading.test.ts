@@ -14,6 +14,7 @@
  *     value table whose right column is read as JSON (true) or text (inPit).
  *   - A form filled from a config gives its rules back in that config's order, whatever
  *     the order of the rows, with a rule mapped since after them.
+ *   - A brackets mapping (BAJAOVRLAY-25) survives the form whole, so a save keeps it.
  *   - Each kind of refusal lands under its own field: the name, the address, a header's
  *     variable, a row's path, a fixed value of the wrong kind, an empty value table, the
  *     request a mapping reads; one with no field (nothing mapped) goes in the general list.
@@ -22,6 +23,7 @@
  *   - Every rule of the config schema: packages/shared/src/dataSources/httpJsonConfig.test.ts.
  *   - The form on the page and the command it sends: DataSourcesPageFlexForm.test.tsx.
  */
+import type { HttpJsonConfig } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { readFlexConfigFormValues, readFlexSourceForm } from './flexSourceFormReading';
@@ -194,6 +196,55 @@ describe('readFlexSourceForm, on a valid form', () => {
       { targetField: 'position', fromListOrder: true },
       { targetField: 'laps', fromPath: 'voltas' },
     ]);
+  });
+
+  it('keeps a brackets mapping through the form, as the Baja app source will carry one', () => {
+    // Arrange: a stored config mapping the Baja app's flat list of matches into brackets
+    // (BAJAOVRLAY-25), put into the form as "Editar" does.
+    const bracketsConfig: HttpJsonConfig = {
+      requests: [
+        {
+          requestId: 'torneio',
+          url: 'http://192.168.0.30/api/eventos/30/torneios/7',
+          headers: [],
+          queryParameters: [],
+        },
+      ],
+      mappings: [
+        {
+          shapeKey: 'brackets',
+          requestId: 'torneio',
+          entriesPath: 'partidas',
+          fields: [
+            { targetField: 'sessionId', constantValue: 'super-prime-30a-competicao' },
+            { targetField: 'updatedAtMs', fromPollMoment: true },
+          ],
+          entryFields: [
+            { targetField: 'roundName', fromPath: 'fase' },
+            { targetField: 'matchId', fromPath: 'id' },
+            { targetField: 'carA.carNumber', fromPath: 'slot1.car' },
+            { targetField: 'carA.teamName', fromPath: 'slot1.shortName' },
+            { targetField: 'carA.schoolName', fromPath: 'slot1.school' },
+            { targetField: 'winnerCarNumber', fromPath: 'vencedor' },
+          ],
+        },
+      ],
+    };
+    const formValues = buildFlexConfigFormValues(bracketsConfig);
+
+    // Act: read the form straight back, as "Salvar fonte" would with nothing changed.
+    const reading = readFlexConfigFormValues(formValues);
+
+    // Assert: the brackets block is in the form and the config comes back whole; an
+    // older form dropped it, so a save would have lost the source's brackets.
+    expect(
+      formValues.mappings.map((mapping) => mapping.shapeKey),
+      'one brackets block',
+    ).toEqual(['brackets']);
+    expect(reading, 'the brackets mapping must survive the trip through the form').toEqual({
+      isValid: true,
+      config: bracketsConfig,
+    });
   });
 });
 

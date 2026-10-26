@@ -17,9 +17,9 @@
  *   - A target must be a field of that shape, at its level (an entry field among the
  *     shape's own fields is refused, and the other way round), and appear once;
  *     "ordem na lista" fills entry fields only.
- *   - A shape is mapped once; brackets are refused with a pt-BR line saying it is not
- *     built; the session has no list, and positions and standings must have one; an empty
- *     list of mappings and a misspelt key are refused.
+ *   - A shape is mapped once; the session has no list, and positions, standings and
+ *     brackets (a list of matches) must have one; an empty list of mappings and a misspelt
+ *     key are refused.
  *
  * What these tests deliberately do not cover:
  *   - That every requestId names one of the source's requests: the httpJson config,
@@ -282,13 +282,12 @@ describe('FlexMappingConfigSchema', () => {
       expectedMessage:
         'Posições está mapeada mais de uma vez; cada formato vem de um só mapeamento.',
     },
-    // Brackets are a draft shape (BAJAOVRLAY-25), and their mapping is not built.
+    // Brackets are a list of matches (BAJAOVRLAY-25): without the list's path there are none.
     {
-      name: 'refuses a brackets mapping, saying it is not built yet',
-      mappings: [{ shapeKey: 'brackets', requestId: 'chaves', fields: [] }],
-      expectedPath: '0.shapeKey',
-      expectedMessage:
-        'Mapear as Chaves ainda não foi construído: o formato das chaves ainda é um rascunho.',
+      name: 'refuses brackets without the list path',
+      mappings: [{ shapeKey: 'brackets', requestId: 'chaves', fields: [], entryFields: [] }],
+      expectedPath: '0.entriesPath',
+      expectedMessage: 'Chaves precisa do "Caminho da lista", o caminho até a lista na resposta.',
     },
     // The session is one object, so a list path there means a mistaken shape key.
     {

@@ -1,0 +1,826 @@
+{
+  "sessionId": "super-prime-30a-competicao",
+  "updatedAtMs": 1793552400000,
+  "rounds": [
+    {
+      "name": "32 avos de final",
+      "matches": [
+        {
+          "matchId": "r1-m1",
+          "walkover": true,
+          "carA": {
+            "carNumber": 2,
+            "teamName": "Baja UFMG",
+            "schoolName": "UFMG"
+          },
+          "winnerCarNumber": 2
+        },
+        {
+          "matchId": "r1-m2",
+          "carA": {
+            "carNumber": 32,
+            "teamName": "Corisco",
+            "schoolName": "UPE"
+          },
+          "carB": {
+            "carNumber": 34,
+            "teamName": "Buffalo",
+            "schoolName": "UFLA"
+          },
+          "winnerCarNumber": 32
+        },
+        {
+          "matchId": "r1-m3",
+          "walkover": true,
+          "carA": {
+            "carNumber": 13,
+            "teamName": "Cactus",
+            "schoolName": "UFERSA-Mos"
+          },
+          "winnerCarNumber": 13
+        },
+        {
+          "matchId": "r1-m4",
+          "walkover": true,
+          "carA": {
+            "carNumber": 12,
+            "teamName": "Piratas Cerrado",
+            "schoolName": "UnB"
+          },
+          "winnerCarNumber": 12
+        },
+        {
+          "matchId": "r1-m5",
+          "walkover": true,
+          "carA": {
+            "carNumber": 29,
+            "teamName": "UFSC",
+            "schoolName": "UFSC-Fln"
+          },
+          "winnerCarNumber": 29
+        },
+        {
+          "matchId": "r1-m6",
+          "walkover": true,
+          "carA": {
+            "carNumber": 36,
+            "teamName": "Zebu",
+            "schoolName": "UFTM"
+          },
+          "winnerCarNumber": 36
+        },
+        {
+          "matchId": "r1-m7",
+          "walkover": true,
+          "carA": {
+            "carNumber": 21,
+            "teamName": "Parahybaja",
+            "schoolName": "UFCG"
+          },
+          "winnerCarNumber": 21
+        },
+        {
+          "matchId": "r1-m8",
+          "walkover": true,
+          "carA": {
+            "carNumber": 38,
+            "teamName": "Tatu",
+            "schoolName": "IFSP-Ser"
+          },
+          "winnerCarNumber": 38
+        },
+        {
+          "matchId": "r1-m9",
+          "walkover": true,
+          "carA": {
+            "carNumber": 17,
+            "teamName": "Bombaja",
+            "schoolName": "UFSM"
+          },
+          "winnerCarNumber": 17
+        },
+        {
+          "matchId": "r1-m10",
+          "walkover": true,
+          "carA": {
+            "carNumber": 6,
+            "teamName": "Rampage",
+            "schoolName": "UFJF"
+          },
+          "winnerCarNumber": 6
+        },
+        {
+          "matchId": "r1-m11",
+          "walkover": true,
+          "carA": {
+            "carNumber": 51,
+            "teamName": "Sinuelo",
+            "schoolName": "FAHOR"
+          },
+          "winnerCarNumber": 51
+        },
+        {
+          "matchId": "r1-m12",
+          "walkover": true,
+          "carA": {
+            "carNumber": 31,
+            "teamName": "Sagui",
+            "schoolName": "UFPR"
+          },
+          "winnerCarNumber": 31
+        },
+        {
+          "matchId": "r1-m13",
+          "walkover": true,
+          "carA": {
+            "carNumber": 8,
+            "teamName": "Imperador",
+            "schoolName": "UTFPR-CWB"
+          },
+          "winnerCarNumber": 8
+        },
+        {
+          "matchId": "r1-m14",
+          "walkover": true,
+          "carA": {
+            "carNumber": 16,
+            "teamName": "Forja",
+            "schoolName": "UFF-VR"
+          },
+          "winnerCarNumber": 16
+        },
+        {
+          "matchId": "r1-m15",
+          "walkover": true,
+          "carA": {
+            "carNumber": 28,
+            "teamName": "Tuffão",
+            "schoolName": "UFF-Nit"
+          },
+          "winnerCarNumber": 28
+        },
+        {
+          "matchId": "r1-m16",
+          "walkover": true,
+          "carA": {
+            "carNumber": 23,
+            "teamName": "Cefast",
+            "schoolName": "CEFET-MG"
+          },
+          "winnerCarNumber": 23
+        },
+        {
+          "matchId": "r1-m17",
+          "walkover": true,
+          "carA": {
+            "carNumber": 47,
+            "teamName": "Pato",
+            "schoolName": "UTFPR-PB"
+          },
+          "winnerCarNumber": 47
+        },
+        {
+          "matchId": "r1-m18",
+          "walkover": true,
+          "carA": {
+            "carNumber": 39,
+            "teamName": "CTJ",
+            "schoolName": "UFSC-Jvl"
+          },
+          "winnerCarNumber": 39
+        },
+        {
+          "matchId": "r1-m19",
+          "walkover": true,
+          "carA": {
+            "carNumber": 49,
+            "teamName": "Guaicurus",
+            "schoolName": "UFGD"
+          },
+          "winnerCarNumber": 49
+        },
+        {
+          "matchId": "r1-m20",
+          "walkover": true,
+          "carA": {
+            "carNumber": 7,
+            "teamName": "Reptiles",
+            "schoolName": "PUC-Rio"
+          },
+          "winnerCarNumber": 7
+        },
+        {
+          "matchId": "r1-m21",
+          "walkover": true,
+          "carA": {
+            "carNumber": 9,
+            "teamName": "Caraubaja",
+            "schoolName": "UFERSA-Car"
+          },
+          "winnerCarNumber": 9
+        },
+        {
+          "matchId": "r1-m22",
+          "walkover": true,
+          "carA": {
+            "carNumber": 24,
+            "teamName": "UFSCar",
+            "schoolName": "UFSCar"
+          },
+          "winnerCarNumber": 24
+        },
+        {
+          "matchId": "r1-m23",
+          "walkover": true,
+          "carA": {
+            "carNumber": 5,
+            "teamName": "Poli",
+            "schoolName": "Poli"
+          },
+          "winnerCarNumber": 5
+        },
+        {
+          "matchId": "r1-m24",
+          "walkover": true,
+          "carA": {
+            "carNumber": 33,
+            "teamName": "Corsários",
+            "schoolName": "IFMG"
+          },
+          "winnerCarNumber": 33
+        },
+        {
+          "matchId": "r1-m25",
+          "walkover": true,
+          "carA": {
+            "carNumber": 1,
+            "teamName": "FEI",
+            "schoolName": "FEI"
+          },
+          "winnerCarNumber": 1
+        },
+        {
+          "matchId": "r1-m26",
+          "walkover": true,
+          "carA": {
+            "carNumber": 3,
+            "teamName": "Baja de Galpão",
+            "schoolName": "UNISC"
+          },
+          "winnerCarNumber": 3
+        },
+        {
+          "matchId": "r1-m27",
+          "walkover": true,
+          "carA": {
+            "carNumber": 44,
+            "teamName": "UFPBaja",
+            "schoolName": "UFPB"
+          },
+          "winnerCarNumber": 44
+        },
+        {
+          "matchId": "r1-m28",
+          "walkover": true,
+          "carA": {
+            "carNumber": 19,
+            "teamName": "Procobaja",
+            "schoolName": "UTFPR-CP"
+          },
+          "winnerCarNumber": 19
+        },
+        {
+          "matchId": "r1-m29",
+          "walkover": true,
+          "carA": {
+            "carNumber": 18,
+            "teamName": "Car-Kará",
+            "schoolName": "UFRN"
+          },
+          "winnerCarNumber": 18
+        },
+        {
+          "matchId": "r1-m30",
+          "walkover": true,
+          "carA": {
+            "carNumber": 50,
+            "teamName": "Mud Runner",
+            "schoolName": "CEFET-RJ"
+          },
+          "winnerCarNumber": 50
+        },
+        {
+          "matchId": "r1-m31",
+          "walkover": true,
+          "carA": {
+            "carNumber": 10,
+            "teamName": "Komiketo",
+            "schoolName": "UFSJ"
+          },
+          "winnerCarNumber": 10
+        },
+        {
+          "matchId": "r1-m32",
+          "walkover": true,
+          "carA": {
+            "carNumber": 27,
+            "teamName": "Mud Racing",
+            "schoolName": "FACENS"
+          },
+          "winnerCarNumber": 27
+        }
+      ]
+    },
+    {
+      "name": "16 avos de final",
+      "matches": [
+        {
+          "matchId": "r2-m1",
+          "carA": {
+            "carNumber": 2,
+            "teamName": "Baja UFMG",
+            "schoolName": "UFMG"
+          },
+          "carB": {
+            "carNumber": 32,
+            "teamName": "Corisco",
+            "schoolName": "UPE"
+          },
+          "winnerCarNumber": 2
+        },
+        {
+          "matchId": "r2-m2",
+          "carA": {
+            "carNumber": 13,
+            "teamName": "Cactus",
+            "schoolName": "UFERSA-Mos"
+          },
+          "carB": {
+            "carNumber": 12,
+            "teamName": "Piratas Cerrado",
+            "schoolName": "UnB"
+          },
+          "winnerCarNumber": 13
+        },
+        {
+          "matchId": "r2-m3",
+          "carA": {
+            "carNumber": 29,
+            "teamName": "UFSC",
+            "schoolName": "UFSC-Fln"
+          },
+          "carB": {
+            "carNumber": 36,
+            "teamName": "Zebu",
+            "schoolName": "UFTM"
+          },
+          "winnerCarNumber": 29
+        },
+        {
+          "matchId": "r2-m4",
+          "carA": {
+            "carNumber": 21,
+            "teamName": "Parahybaja",
+            "schoolName": "UFCG"
+          },
+          "carB": {
+            "carNumber": 38,
+            "teamName": "Tatu",
+            "schoolName": "IFSP-Ser"
+          },
+          "winnerCarNumber": 21
+        },
+        {
+          "matchId": "r2-m5",
+          "carA": {
+            "carNumber": 17,
+            "teamName": "Bombaja",
+            "schoolName": "UFSM"
+          },
+          "carB": {
+            "carNumber": 6,
+            "teamName": "Rampage",
+            "schoolName": "UFJF"
+          },
+          "winnerCarNumber": 17
+        },
+        {
+          "matchId": "r2-m6",
+          "carA": {
+            "carNumber": 51,
+            "teamName": "Sinuelo",
+            "schoolName": "FAHOR"
+          },
+          "carB": {
+            "carNumber": 31,
+            "teamName": "Sagui",
+            "schoolName": "UFPR"
+          },
+          "winnerCarNumber": 51
+        },
+        {
+          "matchId": "r2-m7",
+          "carA": {
+            "carNumber": 8,
+            "teamName": "Imperador",
+            "schoolName": "UTFPR-CWB"
+          },
+          "carB": {
+            "carNumber": 16,
+            "teamName": "Forja",
+            "schoolName": "UFF-VR"
+          },
+          "winnerCarNumber": 8
+        },
+        {
+          "matchId": "r2-m8",
+          "carA": {
+            "carNumber": 28,
+            "teamName": "Tuffão",
+            "schoolName": "UFF-Nit"
+          },
+          "carB": {
+            "carNumber": 23,
+            "teamName": "Cefast",
+            "schoolName": "CEFET-MG"
+          },
+          "winnerCarNumber": 28
+        },
+        {
+          "matchId": "r2-m9",
+          "carA": {
+            "carNumber": 47,
+            "teamName": "Pato",
+            "schoolName": "UTFPR-PB"
+          },
+          "carB": {
+            "carNumber": 39,
+            "teamName": "CTJ",
+            "schoolName": "UFSC-Jvl"
+          },
+          "winnerCarNumber": 47
+        },
+        {
+          "matchId": "r2-m10",
+          "carA": {
+            "carNumber": 49,
+            "teamName": "Guaicurus",
+            "schoolName": "UFGD"
+          },
+          "carB": {
+            "carNumber": 7,
+            "teamName": "Reptiles",
+            "schoolName": "PUC-Rio"
+          },
+          "winnerCarNumber": 7
+        },
+        {
+          "matchId": "r2-m11",
+          "carA": {
+            "carNumber": 9,
+            "teamName": "Caraubaja",
+            "schoolName": "UFERSA-Car"
+          },
+          "carB": {
+            "carNumber": 24,
+            "teamName": "UFSCar",
+            "schoolName": "UFSCar"
+          },
+          "winnerCarNumber": 9
+        },
+        {
+          "matchId": "r2-m12",
+          "carA": {
+            "carNumber": 5,
+            "teamName": "Poli",
+            "schoolName": "Poli"
+          },
+          "carB": {
+            "carNumber": 33,
+            "teamName": "Corsários",
+            "schoolName": "IFMG"
+          },
+          "winnerCarNumber": 5
+        },
+        {
+          "matchId": "r2-m13",
+          "carA": {
+            "carNumber": 1,
+            "teamName": "FEI",
+            "schoolName": "FEI"
+          },
+          "carB": {
+            "carNumber": 3,
+            "teamName": "Baja de Galpão",
+            "schoolName": "UNISC"
+          },
+          "winnerCarNumber": 3
+        },
+        {
+          "matchId": "r2-m14",
+          "carA": {
+            "carNumber": 44,
+            "teamName": "UFPBaja",
+            "schoolName": "UFPB"
+          },
+          "carB": {
+            "carNumber": 19,
+            "teamName": "Procobaja",
+            "schoolName": "UTFPR-CP"
+          },
+          "winnerCarNumber": 44
+        },
+        {
+          "matchId": "r2-m15",
+          "carA": {
+            "carNumber": 18,
+            "teamName": "Car-Kará",
+            "schoolName": "UFRN"
+          },
+          "carB": {
+            "carNumber": 50,
+            "teamName": "Mud Runner",
+            "schoolName": "CEFET-RJ"
+          },
+          "winnerCarNumber": 18
+        },
+        {
+          "matchId": "r2-m16",
+          "carA": {
+            "carNumber": 10,
+            "teamName": "Komiketo",
+            "schoolName": "UFSJ"
+          },
+          "carB": {
+            "carNumber": 27,
+            "teamName": "Mud Racing",
+            "schoolName": "FACENS"
+          },
+          "winnerCarNumber": 10
+        }
+      ]
+    },
+    {
+      "name": "Oitavas de final",
+      "matches": [
+        {
+          "matchId": "r3-m1",
+          "carA": {
+            "carNumber": 2,
+            "teamName": "Baja UFMG",
+            "schoolName": "UFMG"
+          },
+          "carB": {
+            "carNumber": 13,
+            "teamName": "Cactus",
+            "schoolName": "UFERSA-Mos"
+          },
+          "winnerCarNumber": 2
+        },
+        {
+          "matchId": "r3-m2",
+          "carA": {
+            "carNumber": 29,
+            "teamName": "UFSC",
+            "schoolName": "UFSC-Fln"
+          },
+          "carB": {
+            "carNumber": 21,
+            "teamName": "Parahybaja",
+            "schoolName": "UFCG"
+          },
+          "winnerCarNumber": 29
+        },
+        {
+          "matchId": "r3-m3",
+          "carA": {
+            "carNumber": 17,
+            "teamName": "Bombaja",
+            "schoolName": "UFSM"
+          },
+          "carB": {
+            "carNumber": 51,
+            "teamName": "Sinuelo",
+            "schoolName": "FAHOR"
+          },
+          "winnerCarNumber": 17
+        },
+        {
+          "matchId": "r3-m4",
+          "carA": {
+            "carNumber": 8,
+            "teamName": "Imperador",
+            "schoolName": "UTFPR-CWB"
+          },
+          "carB": {
+            "carNumber": 28,
+            "teamName": "Tuffão",
+            "schoolName": "UFF-Nit"
+          },
+          "winnerCarNumber": 8
+        },
+        {
+          "matchId": "r3-m5",
+          "carA": {
+            "carNumber": 47,
+            "teamName": "Pato",
+            "schoolName": "UTFPR-PB"
+          },
+          "carB": {
+            "carNumber": 7,
+            "teamName": "Reptiles",
+            "schoolName": "PUC-Rio"
+          },
+          "winnerCarNumber": 47
+        },
+        {
+          "matchId": "r3-m6",
+          "carA": {
+            "carNumber": 9,
+            "teamName": "Caraubaja",
+            "schoolName": "UFERSA-Car"
+          },
+          "carB": {
+            "carNumber": 5,
+            "teamName": "Poli",
+            "schoolName": "Poli"
+          },
+          "winnerCarNumber": 9
+        },
+        {
+          "matchId": "r3-m7",
+          "carA": {
+            "carNumber": 3,
+            "teamName": "Baja de Galpão",
+            "schoolName": "UNISC"
+          },
+          "carB": {
+            "carNumber": 44,
+            "teamName": "UFPBaja",
+            "schoolName": "UFPB"
+          },
+          "winnerCarNumber": 44
+        },
+        {
+          "matchId": "r3-m8",
+          "carA": {
+            "carNumber": 18,
+            "teamName": "Car-Kará",
+            "schoolName": "UFRN"
+          },
+          "carB": {
+            "carNumber": 10,
+            "teamName": "Komiketo",
+            "schoolName": "UFSJ"
+          },
+          "winnerCarNumber": 10
+        }
+      ]
+    },
+    {
+      "name": "Quartas de final",
+      "matches": [
+        {
+          "matchId": "r4-m1",
+          "carA": {
+            "carNumber": 2,
+            "teamName": "Baja UFMG",
+            "schoolName": "UFMG"
+          },
+          "carB": {
+            "carNumber": 29,
+            "teamName": "UFSC",
+            "schoolName": "UFSC-Fln"
+          },
+          "winnerCarNumber": 2
+        },
+        {
+          "matchId": "r4-m2",
+          "carA": {
+            "carNumber": 17,
+            "teamName": "Bombaja",
+            "schoolName": "UFSM"
+          },
+          "carB": {
+            "carNumber": 8,
+            "teamName": "Imperador",
+            "schoolName": "UTFPR-CWB"
+          },
+          "winnerCarNumber": 17
+        },
+        {
+          "matchId": "r4-m3",
+          "carA": {
+            "carNumber": 47,
+            "teamName": "Pato",
+            "schoolName": "UTFPR-PB"
+          },
+          "carB": {
+            "carNumber": 9,
+            "teamName": "Caraubaja",
+            "schoolName": "UFERSA-Car"
+          },
+          "winnerCarNumber": 9
+        },
+        {
+          "matchId": "r4-m4",
+          "carA": {
+            "carNumber": 44,
+            "teamName": "UFPBaja",
+            "schoolName": "UFPB"
+          },
+          "carB": {
+            "carNumber": 10,
+            "teamName": "Komiketo",
+            "schoolName": "UFSJ"
+          },
+          "winnerCarNumber": 10
+        }
+      ]
+    },
+    {
+      "name": "Semifinal",
+      "matches": [
+        {
+          "matchId": "r5-m1",
+          "bestOf": 3,
+          "carA": {
+            "carNumber": 2,
+            "teamName": "Baja UFMG",
+            "schoolName": "UFMG",
+            "wins": 2
+          },
+          "carB": {
+            "carNumber": 17,
+            "teamName": "Bombaja",
+            "schoolName": "UFSM",
+            "wins": 0
+          },
+          "winnerCarNumber": 2
+        },
+        {
+          "matchId": "r5-m2",
+          "bestOf": 3,
+          "carA": {
+            "carNumber": 9,
+            "teamName": "Caraubaja",
+            "schoolName": "UFERSA-Car",
+            "wins": 0
+          },
+          "carB": {
+            "carNumber": 10,
+            "teamName": "Komiketo",
+            "schoolName": "UFSJ",
+            "wins": 2
+          },
+          "winnerCarNumber": 10
+        }
+      ]
+    },
+    {
+      "name": "Disputa de 3º lugar",
+      "isThirdPlace": true,
+      "matches": [
+        {
+          "matchId": "r7-m1",
+          "bestOf": 3,
+          "carA": {
+            "carNumber": 17,
+            "teamName": "Bombaja",
+            "schoolName": "UFSM",
+            "wins": 2
+          },
+          "carB": {
+            "carNumber": 9,
+            "teamName": "Caraubaja",
+            "schoolName": "UFERSA-Car",
+            "wins": 1
+          },
+          "winnerCarNumber": 17
+        }
+      ]
+    },
+    {
+      "name": "Final",
+      "matches": [
+        {
+          "matchId": "r6-m1",
+          "bestOf": 3,
+          "carA": {
+            "carNumber": 2,
+            "teamName": "Baja UFMG",
+            "schoolName": "UFMG",
+            "wins": 2
+          },
+          "carB": {
+            "carNumber": 10,
+            "teamName": "Komiketo",
+            "schoolName": "UFSJ",
+            "wins": 0
+          },
+          "winnerCarNumber": 2
+        }
+      ]
+    }
+  ]
+}

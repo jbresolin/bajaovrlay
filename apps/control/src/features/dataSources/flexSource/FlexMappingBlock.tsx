@@ -1,4 +1,8 @@
-import { listMappableFieldsOfShape, type MappableField } from '@bajaovrlay/shared';
+import {
+  type DataShapeKey,
+  listMappableFieldsOfShape,
+  type MappableField,
+} from '@bajaovrlay/shared';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +18,7 @@ import { buildErrorAttributesForControl, FormFieldRow } from '@/features/items/F
 import { ptBR } from '@/i18n/ptBR';
 
 import { FlexFieldRuleRow } from './FlexFieldRuleRow';
-import type { FlexSourceFormValues, MappableShapeKey } from './flexSourceFormValues';
+import type { FlexSourceFormValues } from './flexSourceFormValues';
 import { readErrorMessageAtPath } from './formErrorAtPath';
 
 const texts = ptBR.dataSources.flexForm;
@@ -28,7 +32,7 @@ const texts = ptBR.dataSources.flexForm;
 export function FlexMappingBlock(props: {
   form: UseFormReturn<FlexSourceFormValues>;
   mappingIndex: number;
-  shapeKey: MappableShapeKey;
+  shapeKey: DataShapeKey;
   requestIdsToOffer: string[];
   controlIdPrefix: string;
   onRemove: () => void;

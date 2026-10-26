@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { type Graphic, OGrafManifestSchema } from '@bajaovrlay/shared';
+import { findStepCounter, type Graphic, OGrafManifestSchema } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../logger/createLogger.js';
 import { isDataSchemaOfGraphicUsable } from './graphicDataValidation.js';
@@ -25,7 +25,8 @@ export type DiscoverBuiltGraphicsOptions = {
  * left out; it never stops the boot. Each graphic's default layer and category come from
  * its own manifest (`v_baja`); see graphicPlacement.ts.
  * A graphic whose data schema cannot be used, or whose manifest names an update rule
- * that cannot be run, is kept, with a warning naming it.
+ * that cannot be run or a step counter the server does not know, is kept, with a warning
+ * naming it.
  */
 export function discoverBuiltGraphics(options: DiscoverBuiltGraphicsOptions): Graphic[] {
   const { graphicPackagesFolder, logger } = options;
@@ -151,6 +152,15 @@ function readBuiltGraphic(options: {
     logger.warn(
       { graphic_package: packageName, update_rule_problem: updateRuleChoice.problem },
       'graphic names an update rule that cannot be run; every update of it will be refused',
+    );
+  }
+  const stepCounterName = manifest.v_baja?.stepCounter;
+  if (stepCounterName !== undefined && findStepCounter(stepCounterName) === undefined) {
+    // An unknown counter reads as one step (graphicSteps.ts), so Camadas would never offer
+    // "Próximo" for the graphic; this line is the only place that says why (BAJAOVRLAY-25).
+    logger.warn(
+      { graphic_package: packageName, step_counter: stepCounterName },
+      'graphic names a step counter the server does not know; it will have one step',
     );
   }
   return graphic;

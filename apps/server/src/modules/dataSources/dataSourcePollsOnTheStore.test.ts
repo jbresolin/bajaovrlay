@@ -261,7 +261,7 @@ describe('the payload of a logged poll row', () => {
       result: {
         ok: true,
         receivedAtMs: startOfTheEnduroMs + 6_000,
-        shapeNames: ['session', 'positions', 'standings', 'incidents'],
+        shapeNames: ['session', 'positions', 'standings', 'incidents', 'brackets'],
       },
     };
     expect(
@@ -324,7 +324,7 @@ describe('the payload of a logged poll row', () => {
       result: {
         ok: true,
         receivedAtMs: startOfTheEnduroMs + 2_000,
-        shapeNames: ['session', 'positions', 'standings', 'incidents'],
+        shapeNames: ['session', 'positions', 'standings', 'incidents', 'brackets'],
       },
     });
   });

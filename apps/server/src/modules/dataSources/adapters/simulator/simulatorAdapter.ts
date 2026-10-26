@@ -1,4 +1,5 @@
-// The adapter of kind `simulator`: a simulated enduro played as a live source.
+// The adapter of kind `simulator`: a simulated enduro, and a simulated Super Prime beside
+// it (BAJAOVRLAY-25), played as a live source.
 import { type DataShapeKey, type SimulatorConfig, SimulatorConfigSchema } from '@bajaovrlay/shared';
 
 import { ptBR } from '../../../../core/messages/ptBR.js';
@@ -6,8 +7,14 @@ import type { DataSourceAdapter } from '../dataSourceAdapter.js';
 import { buildShapesFromRaceState } from './shapesFromRaceState.js';
 import { simulateEnduroAt } from './simulateEnduro.js';
 
-// The shapes every simulator poll answers.
-const simulatorShapeKeys: DataShapeKey[] = ['session', 'positions', 'standings', 'incidents'];
+// The shapes every simulator poll answers: the enduro's four, and its Super Prime's brackets.
+const simulatorShapeKeys: DataShapeKey[] = [
+  'session',
+  'positions',
+  'standings',
+  'incidents',
+  'brackets',
+];
 
 /**
  * Simulated time since the green flag at the wall-clock moment `nowMs`: real time since

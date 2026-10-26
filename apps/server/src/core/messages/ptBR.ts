@@ -296,6 +296,17 @@ export const ptBR = {
     maneuverability: 'MANOB.',
     enduro: 'ENDURO',
   },
+  // The round names of the simulated Super Prime (simulatedBracket.ts, BAJAOVRLAY-25), as the
+  // real results sheet names them; they reach the air on the bracket's head and pills.
+  simulatorBracket: {
+    final: 'Final',
+    semifinal: 'Semifinal',
+    quarterFinals: 'Quartas de final',
+    roundOfSixteen: 'Oitavas de final',
+    /** A round of 16 matches or more: "16 avos de final", "32 avos de final". */
+    roundOfManyMatches: (matchCount: number) => `${String(matchCount)} avos de final`,
+    thirdPlace: 'Disputa de 3º lugar',
+  },
   // The simulated race direction's reasons (simulatedIncidents.ts): plausible, not the
   // rulebook. A penalty is written in words ("+30 segundos"), as PR #21's notice asks,
   // because the on-air face has no lowercase and "+30 s" would read "+30 S".

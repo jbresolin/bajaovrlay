@@ -15,7 +15,7 @@
  *   - Positions offer the whole list, then one car chosen by its number, then the 1st to
  *     10th places, each with the same thirteen fields and the same types (the lap of the
  *     best lap, bestLapNumber, among them since BAJAOVRLAY-44).
- *   - Brackets (a draft) offer only their rounds (standings:
+ *   - Brackets offer only their whole list of rounds (standings:
  *     standingsBindablePaths.test.ts; incidents: incidentsBindablePaths.test.ts).
  *   - No path appears twice within a shape.
  *   - findBindablePath reads one entry back, and answers undefined for a path not listed.
@@ -275,13 +275,13 @@ describe('listBindablePathsOfShape', () => {
     });
   });
 
-  it('offers only the rounds of the draft brackets shape', () => {
+  it('offers only the whole list of rounds of the brackets shape', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
     // Act: ask for the brackets paths.
     const bracketsPaths = listBindablePathsOfShape('brackets');
 
-    // Assert: one path, until BAJAOVRLAY-25 settles the shape.
+    // Assert: one path: the graphic draws the whole bracket (BAJAOVRLAY-25).
     expect(bracketsPaths, 'brackets must offer only the rounds').toEqual([
       {
         path: 'rounds',
@@ -299,7 +299,7 @@ describe('listBindablePathsOfShape', () => {
     { name: 'the positions', shapeKey: 'positions' },
     // The scope and the whole list sit before the rows and must not be repeated by them.
     { name: 'the standings', shapeKey: 'standings' },
-    // The draft has a single path; this row keeps it honest when BAJAOVRLAY-25 adds more.
+    // A single path (the whole rounds); this row keeps it honest if one is ever added.
     { name: 'the brackets', shapeKey: 'brackets' },
     // A single path too; this row keeps it honest when a penalty board needs more.
     { name: 'the incidents', shapeKey: 'incidents' },

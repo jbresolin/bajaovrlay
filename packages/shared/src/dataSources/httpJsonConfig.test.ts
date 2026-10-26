@@ -23,7 +23,7 @@
  *     with a line break or with a character outside Latin-1 (fetch refuses it), an empty
  *     query parameter name, an address that is not http or https or not an address at
  *     all, an address with a user and password in it (a secret, not quoted back), a
- *     method key (GET only), a shape mapped twice, and brackets (not built yet).
+ *     method key (GET only), a shape mapped twice, and brackets without their list of matches.
  *
  * What these tests deliberately do not cover:
  *   - Every rule of the mapping itself (paths, targets, sources of a rule):
@@ -342,15 +342,16 @@ describe('HttpJsonConfigSchema', () => {
       expectedMessage:
         'Posições está mapeada mais de uma vez; cada formato vem de um só mapeamento.',
     },
-    // Brackets are a draft shape (BAJAOVRLAY-25): their mapping is not built in this PR.
+    // Brackets are a list of matches (BAJAOVRLAY-25): the mapping needs the list's path.
     {
-      name: 'refuses a brackets mapping, saying in pt-BR it is not built yet',
+      name: 'refuses a brackets mapping without the list of matches, in pt-BR',
       config: buildClassificationConfig({
-        mappings: [{ shapeKey: 'brackets', requestId: 'classificacao', fields: [] }],
+        mappings: [
+          { shapeKey: 'brackets', requestId: 'classificacao', fields: [], entryFields: [] },
+        ],
       }),
-      expectedPath: 'mappings.0.shapeKey',
-      expectedMessage:
-        'Mapear as Chaves ainda não foi construído: o formato das chaves ainda é um rascunho.',
+      expectedPath: 'mappings.0.entriesPath',
+      expectedMessage: 'Chaves precisa do "Caminho da lista", o caminho até a lista na resposta.',
     },
   ];
 

@@ -2,7 +2,7 @@ import {
   findNextStepOfInstance,
   type Graphic,
   type Instance,
-  readStepCountOfGraphic,
+  readStepCountOfInstance,
 } from '@bajaovrlay/shared';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -155,15 +155,19 @@ export function LayerStatusPanel() {
 }
 
 /**
- * Where the instance on air stands among its graphic's steps, counted from 1 as the
- * operator reads it; undefined for an empty layer or a graphic of one step.
+ * Where the instance on air stands among its steps, counted from 1 as the operator reads
+ * it; undefined for an empty layer or a graphic of one step. A bracket's count comes from
+ * the rounds on air (BAJAOVRLAY-25), so a live update can change it.
  */
 function describeStepOnProgram(
   instanceOnProgram: Instance | undefined,
   graphicOnProgram: Graphic | undefined,
 ): { stepNumber: number; stepCount: number } | undefined {
-  const stepCount = readStepCountOfGraphic(graphicOnProgram);
-  if (instanceOnProgram === undefined || stepCount === 1) {
+  if (instanceOnProgram === undefined) {
+    return undefined;
+  }
+  const stepCount = readStepCountOfInstance(instanceOnProgram, graphicOnProgram);
+  if (stepCount === 1) {
     return undefined;
   }
   return { stepNumber: instanceOnProgram.currentStep + 1, stepCount };

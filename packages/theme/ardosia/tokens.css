@@ -208,6 +208,18 @@
   --podium-height-winner: 540px;
   --podium-logo-width: 240px; /* the team's logo crowning a podium card */
   --podium-logo-height: 112px;
+  /* The elimination bracket (BAJAOVRLAY-25, catalogue entry 4): a round board's match cards
+     are --board-row-height; the tree is laid out over the stage under the wide head. */
+  --board-stage-width: 1728px; /* the title-safe width, 1920 − 2 × 96 */
+  --board-stage-height: 900px; /* the stage under a wide board's head: 972 − 64 − 8 */
+  --bracket-row-height: 48px; /* one car of a match in the tree */
+  --bracket-column-gap: 96px; /* between two rounds of the tree, room for the lines */
+  --bracket-board-gutter: 40px; /* between a round board's two columns, wider than a row gap */
+  --bracket-versus-width: 40px; /* the "×" between the two cars of a board's match card */
+  --bracket-line: rgb(232 236 244 / 0.4); /* the tree's connecting lines */
+  --bracket-line-width: 3px;
+  --bracket-outline-width: 2px; /* the W.O. tag's outline and a bye's dashed slot */
+  --bracket-win-icon-size: 22px; /* the winner's mark of a match with no number */
 
   /* ---- Motion (docs/design/directions/ardosia/motion.md): the scoreboard's slide-in,
      faster, with the rows in cascade. Graphics read these through readMotionTokens(). */

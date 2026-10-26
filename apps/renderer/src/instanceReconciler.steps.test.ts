@@ -11,11 +11,15 @@
  *   - The same instance at another step, with the same data, gets one goToStep.
  *   - The same instance with new data and another step gets the update first, then the
  *     step, so the step plays with the data it belongs to.
+ *   - A step that goes back with new data (the server keeping a bracket within the steps
+ *     its new rounds have, BAJAOVRLAY-25) is played the same way: the data, then the
+ *     lower step.
  *
  * What these tests deliberately do not cover:
  *   - Playing the step; instancePlayer.steps.test.ts.
  *   - The other changes of a slice; instanceReconciler.test.ts.
  */
+import type { Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { decideLayerOperations } from './instanceReconciler.js';
@@ -24,6 +28,25 @@ import {
   enduroClockInstanceId,
   layersOfTheStream,
 } from './instancesOnAir.testSupport.js';
+
+const superPrimeBracketInstanceId = 'chaveamento-super-prime';
+
+/**
+ * The Super Prime's bracket on the fullscreen layer at a step, its rounds cut to one named
+ * round so the change of data reads plainly (the renderer compares the data, never counts).
+ */
+function createSuperPrimeBracketInstance(currentStep: number, roundName: string): Instance {
+  return {
+    id: superPrimeBracketInstanceId,
+    layerId: 'fullscreen',
+    graphicId: 'bracket',
+    target: 'program',
+    resolvedData: { title: 'SUPER PRIME', rounds: [{ name: roundName, matches: [] }] },
+    currentStep,
+    status: 'on-air',
+    takenAt: '2026-10-31T18:40:00.000Z',
+  };
+}
 
 const stepChangeScenarios = [
   // "Próximo": only the step changed, so the graphic on screen plays that step.
@@ -58,6 +81,26 @@ const stepChangeScenarios = [
             changedData: { state: 'yellow' },
           },
           { kind: 'goToStep', instanceId: enduroClockInstanceId, step: 1 },
+        ],
+      },
+    ],
+  },
+  // A refresh that shrank a bracket's rounds: the server put it back on its last step
+  // (BAJAOVRLAY-25), so the step goes down with the new data, and plays after it.
+  {
+    name: 'updates the data first, then plays the lower step, when the server brought the step back',
+    previousInstances: [createSuperPrimeBracketInstance(5, 'Disputa de 3º lugar')],
+    nextInstances: [createSuperPrimeBracketInstance(2, 'Final')],
+    expectedLayerOperations: [
+      {
+        layerId: 'fullscreen',
+        operations: [
+          {
+            kind: 'updateData',
+            instanceId: superPrimeBracketInstanceId,
+            changedData: { rounds: [{ name: 'Final', matches: [] }] },
+          },
+          { kind: 'goToStep', instanceId: superPrimeBracketInstanceId, step: 2 },
         ],
       },
     ],

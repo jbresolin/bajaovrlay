@@ -7,6 +7,10 @@
   "exports": {
     "./ografGraphicTypes": "./src/ografGraphicTypes.ts",
     "./playSteps": "./src/playSteps.ts",
+    "./checkMarkShape": "./src/checkMarkShape.ts",
+    "./carChipStyles": "./src/carChipStyles.ts",
+    "./teamWithSchoolStyles": "./src/teamWithSchoolStyles.ts",
+    "./wideBoardFrameStyles": "./src/wideBoardFrameStyles.ts",
     "./pageTurner": "./src/pageTurner.ts",
     "./pageCycle": "./src/pageCycle.ts",
     "./timelinePlayback": "./src/timelinePlayback.ts",
@@ -48,6 +52,7 @@
     "./previewStage": "./src/previewStage.ts",
     "./previewAddress.testSupport": "./src/previewAddress.testSupport.ts",
     "./tokenOverrides.testSupport": "./src/tokenOverrides.testSupport.ts",
+    "./themeTokensOnThePage.testSupport": "./src/themeTokensOnThePage.testSupport.ts",
     "./ografSchemaValidator.testSupport": "./src/ografSchemaValidator.testSupport.ts",
     "./the30thCompetitionSponsors.testSupport": "./src/the30thCompetitionSponsors.testSupport.ts",
     "./runningMotions.testSupport": "./src/runningMotions.testSupport.ts"

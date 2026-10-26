@@ -9,7 +9,7 @@
  *   the "Fontes de dados" page.
  *
  * What these tests prove:
- *   - Each of the six sample payloads in samples/ passes its shape, so the samples can
+ *   - Each of the seven sample payloads in samples/ passes its shape, so the samples can
  *     be trusted as fixtures and as documentation.
  *   - Session, standings and brackets payloads with one mistake are refused, each with
  *     the exact pt-BR sentence the operator reads, naming the path from the shape's key.
@@ -80,11 +80,18 @@ describe('the sample payloads', () => {
       shapeKey: 'standings',
       fileName: 'standings.overall.json',
     },
-    // The draft brackets, with a final not decided yet.
+    // A timed knockout (the suspension's), with a final not decided yet.
     {
       name: 'the suspension brackets pass the brackets shape',
       shapeKey: 'brackets',
       fileName: 'brackets.suspension.json',
+    },
+    // The real Super Prime: byes, plain wins, best of 3 and the third place
+    // (bracketsShape.test.ts reads it in detail).
+    {
+      name: 'the real Super Prime passes the brackets shape',
+      shapeKey: 'brackets',
+      fileName: 'brackets.super-prime.json',
     },
     // The incidents of the enduro: a penalty, a warning, an incident with no moment.
     {

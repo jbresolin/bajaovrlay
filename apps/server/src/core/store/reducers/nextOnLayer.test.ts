@@ -6,7 +6,8 @@
  *   and 1st place, one per "Próximo" (BAJAOVRLAY-47). nextOnLayer moves the instance on
  *   the layer's program output to its next OGraf step, by raising its `currentStep`; the
  *   renderer then plays that step. How many steps a graphic has comes from its manifest's
- *   `stepCount` (the shared readStepCountOfGraphic).
+ *   `stepCount`, or from its data for the bracket (the shared readStepCountOfInstance;
+ *   instanceStepsWithinTheirCount.test.ts has the bracket's last step).
  *
  * What these tests prove:
  *   - The podium on air goes from step 0 to 1, keeping its id, data and status, and the

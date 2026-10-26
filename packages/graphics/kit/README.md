@@ -48,11 +48,16 @@ src/wideBoardHeadStyles.ts               the wide head card's look (logo, title,
 src/teamLogoCell.ts                      a team's logo cell (team card, podium): the logo in its box, on the plate or not
 src/teamLogoCellStyles.ts                the logo cell's look; each graphic sizes it with --team-logo-cell-width/height
 src/carChipLargeStyles.ts                the large car chip (team card, podium)
+src/checkMarkShape.ts                    the check mark's SVG path (sessions board's finished slot, bracket's winner)
+src/carChipStyles.ts                     the car's blue chip (standings row, bracket)
+src/teamWithSchoolStyles.ts              a team's name cut with an ellipsis, its school after it (standings row, bracket)
+src/wideBoardFrameStyles.ts              the wide full-screen board's host, frame and stage (podium, bracket)
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
 src/the30thCompetitionSponsorsSample.ts  the previews' 17 real sponsors, logos in preview-sponsor-logos/
 src/previewAddress.testSupport.ts        tests only: preview.html?data=<JSON> for the Playwright tests
 src/tokenOverrides.testSupport.ts        tests only: theme tokens on :root before the graphic loads
+src/themeTokensOnThePage.testSupport.ts  tests only (jsdom): theme tokens on :root for one test
 src/ografSchemaValidator.testSupport.ts  tests only: the ajv validator over the vendored ograf-schema/
 src/the30thCompetitionSponsors.testSupport.ts  tests only: the same 17, each logo a /media address
 src/runningMotions.testSupport.ts        tests only: ends every running GSAP timeline at once

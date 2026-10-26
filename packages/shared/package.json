@@ -28,12 +28,18 @@
     "./scheduleSlotStatusScenarios.testSupport": {
       "@bajaovrlay/source": "./src/entities/scheduleSlotStatusScenarios.testSupport.ts"
     },
+    "./bracketSteps": {
+      "@bajaovrlay/source": "./src/steps/bracketSteps.ts",
+      "types": "./dist/steps/bracketSteps.d.ts",
+      "default": "./dist/steps/bracketSteps.js"
+    },
     "./raceTimeText": {
       "@bajaovrlay/source": "./src/raceTimeText/index.ts",
       "types": "./dist/raceTimeText/index.d.ts",
       "default": "./dist/raceTimeText/index.js"
     },
-    "./samples/positions.json": "./src/dataShapes/samples/positions.enduro-lap-34.json"
+    "./samples/positions.json": "./src/dataShapes/samples/positions.enduro-lap-34.json",
+    "./samples/brackets.super-prime.json": "./src/dataShapes/samples/brackets.super-prime.json"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",

@@ -21,15 +21,16 @@ import { writeTypedValueText } from './typedValueText';
  * shared HttpJsonConfigSchema.
  */
 
-/** The shapes the form can map. Brackets are a draft shape whose mapping is not built. */
-export type MappableShapeKey = Exclude<DataShapeKey, 'brackets'>;
-
-/** The shapes the form offers, in the order of its "+ Sessão / + Posições / + Pontuação / + Incidentes". */
-export const mappableShapeKeys: readonly MappableShapeKey[] = [
+/**
+ * The shapes the form offers, every canonical shape (brackets too since BAJAOVRLAY-25), in
+ * the order of its "+ Sessão / + Posições / + Pontuação / + Incidentes / + Chaves".
+ */
+export const mappableShapeKeys: readonly DataShapeKey[] = [
   'session',
   'positions',
   'standings',
   'incidents',
+  'brackets',
 ];
 
 /** Whether a header or parameter's value is typed here or read from a server variable. */
@@ -82,7 +83,7 @@ export type FieldRuleFormValues = {
 
 /** One mapping block: one shape, the request it reads, and a row per mappable field. */
 export type FlexMappingFormValues = {
-  shapeKey: MappableShapeKey;
+  shapeKey: DataShapeKey;
   requestId: string;
   /** "Caminho da lista", for positions and standings; unused by the session. */
   entriesPath: string;
@@ -120,7 +121,7 @@ export function buildEmptyValueTableRowFormValues(): ValueTableRowFormValues {
  * order listMappableFieldsOfShape gives (required first), reading `requestId`.
  */
 export function buildEmptyMappingFormValues(
-  shapeKey: MappableShapeKey,
+  shapeKey: DataShapeKey,
   requestId: string,
 ): FlexMappingFormValues {
   const fieldRules = listMappableFieldsOfShape(shapeKey).map((field) =>
@@ -151,9 +152,7 @@ export function buildFlexConfigFormValues(config: HttpJsonConfig): FlexConfigFor
     headers: request.headers.map(buildNameAndValueFormValues),
     queryParameters: request.queryParameters.map(buildNameAndValueFormValues),
   }));
-  const mappings = config.mappings
-    .filter((mapping) => mapping.shapeKey !== 'brackets')
-    .map(buildMappingFormValues);
+  const mappings = config.mappings.map(buildMappingFormValues);
   return { requests, mappings };
 }
 
@@ -174,8 +173,7 @@ function buildNameAndValueFormValues(nameAndValue: HttpJsonHeader): NameAndValue
  * filled where a rule names it and noting that rule's place in the config.
  */
 function buildMappingFormValues(mapping: FlexShapeMapping): FlexMappingFormValues {
-  // The schema refused brackets before the config got here; filtered out above too.
-  const shapeKey = mapping.shapeKey as MappableShapeKey;
+  const shapeKey = mapping.shapeKey;
   const fieldRules = listMappableFieldsOfShape(shapeKey).map((field) => {
     const rulesOfLevel = field.level === 'entry' ? (mapping.entryFields ?? []) : mapping.fields;
     const placeOfRule = rulesOfLevel.findIndex(

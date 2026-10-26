@@ -40,7 +40,7 @@ export {
   type StandingsShape,
   StandingsShapeSchema,
 } from './standingsShape.js';
-// The brackets shape (draft until BAJAOVRLAY-25): rounds of head-to-head matches.
+// The brackets shape (BAJAOVRLAY-25): rounds of head-to-head matches, best of N, W.O. and byes.
 export {
   type BracketCar,
   BracketCarSchema,

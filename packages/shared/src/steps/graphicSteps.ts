@@ -1,5 +1,6 @@
 import type { Graphic } from '../slices/graphic.js';
 import type { Instance } from '../slices/instance.js';
+import { findStepCounter } from './stepCounters.js';
 
 /**
  * How many OGraf steps a graphic has, read from its manifest's `stepCount`: a whole number
@@ -17,16 +18,35 @@ export function readStepCountOfGraphic(graphic: Graphic | undefined): number {
 }
 
 /**
+ * How many steps this instance of the graphic has. A manifest with OGraf's `stepCount: -1`
+ * ("dynamic") and a known `v_baja.stepCounter` counts them from the instance's data
+ * (stepCounters.ts: the bracket, BAJAOVRLAY-25); any other reads the manifest's number
+ * (readStepCountOfGraphic), so -1 with no counter, or an unknown one, is still 1.
+ */
+export function readStepCountOfInstance(instance: Instance, graphic: Graphic | undefined): number {
+  const stepCounterName = graphic?.manifest.v_baja?.stepCounter;
+  const isCountedFromTheData = graphic?.manifest.stepCount === -1 && stepCounterName !== undefined;
+  if (isCountedFromTheData) {
+    const stepCounter = findStepCounter(stepCounterName);
+    if (stepCounter !== undefined) {
+      return stepCounter(instance.resolvedData);
+    }
+  }
+  return readStepCountOfGraphic(graphic);
+}
+
+/**
  * The step "Próximo" moves an instance to (BAJAOVRLAY-47: the podium reveals one card per
- * step), or undefined on its last step. Steps count from 0, so a graphic of 4 steps goes
- * 0, 1, 2, 3; past the last there is nothing to go to, and leaving the air is "Limpar".
+ * step; BAJAOVRLAY-25: the bracket one board or tree round), or undefined on its last
+ * step. Steps count from 0, so a graphic of 4 steps goes 0, 1, 2, 3; past the last there
+ * is nothing to go to, and leaving the air is "Limpar".
  */
 export function findNextStepOfInstance(
   instance: Instance,
   graphic: Graphic | undefined,
 ): number | undefined {
   const nextStep = instance.currentStep + 1;
-  if (nextStep >= readStepCountOfGraphic(graphic)) {
+  if (nextStep >= readStepCountOfInstance(instance, graphic)) {
     return undefined;
   }
   return nextStep;
