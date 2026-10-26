@@ -1,4 +1,3 @@
-import { type BindingFieldValue, type BindingResolution, findTransform } from '@bajaovrlay/shared';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 
 import { Input } from '@/components/ui/input';
@@ -22,25 +21,13 @@ import {
   parameterOfEachBindingTransform,
   readBindingFromSchemaFormValue,
 } from './bindingFormValue';
-import { describeBindingValueNow } from './bindingValueNowText';
+import { BindingTransformSelect, TransformParameterControl } from './BindingTransformControls';
+import { BindingValueNowLine } from './BindingValueNowLine';
+import type { SchemaFormBindingOptions } from './schemaFormBindingOptions';
 import type { SchemaFormFieldDescription } from './schemaFormDescription';
 import type { SchemaFormValues } from './schemaFormValues';
 
-/**
- * What a panel hands the generated form so its fields can read a data source: the
- * sources to offer, and how to read a binding against the page's slices now (the shared
- * resolveBindingAgainstSources, for the "Valor agora" line). Only the item editor hands
- * it; without it no field offers "Fonte".
- */
-export type SchemaFormBindingOptions = {
-  dataSources: Array<{ id: string; label: string }>;
-  readValueNow: (binding: BindingFieldValue) => BindingResolution;
-};
-
 const editorTexts = ptBR.bindings.editor;
-// The dropdown's value for "no transform": a Select cannot hold the empty text.
-const noTransformValue = 'nenhuma';
-
 /**
  * The controls of a field set to "Fonte" (or "Relógio da fonte", `isWholeClock`): the
  * source, what to read (the paths that fit the field, a car number for a car chosen by
@@ -84,13 +71,6 @@ export function BoundFieldControls(props: {
 
   // What the field would get now, once the choices make a binding the field can take.
   const bindingRead = readBindingFromSchemaFormValue(field, bindingValue, dataSchema, isWholeClock);
-  const valueNowText =
-    bindingRead.status === 'binding'
-      ? describeBindingValueNow(
-          bindingOptions.readValueNow(bindingRead.binding),
-          bindingRead.binding,
-        )
-      : editorTexts.chooseToSeeTheValue;
 
   /** Chooses a path, and a transform that makes it fit when it fits through one only. */
   function choosePath(pathKey: string): void {
@@ -221,36 +201,14 @@ export function BoundFieldControls(props: {
       />
 
       {chosenPath !== undefined && chosenPath.transformIdsThatFit.length > 0 && (
-        <Controller
-          control={form.control}
-          name={`${bindingName}.transformId`}
-          render={({ field: transformField }) => (
-            <Select
-              value={transformField.value === '' ? noTransformValue : transformField.value}
-              onValueChange={(choice) =>
-                chooseFirstTransform(choice === noTransformValue ? '' : choice)
-              }
-              disabled={isDisabled}
-            >
-              <SelectTrigger
-                size="sm"
-                className="w-full"
-                aria-label={editorTexts.transformLabel(field.label)}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {chosenPath.fitsWithoutTransform && (
-                  <SelectItem value={noTransformValue}>{editorTexts.noTransform}</SelectItem>
-                )}
-                {chosenPath.transformIdsThatFit.map((transformId) => (
-                  <SelectItem key={transformId} value={transformId}>
-                    {findTransform(transformId)?.label ?? transformId}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+        <BindingTransformSelect
+          form={form}
+          transformName={`${bindingName}.transformId`}
+          accessibleName={editorTexts.transformLabel(field.label)}
+          transformIds={chosenPath.transformIdsThatFit}
+          offersNoTransform={chosenPath.fitsWithoutTransform}
+          onTransformChosen={chooseFirstTransform}
+          isDisabled={isDisabled}
         />
       )}
 
@@ -267,36 +225,13 @@ export function BoundFieldControls(props: {
       )}
 
       {secondTransformIdsThatFit.length > 0 && (
-        <Controller
-          control={form.control}
-          name={`${bindingName}.thenTransformId`}
-          render={({ field: secondTransformField }) => (
-            <Select
-              value={
-                secondTransformField.value === '' ? noTransformValue : secondTransformField.value
-              }
-              onValueChange={(choice) =>
-                secondTransformField.onChange(choice === noTransformValue ? '' : choice)
-              }
-              disabled={isDisabled}
-            >
-              <SelectTrigger
-                size="sm"
-                className="w-full"
-                aria-label={editorTexts.thenTransformLabel(field.label)}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={noTransformValue}>{editorTexts.noTransform}</SelectItem>
-                {secondTransformIdsThatFit.map((transformId) => (
-                  <SelectItem key={transformId} value={transformId}>
-                    {findTransform(transformId)?.label ?? transformId}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+        <BindingTransformSelect
+          form={form}
+          transformName={`${bindingName}.thenTransformId`}
+          accessibleName={editorTexts.thenTransformLabel(field.label)}
+          transformIds={secondTransformIdsThatFit}
+          offersNoTransform={true}
+          isDisabled={isDisabled}
         />
       )}
 
@@ -312,68 +247,10 @@ export function BoundFieldControls(props: {
         />
       )}
 
-      <p className="text-xs text-muted-foreground">{valueNowText}</p>
-    </div>
-  );
-}
-
-/**
- * The one parameter of a chosen transform (the first or the second, by `parameterTextName`):
- * digits, or formatGapAsText's unit.
- */
-function TransformParameterControl(props: {
-  form: UseFormReturn<SchemaFormValues>;
-  parameterTextName:
-    `bindings.${string}.transformParameterText` | `bindings.${string}.thenTransformParameterText`;
-  controlId: string;
-  accessibleName: string;
-  transformId: string;
-  isWholeNumber: boolean;
-  isDisabled: boolean;
-}) {
-  const { form, parameterTextName, controlId, accessibleName, transformId } = props;
-  const { isWholeNumber, isDisabled } = props;
-  const parameterName = editorTexts.transformParameterNames[transformId] ?? transformId;
-  return (
-    <div className="flex flex-col gap-1">
-      <Label htmlFor={controlId}>{parameterName}</Label>
-      {isWholeNumber ? (
-        <Input
-          id={controlId}
-          inputMode="numeric"
-          autoComplete="off"
-          aria-label={accessibleName}
-          disabled={isDisabled}
-          {...form.register(parameterTextName)}
-        />
+      {bindingRead.status === 'binding' ? (
+        <BindingValueNowLine binding={bindingRead.binding} bindingOptions={bindingOptions} />
       ) : (
-        <Controller
-          control={form.control}
-          name={parameterTextName}
-          render={({ field: unitField }) => (
-            <Select
-              value={unitField.value}
-              onValueChange={unitField.onChange}
-              disabled={isDisabled}
-            >
-              <SelectTrigger
-                id={controlId}
-                size="sm"
-                className="w-full"
-                aria-label={accessibleName}
-              >
-                <SelectValue placeholder={ptBR.schemaForm.nothingChosenPlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(editorTexts.gapUnitOptions).map(([unit, unitLabel]) => (
-                  <SelectItem key={unit} value={unit}>
-                    {unitLabel}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
+        <p className="text-xs text-muted-foreground">{editorTexts.chooseToSeeTheValue}</p>
       )}
     </div>
   );

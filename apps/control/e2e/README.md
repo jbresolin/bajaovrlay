@@ -75,13 +75,17 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
 - The podium, the battle card and the QR card (BAJAOVRLAY-47): `podiumBattleQrWalk.e2e.ts` (the brief's walk, three tests,
   on the real program output `/render/`): car 1's team given a logo, a "Pódio" whose teams read the positions through
   "Primeiras N entradas" (3) and "Com logos das equipes", frozen, shows the three cards and car 1's logo after three
-  "Próximo" on the Camadas row; a "Disputa de posição" whose eleven fields read the race's first two cars by number, bound with the
-  simulator off and its last data still, shows both teams and the gap; a "Cartão de QR" shows a code that scans back to its address. Car 1, not car 7: until the first lap the
+  "Próximo" on the Camadas row; a "Disputa de posição" whose eleven fields read the race's first two cars by number, bound while
+  the simulator runs at 60×, shows both teams and a gap that follows the race ("+s,d" side by side, "—" if not); a "Cartão de QR" shows a code that scans back to its address. Car 1, not car 7: until the first lap the
   simulator lists its cars by number, so cars 1, 2 and 3 are the podium right after the green flag.
 - The elimination bracket (BAJAOVRLAY-25): `bracketStepsWithTheSimulator.e2e.ts` (the brief's walk, on the real program
   output `/render/`): the simulator on seed 2027 with ten cars at 60× run until its Super Prime has a champion (~17 s), then
   switched off; a "Chaveamento" whose "Fases" read "Chaves › Todas as fases", live, taken; "Próximo" on the Camadas row from
   "Passo 1 de 5" to "Passo 5 de 5", then off; the output draws the final with car 8 the winner.
+
+- The item editor during a race (BAJAOVRLAY-45): `itemEditorStaysFastDuringARace.e2e.ts` (a battle card on air whose eleven
+  fields read cars 1 and 2 live, the simulator at 60×, opened in the editor: a path dropdown opens and "Salvar item" registers
+  within 2 s each, timed with `performance.now()` around the action; the measured times are on the test's report).
 
 `emptyTheServerState.ts` empties the server before each test, panels, macros, "vai limpar" marks, corrections of a source's values, waiting events and the entity library with its images included, the event rules back to their defaults, and puts the data sources back to the seeded simulator alone, off, not recording, with its default settings (`emptyServerState.e2e.ts` proves it; `emptyServerStateEventInbox.e2e.ts` the event inbox part). `../playwright.config.ts` starts the real server (5187, new SQLite file) and the control dev server (5188); run `pnpm --filter @bajaovrlay/control test:e2e` after `pnpm build`, with nothing left listening on 5187/5188 (a reused server keeps its old database). A second checkout running its browser tests at the same time sets `BAJAOVRLAY_E2E_PORT_OFFSET` (for example 100: 5287/5288), which moves every package's browser-test ports alike; it is read once, in `scripts/e2ePortOffset.ts`, and anything but a whole number counts as 0.
 `clockStoppedOnAir.e2e.ts` fails locally when the WSL clock steps (a time sync moves the wall clock); the fix is syncing the Windows clock (Settings → Time & language → Date & time → Sync now), then running `wsl --shutdown` in PowerShell and reopening the terminal, not quarantine.

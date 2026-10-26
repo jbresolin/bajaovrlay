@@ -15,16 +15,19 @@
  *   - After a switch of the flag to "Fonte" and a new title, the on-air update carries the
  *     title only.
  *   - With typed changes only, there is no note.
+ *   - A list field on "Lista dos cadastros" switched from the sponsors to the schedule
+ *     shows the note too (gate 2 round 1 of PR #29: missed since PR #28).
  *
  * What these tests deliberately do not cover:
  *   - Which keys are left out, row by row; fieldsReadFromASource.test.ts.
  *   - The server releasing a live binding typed over on air;
  *     instanceBindingsAfterAnOnAirEdit.test.ts in apps/server.
  */
-import type { Item } from '@bajaovrlay/shared';
+import type { Graphic, Item } from '@bajaovrlay/shared';
 import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { buildLibraryOfThe30thCompetition } from '@/features/schemaForm/boardWithEntityListsFixtureSchema.testSupport';
 import {
   chooseOptionInDropdown,
   typeIntoField,
@@ -47,6 +50,7 @@ import {
   buildEnduranceStartClockItem,
   buildInstanceTakenFromItem,
   buildSlicesWithTheRaceClockAndTheLowerThird,
+  idOfTheMainSessionRundown,
 } from './itemsLikeTheEditorSaves.testSupport';
 
 const noteOfTheNextTake = 'A mudança de fonte entra no ar na próxima entrada.';
@@ -68,6 +72,61 @@ function renderEditorForTheTypedClockOnAir() {
     ],
     dataSources: [buildSimulatorThatIsOk()],
     dataSnapshots: [buildEnduroSnapshotAtLap34(seededSimulatorId)],
+  });
+}
+
+/**
+ * An intermission board whose one list takes any record of the library (its items are
+ * objects that name no required key), so both the sponsors and the schedule fit it.
+ */
+function buildBoardOfAnyListGraphic(): Graphic {
+  return {
+    id: 'intermission-board-fixture',
+    manifest: {
+      id: 'baja-intermission-board-fixture',
+      name: 'Quadro do intervalo',
+      main: 'intermission-board-fixture.js',
+      schema: {
+        type: 'object',
+        properties: {
+          boardItems: { type: 'array', title: 'Itens do quadro', items: { type: 'object' } },
+        },
+      },
+    },
+    defaultLayerId: 'fullscreen',
+    category: 'fullscreen',
+    thumbnailUrl: null,
+    defaultFields: {},
+  };
+}
+
+/** The editor for that board on air, its list reading the sponsors from Cadastros. */
+function renderEditorForTheBoardOfSponsorsOnAir() {
+  const itemOnAir: Item = {
+    id: '4c8e1f27-9a3d-4b56-8e01-2f7a6c9d3b14',
+    home: { kind: 'rundown', rundownId: idOfTheMainSessionRundown },
+    order: 0,
+    graphicId: 'intermission-board-fixture',
+    layerId: 'fullscreen',
+    fields: { boardItems: { kind: 'entityList', entityType: 'sponsor' } },
+    label: 'Intervalo — patrocinadores',
+    color: 'neutral',
+    notes: '',
+  };
+  return renderItemEditorPanelOnFakeServerWithSlices(itemOnAir, {
+    ...buildSlicesWithTheRaceClockAndTheLowerThird(),
+    ...buildLibraryOfThe30thCompetition(),
+    graphics: [buildBoardOfAnyListGraphic()],
+    items: [itemOnAir],
+    instances: [
+      buildInstanceTakenFromItem({
+        id: idOfTheInstanceTakenFromTheItem,
+        item: itemOnAir,
+        layerId: 'fullscreen',
+        target: 'program',
+        takenAt: momentTheItemWasTaken,
+      }),
+    ],
   });
 }
 
@@ -126,5 +185,21 @@ describe('"Atualizar no ar" with a field switched to a source', () => {
 
     // Assert: a typed change goes on air at once; nothing waits for the take.
     expect(screen.queryByText(noteOfTheNextTake), 'no note for typed changes').toBeNull();
+  });
+
+  it('says it waits for the take when a list from Cadastros switches to the other list', () => {
+    // Arrange: the board on air, its list reading the sponsors.
+    renderEditorForTheBoardOfSponsorsOnAir();
+    const noteBeforeTheSwitch = screen.queryByText(noteOfTheNextTake);
+
+    // Act: switch the list to the schedule.
+    chooseOptionInDropdown('Lista dos cadastros de Itens do quadro', 'Programação');
+
+    // Assert: no note before; the note once the list read changed.
+    expect(noteBeforeTheSwitch, 'nothing waits for the take before the switch').toBeNull();
+    expect(
+      screen.getByText(noteOfTheNextTake),
+      'another list reaches the air at the next take only',
+    ).toBeVisible();
   });
 });

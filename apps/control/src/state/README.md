@@ -16,7 +16,8 @@ sending a command. Start reading at `serverConnection.ts`, then `serverStateStor
 - `browserWebSocket.ts` — the few lines that touch the browser's WebSocket API.
 - `browserPageReloadForNewBuild.ts` — the page's build id (embedded by `vite build`) and
   the browser's clock, `location.reload` and `sessionStorage`, handed in by `main.tsx`.
-- `ControlPageStateProvider.tsx` — `useServerState`, `useSendCommand`, `useReadServerStateNow`.
+- `ControlPageStateProvider.tsx` — `useServerState`, `useSendCommand`, `useReadServerStateNow`,
+  `useSubscribeToServerState` (for a value read with React's `useSyncExternalStore`, the editor's "Valor agora").
 - `*.testSupport.*` — the fake server socket and believable slices (panels and macros too;
   data sources, their data from the shared samples and recordings in
   `dataSourcesLikeTheServerSends.testSupport.ts`).

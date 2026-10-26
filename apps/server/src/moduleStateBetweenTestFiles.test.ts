@@ -56,6 +56,10 @@ const moduleStateThatCannotLeak = [
   // A cache of compiled JSON Schemas: an entry is reused only for the very schema object
   // it was compiled from, so it changes how fast an answer comes, never the answer.
   'apps/server/src/core/store/graphicDataValidation.ts: compiledDataSchemasByGraphicId',
+  // Each shape's bindable paths, built the first time they are asked for (BAJAOVRLAY-45):
+  // the list is written in code and frozen, so every call gets the same answer it would
+  // have built, only sooner.
+  'packages/shared/src/dataShapes/bindablePaths.ts: pathsListedForEachShape',
   // The five below are fixed lookup lists: filled where they are made, never changed.
   'apps/server/src/modules/media/rasterImageSizes.ts: jpegFrameHeaderMarkers',
   'apps/server/src/modules/media/rasterImageSizes.ts: jpegMarkersWithoutLength',

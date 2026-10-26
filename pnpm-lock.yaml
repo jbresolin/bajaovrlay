@@ -245,6 +245,9 @@ importers:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)
     devDependencies:
+      '@bajaovrlay/battle-card':
+        specifier: workspace:*
+        version: link:../../packages/graphics/battle-card
       '@bajaovrlay/message-ticker':
         specifier: workspace:*
         version: link:../../packages/graphics/message-ticker
