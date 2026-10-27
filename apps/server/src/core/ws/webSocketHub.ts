@@ -19,7 +19,11 @@ import {
   serializeServerMessage,
 } from './serverMessageBuilding.js';
 import { startServerTimeBroadcast } from './serverTimeBroadcast.js';
-import { buildSlicesForAScreen, keepSliceNamesScreensReceive } from './slicesSentToScreens.js';
+import {
+  buildSlicesForAScreen,
+  keepSliceNamesChangedForTheScreensOfAnOutput,
+  keepSliceNamesScreensReceive,
+} from './slicesSentToScreens.js';
 
 /** The only path that upgrades to a WebSocket (the control page's dev proxy forwards it). */
 export const webSocketPath = '/ws';
@@ -171,8 +175,13 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   // new "last good poll" moment in `dataSources`, that poll's data is already there.
   // What could go wrong: between the two messages the page shows the new data with the
   // source's old health for a moment, which nothing on air reads.
+  // The slices as the hub last saw them, so a screen of one output can be spared a change
+  // that leaves its own copy as it was (a take on the PiP, for program's screens).
+  let slicesBeforeTheChange = stateStore.readAllSlices();
   const stopListening = stateStore.subscribeToSliceChanges(
     (changedSliceNames, slices, changedDataSnapshots) => {
+      const slicesBefore = slicesBeforeTheChange;
+      slicesBeforeTheChange = slices;
       // The clock is read as late as possible: a renderer takes the difference between
       // this time and its own clock at arrival, so every millisecond between this reading
       // and the send shows up as an error in its sample.
@@ -194,13 +203,20 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
         serverNowMs,
       );
       // The screens' text is built once per output, the first time a screen of that
-      // output is met, and only when the change touches a slice screens draw at all.
+      // output is met, and only when the change touches a slice screens draw at all. It
+      // carries only the slices whose copy for that output changed; undefined (nothing
+      // sent) when none did.
       const sliceTextForScreensByOutputId = new Map<string, string | undefined>();
       const readSliceTextForScreensOf = (outputId: string): string | undefined => {
         if (!sliceTextForScreensByOutputId.has(outputId)) {
           const slicesOfTheOutput = buildSlicesForAScreen(slices, outputId);
-          const text = serializeChangeOfSlicesOrNothing(
+          const sliceNamesChangedForTheOutput = keepSliceNamesChangedForTheScreensOfAnOutput(
             sliceNamesForScreens,
+            buildSlicesForAScreen(slicesBefore, outputId),
+            slicesOfTheOutput,
+          );
+          const text = serializeChangeOfSlicesOrNothing(
+            sliceNamesChangedForTheOutput,
             slicesOfTheOutput,
             serverNowMs,
           );

@@ -94,3 +94,22 @@ export function keepSliceNamesScreensReceive(
     return isDrawnByAScreen;
   });
 }
+
+/**
+ * Of the changed slice names a screen draws, the ones whose copy for this output really
+ * differs from before the change, compared as JSON text (gate 2 of PR #32). A take on the
+ * PiP changes the instances slice, but program's copy of it is the same list as before,
+ * so a program screen is sent nothing and OBS's main source parses nothing. The copies
+ * are built by buildSlicesForAScreen, so what is compared is exactly what would be sent.
+ */
+export function keepSliceNamesChangedForTheScreensOfAnOutput(
+  sliceNamesScreensDraw: SliceNameSentWhole[],
+  slicesOfTheOutputBefore: Slices,
+  slicesOfTheOutputAfter: Slices,
+): SliceNameSentWhole[] {
+  return sliceNamesScreensDraw.filter((sliceName) => {
+    const textBefore = JSON.stringify(slicesOfTheOutputBefore[sliceName]);
+    const textAfter = JSON.stringify(slicesOfTheOutputAfter[sliceName]);
+    return textBefore !== textAfter;
+  });
+}

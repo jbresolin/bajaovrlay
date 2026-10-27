@@ -14,8 +14,9 @@
  * What these tests prove (with a real server on a random port and a real SQLite file):
  *   - The hello of a PiP renderer carries the PiP's layer and instance only; the hello of
  *     a renderer with no output carries program's, and neither carries the other's.
- *   - A take on the PiP reaches the PiP renderer with the instance, and the program
- *     renderer with an instances slice that does not have it.
+ *   - A take on the PiP reaches the PiP renderer with the instance and sends program's
+ *     renderer nothing at all, since its instances did not change (gate 2); program's own
+ *     take still reaches it.
  *   - A layer added to the PiP while its renderer is connected reaches it in its layers.
  *   - The PiP renderer's report puts the PiP's instance on air.
  *   - An output nobody created gives a screen no layer and no instance.
@@ -231,15 +232,19 @@ describe('the monitors of one output', () => {
 });
 
 describe('changes reaching the screens of each output', () => {
-  it("sends a take on the PiP to the PiP renderer, and program's renderer an instances slice without it", async () => {
-    // Arrange: the PiP and its caption with a clock item ready, nothing on air yet, and
-    // both renderers connected.
+  it("sends a take on the PiP to the PiP renderer only, and program's own take to program's", async () => {
+    // Arrange: the PiP and its caption, a clock item ready on each output, nothing on air
+    // yet, and both renderers connected.
     const runningServer = await startServerOnARandomPort();
     const { stateStore } = runningServer;
     for (const command of commandsThatSetUpThePip) {
       stateStore.applyCommand(command, operatorActor);
     }
-    const created = stateStore.applyCommand(createClockOnTheCaption, operatorActor);
+    const captionClock = stateStore.applyCommand(createClockOnTheCaption, operatorActor);
+    const programClock = stateStore.applyCommand(
+      { ...createClockOnTheCaption, layerId: 'clock', label: 'Relógio no programa' },
+      operatorActor,
+    );
     const { client: pipRenderer } = await connectAndWaitForHello(runningServer.port, {
       role: 'renderer',
       output: 'pip',
@@ -248,21 +253,32 @@ describe('changes reaching the screens of each output', () => {
       role: 'renderer',
     });
 
-    // Act: take the clock on the caption.
+    // Act: take the clock on the caption; once program's renderer has everything sent so
+    // far, count what it got; then take program's clock.
     stateStore.applyCommand(
-      { type: 'takeItem', itemId: created.ok ? created.createdItemId : '' },
+      { type: 'takeItem', itemId: captionClock.ok ? captionClock.createdItemId : '' },
       operatorActor,
     );
     const instancesOnThePip = await pipRenderer.waitForMessage(
       'the instances with the caption clock',
       (message) => message.type === 'slice' && message.name === 'instances',
     );
+    await waitUntilTheScreenHasEverythingSentSoFar(programRenderer);
+    const changesProgramGotForThePipTake = programRenderer
+      .readReceivedMessages()
+      .filter((message) => message.type === 'slice' || message.type === 'slices');
+    stateStore.applyCommand(
+      { type: 'takeItem', itemId: programClock.ok ? programClock.createdItemId : '' },
+      operatorActor,
+    );
     const instancesOnProgram = await programRenderer.waitForMessage(
-      'the instances of program',
+      "the instances with program's clock",
       (message) => message.type === 'slice' && message.name === 'instances',
     );
 
-    // Assert: the PiP sees the clock; program sees none.
+    // Assert: the PiP sees its clock; program's renderer is sent nothing for the PiP's
+    // take (its instances did not change, so OBS's main source parses nothing), and then
+    // gets its own take.
     expect(
       instancesOnThePip.type === 'slice' &&
         instancesOnThePip.name === 'instances' &&
@@ -270,11 +286,15 @@ describe('changes reaching the screens of each output', () => {
       'the PiP renderer gets the take',
     ).toEqual(['legenda-pip']);
     expect(
+      changesProgramGotForThePipTake,
+      "program's renderer is sent nothing for a take on the PiP",
+    ).toEqual([]);
+    expect(
       instancesOnProgram.type === 'slice' &&
         instancesOnProgram.name === 'instances' &&
-        instancesOnProgram.slice,
-      "program's renderer never sees the PiP's clock",
-    ).toEqual([]);
+        instancesOnProgram.slice.map((instance) => instance.layerId),
+      "program's renderer gets program's take",
+    ).toEqual(['clock']);
   });
 
   it('sends a layer added to the PiP to its renderer while it is connected', async () => {
