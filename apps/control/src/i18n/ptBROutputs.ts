@@ -68,4 +68,6 @@ export const ptBROutputs = {
   // The output choice of Camadas, the monitors and the layer pickers.
   outputPickerLabel: (monitorName: string) => `Saída mostrada em ${monitorName}`,
   layerGroupLabel: (outputName: string) => `Saída ${outputName}`,
+  // A line under "Prévia" once there is more than one output: "PiP · Legenda".
+  layerNameWithItsOutput: (outputName: string, layerName: string) => `${outputName} · ${layerName}`,
 };
