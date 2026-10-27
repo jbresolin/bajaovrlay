@@ -19,6 +19,10 @@
  *   - A layer added to the PiP while its renderer is connected reaches it in its layers.
  *   - The PiP renderer's report puts the PiP's instance on air.
  *   - An output nobody created gives a screen no layer and no instance.
+ *   - The PiP's Prévia frame (`role=monitor&output=pip`) gets only the PiP's "vai limpar"
+ *     marks, and the program Prévia frame only program's (gate 2).
+ *   - A monitor of the PiP (`role=monitor&output=pip`, what the monitor picker loads) gets
+ *     the PiP's layer and instance in its hello and the PiP's take afterwards (gate 2).
  *   - GET /api/v1/state with `role` and `output` answers the same copy as the hello.
  *
  * What these tests deliberately do not cover:
@@ -160,6 +164,69 @@ describe('the hello of a screen of one output', () => {
     // Assert: it draws nothing rather than program's graphics in the wrong scene.
     expect(readLayerIds(readSlicesOfHello(hello)), 'no layer').toEqual([]);
     expect(readLayerIdsOfInstances(readSlicesOfHello(hello)), 'no instance').toEqual([]);
+  });
+});
+
+describe('the monitors of one output', () => {
+  it('give the PiP\'s Prévia frame only the PiP\'s "vai limpar" marks', async () => {
+    // Arrange: a clock on air on each output, both marked "vai limpar" in Prévia.
+    const runningServer = await startServerWithAClockOnEachOutput();
+    for (const layerId of ['legenda-pip', 'clock']) {
+      runningServer.stateStore.applyCommand({ type: 'previewClearLayer', layerId }, operatorActor);
+    }
+
+    // Act: the two Prévia frames connect, the PiP's and program's.
+    const { hello: helloOfThePipPreview } = await connectAndWaitForHello(runningServer.port, {
+      role: 'monitor',
+      output: 'pip',
+    });
+    const { hello: helloOfTheProgramPreview } = await connectAndWaitForHello(runningServer.port, {
+      role: 'monitor',
+    });
+
+    // Assert: each frame gets the marks of its own output's layers only.
+    expect(
+      readSlicesOfHello(helloOfThePipPreview)?.previewClearedLayerIds,
+      "the PiP's Prévia gets the caption's mark alone",
+    ).toEqual(['legenda-pip']);
+    expect(
+      readSlicesOfHello(helloOfTheProgramPreview)?.previewClearedLayerIds,
+      "program's Prévia gets the clock's mark alone",
+    ).toEqual(['clock']);
+  });
+
+  it("gives a monitor of the PiP the PiP's layer and instance, and then the PiP's take", async () => {
+    // Arrange: the PiP and its caption with a clock item ready, nothing on air.
+    const runningServer = await startServerOnARandomPort();
+    for (const command of commandsThatSetUpThePip) {
+      runningServer.stateStore.applyCommand(command, operatorActor);
+    }
+    const created = runningServer.stateStore.applyCommand(createClockOnTheCaption, operatorActor);
+
+    // Act: the "Programa" monitor switched to the PiP connects, then the clock is taken.
+    const { client: pipMonitor, hello } = await connectAndWaitForHello(runningServer.port, {
+      role: 'monitor',
+      output: 'pip',
+    });
+    runningServer.stateStore.applyCommand(
+      { type: 'takeItem', itemId: created.ok ? created.createdItemId : '' },
+      operatorActor,
+    );
+    const instancesMessage = await pipMonitor.waitForMessage(
+      'the instances with the caption clock',
+      (message) => message.type === 'slice' && message.name === 'instances',
+    );
+
+    // Assert: the PiP's layer in the hello, the PiP's clock after the take.
+    expect(readLayerIds(readSlicesOfHello(hello)), "the monitor gets the PiP's caption").toEqual([
+      'legenda-pip',
+    ]);
+    expect(
+      instancesMessage.type === 'slice' &&
+        instancesMessage.name === 'instances' &&
+        instancesMessage.slice.map((instance) => instance.layerId),
+      "the monitor gets the PiP's take",
+    ).toEqual(['legenda-pip']);
   });
 });
 
