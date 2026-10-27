@@ -17,6 +17,8 @@
  *     an info line counts the layers assigned.
  *   - A database written before outputs and before the notice gains the notice too, on
  *     program: the seed catch-up of BAJAOVRLAY-22 still runs on such a database.
+ *   - A database written before outputs whose layers row is damaged (not a list) stops
+ *     the boot, rather than booting on a fresh seed as if nothing were wrong (gate 2).
  *   - A database with outputs keeps a layer list without the tower as it is: the seed is
  *     not caught up any more, so a deletion sticks across a restart.
  *   - A PiP output and its frame come back from the database as they were saved.
@@ -198,6 +200,22 @@ describe('a database written before outputs existed', () => {
       replacePolicy: 'out-then-in',
       persistent: false,
     });
+  });
+});
+
+describe('a damaged layers row', () => {
+  it('stops the boot of a database written before outputs', () => {
+    // Arrange: a database from before outputs whose layers row holds an object, not a list.
+    const { database, graphicPackagesFolder } = openDatabaseOfAServerBeforeOutputs();
+    writeSliceRows(database, [
+      { name: 'layers', json: { broken: true }, updatedAt: '2026-10-24T22:10:00.000Z' },
+    ]);
+
+    // Act: boot the updated server on it.
+    const bootOnTheDamagedRow = () => loadSlicesAtBoot({ database, graphicPackagesFolder });
+
+    // Assert: the boot stops; running on a fresh seed would hide that the row was lost.
+    expect(bootOnTheDamagedRow, 'a damaged layers row must stop the boot').toThrow();
   });
 });
 

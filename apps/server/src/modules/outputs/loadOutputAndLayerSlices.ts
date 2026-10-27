@@ -83,19 +83,15 @@ export function loadOrSeedOutputAndLayerSlices(
  * The boot of a database written before outputs: each stored layer gains
  * `outputId: 'program'`, the seeded layers it lacks are added in their z-order place,
  * and program is the one output. Only an object without an `outputId` is given one; the
- * rest is left for the schema to check, so a damaged row still stops the boot.
+ * rest, a row that is not a list included, is left for the schema to check, so a damaged
+ * row stops the boot.
  */
 function migrateLayersOfADatabaseBeforeOutputs(
   layersRow: SliceRow,
   updatedAt: string,
   logger: ServerLogger,
 ): OutputAndLayerSlicesAtBoot {
-  const storedLayers: unknown[] = Array.isArray(layersRow.json) ? layersRow.json : [];
-  const layersOnProgram = storedLayers.map((storedLayer) => {
-    const isObjectWithoutAnOutput =
-      typeof storedLayer === 'object' && storedLayer !== null && !('outputId' in storedLayer);
-    return isObjectWithoutAnOutput ? { ...storedLayer, outputId: programOutputId } : storedLayer;
-  });
+  const layersOnProgram = putStoredLayersWithoutAnOutputOnProgram(layersRow.json);
   const layersRead = SlicesSchema.shape.layers.parse(layersOnProgram);
   const layersWithTheSeedCaughtUp = addSeededLayersMissingFromStoredLayers(layersRead);
   const outputs = [buildProgramOutput()];
@@ -118,4 +114,21 @@ function migrateLayersOfADatabaseBeforeOutputs(
       { name: 'layers', json: layersWithTheSeedCaughtUp.layers, updatedAt },
     ],
   };
+}
+
+/**
+ * The stored layers with `outputId: 'program'` given to each object that has none. A row
+ * that is not a list is handed back as it is, for the schema to refuse, which stops the
+ * boot: reading it as no layers would let the seed catch-up fill it, and the server would
+ * boot on a fresh seed as if nothing were wrong (gate 2 of PR #32).
+ */
+function putStoredLayersWithoutAnOutputOnProgram(storedJson: unknown): unknown {
+  if (!Array.isArray(storedJson)) {
+    return storedJson;
+  }
+  return storedJson.map((storedLayer: unknown) => {
+    const isObjectWithoutAnOutput =
+      typeof storedLayer === 'object' && storedLayer !== null && !('outputId' in storedLayer);
+    return isObjectWithoutAnOutput ? { ...storedLayer, outputId: programOutputId } : storedLayer;
+  });
 }
