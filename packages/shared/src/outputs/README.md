@@ -5,6 +5,11 @@ loads as a browser source: `program` (/render/), which always exists, and any th
 adds on "Saídas e camadas", such as `pip` (/render/?output=pip). Every layer names its
 output (`outputId` in `../slices/layer.ts`), and a zIndex is unique within an output.
 
+Two things are called "output" here, and they differ. An instance's `target` (program or
+preview) says whether it is on air or in Prévia; an `outputId` (program, pip) says which
+renderer address, and so which OBS source, a layer is drawn by. A PiP layer has instances of
+both targets, like any program layer.
+
 Start reading at `output.ts` (the `outputs` slice and `programOutputId`), then
 `layersOfOutputs.ts` (the slice kept bottom to top, one output's layers, the outputs
 program first). The pt-BR sentences of the two slices' checks are in `ptBROutputs.ts`.

@@ -19,7 +19,9 @@
  *     take still reaches it.
  *   - A layer added to the PiP while its renderer is connected reaches it in its layers.
  *   - The PiP renderer's report puts the PiP's instance on air.
- *   - An output nobody created gives a screen no layer and no instance.
+ *   - An output nobody created gives a screen no layer and no instance, and the server logs
+ *     a warning naming it, so a typo in an OBS source is found in the log (gate 2); a
+ *     screen of an output that exists logs no such line.
  *   - The PiP's Prévia frame (`role=monitor&output=pip`) gets only the PiP's "vai limpar"
  *     marks, and the program Prévia frame only program's (gate 2).
  *   - A monitor of the PiP (`role=monitor&output=pip`, what the monitor picker loads) gets
@@ -33,6 +35,8 @@
 import type { ServerMessage, Slices } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import type { ServerLogger } from '../logger/createLogger.js';
+import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
 import { startServerOnARandomPort } from './webSocketHubOnARandomPort.testSupport.js';
 import {
   connectAndWaitForHello,
@@ -76,8 +80,8 @@ const createClockOnTheCaption = {
  * A running server with the PiP and its caption, a clock item on the caption, and that
  * clock and a second one on program's clock layer both on air; answers the server.
  */
-async function startServerWithAClockOnEachOutput() {
-  const runningServer = await startServerOnARandomPort();
+async function startServerWithAClockOnEachOutput(logger?: ServerLogger) {
+  const runningServer = await startServerOnARandomPort({ logger });
   const { stateStore } = runningServer;
   for (const command of commandsThatSetUpThePip) {
     stateStore.applyCommand(command, operatorActor);
@@ -165,6 +169,24 @@ describe('the hello of a screen of one output', () => {
     // Assert: it draws nothing rather than program's graphics in the wrong scene.
     expect(readLayerIds(readSlicesOfHello(hello)), 'no layer').toEqual([]);
     expect(readLayerIdsOfInstances(readSlicesOfHello(hello)), 'no instance').toEqual([]);
+  });
+
+  it('logs a warning naming an output nobody created, and none for one that exists', async () => {
+    // Arrange: a clock on air on each output, and a logger we can read.
+    const { logger, readRecordedLines } = createRecordingLogger();
+    const runningServer = await startServerWithAClockOnEachOutput(logger);
+
+    // Act: a source with a typo in its address connects, then the PiP's own.
+    await connectAndWaitForHello(runningServer.port, { role: 'renderer', output: 'pipp' });
+    await connectAndWaitForHello(runningServer.port, { role: 'renderer', output: 'pip' });
+
+    // Assert: one warning, naming "pipp".
+    const warningsAboutOutputs = readRecordedLines().filter(
+      (line) => line.message === 'screen connected for an output that does not exist',
+    );
+    expect(warningsAboutOutputs, 'one warning, for the output nobody created').toEqual([
+      expect.objectContaining({ level: 'warn', output_id: 'pipp' }),
+    ]);
   });
 });
 

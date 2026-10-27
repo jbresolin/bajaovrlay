@@ -5,6 +5,10 @@ as a browser source: `program` (/render/), which always exists, and any the oper
 on "Saídas e camadas", such as `pip` (/render/?output=pip). Every layer belongs to one
 output; the slice and command schemas are shared code (`packages/shared/src/outputs/`).
 
+"Output" means the `outputId` of a layer (which renderer address draws it), not an
+instance's `target` (program or preview: on air or in Prévia); `packages/shared/src/outputs/
+README.md` says more.
+
 Start at `loadOutputAndLayerSlices.ts`: a new database is seeded with program and the
 seven layers of `core/store/seedLayers.ts`; a database written before outputs gains
 program with every layer it had assigned to it. From then on the layers are the

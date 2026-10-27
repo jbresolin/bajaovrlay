@@ -134,6 +134,17 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       outputIdOfEachScreen.set(client, outputIdOfTheScreen);
     }
     const allSlices = stateStore.readAllSlices();
+    // A screen of an output nobody created draws nothing (screenOutput.ts); the warning
+    // lets a typo in an OBS source's address be found in the log (gate 2 of PR #32).
+    const isOutputOfTheScreenListed = allSlices.outputs.some(
+      (output) => output.outputId === outputIdOfTheScreen,
+    );
+    if (isScreen && !isOutputOfTheScreenListed) {
+      connectionLogger.warn(
+        { output_id: outputIdOfTheScreen },
+        'screen connected for an output that does not exist',
+      );
+    }
     const slicesForThisClient = isScreen
       ? buildSlicesForAScreen(allSlices, outputIdOfTheScreen)
       : allSlices;

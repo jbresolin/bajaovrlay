@@ -109,7 +109,6 @@ function SelectItem({
   );
 }
 
-/** Shown at the top of a list too long to fit, to scroll up. */
 /** A group of options under one label (the layers of one output). */
 function SelectGroup({ ...props }: React.ComponentProps<typeof SelectPrimitive.Group>) {
   return <SelectPrimitive.Group data-slot="select-group" {...props} />;
@@ -126,6 +125,7 @@ function SelectLabel({ className, ...props }: React.ComponentProps<typeof Select
   );
 }
 
+/** Shown at the top of a list too long to fit, to scroll up. */
 function SelectScrollUpButton({
   className,
   ...props

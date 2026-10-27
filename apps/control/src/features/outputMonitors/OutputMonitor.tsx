@@ -55,6 +55,8 @@ const streamHeightInPixels = 1080;
  * With more than one output a picker beside the title chooses which output's page the
  * frame loads: program by default, the choice kept in this browser
  * (monitoredOutputInBrowserStorage.ts); a kept output that no longer exists is program.
+ * Until the server's hello brings the outputs the frame loads nothing, so a browser that
+ * kept "pip" never loads program's page first and then switches (gate 2 of PR #32).
  */
 export function OutputMonitor(props: {
   output: MonitoredOutput;
@@ -71,6 +73,8 @@ export function OutputMonitor(props: {
   const isChosenOutputListed = outputs.some((output) => output.outputId === chosenOutputId);
   const shownOutputId = isChosenOutputListed ? chosenOutputId : programOutputId;
   const isPickerOffered = outputs.length > 1;
+  // The outputs slice is empty only before the hello: the server always holds program.
+  const areOutputsKnown = outputs.length > 0;
   const outputQuery =
     shownOutputId === programOutputId ? '' : `&output=${encodeURIComponent(shownOutputId)}`;
 
@@ -111,7 +115,11 @@ export function OutputMonitor(props: {
         {/* pointer-events-none: the monitor is for looking, clicks must not land in it.
             max-w-none: the frame must stay 1920 px wide inside a box that is narrower. */}
         <iframe
-          src={`${rendererPageAddressOfOutput[props.output]}${outputQuery}`}
+          src={
+            areOutputsKnown
+              ? `${rendererPageAddressOfOutput[props.output]}${outputQuery}`
+              : undefined
+          }
           title={title}
           width={streamWidthInPixels}
           height={streamHeightInPixels}

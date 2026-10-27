@@ -49,11 +49,7 @@ export function OutputCard(props: OutputCardProps) {
   }
 
   return (
-    <section
-      aria-label={output.name}
-      aria-labelledby={headingId}
-      className="flex flex-col gap-3 rounded-lg border p-4"
-    >
+    <section aria-labelledby={headingId} className="flex flex-col gap-3 rounded-lg border p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={headingId} className="text-lg font-semibold">
           {output.name}

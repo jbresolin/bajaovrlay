@@ -14,14 +14,19 @@
  *     /render/?monitor=1&output=pip, and in "Prévia" /render/?target=preview&monitor=1&output=pip.
  *   - The choice is kept: a page opened later in this browser starts on it.
  *   - A kept choice of an output that no longer exists falls back to program.
+ *   - Before the server's hello brings the outputs, the frame loads nothing, so a browser
+ *     that kept "pip" does not load program first and then switch (gate 2).
  *
  * What these tests deliberately do not cover:
  *   - What the renderer draws for each address; apps/renderer.
  */
-import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { renderOnControlPageConnectedToFakeServer } from '@/state/controlPageOnFakeServer.testSupport';
+import {
+  renderOnControlPageConnectedToFakeServer,
+  renderOnControlPageStillWaitingForTheServer,
+} from '@/state/controlPageOnFakeServer.testSupport';
 import { buildSlicesWithThePipOutput } from '@/state/outputsLikeTheServerSends.testSupport';
 import { buildSlicesWithNothingOnAir } from '@/state/slicesLikeTheServerSends.testSupport';
 
@@ -120,5 +125,23 @@ describe('the monitors with a PiP output', () => {
 
     // Assert: program.
     expect(readAddressOfMonitor('Programa'), 'program again').toBe('/render/?monitor=1');
+  });
+
+  it('loads nothing before the outputs arrive, then the kept output', () => {
+    // Arrange: a browser that last showed the PiP in "Programa", the server not heard yet.
+    window.localStorage.setItem('bajaovrlay.saidaDoMonitor.program', 'pip');
+    const controlPage = renderOnControlPageStillWaitingForTheServer(<PreviewAndProgramMonitors />);
+    const addressBeforeTheHello = readAddressOfMonitor('Programa');
+
+    // Act: the server's hello arrives, with program and PiP.
+    act(() => {
+      controlPage.fakeServer.sendMessage({ type: 'hello', slices: buildSlicesWithThePipOutput() });
+    });
+
+    // Assert: no address before, the PiP's after; program's page was never loaded.
+    expect(addressBeforeTheHello, 'nothing is loaded before the outputs are known').toBeNull();
+    expect(readAddressOfMonitor('Programa'), 'then the kept output').toBe(
+      '/render/?monitor=1&output=pip',
+    );
   });
 });

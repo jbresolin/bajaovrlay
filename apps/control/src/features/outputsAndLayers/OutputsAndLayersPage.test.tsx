@@ -57,6 +57,18 @@ function findCardOfOutput(outputName: string) {
   return within(screen.getByRole('region', { name: outputName }));
 }
 
+/**
+ * The name a region is read out by: its `aria-label`, or the text of the heading its
+ * `aria-labelledby` points at (an output card is named by its heading).
+ */
+function readNameOfRegion(region: HTMLElement): string | null {
+  const headingId = region.getAttribute('aria-labelledby');
+  if (headingId === null) {
+    return region.getAttribute('aria-label');
+  }
+  return document.getElementById(headingId)?.textContent ?? null;
+}
+
 /** The layer names of one output's list, as the rows read, top of the page first. */
 function readLayerNamesOfOutput(outputName: string): (string | null)[] {
   const list = findCardOfOutput(outputName).getByRole('list');
@@ -72,7 +84,7 @@ describe('the list of outputs', () => {
 
     // Assert: the two cards in order, their layers, and their addresses.
     expect(
-      screen.getAllByRole('region').map((card) => card.getAttribute('aria-label')),
+      screen.getAllByRole('region').map(readNameOfRegion),
       'the new-output form, then program, then PiP',
     ).toEqual(['Nova saída', 'Programa', 'PiP']);
     expect(readLayerNamesOfOutput('Programa'), "program's layers, bottom to top").toEqual([
