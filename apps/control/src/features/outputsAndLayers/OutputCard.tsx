@@ -24,6 +24,8 @@ export type OutputCardProps = {
   output: Output;
   layersBottomToTop: Layer[];
   graphics: Graphic[];
+  /** The fallback layer's name now, for the delete warning of each layer. */
+  fallbackLayerName: string;
 };
 
 /**
@@ -93,6 +95,7 @@ export function OutputCard(props: OutputCardProps) {
         output={output}
         layersBottomToTop={props.layersBottomToTop}
         graphics={props.graphics}
+        fallbackLayerName={props.fallbackLayerName}
         sendFromTheCard={sendFromTheCard}
       />
       <AddLayerForm

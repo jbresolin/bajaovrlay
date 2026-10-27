@@ -33,6 +33,8 @@ export type OutputLayerListProps = {
   output: Output;
   layersBottomToTop: Layer[];
   graphics: Graphic[];
+  /** The fallback layer's name now, for the delete warning of each row. */
+  fallbackLayerName: string;
   sendFromTheCard: (command: CommandInput) => Promise<boolean>;
 };
 
@@ -91,6 +93,7 @@ export function OutputLayerList(props: OutputLayerListProps) {
               numberOfGraphicsDefaultingToIt={
                 props.graphics.filter((graphic) => graphic.defaultLayerId === layer.id).length
               }
+              fallbackLayerName={props.fallbackLayerName}
               sendFromTheCard={props.sendFromTheCard}
             />
           ))}

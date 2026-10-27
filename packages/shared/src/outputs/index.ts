@@ -4,6 +4,7 @@
 
 // The `outputs` slice: renderer addresses OBS loads, `program` always among them.
 export {
+  fallbackLayerIdOfGraphics,
   type Output,
   OutputIdSchema,
   type Outputs,

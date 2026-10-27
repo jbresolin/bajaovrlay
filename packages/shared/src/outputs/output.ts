@@ -11,6 +11,14 @@ import { ptBROutputs } from './ptBROutputs.js';
 export const programOutputId = 'program';
 
 /**
+ * The layer every graphic without a usable default layer goes to, on program: the top
+ * layer, where it can never replace the logo, the clock or a lower third on air. The
+ * server keeps it (it cannot be deleted or moved off program), and the settings page names
+ * it in the delete warning (gate 2 of PR #32).
+ */
+export const fallbackLayerIdOfGraphics = 'fullscreen';
+
+/**
  * An output id as it sits in the renderer's address, /render/?output=<id>: lower-case
  * letters and digits, words joined by single hyphens, up to 30 characters. Nothing in it
  * needs escaping, so the address the settings page shows is the one typed into OBS.

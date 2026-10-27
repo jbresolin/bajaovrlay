@@ -1,4 +1,4 @@
-import type { Graphic, OGrafManifest } from '@bajaovrlay/shared';
+import { fallbackLayerIdOfGraphics, type Graphic, type OGrafManifest } from '@bajaovrlay/shared';
 
 /** Where a graphic's takes go by default, and how the control page groups it. */
 export type GraphicPlacement = Pick<Graphic, 'defaultLayerId' | 'category'>;
@@ -17,7 +17,7 @@ export type GraphicPlacementDecision = {
  * replace the logo, the clock or a lower third that is on air. Used at boot, and by
  * deleteLayer for a graphic whose default layer the operator deleted (BAJAOVRLAY-49).
  */
-export const layerIdOfUnplacedGraphics = 'fullscreen';
+export const layerIdOfUnplacedGraphics = fallbackLayerIdOfGraphics;
 
 // The category is optional in a manifest; this is the group for graphics without one.
 const categoryOfUngroupedGraphics = 'other';

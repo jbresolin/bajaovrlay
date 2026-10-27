@@ -28,6 +28,8 @@ export type OutputLayerRowProps = {
   layer: Layer;
   /** How many graphics default to this layer: the armed "Excluir" warns about them. */
   numberOfGraphicsDefaultingToIt: number;
+  /** The fallback layer's name now, which those graphics will use once this one goes. */
+  fallbackLayerName: string;
   /** Sends a command from this card; answers whether the server accepted it. */
   sendFromTheCard: (command: CommandInput) => Promise<boolean>;
 };
@@ -61,7 +63,10 @@ export function OutputLayerRow(props: OutputLayerRowProps) {
 
   const warningWhileArmed =
     props.numberOfGraphicsDefaultingToIt > 0
-      ? texts.graphicsDefaultingToLayer(props.numberOfGraphicsDefaultingToIt)
+      ? texts.graphicsDefaultingToLayer(
+          props.numberOfGraphicsDefaultingToIt,
+          props.fallbackLayerName,
+        )
       : undefined;
 
   return (

@@ -14,7 +14,7 @@
  *   - "Salvar nome" sends updateLayer with the new name; the switch sends the new
  *     "persistent"; the replace-policy dropdown sends the policy chosen.
  *   - "Excluir" sends deleteLayer at the second press only; while armed it warns how many
- *     graphics default to the layer.
+ *     graphics default to the layer, naming the fallback layer by the name it has now.
  *   - A refusal of a delete shows the server's reason, which names what uses the layer.
  *   - A drag with the keyboard and one with the mouse each send one reorderLayers with
  *     the output's layers bottom to top in the new order; a drop where the row started
@@ -185,6 +185,25 @@ describe('deleting a layer', () => {
     expect(fakeServer.listCommandsReceived(), 'the second press deletes').toEqual([
       { type: 'deleteLayer', layerId: 'clock' },
     ]);
+  });
+
+  it('names the fallback layer by the name it has now', () => {
+    // Arrange: the page with the fullscreen layer renamed "Tela inteira".
+    const slices = buildSlicesWithThePipOutput();
+    slices.layers = slices.layers.map((layer) =>
+      layer.id === 'fullscreen' ? { ...layer, name: 'Tela inteira' } : layer,
+    );
+    renderOnControlPageConnectedToFakeServer(<OutputsAndLayersPage />, slices);
+    const clockRow = findRowOfLayer('Programa', 'Relógio');
+
+    // Act: arm "Excluir" on the clock layer, which the race clock defaults to.
+    fireEvent.click(clockRow.getByRole('button', { name: 'Excluir' }));
+
+    // Assert: the warning names the layer the graphic will really use.
+    expect(
+      clockRow.getByText('1 gráfico usa esta camada como padrão; ele passa a usar a Tela inteira.'),
+      'the warning names the fallback layer as it is called now',
+    ).toBeInTheDocument();
   });
 
   it("shows the server's reason, which names what uses the layer", async () => {

@@ -47,10 +47,11 @@ export const ptBROutputs = {
   deleteLayerButton: 'Excluir',
   deleteLayerConfirmButton: 'Confirmar: excluir',
   /** Shown beside an armed "Excluir" when some graphic defaults to this layer. */
-  graphicsDefaultingToLayer: (graphicCount: number) =>
+  /** `fallbackLayerName` is the fallback layer's name now ("Tela cheia" on a new database). */
+  graphicsDefaultingToLayer: (graphicCount: number, fallbackLayerName: string) =>
     graphicCount === 1
-      ? '1 gráfico usa esta camada como padrão; ele passa a usar a Tela cheia.'
-      : `${String(graphicCount)} gráficos usam esta camada como padrão; eles passam a usar a Tela cheia.`,
+      ? `1 gráfico usa esta camada como padrão; ele passa a usar a ${fallbackLayerName}.`
+      : `${String(graphicCount)} gráficos usam esta camada como padrão; eles passam a usar a ${fallbackLayerName}.`,
   // Adding a layer to an output.
   newLayerNameLabel: (outputName: string) => `Nome da nova camada de ${outputName}`,
   newLayerNamePlaceholder: 'Moldura',

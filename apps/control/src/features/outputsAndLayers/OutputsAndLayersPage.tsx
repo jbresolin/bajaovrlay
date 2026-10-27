@@ -1,4 +1,8 @@
-import { listLayersOfOutputBottomToTop, listOutputsProgramFirst } from '@bajaovrlay/shared';
+import {
+  fallbackLayerIdOfGraphics,
+  listLayersOfOutputBottomToTop,
+  listOutputsProgramFirst,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
@@ -18,6 +22,11 @@ export function OutputsAndLayersPage() {
   const outputs = useServerState((state) => state.outputs);
   const layers = useServerState((state) => state.layers);
   const graphics = useServerState((state) => state.graphics);
+  // The delete warning names the fallback layer as it is called now (gate 2 of PR #32);
+  // the id stands in only while the slices have not arrived.
+  const fallbackLayerName =
+    layers.find((layer) => layer.id === fallbackLayerIdOfGraphics)?.name ??
+    fallbackLayerIdOfGraphics;
 
   return (
     <main className="flex max-w-5xl flex-col gap-4">
@@ -32,6 +41,7 @@ export function OutputsAndLayersPage() {
           output={output}
           layersBottomToTop={listLayersOfOutputBottomToTop(layers, output.outputId)}
           graphics={graphics}
+          fallbackLayerName={fallbackLayerName}
         />
       ))}
     </main>
