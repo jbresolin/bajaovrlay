@@ -183,6 +183,11 @@ export const CommandErrorCodeSchema = z.enum([
   'LAYER_IN_USE',
   /** reorderLayers sent a list that is not exactly the output's layers, once each. */
   'LAYERS_NOT_A_PERMUTATION',
+  /**
+   * deleteLayer of the fullscreen layer, or moveLayerToOutput of it off program: it is
+   * where every graphic without a usable default layer goes (gate 2 of PR #32).
+   */
+  'FALLBACK_LAYER_KEPT',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

@@ -18,7 +18,9 @@
  *   - Each refusal, one row per guard: an id already used, a height already used in that
  *     output (named), an output or layer that does not exist, a move while something is
  *     on the layer (on air, in preview, marked "vai limpar"), a move to a height the other
- *     output uses, a reorder list that is not every layer of the output once.
+ *     output uses, a move of the fullscreen layer off program (the fallback of every
+ *     graphic stays on program, gate 2 of PR #32), a reorder list that is not every layer of
+ *     the output once.
  *
  * What these tests deliberately do not cover:
  *   - deleteLayer; deleteLayer.test.ts.
@@ -299,6 +301,14 @@ const layerRefusalScenarios: Array<{
     code: 'LAYER_ZINDEX_TAKEN',
     message:
       'A posição 20 da saída "Programa" já é da camada "Letreiro". Escolha outra posição para "Legenda".',
+  },
+  // The fullscreen layer is where a graphic without a usable default goes, on program: on
+  // the PiP, such a graphic would land in the wrong OBS scene.
+  {
+    name: 'moveLayerToOutput of the fullscreen layer off program',
+    command: { type: 'moveLayerToOutput', layerId: 'fullscreen', outputId: 'pip' },
+    code: 'FALLBACK_LAYER_KEPT',
+    message: 'A camada Tela cheia é a camada padrão dos gráficos e fica na saída Programa.',
   },
   // Moving to an output that does not exist.
   {

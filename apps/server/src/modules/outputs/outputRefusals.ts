@@ -59,6 +59,23 @@ export function refuseHeightTaken(
   };
 }
 
+/**
+ * The refusal for deleting the fullscreen layer or moving it off program: every graphic
+ * without a usable default layer goes there, so it must exist and be program's.
+ */
+export function refuseChangeOfTheFallbackLayer(
+  fallbackLayer: Layer,
+  program: Output | undefined,
+): CommandError {
+  return {
+    code: 'FALLBACK_LAYER_KEPT',
+    message: ptBR.outputs.fallbackLayerKept(
+      fallbackLayer.name,
+      program?.name ?? ptBR.outputs.programOutputName,
+    ),
+  };
+}
+
 /** The refusal for a reorderLayers list that is not every layer of the output once. */
 export function refuseLayersNotAPermutation(output: Output): CommandError {
   return {

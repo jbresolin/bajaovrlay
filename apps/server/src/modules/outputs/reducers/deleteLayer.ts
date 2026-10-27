@@ -1,4 +1,4 @@
-import type { DeleteLayerCommand, Graphic } from '@bajaovrlay/shared';
+import { type DeleteLayerCommand, type Graphic, programOutputId } from '@bajaovrlay/shared';
 
 import { refuseUnknownLayer } from '../../../core/store/commandRefusals.js';
 import { layerIdOfUnplacedGraphics } from '../../../core/store/graphicPlacement.js';
@@ -7,16 +7,20 @@ import type {
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
 import { describeUsesOfTheLayer, describeWhatIsOnTheLayer } from '../layerUses.js';
-import { refuseLayerInUse, refuseLayerNotEmpty } from '../outputRefusals.js';
+import {
+  refuseChangeOfTheFallbackLayer,
+  refuseLayerInUse,
+  refuseLayerNotEmpty,
+} from '../outputRefusals.js';
 
 /**
  * deleteLayer: removes a layer nothing uses. Refused, in this order, for a layer that
- * does not exist, while anything is on it (on air, in preview, marked "vai limpar"), and
- * while items, quick-fire buttons, macro steps or event rules name it, every one listed
- * (layerUses.ts). A graphic whose default layer it was is not a use: it falls back to the
- * fullscreen layer, as at boot (graphicPlacement.ts), and the outcome names it so the
- * store logs a warning. Deleting the fullscreen layer itself leaves such graphics as they
- * are, with a default no layer has: the item editor then asks for a layer.
+ * does not exist, for the fullscreen layer (the fallback of every graphic, kept as program
+ * is; gate 2 of PR #32), while anything is on it (on air, in preview, marked "vai
+ * limpar"), and while items, quick-fire buttons, macro steps or event rules name it,
+ * every one listed (layerUses.ts). A graphic whose default layer it was is not a use: it
+ * falls back to the fullscreen layer, as at boot (graphicPlacement.ts), and the outcome
+ * names it so the store logs a warning.
  */
 export function reduceDeleteLayer(
   slices: SlicesChangedByCommands,
@@ -25,6 +29,10 @@ export function reduceDeleteLayer(
   const layer = slices.layers.find((candidate) => candidate.id === command.layerId);
   if (layer === undefined) {
     return { status: 'refused', error: refuseUnknownLayer(command.layerId) };
+  }
+  if (layer.id === layerIdOfUnplacedGraphics) {
+    const program = slices.outputs.find((output) => output.outputId === programOutputId);
+    return { status: 'refused', error: refuseChangeOfTheFallbackLayer(layer, program) };
   }
   const whatIsOnTheLayer = describeWhatIsOnTheLayer(slices, layer.id);
   if (whatIsOnTheLayer.length > 0) {
@@ -36,10 +44,9 @@ export function reduceDeleteLayer(
   }
 
   const layersKept = slices.layers.filter((candidate) => candidate !== layer);
-  const isTheFallbackLayer = layer.id === layerIdOfUnplacedGraphics;
-  const graphicsToPlaceAgain = isTheFallbackLayer
-    ? []
-    : slices.graphics.filter((graphic) => graphic.defaultLayerId === layer.id);
+  const graphicsToPlaceAgain = slices.graphics.filter(
+    (graphic) => graphic.defaultLayerId === layer.id,
+  );
   if (graphicsToPlaceAgain.length === 0) {
     return { status: 'applied', slices: { ...slices, layers: layersKept } };
   }

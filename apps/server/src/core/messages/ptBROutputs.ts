@@ -19,6 +19,8 @@ export const ptBROutputs = {
     `Já existe uma camada com o id "${layerId}" ("${layerName}").`,
   zIndexTaken: (zIndex: number, outputName: string, takenByName: string, layerName: string) =>
     `A posição ${String(zIndex)} da saída "${outputName}" já é da camada "${takenByName}". Escolha outra posição para "${layerName}".`,
+  fallbackLayerKept: (layerName: string, programName: string) =>
+    `A camada ${layerName} é a camada padrão dos gráficos e fica na saída ${programName}.`,
   layersNotAPermutation: (outputName: string) =>
     `A nova ordem das camadas de "${outputName}" precisa trazer cada camada dessa saída uma vez.`,
   /** What a delete or a move of a layer was trying to do, ending "não pode …". */

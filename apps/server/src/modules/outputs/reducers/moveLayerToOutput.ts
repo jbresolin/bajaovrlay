@@ -1,18 +1,30 @@
-import { type MoveLayerToOutputCommand, sortLayersBottomToTop } from '@bajaovrlay/shared';
+import {
+  type MoveLayerToOutputCommand,
+  programOutputId,
+  sortLayersBottomToTop,
+} from '@bajaovrlay/shared';
 
 import { refuseUnknownLayer } from '../../../core/store/commandRefusals.js';
+import { layerIdOfUnplacedGraphics } from '../../../core/store/graphicPlacement.js';
 import type {
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
 import { describeWhatIsOnTheLayer } from '../layerUses.js';
-import { refuseHeightTaken, refuseLayerNotEmpty, refuseUnknownOutput } from '../outputRefusals.js';
+import {
+  refuseChangeOfTheFallbackLayer,
+  refuseHeightTaken,
+  refuseLayerNotEmpty,
+  refuseUnknownOutput,
+} from '../outputRefusals.js';
 import { findLayerAtHeightOfOutput } from './layerHeights.js';
 
 /**
  * moveLayerToOutput: moves a layer to another output, keeping its id, name and height,
  * so every item, button and macro step that names it now draws on that output. Refused,
- * in this order, for a layer or output that does not exist, while anything is on the
+ * in this order, for a layer or output that does not exist, for the fullscreen layer
+ * leaving program (every graphic without a usable default goes there, and on another
+ * output it would land in the wrong OBS scene; gate 2 of PR #32), while anything is on the
  * layer (on air, in preview, marked "vai limpar": it would jump from one OBS source to
  * another), and when the other output has a layer at that height (named). A move to the
  * output the layer is on changes nothing.
@@ -31,6 +43,12 @@ export function reduceMoveLayerToOutput(
   }
   if (layer.outputId === targetOutput.outputId) {
     return { status: 'applied', slices };
+  }
+  const isTheFallbackLayerLeavingProgram =
+    layer.id === layerIdOfUnplacedGraphics && targetOutput.outputId !== programOutputId;
+  if (isTheFallbackLayerLeavingProgram) {
+    const program = slices.outputs.find((output) => output.outputId === programOutputId);
+    return { status: 'refused', error: refuseChangeOfTheFallbackLayer(layer, program) };
   }
   const whatIsOnTheLayer = describeWhatIsOnTheLayer(slices, layer.id);
   if (whatIsOnTheLayer.length > 0) {

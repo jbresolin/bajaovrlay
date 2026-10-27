@@ -18,8 +18,8 @@
  *   - With several uses at once the reason lists every kind, counted, with their names.
  *   - A graphic whose default layer was deleted defaults to the fullscreen layer, and the
  *     outcome names it so the store can log a warning; the items keep their own layer.
- *   - Deleting the fullscreen layer itself leaves such a graphic with no default the
- *     editor can use, which the editor then asks for.
+ *   - The fullscreen layer itself, the fallback of every graphic, is never deleted: the
+ *     refusal says why, even with nothing on it and nothing naming it (gate 2 of PR #32).
  *
  * What these tests deliberately do not cover:
  *   - The store's warning line and the event-log row; outputsThroughTheStore.test.ts.
@@ -264,33 +264,24 @@ describe('a graphic whose default layer is deleted', () => {
     ).toBe(slicesBefore.items);
   });
 
-  it('leaves the default on the deleted fullscreen layer, for the editor to ask', () => {
-    // Arrange: a graphic whose default is the fullscreen layer.
-    const slicesWithoutAFullscreenGraphic = buildRaceDaySlicesWithPip({});
-    const slicesBefore = {
-      ...slicesWithoutAFullscreenGraphic,
-      graphics: slicesWithoutAFullscreenGraphic.graphics.map((graphic) =>
-        graphic.id === 'team-lower-third' ? { ...graphic, defaultLayerId: 'fullscreen' } : graphic,
-      ),
-    };
+  it('refuses to delete the fullscreen layer itself, the fallback of every graphic', () => {
+    // Arrange: program and PiP, nothing on air and no item; the fullscreen layer is free.
+    const slicesBefore = buildRaceDaySlicesWithPip({});
 
-    // Act: delete the fullscreen layer itself.
+    // Act: try to delete it.
     const outcome = reduceCommand(
       slicesBefore,
       { type: 'deleteLayer', layerId: 'fullscreen' },
       contextOfTheRundownCommand,
     );
 
-    // Assert: deleted; there is nowhere left to fall back to, so the graphics are as they
-    // were and nothing is named.
-    expect(outcome.status, 'the fullscreen layer may be deleted too').toBe('applied');
-    expect(
-      outcome.status === 'applied' && outcome.slices.graphics,
-      'the graphics are untouched: the editor asks for a layer',
-    ).toBe(slicesBefore.graphics);
-    expect(
-      outcome.status === 'applied' && outcome.graphicsPlacedOnTheFallbackLayer,
-      'no graphic was moved',
-    ).toBeUndefined();
+    // Assert: refused; a graphic whose default goes would otherwise point at no layer.
+    expect(outcome, 'the fallback layer is kept').toEqual({
+      status: 'refused',
+      error: {
+        code: 'FALLBACK_LAYER_KEPT',
+        message: 'A camada Tela cheia é a camada padrão dos gráficos e fica na saída Programa.',
+      },
+    });
   });
 });
