@@ -22,6 +22,11 @@ export type EntityImageFieldProps = {
   mediaId: string;
   /** Called with the new media id after an upload, or "" after "Remover". */
   onMediaIdChange: (mediaId: string) => void;
+  /**
+   * Called with true when an upload starts and false when it ends, stored or failed.
+   * Optional: the item editor's image field (ImageUrlFieldControl) does not pass it yet.
+   */
+  onUploadingChange?: (isUploading: boolean) => void;
 };
 
 /**
@@ -31,7 +36,7 @@ export type EntityImageFieldProps = {
  * another file, "Remover" takes the image off the record; the file stays in the store
  * until "Limpar imagens sem uso", so a removal by mistake costs nothing. A refusal (not
  * an image, over 5 MB) is shown in the server's words. The record itself is saved with
- * the form's "Salvar", like any field.
+ * the form's "Salvar", like any field; the form keeps "Salvar" off while an upload runs.
  */
 export function EntityImageField(props: EntityImageFieldProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,9 +48,13 @@ export function EntityImageField(props: EntityImageFieldProps) {
       return;
     }
     setIsUploading(true);
+    props.onUploadingChange?.(true);
     setRefusal(null);
     const outcome = await uploadImageFile(file);
     setIsUploading(false);
+    // uploadImageFile never throws, so a failed upload also ends here and lets the form
+    // save again; otherwise "Salvar" would stay off until the form is closed.
+    props.onUploadingChange?.(false);
     if (outcome.isUploaded) {
       props.onMediaIdChange(outcome.answer.mediaId);
     } else {

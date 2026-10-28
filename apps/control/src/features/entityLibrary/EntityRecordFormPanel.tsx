@@ -25,6 +25,17 @@ import { makeRecordId } from './recordId';
 
 const texts = ptBR.entityLibrary.form;
 
+/** What "Salvar" reads: why it is off, or "Salvar". */
+function readSaveButtonText(isWaitingForTheServer: boolean, isAnImageUploading: boolean): string {
+  if (isWaitingForTheServer) {
+    return texts.savingButton;
+  }
+  if (isAnImageUploading) {
+    return texts.waitingForImageButton;
+  }
+  return texts.saveButton;
+}
+
 /** What a tab gives its form. */
 export type EntityRecordFormPanelProps = {
   entityType: EntityType;
@@ -42,7 +53,8 @@ export type EntityRecordFormPanelProps = {
  * stays. A team's car number is its key, so it is typed for a new team only. A new
  * person, sponsor or slot gets one id when the form opens (makeRecordId, which works over
  * plain http), so two
- * presses of "Salvar" save the same record.
+ * presses of "Salvar" save the same record. While an image field uploads, "Salvar" is
+ * off and reads "Enviando imagem…", and a submit does nothing (BAJAOVRLAY-51).
  */
 export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
   const { entityType, recordAsOpened } = props;
@@ -50,13 +62,28 @@ export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
   const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+  // The keys of the image fields whose upload is still running. Until it ends the form
+  // does not hold the new media id, so a save then would store the record without it.
+  const [uploadingImageFieldKeys, setUploadingImageFieldKeys] = useState<string[]>([]);
+  const isAnImageUploading = uploadingImageFieldKeys.length > 0;
   const form = useForm<EntityFormValues>({
     defaultValues: buildEntityFormValues(entityType, recordAsOpened),
   });
   // A team's logo as the form holds it now, for the light plate's preview.
   const logoMediaId = useWatch({ control: form.control, name: 'logoMediaId' }) ?? '';
 
+  function markImageFieldUploading(recordFieldKey: string, isUploading: boolean): void {
+    setUploadingImageFieldKeys((keysUploading) => {
+      const otherKeysUploading = keysUploading.filter((key) => key !== recordFieldKey);
+      return isUploading ? [...otherKeysUploading, recordFieldKey] : otherKeysUploading;
+    });
+  }
+
   const save = form.handleSubmit(async (values) => {
+    // Checked here and not only on the button: Enter in a text field submits the form too.
+    if (isAnImageUploading) {
+      return;
+    }
     const reading = readEntityFormValues(entityType, values, recordAsOpened, () => newRecordId);
     if (!reading.isValid) {
       for (const [fieldKey, message] of Object.entries(reading.errorsByField)) {
@@ -120,6 +147,9 @@ export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
                   onChange={controlledField.onChange}
                   errorMessage={form.formState.errors[field.recordFieldKey]?.message}
                   isLocked={isTheKeyOfAStoredTeam}
+                  onUploadingChange={(isUploading) => {
+                    markImageFieldUploading(field.recordFieldKey, isUploading);
+                  }}
                 />
               )}
             />
@@ -141,8 +171,12 @@ export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
         </p>
       )}
       <div className="flex gap-2">
-        <ActionButton type="submit" size="sm" disabled={isWaitingForTheServer}>
-          {isWaitingForTheServer ? texts.savingButton : texts.saveButton}
+        <ActionButton
+          type="submit"
+          size="sm"
+          disabled={isWaitingForTheServer || isAnImageUploading}
+        >
+          {readSaveButtonText(isWaitingForTheServer, isAnImageUploading)}
         </ActionButton>
         <Button type="button" size="sm" variant="ghost" onClick={props.onClose}>
           {texts.cancelButton}

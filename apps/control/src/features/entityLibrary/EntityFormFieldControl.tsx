@@ -61,6 +61,8 @@ export type EntityFormFieldControlProps = {
   errorMessage: string | undefined;
   /** True for a field that cannot be changed here (a team's car number, when editing). */
   isLocked: boolean;
+  /** For an image field: called with true when its upload starts and false when it ends. */
+  onUploadingChange: (isUploading: boolean) => void;
 };
 
 /**
@@ -142,6 +144,7 @@ export function EntityFormFieldControl(props: EntityFormFieldControlProps) {
           label={field.label}
           mediaId={value}
           onMediaIdChange={onChange}
+          onUploadingChange={props.onUploadingChange}
         />
       );
   }

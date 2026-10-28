@@ -73,6 +73,8 @@ export const ptBREntityLibrary = {
     editTitle: (recordDescription: string) => `Editar: ${recordDescription}`,
     saveButton: 'Salvar',
     savingButton: 'Salvando…',
+    // "Salvar" while an image field is still uploading: the form does not hold it yet.
+    waitingForImageButton: 'Enviando imagem…',
     cancelButton: 'Cancelar',
     optionalHint: '(opcional)',
     noChoice: 'Escolha…',
