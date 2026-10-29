@@ -23,10 +23,10 @@ export type EntityImageFieldProps = {
   /** Called with the new media id after an upload, or "" after "Remover". */
   onMediaIdChange: (mediaId: string) => void;
   /**
-   * Called with true when an upload starts and false when it ends, stored or failed.
-   * Optional: the item editor's image field (ImageUrlFieldControl) does not pass it yet.
+   * Called with true when an upload starts and false when it ends, stored or failed: the
+   * form around keeps its save buttons off meanwhile, since it does not hold the image yet.
    */
-  onUploadingChange?: (isUploading: boolean) => void;
+  onUploadingChange: (isUploading: boolean) => void;
 };
 
 /**
@@ -48,13 +48,13 @@ export function EntityImageField(props: EntityImageFieldProps) {
       return;
     }
     setIsUploading(true);
-    props.onUploadingChange?.(true);
+    props.onUploadingChange(true);
     setRefusal(null);
     const outcome = await uploadImageFile(file);
     setIsUploading(false);
     // uploadImageFile never throws, so a failed upload also ends here and lets the form
     // save again; otherwise "Salvar" would stay off until the form is closed.
-    props.onUploadingChange?.(false);
+    props.onUploadingChange(false);
     if (outcome.isUploaded) {
       props.onMediaIdChange(outcome.answer.mediaId);
     } else {

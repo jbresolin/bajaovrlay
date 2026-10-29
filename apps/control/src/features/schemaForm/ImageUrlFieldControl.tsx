@@ -10,6 +10,8 @@ export type ImageUrlFieldControlProps = {
   label: string;
   formValue: SchemaFormFieldValue;
   onFormValueChange: (formValue: SchemaFormFieldValue) => void;
+  /** Called with true when an upload starts and false when it ends, stored or failed. */
+  onUploadingChange: (isUploading: boolean) => void;
 };
 
 /**
@@ -18,6 +20,7 @@ export type ImageUrlFieldControlProps = {
  * so a file chosen or dropped is uploaded to the media store at once, and the field holds
  * its address, "/media/<mediaId>", which the graphic draws with <img>. "Remover" clears
  * the field. A stored value that is not an address of the media store shows no thumbnail.
+ * The panel is told when an upload starts and ends, so it can keep its save buttons off.
  */
 export function ImageUrlFieldControl(props: ImageUrlFieldControlProps) {
   const storedUrl = typeof props.formValue === 'string' ? props.formValue : '';
@@ -30,6 +33,7 @@ export function ImageUrlFieldControl(props: ImageUrlFieldControlProps) {
       onMediaIdChange={(newMediaId) => {
         props.onFormValueChange(newMediaId === '' ? null : buildMediaUrl(newMediaId));
       }}
+      onUploadingChange={props.onUploadingChange}
     />
   );
 }

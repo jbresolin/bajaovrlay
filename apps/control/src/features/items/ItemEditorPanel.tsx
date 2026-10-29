@@ -1,8 +1,9 @@
 import type { Command, Item, ItemHome } from '@bajaovrlay/shared';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { updateImageFieldsStillUploading } from '@/features/entityLibrary/imageFieldsStillUploading';
 import { findRundownShownOnPage } from '@/features/rundown/rundownShownOnPage';
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
@@ -118,6 +119,20 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
   // on air only through its event, and "Salvar e disparar" is off.
   const [isAnyFieldFilledByAnEvent, setIsAnyFieldFilledByAnEvent] = useState(false);
 
+  // The keys of the graphic's image fields whose upload is still running (BAJAOVRLAY-51).
+  // Until it ends the form holds the old image, so a save then would store it, and
+  // "Salvar e disparar" would put the graphic on air without the new one.
+  const [imageFieldsStillUploading, setImageFieldsStillUploading] = useState<string[]>([]);
+  const isAnImageUploading = imageFieldsStillUploading.length > 0;
+  // useCallback keeps this the same function at every draw: the rows of the graphic's
+  // form are memoised, and a new function each time would redraw every one of them at
+  // each keystroke (ItemEditorPanelRenders.test.tsx).
+  const markImageFieldUploading = useCallback((fieldKey: string, isUploading: boolean) => {
+    setImageFieldsStillUploading((keysStillUploading) =>
+      updateImageFieldsStillUploading(keysStillUploading, fieldKey, isUploading),
+    );
+  }, []);
+
   // The second form lives in ItemGraphicFieldsForm, drawn below once the page knows the
   // chosen graphic. This is how the panel reaches it at a press: the form puts its handle
   // here while it is on the page. Null means there is no such form right now (no graphic
@@ -150,6 +165,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
     itemForm,
     graphicFieldsFormHandleRef,
     checkBothForms,
+    isAnImageUploading,
     onClose: props.onClose,
     refusalsToShowAtOpening: props.refusalsToShowAtOpening ?? [],
   });
@@ -210,6 +226,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
                 handleRef={graphicFieldsFormHandleRef}
                 isItemOnAir={isItemOnAir}
                 onIsFilledByAnEventChanged={setIsAnyFieldFilledByAnEvent}
+                onImageUploadingChange={markImageFieldUploading}
               />
             )}
           </CardContent>
@@ -217,6 +234,7 @@ function ItemEditorPanelForOneItem(props: ItemEditorPanelProps) {
             <ItemEditorButtons
               isWaitingForTheServer={saves.isWaitingForTheServer}
               isGraphicStillToBeChosen={isGraphicStillToBeChosen}
+              isAnImageUploading={isAnImageUploading}
               isItemOnAir={isItemOnAir}
               isTakenOnlyThroughAnEvent={chosenGraphic !== undefined && isAnyFieldFilledByAnEvent}
               commandTypesSentInThisOpening={saves.commandTypesSentInThisOpening}

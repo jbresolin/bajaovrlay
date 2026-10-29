@@ -20,6 +20,7 @@ import {
   buildUpsertCommandOfRecord,
   describeRecordOfType,
 } from './entityRecordsOfType';
+import { updateImageFieldsStillUploading } from './imageFieldsStillUploading';
 import { LogoPlatePreview } from './LogoPlatePreview';
 import { makeRecordId } from './recordId';
 
@@ -73,10 +74,9 @@ export function EntityRecordFormPanel(props: EntityRecordFormPanelProps) {
   const logoMediaId = useWatch({ control: form.control, name: 'logoMediaId' }) ?? '';
 
   function markImageFieldUploading(recordFieldKey: string, isUploading: boolean): void {
-    setUploadingImageFieldKeys((keysUploading) => {
-      const otherKeysUploading = keysUploading.filter((key) => key !== recordFieldKey);
-      return isUploading ? [...otherKeysUploading, recordFieldKey] : otherKeysUploading;
-    });
+    setUploadingImageFieldKeys((keysUploading) =>
+      updateImageFieldsStillUploading(keysUploading, recordFieldKey, isUploading),
+    );
   }
 
   const save = form.handleSubmit(async (values) => {

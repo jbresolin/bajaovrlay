@@ -78,6 +78,8 @@ export const SchemaFormFieldRow = memo(function SchemaFormFieldRow(props: {
   isFilledByTheWholeClock: boolean;
   /** What the panel shows in place of the control, for a field drawn read-only. */
   readOnlyContent: ReactNode | undefined;
+  /** Told when this image field's upload starts and ends; undefined: the panel does not ask. */
+  onImageUploadingChange: ((fieldKey: string, isUploading: boolean) => void) | undefined;
 }) {
   const { form, field, controlId, isDisabled, textShownWhileUntouched } = props;
   const { dataSchema, bindingOptions, isFilledByTheWholeClock } = props;
@@ -244,6 +246,9 @@ export const SchemaFormFieldRow = memo(function SchemaFormFieldRow(props: {
               label={field.label}
               formValue={valueField.value ?? null}
               onFormValueChange={valueField.onChange}
+              onUploadingChange={(isUploading) => {
+                props.onImageUploadingChange?.(field.key, isUploading);
+              }}
             />
           )}
         />
