@@ -63,6 +63,11 @@ export type ItemGraphicFieldsFormProps = {
    * item goes on air only through its event, so the panel turns "Salvar e disparar" off.
    */
   onIsFilledByAnEventChanged: (isFilledByAnEvent: boolean) => void;
+  /**
+   * Told when an image field's upload starts and ends, with the field's key: the panel
+   * keeps its save buttons off meanwhile. It must stay the same function between draws.
+   */
+  onImageUploadingChange: (fieldKey: string, isUploading: boolean) => void;
 };
 
 /**
@@ -150,6 +155,7 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
         controlIdPrefix={graphicFieldsControlIdPrefix}
         bindingOptions={bindingOptions}
         entityLibrary={entityLibrary}
+        onImageUploadingChange={props.onImageUploadingChange}
       />
       {isItemOnAir && (
         <SourceChangeAtTheNextTakeNote

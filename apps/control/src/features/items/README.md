@@ -9,7 +9,8 @@ and changing a stored one, for any graphic. Start at `ItemEditorPanel.tsx`; the 
 - `ItemEditorPanel.tsx` + `ItemEditorHeader.tsx` + `ItemEditorButtons.tsx` — the editor's two forms and
   its buttons; `useItemEditorSaves.ts` — what a press sends: "Salvar item" (`createItem`, or
   `updateItemFields` with only what changed), "Salvar e disparar" / "Salvar e prévia" (then
-  `takeItem` / `previewItem`), "Atualizar no ar"; `ItemHomeSelect.tsx` is "Onde".
+  `takeItem` / `previewItem`), "Atualizar no ar"; all four are off, reading "Enviando imagem…",
+  while an image of the graphic uploads (BAJAOVRLAY-51); `ItemHomeSelect.tsx` is "Onde".
 - `ItemEditorFormFields.tsx`, `FormFieldRow.tsx`, `itemEditorForm.ts`, `itemEditorFormResolver.ts` —
   the fields every item has (a new item opens with no graphic chosen: "Escolha um gráfico…", and the
   save buttons are off until one is); `ItemGraphicFieldsForm.tsx`, `graphicFieldsOfItemEditor.ts` —

@@ -4,7 +4,9 @@ The "Cadastros" page (#/cadastros, BAJAOVRLAY-19): the entity library on a deskt
 Start at `EntityLibraryPage.tsx` (the images' summary, `MediaFolderSummary.tsx`, and one tab per
 kind) and `EntityTab.tsx` (toolbar, `EntityTable.tsx`, and a side panel:
 `EntityRecordFormPanel.tsx` or `EntityCsvImportPanel.tsx`). The form's fields and how they read
-are `entityRecordForm.ts`; an image uploads at once (`EntityImageField.tsx`, `imageUpload.ts`).
+are `entityRecordForm.ts`; an image uploads at once (`EntityImageField.tsx`, `imageUpload.ts`),
+and "Salvar" stays off until every upload of the form has ended (`imageFieldsStillUploading.ts`,
+shared with the item editor).
 
 CSV columns (`entityCsvColumns.ts`, `;` or `,`, header first, images never): Equipes `carro*`,
 `equipe*`, `escola*`, `escola_completa`, `cidade`, `uf`; Pessoas `id`, `nome*`, `funcao*`,

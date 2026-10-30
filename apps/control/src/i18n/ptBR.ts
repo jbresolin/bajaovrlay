@@ -169,6 +169,9 @@ export const ptBR = {
     // Offered only while the saved item being edited is on air: saves the item and
     // changes its instance on the program output without a new take.
     updateOnAirButton: 'Atualizar no ar',
+    // What every save button reads while an image of the graphic is still uploading: the
+    // form does not hold the new image yet (BAJAOVRLAY-51).
+    waitingForImageButton: 'Enviando imagem…',
     cancelButton: 'Cancelar',
   },
   // The form generated from a graphic's manifest (features/schemaForm). Field labels,

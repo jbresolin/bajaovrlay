@@ -44,6 +44,8 @@ export type ItemEditorSavesOptions = {
   graphicFieldsFormHandleRef: RefObject<ItemGraphicFieldsFormHandle | null>;
   /** Checks both forms, putting the messages under the wrong fields; true when all passed. */
   checkBothForms: () => Promise<boolean>;
+  /** true while an image of the graphic is still uploading: a press then sends nothing. */
+  isAnImageUploading: boolean;
   /** Called after the server accepted everything a press sent, and on "Cancelar". */
   onClose: () => void;
   /** The command types whose refusal the buttons show from the start (usually none). */
@@ -304,7 +306,14 @@ export function useItemEditorSaves(options: ItemEditorSavesOptions): ItemEditorS
   // What a press on a save button does: the buttons go off, the forms are checked and,
   // if they pass, sent; the buttons come back whatever the outcome (accepted, refused,
   // no answer within 5 s, or a field that failed its rule).
+  //
+  // A press during an image upload sends nothing: the form still holds the old image
+  // (BAJAOVRLAY-51). The buttons are off then too; this is the second guard, for any way
+  // in that does not go through them, as a keyboard shortcut added later might not.
   async function pressSaveButton(whatThePressAsksFor: WhatThePressAsksFor): Promise<void> {
+    if (options.isAnImageUploading) {
+      return;
+    }
     setIsWaitingForTheServer(true);
     try {
       await checkBothFormsThenSend(whatThePressAsksFor);

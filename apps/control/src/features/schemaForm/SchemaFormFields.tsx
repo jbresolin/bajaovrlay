@@ -88,6 +88,13 @@ export function SchemaFormFields(props: {
    * ("Edição rápida" shows a field a source keeps up to date this way). Default: none.
    */
   readOnlyFieldContents?: Record<string, ReactNode>;
+  /**
+   * Told when an image field's upload starts and ends, with the field's key, so the panel
+   * can keep its save buttons off meanwhile (the item editor, BAJAOVRLAY-51). Left out
+   * ("Edição rápida"), nobody is told. It must stay the same function from one draw to the
+   * next, or every row redraws at each keystroke (SchemaFormFieldRow.tsx).
+   */
+  onImageUploadingChange?: (fieldKey: string, isUploading: boolean) => void;
 }) {
   const { form, description, controlIdPrefix, textShownInUntouchedField, bindingOptions } = props;
   const isDisabled = props.isDisabled ?? false;
@@ -204,6 +211,7 @@ export function SchemaFormFields(props: {
                 entityLibrary={props.entityLibrary}
                 isFilledByTheWholeClock={keysFilledByTheWholeClock.includes(field.key)}
                 readOnlyContent={readOnlyContent}
+                onImageUploadingChange={props.onImageUploadingChange}
               />
             </div>
           );

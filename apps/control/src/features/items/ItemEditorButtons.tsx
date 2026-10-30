@@ -14,6 +14,11 @@ export type ItemEditorButtonsProps = {
    * line says why, since there is nothing to save or to put on air.
    */
   isGraphicStillToBeChosen: boolean;
+  /**
+   * true while an image of the graphic is still uploading: every button that saves the
+   * item is off and reads "Enviando imagem…", since the form does not hold the image yet.
+   */
+  isAnImageUploading: boolean;
   /** true while the stored item has an instance on the program output. */
   isItemOnAir: boolean;
   /** true while a field is "Evento": the item goes on air only through its event. */
@@ -36,15 +41,21 @@ export type ItemEditorButtonsProps = {
  * no graphic chosen yet (a line beside them says so); the form's own rule "Escolha o
  * gráfico." stays as the second guard. "Salvar e disparar" is off, with its reason, while a
  * field is "Evento": such an item goes on air only through its event (gate 2 of PR #22). "Cancelar" stays on during a press, so the
- * operator can always leave.
+ * operator can always leave. While an image uploads, all four save buttons, "Atualizar no
+ * ar" included, are off and read "Enviando imagem…" (BAJAOVRLAY-51).
  */
 export function ItemEditorButtons(props: ItemEditorButtonsProps) {
   const hasSentACommandInThisOpening = props.commandTypesSentInThisOpening.length > 0;
-  const areSaveButtonsOff = props.isWaitingForTheServer || props.isGraphicStillToBeChosen;
+  const areSaveButtonsOff =
+    props.isWaitingForTheServer || props.isGraphicStillToBeChosen || props.isAnImageUploading;
+  // While an image uploads, each save button says why it is off instead of what it does.
+  function readTextOfSaveButton(whatTheButtonDoes: string): string {
+    return props.isAnImageUploading ? ptBR.itemEditor.waitingForImageButton : whatTheButtonDoes;
+  }
   return (
     <>
       <ActionButton type="button" disabled={areSaveButtonsOff} onClick={props.onSavePressed}>
-        {ptBR.itemEditor.saveButton}
+        {readTextOfSaveButton(ptBR.itemEditor.saveButton)}
       </ActionButton>
       <ActionButton
         type="button"
@@ -55,7 +66,7 @@ export function ItemEditorButtons(props: ItemEditorButtonsProps) {
         }
         onClick={props.onSaveAndTakePressed}
       >
-        {ptBR.itemEditor.saveAndTakeButton}
+        {readTextOfSaveButton(ptBR.itemEditor.saveAndTakeButton)}
       </ActionButton>
       <ActionButton
         type="button"
@@ -63,16 +74,16 @@ export function ItemEditorButtons(props: ItemEditorButtonsProps) {
         disabled={areSaveButtonsOff}
         onClick={props.onSaveAndPreviewPressed}
       >
-        {ptBR.itemEditor.saveAndPreviewButton}
+        {readTextOfSaveButton(ptBR.itemEditor.saveAndPreviewButton)}
       </ActionButton>
       {props.isItemOnAir && (
         <ActionButton
           type="button"
           variant="secondary"
-          disabled={props.isWaitingForTheServer}
+          disabled={props.isWaitingForTheServer || props.isAnImageUploading}
           onClick={props.onUpdateOnAirPressed}
         >
-          {ptBR.itemEditor.updateOnAirButton}
+          {readTextOfSaveButton(ptBR.itemEditor.updateOnAirButton)}
         </ActionButton>
       )}
       <Button type="button" variant="outline" onClick={props.onCancelPressed}>
