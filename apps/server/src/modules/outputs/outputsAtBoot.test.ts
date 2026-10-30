@@ -215,7 +215,10 @@ describe('a damaged layers row', () => {
     const bootOnTheDamagedRow = () => loadSlicesAtBoot({ database, graphicPackagesFolder });
 
     // Assert: the boot stops; running on a fresh seed would hide that the row was lost.
-    expect(bootOnTheDamagedRow, 'a damaged layers row must stop the boot').toThrow();
+    expect(
+      bootOnTheDamagedRow,
+      'the boot stops because the layers schema wants a list and finds an object',
+    ).toThrow('Invalid input: expected array, received object');
   });
 });
 

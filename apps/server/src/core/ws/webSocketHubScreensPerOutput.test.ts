@@ -14,11 +14,6 @@
  * What these tests prove (with a real server on a random port and a real SQLite file):
  *   - The hello of a PiP renderer carries the PiP's layer and instance only; the hello of
  *     a renderer with no output carries program's, and neither carries the other's.
- *   - A take on the PiP reaches the PiP renderer with the instance and sends program's
- *     renderer nothing at all, since its instances did not change (gate 2); program's own
- *     take still reaches it.
- *   - A layer added to the PiP while its renderer is connected reaches it in its layers.
- *   - The PiP renderer's report puts the PiP's instance on air.
  *   - An output nobody created gives a screen no layer and no instance, and the server logs
  *     a warning naming it, so a typo in an OBS source is found in the log (gate 2); a
  *     screen of an output that exists logs no such line.
@@ -30,89 +25,24 @@
  *
  * What these tests deliberately do not cover:
  *   - Which slices a screen gets at all; webSocketHubScreenSlices.test.ts.
+ *   - What a change sends the screens of each output (the PiP's take, a layer added on
+ *     air, the PiP's status report); webSocketHubChangesPerOutput.test.ts.
  *   - The renderer drawing what it is sent; apps/renderer covers that.
  */
-import type { ServerMessage, Slices } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import type { ServerLogger } from '../logger/createLogger.js';
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
-import { startServerOnARandomPort } from './webSocketHubOnARandomPort.testSupport.js';
 import {
-  connectAndWaitForHello,
-  waitUntilTheScreenHasEverythingSentSoFar,
-} from './webSocketHubWithAnnouncedChanges.testSupport.js';
-
-const operatorActor = 'operador:conexao-7';
-
-/** The commands that add the PiP output, its caption, and a clock item on the caption. */
-const commandsThatSetUpThePip = [
-  { type: 'createOutput', outputId: 'pip', name: 'PiP' },
-  {
-    type: 'createLayer',
-    layerId: 'legenda-pip',
-    outputId: 'pip',
-    name: 'Legenda',
-    zIndex: 20,
-    replacePolicy: 'out-then-in',
-    persistent: false,
-  },
-];
-
-/** A race clock item on the PiP's caption, ready to take. */
-const createClockOnTheCaption = {
-  type: 'createItem',
-  home: { kind: 'quickFire', panelId: 'atalhos' },
-  graphicId: 'race-clock',
-  layerId: 'legenda-pip',
-  label: 'Relógio na PiP',
-  fields: {
-    sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
-    state: { kind: 'literal', value: 'green' },
-    clockMode: { kind: 'literal', value: 'elapsed' },
-    referenceTimeMs: { kind: 'literal', value: 3_900_000 },
-    referenceWallClockMs: { kind: 'literal', value: 1_791_550_800_000 },
-    running: { kind: 'literal', value: true },
-  },
-};
-
-/**
- * A running server with the PiP and its caption, a clock item on the caption, and that
- * clock and a second one on program's clock layer both on air; answers the server.
- */
-async function startServerWithAClockOnEachOutput(logger?: ServerLogger) {
-  const runningServer = await startServerOnARandomPort({ logger });
-  const { stateStore } = runningServer;
-  for (const command of commandsThatSetUpThePip) {
-    stateStore.applyCommand(command, operatorActor);
-  }
-  const captionClock = stateStore.applyCommand(createClockOnTheCaption, operatorActor);
-  const programClock = stateStore.applyCommand(
-    { ...createClockOnTheCaption, layerId: 'clock', label: 'Relógio no programa' },
-    operatorActor,
-  );
-  for (const created of [captionClock, programClock]) {
-    if (created.ok && created.createdItemId !== undefined) {
-      stateStore.applyCommand({ type: 'takeItem', itemId: created.createdItemId }, operatorActor);
-    }
-  }
-  return runningServer;
-}
-
-/** The slices of a hello, or none for another message. */
-function readSlicesOfHello(message: ServerMessage): Slices | undefined {
-  return message.type === 'hello' ? message.slices : undefined;
-}
-
-/** The layer ids a group of slices carries, bottom to top. */
-function readLayerIds(slices: Slices | undefined): string[] {
-  return slices?.layers.map((layer) => layer.id) ?? [];
-}
-
-/** The layer of each instance a group of slices carries. */
-function readLayerIdsOfInstances(slices: Slices | undefined): string[] {
-  return slices?.instances.map((instance) => instance.layerId) ?? [];
-}
+  commandsThatSetUpThePip,
+  createClockOnTheCaption,
+  operatorActor,
+  readLayerIds,
+  readLayerIdsOfInstances,
+  readSlicesOfHello,
+  startServerWithAClockOnEachOutput,
+} from './screensOfEachOutput.testSupport.js';
+import { startServerOnARandomPort } from './webSocketHubOnARandomPort.testSupport.js';
+import { connectAndWaitForHello } from './webSocketHubWithAnnouncedChanges.testSupport.js';
 
 describe('the hello of a screen of one output', () => {
   it("gives a PiP renderer the PiP's layer and instance, and a renderer with no output program's", async () => {
@@ -250,134 +180,6 @@ describe('the monitors of one output', () => {
         instancesMessage.slice.map((instance) => instance.layerId),
       "the monitor gets the PiP's take",
     ).toEqual(['legenda-pip']);
-  });
-});
-
-describe('changes reaching the screens of each output', () => {
-  it("sends a take on the PiP to the PiP renderer only, and program's own take to program's", async () => {
-    // Arrange: the PiP and its caption, a clock item ready on each output, nothing on air
-    // yet, and both renderers connected.
-    const runningServer = await startServerOnARandomPort();
-    const { stateStore } = runningServer;
-    for (const command of commandsThatSetUpThePip) {
-      stateStore.applyCommand(command, operatorActor);
-    }
-    const captionClock = stateStore.applyCommand(createClockOnTheCaption, operatorActor);
-    const programClock = stateStore.applyCommand(
-      { ...createClockOnTheCaption, layerId: 'clock', label: 'Relógio no programa' },
-      operatorActor,
-    );
-    const { client: pipRenderer } = await connectAndWaitForHello(runningServer.port, {
-      role: 'renderer',
-      output: 'pip',
-    });
-    const { client: programRenderer } = await connectAndWaitForHello(runningServer.port, {
-      role: 'renderer',
-    });
-
-    // Act: take the clock on the caption; once program's renderer has everything sent so
-    // far, count what it got; then take program's clock.
-    stateStore.applyCommand(
-      { type: 'takeItem', itemId: captionClock.ok ? captionClock.createdItemId : '' },
-      operatorActor,
-    );
-    const instancesOnThePip = await pipRenderer.waitForMessage(
-      'the instances with the caption clock',
-      (message) => message.type === 'slice' && message.name === 'instances',
-    );
-    await waitUntilTheScreenHasEverythingSentSoFar(programRenderer);
-    const changesProgramGotForThePipTake = programRenderer
-      .readReceivedMessages()
-      .filter((message) => message.type === 'slice' || message.type === 'slices');
-    stateStore.applyCommand(
-      { type: 'takeItem', itemId: programClock.ok ? programClock.createdItemId : '' },
-      operatorActor,
-    );
-    const instancesOnProgram = await programRenderer.waitForMessage(
-      "the instances with program's clock",
-      (message) => message.type === 'slice' && message.name === 'instances',
-    );
-
-    // Assert: the PiP sees its clock; program's renderer is sent nothing for the PiP's
-    // take (its instances did not change, so OBS's main source parses nothing), and then
-    // gets its own take.
-    expect(
-      instancesOnThePip.type === 'slice' &&
-        instancesOnThePip.name === 'instances' &&
-        instancesOnThePip.slice.map((instance) => instance.layerId),
-      'the PiP renderer gets the take',
-    ).toEqual(['legenda-pip']);
-    expect(
-      changesProgramGotForThePipTake,
-      "program's renderer is sent nothing for a take on the PiP",
-    ).toEqual([]);
-    expect(
-      instancesOnProgram.type === 'slice' &&
-        instancesOnProgram.name === 'instances' &&
-        instancesOnProgram.slice.map((instance) => instance.layerId),
-      "program's renderer gets program's take",
-    ).toEqual(['clock']);
-  });
-
-  it('sends a layer added to the PiP to its renderer while it is connected', async () => {
-    // Arrange: the PiP and its caption, and the PiP renderer connected.
-    const runningServer = await startServerOnARandomPort();
-    for (const command of commandsThatSetUpThePip) {
-      runningServer.stateStore.applyCommand(command, operatorActor);
-    }
-    const { client: pipRenderer } = await connectAndWaitForHello(runningServer.port, {
-      role: 'renderer',
-      output: 'pip',
-    });
-
-    // Act: João adds the frame under the caption on "Saídas e camadas".
-    runningServer.stateStore.applyCommand(
-      {
-        type: 'createLayer',
-        layerId: 'moldura-pip',
-        outputId: 'pip',
-        name: 'Moldura',
-        zIndex: 10,
-        replacePolicy: 'cut',
-        persistent: true,
-      },
-      operatorActor,
-    );
-    const layersMessage = await pipRenderer.waitForMessage(
-      'the layers with the frame',
-      (message) => message.type === 'slice' && message.name === 'layers',
-    );
-
-    // Assert: the frame arrives under the caption, without a reload.
-    expect(
-      layersMessage.type === 'slice' &&
-        layersMessage.name === 'layers' &&
-        layersMessage.slice.map((layer) => layer.id),
-      'the new layer reaches the connected renderer, bottom to top',
-    ).toEqual(['moldura-pip', 'legenda-pip']);
-  });
-
-  it("puts the PiP's instance on air when the PiP renderer reports it", async () => {
-    // Arrange: a clock on air on each output, and the PiP renderer connected.
-    const runningServer = await startServerWithAClockOnEachOutput();
-    const { client: pipRenderer, hello } = await connectAndWaitForHello(runningServer.port, {
-      role: 'renderer',
-      output: 'pip',
-    });
-    const captionClockId = readSlicesOfHello(hello)?.instances[0]?.id ?? '';
-
-    // Act: the PiP renderer says the caption clock is on screen.
-    pipRenderer.sendJson({ type: 'instanceStatus', instanceId: captionClockId, status: 'on-air' });
-    await waitUntilTheScreenHasEverythingSentSoFar(pipRenderer);
-
-    // Assert: the caption clock is on air; program's is still loading.
-    const statusByLayer = runningServer.stateStore
-      .readAllSlices()
-      .instances.map((instance) => `${instance.layerId}:${instance.status}`);
-    expect(statusByLayer, "the PiP's renderer reports the PiP's instance").toEqual([
-      'legenda-pip:on-air',
-      'clock:loading',
-    ]);
   });
 });
 

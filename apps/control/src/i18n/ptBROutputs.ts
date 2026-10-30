@@ -46,12 +46,15 @@ export const ptBROutputs = {
   persistentLabel: 'Fica no ar entre itens',
   deleteLayerButton: 'Excluir',
   deleteLayerConfirmButton: 'Confirmar: excluir',
-  /** Shown beside an armed "Excluir" when some graphic defaults to this layer. */
-  /** `fallbackLayerName` is the fallback layer's name now ("Tela cheia" on a new database). */
+  /**
+   * Shown beside an armed "Excluir" when some graphic defaults to this layer.
+   * `fallbackLayerName` is the fallback layer's name now ("Tela cheia" on a new database);
+   * no article before it, since a renamed layer may be masculine ("o Fundo").
+   */
   graphicsDefaultingToLayer: (graphicCount: number, fallbackLayerName: string) =>
     graphicCount === 1
-      ? `1 gráfico usa esta camada como padrão; ele passa a usar a ${fallbackLayerName}.`
-      : `${String(graphicCount)} gráficos usam esta camada como padrão; eles passam a usar a ${fallbackLayerName}.`,
+      ? `1 gráfico usa esta camada como padrão; ele passa a usar a camada ${fallbackLayerName}.`
+      : `${String(graphicCount)} gráficos usam esta camada como padrão; eles passam a usar a camada ${fallbackLayerName}.`,
   // Adding a layer to an output.
   newLayerNameLabel: (outputName: string) => `Nome da nova camada de ${outputName}`,
   newLayerNamePlaceholder: 'Moldura',

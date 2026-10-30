@@ -175,7 +175,7 @@ describe('deleting a layer', () => {
     const commandsAfterTheFirstPress = fakeServer.listCommandsReceived();
     const isWarningShownWhileArmed =
       clockRow.queryByText(
-        '1 gráfico usa esta camada como padrão; ele passa a usar a Tela cheia.',
+        '1 gráfico usa esta camada como padrão; ele passa a usar a camada Tela cheia.',
       ) !== null;
     fireEvent.click(clockRow.getByRole('button', { name: 'Confirmar: excluir' }));
 
@@ -187,11 +187,11 @@ describe('deleting a layer', () => {
     ]);
   });
 
-  it('names the fallback layer by the name it has now', () => {
-    // Arrange: the page with the fullscreen layer renamed "Tela inteira".
+  it('names the fallback layer by the name it has now, after "a camada" whatever its gender', () => {
+    // Arrange: the page with the fullscreen layer renamed "Quadro cheio", a masculine name.
     const slices = buildSlicesWithThePipOutput();
     slices.layers = slices.layers.map((layer) =>
-      layer.id === 'fullscreen' ? { ...layer, name: 'Tela inteira' } : layer,
+      layer.id === 'fullscreen' ? { ...layer, name: 'Quadro cheio' } : layer,
     );
     renderOnControlPageConnectedToFakeServer(<OutputsAndLayersPage />, slices);
     const clockRow = findRowOfLayer('Programa', 'Relógio');
@@ -201,7 +201,9 @@ describe('deleting a layer', () => {
 
     // Assert: the warning names the layer the graphic will really use.
     expect(
-      clockRow.getByText('1 gráfico usa esta camada como padrão; ele passa a usar a Tela inteira.'),
+      clockRow.getByText(
+        '1 gráfico usa esta camada como padrão; ele passa a usar a camada Quadro cheio.',
+      ),
       'the warning names the fallback layer as it is called now',
     ).toBeInTheDocument();
   });

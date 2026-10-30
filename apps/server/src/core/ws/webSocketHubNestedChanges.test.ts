@@ -17,8 +17,9 @@
  *     adds a layer to the PiP right away, and the new layer reaches it too.
  *
  * What these tests deliberately do not cover:
- *   - Which slices a screen of an output is sent, and the skip itself (a take on the PiP
- *     sends program's screens nothing); webSocketHubScreensPerOutput.test.ts.
+ *   - Which slices a screen of an output is sent; webSocketHubScreensPerOutput.test.ts.
+ *   - The skip itself (a take on the PiP sends program's screens nothing);
+ *     webSocketHubChangesPerOutput.test.ts.
  */
 import type { ServerMessage } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
