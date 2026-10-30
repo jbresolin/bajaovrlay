@@ -7,6 +7,9 @@ docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
   and `previewClearedLayerIds` slices; "Limpar" sends `clearLayer`, "Prévia: limpar"
   `previewClearLayer`, "Próximo" `nextOnLayer` for a graphic shown in steps (the podium,
   BAJAOVRLAY-47), and "Editar" / "Editar prévia" load that instance into "Edição rápida".
+- `LayerGroupOfOutput.tsx` — with more than one output (BAJAOVRLAY-49) the rows come grouped by
+  output: "Programa" first, always open; each other output a group the operator can fold away.
+  With program alone the panel is the flat list it always was.
 - `LayerStatusRow.tsx` — one row: layer (+ chips "em prévia", "vai limpar"), graphic, "há 2 min", badge, buttons.
 - `InstanceStatusBadge.tsx` — green "No ar", grey "Carregando", red "Falhou" + why (tooltip).
 - `useCurrentTime.ts` — redraws the rows every 10 s so the relative times keep up.

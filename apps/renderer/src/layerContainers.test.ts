@@ -27,7 +27,7 @@ import { createLayerContainers } from './layerContainers.js';
 
 /** Builds one layer of the stream; only the id, name and z-index vary in these tests. */
 function createLayer(id: string, name: string, zIndex: number): Layer {
-  return { id, name, zIndex, replacePolicy: 'out-then-in', persistent: false };
+  return { id, outputId: 'program', name, zIndex, replacePolicy: 'out-then-in', persistent: false };
 }
 
 /** Builds an empty stage element, like the `#stage` of the renderer page. */

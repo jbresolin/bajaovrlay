@@ -19,11 +19,33 @@ const fakeGraphicFolder = fileURLToPath(new URL('../test-fixtures/fake-graphic/'
  * graphic on it to see what the renderer does with a layer it was never told about.
  */
 export const layersOfTheFakeServer: Layer[] = [
-  { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
-  { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
-  { id: 'lower-third', name: 'Legenda', zIndex: 40, replacePolicy: 'cut', persistent: false },
+  {
+    id: 'bug',
+    outputId: 'program',
+    name: 'Logo',
+    zIndex: 10,
+    replacePolicy: 'out-then-in',
+    persistent: true,
+  },
+  {
+    id: 'clock',
+    outputId: 'program',
+    name: 'Relógio',
+    zIndex: 30,
+    replacePolicy: 'out-then-in',
+    persistent: true,
+  },
+  {
+    id: 'lower-third',
+    outputId: 'program',
+    name: 'Legenda',
+    zIndex: 40,
+    replacePolicy: 'cut',
+    persistent: false,
+  },
   {
     id: 'fullscreen',
+    outputId: 'program',
     name: 'Tela cheia',
     zIndex: 50,
     replacePolicy: 'crossfade',
@@ -101,6 +123,7 @@ export async function startFakeServerForPage(
   options: { instancesOnAir: Instance[]; pageMustDialAsAMonitor?: boolean },
 ): Promise<FakeServerForPage> {
   const slices: Slices = {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: layersOfTheFakeServer,
     graphics: [readFakeGraphicFromItsManifest(), sponsorRollWithoutFiles],
     instances: options.instancesOnAir,

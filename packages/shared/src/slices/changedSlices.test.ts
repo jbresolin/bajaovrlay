@@ -29,6 +29,7 @@ import type { Slices } from './slices.js';
 
 const clockLayer = {
   id: 'clock',
+  outputId: 'program',
   name: 'Relógio',
   zIndex: 30,
   replacePolicy: 'out-then-in',
@@ -56,6 +57,7 @@ const finalClockInPreview = {
 /** Builds every slice as a client holds them: the clock layer, and the given instances. */
 function createSlicesWithClockLayerAndInstances(instances: Slices['instances']): Slices {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: [clockLayer],
     graphics: [],
     instances,

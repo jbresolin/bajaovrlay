@@ -39,6 +39,7 @@ export type ChangedSlices = z.infer<typeof ChangedSlicesSchema>;
  */
 export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: ChangedSlices): Slices {
   return {
+    outputs: changedSlices.outputs ?? slices.outputs,
     layers: changedSlices.layers ?? slices.layers,
     graphics: changedSlices.graphics ?? slices.graphics,
     instances: changedSlices.instances ?? slices.instances,

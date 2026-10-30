@@ -13,6 +13,7 @@ import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { MediaSchema } from '../media/mediaRecord.js';
+import { OutputsSchema } from '../outputs/output.js';
 import { OverridesSchema } from '../overrides/override.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
@@ -20,11 +21,12 @@ import { RundownSchema } from '../rundown/rundown.js';
 import { EventLogEntrySchema } from './eventLogEntry.js';
 import { GraphicSchema } from './graphic.js';
 import { InstanceSchema } from './instance.js';
-import { LayerSchema } from './layer.js';
+import { LayersSchema } from './layer.js';
 import { PreviewClearedLayerIdsSchema } from './previewClearedLayerIds.js';
 
 /** The name of every slice, in the order the server lists them. */
 export const SliceNameSchema = z.enum([
+  'outputs',
   'layers',
   'graphics',
   'instances',
@@ -57,7 +59,14 @@ export type SliceName = z.infer<typeof SliceNameSchema>;
  * own: they receive these over the WebSocket (or GET /api/v1/state) and send commands.
  */
 export const SlicesSchema = z.object({
-  layers: z.array(LayerSchema),
+  /**
+   * The renderer addresses OBS loads (BAJAOVRLAY-49): `program` always, and any the
+   * operator adds on "Saídas e camadas". Saved. Screens receive it whole: it is a few
+   * rows, and the schema requires `program` in it, so it could not be sent empty.
+   */
+  outputs: OutputsSchema,
+  /** The layers of every output, each naming its own; ids unique, zIndex per output. */
+  layers: LayersSchema,
   graphics: z.array(GraphicSchema),
   instances: z.array(InstanceSchema),
   /**

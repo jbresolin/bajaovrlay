@@ -1,3 +1,5 @@
+import { useServerState } from '@/state/ControlPageStateProvider';
+
 import {
   chooseMonitorWidthForColumnWidth,
   gapBetweenMonitorsInPixels,
@@ -23,6 +25,8 @@ import { useWidthOfElement } from './useWidthOfElement';
 export function PreviewAndProgramMonitors() {
   const { elementToMeasureRef, widthInPixels: rowWidthInPixels } = useWidthOfElement();
   const monitorWidthInPixels = chooseMonitorWidthForColumnWidth(rowWidthInPixels);
+  // Each monitor may show another output than program (BAJAOVRLAY-49).
+  const outputs = useServerState((state) => state.outputs);
 
   return (
     <div
@@ -33,11 +37,11 @@ export function PreviewAndProgramMonitors() {
       {/* As wide as the monitor, so a long label under it is cut short instead of
           pushing "Programa" out of the row. */}
       <div className="flex shrink-0 flex-col gap-2" style={{ width: monitorWidthInPixels }}>
-        <OutputMonitor output="preview" widthInPixels={monitorWidthInPixels} />
+        <OutputMonitor output="preview" widthInPixels={monitorWidthInPixels} outputs={outputs} />
         <PreviewedLayersList />
       </div>
       <div className="shrink-0" style={{ width: monitorWidthInPixels }}>
-        <OutputMonitor output="program" widthInPixels={monitorWidthInPixels} />
+        <OutputMonitor output="program" widthInPixels={monitorWidthInPixels} outputs={outputs} />
       </div>
     </div>
   );

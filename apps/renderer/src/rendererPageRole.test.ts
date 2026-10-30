@@ -28,6 +28,10 @@
  *     value, `target=program`, `target=PREVIEW`, `target` with no value, a different
  *     parameter) is the program renderer: it draws program, reports, dials
  *     `/ws?role=renderer` and reads `/api/v1/state?role=renderer`.
+ *   - `output=pip` (BAJAOVRLAY-49) names the output the page draws and is passed on to the
+ *     server in both paths, so the server sends it the PiP's layers only; it combines with
+ *     `target` and `monitor` as they combine with each other. No `output`, or an empty
+ *     one, is program, and the paths are exactly those of a page from before outputs.
  *
  * What these tests deliberately do not cover:
  *   - That a monitor or a preview page really sends nothing;
@@ -43,18 +47,21 @@ import { describe, expect, it } from 'vitest';
 import { decideRendererPageRole } from './rendererPageRole.js';
 
 const programRenderer = {
+  outputId: 'program',
   drawnOutput: 'program',
   reportsInstanceStatus: true,
   webSocketPath: '/ws?role=renderer',
   stateReadingPath: '/api/v1/state?role=renderer',
 };
 const programMonitor = {
+  outputId: 'program',
   drawnOutput: 'program',
   reportsInstanceStatus: false,
   webSocketPath: '/ws?role=monitor',
   stateReadingPath: '/api/v1/state?role=monitor',
 };
 const previewPage = {
+  outputId: 'program',
   drawnOutput: 'preview',
   reportsInstanceStatus: false,
   webSocketPath: '/ws?role=monitor',
@@ -160,6 +167,45 @@ const pageAddressScenarios = [
     pageAddressSearch: '?targetDeTeste=preview',
     expectedRole: programRenderer,
   },
+  // OBS's second browser source, for the scene with the camera box: /render/?output=pip.
+  {
+    name: 'is the PiP renderer when the address says output=pip',
+    pageAddressSearch: '?output=pip',
+    expectedRole: {
+      ...programRenderer,
+      outputId: 'pip',
+      webSocketPath: '/ws?role=renderer&output=pip',
+      stateReadingPath: '/api/v1/state?role=renderer&output=pip',
+    },
+  },
+  // The control page's "Programa" monitor switched to the PiP.
+  {
+    name: 'is a PiP monitor when the address says output=pip and monitor=1',
+    pageAddressSearch: '?output=pip&monitor=1',
+    expectedRole: {
+      ...programMonitor,
+      outputId: 'pip',
+      webSocketPath: '/ws?role=monitor&output=pip',
+      stateReadingPath: '/api/v1/state?role=monitor&output=pip',
+    },
+  },
+  // The control page's "Prévia" monitor switched to the PiP.
+  {
+    name: 'is a silent PiP preview page when the address says target=preview and output=pip',
+    pageAddressSearch: '?target=preview&monitor=1&output=pip',
+    expectedRole: {
+      ...previewPage,
+      outputId: 'pip',
+      webSocketPath: '/ws?role=monitor&output=pip',
+      stateReadingPath: '/api/v1/state?role=monitor&output=pip',
+    },
+  },
+  // A half-typed `output=` is program, so the main source never goes blank over it.
+  {
+    name: 'is the program renderer when output has no value',
+    pageAddressSearch: '?output=',
+    expectedRole: programRenderer,
+  },
 ];
 
 describe('decideRendererPageRole', () => {
@@ -172,7 +218,7 @@ describe('decideRendererPageRole', () => {
     // Assert: the output drawn, the reporting and the two server paths are the row's.
     expect(
       role,
-      'only target=preview draws preview and only monitor=1 or target=preview silences a page; anything else is the reporting program renderer',
+      'only target=preview draws preview, only monitor=1 or target=preview silences a page, and output names the output passed on to the server; anything else is the reporting program renderer',
     ).toEqual(expectedRole);
   });
 });

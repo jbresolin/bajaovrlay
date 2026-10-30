@@ -184,8 +184,8 @@ describe('GET /api/v1/openapi.json', () => {
     ).toBeDefined();
     expect(
       document.paths['/state']?.get?.parameters?.map((parameter) => parameter.name),
-      'GET /state must describe its role query parameter',
-    ).toEqual(['role']);
+      'GET /state must describe its role and output query parameters (output: BAJAOVRLAY-49)',
+    ).toEqual(['role', 'output']);
   });
 
   it('is still generated with the "will be cleared" markers in the state it describes', async () => {

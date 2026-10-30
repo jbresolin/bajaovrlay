@@ -41,9 +41,24 @@ import { SliceNameSchema, SlicesSchema } from './slices.js';
 /** Builds the state of a race day morning: five layers, the clock registered and on air. */
 function buildRaceDayStateWithTheClockOnAir() {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: [
-      { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
-      { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
+      {
+        id: 'bug',
+        outputId: 'program',
+        name: 'Logo',
+        zIndex: 10,
+        replacePolicy: 'out-then-in',
+        persistent: true,
+      },
+      {
+        id: 'clock',
+        outputId: 'program',
+        name: 'Relógio',
+        zIndex: 30,
+        replacePolicy: 'out-then-in',
+        persistent: true,
+      },
     ],
     graphics: [
       {
@@ -266,6 +281,7 @@ describe('SliceNameSchema', () => {
     // entity library (teams, people, sponsors and the schedule) and its images, just
     // before the event log.
     const expectedSliceNames = [
+      'outputs',
       'layers',
       'graphics',
       'instances',
@@ -294,7 +310,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these twenty-two, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these twenty-three, in this order').toEqual(
       expectedSliceNames,
     );
   });

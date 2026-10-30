@@ -9,6 +9,7 @@ import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
 /** The slices a reducer may change, in the order changes are reported. */
 export const sliceNamesChangedByCommands = [
+  'outputs',
   'layers',
   'graphics',
   'instances',
@@ -77,6 +78,7 @@ export function buildAllSlices(
   eventLog: Slices['eventLog'],
 ): Slices {
   return {
+    outputs: slicesOfCommands.outputs,
     layers: slicesOfCommands.layers,
     graphics: slicesOfCommands.graphics,
     instances: slicesOfCommands.instances,

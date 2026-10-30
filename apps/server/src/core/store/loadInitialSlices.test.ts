@@ -116,18 +116,41 @@ describe('loadInitialSlices on an empty database', () => {
     // The tower sits at 35, between the clock it stacks under on the same right-hand
     // column and the lower third; the notice (BAJAOVRLAY-44) at 45, above the lower third.
     expect(slices.layers, 'the seeded layers must be exactly these seven').toEqual([
-      { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
+      {
+        id: 'bug',
+        outputId: 'program',
+        name: 'Logo',
+        zIndex: 10,
+        replacePolicy: 'out-then-in',
+        persistent: true,
+      },
       {
         id: 'ticker',
+        outputId: 'program',
         name: 'Letreiro',
         zIndex: 20,
         replacePolicy: 'out-then-in',
         persistent: false,
       },
-      { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
-      { id: 'tower', name: 'Torre', zIndex: 35, replacePolicy: 'out-then-in', persistent: true },
+      {
+        id: 'clock',
+        outputId: 'program',
+        name: 'Relógio',
+        zIndex: 30,
+        replacePolicy: 'out-then-in',
+        persistent: true,
+      },
+      {
+        id: 'tower',
+        outputId: 'program',
+        name: 'Torre',
+        zIndex: 35,
+        replacePolicy: 'out-then-in',
+        persistent: true,
+      },
       {
         id: 'lower-third',
+        outputId: 'program',
         name: 'Tarja',
         zIndex: 40,
         replacePolicy: 'out-then-in',
@@ -135,6 +158,7 @@ describe('loadInitialSlices on an empty database', () => {
       },
       {
         id: 'notice',
+        outputId: 'program',
         name: 'Aviso',
         zIndex: 45,
         replacePolicy: 'out-then-in',
@@ -142,6 +166,7 @@ describe('loadInitialSlices on an empty database', () => {
       },
       {
         id: 'fullscreen',
+        outputId: 'program',
         name: 'Tela cheia',
         zIndex: 50,
         replacePolicy: 'out-then-in',
@@ -157,6 +182,8 @@ describe('loadInitialSlices on an empty database', () => {
       readAllSliceRows(database).map((row) => [row.name, row.updatedAt]),
       'the seed must be saved, stamped with the store clock, so the next boot loads it',
     ).toEqual([
+      // The program output since BAJAOVRLAY-49; modules/outputs covers what it holds.
+      ['outputs', '2026-10-09T08:00:00.000Z'],
       ['layers', '2026-10-09T08:00:00.000Z'],
       ['graphics', '2026-10-09T08:00:00.000Z'],
       ['instances', '2026-10-09T08:00:00.000Z'],

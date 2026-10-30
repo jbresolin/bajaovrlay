@@ -8,6 +8,7 @@ import {
   reduceEventInboxCommand,
 } from '../../../modules/events/index.js';
 import { reduceMediaCommand } from '../../../modules/media/index.js';
+import { reduceOutputOrLayerCommand } from '../../../modules/outputs/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
 import { dropBindingsOfInstancesGone } from './instanceBindingsBookkeeping.js';
@@ -145,5 +146,17 @@ function reduceCommandOfItsType(
     case 'recordUploadedMedia':
     case 'deleteMedia':
       return reduceMediaCommand(slices, command, context);
+    // Outputs and the editing of layers (BAJAOVRLAY-49): their reducers live in the module
+    // modules/outputs.
+    case 'createOutput':
+    case 'renameOutput':
+    case 'deleteOutput':
+    case 'reorderOutputs':
+    case 'createLayer':
+    case 'updateLayer':
+    case 'moveLayerToOutput':
+    case 'reorderLayers':
+    case 'deleteLayer':
+      return reduceOutputOrLayerCommand(slices, command);
   }
 }

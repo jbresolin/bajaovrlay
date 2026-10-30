@@ -43,6 +43,8 @@ export function buildSliceMessage(
   serverNowMs: number,
 ): SliceMessage {
   switch (sliceName) {
+    case 'outputs':
+      return { type: 'slice', name: 'outputs', slice: slices.outputs, serverNowMs };
     case 'layers':
       return { type: 'slice', name: 'layers', slice: slices.layers, serverNowMs };
     case 'graphics':
@@ -125,6 +127,9 @@ function copyOneSliceByName(
   group: ChangedSlices,
 ): void {
   switch (sliceName) {
+    case 'outputs':
+      group.outputs = slices.outputs;
+      break;
     case 'layers':
       group.layers = slices.layers;
       break;

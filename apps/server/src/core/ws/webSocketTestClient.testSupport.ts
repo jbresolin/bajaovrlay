@@ -36,15 +36,23 @@ export type WebSocketTestClient = {
  * `answersPings: false` the client ignores the server's pings, like a frozen browser tab.
  * With `role: 'renderer'` it connects to /ws?role=renderer, as the renderer page OBS
  * loads does; with `role: 'monitor'` to /ws?role=monitor, as the control page's program
- * and preview frames do.
+ * and preview frames do. With `output: 'pip'` as well it adds `&output=pip`, as a renderer
+ * page loaded at /render/?output=pip does (BAJAOVRLAY-49).
  * The socket is closed when the test ends.
  */
 export async function connectWebSocketTestClient(
   port: number,
-  options: { answersPings?: boolean; role?: 'renderer' | 'monitor' } = {},
+  options: { answersPings?: boolean; role?: 'renderer' | 'monitor'; output?: string } = {},
 ): Promise<WebSocketTestClient> {
-  const roleQuery = options.role === undefined ? '' : `?role=${options.role}`;
-  const socket = new WebSocket(`ws://127.0.0.1:${port}/ws${roleQuery}`, {
+  const queryParameters = new URLSearchParams();
+  if (options.role !== undefined) {
+    queryParameters.set('role', options.role);
+  }
+  if (options.output !== undefined) {
+    queryParameters.set('output', options.output);
+  }
+  const query = queryParameters.size === 0 ? '' : `?${queryParameters.toString()}`;
+  const socket = new WebSocket(`ws://127.0.0.1:${port}/ws${query}`, {
     autoPong: options.answersPings ?? true,
   });
   onTestFinished(() => socket.terminate());

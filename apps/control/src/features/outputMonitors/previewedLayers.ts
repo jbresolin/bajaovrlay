@@ -1,4 +1,6 @@
-import type { Graphic, Instance, Item, Layer } from '@bajaovrlay/shared';
+import type { Graphic, Instance, Item, Layer, Output } from '@bajaovrlay/shared';
+
+import { ptBR } from '@/i18n/ptBR';
 
 /**
  * One line under the "Prévia" monitor: a layer that holds a preview, or a layer marked
@@ -12,7 +14,10 @@ export type PreviewedLayer = {
    */
   lineKey: string;
   layerId: string;
-  /** The layer's name as the layer panel shows it, or its id when the layer is unknown. */
+  /**
+   * The layer's name as the layer panel shows it, or its id when the layer is unknown;
+   * with more than one output it starts with the output's name ("PiP · Legenda").
+   */
   layerName: string;
   /** What is previewed, in the words the operator knows it by; empty for a marked layer. */
   previewLabel: string;
@@ -22,6 +27,7 @@ export type PreviewedLayer = {
 
 /** The slices the lines are read from. */
 export type SlicesForPreviewedLayers = {
+  outputs: Output[];
   layers: Layer[];
   graphics: Graphic[];
   items: Item[];
@@ -43,9 +49,23 @@ const zIndexOfUnknownLayer = Number.POSITIVE_INFINITY;
  * item id nobody can look up; both are named by the graphic's name, or by the graphic's
  * id when the server no longer lists the graphic. The label is read from the `items`
  * slice as it is now, so a renamed item shows its new name although the preview still
- * holds the data it was made with.
+ * holds the data it was made with. With more than one output (BAJAOVRLAY-49) each line's
+ * name starts with its output's: "Tomar tudo" takes every output's previews, and two
+ * outputs may each have a "Legenda" (gate 2 of PR #32).
  */
 export function listPreviewedLayers(slices: SlicesForPreviewedLayers): PreviewedLayer[] {
+  const isMoreThanOneOutput = slices.outputs.length > 1;
+  // The name of the line of a layer: the layer's name, or its id when the server no
+  // longer lists it, after its output's name when there is more than one output.
+  function nameTheLayerOfALine(layer: Layer | undefined, layerId: string): string {
+    const layerName = layer?.name ?? layerId;
+    const output = slices.outputs.find((candidate) => candidate.outputId === layer?.outputId);
+    if (!isMoreThanOneOutput || output === undefined) {
+      return layerName;
+    }
+    return ptBR.outputs.layerNameWithItsOutput(output.name, layerName);
+  }
+
   const previewInstances = slices.instances.filter((instance) => instance.target === 'preview');
 
   const linesWithTheirZIndex = previewInstances.map((previewInstance) => {
@@ -56,7 +76,7 @@ export function listPreviewedLayers(slices: SlicesForPreviewedLayers): Previewed
     const previewedLayer: PreviewedLayer = {
       lineKey: `preview:${previewInstance.layerId}:${previewInstance.id}`,
       layerId: previewInstance.layerId,
-      layerName: layer?.name ?? previewInstance.layerId,
+      layerName: nameTheLayerOfALine(layer, previewInstance.layerId),
       previewLabel: itemPreviewed?.label ?? graphicNameOrItsId,
       isMarkedToBeCleared: false,
     };
@@ -68,7 +88,7 @@ export function listPreviewedLayers(slices: SlicesForPreviewedLayers): Previewed
     const markedLayer: PreviewedLayer = {
       lineKey: `mark:${markedLayerId}`,
       layerId: markedLayerId,
-      layerName: layer?.name ?? markedLayerId,
+      layerName: nameTheLayerOfALine(layer, markedLayerId),
       previewLabel: '',
       isMarkedToBeCleared: true,
     };

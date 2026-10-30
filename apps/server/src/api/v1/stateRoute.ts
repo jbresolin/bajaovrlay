@@ -3,15 +3,18 @@ import { createRoute } from '@hono/zod-openapi';
 import { z } from 'zod';
 
 import { ErrorAnswerBodySchema } from '../../core/http/errorAnswers.js';
+import { readOutputIdOfAScreen } from '../../core/ws/screenOutput.js';
 import { buildSlicesForAScreen } from '../../core/ws/slicesSentToScreens.js';
 
 /**
  * The query of GET /state. `role` names the screen asking (`renderer` for the page OBS
  * loads, `monitor` for the control page's frames), as the WebSocket address does; with
- * no role the caller gets every slice.
+ * no role the caller gets every slice. `output` names the screen's output
+ * (BAJAOVRLAY-49), program when left out or empty; it counts only with a role.
  */
 export const StateRouteQuerySchema = z.object({
   role: z.enum(['renderer', 'monitor']).optional(),
+  output: z.string().optional(),
 });
 
 /** The query of GET /state after validation. */
@@ -31,8 +34,9 @@ export const getStateRoute = createRoute({
     200: {
       description:
         'All slices: layers, graphics, instances and the newest event-log entries. With a ' +
-        'role, only layers, graphics, instances and previewClearedLayerIds are filled and ' +
-        'every other slice is an empty list, as the WebSocket sends a screen.',
+        'role, only outputs, graphics and the layers, instances and previewClearedLayerIds ' +
+        'of its output (program unless `output` names another) are filled, and every other ' +
+        'slice is an empty list, as the WebSocket sends a screen.',
       content: { 'application/json': { schema: SlicesSchema } },
     },
     400: {
@@ -44,7 +48,7 @@ export const getStateRoute = createRoute({
 
 /**
  * The slices GET /state answers: every slice with no role, and for a screen the same
- * copy its WebSocket hello carries (slicesSentToScreens.ts: the four slices it draws,
+ * copy its WebSocket hello carries (slicesSentToScreens.ts: what it draws of its output,
  * the rest empty), so the fallback for a late hello never brings a screen a slice the
  * hub keeps from it.
  */
@@ -52,5 +56,5 @@ export function chooseSlicesForStateReader(slices: Slices, query: StateRouteQuer
   if (query.role === undefined) {
     return slices;
   }
-  return buildSlicesForAScreen(slices);
+  return buildSlicesForAScreen(slices, readOutputIdOfAScreen(query.output ?? null));
 }

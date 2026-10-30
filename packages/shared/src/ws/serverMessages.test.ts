@@ -33,6 +33,7 @@ import { ServerMessageSchema } from './serverMessages.js';
 
 const lowerThirdLayer = {
   id: 'lower-third',
+  outputId: 'program',
   name: 'Tarja',
   zIndex: 40,
   replacePolicy: 'out-then-in',
@@ -81,6 +82,7 @@ describe('ServerMessageSchema', () => {
       message: {
         type: 'hello',
         slices: {
+          outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
           layers: [],
           graphics: [],
           instances: [],
@@ -115,6 +117,7 @@ describe('ServerMessageSchema', () => {
       message: {
         type: 'hello',
         slices: {
+          outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
           layers: [],
           graphics: [],
           instances: [],

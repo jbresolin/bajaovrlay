@@ -1,5 +1,6 @@
-// Test support for webSocketHubScreenSlices.test.ts: a hub on a real store whose
-// changes the test can announce itself (for a change no command makes), connecting a
+// Test support for webSocketHubScreenSlices.test.ts and webSocketHubNestedChanges.test.ts:
+// a hub on a real store whose changes the test can announce itself (for a change no
+// command makes) or react to before the hub hears of them, connecting a
 // client up to its hello, and a way to wait until a renderer or a monitor has received
 // everything sent to it so far. Nothing here keeps state between calls.
 import { createServer } from 'node:http';
@@ -26,9 +27,13 @@ import {
 /**
  * Starts a hub on a random free port with a real store on a fresh database, and hands
  * the test the listener the hub gave the store, so the test can tell the hub of a change
- * no command makes. Everything is closed when the test ends.
+ * no command makes. `registerBeforeTheHub`, when given, is handed the real store before the
+ * hub is attached, so a listener it registers is told of each change before the hub is.
+ * Everything is closed when the test ends.
  */
-export async function startHubWhoseChangesTheTestCanAnnounce(): Promise<{
+export async function startHubWhoseChangesTheTestCanAnnounce(
+  options: { registerBeforeTheHub?: (realStateStore: StateStore) => void } = {},
+): Promise<{
   port: number;
   realStateStore: StateStore;
   listenersTheHubRegistered: SliceChangeListener[];
@@ -40,6 +45,7 @@ export async function startHubWhoseChangesTheTestCanAnnounce(): Promise<{
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
     readCurrentTime: () => new Date(momentTheServerClockIsHeldAt),
   });
+  options.registerBeforeTheHub?.(realStateStore);
   const listenersTheHubRegistered: SliceChangeListener[] = [];
   const stateStore: StateStore = {
     readAllSlices: realStateStore.readAllSlices,
@@ -90,7 +96,7 @@ export async function waitUntilTheScreenHasEverythingSentSoFar(
 /** Connects a client and waits for its hello, so it is surely in the hub's client list. */
 export async function connectAndWaitForHello(
   port: number,
-  options: { role?: 'renderer' | 'monitor' } = {},
+  options: { role?: 'renderer' | 'monitor'; output?: string } = {},
 ): Promise<{ client: WebSocketTestClient; hello: ServerMessage }> {
   const client = await connectWebSocketTestClient(port, options);
   const hello = await client.waitForMessage('hello', (message) => message.type === 'hello');

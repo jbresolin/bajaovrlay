@@ -17,7 +17,6 @@
  *     reference (entityId, not the car number of BAJAOVRLAY-19), when a literal has no
  *     value, when its order is negative or its auto-out is zero.
  *   - The six item colours are exactly the names the control page maps to its tokens.
- *   - An instance may carry the id of the item it was taken from, and may also have none.
  *   - The state as a whole now needs the `rundowns` and `items` slices, and a `slice`
  *     message named `items` must carry items.
  *
@@ -27,11 +26,11 @@
  *     apps/server check it.
  *   - Whether the field values fit the graphic's own schema; the server checks that at
  *     the take.
+ *   - The item id an instance remembers; slices/instance.test.ts covers it.
  */
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { InstanceSchema } from '../slices/instance.js';
 import { SliceNameSchema, SlicesSchema } from '../slices/slices.js';
 import { SliceMessageSchema } from '../ws/serverMessages.js';
 import { ItemSchema } from './item.js';
@@ -68,25 +67,19 @@ function buildEnduroClockItem() {
   };
 }
 
-/** Builds the race clock on air on the clock layer, as a take leaves it. */
-function buildRaceClockInstanceOnAir() {
-  return {
-    id: '7d3c1a52-4f0e-4b8e-9a51-2f6f1e0c9b11',
-    layerId: 'clock',
-    graphicId: 'race-clock',
-    target: 'program',
-    resolvedData: { sessionName: 'Enduro de Resistência', state: 'green' },
-    currentStep: 0,
-    status: 'loading',
-    takenAt: '2026-10-11T12:00:00.000Z',
-  };
-}
-
 /** Builds the whole state of a race morning: one rundown, one prepared item, nothing on air. */
 function buildRaceMorningStateWithOnePreparedItem() {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: [
-      { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
+      {
+        id: 'clock',
+        outputId: 'program',
+        name: 'Relógio',
+        zIndex: 30,
+        replacePolicy: 'out-then-in',
+        persistent: true,
+      },
     ],
     graphics: [
       {
@@ -257,52 +250,6 @@ describe('ItemColorSchema', () => {
     expect(colorNamesTheSchemaAllows, 'the item colours must be the six agreed names').toEqual(
       sixAgreedColorNames,
     );
-  });
-});
-
-describe('InstanceSchema and the item it came from', () => {
-  it('keeps the id of the item an instance was taken from', () => {
-    // Arrange: the race clock on air, taken from the enduro clock item.
-    const instanceTakenFromAnItem = {
-      ...buildRaceClockInstanceOnAir(),
-      itemId: 'b1f7c2d0-93a4-4e1b-8c55-0d2a6f3e7a10',
-    };
-
-    // Act: check it against the schema.
-    const result = InstanceSchema.safeParse(instanceTakenFromAnItem);
-
-    // Assert: it is accepted and the item id is still there for the layer panel to read.
-    expect(result.success, 'an instance may say which item it came from').toBe(true);
-    expect(result.data, 'the item id must be kept on the instance').toEqual(
-      instanceTakenFromAnItem,
-    );
-  });
-
-  it('accepts an instance taken by hand, which came from no item', () => {
-    // Arrange: the race clock taken from the quick take panel, so it has no item.
-    const instanceTakenByHand = buildRaceClockInstanceOnAir();
-
-    // Act: check it against the schema.
-    const result = InstanceSchema.safeParse(instanceTakenByHand);
-
-    // Assert: it is accepted, and no item id is invented for it.
-    expect(result.success, 'an instance without an item must still be accepted').toBe(true);
-    expect(result.data, 'no item id may be added to a take made by hand').not.toHaveProperty(
-      'itemId',
-    );
-  });
-
-  it('refuses an instance whose item id is an empty text, naming itemId', () => {
-    // Arrange: an instance that claims to come from an item but names none.
-    const instanceWithEmptyItemId = { ...buildRaceClockInstanceOnAir(), itemId: '' };
-
-    // Act: check it and turn the failure into readable text.
-    const result = InstanceSchema.safeParse(instanceWithEmptyItemId);
-    const failureMessage = result.error ? z.prettifyError(result.error) : '';
-
-    // Assert: it is refused; "no item" is said by leaving the field out.
-    expect(result.success, 'an empty item id must be refused').toBe(false);
-    expect(failureMessage, 'the failure must name the bad field').toContain('itemId');
   });
 });
 

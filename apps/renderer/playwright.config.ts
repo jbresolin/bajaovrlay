@@ -46,14 +46,15 @@ export default defineConfig({
     baseURL: rendererPageAddress,
     trace: 'retain-on-failure',
   },
-  // Two files drive the one real server (a take, a clearAll), so they must never run at the
-  // same time: in two workers one test's clearAll took the other's graphic off air. Each
-  // has a project of its own, the combos waiting for the race clock (`dependencies`); every
-  // other file talks to a stand-in server inside its page and runs in parallel with them.
+  // Three files drive the one real server (a take, a clearAll), so they must never run at
+  // the same time: in two workers one test's clearAll took the other's graphic off air. Each
+  // has a project of its own, the combos waiting for the race clock and the outputs for the
+  // combos (`dependencies`); every other file talks to a stand-in server inside its page and
+  // runs in parallel with them.
   projects: [
     {
       name: 'chromium',
-      testIgnore: ['**/raceClockOnAir.e2e.ts', '**/combosOnAir.e2e.ts'],
+      testIgnore: ['**/raceClockOnAir.e2e.ts', '**/combosOnAir.e2e.ts', '**/outputsOnAir.e2e.ts'],
       // OBS's browser source is Chromium, at the 1920x1080 size of the stream canvas.
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },
@@ -71,6 +72,14 @@ export default defineConfig({
       // the race clock's failure first; the combos say nothing until it is fixed.
       dependencies: ['real server: race clock'],
       snapshotPathTemplate: snapshotPathOfTheChromiumProject,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
+    },
+    {
+      // One page per output (BAJAOVRLAY-49). It clears only its own layers, but waits for
+      // the combos all the same, so their clearAll never lands in the middle of it.
+      name: 'real server: outputs',
+      testMatch: '**/outputsOnAir.e2e.ts',
+      dependencies: ['real server: combos'],
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },
   ],

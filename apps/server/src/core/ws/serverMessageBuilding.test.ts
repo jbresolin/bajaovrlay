@@ -29,6 +29,7 @@ import { buildSlicesMessage } from './serverMessageBuilding.js';
  */
 function buildSlicesEachAListOfItsOwn(): Slices {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: [],
     graphics: [],
     instances: [],

@@ -7,12 +7,41 @@ import type { Graphic, Instance, Layer, Slices } from '@bajaovrlay/shared';
 /** The six layers the server seeds on its first boot, bottom to top. */
 export function buildLayersSeededByTheServer(): Layer[] {
   return [
-    { id: 'bug', name: 'Logo', zIndex: 10, replacePolicy: 'out-then-in', persistent: true },
-    { id: 'ticker', name: 'Letreiro', zIndex: 20, replacePolicy: 'out-then-in', persistent: false },
-    { id: 'clock', name: 'Relógio', zIndex: 30, replacePolicy: 'out-then-in', persistent: true },
-    { id: 'tower', name: 'Torre', zIndex: 35, replacePolicy: 'out-then-in', persistent: true },
+    {
+      id: 'bug',
+      outputId: 'program',
+      name: 'Logo',
+      zIndex: 10,
+      replacePolicy: 'out-then-in',
+      persistent: true,
+    },
+    {
+      id: 'ticker',
+      outputId: 'program',
+      name: 'Letreiro',
+      zIndex: 20,
+      replacePolicy: 'out-then-in',
+      persistent: false,
+    },
+    {
+      id: 'clock',
+      outputId: 'program',
+      name: 'Relógio',
+      zIndex: 30,
+      replacePolicy: 'out-then-in',
+      persistent: true,
+    },
+    {
+      id: 'tower',
+      outputId: 'program',
+      name: 'Torre',
+      zIndex: 35,
+      replacePolicy: 'out-then-in',
+      persistent: true,
+    },
     {
       id: 'lower-third',
+      outputId: 'program',
       name: 'Tarja',
       zIndex: 40,
       replacePolicy: 'out-then-in',
@@ -20,6 +49,7 @@ export function buildLayersSeededByTheServer(): Layer[] {
     },
     {
       id: 'fullscreen',
+      outputId: 'program',
       name: 'Tela cheia',
       zIndex: 50,
       replacePolicy: 'out-then-in',
@@ -69,6 +99,7 @@ export function buildRaceClockInstanceOnTheClockLayer(takenAt: string): Instance
 /** What the server sends right after boot: its layers, the race clock, nothing on air. */
 export function buildSlicesWithNothingOnAir(): Slices {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: buildLayersSeededByTheServer(),
     graphics: [buildRaceClockGraphic()],
     instances: [],

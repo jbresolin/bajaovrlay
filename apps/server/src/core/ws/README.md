@@ -10,6 +10,7 @@ snapshot changed, just before that `slice`/`slices`, which never carry `dataSnap
   is `monitor:<id>` (the control page's frames, which may send nothing), else `operador:<id>`.
 - `slicesSentToScreens.ts` — renderers and monitors get only `layers`, `graphics`, `instances` and
   `previewClearedLayerIds` (the rest `[]` in hello, left out of changes, no `dataSnapshot`); GET /api/v1/state?role= too.
+  A screen is sent a changed slice only when its copy differs from the text it was last sent.
 - `clientMessageAnswers.ts` — checks a client message and runs its command (a renderer's `instanceStatus`
   becomes `reportInstanceStatus`); one `commandResult` each; outside the protocol: INVALID_MESSAGE, socket kept.
 - `serverMessageBuilding.ts` — builds and validates every outgoing message (`hello` also names the build); `hello`, `slice`,

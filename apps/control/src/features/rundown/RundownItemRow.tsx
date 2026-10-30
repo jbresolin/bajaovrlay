@@ -14,6 +14,7 @@ import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
 
 import { DeleteItemButton } from './DeleteItemButton';
+import { DragHandleIcon } from './DragHandleIcon';
 import type { MoveToShortcutsChoice } from './moveToShortcutsChoices';
 import { RundownRowMoreActionsMenu } from './RundownRowMoreActionsMenu';
 
@@ -174,22 +175,5 @@ export function RundownItemRow(props: RundownItemRowProps) {
         </div>
       </div>
     </li>
-  );
-}
-
-/**
- * Six dots in two columns, the usual sign for "drag here". Drawn inline, like the icons
- * of the shadcn Select, instead of adding an icon package (docs/decisions.md, PR #5).
- */
-function DragHandleIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4" fill="currentColor">
-      <circle cx="5" cy="3" r="1.5" />
-      <circle cx="11" cy="3" r="1.5" />
-      <circle cx="5" cy="8" r="1.5" />
-      <circle cx="11" cy="8" r="1.5" />
-      <circle cx="5" cy="13" r="1.5" />
-      <circle cx="11" cy="13" r="1.5" />
-    </svg>
   );
 }

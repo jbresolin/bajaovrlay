@@ -132,6 +132,8 @@ describe('the quick-fire panels and macros on a database written before they exi
       readUpdatedAtBySliceName(database),
       'only graphics (refreshed every boot), quickFirePanels and macros may be written',
     ).toEqual({
+      // Seeded at the first boot (BAJAOVRLAY-49) with the layers, left alone afterwards.
+      outputs: '2026-10-09T08:00:00.000Z',
       layers: '2026-10-09T08:00:00.000Z',
       graphics: '2026-10-16T07:30:00.000Z',
       instances: '2026-10-09T08:00:00.000Z',

@@ -57,6 +57,8 @@ type StateTheResetReads = {
   sponsors: { sponsorId: string }[];
   scheduleSlots: { slotId: string }[];
   media: { mediaId: string }[];
+  outputs: { outputId: string }[];
+  layers: { id: string; outputId: string }[];
 };
 
 /** A command the reset sends: its type and the one or two fields it carries. */
@@ -84,6 +86,8 @@ type ResetCommand = {
   sponsorId?: string;
   slotId?: string;
   mediaId?: string;
+  outputId?: string;
+  layerId?: string;
 };
 
 // The event rules as a new database has them (BAJAOVRLAY-44), but with no item: the reset
@@ -277,6 +281,24 @@ async function emptyTheEntityLibrary(): Promise<void> {
 }
 
 /**
+ * Takes away every output but program, and its layers (BAJAOVRLAY-49), so no test finds
+ * the last one's PiP. Called after the items are deleted, since a layer an item names
+ * cannot be deleted. Program's layers are left as they are: no test edits them.
+ */
+async function putTheOutputsBackToProgramAlone(state: StateTheResetReads): Promise<void> {
+  for (const layer of state.layers) {
+    if (layer.outputId !== 'program') {
+      await sendCommandToRealServer({ type: 'deleteLayer', layerId: layer.id });
+    }
+  }
+  for (const output of state.outputs) {
+    if (output.outputId !== 'program') {
+      await sendCommandToRealServer({ type: 'deleteOutput', outputId: output.outputId });
+    }
+  }
+}
+
+/**
  * Empties the real server. First it waits for a running macro to end. Then `clearAll`
  * takes everything off air and off the preview output (it removes every instance, of
  * both outputs, and every "vai limpar" mark, so no stopPreview is needed); every item is deleted, rundown and panel alike, which also leaves the
@@ -287,6 +309,7 @@ async function emptyTheEntityLibrary(): Promise<void> {
  * stay listed. Every correction of a source's value is removed (clearOverride). The event
  * rules go back to their defaults with no item, and every waiting event is dismissed
  * (putTheEventInboxBackToItsDefaults). The entity library and its images are emptied.
+ * Every output but program goes, with its layers (putTheOutputsBackToProgramAlone).
  * Each test file calls this in a `test.beforeEach`, so a test never
  * depends on the one before it.
  * What could go wrong: it deletes whatever the server holds, so it must only ever be
@@ -327,4 +350,5 @@ export async function emptyTheServerState(): Promise<void> {
   await putTheDataSourcesBackToTheSeed(state);
   await putTheEventInboxBackToItsDefaults();
   await emptyTheEntityLibrary();
+  await putTheOutputsBackToProgramAlone(state);
 }

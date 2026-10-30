@@ -24,6 +24,7 @@ import { ServerMessageSchema } from './serverMessages.js';
 /** Every slice empty, as the hello of a fresh database carries them. */
 function buildEverySliceEmpty() {
   return {
+    outputs: [{ outputId: 'program', name: 'Programa', order: 0 }],
     layers: [],
     graphics: [],
     instances: [],

@@ -32,6 +32,7 @@ const numberOfLinesThatMakeASet = 2;
  * because the pages that draw previews never report to the server.
  */
 export function PreviewedLayersList() {
+  const outputs = useServerState((state) => state.outputs);
   const layers = useServerState((state) => state.layers);
   const graphics = useServerState((state) => state.graphics);
   const items = useServerState((state) => state.items);
@@ -41,6 +42,7 @@ export function PreviewedLayersList() {
   const sendTakeByThisOperator = useTakeThenPreviewNextItem();
 
   const previewedLayers = listPreviewedLayers({
+    outputs,
     layers,
     graphics,
     items,

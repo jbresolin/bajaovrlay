@@ -96,9 +96,17 @@ empty list, so a source of a kind it does not know cannot make it refuse its `he
 {
   "type": "hello",
   "slices": {
+    "outputs": [
+      {
+        "outputId": "program",
+        "name": "Programa",
+        "order": 0
+      }
+    ],
     "layers": [
       {
         "id": "bug",
+        "outputId": "program",
         "name": "Logo",
         "zIndex": 10,
         "replacePolicy": "out-then-in",
@@ -106,6 +114,7 @@ empty list, so a source of a kind it does not know cannot make it refuse its `he
       },
       {
         "id": "clock",
+        "outputId": "program",
         "name": "Relógio",
         "zIndex": 30,
         "replacePolicy": "out-then-in",

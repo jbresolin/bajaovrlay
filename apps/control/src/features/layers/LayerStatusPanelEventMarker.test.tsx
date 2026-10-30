@@ -34,6 +34,7 @@ import { LayerStatusPanel } from './LayerStatusPanel';
 /** The notice layer at 45, as the server seeds it. */
 const noticeLayer = {
   id: 'notice',
+  outputId: 'program',
   name: 'Aviso',
   zIndex: 45,
   replacePolicy: 'out-then-in' as const,

@@ -14,15 +14,36 @@
  *     must survive) give two lines with different keys.
  *   - The key of a preview line changes when a new preview replaces the old one on the
  *     same layer, so React draws the new line as a new line.
+ *   - With more than one output (BAJAOVRLAY-49) each line's name starts with its output's
+ *     name ("PiP · Legenda"), since "Tomar tudo" takes every output's previews and two
+ *     outputs may each have a "Legenda"; with program alone the name is the layer's alone.
  *
  * What these tests deliberately do not cover:
- *   - What the lines say and their buttons: PreviewedLayersList.test.tsx and
+ *   - The lines' buttons: PreviewedLayersList.test.tsx and
  *     PreviewedLayersListTakeAll.test.tsx draw them on the page.
  */
 import type { Instance, Layer } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { listPreviewedLayers } from './previewedLayers';
+
+/** The program output, as every database has it. */
+const programOutput = { outputId: 'program', name: 'Programa', order: 0 };
+
+/** The PiP output João adds for the scene with the camera box. */
+const pipOutput = { outputId: 'pip', name: 'PiP', order: 1 };
+
+/** The PiP's caption, named "Legenda" as program's might be too. */
+function buildPipCaptionLayer(): Layer {
+  return {
+    id: 'legenda-pip',
+    outputId: 'pip',
+    name: 'Legenda',
+    zIndex: 20,
+    replacePolicy: 'out-then-in',
+    persistent: false,
+  };
+}
 
 // The clock was previewed at 10:00 on the Saturday of the endurance race.
 const momentOfThePreview = '2026-10-10T13:00:00.000Z';
@@ -31,6 +52,7 @@ const momentOfThePreview = '2026-10-10T13:00:00.000Z';
 function buildClockLayer(): Layer {
   return {
     id: 'clock',
+    outputId: 'program',
     name: 'Relógio',
     zIndex: 30,
     replacePolicy: 'out-then-in',
@@ -57,6 +79,7 @@ describe('the keys of the lines under the "Prévia" monitor', () => {
   it('gives a preview and a mark on the same layer two different keys', () => {
     // Arrange: a clock previewed on the clock layer, and the same layer marked.
     const slices = {
+      outputs: [programOutput],
       layers: [buildClockLayer()],
       graphics: [],
       items: [],
@@ -77,6 +100,7 @@ describe('the keys of the lines under the "Prévia" monitor', () => {
   it('gives a new preview on the same layer a new key', () => {
     // Arrange: the same layer previewed twice, one preview after the other.
     const slicesWithTheFirstPreview = {
+      outputs: [programOutput],
       layers: [buildClockLayer()],
       graphics: [],
       items: [],
@@ -96,5 +120,49 @@ describe('the keys of the lines under the "Prévia" monitor', () => {
     expect(keyOfTheSecondLine, 'a preview that replaced another is a new line').not.toBe(
       keyOfTheFirstLine,
     );
+  });
+});
+
+describe('the names of the lines under the "Prévia" monitor', () => {
+  it('start with the output name when there is more than one output', () => {
+    // Arrange: program and PiP; the clock previewed on program, the PiP's caption marked.
+    const slices = {
+      outputs: [programOutput, pipOutput],
+      layers: [buildClockLayer(), buildPipCaptionLayer()],
+      graphics: [],
+      items: [],
+      instances: [buildRaceClockPreviewWithId('3b9e2f70-5c1d-4a8e-b6f3-0d2c9e7a1b44')],
+      previewClearedLayerIds: ['legenda-pip'],
+    };
+
+    // Act: list the lines.
+    const lines = listPreviewedLayers(slices);
+
+    // Assert: each line names its output first.
+    expect(
+      lines.map((line) => line.layerName),
+      'each line says which output its layer is on',
+    ).toEqual(['PiP · Legenda', 'Programa · Relógio']);
+  });
+
+  it('are the layer name alone with program alone', () => {
+    // Arrange: program alone, the clock previewed.
+    const slices = {
+      outputs: [programOutput],
+      layers: [buildClockLayer()],
+      graphics: [],
+      items: [],
+      instances: [buildRaceClockPreviewWithId('3b9e2f70-5c1d-4a8e-b6f3-0d2c9e7a1b44')],
+      previewClearedLayerIds: [],
+    };
+
+    // Act: list the lines.
+    const lines = listPreviewedLayers(slices);
+
+    // Assert: as it always was.
+    expect(
+      lines.map((line) => line.layerName),
+      'no output name with one output',
+    ).toEqual(['Relógio']);
   });
 });

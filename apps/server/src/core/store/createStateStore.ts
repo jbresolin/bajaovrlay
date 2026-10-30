@@ -188,6 +188,16 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         'instance brought back to the last step its data has',
       );
     }
+    // A deleted layer that was some graphic's default leaves that graphic on the fallback
+    // layer (BAJAOVRLAY-49). The boot warns the same way about a manifest naming a layer
+    // that does not exist, so a default that moved by itself always leaves a trace.
+    const graphicIdsPlacedAgain = reducerOutcome.graphicsPlacedOnTheFallbackLayer ?? [];
+    if (graphicIdsPlacedAgain.length > 0 && command.type === 'deleteLayer') {
+      options.logger.warn(
+        { deleted_layer_id: command.layerId, graphic_ids: graphicIdsPlacedAgain },
+        'graphics whose default layer was deleted now default to the fullscreen layer',
+      );
+    }
 
     // The one exception to "every command is logged" (decision D11): a data-source poll
     // that left its source's health as it was (the reducer says so) is saved and

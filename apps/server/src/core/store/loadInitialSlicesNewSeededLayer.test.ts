@@ -7,8 +7,12 @@
  *   BAJAOVRLAY-22, at z-index 35 between the clock and the lower third), an operator's
  *   database written before it has no such layer, and no graphic could ever be placed
  *   there. The notice (BAJAOVRLAY-44, at 45 between the lower third and the fullscreen)
- *   is the second such layer. So loadInitialSlices adds every seeded layer the stored layers lack, in its
- *   z-order place, writes the layers row again and says so in the log.
+ *   is the second such layer. So the boot adds every seeded layer the stored layers lack,
+ *   in its z-order place, writes the layers row again and says so in the log. Since
+ *   BAJAOVRLAY-49 this catch-up runs only on a database written before outputs existed
+ *   (such as these), where every layer is also put on program; outputsAtBoot.test.ts in
+ *   modules/outputs covers that and the database with outputs, whose seed is not caught
+ *   up any more.
  *
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
@@ -28,7 +32,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ServerDatabase } from '../db/openDatabase.js';
-import { readAllSliceRows, writeSliceRows } from '../db/sliceRowStorage.js';
+import { deleteSliceRows, readAllSliceRows, writeSliceRows } from '../db/sliceRowStorage.js';
 import type { SliceRow } from '../db/tables.js';
 import { openTemporaryDatabase } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
@@ -57,7 +61,9 @@ function loadSlicesAtBoot(options: {
 
 /**
  * The layers row as a server before BAJAOVRLAY-22 wrote it: the five layers of that
- * time, with no tower. What an operator's database holds after updating the server.
+ * time, with no tower and no output (outputs arrived with BAJAOVRLAY-49). What an
+ * operator's database holds after updating the server; the tests also remove the
+ * outputs row, since such a database has none.
  */
 function buildLayersRowOfAServerBeforeTheTower(): SliceRow {
   return {
@@ -99,6 +105,7 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
     const { database } = openTemporaryDatabase();
     loadSlicesAtBoot({ database, graphicPackagesFolder });
     writeSliceRows(database, [buildLayersRowOfAServerBeforeTheTower()]);
+    deleteSliceRows(database, ['outputs']);
     const { logger, readRecordedLines } = createRecordingLogger();
 
     // Act: boot again, as the updated server does on the operator's database.
@@ -116,6 +123,7 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
       'the tower must be added exactly as the seed defines it',
     ).toEqual({
       id: 'tower',
+      outputId: 'program',
       name: 'Torre',
       zIndex: 35,
       replacePolicy: 'out-then-in',
@@ -150,6 +158,7 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
       ...(rowBeforeTheTower.json as object[]).slice(3),
     ];
     writeSliceRows(database, [{ ...rowBeforeTheTower, json: layersBeforeTheNotice }]);
+    deleteSliceRows(database, ['outputs']);
     const { logger, readRecordedLines } = createRecordingLogger();
 
     // Act: boot again, as the server of BAJAOVRLAY-44 does.
@@ -161,6 +170,7 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
       'the notice must be added exactly as the seed defines it',
     ).toEqual({
       id: 'notice',
+      outputId: 'program',
       name: 'Aviso',
       zIndex: 45,
       replacePolicy: 'out-then-in',
