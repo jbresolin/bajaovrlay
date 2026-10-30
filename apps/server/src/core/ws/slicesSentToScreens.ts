@@ -95,21 +95,38 @@ export function keepSliceNamesScreensReceive(
   });
 }
 
+/** The JSON text of each slice a screen draws, by slice name. */
+export type TextsOfTheSlicesAScreenDraws = Map<SliceNameSentWhole, string>;
+
 /**
- * Of the changed slice names a screen draws, the ones whose copy for this output really
- * differs from before the change, compared as JSON text (gate 2 of PR #32). A take on the
- * PiP changes the instances slice, but program's copy of it is the same list as before,
- * so a program screen is sent nothing and OBS's main source parses nothing. The copies
- * are built by buildSlicesForAScreen, so what is compared is exactly what would be sent.
+ * The JSON text of each slice a screen draws, out of a screen's copy of the slices
+ * (buildSlicesForAScreen): what the hub remembers having sent a screen, and compares with.
  */
-export function keepSliceNamesChangedForTheScreensOfAnOutput(
+export function writeTextsOfTheSlicesAScreenDraws(
+  slicesForAScreen: Slices,
+): TextsOfTheSlicesAScreenDraws {
+  const texts: TextsOfTheSlicesAScreenDraws = new Map();
+  for (const sliceName of sliceNamesScreensReceive) {
+    texts.set(sliceName, JSON.stringify(slicesForAScreen[sliceName]));
+  }
+  return texts;
+}
+
+/**
+ * Of the changed slice names a screen draws, the ones whose text now differs from the
+ * text last sent to that screen (gate 2 of PR #32). A take on the PiP changes the
+ * instances slice, but program's copy of it is the same list as before, so a program
+ * screen is sent nothing and OBS's main source parses nothing. Compared with what was
+ * last sent, not with the slices from before the change: a listener may apply a command
+ * while the store is still telling the hub of another, and then the hub hears of the
+ * second change first (webSocketHubNestedChanges.test.ts).
+ */
+export function keepSliceNamesWhoseTextDiffersFromTheLastSent(
   sliceNamesScreensDraw: SliceNameSentWhole[],
-  slicesOfTheOutputBefore: Slices,
-  slicesOfTheOutputAfter: Slices,
+  textsLastSent: TextsOfTheSlicesAScreenDraws,
+  textsNow: TextsOfTheSlicesAScreenDraws,
 ): SliceNameSentWhole[] {
-  return sliceNamesScreensDraw.filter((sliceName) => {
-    const textBefore = JSON.stringify(slicesOfTheOutputBefore[sliceName]);
-    const textAfter = JSON.stringify(slicesOfTheOutputAfter[sliceName]);
-    return textBefore !== textAfter;
-  });
+  return sliceNamesScreensDraw.filter(
+    (sliceName) => textsLastSent.get(sliceName) !== textsNow.get(sliceName),
+  );
 }
