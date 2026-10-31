@@ -33,7 +33,11 @@ export function checkOneShapeMapping(mapping: FlexShapeMapping, context: z.Refin
   if (mapping.nestedEntriesPath !== undefined) {
     const pathParsing = parseValuePath(mapping.nestedEntriesPath);
     if (!pathParsing.ok) {
-      context.addIssue({ code: 'custom', path: ['nestedEntriesPath'], message: pathParsing.reason });
+      context.addIssue({
+        code: 'custom',
+        path: ['nestedEntriesPath'],
+        message: pathParsing.reason,
+      });
     }
   }
   checkLookupNamesAreUnique(mapping, context);
@@ -229,7 +233,8 @@ function checkReadingsOfRules(
   const lookupNames = new Set((mapping.lookups ?? []).map((lookup) => lookup.lookupName));
 
   rules.forEach((rule, ruleIndex) => {
-    const fieldLabel = findMappableField(mapping.shapeKey, rule.targetField)?.label ?? rule.targetField;
+    const fieldLabel =
+      findMappableField(mapping.shapeKey, rule.targetField)?.label ?? rule.targetField;
     for (const reading of listReadingsOfRule(rule)) {
       const pathOfReading = [...pathOfRules, ruleIndex, ...reading.whereInRule];
       if (reading.kind === 'lookup' && level === 'topLevel') {
@@ -274,7 +279,8 @@ function checkLastPassIsUsed(
     if (rule.targetField !== lastPassTargetField) {
       return;
     }
-    const fieldLabel = findMappableField(mapping.shapeKey, rule.targetField)?.label ?? rule.targetField;
+    const fieldLabel =
+      findMappableField(mapping.shapeKey, rule.targetField)?.label ?? rule.targetField;
     context.addIssue({
       code: 'custom',
       path: ['entryFields', ruleIndex, 'targetField'],

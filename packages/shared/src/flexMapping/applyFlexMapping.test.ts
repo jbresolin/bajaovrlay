@@ -286,6 +286,7 @@ describe('values the mapping cannot read', () => {
       'Posições › carro 11 (linha 3) › Última volta: não consegui ler "ultima_volta": "4:3x.293" não é um tempo de volta como 4:38.293, 278.293 ou 1:02:03.4';
     expect(result, 'one unreadable value must fail the whole poll').toEqual({
       ok: false,
+      isRefusedByAFlag: false,
       problems: [expectedProblem],
       summary: expectedProblem,
     });
@@ -366,6 +367,7 @@ describe('responses and lists that are not there', () => {
     // Assert: one problem per shape that reads that request.
     expect(result, 'a shape whose response is missing must fail the mapping').toEqual({
       ok: false,
+      isRefusedByAFlag: false,
       problems: [
         'Posições: não há resposta da requisição "classificacao"',
         'Sessão: não há resposta da requisição "classificacao"',

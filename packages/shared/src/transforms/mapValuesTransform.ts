@@ -63,8 +63,7 @@ function isTableWithOtherwiseValue(parameters: unknown): parameters is object {
  */
 export const MapValuesParametersSchema = z.unknown().superRefine((parameters, context) => {
   const isSecondFormWithWrongKeys =
-    isTableWithOtherwiseValue(parameters) &&
-    !hasExactlyTheKeysOfTheSecondForm(parameters);
+    isTableWithOtherwiseValue(parameters) && !hasExactlyTheKeysOfTheSecondForm(parameters);
   if (isSecondFormWithWrongKeys) {
     context.addIssue({
       code: 'custom',

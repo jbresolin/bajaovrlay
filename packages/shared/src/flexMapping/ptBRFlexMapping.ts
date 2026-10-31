@@ -92,7 +92,8 @@ export const ptBRFlexMapping = {
       `A alternativa ${alternativeNumber} da regra de "${targetField}" precisa de exatamente uma origem: caminho, caminho no item de fora, consulta, coluna ou valor fixo.`,
     fixedValueOnlyLast: (targetField: string) =>
       `Na regra de "${targetField}", o valor fixo só pode ser a última alternativa: as que viessem depois nunca seriam usadas.`,
-    unknownLookup: (lookupName: string) => `A consulta "${lookupName}" não existe neste mapeamento.`,
+    unknownLookup: (lookupName: string) =>
+      `A consulta "${lookupName}" não existe neste mapeamento.`,
     lookupOnlyForEntries: (fieldLabel: string) =>
       `"Consulta" só vale para os campos de cada item da lista, não para "${fieldLabel}".`,
     lookupNamedTwice: (lookupName: string) => `Há duas consultas chamadas "${lookupName}".`,
@@ -136,7 +137,33 @@ export const ptBRFlexMapping = {
     entryWithMatch: (matchId: string, lineNumber: number) =>
       `disputa ${matchId} (linha ${lineNumber})`,
     matchWithoutRoundName: 'falta o nome da fase, que diz em que fase a disputa entra',
-    couldNotReadAtPath: (path: string, reason: string) => `não consegui ler "${path}": ${reason}`,
+    /** "não consegui ler "ultima_volta": …" or "não consegui ler a coluna "Total": …". */
+    couldNotRead: (whereRead: string, reason: string) => `não consegui ler ${whereRead}: ${reason}`,
+    whereReadAtPath: (path: string) => `"${path}"`,
+    whereReadInColumn: (header: string) => `a coluna "${header}"`,
+    tableWithoutHeader: (shapeName: string, header: string) =>
+      `${shapeName}: a tabela não tem a coluna "${header}"`,
+    noColumnsListAtPath: (shapeName: string, columnsPath: string, requestId: string) =>
+      `${shapeName}: não há uma lista de colunas em "${columnsPath}" na resposta de ${requestId}`,
+    /** The label of the parts read from columns in a problem line (BAJAOVRLAY-53). */
+    scorePartsFromColumnsLabel: 'Partes da pontuação',
+    partCellNotANumber: (header: string, quotedValue: string) =>
+      `a coluna "${header}" não tem um número: ${quotedValue}`,
+    atLookup: (shapeName: string, lookupName: string, detail: string) =>
+      `${shapeName} › consulta "${lookupName}": ${detail}`,
+    lookupKeyTwice: (quotedKey: string, listPath: string) =>
+      `a chave ${quotedKey} aparece em mais de um item da lista "${listPath}"`,
+    noResponseForLookupRequest: (requestId: string) =>
+      `não há resposta da requisição "${requestId}"`,
+    noLookupListAtPath: (listPath: string, requestId: string) =>
+      `não há uma lista em "${listPath}" na resposta de ${requestId}`,
+    noInnerListInOuterElement: (
+      shapeName: string,
+      placeInOuterList: number,
+      entriesPath: string,
+      nestedEntriesPath: string,
+    ) =>
+      `${shapeName} › item ${placeInOuterList} de "${entriesPath}": não há uma lista em "${nestedEntriesPath}"`,
     noResponseForRequest: (shapeName: string, requestId: string) =>
       `${shapeName}: não há resposta da requisição "${requestId}"`,
     noListAtPath: (shapeName: string, entriesPath: string, requestId: string) =>

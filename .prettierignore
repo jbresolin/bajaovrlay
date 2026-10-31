@@ -25,3 +25,10 @@ docs/design/vendor/
 # The real results and logos João handed over (docs/design/sample_data/), kept exactly as
 # delivered; the design tools read them and write their own copies.
 docs/design/sample_data/
+
+# The Baja app's real API answers, saved with curl (BAJAOVRLAY-53) and kept byte for byte;
+# the fixtures made from its doc or made up are formatted as usual.
+packages/shared/src/flexMapping/examples/bajaApp/equipes-*.json
+packages/shared/src/flexMapping/examples/bajaApp/resultado-26BR_GER.json
+packages/shared/src/flexMapping/examples/bajaApp/torneio-26BR_SPR.json
+packages/shared/src/flexMapping/examples/bajaApp/torneio-25SU_SPR.json

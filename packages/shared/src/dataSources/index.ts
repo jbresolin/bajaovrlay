@@ -9,7 +9,8 @@ export { type SimulatorConfig, SimulatorConfigSchema } from './simulatorConfig.j
 // The replay's config: recording, speed (one of replaySpeeds), loop, offset, start.
 export { type ReplayConfig, ReplayConfigSchema, replaySpeeds } from './replayConfig.js';
 // The flex source's config: its GET requests (headers and query parameters, a value or a
-// BAJAOVRLAY_SOURCE_ variable) and the flex mapping of their responses.
+// BAJAOVRLAY_SOURCE_ variable, an optional refresh time) and the flex mapping of their
+// responses; the range of a request's refresh time (1 minute to 1 hour).
 export {
   type HttpJsonConfig,
   HttpJsonConfigSchema,
@@ -19,7 +20,9 @@ export {
   HttpJsonQueryParameterSchema,
   type HttpJsonRequest,
   HttpJsonRequestSchema,
+  longestRequestRefreshMs,
   mostRequestsPerHttpJsonSource,
+  shortestRequestRefreshMs,
   sourceEnvironmentVariablePrefix,
 } from './httpJsonConfig.js';
 // The answer of the sample route ("Buscar da fonte"): the parsed body, or the pt-BR error.

@@ -71,7 +71,10 @@ function buildRacePositionsMapping(): Record<string, unknown> {
       },
       {
         targetField: 'schoolName',
-        firstOf: [{ fromLookup: { lookup: 'equipes', path: 'school_short' } }, { fromPath: 'school' }],
+        firstOf: [
+          { fromLookup: { lookup: 'equipes', path: 'school_short' } },
+          { fromPath: 'school' },
+        ],
       },
       { targetField: 'laps', fromPath: 'laps' },
       { targetField: 'lastPassAtMs', fromPath: 'last_pass_ms' },
@@ -86,7 +89,10 @@ function buildTableStandingsMapping(): Record<string, unknown> {
     requestId: 'resultado',
     entriesPath: 'rows',
     table: { columnsPath: 'columns', headerPath: 'header', cellsPath: 'cells' },
-    scorePartsFromColumns: { headers: ['Segurança', 'Projeto', 'Dinâmicas', 'Enduro'], valuePath: 'raw' },
+    scorePartsFromColumns: {
+      headers: ['Segurança', 'Projeto', 'Dinâmicas', 'Enduro'],
+      valuePath: 'raw',
+    },
     refuseWhen: {
       path: 'spoilers_active',
       equals: true,
@@ -193,7 +199,10 @@ describe('FlexMappingConfigSchema, the additions of BAJAOVRLAY-53', () => {
       name: 'refuses an alternative that names two sources',
       mapping: withEntryRule(buildTableStandingsMapping(), {
         targetField: 'isDisqualified',
-        firstOf: [{ fromPath: 'team.disqualified', constantValue: false }, { constantValue: false }],
+        firstOf: [
+          { fromPath: 'team.disqualified', constantValue: false },
+          { constantValue: false },
+        ],
       }),
       expectedPath: '0.entryFields.5.firstOf.0',
       expectedMessage:
@@ -225,7 +234,10 @@ describe('FlexMappingConfigSchema, the additions of BAJAOVRLAY-53', () => {
       name: 'refuses an alternative reading a lookup the mapping does not declare',
       mapping: withEntryRule(buildTableStandingsMapping(), {
         targetField: 'isDisqualified',
-        firstOf: [{ fromLookup: { lookup: 'equipes', path: 'disqualified' } }, { constantValue: false }],
+        firstOf: [
+          { fromLookup: { lookup: 'equipes', path: 'disqualified' } },
+          { constantValue: false },
+        ],
       }),
       expectedPath: '0.entryFields.5.firstOf.0.fromLookup.lookup',
       expectedMessage: 'A consulta "equipes" não existe neste mapeamento.',

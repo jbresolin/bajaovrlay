@@ -1,25 +1,52 @@
 /**
  * One rule of a flex mapping applied to its source (the response, or one element of a
- * list): a fixed value, the poll moment, the place in the list, or the value at a path
- * through its transform; and the writing of that value at a dotted target. Split from
- * applyFlexMapping.ts (BAJAOVRLAY-25), which walks the shapes and their lists and calls
- * these for every rule.
+ * list): a fixed value, the poll moment, the place in the list, or a value read (at a
+ * path, on the outer element, on a lookup's match, in a column, or the first of its
+ * alternatives) through its transform; and the writing of that value at a dotted target,
+ * text cleaned up (sourceTextCleanup.ts). Split from applyFlexMapping.ts (BAJAOVRLAY-25),
+ * which walks the shapes and their lists and calls these for every rule.
  */
 import type { DataShapeKey } from '../dataShapes/dataShapeKey.js';
 import { ptBRDataShapes } from '../dataShapes/ptBRDataShapes.js';
 import { ptBRTransforms } from '../transforms/ptBRTransforms.js';
 import { findTransform } from '../transforms/transformRegistry.js';
 import type { FlexFieldRule } from './flexMappingConfig.js';
+import type { FlexAlternativeSource } from './flexRuleSources.js';
+import { readCellUnderHeader } from './flexTableColumns.js';
 import { findMappableField } from './mappableFields.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
-import { readValueAtPath } from './valuePath.js';
+import { cleanUpTextFromASource } from './sourceTextCleanup.js';
+import { readValueAtPath, type ValueAtPath } from './valuePath.js';
 
-/** What a rule needs besides the value it reads: the poll moment, and the place in the list. */
+/**
+ * What a rule needs besides the value it reads: the poll moment, the place in the list,
+ * and for an entry the outer element, the lookups' matches and the cells by header.
+ */
 export type RuleSurroundings = {
   pollMomentMs: number;
   /** The element's 1-based place in its list; undefined for a shape's own fields. */
   placeInList: number | undefined;
+  /** The outer element of a nested list; undefined for a flat list or the shape's fields. */
+  parentElement: unknown;
+  /** The element each lookup matched for this entry, by lookup name; absent when none. */
+  lookupMatches: ReadonlyMap<string, unknown>;
+  /** This entry's cells, when the mapping reads a table; undefined otherwise. */
+  cellsOfEntry: unknown[] | undefined;
+  /** Each column's place in the cells, by its cleaned-up header. */
+  columnPlaceByHeader: ReadonlyMap<string, number>;
 };
+
+/** The surroundings of a shape's own fields: no list, no lookup, no table. */
+export function buildSurroundingsOfShape(pollMomentMs: number): RuleSurroundings {
+  return {
+    pollMomentMs,
+    placeInList: undefined,
+    parentElement: undefined,
+    lookupMatches: new Map(),
+    cellsOfEntry: undefined,
+    columnPlaceByHeader: new Map(),
+  };
+}
 
 /** What one rule gave: a value to set, nothing to set, or a pt-BR problem. */
 export type RuleOutcome =
@@ -28,12 +55,25 @@ export type RuleOutcome =
   | { outcome: 'problem'; detail: string };
 
 /**
- * Applies one rule to its source (the response, or one element of the list): a fixed
- * value, the poll moment, the place in the list, or the value at its path through its
- * transform. A target the shape does not list is a problem, so nothing but a canonical
- * field is ever written.
+ * Applies one rule to its source (the response, or one element of the list). A target the
+ * shape does not list is a problem, so nothing but a canonical field is ever written. Text
+ * that is set is cleaned up: entities decoded, spaces collapsed, ends trimmed.
  */
 export function applyOneRule(
+  shapeKey: DataShapeKey,
+  rule: FlexFieldRule,
+  source: unknown,
+  surroundings: RuleSurroundings,
+): RuleOutcome {
+  const ruleOutcome = applyOneRuleAsRead(shapeKey, rule, source, surroundings);
+  if (ruleOutcome.outcome === 'set' && typeof ruleOutcome.value === 'string') {
+    return { outcome: 'set', value: cleanUpTextFromASource(ruleOutcome.value) };
+  }
+  return ruleOutcome;
+}
+
+/** Applies one rule, giving its value as read (or transformed), not yet cleaned up. */
+function applyOneRuleAsRead(
   shapeKey: DataShapeKey,
   rule: FlexFieldRule,
   source: unknown,
@@ -64,40 +104,124 @@ export function applyOneRule(
     }
     return { outcome: 'set', value: surroundings.placeInList };
   }
-  if (rule.fromPath !== undefined) {
-    return readRuleValueAtPath(rule, rule.fromPath, source);
+  if (rule.firstOf !== undefined) {
+    return readFirstOfTheAlternatives(rule, rule.firstOf, source, surroundings);
   }
-  // A rule with no source is refused by the config schema; unchecked, it maps nothing.
-  return { outcome: 'leftOut' };
-}
-
-/**
- * Reads a rule's value at its path and runs its transform, if it has one. Nothing there,
- * or a null, leaves the field out; a refused path or a refused value is a problem quoting
- * the path ("não consegui ler "ultima_volta": …").
- */
-function readRuleValueAtPath(rule: FlexFieldRule, path: string, source: unknown): RuleOutcome {
-  const lines = ptBRFlexMapping.problemLines;
-  const reading = readValueAtPath(source, path);
+  // A path of any kind: read it; nothing there, or a null, leaves the field out.
+  const reading = readOneSource(rule, source, surroundings);
   if (reading.outcome === 'pathRefused') {
     return { outcome: 'problem', detail: reading.reason };
   }
   if (reading.outcome === 'nothingThere' || reading.value === null) {
     return { outcome: 'leftOut' };
   }
+  return runTransformOfRule(rule, describeWhereRead(rule), reading.value);
+}
+
+/**
+ * Tries the alternatives in order: the first value present, not null and not blank text
+ * (once cleaned up, so "&nbsp;" is blank) wins. A fixed value wins as it is; a value read
+ * goes through the rule's transform. None present leaves the field out.
+ */
+function readFirstOfTheAlternatives(
+  rule: FlexFieldRule,
+  alternatives: FlexAlternativeSource[],
+  source: unknown,
+  surroundings: RuleSurroundings,
+): RuleOutcome {
+  for (const alternative of alternatives) {
+    if (alternative.constantValue !== undefined) {
+      return { outcome: 'set', value: alternative.constantValue };
+    }
+    const reading = readOneSource(alternative, source, surroundings);
+    if (reading.outcome === 'pathRefused') {
+      return { outcome: 'problem', detail: reading.reason };
+    }
+    if (reading.outcome === 'found' && isAValuePresent(reading.value)) {
+      return runTransformOfRule(rule, describeWhereRead(alternative), reading.value);
+    }
+  }
+  return { outcome: 'leftOut' };
+}
+
+/** Says whether a value counts as present for an alternative: not null, not blank text. */
+function isAValuePresent(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (typeof value === 'string') {
+    return cleanUpTextFromASource(value) !== '';
+  }
+  return true;
+}
+
+/**
+ * Reads the one path-like source of a rule or alternative: on the source itself, on the
+ * outer element, on the element a lookup matched (nothing there when it matched none), or
+ * in the cell under a column's header.
+ */
+function readOneSource(
+  sourceOfRule: FlexAlternativeSource,
+  source: unknown,
+  surroundings: RuleSurroundings,
+): ValueAtPath {
+  if (sourceOfRule.fromPath !== undefined) {
+    return readValueAtPath(source, sourceOfRule.fromPath);
+  }
+  if (sourceOfRule.fromParent !== undefined) {
+    return readValueAtPath(surroundings.parentElement, sourceOfRule.fromParent);
+  }
+  if (sourceOfRule.fromLookup !== undefined) {
+    const matchedElement = surroundings.lookupMatches.get(sourceOfRule.fromLookup.lookup);
+    if (matchedElement === undefined) {
+      return { outcome: 'nothingThere' };
+    }
+    return readValueAtPath(matchedElement, sourceOfRule.fromLookup.path);
+  }
+  if (sourceOfRule.fromColumn !== undefined) {
+    return readCellUnderHeader(
+      surroundings.cellsOfEntry,
+      surroundings.columnPlaceByHeader,
+      sourceOfRule.fromColumn,
+    );
+  }
+  // A rule with no source is refused by the config schema; unchecked, it maps nothing.
+  return { outcome: 'nothingThere' };
+}
+
+/** How a problem names where a value was read: its path quoted, or the column. */
+function describeWhereRead(sourceOfRule: FlexAlternativeSource): string {
+  const lines = ptBRFlexMapping.problemLines;
+  if (sourceOfRule.fromColumn !== undefined) {
+    return lines.whereReadInColumn(sourceOfRule.fromColumn.header);
+  }
+  const path =
+    sourceOfRule.fromPath ?? sourceOfRule.fromParent ?? sourceOfRule.fromLookup?.path ?? '';
+  return lines.whereReadAtPath(path);
+}
+
+/**
+ * Runs the rule's transform, if it has one, on a value read. A refused value is a problem
+ * quoting where it was read ("não consegui ler "ultima_volta": …").
+ */
+function runTransformOfRule(rule: FlexFieldRule, whereRead: string, value: unknown): RuleOutcome {
+  const lines = ptBRFlexMapping.problemLines;
   if (rule.transformId === undefined) {
-    return { outcome: 'set', value: reading.value };
+    return { outcome: 'set', value };
   }
 
   const transform = findTransform(rule.transformId);
   // The config's schema already refused a binding transform here; this keeps apply typed.
   if (transform?.family !== 'mapping') {
     const reason = ptBRTransforms.parameterReasons.unknownTransform(rule.transformId);
-    return { outcome: 'problem', detail: lines.couldNotReadAtPath(path, reason) };
+    return { outcome: 'problem', detail: lines.couldNotRead(whereRead, reason) };
   }
-  const transformResult = transform.apply(reading.value, rule.transformParameters);
+  const transformResult = transform.apply(value, rule.transformParameters);
   if (!transformResult.ok) {
-    return { outcome: 'problem', detail: lines.couldNotReadAtPath(path, transformResult.reason) };
+    return {
+      outcome: 'problem',
+      detail: lines.couldNotRead(whereRead, transformResult.reason),
+    };
   }
   return { outcome: 'set', value: transformResult.value };
 }

@@ -84,7 +84,8 @@ describe('HttpJsonConfigSchema, lookups and refresh times', () => {
     // Assert: refused at the lookup's request, naming the shape and the lookup.
     expect(firstIssue, 'the lookup must name one of the requests').toEqual({
       path: 'mappings.0.lookups.0.requestId',
-      message: 'A consulta "equipes" de Posições lê a requisição "times", que não existe nesta fonte.',
+      message:
+        'A consulta "equipes" de Posições lê a requisição "times", que não existe nesta fonte.',
     });
   });
 

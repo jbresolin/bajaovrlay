@@ -149,10 +149,16 @@ export function listPathsOfOneSource(
     paths.push({ path: source.fromParent, whereInRule: [...whereInRule, 'fromParent'] });
   }
   if (source.fromLookup !== undefined) {
-    paths.push({ path: source.fromLookup.path, whereInRule: [...whereInRule, 'fromLookup', 'path'] });
+    paths.push({
+      path: source.fromLookup.path,
+      whereInRule: [...whereInRule, 'fromLookup', 'path'],
+    });
   }
   if (source.fromColumn?.path !== undefined) {
-    paths.push({ path: source.fromColumn.path, whereInRule: [...whereInRule, 'fromColumn', 'path'] });
+    paths.push({
+      path: source.fromColumn.path,
+      whereInRule: [...whereInRule, 'fromColumn', 'path'],
+    });
   }
   return paths;
 }
