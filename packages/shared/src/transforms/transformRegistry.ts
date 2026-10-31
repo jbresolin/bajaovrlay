@@ -1,7 +1,11 @@
 import { lapTimeTextToMsTransform, secondsToMsTransform } from './durationTransforms.js';
 import { mapValuesTransform } from './mapValuesTransform.js';
 import { isoDateTextToMsTransform, unixSecondsToMsTransform } from './momentTransforms.js';
-import { textToIntegerTransform, textToNumberTransform } from './numberTransforms.js';
+import {
+  numberToTextTransform,
+  textToIntegerTransform,
+  textToNumberTransform,
+} from './numberTransforms.js';
 import {
   formatGapAsTextTransform,
   formatLapTimeAsTextTransform,
@@ -15,7 +19,7 @@ import { withTeamLogosTransform } from './withTeamLogosTransform.js';
 /**
  * Every transform there is, in the order the control page's dropdowns show them. What a
  * mapping or a binding can do to a value is exactly this list (architecture rule 5), so a
- * reviewer reads every possible behaviour here. The first eight are mapping transforms
+ * reviewer reads every possible behaviour here. The first nine are mapping transforms
  * (outside data into the canonical shapes), the last five binding transforms (canonical
  * data shaped for a graphic, BAJAOVRLAY-20, and withTeamLogos, BAJAOVRLAY-47); each form
  * offers its own family only.
@@ -23,6 +27,7 @@ import { withTeamLogosTransform } from './withTeamLogosTransform.js';
 export const transformRegistry: readonly Transform[] = [
   textToNumberTransform,
   textToIntegerTransform,
+  numberToTextTransform,
   secondsToMsTransform,
   lapTimeTextToMsTransform,
   isoDateTextToMsTransform,
