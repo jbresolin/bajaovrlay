@@ -1,7 +1,10 @@
 # BajaOvrLay on TrueNAS
 
-Between events the server runs on TrueNAS (192.168.2.5) as a Portainer stack, behind
-Nginx Proxy Manager (NPM). Steps 1–7 are the first install; step 8 is every update after.
+**Optional.** BajaOvrLay's home is the stream PC (`../stream-pc/README.md`); this stack is
+for running it on TrueNAS if that is ever wanted.
+
+Here the server runs on TrueNAS (192.168.2.5) as a Portainer stack, behind Nginx Proxy
+Manager (NPM). Steps 1–7 are the first install; step 8 is every update after.
 `<domain>` stands for the name NPM serves it under (for example `bajaovrlay.casa.lan`);
 `/mnt/Local/SSD/bajaovrlay` is the example dataset: use yours wherever it appears.
 

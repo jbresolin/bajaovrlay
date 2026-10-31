@@ -14,8 +14,11 @@ Download Docker Desktop for Windows from docker.com, install it with the **WSL 2
 
 ## 2. Save the image to the USB stick (on a machine with internet)
 
-On João's WSL (any machine with Docker and internet). The first line only once per
-machine: it asks for the `read:packages` token of deploy/truenas/README.md, step 2.
+On João's WSL (any machine with Docker and internet). The repository is private, so its
+image on GHCR is too: the first line, once per machine, asks for a token. Make it on
+GitHub: **Settings → Developer settings → Personal access tokens → Tokens (classic) →
+Generate new token (classic)**, note `Pull BajaOvrLay`, scope **read:packages** only →
+copy the token, and paste it as the password.
 
 ```sh
 docker login ghcr.io -u jbresolin

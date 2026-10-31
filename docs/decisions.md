@@ -1367,3 +1367,4 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-10-31 — PR #37 — On the stream PC the data lives in a Docker volume, not a Windows folder, because SQLite's locking is not reliable through Docker Desktop's Windows file sharing.
 - 2026-10-31 — PR #37 — BAJAOVRLAY_PUBLIC_ORIGINS lists a reverse proxy's exact origins that may upload images as the server's own address does; an entry with a path or without a scheme stops the boot.
 - 2026-10-31 — PR #37 — Gate 2: on TrueNAS the nightly backups go to a mount of their own, `/mnt/Local/db-dumps/bajaovrlay` as `/backups`, beside the other dumps and outside the live dataset, so one dataset problem cannot take the database and its backups together; retention stays the command's own 14.
+- 2026-10-31 — PR #37 — Gate 2: the stream PC is BajaOvrLay's home and the only place it runs in real life; the TrueNAS stack stays as an optional way to run it elsewhere.
