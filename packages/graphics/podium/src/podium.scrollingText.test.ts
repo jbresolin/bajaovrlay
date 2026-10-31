@@ -23,7 +23,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -41,7 +40,6 @@ function listScrollingBoxes(podium: PodiumGraphic): HTMLElement[] {
 /** Loads the enduro's podium, every text too long for its box, and takes it on air. */
 async function putPodiumOnAirWithEveryTextTooLong(): Promise<PodiumGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const podium = createPodiumOnThePage();
   await loadPodiumWithData(podium, createEnduroPodium(false));
   await podium.playAction({ skipAnimation: true });

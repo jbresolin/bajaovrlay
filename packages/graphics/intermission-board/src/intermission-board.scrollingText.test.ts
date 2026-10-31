@@ -23,7 +23,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -44,7 +43,6 @@ function listScrollingBoxes(board: IntermissionBoardGraphic): HTMLElement[] {
 /** Loads the break before the enduro with its top five, every text too long, on air. */
 async function putBoardOnAirWithEveryTextTooLong(): Promise<IntermissionBoardGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const board = createIntermissionBoardOnThePage();
   await loadIntermissionBoardWithData(
     board,

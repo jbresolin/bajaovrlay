@@ -23,7 +23,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -55,7 +54,6 @@ function listScrollingBoxes(battleCard: BattleCardGraphic): HTMLElement[] {
 /** Loads the Imperador–FEI battle, every text too long, and takes it on air. */
 async function putBattleCardOnAirWithEveryTextTooLong(): Promise<BattleCardGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const battleCard = createBattleCardOnThePage();
   await loadBattleCardWithData(battleCard, createImperadorAheadOfFeiData());
   await battleCard.playAction({ skipAnimation: true });

@@ -2,18 +2,22 @@
  * Test support for the scrolling text clock's tests (scrollingTextWhenTooLong.test.ts and
  * scrollingTextWhenTooLong.changes.test.ts): a graphic's shadow root with boxes whose widths
  * the test sets (jsdom lays nothing out), a ResizeObserver the test drives (jsdom has none),
- * and the reads and moves of the cycle's GSAP timeline. No graphic's module imports this.
+ * the clock's timers under the test's hand, and the Web Animations it starts recorded
+ * (jsdom has none). No graphic's module imports this.
  */
-import { gsap } from 'gsap';
 import { expect, onTestFinished, vi } from 'vitest';
 
-import { findRunningScrollingTextCycles } from './scrollingTextOnAir.testSupport.js';
 import type { ScrollingTextClock } from './scrollingTextWhenTooLong.js';
 import {
   createScrollingTextClock,
   makeScrollingTextBox,
   writeScrollingTextIfChanged,
 } from './scrollingTextWhenTooLong.js';
+import {
+  findLastAnimationOf,
+  installRecordingWebAnimations,
+  type RecordedAnimation,
+} from './webAnimationsInJsdom.testSupport.js';
 
 /** Ardósia's text timings, set on the graphic's element as the renderer's :root would. */
 export const ardosiaTextTokens: Record<string, string> = {
@@ -24,7 +28,7 @@ export const ardosiaTextTokens: Record<string, string> = {
   '--motion-text-edge-fade': '24',
 };
 
-/** The same timings as numbers, for the pure cycle the timeline must agree with. */
+/** The same timings as numbers, for the pure cycle the clock must follow. */
 export const ardosiaTextTimings = {
   holdStartMs: 2500,
   scrollSpeedPxPerSecond: 60,
@@ -111,6 +115,18 @@ export function installHandDrivenResizeObserver(): { reportResizeOf: (element: E
   return { reportResizeOf };
 }
 
+/**
+ * Takes the clock's timers into the test's hands (setTimeout only: the MutationObserver
+ * still delivers on its own) and records the animations it starts; both undone after.
+ */
+export function takeControlOfTimeAndAnimations(): void {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  onTestFinished(() => {
+    vi.useRealTimers();
+  });
+  installRecordingWebAnimations();
+}
+
 /** Starts a clock over the graphic, stopped again when the test ends. */
 export function startClockOverGraphic(host: HTMLElement, root: ShadowRoot): ScrollingTextClock {
   const clock = createScrollingTextClock({ root, tokensSource: host });
@@ -119,43 +135,22 @@ export function startClockOverGraphic(host: HTMLElement, root: ShadowRoot): Scro
   return clock;
 }
 
-/** The clock's cycle timelines running at the top of GSAP's global timeline. */
-export function findRunningCycleTimelines(): gsap.core.Timeline[] {
-  return findRunningScrollingTextCycles();
+/** Lets the cycle run on by `durationMs`, firing the clock's timers on the way. */
+export function letTheCycleRunFor(durationMs: number): void {
+  vi.advanceTimersByTime(durationMs);
 }
 
-/** The one cycle timeline running, paused so only the test moves it. */
-export function pauseTheOneCycleTimeline(): gsap.core.Timeline {
-  const timelines = findRunningCycleTimelines();
-  expect(timelines.length, 'exactly one cycle timeline must be running').toBe(1);
-  const [timeline] = timelines;
-  if (timeline === undefined) {
-    throw new Error('no cycle timeline');
+/** The animation the clock gave a text last, which the test expects to exist. */
+export function readAnimationOf(text: HTMLElement): RecordedAnimation {
+  const animation = findLastAnimationOf(text);
+  expect(animation, 'the clock must have animated this text').toBeDefined();
+  if (animation === undefined) {
+    throw new Error('no animation');
   }
-  timeline.pause();
-  return timeline;
-}
-
-/** Moves a paused timeline to `momentMs`, firing the phase changes on its way. */
-export function moveTimelineTo(timeline: gsap.core.Timeline, momentMs: number): void {
-  timeline.seek(momentMs / 1000, false);
-}
-
-/** How far GSAP has moved a text, in pixels (0 at its start). */
-export function readTextOffsetPx(text: HTMLElement): number {
-  return Number(gsap.getProperty(text, 'x'));
+  return animation;
 }
 
 /** Lets the MutationObserver deliver what the test just changed. */
 export async function letTheClockSeeTheChange(): Promise<void> {
   await Promise.resolve();
-}
-
-/** Ends every timeline the test left, so GSAP's global timeline is empty for the next test. */
-export function endLeftoverTimelinesWhenTheTestEnds(): void {
-  onTestFinished(() => {
-    for (const timeline of findRunningCycleTimelines()) {
-      timeline.kill();
-    }
-  });
 }

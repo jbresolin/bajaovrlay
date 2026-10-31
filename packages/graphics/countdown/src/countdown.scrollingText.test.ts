@@ -23,7 +23,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -41,7 +40,6 @@ async function putCountdownOnAirWithEveryTextTooLong(
   layout: CountdownLayout,
 ): Promise<CountdownGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const countdown = createCountdownOnThePage();
   await loadCountdownWithData(countdown, createEnduroCountdownData(layout));
   await countdown.playAction({ skipAnimation: true });

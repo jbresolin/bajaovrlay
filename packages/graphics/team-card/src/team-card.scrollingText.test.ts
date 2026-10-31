@@ -23,7 +23,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -50,7 +49,6 @@ function listScrollingBoxes(teamCard: TeamCardGraphic): HTMLElement[] {
 /** Loads car 7's card, every text too long, and takes it on air. */
 async function putTeamCardOnAirWithEveryTextTooLong(): Promise<TeamCardGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const teamCard = createTeamCardOnThePage();
   await loadTeamCardWithData(teamCard, createReptilesTeamCardDataWithoutMedia());
   await teamCard.playAction({ skipAnimation: true });

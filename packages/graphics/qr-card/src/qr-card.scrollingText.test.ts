@@ -23,7 +23,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -50,7 +49,6 @@ function listScrollingBoxes(qrCard: QrCardGraphic): HTMLElement[] {
 /** Loads the results card, every text too long, and takes it on air. */
 async function putQrCardOnAirWithEveryTextTooLong(): Promise<QrCardGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const qrCard = createQrCardOnThePage();
   await loadQrCardWithData(qrCard, createResultsSample());
   await qrCard.playAction({ skipAnimation: true });

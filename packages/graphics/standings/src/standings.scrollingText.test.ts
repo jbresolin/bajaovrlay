@@ -21,7 +21,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -44,7 +43,6 @@ function listScrollingBoxes(standings: StandingsGraphic): HTMLElement[] {
 /** Loads the overall table, every text too long for its box, and takes it on air. */
 async function putStandingsOnAirWithEveryTextTooLong(): Promise<StandingsGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const standings = createStandingsOnThePage();
   await loadStandingsWithData(standings, createOverallStandingsWithParts());
   await standings.playAction({ skipAnimation: true });

@@ -21,7 +21,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -44,7 +43,6 @@ function listTeamBoxes(bracket: BracketGraphic): HTMLElement[] {
 /** Loads the real Super Prime, every text too long for its box, and takes it on air. */
 async function putSuperPrimeOnAirWithEveryTextTooLong(): Promise<BracketGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   placeTokensOnTheRoot(ardosiaTreeTokenDeclarations);
   const bracket = createBracketOnThePage();
   await loadBracketWithData(bracket, createTheRealSuperPrime());

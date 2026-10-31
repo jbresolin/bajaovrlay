@@ -21,7 +21,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -48,7 +47,6 @@ function listTeamCells(tower: PositionsTowerGraphic): HTMLElement[] {
 /** Loads the 60-car sample, every name too long for its column, and takes it on air. */
 async function putTowerOnAirWithEveryNameTooLong(): Promise<PositionsTowerGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const tower = createTowerOnThePage();
   await loadTowerWithData(tower, createCompactTowerDataOnTheSample());
   await tower.playAction({ skipAnimation: true });

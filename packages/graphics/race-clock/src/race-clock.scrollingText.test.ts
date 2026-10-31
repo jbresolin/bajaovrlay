@@ -21,7 +21,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -37,7 +36,6 @@ import {
 /** Loads the enduro's clock, its title too long for the card, and takes it on air. */
 async function putRaceClockOnAirWithTheTitleTooLong(): Promise<RaceClockGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const raceClock = createRaceClockOnThePage();
   await loadRaceClockWithData(raceClock, createGreenFlagEnduroData());
   await raceClock.playAction({ skipAnimation: true });

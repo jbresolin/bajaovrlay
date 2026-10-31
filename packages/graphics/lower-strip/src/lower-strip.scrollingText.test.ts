@@ -24,7 +24,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -39,7 +38,6 @@ import {
 /** Loads the real enduro's strip, every school too long for its pill, and takes it on air. */
 async function putStripOnAirWithEverySchoolTooLong(): Promise<LowerStripGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const lowerStrip = createLowerStripOnThePage();
   await loadLowerStripWithData(lowerStrip, createRealEnduroStripData());
   await lowerStrip.playAction({ skipAnimation: true });

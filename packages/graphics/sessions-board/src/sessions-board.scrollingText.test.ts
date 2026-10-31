@@ -22,7 +22,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -37,7 +36,6 @@ import {
 /** Loads Sunday's board, every text too long for its box, and takes it on air. */
 async function putBoardOnAirWithEveryTextTooLong(): Promise<SessionsBoardGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const board = createSessionsBoardOnThePage();
   await loadSessionsBoardWithData(board, createSundaySessionsBoardData());
   await board.playAction({ skipAnimation: true });

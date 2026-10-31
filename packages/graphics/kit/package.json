@@ -20,6 +20,7 @@
     "./scrollingTextWhenTooLong": "./src/scrollingTextWhenTooLong.ts",
     "./scrollingTextStyles": "./src/scrollingTextStyles.ts",
     "./scrollingTextCycle": "./src/scrollingTextCycle.ts",
+    "./scrollingTextKeyframes": "./src/scrollingTextKeyframes.ts",
     "./scrollingTextTimings": "./src/scrollingTextTimings.ts",
     "./clockTicker": "./src/clockTicker.ts",
     "./raceClockReading": "./src/raceClockReading.ts",
@@ -61,6 +62,7 @@
     "./the30thCompetitionSponsors.testSupport": "./src/the30thCompetitionSponsors.testSupport.ts",
     "./runningMotions.testSupport": "./src/runningMotions.testSupport.ts",
     "./scrollingTextOnAir.testSupport": "./src/scrollingTextOnAir.testSupport.ts",
+    "./webAnimationsInJsdom.testSupport": "./src/webAnimationsInJsdom.testSupport.ts",
     "./scrollingTextInTheBrowser.testSupport": "./src/scrollingTextInTheBrowser.testSupport.ts"
   },
   "scripts": {

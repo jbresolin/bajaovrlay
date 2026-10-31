@@ -23,7 +23,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -50,7 +49,6 @@ function listScrollingBoxes(lowerThird: LowerThirdGraphic): HTMLElement[] {
 /** Loads a team captain's lower third, every text too long, and takes it on air. */
 async function putLowerThirdOnAirWithEveryTextTooLong(): Promise<LowerThirdGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const lowerThird = createLowerThirdOnThePage();
   await loadLowerThirdWithData(lowerThird, createTeamCaptainData());
   await lowerThird.playAction({ skipAnimation: true });

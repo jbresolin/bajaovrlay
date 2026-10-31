@@ -23,7 +23,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -42,7 +41,6 @@ async function putRollOnAirWithEveryTextTooLong(
   layout: SponsorRollLayout,
 ): Promise<SponsorRollGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   placeTheSponsorHoldsOnTheRoot();
   const roll = createSponsorRollOnThePage();
   await loadSponsorRollWithData(roll, createThe30thCompetitionRoll(layout));

@@ -24,7 +24,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -51,7 +50,6 @@ function listScrollingBoxes(notice: NoticeGraphic): HTMLElement[] {
 /** Loads car 47's jump-start penalty, every text too long, and takes it on air. */
 async function putNoticeOnAirWithEveryTextTooLong(): Promise<NoticeGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const notice = createNoticeOnThePage();
   await loadNoticeWithData(notice, createJumpStartPenaltyData());
   await notice.playAction({ skipAnimation: true });

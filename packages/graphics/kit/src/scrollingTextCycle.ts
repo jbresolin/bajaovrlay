@@ -1,15 +1,16 @@
 /**
  * The cycle of the texts too long for their boxes in one graphic (BAJAOVRLAY-55), as plain
- * arithmetic: no page, no GSAP, no clock. Each text that does not fit holds at its start,
+ * arithmetic: no page, no animation, no clock. Each text that does not fit holds at its start,
  * scrolls at the theme's constant speed until its end shows, holds at its end and
  * crossfades back to its start. All the texts of one graphic share one cycle, as long as
  * the longest of them needs: they start scrolling together and come back together, the
  * shorter ones waiting at their end, so a tower of 20 rows reads calm, not chaotic.
  *
  * Texts are named by a key the caller chooses (the graphic's clock numbers its boxes).
- * scrollingTextWhenTooLong.ts measures the widths, plans a cycle here and builds its GSAP
- * timeline from readPhaseMomentsOfText; readScrollingTextPhaseAt answers where a text is
- * at a moment, which the tests read and the timeline must agree with.
+ * scrollingTextWhenTooLong.ts measures the widths, plans a cycle here, and books its phase
+ * timers from readPhaseMomentsOfText; scrollingTextKeyframes.ts turns a text's cycle into
+ * the Web Animation keyframes that move it. readScrollingTextPhaseAt answers where a text
+ * is at a moment, which the tests read and the keyframes must agree with.
  */
 import type { ScrollingTextTimings } from './scrollingTextTimings.js';
 

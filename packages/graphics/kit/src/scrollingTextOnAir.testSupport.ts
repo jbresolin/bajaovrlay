@@ -6,12 +6,16 @@
  * never start a cycle there. `makeEveryScrollingTextTooLongForItsBox` makes every
  * scrolling text 876 px wide in a 300 px box (the length of "INSTITUTO FEDERAL DE
  * EDUCAÇÃO, CIÊNCIA E TECNOLOGIA FLUMINENSE - IFF - CAMPUS ITAPERUNA" in a tower row) for
- * one test, so a test can prove the cycle starts on air and ends on stop and dispose.
+ * one test, and records the Web Animations the clock starts (jsdom has none), so a test
+ * can prove the cycle starts on air and ends on stop and dispose.
  */
-import { gsap } from 'gsap';
 import { onTestFinished } from 'vitest';
 
-import { scrollingTextCycleTimelineData } from './scrollingTextWhenTooLong.js';
+import { scrollingTextCycleIdPrefix } from './scrollingTextWhenTooLong.js';
+import {
+  installRecordingWebAnimations,
+  listUncancelledAnimations,
+} from './webAnimationsInJsdom.testSupport.js';
 
 /** Makes every scrolling text too long for its box, for the rest of the test. */
 export function makeEveryScrollingTextTooLongForItsBox(): void {
@@ -29,6 +33,7 @@ export function makeEveryScrollingTextTooLongForItsBox(): void {
       return this.classList.contains('scrolling-text-box') ? 300 : 0;
     },
   });
+  installRecordingWebAnimations();
   onTestFinished(() => {
     if (realOffsetWidth !== undefined) {
       Object.defineProperty(HTMLElement.prototype, 'offsetWidth', realOffsetWidth);
@@ -39,19 +44,16 @@ export function makeEveryScrollingTextTooLongForItsBox(): void {
   });
 }
 
-/** The scrolling text cycles running: one per graphic on air with a text too long. */
-export function findRunningScrollingTextCycles(): gsap.core.Timeline[] {
-  return gsap.globalTimeline
-    .getChildren(false, false, true)
-    .filter((child): child is gsap.core.Timeline => child instanceof gsap.core.Timeline)
-    .filter((timeline) => timeline.data === scrollingTextCycleTimelineData);
-}
-
-/** Ends every scrolling text cycle left running when the test ends, so none leaks. */
-export function killScrollingTextCyclesWhenTheTestEnds(): void {
-  onTestFinished(() => {
-    for (const timeline of findRunningScrollingTextCycles()) {
-      timeline.kill();
+/**
+ * The scrolling text cycles running, one entry per cycle (its animations' shared id): one
+ * per graphic on air with a text too long, none once every one was cancelled.
+ */
+export function findRunningScrollingTextCycles(): string[] {
+  const cycleIds = new Set<string>();
+  for (const animation of listUncancelledAnimations()) {
+    if (animation.id.startsWith(scrollingTextCycleIdPrefix)) {
+      cycleIds.add(animation.id);
     }
-  });
+  }
+  return [...cycleIds];
 }

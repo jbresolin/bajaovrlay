@@ -8,7 +8,7 @@
  *   starts again. Every such text of one graphic shares one cycle, so a tower of 20 rows
  *   moves together. This module answers, from the widths and the theme's timings alone,
  *   how long a cycle lasts and where each text is at a given moment of it; the graphic's
- *   GSAP timeline is built from the very same moments (scrollingTextWhenTooLong.ts).
+ *   Web Animation keyframes are built from the very same moments (scrollingTextKeyframes.ts).
  *
  * What these tests prove:
  *   - A text that fits never moves and is not part of the cycle.
@@ -22,7 +22,7 @@
  *   - The crossfade back is half a fade out at the end and half a fade in at the start.
  *
  * What these tests deliberately do not cover:
- *   - Measuring the widths on the page and running the cycle with GSAP;
+ *   - Measuring the widths on the page and running the cycle;
  *     scrollingTextWhenTooLong.test.ts covers those.
  *   - Reading the timings from the theme; scrollingTextTimings.test.ts.
  */

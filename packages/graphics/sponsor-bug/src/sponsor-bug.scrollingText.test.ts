@@ -22,7 +22,6 @@
  */
 import {
   findRunningScrollingTextCycles,
-  killScrollingTextCyclesWhenTheTestEnds,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
 import { describe, expect, it } from 'vitest';
@@ -42,7 +41,6 @@ function letThePageCatchUp(): Promise<void> {
 /** Loads the enduro's bug with its sponsor, both words too long, and takes it on air. */
 async function putBugOnAirWithBothWordsTooLong(): Promise<SponsorBugGraphic> {
   makeEveryScrollingTextTooLongForItsBox();
-  killScrollingTextCyclesWhenTheTestEnds();
   const sponsorBug = createSponsorBugOnThePage();
   const pendingLoad = loadSponsorBugWithData(sponsorBug, createEnduroBugDataWithSponsor());
   // jsdom loads no image: the logo's load event is fired by hand, as a page with the file would.
