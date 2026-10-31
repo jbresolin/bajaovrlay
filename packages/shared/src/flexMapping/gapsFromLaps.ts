@@ -6,7 +6,8 @@
  * What could go wrong: a source whose cars are not in position order gets gaps to the
  * wrong car; the positions shape refuses such a list anyway.
  */
-import { lastPassTargetField } from './flexShapeMappingChecks.js';
+/** The target only this step reads; it is taken off every car before the shape. */
+export const lastPassTargetField = 'lastPassAtMs';
 
 /** The statuses of a car still in the race; only these get gaps. */
 const statusesStillInTheRace = new Set(['running', 'inPit', 'stopped']);

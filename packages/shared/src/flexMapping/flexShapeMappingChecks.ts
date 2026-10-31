@@ -11,12 +11,10 @@ import type { DataShapeKey } from '../dataShapes/dataShapeKey.js';
 import { ptBRDataShapes } from '../dataShapes/ptBRDataShapes.js';
 import type { FlexFieldRule, FlexShapeMapping } from './flexMappingConfig.js';
 import { listReadingsOfRule } from './flexRuleSources.js';
+import { lastPassTargetField } from './gapsFromLaps.js';
 import { findMappableField, type MappableFieldLevel } from './mappableFields.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
 import { parseValuePath } from './valuePath.js';
-
-/** The target only the gaps step reads (gapsFromLaps.ts); it never reaches the shape. */
-export const lastPassTargetField = 'lastPassAtMs';
 
 /**
  * Checks one shape's mapping: its list (or the session's lack of one), its options on the
