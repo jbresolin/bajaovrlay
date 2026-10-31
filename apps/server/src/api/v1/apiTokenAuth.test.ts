@@ -23,16 +23,19 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
 import {
   apiTokensOfTheDesk,
-  applyOrThrow,
   companionToken,
+  streamDeckToken,
+  wrongToken,
+} from '../../core/apiAccess/fakeApiTokens.testSupport.js';
+import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
+import {
+  applyOrThrow,
   createAppWithTheCommandApi,
   operatorActor,
   prepareTheRaceDay,
   sendApiRequest,
-  streamDeckToken,
 } from './commandApiOnTheApp.testSupport.js';
 
 const authScenarios = [
@@ -64,7 +67,7 @@ const authScenarios = [
   {
     name: 'answers 401 to a wrong token',
     apiTokensVariable: apiTokensOfTheDesk,
-    request: { token: '0000000000000000ffffffffffffffff' },
+    request: { token: wrongToken },
     expectedStatus: 401,
     expectedError: {
       code: 'API_TOKEN_REFUSED',

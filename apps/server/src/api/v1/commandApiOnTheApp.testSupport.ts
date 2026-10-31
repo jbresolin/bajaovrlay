@@ -21,13 +21,6 @@ import {
 } from '../../core/store/raceClockItemOnTheStore.testSupport.js';
 import { answerClientMessage } from '../../core/ws/clientMessageAnswers.js';
 
-// Two tokens as `openssl rand -hex 16` makes them; never real ones.
-export const companionToken = '3f9c1a7e5b2d4c6f8a0e1b3d5f7a9c2e';
-export const streamDeckToken = '8b2e4d6f0a1c3e5b7d9f1a3c5e7b9d0f';
-
-/** BAJAOVRLAY_API_TOKENS on the operator's desk: Companion and a Stream Deck. */
-export const apiTokensOfTheDesk = `companion=${companionToken},streamdeck=${streamDeckToken}`;
-
 /** The operator connection the WebSocket twin of each request is sent as. */
 export const operatorActor = 'operador:conexao-7';
 

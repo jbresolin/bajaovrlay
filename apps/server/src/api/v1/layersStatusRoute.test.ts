@@ -24,8 +24,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   apiTokensOfTheDesk,
-  applyOrThrow,
   companionToken,
+} from '../../core/apiAccess/fakeApiTokens.testSupport.js';
+import {
+  applyOrThrow,
   createAppWithTheCommandApi,
   prepareTheRaceDay,
   sendApiRequest,

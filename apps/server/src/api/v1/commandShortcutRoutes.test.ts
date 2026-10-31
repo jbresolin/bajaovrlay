@@ -29,11 +29,13 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import type { StateStore } from '../../core/store/createStateStore.js';
 import {
   apiTokensOfTheDesk,
-  applyOrThrow,
   companionToken,
+} from '../../core/apiAccess/fakeApiTokens.testSupport.js';
+import type { StateStore } from '../../core/store/createStateStore.js';
+import {
+  applyOrThrow,
   createAppWithTheCommandApi,
   prepareTheRaceDay,
   type RaceDayOnTheStore,

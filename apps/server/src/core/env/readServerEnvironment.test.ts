@@ -21,6 +21,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { companionToken } from '../apiAccess/fakeApiTokens.testSupport.js';
 import { readServerEnvironment } from './readServerEnvironment.js';
 
 describe('readServerEnvironment and BAJAOVRLAY_SOURCE_ALLOWED_HOSTS', () => {
@@ -92,7 +93,7 @@ describe('readServerEnvironment and BAJAOVRLAY_API_TOKENS', () => {
   it('reads the devices of a variable that is set', () => {
     // Arrange: Companion on the operator's desk.
     const environmentVariables = {
-      BAJAOVRLAY_API_TOKENS: 'companion=3f9c1a7e5b2d4c6f8a0e1b3d5f7a9c2e',
+      BAJAOVRLAY_API_TOKENS: `companion=${companionToken}`,
     };
 
     // Act: read the environment.
@@ -101,7 +102,7 @@ describe('readServerEnvironment and BAJAOVRLAY_API_TOKENS', () => {
     // Assert: one device.
     expect(environment.BAJAOVRLAY_API_TOKENS, 'the variable must list Companion').toEqual({
       isSet: true,
-      tokens: [{ name: 'companion', token: '3f9c1a7e5b2d4c6f8a0e1b3d5f7a9c2e' }],
+      tokens: [{ name: 'companion', token: companionToken }],
     });
   });
 

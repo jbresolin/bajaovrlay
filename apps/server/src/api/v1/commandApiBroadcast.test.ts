@@ -19,6 +19,10 @@
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { parseApiTokens } from '../../core/apiAccess/apiTokens.js';
+import {
+  apiTokensOfTheDesk,
+  companionToken,
+} from '../../core/apiAccess/fakeApiTokens.testSupport.js';
 import { buildBootOptions } from '../../core/boot/bootedServer.testSupport.js';
 import { startServer } from '../../core/boot/startServer.js';
 import { committedMigrationsFolder } from '../../core/db/openDatabase.js';
@@ -28,7 +32,6 @@ import {
   shortcutsPanelHome,
 } from '../../core/store/raceClockItemOnTheStore.testSupport.js';
 import { connectWebSocketTestClient } from '../../core/ws/webSocketTestClient.testSupport.js';
-import { apiTokensOfTheDesk, companionToken } from './commandApiOnTheApp.testSupport.js';
 
 /** Boots the whole server with Companion's and the Stream Deck's tokens; closed after the test. */
 async function startServerWithTheCommandApi() {

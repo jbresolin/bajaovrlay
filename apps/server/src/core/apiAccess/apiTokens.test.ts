@@ -31,10 +31,7 @@ import {
   parseApiTokens,
   readBearerTokenFromAuthorizationHeader,
 } from './apiTokens.js';
-
-// Two tokens as `openssl rand -hex 16` makes them; never real ones.
-const companionToken = '3f9c1a7e5b2d4c6f8a0e1b3d5f7a9c2e';
-const streamDeckToken = '8b2e4d6f0a1c3e5b7d9f1a3c5e7b9d0f';
+import { companionToken, sharedToken, streamDeckToken } from './fakeApiTokens.testSupport.js';
 
 describe('parseApiTokens', () => {
   const variablesThatTurnTheApiOff = [
@@ -103,7 +100,7 @@ describe('parseApiTokens', () => {
     // A space inside is a paste that went wrong; a Bearer header cannot carry it.
     {
       name: 'refuses a token with a space inside',
-      text: 'companion=3f9c1a7e5b2d 4c6f8a0e1b3d5f7a9c2e',
+      text: 'companion=companion-test token-0001',
       expectedProblem: 'the token of "companion" has a space inside',
     },
     // Two lines for one device: which token counts would be a guess.
@@ -115,7 +112,7 @@ describe('parseApiTokens', () => {
     // One token for two devices: the event log could not say which one pressed.
     {
       name: 'refuses one token given to two devices',
-      text: `companion=${companionToken},streamdeck=${companionToken}`,
+      text: `companion=${sharedToken},streamdeck=${sharedToken}`,
       expectedProblem: '"companion" and "streamdeck" have the same token',
     },
   ];
@@ -134,6 +131,7 @@ describe('parseApiTokens', () => {
     const problemText = parsing.isValid ? '' : parsing.problem;
     expect(problemText, 'a refusal never repeats a token').not.toContain(companionToken);
     expect(problemText, 'a refusal never repeats a token').not.toContain(streamDeckToken);
+    expect(problemText, 'a refusal never repeats a token').not.toContain(sharedToken);
   });
 });
 

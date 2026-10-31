@@ -8,3 +8,6 @@ in front of each route of the command API (api/v1/mountCommandApiRoutes.ts): 403
 variable is unset, 401 for a missing or wrong token, otherwise the device's name for the route.
 
 A token is a secret: nothing here logs or echoes one, only the device's name.
+
+Every test takes its tokens from `fakeApiTokens.testSupport.ts`: fake-looking and low in
+entropy (`companion-test-token-0001`), so the secret scanner on PRs never takes one for real.
