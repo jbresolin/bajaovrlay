@@ -13,6 +13,8 @@
  *   - The real 26BR overall table gives Poli Baja (car 5) its total and its five parts,
  *     and the standings' parts come in the order the operator picked them.
  *   - A column the organisers add in the middle shifts nothing: the same values are read.
+ *   - Of two columns with the same header, the first is read (the API's own rule: two
+ *     columns with one header share one value).
  *   - A header the answer does not have is one problem naming it, not one per row.
  *   - A part whose cell holds no value is left out, its column kept; a part whose cell
  *     holds text is a problem naming the team, the column and the value.
@@ -109,6 +111,27 @@ describe('applyFlexMapping, table columns', () => {
 
     // Assert: exactly what the table gave before the column was added.
     expect(result, 'a new column must shift nothing').toEqual({
+      ok: true,
+      shapes: { standings: poliBajaStandings },
+    });
+  });
+
+  it('reads the first of two columns with the same header', () => {
+    // Arrange: Poli Baja's row with a second "Total" column appended at the end, holding a
+    // different number, as a table copied from two sheets might.
+    const mappings = buildTableMapping(partHeadersOf26BR);
+    const table = readFirstRowOf26BR() as {
+      columns: unknown[];
+      rows: Array<{ cells: unknown[] }>;
+    };
+    table.columns.push({ header: 'Total', kind: 'formula', ranking: false });
+    table.rows[0]?.cells.push({ raw: 0 });
+
+    // Act: map it.
+    const result = applyFlexMapping(mappings, { resultado: table }, pollMomentMs);
+
+    // Assert: the total comes from the first "Total" column, 816.24, not the second's 0.
+    expect(result, 'the first column with the header must be read').toEqual({
       ok: true,
       shapes: { standings: poliBajaStandings },
     });

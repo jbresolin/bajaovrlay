@@ -17,6 +17,8 @@
  *   - A request without refreshEveryMs is fetched at every poll, as before.
  *   - A config change, the source's preparation (turned on, or its config saved) and a
  *     restart (a new adapter) all fetch the list again.
+ *   - A response stamped later than the poll's clock (the clock set back, a replayed day)
+ *     is never reused.
  *
  * What these tests deliberately do not cover:
  *   - The range of refreshEveryMs (1 minute to 1 hour): the shared config schema's tests.
@@ -200,6 +202,23 @@ describe('a request with its own refresh time', () => {
 
     // Assert: the teams fetched at every poll.
     expect(countRequestsFor(server, teamsPath), 'the teams must be fetched every poll').toBe(3);
+  });
+
+  it('never reuses a response stamped later than the poll’s clock', async () => {
+    // Arrange: the teams fetched at a poll 10 s after the first one.
+    const server = await startResultsServer();
+    const config = buildRaceWithTeamsConfig(server.baseUrl, tenMinutesMs);
+    const adapter = createAdapterForRefreshTests();
+    await adapter.pollOnce(config, buildPollContextAt(10));
+
+    // Act: poll with the clock set back to the first poll's moment, before that fetch.
+    await adapter.pollOnce(config, buildPollContextAt(0));
+
+    // Assert: the teams fetched again, since a response "from the future" is not trusted.
+    expect(
+      countRequestsFor(server, teamsPath),
+      'a future-stamped response must not be reused',
+    ).toBe(2);
   });
 
   const fetchedAgainScenarios: Array<{

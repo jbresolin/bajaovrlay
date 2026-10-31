@@ -46,6 +46,18 @@ function buildPendingSlot(fromMatch: number, takes: 'winner' | 'loser') {
   return { type: 'pending', from_match: fromMatch, takes };
 }
 
+/**
+ * Checks that the fixture holds the match a test is about to change and gives it back, so a
+ * changed fixture fails the test instead of letting it pass having changed nothing.
+ */
+function expectMatchInFixture(
+  match: TournamentAnswer['rounds'][number]['matches'][number] | undefined,
+  whichMatch: string,
+): TournamentAnswer['rounds'][number]['matches'][number] {
+  expect(match, `the 25SU fixture must hold ${whichMatch}`).toBeDefined();
+  return match as TournamentAnswer['rounds'][number]['matches'][number];
+}
+
 /** Maps a tournament answer with the draft mapping, then validates the brackets. */
 function mapAndValidateTournament(tournament: unknown) {
   const result = applyFlexMapping(
@@ -127,11 +139,12 @@ describe('applyFlexMapping, brackets contracts A and C', () => {
   it('leaves out every round from the quarter-finals on when one quarter-final side is pending', () => {
     // Arrange: the real 25SU bracket with one side of its first quarter-final pending.
     const tournament = readBajaAppFixture(bajaAppFixtureFiles.superPrime25SU) as TournamentAnswer;
-    const firstQuarterFinal = tournament.rounds[1]?.matches[0];
-    if (firstQuarterFinal !== undefined) {
-      firstQuarterFinal.slots[1] = buildPendingSlot(114, 'winner');
-      firstQuarterFinal.winner = null;
-    }
+    const firstQuarterFinal = expectMatchInFixture(
+      tournament.rounds[1]?.matches[0],
+      'a first quarter-final',
+    );
+    firstQuarterFinal.slots[1] = buildPendingSlot(114, 'winner');
+    firstQuarterFinal.winner = null;
 
     // Act: map and validate it.
     const { validation, roundNames } = mapAndValidateTournament(tournament);
@@ -148,11 +161,12 @@ describe('applyFlexMapping, brackets contracts A and C', () => {
   it('keeps a finished final when only the third place is still pending', () => {
     // Arrange: the real 25SU bracket with its third place's sides pending.
     const tournament = readBajaAppFixture(bajaAppFixtureFiles.superPrime25SU) as TournamentAnswer;
-    const thirdPlaceMatch = tournament.rounds.find((round) => round.round === -1)?.matches[0];
-    if (thirdPlaceMatch !== undefined) {
-      thirdPlaceMatch.slots = [buildPendingSlot(125, 'loser'), buildPendingSlot(126, 'loser')];
-      thirdPlaceMatch.winner = null;
-    }
+    const thirdPlaceMatch = expectMatchInFixture(
+      tournament.rounds.find((round) => round.round === -1)?.matches[0],
+      'a third-place match (round -1)',
+    );
+    thirdPlaceMatch.slots = [buildPendingSlot(125, 'loser'), buildPendingSlot(126, 'loser')];
+    thirdPlaceMatch.winner = null;
 
     // Act: map and validate it.
     const { validation, roundNames } = mapAndValidateTournament(tournament);

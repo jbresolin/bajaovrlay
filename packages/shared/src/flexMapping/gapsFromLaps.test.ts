@@ -10,7 +10,9 @@
  *   gap stays put, however the cars move on track.
  *
  * What these tests prove, one table per rule, with the lap counts of a four-hour enduro:
- *   - The leader is position 1 and carries no gap and no interval.
+ *   - The leader is position 1 and carries no gap and no interval, whatever its status: a
+ *     retired leader still sets the laps the others are measured from, and a car with more
+ *     laps than it gets no gap.
  *   - A car on the leader's lap gets gapToLeaderMs = its last pass − the leader's.
  *   - A lapped car gets gapToLeaderLaps = the laps it is behind.
  *   - intervalMs goes to the car directly ahead when both are on the same lap, and not
@@ -18,6 +20,7 @@
  *   - Only cars still in the race (running, inPit, stopped) get gaps.
  *   - Gaps a source sends itself are never overwritten.
  *   - Every car loses lastPassAtMs, and a car without one gets no time gap.
+ *   - A time that would come out negative (passes out of step with the laps) is left out.
  *
  * What these tests deliberately do not cover:
  *   - Mapping lastPassAtMs from the answer, and the result through validateDataShape:
@@ -92,6 +95,26 @@ describe('addGapsWorkedOutFromLaps', () => {
         name: 'gives car 2, leading on 34 laps, no gap and no interval',
         cars: [buildMappedCar(1, 2, 34, 0)],
         expected: [noGaps(2)],
+      },
+      // A retired car ranked first is still the leader: car 13 on its lap is measured from it
+      // (gate 2 of PR #35), though no interval goes to a car out of the race.
+      {
+        name: 'measures car 13 from car 2, leading on 34 laps though retired',
+        cars: [
+          buildMappedCar(1, 2, 34, 0, { status: 'retired' }),
+          buildMappedCar(2, 13, 34, 12_399),
+        ],
+        expected: [noGaps(2), { ...noGaps(13), gapToLeaderMs: 12_399 }],
+      },
+      // A source ranking a retired car with fewer laps first: the car with more laps than
+      // the leader gets no gap at all, as the positions shape wants.
+      {
+        name: 'gives car 13, on 34 laps behind car 2 retired on 30, no gap',
+        cars: [
+          buildMappedCar(1, 2, 30, 0, { status: 'retired' }),
+          buildMappedCar(2, 13, 34, 12_399),
+        ],
+        expected: [noGaps(2), noGaps(13)],
       },
     ]);
   });
@@ -235,6 +258,18 @@ describe('addGapsWorkedOutFromLaps', () => {
           { ...noGaps(13), gapToLeaderLaps: 1 },
           { ...noGaps(7), gapToLeaderLaps: 1, intervalMs: 10_000 },
         ],
+      },
+    ]);
+  });
+
+  describe('a time that would come out negative', () => {
+    runGapScenarios([
+      // Car 13 on the leader's lap with a last pass before the leader's: the passes are out
+      // of step with the laps, so neither its gap nor its interval is guessed.
+      {
+        name: 'gives car 13, on lap 34 but passing 5 s before the leader, no time gap',
+        cars: [buildMappedCar(1, 2, 34, 0), buildMappedCar(2, 13, 34, -5_000)],
+        expected: [noGaps(2), noGaps(13)],
       },
     ]);
   });

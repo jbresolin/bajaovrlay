@@ -67,6 +67,11 @@ export function createHttpJsonAdapter(
       sourceHostAllowlist,
       logger,
     });
+    // Remembered as soon as it is fetched good, before mapping: an answer the poll then
+    // refuses (by a refuseWhen flag, or by the shape's validation) is still reused for its
+    // refreshEveryMs. That is acceptable because a request with a refresh time is a lookup
+    // list (the teams), which carries no flag: the race or table that would raise one is
+    // fetched at every poll. A broken list stays at most refreshEveryMs (an hour at most).
     if (fetchResult.ok) {
       rememberedResponses.remember(config, request, fetchResult, pollMomentMs);
     }
