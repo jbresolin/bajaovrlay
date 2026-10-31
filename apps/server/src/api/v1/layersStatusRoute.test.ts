@@ -13,6 +13,8 @@
  *   - An item on air and another in preview are named on their layers; the running macro
  *     is named, and marked stopping once "Parar" was pressed.
  *   - An instance whose item was deleted counts as on air, with no item name.
+ *   - A layer whose id is `__proto__` is listed like any other, not swallowed as the
+ *     object's prototype.
  *
  * What these tests deliberately do not cover:
  *   - The token check; apiTokenAuth.test.ts.
@@ -28,6 +30,7 @@ import {
   prepareTheRaceDay,
   sendApiRequest,
 } from './commandApiOnTheApp.testSupport.js';
+import { buildLayersStatus } from './layersStatusRoute.js';
 
 /** One layer of the answer, as the tests read it. */
 type LayerStatus = {
@@ -142,5 +145,45 @@ describe('GET /api/v1/layers/status', () => {
       true,
       null,
     ]);
+  });
+
+  it('lists a layer whose id is __proto__ like any other', () => {
+    // Arrange: the seeded slices plus a layer named, by accident or not, "__proto__". A
+    // plain object would treat that key as its prototype and drop the layer.
+    const { stateStore } = createAppWithTheCommandApi({ apiTokensVariable: apiTokensOfTheDesk });
+    const seededSlices = stateStore.readAllSlices();
+    const slicesWithTheOddLayer = {
+      ...seededSlices,
+      layers: [
+        ...seededSlices.layers,
+        {
+          id: '__proto__',
+          outputId: 'program',
+          name: 'Camada de teste',
+          zIndex: 990,
+          replacePolicy: 'cut' as const,
+          persistent: false,
+        },
+      ],
+    };
+
+    // Act: build the status and send it through JSON, as the route does.
+    const status = JSON.parse(
+      JSON.stringify(buildLayersStatus(slicesWithTheOddLayer, 'companion')),
+    ) as LayersStatus;
+
+    // Assert: the layer is there, under its own id, with nothing on it.
+    const programLayers = status.outputs.program?.layers ?? {};
+    expect(Object.keys(programLayers), 'the odd layer is listed last').toContain('__proto__');
+    expect(
+      Object.getOwnPropertyDescriptor(programLayers, '__proto__')?.value,
+      'its status',
+    ).toEqual({
+      name: 'Camada de teste',
+      isOnAir: false,
+      onAirItemName: null,
+      isInPreview: false,
+      previewItemName: null,
+    });
   });
 });

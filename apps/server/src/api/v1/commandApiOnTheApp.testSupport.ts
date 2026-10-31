@@ -5,9 +5,10 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { Slices } from '@bajaovrlay/shared';
+import type { SliceName, Slices } from '@bajaovrlay/shared';
 
 import { parseApiTokens } from '../../core/apiAccess/apiTokens.js';
+import { writeSliceRows } from '../../core/db/sliceRowStorage.js';
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger, type ServerLogger } from '../../core/logger/createLogger.js';
@@ -48,6 +49,11 @@ export type AppWithTheCommandApi = {
 export function createAppWithTheCommandApi(options: {
   apiTokensVariable: string | undefined;
   logger?: ServerLogger;
+  /**
+   * Slice rows written over the seeded ones before the store boots, as a damaged or an
+   * older database would hold them (for example `rundowns` as an empty list).
+   */
+  rowsWrittenBeforeTheBoot?: Array<{ name: SliceName; json: unknown }>;
 }): AppWithTheCommandApi {
   const parsing = parseApiTokens(options.apiTokensVariable);
   if (!parsing.isValid) {
@@ -55,10 +61,19 @@ export function createAppWithTheCommandApi(options: {
   }
   const logger = options.logger ?? createLogger({ level: 'silent' });
   const { database } = openTemporaryDatabase();
+  const graphicPackagesFolder = createGraphicsFolderWithRaceClockAndPodium();
+  if (options.rowsWrittenBeforeTheBoot !== undefined) {
+    // A first boot seeds the database; the rows are then written as the test asks.
+    createStateStore({ database, logger, graphicPackagesFolder });
+    writeSliceRows(
+      database,
+      options.rowsWrittenBeforeTheBoot.map((row) => ({ ...row, updatedAt: momentOfTheRaceDay })),
+    );
+  }
   const stateStore = createStateStore({
     database,
     logger,
-    graphicPackagesFolder: createGraphicsFolderWithRaceClockAndPodium(),
+    graphicPackagesFolder,
     readCurrentTime: () => new Date(momentOfTheRaceDay),
     createInstanceId: countIdsFrom('instancia'),
     createItemId: countIdsFrom('item'),

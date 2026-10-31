@@ -15,6 +15,9 @@
  *   - A command of the wrong shape answers 400 with INVALID_COMMAND naming the field, and
  *     is logged as failed; a body that is not the envelope answers 400 INVALID_MESSAGE; a
  *     body that is not JSON, 400 MALFORMED_JSON_BODY.
+ *   - A body not sent as JSON (a form, plain text, no Content-Type) answers 415 and a body
+ *     over 256 KB answers 413, both in the error shape with a pt-BR reason, and neither
+ *     reaches the store; a JSON Content-Type naming its charset is accepted.
  *   - A refusal carries the code and message the WebSocket gives, in the error shape
  *     every route uses, and its status: 422 for a reference to nothing, 409 for a state
  *     in the way.
@@ -148,6 +151,102 @@ describe('POST /api/v1/commands', () => {
     // Assert: 400 in the error shape every route uses.
     expect(response.status, 'a body that is not JSON answers 400').toBe(400);
     expect(body.error.code, 'named as a JSON body that cannot be read').toBe('MALFORMED_JSON_BODY');
+  });
+
+  const bodiesNotSentAsJson = [
+    // A script that forgot the header: curl -d sends a form by default.
+    {
+      name: 'refuses a body sent as a form with 415, in pt-BR',
+      contentType: 'application/x-www-form-urlencoded' as string | undefined,
+    },
+    // No Content-Type at all, as a hand-written HTTP client may send.
+    { name: 'refuses a body with no Content-Type with 415, in pt-BR', contentType: undefined },
+    // Plain text, as Companion sends when its body type is left on "text".
+    { name: 'refuses a body sent as plain text with 415, in pt-BR', contentType: 'text/plain' },
+  ];
+
+  it.each(bodiesNotSentAsJson)('$name', async ({ contentType }) => {
+    // Arrange: an app with Companion's token, and a clearAll envelope sent with the header above.
+    const { app, stateStore } = createAppWithTheCommandApi({
+      apiTokensVariable: apiTokensOfTheDesk,
+    });
+    const headers: Record<string, string> = { Authorization: `Bearer ${companionToken}` };
+    if (contentType !== undefined) {
+      headers['Content-Type'] = contentType;
+    }
+    const eventLogBefore = stateStore.readAllSlices().eventLog;
+
+    // Act: send it.
+    const response = await app.request('http://localhost/api/v1/commands', {
+      method: 'POST',
+      headers,
+      body: '{"type":"command","command":{"type":"clearAll"}}',
+    });
+    const body: unknown = await response.json();
+
+    // Assert: 415 in the error shape every route uses, and nothing reached the store.
+    expect(response.status, 'a body that is not sent as JSON answers 415').toBe(415);
+    expect(body, 'the error shape, with how to send it in pt-BR').toEqual({
+      error: {
+        code: 'BODY_NOT_JSON',
+        message: 'Envie o comando como JSON: Content-Type: application/json.',
+      },
+    });
+    expect(stateStore.readAllSlices().eventLog, 'the store never heard of it').toEqual(
+      eventLogBefore,
+    );
+  });
+
+  it('accepts a JSON Content-Type that names its charset', async () => {
+    // Arrange: an app with Companion's token; some tools add "; charset=utf-8".
+    const { app } = createAppWithTheCommandApi({ apiTokensVariable: apiTokensOfTheDesk });
+
+    // Act: send "Limpar tudo" so.
+    const response = await app.request('http://localhost/api/v1/commands', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${companionToken}`,
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: '{"type":"command","command":{"type":"clearAll"}}',
+    });
+
+    // Assert: run.
+    expect(response.status, 'JSON with a charset is still JSON').toBe(200);
+  });
+
+  it('refuses a body over 256 KB with 413, in pt-BR, before reading it all', async () => {
+    // Arrange: an app with Companion's token, and an envelope padded past 256 KB.
+    const { app, stateStore } = createAppWithTheCommandApi({
+      apiTokensVariable: apiTokensOfTheDesk,
+    });
+    const eventLogBefore = stateStore.readAllSlices().eventLog;
+    const paddedEnvelope = {
+      type: 'command',
+      requestId: 'companion-1',
+      command: { type: 'createManualEvent', text: 'Bandeira amarela no setor 3 '.repeat(10_000) },
+    };
+
+    // Act: send it.
+    const response = await sendApiRequest(app, {
+      method: 'POST',
+      path: '/api/v1/commands',
+      token: companionToken,
+      body: paddedEnvelope,
+    });
+    const body: unknown = await response.json();
+
+    // Assert: 413 in the error shape, and nothing reached the store.
+    expect(response.status, 'a body over the limit answers 413').toBe(413);
+    expect(body, 'the error shape, with the limit in pt-BR').toEqual({
+      error: {
+        code: 'BODY_TOO_LARGE',
+        message: 'O comando passa de 256 KB; um comando nunca precisa de tanto.',
+      },
+    });
+    expect(stateStore.readAllSlices().eventLog, 'the store never heard of it').toEqual(
+      eventLogBefore,
+    );
   });
 
   it('carries the WebSocket’s reason for a refusal, as 409 when the state is in the way', async () => {

@@ -14,6 +14,8 @@
  *   - The event-log row of a shortcut names `api:companion`.
  *   - A refusal carries the code and pt-BR message the WebSocket gives: an item that does
  *     not exist (422) and a cursor on nothing (409).
+ *   - "Tomar" with no rundown at all (a damaged database) answers 422, the status the
+ *     refusal map gives RUNDOWN_NOT_FOUND everywhere.
  *   - "Parar" with no macro running answers ok and changes nothing, as stopMacro does for
  *     a macro that is not running.
  *
@@ -239,6 +241,30 @@ describe('the refusals of a shortcut', () => {
     expect(body.error, 'the same reason as the WebSocket').toEqual(
       webSocketAnswer.ok ? undefined : webSocketAnswer.error,
     );
+  });
+
+  it('refuses "Tomar" with no rundown at all as 422, the status the map gives the code', async () => {
+    // Arrange: a database whose rundowns were lost (the server seeds one, so only damage
+    // can leave none).
+    const { app } = createAppWithTheCommandApi({
+      apiTokensVariable: apiTokensOfTheDesk,
+      rowsWrittenBeforeTheBoot: [{ name: 'rundowns', json: [] }],
+    });
+
+    // Act: press "Tomar".
+    const response = await sendApiRequest(app, {
+      method: 'POST',
+      path: '/api/v1/take-next',
+      token: companionToken,
+    });
+    const body = (await response.json()) as { error: unknown };
+
+    // Assert: 422, as RUNDOWN_NOT_FOUND answers everywhere, with the reason in pt-BR.
+    expect(response.status, 'RUNDOWN_NOT_FOUND has one status, from the map').toBe(422);
+    expect(body.error, 'the reason in pt-BR').toEqual({
+      code: 'RUNDOWN_NOT_FOUND',
+      message: 'Não há rundown no servidor para tomar o próximo item.',
+    });
   });
 
   it('answers "Parar" with no macro running as ok, changing nothing', async () => {

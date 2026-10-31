@@ -1,6 +1,7 @@
 import { CommandMessageSchema } from '@bajaovrlay/shared';
 import { createRoute } from '@hono/zod-openapi';
 
+import { ErrorAnswerBodySchema } from '../../core/http/errorAnswers.js';
 import { apiTokenSecurity, commandRouteResponses } from './commandApiOpenApi.js';
 
 /**
@@ -27,5 +28,15 @@ export const postCommandsRoute = createRoute({
       content: { 'application/json': { schema: CommandMessageSchema } },
     },
   },
-  responses: commandRouteResponses,
+  responses: {
+    ...commandRouteResponses,
+    413: {
+      description: 'The body is over 256 KB (code BODY_TOO_LARGE, pt-BR).',
+      content: { 'application/json': { schema: ErrorAnswerBodySchema } },
+    },
+    415: {
+      description: 'The body is not sent as application/json (code BODY_NOT_JSON, pt-BR).',
+      content: { 'application/json': { schema: ErrorAnswerBodySchema } },
+    },
+  },
 });

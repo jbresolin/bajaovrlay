@@ -77,24 +77,31 @@ export const getLayersStatusRoute = createRoute({
  */
 export function buildLayersStatus(slices: Slices, tokenName: string): LayersStatus {
   const outputsInOrder = [...slices.outputs].sort((first, second) => first.order - second.order);
-  const outputs: LayersStatus['outputs'] = {};
-  for (const output of outputsInOrder) {
-    const layers: LayersStatus['outputs'][string]['layers'] = {};
+  // Object.fromEntries defines each key as the object's own property, so an id such as
+  // "__proto__" is listed like any other; assigning `layers[layer.id] = ...` to a plain
+  // object would set its prototype instead and the layer would vanish (gate 2 of PR #34).
+  const outputEntries = outputsInOrder.map((output) => {
     const layersOfOutput = slices.layers.filter((layer) => layer.outputId === output.outputId);
-    for (const layer of layersOfOutput) {
+    const layerEntries = layersOfOutput.map((layer) => {
       const onAir = findInstanceOnLayer(slices.instances, layer.id, 'program');
       const inPreview = findInstanceOnLayer(slices.instances, layer.id, 'preview');
-      layers[layer.id] = {
+      const layerStatus = {
         name: layer.name,
         isOnAir: onAir !== undefined,
         onAirItemName: readItemNameOfInstance(slices, onAir),
         isInPreview: inPreview !== undefined,
         previewItemName: readItemNameOfInstance(slices, inPreview),
       };
-    }
-    outputs[output.outputId] = { name: output.name, layers };
-  }
-  return { tokenName, runningMacro: readRunningMacro(slices), outputs };
+      return [layer.id, layerStatus] as const;
+    });
+    const outputStatus = { name: output.name, layers: Object.fromEntries(layerEntries) };
+    return [output.outputId, outputStatus] as const;
+  });
+  return {
+    tokenName,
+    runningMacro: readRunningMacro(slices),
+    outputs: Object.fromEntries(outputEntries),
+  };
 }
 
 /** The instance on one layer of one output, if any (a layer holds one per output). */

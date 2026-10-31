@@ -140,7 +140,9 @@ every second:
 ```
 
 Outputs and layers are keyed by id, so a value has a fixed path, for example
-`outputs.program.layers.clock.isOnAir`. `runningMacro` is `null` when no macro runs.
+`outputs.program.layers.clock.isOnAir` (or, for an id with a `-`,
+`outputs.program.layers['lower-third'].isOnAir`; see below). `runningMacro` is `null` when no
+macro runs.
 
 To turn the "Tomar" button of the clock red while the clock is on air:
 
@@ -157,6 +159,17 @@ To turn the "Tomar" button of the clock red while the clock is on air:
 
    and set its style to a red background.
 
+A layer made on "Saídas e camadas" may have an id that starts with a digit or holds a `-`
+(the seeded `lower-third` does too). The dot form cannot name such an id; write it in brackets
+and quotes instead:
+
+```
+jsonpath($(custom:baja_status), "$.outputs.program.layers['lower-third'].isOnAir") == true
+```
+
+The bracket form works for every id, so it is the safe one to copy. An output's id can hold a
+`-` as well (`$.outputs['pip-2'].layers['legenda-pip'].isInPreview`).
+
 The same way, `isInPreview` can turn a button green while its item waits in Prévia, and
 `$.runningMacro.macroId` can light the button of the macro that runs.
 
@@ -169,7 +182,9 @@ under **Variables** first: it shows the last answer, or the error.
 With `BAJA` and `TOKEN` set as in step 1. Each answers 200 with
 `{"type":"commandResult","requestId":null,"ok":true}`, or a refusal with the reason in pt-BR:
 400 the command is malformed, 403 not allowed, 422 it names something that does not exist, 409
-the state is in the way (nothing in Prévia, a macro already running).
+the state is in the way (nothing in Prévia, a macro already running). `POST /commands` also
+answers 415 to a body not sent with `Content-Type: application/json` and 413 to a body over
+256 KB.
 
 ```sh
 # "Tomar": the item under the rundown's cursor.

@@ -15,7 +15,8 @@
  *   - The other API routes ask for the token too, and the read routes that came before
  *     (GET /state) do not.
  *   - No log line, of any request in the table, contains a token; the line of an
- *     accepted command names the device and the request id.
+ *     accepted command names the device and the request id, and the warning of a refused
+ *     token carries the request id and never the token that was sent.
  *
  * What these tests deliberately do not cover:
  *   - Reading the variable and the header in every form; apiTokens.test.ts.
@@ -196,5 +197,31 @@ describe('the token check of the command API', () => {
     expect(JSON.stringify(readRecordedLines()), 'no line carries the token').not.toContain(
       companionToken,
     );
+  });
+  it('logs a refused token with the request id, never the token that was sent', async () => {
+    // Arrange: an app with two devices and a recording logger, and Companion's token with
+    // its last character changed, as a typo in Companion's header field would leave it.
+    const { logger, readRecordedLines } = createRecordingLogger();
+    const { app } = createAppWithTheCommandApi({ apiTokensVariable: apiTokensOfTheDesk, logger });
+    const mistypedToken = `${companionToken.slice(0, -1)}0`;
+
+    // Act: press "Limpar tudo" with it.
+    const response = await sendApiRequest(app, {
+      method: 'POST',
+      path: '/api/v1/clear-all',
+      token: mistypedToken,
+    });
+
+    // Assert: 401, one warn line with the request id, and neither token in any line.
+    expect(response.status, 'a wrong token answers 401').toBe(401);
+    const refusalLine = readRecordedLines().find(
+      (line) => line.message === 'api request refused: missing, malformed or wrong token',
+    );
+    expect(refusalLine?.level, 'the refusal is a warning').toBe('warn');
+    expect(refusalLine?.request_id, 'the line carries the request id').toEqual(expect.any(String));
+    expect(refusalLine?.has_authorization_header, 'the line says a header came').toBe(true);
+    const everyLogLine = JSON.stringify(readRecordedLines());
+    expect(everyLogLine, 'no line carries the token that was sent').not.toContain(mistypedToken);
+    expect(everyLogLine, 'no line carries the real token either').not.toContain(companionToken);
   });
 });

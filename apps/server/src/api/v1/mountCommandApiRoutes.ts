@@ -17,6 +17,11 @@ import {
 } from './commandApiAnswers.js';
 import { apiTokenSecurityScheme, apiTokenSecuritySchemeName } from './commandApiOpenApi.js';
 import {
+  refuseCommandBodyNotSentAsJson,
+  refuseCommandBodyOverTheLimit,
+} from './commandBodyChecks.js';
+import { chooseHttpStatusOfCommandRefusal } from './commandRefusalHttpStatus.js';
+import {
   postClearAllRoute,
   postClearLayerRoute,
   postNextOnLayerRoute,
@@ -56,7 +61,15 @@ export function mountCommandApiRoutes(
   apiRoutes.openAPIRegistry.registerComponent('schemas', 'Command', buildCommandComponent());
 
   apiRoutes.openapi(
-    { ...postCommandsRoute, middleware },
+    {
+      ...postCommandsRoute,
+      // The token first, so nobody without one learns what the body checks accept.
+      middleware: [
+        ...middleware,
+        refuseCommandBodyNotSentAsJson(),
+        refuseCommandBodyOverTheLimit(),
+      ],
+    },
     (context) => {
       const envelope = context.req.valid('json');
       const answer = runCommandFromTheApi({
@@ -195,7 +208,7 @@ function readTokenName(context: Context<ServerAppEnvironment>): string {
 /** The answer of "Tomar" when the server has no rundown at all (a damaged database). */
 function buildNoRundownAnswer(): CommandApiAnswer {
   return {
-    httpStatus: 409,
+    httpStatus: chooseHttpStatusOfCommandRefusal('RUNDOWN_NOT_FOUND'),
     body: buildErrorCommandResult(null, {
       code: 'RUNDOWN_NOT_FOUND',
       message: ptBR.errors.noRundownToTakeFrom,

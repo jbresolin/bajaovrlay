@@ -26,6 +26,10 @@ export const ptBR = {
     // POST /take-next with no rundown at all: the server seeds one, so only a damaged
     // database could leave none.
     noRundownToTakeFrom: 'Não há rundown no servidor para tomar o próximo item.',
+    // POST /api/v1/commands with a body not sent as JSON (a form, plain text, no header).
+    commandBodyNotJson: 'Envie o comando como JSON: Content-Type: application/json.',
+    // POST /api/v1/commands with a body over 256 KB, refused before it is read in full.
+    commandBodyTooLarge: 'O comando passa de 256 KB; um comando nunca precisa de tanto.',
   },
   // Answers to commands and WebSocket messages; each goes with a stable code
   // (CommandErrorCodeSchema in @bajaovrlay/shared).
