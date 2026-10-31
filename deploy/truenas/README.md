@@ -46,8 +46,8 @@ too).
 **Stacks → Add stack** → Name `bajaovrlay` → **Web editor** → paste
 `deploy/truenas/compose.yaml` → change the two lines marked FILL IN (the dataset path from
 step 1, the network name from step 3). Under **Environment variables** → **Add an
-environment variable** (at least this one: Portainer only writes `stack.env` when there is
-one):
+environment variable** (behind NPM this one is needed; with none at all the stack still
+deploys):
 
 ```
 BAJAOVRLAY_PUBLIC_ORIGINS=https://<domain>
@@ -88,14 +88,16 @@ something is taken.
 Add this line to `/mnt/Local/scripts/db-dumps/dump-databases.sh`, with the other dumps:
 
 ```sh
-docker exec bajaovrlay node apps/server/dist/backupDatabase.js /backups
+docker exec bajaovrlay node apps/server/dist/backupDatabase.js /backups || echo "bajaovrlay: backup falhou" >&2
 ```
 
 It writes a consistent copy with SQLite's online backup while the server runs, named
 `bajaovrlay-<date>T<time>Z.sqlite` (UTC), into `/mnt/Local/db-dumps/bajaovrlay` (the stack's
 `/backups` mount), and keeps the newest 14 there; files of other names are never touched,
-and the dump script's own retention can leave the folder alone. It exits non-zero, logging
-why, if it fails.
+and the dump script's own retention can leave the folder alone. If it fails (the container
+stopped, the folder not writable) it logs why and exits non-zero; the `|| echo` then
+writes one line to the script's errors instead of ending the script, so a script with
+`set -e` still runs the dumps after it.
 
 ### Restore a backup
 

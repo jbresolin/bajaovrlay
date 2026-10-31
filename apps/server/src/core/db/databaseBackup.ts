@@ -50,8 +50,12 @@ export async function writeDatabaseBackup(options: {
     // pages per step by default, and against a server writing without pause it started
     // over again and again (3 to 10 times longer in backupDatabaseWhileTheServerWrites
     // .test.ts); a bigger database, at every poll, could start over without end. So every
-    // step after the first copies all that is left, under one read lock: the server's
-    // writes wait those few milliseconds (its busy timeout is 5 s) instead.
+    // step after the first copies all that is left, under one read lock, and the server's
+    // writes wait until it is done (its busy timeout is 5 s). The trade-off: that wait is
+    // the time to copy the whole file, so it grows with the database, and event_log is
+    // never pruned. Measured on João's machine: 35 ms for 10 MB, 160 ms for 100 MB, 465 ms
+    // for 300 MB. Near 3 GB the wait would pass 5 s and a write would fail (SQLITE_BUSY)
+    // during the backup: long before that, event_log needs pruning.
     await database.backup(unfinishedBackupPath, { progress: () => allRemainingPagesInOneStep });
   } catch (backupError) {
     rmSync(unfinishedBackupPath, { force: true });

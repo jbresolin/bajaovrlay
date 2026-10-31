@@ -7,8 +7,11 @@ services:
     # A fixed name: the nightly backup line runs `docker exec bajaovrlay ...`.
     container_name: bajaovrlay
     restart: unless-stopped
-    # Portainer writes the stack's "Environment variables" to stack.env.
-    env_file: stack.env
+    # Portainer writes the stack's "Environment variables" to stack.env, and only when there
+    # is at least one; not required, so a stack with none still deploys.
+    env_file:
+      - path: stack.env
+        required: false
     volumes:
       # FILL IN: the dataset folder made in step 1 (owned by uid 1000).
       - /mnt/Local/SSD/bajaovrlay/data:/data
