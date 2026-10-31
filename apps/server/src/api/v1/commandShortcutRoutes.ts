@@ -1,0 +1,101 @@
+// The button shortcuts of the command API (BAJAOVRLAY-28): fixed URLs with no body, which
+// Companion's generic HTTP module handles best. Each builds one command; mountCommandApiRoutes
+// runs it through the store's one path. Declared here with their Zod schemas so the
+// OpenAPI document describes them.
+import { createRoute } from '@hono/zod-openapi';
+import { z } from 'zod';
+
+import { apiTokenSecurity, commandRouteResponses } from './commandApiOpenApi.js';
+
+const ItemIdParameterSchema = z.object({ itemId: z.string().min(1) });
+const LayerIdParameterSchema = z.object({ layerId: z.string().min(1) });
+const MacroIdParameterSchema = z.object({ macroId: z.string().min(1) });
+
+/** `POST /api/v1/take-next`: "Tomar", the item under the cursor of the rundown shown. */
+export const postTakeNextRoute = createRoute({
+  method: 'post',
+  path: '/take-next',
+  summary: '"Tomar": takeNext on the rundown the control page shows',
+  security: apiTokenSecurity,
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/take-item/{itemId}`: takeItem of one item, rundown or quick-fire. */
+export const postTakeItemRoute = createRoute({
+  method: 'post',
+  path: '/take-item/{itemId}',
+  summary: 'takeItem: put one item on air',
+  security: apiTokenSecurity,
+  request: { params: ItemIdParameterSchema },
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/preview-item/{itemId}`: previewItem of one item, asked for by hand. */
+export const postPreviewItemRoute = createRoute({
+  method: 'post',
+  path: '/preview-item/{itemId}',
+  summary: 'previewItem: show one item in Prévia (origin manual)',
+  security: apiTokenSecurity,
+  request: { params: ItemIdParameterSchema },
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/take-all-previews`: "Tomar tudo". */
+export const postTakeAllPreviewsRoute = createRoute({
+  method: 'post',
+  path: '/take-all-previews',
+  summary: '"Tomar tudo": takeAllPreviews',
+  security: apiTokenSecurity,
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/clear-layer/{layerId}`: clearLayer, on both outputs. */
+export const postClearLayerRoute = createRoute({
+  method: 'post',
+  path: '/clear-layer/{layerId}',
+  summary: 'clearLayer: take everything off one layer',
+  security: apiTokenSecurity,
+  request: { params: LayerIdParameterSchema },
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/clear-all`: "Limpar tudo", the panic button. */
+export const postClearAllRoute = createRoute({
+  method: 'post',
+  path: '/clear-all',
+  summary: '"Limpar tudo": clearAll',
+  security: apiTokenSecurity,
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/next-on-layer/{layerId}`: "Próximo", from the step on air now. */
+export const postNextOnLayerRoute = createRoute({
+  method: 'post',
+  path: '/next-on-layer/{layerId}',
+  summary: '"Próximo": nextOnLayer from the step the graphic on air is on now',
+  description:
+    'The control page names the step the operator saw, so a double press is refused; this ' +
+    'route reads the step on air when the request arrives, so two presses move two steps.',
+  security: apiTokenSecurity,
+  request: { params: LayerIdParameterSchema },
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/run-macro/{macroId}`: a macro's button. */
+export const postRunMacroRoute = createRoute({
+  method: 'post',
+  path: '/run-macro/{macroId}',
+  summary: 'runMacro: start one macro',
+  security: apiTokenSecurity,
+  request: { params: MacroIdParameterSchema },
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/stop-macro`: "Parar", the macro running now. */
+export const postStopMacroRoute = createRoute({
+  method: 'post',
+  path: '/stop-macro',
+  summary: '"Parar": stopMacro of the macro running now; ok with nothing running',
+  security: apiTokenSecurity,
+  responses: commandRouteResponses,
+});

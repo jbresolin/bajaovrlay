@@ -49,6 +49,7 @@ try {
     themeFolder,
     dataFolder,
     sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
+    apiTokens: environment.BAJAOVRLAY_API_TOKENS,
     controlPageFolder,
     rendererPageFolder,
     buildIdFileUrl,
@@ -61,6 +62,10 @@ try {
       build_id: runningServer.buildId,
       database_path: databasePath,
       data_folder: dataFolder,
+      // The names of the devices, never their tokens.
+      api_token_names: environment.BAJAOVRLAY_API_TOKENS.isSet
+        ? environment.BAJAOVRLAY_API_TOKENS.tokens.map((apiToken) => apiToken.name)
+        : [],
     },
     'server listening',
   );

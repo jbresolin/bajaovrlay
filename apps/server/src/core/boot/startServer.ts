@@ -12,6 +12,7 @@ import {
 import { startEventInboxService } from '../../modules/events/index.js';
 import { buildMediaFolderPath, startMediaService } from '../../modules/media/index.js';
 import { readBuildId } from '../../readBuildId.js';
+import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
 import type { ServerLogger } from '../logger/createLogger.js';
@@ -48,6 +49,11 @@ export type StartServerOptions = {
    * leave it out by mistake: the store (saves), the poller and the sample route get it.
    */
   sourceHostAllowlist: SourceHostAllowlist;
+  /**
+   * BAJAOVRLAY_API_TOKENS as read at boot: the devices that may send commands over HTTP
+   * (BAJAOVRLAY-28). Left out, the command API is off and answers 403.
+   */
+  apiTokens?: ApiTokens | undefined;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /**
@@ -165,6 +171,7 @@ async function startServingFromDatabase(
       rendererPageFolder: options.rendererPageFolder,
       sourceHostAllowlist: options.sourceHostAllowlist,
       mediaFolder,
+      apiTokens: options.apiTokens,
     });
     httpServer = await listen({
       fetch: app.fetch,

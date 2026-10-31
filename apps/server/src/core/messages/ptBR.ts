@@ -19,6 +19,13 @@ export const ptBR = {
     invalidSampleRequest: 'A requisição de exemplo é inválida.',
     // A body sent as JSON that cannot be parsed at all (cut off, or not JSON).
     malformedJsonBody: 'O corpo da requisição não é JSON válido.',
+    // The command API (BAJAOVRLAY-28) with BAJAOVRLAY_API_TOKENS unset: it says how to turn it on.
+    apiTurnedOff: 'API de comandos desligada: defina BAJAOVRLAY_API_TOKENS.',
+    // A request to the command API with no token, a wrong one, or another scheme than Bearer.
+    apiTokenRefused: 'Token de API ausente ou errado: envie Authorization: Bearer <token>.',
+    // POST /take-next with no rundown at all: the server seeds one, so only a damaged
+    // database could leave none.
+    noRundownToTakeFrom: 'Não há rundown no servidor para tomar o próximo item.',
   },
   // Answers to commands and WebSocket messages; each goes with a stable code
   // (CommandErrorCodeSchema in @bajaovrlay/shared).

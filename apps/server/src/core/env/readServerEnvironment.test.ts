@@ -1,5 +1,5 @@
 /**
- * Reading BAJAOVRLAY_SOURCE_ALLOWED_HOSTS at boot (apps/server)
+ * Reading BAJAOVRLAY_SOURCE_ALLOWED_HOSTS and BAJAOVRLAY_API_TOKENS at boot (apps/server)
  *
  * What this module is for:
  *   readServerEnvironment checks every variable the server reads at boot (see
@@ -16,6 +16,7 @@
  * What these tests deliberately do not cover:
  *   - Every way an entry is read and matched: sourceHostAllowlist.test.ts in the
  *     data-source module.
+ *   - Every way the tokens are read: apiTokens.test.ts in core/apiAccess.
  *   - The other variables: resolveDatabasePath.test.ts and resolveDataFolder.test.ts.
  */
 import { describe, expect, it } from 'vitest';
@@ -71,5 +72,58 @@ describe('readServerEnvironment and BAJAOVRLAY_SOURCE_ALLOWED_HOSTS', () => {
     expect(readingTheEnvironment, 'the boot must stop naming the bad entry').toThrow(
       '"http://cronometragem.local:8080/api" is not a host or host:port',
     );
+  });
+});
+
+describe('readServerEnvironment and BAJAOVRLAY_API_TOKENS', () => {
+  it('reads an unset variable as the command API off', () => {
+    // Arrange: an environment without the variable, as most installs have.
+    const environmentVariables = {};
+
+    // Act: read the environment.
+    const environment = readServerEnvironment(environmentVariables);
+
+    // Assert: off.
+    expect(environment.BAJAOVRLAY_API_TOKENS, 'unset must mean the API is off').toEqual({
+      isSet: false,
+    });
+  });
+
+  it('reads the devices of a variable that is set', () => {
+    // Arrange: Companion on the operator's desk.
+    const environmentVariables = {
+      BAJAOVRLAY_API_TOKENS: 'companion=3f9c1a7e5b2d4c6f8a0e1b3d5f7a9c2e',
+    };
+
+    // Act: read the environment.
+    const environment = readServerEnvironment(environmentVariables);
+
+    // Assert: one device.
+    expect(environment.BAJAOVRLAY_API_TOKENS, 'the variable must list Companion').toEqual({
+      isSet: true,
+      tokens: [{ name: 'companion', token: '3f9c1a7e5b2d4c6f8a0e1b3d5f7a9c2e' }],
+    });
+  });
+
+  it('stops the boot naming the variable, without repeating the token', () => {
+    // Arrange: a token too short to be safe on the LAN.
+    const environmentVariables = { BAJAOVRLAY_API_TOKENS: 'companion=baja2026' };
+
+    // Act: read the environment, keeping the message it throws.
+    let thrownMessage = '';
+    try {
+      readServerEnvironment(environmentVariables);
+    } catch (bootError) {
+      thrownMessage = (bootError as Error).message;
+    }
+
+    // Assert: the variable and the device are named, the token is not.
+    expect(thrownMessage, 'the boot must stop naming the variable').toContain(
+      'BAJAOVRLAY_API_TOKENS',
+    );
+    expect(thrownMessage, 'the boot must say which device').toContain(
+      'the token of "companion" is shorter than 16 characters',
+    );
+    expect(thrownMessage, 'the boot message never repeats a token').not.toContain('baja2026');
   });
 });

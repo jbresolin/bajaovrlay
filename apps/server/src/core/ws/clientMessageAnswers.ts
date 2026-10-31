@@ -92,9 +92,11 @@ function buildReportInstanceStatusCommand(
 
 /**
  * Runs one command through the store and builds the `commandResult` for its sender:
- * ok, the store's refusal, or UNEXPECTED_SERVER_ERROR when the store threw.
+ * ok, the store's refusal, or UNEXPECTED_SERVER_ERROR when the store threw. The command
+ * API's routes call it too (api/v1/commandApiAnswers.ts), so HTTP answers what a
+ * WebSocket message would.
  */
-function applyCommandAndBuildCommandResult(options: {
+export function applyCommandAndBuildCommandResult(options: {
   commandInput: unknown;
   requestId: string | null;
   stateStore: StateStore;

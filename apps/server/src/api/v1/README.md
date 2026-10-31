@@ -17,5 +17,13 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   as multipart form data, checked by its bytes, recorded through the command path as
   `sistema:midia`. The image itself is served outside /api/v1, at `/media/<mediaId>`.
 
+- The command API (BAJAOVRLAY-28), mounted by `mountCommandApiRoutes.ts`, each route behind
+  `core/apiAccess/requireApiToken.ts` (a Bearer token of BAJAOVRLAY_API_TOKENS):
+  `POST /api/v1/commands` (`commandsRoute.ts`, the WebSocket's command envelope in, its
+  commandResult out), nine button shortcuts (`commandShortcutRoutes.ts`; the three that read
+  the state to build their command are in `shortcutCommands.ts`) and `GET /api/v1/layers/status`
+  (`layersStatusRoute.ts`). Every command runs through `commandApiAnswers.ts`, signed
+  `api:<token name>`; `commandRefusalHttpStatus.ts` gives each refusal code its HTTP status.
+
 Each route is declared with `createRoute` from @hono/zod-openapi so it appears in the
 OpenAPI document; a route added with plain `app.get` would be missing from it.

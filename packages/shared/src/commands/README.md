@@ -10,6 +10,8 @@ field named in `takeTimeFieldKeys` (default `[]`) is written by the server with 
 command's moment in wall-clock milliseconds. No command puts a graphic up by itself:
 since BAJAOVRLAY-37 everything on air or in preview comes from an item (`takeGraphic` and
 `previewGraphic` were removed).
+`commandSenders.ts` classes every command once as the operator's (the control page, and
+an API token since BAJAOVRLAY-28) or only the server's; the server's authorisation step reads it.
 `commandError.ts` lists every error code the server can answer with; the pt-BR
 messages themselves live in the server's catalog (apps/server/src/core/messages/).
 The rules each command follows live in the server's reducers, one file per command.

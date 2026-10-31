@@ -7,6 +7,7 @@ import type {
   SourceHostAllowlist,
 } from '../../modules/dataSources/index.js';
 import { serveMediaFiles } from '../../modules/media/index.js';
+import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
@@ -43,6 +44,8 @@ export type ServerAppOptions = {
    * /media/<mediaId>. Both need the store; leave out in tests that touch no image.
    */
   mediaFolder?: string | undefined;
+  /** BAJAOVRLAY_API_TOKENS as read at boot; the command API answers 403 when left out. */
+  apiTokens?: ApiTokens | undefined;
 };
 
 /**
@@ -69,6 +72,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         sourceHostAllowlist: options.sourceHostAllowlist,
         sampleRequestTimeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
         mediaFolder: options.mediaFolder,
+        apiTokens: options.apiTokens,
       }),
     );
     if (options.mediaFolder !== undefined) {
