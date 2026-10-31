@@ -47,6 +47,16 @@ export type MotionTokens = {
   inOffsetPx: number;
   /** `--motion-podium-offset`: how many pixels a podium card rises when it is revealed. */
   podiumOffsetPx: number;
+  /** `--motion-text-hold-start`: how long a text too long for its box holds at its start (BAJAOVRLAY-55). */
+  textHoldStartMs: number;
+  /** `--motion-text-scroll-speed`: how fast it scrolls, in pixels per second (a longer text takes longer). */
+  textScrollSpeedPxPerSecond: number;
+  /** `--motion-text-hold-end`: how long it holds once its end shows. */
+  textHoldEndMs: number;
+  /** `--motion-text-return`: the crossfade back to its start. */
+  textReturnMs: number;
+  /** `--motion-text-edge-fade`: how many pixels the soft fade at a scrolling box's edges is wide. */
+  textEdgeFadePx: number;
   /** `--ease-out`: the curve of every entry, as a CSS cubic-bezier string. */
   easeOut: string;
   /** `--ease-in`: the curve of every exit. */
@@ -88,6 +98,11 @@ export const motionTokenNames: Record<keyof MotionTokens, string> = {
   sponsorHoldRealizacaoMs: '--motion-sponsor-hold-realizacao',
   inOffsetPx: '--motion-in-offset',
   podiumOffsetPx: '--motion-podium-offset',
+  textHoldStartMs: '--motion-text-hold-start',
+  textScrollSpeedPxPerSecond: '--motion-text-scroll-speed',
+  textHoldEndMs: '--motion-text-hold-end',
+  textReturnMs: '--motion-text-return',
+  textEdgeFadePx: '--motion-text-edge-fade',
   easeOut: '--ease-out',
   easeIn: '--ease-in',
   easeInOut: '--ease-in-out',
@@ -131,6 +146,14 @@ export function readMotionTokens(element: Element): MotionTokens {
     ),
     inOffsetPx: readLengthInPixels(readToken(motionTokenNames.inOffsetPx)),
     podiumOffsetPx: readLengthInPixels(readToken(motionTokenNames.podiumOffsetPx)),
+    textHoldStartMs: readDurationInMilliseconds(readToken(motionTokenNames.textHoldStartMs)),
+    // A speed is a bare number like an offset ("60", pixels per second).
+    textScrollSpeedPxPerSecond: readLengthInPixels(
+      readToken(motionTokenNames.textScrollSpeedPxPerSecond),
+    ),
+    textHoldEndMs: readDurationInMilliseconds(readToken(motionTokenNames.textHoldEndMs)),
+    textReturnMs: readDurationInMilliseconds(readToken(motionTokenNames.textReturnMs)),
+    textEdgeFadePx: readLengthInPixels(readToken(motionTokenNames.textEdgeFadePx)),
     easeOut: readEase(readToken(motionTokenNames.easeOut)),
     easeIn: readEase(readToken(motionTokenNames.easeIn)),
     easeInOut: readEase(readToken(motionTokenNames.easeInOut)),

@@ -16,6 +16,10 @@ src/pageTurner.ts                        hold, turn, hold again: the tower's and
 src/timelinePlayback.ts                  play a paused GSAP timeline to its end, or finish it at once
 src/dataProblems.ts                      one pt-BR sentence for the first problem in refused data
 src/textInPlace.ts                       writeTextIfChanged: a text written on air only when it differs
+src/scrollingTextWhenTooLong.ts         a text too long for its box scrolls in it: the box, and one clock per graphic (BAJAOVRLAY-55)
+src/scrollingTextCycle.ts                that clock's arithmetic: a cycle's length and where each text is at a moment
+src/scrollingTextTimings.ts              its timings from the theme's --motion-text-* tokens, each with a fallback
+src/scrollingTextStyles.ts               the box that clips, the text that moves, the edge fade while it scrolls
 src/textPresence.ts                      whether an optional text has something to show (isTextGiven)
 src/clockTicker.ts                       the per-frame loop that redraws a running clock while on air
 src/raceClockReading.ts                  the clock's five fields (flag, mode, time, moment, running) and its H:MM:SS text
@@ -50,7 +54,7 @@ src/teamLogoCellStyles.ts                the logo cell's look; each graphic size
 src/carChipLargeStyles.ts                the large car chip (team card, podium)
 src/checkMarkShape.ts                    the check mark's SVG path (sessions board's finished slot, bracket's winner)
 src/carChipStyles.ts                     the car's blue chip (standings row, bracket)
-src/teamWithSchoolStyles.ts              a team's name cut with an ellipsis, its school after it (standings row, bracket)
+src/teamWithSchoolStyles.ts              a team's name (a scrolling box), its school after it (standings row, bracket)
 src/wideBoardFrameStyles.ts              the wide full-screen board's host, frame and stage (podium, bracket)
 src/previewControls.ts                   preview.html's stage, buttons, answer line and data-preview-state
 src/previewStage.ts                      ?stage=grey|black, the design's screenshot backgrounds
@@ -68,3 +72,15 @@ Import each by its subpath (`@bajaovrlay/graphics-kit/pageTurner`), never a path
 test-only modules end in `.testSupport`, subpath included, so no graphic's own module can import
 them by mistake and Vite never bundles ajv into a graphic.
 Move something here only when a second graphic needs it; a helper with one user stays home.
+
+## A text too long for its box
+
+Every text on air that can be too long for its box (a team, a school, a person, a session,
+the event line, a sponsor's name written as text) is a scrolling box: give the box a width
+(fixed, `flex: 1` or a `max-width` from the theme, never unbounded), make it with
+`makeScrollingTextBox` or `renderScrollingText`, add `scrollingTextStyles` to the graphic's
+styles, and run one `createScrollingTextClock` over the shadow root: `start()` once on air,
+`stop()` on stop, dispose and when the element leaves the page. A text that fits never
+moves; one too long holds, scrolls at `--motion-text-scroll-speed`, holds and crossfades
+back, every text of the graphic on one cycle. An ellipsis is no longer used on air. The one
+exception is the message ticker, whose message is limited to 50 characters instead.

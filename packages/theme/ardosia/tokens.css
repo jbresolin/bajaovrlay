@@ -245,6 +245,14 @@
   --motion-sponsor-hold-realizacao: 5000ms;
   --motion-in-offset: 20; /* px a piece rises on entry (and lifts on exit) */
   --motion-podium-offset: 40; /* px a podium card rises when revealed: twice the usual rise */
+  /* A text too long for its box (a long school name) scrolls inside it (BAJAOVRLAY-55): it
+     holds at its start, scrolls at a constant speed until its end shows, holds there and
+     crossfades back to its start. Starting values; João tunes them on screen. */
+  --motion-text-hold-start: 2500ms;
+  --motion-text-scroll-speed: 60; /* px per second: a longer name takes longer, never faster */
+  --motion-text-hold-end: 1500ms;
+  --motion-text-return: 250ms;
+  --motion-text-edge-fade: 24; /* px of soft fade at the box's edges while the text scrolls */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
