@@ -5,6 +5,7 @@ import {
   type DataShapeKey,
   type HttpJsonConfig,
   HttpJsonConfigSchema,
+  type HttpJsonRequest,
 } from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../../../../core/logger/createLogger.js';
@@ -15,6 +16,7 @@ import type {
 } from '../dataSourceAdapter.js';
 import { fetchHttpJsonRequest, type HttpJsonFetchResult } from './fetchHttpJsonRequest.js';
 import type { ReadEnvironmentVariable } from './httpJsonRequestAddress.js';
+import { createRememberedResponses } from './rememberedResponses.js';
 import type { SourceHostAllowlist } from './sourceHostAllowlist.js';
 
 /** What the httpJson adapter needs. */
@@ -35,14 +37,41 @@ export type HttpJsonAdapterOptions = {
  * half-succeeds (the same rule as the shapes). The shapes go back unvalidated; the store
  * validates them, as it does every adapter's (recordDataSourcePoll).
  *
- * There is nothing to prepare (no prepareForPolling): every poll reads afresh, and the
- * environment variables are read at each poll, so a token changed on the server is sent
- * from the next poll on without touching the source.
+ * A request with `refreshEveryMs` (BAJAOVRLAY-53) is fetched only once in that time: the
+ * polls between reuse its last good response (rememberedResponses.ts). prepareForPolling,
+ * which the poller calls when the source is turned on and when its config is saved, forgets
+ * them, so either fetches afresh. The environment variables are read at each fetch, so a
+ * token changed on the server is sent from the next fetch on without touching the source.
  */
 export function createHttpJsonAdapter(
   options: HttpJsonAdapterOptions,
 ): DataSourceAdapter<HttpJsonConfig> {
   const { logger, readEnvironmentVariable, sourceHostAllowlist } = options;
+  const rememberedResponses = createRememberedResponses();
+
+  /** Gives a remembered response still within its time, or fetches the request afresh. */
+  async function reuseOrFetchRequest(
+    config: HttpJsonConfig,
+    request: HttpJsonRequest,
+    context: DataSourcePollContext,
+    pollMomentMs: number,
+  ): Promise<HttpJsonFetchResult> {
+    const remembered = rememberedResponses.findStillFresh(config, request, pollMomentMs);
+    if (remembered !== undefined) {
+      logger.debug({ requestId: request.requestId }, 'flex source request reused');
+      return { ok: true, status: remembered.status, body: remembered.body };
+    }
+    const fetchResult = await fetchHttpJsonRequest(request, {
+      signal: context.signal,
+      readEnvironmentVariable,
+      sourceHostAllowlist,
+      logger,
+    });
+    if (fetchResult.ok) {
+      rememberedResponses.remember(config, request, fetchResult, pollMomentMs);
+    }
+    return fetchResult;
+  }
 
   async function pollOnce(
     config: HttpJsonConfig,
@@ -50,14 +79,7 @@ export function createHttpJsonAdapter(
   ): Promise<PolledShapes> {
     const pollMomentMs = context.readCurrentTime().getTime();
     const fetchResults = await Promise.all(
-      config.requests.map((request) =>
-        fetchHttpJsonRequest(request, {
-          signal: context.signal,
-          readEnvironmentVariable,
-          sourceHostAllowlist,
-          logger,
-        }),
-      ),
+      config.requests.map((request) => reuseOrFetchRequest(config, request, context, pollMomentMs)),
     );
 
     const responsesByRequestId = collectResponsesOrThrowTheFirstFailure(
@@ -77,6 +99,9 @@ export function createHttpJsonAdapter(
     listProducedShapes: (config): DataShapeKey[] =>
       config.mappings.map((mapping) => mapping.shapeKey),
     pollOnce,
+    prepareForPolling: (config) => {
+      rememberedResponses.forgetEveryResponseOf(config);
+    },
   };
 }
 
