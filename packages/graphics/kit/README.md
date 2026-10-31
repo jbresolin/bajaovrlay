@@ -81,12 +81,24 @@ Move something here only when a second graphic needs it; a helper with one user 
 ## A text too long for its box
 
 Every text on air that can be too long for its box (a team, a school, a person, a session,
-the event line, a sponsor's name written as text) is a scrolling box: give the box a width
-(fixed, `flex: 1` or a `max-width` from the theme, never unbounded), make it with
-`makeScrollingTextBox` or `renderScrollingText` (`scrollingTextBox`), add `scrollingTextStyles` to the graphic's
-styles, and run one `createScrollingTextClock` over the shadow root: `start()` once on air,
-`stop()` on stop, dispose and when the element leaves the page. A text that fits never
-moves; one too long holds, scrolls at `--motion-text-scroll-speed`, holds and crossfades
-back, every text of the graphic on one cycle, run as Web Animations of `transform` and
-`opacity` so the compositor keeps the frames when the page is busy. An ellipsis is no longer used on air. The one
-exception is the message ticker, whose message is limited to 50 characters instead.
+the event line, a sponsor's name written as text) is a scrolling box:
+
+- give the box a width (fixed, `flex: 1` or a `max-width` from the theme, never unbounded);
+- make it with `makeScrollingTextBox` or `renderScrollingText` (`scrollingTextBox`), and add
+  `scrollingTextStyles` to the graphic's styles;
+- run one `createScrollingTextClock` over the shadow root: `start()` once on air;
+  `holdTheTextsForThePlayOut()` when the stop begins and `stopAfterThePlayOut()` once its
+  play-out has ended (a text never jumps back mid-exit); `stop()` on dispose and when the
+  element leaves the page.
+
+A text that fits never moves; one too long holds, scrolls at `--motion-text-scroll-speed`,
+holds and crossfades back, every text of the graphic on one cycle, run as Web Animations of
+`transform` and `opacity` so the compositor keeps the frames when the page is busy (the one
+exception to GSAP, CLAUDE.md). An ellipsis is no longer used on air. The one exception is
+the message ticker, whose message is limited to 50 characters instead.
+
+**Browser floor: OBS 31 or later**, with the Chromium that version ships. Right-aligned boxes
+(the bracket's right-hand cars, the clock card's title, the countdown's session) use
+`justify-content: safe flex-end` / `safe center`, which needs Chromium 115; the edge fade is
+written with `-webkit-mask-image` beside `mask-image`, which keeps it in a slightly older
+Chromium too.

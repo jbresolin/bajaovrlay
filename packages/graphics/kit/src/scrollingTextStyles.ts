@@ -27,13 +27,16 @@ export const scrollingTextStyles = css`
   .scrolling-text-box[data-scroll-phase='holdingAtEnd'],
   .scrolling-text-box[data-scroll-phase='fadingOutAtEnd'] {
     --scrolling-text-edge-fade: calc(var(--motion-text-edge-fade) * 1px);
-    mask-image: linear-gradient(
+    --scrolling-text-edge-fade-mask: linear-gradient(
       to right,
       transparent 0,
       black var(--scrolling-text-edge-fade),
       black calc(100% - var(--scrolling-text-edge-fade)),
       transparent 100%
     );
+    /* The prefixed one keeps the fade in a Chromium older than 120 (an older OBS). */
+    -webkit-mask-image: var(--scrolling-text-edge-fade-mask);
+    mask-image: var(--scrolling-text-edge-fade-mask);
   }
 
   /* Only on a box in a cycle: a layer per moving text, none for the texts at rest. */
