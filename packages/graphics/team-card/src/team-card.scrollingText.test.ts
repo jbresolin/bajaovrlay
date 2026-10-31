@@ -6,7 +6,7 @@
  *   Paraná - Cornélio Procópio · Cornélio Procópio · PR") can be wider than the card may
  *   grow (`--lower-third-max-width`). The name and the details line are scrolling boxes of
  *   the kit (scrollingTextWhenTooLong.ts): the card runs one clock for them while on air,
- *   and must end it whenever it leaves the air, or a GSAP timeline would go on running
+ *   and must end it whenever it leaves the air, or its animations and timers would go on running
  *   inside OBS.
  *
  * What these tests prove:

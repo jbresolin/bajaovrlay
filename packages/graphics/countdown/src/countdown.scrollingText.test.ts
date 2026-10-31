@@ -6,7 +6,7 @@
  *   fullscreen layout, over the count, under the board's event line. A long name ("Enduro
  *   de Resistência — Universidade Tecnológica Federal do Paraná - Cornélio Procópio") is a
  *   scrolling box of the kit (scrollingTextWhenTooLong.ts): the countdown runs one cycle for
- *   its boxes while on air and must end it whenever it leaves the air, or a GSAP timeline
+ *   its boxes while on air and must end it whenever it leaves the air, or its animations and timers
  *   would go on running inside OBS.
  *
  * What these tests prove:

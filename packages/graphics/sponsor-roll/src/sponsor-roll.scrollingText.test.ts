@@ -3,11 +3,11 @@
  *
  * What this module is for:
  *   The sponsors are logos; the roll's words are the board head's line (the page's level,
- *   "PATROCÍNIO DIAMANTE") in the fullscreen layout and the event word in the corner's
- *   300 px card, which the operator types and may make longer than the card. Both are
- *   scrolling boxes of the kit (scrollingTextWhenTooLong.ts): the roll runs one cycle for
- *   them while on air and must end it whenever it leaves the air, or a GSAP timeline would
- *   go on running inside OBS.
+ *   "PATROCÍNIO DIAMANTE") in the fullscreen layout and the event word in the corner's 300 px
+ *   card, which the operator types and may make longer than the card. Both are scrolling boxes
+ *   of the kit (scrollingTextWhenTooLong.ts): the roll runs one cycle for them while on air
+ *   and must end it whenever it leaves the air, or its animations and timers would go on
+ *   running inside OBS.
  *
  * What these tests prove:
  *   - On air, in either layout, with every text too long, the roll runs exactly one cycle,

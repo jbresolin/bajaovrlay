@@ -2,13 +2,13 @@
  * The lower strip web component: school names too long for their pill (packages/graphics/lower-strip)
  *
  * What this module is for:
- *   Each car's pill names its school after the position and the chip. Six cars a page
- *   always fit with the schools' short names (stripPages.ts), but a source may send a long
- *   one ("Instituto Federal de Educação, Ciência e Tecnologia Fluminense - IFF - Campus
+ *   Each car's pill names its school after the position and the chip. Six cars a page always
+ *   fit with the schools' short names (stripPages.ts), but a source may send a long one
+ *   ("Instituto Federal de Educação, Ciência e Tecnologia Fluminense - IFF - Campus
  *   Itaperuna"). The school cell is a scrolling box of the kit (scrollingTextWhenTooLong.ts)
  *   instead of being cut with an ellipsis: the strip runs one cycle for every pill while on
- *   air and must end it whenever it leaves the air, or a GSAP timeline would go on running
- *   inside OBS.
+ *   air and must end it whenever it leaves the air, or its animations and timers would go on
+ *   running inside OBS.
  *
  * What these tests prove:
  *   - On air, with every school too long, the strip runs exactly one cycle for the six

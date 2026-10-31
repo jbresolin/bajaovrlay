@@ -6,7 +6,7 @@
  *   address (up to 106 characters). Either can be wider than the card may grow
  *   (`--lower-third-max-width`, the lower-third slot's maximum); each is a scrolling box of
  *   the kit (scrollingTextWhenTooLong.ts). The card runs one clock for them while on air,
- *   and must end it whenever it leaves the air, or a GSAP timeline would go on running
+ *   and must end it whenever it leaves the air, or its animations and timers would go on running
  *   inside OBS.
  *
  * What these tests prove:

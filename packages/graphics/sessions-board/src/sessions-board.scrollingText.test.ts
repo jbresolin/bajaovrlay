@@ -2,12 +2,12 @@
  * The sessions board web component: session names too long for their pill (packages/graphics/sessions-board)
  *
  * What this module is for:
- *   Each slot's session name sits between its start time and its state; a long one
- *   ("Enduro de Resistência — Universidade Tecnológica Federal do Paraná - Cornélio
- *   Procópio"), and the event line in the head, are scrolling boxes of the kit
- *   (scrollingTextWhenTooLong.ts) instead of being cut with an ellipsis. The board runs one
- *   cycle for all of them while on air and must end it whenever it leaves the air, or a
- *   GSAP timeline would go on running inside OBS.
+ *   Each slot's session name sits between its start time and its state; a long one ("Enduro de
+ *   Resistência — Universidade Tecnológica Federal do Paraná - Cornélio Procópio"), and the
+ *   event line in the head, are scrolling boxes of the kit (scrollingTextWhenTooLong.ts)
+ *   instead of being cut with an ellipsis. The board runs one cycle for all of them while on
+ *   air and must end it whenever it leaves the air, or its animations and timers would go on
+ *   running inside OBS.
  *
  * What these tests prove:
  *   - On air, with every text too long, the board runs exactly one cycle for the event

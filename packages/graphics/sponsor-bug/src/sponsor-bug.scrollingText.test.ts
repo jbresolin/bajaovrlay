@@ -6,7 +6,7 @@
  *   event word beside the mark ("ENDURO", or "ENDURO DE RESISTÊNCIA") and the caption over
  *   the sponsor's logo ("Apresentado por"). Each is a scrolling box of the kit
  *   (scrollingTextWhenTooLong.ts) instead of running past the card: the bug runs one cycle
- *   for them while on air and must end it whenever it leaves the air, or a GSAP timeline
+ *   for them while on air and must end it whenever it leaves the air, or its animations and timers
  *   would go on running inside OBS.
  *
  * What these tests prove:

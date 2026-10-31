@@ -6,7 +6,7 @@
  *   The top five's teams with their schools, the next session's name and the head's event
  *   line can be wider than their box. Each is a scrolling box of the kit
  *   (scrollingTextWhenTooLong.ts): the board runs one clock for all of them while on air,
- *   and must end it whenever it leaves the air, or a GSAP timeline would go on running
+ *   and must end it whenever it leaves the air, or its animations and timers would go on running
  *   inside OBS.
  *
  * What these tests prove:

@@ -3,9 +3,11 @@
  * laps and the optional flag band. This file owns the OGraf lifecycle (load, play,
  * update, stop, dispose) and only wires the pieces together; the rules live in named
  * modules: raceClockModel (data), raceClockView (the DOM, changed in place, never
- * rebuilt), raceClockFlagChanges (the flag's crossfade and the band's switch), playSteps (the OGraf step rule), the kit's clockTicker (the frame loop) and
- * raceClockAnimations (GSAP timelines from the theme's motion tokens). The wait for the
- * theme's face before the first draw is the theme's own (`@bajaovrlay/theme/fonts`).
+ * rebuilt), raceClockFlagChanges (the flag's crossfade and the band's switch), playSteps
+ * (the OGraf step rule), the kit's clockTicker (the frame loop), the kit's scrolling text
+ * clock (a session title too long for the card) and raceClockAnimations (GSAP timelines
+ * from the theme's motion tokens). The wait for the theme's face before the first draw is
+ * the theme's own (`@bajaovrlay/theme/fonts`).
  *
  * The renderer, not this module, picks the tag name and calls customElements.define, as
  * OGraf v1 expects of a graphic's default export.
@@ -64,8 +66,6 @@ import {
 const raceClockStepCount = 1;
 
 type LifecycleStage = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
-
-/** A flag change on air (crossfade or band toggle) and what draws its end state at once. */
 
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 

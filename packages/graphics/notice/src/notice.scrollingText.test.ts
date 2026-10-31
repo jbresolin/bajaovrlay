@@ -7,7 +7,7 @@
  *   Itaperuna") or a long penalty reason does not fit; instead of an ellipsis the team
  *   (name and school together) and the reason are scrolling boxes of the kit
  *   (scrollingTextWhenTooLong.ts). The notice runs one clock for them while on air, and
- *   must end it whenever it leaves the air, or a GSAP timeline would go on running inside
+ *   must end it whenever it leaves the air, or its animations and timers would go on running inside
  *   OBS.
  *
  * What these tests prove:

@@ -7,7 +7,7 @@
  *   pill past the title-safe area; the team column stops at `--battle-team-max-width` and
  *   both lines are scrolling boxes of the kit (scrollingTextWhenTooLong.ts). The card runs
  *   one clock for its four texts while on air, and must end it whenever it leaves the air,
- *   or a GSAP timeline would go on running inside OBS.
+ *   or its animations and timers would go on running inside OBS.
  *
  * What these tests prove:
  *   - Both cars' team names and schools are scrolling boxes.

@@ -5,7 +5,7 @@
  *   The card's title is the session's name ("ENDURO DE RESISTÊNCIA — UNIVERSIDADE
  *   TECNOLÓGICA FEDERAL DO PARANÁ - CORNÉLIO PROCÓPIO" would not fit its 420 px). It is a
  *   scrolling box of the kit (scrollingTextWhenTooLong.ts): the clock runs its cycle while
- *   on air and must end it whenever it leaves the air, or a GSAP timeline would go on
+ *   on air and must end it whenever it leaves the air, or its animations and timers would go on
  *   running inside OBS.
  *
  * What these tests prove:

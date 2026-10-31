@@ -2,11 +2,11 @@
  * The bracket web component: names too long for their card (packages/graphics/bracket)
  *
  * What this module is for:
- *   A car's team with its school, in a round board's match card or a tree pill, and the
- *   head's event line are often wider than their box. Each is a scrolling box of the kit
+ *   A car's team with its school, in a round board's match card or a tree pill, and the head's
+ *   event line are often wider than their box. Each is a scrolling box of the kit
  *   (scrollingTextWhenTooLong.ts): the bracket runs one clock for the whole stage while on
- *   air, and must end it whenever it leaves the air, or a GSAP timeline would go on running
- *   inside OBS.
+ *   air, and must end it whenever it leaves the air, or its animations and timers would go on
+ *   running inside OBS.
  *
  * What these tests prove:
  *   - On air, with every text too long, the bracket runs exactly one cycle for every car

@@ -6,7 +6,7 @@
  *   do Paraná - Cornélio Procópio") can be wider than the pills may grow
  *   (`--lower-third-max-width`). Each text is a scrolling box of the kit
  *   (scrollingTextWhenTooLong.ts): the lower third runs one clock for its texts while on
- *   air, and must end it whenever it leaves the air, or a GSAP timeline would go on
+ *   air, and must end it whenever it leaves the air, or its animations and timers would go on
  *   running inside OBS.
  *
  * What these tests prove:

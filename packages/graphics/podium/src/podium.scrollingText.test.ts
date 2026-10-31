@@ -6,8 +6,8 @@
  *   Tecnologia Fluminense - IFF - Campus Itaperuna") and the head's event line can be wider
  *   than their box. Each is one line in a scrolling box of the kit
  *   (scrollingTextWhenTooLong.ts), never wrapped nor ellipsed: the podium runs one clock for
- *   the whole board while on air, and must end it whenever it leaves the air, or a GSAP
- *   timeline would go on running inside OBS.
+ *   the whole board while on air, and must end it whenever it leaves the air, or its animations and
+ *   timers would go on running inside OBS.
  *
  * What these tests prove:
  *   - On air, with every text too long, the podium runs exactly one cycle for every card's
