@@ -1,8 +1,16 @@
-// The commands three button shortcuts of the command API build from the state (BAJAOVRLAY-28).
+// The commands four button shortcuts of the command API build from the state (BAJAOVRLAY-28).
 // The other six shortcuts carry everything their command needs in their address. These
 // only read the slices to fill in what a fixed URL cannot know; whether the command is
 // allowed and what it does is left to the store's one path, as for any command.
-import type { Command, Slices } from '@bajaovrlay/shared';
+import {
+  type Command,
+  type CommandError,
+  listItemsOfQuickFirePanelInOrder,
+  type Slices,
+} from '@bajaovrlay/shared';
+
+import { ptBR } from '../../core/messages/ptBR.js';
+import { refuseUnknownQuickFirePanel } from '../../core/store/quickFireAndMacroRefusals.js';
 
 /**
  * "Tomar" (POST /take-next): takeNext on the first rundown the server lists, the one
@@ -45,4 +53,46 @@ export function buildStopMacroCommandOfTheRunningMacro(slices: Slices): Command 
     return undefined;
   }
   return { type: 'stopMacro', macroId: runningMacro.macroId };
+}
+
+/** What fire-shortcut builds: the take of the button's item, or why there is no button. */
+export type QuickFireButtonCommand =
+  { isFound: true; command: Command } | { isFound: false; refusal: CommandError };
+
+/**
+ * A pad's button mapped to a place (POST /fire-shortcut/:panelId/:buttonNumber, João's
+ * note of 2026-10-11): takeItem of the panel's n-th button, counted from 1 in the panel's
+ * order, as the digit keys count them (apps/control's chooseCommandForDigitKey) but with
+ * no cap at nine. It is the very command a click on the button sends, so it never moves
+ * the cursor, and an item filled by an event is refused by the store as for a click. A
+ * panel or a number that does not exist is refused here, as no command can name it.
+ * What could go wrong: the n-th button is whatever sits there now, so a button moved on
+ * the page fires from its new place, as a digit key does.
+ */
+export function buildTakeItemCommandOfQuickFireButton(
+  slices: Slices,
+  panelId: string,
+  buttonNumberAsSent: string,
+): QuickFireButtonCommand {
+  const panel = slices.quickFirePanels.find((candidate) => candidate.id === panelId);
+  if (panel === undefined) {
+    return { isFound: false, refusal: refuseUnknownQuickFirePanel(panelId) };
+  }
+  const buttonsInOrder = listItemsOfQuickFirePanelInOrder(slices.items, panelId);
+  // Only digits count: "2" is button 2, while "2.5", "-1", " 2" or "dois" name no button.
+  const isWrittenAsDigits = /^[0-9]+$/.test(buttonNumberAsSent);
+  const buttonNumber = isWrittenAsDigits ? Number(buttonNumberAsSent) : 0;
+  const item = buttonNumber >= 1 ? buttonsInOrder[buttonNumber - 1] : undefined;
+  if (item === undefined) {
+    const refusal: CommandError = {
+      code: 'QUICK_FIRE_BUTTON_NOT_FOUND',
+      message: ptBR.quickFirePanelErrors.buttonNotFound(
+        panel.name,
+        buttonNumberAsSent,
+        buttonsInOrder.length,
+      ),
+    };
+    return { isFound: false, refusal };
+  }
+  return { isFound: true, command: { type: 'takeItem', itemId: item.id } };
 }

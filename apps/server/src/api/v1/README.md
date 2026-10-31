@@ -21,7 +21,7 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   `core/apiAccess/requireApiToken.ts` (a Bearer token of BAJAOVRLAY_API_TOKENS):
   `POST /api/v1/commands` (`commandsRoute.ts`, the WebSocket's command envelope in, its
   commandResult out; `commandBodyChecks.ts` refuses a body not sent as JSON, 415, or over
-  256 KB, 413), nine button shortcuts (`commandShortcutRoutes.ts`; the three that read
+  256 KB, 413), ten button shortcuts (`commandShortcutRoutes.ts`; the four that read
   the state to build their command are in `shortcutCommands.ts`) and `GET /api/v1/layers/status`
   (`layersStatusRoute.ts`). Every command runs through `commandApiAnswers.ts`, signed
   `api:<token name>`; `commandRefusalHttpStatus.ts` gives each refusal code its HTTP status.

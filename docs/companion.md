@@ -95,6 +95,21 @@ Puts the item under the rundown's cursor on air and moves the cursor on, as the 
 Unlike the page's Space key, it never sends what Prévia holds instead: a fixed button does one
 thing. To air what Prévia shows, make a "Tomar tudo" button with `take-all-previews`.
 
+### A quick-fire button by its place
+
+Fires the n-th button of a quick-fire panel, as a click on it does: the item goes on air and
+the rundown's cursor stays where it is. A pad's key then follows a place, not an item, so a
+button remade on the page keeps working from the same key.
+
+- Text: what the button shows on the page, for example `RELÓGIO CANTO`
+- URL: `fire-shortcut/<the panel's id>/<n>`, for example `fire-shortcut/atalhos/1`
+
+Buttons are counted from 1 in the panel's order, as the digit keys 1–9 count them (with no
+stop at nine). The seeded panel "Atalhos" has the id `atalhos`; the ids of other panels are in
+`curl -s $BAJA/state | jq -r '.quickFirePanels[] | "\(.id)  \(.name)"'`. A panel that does not
+exist, or a number past its last button, answers 422 with the reason in pt-BR. Moving a button
+on the page moves what its number fires, as with the digit keys.
+
 ### "Limpar tudo"
 
 The panic button: takes everything off every layer of every output.
@@ -207,6 +222,9 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/clear-all
 
 # "Próximo" on a layer: the graphic on air there moves to its next step.
 curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/next-on-layer/fullscreen
+
+# A quick-fire button by its place: button 1 of "Atalhos".
+curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/fire-shortcut/atalhos/1
 
 # Start a macro.
 curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/run-macro/<macroId>

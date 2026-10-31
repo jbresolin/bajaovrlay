@@ -135,6 +135,12 @@ export const ptBR = {
   // named by its name when the server has it, and by id when it was not found.
   quickFirePanelErrors: {
     panelNotFound: (panelId: string) => `O painel de atalhos "${panelId}" não existe.`,
+    // fire-shortcut/<panelId>/<n> of the command API with no button n (BAJAOVRLAY-28);
+    // `buttonNumberAsSent` is the URL's text, which may be no number at all.
+    buttonNotFound: (panelName: string, buttonNumberAsSent: string, numberOfButtons: number) =>
+      numberOfButtons === 0
+        ? `O painel "${panelName}" não tem botões.`
+        : `O painel "${panelName}" não tem o botão "${buttonNumberAsSent}"; seus botões vão de 1 a ${numberOfButtons}.`,
     panelNotEmpty: (panelName: string, numberOfItems: number) =>
       `O painel "${panelName}" ainda tem ${numberOfItems === 1 ? '1 item' : `${numberOfItems} itens`}. Mova ou exclua os itens dele antes de excluir o painel.`,
     lastPanel: (panelName: string) =>

@@ -9,11 +9,14 @@
  *
  * What these tests prove (two apps built alike on real SQLite files, one sent the
  * WebSocket command as the control page sends it, the other the shortcut):
- *   - Each of the nine shortcuts leaves every slice exactly as its WebSocket command does,
+ *   - Each of the ten shortcuts leaves every slice exactly as its WebSocket command does,
  *     and the same event-log rows (command, payload, result, moment), answered 200.
  *   - The event-log row of a shortcut names `api:companion`.
  *   - A refusal carries the code and pt-BR message the WebSocket gives: an item that does
  *     not exist (422) and a cursor on nothing (409).
+ *   - fire-shortcut/<panelId>/<n> takes the panel's n-th button (from 1, in the panel's
+ *     order, as the digit keys count) exactly as a click does, without moving the cursor;
+ *     a panel or a button number that does not exist answers 422 in pt-BR.
  *   - "Tomar" with no rundown at all (a damaged database) answers 422, the status the
  *     refusal map gives RUNDOWN_NOT_FOUND everywhere.
  *   - "Parar" with no macro running answers ok and changes nothing, as stopMacro does for
@@ -119,6 +122,14 @@ const shortcutScenarios: ShortcutScenario[] = [
     },
     buildPath: () => '/api/v1/next-on-layer/fullscreen',
     buildWebSocketCommand: () => ({ type: 'nextOnLayer', layerId: 'fullscreen', fromStep: 1 }),
+  },
+  // A pad's button mapped to a place, not an id: button 2 of "Atalhos" is the podium, the
+  // second button made there (João's note of 2026-10-11).
+  {
+    name: 'fire-shortcut takes button 2 of "Atalhos", as a click on it (takeItem) does',
+    prepareTheStore: changeNothing,
+    buildPath: () => '/api/v1/fire-shortcut/atalhos/2',
+    buildWebSocketCommand: (raceDay) => ({ type: 'takeItem', itemId: raceDay.podiumItemId }),
   },
   // A macro button.
   {
@@ -265,6 +276,89 @@ describe('the refusals of a shortcut', () => {
       code: 'RUNDOWN_NOT_FOUND',
       message: 'Não há rundown no servidor para tomar o próximo item.',
     });
+  });
+
+  it('fires a quick-fire button without moving the rundown’s cursor', async () => {
+    // Arrange: a race day with the cursor on the enduro clock.
+    const { app, stateStore } = createAppWithTheCommandApi({
+      apiTokensVariable: apiTokensOfTheDesk,
+    });
+    const raceDay = prepareTheRaceDay(stateStore);
+
+    // Act: fire button 1 of "Atalhos", the corner clock.
+    const response = await sendApiRequest(app, {
+      method: 'POST',
+      path: '/api/v1/fire-shortcut/atalhos/1',
+      token: companionToken,
+    });
+
+    // Assert: the corner clock is on air and the cursor stayed on the enduro clock.
+    expect(response.status, 'the button press is accepted').toBe(200);
+    const slices = stateStore.readAllSlices();
+    expect(
+      slices.instances.some((instance) => instance.itemId === raceDay.cornerClockItemId),
+      'the corner clock is on air',
+    ).toBe(true);
+    expect(slices.rundowns[0]?.cursorItemId, 'the cursor did not move').toBe(
+      raceDay.enduroClockItemId,
+    );
+  });
+
+  const buttonsThatDoNotExist = [
+    // A pad set up for a panel that was deleted or never made.
+    {
+      name: 'refuses a panel that does not exist',
+      path: '/api/v1/fire-shortcut/patrocinadores/1',
+      expectedError: {
+        code: 'QUICK_FIRE_PANEL_NOT_FOUND',
+        message: 'O painel de atalhos "patrocinadores" não existe.',
+      },
+    },
+    // "Atalhos" holds two buttons; a pad's third key has nothing under it.
+    {
+      name: 'refuses a button number past the panel’s last button',
+      path: '/api/v1/fire-shortcut/atalhos/3',
+      expectedError: {
+        code: 'QUICK_FIRE_BUTTON_NOT_FOUND',
+        message: 'O painel "Atalhos" não tem o botão "3"; seus botões vão de 1 a 2.',
+      },
+    },
+    // Buttons are counted from 1, as the digit keys count them.
+    {
+      name: 'refuses button 0',
+      path: '/api/v1/fire-shortcut/atalhos/0',
+      expectedError: {
+        code: 'QUICK_FIRE_BUTTON_NOT_FOUND',
+        message: 'O painel "Atalhos" não tem o botão "0"; seus botões vão de 1 a 2.',
+      },
+    },
+    // A number written in words, from a hand-typed URL.
+    {
+      name: 'refuses a button number that is not a number',
+      path: '/api/v1/fire-shortcut/atalhos/dois',
+      expectedError: {
+        code: 'QUICK_FIRE_BUTTON_NOT_FOUND',
+        message: 'O painel "Atalhos" não tem o botão "dois"; seus botões vão de 1 a 2.',
+      },
+    },
+  ];
+
+  it.each(buttonsThatDoNotExist)('$name with 422, in pt-BR', async ({ path, expectedError }) => {
+    // Arrange: a race day, whose "Atalhos" holds the corner clock and the podium.
+    const { app, stateStore } = createAppWithTheCommandApi({
+      apiTokensVariable: apiTokensOfTheDesk,
+    });
+    prepareTheRaceDay(stateStore);
+    const slicesBefore = readSlicesExceptTheEventLog(stateStore);
+
+    // Act: press the button in the table.
+    const response = await sendApiRequest(app, { method: 'POST', path, token: companionToken });
+    const body = (await response.json()) as { error: unknown };
+
+    // Assert: 422 with the reason, and nothing on screen changed.
+    expect(response.status, 'a button that does not exist is unprocessable').toBe(422);
+    expect(body.error, 'the reason names the panel and the button').toEqual(expectedError);
+    expect(readSlicesExceptTheEventLog(stateStore), 'nothing changed').toEqual(slicesBefore);
   });
 
   it('answers "Parar" with no macro running as ok, changing nothing', async () => {

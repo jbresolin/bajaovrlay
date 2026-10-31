@@ -347,6 +347,7 @@ describe('the OpenAPI document of the command API', () => {
       ['/clear-all', 'post'],
       ['/next-on-layer/{layerId}', 'post'],
       ['/run-macro/{macroId}', 'post'],
+      ['/fire-shortcut/{panelId}/{buttonNumber}', 'post'],
       ['/stop-macro', 'post'],
       ['/layers/status', 'get'],
     ] as const;

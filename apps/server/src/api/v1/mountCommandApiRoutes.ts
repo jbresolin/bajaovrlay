@@ -24,6 +24,7 @@ import { chooseHttpStatusOfCommandRefusal } from './commandRefusalHttpStatus.js'
 import {
   postClearAllRoute,
   postClearLayerRoute,
+  postFireShortcutRoute,
   postNextOnLayerRoute,
   postPreviewItemRoute,
   postRunMacroRoute,
@@ -37,11 +38,12 @@ import { buildLayersStatus, getLayersStatusRoute } from './layersStatusRoute.js'
 import {
   buildNextOnLayerCommandFromTheStepOnAir,
   buildStopMacroCommandOfTheRunningMacro,
+  buildTakeItemCommandOfQuickFireButton,
   buildTakeNextCommandOfTheShownRundown,
 } from './shortcutCommands.js';
 
 /**
- * Mounts the command API (BAJAOVRLAY-28) on the /api/v1 routes: POST /commands, the nine
+ * Mounts the command API (BAJAOVRLAY-28) on the /api/v1 routes: POST /commands, the ten
  * button shortcuts and GET /layers/status, each behind requireApiToken (named on each
  * route, never by a path pattern, so no other route can fall under it by accident), plus
  * the bearer scheme and the `Command` component in the OpenAPI document.
@@ -136,6 +138,20 @@ export function mountCommandApiRoutes(
   apiRoutes.openapi({ ...postRunMacroRoute, middleware }, (context) => {
     const { macroId } = context.req.valid('param');
     return answerWithCommand(context, stateStore, { type: 'runMacro', macroId });
+  });
+
+  apiRoutes.openapi({ ...postFireShortcutRoute, middleware }, (context) => {
+    const { panelId, buttonNumber } = context.req.valid('param');
+    const built = buildTakeItemCommandOfQuickFireButton(
+      stateStore.readAllSlices(),
+      panelId,
+      buttonNumber,
+    );
+    if (!built.isFound) {
+      const body = buildErrorCommandResult(null, built.refusal);
+      return context.json(body, chooseHttpStatusOfCommandRefusal(built.refusal.code));
+    }
+    return answerWithCommand(context, stateStore, built.command);
   });
 
   apiRoutes.openapi({ ...postStopMacroRoute, middleware }, (context) => {

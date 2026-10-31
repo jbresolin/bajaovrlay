@@ -91,6 +91,25 @@ export const postRunMacroRoute = createRoute({
   responses: commandRouteResponses,
 });
 
+/**
+ * `POST /api/v1/fire-shortcut/{panelId}/{buttonNumber}`: a quick-fire button by its place,
+ * so a pad maps to positions rather than item ids, which change when an item is remade.
+ */
+export const postFireShortcutRoute = createRoute({
+  method: 'post',
+  path: '/fire-shortcut/{panelId}/{buttonNumber}',
+  summary: 'takeItem of the n-th button of a quick-fire panel, as a click on it',
+  description:
+    "Buttons are counted from 1 in the panel's order, as the digit keys count them, with no " +
+    "cap at nine. The rundown's cursor does not move. A panel or a button number that does " +
+    'not exist answers 422 (QUICK_FIRE_PANEL_NOT_FOUND, QUICK_FIRE_BUTTON_NOT_FOUND).',
+  security: apiTokenSecurity,
+  // The number is read as text and checked by the route, so "0" or "dois" get the same
+  // pt-BR 422 as a button past the last one, not Zod's report.
+  request: { params: z.object({ panelId: z.string().min(1), buttonNumber: z.string().min(1) }) },
+  responses: commandRouteResponses,
+});
+
 /** `POST /api/v1/stop-macro`: "Parar", the macro running now. */
 export const postStopMacroRoute = createRoute({
   method: 'post',
