@@ -3,7 +3,7 @@ import {
   listMappableFieldsOfShape,
   type MappableField,
 } from '@bajaovrlay/shared';
-import { Controller, type UseFormReturn } from 'react-hook-form';
+import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,14 +18,16 @@ import { buildErrorAttributesForControl, FormFieldRow } from '@/features/items/F
 import { ptBR } from '@/i18n/ptBR';
 
 import { FlexFieldRuleRow } from './FlexFieldRuleRow';
+import { FlexMappingOptions } from './FlexMappingOptions';
 import type { FlexSourceFormValues } from './flexSourceFormValues';
 import { readErrorMessageAtPath } from './formErrorAtPath';
 
 const texts = ptBR.dataSources.flexForm;
 
 /**
- * One shape's mapping block: the request it reads, the "Caminho da lista" for positions
- * and standings, then one row per field listMappableFieldsOfShape gives, the shape's own
+ * One shape's mapping block: the request it reads, the "Caminho da lista" for every list
+ * shape, its options (FlexMappingOptions, BAJAOVRLAY-53), then one row per field
+ * listMappableFieldsOfShape gives, the shape's own
  * fields first, then (for a list) each item's fields; required fields first and marked.
  * The rows are the form's fieldRules in that same order, so row i is field i.
  */
@@ -47,6 +49,11 @@ export function FlexMappingBlock(props: {
   const requestIdError = readErrorMessageAtPath(errors, `${mappingPath}.requestId`);
   const entriesPathError = readErrorMessageAtPath(errors, `${mappingPath}.entriesPath`);
   const isAList = shapeKey !== 'session';
+  // The lookups' names typed so far, each once and none empty: what "Consulta" offers.
+  const lookupValues = useWatch({ control: form.control, name: `${mappingPath}.lookups` });
+  const lookupNamesToOffer = [
+    ...new Set(lookupValues.map((lookup) => lookup.lookupName.trim())),
+  ].filter((lookupName) => lookupName !== '');
 
   // Each field with its row index, split by level for the two headings.
   const fieldsWithRowIndex = listMappableFieldsOfShape(shapeKey).map((field, rowIndex) => ({
@@ -70,6 +77,7 @@ export function FlexMappingBlock(props: {
             form={form}
             field={field}
             rowPath={`${mappingPath}.fieldRules.${rowIndex}`}
+            lookupNamesToOffer={lookupNamesToOffer}
             controlIdPrefix={`${props.controlIdPrefix}-fieldRules-${rowIndex}`}
           />
         ))}
@@ -134,6 +142,13 @@ export function FlexMappingBlock(props: {
           </FormFieldRow>
         )}
       </div>
+      <FlexMappingOptions
+        form={form}
+        mappingIndex={mappingIndex}
+        shapeKey={shapeKey}
+        requestIdsToOffer={props.requestIdsToOffer}
+        controlIdPrefix={props.controlIdPrefix}
+      />
       <p className="text-xs text-muted-foreground">{texts.emptyRowHint}</p>
       {renderFieldRows(texts.topLevelFieldsTitle, topLevelFields)}
       {isAList && renderFieldRows(texts.entryFieldsTitle, entryFields)}

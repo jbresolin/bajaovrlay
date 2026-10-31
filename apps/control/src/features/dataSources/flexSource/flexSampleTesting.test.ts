@@ -73,12 +73,14 @@ describe('testFlexMappingOnSamples', () => {
     // Assert: each says which request's sample is the trouble.
     expect(withoutSample, 'a missing sample must be named by its request').toEqual({
       isPassing: false,
+      isRefusedByAFlag: false,
       problems: [
         'Falta a resposta de exemplo de classificacao: busque da fonte ou cole um exemplo.',
       ],
     });
     expect(withCutSample, 'a sample that is not JSON must be named by its request').toEqual({
       isPassing: false,
+      isRefusedByAFlag: false,
       problems: ['A resposta de exemplo de classificacao não é JSON válido.'],
     });
   });

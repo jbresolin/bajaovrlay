@@ -4,6 +4,7 @@ import { SessionCard } from '../SessionCard';
 import { SnapshotPositionsTable } from '../SnapshotPositionsTable';
 import { SnapshotStandingsTable } from '../SnapshotStandingsTable';
 import type { FlexSampleTestResult } from './flexSampleTesting';
+import { FlexTestBracketsSummary } from './FlexTestBracketsSummary';
 
 const texts = ptBR.dataSources.flexForm.test;
 
@@ -11,10 +12,23 @@ const texts = ptBR.dataSources.flexForm.test;
  * What "Testar" found: the canonical shapes in the very tables the source detail draws
  * (session card, positions, standings), so the operator sees the data as the Fontes page
  * will show it once saved; or the list of problems, each a pt-BR line naming the shape,
- * the car and line, the field and the path.
+ * the car and line, the field and the path. An answer refused by a mapping's flag
+ * ("Recusar a resposta quando") shows the operator's own sentence alone, not as a
+ * problem of the mapping (BAJAOVRLAY-53); brackets show as their rounds' list.
  */
 export function FlexTestResult(props: { result: FlexSampleTestResult }) {
   const { result } = props;
+  if (!result.isPassing && result.isRefusedByAFlag) {
+    return (
+      <div role="alert" aria-label={texts.refusedByAFlagLabel} className="flex flex-col gap-1">
+        {result.problems.map((refusalSentence) => (
+          <p key={refusalSentence} className="text-sm font-medium text-destructive">
+            {refusalSentence}
+          </p>
+        ))}
+      </div>
+    );
+  }
   if (!result.isPassing) {
     return (
       <div role="alert" aria-label={texts.problemsTitle} className="flex flex-col gap-1">
@@ -35,6 +49,7 @@ export function FlexTestResult(props: { result: FlexSampleTestResult }) {
       {shapes.session !== undefined && <SessionCard session={shapes.session} />}
       {shapes.positions !== undefined && <SnapshotPositionsTable positions={shapes.positions} />}
       {shapes.standings !== undefined && <SnapshotStandingsTable standings={shapes.standings} />}
+      {shapes.brackets !== undefined && <FlexTestBracketsSummary brackets={shapes.brackets} />}
     </section>
   );
 }
