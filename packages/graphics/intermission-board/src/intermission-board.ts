@@ -206,10 +206,12 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.stopTheTimers();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     const stopOut = buildIntermissionBoardStopOutTimeline(
       findIntermissionBoardPieces(this.renderRoot),
     );
     await this.motions.run(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
     if (this.readLifecycleNow() === 'offAir') {
       await this.drawOffAir(this.requireData());
     }
@@ -265,12 +267,14 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.stopTheTimers();
+    this.scrollingTextClock?.stop();
   }
 
   /** OGraf dispose: stops the count and the line's timer, ends every timeline. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.stopTheTimers();
+    this.scrollingTextClock?.stop();
     this.motions.finishEveryTimelineAtOnce();
     return okAnswer;
   }
@@ -337,10 +341,10 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
     }
   }
 
+  /** Stops the count and the sponsor line's timer (the scrolling texts are each caller's). */
   private stopTheTimers(): void {
     this.countdownClock.stopTicking();
     this.sponsorLineTimer.stop();
-    this.scrollingTextClock?.stop();
   }
 
   /** Writes the count where the board shows it, only when its text changed. */

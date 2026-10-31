@@ -6,13 +6,17 @@
  *   FLUMINENSE - IFF - CAMPUS ITAPERUNA") is often wider than the tower's team column. The
  *   team cell is a scrolling box of the kit (scrollingTextWhenTooLong.ts): the tower runs
  *   one clock for all its rows while on air, and must end it whenever it leaves the air,
- *   or a GSAP timeline would go on running inside OBS.
+ *   or its animations and timers would go on running inside OBS.
  *
  * What these tests prove:
  *   - On air, with every name too long, the tower runs exactly one cycle for all its rows,
  *     each name at its start first, also after a play with skipAnimation.
  *   - Off air nothing runs: stop, dispose and removal from the page each end the cycle
  *     and put every name back at its start (each test fails without the stop).
+ *   - Through the stop's play-out every name stays where it is (paused, not snapped back),
+ *     and is put back at its start once the play-out has ended.
+ *   - The positions arriving again with the same names (every 2 s on air) leave every
+ *     scrolling name going: the rows write only what changed.
  *
  * What these tests deliberately do not cover:
  *   - The cycle's timing and its changes during a scroll; the kit's tests.
@@ -23,6 +27,10 @@ import {
   findRunningScrollingTextCycles,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
+import {
+  findLastAnimationOf,
+  listUncancelledAnimations,
+} from '@bajaovrlay/graphics-kit/webAnimationsInJsdom.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import type PositionsTowerGraphic from './positions-tower.js';
@@ -94,5 +102,60 @@ describe('the names too long for their column', () => {
     expect(findRunningScrollingTextCycles(), 'no cycle may run off air').toEqual([]);
     const boxesWithAPhase = teamCells.filter((cell) => cell.dataset.scrollPhase !== undefined);
     expect(boxesWithAPhase, 'every name must be back at its start').toEqual([]);
+  });
+});
+
+describe('the names too long for their column, leaving the air', () => {
+  it('stay where they are through the play-out, then go back to their start', async () => {
+    // Arrange: the sample on air, its cycle running.
+    const tower = await putTowerOnAirWithEveryNameTooLong();
+    const scrollingTexts = listTeamCells(tower).map((cell) => {
+      const text = cell.querySelector('.scrolling-text');
+      if (text === null) {
+        throw new Error('a team box without its text');
+      }
+      return text;
+    });
+
+    // Act: the operator takes the tower off; read the names during the play-out, then after.
+    const stopping = tower.stopAction({});
+    const pausedDuringThePlayOut = scrollingTexts.map(
+      (text) => findLastAnimationOf(text)?.isPaused,
+    );
+    const cancelledDuringThePlayOut = scrollingTexts.map(
+      (text) => findLastAnimationOf(text)?.isCancelled,
+    );
+    await stopping;
+
+    // Assert: held (paused, not cancelled) during the exit; at rest once it has ended.
+    expect(new Set(pausedDuringThePlayOut), 'every name must stay where it is').toEqual(
+      new Set([true]),
+    );
+    expect(new Set(cancelledDuringThePlayOut), 'no name may snap back mid-exit').toEqual(
+      new Set([false]),
+    );
+    expect(listUncancelledAnimations(), 'every name must be at its start after the exit').toEqual(
+      [],
+    );
+  });
+});
+
+describe('the positions arriving again with the same names', () => {
+  it('leave every scrolling name going', async () => {
+    // Arrange: the sample on air, every name scrolling in one cycle.
+    const tower = await putTowerOnAirWithEveryNameTooLong();
+    const animationsBefore = listUncancelledAnimations();
+
+    // Act: the live binding sends the same list again, as it does every 2 s.
+    await tower.updateAction({ data: { entries: createCompactTowerDataOnTheSample().entries } });
+    await Promise.resolve();
+
+    // Assert: not one name was restarted.
+    expect(animationsBefore.length, 'every row on the page scrolls').toBe(
+      listTeamCells(tower).length,
+    );
+    expect(listUncancelledAnimations(), 'the same names must not restart their scroll').toEqual(
+      animationsBefore,
+    );
   });
 });

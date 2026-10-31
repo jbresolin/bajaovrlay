@@ -194,11 +194,12 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.countdownClock.stopTicking();
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.motions.run(
       buildCountdownStopOutTimeline(this.requirePieces()),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     // An update that came during the stop-out was only stored; drawn now, off air.
     if (this.readLifecycleNow() === 'offAir') {
       await this.drawTheStoredDataOffAir();

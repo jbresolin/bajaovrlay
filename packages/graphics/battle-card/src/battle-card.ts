@@ -222,13 +222,14 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     this.trendCrossfade.finish();
     this.isStoppingOut = true;
     await this.runPiecesTimeline(
       buildStopOutTimeline(this.requireParts()),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     this.isStoppingOut = false;
     if (this.readLifecycleNow() === 'offAir') {
       await this.redrawAtRest();

@@ -194,11 +194,12 @@ export default class TeamCardGraphic extends LitElement implements OGrafGraphic 
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.runPanelTimeline(
       buildStopOutTimeline({ panel: this.requirePanel() }),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     return okAnswer;
   }
 

@@ -188,11 +188,12 @@ export default class LowerThirdGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.runPillsTimeline(
       buildStopOutTimeline(this.requireParts()),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     return okAnswer;
   }
 

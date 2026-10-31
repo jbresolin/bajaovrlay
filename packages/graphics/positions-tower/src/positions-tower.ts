@@ -210,8 +210,9 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.pageTurner.stop();
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.requireStage().playOut(params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
     this.requirePageTurns().restOnPageOneForTheNextTake();
     return okAnswer;
   }

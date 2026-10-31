@@ -204,11 +204,12 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.runPanelTimeline(
       buildStopOutTimeline(this.requireParts()),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
 
     // A play may have arrived during the out animation; only then keep the clock ticking.
     if (this.readLifecycleNow() !== 'onAir') {

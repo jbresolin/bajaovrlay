@@ -198,12 +198,13 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.statusChecks.cancelTheStatusCheck();
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     const stopOut = buildSessionsBoardStopOutTimeline(
       findSessionsBoard(this.renderRoot),
       this.listEveryPiece(),
     );
     await this.motions.run(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
     // An update that came during the stop-out was only stored; drawn now, off air.
     if (this.readLifecycleNow() === 'offAir') {
       await this.storeAndDrawTheStatusesNow(this.requireData());

@@ -209,11 +209,12 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.pageTurner.stop();
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     const parts = this.requireParts();
     const everyPiece = [parts.head, ...listColumnCascades(parts).flat()];
     const stopOut = buildLiftOutTogetherTimeline(parts.tokensSource, everyPiece);
     await this.runMotionTimeline(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
     this.pageTurns.restOnPageOneOnceSettledOffAir();
     return okAnswer;
   }

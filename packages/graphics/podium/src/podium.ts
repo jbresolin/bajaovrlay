@@ -233,10 +233,11 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     const stepOnAir = this.currentStep ?? 0;
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     const parts = this.requireParts();
     const stopOut = buildStopOutTimeline(parts, stepOnAir);
     await this.runMotionTimeline(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
 
     // A play that came during the stop-out cut it short and owns the podium now.
     if (this.readLifecycleNow() !== 'offAir' || this.runningMotionTimeline !== undefined) {

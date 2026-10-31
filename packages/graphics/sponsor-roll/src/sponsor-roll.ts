@@ -184,12 +184,13 @@ export default class SponsorRollGraphic extends LitElement implements OGrafGraph
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.pageTurner.stop();
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     const stopOut = buildSponsorRollStopOutTimeline(
       findSponsorRollPanel(this.renderRoot),
       this.pageTurns.listPiecesOnAir(),
     );
     await this.motions.run(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
     if (this.readLifecycleNow() === 'offAir') {
       await this.pageTurns.drawFromPageOneOffAir(this.requireData());
     }

@@ -184,11 +184,12 @@ export default class SponsorBugGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.runPanelTimeline(
       buildStopOutTimeline({ panel: this.requirePanel() }),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     return okAnswer;
   }
 

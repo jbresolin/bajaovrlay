@@ -194,11 +194,12 @@ export default class NoticeGraphic extends LitElement implements OGrafGraphic {
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.runPanelTimeline(
       buildStopOutTimeline(this.requireParts()),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     return okAnswer;
   }
 

@@ -282,6 +282,13 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
         restTextAtItsStart(name, textInTheCycle);
       }
     }
+    // A redraw that made a cell again took its text off the page: its animation would go on
+    // moving an element nobody sees until the cycle ends.
+    for (const [name, textInTheCycle] of [...textsInTheCycle]) {
+      if (!textInTheCycle.text.isConnected) {
+        restTextAtItsStart(name, textInTheCycle);
+      }
+    }
     if (isRunning && !isCycleRunning() && mayHaveANewTextTooLong) {
       beginTheNextCycle();
     }

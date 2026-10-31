@@ -202,12 +202,13 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     this.isStoppingOut = true;
     await this.runPanelTimeline(
       buildStopOutTimeline({ panel: this.requirePanel() }),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     this.isStoppingOut = false;
     // Only a card still off air is redrawn: a play that came meanwhile drew it already.
     if (this.hasDataNotYetDrawn && this.readLifecycleNow() === 'offAir') {

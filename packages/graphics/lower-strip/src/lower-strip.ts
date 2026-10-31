@@ -222,7 +222,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.pageTurner.stop();
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     const parts = this.requireParts();
     // Both lanes: a turn the stop cut short may leave pills on either.
     const everyPiece = [
@@ -233,6 +233,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
     ];
     const stopOut = buildBarStopOutTimeline(parts.bar, everyPiece);
     await this.motionRunner.run(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
     // A play may have arrived during the out animation; only then keep the clock ticking.
     if (this.readLifecycleNow() !== 'onAir') {
       this.clockBlockOnBar.stopTicking();

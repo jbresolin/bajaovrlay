@@ -6,13 +6,15 @@
  *   - IFF - Campus Itaperuna") and the head's event line are often wider than their box. Each
  *   is a scrolling box of the kit (scrollingTextWhenTooLong.ts): the standings run one clock
  *   for the whole board while on air, and must end it whenever the board leaves the air, or
- *   a GSAP timeline would go on running inside OBS.
+ *   its animations and timers would go on running inside OBS.
  *
  * What these tests prove:
  *   - On air, with every text too long, the board runs exactly one cycle for all its rows
  *     and its event line, each at its start first, also after a play with skipAnimation.
  *   - Off air nothing runs: stop, dispose and removal from the page each end the cycle and
  *     put every text back at its start (each test fails without the stop).
+ *   - A live poll that changes the scores but not the teams leaves every scrolling text
+ *     going: the rows are redrawn, but each keeps its team cell while it shows that team.
  *
  * What these tests deliberately do not cover:
  *   - The cycle's timing and its changes during a scroll; the kit's tests.
@@ -23,6 +25,7 @@ import {
   findRunningScrollingTextCycles,
   makeEveryScrollingTextTooLongForItsBox,
 } from '@bajaovrlay/graphics-kit/scrollingTextOnAir.testSupport';
+import { listUncancelledAnimations } from '@bajaovrlay/graphics-kit/webAnimationsInJsdom.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import { createOverallStandingsWithParts } from './previewData.js';
@@ -93,5 +96,35 @@ describe('the texts too long for their box', () => {
     expect(findRunningScrollingTextCycles(), 'no cycle may run off air').toEqual([]);
     const boxesWithAPhase = boxes.filter((box) => box.dataset.scrollPhase !== undefined);
     expect(boxesWithAPhase, 'every text must be back at its start').toEqual([]);
+  });
+});
+
+describe('a live poll with new scores and the same teams', () => {
+  it('leaves every scrolling text going', async () => {
+    // Arrange: the overall table on air, every text scrolling in one cycle.
+    const standings = await putStandingsOnAirWithEveryTextTooLong();
+    const animationsBefore = listUncancelledAnimations();
+
+    // Act: the next poll brings the same teams in the same order, every score 1 point up.
+    const entriesWithNewScores = createOverallStandingsWithParts().entries.map((entry) => ({
+      ...entry,
+      points: entry.points + 1,
+    }));
+    await standings.updateAction({ data: { entries: entriesWithNewScores } });
+    await Promise.resolve();
+
+    // Assert: every text on the board is one that was scrolling (the very element, not a
+    // new one with the same words), and not one animation was restarted.
+    const textsOnTheBoard = listScrollingBoxes(standings).map((box) =>
+      box.querySelector('.scrolling-text'),
+    );
+    const animatedTexts = animationsBefore.map((animation) => animation.element);
+    const textsMadeAgain = textsOnTheBoard.filter(
+      (text) => !animatedTexts.includes(text as Element),
+    );
+    expect(textsMadeAgain.length, 'no text may be made again by the redraw').toBe(0);
+    expect(listUncancelledAnimations().length, 'the same teams must not restart their scroll').toBe(
+      animationsBefore.length,
+    );
   });
 });

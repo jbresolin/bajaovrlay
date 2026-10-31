@@ -15,6 +15,8 @@
  *   - A box resized during a scroll puts its text back at its start; a resize report with
  *     the same width (a browser sends one when a box is first watched) changes nothing.
  *   - A live update writing the same text (the tower's list every 2 s) does not restart it.
+ *   - A text taken off the page during a scroll (a redraw that made its cell again) leaves
+ *     the cycle at once: no animation goes on moving an element nobody sees.
  *   - A text that fit and grows past its box while nothing scrolls (its font has loaded)
  *     starts a cycle.
  *   - Boxes that left the page (the lower strip makes new pills every page) are no longer
@@ -238,5 +240,29 @@ describe('the start of each animation', () => {
 
     // Assert: the animation started at 12.5 s, the moment its phase timers count from.
     expect(readAnimationOf(iff.text).startTime, 'the animation must start now').toBe(12_500);
+  });
+});
+
+describe('a text taken off the page during a scroll', () => {
+  it('leaves the cycle at once, its animation cancelled', async () => {
+    // Arrange: two rows 4 s into their scroll.
+    takeControlOfTimeAndAnimations();
+    installHandDrivenResizeObserver();
+    const { host, root } = createGraphicHostWithShadowRoot();
+    const tucano = addTeamNameBox(root, 'EQUIPE TUCANO BAJA UFSC', {
+      textWidthPx: 516,
+      boxWidthPx: 300,
+    });
+    const iff = addTeamNameBox(root, iffItaperuna, { textWidthPx: 876, boxWidthPx: 300 });
+    startClockOverGraphic(host, root);
+    letTheCycleRunFor(4000);
+
+    // Act: a redraw takes the first row's box off the page.
+    tucano.box.remove();
+    await letTheClockSeeTheChange();
+
+    // Assert: its animation is cancelled; the row still on the page goes on.
+    expect(readAnimationOf(tucano.text).isCancelled, 'the removed text must leave').toBe(true);
+    expect(readAnimationOf(iff.text).isCancelled, 'the other row must go on').toBe(false);
   });
 });

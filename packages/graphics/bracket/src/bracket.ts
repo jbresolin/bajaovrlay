@@ -247,10 +247,11 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     const moveNumberOfThisStop = this.moves.startAMove();
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
-    this.scrollingTextClock?.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     this.resultCrossfades.finishEveryTimelineAtOnce();
     const parts = this.requireParts();
     await this.stepMotions.run(buildLiftOutOfThePieces(parts, true), params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
 
     // A play that came during the stop-out cut it short and owns the bracket now.
     if (this.moves.isOvertaken(moveNumberOfThisStop) || this.readLifecycleNow() !== 'offAir') {
