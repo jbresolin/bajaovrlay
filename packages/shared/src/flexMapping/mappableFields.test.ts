@@ -14,6 +14,8 @@
  *     when the list says so.
  *   - Every field of the shapes' schemas is listed, except the standings' own scoreParts,
  *     which the mapping builds from each team's list of parts (see the README).
+ *   - The one listed field no schema has is the positions' lastPassAtMs, which only the
+ *     gaps step reads and which never reaches the shape (BAJAOVRLAY-53).
  *
  * What these tests deliberately do not cover:
  *   - Using the list to refuse a rule; flexMappingConfig.test.ts covers that.
@@ -147,6 +149,13 @@ describe('listMappableFieldsOfShape', () => {
       },
       { targetField: 'pitStops', label: 'Paradas nos boxes', isRequired: false, level: 'entry' },
       { targetField: 'fuelStops', label: 'Abastecimentos', isRequired: false, level: 'entry' },
+      // Read only to work out the gaps (BAJAOVRLAY-53), then taken off each car.
+      {
+        targetField: 'lastPassAtMs',
+        label: 'Última passagem (para calcular as diferenças)',
+        isRequired: false,
+        level: 'entry',
+      },
     ]);
   });
 
@@ -240,10 +249,13 @@ describe('the mappable fields match the shape schemas', () => {
       topLevelSchema: SessionShapeSchema,
       entrySchema: undefined,
     },
-    // Positions: top-level fields in the shape, entry fields in one car.
+    // Positions: top-level fields in the shape, entry fields in one car. lastPassAtMs is
+    // left out: only the gaps step reads it, and it is taken off before the shape.
     {
-      name: 'every positions field exists in its schema, required as listed',
-      fields: listMappableFieldsOfShape('positions'),
+      name: 'every positions field but lastPassAtMs exists in its schema, required as listed',
+      fields: listMappableFieldsOfShape('positions').filter(
+        (field) => field.targetField !== 'lastPassAtMs',
+      ),
       topLevelSchema: PositionsShapeSchema,
       entrySchema: PositionEntrySchema,
     },
@@ -303,10 +315,13 @@ describe('the mappable fields match the shape schemas', () => {
         ...listFieldNamesOfSchema(IncidentEntrySchema),
       ],
     },
-    // The entries list itself is filled by entriesPath, so only the car's fields count.
+    // The entries list itself is filled by entriesPath, so only the car's fields count;
+    // lastPassAtMs is listed beside them for the gaps step alone.
     {
       name: 'every positions schema field is mappable',
-      fields: listMappableFieldsOfShape('positions'),
+      fields: listMappableFieldsOfShape('positions').filter(
+        (field) => field.targetField !== 'lastPassAtMs',
+      ),
       schemaFieldNames: [
         ...listFieldNamesOfSchema(PositionsShapeSchema).filter((name) => name !== 'entries'),
         ...listFieldNamesOfSchema(PositionEntrySchema),

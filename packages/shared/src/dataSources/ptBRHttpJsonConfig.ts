@@ -52,6 +52,10 @@ export const ptBRHttpJsonConfig = {
     `A variável de ambiente "${variableName}" não pode ser usada: só variáveis com nome BAJAOVRLAY_SOURCE_ e letras maiúsculas, números ou "_" podem ser enviadas a uma fonte.`,
   unknownRequestInMapping: (shapeName: string, requestId: string) =>
     `${shapeName} lê a requisição "${requestId}", que não existe nesta fonte.`,
+  unknownRequestInLookup: (shapeName: string, lookupName: string, requestId: string) =>
+    `A consulta "${lookupName}" de ${shapeName} lê a requisição "${requestId}", que não existe nesta fonte.`,
+  refreshEveryMsOutOfRange: (shortestMs: number, longestMs: number) =>
+    `O tempo de atualização da requisição vai de 1 minuto (${shortestMs} ms) a 1 hora (${longestMs} ms), em milissegundos inteiros.`,
 };
 
 /**

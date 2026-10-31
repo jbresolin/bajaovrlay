@@ -12,6 +12,14 @@ import { isReadableWebAddress, parseWebAddress } from './webAddressParsing.js';
 export const mostRequestsPerHttpJsonSource = 5;
 
 /**
+ * The range of a request's own refresh time (BAJAOVRLAY-53). At least a minute, the
+ * longest poll interval, so it is never shorter than the poll and means something; at most
+ * an hour, so a list fixed during the event is never shown wrong for longer than that.
+ */
+export const shortestRequestRefreshMs = 60_000;
+export const longestRequestRefreshMs = 3_600_000;
+
+/**
  * The prefix every environment variable a config names must start with. The dataSources
  * slice goes to every operator connection and into the event log, so a token is never
  * written in a config: the config names a variable and the server reads it at poll time.
@@ -144,6 +152,17 @@ export const HttpJsonRequestSchema = z.strictObject(
     queryParameters: z
       .array(HttpJsonQueryParameterSchema, { error: explainListProblem('queryParameters') })
       .default([]),
+    /**
+     * Fetch this request only once in this many ms, reusing its last good response at the
+     * polls between (BAJAOVRLAY-53): for a list that changes once an event, joined by a
+     * lookup, such as the teams. Absent, the request is fetched at every poll.
+     */
+    refreshEveryMs: z
+      .number({ error: refreshEveryMsReason })
+      .int({ error: refreshEveryMsReason })
+      .min(shortestRequestRefreshMs, { error: refreshEveryMsReason })
+      .max(longestRequestRefreshMs, { error: refreshEveryMsReason })
+      .optional(),
   },
   { error: explainProblemOfRequestObject },
 );
@@ -177,6 +196,14 @@ export const HttpJsonConfigSchema = z
 
 /** A flex source's config after it has passed HttpJsonConfigSchema. */
 export type HttpJsonConfig = z.infer<typeof HttpJsonConfigSchema>;
+
+/** The one sentence for any refresh time out of range or not a whole number of ms. */
+function refreshEveryMsReason(): string {
+  return ptBRHttpJsonConfig.refreshEveryMsOutOfRange(
+    shortestRequestRefreshMs,
+    longestRequestRefreshMs,
+  );
+}
 
 /**
  * A text field whose refusal, when it is missing or holds something else (requestId: 5),
@@ -350,7 +377,7 @@ function checkTypedHeaderValueCanBeSent(header: NameAndValue, context: z.Refinem
   }
 }
 
-/** Checks that request ids are unique and that every mapping reads one of the requests. */
+/** Checks that request ids are unique and that every mapping and lookup reads one of the requests. */
 function checkRequestIdsOfConfig(
   requests: HttpJsonRequest[],
   mappings: FlexMappingConfig,
@@ -379,5 +406,18 @@ function checkRequestIdsOfConfig(
         ),
       });
     }
+    (mapping.lookups ?? []).forEach((lookup, lookupIndex) => {
+      if (!requestIdsSeen.has(lookup.requestId)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['mappings', mappingIndex, 'lookups', lookupIndex, 'requestId'],
+          message: ptBRHttpJsonConfig.unknownRequestInLookup(
+            ptBRDataShapes.shapeNames[mapping.shapeKey],
+            lookup.lookupName,
+            lookup.requestId,
+          ),
+        });
+      }
+    });
   });
 }

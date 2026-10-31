@@ -111,6 +111,8 @@ function listPositionsFields(): MappableField[] {
     entryField('intervalMs', carLabels.intervalMs, false),
     entryField('pitStops', carLabels.pitStops, false),
     entryField('fuelStops', carLabels.fuelStops, false),
+    // Read only by the gaps step (workOutGapsFromLaps, gapsFromLaps.ts), then taken off.
+    entryField('lastPassAtMs', extraLabels.lastPassAtMs, false),
   ];
 }
 
