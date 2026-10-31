@@ -21,7 +21,8 @@ are as of the last line crossing; `gapsFromLaps.ts`); **brackets** grouped into 
 first incomplete round left out with the rounds after it (an incomplete third place alone)
 and a third place after the final moved before it (`bracketRoundsContracts.ts`).
 **Every text written is cleaned up** for every flex source: HTML entities decoded, spaces
-collapsed, ends trimmed (`sourceTextCleanup.ts`). A disqualified team's mapped rank is dropped.
+collapsed, ends trimmed (`sourceTextCleanup.ts`); text that cleans up to nothing is left
+out. A disqualified team's mapped rank is dropped.
 
 Limits, on purpose. **Paths** are keys and `[n]` indices only, no wildcards, filters or
 functions; a key holding a dot or a bracket, and a response whose top level is a list,

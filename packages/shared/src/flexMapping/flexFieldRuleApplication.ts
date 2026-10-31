@@ -57,7 +57,8 @@ export type RuleOutcome =
 /**
  * Applies one rule to its source (the response, or one element of the list). A target the
  * shape does not list is a problem, so nothing but a canonical field is ever written. Text
- * that is set is cleaned up: entities decoded, spaces collapsed, ends trimmed.
+ * that is set is cleaned up (entities decoded, spaces collapsed, ends trimmed), and text
+ * that cleans up to nothing is left out.
  */
 export function applyOneRule(
   shapeKey: DataShapeKey,
@@ -66,10 +67,17 @@ export function applyOneRule(
   surroundings: RuleSurroundings,
 ): RuleOutcome {
   const ruleOutcome = applyOneRuleAsRead(shapeKey, rule, source, surroundings);
-  if (ruleOutcome.outcome === 'set' && typeof ruleOutcome.value === 'string') {
-    return { outcome: 'set', value: cleanUpTextFromASource(ruleOutcome.value) };
+  if (ruleOutcome.outcome !== 'set' || typeof ruleOutcome.value !== 'string') {
+    return ruleOutcome;
   }
-  return ruleOutcome;
+  // Text that cleans up to nothing ("&nbsp;", spaces) is left out, never written as "": the
+  // source does not know the value, as with a null, so a required field is named as missing
+  // and an optional one stays valid (gate 2 of PR #35). firstOf treats a blank the same way.
+  const cleanedText = cleanUpTextFromASource(ruleOutcome.value);
+  if (cleanedText === '') {
+    return { outcome: 'leftOut' };
+  }
+  return { outcome: 'set', value: cleanedText };
 }
 
 /** Applies one rule, giving its value as read (or transformed), not yet cleaned up. */

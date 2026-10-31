@@ -16,12 +16,16 @@
  *   - An entity the list does not know, and an ampersand on its own, are kept as written.
  *   - Through applyFlexMapping, a team name and an event name are cleaned when written,
  *     and a value that is not text is left alone.
+ *   - Text that cleans up to nothing ("&nbsp;", spaces) is left out, never written as "":
+ *     a required field is then named as missing, and an optional one lets the shape pass
+ *     (gate 2 of PR #35), as firstOf already treats a blank as absent.
  *
  * What these tests deliberately do not cover:
  *   - HTML tags: no source sends them in a name; a tag would show as written.
  */
 import { describe, expect, it } from 'vitest';
 
+import { validateDataShape } from '../dataShapes/validateDataShape.js';
 import { applyFlexMapping } from './applyFlexMapping.js';
 import { FlexMappingConfigSchema } from './flexMappingConfig.js';
 import { cleanUpTextFromASource } from './sourceTextCleanup.js';
@@ -126,5 +130,112 @@ describe('applyFlexMapping cleans up every text it writes', () => {
         positions: { entries: [{ carNumber: 1, teamName: 'Procobaja' }] },
       },
     });
+  });
+});
+
+describe('applyFlexMapping leaves out text that cleans up to nothing', () => {
+  /** A race direction answer with one penalty, car 13 "Bombaja" of UFSM, as `changes` say. */
+  function buildPenaltyAnswer(changes: Record<string, unknown>) {
+    return {
+      prova: 'END',
+      ocorrencias: [
+        {
+          id: 'pen-0042',
+          carro: 13,
+          equipe: 'Bombaja',
+          escola: 'UFSM',
+          tipo: 'penalty',
+          motivo: 'Queima de largada',
+          penalidade: '+30 segundos',
+          ...changes,
+        },
+      ],
+    };
+  }
+
+  /** The incidents mapping of that answer, every field read by a plain path. */
+  function buildIncidentsMapping() {
+    return FlexMappingConfigSchema.parse([
+      {
+        shapeKey: 'incidents',
+        requestId: 'direcao',
+        entriesPath: 'ocorrencias',
+        fields: [
+          { targetField: 'sessionId', fromPath: 'prova' },
+          { targetField: 'updatedAtMs', fromPollMoment: true },
+        ],
+        entryFields: [
+          { targetField: 'incidentId', fromPath: 'id' },
+          { targetField: 'carNumber', fromPath: 'carro' },
+          { targetField: 'teamName', fromPath: 'equipe' },
+          { targetField: 'schoolName', fromPath: 'escola' },
+          { targetField: 'kind', fromPath: 'tipo' },
+          { targetField: 'reason', fromPath: 'motivo' },
+          { targetField: 'penaltyText', fromPath: 'penalidade' },
+        ],
+      },
+    ]);
+  }
+
+  const blankTextScenarios: Array<{
+    name: string;
+    changes: Record<string, unknown>;
+    blankField: string;
+    expectedValidation: { isValid: boolean };
+  }> = [
+    // A required text typed as "&nbsp;": left out, so the validation says it is missing.
+    {
+      name: 'leaves out a required reason sent as "&nbsp;"',
+      changes: { motivo: '&nbsp;' },
+      blankField: 'reason',
+      expectedValidation: { isValid: false },
+    },
+    // An optional text sent as spaces: left out, and the incident is still valid.
+    {
+      name: 'leaves out an optional penalty text sent as spaces, and the incident passes',
+      changes: { penalidade: '   ' },
+      blankField: 'penaltyText',
+      expectedValidation: { isValid: true },
+    },
+  ];
+
+  it.each(blankTextScenarios)('$name', ({ changes, blankField, expectedValidation }) => {
+    // Arrange: the incidents mapping and the answer with this row's blank text.
+    const mappings = buildIncidentsMapping();
+    const answer = buildPenaltyAnswer(changes);
+
+    // Act: map it, then validate the incidents as the store does.
+    const result = applyFlexMapping(mappings, { direcao: answer }, 0);
+    const incidents = result.ok ? (result.shapes.incidents as { entries: object[] }) : undefined;
+    const validation = validateDataShape('incidents', incidents);
+
+    // Assert: the blank field is absent, not "", and the validation is as this row says.
+    expect(
+      incidents?.entries[0],
+      'blank text must be left out, never written as ""',
+    ).not.toHaveProperty(blankField);
+    expect(validation, 'the incidents must validate as this row says').toMatchObject(
+      expectedValidation,
+    );
+  });
+
+  it('names the required reason as missing, not as too short', () => {
+    // Arrange: the reason sent as "&nbsp;".
+    const mappings = buildIncidentsMapping();
+    const answer = buildPenaltyAnswer({ motivo: '&nbsp;' });
+
+    // Act: map and validate.
+    const result = applyFlexMapping(mappings, { direcao: answer }, 0);
+    const validation = validateDataShape(
+      'incidents',
+      result.ok ? result.shapes.incidents : undefined,
+    );
+
+    // Assert: the validation's message is about a missing field, not "valor abaixo do mínimo".
+    const errorMessage = validation.isValid ? '' : validation.errorMessage;
+    expect(errorMessage, 'the reason must be named at its path').toContain(
+      'incidents.entries.0.reason',
+    );
+    expect(errorMessage, 'the reason must not read as too short').not.toContain('mínimo');
   });
 });
