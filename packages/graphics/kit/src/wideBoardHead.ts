@@ -13,6 +13,8 @@
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, type TemplateResult } from 'lit';
 
+import { renderScrollingText, writeScrollingTextIfChanged } from './scrollingTextWhenTooLong.js';
+
 /** The elements of the head that change after the first render. */
 export type WideBoardHeadParts = {
   head: HTMLElement;
@@ -39,7 +41,11 @@ export function renderWideBoardHeadTemplate(
   return html`<header class="wide-board-head" data-testid=${`${testIdPrefix}-head`}>
     <img class="wide-board-head-logo" src=${logoAddress} alt=${logoAlternativeText} />
     <h1 class="wide-board-head-title" data-testid=${`${testIdPrefix}-title`}></h1>
-    <span class="wide-board-head-event-line" data-testid=${`${testIdPrefix}-event-line`}></span>
+    <span
+      class="wide-board-head-event-line scrolling-text-box"
+      data-testid=${`${testIdPrefix}-event-line`}
+      >${renderScrollingText('')}</span
+    >
     <span class="wide-board-head-page-line" data-testid=${`${testIdPrefix}-page-line`}></span>
   </header>`;
 }
@@ -71,7 +77,7 @@ export function findWideBoardHeadParts(
  */
 export function writeWideBoardHead(parts: WideBoardHeadParts, texts: WideBoardHeadTexts): void {
   parts.title.textContent = texts.title;
-  parts.eventLine.textContent = texts.eventLine;
+  writeScrollingTextIfChanged(parts.eventLine, texts.eventLine);
   parts.eventLine.hidden = texts.eventLine === '';
   parts.pageLine.textContent = texts.pageLine;
 }

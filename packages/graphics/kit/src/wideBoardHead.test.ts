@@ -93,4 +93,23 @@ describe('the board head', () => {
     ).toEqual(['PÓDIO', 'ENDURO DE RESISTÊNCIA', '2/3']);
     expect(parts.eventLine.hidden, 'an event line with text is shown').toBe(false);
   });
+
+  it('writes the event line inside a scrolling box, so a long event scrolls, never ellipsed', () => {
+    // Arrange: the standings' head and its parts.
+    const parts = findWideBoardHeadParts(drawThePodiumHead(), 'podium');
+
+    // Act: write the long name of the event.
+    writeWideBoardHead(parts, {
+      title: 'CLASSIFICAÇÃO GERAL',
+      eventLine: '30ª COMPETIÇÃO BAJA SAE BRASIL - ETAPA NACIONAL - PIRACICABA',
+      pageLine: '1/3',
+    });
+
+    // Assert: the event line is a scrolling box holding the text in its one text element.
+    const textElement = parts.eventLine.querySelector(':scope > .scrolling-text');
+    expect(parts.eventLine.classList.contains('scrolling-text-box'), 'a scrolling box').toBe(true);
+    expect(textElement?.textContent, 'the text inside its text element').toBe(
+      '30ª COMPETIÇÃO BAJA SAE BRASIL - ETAPA NACIONAL - PIRACICABA',
+    );
+  });
 });

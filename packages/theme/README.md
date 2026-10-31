@@ -69,6 +69,13 @@ token names are the design's. Copied with these changes:
   `sponsorHold<Level>Ms`); and `--session-status-icon-size` (22 px, the slot's state shape,
   which the design's styles wrote as a number).
 
+- added for a text too long for its box (BAJAOVRLAY-55), which scrolls inside it: the motion
+  tokens `--motion-text-hold-start`, `--motion-text-scroll-speed` (px per second),
+  `--motion-text-hold-end`, `--motion-text-return` and `--motion-text-edge-fade` (px; read by
+  `readMotionTokens` as `text*`), and the widths that bound boxes which grew with their text:
+  `--lower-third-max-width` (1300 px, the safe width left of the tower) and
+  `--battle-team-max-width` (480 px).
+
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).
 

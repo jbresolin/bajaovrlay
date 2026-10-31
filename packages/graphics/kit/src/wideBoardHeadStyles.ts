@@ -42,12 +42,12 @@ export const wideBoardHeadStyles = css`
     white-space: nowrap;
   }
 
-  /* The event line, in the caption's look, cut with an ellipsis before the line at the right. */
+  /* The event line, in the caption's look: a scrolling box (scrollingTextStyles) between the
+     title and the line at the right, whose text scrolls when too long (BAJAOVRLAY-55). */
   .wide-board-head-event-line {
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
     padding-left: var(--space-2);
     font-family: var(--font-text);
     font-weight: var(--weight-caption);

@@ -20,6 +20,8 @@
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, nothing, type TemplateResult } from 'lit';
 
+import { renderScrollingText } from './scrollingTextWhenTooLong.js';
+
 /** What a board's head shows; `testIdPrefix` starts every part's data-testid. */
 export type BoardHeadContent = {
   /** The board's name in test ids: "sessions-board" gives "sessions-board-title". */
@@ -40,8 +42,10 @@ export function renderBoardHead(content: BoardHeadContent): TemplateResult {
   const subtitle =
     content.subtitle === undefined
       ? nothing
-      : html`<span class="caption board-subtitle" data-testid="${prefix}-subtitle"
-          >${content.subtitle}</span
+      : html`<span
+          class="caption board-subtitle scrolling-text-box"
+          data-testid="${prefix}-subtitle"
+          >${renderScrollingText(content.subtitle)}</span
         >`;
   const aside =
     content.aside === undefined
