@@ -12,7 +12,7 @@
  */
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { writeTimeOfDayText } from '@bajaovrlay/graphics-kit/countdownText';
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 // The white logo lives in the theme package; Vite bundles a copy into this graphic's dist/.
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, type TemplateResult } from 'lit';

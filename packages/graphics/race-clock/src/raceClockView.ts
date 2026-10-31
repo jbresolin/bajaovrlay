@@ -14,7 +14,7 @@ import {
 import {
   renderScrollingText,
   writeScrollingTextIfChanged,
-} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+} from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 // The white logo lives in the theme package; Vite bundles a copy into this graphic's
 // dist/assets/, so the built clock works from the preview and from the air alike.

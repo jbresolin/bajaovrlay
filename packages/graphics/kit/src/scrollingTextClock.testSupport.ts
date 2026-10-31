@@ -7,12 +7,9 @@
  */
 import { expect, onTestFinished, vi } from 'vitest';
 
+import { makeScrollingTextBox, writeScrollingTextIfChanged } from './scrollingTextBox.js';
 import type { ScrollingTextClock } from './scrollingTextWhenTooLong.js';
-import {
-  createScrollingTextClock,
-  makeScrollingTextBox,
-  writeScrollingTextIfChanged,
-} from './scrollingTextWhenTooLong.js';
+import { createScrollingTextClock } from './scrollingTextWhenTooLong.js';
 import {
   findLastAnimationOf,
   installRecordingWebAnimations,
@@ -81,28 +78,39 @@ export function addTeamNameBox(
   return measuredBox;
 }
 
-/**
- * A ResizeObserver the test drives: jsdom has none. `reportResizeOf` calls the clock back
- * as a browser would after a box changed size.
- */
-export function installHandDrivenResizeObserver(): { reportResizeOf: (element: Element) => void } {
+/** The hand-driven ResizeObserver: how a test reports a resize and reads what is watched. */
+export type HandDrivenResizeObserver = {
+  /** Calls the clock back as a browser would after `element` changed size. */
+  reportResizeOf: (element: Element) => void;
+  /** The elements being watched now: observed and not unobserved since. */
+  listWatchedElements: () => Element[];
+};
+
+/** A ResizeObserver the test drives: jsdom has none. */
+export function installHandDrivenResizeObserver(): HandDrivenResizeObserver {
   const callbacks: ResizeObserverCallback[] = [];
-  class HandDrivenResizeObserver {
+  const watchedElements = new Set<Element>();
+  class HandDrivenResizeObserverStandIn {
     private readonly callback: ResizeObserverCallback;
     constructor(callback: ResizeObserverCallback) {
       this.callback = callback;
       callbacks.push(callback);
     }
-    observe(): void {}
-    unobserve(): void {}
+    observe(element: Element): void {
+      watchedElements.add(element);
+    }
+    unobserve(element: Element): void {
+      watchedElements.delete(element);
+    }
     disconnect(): void {
+      watchedElements.clear();
       const index = callbacks.indexOf(this.callback);
       if (index >= 0) {
         callbacks.splice(index, 1);
       }
     }
   }
-  vi.stubGlobal('ResizeObserver', HandDrivenResizeObserver);
+  vi.stubGlobal('ResizeObserver', HandDrivenResizeObserverStandIn);
   onTestFinished(() => {
     vi.unstubAllGlobals();
   });
@@ -112,7 +120,7 @@ export function installHandDrivenResizeObserver(): { reportResizeOf: (element: E
       callback([entry], {} as ResizeObserver);
     }
   }
-  return { reportResizeOf };
+  return { reportResizeOf, listWatchedElements: () => [...watchedElements] };
 }
 
 /**

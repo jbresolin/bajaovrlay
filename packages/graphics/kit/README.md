@@ -16,7 +16,8 @@ src/pageTurner.ts                        hold, turn, hold again: the tower's and
 src/timelinePlayback.ts                  play a paused GSAP timeline to its end, or finish it at once
 src/dataProblems.ts                      one pt-BR sentence for the first problem in refused data
 src/textInPlace.ts                       writeTextIfChanged: a text written on air only when it differs
-src/scrollingTextWhenTooLong.ts         a text too long for its box scrolls in it: the box, and one clock per graphic (BAJAOVRLAY-55)
+src/scrollingTextWhenTooLong.ts         a text too long for its box scrolls in it: one clock per graphic (BAJAOVRLAY-55)
+src/scrollingTextBox.ts                  the scrolling box: make it, write its text, render it in Lit; how the clock finds and measures it
 src/scrollingTextCycle.ts                that clock's arithmetic: a cycle's length and where each text is at a moment
 src/scrollingTextKeyframes.ts            one text's cycle as Web Animation keyframes (transform, opacity: the compositor runs them)
 src/scrollingTextTimings.ts              its timings from the theme's --motion-text-* tokens, each with a fallback
@@ -82,7 +83,7 @@ Move something here only when a second graphic needs it; a helper with one user 
 Every text on air that can be too long for its box (a team, a school, a person, a session,
 the event line, a sponsor's name written as text) is a scrolling box: give the box a width
 (fixed, `flex: 1` or a `max-width` from the theme, never unbounded), make it with
-`makeScrollingTextBox` or `renderScrollingText`, add `scrollingTextStyles` to the graphic's
+`makeScrollingTextBox` or `renderScrollingText` (`scrollingTextBox`), add `scrollingTextStyles` to the graphic's
 styles, and run one `createScrollingTextClock` over the shadow root: `start()` once on air,
 `stop()` on stop, dispose and when the element leaves the page. A text that fits never
 moves; one too long holds, scrolls at `--motion-text-scroll-speed`, holds and crossfades

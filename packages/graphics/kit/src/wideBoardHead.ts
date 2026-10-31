@@ -13,7 +13,7 @@
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, type TemplateResult } from 'lit';
 
-import { writeScrollingTextIfChanged } from './scrollingTextWhenTooLong.js';
+import { writeScrollingTextIfChanged } from './scrollingTextBox.js';
 
 /** The elements of the head that change after the first render. */
 export type WideBoardHeadParts = {

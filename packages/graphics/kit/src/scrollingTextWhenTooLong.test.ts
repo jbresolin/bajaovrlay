@@ -32,6 +32,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
+import { makeScrollingTextBox, writeScrollingTextIfChanged } from './scrollingTextBox.js';
 import {
   addTeamNameBox,
   ardosiaTextTimings,
@@ -46,7 +47,6 @@ import {
 import { planScrollingTextCycle } from './scrollingTextCycle.js';
 import { buildScrollingTextKeyframes } from './scrollingTextKeyframes.js';
 import { findRunningScrollingTextCycles } from './scrollingTextOnAir.testSupport.js';
-import { makeScrollingTextBox, writeScrollingTextIfChanged } from './scrollingTextWhenTooLong.js';
 import { listUncancelledAnimations } from './webAnimationsInJsdom.testSupport.js';
 
 /** The longest school of the field, 1236 px in a 300 px box: 960 px to scroll, 16 s. */

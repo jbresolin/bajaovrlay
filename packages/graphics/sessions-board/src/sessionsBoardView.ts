@@ -18,7 +18,7 @@
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { checkMarkShape } from '@bajaovrlay/graphics-kit/checkMarkShape';
 import { writeTimeOfDayText } from '@bajaovrlay/graphics-kit/countdownText';
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import type { ScheduleSlotStatus } from '@bajaovrlay/shared/scheduleSlotStatus';
 import { html, svg, type TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';

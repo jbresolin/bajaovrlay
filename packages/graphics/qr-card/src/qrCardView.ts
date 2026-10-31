@@ -5,7 +5,7 @@
  * `shape-rendering: crispEdges` so no module edge is smoothed into grey. Lit keeps the card
  * element itself across redraws, so the animations' inline styles on it survive an update.
  */
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { html, svg, type TemplateResult } from 'lit';
 
 import { ptBR } from './ptBR.js';

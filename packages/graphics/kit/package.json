@@ -17,6 +17,7 @@
     "./dataProblems": "./src/dataProblems.ts",
     "./textPresence": "./src/textPresence.ts",
     "./textInPlace": "./src/textInPlace.ts",
+    "./scrollingTextBox": "./src/scrollingTextBox.ts",
     "./scrollingTextWhenTooLong": "./src/scrollingTextWhenTooLong.ts",
     "./scrollingTextStyles": "./src/scrollingTextStyles.ts",
     "./scrollingTextCycle": "./src/scrollingTextCycle.ts",

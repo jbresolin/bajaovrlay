@@ -10,7 +10,7 @@
  * without it the card's content is simply shorter and stays centred in the card's height.
  * Images are `<img src>` and nothing else: an `<img>` runs no script, even for an SVG.
  */
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
 import {
   findWideBoardHeadParts,

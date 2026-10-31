@@ -14,6 +14,13 @@
  *   - It joins the next cycle with its new width.
  *   - A box resized during a scroll puts its text back at its start; a resize report with
  *     the same width (a browser sends one when a box is first watched) changes nothing.
+ *   - A live update writing the same text (the tower's list every 2 s) does not restart it.
+ *   - A text that fit and grows past its box while nothing scrolls (its font has loaded)
+ *     starts a cycle.
+ *   - Boxes that left the page (the lower strip makes new pills every page) are no longer
+ *     watched for resizes from the next cycle start, so watched boxes never pile up.
+ *   - Each animation starts at the document timeline's time of now, so a box's phase
+ *     timers and its text keep in step.
  *
  * What these tests deliberately do not cover:
  *   - Real layout, time and animations, as in scrollingTextWhenTooLong.test.ts: the widths
@@ -22,6 +29,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { writeScrollingTextIfChanged } from './scrollingTextBox.js';
 import {
   addTeamNameBox,
   createGraphicHostWithShadowRoot,
@@ -32,7 +40,7 @@ import {
   startClockOverGraphic,
   takeControlOfTimeAndAnimations,
 } from './scrollingTextClock.testSupport.js';
-import { writeScrollingTextIfChanged } from './scrollingTextWhenTooLong.js';
+import { setTheDocumentTimeTo } from './webAnimationsInJsdom.testSupport.js';
 
 /** The longest school of the field: 1236 px, 960 px to scroll in a 300 px box, 16 s. */
 const utfprCornelioProcopio = 'UNIVERSIDADE TECNOLÓGICA FEDERAL DO PARANÁ - CORNÉLIO PROCÓPIO';
@@ -138,5 +146,97 @@ describe('a change during a scroll', () => {
     // Assert: nothing changed, so the text keeps its animation and its phase.
     expect(readAnimationOf(tucano.text).isCancelled, 'its animation must go on').toBe(false);
     expect(tucano.box.dataset.scrollPhase, 'the text must go on scrolling').toBe('scrolling');
+  });
+});
+
+describe('a live update that writes the same text', () => {
+  it('leaves the scrolling text going', async () => {
+    // Arrange: a tower row 4 s into its scroll.
+    takeControlOfTimeAndAnimations();
+    installHandDrivenResizeObserver();
+    const { host, root } = createGraphicHostWithShadowRoot();
+    const iff = addTeamNameBox(root, iffItaperuna, { textWidthPx: 876, boxWidthPx: 300 });
+    startClockOverGraphic(host, root);
+    letTheCycleRunFor(4000);
+
+    // Act: the positions arrive again (every 2 s) with the same name in the row.
+    writeScrollingTextIfChanged(iff.box, iffItaperuna);
+    await letTheClockSeeTheChange();
+
+    // Assert: nothing was written, so the scroll goes on.
+    expect(readAnimationOf(iff.text).isCancelled, 'the same name must not restart').toBe(false);
+    expect(iff.box.dataset.scrollPhase, 'the text must go on scrolling').toBe('scrolling');
+  });
+});
+
+describe('a text that grows past its box while nothing scrolls', () => {
+  it('starts a cycle, as when the face loads after the first draw', () => {
+    // Arrange: a name that fits in the fallback face, on air, so no cycle runs.
+    takeControlOfTimeAndAnimations();
+    const resizeObserver = installHandDrivenResizeObserver();
+    const { host, root } = createGraphicHostWithShadowRoot();
+    const ufscar = addTeamNameBox(root, 'BAJA UFSCAR', { textWidthPx: 280, boxWidthPx: 300 });
+    startClockOverGraphic(host, root);
+    const cycleBeforeTheFace = ufscar.box.dataset.scrollPhase;
+
+    // Act: the display face loads and the text grows past its box.
+    ufscar.widths.textWidthPx = 320;
+    resizeObserver.reportResizeOf(ufscar.text);
+
+    // Assert: no cycle before; now the text holds at its start of a new cycle.
+    expect(cycleBeforeTheFace, 'a fitting text runs no cycle').toBeUndefined();
+    expect(readAnimationOf(ufscar.text).isCancelled, 'the grown text must be animated').toBe(false);
+    expect(ufscar.box.dataset.scrollPhase, 'it holds at its start first').toBe('holdingAtStart');
+  });
+});
+
+describe('boxes that left the page', () => {
+  it('are no longer watched for resizes from the next cycle start', () => {
+    // Arrange: a strip page of two pills, one too long, on air; the page turns and the
+    // old pill leaves the page.
+    takeControlOfTimeAndAnimations();
+    const resizeObserver = installHandDrivenResizeObserver();
+    const { host, root } = createGraphicHostWithShadowRoot();
+    const oldPill = addTeamNameBox(root, iffItaperuna, { textWidthPx: 876, boxWidthPx: 300 });
+    const keptPill = addTeamNameBox(root, 'EQUIPE TUCANO BAJA UFSC', {
+      textWidthPx: 516,
+      boxWidthPx: 300,
+    });
+    startClockOverGraphic(host, root);
+    const watchedWhileOnThePage = resizeObserver.listWatchedElements();
+    oldPill.box.remove();
+
+    // Act: the cycle runs to its end and the next one starts.
+    letTheCycleRunFor(2500 + 10_000 + 1500 + 250);
+
+    // Assert: the old pill's box and text are no longer watched; the kept pill still is.
+    const watchedAfter = resizeObserver.listWatchedElements();
+    expect(watchedWhileOnThePage, 'both pills are watched while on the page').toEqual(
+      expect.arrayContaining([oldPill.box, oldPill.text, keptPill.box, keptPill.text]),
+    );
+    expect(watchedAfter, 'a box that left the page must no longer be watched').not.toEqual(
+      expect.arrayContaining([oldPill.box]),
+    );
+    expect(watchedAfter, 'nor its text').not.toEqual(expect.arrayContaining([oldPill.text]));
+    expect(watchedAfter, 'the pill still on the page stays watched').toEqual(
+      expect.arrayContaining([keptPill.box, keptPill.text]),
+    );
+  });
+});
+
+describe('the start of each animation', () => {
+  it("is the document timeline's time of now, not the next frame", () => {
+    // Arrange: a page open for 12.5 s, a row too long.
+    takeControlOfTimeAndAnimations();
+    installHandDrivenResizeObserver();
+    setTheDocumentTimeTo(12_500);
+    const { host, root } = createGraphicHostWithShadowRoot();
+    const iff = addTeamNameBox(root, iffItaperuna, { textWidthPx: 876, boxWidthPx: 300 });
+
+    // Act: the graphic goes on air.
+    startClockOverGraphic(host, root);
+
+    // Assert: the animation started at 12.5 s, the moment its phase timers count from.
+    expect(readAnimationOf(iff.text).startTime, 'the animation must start now').toBe(12_500);
   });
 });

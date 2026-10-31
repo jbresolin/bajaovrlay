@@ -18,7 +18,7 @@
  * `/media/<id>` the server serves, and an `<img>` runs no script even for an SVG.
  */
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { headingOfSponsorLevel } from '@bajaovrlay/graphics-kit/sponsorRound';
 import type { PageIndexOfEachLayer } from '@bajaovrlay/graphics-kit/stackedPageLayers';
 // The white mark lives in the theme package; Vite bundles a copy into this graphic's dist/.

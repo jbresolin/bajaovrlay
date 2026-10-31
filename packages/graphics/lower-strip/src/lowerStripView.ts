@@ -18,7 +18,7 @@ import {
 import {
   makeScrollingTextBox,
   writeScrollingTextIfChanged,
-} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+} from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { html, type TemplateResult } from 'lit';
 

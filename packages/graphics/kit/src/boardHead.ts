@@ -20,7 +20,7 @@
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, nothing, type TemplateResult } from 'lit';
 
-import { renderScrollingText } from './scrollingTextWhenTooLong.js';
+import { renderScrollingText } from './scrollingTextBox.js';
 
 /** What a board's head shows; `testIdPrefix` starts every part's data-testid. */
 export type BoardHeadContent = {

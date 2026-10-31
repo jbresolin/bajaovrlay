@@ -7,7 +7,7 @@
  * cells of the columns that changed on the same row; a status cell made again this way
  * draws the row's icon at once, since the status itself did not change.
  */
-import { makeScrollingTextBox } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { makeScrollingTextBox } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { nothing, render } from 'lit';
 

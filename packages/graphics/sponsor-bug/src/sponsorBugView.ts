@@ -12,7 +12,7 @@
  */
 // The white mark lives in the theme package; Vite bundles a copy into this graphic's
 // dist/assets/, so the built bug works from the preview and from the air alike.
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import markAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, nothing, type TemplateResult } from 'lit';
 

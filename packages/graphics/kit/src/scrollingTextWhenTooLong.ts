@@ -4,9 +4,9 @@
  * ellipsis is no longer used on air.
  *
  * A box is any element of the graphic marked `scrolling-text-box`, holding one
- * `scrolling-text` element with the text: made with makeScrollingTextBox (a graphic that
- * writes its own DOM) or renderScrollingText (a Lit template). The box clips; the text
- * inside is one line, as wide as it needs (scrollingTextStyles.ts).
+ * `scrolling-text` element with the text (scrollingTextBox.ts makes, writes and measures
+ * them). The box clips; the text inside is one line, as wide as it needs
+ * (scrollingTextStyles.ts).
  *
  * One clock per graphic, over its shadow root, started on air and stopped off air. At each
  * cycle start it finds every box, measures it and plans the cycle (scrollingTextCycle.ts);
@@ -24,8 +24,12 @@
  * graphic busy inside OBS; stop disconnects, clears and cancels them all, and every graphic
  * stops its clock on stop, dispose and when it leaves the page.
  */
-import { html, type TemplateResult } from 'lit';
-
+import {
+  findScrollingTextParts,
+  measurePart,
+  type ScrollingTextPart,
+  textClassName,
+} from './scrollingTextBox.js';
 import {
   leaveTextOutOfTheCycle,
   measureScrollDistancePx,
@@ -37,12 +41,6 @@ import {
 } from './scrollingTextCycle.js';
 import { buildScrollingTextKeyframes } from './scrollingTextKeyframes.js';
 import { readScrollingTextTimings, type ScrollingTextTimings } from './scrollingTextTimings.js';
-import { writeTextIfChanged } from './textInPlace.js';
-
-/** The class that marks a clipped box; the clock finds the boxes by it. */
-const boxClassName = 'scrolling-text-box';
-/** The class of the one text element inside a box, the element that moves. */
-const textClassName = 'scrolling-text';
 
 /**
  * How every scrolling text animation's `id` begins, followed by the cycle's number: the
@@ -61,91 +59,27 @@ export type ScrollingTextClockOptions = {
 
 /** The clock of a graphic's scrolling texts. */
 export type ScrollingTextClock = {
-  /** Starts the cycles (the graphic is on air); starting a running clock does nothing. */
+  /**
+   * Starts the cycles (the graphic is on air); starting a running clock does nothing.
+   * Texts held for a play-out are put to rest first, and the new cycle starts afresh.
+   */
   start: () => void;
-  /** Ends the cycle and puts every text back at its start, with no fade. */
+  /**
+   * The stop begins: every text stays where it stands through the graphic's play-out
+   * (paused, its fade kept), and no cycle goes on. Snapping back mid-exit would jump.
+   */
+  holdTheTextsForThePlayOut: () => void;
+  /**
+   * The play-out has ended: the held texts go back to their start. Does nothing when the
+   * graphic went on air again during the play-out, so the new cycle is never cut.
+   */
+  stopAfterThePlayOut: () => void;
+  /** Ends the cycle at once and puts every text back at its start (dispose, removal). */
   stop: () => void;
 };
 
-/** A box and its text, as the clock found them at a cycle start. */
-type ScrollingTextPart = { box: HTMLElement; text: HTMLElement };
-
 /** A text in the running cycle: its part and the animation that moves it. */
 type TextInTheCycle = ScrollingTextPart & { animation: Animation };
-
-/**
- * Makes `box` a scrolling text box for a graphic that writes its own DOM (the tower's
- * rows): marks it and wraps what it holds (a text, or a team name and its school that
- * scroll as one line) in the one text element, which it answers. Write a plain text with
- * writeScrollingTextIfChanged.
- */
-export function makeScrollingTextBox(box: HTMLElement): HTMLElement {
-  const existingText = findTextOfBox(box);
-  if (existingText !== undefined) {
-    return existingText;
-  }
-  box.classList.add(boxClassName);
-  const text = document.createElement('span');
-  text.className = textClassName;
-  text.append(...box.childNodes);
-  box.append(text);
-  return text;
-}
-
-/** Writes `text` into a scrolling text box, only when it differs (textInPlace's rule). */
-export function writeScrollingTextIfChanged(box: HTMLElement, text: string): void {
-  const textElement = makeScrollingTextBox(box);
-  writeTextIfChanged(textElement, text);
-}
-
-/**
- * The text element of a scrolling box, for a Lit template: the box around it carries the
- * class `scrolling-text-box` (written in the graphic's template, with its own classes).
- */
-export function renderScrollingText(text: string): TemplateResult {
-  return html`<span class="${textClassName}">${text}</span>`;
-}
-
-/** The text element directly inside a box, if the box has one. */
-function findTextOfBox(box: Element): HTMLElement | undefined {
-  for (const child of box.children) {
-    if (child instanceof HTMLElement && child.classList.contains(textClassName)) {
-      return child;
-    }
-  }
-  return undefined;
-}
-
-/** Every box of the graphic with its text element, in document order. */
-function findScrollingTextParts(root: ParentNode): ScrollingTextPart[] {
-  const parts: ScrollingTextPart[] = [];
-  for (const box of root.querySelectorAll<HTMLElement>(`.${boxClassName}`)) {
-    const text = findTextOfBox(box);
-    if (text !== undefined) {
-      parts.push({ box, text });
-    }
-  }
-  return parts;
-}
-
-/**
- * The widths the cycle needs: the text's, and the room the box gives it (its width inside
- * its padding, where the text starts and must end). offsetWidth and clientWidth ignore
- * transforms, so a text mid-scroll or a row mid-slide measures the same as at rest. A
- * hidden box measures 0 and so fits.
- */
-function measurePart(part: ScrollingTextPart): ScrollingTextMeasure {
-  const boxStyle = getComputedStyle(part.box);
-  const paddingPx = readPixels(boxStyle.paddingLeft) + readPixels(boxStyle.paddingRight);
-  const boxWidthPx = part.box.clientWidth - paddingPx;
-  return { textWidthPx: part.text.offsetWidth, boxWidthPx };
-}
-
-/** A computed length in pixels; an empty or unreadable one (jsdom's) is 0. */
-function readPixels(computedLength: string): number {
-  const pixels = Number.parseFloat(computedLength);
-  return Number.isNaN(pixels) ? 0 : pixels;
-}
 
 /** Names the phase on the box: the styles fade its edges while it scrolls (scrollingTextStyles). */
 function writePhaseOnBox(box: HTMLElement, phase: ScrollingTextPhaseName): void {
@@ -155,6 +89,8 @@ function writePhaseOnBox(box: HTMLElement, phase: ScrollingTextPhaseName): void 
 /** Creates a stopped clock over a graphic's shadow root. */
 export function createScrollingTextClock(options: ScrollingTextClockOptions): ScrollingTextClock {
   let isRunning = false;
+  /** Whether the texts of the last cycle are held, paused, for a play-out. */
+  let isHeldForThePlayOut = false;
   let cycleNumber = 0;
   let cycle: ScrollingTextCycle = { durationMs: 0, scrollDistancePxByName: new Map() };
   let timings: ScrollingTextTimings = readScrollingTextTimings(options.tokensSource);
@@ -167,8 +103,11 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
   let nextTextNumber = 1;
   let mutationObserver: MutationObserver | undefined;
   let resizeObserver: ResizeObserver | undefined;
-  /** The elements the ResizeObserver already watches: watching one again reports it again. */
-  let watchedForResize = new WeakSet<Element>();
+  /**
+   * The elements the ResizeObserver watches: watching one again reports it again, and one
+   * that left the page is let go at the next cycle start (forgetBoxesThatLeftThePage).
+   */
+  const watchedForResize = new Set<Element>();
 
   function nameText(text: HTMLElement): string {
     const knownName = nameOfText.get(text);
@@ -189,6 +128,20 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
       if (!watchedForResize.has(element)) {
         watchedForResize.add(element);
         resizeObserver.observe(element);
+      }
+    }
+  }
+
+  /**
+   * Stops watching the boxes and texts no longer on the page. The lower strip and the tower
+   * make new ones as they turn pages: over a four-hour stint the watched elements would
+   * pile up, each kept alive by the observer.
+   */
+  function forgetBoxesThatLeftThePage(): void {
+    for (const element of [...watchedForResize]) {
+      if (!element.isConnected) {
+        resizeObserver?.unobserve(element);
+        watchedForResize.delete(element);
       }
     }
   }
@@ -242,12 +195,17 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
     bookTimer(() => writePhaseWhileInTheCycle(name, 'fadingInAtStart'), moments.returnSwitchesAtMs);
   }
 
-  /** Clears the cycle's timers and puts every text still in it back at its start. */
-  function endTheRunningCycle(): void {
+  function clearTheCycleTimers(): void {
     for (const timerId of pendingTimerIds) {
       window.clearTimeout(timerId);
     }
     pendingTimerIds = [];
+  }
+
+  /** Clears the cycle's timers and puts every text still in it back at its start. */
+  function endTheRunningCycle(): void {
+    clearTheCycleTimers();
+    isHeldForThePlayOut = false;
     for (const [name, textInTheCycle] of [...textsInTheCycle]) {
       restTextAtItsStart(name, textInTheCycle);
     }
@@ -266,6 +224,7 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
     }
 
     timings = readScrollingTextTimings(options.tokensSource);
+    forgetBoxesThatLeftThePage();
     const measuresByName = new Map<string, ScrollingTextMeasure>();
     const partsByName = new Map<string, ScrollingTextPart>();
     for (const part of findScrollingTextParts(options.root)) {
@@ -361,18 +320,40 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(onBoxesResized);
     }
+    // A cycle start puts texts held for a play-out to rest before measuring again.
     beginTheNextCycle();
   }
 
-  function stop(): void {
+  /** Stops watching for changes and resizes; nothing starts a cycle until the next start. */
+  function stopWatching(): void {
     isRunning = false;
     mutationObserver?.disconnect();
     mutationObserver = undefined;
     resizeObserver?.disconnect();
     resizeObserver = undefined;
-    watchedForResize = new WeakSet();
+    watchedForResize.clear();
+  }
+
+  function holdTheTextsForThePlayOut(): void {
+    stopWatching();
+    clearTheCycleTimers();
+    for (const textInTheCycle of textsInTheCycle.values()) {
+      textInTheCycle.animation.pause();
+    }
+    isHeldForThePlayOut = true;
+  }
+
+  function stopAfterThePlayOut(): void {
+    if (!isHeldForThePlayOut) {
+      return;
+    }
     endTheRunningCycle();
   }
 
-  return { start, stop };
+  function stop(): void {
+    stopWatching();
+    endTheRunningCycle();
+  }
+
+  return { start, holdTheTextsForThePlayOut, stopAfterThePlayOut, stop };
 }

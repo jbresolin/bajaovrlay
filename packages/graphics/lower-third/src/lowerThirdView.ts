@@ -8,7 +8,7 @@
  * writeScrollingTextIfChanged, which makes each a box at its first write, so a text too
  * long for the pill's `--lower-third-max-width` scrolls inside it.
  */
-import { writeScrollingTextIfChanged } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { writeScrollingTextIfChanged } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';
 

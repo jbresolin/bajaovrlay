@@ -4,8 +4,10 @@
  *
  * The scrolling text clock (scrollingTextWhenTooLong.ts) hands each text too long for its
  * box to the browser as one Web Animation. Under jsdom nothing would run; this stand-in
- * records each call (the element, its keyframes, its options) and whether the animation
- * was cancelled since, so a test can read what the clock asked the browser to do. It
+ * records each call (the element, its keyframes, its options), the start time the clock
+ * gave it, and whether it was paused or cancelled since, so a test can read what the clock
+ * asked the browser to do. The document's timeline is a stand-in too, its time set by the
+ * test (0 until then). It
  * never moves anything: where a text is at a moment is the pure cycle's to say
  * (scrollingTextKeyframes.test.ts proves the keyframes agree with it).
  */
@@ -17,8 +19,14 @@ export type RecordedAnimation = {
   keyframes: Keyframe[];
   options: KeyframeAnimationOptions;
   id: string;
+  /** The start time the clock set, or null when it left the browser to choose. */
+  startTime: number | null;
+  isPaused: boolean;
   isCancelled: boolean;
 };
+
+/** The stand-in's document timeline; a test moves its time with setTheDocumentTimeTo. */
+const documentTimelineStandIn = { currentTime: 0 };
 
 /** Every animation started since the stand-in was installed, in order. */
 const recordedAnimations: RecordedAnimation[] = [];
@@ -35,23 +43,29 @@ export function installRecordingWebAnimations(): void {
         keyframes,
         options,
         id: options.id ?? '',
+        startTime: null,
+        isPaused: false,
         isCancelled: false,
       };
       recordedAnimations.push(recorded);
-      // Only what the clock uses of an Animation: its start time, and cancel.
-      return {
-        startTime: null,
+      // Only what the clock uses of an Animation: its start time, pause and cancel. The
+      // start time is written straight into the record.
+      return Object.assign(recorded, {
+        pause: () => {
+          recorded.isPaused = true;
+        },
         cancel: () => {
           recorded.isCancelled = true;
         },
-      };
+      });
     },
   });
   // jsdom has no document timeline either; the clock reads its current time.
   const realTimeline = Object.getOwnPropertyDescriptor(document, 'timeline');
+  documentTimelineStandIn.currentTime = 0;
   Object.defineProperty(document, 'timeline', {
     configurable: true,
-    value: { currentTime: 0 },
+    value: documentTimelineStandIn,
   });
   onTestFinished(() => {
     if (realTimeline === undefined) {
@@ -79,4 +93,9 @@ export function findLastAnimationOf(element: Element): RecordedAnimation | undef
     (animation) => animation.element === element,
   );
   return animationsOfTheElement[animationsOfTheElement.length - 1];
+}
+
+/** Moves the stand-in document timeline's time, in milliseconds since the page opened. */
+export function setTheDocumentTimeTo(timeMs: number): void {
+  documentTimelineStandIn.currentTime = timeMs;
 }

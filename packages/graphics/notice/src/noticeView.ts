@@ -9,7 +9,7 @@
 import {
   makeScrollingTextBox,
   writeScrollingTextIfChanged,
-} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+} from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';

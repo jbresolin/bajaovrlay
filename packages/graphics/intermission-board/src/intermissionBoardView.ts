@@ -16,7 +16,7 @@
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { writeTimeOfDayText } from '@bajaovrlay/graphics-kit/countdownText';
 import { writePointsAsText } from '@bajaovrlay/graphics-kit/pointsText';
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { headingOfSponsorLevel } from '@bajaovrlay/graphics-kit/sponsorRound';
 import type { PageIndexOfEachLayer } from '@bajaovrlay/graphics-kit/stackedPageLayers';
 import { html, nothing, type TemplateResult } from 'lit';

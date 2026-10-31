@@ -7,7 +7,7 @@
  * is never rebuilt, never re-enters, and a cascade running on it goes on. Only the slots
  * the page gains or loses are created or removed.
  */
-import { makeScrollingTextBox } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { makeScrollingTextBox } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import {
   findWideBoardHeadParts,
   renderWideBoardHeadTemplate,

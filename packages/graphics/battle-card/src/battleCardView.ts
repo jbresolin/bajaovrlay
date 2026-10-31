@@ -10,7 +10,7 @@
  * current one (battleCardAnimations.ts); at rest the incoming layer is dressed like the
  * current one, so the cell's width never depends on which layer is showing.
  */
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { html, svg, type TemplateResult } from 'lit';
 
 import { type BattleCar, isLeader } from './battleCardModel.js';

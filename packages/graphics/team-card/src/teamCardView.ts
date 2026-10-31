@@ -10,7 +10,7 @@
  * Images are `<img src>` and nothing else: the address is a `/media/<id>` the server
  * serves, and an `<img>` runs no script even when the file is an SVG.
  */
-import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
 import { html, nothing, type TemplateResult } from 'lit';
 
