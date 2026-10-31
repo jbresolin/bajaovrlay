@@ -5,6 +5,8 @@ a 64 px name pill bottom-left at x 96, and under it a 40 px role pill with the r
 muted team line, the lower pill ending at y 940, on the `lower-third` layer. Only `name` is required;
 without `role` and `teamLine` the role pill is left out and the name pill stands alone at the bottom.
 The design's car chip in the role pill is not drawn (this task gives the graphic no car number).
+Each pill stops at `--lower-third-max-width` (1300 px, left of the tower); past it the name, the role
+or the team line scrolls inside its box (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55).
 Start reading at `src/lower-third.ts` (the OGraf lifecycle, same as the notice's); it wires
 `lowerThirdModel.ts`, `lowerThirdView.ts`, `lowerThirdStyles.ts`, `lowerThirdAnimations.ts`, `ptBR.ts`.
 Typical item, in the item editor: "Nome" ← Cadastro, Pessoa, "Nome"; "Função" ← the same person,

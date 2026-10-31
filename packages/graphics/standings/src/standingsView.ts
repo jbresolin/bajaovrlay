@@ -7,6 +7,7 @@
  * is never rebuilt, never re-enters, and a cascade running on it goes on. Only the slots
  * the page gains or loses are created or removed.
  */
+import { makeScrollingTextBox } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   findWideBoardHeadParts,
   renderWideBoardHeadTemplate,
@@ -270,11 +271,7 @@ function writeRowFromEntry(
   row.toggleAttribute('data-leader', isOnTheLeaderChip(entry));
   row.toggleAttribute('data-disqualified', entry.isDisqualified ?? false);
 
-  const teamCell = createCell('cell cell-team', '', 'row-team');
-  teamCell.append(
-    createCell('team-name', entry.teamName, 'row-team-name'),
-    createCell('school-name', entry.schoolName, 'row-school-name'),
-  );
+  const teamCell = findTeamCellShowing(row, entry) ?? createTeamCell(entry);
   const cells = [
     createCell('cell cell-rank', writeRankText(entry), 'row-rank'),
     createCell('cell cell-car chip', String(entry.carNumber), 'row-car'),
@@ -289,6 +286,40 @@ function writeRowFromEntry(
   }
   cells.push(createCell('cell cell-total', writeTotalText(entry), 'row-total'));
   row.firstElementChild?.replaceChildren(...cells);
+}
+
+/**
+ * Builds the team cell: the name and the school scroll together as one line inside a
+ * scrolling box in the cell (BAJAOVRLAY-55), never the cell itself: a grid cell that clips
+ * shrinks its track and lifts the whole row by a pixel.
+ */
+function createTeamCell(entry: StandingsEntry): HTMLElement {
+  const teamBox = createCell('team-box', '', 'row-team-box');
+  teamBox.append(
+    createCell('team-name', entry.teamName, 'row-team-name'),
+    createCell('school-name', entry.schoolName, 'row-school-name'),
+  );
+  const teamText = makeScrollingTextBox(teamBox);
+  teamText.classList.add('team-with-school');
+  const teamCell = createCell('cell cell-team', '', 'row-team');
+  teamCell.append(teamBox);
+  return teamCell;
+}
+
+/**
+ * The row's team cell when it already shows this team and school, kept through a redraw so
+ * a name scrolling on air goes on; a new cell would rest at its start until the next cycle,
+ * and live updates every few seconds would keep a long name from ever scrolling.
+ */
+function findTeamCellShowing(row: HTMLElement, entry: StandingsEntry): HTMLElement | undefined {
+  const teamCell = row.querySelector<HTMLElement>('[data-testid="row-team"]');
+  const teamName = teamCell?.querySelector('[data-testid="row-team-name"]')?.textContent;
+  const schoolName = teamCell?.querySelector('[data-testid="row-school-name"]')?.textContent;
+  const isShowingThisTeam = teamName === entry.teamName && schoolName === entry.schoolName;
+  if (teamCell === null || teamCell === undefined || !isShowingThisTeam) {
+    return undefined;
+  }
+  return teamCell;
 }
 
 function createCell(className: string, text: string, testId?: string): HTMLElement {

@@ -3,7 +3,9 @@
 The battle card OGraf graphic in Ardósia (design: PR #21, catalogue entry 2), on the `lower-third`
 layer, bottom-centre: two cars fighting for one place, each a 72 px pill (position, car chip, team
 over school, laps), and between them the gap at 44 px over its trend, "▸◂ FECHANDO −0,7" in green,
-"◂▸ ABRINDO +0,7" in the down cue's blue or "— ESTÁVEL" muted. Start reading at `src/battle-card.ts`
+"◂▸ ABRINDO +0,7" in the down cue's blue or "— ESTÁVEL" muted. Each car's team column stops at
+`--battle-team-max-width`; past it the name or the school scrolls inside its line (the kit's
+`scrollingTextWhenTooLong`, BAJAOVRLAY-55). Start reading at `src/battle-card.ts`
 (the OGraf lifecycle, the team card's: load once, play in, stop out, update in place any time after
 load, every call answers a status, never throws); it wires `battleCardModel.ts` (Zod data, the gap
 text), `battleTrend.ts` (the trend remembered from lap to lap, and its trade-off), `battleCardView.ts`,

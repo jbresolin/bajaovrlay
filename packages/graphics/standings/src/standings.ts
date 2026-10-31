@@ -32,6 +32,11 @@ import {
 } from '@bajaovrlay/graphics-kit/pageHold';
 import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -75,7 +80,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The standings graphic; the default export a renderer registers as a custom element. */
 export default class StandingsGraphic extends LitElement implements OGrafGraphic {
-  static override styles = [wideBoardHeadStyles, standingsStyles];
+  static override styles = [scrollingTextStyles, wideBoardHeadStyles, standingsStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -83,6 +88,11 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
   private parts: StandingsParts | undefined = undefined;
   private runningMotionTimeline: StandingsTimeline | undefined = undefined;
   private readonly runningTimelines = new Set<StandingsTimeline>();
+  /**
+   * The one cycle of the texts too long for their box, every row and the event line on it
+   * (BAJAOVRLAY-55). Made at load: the shadow root it watches exists only once Lit rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
   private readonly pageTurner: PageTurner = createPageTurner({
     onTurn: () => this.turnToTheNextPageNow(),
     readHoldMs: () => readHoldMsOrFallback(this, 'boardHoldMs', boardHoldMsWhenTokenMissing),
@@ -130,6 +140,10 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
 
     const parts = findStandingsParts(this.renderRoot, this);
     this.parts = parts;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     this.data = dataCheck.data;
     placePiecesOffAir(parts.tokensSource, [parts.head]);
     this.pageTurns.drawCurrentPage('offAir');
@@ -175,6 +189,7 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
       return { statusCode: 200, currentStep: this.currentStep };
     }
     this.startPageTurnerWhenThereArePages();
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -194,6 +209,7 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
     const parts = this.requireParts();
     const everyPiece = [parts.head, ...listColumnCascades(parts).flat()];
     const stopOut = buildLiftOutTogetherTimeline(parts.tokensSource, everyPiece);
@@ -234,6 +250,7 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
   }
 
   /** OGraf customAction: the standings have none, so every id is unknown. */
@@ -245,6 +262,7 @@ export default class StandingsGraphic extends LitElement implements OGrafGraphic
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
     for (const timeline of [...this.runningTimelines]) {
       finishTimelineAtOnce(timeline);
     }

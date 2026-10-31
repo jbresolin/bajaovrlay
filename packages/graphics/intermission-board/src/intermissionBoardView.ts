@@ -16,6 +16,7 @@
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { writeTimeOfDayText } from '@bajaovrlay/graphics-kit/countdownText';
 import { writePointsAsText } from '@bajaovrlay/graphics-kit/pointsText';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { headingOfSponsorLevel } from '@bajaovrlay/graphics-kit/sponsorRound';
 import type { PageIndexOfEachLayer } from '@bajaovrlay/graphics-kit/stackedPageLayers';
 import { html, nothing, type TemplateResult } from 'lit';
@@ -35,7 +36,9 @@ function renderNextSessionCard(data: IntermissionBoardData): TemplateResult {
   return html`<div class="piece-place">
     <div class="card next-card" data-testid="intermission-next">
       <span class="caption">${ptBR.nextCaption}</span>
-      <span class="next-session" data-testid="intermission-session">${data.nextSessionName}</span>
+      <span class="next-session scrolling-text-box" data-testid="intermission-session"
+        >${renderScrollingText(data.nextSessionName)}</span
+      >
       <span class="next-count" data-testid="intermission-count"></span>
       <span class="next-start" data-testid="intermission-start"
         >${ptBR.startTime(writeTimeOfDayText(data.nextStartsAtMs))}</span
@@ -57,8 +60,12 @@ function renderTopFiveRow(entry: TopFiveEntry): TemplateResult {
         <span class="cell-rank">${writeRankOfTeam(entry)}</span>
         <span class="chip">${entry.carNumber}</span>
         <span class="cell-team"
-          ><span class="team-name">${entry.teamName}</span
-          ><span class="school-name">${entry.schoolName}</span></span
+          ><span class="team-box scrolling-text-box" data-testid="intermission-row-team-box"
+            ><span class="scrolling-text team-with-school"
+              ><span class="team-name">${entry.teamName}</span
+              ><span class="school-name">${entry.schoolName}</span></span
+            ></span
+          ></span
         >
         <span class="cell-total">${writePointsAsText(entry.points)}</span>
       </div>

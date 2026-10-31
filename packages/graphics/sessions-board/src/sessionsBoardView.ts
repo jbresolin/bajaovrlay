@@ -18,6 +18,7 @@
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { checkMarkShape } from '@bajaovrlay/graphics-kit/checkMarkShape';
 import { writeTimeOfDayText } from '@bajaovrlay/graphics-kit/countdownText';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import type { ScheduleSlotStatus } from '@bajaovrlay/shared/scheduleSlotStatus';
 import { html, svg, type TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
@@ -63,7 +64,9 @@ function renderSlotRow(slotOnTheBoard: SlotOnTheBoard): TemplateResult {
       <span class="session-time" data-testid="sessions-board-time"
         >${writeTimeOfDayText(slot.startsAtMs)}</span
       >
-      <span class="session-name" data-testid="sessions-board-session">${slot.sessionName}</span>
+      <span class="session-name scrolling-text-box" data-testid="sessions-board-session"
+        >${renderScrollingText(slot.sessionName)}</span
+      >
       <span class="session-status">${sessionsBoardStatuses.map(renderStatusLayer)}</span>
     </div>
   </li>`;

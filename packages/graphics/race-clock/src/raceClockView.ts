@@ -11,6 +11,10 @@ import {
   type FlagState,
   writeRaceClockTimeTextAt,
 } from '@bajaovrlay/graphics-kit/raceClockReading';
+import {
+  renderScrollingText,
+  writeScrollingTextIfChanged,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 // The white logo lives in the theme package; Vite bundles a copy into this graphic's
 // dist/assets/, so the built clock works from the preview and from the air alike.
@@ -52,7 +56,9 @@ export function renderRaceClockTemplate(): TemplateResult {
           alt=${ptBR.logoAlternativeText}
           data-testid="race-clock-logo"
         />
-        <span class="title" data-testid="race-clock-session-name"></span>
+        <span class="title scrolling-text-box" data-testid="race-clock-session-name"
+          >${renderScrollingText('')}</span
+        >
       </header>
       <div class="body">
         <span class="caption" data-testid="race-clock-caption"></span>
@@ -94,9 +100,12 @@ export function findRaceClockParts(renderRoot: ParentNode): RaceClockParts {
   };
 }
 
-/** Writes the session title, the clock caption and the leader laps (hidden when absent). */
+/**
+ * Writes the session title (a scrolling box: a name too long for the card scrolls in it,
+ * BAJAOVRLAY-55), the clock caption and the leader laps (hidden when absent).
+ */
 export function writeSessionCaptionAndLaps(parts: RaceClockParts, data: RaceClockData): void {
-  writeTextIfChanged(parts.sessionName, data.sessionName);
+  writeScrollingTextIfChanged(parts.sessionName, data.sessionName);
   writeTextIfChanged(parts.clockCaption, ptBR.clockModeCaptions[data.clockMode]);
   const laps = data.lapsCompletedByLeader;
   parts.laps.hidden = laps === undefined;

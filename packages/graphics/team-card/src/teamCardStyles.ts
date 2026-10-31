@@ -40,6 +40,10 @@ export const teamCardStyles = css`
     border-radius: var(--radius);
     background: var(--panel-base);
     box-shadow: var(--shadow);
+    /* As wide as what it holds, never past the safe width left of the tower (BAJAOVRLAY-55):
+       at the maximum the name and the details scroll inside their boxes. */
+    max-width: var(--lower-third-max-width);
+    box-sizing: border-box;
     color: var(--text);
     font-family: var(--font-display);
     /* Bebas Neue has no lowercase: every word is set in caps (packages/theme/README.md),
@@ -83,17 +87,22 @@ export const teamCardStyles = css`
     /* The line box holds the accents of a caps face (Bebas puts them above the cap height). */
     line-height: 1.2;
     white-space: nowrap;
+    min-width: 0;
   }
 
   /* The school and the place line, under the name, lined up with it past the chip. */
   .details {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
     padding-left: calc(var(--chip-large-size) + var(--space-4));
     font-size: var(--size-detail);
     line-height: 1.3;
     white-space: nowrap;
+  }
+
+  /* The details' scrolling text: the school and the place line side by side. */
+  .details .scrolling-text {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-3);
   }
 
   .details-separator,

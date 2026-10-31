@@ -94,6 +94,26 @@ describe('the board head', () => {
     expect(parts.eventLine.hidden, 'an event line with text is shown').toBe(false);
   });
 
+  it('draws again over a written event line without losing it', () => {
+    // Arrange: the bracket's head, its event line written, as a graphic does after load.
+    const container = drawThePodiumHead();
+    const parts = findWideBoardHeadParts(container, 'podium');
+    writeWideBoardHead(parts, {
+      title: 'CHAVEAMENTO',
+      eventLine: 'SUPER PRIME',
+      pageLine: '',
+    });
+
+    // Act: the graphic renders its whole template again (a bracket step).
+    const drawAgain = () => {
+      render(renderWideBoardHeadTemplate('podium', 'Baja SAE Brasil'), container);
+    };
+
+    // Assert: the render succeeds and the written event line is kept.
+    expect(drawAgain, 'a second render must not trip over the written text').not.toThrow();
+    expect(parts.eventLine.textContent, 'the event line must be kept').toBe('SUPER PRIME');
+  });
+
   it('writes the event line inside a scrolling box, so a long event scrolls, never ellipsed', () => {
     // Arrange: the standings' head and its parts.
     const parts = findWideBoardHeadParts(drawThePodiumHead(), 'podium');

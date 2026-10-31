@@ -103,7 +103,10 @@ export function planScrollingTextCycle(
  * rests at its start until the next cycle measures it again. The cycle keeps its length,
  * so no other text jumps.
  */
-export function leaveTextOutOfTheCycle(cycle: ScrollingTextCycle, name: string): ScrollingTextCycle {
+export function leaveTextOutOfTheCycle(
+  cycle: ScrollingTextCycle,
+  name: string,
+): ScrollingTextCycle {
   const scrollDistancePxByName = new Map(cycle.scrollDistancePxByName);
   scrollDistancePxByName.delete(name);
   return { durationMs: cycle.durationMs, scrollDistancePxByName };

@@ -87,10 +87,7 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
   });
-  /**
-   * The one cycle of the names too long for their column, every row on it (BAJAOVRLAY-55).
-   * Made at load: the shadow root it watches exists only once Lit has rendered.
-   */
+  /** The names too long for their column, every row on one cycle; made at load, after render. */
   private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
@@ -130,7 +127,10 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     }
 
     const parts = findPositionsTowerParts(this.renderRoot, this);
-    this.scrollingTextClock = createScrollingTextClock({ root: this.renderRoot, tokensSource: this });
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     const stage = new TowerStage({
       parts,
       rowsPerPage: readTowerLayoutTokens(parts.tokensSource).rowsPerPage,

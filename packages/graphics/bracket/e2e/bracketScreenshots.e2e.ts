@@ -20,11 +20,14 @@
  *     at y 224 and the final's column from x 1312.
  *
  * What these tests deliberately do not cover:
- *   - Motion; the shots show the end of each step's cascade.
+ *   - Motion; the shots show the end of each step's cascade. A team too long for its card
+ *     is held at its start (BAJAOVRLAY-55: cut at its box's edge, no fade).
  *   - The design's frame-1 shots over footage; the grey and black stages are compared.
  *   - Other operating systems: baselines are rendered on Linux. After a deliberate visual
  *     change, refresh them with `pnpm --filter @bajaovrlay/bracket test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** Waits until the last preview action has answered with the bracket on air. */
@@ -35,8 +38,12 @@ async function waitUntilOnAir(page: Page): Promise<void> {
   );
 }
 
-/** Opens a preview sample on the stage and waits for its first step and the font. */
+/**
+ * Opens a preview sample on the stage, a long team held at its start, and waits for its
+ * first step and the font.
+ */
 async function openPreviewOnAir(page: Page, query: string): Promise<void> {
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(`preview.html?${query}`);
   await waitUntilOnAir(page);
   await page.evaluate(() => document.fonts.ready.then(() => undefined));

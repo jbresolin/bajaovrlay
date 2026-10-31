@@ -72,13 +72,14 @@ export const sessionsBoardStyles = [
       padding-top: var(--glyph-nudge);
     }
 
+    /* A scrolling box (the kit's scrollingTextStyles): a name too long for the pill scrolls
+       inside it, never cut with an ellipsis (BAJAOVRLAY-55). */
     .session-name {
       font-size: var(--size-title);
       letter-spacing: var(--tracking-display);
       line-height: 1.3;
       white-space: nowrap;
       overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     /* The three state layers stacked in one cell, right-aligned, one visible. */

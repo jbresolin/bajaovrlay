@@ -32,6 +32,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { teamLogoCellStyles } from '@bajaovrlay/graphics-kit/teamLogoCellStyles';
 import {
   finishTimelineAtOnce,
@@ -78,6 +83,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 /** The podium graphic; the default export a renderer registers as a custom element. */
 export default class PodiumGraphic extends LitElement implements OGrafGraphic {
   static override styles = [
+    scrollingTextStyles,
     wideBoardFrameStyles,
     wideBoardHeadStyles,
     teamLogoCellStyles,
@@ -95,6 +101,11 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
   private parts: PodiumParts | undefined = undefined;
   // One motion at a time (in, a step, out); a new one finishes the running one first.
   private runningMotionTimeline: PodiumTimeline | undefined = undefined;
+  /**
+   * The one cycle of the texts too long for their box, every card's name and school and the
+   * event line (BAJAOVRLAY-55). Made at load: the shadow root exists once Lit has rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
     return renderPodiumTemplate(this.dataOnScreen);
@@ -126,6 +137,10 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     await this.updateComplete;
     const parts = findPodiumParts(this.renderRoot, this);
     this.parts = parts;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     this.writeHeadNow();
     placeHeadOffAir(parts.tokensSource, parts.head);
     hideEveryCardAtOnce(parts);
@@ -183,6 +198,7 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
 
     if (target.step < stepBefore) {
       hideCardsPastStep(parts, target.step, stepBefore);
+      this.scrollingTextClock?.start();
       return { statusCode: 200, currentStep: target.step };
     }
 
@@ -196,6 +212,8 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    // Started once the first card has risen; on a later step it is already running.
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -215,6 +233,7 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
     const stepOnAir = this.currentStep ?? 0;
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
+    this.scrollingTextClock?.stop();
     const parts = this.requireParts();
     const stopOut = buildStopOutTimeline(parts, stepOnAir);
     await this.runMotionTimeline(stopOut, params.skipAnimation ?? false);
@@ -269,6 +288,7 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
   /** OGraf dispose: ends the running timeline; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.scrollingTextClock?.stop();
     this.finishRunningMotionAtOnce();
     return okAnswer;
   }
@@ -279,6 +299,7 @@ export default class PodiumGraphic extends LitElement implements OGrafGraphic {
    */
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.scrollingTextClock?.stop();
     this.finishRunningMotionAtOnce();
   }
 

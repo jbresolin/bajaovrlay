@@ -42,14 +42,17 @@ export const bracketStyles = css`
     position: relative;
   }
 
-  /* The team and its school on one line; a long team name is cut, never the school. */
+  /* The team and its school on one line, a scrolling box of the kit (scrollingTextStyles):
+     too long, the two scroll together inside it (BAJAOVRLAY-55), never cut with an ellipsis. */
   .team {
     display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
+  }
+
+  .team .scrolling-text {
+    flex: none;
   }
 
   /* The name and the school are the kit's (teamWithSchoolStyles), with the rows' tracking. */

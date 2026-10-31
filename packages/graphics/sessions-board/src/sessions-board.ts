@@ -30,6 +30,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -67,7 +72,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The sessions board graphic; the default export a renderer registers as a custom element. */
 export default class SessionsBoardGraphic extends LitElement implements OGrafGraphic {
-  static override styles = sessionsBoardStyles;
+  static override styles = [scrollingTextStyles, sessionsBoardStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -77,6 +82,8 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
   // An update that came on air during a motion (the play-in, a crossfade), drawn after it.
   private isRedrawWaitingForTheMotion = false;
   private readonly motions: MotionTimelineRunner = createMotionTimelineRunner();
+  /** The scroll cycle of the session names and the event line (BAJAOVRLAY-55), made at load. */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
   private readonly statusChecks = new SessionsBoardStatusChecks({
     readRenderRoot: () => this.renderRoot,
     readData: () => this.requireData(),
@@ -115,6 +122,10 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
     // Lit renders only connected elements: a load on an element not yet in the page waits
     // here until it is added.
     await this.storeAndDrawTheStatusesNow(dataCheck.data);
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     this.placeEveryPieceOffAir();
     await waitForThemeFontsToBeReady(this);
 
@@ -170,6 +181,7 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -186,6 +198,7 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.statusChecks.cancelTheStatusCheck();
+    this.scrollingTextClock?.stop();
     const stopOut = buildSessionsBoardStopOutTimeline(
       findSessionsBoard(this.renderRoot),
       this.listEveryPiece(),
@@ -251,12 +264,14 @@ export default class SessionsBoardGraphic extends LitElement implements OGrafGra
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.statusChecks.cancelTheStatusCheck();
+    this.scrollingTextClock?.stop();
   }
 
   /** OGraf dispose: cancels the status check and ends every timeline; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.statusChecks.cancelTheStatusCheck();
+    this.scrollingTextClock?.stop();
     this.motions.finishEveryTimelineAtOnce();
     return okAnswer;
   }

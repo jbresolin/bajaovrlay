@@ -29,6 +29,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -70,7 +75,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The notice graphic; the default export a renderer registers as a custom element. */
 export default class NoticeGraphic extends LitElement implements OGrafGraphic {
-  static override styles = noticeStyles;
+  static override styles = [scrollingTextStyles, noticeStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -78,6 +83,11 @@ export default class NoticeGraphic extends LitElement implements OGrafGraphic {
   private parts: NoticeParts | undefined = undefined;
   // The notice has one motion at a time (in or out), so one timeline is all there is to end.
   private runningPanelTimeline: NoticeTimeline | undefined = undefined;
+  /**
+   * The cycle of the texts too long for the panel (BAJAOVRLAY-55). Made at load: the
+   * shadow root it watches exists only once Lit has rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
     return renderNoticeTemplate();
@@ -117,6 +127,10 @@ export default class NoticeGraphic extends LitElement implements OGrafGraphic {
 
     const parts = findNoticeParts(this.renderRoot);
     this.parts = parts;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     this.data = dataCheck.data;
     writeNoticeData(parts, dataCheck.data);
     placePanelOffAir(parts);
@@ -164,6 +178,7 @@ export default class NoticeGraphic extends LitElement implements OGrafGraphic {
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -179,6 +194,7 @@ export default class NoticeGraphic extends LitElement implements OGrafGraphic {
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
+    this.scrollingTextClock?.stop();
     await this.runPanelTimeline(
       buildStopOutTimeline(this.requireParts()),
       params.skipAnimation ?? false,
@@ -206,6 +222,15 @@ export default class NoticeGraphic extends LitElement implements OGrafGraphic {
     return okAnswer;
   }
 
+  /**
+   * Lit's hook for the element leaving the page: the scrolling texts' cycle stops, so a
+   * layer a renderer removed without dispose leaves no timeline running inside OBS.
+   */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.scrollingTextClock?.stop();
+  }
+
   /** OGraf customAction: the notice has none, so every id is unknown. */
   async customAction(params: OGrafCustomActionParams): Promise<OGrafReturnPayload> {
     return buildRefusalAnswer(404, ptBR.actionProblems.unknownCustomAction(params.id));
@@ -217,6 +242,7 @@ export default class NoticeGraphic extends LitElement implements OGrafGraphic {
    */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.scrollingTextClock?.stop();
     const runningTimeline = this.runningPanelTimeline;
     this.runningPanelTimeline = undefined;
     if (runningTimeline !== undefined) {

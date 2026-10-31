@@ -15,6 +15,10 @@ import {
   findClockBlockParts,
   renderClockBlockTemplate,
 } from '@bajaovrlay/graphics-kit/clockBlock';
+import {
+  makeScrollingTextBox,
+  writeScrollingTextIfChanged,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { html, type TemplateResult } from 'lit';
 
@@ -74,15 +78,20 @@ function createCarPillCell(className: string, testId: string): HTMLSpanElement {
   return cell;
 }
 
-/** Builds one empty car pill: the position, the car chip and the school, in that order. */
+/**
+ * Builds one empty car pill: the position, the car chip and the school, in that order. The
+ * school is a scrolling box: a name too long for the pill scrolls inside it (BAJAOVRLAY-55).
+ */
 function createCarPill(): HTMLLIElement {
   const pill = document.createElement('li');
   pill.className = 'car';
   pill.dataset.testid = 'lower-strip-car';
+  const schoolCell = createCarPillCell('school', 'lower-strip-car-school');
+  makeScrollingTextBox(schoolCell);
   pill.append(
     createCarPillCell('position', 'lower-strip-car-position'),
     createCarPillCell('chip', 'lower-strip-car-number'),
-    createCarPillCell('school', 'lower-strip-car-school'),
+    schoolCell,
   );
   return pill;
 }
@@ -90,12 +99,13 @@ function createCarPill(): HTMLLIElement {
 /** Writes one car into a pill: "1º" (the leader's on the green chip), the number, the school. */
 function writeCarIntoPill(pill: HTMLLIElement, car: StripCar): void {
   const [positionCell, chipCell, schoolCell] = pill.children;
-  if (positionCell === undefined || chipCell === undefined || schoolCell === undefined) {
+  const isSchoolCellWhole = schoolCell instanceof HTMLElement;
+  if (positionCell === undefined || chipCell === undefined || !isSchoolCellWhole) {
     throw new Error('a car pill lost a cell; this is a bug in lowerStripView.ts');
   }
   writeTextIfChanged(positionCell, ptBR.positionWithOrdinal(car.position));
   writeTextIfChanged(chipCell, String(car.carNumber));
-  writeTextIfChanged(schoolCell, car.schoolName);
+  writeScrollingTextIfChanged(schoolCell, car.schoolName);
   pill.toggleAttribute('data-leader', car.position === 1);
   pill.setAttribute('aria-label', ptBR.carPillName(car.position, car.carNumber, car.schoolName));
 }

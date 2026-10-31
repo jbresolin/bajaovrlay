@@ -13,7 +13,7 @@
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, type TemplateResult } from 'lit';
 
-import { renderScrollingText, writeScrollingTextIfChanged } from './scrollingTextWhenTooLong.js';
+import { writeScrollingTextIfChanged } from './scrollingTextWhenTooLong.js';
 
 /** The elements of the head that change after the first render. */
 export type WideBoardHeadParts = {
@@ -44,8 +44,11 @@ export function renderWideBoardHeadTemplate(
     <span
       class="wide-board-head-event-line scrolling-text-box"
       data-testid=${`${testIdPrefix}-event-line`}
-      >${renderScrollingText('')}</span
-    >
+      ><!-- No binding inside: writeWideBoardHead writes this text, and a Lit part here
+        would lose its markers to that write and fail the graphic's next render. --><span
+        class="scrolling-text"
+      ></span
+    ></span>
     <span class="wide-board-head-page-line" data-testid=${`${testIdPrefix}-page-line`}></span>
   </header>`;
 }

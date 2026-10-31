@@ -3,7 +3,7 @@
  * laps and the optional flag band. This file owns the OGraf lifecycle (load, play,
  * update, stop, dispose) and only wires the pieces together; the rules live in named
  * modules: raceClockModel (data), raceClockView (the DOM, changed in place, never
- * rebuilt), playSteps (the OGraf step rule), the kit's clockTicker (the frame loop) and
+ * rebuilt), raceClockFlagChanges (the flag's crossfade and the band's switch), playSteps (the OGraf step rule), the kit's clockTicker (the frame loop) and
  * raceClockAnimations (GSAP timelines from the theme's motion tokens). The wait for the
  * theme's face before the first draw is the theme's own (`@bajaovrlay/theme/fonts`).
  *
@@ -22,7 +22,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
-import type { FlagState } from '@bajaovrlay/graphics-kit/raceClockReading';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -33,13 +37,12 @@ import { LitElement } from 'lit';
 
 import { ptBR } from './ptBR.js';
 import {
-  buildFlagBandToggleTimeline,
-  buildFlagChangeTimeline,
   buildPlayInTimeline,
   buildStopOutTimeline,
   placePanelOffAir,
   type RaceClockTimeline,
 } from './raceClockAnimations.js';
+import { RaceClockFlagChanges } from './raceClockFlagChanges.js';
 import {
   isFlagBandShown,
   mergePartialUpdateIntoRaceClockData,
@@ -49,11 +52,9 @@ import {
 import { raceClockStyles } from './raceClockStyles.js';
 import {
   findRaceClockParts,
-  prepareIncomingFlagLayer,
   type RaceClockParts,
   renderRaceClockTemplate,
   showFlagBandAtOnce,
-  showFlagBandAtOnceAndMeasureChange,
   showFlagStateAtOnce,
   writeClockTimeAt,
   writeSessionCaptionAndLaps,
@@ -65,7 +66,6 @@ const raceClockStepCount = 1;
 type LifecycleStage = 'unloaded' | 'loading' | 'offAir' | 'onAir' | 'disposed';
 
 /** A flag change on air (crossfade or band toggle) and what draws its end state at once. */
-type RunningFlagChange = { timeline: RaceClockTimeline; settleAtOnce: () => void };
 
 const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 
@@ -76,7 +76,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The race clock graphic; the default export a renderer registers as a custom element. */
 export default class RaceClockGraphic extends LitElement implements OGrafGraphic {
-  static override styles = raceClockStyles;
+  static override styles = [scrollingTextStyles, raceClockStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -84,12 +84,19 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   private parts: RaceClockParts | undefined = undefined;
   private readonly runningTimelines = new Set<RaceClockTimeline>();
   private runningPanelTimeline: RaceClockTimeline | undefined = undefined;
-  private runningFlagChange: RunningFlagChange | undefined = undefined;
+  private readonly flagChanges = new RaceClockFlagChanges({
+    readParts: () => this.requireParts(),
+    isOnAir: () => this.lifecycle === 'onAir',
+    isDisposed: () => this.lifecycle === 'disposed',
+    runTimeline: (timeline, skipAnimation) => this.runTimeline(timeline, skipAnimation),
+  });
   private readonly clockTicker: ClockTicker = createClockTicker({
     onFrame: () => this.redrawClockTime(),
     requestFrame: (callback) => requestAnimationFrame(callback),
     cancelFrame: (frameId) => cancelAnimationFrame(frameId),
   });
+  /** The session name's scroll cycle (BAJAOVRLAY-55), made at load once the shadow root exists. */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
     return renderRaceClockTemplate();
@@ -128,6 +135,10 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     }
 
     const parts = findRaceClockParts(this.renderRoot);
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     this.parts = parts;
     this.data = dataCheck.data;
     writeSessionCaptionAndLaps(parts, dataCheck.data);
@@ -177,6 +188,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -192,6 +204,7 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
+    this.scrollingTextClock?.stop();
     await this.runPanelTimeline(
       buildStopOutTimeline(this.requireParts()),
       params.skipAnimation ?? false,
@@ -228,12 +241,18 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
     const isFlagChange = dataCheck.data.state !== dataBeforeUpdate.state;
     const isBandChange = isFlagBandShown(dataCheck.data) !== isFlagBandShown(dataBeforeUpdate);
     if (isFlagChange) {
-      await this.changeFlagState(dataCheck.data.state, skipAnimation);
+      await this.flagChanges.changeFlagState(dataCheck.data.state, skipAnimation);
     }
     if (isBandChange) {
-      await this.changeFlagBand(isFlagBandShown(dataCheck.data), skipAnimation);
+      await this.flagChanges.changeFlagBand(isFlagBandShown(dataCheck.data), skipAnimation);
     }
     return okAnswer;
+  }
+
+  /** Lit's hook for leaving the page: a layer removed without dispose leaves no cycle running. */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.scrollingTextClock?.stop();
   }
 
   /** OGraf customAction: the race clock has none, so every id is unknown. */
@@ -248,12 +267,13 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.clockTicker.stop();
+    this.scrollingTextClock?.stop();
     for (const timeline of [...this.runningTimelines]) {
       finishTimelineAtOnce(timeline);
     }
     this.runningTimelines.clear();
     this.runningPanelTimeline = undefined;
-    this.runningFlagChange = undefined;
+    this.flagChanges.forgetTheRunningChange();
     return okAnswer;
   }
 
@@ -303,75 +323,6 @@ export default class RaceClockGraphic extends LitElement implements OGrafGraphic
       return;
     }
     writeClockTimeAt(this.parts, this.data, readServerAlignedTimeMs());
-  }
-
-  /**
-   * Changes the flag state: on air the new band crossfades in over the current one;
-   * off air nobody would see it, so the new flag is drawn at once, ready for play.
-   */
-  private async changeFlagState(flagState: FlagState, skipAnimation: boolean): Promise<void> {
-    const parts = this.requireParts();
-    this.finishRunningFlagChange();
-    if (this.lifecycle !== 'onAir') {
-      showFlagStateAtOnce(parts, flagState);
-      return;
-    }
-    prepareIncomingFlagLayer(parts, flagState);
-    await this.runFlagChange(
-      buildFlagChangeTimeline(parts),
-      () => showFlagStateAtOnce(parts, flagState),
-      skipAnimation,
-    );
-  }
-
-  /**
-   * Switches the band on or off: on air the card grows or shrinks by the band's height
-   * while the band fades; off air the card is simply redrawn at its new height. The
-   * heights come from the drawn card around the switch, so no pixel value lives here.
-   */
-  private async changeFlagBand(isShown: boolean, skipAnimation: boolean): Promise<void> {
-    const parts = this.requireParts();
-    this.finishRunningFlagChange();
-    const toggle = showFlagBandAtOnceAndMeasureChange(parts, isShown);
-    if (this.lifecycle !== 'onAir') {
-      return;
-    }
-    await this.runFlagChange(
-      buildFlagBandToggleTimeline(parts, toggle),
-      () => showFlagBandAtOnce(parts, isShown),
-      skipAnimation,
-    );
-  }
-
-  /**
-   * Runs a flag change (crossfade or band toggle) and settles it when it ends. Only the
-   * latest change may settle; an older one was settled when it was cut short, so two
-   * changes in a row never tangle.
-   */
-  private async runFlagChange(
-    timeline: RaceClockTimeline,
-    settleAtOnce: () => void,
-    skipAnimation: boolean,
-  ): Promise<void> {
-    const flagChange: RunningFlagChange = { timeline, settleAtOnce };
-    this.runningFlagChange = flagChange;
-    await this.runTimeline(timeline, skipAnimation);
-
-    const isStillTheLatestChange = this.runningFlagChange === flagChange;
-    if (isStillTheLatestChange && this.readLifecycleNow() !== 'disposed') {
-      this.runningFlagChange = undefined;
-      flagChange.settleAtOnce();
-    }
-  }
-
-  private finishRunningFlagChange(): void {
-    const runningChange = this.runningFlagChange;
-    if (runningChange === undefined) {
-      return;
-    }
-    this.runningFlagChange = undefined;
-    finishTimelineAtOnce(runningChange.timeline);
-    runningChange.settleAtOnce();
   }
 
   /** Runs an in or out animation; one still running is finished at once first. */

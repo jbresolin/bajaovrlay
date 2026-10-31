@@ -5,7 +5,9 @@ The countdown OGraf graphic in Ardósia (BAJAOVRLAY-46; design: the `countdown` 
 `card` is the race clock's card without the band, on the clock layer, replacing the race clock
 between sessions; layout `fullscreen` is the narrow waiting board ("PRÓXIMA SESSÃO", the count at
 160 px), on the fullscreen layer. The graphic counts by itself on the server-aligned clock (the kit's
-countdownClock) and stops at "0:00"; a start moved in Cadastros moves the target. Start reading at
+countdownClock) and stops at "0:00"; a start moved in Cadastros moves the target. A session name
+or event line too long for its box scrolls inside it (the kit's `scrollingTextWhenTooLong`,
+BAJAOVRLAY-55). Start reading at
 `src/countdown.ts`; it wires `countdownModel.ts`, `countdownView.ts`, `countdownStyles.ts`,
 `countdownAnimations.ts` and `ptBR.ts`. Preview: `pnpm --filter @bajaovrlay/countdown dev`, then
 http://localhost:5210/preview.html (`?layout=fullscreen`, `?stage=grey|black`, `?data=<JSON>`).

@@ -74,7 +74,8 @@ token names are the design's. Copied with these changes:
   `--motion-text-hold-end`, `--motion-text-return` and `--motion-text-edge-fade` (px; read by
   `readMotionTokens` as `text*`), and the widths that bound boxes which grew with their text:
   `--lower-third-max-width` (1300 px, the safe width left of the tower) and
-  `--battle-team-max-width` (480 px).
+  `--battle-team-max-width` (460 px), and `--strip-school-max-width` (140 px, measured on the
+  real field so one long school leaves the other pills of its page whole).
 
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).

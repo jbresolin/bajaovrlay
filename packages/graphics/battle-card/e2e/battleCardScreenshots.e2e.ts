@@ -25,6 +25,8 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/battle-card test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, test } from '@playwright/test';
 
 const trends = ['closing', 'opening', 'steady'] as const;
@@ -34,7 +36,10 @@ test.describe('the battle card looks like its baseline', () => {
   for (const trend of trends) {
     for (const stage of stages) {
       test(`${trend} on the ${stage} stage`, async ({ page }) => {
-        // Arrange: the preview on air with this trend set by hand, its face loaded.
+        // Arrange: the preview on air with this trend set by hand, its face loaded; a name
+        // too long for its pill held at its start (BAJAOVRLAY-55), so no scroll can land
+        // during a capture.
+        await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
         await page.goto(`preview.html?stage=${stage}&trend=${trend}`);
         await expect(page.locator('body'), 'the battle card must be on air').toHaveAttribute(
           'data-preview-state',

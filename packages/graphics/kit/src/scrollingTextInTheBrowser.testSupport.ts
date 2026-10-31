@@ -78,9 +78,7 @@ export function expectTextStartShowing(place: ScrollingBoxPlace, paddingLeftPx =
     Math.abs(place.textLeft - (place.boxLeft + paddingLeftPx)),
     "the text's start must show at the box's left edge",
   ).toBeLessThan(1);
-  expect(place.textRight, 'the text must be too long for its box').toBeGreaterThan(
-    place.boxRight,
-  );
+  expect(place.textRight, 'the text must be too long for its box').toBeGreaterThan(place.boxRight);
 }
 
 /**

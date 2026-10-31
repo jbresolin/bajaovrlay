@@ -253,9 +253,7 @@ describe('one clock shared by three texts', () => {
     const scrollStarts = new Set(momentsOfEach.map((moments) => moments?.scrollStartsAtMs));
     const returnStarts = new Set(momentsOfEach.map((moments) => moments?.returnStartsAtMs));
     const scrollEnds = new Set(momentsOfEach.map((moments) => moments?.scrollEndsAtMs));
-    expect([...scrollStarts], 'every text must start scrolling at the same moment').toEqual([
-      2500,
-    ]);
+    expect([...scrollStarts], 'every text must start scrolling at the same moment').toEqual([2500]);
     expect([...returnStarts], 'every text must start its return at the same moment').toEqual([
       2500 + 10_000 + 1500,
     ]);

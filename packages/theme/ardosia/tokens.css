@@ -208,7 +208,13 @@
   --battle-gap-width: 220px;
   /* The widest a car's name and school may be on the battle card (BAJAOVRLAY-55): past it
      they scroll, so two cars and the gap card stay inside the title-safe 1728 px. */
-  --battle-team-max-width: 480px;
+  --battle-team-max-width: 460px;
+  /* The widest a school may be on the lower strip (BAJAOVRLAY-55): a longer one scrolls in
+     its pill and leaves the other five pills of its page their room, so they stay whole
+     (lowerStripLongSchool.e2e.ts). Measured on the real field: the widest school is 120 px
+     (UFERSA-Mos), and the tightest page has 117 px to spare beside a 42 px school, so the
+     bound lies between 120 and 159 px. */
+  --strip-school-max-width: 140px;
   --qr-size: 176px; /* the code's box; its cells are this divided by the code's modules */
   --size-podium-position: 72px;
   --podium-width: 480px;

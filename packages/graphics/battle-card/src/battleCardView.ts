@@ -10,6 +10,7 @@
  * current one (battleCardAnimations.ts); at rest the incoming layer is dressed like the
  * current one, so the cell's width never depends on which layer is showing.
  */
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { html, svg, type TemplateResult } from 'lit';
 
 import { type BattleCar, isLeader } from './battleCardModel.js';
@@ -71,7 +72,11 @@ function renderTrendLayer(trend: TrendShown, testId: string, isIncoming: boolean
   >`;
 }
 
-/** One car's pill: position (green chip for the leader), car chip, team over school, laps. */
+/**
+ * One car's pill: position (green chip for the leader), car chip, team over school, laps.
+ * The team and the school are the kit's scrolling boxes (BAJAOVRLAY-55): past
+ * `--battle-team-max-width` each scrolls inside its line.
+ */
 function renderCarPill(car: BattleCar, testIdPrefix: string): TemplateResult {
   return html`<div
     class="pill battle-car"
@@ -81,9 +86,10 @@ function renderCarPill(car: BattleCar, testIdPrefix: string): TemplateResult {
     <span class="position" data-testid=${`${testIdPrefix}-position`}>${car.position}</span>
     <span class="chip" data-testid=${`${testIdPrefix}-car-number`}>${car.carNumber}</span>
     <span class="team"
-      ><span class="team-name" data-testid=${`${testIdPrefix}-team-name`}>${car.teamName}</span
-      ><span class="school-name" data-testid=${`${testIdPrefix}-school-name`}
-        >${car.schoolName}</span
+      ><span class="team-name scrolling-text-box" data-testid=${`${testIdPrefix}-team-name`}
+        >${renderScrollingText(car.teamName)}</span
+      ><span class="school-name scrolling-text-box" data-testid=${`${testIdPrefix}-school-name`}
+        >${renderScrollingText(car.schoolName)}</span
       ></span
     >
     <span class="laps" data-testid=${`${testIdPrefix}-laps`}>${ptBR.lapsText(car.laps)}</span>

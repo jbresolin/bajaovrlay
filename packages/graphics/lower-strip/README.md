@@ -5,7 +5,9 @@ pages), on the `ticker` layer along the bottom: the clock block (the race time a
 flag pill, the kit's, the same text as the race clock's card), the running order six cars a page
 ("1º", the car chip, the school's short name) and the page cell ("1/6"). Every
 `--motion-strip-hold` the page turns in place, the old pills lifting while the new rise (two
-lanes, the kit's `barMotion`); a live update redraws the page on air in place. Start reading at
+lanes, the kit's `barMotion`); a live update redraws the page on air in place. A school name
+too long for its pill scrolls inside it (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55).
+Start reading at
 `src/lower-strip.ts` (lifecycle, motion, the page timer and the clock's frame loop); it wires
 `lowerStripModel.ts` (Zod data), `stripPages.ts` (six cars a page, with the measurement),
 `lowerStripPageTurns.ts`, `lowerStripView.ts`, `lowerStripStyles.ts` and `ptBR.ts`.

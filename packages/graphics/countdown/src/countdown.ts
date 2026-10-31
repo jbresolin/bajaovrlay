@@ -32,6 +32,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
@@ -71,7 +76,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The countdown graphic; the default export a renderer registers as a custom element. */
 export default class CountdownGraphic extends LitElement implements OGrafGraphic {
-  static override styles = countdownStyles;
+  static override styles = [scrollingTextStyles, countdownStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -88,6 +93,8 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
     requestFrame: (callback) => window.requestAnimationFrame(callback),
     cancelFrame: (frameId) => window.cancelAnimationFrame(frameId),
   });
+  /** The session name's and event line's scroll cycle (BAJAOVRLAY-55), made at load. */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
     return renderCountdownTemplate(this.data);
@@ -114,6 +121,10 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
     // What could go wrong: a renderer calling load on an element not yet in the page
     // waits here until it is added, because Lit renders only connected elements.
     await this.redrawWithData(dataCheck.data);
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     placeCountdownOffAir(this.requirePieces());
     this.countdownClock.redraw();
     await waitForThemeFontsToBeReady(this);
@@ -166,6 +177,7 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -182,6 +194,7 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.countdownClock.stopTicking();
+    this.scrollingTextClock?.stop();
     await this.motions.run(
       buildCountdownStopOutTimeline(this.requirePieces()),
       params.skipAnimation ?? false,
@@ -242,12 +255,14 @@ export default class CountdownGraphic extends LitElement implements OGrafGraphic
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.countdownClock.stopTicking();
+    this.scrollingTextClock?.stop();
   }
 
   /** OGraf dispose: stops the count and ends every timeline; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.countdownClock.stopTicking();
+    this.scrollingTextClock?.stop();
     this.motions.finishEveryTimelineAtOnce();
     return okAnswer;
   }

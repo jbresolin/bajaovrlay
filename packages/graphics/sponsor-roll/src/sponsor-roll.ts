@@ -30,6 +30,11 @@ import type {
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import type { PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { createSponsorPageTurner } from '@bajaovrlay/graphics-kit/sponsorPageTurner';
 import type { SponsorLevel } from '@bajaovrlay/graphics-kit/sponsorRound';
 import { waitForImagesToSettle } from '@bajaovrlay/graphics-kit/waitForImagesToSettle';
@@ -61,7 +66,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The sponsor roll graphic; the default export a renderer registers as a custom element. */
 export default class SponsorRollGraphic extends LitElement implements OGrafGraphic {
-  static override styles = sponsorRollStyles;
+  static override styles = [scrollingTextStyles, sponsorRollStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -70,6 +75,8 @@ export default class SponsorRollGraphic extends LitElement implements OGrafGraph
   private data: SponsorRollData | undefined = undefined;
   private isRedrawWaitingForTheMotion = false;
   private readonly motions: MotionTimelineRunner = createMotionTimelineRunner();
+  /** The scroll cycle of the head's line and the corner's event word (BAJAOVRLAY-55), made at load. */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
   private readonly pageTurns = new SponsorRollPageTurns({
     readRenderRoot: () => this.renderRoot,
     readData: () => this.requireData(),
@@ -107,6 +114,10 @@ export default class SponsorRollGraphic extends LitElement implements OGrafGraph
 
     this.data = dataCheck.data;
     await this.pageTurns.drawFromPageOneOffAir(dataCheck.data);
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     await waitForThemeFontsToBeReady(this);
     await waitForImagesToSettle(this.renderRoot);
 
@@ -153,6 +164,7 @@ export default class SponsorRollGraphic extends LitElement implements OGrafGraph
       return { statusCode: 200, currentStep: this.currentStep };
     }
     this.startThePageTimerWhenThereArePages();
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -172,6 +184,7 @@ export default class SponsorRollGraphic extends LitElement implements OGrafGraph
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
     const stopOut = buildSponsorRollStopOutTimeline(
       findSponsorRollPanel(this.renderRoot),
       this.pageTurns.listPiecesOnAir(),
@@ -232,12 +245,14 @@ export default class SponsorRollGraphic extends LitElement implements OGrafGraph
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
   }
 
   /** OGraf dispose: stops the page timer and ends every timeline; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
     this.motions.finishEveryTimelineAtOnce();
     return okAnswer;
   }

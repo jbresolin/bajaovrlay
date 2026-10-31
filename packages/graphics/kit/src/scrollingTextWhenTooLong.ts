@@ -207,7 +207,11 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
   }
 
   /** Adds one text's moves to the cycle's timeline, at the moments the pure cycle gives. */
-  function addPartToTimeline(timeline: gsap.core.Timeline, name: string, part: ScrollingTextPart): void {
+  function addPartToTimeline(
+    timeline: gsap.core.Timeline,
+    name: string,
+    part: ScrollingTextPart,
+  ): void {
     const moments = readPhaseMomentsOfText(cycle, name, timings);
     const scrollDistancePx = cycle.scrollDistancePxByName.get(name);
     if (moments === undefined || scrollDistancePx === undefined) {
@@ -215,14 +219,22 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
     }
     const halfReturnSeconds = timings.returnMs / 2 / 1000;
     const scrollSeconds = (moments.scrollEndsAtMs - moments.scrollStartsAtMs) / 1000;
-    timeline.call(() => writePhaseWhileInTheCycle(name, 'scrolling'), [], moments.scrollStartsAtMs / 1000);
+    timeline.call(
+      () => writePhaseWhileInTheCycle(name, 'scrolling'),
+      [],
+      moments.scrollStartsAtMs / 1000,
+    );
     timeline.fromTo(
       part.text,
       { x: 0 },
       { x: -scrollDistancePx, duration: scrollSeconds, ease: 'none' },
       moments.scrollStartsAtMs / 1000,
     );
-    timeline.call(() => writePhaseWhileInTheCycle(name, 'holdingAtEnd'), [], moments.scrollEndsAtMs / 1000);
+    timeline.call(
+      () => writePhaseWhileInTheCycle(name, 'holdingAtEnd'),
+      [],
+      moments.scrollEndsAtMs / 1000,
+    );
     timeline.call(
       () => writePhaseWhileInTheCycle(name, 'fadingOutAtEnd'),
       [],

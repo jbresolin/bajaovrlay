@@ -65,8 +65,9 @@ export const standingsRowStyles = [
 
     /* The car number: the kit's chip (carChipStyles), at the row's size. */
 
-    /* The team, cut with an ellipsis inside its column, the school after it as a caption;
-     both with the rows' tracking (Bebas Neue is tight by design). */
+    /* The team, the school after it as a caption, in a scrolling box inside the cell that
+     scrolls the two as one line when too long (BAJAOVRLAY-55); both with the rows'
+     tracking (Bebas Neue is tight by design). */
     .cell-team {
       display: flex;
       align-items: baseline;

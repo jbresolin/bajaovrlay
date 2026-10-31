@@ -102,10 +102,10 @@ describe('a text too long for its box', () => {
       ardosiaTextTimings,
     );
     expect(utfpr.box.dataset.scrollPhase, 'the box must say it is scrolling').toBe('scrolling');
-    expect(readTextOffsetPx(utfpr.text), 'the text must be where the pure cycle puts it').toBeCloseTo(
-      expected.offsetPx,
-      3,
-    );
+    expect(
+      readTextOffsetPx(utfpr.text),
+      'the text must be where the pure cycle puts it',
+    ).toBeCloseTo(expected.offsetPx, 3);
   });
 
   it('holds at its end with its last letter clear of the fade, then crossfades back', () => {
@@ -234,7 +234,9 @@ describe('stop', () => {
     clock.stop();
 
     // Assert: no timeline is left running, and both texts rest at their start.
-    expect(findRunningCycleTimelines(), 'stop must end the cycle: nothing left running').toEqual([]);
+    expect(findRunningCycleTimelines(), 'stop must end the cycle: nothing left running').toEqual(
+      [],
+    );
     for (const { box, text } of [tucano, iff]) {
       expect(readTextOffsetPx(text), 'every text must be back at its start').toBe(0);
       expect(Number(gsap.getProperty(text, 'opacity')), 'every text fully shown').toBe(1);
