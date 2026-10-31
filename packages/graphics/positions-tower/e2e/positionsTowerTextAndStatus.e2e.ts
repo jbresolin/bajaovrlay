@@ -4,8 +4,9 @@
  *
  * What this module is for:
  *   What a row says, beyond its order: the status icon of a car in the pit, broken down
- *   or out of the race (and the dimmed pill of the last two), a long team name cut with
- *   an ellipsis inside its column at the same row height as the others, the empty mark
+ *   or out of the race (and the dimmed pill of the last two), a long team name clipped
+ *   inside its column (it scrolls there on air, BAJAOVRLAY-55) at the same row height as
+ *   the others, the empty mark
  *   for a value the source does not know, and the gaps and lap times written to the
  *   tenth, cut, without a unit (João's gate decision on PR #19), in caps on air.
  *
@@ -14,7 +15,8 @@
  *     and "Desclassificado" as the icons' names, no icon for running and notStarted,
  *     and dims the retired and disqualified pills to `--status-retired-opacity`.
  *   - A 40-character team name does not change its row's height (34 px like the others)
- *     and overflows hidden inside its column.
+ *     and overflows hidden inside its column, cut with no ellipsis (positionsTowerLongNames
+ *     .e2e.ts proves it scrolls).
  *   - A car missing its optional values shows "—" in every detailed cell that needs them.
  *   - 19 087 ms reads "+19,0", 278 293 ms reads "4:38,2", and two laps down reads
  *     "+2 voltas" in the DOM with the cell's computed text-transform uppercase, so the
@@ -121,7 +123,7 @@ test.describe('status icons', () => {
 });
 
 test.describe('a long team name', () => {
-  test('is cut inside its column and never changes the row height', async ({ page }) => {
+  test('is clipped inside its column and never changes the row height', async ({ page }) => {
     // Arrange and act: a compact tower where the second car's team name is 40 characters.
     const fortyCharacterName = 'Associação Atlética Baja Cerrado Goiano!';
     const entries = [
@@ -157,24 +159,24 @@ test.describe('a long team name', () => {
     const nameOverflow = await page
       .getByTestId('positions-tower-row')
       .nth(1)
-      .locator('[data-testid="row-team-name"]')
-      .evaluate((name) => ({
-        isOverflowing: name.scrollWidth > name.clientWidth,
-        overflow: getComputedStyle(name).overflow,
-        textOverflow: getComputedStyle(name).textOverflow,
-        whiteSpace: getComputedStyle(name).whiteSpace,
+      .locator('[data-testid="row-team"]')
+      .evaluate((teamCell) => ({
+        isOverflowing: teamCell.scrollWidth > teamCell.clientWidth,
+        overflow: getComputedStyle(teamCell).overflow,
+        textOverflow: getComputedStyle(teamCell).textOverflow,
+        whiteSpace: getComputedStyle(teamCell).whiteSpace,
       }));
 
     // Assert: every row is 34 px (the long name did not wrap), the name overflows its
-    // box and is clipped with an ellipsis on one line.
+    // team cell and is clipped there on one line, with no ellipsis.
     expect(fortyCharacterName, 'the name under test is 40 characters').toHaveLength(40);
     expect(rowHeights, 'every row must be the theme’s 34 px, the long name included').toEqual([
       34, 34, 34,
     ]);
-    expect(nameOverflow, 'the long name must be cut with an ellipsis, never wrapped').toEqual({
+    expect(nameOverflow, 'the long name must be clipped, never wrapped nor ellipsed').toEqual({
       isOverflowing: true,
       overflow: 'hidden',
-      textOverflow: 'ellipsis',
+      textOverflow: 'clip',
       whiteSpace: 'nowrap',
     });
   });

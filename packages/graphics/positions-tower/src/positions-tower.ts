@@ -26,6 +26,11 @@ import type {
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -67,7 +72,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The positions tower graphic; the default export a renderer registers as a custom element. */
 export default class PositionsTowerGraphic extends LitElement implements OGrafGraphic {
-  static override styles = positionsTowerStyles;
+  static override styles = [scrollingTextStyles, positionsTowerStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -82,6 +87,11 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     setTimer: (callback, delayMs) => window.setTimeout(callback, delayMs),
     clearTimer: (timerId) => window.clearTimeout(timerId),
   });
+  /**
+   * The one cycle of the names too long for their column, every row on it (BAJAOVRLAY-55).
+   * Made at load: the shadow root it watches exists only once Lit has rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
     return renderPositionsTowerTemplate();
@@ -120,6 +130,7 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     }
 
     const parts = findPositionsTowerParts(this.renderRoot, this);
+    this.scrollingTextClock = createScrollingTextClock({ root: this.renderRoot, tokensSource: this });
     const stage = new TowerStage({
       parts,
       rowsPerPage: readTowerLayoutTokens(parts.tokensSource).rowsPerPage,
@@ -179,6 +190,7 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
       return { statusCode: 200, currentStep: this.currentStep };
     }
     this.startPageTurnerWhenCycling();
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -198,6 +210,7 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
     await this.requireStage().playOut(params.skipAnimation ?? false);
     this.requirePageTurns().restOnPageOneForTheNextTake();
     return okAnswer;
@@ -259,6 +272,7 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
   }
 
   /** OGraf customAction: the tower has none, so every id is unknown. */
@@ -273,6 +287,7 @@ export default class PositionsTowerGraphic extends LitElement implements OGrafGr
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
     for (const timeline of [...this.runningTimelines]) {
       finishTimelineAtOnce(timeline);
     }

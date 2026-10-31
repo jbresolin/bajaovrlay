@@ -7,6 +7,7 @@
 import { gsap } from 'gsap';
 import { expect, onTestFinished, vi } from 'vitest';
 
+import { findRunningScrollingTextCycles } from './scrollingTextOnAir.testSupport.js';
 import type { ScrollingTextClock } from './scrollingTextWhenTooLong.js';
 import {
   createScrollingTextClock,
@@ -118,11 +119,9 @@ export function startClockOverGraphic(host: HTMLElement, root: ShadowRoot): Scro
   return clock;
 }
 
-/** The GSAP timelines running at the top level: the clock's cycle, when there is one. */
+/** The clock's cycle timelines running at the top of GSAP's global timeline. */
 export function findRunningCycleTimelines(): gsap.core.Timeline[] {
-  return gsap.globalTimeline
-    .getChildren(false, false, true)
-    .filter((child): child is gsap.core.Timeline => child instanceof gsap.core.Timeline);
+  return findRunningScrollingTextCycles();
 }
 
 /** The one cycle timeline running, paused so only the test moves it. */

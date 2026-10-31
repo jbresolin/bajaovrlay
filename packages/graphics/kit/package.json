@@ -59,7 +59,9 @@
     "./themeTokensOnThePage.testSupport": "./src/themeTokensOnThePage.testSupport.ts",
     "./ografSchemaValidator.testSupport": "./src/ografSchemaValidator.testSupport.ts",
     "./the30thCompetitionSponsors.testSupport": "./src/the30thCompetitionSponsors.testSupport.ts",
-    "./runningMotions.testSupport": "./src/runningMotions.testSupport.ts"
+    "./runningMotions.testSupport": "./src/runningMotions.testSupport.ts",
+    "./scrollingTextOnAir.testSupport": "./src/scrollingTextOnAir.testSupport.ts",
+    "./scrollingTextInTheBrowser.testSupport": "./src/scrollingTextInTheBrowser.testSupport.ts"
   },
   "scripts": {
     "typecheck": "tsc --project tsconfig.json --noEmit",

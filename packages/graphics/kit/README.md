@@ -64,6 +64,8 @@ src/tokenOverrides.testSupport.ts        tests only: theme tokens on :root befor
 src/themeTokensOnThePage.testSupport.ts  tests only (jsdom): theme tokens on :root for one test
 src/ografSchemaValidator.testSupport.ts  tests only: the ajv validator over the vendored ograf-schema/
 src/the30thCompetitionSponsors.testSupport.ts  tests only: the same 17, each logo a /media address
+src/scrollingTextOnAir.testSupport.ts    tests only (jsdom): every scrolling text too long for its box; the clock's running cycles
+src/scrollingTextInTheBrowser.testSupport.ts  tests only (Playwright): the long Baja names, tokens to rest or scroll, box measures
 src/runningMotions.testSupport.ts        tests only: ends every running GSAP timeline at once
 ograf-schema/                            the official OGraf v1 schemas, vendored once (see its README)
 ```

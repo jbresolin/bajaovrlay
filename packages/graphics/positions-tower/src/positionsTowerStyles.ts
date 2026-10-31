@@ -212,21 +212,24 @@ export const positionsTowerStyles = css`
     line-height: 1;
   }
 
-  /* The team: cut with an ellipsis inside its column, never wrapping; the school after it
-     in the detailed layout, with the theme's row tracking (Bebas Neue is tight by design). */
+  /* The team: a scrolling box (the kit's scrollingTextStyles) inside its column, never
+     wrapping; the school after the name in the detailed layout, the two scrolling as one
+     line when too long, with the theme's row tracking (Bebas Neue is tight by design). */
   .cell-team {
     display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
     min-width: 0;
     padding-left: var(--space-3);
     letter-spacing: var(--tracking-row);
   }
 
+  .cell-team .scrolling-text {
+    display: inline-flex;
+    flex: none;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
   .team-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     /* The line box holds the accents of a caps face (Bebas puts them above the cap height). */
     line-height: 1.3;
   }

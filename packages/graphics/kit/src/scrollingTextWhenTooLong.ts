@@ -40,6 +40,12 @@ const boxClassName = 'scrolling-text-box';
 /** The class of the one text element inside a box, the element that moves. */
 const textClassName = 'scrolling-text';
 
+/**
+ * The `data` every cycle timeline carries, so a test can tell the clock's timeline from a
+ * graphic's own motions (scrollingTextOnAir.testSupport.ts).
+ */
+export const scrollingTextCycleTimelineData = 'scrollingTextCycle';
+
 /** What a graphic gives its clock. */
 export type ScrollingTextClockOptions = {
   /** The graphic's shadow root: every box inside it shares the clock. */
@@ -61,8 +67,9 @@ type ScrollingTextPart = { box: HTMLElement; text: HTMLElement };
 
 /**
  * Makes `box` a scrolling text box for a graphic that writes its own DOM (the tower's
- * rows): marks it and puts the one text element inside, which it answers. Write the text
- * with writeScrollingTextIfChanged.
+ * rows): marks it and wraps what it holds (a text, or a team name and its school that
+ * scroll as one line) in the one text element, which it answers. Write a plain text with
+ * writeScrollingTextIfChanged.
  */
 export function makeScrollingTextBox(box: HTMLElement): HTMLElement {
   const existingText = findTextOfBox(box);
@@ -72,7 +79,8 @@ export function makeScrollingTextBox(box: HTMLElement): HTMLElement {
   box.classList.add(boxClassName);
   const text = document.createElement('span');
   text.className = textClassName;
-  box.replaceChildren(text);
+  text.append(...box.childNodes);
+  box.append(text);
   return text;
 }
 
@@ -113,12 +121,22 @@ function findScrollingTextParts(root: ParentNode): ScrollingTextPart[] {
 }
 
 /**
- * The widths the cycle needs. offsetWidth and clientWidth ignore transforms, so a text
- * mid-scroll or a row mid-slide measures the same as at rest. A hidden box measures 0 and
- * so fits.
+ * The widths the cycle needs: the text's, and the room the box gives it (its width inside
+ * its padding, where the text starts and must end). offsetWidth and clientWidth ignore
+ * transforms, so a text mid-scroll or a row mid-slide measures the same as at rest. A
+ * hidden box measures 0 and so fits.
  */
 function measurePart(part: ScrollingTextPart): ScrollingTextMeasure {
-  return { textWidthPx: part.text.offsetWidth, boxWidthPx: part.box.clientWidth };
+  const boxStyle = getComputedStyle(part.box);
+  const paddingPx = readPixels(boxStyle.paddingLeft) + readPixels(boxStyle.paddingRight);
+  const boxWidthPx = part.box.clientWidth - paddingPx;
+  return { textWidthPx: part.text.offsetWidth, boxWidthPx };
+}
+
+/** A computed length in pixels; an empty or unreadable one (jsdom's) is 0. */
+function readPixels(computedLength: string): number {
+  const pixels = Number.parseFloat(computedLength);
+  return Number.isNaN(pixels) ? 0 : pixels;
 }
 
 /** Names the phase on the box: the styles fade its edges while it scrolls (scrollingTextStyles). */
@@ -265,7 +283,10 @@ export function createScrollingTextClock(options: ScrollingTextClockOptions): Sc
     }
 
     partsInTheCycle = new Map();
-    const timeline = gsap.timeline({ onComplete: beginTheNextCycle });
+    const timeline = gsap.timeline({
+      data: scrollingTextCycleTimelineData,
+      onComplete: beginTheNextCycle,
+    });
     for (const name of cycle.scrollDistancePxByName.keys()) {
       const part = partsByName.get(name);
       if (part === undefined) {

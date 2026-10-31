@@ -281,3 +281,38 @@ describe('writeScrollingTextIfChanged', () => {
     expect(box.children.length, 'the box must hold the one text element').toBe(1);
   });
 });
+
+describe('makeScrollingTextBox', () => {
+  it("wraps what the box holds, so a team's name and its school scroll as one line", () => {
+    // Arrange: a tower row's team cell holding the team name and its school.
+    const cell = document.createElement('span');
+    const teamName = document.createElement('span');
+    teamName.textContent = 'BAJA UTFPR';
+    const schoolName = document.createElement('span');
+    schoolName.textContent = 'UNIVERSIDADE TECNOLÓGICA FEDERAL DO PARANÁ - CORNÉLIO PROCÓPIO';
+    cell.append(teamName, schoolName);
+
+    // Act: make the cell a scrolling box.
+    const text = makeScrollingTextBox(cell);
+
+    // Assert: the one text element holds both, in order, and is the cell's only child.
+    expect(cell.children.length, 'the cell must hold the one text element').toBe(1);
+    expect([...text.children], 'the name and the school must move together').toEqual([
+      teamName,
+      schoolName,
+    ]);
+  });
+
+  it('answers the same text element when called again', () => {
+    // Arrange: a box already made scrolling.
+    const box = document.createElement('span');
+    const firstText = makeScrollingTextBox(box);
+
+    // Act: make it scrolling again, as a column rebuild would.
+    const secondText = makeScrollingTextBox(box);
+
+    // Assert: nothing is wrapped twice.
+    expect(secondText, 'a box must keep its one text element').toBe(firstText);
+    expect(box.children.length, 'a box must never hold two text elements').toBe(1);
+  });
+});

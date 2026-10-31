@@ -7,6 +7,7 @@
  * cells of the columns that changed on the same row; a status cell made again this way
  * draws the row's icon at once, since the status itself did not change.
  */
+import { makeScrollingTextBox } from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { nothing, render } from 'lit';
 
@@ -26,7 +27,7 @@ export type TowerRow = {
   cells: Map<TowerColumnKey, HTMLElement>;
   /** The status last written, so a status cell made again can draw its icon. */
   status: PositionStatus | undefined;
-  /** The team name inside the team cell (cut with an ellipsis). */
+  /** The team name inside the team cell, which scrolls when too long for its column. */
   teamName: HTMLElement;
   /** The school after the team name, shown in the detailed layout only. */
   schoolName: HTMLElement;
@@ -106,13 +107,17 @@ export function rebuildTowerRowCells(row: TowerRow, columns: TowerColumn[]): voi
   }
 }
 
-/** Builds one empty cell for a column; the team cell holds the name and the school. */
+/**
+ * Builds one empty cell for a column. The team cell is a scrolling box holding the name and
+ * the school, which scroll together as one line when too long for the column (BAJAOVRLAY-55).
+ */
 function createCellOfColumn(row: TowerRow, columnKey: TowerColumnKey): HTMLElement {
   const cell = document.createElement('span');
   cell.className = `cell ${cellClassByColumn[columnKey]}`;
   cell.dataset.testid = `row-${columnKey}`;
   if (columnKey === 'team') {
     cell.append(row.teamName, row.schoolName);
+    makeScrollingTextBox(cell);
   }
   return cell;
 }
