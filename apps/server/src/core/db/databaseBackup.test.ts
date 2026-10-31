@@ -3,7 +3,7 @@
  *
  * What this module is for:
  *   João's nightly script dumps the TrueNAS Postgres and MariaDB databases but cannot see
- *   SQLite inside a container. `node apps/server/dist/backupDatabase.js /data/backups`
+ *   SQLite inside a container. `node apps/server/dist/backupDatabase.js /backups`
  *   (run with `docker exec` from that script) writes a consistent copy of the server's
  *   database with SQLite's online backup, named by the moment it was taken, and keeps the
  *   newest 14. This file tests the part that copies, names and removes.

@@ -1,6 +1,7 @@
-// The backup command: `node apps/server/dist/backupDatabase.js /data/backups`, run with
-// `docker exec` by João's nightly script on TrueNAS (deploy/truenas/README.md). It reads
-// DATABASE_PATH as the server does, so inside the image it copies /data/bajaovrlay.sqlite.
+// The backup command: `node apps/server/dist/backupDatabase.js <folder>`, run with
+// `docker exec` by João's nightly script on TrueNAS into its /backups mount, and by hand on
+// the stream PC into /data/backups (deploy/). It reads DATABASE_PATH as the server does, so
+// inside the image it copies /data/bajaovrlay.sqlite.
 import { fileURLToPath } from 'node:url';
 
 import { writeDatabaseBackup } from './core/db/databaseBackup.js';

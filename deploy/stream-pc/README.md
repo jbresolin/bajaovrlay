@@ -2,7 +2,8 @@
 
 At the event the server runs on the stream PC (Windows, Docker Desktop) with no internet
 at all. The image is carried there on a USB stick. Steps 1–5 are the install; step 6 is
-the check before every broadcast; step 7 is an update at the track.
+the check before every broadcast; step 7 is an update at the track; step 8 puts a backup
+of the database back.
 
 ## 1. Install Docker Desktop (once, with internet)
 
@@ -44,11 +45,25 @@ docker compose -f C:\BajaOvrLay\compose.yaml up -d
 
 The data lives in the Docker volume `bajaovrlay-data`, on the PC's own disk, and survives
 restarts and updates. It is a volume rather than a Windows folder because SQLite's file
-locking is not reliable through Docker Desktop's Windows file sharing. To copy the whole
-data folder out (before an update, or to the USB stick):
+locking is not reliable through Docker Desktop's Windows file sharing.
+
+To copy the whole data folder out (before an update, or onto the USB stick), stop the
+server first: a copy taken while it writes can catch the database half-written. Each copy
+goes into a new folder named by the moment, so a second copy never lands inside the first.
+Between sessions only: the server is down for those seconds.
 
 ```powershell
-docker cp bajaovrlay:/data C:\BajaOvrLay\copia-dados
+docker stop bajaovrlay
+docker cp bajaovrlay:/data "C:\BajaOvrLay\copia-dados-$(Get-Date -Format yyyy-MM-dd_HHmm)"
+docker start bajaovrlay
+```
+
+With the server running, copy the database alone, through the backup command, which takes
+a consistent copy while it writes (the newest 14 are kept in `/data/backups`):
+
+```powershell
+docker exec bajaovrlay node apps/server/dist/backupDatabase.js /data/backups
+docker cp bajaovrlay:/data/backups "C:\BajaOvrLay\copias-banco-$(Get-Date -Format yyyy-MM-dd_HHmm)"
 ```
 
 The first time an operator laptop opens the control page, Windows may ask whether Docker
@@ -84,3 +99,20 @@ docker compose -f C:\BajaOvrLay\compose.yaml up -d
 
 Compose sees the new image and replaces the container; the volume and its data stay. Open
 pages and OBS reload themselves once the new server is up.
+
+## 8. Restore a backup of the database
+
+Stop the server first, and remove the journal SQLite may have left beside the database:
+otherwise SQLite plays that leftover journal into the restored file. The volume is reached
+through a short-lived container of the same image. List the backups, then put one in place
+of the database (here the one of 14 November):
+
+```powershell
+docker stop bajaovrlay
+docker run --rm --user root -v bajaovrlay-data:/data --entrypoint ls ghcr.io/jbresolin/bajaovrlay:latest /data/backups
+docker run --rm --user root -v bajaovrlay-data:/data --entrypoint sh ghcr.io/jbresolin/bajaovrlay:latest -c "rm -f /data/bajaovrlay.sqlite-journal && cp /data/backups/bajaovrlay-2026-11-14T030000Z.sqlite /data/bajaovrlay.sqlite && chown node:node /data/bajaovrlay.sqlite"
+docker start bajaovrlay
+```
+
+For a backup copied out to the PC (step 4), add `-v C:\BajaOvrLay\copias-banco-<moment>:/copia`
+to the second `docker run` and copy from `/copia/<file>` instead of `/data/backups/<file>`.

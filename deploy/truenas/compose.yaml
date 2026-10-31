@@ -1,6 +1,6 @@
 # BajaOvrLay on TrueNAS, as a Portainer stack (deploy/truenas/README.md, step 4).
 # Two lines to fill in before deploying: the dataset path, and the name of the network
-# Nginx Proxy Manager is on (both marked FILL IN).
+# Nginx Proxy Manager is on (both marked FILL IN). The backup folder is the runbook's.
 services:
   bajaovrlay:
     image: ghcr.io/jbresolin/bajaovrlay:latest
@@ -12,6 +12,9 @@ services:
     volumes:
       # FILL IN: the dataset folder made in step 1 (owned by uid 1000).
       - /mnt/Local/SSD/bajaovrlay/data:/data
+      # The nightly backups, kept out of the live dataset: a problem with that dataset must
+      # not take the backups with it. Made in step 1 too, owned by uid 1000.
+      - /mnt/Local/db-dumps/bajaovrlay:/backups
     # The check itself is the image's (node fetching /health); these are its timings.
     healthcheck:
       interval: 30s

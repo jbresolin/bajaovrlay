@@ -11,12 +11,14 @@ In the TrueNAS web UI: **Datasets** → select `Local/SSD` → **Add Dataset** �
 `bajaovrlay`, Dataset Preset **Generic** → **Save**. Then, in **System → Shell**:
 
 ```sh
-sudo mkdir -p /mnt/Local/SSD/bajaovrlay/data
-sudo chown -R 1000:1000 /mnt/Local/SSD/bajaovrlay/data
+sudo mkdir -p /mnt/Local/SSD/bajaovrlay/data /mnt/Local/db-dumps/bajaovrlay
+sudo chown -R 1000:1000 /mnt/Local/SSD/bajaovrlay/data /mnt/Local/db-dumps/bajaovrlay
 ```
 
-The server runs as uid 1000 (the image's `node` user), never root, so the folder must be
-its. Everything the server keeps goes in it: the database, recordings, images, backups.
+The server runs as uid 1000 (the image's `node` user), never root, so both folders must be
+its. Everything the server keeps goes in `data`: the database, recordings, images. The
+nightly backups (step 7) go in `/mnt/Local/db-dumps/bajaovrlay`, beside the other dumps
+and outside the live dataset, so a problem with that dataset cannot take them too.
 
 ## 2. Let TrueNAS pull the image (once)
 
@@ -86,14 +88,29 @@ something is taken.
 Add this line to `/mnt/Local/scripts/db-dumps/dump-databases.sh`, with the other dumps:
 
 ```sh
-docker exec bajaovrlay node apps/server/dist/backupDatabase.js /data/backups
+docker exec bajaovrlay node apps/server/dist/backupDatabase.js /backups
 ```
 
 It writes a consistent copy with SQLite's online backup while the server runs, named
-`bajaovrlay-<date>T<time>Z.sqlite` (UTC), into `/mnt/Local/SSD/bajaovrlay/data/backups`,
-and keeps the newest 14 (files of other names there are never touched). It exits non-zero,
-logging why, if it fails. To restore one: stop the stack, copy the backup over
-`data/bajaovrlay.sqlite`, start the stack.
+`bajaovrlay-<date>T<time>Z.sqlite` (UTC), into `/mnt/Local/db-dumps/bajaovrlay` (the stack's
+`/backups` mount), and keeps the newest 14 there; files of other names are never touched,
+and the dump script's own retention can leave the folder alone. It exits non-zero, logging
+why, if it fails.
+
+### Restore a backup
+
+Stop the server first, and remove the journal SQLite may have left beside the database:
+otherwise SQLite plays that leftover journal into the restored file. Pick the backup with
+`ls`, then put it in place of the database (here the one of 14 November):
+
+```sh
+sudo docker stop bajaovrlay
+ls /mnt/Local/db-dumps/bajaovrlay
+sudo rm -f /mnt/Local/SSD/bajaovrlay/data/bajaovrlay.sqlite-journal
+sudo cp /mnt/Local/db-dumps/bajaovrlay/bajaovrlay-2026-11-14T030000Z.sqlite /mnt/Local/SSD/bajaovrlay/data/bajaovrlay.sqlite
+sudo chown 1000:1000 /mnt/Local/SSD/bajaovrlay/data/bajaovrlay.sqlite
+sudo docker start bajaovrlay
+```
 
 ## 8. Update to a new image
 

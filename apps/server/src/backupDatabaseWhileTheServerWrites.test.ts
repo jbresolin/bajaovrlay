@@ -2,7 +2,7 @@
  * The backup command while the server is running (apps/server)
  *
  * What this module is for:
- *   `node apps/server/dist/backupDatabase.js /data/backups` is run by João's nightly
+ *   `node apps/server/dist/backupDatabase.js /backups` is run by João's nightly
  *   script with `docker exec`, so it always runs next to a server that may be writing at
  *   that moment (a data source polling, an operator taking an item). It must still write
  *   a copy SQLite calls whole. This drives the command as a process of its own, as
