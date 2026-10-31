@@ -10,7 +10,7 @@
 export const lastPassTargetField = 'lastPassAtMs';
 
 /** The statuses of a car still in the race; only these get gaps. */
-const statusesStillInTheRace = new Set(['running', 'inPit', 'stopped']);
+const statusesStillInTheRace: ReadonlySet<string> = new Set(['running', 'inPit', 'stopped']);
 
 /** A mapped car as this step reads it: whatever its rules filled, not yet validated. */
 type MappedCar = Record<string, unknown>;
