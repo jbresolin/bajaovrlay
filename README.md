@@ -9,6 +9,8 @@ contract for how this repository is built, and it summarises the design authorit
 - `packages/shared` — Zod schemas shared by all of the above.
 - `packages/graphics` — OGraf graphics, one package each.
 - `docs/` — design docs, task briefs and `testing-style.md` (how every test is written).
+- `Dockerfile` and `deploy/` — the one image of the whole system, and the runbooks for
+  TrueNAS and the stream PC (`scripts/dockerSmoke.sh` checks the image end to end).
 
 Needs Node 22 (`.nvmrc`) and pnpm (`corepack enable` once), then `pnpm install` and
 `pnpm dev`. CI runs `pnpm lint`, `typecheck`, `test`, `build` and the browser tests in

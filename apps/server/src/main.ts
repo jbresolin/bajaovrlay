@@ -49,6 +49,7 @@ try {
     themeFolder,
     dataFolder,
     sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
+    publicOrigins: environment.BAJAOVRLAY_PUBLIC_ORIGINS,
     controlPageFolder,
     rendererPageFolder,
     buildIdFileUrl,

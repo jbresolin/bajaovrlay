@@ -400,8 +400,9 @@ Flaky test = bug; quarantine visibly, never delete to green. CI blocks merge on 
 
 ## 14. Deployment
 
-- Between events: one Docker image (the server serves the control and renderer builds and the graphics), compose stack on TrueNAS via Portainer, behind the existing proxy. The SQLite file and media live on a dataset covered by the nightly dump script.
-- At the event: the same image on the stream PC (Docker Desktop) or on a small box at the desk. OBS browser source points at the box on port 8080, path /render/program. Nothing on screen depends on the uplink; the scoring poller degrades to stale, never to blank.
+- One Docker image (`Dockerfile`, BAJAOVRLAY-34): the server serves the control and renderer builds, the graphics and the theme, on port 8080, as uid 1000. Everything it keeps lives in one volume, `/data` (the SQLite file, recordings, media, backups), so a backup is one folder. Nothing is fetched at run time; a browser test serves the build with every other address blocked. GitHub publishes it to `ghcr.io/jbresolin/bajaovrlay` as `:latest` and `:<short sha>` on every push to main, outside "CI passed".
+- Between events: a compose stack on TrueNAS via Portainer, behind Nginx Proxy Manager on a shared network with WebSocket support on (`deploy/truenas/`). `BAJAOVRLAY_PUBLIC_ORIGINS` lists the proxy's address so Cadastros may upload through it. The nightly dump script backs the SQLite file up with `docker exec bajaovrlay node apps/server/dist/backupDatabase.js /data/backups` (SQLite's online backup, 14 kept).
+- At the event: the same image on the stream PC (Docker Desktop), loaded from a USB stick (`docker save` / `docker load`), its data in a Docker volume on the PC's disk (`deploy/stream-pc/`). OBS browser source points at `http://localhost:8080/render/` (program; another output at `/render/?output=<id>`). Nothing on screen depends on the uplink; the scoring poller degrades to stale, never to blank.
 - Backups at the event: copy the data folder to a USB stick at every session break (a one-click action on the control page's admin route).
 
 ## 15. Integrations

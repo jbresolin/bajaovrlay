@@ -1,0 +1,22 @@
+# BajaOvrLay on the stream PC (Docker Desktop, Windows), with no internet
+# (deploy/stream-pc/README.md, step 4). Keep this file in C:\BajaOvrLay\.
+services:
+  bajaovrlay:
+    image: ghcr.io/jbresolin/bajaovrlay:latest
+    container_name: bajaovrlay
+    # Starts again with Docker Desktop after a reboot of the stream PC.
+    restart: unless-stopped
+    # Offline: the image comes from `docker load` (step 3), never from the registry.
+    pull_policy: never
+    # 8080 on every interface of the PC: OBS uses localhost, an operator laptop on the
+    # event LAN uses the PC's address.
+    ports:
+      - '8080:8080'
+    volumes:
+      # A Docker volume on the PC's own disk, not a Windows folder: SQLite's file locking
+      # is not reliable through Docker Desktop's Windows file sharing (README, step 4).
+      - bajaovrlay-data:/data
+
+volumes:
+  bajaovrlay-data:
+    name: bajaovrlay-data

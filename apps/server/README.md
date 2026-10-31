@@ -17,5 +17,10 @@ then `src/core/store/createStateStore.ts` (the single command path).
   (live refresh of bound fields, the operator's corrections), and `outputs/` (outputs and
   the editing of layers, BAJAOVRLAY-49), among others; each has a README.
 - `src/api/v1/` — thin REST routes and the generated OpenAPI document.
+- `src/backupDatabase.ts` — the backup command, `node apps/server/dist/backupDatabase.js
+<folder>`: a dated copy of the database while the server runs, the newest 14 kept.
+- `e2e/` — the built server with the network blocked (Playwright, after `pnpm build`).
 - `drizzle/` — committed SQL migrations, applied at boot.
 - `/.env.example` — every setting. Run the server with `pnpm dev` from the repo root.
+- `/Dockerfile` and `/deploy/` — the one image of the whole system, and how it runs on
+  TrueNAS and on the stream PC.

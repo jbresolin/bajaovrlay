@@ -1,0 +1,28 @@
+# What the Docker build never needs: installed and built copies (the build makes its own),
+# local data and secrets, test output, git, and the docs, but for the sample data the
+# graphics' preview pages are built with.
+**/node_modules
+**/dist
+**/test-results
+**/playwright-report
+build-id.json
+build-id.building.json
+vitest-report.json
+
+*.sqlite
+*.sqlite-*
+apps/server/data
+apps/server/.e2e-data
+apps/control/e2e-data
+apps/renderer/.e2e-data
+.env
+.env.*
+!.env.example
+
+.git
+.github
+.scratch
+docs/**
+!docs/design/sample-data.json
+deploy
+*.log

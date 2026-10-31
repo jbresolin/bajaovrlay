@@ -29,16 +29,24 @@ everywhere but on the runner, so it reads `GITHUB_ACTIONS` (set only there) rath
 
 ## The jobs
 
-| Job                                                                | What it does                                                                                                                                                                        |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit and component tests (Vitest)                                  | `pnpm test`: every package's Vitest suite.                                                                                                                                          |
-| Lint, typecheck, build, browser tests of the renderer and graphics | `pnpm lint`, `pnpm typecheck`, `pnpm build`, then `pnpm test:e2e:renderer-and-graphics`: the browser tests of every package but the control page, one package at a time.            |
-| Browser tests of the control page (shard 1 of 2, 2 of 2)           | `pnpm build`, then `pnpm test:e2e:control --shard=N/2`: half of the control page's browser tests each, on a runner of its own with its own server, database and ports.              |
-| CI passed                                                          | Green only when the three above all passed. **João merges only on a green "CI passed".** Branch protection is not available on this repository's plan, so nothing else enforces it. |
+| Job                                                                | What it does                                                                                                                                                                                                        |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit and component tests (Vitest)                                  | `pnpm test`: every package's Vitest suite.                                                                                                                                                                          |
+| Lint, typecheck, build, browser tests of the renderer and graphics | `pnpm lint`, `pnpm typecheck`, `pnpm build`, then `pnpm test:e2e:renderer-and-graphics`: the browser tests of every package but the control page (the built server's offline test included), one package at a time. |
+| Browser tests of the control page (shard 1 of 2, 2 of 2)           | `pnpm build`, then `pnpm test:e2e:control --shard=N/2`: half of the control page's browser tests each, on a runner of its own with its own server, database and ports.                                              |
+| CI passed                                                          | Green only when the three above all passed. **João merges only on a green "CI passed".** Branch protection is not available on this repository's plan, so nothing else enforces it.                                 |
 
 Each job has `timeout-minutes: 15`. A job that fails with browser tests uploads its
 screenshots, traces and report as an artifact named after it
 (`playwright-results-control-shard-1`, …).
+
+## Publishing the Docker image
+
+`.github/workflows/publish-image.yml`, a workflow of its own: on every push to `main` it
+builds the `Dockerfile` and pushes it to `ghcr.io/jbresolin/bajaovrlay` as `:latest` and
+`:<short sha>`. It never runs on a pull request, is not one of the jobs "CI passed" waits
+for, and its failure shows only as a red "Publish image" run on the Actions page and on the
+commit. TrueNAS pulls `:latest` from there (`deploy/truenas/README.md`).
 
 ## The slowest-tests table
 

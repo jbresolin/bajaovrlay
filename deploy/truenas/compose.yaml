@@ -1,0 +1,31 @@
+# BajaOvrLay on TrueNAS, as a Portainer stack (deploy/truenas/README.md, step 4).
+# Two lines to fill in before deploying: the dataset path, and the name of the network
+# Nginx Proxy Manager is on (both marked FILL IN).
+services:
+  bajaovrlay:
+    image: ghcr.io/jbresolin/bajaovrlay:latest
+    # A fixed name: the nightly backup line runs `docker exec bajaovrlay ...`.
+    container_name: bajaovrlay
+    restart: unless-stopped
+    # Portainer writes the stack's "Environment variables" to stack.env.
+    env_file: stack.env
+    volumes:
+      # FILL IN: the dataset folder made in step 1 (owned by uid 1000).
+      - /mnt/Local/SSD/bajaovrlay/data:/data
+    # The check itself is the image's (node fetching /health); these are its timings.
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    networks:
+      - proxy
+    # No published port: NPM reaches the server as http://bajaovrlay:8080 on the shared
+    # network. To open it straight on http://192.168.2.5:8080 too, uncomment this line.
+    # ports: ['8080:8080']
+
+networks:
+  proxy:
+    external: true
+    # FILL IN: the network NPM's container is on (step 3 finds it).
+    name: nginx-proxy-manager_default
