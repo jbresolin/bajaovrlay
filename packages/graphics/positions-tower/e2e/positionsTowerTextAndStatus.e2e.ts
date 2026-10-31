@@ -159,12 +159,12 @@ test.describe('a long team name', () => {
     const nameOverflow = await page
       .getByTestId('positions-tower-row')
       .nth(1)
-      .locator('[data-testid="row-team"]')
-      .evaluate((teamCell) => ({
-        isOverflowing: teamCell.scrollWidth > teamCell.clientWidth,
-        overflow: getComputedStyle(teamCell).overflow,
-        textOverflow: getComputedStyle(teamCell).textOverflow,
-        whiteSpace: getComputedStyle(teamCell).whiteSpace,
+      .locator('[data-testid="row-team-box"]')
+      .evaluate((teamBox) => ({
+        isOverflowing: teamBox.scrollWidth > teamBox.clientWidth,
+        overflow: getComputedStyle(teamBox).overflow,
+        textOverflow: getComputedStyle(teamBox).textOverflow,
+        whiteSpace: getComputedStyle(teamBox).whiteSpace,
       }));
 
     // Assert: every row is 34 px (the long name did not wrap), the name overflows its

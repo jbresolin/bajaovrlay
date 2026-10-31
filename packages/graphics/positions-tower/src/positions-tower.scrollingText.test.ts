@@ -34,10 +34,10 @@ import {
   loadTowerWithData,
 } from './positionsTowerOnThePage.testSupport.js';
 
-/** The team cells of the rows on the page, the tower's scrolling boxes. */
+/** The scrolling boxes in the team cells of the rows on the page. */
 function listTeamCells(tower: PositionsTowerGraphic): HTMLElement[] {
   return listRowElements(tower).map((row) => {
-    const cell = row.querySelector<HTMLElement>('[data-testid="row-team"]');
+    const cell = row.querySelector<HTMLElement>('[data-testid="row-team-box"]');
     if (cell === null) {
       throw new Error('a tower row without its team cell');
     }

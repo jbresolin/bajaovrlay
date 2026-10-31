@@ -108,7 +108,7 @@ export function rebuildTowerRowCells(row: TowerRow, columns: TowerColumn[]): voi
 }
 
 /**
- * Builds one empty cell for a column. The team cell is a scrolling box holding the name and
+ * Builds one empty cell for a column. The team cell holds a scrolling box with the name and
  * the school, which scroll together as one line when too long for the column (BAJAOVRLAY-55).
  */
 function createCellOfColumn(row: TowerRow, columnKey: TowerColumnKey): HTMLElement {
@@ -116,8 +116,12 @@ function createCellOfColumn(row: TowerRow, columnKey: TowerColumnKey): HTMLEleme
   cell.className = `cell ${cellClassByColumn[columnKey]}`;
   cell.dataset.testid = `row-${columnKey}`;
   if (columnKey === 'team') {
-    cell.append(row.teamName, row.schoolName);
-    makeScrollingTextBox(cell);
+    const teamBox = document.createElement('span');
+    teamBox.className = 'team-box';
+    teamBox.dataset.testid = 'row-team-box';
+    teamBox.append(row.teamName, row.schoolName);
+    makeScrollingTextBox(teamBox);
+    cell.append(teamBox);
   }
   return cell;
 }

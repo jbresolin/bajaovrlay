@@ -212,9 +212,12 @@ export const positionsTowerStyles = css`
     line-height: 1;
   }
 
-  /* The team: a scrolling box (the kit's scrollingTextStyles) inside its column, never
+  /* The team: a scrolling box (the kit's scrollingTextStyles) filling its column, never
      wrapping; the school after the name in the detailed layout, the two scrolling as one
-     line when too long, with the theme's row tracking (Bebas Neue is tight by design). */
+     line when too long, with the theme's row tracking (Bebas Neue is tight by design).
+     The box sits inside the cell rather than being the cell: a grid cell that clips has no
+     automatic minimum height, which shrinks the row's track and lifts every cell of the
+     row by a pixel. */
   .cell-team {
     display: flex;
     min-width: 0;
@@ -222,7 +225,12 @@ export const positionsTowerStyles = css`
     letter-spacing: var(--tracking-row);
   }
 
-  .cell-team .scrolling-text {
+  .team-box {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .team-box .scrolling-text {
     display: inline-flex;
     flex: none;
     align-items: baseline;

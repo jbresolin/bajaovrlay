@@ -83,16 +83,9 @@ async function openDetailedTowerWithLongSchools(
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
 }
 
-/** The team cell of the row at `rowIndex` (0 is the leader). */
+/** The scrolling box in the team cell of the row at `rowIndex` (0 is the leader). */
 function findTeamCellOfRow(page: Page, rowIndex: number) {
-  return page.getByTestId('positions-tower-row').nth(rowIndex).getByTestId('row-team');
-}
-
-/** The team cell's left padding, where the line starts. */
-async function readTeamCellPaddingLeft(page: Page): Promise<number> {
-  return findTeamCellOfRow(page, 0).evaluate((cell) =>
-    Number.parseFloat(getComputedStyle(cell).paddingLeft),
-  );
+  return page.getByTestId('positions-tower-row').nth(rowIndex).getByTestId('row-team-box');
 }
 
 const longSchoolRows = [
@@ -113,14 +106,13 @@ test.describe('a row whose school is too long for the team column', () => {
       // Act: measure the long row's cell and the leader's.
       const longPlace = await measureScrollingBox(longCell);
       const shortPlace = await measureScrollingBox(findTeamCellOfRow(page, 0));
-      const paddingLeft = await readTeamCellPaddingLeft(page);
 
       // Assert: same width as the short row's cell, the start of the line showing.
       expect(longPlace.boxWidth, 'the long row must keep the column width').toBeCloseTo(
         shortPlace.boxWidth,
         1,
       );
-      expectTextStartShowing(longPlace, paddingLeft);
+      expectTextStartShowing(longPlace);
     });
 
     test(`shows its end at the end of the scroll, the cell as wide (${name})`, async ({ page }) => {
@@ -154,10 +146,9 @@ test.describe('a row whose school is too long for the team column', () => {
     await expect(leaderCell, 'a fitting row must name no phase').not.toHaveAttribute(
       'data-scroll-phase',
     );
-    const paddingLeft = await readTeamCellPaddingLeft(page);
     const leaderPlace = await measureScrollingBox(leaderCell);
     expect(
-      Math.abs(leaderPlace.textLeft - (leaderPlace.boxLeft + paddingLeft)),
+      Math.abs(leaderPlace.textLeft - leaderPlace.boxLeft),
       'the fitting text must stay at its start',
     ).toBeLessThan(1);
   });

@@ -126,7 +126,7 @@ test.describe('the tower with 20 names scrolling', () => {
     await openCompactTowerOnAir(page, readEnduroSampleEntries().slice(0, 20));
     const stillTower = await measureFramesInThePage(page);
     await openCompactTowerOnAir(page, createTwentyEntriesWithLongNames());
-    const teamCells = page.getByTestId('row-team');
+    const teamCells = page.getByTestId('row-team-box');
     await expect(teamCells, 'the tower must show 20 rows').toHaveCount(20);
     await waitForScrollPhase(teamCells.last(), 'scrolling');
     const scrollingTower = await measureFramesInThePage(page);
