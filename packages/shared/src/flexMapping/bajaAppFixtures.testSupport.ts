@@ -13,6 +13,8 @@ export const bajaAppFixtureFiles = {
   superPrime25SUWithPendingSlots: 'torneio-25SU_SPR-pending.made-up.json',
   raceTenMinutesIn00NE: 'corrida-00NE_ZZL.from-doc.json',
   raceBeforeTheStart26BR: 'corrida-26BR_END-waiting.from-doc.json',
+  event26BR: 'evento-26BR.json',
+  event26BRDuringTheEvent: 'evento-26BR-during-the-event.made-up.json',
 } as const;
 
 /** Reads one fixture of examples/bajaApp/ as the API answered it. */

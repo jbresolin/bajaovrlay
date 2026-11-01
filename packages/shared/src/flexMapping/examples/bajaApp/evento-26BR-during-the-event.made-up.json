@@ -1,0 +1,521 @@
+{
+  "event": {
+    "id": "26BR",
+    "name": "31ª Competição Baja SAE BRASIL",
+    "title": "Baja SAE BRASIL - 2026",
+    "year": 2026,
+    "type": "Nacional",
+    "location": "em São José dos Campos - SP",
+    "dates": "25 a 29 de Março de 2026",
+    "listed": true
+  },
+  "status": {
+    "default_event": true,
+    "finished": false,
+    "spoilers_active": false
+  },
+  "resultados": [
+    {
+      "id": "26BR_SGE",
+      "name": "Segurança Estática",
+      "group": "Segurança",
+      "type": "table",
+      "provas": [
+        "SGE"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_SGE"
+    },
+    {
+      "id": "26BR_SGD",
+      "name": "Segurança Dinâmica",
+      "group": "Segurança",
+      "type": "table",
+      "provas": [
+        "SGD"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_SGD"
+    },
+    {
+      "id": "26BR_REL",
+      "name": "Relatório de Projeto",
+      "group": "Projeto",
+      "type": "table",
+      "provas": [
+        "REL"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_REL"
+    },
+    {
+      "id": "26BR_RDT",
+      "name": "Relatório de Desafio Técnico",
+      "group": "Projeto",
+      "type": "table",
+      "provas": [
+        "RDT"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_RDT"
+    },
+    {
+      "id": "26BR_SLP",
+      "name": "Solicitação de Proposta",
+      "group": "Projeto",
+      "type": "table",
+      "provas": [
+        "SLP"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_SLP"
+    },
+    {
+      "id": "26BR_APD",
+      "name": "Avaliação de Projeto Dinâmico",
+      "group": "Projeto",
+      "type": "table",
+      "provas": [
+        "APD"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_APD"
+    },
+    {
+      "id": "26BR_APF",
+      "name": "Finalistas de Apr. Projeto + Apr. Negócios",
+      "group": "Projeto",
+      "type": "table",
+      "provas": [
+        "APF"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_APF"
+    },
+    {
+      "id": "26BR_AP1",
+      "name": "Apresentação de Projeto - Primeiro Pelotão",
+      "group": "Projeto",
+      "type": "table",
+      "provas": [
+        "PRE",
+        "PRC",
+        "PRP",
+        "PRS",
+        "PRF",
+        "PRD",
+        "PRG",
+        "PRN"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_AP1"
+    },
+    {
+      "id": "26BR_AP2",
+      "name": "Apresentação de Projeto - Segundo Pelotão",
+      "group": "Projeto",
+      "type": "table",
+      "provas": [
+        "AP2"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_AP2"
+    },
+    {
+      "id": "26BR_PRO",
+      "name": "Total Projetos",
+      "group": "Projeto",
+      "type": "table",
+      "provas": [
+        "REL",
+        "RDT",
+        "SLP",
+        "PRE",
+        "PRC",
+        "PRP",
+        "PRS",
+        "PRF",
+        "PRD",
+        "PRG",
+        "PRN",
+        "AP2",
+        "APD"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_PRO"
+    },
+    {
+      "id": "26BR_ACE",
+      "name": "Aceleração",
+      "group": "Dinâmicas",
+      "type": "table",
+      "provas": [
+        "AVF"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_ACE"
+    },
+    {
+      "id": "26BR_VEL",
+      "name": "Velocidade Final",
+      "group": "Dinâmicas",
+      "type": "table",
+      "provas": [
+        "AVF"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_VEL"
+    },
+    {
+      "id": "26BR_MAN",
+      "name": "Manobrabilidade",
+      "group": "Dinâmicas",
+      "type": "table",
+      "provas": [
+        "MAN"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_MAN"
+    },
+    {
+      "id": "26BR_TRA",
+      "name": "Tração",
+      "group": "Dinâmicas",
+      "type": "table",
+      "provas": [
+        "TRA"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_TRA"
+    },
+    {
+      "id": "26BR_SUS",
+      "name": "Suspensão",
+      "group": "Dinâmicas",
+      "type": "table",
+      "provas": [
+        "SUS"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_SUS"
+    },
+    {
+      "id": "26BR_SPP",
+      "name": "Super Prime",
+      "group": "Dinâmicas",
+      "type": "table",
+      "provas": [
+        "SPP"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_SPP"
+    },
+    {
+      "id": "26BR_SPR",
+      "name": "Chaveamento Super Prime",
+      "group": "Dinâmicas",
+      "type": "tournament",
+      "provas": [
+        "SPR"
+      ],
+      "url": "/resultados/torneio.php?evt=26BR&id=26BR_SPR"
+    },
+    {
+      "id": "26BR_DIN",
+      "name": "Total Dinâmicas",
+      "group": "Dinâmicas",
+      "type": "table",
+      "provas": [
+        "AVF",
+        "MAN",
+        "TRA",
+        "SUS",
+        "SPP"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_DIN"
+    },
+    {
+      "id": "26BR_END",
+      "name": "Enduro",
+      "group": "Enduro",
+      "type": "table",
+      "provas": [
+        "END"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_END"
+    },
+    {
+      "id": "26BR_GRI",
+      "name": "Grid",
+      "group": "Enduro",
+      "type": "table",
+      "provas": [
+        "GRI"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_GRI"
+    },
+    {
+      "id": "26BR_EPN",
+      "name": "Penalizações",
+      "group": "Enduro",
+      "type": "table",
+      "provas": [
+        "EPN"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_EPN"
+    },
+    {
+      "id": "26BR_GER",
+      "name": "Geral",
+      "group": null,
+      "type": "table",
+      "provas": [
+        "AVF",
+        "MAN",
+        "TRA",
+        "SUS",
+        "SPP",
+        "REL",
+        "RDT",
+        "SLP",
+        "PRE",
+        "PRC",
+        "PRP",
+        "PRS",
+        "PRF",
+        "PRD",
+        "PRG",
+        "PRN",
+        "AP2",
+        "APD",
+        "END",
+        "EPN",
+        "SGD",
+        "SGE",
+        "PEN"
+      ],
+      "url": "/resultados/resultado.php?evt=26BR&id=26BR_GER"
+    }
+  ],
+  "provas": [
+    {
+      "id": "SGE",
+      "name": "Segurança Estática",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "SGD",
+      "name": "Segurança Dinâmica",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "REL",
+      "name": "Relatório de Projeto",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "RDT",
+      "name": "Relatório de Desafio Técnico",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "SLP",
+      "name": "Solicitação de Proposta",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "APD",
+      "name": "Aval. Proj. Dinâmico",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "APF",
+      "name": "Finalistas Projeto",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PRE",
+      "name": "Apresentação de Projeto - Elétrica",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PRC",
+      "name": "Apresentação de Projeto - Cálculo Estrutural",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PRP",
+      "name": "Apresentação de Projeto - Powertrain",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PRS",
+      "name": "Apresentação de Projeto - Suspensão e Direção",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PRF",
+      "name": "Apresentação de Projeto - Freios",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PRD",
+      "name": "Apresentação de Projeto - Design",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PRG",
+      "name": "Apresentação de Projeto - Gestão",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PRN",
+      "name": "Apresentação de Negócios",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "AP2",
+      "name": "Projeto Segundo Pelotão",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "AVF",
+      "name": "Aceleração e Velocidade",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "MAN",
+      "name": "Manobrabilidade",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "TRA",
+      "name": "Tração",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "SUS",
+      "name": "Suspensão",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "SPR",
+      "name": "Chaveamento Super Prime",
+      "type": "tournament",
+      "status": "final",
+      "tournament": true,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "SPP",
+      "name": "Super Prime",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "END",
+      "name": "Enduro",
+      "type": "normal",
+      "status": "partial",
+      "tournament": false,
+      "lap_counted": true,
+      "live_url": "/resultados/corrida.php?evt=26BR&p=END"
+    },
+    {
+      "id": "GRI",
+      "name": "Grid",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "EPN",
+      "name": "Penalizações Enduro",
+      "type": "rolling",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    },
+    {
+      "id": "PEN",
+      "name": "Penalidades",
+      "type": "normal",
+      "status": "final",
+      "tournament": false,
+      "lap_counted": false,
+      "live_url": null
+    }
+  ],
+  "teams_url": "/resultados/equipes.php?evt=26BR"
+}

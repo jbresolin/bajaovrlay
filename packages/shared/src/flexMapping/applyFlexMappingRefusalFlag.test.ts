@@ -24,11 +24,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyFlexMapping } from './applyFlexMapping.js';
-import {
-  buildDraftOverallMappings,
-  spoilersRefusalMessage,
-} from './bajaAppDraftPresets.testSupport.js';
 import { bajaAppFixtureFiles, readBajaAppFixture } from './bajaAppFixtures.testSupport.js';
+import {
+  bajaAppApiAddress,
+  buildBajaAppResultsTableSourceConfig,
+  spoilersRefusalMessage,
+} from './presets/bajaApp/bajaAppPresets.js';
 
 /** The moment of the poll in these tests: the 25SU competition's last day. */
 const pollMomentMs = Date.UTC(2025, 9, 26, 18, 0, 0);
@@ -36,11 +37,24 @@ const pollMomentMs = Date.UTC(2025, 9, 26, 18, 0, 0);
 /** 26BR's parts of the score, which the 26BR table has as headers. */
 const partHeadersOf26BR = ['Penalidade', 'Segurança', 'Projeto', 'Dinâmicas', 'Enduro'];
 
+/** The Baja app's results table preset on 26BR's overall table (BAJAOVRLAY-54). */
+function buildOverallMappingsOf26BR() {
+  const config = buildBajaAppResultsTableSourceConfig({
+    apiAddress: bajaAppApiAddress,
+    eventId: '26BR',
+    resultadoId: '26BR_GER',
+    pointsHeader: 'Total',
+    partHeaders: partHeadersOf26BR,
+    standingsScope: 'overall',
+  });
+  return config.mappings;
+}
+
 describe('applyFlexMapping, refusing an answer by a flag', () => {
   it('refuses the doc 25SU table during spoilers with the operator’s sentence alone', () => {
-    // Arrange: the draft overall mapping (refused while spoilers_active is true), the doc's
+    // Arrange: the overall table preset (refused while spoilers_active is true), the doc's
     // 25SU table during spoilers and a teams list.
-    const mappings = buildDraftOverallMappings(partHeadersOf26BR);
+    const mappings = buildOverallMappingsOf26BR();
     const responses = {
       resultado: readBajaAppFixture(bajaAppFixtureFiles.overallDuringSpoilers25SU),
       equipes: { teams: [] },
@@ -60,7 +74,7 @@ describe('applyFlexMapping, refusing an answer by a flag', () => {
 
   it('does not refuse the real 26BR table, whose spoilers are off', () => {
     // Arrange: the same mapping, the real 26BR table and teams.
-    const mappings = buildDraftOverallMappings(partHeadersOf26BR);
+    const mappings = buildOverallMappingsOf26BR();
     const responses = {
       resultado: readBajaAppFixture(bajaAppFixtureFiles.overall26BR),
       equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
@@ -75,7 +89,7 @@ describe('applyFlexMapping, refusing an answer by a flag', () => {
 
   it('compares by strict equality, so the text "true" does not refuse', () => {
     // Arrange: a table whose flag came as the text "true", with no row.
-    const mappings = buildDraftOverallMappings(partHeadersOf26BR);
+    const mappings = buildOverallMappingsOf26BR();
     const table = readBajaAppFixture(bajaAppFixtureFiles.overall26BR);
     const responses = {
       resultado: { ...table, spoilers_active: 'true', rows: [] },

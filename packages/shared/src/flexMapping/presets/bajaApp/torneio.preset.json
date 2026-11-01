@@ -1,0 +1,54 @@
+{
+  "requests": [
+    {
+      "requestId": "torneio",
+      "url": "{{apiAddress}}/resultados/torneio.php",
+      "queryParameters": [
+        { "name": "evt", "value": "{{eventId}}" },
+        { "name": "id", "value": "{{resultadoId}}" }
+      ]
+    }
+  ],
+  "mappings": [
+    {
+      "shapeKey": "brackets",
+      "requestId": "torneio",
+      "entriesPath": "rounds",
+      "nestedEntriesPath": "matches",
+      "entryIsIncompleteWhen": [
+        { "path": "slots[0].type", "isOneOf": ["pending", "unknown"] },
+        { "path": "slots[1].type", "isOneOf": ["pending", "unknown"] }
+      ],
+      "fields": [
+        { "targetField": "sessionId", "fromPath": "resultado_id" },
+        { "targetField": "updatedAtMs", "fromPollMoment": true }
+      ],
+      "entryFields": [
+        { "targetField": "roundName", "fromParent": "name" },
+        {
+          "targetField": "roundIsThirdPlace",
+          "fromParent": "round",
+          "transformId": "mapValues",
+          "transformParameters": { "table": { "-1": true }, "otherwiseValue": false }
+        },
+        { "targetField": "matchId", "fromPath": "match_id", "transformId": "numberToText" },
+        { "targetField": "bestOf", "fromPath": "best_of" },
+        { "targetField": "winnerCarNumber", "fromPath": "winner" },
+        {
+          "targetField": "walkover",
+          "fromPath": "slots[1].type",
+          "transformId": "mapValues",
+          "transformParameters": { "table": { "bye": true }, "otherwiseValue": false }
+        },
+        { "targetField": "carA.carNumber", "fromPath": "slots[0].team.number" },
+        { "targetField": "carA.teamName", "fromPath": "slots[0].team.short_name" },
+        { "targetField": "carA.schoolName", "fromPath": "slots[0].team.school_short" },
+        { "targetField": "carA.wins", "fromPath": "slots[0].wins" },
+        { "targetField": "carB.carNumber", "fromPath": "slots[1].team.number" },
+        { "targetField": "carB.teamName", "fromPath": "slots[1].team.short_name" },
+        { "targetField": "carB.schoolName", "fromPath": "slots[1].team.school_short" },
+        { "targetField": "carB.wins", "fromPath": "slots[1].wins" }
+      ]
+    }
+  ]
+}
