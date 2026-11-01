@@ -24,6 +24,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -65,7 +70,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The lower third graphic; the default export a renderer registers as a custom element. */
 export default class LowerThirdGraphic extends LitElement implements OGrafGraphic {
-  static override styles = lowerThirdStyles;
+  static override styles = [scrollingTextStyles, lowerThirdStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -73,6 +78,11 @@ export default class LowerThirdGraphic extends LitElement implements OGrafGraphi
   private parts: LowerThirdParts | undefined = undefined;
   // One motion at a time (in or out), so one timeline is all there is to end.
   private runningPillsTimeline: LowerThirdTimeline | undefined = undefined;
+  /**
+   * The cycle of the texts too long for their pill (BAJAOVRLAY-55). Made at load: the
+   * shadow root it watches exists only once Lit has rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
     return renderLowerThirdTemplate();
@@ -112,6 +122,10 @@ export default class LowerThirdGraphic extends LitElement implements OGrafGraphi
 
     const parts = findLowerThirdParts(this.renderRoot);
     this.parts = parts;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     this.data = dataCheck.data;
     writeLowerThirdData(parts, dataCheck.data);
     placePillsOffAir(parts);
@@ -158,6 +172,7 @@ export default class LowerThirdGraphic extends LitElement implements OGrafGraphi
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -173,10 +188,12 @@ export default class LowerThirdGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.runPillsTimeline(
       buildStopOutTimeline(this.requireParts()),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     return okAnswer;
   }
 
@@ -202,6 +219,15 @@ export default class LowerThirdGraphic extends LitElement implements OGrafGraphi
     return okAnswer;
   }
 
+  /**
+   * Lit's hook for the element leaving the page: the scrolling texts' cycle stops, so a
+   * layer a renderer removed without dispose leaves no timeline running inside OBS.
+   */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.scrollingTextClock?.stop();
+  }
+
   /** OGraf customAction: the lower third has none, so every id is unknown. */
   async customAction(params: OGrafCustomActionParams): Promise<OGrafReturnPayload> {
     return buildRefusalAnswer(404, ptBR.actionProblems.unknownCustomAction(params.id));
@@ -213,6 +239,7 @@ export default class LowerThirdGraphic extends LitElement implements OGrafGraphi
    */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.scrollingTextClock?.stop();
     const runningTimeline = this.runningPillsTimeline;
     this.runningPillsTimeline = undefined;
     if (runningTimeline !== undefined) {

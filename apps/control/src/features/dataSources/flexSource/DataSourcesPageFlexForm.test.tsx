@@ -82,12 +82,14 @@ describe('a new flex source', () => {
     });
     const optionNames = screen.getAllByRole('option').map((option) => option.textContent);
 
-    // Assert: "none" and the eight mapping transforms; "Tempo de volta como texto" formats
+    // Assert: "none" and the nine mapping transforms (numberToText since BAJAOVRLAY-53);
+    // "Tempo de volta como texto" formats
     // canonical data for the screen and belongs to an item's binding, not to a mapping.
     expect(optionNames, 'a mapping rule must offer mapping transforms only').toEqual([
       'Sem transformação',
       'Texto para número',
       'Texto para número inteiro',
+      'Número para texto',
       'Segundos para milissegundos',
       'Tempo de volta (texto) para milissegundos',
       'Data e hora ISO 8601 para milissegundos',

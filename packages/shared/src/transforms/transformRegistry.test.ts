@@ -45,6 +45,7 @@ describe('transformRegistry', () => {
     expect(idsAndFamilies, 'the registry must list exactly these transforms').toEqual([
       ['textToNumber', 'mapping'],
       ['textToInteger', 'mapping'],
+      ['numberToText', 'mapping'],
       ['secondsToMs', 'mapping'],
       ['lapTimeTextToMs', 'mapping'],
       ['isoDateTextToMs', 'mapping'],
@@ -144,16 +145,18 @@ describe('transformRegistry', () => {
     },
   );
 
-  it('lists the eight mapping transforms for the flex form', () => {
+  it('lists the nine mapping transforms for the flex form', () => {
     // Arrange: nothing to set up.
 
     // Act: list the mapping family, as the flex source form's dropdown does.
     const mappingTransformIds = listTransformsOfFamily('mapping').map((transform) => transform.id);
 
-    // Assert: the eight of BAJAOVRLAY-40, none of the binding ones.
+    // Assert: the eight of BAJAOVRLAY-40 and numberToText (BAJAOVRLAY-53), none of the
+    // binding ones.
     expect(mappingTransformIds, 'the flex form must offer mapping transforms only').toEqual([
       'textToNumber',
       'textToInteger',
+      'numberToText',
       'secondsToMs',
       'lapTimeTextToMs',
       'isoDateTextToMs',

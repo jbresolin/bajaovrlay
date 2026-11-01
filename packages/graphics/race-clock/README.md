@@ -2,8 +2,9 @@
 
 The race clock OGraf graphic in Ardósia: the card top-right of the stage with the white logo
 and the session title in its head, the caption line (clock mode, leader laps) over the running
-race time, and the optional flag band. `race-clock.ograf.json` is what a renderer reads; its
-`main` points at the default export of `src/race-clock.ts` (a Lit element), which only wires
+race time, and the optional flag band. A session title too long for the card scrolls inside
+its box (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55). `race-clock.ograf.json` is what
+a renderer reads; its `main` points at the default export of `src/race-clock.ts` (a Lit element), which only wires
 the pure modules beside it: data model, time (the sum, its H:MM:SS text — shared with the
 control page's session card — and the server-aligned "now" it counts with, never `Date.now()`,
 are `@bajaovrlay/shared/clock`), GSAP animations, `ptBR.ts`. The clock's reading (the five

@@ -21,7 +21,9 @@
  *
  * What these tests deliberately do not cover:
  *   - Motion; the screenshots show the end of the play-in animation only. The pages are
- *     held on page 1 (paging firstPageOnly) so no page turn can land during a capture.
+ *     held on page 1 (paging firstPageOnly) so no page turn can land during a capture, and
+ *     a name too long for its column is held at its start (BAJAOVRLAY-55: cut at the
+ *     column's edge, no fade), so no scroll can land during one either.
  *   - The stage behind the tower: the preview's stand-in is a gradient, not the footage
  *     of the design pages; the tower itself is what is compared.
  *   - Other operating systems: baselines are rendered on Linux (CI). After a deliberate
@@ -29,6 +31,8 @@
  *     `pnpm --filter @bajaovrlay/positions-tower test:e2e --update-snapshots`.
  */
 import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 import { readEnduroSampleEntries } from './sampleEntries.js';
@@ -38,6 +42,7 @@ import { readEnduroSampleEntries } from './sampleEntries.js';
  * the play-in to finish and for the theme's font to be ready.
  */
 async function openPreviewOnPageOne(page: Page, settings: Record<string, unknown>): Promise<void> {
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   const towerData = { entries: readEnduroSampleEntries(), paging: 'firstPageOnly', ...settings };
   await page.goto(buildPreviewAddressWithData(towerData));
   await expect(page.locator('body'), 'the tower must be on air').toHaveAttribute(

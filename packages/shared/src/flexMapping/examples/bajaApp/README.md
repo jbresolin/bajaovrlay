@@ -1,0 +1,19 @@
+# packages/shared/src/flexMapping/examples/bajaApp
+
+Answers of the Baja app's public results API (`docs/results-api.md` in the Baja app repo),
+the fixtures of BAJAOVRLAY-53's tests. Start with `bajaAppFixtures.testSupport.ts` beside
+`applyFlexMapping.ts`, which reads them.
+
+- **Real, saved with curl on 2026-10-30** from `https://api.bajasaebrasil.net/resultados/…`,
+  byte for byte (prettier leaves them alone): `equipes-26BR.json` (team 100 has an empty
+  short name), `equipes-26SE.json` (no team has a short name), `resultado-26BR_GER.json`
+  (cars 46 and 54 disqualified, both "position 50"), `torneio-26BR_SPR.json` and
+  `torneio-25SU_SPR.json` (byes, best of 3, the third place listed after the final).
+- **From the API's doc**, as no counted race exists yet: `corrida-00NE_ZZL.from-doc.json`
+  (the race ten minutes in), `corrida-26BR_END-waiting.from-doc.json` (before the start,
+  `elapsed_ms` null) and `resultado-25SU_GER-spoilers.from-doc.json` (the doc's one row
+  during spoilers, with the real 25SU table's columns and team).
+- **Made up**: `torneio-25SU_SPR-pending.made-up.json`, 25SU's Super Prime with the
+  semifinals still running, so the final and third place have pending slots.
+
+No BajaOvrLay code names these fields: only these files and the draft presets of the tests.

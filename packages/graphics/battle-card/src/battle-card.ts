@@ -29,6 +29,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -83,7 +88,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The battle card graphic; the default export a renderer registers as a custom element. */
 export default class BattleCardGraphic extends LitElement implements OGrafGraphic {
-  static override styles = battleCardStyles;
+  static override styles = [scrollingTextStyles, battleCardStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -99,6 +104,8 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
   // The card has one in or out at a time, so one timeline is all there is to end.
   private runningPiecesTimeline: BattleCardTimeline | undefined = undefined;
   private isStoppingOut = false;
+  /** The long names' scrolling cycle (BAJAOVRLAY-55); made at load, once Lit has rendered. */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
   private readonly trendCrossfade = new BattleTrendCrossfade((trend) => {
     this.putTrendAtRest(trend);
   });
@@ -142,6 +149,10 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
     await this.redrawAtRest();
     const parts = findBattleCardParts(this.renderRoot);
     this.parts = parts;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     placePiecesOffAir(parts);
     await waitForThemeFontsToBeReady(this);
 
@@ -192,6 +203,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -210,12 +222,14 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     this.trendCrossfade.finish();
     this.isStoppingOut = true;
     await this.runPiecesTimeline(
       buildStopOutTimeline(this.requireParts()),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     this.isStoppingOut = false;
     if (this.readLifecycleNow() === 'offAir') {
       await this.redrawAtRest();
@@ -259,6 +273,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
   /** OGraf dispose: ends every timeline, the crossfade included; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.scrollingTextClock?.stop();
     this.trendCrossfade.finish();
     this.finishRunningPiecesTimelineAtOnce();
     return okAnswer;
@@ -270,6 +285,7 @@ export default class BattleCardGraphic extends LitElement implements OGrafGraphi
    */
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.scrollingTextClock?.stop();
     this.trendCrossfade.finish();
     this.finishRunningPiecesTimelineAtOnce();
   }

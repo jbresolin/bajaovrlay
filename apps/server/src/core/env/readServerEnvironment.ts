@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { parseSourceHostAllowlist } from '../../modules/dataSources/index.js';
+import { parsePublicOrigins } from '../../modules/media/index.js';
 import { parseApiTokens } from '../apiAccess/apiTokens.js';
 import { serverLogLevels } from '../logger/createLogger.js';
 
@@ -46,6 +47,23 @@ const ServerEnvironmentSchema = z.object({
         return z.NEVER;
       }
       return parsing.apiTokens;
+    }),
+  // The addresses of a reverse proxy whose pages may upload images, read here into the
+  // list of origins: unset or empty is none, and an entry that is not an http(s) origin
+  // stops the boot naming it, since a typo would otherwise refuse every upload (403).
+  BAJAOVRLAY_PUBLIC_ORIGINS: z
+    .string()
+    .optional()
+    .transform((text, context) => {
+      const parsing = parsePublicOrigins(text);
+      if (!parsing.isValid) {
+        context.addIssue({
+          code: 'custom',
+          message: `"${parsing.badEntry}" is not an address like https://bajaovrlay.casa.lan (scheme and host, nothing after them)`,
+        });
+        return z.NEVER;
+      }
+      return parsing.publicOrigins;
     }),
 });
 

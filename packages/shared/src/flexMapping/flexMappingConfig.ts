@@ -5,19 +5,41 @@ import { ptBRDataShapes } from '../dataShapes/ptBRDataShapes.js';
 import { checkTransformParameters } from '../transforms/checkTransformParameters.js';
 import { ptBRTransforms } from '../transforms/ptBRTransforms.js';
 import { findTransform } from '../transforms/transformRegistry.js';
-import { findMappableField, type MappableFieldLevel } from './mappableFields.js';
+import {
+  FlexIncompleteEntryConditionSchema,
+  FlexLookupSchema,
+  FlexRefusalFlagSchema,
+  FlexScorePartsFromColumnsSchema,
+  FlexTableLayoutSchema,
+} from './flexMappingListOptions.js';
+import {
+  checkAlternativesOfRule,
+  checkPathsParse,
+  countSourcesNamed,
+  doesSourceReadTheData,
+  FlexAlternativeSourceSchema,
+  FlexColumnReadingSchema,
+  FlexLookupReadingSchema,
+  listPathsOfOneSource,
+} from './flexRuleSources.js';
+import { checkOneShapeMapping } from './flexShapeMappingChecks.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
-import { parseValuePath } from './valuePath.js';
 
 /**
  * One field rule: the canonical field it fills, and exactly one source for its value.
- * - `fromPath` reads the response (or the list element, for an entry field), with at most
- *   one transform from the registry (`transformId`, and `transformParameters` for the one
- *   that takes any). One transform per rule: a chain is out of scope (see the README).
+ * - `fromPath` reads the response (or the list element, for an entry field).
+ * - `fromParent` reads the outer element of a nested list (nestedEntriesPath), entries only.
+ * - `fromLookup` reads the element of a lookup the entry's key matched, entries only.
+ * - `fromColumn` reads the entry's cell under a column's header (the mapping's table).
+ * - `firstOf` tries alternatives in order (flexRuleSources.ts): the first value present,
+ *   not null and not blank text wins.
  * - `constantValue` is a fixed value, such as `sessionKind: "enduro"`.
  * - `fromListOrder` is the element's 1-based place in the list, for a source that sends
  *   its list in order but no place number.
  * - `fromPollMoment` is the moment of the poll on the server's clock.
+ * A source that reads the data may have one transform from the registry (`transformId`,
+ * and `transformParameters` for one that takes any); with `firstOf` it runs on the value
+ * read, never on a fixed value. One transform per rule: a chain is out of scope.
  * Strict, so a misspelt key ("fromPth") is refused instead of leaving a rule with no source.
  */
 export const FlexFieldRuleSchema = z
@@ -36,6 +58,10 @@ export const FlexFieldRuleSchema = z
       constantValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
       fromListOrder: z.literal(true).optional(),
       fromPollMoment: z.literal(true).optional(),
+      fromParent: z.string().optional(),
+      fromLookup: FlexLookupReadingSchema.optional(),
+      fromColumn: FlexColumnReadingSchema.optional(),
+      firstOf: z.array(FlexAlternativeSourceSchema).optional(),
     },
     { error: explainUnknownKeysOfRule },
   )
@@ -48,12 +74,17 @@ export type FlexFieldRule = z.infer<typeof FlexFieldRuleSchema>;
 
 /**
  * The mapping of one shape: which request's response it reads, and its rules. A shape's
- * rules read that one response only: there are no joins across requests (see the README).
+ * rules read that one response, and other requests only through its lookups.
  * - `fields` fill the shape's own fields (all of the session's; `sessionId`, `updatedAtMs`
  *   and standings' `scope` for the lists);
  * - `entriesPath` and `entryFields`, for every shape but the session: the path to the
  *   list in the response, and the rules applied to each element of it. For brackets the
- *   list is the matches, each naming its round (BAJAOVRLAY-25).
+ *   list is the matches, each naming its round (BAJAOVRLAY-25);
+ * - `nestedEntriesPath`: the list inside each element of that list, each inner element
+ *   being one entry, so rounds holding matches are read as matches (BAJAOVRLAY-53);
+ * - `lookups`, `table`, `scorePartsFromColumns`, `refuseWhen`, `workOutGapsFromLaps` and
+ *   `entryIsIncompleteWhen`: see flexMappingListOptions.ts and the README.
+ * Which shape may declare what is checked by flexShapeMappingChecks.ts.
  */
 export const FlexShapeMappingSchema = z
   .strictObject(
@@ -62,6 +93,13 @@ export const FlexShapeMappingSchema = z
       /** The request whose response this shape reads (the httpJson config's requests). */
       requestId: z.string().min(1),
       entriesPath: z.string().optional(),
+      nestedEntriesPath: z.string().optional(),
+      lookups: z.array(FlexLookupSchema).optional(),
+      table: FlexTableLayoutSchema.optional(),
+      scorePartsFromColumns: FlexScorePartsFromColumnsSchema.optional(),
+      refuseWhen: FlexRefusalFlagSchema.optional(),
+      workOutGapsFromLaps: z.boolean().optional(),
+      entryIsIncompleteWhen: z.array(FlexIncompleteEntryConditionSchema).min(1).optional(),
       fields: z.array(FlexFieldRuleSchema),
       entryFields: z.array(FlexFieldRuleSchema).optional(),
     },
@@ -103,25 +141,15 @@ function explainUnknownKeysOfMapping(issue: z.core.$ZodRawIssue): string | undef
   return undefined;
 }
 
-/** Counts the sources a rule names: exactly one is right. */
-function countSourcesOfRule(rule: FlexFieldRule): number {
-  const sourceIsNamed = [
-    rule.fromPath !== undefined,
-    rule.constantValue !== undefined,
-    rule.fromListOrder !== undefined,
-    rule.fromPollMoment !== undefined,
-  ];
-  return sourceIsNamed.filter((isNamed) => isNamed).length;
-}
-
 /**
- * Checks what one rule can say about itself, whatever shape it belongs to: one source, a
- * transform only on a path, parameters only with a transform, a path that parses, and a
- * transform the registry has, with parameters its schema accepts.
+ * Checks what one rule can say about itself, whatever shape it belongs to: one source, its
+ * alternatives (flexRuleSources.ts), a transform only on a source that reads the data,
+ * parameters only with a transform, paths that parse, and a transform the registry has,
+ * with parameters its schema accepts.
  */
 function checkOneFieldRule(rule: FlexFieldRule, context: z.RefinementCtx): void {
   const reasons = ptBRFlexMapping.configReasons;
-  if (countSourcesOfRule(rule) !== 1) {
+  if (countSourcesNamed(rule) !== 1) {
     context.addIssue({
       code: 'custom',
       path: [],
@@ -130,14 +158,12 @@ function checkOneFieldRule(rule: FlexFieldRule, context: z.RefinementCtx): void 
     return;
   }
 
-  if (rule.fromPath !== undefined) {
-    const pathParsing = parseValuePath(rule.fromPath);
-    if (!pathParsing.ok) {
-      context.addIssue({ code: 'custom', path: ['fromPath'], message: pathParsing.reason });
-    }
+  checkPathsParse(listPathsOfOneSource(rule, []), context);
+  if (rule.firstOf !== undefined) {
+    checkAlternativesOfRule(rule.targetField, rule.firstOf, context);
   }
 
-  if (rule.transformId !== undefined && rule.fromPath === undefined) {
+  if (rule.transformId !== undefined && !doesSourceReadTheData(rule)) {
     context.addIssue({
       code: 'custom',
       path: ['transformId'],
@@ -188,122 +214,6 @@ function checkOneFieldRule(rule: FlexFieldRule, context: z.RefinementCtx): void 
       message: transformCheck.reason,
     });
   }
-}
-
-/**
- * Checks one shape's mapping: the session has no list, and the lists have their path and
- * their entry rules; every target is a field of this shape at this level, named once.
- */
-function checkOneShapeMapping(mapping: FlexShapeMapping, context: z.RefinementCtx): void {
-  const reasons = ptBRFlexMapping.configReasons;
-  const shapeName = ptBRDataShapes.shapeNames[mapping.shapeKey];
-
-  if (mapping.shapeKey === 'session') {
-    if (mapping.entriesPath !== undefined) {
-      context.addIssue({
-        code: 'custom',
-        path: ['entriesPath'],
-        message: reasons.sessionHasNoList,
-      });
-    }
-    if (mapping.entryFields !== undefined) {
-      context.addIssue({
-        code: 'custom',
-        path: ['entryFields'],
-        message: reasons.sessionHasNoList,
-      });
-    }
-  } else {
-    checkListPathOfMapping(mapping, shapeName, context);
-  }
-
-  checkTargetsOfRules(mapping.shapeKey, mapping.fields, 'topLevel', ['fields'], context);
-  if (mapping.entryFields !== undefined) {
-    checkTargetsOfRules(mapping.shapeKey, mapping.entryFields, 'entry', ['entryFields'], context);
-  }
-}
-
-/** Checks that a list shape has its list's path, readable, and entry rules. */
-function checkListPathOfMapping(
-  mapping: FlexShapeMapping,
-  shapeName: string,
-  context: z.RefinementCtx,
-): void {
-  const reasons = ptBRFlexMapping.configReasons;
-  if (mapping.entriesPath === undefined) {
-    context.addIssue({
-      code: 'custom',
-      path: ['entriesPath'],
-      message: reasons.listShapeNeedsEntriesPath(shapeName),
-    });
-  } else {
-    const pathParsing = parseValuePath(mapping.entriesPath);
-    if (!pathParsing.ok) {
-      context.addIssue({ code: 'custom', path: ['entriesPath'], message: pathParsing.reason });
-    }
-  }
-  if (mapping.entryFields === undefined) {
-    context.addIssue({
-      code: 'custom',
-      path: ['entryFields'],
-      message: reasons.listShapeNeedsEntryFields(shapeName),
-    });
-  }
-}
-
-/**
- * Checks the targets of one list of rules: each is a mappable field of the shape, at the
- * level of this list, named by one rule only; "ordem na lista" only fills entry fields.
- */
-function checkTargetsOfRules(
-  shapeKey: DataShapeKey,
-  rules: FlexFieldRule[],
-  level: MappableFieldLevel,
-  pathOfRules: string[],
-  context: z.RefinementCtx,
-): void {
-  const reasons = ptBRFlexMapping.configReasons;
-  const shapeName = ptBRDataShapes.shapeNames[shapeKey];
-  const targetFieldsSeen = new Set<string>();
-
-  rules.forEach((rule, ruleIndex) => {
-    const pathOfTarget = [...pathOfRules, ruleIndex, 'targetField'];
-    const mappableField = findMappableField(shapeKey, rule.targetField);
-    if (mappableField === undefined) {
-      context.addIssue({
-        code: 'custom',
-        path: pathOfTarget,
-        message: reasons.unknownTargetField(shapeName, rule.targetField),
-      });
-      return;
-    }
-
-    if (mappableField.level !== level) {
-      const message =
-        mappableField.level === 'entry'
-          ? reasons.entryFieldAtTopLevel(mappableField.label)
-          : reasons.topLevelFieldInEntry(mappableField.label);
-      context.addIssue({ code: 'custom', path: pathOfTarget, message });
-      return;
-    }
-
-    if (targetFieldsSeen.has(rule.targetField)) {
-      context.addIssue({
-        code: 'custom',
-        path: pathOfTarget,
-        message: reasons.targetFieldTwice(mappableField.label),
-      });
-    }
-    targetFieldsSeen.add(rule.targetField);
-
-    if (rule.fromListOrder !== undefined && level === 'topLevel') {
-      context.addIssue({
-        code: 'custom',
-        path: [...pathOfRules, ruleIndex, 'fromListOrder'],
-        message: reasons.listOrderOnlyForEntries(mappableField.label),
-      });
-    }
-  });
 }
 
 /** Checks the list of mappings: at least one, and each shape once. */

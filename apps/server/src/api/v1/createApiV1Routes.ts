@@ -52,6 +52,8 @@ export function createApiV1Routes(options: {
   mediaFolder?: string | undefined;
   /** BAJAOVRLAY_API_TOKENS as read at boot; the command API is off when left out. */
   apiTokens?: ApiTokens | undefined;
+  /** BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a proxy's pages that may upload; none when left out. */
+  publicOrigins?: readonly string[] | undefined;
 }): OpenAPIHono<ServerAppEnvironment> {
   const readSourceEnvironmentVariable =
     options.readSourceEnvironmentVariable ?? readServerEnvironmentVariable;
@@ -129,7 +131,12 @@ export function createApiV1Routes(options: {
     );
     apiRoutes.openapi(postMediaRoute, async (context) => {
       // Until M4 logins, a page of another site must not upload through the operator's browser.
-      if (isUploadFromAnotherSite(context.req.header('origin'), context.req.url)) {
+      const isFromAnotherSite = isUploadFromAnotherSite(
+        context.req.header('origin'),
+        context.req.url,
+        options.publicOrigins ?? [],
+      );
+      if (isFromAnotherSite) {
         return context.json(buildUploadFromAnotherSiteAnswer(), 403);
       }
       const upload = await readUploadedFile(context);

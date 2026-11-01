@@ -5,6 +5,7 @@
  * `shape-rendering: crispEdges` so no module edge is smoothed into grey. Lit keeps the card
  * element itself across redraws, so the animations' inline styles on it survive an update.
  */
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { html, svg, type TemplateResult } from 'lit';
 
 import { ptBR } from './ptBR.js';
@@ -53,10 +54,12 @@ export function renderQrCardTemplate(drawing: QrCardDrawing | undefined): Templa
   return html`<section class="qr-card" data-testid="qr-card-panel">
     <div class="code-box" data-testid="qr-card-code-box">${renderCode(drawing)}</div>
     <div class="text">
-      <span class="call-to-action" data-testid="qr-card-call-to-action"
-        >${drawing.data.callToAction}</span
+      <span class="call-to-action scrolling-text-box" data-testid="qr-card-call-to-action"
+        >${renderScrollingText(drawing.data.callToAction)}</span
       >
-      <span class="address" data-testid="qr-card-address">${drawing.data.address}</span>
+      <span class="address scrolling-text-box" data-testid="qr-card-address"
+        >${renderScrollingText(drawing.data.address)}</span
+      >
     </div>
   </section>`;
 }

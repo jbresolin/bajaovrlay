@@ -76,9 +76,14 @@ export const podiumStyles = css`
     color: var(--leader-text);
   }
 
-  /* The team: a long name wraps inside the card rather than spill past it. */
-  .team-name {
+  /* The team and the school: each one line, a scrolling box (scrollingTextStyles) never
+     wider than the card; a long name scrolls inside it (BAJAOVRLAY-55), never wraps. */
+  .team-name,
+  .school-name {
     max-width: 100%;
+  }
+
+  .team-name {
     font-weight: var(--weight-display);
     font-size: var(--size-name);
     letter-spacing: var(--tracking-display);

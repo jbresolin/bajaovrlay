@@ -95,3 +95,23 @@ export const textToIntegerTransform: MappingTransform = {
   description: ptBRTransforms.transforms.textToInteger.description,
   apply: (value) => readTextAsInteger(value),
 };
+
+/**
+ * Writes a number as text, for a canonical text id a source sends as a number (a bracket
+ * match's id). Numbers only: text passing through would hide a source that changed format.
+ */
+function writeNumberAsText(value: unknown): TransformResult {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return refuseTransformValue(ptBRTransforms.reasons.notANumber(quoteValueForReason(value)));
+  }
+  return giveTransformedValue(String(value));
+}
+
+/** 65 becomes "65". */
+export const numberToTextTransform: MappingTransform = {
+  id: 'numberToText',
+  family: 'mapping',
+  label: ptBRTransforms.transforms.numberToText.label,
+  description: ptBRTransforms.transforms.numberToText.description,
+  apply: (value) => writeNumberAsText(value),
+};

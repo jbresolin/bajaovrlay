@@ -23,12 +23,15 @@
  *
  * What these tests deliberately do not cover:
  *   - Motion; the shots show the end of the play-in (or of the turns to page 3). The page
- *     hold is made very long through a token override, so no timer turn lands in a shot.
+ *     hold is made very long through a token override, so no timer turn lands in a shot,
+ *     and so is the hold of a text too long for its box (BAJAOVRLAY-55: cut at its box's
+ *     edge, no fade), so no scroll lands in one either.
  *   - The footage of the design's frame-1 shots; the grey and black stages are compared.
  *   - Other operating systems: baselines are rendered on Linux. After a deliberate visual
  *     change, refresh them with `pnpm --filter @bajaovrlay/standings test:e2e --update-snapshots`.
  */
 import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
 import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
@@ -43,15 +46,18 @@ async function waitUntilOnAir(page: Page): Promise<void> {
 }
 
 /**
- * Opens the preview with the data on the stage, the page hold made 10 minutes long so no
- * page turns by itself, and waits for the play-in to end and the font to be ready.
+ * Opens the preview with the data on the stage, the page hold and a long text's hold made
+ * 10 minutes long so no page turns and no text scrolls by itself, and waits for the play-in to end and the font to be ready.
  */
 async function openPreviewOnAir(
   page: Page,
   data: Record<string, unknown>,
   stage: string,
 ): Promise<void> {
-  await placeTokenOverridesBeforeTheGraphicLoads(page, { '--motion-board-hold': '600000ms' });
+  await placeTokenOverridesBeforeTheGraphicLoads(page, {
+    '--motion-board-hold': '600000ms',
+    ...textTokensHoldingAtTheStart,
+  });
   await page.goto(`${buildPreviewAddressWithData(data)}&stage=${stage}`);
   await waitUntilOnAir(page);
   await page.evaluate(() => document.fonts.ready.then(() => undefined));

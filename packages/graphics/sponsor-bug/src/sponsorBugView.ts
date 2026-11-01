@@ -12,6 +12,7 @@
  */
 // The white mark lives in the theme package; Vite bundles a copy into this graphic's
 // dist/assets/, so the built bug works from the preview and from the air alike.
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import markAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, nothing, type TemplateResult } from 'lit';
 
@@ -22,9 +23,11 @@ import {
   type SponsorBugData,
 } from './sponsorBugModel.js';
 
-/** The caption over the sponsor's logo ("Apresentado por"). */
+/** The caption over the sponsor's logo ("Apresentado por"), a scrolling box (BAJAOVRLAY-55). */
 function renderCaption(data: SponsorBugData): TemplateResult {
-  return html`<span class="caption" data-testid="sponsor-bug-caption">${data.caption}</span>`;
+  return html`<span class="caption scrolling-text-box" data-testid="sponsor-bug-caption"
+    >${renderScrollingText(data.caption ?? '')}</span
+  >`;
 }
 
 /** The sponsor cell: the caption (when given) over the logo, on the card or on the plate. */
@@ -43,10 +46,10 @@ function renderSponsorCell(data: SponsorBugData, cells: SponsorBugCells): Templa
   ></span>`;
 }
 
-/** The event word beside the mark ("ENDURO"). */
+/** The event word beside the mark ("ENDURO"), a scrolling box (BAJAOVRLAY-55). */
 function renderEventWord(data: SponsorBugData): TemplateResult {
-  return html`<span class="event-word" data-testid="sponsor-bug-event-word"
-    >${data.eventWord}</span
+  return html`<span class="event-word scrolling-text-box" data-testid="sponsor-bug-event-word"
+    >${renderScrollingText(data.eventWord ?? '')}</span
   >`;
 }
 

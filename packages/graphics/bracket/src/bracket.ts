@@ -31,6 +31,11 @@ import type {
   OGrafStopActionParams,
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { teamWithSchoolStyles } from '@bajaovrlay/graphics-kit/teamWithSchoolStyles';
 import { waitForImagesToSettle } from '@bajaovrlay/graphics-kit/waitForImagesToSettle';
 import { wideBoardFrameStyles } from '@bajaovrlay/graphics-kit/wideBoardFrameStyles';
@@ -81,6 +86,7 @@ const okAnswer: OGrafReturnPayload = { statusCode: 200 };
 /** The bracket graphic; the default export a renderer registers as a custom element. */
 export default class BracketGraphic extends LitElement implements OGrafGraphic {
   static override styles = [
+    scrollingTextStyles,
     wideBoardFrameStyles,
     wideBoardHeadStyles,
     carChipStyles,
@@ -108,6 +114,11 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
   // marks Próximo's lift-out to a new view: an update meanwhile is only kept, like one
   // during the stop-out, and the play draws it once the old view is gone.
   private readonly moves = createMoveBookkeeping();
+  /**
+   * The one cycle of the texts too long for their box, every car on the stage and the event
+   * line on it (BAJAOVRLAY-55). Made at load: the shadow root exists once Lit has rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
     return renderBracketTemplate(this.onScreen);
@@ -134,6 +145,10 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     // Lit renders only connected elements: a load on an element not yet in the page
     // waits here until it is added.
     await this.redrawAtStep(dataCheck.data, 0);
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     const parts = this.requireParts();
     placeHeadOffAir(parts.tokensSource, parts.head);
     hideEveryPieceAtOnce(parts);
@@ -200,6 +215,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     await this.redrawAtStep(dataNow, stepNow);
     if (plan.moveKind === 'atOnce') {
       showEveryPieceAtOnce(parts);
+      this.scrollingTextClock?.start();
       return { statusCode: 200, currentStep: stepNow };
     }
     await this.stepMotions.run(
@@ -209,6 +225,9 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     if (this.moves.isOvertaken(moveNumberOfThisPlay)) {
       return answerAfterAnotherMoveTookOver(this.readLifecycleNow(), this.currentStep);
     }
+    // Started once the step has risen; on a later step it is already running, and the
+    // texts the step redrew join its next cycle.
+    this.scrollingTextClock?.start();
     // An update during the rise is drawn in place, and may have brought the step back.
     return { statusCode: 200, currentStep: this.currentStep };
   }
@@ -228,9 +247,11 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
     const moveNumberOfThisStop = this.moves.startAMove();
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     this.resultCrossfades.finishEveryTimelineAtOnce();
     const parts = this.requireParts();
     await this.stepMotions.run(buildLiftOutOfThePieces(parts, true), params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
 
     // A play that came during the stop-out cut it short and owns the bracket now.
     if (this.moves.isOvertaken(moveNumberOfThisStop) || this.readLifecycleNow() !== 'offAir') {
@@ -292,6 +313,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
   /** OGraf dispose: ends every running motion and crossfade; pending actions resolve. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.scrollingTextClock?.stop();
     this.moves.overtakeEveryMove();
     this.stepMotions.finishEveryTimelineAtOnce();
     this.resultCrossfades.finishEveryTimelineAtOnce();
@@ -304,6 +326,7 @@ export default class BracketGraphic extends LitElement implements OGrafGraphic {
    */
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.scrollingTextClock?.stop();
     // A play pending on a motion ended here gives the bracket up rather than drawing on.
     this.moves.overtakeEveryMove();
     this.stepMotions.finishEveryTimelineAtOnce();

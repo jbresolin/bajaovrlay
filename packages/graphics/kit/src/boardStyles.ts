@@ -95,11 +95,12 @@ export const narrowBoardStyles = css`
     white-space: nowrap;
   }
 
+  /* A scrolling box (scrollingTextStyles): a long event line scrolls (BAJAOVRLAY-55). */
   .board-subtitle {
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: nowrap;
     padding-left: var(--space-2);
   }
 

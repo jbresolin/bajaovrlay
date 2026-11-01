@@ -60,12 +60,13 @@ const moduleStateThatCannotLeak = [
   // the list is written in code and frozen, so every call gets the same answer it would
   // have built, only sooner.
   'packages/shared/src/dataShapes/bindablePaths.ts: pathsListedForEachShape',
-  // The five below are fixed lookup lists: filled where they are made, never changed.
+  // The six below are fixed lookup lists: filled where they are made, never changed.
   'apps/server/src/modules/media/rasterImageSizes.ts: jpegFrameHeaderMarkers',
   'apps/server/src/modules/media/rasterImageSizes.ts: jpegMarkersWithoutLength',
   'apps/server/src/modules/events/reducers/recordDetectedEvents.ts: kindsSupersededByANewerEvent',
   'packages/shared/src/dataShapes/positionsShape.ts: statusesOutOfLapOrder',
   'packages/shared/src/dataSources/httpJsonConfig.ts: headerNamesFetchSetsItself',
+  'packages/shared/src/flexMapping/gapsFromLaps.ts: statusesStillInTheRace',
   // Fixed addresses of files: a URL object is never changed after it is made.
   'apps/server/src/readServerVersion.ts: serverPackageJsonUrl',
   'apps/server/src/readBuildId.ts: buildIdFileUrl',

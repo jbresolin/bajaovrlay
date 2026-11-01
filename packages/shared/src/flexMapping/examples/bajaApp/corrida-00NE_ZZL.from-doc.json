@@ -1,0 +1,106 @@
+{
+  "event_id": "00NE",
+  "prova_id": "ZZL",
+  "name": "Enduro de teste",
+  "simulation": false,
+  "calculated_at_ms": 1760000600000,
+  "clock": {
+    "state": "running",
+    "start_ms": 1760000000000,
+    "finish_ms": null,
+    "elapsed_ms": 600000,
+    "server_time_ms": 1760000600000,
+    "planned_duration_ms": null,
+    "scoring_start_ms": 1760000000000,
+    "prova_status": "partial"
+  },
+  "pace": {
+    "median_lap_ms": null,
+    "laps_in_window": 5,
+    "window_s": 900
+  },
+  "cars": [
+    {
+      "position": 1,
+      "number": 11,
+      "team": "Equipe 11",
+      "school": "Escola 11",
+      "laps": 3,
+      "last_pass_ms": 1760000390000,
+      "last_lap_ms": 120000,
+      "best_lap_ms": 120000,
+      "expected_lap_ms": null,
+      "status": "running",
+      "status_since_ms": null,
+      "pit": {
+        "inside": false,
+        "since_ms": null,
+        "stops": 0,
+        "total_ms": 0,
+        "last_ms": null
+      },
+      "fueling": null
+    },
+    {
+      "position": 2,
+      "number": 22,
+      "team": "Equipe 22",
+      "school": "Escola 22",
+      "laps": 2,
+      "last_pass_ms": 1760000300000,
+      "last_lap_ms": 130000,
+      "best_lap_ms": 130000,
+      "expected_lap_ms": null,
+      "status": "running",
+      "status_since_ms": null,
+      "pit": {
+        "inside": false,
+        "since_ms": null,
+        "stops": 0,
+        "total_ms": 0,
+        "last_ms": null
+      },
+      "fueling": null
+    },
+    {
+      "position": null,
+      "number": 33,
+      "team": "Equipe 33",
+      "school": "Escola 33",
+      "laps": 0,
+      "last_pass_ms": 1760000050000,
+      "last_lap_ms": null,
+      "best_lap_ms": null,
+      "expected_lap_ms": null,
+      "status": "running",
+      "status_since_ms": null,
+      "pit": {
+        "inside": false,
+        "since_ms": null,
+        "stops": 0,
+        "total_ms": 0,
+        "last_ms": null
+      },
+      "fueling": null
+    }
+  ],
+  "best_lap": {
+    "number": 11,
+    "team": "Equipe 11",
+    "school": "Escola 11",
+    "lap": 1,
+    "lap_time_ms": 120000,
+    "at_ms": 1760000150000
+  },
+  "best_lap_history": [
+    {
+      "number": 11,
+      "team": "Equipe 11",
+      "school": "Escola 11",
+      "lap": 1,
+      "lap_time_ms": 120000,
+      "at_ms": 1760000150000
+    }
+  ],
+  "recent_stops": []
+}

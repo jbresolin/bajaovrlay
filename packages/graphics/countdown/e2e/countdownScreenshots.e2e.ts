@@ -16,10 +16,13 @@
  *     --board-width (1280 px) wide and centred.
  *
  * What these tests deliberately do not cover:
- *   - Motion and the count moving; countdownLifecycle.e2e.ts.
+ *   - Motion and the count moving; countdownLifecycle.e2e.ts. A session name or event too
+ *     long for its box is held at its start (BAJAOVRLAY-55), so no scroll lands in a shot.
  *   - Other operating systems: baselines are rendered on Linux. After a deliberate visual
  *     change, refresh them with `pnpm --filter @bajaovrlay/countdown test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** 09:36:15 on Sunday 30 March 2025 in Brasília: the design's 23:45 before the start. */
@@ -45,6 +48,7 @@ function buildAddressOfTheDesignsSample(stage: string, layout: 'card' | 'fullscr
  */
 async function openPreviewOnAirAtTheDesignsMoment(page: Page, address: string): Promise<void> {
   await page.clock.install({ time: designsMomentMs - 10_000 });
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(address);
   await expect(page.locator('body'), 'the countdown must be on air').toHaveAttribute(
     'data-preview-state',

@@ -5,6 +5,8 @@
  * `ptBR.dataSources.flexForm`. The shapes' names, the canonical fields' labels and the
  * transforms' labels come from the shared catalogs, which the server shows too.
  */
+import { ptBRFlexMappingOptions } from './ptBRFlexMappingOptions';
+
 export const ptBRFlexSourceForm = {
   // The requests: one block per GET the source makes at every poll.
   requestsTitle: 'Requisições',
@@ -20,6 +22,10 @@ export const ptBRFlexSourceForm = {
   urlPlaceholder: 'http://192.168.0.20:8080/classificacao',
   headersTitle: 'Cabeçalhos',
   queryParametersTitle: 'Parâmetros da URL',
+  // A request fetched less often than the source is polled (BAJAOVRLAY-53).
+  refreshEverySeconds: 'Atualizar a cada (s)',
+  refreshEverySecondsHint:
+    'Vazio: a cada leitura. Para uma lista que muda pouco, como as equipes: de 60 a 3600 s.',
   addHeaderButton: '+ Cabeçalho',
   addQueryParameterButton: '+ Parâmetro',
   // One header or query parameter row: its name, then a value typed here or the name of
@@ -62,6 +68,7 @@ export const ptBRFlexSourceForm = {
   entryFieldsTitle: 'Campos de cada item da lista',
   requiredMark: 'obrigatório',
   emptyRowHint: 'Um campo "Não mapeado" fica de fora.',
+  mappingOptions: ptBRFlexMappingOptions,
   // One row per canonical field. Each control's name carries the field's label, so a
   // screen reader (and a test) tells "Caminho de Equipe" from "Caminho de Escola".
   fieldRule: {
@@ -72,11 +79,35 @@ export const ptBRFlexSourceForm = {
       constant: 'Valor fixo',
       listOrder: 'Ordem na lista',
       pollMoment: 'Momento da leitura',
+      parent: 'Item de fora',
+      lookup: 'Consulta',
+      column: 'Coluna',
+      alternatives: 'Alternativas',
     },
     path: (fieldLabel: string) => `Caminho de ${fieldLabel}`,
     constant: (fieldLabel: string) => `Valor fixo de ${fieldLabel}`,
+    parentPath: (fieldLabel: string) => `Caminho no item de fora de ${fieldLabel}`,
+    lookupName: (fieldLabel: string) => `Consulta de ${fieldLabel}`,
+    lookupPath: (fieldLabel: string) => `Caminho na consulta de ${fieldLabel}`,
+    columnHeader: (fieldLabel: string) => `Coluna de ${fieldLabel}`,
+    columnPath: (fieldLabel: string) => `Caminho na célula de ${fieldLabel}`,
     transform: (fieldLabel: string) => `Transformação de ${fieldLabel}`,
     noTransform: 'Sem transformação',
+  },
+  // "Alternativas": the first value present, not empty, wins (BAJAOVRLAY-53).
+  alternatives: {
+    label: (fieldLabel: string) => `Alternativas de ${fieldLabel}`,
+    hint: 'Vale a primeira que tiver um valor (não vazio); um valor fixo só no fim.',
+    // "Alternativa 2 de Equipe": each control's name says which alternative and field.
+    ofField: (alternativeNumber: number, fieldLabel: string) =>
+      `Alternativa ${alternativeNumber} de ${fieldLabel}`,
+    sourceKind: (alternativeName: string) => `Origem da ${alternativeName}`,
+    path: (alternativeName: string) => `Caminho da ${alternativeName}`,
+    constant: (alternativeName: string) => `Valor fixo da ${alternativeName}`,
+    lookupName: (alternativeName: string) => `Consulta da ${alternativeName}`,
+    columnHeader: (alternativeName: string) => `Coluna da ${alternativeName}`,
+    addButton: '+ Alternativa',
+    removeButton: (alternativeName: string) => `Remover ${alternativeName}`,
   },
   // The table of mapValues, the one transform with parameters.
   valueTable: {
@@ -85,6 +116,9 @@ export const ptBRFlexSourceForm = {
     canonicalValue: (rowNumber: number) => `Vira ${rowNumber}`,
     addRowButton: '+ Linha',
     removeRowButton: (rowNumber: number) => `Remover linha ${rowNumber}`,
+    // What a value the table does not list becomes; empty refuses it, as before.
+    otherwiseValue: (fieldLabel: string) => `Senão, ${fieldLabel} vira`,
+    otherwiseValueHint: 'Vazio: um valor que não está na tabela é recusado.',
   },
   typedValueHint:
     'true, false e números são lidos como tais e o resto como texto; para um texto como 42, escreva "42" com aspas.',
@@ -113,6 +147,12 @@ export const ptBRFlexSourceForm = {
     // the network dropped.
     serverUnreachable: 'Não consegui falar com o servidor para buscar o exemplo.',
     shapesPassed: 'O mapeamento passou: é isto que a fonte vai produzir.',
+    // The answer refused by a mapping's "Recusar a resposta quando": its own sentence.
+    refusedByAFlagLabel: 'Resposta recusada',
+    // The brackets, which the source detail has no table for: each round and its matches.
+    bracketsTitle: 'Chaves',
+    bracketsRound: (roundName: string, matchCount: number) =>
+      matchCount === 1 ? `${roundName}: 1 disputa` : `${roundName}: ${matchCount} disputas`,
   },
 
   // "Exportar configuração" and "Importar configuração": how a tested config travels.

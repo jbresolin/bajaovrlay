@@ -2,6 +2,7 @@
 // this file only reads the environment, works out the paths and handles exit.
 import { fileURLToPath } from 'node:url';
 
+import { shutDownTheServer } from './core/boot/shutDownTheServer.js';
 import { startServer } from './core/boot/startServer.js';
 import { committedMigrationsFolder } from './core/db/openDatabase.js';
 import { readServerEnvironment } from './core/env/readServerEnvironment.js';
@@ -50,6 +51,7 @@ try {
     dataFolder,
     sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
     apiTokens: environment.BAJAOVRLAY_API_TOKENS,
+    publicOrigins: environment.BAJAOVRLAY_PUBLIC_ORIGINS,
     controlPageFolder,
     rendererPageFolder,
     buildIdFileUrl,
@@ -74,13 +76,10 @@ try {
     logger.warn('no build-id.json; open pages will not reload themselves after an upgrade');
   }
 
-  // On Ctrl+C or a service stop: drop WebSocket clients, stop listening, close the
-  // database, then exit.
-  const shutDown = async (signal: NodeJS.Signals): Promise<void> => {
-    logger.info({ signal }, 'server shutting down');
-    await runningServer.close();
-    process.exit(0);
-  };
+  // On Ctrl+C or a service stop (`docker stop`): drop WebSocket clients, stop listening,
+  // close the database, then exit; 1, with the error logged, if closing fails.
+  const shutDown = (signal: NodeJS.Signals): Promise<void> =>
+    shutDownTheServer({ runningServer, logger, signal, exitProcess: (code) => process.exit(code) });
   process.once('SIGINT', (signal) => void shutDown(signal));
   process.once('SIGTERM', (signal) => void shutDown(signal));
 } catch (bootError) {

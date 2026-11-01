@@ -31,6 +31,10 @@ import type {
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import type { PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { createSponsorPageTurner } from '@bajaovrlay/graphics-kit/sponsorPageTurner';
 import type { SponsorLevel } from '@bajaovrlay/graphics-kit/sponsorRound';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
@@ -75,6 +79,11 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 /** The intermission board graphic; the default export a renderer registers. */
 export default class IntermissionBoardGraphic extends LitElement implements OGrafGraphic {
   static override styles = intermissionBoardStyles;
+  /**
+   * The one cycle of the texts too long for their box: the top five, the next session and
+   * the event line (BAJAOVRLAY-55). Made at load: the shadow root exists once Lit rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -126,6 +135,10 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
     this.lifecycle = 'loading';
 
     await this.drawOffAir(dataCheck.data);
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     await waitForThemeFontsToBeReady(this);
     await waitForImagesToSettle(this.renderRoot);
 
@@ -176,6 +189,7 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
       return { statusCode: 200, currentStep: this.currentStep };
     }
     this.startTheLineTimerWhenThereArePages();
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -192,10 +206,12 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.stopTheTimers();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     const stopOut = buildIntermissionBoardStopOutTimeline(
       findIntermissionBoardPieces(this.renderRoot),
     );
     await this.motions.run(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
     if (this.readLifecycleNow() === 'offAir') {
       await this.drawOffAir(this.requireData());
     }
@@ -251,12 +267,14 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.stopTheTimers();
+    this.scrollingTextClock?.stop();
   }
 
   /** OGraf dispose: stops the count and the line's timer, ends every timeline. */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.stopTheTimers();
+    this.scrollingTextClock?.stop();
     this.motions.finishEveryTimelineAtOnce();
     return okAnswer;
   }
@@ -323,6 +341,7 @@ export default class IntermissionBoardGraphic extends LitElement implements OGra
     }
   }
 
+  /** Stops the count and the sponsor line's timer (the scrolling texts are each caller's). */
   private stopTheTimers(): void {
     this.countdownClock.stopTicking();
     this.sponsorLineTimer.stop();

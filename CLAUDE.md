@@ -24,6 +24,8 @@ and will not have an IDE open. Every rule below follows from that.
 - Renderer: framework-free TypeScript. Every dependency there is a frame-drop risk in OBS.
 - Graphics: EBU OGraf v1 packages (manifest + web component). Lit for the components,
   GSAP for animation, CSS custom properties for theme values.
+- GSAP for animation, except scrolling text, which runs on Web Animations so the compositor
+  moves it (the kit's scrollingTextWhenTooLong; accepted by João at gate 2 of PR #36).
 - Tests: Vitest (unit, integration with a real SQLite file, components with Testing
   Library), Playwright (renderer, E2E, screenshots).
 - Logging: structured JSON logger with `request_id`. `console.log` is lint-banned.

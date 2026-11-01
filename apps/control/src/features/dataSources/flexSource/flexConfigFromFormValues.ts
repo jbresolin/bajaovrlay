@@ -1,13 +1,14 @@
-import {
-  type FieldRuleFormValues,
-  type FlexConfigFormValues,
-  type FlexMappingFormValues,
-  type FlexRequestFormValues,
-  type NameAndValueFormValues,
-  noTransformId,
-  type ValueTableRowFormValues,
+import { readNumberFromFieldText } from '../numberFieldText';
+import { buildMappingOptionsFromFormValues } from './flexMappingOptionsFromFormValues';
+import { buildRuleFromFormValues } from './flexRuleFromFormValues';
+import type {
+  FlexConfigFormValues,
+  FlexMappingFormValues,
+  FlexRequestFormValues,
+  NameAndValueFormValues,
 } from './flexSourceFormValues';
-import { readTypedValueText } from './typedValueText';
+
+const millisecondsPerSecond = 1_000;
 
 /**
  * Turns the requests and mappings the flex form holds into a config, as typed and not yet
@@ -43,15 +44,22 @@ export function buildFlexConfigFromFormValues(values: FlexConfigFormValues): Fle
 
 /**
  * Builds one request from its block, as "Buscar da fonte" sends it too. The name and the
- * address are trimmed: a space typed around them is never meant.
+ * address are trimmed: a space typed around them is never meant. "Atualizar a cada (s)"
+ * becomes `refreshEveryMs` when filled (seconds to whole ms; text that is no number stays
+ * NaN, which the schema refuses with its range), and no key at all when empty.
  */
 export function buildRequestFromFormValues(requestValues: FlexRequestFormValues) {
-  return {
+  const request = {
     requestId: requestValues.requestId.trim(),
     url: requestValues.url.trim(),
     headers: requestValues.headers.map(buildNameAndValue),
     queryParameters: requestValues.queryParameters.map(buildNameAndValue),
   };
+  if (requestValues.refreshEverySeconds.trim() === '') {
+    return request;
+  }
+  const refreshEverySeconds = readNumberFromFieldText(requestValues.refreshEverySeconds);
+  return { ...request, refreshEveryMs: Math.round(refreshEverySeconds * millisecondsPerSecond) };
 }
 
 /**
@@ -101,18 +109,17 @@ function buildMappingFromFormValues(mappingValues: FlexMappingFormValues): {
   };
 
   const requestId = mappingValues.requestId;
-  if (mappingValues.shapeKey === 'session') {
-    return { mapping: { shapeKey: 'session', requestId, fields }, formRows };
+  const shapeKey = mappingValues.shapeKey;
+  const options = buildMappingOptionsFromFormValues(shapeKey, mappingValues);
+  if (shapeKey === 'session') {
+    return { mapping: { shapeKey, requestId, ...options, fields }, formRows };
   }
   // An empty "Caminho da lista" is left out, so the schema says the list needs its path.
   const entriesPath = mappingValues.entriesPath.trim();
   if (entriesPath === '') {
-    return {
-      mapping: { shapeKey: mappingValues.shapeKey, requestId, fields, entryFields },
-      formRows,
-    };
+    return { mapping: { shapeKey, requestId, ...options, fields, entryFields }, formRows };
   }
-  const mapping = { shapeKey: mappingValues.shapeKey, requestId, entriesPath, fields, entryFields };
+  const mapping = { shapeKey, requestId, entriesPath, ...options, fields, entryFields };
   return { mapping, formRows };
 }
 
@@ -127,55 +134,4 @@ function putRulesInConfigOrder(rulesOfLevel: RuleOfRow[]): RuleOfRow[] {
     (first, second) => (first.placeInConfig ?? 0) - (second.placeInConfig ?? 0),
   );
   return [...sortedRulesFromTheConfig, ...rulesMappedInTheForm];
-}
-
-/** Builds the rule of one row, or undefined for a row left "Não mapeado". */
-function buildRuleFromFormValues(row: FieldRuleFormValues): unknown {
-  const targetField = row.targetField;
-  switch (row.sourceKind) {
-    case 'none':
-      return undefined;
-    case 'path':
-      return buildPathRule(row);
-    case 'constant':
-      return { targetField, constantValue: readTypedValueText(row.pathOrConstantText) };
-    case 'listOrder':
-      return { targetField, fromListOrder: true };
-    case 'pollMoment':
-      return { targetField, fromPollMoment: true };
-  }
-}
-
-/** Builds a "Caminho" rule, with its transform and, for mapValues, the table. */
-function buildPathRule(row: FieldRuleFormValues) {
-  const fromPath = row.pathOrConstantText.trim();
-  if (row.transformId === noTransformId) {
-    return { targetField: row.targetField, fromPath };
-  }
-  if (row.transformId !== 'mapValues') {
-    return { targetField: row.targetField, fromPath, transformId: row.transformId };
-  }
-  return {
-    targetField: row.targetField,
-    fromPath,
-    transformId: row.transformId,
-    transformParameters: buildValueTable(row.valueTableRows),
-  };
-}
-
-/**
- * Builds the mapValues table from its rows. A row left wholly empty is skipped (the
- * operator pressed "+ Linha" once too often); a later row with the same source value wins,
- * as it would in a JSON object.
- */
-function buildValueTable(rows: ValueTableRowFormValues[]): Record<string, unknown> {
-  const table: Record<string, unknown> = {};
-  for (const row of rows) {
-    const isRowEmpty = row.sourceValue === '' && row.canonicalValueText.trim() === '';
-    if (isRowEmpty) {
-      continue;
-    }
-    table[row.sourceValue] = readTypedValueText(row.canonicalValueText);
-  }
-  return table;
 }

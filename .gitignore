@@ -23,6 +23,8 @@ apps/server/data/
 apps/control/e2e-data/
 # Database and data folder (DATA_DIR) of the renderer's browser tests
 apps/renderer/.e2e-data/
+# Database and data folder of the built server's browser tests (apps/server/e2e)
+apps/server/.e2e-data/
 .env
 .env.*
 !.env.example

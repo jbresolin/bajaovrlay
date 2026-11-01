@@ -19,12 +19,14 @@
  *   - Motion and the turns; the lifecycle e2e and the component tests. After a deliberate
  *     visual change, refresh the baselines with `… test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
 import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /**
  * Opens the preview on air with its logos loaded, the face ready and the page's buttons
- * hidden. The holds are made a day long, so no page turns while the shot is taken.
+ * hidden. The holds are made a day long, so no page turns while the shot is taken, and a
+ * text too long for its box is held at its start (BAJAOVRLAY-55), so no scroll lands in it.
  */
 async function openPreviewOnAirWithItsLogos(page: Page, address: string): Promise<void> {
   const oneDayMs = '86400000ms';
@@ -35,6 +37,7 @@ async function openPreviewOnAirWithItsLogos(page: Page, address: string): Promis
     '--motion-sponsor-hold-prata': oneDayMs,
     '--motion-sponsor-hold-apoio': oneDayMs,
     '--motion-sponsor-hold-realizacao': oneDayMs,
+    ...textTokensHoldingAtTheStart,
   });
   await page.goto(address);
   await expect(page.locator('body'), 'the roll must be on air').toHaveAttribute(

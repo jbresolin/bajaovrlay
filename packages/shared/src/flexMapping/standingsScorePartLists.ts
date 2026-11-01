@@ -6,9 +6,13 @@
  * in the order met, a part with no value included: the real export has blank 4X4 cells,
  * and a column must not vanish, or move, because of one (gate 2 of PR #25). The label is
  * the part's id too: the source names its parts, and a second, invented id would be one
- * more thing to keep in step.
+ * more thing to keep in step. A table answer (BAJAOVRLAY-53) gives its parts by column
+ * instead: the operator picks the headers, and each header is a part's label and id.
  */
 import type { StandingsScorePart } from '../dataShapes/standingsShape.js';
+import { quoteValueForReason } from '../transforms/quoteValueForReason.js';
+import type { FlexScorePartsFromColumns } from './flexMappingListOptions.js';
+import { readCellUnderHeader } from './flexTableColumns.js';
 import { ptBRFlexMapping } from './ptBRFlexMapping.js';
 
 /**
@@ -74,4 +78,44 @@ export function listScorePartsOfLabelsMet(labelsMet: string[]): StandingsScorePa
     }
   }
   return scoreParts;
+}
+
+/** A team's points by part read from its cells, or a pt-BR reason naming the bad cell. */
+export type ScorePartsFromColumnsReading =
+  { ok: true; pointsByPart: Record<string, number> } | { ok: false; reason: string };
+
+/**
+ * Reads one team's parts from its cells, one per picked header, each keyed by the header.
+ * A cell with no value (null, or missing) is left out: the part is unknown and shows "—".
+ * A cell holding anything but a number (the "SPOILERS" of a hidden column) is refused,
+ * naming the column and the value, so nothing is guessed.
+ */
+export function readScorePartsFromColumns(
+  cellsOfEntry: unknown[] | undefined,
+  columnPlaceByHeader: ReadonlyMap<string, number>,
+  partsFromColumns: FlexScorePartsFromColumns,
+): ScorePartsFromColumnsReading {
+  const pointsByPart: Record<string, number> = {};
+  for (const header of partsFromColumns.headers) {
+    const cellReading = readCellUnderHeader(cellsOfEntry, columnPlaceByHeader, {
+      header,
+      path: partsFromColumns.valuePath,
+    });
+    if (cellReading.outcome === 'pathRefused') {
+      return { ok: false, reason: cellReading.reason };
+    }
+    if (cellReading.outcome === 'nothingThere' || cellReading.value === null) {
+      continue;
+    }
+    const value = cellReading.value;
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      const reason = ptBRFlexMapping.problemLines.partCellNotANumber(
+        header,
+        quoteValueForReason(value),
+      );
+      return { ok: false, reason };
+    }
+    pointsByPart[header] = value;
+  }
+  return { ok: true, pointsByPart };
 }

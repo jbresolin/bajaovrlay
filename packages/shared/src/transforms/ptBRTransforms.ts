@@ -21,6 +21,11 @@ export const ptBRTransforms = {
       label: 'Texto para número inteiro',
       description: 'Lê um número inteiro escrito como texto: "42" vira 42. Recusa casas decimais.',
     },
+    numberToText: {
+      label: 'Número para texto',
+      description:
+        'Escreve um número como texto, para um identificador que a fonte manda como número: 65 vira "65".',
+    },
     secondsToMs: {
       label: 'Segundos para milissegundos',
       description:
@@ -49,7 +54,7 @@ export const ptBRTransforms = {
     mapValues: {
       label: 'Tabela de valores',
       description:
-        'Troca o valor da fonte pelo valor da tabela: "BOX" vira "inPit". Um valor que não está na tabela é recusado.',
+        'Troca o valor da fonte pelo valor da tabela: "BOX" vira "inPit". Um valor que não está na tabela é recusado, a menos que a regra diga o que ele vira ("senão").',
     },
     topN: {
       label: 'Primeiras N entradas',
@@ -121,6 +126,8 @@ export const ptBRTransforms = {
     mapValuesTableMustBeObject:
       'A tabela de valores deve ser um objeto JSON como { "BOX": "inPit", "PISTA": "running" }.',
     mapValuesTableIsEmpty: 'A tabela de valores está vazia.',
+    mapValuesWithOtherwiseNeedsTable:
+      'Com um valor "senão" (otherwiseValue), a tabela vai em "table": { "table": { "BOX": "inPit" }, "otherwiseValue": "running" }.',
     topNOutOfRange: 'O número de entradas deve ser um inteiro de 1 a 60.',
     gapUnitUnknown: 'A unidade da diferença deve ser "ms" (tempo) ou "laps" (voltas).',
     maxLengthOutOfRange: 'O tamanho máximo deve ser um inteiro de 4 a 60 letras.',

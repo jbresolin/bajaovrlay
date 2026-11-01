@@ -54,6 +54,11 @@ export type StartServerOptions = {
    * (BAJAOVRLAY-28). Left out, the command API is off and answers 403.
    */
   apiTokens?: ApiTokens | undefined;
+  /**
+   * BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a reverse proxy's addresses whose pages may
+   * upload images as well as the server's own. Left out: none (tests, the stream PC).
+   */
+  publicOrigins?: readonly string[] | undefined;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /**
@@ -172,6 +177,7 @@ async function startServingFromDatabase(
       sourceHostAllowlist: options.sourceHostAllowlist,
       mediaFolder,
       apiTokens: options.apiTokens,
+      publicOrigins: options.publicOrigins,
     });
     httpServer = await listen({
       fetch: app.fetch,

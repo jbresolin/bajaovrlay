@@ -5,7 +5,9 @@ The sponsor roll OGraf graphic in Ardósia (BAJAOVRLAY-46; design: the `sponsor-
 (Diamante … "Realização" last). Layout `fullscreen`, on the fullscreen layer: a narrow board with up to
 six tiles of one level a page, a level shared evenly between its pages, the page turning in place when
 its level's hold is up. Layout `corner`, on the bug layer: the bug's card, its sponsor cell (the level's
-heading over one logo) crossfading on each sponsor's level hold. Start reading at
+heading over one logo) crossfading on each sponsor's level hold. The sponsors are logos; the head's
+line and the corner's event word scroll inside their box when too long (the kit's
+`scrollingTextWhenTooLong`, BAJAOVRLAY-55). Start reading at
 `src/sponsor-roll.ts`; it wires `sponsorRollModel.ts`, `sponsorRollPageTurns.ts`, `sponsorRollView.ts`,
 `sponsorRollStyles.ts`, `sponsorRollAnimations.ts` and `ptBR.ts`. Preview:
 `pnpm --filter @bajaovrlay/sponsor-roll dev`, then http://localhost:5214/preview.html (`?layout=corner`,

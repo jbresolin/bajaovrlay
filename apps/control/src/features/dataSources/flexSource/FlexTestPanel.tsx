@@ -150,7 +150,9 @@ export function FlexTestPanel(props: {
             <p className="text-sm text-muted-foreground">{texts.resultOutdated}</p>
           )}
           {!isOutcomeOutdated && testOutcome.kind === 'configHasProblems' && (
-            <FlexTestResult result={{ isPassing: false, problems: testOutcome.problems }} />
+            <FlexTestResult
+              result={{ isPassing: false, problems: testOutcome.problems, isRefusedByAFlag: false }}
+            />
           )}
           {!isOutcomeOutdated && testOutcome.kind === 'tested' && (
             <FlexTestResult result={testOutcome.result} />

@@ -4,6 +4,8 @@ The notice OGraf graphic in Ardósia (design: PR #21, catalogue sections 6 and 7
 top-left under the bug, on the `notice` layer. Two variants: `fastestLap` (green MELHOR VOLTA badge
 and VOLTA n in the head; chip, team, school and the lap time) and `penalty` (warning triangle, the
 kind word and DIREÇÃO DE PROVA; chip, team, school, then the reason and the navy penalty cell).
+A team with its school, or a reason, too long for the 420 px card scrolls inside its box instead of
+an ellipsis (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55).
 Start reading at `src/notice.ts` (the OGraf lifecycle, same as the race clock's: load once, play
 in, stop out, update in place any time after load, every call answers a status, never throws);
 it wires `noticeModel.ts` (Zod data, required: `variant`, `carNumber`), `noticeView.ts` (both

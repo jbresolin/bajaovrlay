@@ -8,7 +8,8 @@
  * qrCardAnimations (GSAP timelines from the theme's motion tokens).
  *
  * Load makes the code and waits for the theme's face, so play brings the card in whole.
- * Nothing moves while the card is up. An update redraws the card in place with no motion (a
+ * Nothing moves while the card is up but a text too long for it, which scrolls inside its
+ * box (BAJAOVRLAY-55); the code never moves. An update redraws the card in place with no motion (a
  * new address is a new code at once, in the same card); one that arrives while the card is
  * lifting out is only stored, and drawn once the card is off screen, so the code never
  * changes under a fading card.
@@ -27,6 +28,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -65,7 +71,7 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The QR card graphic; the default export a renderer registers as a custom element. */
 export default class QrCardGraphic extends LitElement implements OGrafGraphic {
-  static override styles = qrCardStyles;
+  static override styles = [scrollingTextStyles, qrCardStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
@@ -79,6 +85,11 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
   private runningPanelTimeline: QrCardTimeline | undefined = undefined;
   private isStoppingOut = false;
   private hasDataNotYetDrawn = false;
+  /**
+   * The cycle of the texts too long for the card (BAJAOVRLAY-55). Made at load: the
+   * shadow root it watches exists only once Lit has rendered.
+   */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
 
   override render() {
     return renderQrCardTemplate(this.drawing);
@@ -108,6 +119,10 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
     await this.redrawWithData(dataCheck.data);
     const panel = findQrCardPanel(this.renderRoot);
     this.panel = panel;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     placePanelOffAir({ panel });
     // The element itself is where the face's token is read: custom properties reach
     // inside the shadow root, so the wait follows the theme on the page.
@@ -168,6 +183,7 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -186,11 +202,13 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     this.isStoppingOut = true;
     await this.runPanelTimeline(
       buildStopOutTimeline({ panel: this.requirePanel() }),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     this.isStoppingOut = false;
     // Only a card still off air is redrawn: a play that came meanwhile drew it already.
     if (this.hasDataNotYetDrawn && this.readLifecycleNow() === 'offAir') {
@@ -235,6 +253,7 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
    */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.scrollingTextClock?.stop();
     this.finishRunningPanelTimelineAtOnce();
     return okAnswer;
   }
@@ -245,6 +264,7 @@ export default class QrCardGraphic extends LitElement implements OGrafGraphic {
    */
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.scrollingTextClock?.stop();
     this.finishRunningPanelTimelineAtOnce();
   }
 

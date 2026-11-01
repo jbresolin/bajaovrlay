@@ -3,7 +3,9 @@
 The `httpJson` adapter: a **flex source**, any JSON API read with the GET requests and the
 mapping its config lists (`HttpJsonConfigSchema` in packages/shared, mapping in
 `packages/shared/src/flexMapping/`). Each poll fetches every request at once and maps
-their JSON with the shared `applyFlexMapping`. One request failing fails the poll.
+their JSON with the shared `applyFlexMapping`. One request failing fails the poll. A request
+with `refreshEveryMs` is fetched once in that time and its last good response reused between
+(`rememberedResponses.ts`); a config change, turning the source on or a restart fetches anew.
 
 Start at `httpJsonAdapter.ts`, then `fetchHttpJsonRequest.ts` (one GET with the poll's
 signal, no redirects, the pt-BR errors; `fetchSampleOfHttpJsonRequest.ts` reuses it for

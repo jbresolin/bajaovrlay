@@ -1,18 +1,20 @@
 import {
   type DataShapeKey,
-  type FlexFieldRule,
   type FlexShapeMapping,
   type HttpJsonConfig,
   type HttpJsonDataSource,
   type HttpJsonHeader,
-  type JsonValue,
   listMappableFieldsOfShape,
-  type MappableFieldLevel,
 } from '@bajaovrlay/shared';
 
 import { writeNumberAsFieldText } from '../numberFieldText';
 import { defaultPollIntervalMs, type LabelAndPollIntervalFormValues } from '../sourceFormReading';
-import { writeTypedValueText } from './typedValueText';
+import { buildFieldRuleFormValues, type FieldRuleFormValues } from './flexFieldRuleFormValues';
+import {
+  buildEmptyMappingOptionsFormValues,
+  buildMappingOptionsFormValues,
+  type MappingOptionsFormValues,
+} from './flexMappingOptionsFormValues';
 
 /**
  * What the flex HTTP/JSON form holds, and how it is filled: from a stored source
@@ -50,42 +52,18 @@ export type FlexRequestFormValues = {
   url: string;
   headers: NameAndValueFormValues[];
   queryParameters: NameAndValueFormValues[];
+  /** "Atualizar a cada (s)": seconds as typed; empty fetches the request at every poll. */
+  refreshEverySeconds: string;
 };
 
-/** Where a field's value comes from; "none" leaves the field out of the config. */
-export type FieldRuleSourceKind = 'none' | 'path' | 'constant' | 'listOrder' | 'pollMoment';
-
-/** The "Sem transformação" choice of the transform dropdown. */
-export const noTransformId = 'none';
-
-/** One row of a mapValues table: the source's value and what it becomes, as typed. */
-export type ValueTableRowFormValues = { sourceValue: string; canonicalValueText: string };
-
-/** One canonical field's row of a mapping block. */
-export type FieldRuleFormValues = {
-  targetField: string;
-  level: MappableFieldLevel;
-  sourceKind: FieldRuleSourceKind;
-  /** The path for "Caminho", the value for "Valor fixo"; unused by the other two. */
-  pathOrConstantText: string;
-  /** A registry id, or noTransformId. */
-  transformId: string;
-  /** The table of mapValues; unused by the other transforms. */
-  valueTableRows: ValueTableRowFormValues[];
-  /**
-   * The rule's place in its list (fields or entryFields) of the config the form was
-   * filled from, or null for a row that had no rule there. Not shown: it keeps the rules
-   * in the order they were written, so "Editar" with only a rename sends no config and
-   * "Exportar" right after "Importar" gives back the same text.
-   */
-  placeInConfig: number | null;
-};
-
-/** One mapping block: one shape, the request it reads, and a row per mappable field. */
-export type FlexMappingFormValues = {
+/**
+ * One mapping block: one shape, the request it reads, a row per mappable field, and the
+ * options of BAJAOVRLAY-53 (flexMappingOptionsFormValues.ts).
+ */
+export type FlexMappingFormValues = MappingOptionsFormValues & {
   shapeKey: DataShapeKey;
   requestId: string;
-  /** "Caminho da lista", for positions and standings; unused by the session. */
+  /** "Caminho da lista", for every list shape; unused by the session. */
   entriesPath: string;
   fieldRules: FieldRuleFormValues[];
 };
@@ -103,17 +81,12 @@ const millisecondsPerSecond = 1_000;
 
 /** An empty request block, as "+ Requisição" adds it. */
 export function buildEmptyRequestFormValues(): FlexRequestFormValues {
-  return { requestId: '', url: '', headers: [], queryParameters: [] };
+  return { requestId: '', url: '', headers: [], queryParameters: [], refreshEverySeconds: '' };
 }
 
 /** An empty header or parameter row: a typed value. */
 export function buildEmptyNameAndValueFormValues(): NameAndValueFormValues {
   return { name: '', valueKind: 'value', valueText: '' };
-}
-
-/** An empty value table row. */
-export function buildEmptyValueTableRowFormValues(): ValueTableRowFormValues {
-  return { sourceValue: '', canonicalValueText: '' };
 }
 
 /**
@@ -127,7 +100,13 @@ export function buildEmptyMappingFormValues(
   const fieldRules = listMappableFieldsOfShape(shapeKey).map((field) =>
     buildFieldRuleFormValues(field.targetField, field.level, undefined),
   );
-  return { shapeKey, requestId, entriesPath: '', fieldRules };
+  return {
+    shapeKey,
+    requestId,
+    entriesPath: '',
+    fieldRules,
+    ...buildEmptyMappingOptionsFormValues(),
+  };
 }
 
 /** Fills the whole form from a stored flex source, or empty with one request for a new one. */
@@ -151,6 +130,10 @@ export function buildFlexConfigFormValues(config: HttpJsonConfig): FlexConfigFor
     url: request.url,
     headers: request.headers.map(buildNameAndValueFormValues),
     queryParameters: request.queryParameters.map(buildNameAndValueFormValues),
+    refreshEverySeconds:
+      request.refreshEveryMs === undefined
+        ? ''
+        : writeNumberAsFieldText(request.refreshEveryMs / millisecondsPerSecond),
   }));
   const mappings = config.mappings.map(buildMappingFormValues);
   return { requests, mappings };
@@ -190,64 +173,6 @@ function buildMappingFormValues(mapping: FlexShapeMapping): FlexMappingFormValue
     requestId: mapping.requestId,
     entriesPath: mapping.entriesPath ?? '',
     fieldRules,
+    ...buildMappingOptionsFormValues(mapping),
   };
-}
-
-/** One field's row from its rule, or a "Não mapeado" row when no rule names the field. */
-function buildFieldRuleFormValues(
-  targetField: string,
-  level: MappableFieldLevel,
-  rule: FlexFieldRule | undefined,
-): FieldRuleFormValues {
-  const emptyRow: FieldRuleFormValues = {
-    targetField,
-    level,
-    sourceKind: 'none',
-    pathOrConstantText: '',
-    transformId: noTransformId,
-    valueTableRows: [],
-    placeInConfig: null,
-  };
-  if (rule === undefined) {
-    return emptyRow;
-  }
-  if (rule.fromPath !== undefined) {
-    return {
-      ...emptyRow,
-      sourceKind: 'path',
-      pathOrConstantText: rule.fromPath,
-      transformId: rule.transformId ?? noTransformId,
-      valueTableRows: buildValueTableRows(rule.transformId, rule.transformParameters),
-    };
-  }
-  if (rule.constantValue !== undefined) {
-    return {
-      ...emptyRow,
-      sourceKind: 'constant',
-      pathOrConstantText: writeTypedValueText(rule.constantValue),
-    };
-  }
-  if (rule.fromListOrder !== undefined) {
-    return { ...emptyRow, sourceKind: 'listOrder' };
-  }
-  return { ...emptyRow, sourceKind: 'pollMoment' };
-}
-
-/** The rows of a mapValues table, in the config's order; none for any other transform. */
-function buildValueTableRows(
-  transformId: string | undefined,
-  transformParameters: unknown,
-): ValueTableRowFormValues[] {
-  const isAValueTable =
-    transformId === 'mapValues' &&
-    typeof transformParameters === 'object' &&
-    transformParameters !== null;
-  if (!isAValueTable) {
-    return [];
-  }
-  const tableRows = Object.entries(transformParameters as Record<string, JsonValue>);
-  return tableRows.map(([sourceValue, canonicalValue]) => ({
-    sourceValue,
-    canonicalValueText: writeTypedValueText(canonicalValue),
-  }));
 }

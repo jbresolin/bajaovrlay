@@ -12,7 +12,8 @@
  *   - A response in the shape of the endpoint asked of the Baja app (a match per element
  *     with its id as text, the round as a code, each slot a team or a bye) maps into brackets that pass
  *     validateDataShape: round codes made names and the third-place mark by mapValues,
- *     best of 3 with each car's wins, a bye with no carB at all.
+ *     best of 3 with each car's wins, a bye with no carB at all, and the third place,
+ *     listed after the final, moved just before it (BAJAOVRLAY-53's contract C).
  *   - A match whose round code the table cannot name fails the whole mapping, naming the
  *     match by its id and line; one with no round at all fails it too, as the grouping
  *     cannot place it.
@@ -139,11 +140,15 @@ describe('applyFlexMapping into brackets', () => {
     const brackets = result.ok ? result.shapes.brackets : undefined;
     const validation = validateDataShape('brackets', brackets);
 
-    // Assert: three rounds in the order met, the final still at 1 × 1 with no winner,
-    // the third place marked, and the bye with no carB at all.
+    // Assert: three rounds in the order met, except the third place, listed after the
+    // final, moved just before it (contract C, BAJAOVRLAY-53); the final still at 1 × 1
+    // with no winner, the third place marked, and the bye with no carB at all.
     expect(result.ok, 'the mapping must work').toBe(true);
     expect(validation.isValid, 'the mapped brackets must pass the brackets shape').toBe(true);
-    expect(brackets, 'the matches must sit in their rounds as the endpoint gave them').toEqual({
+    expect(
+      brackets,
+      'the matches must sit in their rounds, the third place before the final',
+    ).toEqual({
       sessionId: 'super-prime-30a-competicao',
       updatedAtMs: pollMomentMs,
       rounds: [
@@ -169,18 +174,6 @@ describe('applyFlexMapping into brackets', () => {
           ],
         },
         {
-          name: 'Final',
-          matches: [
-            {
-              matchId: 'J127',
-              bestOf: 3,
-              walkover: false,
-              carA: { carNumber: 2, teamName: 'Baja UFMG', schoolName: 'UFMG', wins: 1 },
-              carB: { carNumber: 10, teamName: 'Komiketo', schoolName: 'UFSJ', wins: 1 },
-            },
-          ],
-        },
-        {
           name: 'Disputa de 3º lugar',
           isThirdPlace: true,
           matches: [
@@ -190,6 +183,18 @@ describe('applyFlexMapping into brackets', () => {
               walkover: true,
               winnerCarNumber: 17,
               carA: { carNumber: 17, teamName: 'Bombaja', schoolName: 'UFSM' },
+            },
+          ],
+        },
+        {
+          name: 'Final',
+          matches: [
+            {
+              matchId: 'J127',
+              bestOf: 3,
+              walkover: false,
+              carA: { carNumber: 2, teamName: 'Baja UFMG', schoolName: 'UFMG', wins: 1 },
+              carB: { carNumber: 10, teamName: 'Komiketo', schoolName: 'UFSJ', wins: 1 },
             },
           ],
         },

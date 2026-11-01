@@ -337,6 +337,7 @@ describe('a classification whose parts cannot be read', () => {
     // Assert: the mapping fails, and the problem names the team and what is wrong.
     expect(result, 'unreadable parts must fail the whole mapping').toEqual({
       ok: false,
+      isRefusedByAFlag: false,
       problems: [expectedProblem],
       summary: expectedProblem,
     });

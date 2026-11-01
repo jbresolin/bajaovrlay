@@ -26,11 +26,11 @@
 import type { HttpJsonConfig } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
+import type { FieldRuleFormValues } from './flexFieldRuleFormValues';
 import { readFlexConfigFormValues, readFlexSourceForm } from './flexSourceFormReading';
 import {
   buildEmptyMappingFormValues,
   buildFlexConfigFormValues,
-  type FieldRuleFormValues,
   type FlexMappingFormValues,
   type FlexSourceFormValues,
 } from './flexSourceFormValues';
@@ -58,6 +58,7 @@ function buildFormWithOneRequestAndMappings(
         url: 'http://192.168.0.20:8080/classificacao',
         headers: [],
         queryParameters: [],
+        refreshEverySeconds: '',
       },
     ],
     mappings,

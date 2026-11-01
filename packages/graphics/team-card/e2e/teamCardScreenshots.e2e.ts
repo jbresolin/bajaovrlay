@@ -30,6 +30,8 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/team-card test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 import {
@@ -80,6 +82,9 @@ function buildPreviewAddress(combination: Combination, stage: string): string {
  * have loaded (the image's own `complete` and a real width, never a timer).
  */
 async function openPreviewOnAirWithImagesLoaded(page: Page, address: string): Promise<void> {
+  // A text too long for the card is held at its start (BAJAOVRLAY-55), so no scroll can
+  // land during a capture.
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(address);
   await expect(page.locator('body'), 'the team card must be on air').toHaveAttribute(
     'data-preview-state',

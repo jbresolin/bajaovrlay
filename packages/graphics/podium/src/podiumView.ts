@@ -10,6 +10,7 @@
  * without it the card's content is simply shorter and stays centred in the card's height.
  * Images are `<img src>` and nothing else: an `<img>` runs no script, even for an SVG.
  */
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { renderTeamLogoCell } from '@bajaovrlay/graphics-kit/teamLogoCell';
 import {
   findWideBoardHeadParts,
@@ -61,8 +62,12 @@ function renderCardContent(entry: PodiumEntry): TemplateResult {
       >${writePlaceText(entry)}</span
     >
     <span class="car-chip-large" data-testid="podium-car-number">${entry.carNumber}</span>
-    <span class="team-name" data-testid="podium-team-name">${entry.teamName}</span>
-    <span class="school-name" data-testid="podium-school-name">${entry.schoolName}</span>`;
+    <span class="team-name scrolling-text-box" data-testid="podium-team-name"
+      >${renderScrollingText(entry.teamName)}</span
+    >
+    <span class="school-name scrolling-text-box" data-testid="podium-school-name"
+      >${renderScrollingText(entry.schoolName)}</span
+    >`;
 }
 
 /** One card: its slot and step marked for the styles and tests, empty past the list's end. */

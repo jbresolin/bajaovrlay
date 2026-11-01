@@ -18,6 +18,7 @@
  * `/media/<id>` the server serves, and an `<img>` runs no script even for an SVG.
  */
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { headingOfSponsorLevel } from '@bajaovrlay/graphics-kit/sponsorRound';
 import type { PageIndexOfEachLayer } from '@bajaovrlay/graphics-kit/stackedPageLayers';
 // The white mark lives in the theme package; Vite bundles a copy into this graphic's dist/.
@@ -116,7 +117,9 @@ function renderSponsorCell(layerIndex: number, page: SponsorRollPage | undefined
 function renderCorner(data: SponsorRollData, state: SponsorRollViewState): TemplateResult {
   const [firstLayerPageIndex, secondLayerPageIndex] = state.pageIndexOfLayer;
   const eventWord = hasEventWord(data)
-    ? html`<span class="event-word" data-testid="sponsor-roll-event-word">${data.eventWord}</span>`
+    ? html`<span class="event-word scrolling-text-box" data-testid="sponsor-roll-event-word"
+        >${renderScrollingText(data.eventWord ?? '')}</span
+      >`
     : nothing;
   return html`<section class="sponsor-bug" data-testid="sponsor-roll-panel" data-layout="corner">
     <img class="mark" src=${markAddress} alt=${ptBR.markAlternativeText} />

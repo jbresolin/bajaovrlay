@@ -27,10 +27,15 @@
  *     `pnpm --filter @bajaovrlay/notice test:e2e --update-snapshots`.
  */
 import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** Opens the preview with the data, waits for the play-in to finish and for the font. */
 async function openPreviewOnAir(page: Page, noticeData: Record<string, unknown>): Promise<void> {
+  // A text too long for the panel is held at its start (BAJAOVRLAY-55), so no scroll can
+  // land during a capture.
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(buildPreviewAddressWithData(noticeData));
   await expect(page.locator('body'), 'the notice must be on air').toHaveAttribute(
     'data-preview-state',

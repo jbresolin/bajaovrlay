@@ -50,8 +50,11 @@ export const roundBoardStyles = css`
     grid-template-columns: auto minmax(0, 1fr) var(--chip-width);
   }
 
+  /* Right-aligned while it fits; "safe" puts a line too long for the box at its start, so
+     its start shows at rest and it scrolls like any other (BAJAOVRLAY-55), instead of
+     overflowing to the left with its start cut off. */
   .card-side[data-side='right'] .team {
-    justify-content: flex-end;
+    justify-content: safe flex-end;
   }
 
   .card-side[data-empty] {

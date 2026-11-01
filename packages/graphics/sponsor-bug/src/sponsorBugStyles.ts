@@ -25,4 +25,12 @@ export const sponsorBugStyles = [
     }
   `,
   bugCardStyles,
+  css`
+    /* The two words the operator types are scrolling boxes (the kit's scrollingTextStyles,
+       BAJAOVRLAY-55): the event word is as wide as the column; the caption, in a column
+       aligned to its start, is as wide as its text up to the column, then scrolls. */
+    .sponsor-bug .caption.scrolling-text-box {
+      max-width: 100%;
+    }
+  `,
 ];

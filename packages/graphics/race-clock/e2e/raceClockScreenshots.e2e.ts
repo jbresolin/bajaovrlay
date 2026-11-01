@@ -19,7 +19,9 @@
  *     40 px lower, exactly like its baseline.
  *
  * What these tests deliberately do not cover:
- *   - Motion; the screenshots show the end of the play-in animation only.
+ *   - Motion; the screenshots show the end of the play-in animation only, and a session
+ *     name too long for the card is held at its start (BAJAOVRLAY-55), so no scroll can
+ *     land during a capture.
  *   - The stage behind the card: the preview's stand-in is a gradient, not the footage
  *     of the design pages; the card itself is what is compared.
  *   - Other operating systems: baselines are rendered on Linux (CI). After a deliberate
@@ -27,6 +29,8 @@
  *     `pnpm --filter @bajaovrlay/race-clock test:e2e --update-snapshots`.
  */
 import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 const flagStateScenarios = [
@@ -52,6 +56,7 @@ async function openPreviewWithHeldClock(
   page: Page,
   heldClockData: Record<string, unknown>,
 ): Promise<void> {
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(buildPreviewAddressWithData(heldClockData));
   await expect(page.locator('body'), 'the clock must be on air').toHaveAttribute(
     'data-preview-state',

@@ -132,6 +132,13 @@ export const standingsStyles = [
       color: var(--text-muted);
       white-space: nowrap;
     }
+
+    /* The team's scrolling box (BAJAOVRLAY-55) fills the team cell: the name and the school
+       inside it scroll as one line when too long, never cut with an ellipsis. */
+    .team-box {
+      flex: 1;
+      min-width: 0;
+    }
   `,
   standingsRowStyles,
 ];

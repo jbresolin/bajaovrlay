@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The Playwright config and tests run in Node and drive a browser page. Playwright
+    // bundles these files before running them, hence bundler-style import resolution.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["playwright.config.ts", "e2e"]
+}

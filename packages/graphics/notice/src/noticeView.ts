@@ -2,8 +2,14 @@
  * The notice's DOM: the template Lit draws once, with the parts of both variants, and the
  * function that afterwards writes the data into it in place. Nothing is rebuilt: a part
  * the variant or the data has no use for is hidden (the `hidden` attribute), so an update
- * on air touches only text and attributes.
+ * on air touches only text and attributes. The team (its name and school as one line) and
+ * the reason are the kit's scrolling boxes (BAJAOVRLAY-55): too long for the 420 px panel,
+ * each scrolls inside its box instead of being cut with an ellipsis.
  */
+import {
+  makeScrollingTextBox,
+  writeScrollingTextIfChanged,
+} from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
 import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';
@@ -141,6 +147,8 @@ function writeHead(parts: NoticeParts, data: NoticeData): void {
  */
 function writeCarRow(parts: NoticeParts, data: NoticeData): void {
   writeTextIfChanged(parts.carNumber, String(data.carNumber));
+  // The name and the school scroll together; making the box again is a no-op.
+  makeScrollingTextBox(parts.team);
 
   const hasTeamName = isTextGiven(data.teamName);
   parts.team.hidden = !hasTeamName;
@@ -161,7 +169,8 @@ function writeReasonRow(parts: NoticeParts, data: NoticeData): void {
   const isPenalty = data.variant === 'penalty';
   const reasonText = isPenalty && isTextGiven(data.reason) ? data.reason : undefined;
   const penaltyText = isPenalty && isTextGiven(data.penaltyText) ? data.penaltyText : undefined;
-  showTextOrHide(parts.reason, reasonText);
+  parts.reason.hidden = reasonText === undefined;
+  writeScrollingTextIfChanged(parts.reason, reasonText ?? '');
   showTextOrHide(parts.penalty, penaltyText);
   parts.reasonRow.hidden = reasonText === undefined && penaltyText === undefined;
 }
