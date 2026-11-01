@@ -43,6 +43,11 @@ export type ServerAppOptions = {
    * /media/<mediaId>. Both need the store; leave out in tests that touch no image.
    */
   mediaFolder?: string | undefined;
+  /**
+   * BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: the addresses of a reverse proxy whose pages
+   * may upload images too. None when left out: only the server's own address may.
+   */
+  publicOrigins?: readonly string[] | undefined;
 };
 
 /**
@@ -69,6 +74,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         sourceHostAllowlist: options.sourceHostAllowlist,
         sampleRequestTimeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
         mediaFolder: options.mediaFolder,
+        publicOrigins: options.publicOrigins,
       }),
     );
     if (options.mediaFolder !== undefined) {

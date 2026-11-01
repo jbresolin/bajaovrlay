@@ -32,7 +32,13 @@ export const countdownStyles = [
       opacity: 0;
     }
 
+    /* A scrolling box (BAJAOVRLAY-55): as wide as the session's name up to the board's
+       width, centred while it fits and starting at its left edge, to scroll, when it does
+       not ("safe" alignment). */
     .countdown-session {
+      display: flex;
+      justify-content: safe center;
+      max-width: 100%;
       font-size: var(--size-time);
       letter-spacing: var(--tracking-display);
       line-height: 1.2;

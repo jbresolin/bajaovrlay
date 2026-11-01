@@ -34,5 +34,7 @@ export {
 // Until M4: an upload sent by a page of another site is refused 403, and its answer.
 export { buildUploadFromAnotherSiteAnswer } from './api.js';
 export { isUploadFromAnotherSite } from './uploadOrigin.js';
+// BAJAOVRLAY_PUBLIC_ORIGINS: a reverse proxy's addresses whose pages may upload, read at boot.
+export { parsePublicOrigins, publicOriginsVariableName } from './publicOrigins.js';
 // GET /media/<mediaId>, with a year of cache, nosniff and the policy that runs nothing.
 export { contentSecurityPolicyOfImages, serveMediaFiles } from './api.js';

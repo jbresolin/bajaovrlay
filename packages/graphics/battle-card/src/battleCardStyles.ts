@@ -28,6 +28,10 @@ export const battleCardStyles = css`
     left: 50%;
     bottom: var(--lower-third-bottom);
     transform: translateX(-50%);
+    /* As wide as the pieces want: placed at left 50%, the card would otherwise be offered
+       half the stage and squeeze the team columns, which may shrink since BAJAOVRLAY-55.
+       Each team column stops at --battle-team-max-width instead. */
+    width: max-content;
     display: flex;
     align-items: stretch;
     gap: var(--row-gap);
@@ -96,11 +100,16 @@ export const battleCardStyles = css`
     line-height: 1;
   }
 
+  /* The team over the school: as wide as the longer line, never past the theme's
+     maximum (BAJAOVRLAY-55), so two cars and the gap card stay inside the title-safe
+     area; past it each line scrolls inside its box (the kit's scrollingTextStyles). */
   .team {
     display: flex;
     flex-direction: column;
     gap: calc(var(--space-1) / 2);
     padding: 0 var(--space-2);
+    max-width: var(--battle-team-max-width);
+    min-width: 0;
     white-space: nowrap;
   }
 
@@ -113,6 +122,10 @@ export const battleCardStyles = css`
   .school-name {
     font-size: var(--size-caption);
     color: var(--text-muted);
+    /* The box clips (a scrolling box): room above and below the line for the accents of a
+       caps face, taken back by the margins so the line sits where it always did. */
+    padding-block: 0.15em;
+    margin-block: -0.15em;
   }
 
   .laps {

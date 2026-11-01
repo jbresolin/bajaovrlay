@@ -9,7 +9,9 @@
  *
  * The two pills are anchored by their bottom edge, so a lower third without the role pill
  * keeps the name pill where the role pill would have ended: shorter, never an empty frame.
- * Each pill is as wide as what it holds.
+ * Each pill is as wide as what it holds, up to `--lower-third-max-width` (the safe width
+ * left of the tower, BAJAOVRLAY-55): past it the name, the role or the team line scrolls
+ * inside its box (the kit's scrollingTextStyles), the pill keeping its width.
  */
 import { css } from 'lit';
 
@@ -50,6 +52,8 @@ export const lowerThirdStyles = css`
     background: var(--panel-base);
     box-shadow: var(--shadow);
     white-space: nowrap;
+    max-width: var(--lower-third-max-width);
+    box-sizing: border-box;
     /* Hidden until playAction animates it in. */
     opacity: 0;
   }
@@ -64,6 +68,19 @@ export const lowerThirdStyles = css`
     font-weight: var(--weight-display);
     letter-spacing: var(--tracking-row);
     line-height: 1;
+  }
+
+  /* The name's box: it shrinks inside the pill at the pill's maximum. Its line box holds
+     the accents of a caps face (Bebas puts them above the cap height), which the box's
+     clip would otherwise cut; centred in the pill, the letters stay where they were. */
+  .name {
+    min-width: 0;
+    line-height: 1.3;
+  }
+
+  .role,
+  .team-line {
+    min-width: 0;
   }
 
   /* The role and the team line: 40 px tall, 22 px captions, the team line muted. */

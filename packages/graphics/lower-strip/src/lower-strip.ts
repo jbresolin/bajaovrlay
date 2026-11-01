@@ -47,6 +47,11 @@ import {
 } from '@bajaovrlay/graphics-kit/pageHold';
 import { createPageTurner, type PageTurner } from '@bajaovrlay/graphics-kit/pageTurner';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import { waitForThemeFontsToBeReady } from '@bajaovrlay/theme/fonts';
 import { LitElement } from 'lit';
 
@@ -80,13 +85,15 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The lower strip graphic; the default export a renderer registers as a custom element. */
 export default class LowerStripGraphic extends LitElement implements OGrafGraphic {
-  static override styles = lowerStripStyles;
+  static override styles = [scrollingTextStyles, lowerStripStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
   private data: LowerStripData | undefined = undefined;
   private parts: LowerStripParts | undefined = undefined;
   private readonly motionRunner: MotionTimelineRunner = createMotionTimelineRunner();
+  /** The scroll cycle of the schools too long for their pill (BAJAOVRLAY-55), made at load. */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
   private readonly pageTurner: PageTurner = createPageTurner({
     onTurn: () => this.turnToTheNextPageNow(),
     readHoldMs: () => readHoldMsOrFallback(this, 'stripHoldMs', stripHoldMsWhenTokenMissing),
@@ -142,6 +149,10 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
 
     const parts = findLowerStripParts(this.renderRoot);
     this.parts = parts;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     this.data = dataCheck.data;
     this.clockBlockOnBar.writeSwitch(isClockBlockShown(dataCheck.data), false);
     this.clockBlockOnBar.redraw();
@@ -191,6 +202,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
       return { statusCode: 200, currentStep: this.currentStep };
     }
     this.startPageTurnerWhenThereArePages();
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -210,6 +222,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
     this.pageTurner.stop();
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     const parts = this.requireParts();
     // Both lanes: a turn the stop cut short may leave pills on either.
     const everyPiece = [
@@ -220,6 +233,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
     ];
     const stopOut = buildBarStopOutTimeline(parts.bar, everyPiece);
     await this.motionRunner.run(stopOut, params.skipAnimation ?? false);
+    this.scrollingTextClock?.stopAfterThePlayOut();
     // A play may have arrived during the out animation; only then keep the clock ticking.
     if (this.readLifecycleNow() !== 'onAir') {
       this.clockBlockOnBar.stopTicking();
@@ -274,6 +288,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
     this.clockBlockOnBar.stopTicking();
   }
 
@@ -289,6 +304,7 @@ export default class LowerStripGraphic extends LitElement implements OGrafGraphi
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
     this.pageTurner.stop();
+    this.scrollingTextClock?.stop();
     this.clockBlockOnBar.stopTicking();
     this.motionRunner.finishEveryTimelineAtOnce();
     return okAnswer;

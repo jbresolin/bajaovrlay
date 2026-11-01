@@ -19,11 +19,14 @@
  *     centred, on the title-safe bottom edge (y 1026), 460 px tall and the winner's 540.
  *
  * What these tests deliberately do not cover:
- *   - Motion; the shots show the end of each step's rise.
+ *   - Motion; the shots show the end of each step's rise. A text too long for its box is
+ *     held at its start (BAJAOVRLAY-55: cut at its box's edge, no fade).
  *   - The footage of the design's frame-1 shots; the grey and black stages are compared.
  *   - Other operating systems: baselines are rendered on Linux. After a deliberate visual
  *     change, refresh them with `pnpm --filter @bajaovrlay/podium test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** Waits until the last preview action has answered with the podium on air. */
@@ -34,8 +37,12 @@ async function waitUntilOnAir(page: Page): Promise<void> {
   );
 }
 
-/** Opens the preview's sample podium on the stage and waits for the head and the font. */
+/**
+ * Opens the preview's sample podium on the stage, a long text held at its start, and waits
+ * for the head and the font.
+ */
 async function openPreviewOnAir(page: Page, stage: string): Promise<void> {
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(`preview.html?stage=${stage}`);
   await waitUntilOnAir(page);
   await page.evaluate(() => document.fonts.ready.then(() => undefined));

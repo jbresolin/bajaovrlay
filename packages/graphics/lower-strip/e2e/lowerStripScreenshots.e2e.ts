@@ -21,6 +21,8 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/lower-strip test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, test } from '@playwright/test';
 
 const variants = [
@@ -34,7 +36,9 @@ test.describe('the lower strip looks like its baseline', () => {
   for (const variant of variants) {
     for (const stage of ['grey', 'black'] as const) {
       test(`page 1 ${variant.slug} on the ${stage} stage`, async ({ page }) => {
-        // Arrange: the built preview on this stage (the clock held), on air with its face.
+        // Arrange: the built preview on this stage (the clock held, a school too long for its
+        // pill held at its start: BAJAOVRLAY-55), on air with its face.
+        await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
         await page.goto(`preview.html?stage=${stage}${variant.query}`);
         await expect(page.locator('body'), 'the strip must be on air').toHaveAttribute(
           'data-preview-state',

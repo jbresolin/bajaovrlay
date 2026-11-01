@@ -12,7 +12,7 @@ The previous attempt failed on three fronts (functionality, control, looks), so 
 
 - A visual template editor. Graphics are authored in code by a developer; operators only fill fields and press buttons.
 - CasparCG or SDI output, newsroom (MOS) integration, 24/7 unattended playout.
-- Multi-tenant or public hosting. This runs on our LAN at the event and on TrueNAS between events.
+- Multi-tenant or public hosting. This runs on the stream PC, on our LAN at the event (and, optionally, on TrueNAS).
 
 ## 2. Vocabulary
 
@@ -413,9 +413,11 @@ Flaky test = bug; quarantine visibly, never delete to green. CI blocks merge on 
 
 ## 14. Deployment
 
-- Between events: one Docker image (the server serves the control and renderer builds and the graphics), compose stack on TrueNAS via Portainer, behind the existing proxy. The SQLite file and media live on a dataset covered by the nightly dump script.
-- At the event: the same image on the stream PC (Docker Desktop) or on a small box at the desk. OBS browser source points at the box on port 8080, path /render/program. Nothing on screen depends on the uplink; the scoring poller degrades to stale, never to blank.
-- Backups at the event: copy the data folder to a USB stick at every session break (a one-click action on the control page's admin route).
+- BajaOvrLay's home is the stream PC: it runs there and only there in real life. TrueNAS is optional, a way to run it elsewhere if that is ever wanted (decided 2026-10-31, gate 2 of PR #37).
+- One Docker image (`Dockerfile`, BAJAOVRLAY-34): the server serves the control and renderer builds, the graphics and the theme, on port 8080, as uid 1000. Everything it keeps lives in one volume, `/data` (the SQLite file, recordings, media), so a copy of that folder is the whole install. Nothing is fetched at run time; a browser test serves the build with every other address blocked. GitHub publishes it to `ghcr.io/jbresolin/bajaovrlay` as `:latest` and `:<short sha>` on every push to main, outside "CI passed".
+- The stream PC (`deploy/stream-pc/`): the image under Docker Desktop, carried on a USB stick (`docker save` / `docker load`) since the PC has no internet, its data in a Docker volume on the PC's disk. OBS browser source points at `http://localhost:8080/render/` (program; another output at `/render/?output=<id>`). Nothing on screen depends on the uplink; the scoring poller degrades to stale, never to blank. The backup command (`backupDatabase.js /data/backups`) copies the database while it runs; a copy of the whole folder is taken with the server stopped.
+- Backups at the event: copy the data folder to a USB stick at every session break (a one-click action on the control page's admin route, M5).
+- Optional, TrueNAS (`deploy/truenas/`): a compose stack via Portainer, behind Nginx Proxy Manager on a shared network with WebSocket support on. `BAJAOVRLAY_PUBLIC_ORIGINS` lists the proxy's address so Cadastros may upload through it. The nightly dump script backs the SQLite file up with `docker exec bajaovrlay node apps/server/dist/backupDatabase.js /backups` (SQLite's online backup, 14 kept), into a mount of its own beside the other dumps, outside the live dataset.
 
 ## 15. Integrations
 

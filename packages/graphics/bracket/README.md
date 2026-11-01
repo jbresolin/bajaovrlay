@@ -7,7 +7,9 @@ match cards (32 a page, one step a page); the rounds from the quarter-finals dow
 **tree**, a column per round under its name pill, each match centred between the two it comes
 from, the lines between them, the third place at the foot of the final's column. A match's
 result is a time, a count of wins (best of N), the winner's mark, or the outlined "W.O."; a
-bye's empty side is the dashed "SEM ADVERSÁRIO". Start reading at `src/bracket.ts` (the OGraf
+bye's empty side is the dashed "SEM ADVERSÁRIO". A car's team and school too long for its card
+or pill, and a long event line, scroll inside their box on one cycle for the stage (the kit's
+`scrollingTextWhenTooLong`, BAJAOVRLAY-55). Start reading at `src/bracket.ts` (the OGraf
 lifecycle); it wires `bracketPlayBookkeeping.ts` (what a play asks for, the count of moves that
 lets an overtaken one give up, the lifecycle's answers), `bracketModel.ts` (Zod data),
 `bracketStepView.ts` (what a step shows, on the shared plan `@bajaovrlay/shared/bracketSteps` the server counts with), `matchResults.ts`,

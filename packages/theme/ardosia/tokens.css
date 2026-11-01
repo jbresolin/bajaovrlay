@@ -165,6 +165,11 @@
   /* The lower-third slot (lower third, team card): its bottom edge sits at y 940, above the
      ticker's bar (y 954), as the design draws it. */
   --lower-third-bottom: 140px;
+  /* The widest a card of the lower-third slot (the lower third's pills, the team card) may
+     grow (BAJAOVRLAY-55): the title-safe width left of the tower's column, 1728 − 420 − 8 =
+     1300 px, so a long name never runs under the tower nor off the safe area; past it the
+     name scrolls inside its box. */
+  --lower-third-max-width: calc(var(--board-stage-width) - var(--column-width) - var(--stack-gap));
   /* The team card (lower-third slot) and the standings board (fullscreen), from the
      catalogue of PR #21 (BAJAOVRLAY-24). */
   --panel-light: rgb(255 255 255 / 0.96); /* the logo's light plate */
@@ -201,6 +206,15 @@
   --text-on-light: #111111; /* the QR card's text on its light surface */
   --battle-height: 72px; /* a two-line pill: name over school */
   --battle-gap-width: 220px;
+  /* The widest a car's name and school may be on the battle card (BAJAOVRLAY-55): past it
+     they scroll, so two cars and the gap card stay inside the title-safe 1728 px. */
+  --battle-team-max-width: 460px;
+  /* The widest a school may be on the lower strip (BAJAOVRLAY-55): a longer one scrolls in
+     its pill and leaves the other five pills of its page their room, so they stay whole
+     (lowerStripLongSchool.e2e.ts). Measured on the real field: the widest school is 120 px
+     (UFERSA-Mos), and the tightest page has 117 px to spare beside a 42 px school, so the
+     bound lies between 120 and 159 px. */
+  --strip-school-max-width: 140px;
   --qr-size: 176px; /* the code's box; its cells are this divided by the code's modules */
   --size-podium-position: 72px;
   --podium-width: 480px;
@@ -245,6 +259,14 @@
   --motion-sponsor-hold-realizacao: 5000ms;
   --motion-in-offset: 20; /* px a piece rises on entry (and lifts on exit) */
   --motion-podium-offset: 40; /* px a podium card rises when revealed: twice the usual rise */
+  /* A text too long for its box (a long school name) scrolls inside it (BAJAOVRLAY-55): it
+     holds at its start, scrolls at a constant speed until its end shows, holds there and
+     crossfades back to its start. Starting values; João tunes them on screen. */
+  --motion-text-hold-start: 2500ms;
+  --motion-text-scroll-speed: 60; /* px per second: a longer name takes longer, never faster */
+  --motion-text-hold-end: 1500ms;
+  --motion-text-return: 250ms;
+  --motion-text-edge-fade: 24; /* px of soft fade at the box's edges while the text scrolls */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);

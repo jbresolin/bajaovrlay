@@ -133,18 +133,23 @@ export const noticeStyles = css`
     font-size: var(--size-row);
   }
 
+  /* The team: a scrolling box (the kit's scrollingTextStyles, BAJAOVRLAY-55) whose one
+     text holds the name and the school side by side, scrolling together when too long. */
   .team {
     flex: 1;
     min-width: 0;
     display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
     overflow: hidden;
   }
 
+  .team .scrolling-text {
+    display: inline-flex;
+    flex: none;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
   .team-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
     letter-spacing: var(--tracking-row);
     /* The line box holds the accents of a caps face (Bebas puts them above the cap height). */
     line-height: 1.3;
@@ -177,11 +182,11 @@ export const noticeStyles = css`
     padding-bottom: var(--space-3);
   }
 
+  /* A scrolling box (BAJAOVRLAY-55): a reason longer than the row scrolls inside it. */
   .reason {
     flex: 1 0 auto;
     max-width: 100%;
     overflow: hidden;
-    text-overflow: ellipsis;
     letter-spacing: var(--tracking-row);
     line-height: 1.3;
   }

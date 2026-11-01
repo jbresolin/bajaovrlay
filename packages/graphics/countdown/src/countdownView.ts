@@ -12,6 +12,7 @@
  */
 import { renderBoardHead } from '@bajaovrlay/graphics-kit/boardHead';
 import { writeTimeOfDayText } from '@bajaovrlay/graphics-kit/countdownText';
+import { renderScrollingText } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 // The white logo lives in the theme package; Vite bundles a copy into this graphic's dist/.
 import logoAddress from '@bajaovrlay/theme/brand/logo-branca.png';
 import { html, type TemplateResult } from 'lit';
@@ -34,7 +35,9 @@ function renderCountdownCard(data: CountdownData): TemplateResult {
         alt=${ptBR.logoAlternativeText}
         data-testid="countdown-logo"
       />
-      <span class="title" data-testid="countdown-session">${data.sessionName}</span>
+      <span class="title scrolling-text-box" data-testid="countdown-session"
+        >${renderScrollingText(data.sessionName)}</span
+      >
     </header>
     <div class="body">
       <span class="caption" data-testid="countdown-caption">${ptBR.cardCaption}</span>
@@ -59,7 +62,9 @@ function renderCountdownBoard(data: CountdownData): TemplateResult {
       aside: headLines.dateLine,
     })}
     <div class="card countdown-body" data-testid="countdown-body">
-      <span class="countdown-session" data-testid="countdown-session">${data.sessionName}</span>
+      <span class="countdown-session scrolling-text-box" data-testid="countdown-session"
+        >${renderScrollingText(data.sessionName)}</span
+      >
       <span class="countdown-count" data-testid="countdown-count"></span>
       <span class="countdown-start" data-testid="countdown-start"
         >${ptBR.fullscreenStartTime(timeOfDay)}</span

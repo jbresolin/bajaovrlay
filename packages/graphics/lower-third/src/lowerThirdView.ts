@@ -3,9 +3,12 @@
  * role pill with the role, a dot and the team line), and the function that afterwards
  * writes the data into it in place. Nothing is rebuilt: a part the data has no use for
  * gets the `hidden` attribute, which takes it out of the layout (display: none), so a
- * missing part leaves no empty box and the pills shrink to what they hold.
+ * missing part leaves no empty box and the pills shrink to what they hold. The name, the
+ * role and the team line are the kit's scrolling boxes (BAJAOVRLAY-55): written through
+ * writeScrollingTextIfChanged, which makes each a box at its first write, so a text too
+ * long for the pill's `--lower-third-max-width` scrolls inside it.
  */
-import { writeTextIfChanged } from '@bajaovrlay/graphics-kit/textInPlace';
+import { writeScrollingTextIfChanged } from '@bajaovrlay/graphics-kit/scrollingTextBox';
 import { isTextGiven } from '@bajaovrlay/graphics-kit/textPresence';
 import { html, type TemplateResult } from 'lit';
 
@@ -15,16 +18,23 @@ import { ptBR } from './ptBR.js';
 
 /** The elements whose text or attributes change after the first render. */
 export type LowerThirdParts = LowerThirdAnimatedElements & {
+  name: HTMLElement;
   role: HTMLElement;
   separator: HTMLElement;
   teamLine: HTMLElement;
 };
 
+/**
+ * The name's scrolling box, alone in the name pill: written with no whitespace around it,
+ * so the pill's text is the name and nothing else.
+ */
+const nameBox = html`<span class="name" data-testid="lower-third-name"></span>`;
+
 /** The lower third's markup, drawn once. data-testid names are how code and tests find parts. */
 export function renderLowerThirdTemplate(): TemplateResult {
   return html`
     <section class="lower-third" data-testid="lower-third">
-      <div class="pill name-pill" data-testid="lower-third-name-pill"></div>
+      <div class="pill name-pill" data-testid="lower-third-name-pill">${nameBox}</div>
       <div class="pill role-pill" data-testid="lower-third-role-pill">
         <span class="role" data-testid="lower-third-role"></span>
         <span class="separator" data-testid="lower-third-separator">${ptBR.teamLineSeparator}</span>
@@ -45,6 +55,7 @@ export function findLowerThirdParts(renderRoot: ParentNode): LowerThirdParts {
   };
   return {
     namePill: findPart('lower-third-name-pill'),
+    name: findPart('lower-third-name'),
     rolePill: findPart('lower-third-role-pill'),
     role: findPart('lower-third-role'),
     separator: findPart('lower-third-separator'),
@@ -56,7 +67,7 @@ export function findLowerThirdParts(renderRoot: ParentNode): LowerThirdParts {
 function showTextOrHide(element: HTMLElement, text: string | undefined): void {
   const isShown = text !== undefined;
   element.hidden = !isShown;
-  writeTextIfChanged(element, isShown ? text : '');
+  writeScrollingTextIfChanged(element, isShown ? text : '');
 }
 
 /**
@@ -65,7 +76,7 @@ function showTextOrHide(element: HTMLElement, text: string | undefined): void {
  * the role pill is hidden and the name pill stands alone.
  */
 export function writeLowerThirdData(parts: LowerThirdParts, data: LowerThirdData): void {
-  writeTextIfChanged(parts.namePill, data.name);
+  writeScrollingTextIfChanged(parts.name, data.name);
 
   const roleText = isTextGiven(data.role) ? data.role : undefined;
   const teamLineText = isTextGiven(data.teamLine) ? data.teamLine : undefined;

@@ -15,9 +15,11 @@
  *   - The board is --board-width (1280 px) wide and centred; the count reads 23:45.
  *
  * What these tests deliberately do not cover:
- *   - Motion and the line's turns; the lifecycle e2e and the component tests. After a
+ *   - Motion and the line's turns; the lifecycle e2e and the component tests. A text too
+ *     long for its box is held at its start (BAJAOVRLAY-55: cut at its box's edge, no fade). After a
  *     deliberate visual change, refresh with `… test:e2e --update-snapshots=all`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
 import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
@@ -31,13 +33,14 @@ const enduroStartsAtMs = Date.parse('2025-03-30T10:00:00.000-03:00');
  * Opens the preview on air at the design's moment: the start fixed by the address, the
  * page's clock run from ten seconds before (GSAP reads it) and paused half a second after
  * the moment once on air; the holds are a day long, so the line never turns during the
- * shot; the logos and the face loaded; the page's buttons hidden.
+ * shot, and a long text holds at its start; the logos and the face loaded; the page's buttons hidden.
  */
 async function openPreviewOnAirAtTheDesignsMoment(page: Page, address: string): Promise<void> {
   const oneDayMs = '86400000ms';
   await placeTokenOverridesBeforeTheGraphicLoads(page, {
     '--motion-sponsor-hold': oneDayMs,
     '--motion-sponsor-hold-diamante': oneDayMs,
+    ...textTokensHoldingAtTheStart,
   });
   await page.clock.install({ time: designsMomentMs - 10_000 });
   await page.goto(`${address}&nextStartsAtMs=${String(enduroStartsAtMs)}`);

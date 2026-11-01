@@ -111,4 +111,20 @@ describe('renderBoardHead', () => {
     );
     expect(readPartText(container, 'sponsor-roll-aside'), 'the new page').toBe('2/5');
   });
+
+  it('draws the subtitle as a scrolling box, so a long event scrolls, never ellipsed', () => {
+    // Arrange: a container on the page.
+    const container = createContainerOnThePage();
+
+    // Act: draw the sessions board's head.
+    render(renderBoardHead(buildSessionsBoardHead()), container);
+
+    // Assert: the subtitle is a scrolling box with the event in its one text element.
+    const subtitle = container.querySelector('[data-testid="sessions-board-subtitle"]');
+    const textElement = subtitle?.querySelector(':scope > .scrolling-text');
+    expect(subtitle?.classList.contains('scrolling-text-box'), 'a scrolling box').toBe(true);
+    expect(textElement?.textContent, 'the event inside its text element').toBe(
+      '30ª Competição Baja SAE Brasil',
+    );
+  });
 });

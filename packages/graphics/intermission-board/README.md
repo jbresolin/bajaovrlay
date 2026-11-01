@@ -6,7 +6,9 @@ session with its count (the countdown's kit parts, on the server-aligned clock, 
 the overall top five (the standings' pills, the kit's standingsRowStyles) and a sponsor line turning
 through every sponsor a level at a time (the sponsor roll's paging rule and timer, four logos a page).
 The top five and the sponsor line are optional: without the top five the next session takes the
-whole width, its words centred; without sponsors there is no line. Start reading at
+whole width, its words centred; without sponsors there is no line. A team, the next session or the
+event line too long for its box scrolls inside it, on one cycle for the board (the kit's
+`scrollingTextWhenTooLong`, BAJAOVRLAY-55). Start reading at
 `src/intermission-board.ts`; it wires `intermissionBoardModel.ts`, `intermissionBoardView.ts`,
 `intermissionBoardStyles.ts`, `intermissionBoardAnimations.ts`, `intermissionSponsorLine.ts` and
 `ptBR.ts`. Preview: `pnpm --filter @bajaovrlay/intermission-board dev`, then

@@ -23,10 +23,17 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/sponsor-bug test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
-/** Opens the preview on air and waits for the face and every image of the bug (never a timer). */
+/**
+ * Opens the preview on air and waits for the face and every image of the bug (never a
+ * timer). A word too long for the card is held at its start (BAJAOVRLAY-55), so no scroll
+ * lands in the shot.
+ */
 async function openPreviewOnAirWithImagesLoaded(page: Page, address: string): Promise<void> {
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(address);
   await expect(page.locator('body'), 'the bug must be on air').toHaveAttribute(
     'data-preview-state',
