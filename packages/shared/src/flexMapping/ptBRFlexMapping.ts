@@ -14,6 +14,8 @@ export const ptBRFlexMapping = {
     /** A team's parts of the score, sent as a list of `{ label, value }` (BAJAOVRLAY-24). */
     pointsByPart: 'Partes da pontuação (lista de rótulo e valor)',
     isDisqualified: 'Desclassificada',
+    /** Read only to work out the gaps (BAJAOVRLAY-53); never reaches the shape. */
+    lastPassAtMs: 'Última passagem (para calcular as diferenças)',
   },
 
   /** The fields of one bracket match, as a flat list of matches sends them (BAJAOVRLAY-25). */
@@ -83,9 +85,38 @@ export const ptBRFlexMapping = {
     targetFieldTwice: (fieldLabel: string) =>
       `"${fieldLabel}" aparece em mais de uma regra; cada campo tem uma regra só.`,
     ruleNeedsExactlyOneSource: (targetField: string) =>
-      `A regra de "${targetField}" precisa de exatamente uma origem: caminho, valor fixo, ordem na lista ou momento da leitura.`,
+      `A regra de "${targetField}" precisa de exatamente uma origem: caminho, caminho no item de fora, consulta, coluna, alternativas, valor fixo, ordem na lista ou momento da leitura.`,
+    alternativesNeedTwoSources: (targetField: string) =>
+      `As alternativas da regra de "${targetField}" precisam de pelo menos duas origens; com uma só, use a origem direto.`,
+    alternativeNeedsExactlyOneSource: (targetField: string, alternativeNumber: number) =>
+      `A alternativa ${alternativeNumber} da regra de "${targetField}" precisa de exatamente uma origem: caminho, caminho no item de fora, consulta, coluna ou valor fixo.`,
+    fixedValueOnlyLast: (targetField: string) =>
+      `Na regra de "${targetField}", o valor fixo só pode ser a última alternativa: as que viessem depois nunca seriam usadas.`,
+    unknownLookup: (lookupName: string) =>
+      `A consulta "${lookupName}" não existe neste mapeamento.`,
+    lookupOnlyForEntries: (fieldLabel: string) =>
+      `"Consulta" só vale para os campos de cada item da lista, não para "${fieldLabel}".`,
+    lookupNamedTwice: (lookupName: string) => `Há duas consultas chamadas "${lookupName}".`,
+    badLookupName: (lookupName: string) =>
+      `O nome da consulta "${lookupName}" pode ter só letras sem acento, números, "_" e "-", até 40.`,
+    parentWithoutNestedList: (fieldLabel: string) =>
+      `"${fieldLabel}" lê o item de fora, mas este mapeamento não tem "Lista dentro de cada item".`,
+    columnWithoutTable: (fieldLabel: string) =>
+      `"${fieldLabel}" lê uma coluna, mas este mapeamento não diz onde estão as colunas da tabela.`,
+    scorePartsFromColumnsOnlyInStandings: 'Partes da pontuação por coluna só existem na Pontuação.',
+    scorePartsFromColumnsNeedTable:
+      'Partes da pontuação por coluna precisam de onde estão as colunas da tabela.',
+    scorePartsFromTwoPlaces:
+      'As partes da pontuação vêm de colunas ou de uma lista por equipe, não das duas.',
+    headerTwiceInScoreParts: (header: string) =>
+      `A coluna "${header}" aparece duas vezes nas partes da pontuação.`,
+    gapsOnlyInPositions: 'Calcular as diferenças pelas voltas só existe nas Posições.',
+    lastPassWithoutGaps: (fieldLabel: string) =>
+      `"${fieldLabel}" só serve para calcular as diferenças pelas voltas; ligue essa opção ou deixe o campo sem mapear.`,
+    incompleteEntriesOnlyInBrackets: 'Disputas incompletas só existem nas Chaves.',
+    refusalNeedsMessage: 'A recusa precisa de uma mensagem para o operador.',
     transformWithoutPath: (targetField: string) =>
-      `A transformação da regra de "${targetField}" só vale para um campo lido por caminho.`,
+      `A transformação da regra de "${targetField}" só vale para um campo lido da resposta (caminho, item de fora, consulta, coluna ou alternativas).`,
     parametersWithoutTransform: (targetField: string) =>
       `A regra de "${targetField}" tem parâmetros mas nenhuma transformação.`,
     listOrderOnlyForEntries: (fieldLabel: string) =>
@@ -106,7 +137,33 @@ export const ptBRFlexMapping = {
     entryWithMatch: (matchId: string, lineNumber: number) =>
       `disputa ${matchId} (linha ${lineNumber})`,
     matchWithoutRoundName: 'falta o nome da fase, que diz em que fase a disputa entra',
-    couldNotReadAtPath: (path: string, reason: string) => `não consegui ler "${path}": ${reason}`,
+    /** "não consegui ler "ultima_volta": …" or "não consegui ler a coluna "Total": …". */
+    couldNotRead: (whereRead: string, reason: string) => `não consegui ler ${whereRead}: ${reason}`,
+    whereReadAtPath: (path: string) => `"${path}"`,
+    whereReadInColumn: (header: string) => `a coluna "${header}"`,
+    tableWithoutHeader: (shapeName: string, header: string) =>
+      `${shapeName}: a tabela não tem a coluna "${header}"`,
+    noColumnsListAtPath: (shapeName: string, columnsPath: string, requestId: string) =>
+      `${shapeName}: não há uma lista de colunas em "${columnsPath}" na resposta de ${requestId}`,
+    /** The label of the parts read from columns in a problem line (BAJAOVRLAY-53). */
+    scorePartsFromColumnsLabel: 'Partes da pontuação',
+    partCellNotANumber: (header: string, quotedValue: string) =>
+      `a coluna "${header}" não tem um número: ${quotedValue}`,
+    atLookup: (shapeName: string, lookupName: string, detail: string) =>
+      `${shapeName} › consulta "${lookupName}": ${detail}`,
+    lookupKeyTwice: (quotedKey: string, listPath: string) =>
+      `a chave ${quotedKey} aparece em mais de um item da lista "${listPath}"`,
+    noResponseForLookupRequest: (requestId: string) =>
+      `não há resposta da requisição "${requestId}"`,
+    noLookupListAtPath: (listPath: string, requestId: string) =>
+      `não há uma lista em "${listPath}" na resposta de ${requestId}`,
+    noInnerListInOuterElement: (
+      shapeName: string,
+      placeInOuterList: number,
+      entriesPath: string,
+      nestedEntriesPath: string,
+    ) =>
+      `${shapeName} › item ${placeInOuterList} de "${entriesPath}": não há uma lista em "${nestedEntriesPath}"`,
     noResponseForRequest: (shapeName: string, requestId: string) =>
       `${shapeName}: não há resposta da requisição "${requestId}"`,
     noListAtPath: (shapeName: string, entriesPath: string, requestId: string) =>

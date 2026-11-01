@@ -5,11 +5,27 @@ import {
   type FlexMappingConfig,
   FlexMappingConfigSchema,
 } from '../flexMapping/flexMappingConfig.js';
+import {
+  explainListProblem,
+  explainProblemOfConfigObject,
+  explainProblemOfHeaderObject,
+  explainProblemOfQueryParameterObject,
+  explainProblemOfRequestObject,
+  textFieldNamed,
+} from './httpJsonConfigIssueSentences.js';
 import { ptBRHttpJsonConfig } from './ptBRHttpJsonConfig.js';
 import { isReadableWebAddress, parseWebAddress } from './webAddressParsing.js';
 
 /** The most requests one flex source makes per poll: every one is fetched at every poll. */
 export const mostRequestsPerHttpJsonSource = 5;
+
+/**
+ * The range of a request's own refresh time (BAJAOVRLAY-53). At least a minute, the
+ * longest poll interval, so it is never shorter than the poll and means something; at most
+ * an hour, so a list fixed during the event is never shown wrong for longer than that.
+ */
+export const shortestRequestRefreshMs = 60_000;
+export const longestRequestRefreshMs = 3_600_000;
 
 /**
  * The prefix every environment variable a config names must start with. The dataSources
@@ -144,6 +160,17 @@ export const HttpJsonRequestSchema = z.strictObject(
     queryParameters: z
       .array(HttpJsonQueryParameterSchema, { error: explainListProblem('queryParameters') })
       .default([]),
+    /**
+     * Fetch this request only once in this many ms, reusing its last good response at the
+     * polls between (BAJAOVRLAY-53): for a list that changes once an event, joined by a
+     * lookup, such as the teams. Absent, the request is fetched at every poll.
+     */
+    refreshEveryMs: z
+      .number({ error: refreshEveryMsReason })
+      .int({ error: refreshEveryMsReason })
+      .min(shortestRequestRefreshMs, { error: refreshEveryMsReason })
+      .max(longestRequestRefreshMs, { error: refreshEveryMsReason })
+      .optional(),
   },
   { error: explainProblemOfRequestObject },
 );
@@ -178,32 +205,12 @@ export const HttpJsonConfigSchema = z
 /** A flex source's config after it has passed HttpJsonConfigSchema. */
 export type HttpJsonConfig = z.infer<typeof HttpJsonConfigSchema>;
 
-/**
- * A text field whose refusal, when it is missing or holds something else (requestId: 5),
- * is a pt-BR sentence naming the field instead of Zod's English default.
- */
-function textFieldNamed(fieldName: string) {
-  return z.string({
-    error: (issue) => {
-      if (issue.input === undefined) {
-        return ptBRHttpJsonConfig.missingField(fieldName);
-      }
-      return ptBRHttpJsonConfig.fieldNotText(fieldName);
-    },
-  });
-}
-
-/** The pt-BR sentence for a list field that is missing or holds something other than a list. */
-function explainListProblem(fieldName: string) {
-  return (issue: z.core.$ZodRawIssue): string | undefined => {
-    if (issue.code !== 'invalid_type') {
-      return undefined;
-    }
-    if (issue.input === undefined) {
-      return ptBRHttpJsonConfig.missingField(fieldName);
-    }
-    return ptBRHttpJsonConfig.fieldNotAList(fieldName);
-  };
+/** The one sentence for any refresh time out of range or not a whole number of ms. */
+function refreshEveryMsReason(): string {
+  return ptBRHttpJsonConfig.refreshEveryMsOutOfRange(
+    shortestRequestRefreshMs,
+    longestRequestRefreshMs,
+  );
 }
 
 /** Tells whether text parses as an address whose protocol is http or https. */
@@ -223,59 +230,6 @@ function isHttpOrHttpsAddress(text: string): boolean {
 function hasAUserOrPasswordInIt(address: string): boolean {
   const parsedAddress = parseWebAddress(address);
   return parsedAddress.username !== '' || parsedAddress.password !== '';
-}
-
-/** Gives the pt-BR sentence for a whole config that is not an object or has a misspelt key. */
-function explainProblemOfConfigObject(issue: z.core.$ZodRawIssue): string | undefined {
-  if (issue.code === 'unrecognized_keys') {
-    return ptBRHttpJsonConfig.unknownKeysInConfig(issue.keys);
-  }
-  if (issue.code === 'invalid_type') {
-    return ptBRHttpJsonConfig.configNotAnObject;
-  }
-  return undefined;
-}
-
-/** Gives the pt-BR sentence for a request that is not an object or has a misspelt key (or "method"). */
-function explainProblemOfRequestObject(issue: z.core.$ZodRawIssue): string | undefined {
-  if (issue.code === 'unrecognized_keys') {
-    return ptBRHttpJsonConfig.unknownKeysInRequest(issue.keys);
-  }
-  if (issue.code === 'invalid_type') {
-    return ptBRHttpJsonConfig.requestNotAnObject;
-  }
-  return undefined;
-}
-
-/** Gives the pt-BR sentence for a header that is not an object or has a misspelt key. */
-function explainProblemOfHeaderObject(issue: z.core.$ZodRawIssue): string | undefined {
-  if (issue.code === 'unrecognized_keys') {
-    return ptBRHttpJsonConfig.unknownKeysInHeader(readNameWritten(issue.input), issue.keys);
-  }
-  if (issue.code === 'invalid_type') {
-    return ptBRHttpJsonConfig.headerNotAnObject;
-  }
-  return undefined;
-}
-
-/** Gives the pt-BR sentence for a query parameter that is not an object or has a misspelt key. */
-function explainProblemOfQueryParameterObject(issue: z.core.$ZodRawIssue): string | undefined {
-  if (issue.code === 'unrecognized_keys') {
-    return ptBRHttpJsonConfig.unknownKeysInQueryParameter(readNameWritten(issue.input), issue.keys);
-  }
-  if (issue.code === 'invalid_type') {
-    return ptBRHttpJsonConfig.queryParameterNotAnObject;
-  }
-  return undefined;
-}
-
-/** The `name` written on a header or parameter not yet checked, when it is text; undefined otherwise. */
-function readNameWritten(input: unknown): string | undefined {
-  const hasAName = typeof input === 'object' && input !== null && 'name' in input;
-  if (!hasAName) {
-    return undefined;
-  }
-  return typeof input.name === 'string' ? input.name : undefined;
 }
 
 /** The fields a header and a query parameter share, as their checks read them. */
@@ -350,7 +304,7 @@ function checkTypedHeaderValueCanBeSent(header: NameAndValue, context: z.Refinem
   }
 }
 
-/** Checks that request ids are unique and that every mapping reads one of the requests. */
+/** Checks that request ids are unique and that every mapping and lookup reads one of the requests. */
 function checkRequestIdsOfConfig(
   requests: HttpJsonRequest[],
   mappings: FlexMappingConfig,
@@ -379,5 +333,18 @@ function checkRequestIdsOfConfig(
         ),
       });
     }
+    (mapping.lookups ?? []).forEach((lookup, lookupIndex) => {
+      if (!requestIdsSeen.has(lookup.requestId)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['mappings', mappingIndex, 'lookups', lookupIndex, 'requestId'],
+          message: ptBRHttpJsonConfig.unknownRequestInLookup(
+            ptBRDataShapes.shapeNames[mapping.shapeKey],
+            lookup.lookupName,
+            lookup.requestId,
+          ),
+        });
+      }
+    });
   });
 }

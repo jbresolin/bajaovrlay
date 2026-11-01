@@ -58,7 +58,11 @@ export function FlexRequestsSection(
   );
 }
 
-/** One request block: name, address, headers, query parameters, and "Remover requisição". */
+/**
+ * One request block: name, address, refresh time (BAJAOVRLAY-53: fetched only once in
+ * that many seconds, its last answer reused between), headers, query parameters, and
+ * "Remover requisição".
+ */
 function FlexRequestBlock(
   props: FlexRequestsProps & {
     requestIndex: number;
@@ -70,9 +74,14 @@ function FlexRequestBlock(
   const errors = form.formState.errors;
   const requestPath = `requests.${requestIndex}` as const;
   const idPrefix = `${props.controlIdPrefix}-requests-${requestIndex}`;
-  const ids = { requestId: `${idPrefix}-requestId`, url: `${idPrefix}-url` };
+  const ids = {
+    requestId: `${idPrefix}-requestId`,
+    url: `${idPrefix}-url`,
+    refreshEverySeconds: `${idPrefix}-refreshEverySeconds`,
+  };
   const requestIdError = readErrorMessageAtPath(errors, `${requestPath}.requestId`);
   const urlError = readErrorMessageAtPath(errors, `${requestPath}.url`);
+  const refreshError = readErrorMessageAtPath(errors, `${requestPath}.refreshEverySeconds`);
 
   return (
     <section
@@ -102,6 +111,20 @@ function FlexRequestBlock(
           />
         </FormFieldRow>
       </div>
+      <FormFieldRow
+        label={texts.refreshEverySeconds}
+        controlId={ids.refreshEverySeconds}
+        errorMessage={refreshError}
+      >
+        <Input
+          id={ids.refreshEverySeconds}
+          inputMode="decimal"
+          className="w-32"
+          {...form.register(`${requestPath}.refreshEverySeconds`)}
+          {...buildErrorAttributesForControl(ids.refreshEverySeconds, refreshError)}
+        />
+      </FormFieldRow>
+      <p className="text-xs text-muted-foreground">{texts.refreshEverySecondsHint}</p>
       <NameAndValueRows
         form={form}
         listPath={`${requestPath}.headers`}

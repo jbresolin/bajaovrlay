@@ -1,0 +1,144 @@
+{
+  "event_id": "25SU",
+  "resultado_id": "25SU_GER",
+  "name": "Geral",
+  "provas": [
+    "PB4",
+    "B44",
+    "APD",
+    "PRE",
+    "PRC",
+    "PRP",
+    "PRS",
+    "PRF",
+    "PRD",
+    "PRG",
+    "PRM",
+    "AVF",
+    "TRA",
+    "MAN",
+    "ST1",
+    "ST2",
+    "ST3",
+    "SPP",
+    "SGD",
+    "END",
+    "SGE",
+    "SGD",
+    "PEN",
+    "TSP",
+    "CAD",
+    "CMP"
+  ],
+  "spoilers_active": true,
+  "ranking": {
+    "by": "Total",
+    "order": "desc"
+  },
+  "columns": [
+    {
+      "header": "Pos",
+      "kind": "position",
+      "ranking": false
+    },
+    {
+      "header": "#",
+      "kind": "team_number",
+      "ranking": false
+    },
+    {
+      "header": "Equipe",
+      "kind": "team",
+      "ranking": false
+    },
+    {
+      "header": "Segurança",
+      "kind": "formula",
+      "ranking": false
+    },
+    {
+      "header": "Projeto",
+      "kind": "formula",
+      "ranking": false
+    },
+    {
+      "header": "Dinâmicas",
+      "kind": "formula",
+      "ranking": false
+    },
+    {
+      "header": "Enduro",
+      "kind": "formula",
+      "ranking": false
+    },
+    {
+      "header": "Bônus 4x4",
+      "kind": "formula",
+      "ranking": false
+    },
+    {
+      "header": "Penalizações",
+      "kind": "formula",
+      "ranking": false
+    },
+    {
+      "header": "Total",
+      "kind": "formula",
+      "ranking": true
+    }
+  ],
+  "rows": [
+    {
+      "position": null,
+      "team": {
+        "number": 1,
+        "name": "Procobaja ",
+        "school": "Universidade Tecnológica Federal do Paraná - Cornélio Procópio",
+        "state": "PR",
+        "disqualified": false
+      },
+      "cells": [
+        {
+          "raw": null,
+          "display": "–"
+        },
+        {
+          "raw": 1,
+          "display": 1
+        },
+        {
+          "raw": "Procobaja ",
+          "display": "Procobaja "
+        },
+        {
+          "raw": -15,
+          "display": -15
+        },
+        {
+          "raw": "SPOILERS",
+          "display": "SPOILERS"
+        },
+        {
+          "raw": "SPOILERS",
+          "display": "SPOILERS"
+        },
+        {
+          "raw": 84.71,
+          "display": 84.71
+        },
+        {
+          "raw": 0,
+          "display": 0
+        },
+        {
+          "raw": null,
+          "display": null
+        },
+        {
+          "raw": "SPOILERS",
+          "display": "SPOILERS"
+        }
+      ]
+    }
+  ]
+}

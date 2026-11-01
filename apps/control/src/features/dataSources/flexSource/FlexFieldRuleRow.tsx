@@ -2,7 +2,6 @@ import { listTransformsOfFamily, type MappableField } from '@bajaovrlay/shared';
 import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
 
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -13,11 +12,10 @@ import {
 import { buildErrorAttributesForControl } from '@/features/items/FormFieldRow';
 import { ptBR } from '@/i18n/ptBR';
 
-import {
-  type FieldRuleSourceKind,
-  type FlexSourceFormValues,
-  noTransformId,
-} from './flexSourceFormValues';
+import { FlexAlternativesEditor } from './FlexAlternativesEditor';
+import { type FieldRuleSourceKind, noTransformId } from './flexFieldRuleFormValues';
+import { FlexReadingControls } from './FlexReadingControls';
+import type { FlexSourceFormValues } from './flexSourceFormValues';
 import { readErrorMessageAtPath } from './formErrorAtPath';
 import { ValueTableEditor } from './ValueTableEditor';
 
@@ -27,12 +25,14 @@ const texts = ptBR.dataSources.flexForm;
 // belongs to an item field (BAJAOVRLAY-20); the config schema refuses one here anyway.
 const mappingTransforms = listTransformsOfFamily('mapping');
 
-// "Ordem na lista" is the place of an item in its list, so only an item's field offers it.
+// "Ordem na lista", "Item de fora", "Consulta" and "Coluna" read an item of a list, so
+// only an item's field offers them; "Alternativas" (paths and fixed values) both.
 const sourceKindsOfTopLevelFields: readonly FieldRuleSourceKind[] = [
   'none',
   'path',
   'constant',
   'pollMoment',
+  'alternatives',
 ];
 const sourceKindsOfEntryFields: readonly FieldRuleSourceKind[] = [
   'none',
@@ -40,11 +40,25 @@ const sourceKindsOfEntryFields: readonly FieldRuleSourceKind[] = [
   'constant',
   'listOrder',
   'pollMoment',
+  'parent',
+  'lookup',
+  'column',
+  'alternatives',
 ];
+
+/** The kinds whose value is read from the data, which a transform may work on. */
+const sourceKindsThatReadTheData: ReadonlySet<FieldRuleSourceKind> = new Set([
+  'path',
+  'parent',
+  'lookup',
+  'column',
+  'alternatives',
+]);
 
 /**
  * One canonical field's row: its label (marked when required), where its value comes
- * from, the path or fixed value, and for a path the transform from the shared registry,
+ * from, that reading's controls (FlexReadingControls) or the alternatives
+ * (FlexAlternativesEditor), and for a value read the transform from the shared registry,
  * with the value table under it when the transform is "Tabela de valores" (mapValues).
  * The controls are named after the field ("Caminho de Equipe"), so every row is told
  * apart by ear and by a test.
@@ -53,6 +67,7 @@ export function FlexFieldRuleRow(props: {
   form: UseFormReturn<FlexSourceFormValues>;
   field: MappableField;
   rowPath: `mappings.${number}.fieldRules.${number}`;
+  lookupNamesToOffer: string[];
   controlIdPrefix: string;
 }) {
   const { form, field, rowPath, controlIdPrefix } = props;
@@ -66,8 +81,16 @@ export function FlexFieldRuleRow(props: {
 
   const sourceKindsOffered =
     field.level === 'entry' ? sourceKindsOfEntryFields : sourceKindsOfTopLevelFields;
-  const hasText = sourceKind === 'path' || sourceKind === 'constant';
-  const isReadByPath = sourceKind === 'path';
+  const isOneReading =
+    sourceKind === 'path' ||
+    sourceKind === 'constant' ||
+    sourceKind === 'parent' ||
+    sourceKind === 'lookup' ||
+    sourceKind === 'column';
+  const readsTheData = sourceKindsThatReadTheData.has(sourceKind);
+  // What is about the whole rule (one source, two alternatives) lands at the path field,
+  // which alternatives and the kinds without text do not draw: it is shown here instead.
+  const isRuleErrorWithoutItsInput = !isOneReading && textError !== undefined;
 
   return (
     <div className="flex flex-col gap-1 border-t border-border pt-2">
@@ -94,19 +117,27 @@ export function FlexFieldRuleRow(props: {
             </Select>
           )}
         />
-        {hasText && (
-          <Input
-            aria-label={
-              isReadByPath
-                ? texts.fieldRule.path(field.label)
-                : texts.fieldRule.constant(field.label)
-            }
-            className="min-w-40 flex-1 font-mono"
-            {...form.register(`${rowPath}.pathOrConstantText`)}
-            {...buildErrorAttributesForControl(textControlId, textError)}
+        {isOneReading && (
+          <FlexReadingControls
+            form={form}
+            readingPath={rowPath}
+            sourceKind={sourceKind}
+            lookupNamesToOffer={props.lookupNamesToOffer}
+            controlIdPrefix={controlIdPrefix}
+            labels={{
+              path:
+                sourceKind === 'parent'
+                  ? texts.fieldRule.parentPath(field.label)
+                  : texts.fieldRule.path(field.label),
+              constant: texts.fieldRule.constant(field.label),
+              lookupName: texts.fieldRule.lookupName(field.label),
+              lookupPath: texts.fieldRule.lookupPath(field.label),
+              columnHeader: texts.fieldRule.columnHeader(field.label),
+              columnPath: texts.fieldRule.columnPath(field.label),
+            }}
           />
         )}
-        {isReadByPath && (
+        {readsTheData && (
           <Controller
             control={form.control}
             name={`${rowPath}.transformId`}
@@ -132,7 +163,7 @@ export function FlexFieldRuleRow(props: {
           />
         )}
       </div>
-      {hasText && textError !== undefined && (
+      {isRuleErrorWithoutItsInput && (
         <p id={`${textControlId}-error`} className="text-sm text-destructive">
           {textError}
         </p>
@@ -140,12 +171,22 @@ export function FlexFieldRuleRow(props: {
       {sourceKind === 'constant' && (
         <p className="text-xs text-muted-foreground">{texts.typedValueHint}</p>
       )}
-      {isReadByPath && transformError !== undefined && (
+      {readsTheData && transformError !== undefined && (
         <p id={`${transformControlId}-error`} className="text-sm text-destructive">
           {transformError}
         </p>
       )}
-      {isReadByPath && transformId === 'mapValues' && (
+      {sourceKind === 'alternatives' && (
+        <FlexAlternativesEditor
+          form={form}
+          rowPath={rowPath}
+          fieldLabel={field.label}
+          level={field.level}
+          lookupNamesToOffer={props.lookupNamesToOffer}
+          controlIdPrefix={controlIdPrefix}
+        />
+      )}
+      {readsTheData && transformId === 'mapValues' && (
         <ValueTableEditor form={form} rowPath={rowPath} fieldLabel={field.label} />
       )}
     </div>

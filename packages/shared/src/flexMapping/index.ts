@@ -19,6 +19,20 @@ export {
   type FlexShapeMapping,
   FlexShapeMappingSchema,
 } from './flexMappingConfig.js';
+// Where a rule may read besides a path: the outer element, a lookup, a column, alternatives.
+export {
+  type FlexAlternativeSource,
+  type FlexColumnReading,
+  type FlexLookupReading,
+} from './flexRuleSources.js';
+// What a shape's mapping may declare beside its rules (BAJAOVRLAY-53).
+export {
+  type FlexIncompleteEntryCondition,
+  type FlexLookup,
+  type FlexRefusalFlag,
+  type FlexScorePartsFromColumns,
+  type FlexTableLayout,
+} from './flexMappingListOptions.js';
 // The canonical fields a mapping can fill in each shape, with their pt-BR labels.
 export {
   findMappableField,

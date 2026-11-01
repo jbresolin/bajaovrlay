@@ -124,7 +124,7 @@ describe('FlexMappingConfigSchema', () => {
       ],
       expectedPath: '0.entryFields.0',
       expectedMessage:
-        'A regra de "teamName" precisa de exatamente uma origem: caminho, valor fixo, ordem na lista ou momento da leitura.',
+        'A regra de "teamName" precisa de exatamente uma origem: caminho, caminho no item de fora, consulta, coluna, alternativas, valor fixo, ordem na lista ou momento da leitura.',
     },
     // A rule with no source at all would map nothing while looking like it maps something.
     {
@@ -132,7 +132,7 @@ describe('FlexMappingConfigSchema', () => {
       mappings: [buildPositionsMappingWithEntryFields([{ targetField: 'laps' }])],
       expectedPath: '0.entryFields.0',
       expectedMessage:
-        'A regra de "laps" precisa de exatamente uma origem: caminho, valor fixo, ordem na lista ou momento da leitura.',
+        'A regra de "laps" precisa de exatamente uma origem: caminho, caminho no item de fora, consulta, coluna, alternativas, valor fixo, ordem na lista ou momento da leitura.',
     },
     // A transform names what is done to a value read from the response, so a fixed value has none.
     {
@@ -143,7 +143,8 @@ describe('FlexMappingConfigSchema', () => {
         ]),
       ],
       expectedPath: '0.entryFields.0.transformId',
-      expectedMessage: 'A transformação da regra de "laps" só vale para um campo lido por caminho.',
+      expectedMessage:
+        'A transformação da regra de "laps" só vale para um campo lido da resposta (caminho, item de fora, consulta, coluna ou alternativas).',
     },
     // A value table with no transform to read it would be silently ignored.
     {

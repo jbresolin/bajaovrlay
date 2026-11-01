@@ -1,0 +1,22 @@
+{
+  "event_id": "26BR",
+  "prova_id": "END",
+  "name": "Enduro",
+  "simulation": false,
+  "calculated_at_ms": null,
+  "clock": {
+    "state": "waiting",
+    "start_ms": null,
+    "finish_ms": null,
+    "elapsed_ms": null,
+    "server_time_ms": 1792890969037,
+    "planned_duration_ms": null,
+    "scoring_start_ms": 1774789261000,
+    "prova_status": "final"
+  },
+  "pace": null,
+  "cars": [],
+  "best_lap": null,
+  "best_lap_history": [],
+  "recent_stops": []
+}

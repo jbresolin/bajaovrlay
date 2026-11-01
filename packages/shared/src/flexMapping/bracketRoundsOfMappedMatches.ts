@@ -18,44 +18,65 @@ export type RoundOfMappedMatches = {
   matches: Array<Record<string, unknown>>;
 };
 
+/**
+ * One round as grouped, with what the contracts need (bracketRoundsContracts.ts): whether
+ * a rule marked any of its matches incomplete, and its matches' 1-based lines.
+ */
+export type GroupedRound = {
+  round: RoundOfMappedMatches;
+  hasAnIncompleteMatch: boolean;
+  matchLineNumbers: number[];
+};
+
 /** The rounds, and the 1-based lines of the matches that named no round (left out). */
 export type MappedMatchesGrouping = {
-  rounds: RoundOfMappedMatches[];
+  groupedRounds: GroupedRound[];
   linesWithoutRoundName: number[];
 };
 
 /**
  * Groups the mapped matches by `roundName`, first met first. A round is the third place
- * when any of its matches says `roundIsThirdPlace` true. The two round fields are taken off
+ * when any of its matches says `roundIsThirdPlace` true, and holds an incomplete match
+ * when `isMatchIncomplete` says so for any of them. The two round fields are taken off
  * each match, since the shape's matches do not carry them. A match with no round name (a
  * text, not empty) cannot be placed: its line is listed for the caller's problem line.
  */
 export function groupMappedMatchesIntoRounds(
   matches: Array<Record<string, unknown>>,
+  isMatchIncomplete: boolean[],
 ): MappedMatchesGrouping {
-  const rounds: RoundOfMappedMatches[] = [];
+  const groupedRounds: GroupedRound[] = [];
   const linesWithoutRoundName: number[] = [];
 
   matches.forEach((mappedMatch, matchIndex) => {
+    const lineNumber = matchIndex + 1;
     const { roundName, roundIsThirdPlace, ...match } = mappedMatch;
     const isRoundNamed = typeof roundName === 'string' && roundName !== '';
     if (!isRoundNamed) {
-      linesWithoutRoundName.push(matchIndex + 1);
+      linesWithoutRoundName.push(lineNumber);
       return;
     }
 
-    let round = rounds.find((candidate) => candidate.name === roundName);
-    if (round === undefined) {
-      round = { name: roundName, matches: [] };
-      rounds.push(round);
+    let groupedRound = groupedRounds.find((candidate) => candidate.round.name === roundName);
+    if (groupedRound === undefined) {
+      groupedRound = {
+        round: { name: roundName, matches: [] },
+        hasAnIncompleteMatch: false,
+        matchLineNumbers: [],
+      };
+      groupedRounds.push(groupedRound);
     }
     if (roundIsThirdPlace === true) {
-      round.isThirdPlace = true;
+      groupedRound.round.isThirdPlace = true;
     }
-    round.matches.push(dropWhatATableWritesByDefault(match));
+    if (isMatchIncomplete[matchIndex] === true) {
+      groupedRound.hasAnIncompleteMatch = true;
+    }
+    groupedRound.matchLineNumbers.push(lineNumber);
+    groupedRound.round.matches.push(dropWhatATableWritesByDefault(match));
   });
 
-  return { rounds, linesWithoutRoundName };
+  return { groupedRounds, linesWithoutRoundName };
 }
 
 /** One car of a mapped match, when it is an object (the mapping builds it from its rules). */

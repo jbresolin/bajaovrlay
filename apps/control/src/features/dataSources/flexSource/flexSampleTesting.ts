@@ -16,13 +16,18 @@ import { ptBR } from '@/i18n/ptBR';
  * handed in.
  */
 
-/** What testing a mapping on samples answers: the canonical shapes, or the problem lines. */
+/**
+ * What testing a mapping on samples answers: the canonical shapes, or the problem lines.
+ * `isRefusedByAFlag` says a mapping's "Recusar a resposta quando" refused the answer: the
+ * lines are then the operator's own sentences, shown alone (BAJAOVRLAY-53).
+ */
 export type FlexSampleTestResult =
-  { isPassing: true; shapes: DataSnapshotShapes } | { isPassing: false; problems: string[] };
+  | { isPassing: true; shapes: DataSnapshotShapes }
+  | { isPassing: false; problems: string[]; isRefusedByAFlag: boolean };
 
 /**
- * Tests a mapping on the sample text of each request it reads (`sampleTextByRequestId`,
- * as typed, pasted or fetched). A missing or broken sample is a problem of its own, named
+ * Tests a mapping on the sample text of each request it reads, its lookups' too
+ * (`sampleTextByRequestId`, as typed, pasted or fetched). A missing or broken sample is a problem of its own, named
  * by its request, before any mapping is tried.
  */
 export function testFlexMappingOnSamples(
@@ -31,7 +36,15 @@ export function testFlexMappingOnSamples(
   pollMomentMs: number,
 ): FlexSampleTestResult {
   const texts = ptBR.dataSources.flexForm.test;
-  const requestIdsRead = [...new Set(mappings.map((mapping) => mapping.requestId))];
+  // Every request a mapping reads: its own, and those of its lookups (BAJAOVRLAY-53).
+  const requestIdsRead = [
+    ...new Set(
+      mappings.flatMap((mapping) => [
+        mapping.requestId,
+        ...(mapping.lookups ?? []).map((lookup) => lookup.requestId),
+      ]),
+    ),
+  ];
 
   const sampleProblems: string[] = [];
   const responsesByRequestId: Record<string, unknown> = {};
@@ -48,12 +61,16 @@ export function testFlexMappingOnSamples(
     }
   }
   if (sampleProblems.length > 0) {
-    return { isPassing: false, problems: sampleProblems };
+    return { isPassing: false, problems: sampleProblems, isRefusedByAFlag: false };
   }
 
   const mappingResult = applyFlexMapping(mappings, responsesByRequestId, pollMomentMs);
   if (!mappingResult.ok) {
-    return { isPassing: false, problems: mappingResult.problems };
+    return {
+      isPassing: false,
+      problems: mappingResult.problems,
+      isRefusedByAFlag: mappingResult.isRefusedByAFlag,
+    };
   }
   return validateEveryMappedShape(mappingResult.shapes);
 }
@@ -74,7 +91,7 @@ function validateEveryMappedShape(
     }
   }
   if (validationProblems.length > 0) {
-    return { isPassing: false, problems: validationProblems };
+    return { isPassing: false, problems: validationProblems, isRefusedByAFlag: false };
   }
   // Each shape was parsed by its own schema under its own key just above.
   return { isPassing: true, shapes: validShapes as DataSnapshotShapes };

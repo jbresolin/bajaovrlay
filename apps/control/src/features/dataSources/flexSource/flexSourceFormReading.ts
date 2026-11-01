@@ -8,7 +8,8 @@ import {
   readPollIntervalMs,
   type ValidSourceFormReading,
 } from '../sourceFormReading';
-import { buildFlexConfigFromFormValues, type FormRowsOfRules } from './flexConfigFromFormValues';
+import { buildFlexConfigFromFormValues } from './flexConfigFromFormValues';
+import { findFormFieldPathOfIssue } from './flexFormFieldOfIssue';
 import type { FlexConfigFormValues, FlexSourceFormValues } from './flexSourceFormValues';
 
 /**
@@ -114,66 +115,4 @@ function explainIssueForTheForm(issue: { code: string; path: PropertyKey[]; mess
     return ptBR.dataSources.flexForm.fieldErrors.constantNotTextNumberOrBoolean;
   }
   return issue.message;
-}
-
-/** The form field a refusal is about, or undefined when it is about no one field. */
-function findFormFieldPathOfIssue(
-  issuePath: PropertyKey[],
-  formRowsOfRules: FormRowsOfRules,
-): string | undefined {
-  const [part, ...restOfPath] = issuePath;
-  if (part === 'requests') {
-    return findFormFieldPathInRequests(restOfPath);
-  }
-  if (part === 'mappings') {
-    return findFormFieldPathInMappings(restOfPath, formRowsOfRules);
-  }
-  return undefined;
-}
-
-/** The field of a request's refusal: its name, address, or a header or parameter row. */
-function findFormFieldPathInRequests(issuePath: PropertyKey[]): string | undefined {
-  const [requestIndex, requestKey, rowIndex, rowKey] = issuePath;
-  if (typeof requestIndex !== 'number') {
-    return undefined;
-  }
-  const requestPath = `requests.${requestIndex}`;
-  if (requestKey === 'requestId' || requestKey === 'url') {
-    return `${requestPath}.${requestKey}`;
-  }
-  const isARowOfTheRequest = requestKey === 'headers' || requestKey === 'queryParameters';
-  if (!isARowOfTheRequest || typeof rowIndex !== 'number') {
-    return undefined;
-  }
-  // A bad name goes under the name; "exactly one value" and a bad value or variable
-  // go under the value.
-  const rowField = rowKey === 'name' ? 'name' : 'valueText';
-  return `${requestPath}.${requestKey}.${rowIndex}.${rowField}`;
-}
-
-/** The field of a mapping's refusal: its request, its list path, or one field's row. */
-function findFormFieldPathInMappings(
-  issuePath: PropertyKey[],
-  formRowsOfRules: FormRowsOfRules,
-): string | undefined {
-  const [mappingIndex, mappingKey, ruleIndex, ruleKey] = issuePath;
-  if (typeof mappingIndex !== 'number') {
-    return undefined;
-  }
-  const mappingPath = `mappings.${mappingIndex}`;
-  if (mappingKey === 'requestId' || mappingKey === 'entriesPath') {
-    return `${mappingPath}.${mappingKey}`;
-  }
-  const isARuleOfTheMapping = mappingKey === 'fields' || mappingKey === 'entryFields';
-  if (!isARuleOfTheMapping || typeof ruleIndex !== 'number') {
-    return undefined;
-  }
-  const rowIndex = formRowsOfRules[mappingIndex]?.[mappingKey][ruleIndex];
-  if (rowIndex === undefined) {
-    return undefined;
-  }
-  // A transform or its table goes under the transform; anything else under the path or value.
-  const isAboutTheTransform = ruleKey === 'transformId' || ruleKey === 'transformParameters';
-  const rowField = isAboutTheTransform ? 'transformId' : 'pathOrConstantText';
-  return `${mappingPath}.fieldRules.${rowIndex}.${rowField}`;
 }

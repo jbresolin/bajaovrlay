@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ptBR } from '@/i18n/ptBR';
 
-import {
-  buildEmptyValueTableRowFormValues,
-  type FlexSourceFormValues,
-} from './flexSourceFormValues';
+import { buildEmptyValueTableRowFormValues } from './flexFieldRuleFormValues';
+import type { FlexSourceFormValues } from './flexSourceFormValues';
 
 const texts = ptBR.dataSources.flexForm.valueTable;
 
@@ -15,7 +13,8 @@ const texts = ptBR.dataSources.flexForm.valueTable;
  * The table of "Tabela de valores" (mapValues) for one field: each row a value the source
  * sends ("BOX", "RUN", "4") and what it becomes in the canonical shape ("inPit", true,
  * "red"). A value the source sends that is not in the table fails the poll by name, so
- * every code the source can send needs its row.
+ * every code the source can send needs its row, unless "Senão" says what any other value
+ * becomes (BAJAOVRLAY-53), for a source whose words may grow.
  */
 export function ValueTableEditor(props: {
   form: UseFormReturn<FlexSourceFormValues>;
@@ -67,6 +66,14 @@ export function ValueTableEditor(props: {
       >
         {texts.addRowButton}
       </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          aria-label={texts.otherwiseValue(props.fieldLabel)}
+          className="w-36 bg-background font-mono"
+          {...form.register(`${rowPath}.otherwiseValueText`)}
+        />
+        <span className="text-xs text-muted-foreground">{texts.otherwiseValueHint}</span>
+      </div>
     </div>
   );
 }
