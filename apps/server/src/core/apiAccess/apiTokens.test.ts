@@ -15,6 +15,8 @@
  *   - An entry with no "=", a name that cannot be an actor name, a token shorter than 16
  *     characters or with a space inside, a name listed twice and a token given to two
  *     devices are each refused, and the message never contains a token.
+ *   - The name "rede", in any case, is refused: it signs the calls with no token when
+ *     BAJAOVRLAY_API_OPEN=true.
  *   - The Authorization header is read only as `Bearer <token>` (the word in any case).
  *   - A presented token is matched to its device's name, and a wrong one to none.
  *
@@ -114,6 +116,14 @@ describe('parseApiTokens', () => {
       name: 'refuses one token given to two devices',
       text: `companion=${sharedToken},streamdeck=${sharedToken}`,
       expectedProblem: '"companion" and "streamdeck" have the same token',
+    },
+    // "rede" signs the calls that come with no token when the API is open; a device of
+    // that name would make the event log unable to tell the two apart.
+    {
+      name: 'refuses the name "rede", kept for calls with no token',
+      text: `Rede=${companionToken}`,
+      expectedProblem:
+        'the name "Rede" is kept for calls with no token (BAJAOVRLAY_API_OPEN): name the device otherwise',
     },
   ];
 

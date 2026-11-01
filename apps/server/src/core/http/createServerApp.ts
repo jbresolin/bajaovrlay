@@ -46,6 +46,8 @@ export type ServerAppOptions = {
   mediaFolder?: string | undefined;
   /** BAJAOVRLAY_API_TOKENS as read at boot; the command API answers 403 when left out. */
   apiTokens?: ApiTokens | undefined;
+  /** BAJAOVRLAY_API_OPEN as read at boot: the command API with no token; not open when left out. */
+  isApiOpenToTheNetwork?: boolean | undefined;
   /**
    * BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: the addresses of a reverse proxy whose pages
    * may upload images too. None when left out: only the server's own address may.
@@ -78,6 +80,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         sampleRequestTimeoutInMilliseconds: options.sampleRequestTimeoutInMilliseconds,
         mediaFolder: options.mediaFolder,
         apiTokens: options.apiTokens,
+        isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
         publicOrigins: options.publicOrigins,
       }),
     );

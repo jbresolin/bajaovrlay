@@ -2,6 +2,7 @@
 // this file only reads the environment, works out the paths and handles exit.
 import { fileURLToPath } from 'node:url';
 
+import { logCommandApiAccessAtBoot } from './core/apiAccess/commandApiAccessAtBoot.js';
 import { shutDownTheServer } from './core/boot/shutDownTheServer.js';
 import { startServer } from './core/boot/startServer.js';
 import { committedMigrationsFolder } from './core/db/openDatabase.js';
@@ -51,6 +52,7 @@ try {
     dataFolder,
     sourceHostAllowlist: environment.BAJAOVRLAY_SOURCE_ALLOWED_HOSTS,
     apiTokens: environment.BAJAOVRLAY_API_TOKENS,
+    isApiOpenToTheNetwork: environment.BAJAOVRLAY_API_OPEN,
     publicOrigins: environment.BAJAOVRLAY_PUBLIC_ORIGINS,
     controlPageFolder,
     rendererPageFolder,
@@ -64,13 +66,14 @@ try {
       build_id: runningServer.buildId,
       database_path: databasePath,
       data_folder: dataFolder,
-      // The names of the devices, never their tokens.
-      api_token_names: environment.BAJAOVRLAY_API_TOKENS.isSet
-        ? environment.BAJAOVRLAY_API_TOKENS.tokens.map((apiToken) => apiToken.name)
-        : [],
     },
     'server listening',
   );
+  logCommandApiAccessAtBoot({
+    logger,
+    apiTokens: environment.BAJAOVRLAY_API_TOKENS,
+    isOpenToTheNetwork: environment.BAJAOVRLAY_API_OPEN,
+  });
   // startServer read build-id.json once, at boot; that id is the one every hello names.
   if (runningServer.buildId === undefined) {
     logger.warn('no build-id.json; open pages will not reload themselves after an upgrade');

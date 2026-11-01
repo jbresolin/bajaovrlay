@@ -47,7 +47,8 @@ const authScenarios = [
     expectedStatus: 403,
     expectedError: {
       code: 'API_TURNED_OFF',
-      message: 'API de comandos desligada: defina BAJAOVRLAY_API_TOKENS.',
+      message:
+        'API de comandos desligada: defina BAJAOVRLAY_API_TOKENS, ou BAJAOVRLAY_API_OPEN=true numa rede só do estúdio.',
     },
     expectedLastActor: operatorActor,
   },

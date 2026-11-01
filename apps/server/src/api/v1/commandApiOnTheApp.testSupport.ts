@@ -41,6 +41,8 @@ export type AppWithTheCommandApi = {
  */
 export function createAppWithTheCommandApi(options: {
   apiTokensVariable: string | undefined;
+  /** BAJAOVRLAY_API_OPEN=true: the API answers calls with no token. Left out: not open. */
+  isApiOpenToTheNetwork?: boolean;
   logger?: ServerLogger;
   /**
    * Slice rows written over the seeded ones before the store boots, as a damaged or an
@@ -80,6 +82,7 @@ export function createAppWithTheCommandApi(options: {
     version: '0.3.1',
     stateStore,
     apiTokens: parsing.apiTokens,
+    isApiOpenToTheNetwork: options.isApiOpenToTheNetwork ?? false,
   });
   return { app, stateStore };
 }
@@ -196,7 +199,8 @@ export function sendCommandOverTheWebSocket(stateStore: StateStore, command: unk
 /**
  * Sends one request to the app as Companion's generic HTTP module does. `token` puts
  * `Authorization: Bearer <token>`; `authorization` puts that header as written instead;
- * neither sends no header. A `body` is sent as JSON text.
+ * neither sends no header. A `body` is sent as JSON text. `clientAddress` is the address
+ * the socket reports, given to the app as @hono/node-server gives Node's request.
  */
 export async function sendApiRequest(
   app: AppWithTheCommandApi['app'],
@@ -206,6 +210,7 @@ export async function sendApiRequest(
     token?: string;
     authorization?: string;
     body?: unknown;
+    clientAddress?: string;
   },
 ): Promise<Response> {
   const headers: Record<string, string> = {};
@@ -220,11 +225,15 @@ export async function sendApiRequest(
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(request.body);
   }
-  return await app.request(`http://localhost${request.path}`, {
-    method: request.method,
-    headers,
-    body,
-  });
+  const nodeServerBindings =
+    request.clientAddress === undefined
+      ? undefined
+      : { incoming: { socket: { remoteAddress: request.clientAddress } } };
+  return await app.request(
+    `http://localhost${request.path}`,
+    { method: request.method, headers, body },
+    nodeServerBindings,
+  );
 }
 
 /**

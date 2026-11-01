@@ -13,7 +13,9 @@ export const apiTokenSecurityScheme = {
   scheme: 'bearer',
   description:
     'One token per device, listed in the server variable BAJAOVRLAY_API_TOKENS as ' +
-    'name=token pairs separated by commas. Unset, every route of the command API answers 403.',
+    'name=token pairs separated by commas. With BAJAOVRLAY_API_OPEN=true a request with no ' +
+    'Authorization header is accepted too, as the device "rede". With neither, every route ' +
+    'of the command API answers 403.',
 };
 
 /** What each route of the command API puts in its `security`: the bearer token. */
@@ -42,7 +44,7 @@ export const commandRouteResponses = {
   },
   403: {
     description:
-      'BAJAOVRLAY_API_TOKENS is not set (code API_TURNED_OFF), or the command is one only ' +
+      'Neither BAJAOVRLAY_API_TOKENS nor BAJAOVRLAY_API_OPEN=true is set (code API_TURNED_OFF), or the command is one only ' +
       'the server sends (code NOT_ALLOWED, in a commandResult); pt-BR.',
     content: commandResultContent,
   },

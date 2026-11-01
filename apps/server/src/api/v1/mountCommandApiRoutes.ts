@@ -4,7 +4,7 @@ import type { Context } from 'hono';
 import { z } from 'zod';
 
 import type { ApiTokens } from '../../core/apiAccess/apiTokens.js';
-import { requireApiToken } from '../../core/apiAccess/requireApiToken.js';
+import { requireApiAccess } from '../../core/apiAccess/requireApiAccess.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
 import { ptBR } from '../../core/messages/ptBR.js';
 import { describeInvalidMessage } from '../../core/store/commandRefusals.js';
@@ -44,16 +44,21 @@ import {
 
 /**
  * Mounts the command API (BAJAOVRLAY-28) on the /api/v1 routes: POST /commands, the ten
- * button shortcuts and GET /layers/status, each behind requireApiToken (named on each
+ * button shortcuts and GET /layers/status, each behind requireApiAccess (named on each
  * route, never by a path pattern, so no other route can fall under it by accident), plus
  * the bearer scheme and the `Command` component in the OpenAPI document.
  */
 export function mountCommandApiRoutes(
   apiRoutes: OpenAPIHono<ServerAppEnvironment>,
-  options: { stateStore: StateStore; apiTokens: ApiTokens },
+  options: { stateStore: StateStore; apiTokens: ApiTokens; isOpenToTheNetwork: boolean },
 ): void {
   const { stateStore } = options;
-  const middleware = [requireApiToken(options.apiTokens)];
+  const middleware = [
+    requireApiAccess({
+      apiTokens: options.apiTokens,
+      isOpenToTheNetwork: options.isOpenToTheNetwork,
+    }),
+  ];
 
   apiRoutes.openAPIRegistry.registerComponent(
     'securitySchemes',
@@ -65,7 +70,7 @@ export function mountCommandApiRoutes(
   apiRoutes.openapi(
     {
       ...postCommandsRoute,
-      // The token first, so nobody without one learns what the body checks accept.
+      // Access first, so nobody without it learns what the body checks accept.
       middleware: [
         ...middleware,
         refuseCommandBodyNotSentAsJson(),
@@ -78,7 +83,7 @@ export function mountCommandApiRoutes(
         commandInput: envelope.command,
         requestId: envelope.requestId ?? null,
         stateStore,
-        tokenName: readTokenName(context),
+        tokenName: readApiCallerName(context),
         logger: context.get('requestLogger'),
       });
       return context.json(answer.body, answer.httpStatus);
@@ -157,14 +162,20 @@ export function mountCommandApiRoutes(
   apiRoutes.openapi({ ...postStopMacroRoute, middleware }, (context) => {
     const command = buildStopMacroCommandOfTheRunningMacro(stateStore.readAllSlices());
     if (command === undefined) {
-      const answer = answerOkWithoutACommand(readTokenName(context), context.get('requestLogger'));
+      const answer = answerOkWithoutACommand(
+        readApiCallerName(context),
+        context.get('requestLogger'),
+      );
       return context.json(answer.body, answer.httpStatus);
     }
     return answerWithCommand(context, stateStore, command);
   });
 
   apiRoutes.openapi({ ...getLayersStatusRoute, middleware }, (context) => {
-    return context.json(buildLayersStatus(stateStore.readAllSlices(), readTokenName(context)), 200);
+    return context.json(
+      buildLayersStatus(stateStore.readAllSlices(), readApiCallerName(context)),
+      200,
+    );
   });
 }
 
@@ -202,23 +213,23 @@ function answerWithCommand(
     commandInput: command,
     requestId: null,
     stateStore,
-    tokenName: readTokenName(context),
+    tokenName: readApiCallerName(context),
     logger: context.get('requestLogger'),
   });
   return context.json(answer.body, answer.httpStatus);
 }
 
 /**
- * The name of the token requireApiToken matched. It always ran first on these routes, so
- * a missing name is a bug in the mounting, and throwing makes it a 500, never a command
- * signed by nobody.
+ * Who requireApiAccess let in: a device's name, or "rede" when the API is open. It always
+ * ran first on these routes, so a missing name is a bug in the mounting, and throwing
+ * makes it a 500, never a command signed by nobody.
  */
-function readTokenName(context: Context<ServerAppEnvironment>): string {
-  const tokenName = context.get('apiTokenName');
-  if (tokenName === undefined) {
-    throw new Error('a route of the command API ran without requireApiToken in front of it');
+function readApiCallerName(context: Context<ServerAppEnvironment>): string {
+  const callerName = context.get('apiCallerName');
+  if (callerName === undefined) {
+    throw new Error('a route of the command API ran without requireApiAccess in front of it');
   }
-  return tokenName;
+  return callerName;
 }
 
 /** The answer of "Tomar" when the server has no rundown at all (a damaged database). */

@@ -9,4 +9,4 @@ Inside it, the decision records at the end (§18, §19) win over the earlier sec
 - `00-concept.md` — what the system is, its architecture, state model, rules and milestones.
 - `briefs/` — agent task briefs, one per Plane work item (BAJAOVRLAY-n).
 - `testing-style.md` — the canonical example test every test file copies (created in BAJAOVRLAY-7).
-- `companion.md` — driving the show from Companion or a Stream Deck over HTTP: tokens, buttons, button colours and a `curl` line per shortcut (BAJAOVRLAY-28).
+- `buttons.md` — driving the show from Companion, a Stream Deck or an Ulanzi D200 over HTTP: open mode or tokens, buttons, button colours and a `curl` line per shortcut (BAJAOVRLAY-28).

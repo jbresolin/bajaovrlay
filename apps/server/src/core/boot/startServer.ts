@@ -55,6 +55,11 @@ export type StartServerOptions = {
    */
   apiTokens?: ApiTokens | undefined;
   /**
+   * BAJAOVRLAY_API_OPEN as read at boot: the command API answers calls with no token,
+   * signed `api:rede`, for a studio-only network. Left out: not open.
+   */
+  isApiOpenToTheNetwork?: boolean | undefined;
+  /**
    * BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a reverse proxy's addresses whose pages may
    * upload images as well as the server's own. Left out: none (tests, the stream PC).
    */
@@ -177,6 +182,7 @@ async function startServingFromDatabase(
       sourceHostAllowlist: options.sourceHostAllowlist,
       mediaFolder,
       apiTokens: options.apiTokens,
+      isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
       publicOrigins: options.publicOrigins,
     });
     httpServer = await listen({

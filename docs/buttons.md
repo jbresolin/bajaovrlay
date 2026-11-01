@@ -1,18 +1,45 @@
-# Companion and Stream Deck: driving BajaOvrLay over HTTP
+# Botões: Companion, Stream Deck, Ulanzi D200
 
-A step-by-step guide to running the show from Bitfocus Companion (and so from a Stream Deck or
-any macro pad Companion drives), using the command API built in BAJAOVRLAY-28. Every button
-press goes through the same single command path as a click on the control page: it is checked,
-saved, written to the event log as `api:<device name>`, and broadcast to every open page.
+A step-by-step guide to running the show from hardware buttons, using the command API built in
+BAJAOVRLAY-28: Bitfocus Companion (and so a Stream Deck or any macro pad Companion drives), an
+Ulanzi D200, or a script. Every button press goes through the same single command path as a
+click on the control page: it is checked, saved, written to the event log as `api:<device name>`
+(or `api:rede`, see below), and broadcast to every open page.
 
-The examples assume the server runs at `http://192.168.0.10:3000`. Use your server's address.
-The server must listen on the LAN (`HOST=0.0.0.0` in `.env`) for Companion to reach it from
-another machine.
+The examples assume the server runs at `http://192.168.0.10:3000`. Use your server's address;
+the Docker image on the stream PC answers on port 8080. Run from a checkout, the server must
+listen on the LAN (`HOST=0.0.0.0` in `.env`) for a button to reach it from another machine.
 
-## 1. Set the token
+## 1. Choose how the buttons get in
 
-Each device gets its own token, so the event log can tell them apart and a lost device can be
-cut off alone.
+The command API is off until one of two variables turns it on. Set them in `.env` (dev), in
+the compose file under `environment:` (stream PC) or under the stack's "Environment variables"
+(TrueNAS), then restart the server.
+
+- **Open to the studio network: `BAJAOVRLAY_API_OPEN=true`.** Any machine on the network may
+  press a button, with no token. Use it only on the dedicated studio network, where the control
+  page has no login either. It is the mode for the Ulanzi D200, whose buttons each carry their
+  own headers, so typing a token into every one does not work. A call with no token is written
+  to the event log as `api:rede`, and its log line carries the address it came from
+  (`client_ip`), so a stray press can be traced. The boot log warns that the API is open to the
+  whole network.
+- **By token: `BAJAOVRLAY_API_TOKENS`.** Each device sends its own token (section 2). Use it
+  anywhere else, and whenever the event log should name the device. Companion and a Stream Deck
+  handle a header once per connection, so a token costs nothing there.
+
+Both may be set together: a device with a token is then logged by its name, and a call with no
+header as `api:rede`. A wrong token is refused (401) even when the API is open, so a device set
+up with an old token is told so. The name `rede` is kept for calls with no token: no device may
+take it.
+
+With neither variable, every command route answers 403 "API de comandos desligada: defina
+BAJAOVRLAY_API_TOKENS, ou BAJAOVRLAY_API_OPEN=true numa rede só do estúdio." A server reachable
+from outside the studio never opens by accident: the open mode is only ever turned on by hand.
+
+## 2. Set the tokens
+
+Skip this section if the API is open and no device needs its own name. Each device gets its own
+token, so the event log can tell them apart and a lost device can be cut off alone.
 
 1. Make a token for each device, on any machine with OpenSSL:
 
@@ -20,19 +47,16 @@ cut off alone.
    openssl rand -hex 16
    ```
 
-2. Add them to `.env` at the repository root, as `name=token` pairs separated by commas. The
-   name is 1 to 40 letters, digits, `-` or `_`; the token is at least 16 characters, no spaces.
+2. Add them as `name=token` pairs separated by commas. The name is 1 to 40 letters, digits, `-`
+   or `_` (not `rede`); the token is at least 16 characters, no spaces.
 
    ```sh
    BAJAOVRLAY_API_TOKENS=companion=<the first token>,streamdeck=<the second token>
    ```
 
-3. Restart the server. The "server listening" log line lists the device names
+3. Restart the server. The boot log's "command API" line lists the device names
    (`api_token_names`), never the tokens. A token that cannot be used stops the boot with a
    message naming the device.
-
-Without the variable, every command route answers 403 "API de comandos desligada: defina
-BAJAOVRLAY_API_TOKENS." A wrong or missing token answers 401.
 
 Check it from a terminal before opening Companion:
 
@@ -42,9 +66,31 @@ export TOKEN=<Companion's token>
 curl -s -H "Authorization: Bearer $TOKEN" $BAJA/layers/status
 ```
 
-The answer starts with `"tokenName":"companion"`.
+The answer starts with `"tokenName":"companion"` (`"tokenName":"rede"` for a call with no
+token on an open API).
 
-## 2. Add Companion's "Generic HTTP" connection
+## 3. An Ulanzi D200 button
+
+With the API open (section 1), a D200 button is one HTTP request with nothing to fill in but
+the address. For "Tomar":
+
+1. In Ulanzi Studio, drag an **HTTP request** action (the name may differ by version) onto the
+   button.
+2. Method: **POST**.
+3. URL: `http://192.168.0.10:3000/api/v1/take-next`.
+4. Content Type: **none**. No headers, no body.
+5. Give the button its text, `TOMAR`.
+
+Every other shortcut in section 8 works the same way: only the end of the URL changes, for
+example `.../api/v1/clear-all` for "Limpar tudo" or `.../api/v1/fire-shortcut/atalhos/1` for
+the first quick-fire button. The ids a button needs are found as in section 5.
+
+For the button's look, the state is in `GET /api/v1/layers/status` (section 7), the same feed
+Companion reads. How the D200 reads a state back (a status code, a text, or a JSON value) is
+not settled yet; once it is, a plainer per-layer route may follow. The D200's field names above
+have not been checked against a real D200.
+
+## 4. Add Companion's "Generic HTTP" connection
 
 1. In Companion's admin page, open **Connections**, search for **Generic HTTP**, and add it.
 2. Name it `BajaOvrLay`.
@@ -52,14 +98,14 @@ The answer starts with `"tokenName":"companion"`.
    the end of the address.
 4. Save.
 
-Every request needs the token. In each action below, put this in the **Header** field (it takes
-JSON):
+With tokens, every request needs Companion's. In each action below, put this in the **Header**
+field (it takes JSON); with the API open, leave the field empty:
 
 ```json
 { "Authorization": "Bearer <Companion's token>" }
 ```
 
-## 3. Find the ids a button needs
+## 5. Find the ids a button needs
 
 "Tomar" and "Limpar tudo" need no id. A button for one item, one layer or one macro names it by
 its id, which the control page does not show. Read them from the server:
@@ -79,10 +125,10 @@ A new database seeds the program output's layers as `bug`, `ticker`, `clock`, `t
 `lower-third`, `notice` and `fullscreen`. An item's id never changes while the item exists; a
 deleted and recreated item gets a new one, and its button must be edited.
 
-## 4. Make the buttons
+## 6. Make the buttons
 
 For each button: add a button on a page, give it its text, and under **Press actions** add
-**BajaOvrLay: POST**, with the URL below, the body left empty and the header from step 2.
+**BajaOvrLay: POST**, with the URL below, the body left empty and the header from section 4.
 
 ### "Tomar"
 
@@ -128,7 +174,7 @@ Starts one macro, as its button on the control page does.
 A second macro pressed while one runs is refused, as on the page. A "Parar" button is
 `stop-macro`: it stops whichever macro is running, and does nothing when none is.
 
-## 5. Colour a button from `/layers/status`
+## 7. Colour a button from `/layers/status`
 
 `GET /layers/status` answers what a button needs to show, read from memory, so it can be asked
 every second:
@@ -164,7 +210,7 @@ To turn the "Tomar" button of the clock red while the clock is on air:
 1. Under **Variables → Custom variables**, add one named `baja_status`.
 2. Under **Triggers**, add a trigger:
    - Event: **Time interval**, every 1 second.
-   - Action: **BajaOvrLay: GET**, URL `layers/status`, the header from step 2, and **JSON
+   - Action: **BajaOvrLay: GET**, URL `layers/status`, the header from section 4, and **JSON
      Response Data Variable** set to `baja_status`.
 3. On the button, under **Feedbacks**, add **Internal: Check expression** with the expression
 
@@ -192,9 +238,10 @@ The names of Companion's fields above are those of Companion 3 with the Generic 
 another version may word them differently. If a feedback stays dark, check the custom variable
 under **Variables** first: it shows the last answer, or the error.
 
-## 6. Every shortcut from a terminal
+## 8. Every shortcut from a terminal
 
-With `BAJA` and `TOKEN` set as in step 1. Each answers 200 with
+With `BAJA` and `TOKEN` set as in section 2; with the API open, leave out the
+`-H "Authorization: …"` part. Each answers 200 with
 `{"type":"commandResult","requestId":null,"ok":true}`, or a refusal with the reason in pt-BR:
 400 the command is malformed, 403 not allowed, 422 it names something that does not exist, 409
 the state is in the way (nothing in Prévia, a macro already running). `POST /commands` also
@@ -240,7 +287,7 @@ curl -s -H "Authorization: Bearer $TOKEN" $BAJA/layers/status
 two steps. The control page refuses the second press instead, because it knows which step the
 operator saw.
 
-## 7. Any other command
+## 9. Any other command
 
 Anything the control page can do is open to a device through `POST /commands`, with the same
 envelope the page sends over the WebSocket. For example, "Prévia automática" off is not a

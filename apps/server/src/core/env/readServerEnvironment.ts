@@ -48,6 +48,25 @@ const ServerEnvironmentSchema = z.object({
       }
       return parsing.apiTokens;
     }),
+  // The command API with no token, for a studio-only network (BAJAOVRLAY-28, item 9). Only
+  // "true" opens it; unset, empty or "false" does not, and any other word ("sim", "1")
+  // stops the boot, since guessing wrong would either open the API or leave buttons dead.
+  BAJAOVRLAY_API_OPEN: z
+    .string()
+    .optional()
+    .transform((text, context) => {
+      if (text === undefined || text === '' || text === 'false') {
+        return false;
+      }
+      if (text === 'true') {
+        return true;
+      }
+      context.addIssue({
+        code: 'custom',
+        message: `"${text}" is not a yes or no: write true or false`,
+      });
+      return z.NEVER;
+    }),
   // The addresses of a reverse proxy whose pages may upload images, read here into the
   // list of origins: unset or empty is none, and an entry that is not an http(s) origin
   // stops the boot naming it, since a typo would otherwise refuse every upload (403).

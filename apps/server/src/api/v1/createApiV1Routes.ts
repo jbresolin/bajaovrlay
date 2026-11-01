@@ -52,6 +52,8 @@ export function createApiV1Routes(options: {
   mediaFolder?: string | undefined;
   /** BAJAOVRLAY_API_TOKENS as read at boot; the command API is off when left out. */
   apiTokens?: ApiTokens | undefined;
+  /** BAJAOVRLAY_API_OPEN as read at boot: the command API with no token; not open when left out. */
+  isApiOpenToTheNetwork?: boolean | undefined;
   /** BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a proxy's pages that may upload; none when left out. */
   publicOrigins?: readonly string[] | undefined;
 }): OpenAPIHono<ServerAppEnvironment> {
@@ -156,6 +158,7 @@ export function createApiV1Routes(options: {
   mountCommandApiRoutes(apiRoutes, {
     stateStore: options.stateStore,
     apiTokens: options.apiTokens ?? apiTurnedOff,
+    isOpenToTheNetwork: options.isApiOpenToTheNetwork ?? false,
   });
 
   apiRoutes.doc31('/openapi.json', {

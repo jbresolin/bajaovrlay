@@ -85,3 +85,20 @@ endpoints at least: `runMacro` by id, `takeItem` by id, `takeNext` / `takePrevie
 `clearLayer` / `clearAll`, and "fire quick-fire button N of panel P" so a pad can map to
 positions rather than ids that change. Token auth, OpenAPI from the Zod schemas as already
 planned.
+
+## Addition: an open mode for the studio network (João, 2026-11-01)
+
+João's buttons are Ulanzi D200s, where each button's HTTP call carries its own headers, so a
+token per button is unworkable. The API only runs on the dedicated studio network, where the
+control page has no login either (PINs are M4).
+
+9. `BAJAOVRLAY_API_OPEN=true` turns the command API on with no token. Every route of this PR
+   answers without an `Authorization` header; the actor is `api:rede`, and the request log
+   carries the client's IP. Server-only commands are still refused. With
+   `BAJAOVRLAY_API_TOKENS` also set, tokens are still accepted and logged by name. With
+   neither variable, the API stays off (403), the message naming both. The boot log says
+   plainly that the API is open to the whole network. `docs/companion.md` becomes
+   `docs/buttons.md` ("Botões: Companion, Stream Deck, Ulanzi D200") with an Ulanzi section:
+   an HTTP POST to `http://<server>:3000/api/v1/take-next`, Content Type none, no headers or
+   body; the button's look reads `/api/v1/layers/status`. A plain per-layer state route for
+   the D200 may follow once João says how the D200 reads state; not in this PR.

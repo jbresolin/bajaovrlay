@@ -17,6 +17,12 @@ export type ApiTokensParsing =
 /** The command API off: what an unset variable gives, and what tests start from. */
 export const apiTurnedOff: ApiTokens = { isSet: false };
 
+/**
+ * The name a call with no token is signed with (`api:rede`) when BAJAOVRLAY_API_OPEN=true,
+ * so no device may take it: the event log could not tell the device from the network.
+ */
+export const apiCallerNameWithoutAToken = 'rede';
+
 // A name becomes part of the actor `api:<name>` in the event log, so it stays plain.
 const apiTokenNamePattern = /^[A-Za-z0-9_-]{1,40}$/;
 // 16 characters is 64 bits of `openssl rand -hex 16` at the least; shorter is guessable.
@@ -65,6 +71,10 @@ function findProblemOfOneEntry(
 ): string | undefined {
   if (!apiTokenNamePattern.test(name)) {
     return `entry ${entryNumber} has a name that is not 1 to 40 letters, digits, "-" or "_" (for example streamdeck)`;
+  }
+  // Any case: "Rede" beside "api:rede" in the event log would read as the same caller.
+  if (name.toLowerCase() === apiCallerNameWithoutAToken) {
+    return `the name "${name}" is kept for calls with no token (BAJAOVRLAY_API_OPEN): name the device otherwise`;
   }
   if (token.length < shortestTokenLength) {
     return `the token of "${name}" is shorter than ${shortestTokenLength} characters (make one with openssl rand -hex 16)`;

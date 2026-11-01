@@ -18,7 +18,8 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   `sistema:midia`. The image itself is served outside /api/v1, at `/media/<mediaId>`.
 
 - The command API (BAJAOVRLAY-28), mounted by `mountCommandApiRoutes.ts`, each route behind
-  `core/apiAccess/requireApiToken.ts` (a Bearer token of BAJAOVRLAY_API_TOKENS):
+  `core/apiAccess/requireApiAccess.ts` (a Bearer token of BAJAOVRLAY_API_TOKENS, or no
+  token at all with BAJAOVRLAY_API_OPEN=true, signed `api:rede`):
   `POST /api/v1/commands` (`commandsRoute.ts`, the WebSocket's command envelope in, its
   commandResult out; `commandBodyChecks.ts` refuses a body not sent as JSON, 415, or over
   256 KB, 413), ten button shortcuts (`commandShortcutRoutes.ts`; the four that read
