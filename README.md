@@ -9,6 +9,8 @@ contract for how this repository is built, and it summarises the design authorit
 - `packages/shared` — Zod schemas shared by all of the above.
 - `packages/graphics` — OGraf graphics, one package each.
 - `docs/` — design docs, task briefs and `testing-style.md` (how every test is written).
+- `Dockerfile` and `deploy/` — the one image of the whole system and its runbooks (see
+  "Deployment" below).
 
 Needs Node 22 (`.nvmrc`) and pnpm (`corepack enable` once), then `pnpm install` and
 `pnpm dev`. CI runs `pnpm lint`, `typecheck`, `test`, `build` and the browser tests in
@@ -17,6 +19,15 @@ four parallel jobs, on a PR once it is marked ready for review (`docs/ci.md`).
 `pnpm verify` runs the same checks on your machine, in order, and stops at the first one
 that fails, naming it; `pnpm verify --quick` leaves out the browser tests. Run it before
 every push (`docs/testing-style.md`, "Before you push").
+
+## Deployment
+
+BajaOvrLay runs on the **stream PC**: one Docker image under Docker Desktop, with no
+internet at the track. `deploy/stream-pc/README.md` is the runbook: the image carried on a
+USB stick, the OBS addresses, the checks before going on air, backups and restore.
+Running it on **TrueNAS** instead is optional (`deploy/truenas/README.md`, a Portainer
+stack behind Nginx Proxy Manager). `scripts/dockerSmoke.sh` checks the image end to end on
+a machine with Docker; every variable is in `.env.example`.
 
 **Runbook: a PiP output and its OBS browser source.** An OBS scene with a
 picture-in-picture box can carry an overlay of its own. On the control page open

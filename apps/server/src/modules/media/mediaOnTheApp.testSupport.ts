@@ -27,9 +27,13 @@ export const momentOfTheUploads = '2026-11-14T12:00:00.000Z';
 /**
  * Builds the app as production does, silent, with a new database and media folder. With
  * `earlierUploads`, the database already lists those images when the server boots, as a
- * season of uploads would leave it (their files are not written).
+ * season of uploads would leave it (their files are not written). `publicOrigins` is
+ * BAJAOVRLAY_PUBLIC_ORIGINS as read at boot; none when left out.
  */
-export function createAppWithAMediaFolder(earlierUploads?: Media): AppWithAMediaFolder {
+export function createAppWithAMediaFolder(
+  earlierUploads?: Media,
+  publicOrigins: string[] = [],
+): AppWithAMediaFolder {
   const { database } = openTemporaryDatabase();
   const mediaFolder = mkdtempSync(join(tmpdir(), 'bajaovrlay-midia-'));
   onTestFinished(() => rmSync(mediaFolder, { recursive: true, force: true }));
@@ -49,7 +53,13 @@ export function createAppWithAMediaFolder(earlierUploads?: Media): AppWithAMedia
     ]);
   }
   const stateStore = createStateStore(storeOptions);
-  const app = createServerApp({ logger, version: '0.3.1', stateStore, mediaFolder });
+  const app = createServerApp({
+    logger,
+    version: '0.3.1',
+    stateStore,
+    mediaFolder,
+    publicOrigins,
+  });
   return { app, stateStore, mediaFolder };
 }
 
