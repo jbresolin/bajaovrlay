@@ -24,6 +24,8 @@
  *     visual change, refresh them with
  *     `pnpm --filter @bajaovrlay/qr-card test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 const cards = [
@@ -37,6 +39,9 @@ const stages = ['grey', 'black'] as const;
 
 /** Opens the preview on air and waits for the face, never a timer. */
 async function openPreviewOnAir(page: Page, address: string): Promise<void> {
+  // A text too long for the card is held at its start (BAJAOVRLAY-55), so no scroll can
+  // land during a capture.
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(address);
   await expect(page.locator('body'), 'the QR card must be on air').toHaveAttribute(
     'data-preview-state',

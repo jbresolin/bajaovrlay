@@ -59,9 +59,17 @@ export const clockCardStyles = css`
     /* The line box holds the accents of a caps face (Bebas puts them above the cap height). */
     line-height: 1.3;
     text-align: right;
+    /* A scrolling box (scrollingTextStyles, BAJAOVRLAY-55): a session name too long for
+       the card scrolls; the box clips and keeps no ellipsis. It takes the head's room
+       beside the logo and its text never widens the 420 px card (inline-size
+       containment); it stays right-aligned while it fits and starts at its left edge, to
+       scroll, when it does not ("safe" alignment). */
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    flex: 1;
+    display: flex;
+    justify-content: safe flex-end;
+    contain: inline-size;
   }
 
   /* The body: the caption line (caption left, laps right) over the time. */

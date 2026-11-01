@@ -87,11 +87,13 @@ const lowerStripOwnStyles = css`
     font-size: var(--size-strip);
   }
 
-  /* The school's short name, whole: six cars a page always fit (stripPages.ts). */
+  /* The school's short name, whole: six cars a page always fit (stripPages.ts). A name
+     too long scrolls inside its box (a scrolling box, BAJAOVRLAY-55), bounded by the theme
+     so the other pills of its page keep their room and stay whole. */
   .school {
+    max-width: var(--strip-school-max-width);
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     padding-left: var(--space-1);
     letter-spacing: var(--tracking-row);
     line-height: 1.3;

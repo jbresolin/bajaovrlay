@@ -27,6 +27,11 @@ import type {
   OGrafUpdateActionParams,
 } from '@bajaovrlay/graphics-kit/ografGraphicTypes';
 import { choosePlayActionTarget } from '@bajaovrlay/graphics-kit/playSteps';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
+import {
+  createScrollingTextClock,
+  type ScrollingTextClock,
+} from '@bajaovrlay/graphics-kit/scrollingTextWhenTooLong';
 import {
   finishTimelineAtOnce,
   playTimelineToTheEnd,
@@ -64,10 +69,12 @@ function buildRefusalAnswer(statusCode: number, statusMessage: string): OGrafRet
 
 /** The sponsor bug graphic; the default export a renderer registers as a custom element. */
 export default class SponsorBugGraphic extends LitElement implements OGrafGraphic {
-  static override styles = sponsorBugStyles;
+  static override styles = [scrollingTextStyles, sponsorBugStyles];
 
   private lifecycle: LifecycleStage = 'unloaded';
   private currentStep: number | undefined = undefined;
+  /** The scroll cycle of the event word and the caption (BAJAOVRLAY-55), made at load. */
+  private scrollingTextClock: ScrollingTextClock | undefined = undefined;
   // Read by render(); not a Lit reactive property, so the card is redrawn only when this
   // file asks (redrawWithData), never by surprise.
   private data: SponsorBugData | undefined = undefined;
@@ -103,6 +110,10 @@ export default class SponsorBugGraphic extends LitElement implements OGrafGraphi
     await this.redrawWithData(dataCheck.data);
     const panel = findSponsorBugPanel(this.renderRoot);
     this.panel = panel;
+    this.scrollingTextClock = createScrollingTextClock({
+      root: this.renderRoot,
+      tokensSource: this,
+    });
     placePanelOffAir({ panel });
     // The element itself is where the face's token is read: custom properties reach
     // inside the shadow root, so the wait follows the theme on the page.
@@ -157,6 +168,7 @@ export default class SponsorBugGraphic extends LitElement implements OGrafGraphi
     if (this.readLifecycleNow() !== 'onAir') {
       return { statusCode: 200, currentStep: this.currentStep };
     }
+    this.scrollingTextClock?.start();
     return { statusCode: 200, currentStep: target.step };
   }
 
@@ -172,10 +184,12 @@ export default class SponsorBugGraphic extends LitElement implements OGrafGraphi
 
     this.lifecycle = 'offAir';
     this.currentStep = undefined;
+    this.scrollingTextClock?.holdTheTextsForThePlayOut();
     await this.runPanelTimeline(
       buildStopOutTimeline({ panel: this.requirePanel() }),
       params.skipAnimation ?? false,
     );
+    this.scrollingTextClock?.stopAfterThePlayOut();
     return okAnswer;
   }
 
@@ -204,12 +218,19 @@ export default class SponsorBugGraphic extends LitElement implements OGrafGraphi
     return buildRefusalAnswer(404, ptBR.actionProblems.unknownCustomAction(params.id));
   }
 
+  /** Lit's hook for leaving the page: a layer removed without dispose leaves no cycle running. */
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.scrollingTextClock?.stop();
+  }
+
   /**
    * OGraf dispose: ends every timeline; pending actions resolve. OGraf passes an empty
    * params object, which the card has no use for.
    */
   async dispose(): Promise<OGrafReturnPayload> {
     this.lifecycle = 'disposed';
+    this.scrollingTextClock?.stop();
     const runningTimeline = this.runningPanelTimeline;
     this.runningPanelTimeline = undefined;
     if (runningTimeline !== undefined) {

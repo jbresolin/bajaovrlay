@@ -19,7 +19,8 @@
  *   - a stop ends a running crossfade at once, before its own lift-out.
  *
  * What these tests deliberately do not cover:
- *   - Timers: the bracket has none (nothing on it moves by itself), so there is none to stop.
+ *   - Timers: the bracket has none but its scrolling texts' cycle (BAJAOVRLAY-55), whose
+ *     end on stop, dispose and removal bracket.scrollingText.test.ts covers.
  *   - What the motions look like: bracketAnimations.test.ts.
  */
 import { gsap } from 'gsap';

@@ -28,11 +28,18 @@ export function renderCarChip(car: BracketCarData): TemplateResult {
   >`;
 }
 
-/** The team and its school, side by side; a long team name is cut with an ellipsis. */
+/**
+ * The team and its school, side by side in one scrolling text of the kit (BAJAOVRLAY-55):
+ * too long for the card or the pill, the two scroll together inside the box, never cut
+ * with an ellipsis. The classes are the kit's scrolling box and text
+ * (scrollingTextWhenTooLong.ts) and its team-with-school line (teamWithSchoolStyles).
+ */
 export function renderCarTeam(car: BracketCarData): TemplateResult {
-  return html`<span class="team"
-    ><span class="team-name" data-testid="bracket-team-name">${car.teamName}</span
-    ><span class="school-name">${car.schoolName}</span></span
+  return html`<span class="team scrolling-text-box" data-testid="bracket-team"
+    ><span class="scrolling-text team-with-school"
+      ><span class="team-name" data-testid="bracket-team-name">${car.teamName}</span
+      ><span class="school-name">${car.schoolName}</span></span
+    ></span
   >`;
 }
 

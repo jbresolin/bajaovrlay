@@ -4,7 +4,9 @@ The QR card OGraf graphic in Ardósia (design: PR #21, catalogue entry 12), on t
 layer: the one light surface of the catalogue, a code made from the address, the call to action at
 34 px and the address at 26 px. The graphic makes the code itself when it loads, with
 `qrcode-generator` (MIT, no dependencies, pinned, bundled into `qr-card.js`) at error-correction
-level M: nothing comes from the network. Nothing moves while the card is up. Start reading at
+level M: nothing comes from the network. Nothing moves while the card is up, except a call to action
+or an address too long for the card: the card stops at `--lower-third-max-width` and the text
+scrolls inside its box (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55). Start reading at
 `src/qr-card.ts` (the OGraf lifecycle, the team card's: load once, play in, stop out, update in
 place any time after load, every call answers a status, never throws); it wires `qrCardModel.ts`
 (Zod data, the address's rules), `qrCodeEncoding.ts` (the squares, and the longest address, 106),

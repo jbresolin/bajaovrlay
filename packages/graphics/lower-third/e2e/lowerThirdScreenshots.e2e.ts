@@ -30,6 +30,8 @@
  *     `pnpm --filter @bajaovrlay/lower-third test:e2e --update-snapshots`.
  */
 import { buildPreviewAddressWithData } from '@bajaovrlay/graphics-kit/previewAddress.testSupport';
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** Opens the preview on the stage with the data, waits for the play-in and for the font. */
@@ -38,6 +40,9 @@ async function openPreviewOnAir(
   lowerThirdData: Record<string, unknown>,
   stage: string,
 ): Promise<void> {
+  // A text too long for its pill is held at its start (BAJAOVRLAY-55), so no scroll can
+  // land during a capture.
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(`${buildPreviewAddressWithData(lowerThirdData)}&stage=${stage}`);
   await expect(page.locator('body'), 'the lower third must be on air').toHaveAttribute(
     'data-preview-state',

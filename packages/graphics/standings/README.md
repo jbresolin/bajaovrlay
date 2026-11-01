@@ -5,6 +5,9 @@ never by a switch: with `scoreParts` the overall table (one muted column per par
 green, 20 rows a page turning every `--motion-board-hold`, the head's line "2/3 · 21º A 40º"); without
 them the whole field in three columns of 20 tower pills (paging by 60 past 60 teams). Disqualified
 teams close the list, dimmed, "—" and "DESCL."; rank 1, tied or not, is on the green chip.
+A team and school too long for the column, and a long event line, scroll inside their box on one
+cycle for the board (the kit's `scrollingTextWhenTooLong`, BAJAOVRLAY-55); a redraw keeps a row's
+team box when its team is unchanged, so a live update never restarts its scroll.
 
 Start at `standings.ograf.json` and `src/standings.ts` (the OGraf lifecycle and the motion; it
 wires `standingsModel`, `standingsPageTurns` (the page shown and a turn), `standingsLayout`,

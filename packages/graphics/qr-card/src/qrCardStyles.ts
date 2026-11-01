@@ -34,6 +34,10 @@ export const qrCardStyles = css`
     border-radius: var(--radius);
     background: var(--panel-light);
     box-shadow: var(--shadow);
+    /* As wide as what it holds, never past the lower-third slot's maximum (BAJAOVRLAY-55):
+       at the maximum the call to action and the address scroll inside their boxes. */
+    max-width: var(--lower-third-max-width);
+    box-sizing: border-box;
     color: var(--text-on-light);
     font-family: var(--font-display);
     /* Bebas Neue has no lowercase: every word is set in caps (packages/theme/README.md),
@@ -61,6 +65,7 @@ export const qrCardStyles = css`
     flex-direction: column;
     gap: var(--space-2);
     padding: 0 var(--space-3) 0 var(--space-1);
+    min-width: 0;
     white-space: nowrap;
   }
 
@@ -75,5 +80,9 @@ export const qrCardStyles = css`
   .address {
     font-size: var(--size-detail);
     letter-spacing: var(--tracking-caption);
+    /* The box clips (a scrolling box): room above and below the line for the accents of a
+       caps face, taken back by the margins so the line sits where it always did. */
+    padding-block: 0.15em;
+    margin-block: -0.15em;
   }
 `;

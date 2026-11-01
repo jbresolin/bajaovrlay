@@ -17,6 +17,8 @@
  *   - Motion; sessionsBoardLifecycle.e2e.ts. After a deliberate visual change, refresh the
  *     baselines with `pnpm --filter @bajaovrlay/sessions-board test:e2e --update-snapshots`.
  */
+import { textTokensHoldingAtTheStart } from '@bajaovrlay/graphics-kit/scrollingTextInTheBrowser.testSupport';
+import { placeTokenOverridesBeforeTheGraphicLoads } from '@bajaovrlay/graphics-kit/tokenOverrides.testSupport';
 import { expect, type Page, test } from '@playwright/test';
 
 /** Sunday 30 March 2025 at a time of day in Brasília, in ms. */
@@ -53,6 +55,9 @@ function buildAddressOfTheDesignsSunday(stage: string): string {
  */
 async function openPreviewOnAirAt0920(page: Page, address: string): Promise<void> {
   await page.clock.install({ time: atSundayBrasiliaTime('09:20') - 10_000 });
+  // A session name too long for its pill is held at its start (BAJAOVRLAY-55): no scroll
+  // can land in a shot.
+  await placeTokenOverridesBeforeTheGraphicLoads(page, textTokensHoldingAtTheStart);
   await page.goto(address);
   await expect(page.locator('body'), 'the board must be on air').toHaveAttribute(
     'data-preview-state',

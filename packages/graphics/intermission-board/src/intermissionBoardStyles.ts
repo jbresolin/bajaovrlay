@@ -9,10 +9,12 @@
  * the theme the board is unstyled, and packages/theme's noHardCodedValues guard keeps it so.
  */
 import { narrowBoardStyles } from '@bajaovrlay/graphics-kit/boardStyles';
+import { scrollingTextStyles } from '@bajaovrlay/graphics-kit/scrollingTextStyles';
 import { standingsRowStyles } from '@bajaovrlay/graphics-kit/standingsRowStyles';
 import { css } from 'lit';
 
 export const intermissionBoardStyles = [
+  scrollingTextStyles,
   narrowBoardStyles,
   standingsRowStyles,
   css`
@@ -37,6 +39,9 @@ export const intermissionBoardStyles = [
       display: flex;
       flex-direction: column;
       justify-content: center;
+      /* A grid item is as wide as its text by default: a long session name would widen the
+         card and push the top five off the board; it scrolls inside instead (BAJAOVRLAY-55). */
+      min-width: 0;
       gap: var(--space-2);
       padding: var(--space-5);
       /* Hidden until playAction animates it in. */
@@ -48,11 +53,21 @@ export const intermissionBoardStyles = [
       text-align: center;
     }
 
+    /* A scrolling box (BAJAOVRLAY-55): a session name too long for the card scrolls in it,
+       never wider than the card, centred or not. */
     .next-session {
+      max-width: 100%;
       font-size: var(--size-time);
       letter-spacing: var(--tracking-display);
       line-height: 1.2;
       white-space: nowrap;
+    }
+
+    /* The team's scrolling box fills the team cell: the name and the school scroll as one
+       line inside it, never the grid cell itself (a cell that clips shrinks its track). */
+    .team-box {
+      flex: 1;
+      min-width: 0;
     }
 
     .next-count {
