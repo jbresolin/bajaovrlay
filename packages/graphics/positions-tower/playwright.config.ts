@@ -37,9 +37,10 @@ export default defineConfig({
       testIgnore: '**/positionsTowerFrameBudget.e2e.ts',
     },
     {
-      // The frame budget counts frames, so it runs alone, after every other test of the
-      // package has finished: beside them, their own pages took the cores it measures
-      // with (one dropped frame in a verify run, none alone; BAJAOVRLAY-55).
+      // The frame budget measures frames (printed, not asserted), so it runs alone, after
+      // every other test of the package has finished: beside them, their own pages took
+      // the cores it measures with (one dropped frame in a verify run, none alone;
+      // BAJAOVRLAY-55).
       name: 'frame-budget',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
       testMatch: '**/positionsTowerFrameBudget.e2e.ts',
