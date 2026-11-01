@@ -25,3 +25,13 @@ the slices it is sent. Nothing here reaches the air.
   The tables and the card show the operator's corrections laid over the data, and a team,
   school, status, points, event, session name, flag or laps can be corrected from there
   (`features/overrides/CorrectableValue.tsx`, BAJAOVRLAY-20).
+
+## Fontes do app Baja
+
+"+ Fonte" → "Adicionar fonte do app Baja" (BAJAOVRLAY-54; the operator's guide is
+`docs/bajaAppSources.md`). The event id is the Baja app's own, as in its results address
+(`?evt=26BR`). A lap-counted race feeds the session and positions (the clock, the flag, the
+tower), a results table the standings, a tournament the brackets. On Fontes, "Resultado com
+spoilers ativos…" means the organisers hide the table for now, and "Corrida em modo
+simulação…" that the app marks the race as a test, refused unless the source was made with
+"Aceitar corrida simulada"; either way the source reads "Atrasada" and keeps what is on air.
