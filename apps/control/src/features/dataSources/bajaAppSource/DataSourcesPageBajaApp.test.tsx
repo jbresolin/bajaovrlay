@@ -19,6 +19,8 @@
  *   - A tournament chosen is saved as the tournament preset.
  *   - A typed address of a local copy of the API is used for every request.
  *   - The route's sentence is shown when the event cannot be read, and nothing opens.
+ *   - Nothing is read without an event id and an http(s) address, each refusal under
+ *     its own field.
  *
  * What these tests deliberately do not cover:
  *   - What each preset makes of the API's answers: bajaAppPresets.test.ts (packages/shared).
@@ -294,5 +296,30 @@ describe('"Adicionar fonte do app Baja"', () => {
       picker.getByRole('button', { name: 'Continuar' }),
       'nothing to continue with',
     ).toBeDisabled();
+  });
+
+  it('reads nothing without an event id and an http address, each said under its field', () => {
+    // Arrange: the route ready, the picker open.
+    const sampleRoute = createSampleRouteAnswering({
+      'evento.php': bajaAppAnswers.event26BRDuringTheEvent,
+    });
+    vi.stubGlobal('fetch', sampleRoute);
+    renderPageWithSources();
+    openTheBajaAppPicker();
+
+    // Act: an address with no http:// typed, no event, and "Ler evento".
+    typeIntoField('Endereço da API', 'api.bajasaebrasil.net');
+    pressButton('Ler evento');
+
+    // Assert: both sentences, each described by its own field, and nothing read.
+    expect(
+      screen.getByLabelText('Endereço da API'),
+      'the address field',
+    ).toHaveAccessibleDescription('O endereço da API começa com http:// ou https://.');
+    expect(
+      screen.getByLabelText('Código do evento'),
+      'the event field',
+    ).toHaveAccessibleDescription('Digite o código do evento.');
+    expect(sampleRoute, 'nothing read').not.toHaveBeenCalled();
   });
 });

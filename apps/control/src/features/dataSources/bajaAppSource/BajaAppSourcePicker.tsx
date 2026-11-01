@@ -56,7 +56,9 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
   const ids = { apiAddress: `${idPrefix}-endereco`, eventId: `${idPrefix}-evento` };
   const [apiAddress, setApiAddress] = useState(bajaAppApiAddress);
   const [eventId, setEventId] = useState('');
-  const [typingProblem, setTypingProblem] = useState<string | undefined>(undefined);
+  // What is wrong with what was typed, under the field it belongs to.
+  const [addressProblem, setAddressProblem] = useState<string | undefined>(undefined);
+  const [eventIdProblem, setEventIdProblem] = useState<string | undefined>(undefined);
   const [eventReading, setEventReading] = useState<EventReadingState>({ phase: 'notRead' });
   const [chosenKey, setChosenKey] = useState<BajaAppChoiceKey | null>(null);
   const [acceptsSimulatedRace, setAcceptsSimulatedRace] = useState(false);
@@ -64,15 +66,12 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
 
   async function readTheEvent(): Promise<void> {
     const where = { apiAddress: apiAddress.trim(), eventId: eventId.trim() };
-    if (where.eventId === '') {
-      setTypingProblem(texts.noEventId);
+    const isAnHttpAddress = /^https?:\/\//.test(where.apiAddress);
+    setAddressProblem(isAnHttpAddress ? undefined : texts.apiAddressNotHttp);
+    setEventIdProblem(where.eventId === '' ? texts.noEventId : undefined);
+    if (!isAnHttpAddress || where.eventId === '') {
       return;
     }
-    if (!/^https?:\/\//.test(where.apiAddress)) {
-      setTypingProblem(texts.apiAddressNotHttp);
-      return;
-    }
-    setTypingProblem(undefined);
     setChosenKey(null);
     setTableColumns(null);
     setEventReading({ phase: 'reading' });
@@ -192,25 +191,26 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
               <FormFieldRow
                 label={texts.apiAddressLabel}
                 controlId={ids.apiAddress}
-                errorMessage={undefined}
+                errorMessage={addressProblem}
               >
                 <Input
                   id={ids.apiAddress}
                   value={apiAddress}
                   onChange={(event) => setApiAddress(event.target.value)}
+                  {...buildErrorAttributesForControl(ids.apiAddress, addressProblem)}
                 />
               </FormFieldRow>
               <FormFieldRow
                 label={texts.eventIdLabel}
                 controlId={ids.eventId}
-                errorMessage={typingProblem}
+                errorMessage={eventIdProblem}
               >
                 <Input
                   id={ids.eventId}
                   value={eventId}
                   placeholder={texts.eventIdHint}
                   onChange={(event) => setEventId(event.target.value)}
-                  {...buildErrorAttributesForControl(ids.eventId, typingProblem)}
+                  {...buildErrorAttributesForControl(ids.eventId, eventIdProblem)}
                 />
               </FormFieldRow>
               <Button
