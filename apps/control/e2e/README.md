@@ -28,6 +28,10 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   `flexSourceFollowsATimingSystem.e2e.ts` (the example preset imported into "HTTP/JSON (flexível)", pointed at an imaginary
   timing system the test serves on a free port, `timingSystemTestServer.ts`: "Testar" shows 20 cars; saved and on, the table
   follows a changed answer, keeps its data "Atrasada" while the timing system answers 500, and is "Ok" again after).
+  `bajaAppSourcesWalk.e2e.ts` (BAJAOVRLAY-54, the brief's walk): "Adicionar fonte do app Baja" makes 26BR's Enduro, its
+  "Geral" table and its Super Prime bracket from a stand-in of the Baja app's API the test serves on a free port
+  (`bajaAppTestServer.ts`, the shared fixtures); a tower, a standings board and a bracket open on them (the manifests'
+  suggestions) and are taken; the tower follows a changed race answer, car 22 into the lead.
   `bindingsFollowTheSimulator.e2e.ts` (BAJAOVRLAY-20, the brief's walk): a race clock whose title and flag read the
   simulator and whose time is "Relógio da fonte" goes on air with the simulator's state, turns yellow by itself at the seeded race's
   first yellow (seed 1405, set with the speed: 16 simulated minutes in, ~16 s at 60×), takes a correction of the session name ("Corrigir valor da fonte…") and
