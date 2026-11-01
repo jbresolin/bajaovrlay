@@ -45,7 +45,7 @@ export const postMediaRoute = createRoute({
   method: 'post',
   path: '/media',
   summary:
-    "Upload one image (PNG, JPEG, WebP or SVG, up to 5 MB) to the media store, from this server's own pages or a tool that sends no Origin",
+    "Upload one image (PNG, JPEG, WebP or SVG, up to 5 MB) to the media store, from this server's own pages, a reverse proxy's listed in BAJAOVRLAY_PUBLIC_ORIGINS, or a tool that sends no Origin",
   request: {
     body: {
       required: true,
@@ -67,7 +67,8 @@ export const postMediaRoute = createRoute({
     },
     400: { description: 'No file in the "file" field (pt-BR).', content: errorAnswerContent },
     403: {
-      description: 'Sent by a page of another site: its Origin is not this server (pt-BR).',
+      description:
+        'Sent by a page of another site: its Origin is neither this server nor BAJAOVRLAY_PUBLIC_ORIGINS (pt-BR).',
       content: errorAnswerContent,
     },
     413: { description: 'The file is over 5 MB (pt-BR).', content: errorAnswerContent },

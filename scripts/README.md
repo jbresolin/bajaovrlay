@@ -36,3 +36,11 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
 - `checkJobResults.sh` (CI's "CI passed" job): fails unless every result in
   RESULTS_OF_THE_JOBS is "success" (an empty list fails too), tested by
   `checkJobResults.test.ts`.
+- `dockerSmoke.sh` (by hand, never on CI: it needs Docker): builds the image, runs it on a
+  new volume, waits until Docker calls it healthy, loads `/`, `/render/` and `/health`,
+  checks it runs as uid 1000, takes a race clock over the WebSocket with the control page's
+  browser-test helper (`dockerSmokeTakeAnItem.ts`), runs the backup command inside it, then
+  stops and starts it and checks the clock is still on air; it removes what it made, pass
+  or fail. `BAJAOVRLAY_SMOKE_PORT` moves its port (18080).
+- `collectImageFiles.sh` (the Dockerfile's build stage only): copies what the image runs
+  into one folder laid out as the repository is.
