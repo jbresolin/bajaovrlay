@@ -48,6 +48,11 @@ export type StartServerOptions = {
    * leave it out by mistake: the store (saves), the poller and the sample route get it.
    */
   sourceHostAllowlist: SourceHostAllowlist;
+  /**
+   * BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a reverse proxy's addresses whose pages may
+   * upload images as well as the server's own. Left out: none (tests, the stream PC).
+   */
+  publicOrigins?: readonly string[] | undefined;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /**
@@ -165,6 +170,7 @@ async function startServingFromDatabase(
       rendererPageFolder: options.rendererPageFolder,
       sourceHostAllowlist: options.sourceHostAllowlist,
       mediaFolder,
+      publicOrigins: options.publicOrigins,
     });
     httpServer = await listen({
       fetch: app.fetch,
