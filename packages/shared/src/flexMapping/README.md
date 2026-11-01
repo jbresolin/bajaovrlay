@@ -7,7 +7,9 @@ the extra sources in `flexRuleSources.ts`, the mapping's options in `flexMapping
 their checks in `flexShapeMappingChecks.ts`), `flexListEntryMapping.ts` (one entry),
 `valuePath.ts` (the hand-written path parser), `mappableFields.ts` and `ptBRFlexMapping.ts`
 (every text). `examples/` holds a fictional preset and fixture, and `examples/bajaApp/` the
-Baja app's real answers (BAJAOVRLAY-53; its draft presets are test support until BAJAOVRLAY-54).
+Baja app's real answers (BAJAOVRLAY-53). `presets/bajaApp/` holds the Baja app presets
+(BAJAOVRLAY-54): one JSON per kind of answer, `{{name}}` where a parameter goes
+(`presets/presetPlaceholders.ts`), filled in and checked by `bajaAppPresets.ts`.
 
 What a mapping can do, generic on purpose (no source's word is written in this code):
 **alternatives** (`firstOf`: the first value present, not null, not blank wins);

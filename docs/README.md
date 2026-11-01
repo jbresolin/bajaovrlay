@@ -8,4 +8,5 @@ Inside it, the decision records at the end (§18, §19) win over the earlier sec
 
 - `00-concept.md` — what the system is, its architecture, state model, rules and milestones.
 - `briefs/` — agent task briefs, one per Plane work item (BAJAOVRLAY-n).
+- `bajaAppSources.md` — "Fontes do app Baja", the operator's guide to the Baja app presets.
 - `testing-style.md` — the canonical example test every test file copies (created in BAJAOVRLAY-7).

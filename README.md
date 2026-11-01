@@ -20,6 +20,16 @@ four parallel jobs, on a PR once it is marked ready for review (`docs/ci.md`).
 that fails, naming it; `pnpm verify --quick` leaves out the browser tests. Run it before
 every push (`docs/testing-style.md`, "Before you push").
 
+## The Baja app's results
+
+The Baja app's public results API (`https://api.bajasaebrasil.net`) feeds BajaOvrLay
+through three presets of the flex source: on "Fontes de dados", "+ Fonte" → "Adicionar
+fonte do app Baja" makes a race, a results table or a bracket source from an event's id;
+in "Cadastros", "Importar equipes do app Baja" fills the Equipes tab. The operator's guide
+is `docs/bajaAppSources.md`. When `BAJAOVRLAY_SOURCE_ALLOWED_HOSTS` is set, it must list
+`api.bajasaebrasil.net` (`.env.example`). `pnpm serve:baja-example` serves a stand-in of
+the API with a race on `http://localhost:4791`, for a walk with no counted race live.
+
 ## Deployment
 
 BajaOvrLay runs on the **stream PC**: one Docker image under Docker Desktop, with no

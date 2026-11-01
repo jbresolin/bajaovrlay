@@ -14,6 +14,8 @@ the slices it is sent. Nothing here reaches the air.
 - `SimulatorSourceForm.tsx`, `ReplaySourceForm.tsx` — the per-kind forms, read by
   `simulatorSourceForm.ts` / `replaySourceForm.ts` with the shared config schemas; the flex
   HTTP/JSON form, its "Testar" panel and import / export are in `flexSource/` (its README);
+  `bajaAppSource/` (its README) is "Adicionar fonte do app Baja", which opens the flex form
+  at a Baja app preset (BAJAOVRLAY-54);
   `dataSourceCommandsFromForm.ts` builds create / update-with-only-changes (pure);
   `recordingsOfferedForReplay.ts` lists the ended recordings newest first.
 - `DataSourceDetail.tsx` — the selected source's data: `SessionCard.tsx` (`useSessionClockText.ts`,
