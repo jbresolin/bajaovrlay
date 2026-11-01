@@ -53,6 +53,7 @@ export {
   type BajaAppRaceParameters,
   type BajaAppResultsTableParameters,
   buildBajaAppBracketSourceConfig,
+  buildBajaAppEndpointAddress,
   buildBajaAppRaceSourceConfig,
   buildBajaAppResultsTableSourceConfig,
   proposedScorePartHeaders,

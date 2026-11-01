@@ -34,7 +34,12 @@
           "fromPath": "clock.state",
           "transformId": "mapValues",
           "transformParameters": {
-            "table": { "waiting": "pre", "running": "green", "red_flag": "red", "finished": "finished" },
+            "table": {
+              "waiting": "pre",
+              "running": "green",
+              "red_flag": "red",
+              "finished": "finished"
+            },
             "otherwiseValue": "yellow"
           }
         },

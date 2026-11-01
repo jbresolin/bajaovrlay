@@ -20,9 +20,7 @@
       "name": "Segurança Estática",
       "group": "Segurança",
       "type": "table",
-      "provas": [
-        "SGE"
-      ],
+      "provas": ["SGE"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_SGE"
     },
     {
@@ -30,9 +28,7 @@
       "name": "Segurança Dinâmica",
       "group": "Segurança",
       "type": "table",
-      "provas": [
-        "SGD"
-      ],
+      "provas": ["SGD"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_SGD"
     },
     {
@@ -40,9 +36,7 @@
       "name": "Relatório de Projeto",
       "group": "Projeto",
       "type": "table",
-      "provas": [
-        "REL"
-      ],
+      "provas": ["REL"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_REL"
     },
     {
@@ -50,9 +44,7 @@
       "name": "Relatório de Desafio Técnico",
       "group": "Projeto",
       "type": "table",
-      "provas": [
-        "RDT"
-      ],
+      "provas": ["RDT"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_RDT"
     },
     {
@@ -60,9 +52,7 @@
       "name": "Solicitação de Proposta",
       "group": "Projeto",
       "type": "table",
-      "provas": [
-        "SLP"
-      ],
+      "provas": ["SLP"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_SLP"
     },
     {
@@ -70,9 +60,7 @@
       "name": "Avaliação de Projeto Dinâmico",
       "group": "Projeto",
       "type": "table",
-      "provas": [
-        "APD"
-      ],
+      "provas": ["APD"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_APD"
     },
     {
@@ -80,9 +68,7 @@
       "name": "Finalistas de Apr. Projeto + Apr. Negócios",
       "group": "Projeto",
       "type": "table",
-      "provas": [
-        "APF"
-      ],
+      "provas": ["APF"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_APF"
     },
     {
@@ -90,16 +76,7 @@
       "name": "Apresentação de Projeto - Primeiro Pelotão",
       "group": "Projeto",
       "type": "table",
-      "provas": [
-        "PRE",
-        "PRC",
-        "PRP",
-        "PRS",
-        "PRF",
-        "PRD",
-        "PRG",
-        "PRN"
-      ],
+      "provas": ["PRE", "PRC", "PRP", "PRS", "PRF", "PRD", "PRG", "PRN"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_AP1"
     },
     {
@@ -107,9 +84,7 @@
       "name": "Apresentação de Projeto - Segundo Pelotão",
       "group": "Projeto",
       "type": "table",
-      "provas": [
-        "AP2"
-      ],
+      "provas": ["AP2"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_AP2"
     },
     {
@@ -139,9 +114,7 @@
       "name": "Aceleração",
       "group": "Dinâmicas",
       "type": "table",
-      "provas": [
-        "AVF"
-      ],
+      "provas": ["AVF"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_ACE"
     },
     {
@@ -149,9 +122,7 @@
       "name": "Velocidade Final",
       "group": "Dinâmicas",
       "type": "table",
-      "provas": [
-        "AVF"
-      ],
+      "provas": ["AVF"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_VEL"
     },
     {
@@ -159,9 +130,7 @@
       "name": "Manobrabilidade",
       "group": "Dinâmicas",
       "type": "table",
-      "provas": [
-        "MAN"
-      ],
+      "provas": ["MAN"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_MAN"
     },
     {
@@ -169,9 +138,7 @@
       "name": "Tração",
       "group": "Dinâmicas",
       "type": "table",
-      "provas": [
-        "TRA"
-      ],
+      "provas": ["TRA"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_TRA"
     },
     {
@@ -179,9 +146,7 @@
       "name": "Suspensão",
       "group": "Dinâmicas",
       "type": "table",
-      "provas": [
-        "SUS"
-      ],
+      "provas": ["SUS"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_SUS"
     },
     {
@@ -189,9 +154,7 @@
       "name": "Super Prime",
       "group": "Dinâmicas",
       "type": "table",
-      "provas": [
-        "SPP"
-      ],
+      "provas": ["SPP"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_SPP"
     },
     {
@@ -199,9 +162,7 @@
       "name": "Chaveamento Super Prime",
       "group": "Dinâmicas",
       "type": "tournament",
-      "provas": [
-        "SPR"
-      ],
+      "provas": ["SPR"],
       "url": "/resultados/torneio.php?evt=26BR&id=26BR_SPR"
     },
     {
@@ -209,13 +170,7 @@
       "name": "Total Dinâmicas",
       "group": "Dinâmicas",
       "type": "table",
-      "provas": [
-        "AVF",
-        "MAN",
-        "TRA",
-        "SUS",
-        "SPP"
-      ],
+      "provas": ["AVF", "MAN", "TRA", "SUS", "SPP"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_DIN"
     },
     {
@@ -223,9 +178,7 @@
       "name": "Enduro",
       "group": "Enduro",
       "type": "table",
-      "provas": [
-        "END"
-      ],
+      "provas": ["END"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_END"
     },
     {
@@ -233,9 +186,7 @@
       "name": "Grid",
       "group": "Enduro",
       "type": "table",
-      "provas": [
-        "GRI"
-      ],
+      "provas": ["GRI"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_GRI"
     },
     {
@@ -243,9 +194,7 @@
       "name": "Penalizações",
       "group": "Enduro",
       "type": "table",
-      "provas": [
-        "EPN"
-      ],
+      "provas": ["EPN"],
       "url": "/resultados/resultado.php?evt=26BR&id=26BR_EPN"
     },
     {

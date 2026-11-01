@@ -9,8 +9,8 @@
  */
 import type { StandingsScope } from '../../../dataShapes/standingsShape.js';
 import { type HttpJsonConfig, HttpJsonConfigSchema } from '../../../dataSources/httpJsonConfig.js';
-import racePreset from './corrida.preset.json' with { type: 'json' };
 import { fillPresetPlaceholders, type PresetParameterValues } from '../presetPlaceholders.js';
+import racePreset from './corrida.preset.json' with { type: 'json' };
 import resultsTablePreset from './resultado.preset.json' with { type: 'json' };
 import tournamentPreset from './torneio.preset.json' with { type: 'json' };
 
@@ -80,7 +80,8 @@ export function buildBajaAppRaceSourceConfig(parameters: BajaAppRaceParameters):
     return config;
   }
   const mappingsWithoutTheRefusal = config.mappings.map((mapping) => {
-    const { refuseWhen: _refusalTakenOff, ...mappingWithoutTheRefusal } = mapping;
+    const mappingWithoutTheRefusal = { ...mapping };
+    delete mappingWithoutTheRefusal.refuseWhen;
     return mappingWithoutTheRefusal;
   });
   return HttpJsonConfigSchema.parse({ ...config, mappings: mappingsWithoutTheRefusal });
@@ -130,6 +131,14 @@ export function buildBajaAppBracketSourceConfig(
     resultadoId: parameters.resultadoId,
   });
   return HttpJsonConfigSchema.parse(filledPreset);
+}
+
+/**
+ * The address of one endpoint of the API ("evento.php"), as the presets write theirs, for
+ * a page that reads an answer before filling a preset in.
+ */
+export function buildBajaAppEndpointAddress(apiAddress: string, endpoint: string): string {
+  return `${writeAddressWithoutTheLastSlash(apiAddress)}/resultados/${endpoint}`;
 }
 
 /** An address the operator typed, "https://api.bajasaebrasil.net/", without its last "/". */
