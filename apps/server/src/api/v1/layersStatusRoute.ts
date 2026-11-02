@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { ErrorAnswerBodySchema } from '../../core/http/errorAnswers.js';
 import { apiTokenSecurity } from './commandApiOpenApi.js';
+import { findInstanceOnLayer, readItemLabelOfInstance } from './instancesOnLayers.js';
 
 /** One layer as a button reads it: on air, in preview, and the name of each one's item. */
 const LayerStatusSchema = z.object({
@@ -104,22 +105,9 @@ export function buildLayersStatus(slices: Slices, tokenName: string): LayersStat
   };
 }
 
-/** The instance on one layer of one output, if any (a layer holds one per output). */
-function findInstanceOnLayer(
-  instances: Instance[],
-  layerId: string,
-  target: Instance['target'],
-): Instance | undefined {
-  return instances.find((instance) => instance.layerId === layerId && instance.target === target);
-}
-
-/** The label of the item an instance came from, or null (no instance, no item, item deleted). */
+/** The label of the item an instance came from, or null when there is none. */
 function readItemNameOfInstance(slices: Slices, instance: Instance | undefined): string | null {
-  if (instance?.itemId === undefined) {
-    return null;
-  }
-  const item = slices.items.find((candidate) => candidate.id === instance.itemId);
-  return item?.label ?? null;
+  return readItemLabelOfInstance(slices, instance) ?? null;
 }
 
 /** The macro running now with its label, or null. Only one runs at a time. */

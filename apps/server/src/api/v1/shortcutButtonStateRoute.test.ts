@@ -140,6 +140,16 @@ const unknownShortcutScenarios: UnknownShortcutScenario[] = [
       message: 'O painel "Atalhos" não tem o botão "0"; seus botões vão de 1 a 3.',
     },
   },
+  // A number typed as a word in Ulanzi Studio names no button, rather than being read as
+  // some button by a lenient parse.
+  {
+    name: 'a number that is not a number',
+    path: '/api/v1/state/shortcut/atalhos/dois',
+    expectedError: {
+      code: 'QUICK_FIRE_BUTTON_NOT_FOUND',
+      message: 'O painel "Atalhos" não tem o botão "dois"; seus botões vão de 1 a 3.',
+    },
+  },
 ];
 
 describe('GET /api/v1/state/shortcut/:panelId/:buttonNumber for a button that does not exist', () => {

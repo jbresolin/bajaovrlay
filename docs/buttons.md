@@ -97,8 +97,8 @@ The status URLs (`GET`, no header on an open API):
   one) answers 404, so the button shows its "unmatched" image.
 
 They read the server's memory only and write nothing to the event log, so a poll every second
-costs nothing. A poll is logged at `debug`, so it never fills the log; only a refused poll (a
-404, a 401) is logged, at `warn`, which is where to look when a button stays on "unmatched".
+costs nothing. A poll is logged at `debug`, so it never fills the log. A refused poll (a 404, a 401) is logged at `warn` once a minute per address and status, and at `debug` in between: the
+log is where to look when a button stays on "unmatched", without one line every second.
 
 In Ulanzi Studio, drag an **HTTP request** action (the name may differ by version) onto the
 button and fill it in as below. The URLs start with `http://192.168.0.10:3000/api/v1/`; only

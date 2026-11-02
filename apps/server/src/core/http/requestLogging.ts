@@ -6,7 +6,8 @@ import type { ServerAppEnvironment } from './httpContextVariables.js';
 /**
  * Middleware that gives each request a logger stamped with its `request_id` and writes
  * one "request handled" line when the answer is ready. Must run after Hono's requestId.
- * The line is at info, except for a request marked polled by buttons (see below).
+ * The line is at info, unless the route chose another level (`requestHandledLogLevel`,
+ * set by logPollsByButtonsQuietly on the button state routes).
  */
 export function logEachRequest(logger: ServerLogger): MiddlewareHandler<ServerAppEnvironment> {
   return async (context, next) => {
@@ -23,39 +24,7 @@ export function logEachRequest(logger: ServerLogger): MiddlewareHandler<ServerAp
       status: context.res.status,
       duration_ms: durationInMilliseconds,
     };
-    const level = chooseLevelOfRequestHandledLine(
-      context.get('isPolledByButtons') === true,
-      context.res.status,
-    );
+    const level = context.get('requestHandledLogLevel') ?? 'info';
     requestLogger[level](requestLine, 'request handled');
   };
-}
-
-/**
- * Middleware for a route that buttons poll every second (BAJAOVRLAY-56): marks the
- * request so its log lines go to debug. Fifteen D200 buttons polling each second would
- * otherwise write some 54,000 info lines an hour. It must run before requireApiAccess, so
- * the open mode's own line is quiet too.
- */
-export function markRequestAsPolledByButtons(): MiddlewareHandler<ServerAppEnvironment> {
-  return async (context, next) => {
-    context.set('isPolledByButtons', true);
-    await next();
-  };
-}
-
-/**
- * The level of the "request handled" line: info for every request, except a poll by
- * buttons, which is debug when answered and warn when refused or failed (status 400 and
- * up), so a mis-set button still shows up at the default level.
- */
-function chooseLevelOfRequestHandledLine(
-  isPolledByButtons: boolean,
-  httpStatus: number,
-): 'debug' | 'info' | 'warn' {
-  if (!isPolledByButtons) {
-    return 'info';
-  }
-  const isRefusedOrFailed = httpStatus >= 400;
-  return isRefusedOrFailed ? 'warn' : 'debug';
 }

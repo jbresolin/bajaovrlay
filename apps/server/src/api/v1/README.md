@@ -32,7 +32,8 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   each a flat answer for the Ulanzi D200's one-word JSON path (`buttonStates.ts`); an unknown id
   answers 404. They read memory only and never write the event log. Buttons poll them every
   second (fifteen buttons: some 54,000 requests an hour), so their request lines are logged at
-  debug, and only a refused or failed poll at warn (`core/http/requestLogging.ts`).
+  debug; a refused poll at warn once a minute per path and status, and a failed one (500) at
+  warn every time (`core/http/pollsByButtonsLogging.ts`).
 
 Each route is declared with `createRoute` from @hono/zod-openapi so it appears in the
 OpenAPI document; a route added with plain `app.get` would be missing from it.

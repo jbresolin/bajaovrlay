@@ -51,7 +51,8 @@ export const getLayerButtonStateRoute = createRoute({
   method: 'get',
   path: '/state/layer/{layerId}',
   summary: 'One layer for a button: on air, in preview, marked "vai limpar", the item on air',
-  description: 'Read from memory; polled every second, so it logs at debug (errors at warn).',
+  description:
+    'Read from memory; polled every second, so it logs at debug (a refusal at warn once a minute).',
   security: apiTokenSecurity,
   request: { params: z.object({ layerId: z.string().min(1) }) },
   responses: {
@@ -71,7 +72,7 @@ export const getShortcutButtonStateRoute = createRoute({
   description:
     "Counted as fire-shortcut counts: from 1, in the panel's order. A panel or a button " +
     'number that does not exist answers 404 (QUICK_FIRE_PANEL_NOT_FOUND, ' +
-    'QUICK_FIRE_BUTTON_NOT_FOUND). Read from memory; logs at debug (errors at warn).',
+    'QUICK_FIRE_BUTTON_NOT_FOUND). Read from memory; logs at debug (a refusal at warn once a minute).',
   security: apiTokenSecurity,
   // Read as text and checked by the finder, so "0" gets the same pt-BR 404 as a button
   // past the last one, as in fire-shortcut.
@@ -90,7 +91,8 @@ export const getMacroButtonStateRoute = createRoute({
   method: 'get',
   path: '/state/macro/{macroId}',
   summary: 'One macro for a button: whether it runs (until its run ends, "Parar" included)',
-  description: 'Read from memory; polled every second, so it logs at debug (errors at warn).',
+  description:
+    'Read from memory; polled every second, so it logs at debug (a refusal at warn once a minute).',
   security: apiTokenSecurity,
   request: { params: z.object({ macroId: z.string().min(1) }) },
   responses: {

@@ -36,7 +36,7 @@ export function requireApiAccess(options: {
     // instead of pressing on as "rede".
     if (isOpenToTheNetwork && authorizationHeader === undefined) {
       // A button's status poll comes every second; its line goes to debug with the rest
-      // of that request (markRequestAsPolledByButtons, BAJAOVRLAY-56). A press stays at info.
+      // of that request (logPollsByButtonsQuietly, BAJAOVRLAY-56). A press stays at info.
       const level = context.get('isPolledByButtons') === true ? 'debug' : 'info';
       const requestLogger = context.get('requestLogger');
       requestLogger[level](
@@ -54,13 +54,15 @@ export function requireApiAccess(options: {
         : findNameOfMatchingApiToken(apiTokens.tokens, presentedToken);
     if (tokenName === undefined) {
       // Whether a header came at all helps tell "Companion lost its header" from "an old
-      // token"; what the header said is never written.
-      context
-        .get('requestLogger')
-        .warn(
-          { has_authorization_header: authorizationHeader !== undefined },
-          'api request refused: missing, malformed or wrong token',
-        );
+      // token"; what the header said is never written. A button's poll is refused every
+      // second, so its line goes to debug; its "request handled" line still warns once a
+      // minute (logPollsByButtonsQuietly, BAJAOVRLAY-56).
+      const level = context.get('isPolledByButtons') === true ? 'debug' : 'warn';
+      const requestLogger = context.get('requestLogger');
+      requestLogger[level](
+        { has_authorization_header: authorizationHeader !== undefined },
+        'api request refused: missing, malformed or wrong token',
+      );
       const body: ErrorAnswerBody = {
         error: { code: 'API_TOKEN_REFUSED', message: ptBR.errors.apiTokenRefused },
       };

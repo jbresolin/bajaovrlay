@@ -5,7 +5,7 @@ import type { ApiTokens } from '../../core/apiAccess/apiTokens.js';
 import { requireApiAccess } from '../../core/apiAccess/requireApiAccess.js';
 import type { ErrorAnswerBody } from '../../core/http/errorAnswers.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
-import { markRequestAsPolledByButtons } from '../../core/http/requestLogging.js';
+import { logPollsByButtonsQuietly } from '../../core/http/pollsByButtonsLogging.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import {
   getLayerButtonStateRoute,
@@ -23,16 +23,18 @@ import {
  * Mounts the button state routes (BAJAOVRLAY-56) on the /api/v1 routes, behind the same
  * access as the rest of the command API (open mode or tokens; 403 when off). Each reads
  * the slices in memory only and never runs a command, so it writes no event-log row; its
- * request lines go to debug, or warn when refused (markRequestAsPolledByButtons).
+ * request lines go to debug, and a refusal to warn once a minute per path and status
+ * (logPollsByButtonsQuietly).
  */
 export function mountButtonStateRoutes(
   apiRoutes: OpenAPIHono<ServerAppEnvironment>,
   options: { stateStore: StateStore; apiTokens: ApiTokens; isOpenToTheNetwork: boolean },
 ): void {
   const { stateStore } = options;
-  // The mark first, so the access check's own line of an open call is quiet too.
+  // The quiet log first, so the access check's own lines are quiet too. One middleware for
+  // the three routes, so they share one set of refusal windows per app.
   const middleware = [
-    markRequestAsPolledByButtons(),
+    logPollsByButtonsQuietly(),
     requireApiAccess({
       apiTokens: options.apiTokens,
       isOpenToTheNetwork: options.isOpenToTheNetwork,

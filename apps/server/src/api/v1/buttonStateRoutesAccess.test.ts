@@ -6,7 +6,9 @@
  *   access check: open to the studio network with no header, or one token per device, or
  *   off. Fifteen buttons polling every second would write about 54,000 request lines an
  *   hour, so a poll that answers writes its lines at debug, and only a refused or failed
- *   poll writes at warn. Polls read memory only and never add a row to the event log.
+ *   poll writes at warn (a refused one once a minute per path and status, which
+ *   buttonStatePollRefusalLog.test.ts proves). Polls read memory only and never add a row
+ *   to the event log.
  *
  * What these tests prove (on a real store, through the app):
  *   - Open, each route answers a call with no header (200).

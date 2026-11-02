@@ -6,6 +6,7 @@ import type { CommandError, Instance, Slices } from '@bajaovrlay/shared';
 
 import { refuseUnknownLayer } from '../../core/store/commandRefusals.js';
 import { refuseUnknownMacro } from '../../core/store/quickFireAndMacroRefusals.js';
+import { findInstanceOnLayer, readItemLabelOfInstance } from './instancesOnLayers.js';
 import { findQuickFireButtonAtItsPlace } from './quickFireButtonByPlace.js';
 
 /** One layer, as a button reads it. */
@@ -48,7 +49,7 @@ export function readStateOfLayerForAButton(
     isOnAir: instanceOnAir !== undefined,
     isInPreview: instanceInPreview !== undefined,
     isMarkedToClear: slices.previewClearedLayerIds.includes(layerId),
-    itemName: readItemLabelOfInstance(slices, instanceOnAir),
+    itemName: readItemNameForAButton(slices, instanceOnAir),
   };
   return { isFound: true, state };
 }
@@ -96,20 +97,7 @@ export function readStateOfMacroForAButton(
   return { isFound: true, state: { isRunning } };
 }
 
-/** The instance on one layer for one target, if any (a layer holds one per target). */
-function findInstanceOnLayer(
-  instances: Instance[],
-  layerId: string,
-  target: Instance['target'],
-): Instance | undefined {
-  return instances.find((instance) => instance.layerId === layerId && instance.target === target);
-}
-
-/** The label of the item an instance came from, or "" (no instance, no item, item deleted). */
-function readItemLabelOfInstance(slices: Slices, instance: Instance | undefined): string {
-  if (instance?.itemId === undefined) {
-    return '';
-  }
-  const item = slices.items.find((candidate) => candidate.id === instance.itemId);
-  return item?.label ?? '';
+/** The label of the item on program, or "" when there is none, so the plugin always finds a text. */
+function readItemNameForAButton(slices: Slices, instance: Instance | undefined): string {
+  return readItemLabelOfInstance(slices, instance) ?? '';
 }
