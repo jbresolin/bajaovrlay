@@ -1,9 +1,13 @@
 # BajaOvrLay on the stream PC
 
-At the event the server runs on the stream PC (Windows, Docker Desktop) with no internet
-at all. The image is carried there on a USB stick. Steps 1–5 are the install; step 6 is
-the check before every broadcast; step 7 is an update at the track; step 8 puts a backup
-of the database back.
+At the event the server runs on the stream PC (Windows, Docker Desktop). BajaOvrLay runs
+entirely there: the control page, the renderer OBS loads and the graphics are served by
+that one server. The PC has internet, since it streams, but only BajaOvrLay's external
+data sources use that uplink (the Baja app's API, a scoring poll). When the uplink drops,
+those sources go stale and the last good data stays on air; nothing on screen is drawn
+from elsewhere. The image is carried there on a USB stick. Steps 1–5 are the install; step
+6 is the check before every broadcast; step 7 is an update at the track; step 8 puts a
+backup of the database back.
 
 ## 1. Install Docker Desktop (once, with internet)
 
@@ -89,7 +93,8 @@ Desktop may use the network: allow **private** networks.
 3. The control page shows "Conectado".
 4. A test take: an item on the program output shows in OBS, then "Limpar" clears it.
 5. "Fontes de dados": each source the session needs is on and "Ok".
-6. With the uplink cable out, steps 3 and 4 still work and nothing on air changes.
+6. With the uplink cable out, steps 3 and 4 still work and nothing on air changes. The
+   external sources turn "Atrasada", then "Erro", and are "Ok" again once it is back in.
 
 ## 7. Update at the track
 

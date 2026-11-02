@@ -32,8 +32,9 @@ the API with a race on `http://localhost:4791`, for a walk with no counted race 
 
 ## Deployment
 
-BajaOvrLay runs on the **stream PC**: one Docker image under Docker Desktop, with no
-internet at the track. `deploy/stream-pc/README.md` is the runbook: the image carried on a
+BajaOvrLay runs on the **stream PC**: one Docker image under Docker Desktop, entirely on
+that PC. Only its external data sources use the PC's uplink; when it drops they go stale
+and the last good data stays on air. `deploy/stream-pc/README.md` is the runbook: the image carried on a
 USB stick, the OBS addresses, the checks before going on air, backups and restore.
 Running it on **TrueNAS** instead is optional (`deploy/truenas/README.md`, a Portainer
 stack behind Nginx Proxy Manager). `scripts/dockerSmoke.sh` checks the image end to end on

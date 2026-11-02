@@ -2,8 +2,9 @@
  * The built system with no internet (apps/server, browser tests)
  *
  * What this module is for:
- *   At the event the stream PC has no internet at all: the Docker image must carry every
- *   page, script, font and graphic, and nothing may be fetched from anywhere else. A font
+ *   At the event the stream PC's uplink can drop at any moment, and only the external data
+ *   sources may use it: the Docker image must carry every page, script, font and graphic,
+ *   and nothing on screen may be fetched from anywhere else. A font
  *   from a CDN would not fail loudly; OBS would quietly draw the clock in another face.
  *   These tests serve the built output with the built server (`node dist/main.js`, what
  *   the image runs) and refuse, inside the browser, every request to any other address.

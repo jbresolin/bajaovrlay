@@ -6,6 +6,9 @@ pública, `https://api.bajasaebrasil.net`. O BajaOvrLay lê essa API de duas for
 equipes** para os Cadastros. Tudo é lido pelo servidor do BajaOvrLay, nunca pelo navegador:
 o computador onde o servidor roda precisa de internet.
 
+No evento, é a internet do computador da transmissão: se ela cair, as fontes do app ficam
+"Atrasadas" e o último dado bom continua no ar, até a conexão voltar.
+
 ## Qual código de evento digitar
 
 O código do evento é o que o app Baja usa no endereço dos resultados (`?evt=26BR`): dois
