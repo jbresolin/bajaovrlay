@@ -13,7 +13,9 @@ No evento, é a internet do computador da transmissão: se ela cair, as fontes d
 
 O código do evento é o que o app Baja usa no endereço dos resultados (`?evt=26BR`): dois
 dígitos do ano e a sigla da etapa. Exemplos: `26BR` (Nacional 2026), `26SE` (Sudeste 2026),
-`25SU` (Sul 2025). Digite como no app, em maiúsculas.
+`25SU` (Sul 2025). Digite como no app, em maiúsculas: a API diferencia maiúsculas, então
+`26br` é recusado na própria página, antes de qualquer leitura, e a página não troca as
+letras por você.
 
 ## Adicionar uma fonte
 
@@ -28,6 +30,15 @@ Em **Fontes de dados**, "+ Fonte" → **"Adicionar fonte do app Baja"**:
    Enduro". Dá para conferir, usar "Testar", exportar. Nada é salvo até **"Salvar fonte"**.
 4. Ligue a fonte na lista.
 
+### Um resultado fora do menu do evento
+
+Alguns resultados respondem mas não aparecem no menu do evento (o Super Prime de 26BR,
+`26BR_SPR`, é um deles). Para esses, escolha **"Outro resultado (digite o id)"**, digite o id
+(o código do evento, `_` e até 3 letras ou algarismos, como `26BR_SPR`) e aperte **"Ler
+resultado"**. A página pergunta primeiro como tabela; se o app responder que é um torneio,
+lê como chaveamento. Ela mostra o que achou ("Tabela: …" ou "Chaveamento: …") e "Continuar"
+segue como nas listas. Uma tabela lida assim entra como "outra", nunca como a Geral.
+
 ### O que cada fonte alimenta
 
 | Lista                           | Vira              | Alimenta                                                             | Lida a cada |
@@ -40,14 +51,18 @@ Em **Fontes de dados**, "+ Fonte" → **"Adicionar fonte do app Baja"**:
   (lida de novo a cada 10 minutos); sem nome curto, pelo nome que a corrida traz. As
   diferenças (para o líder e para o carro da frente) são calculadas pelo BajaOvrLay a partir
   das voltas e da última passagem: valem na última passagem pela linha. Antes da largada o
-  relógio fica parado em 0:00. Um estado novo que o app venha a criar aparece como bandeira
-  amarela, e uma situação nova de carro como "na pista", até alguém mapeá-los.
-- **Tabela de resultado.** Os pontos vêm da coluna pela qual a tabela classifica (na Geral,
-  "Total"). Ao escolher a tabela, a página lê as colunas dela e mostra uma caixa por coluna
+  relógio fica parado em 0:00. Um estado de corrida que o preset não conhece **não vira
+  bandeira nenhuma**: a leitura é recusada (veja abaixo) e o último dado bom fica no ar. Uma
+  situação nova de carro aparece como "na pista", até alguém mapeá-la.
+- **Tabela de resultado.** Os pontos vêm da coluna que o app marca como a da classificação
+  (na Geral, "Total"). Uma tabela que não classifica ninguém (como Segurança Estática) ou que
+  não marca coluna nenhuma não vira fonte: a página diz por quê e "Continuar" fica apagado. Ao escolher a tabela, a página lê as colunas dela e mostra uma caixa por coluna
   que pode virar **parte da pontuação**; vêm marcadas as partes da tabela Geral (Penalidade,
   Segurança, Projeto, Dinâmicas, Enduro). A Geral soma tudo; qualquer outra tabela entra como
   "outra". Equipes desclassificadas ficam no fim, sem posição.
-- **Chaveamento.** Só entram as fases completas: uma fase com um lado ainda "a definir" fica
+- **Chaveamento.** As equipes aparecem pelo nome curto da lista de equipes, senão pelo do
+  chaveamento, senão pelo nome completo (num evento sem nomes curtos, como 26SE). Um "bye"
+  de qualquer lado é vitória por W.O. Só entram as fases completas: uma fase com um lado ainda "a definir" fica
   de fora, com as seguintes, até o app completá-la. A disputa de 3º lugar vem logo antes da
   final.
 
@@ -65,11 +80,17 @@ a responder normalmente, a fonte volta a "Ok" sozinha.
   a corrida como simulação (um teste da cronometragem). Para que ela não vá ao ar como
   corrida de verdade, a fonte a recusa. Para testes e ensaios, faça a fonte de novo com
   **"Aceitar corrida simulada"** marcado.
+- **"Estado de corrida desconhecido: "…". Atualize o preset da fonte."** O app mandou um
+  estado de corrida que o preset não conhece (entre aspas, a palavra que veio). Nenhuma
+  bandeira vai ao ar por palpite: a fonte fica atrasada até o preset aprender a palavra. Avise
+  o técnico; é uma linha a mais no preset (`corrida.preset.json`). Marcar "Aceitar corrida
+  simulada" não tira esta recusa.
 
 ## Importar as equipes para os Cadastros
 
 Em **Cadastros**, aba Equipes, **"Importar equipes do app Baja"**: digite o código do evento
-e aperte "Buscar equipes". As equipes viram o texto de um CSV e abre o **"Importar CSV"** de
+e aperte "Buscar equipes". "Endereço da API" vem com o do app, como em Fontes; troque só
+para ensaiar com uma cópia local (`pnpm serve:baja-example`). As equipes viram o texto de um CSV e abre o **"Importar CSV"** de
 sempre, com a prévia ("novo", "atualiza", "erro"). Confira e aperte "Importar N linhas
 válidas".
 
