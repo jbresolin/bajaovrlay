@@ -38,10 +38,11 @@ export const ptBRFlexMappingOptions = {
 
   refusalTitle: 'Recusar a resposta quando',
   refusalHint:
-    'Se o valor no caminho for igual ao valor dado, a leitura falha com a mensagem e o último dado bom fica no ar.',
+    'Se o valor no caminho for igual ao "Valor que recusa", ou não for nenhum dos "Valores conhecidos" (use um dos dois), a leitura falha com a mensagem e o último dado bom fica no ar. {valor} na mensagem mostra o valor lido.',
   refusalFields: {
     path: 'Caminho da recusa',
     equalsText: 'Valor que recusa',
+    notOneOfText: 'Valores conhecidos (separados por vírgula)',
     message: 'Mensagem da recusa',
   },
 

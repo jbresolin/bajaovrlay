@@ -78,16 +78,29 @@ function buildScorePartsFromColumns(options: MappingOptionsFormValues) {
   return valuePath === '' ? { headers } : { headers, valuePath };
 }
 
-/** The refusal flag, or undefined when its three fields are all empty. */
+/**
+ * The refusal flag, or undefined when its fields are all empty. With known values typed it
+ * refuses by them (`notOneOf`), and by "Valor que recusa" too when that is typed, which
+ * the schema then refuses under it: one comparison only. Without known values it refuses
+ * by "Valor que recusa", an empty one meaning the empty text, as before.
+ */
 function buildRefusal(options: MappingOptionsFormValues) {
   const path = options.refuseWhen.path.trim();
   const message = options.refuseWhen.message.trim();
+  const equalsText = options.refuseWhen.equalsText;
+  const notOneOfText = options.refuseWhen.notOneOfText;
   const isEveryFieldEmpty =
-    path === '' && options.refuseWhen.equalsText.trim() === '' && message === '';
+    path === '' && equalsText.trim() === '' && notOneOfText.trim() === '' && message === '';
   if (isEveryFieldEmpty) {
     return undefined;
   }
-  return { path, equals: readTypedValueText(options.refuseWhen.equalsText), message };
+  if (notOneOfText.trim() === '') {
+    return { path, equals: readTypedValueText(equalsText), message };
+  }
+  const notOneOf = readCommaSeparatedValues(notOneOfText);
+  return equalsText.trim() === ''
+    ? { path, notOneOf, message }
+    : { path, equals: readTypedValueText(equalsText), notOneOf, message };
 }
 
 /** Reads "pending, unknown" as its typed values, empty pieces skipped. */

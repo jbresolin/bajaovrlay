@@ -15,6 +15,8 @@ export const ptBRBajaAppSource = {
   readEventButton: 'Ler evento',
   readingEvent: 'Lendo o evento…',
   noEventId: 'Digite o código do evento.',
+  eventIdNotAsTheApiWritesIt:
+    'O código do evento tem 4 letras maiúsculas ou algarismos, como no app Baja: 26BR.',
   apiAddressNotHttp: 'O endereço da API começa com http:// ou https://.',
   // The three lists of what an event has, each a group of choices.
   racesTitle: 'Corridas com contagem de voltas',
@@ -26,6 +28,20 @@ export const ptBRBajaAppSource = {
   tournamentsTitle: 'Chaveamentos',
   tournamentsHint: 'Viram chaveamento.',
   noTournaments: 'Nenhum chaveamento neste evento.',
+  // A result the event's menu leaves out (26BR's Super Prime), read by its id.
+  otherResultTitle: 'Fora do menu do evento',
+  otherResultChoice: 'Outro resultado (digite o id)',
+  otherResultHint:
+    'Para um resultado que responde mas não está no menu do evento. A página descobre se é tabela ou chaveamento.',
+  resultadoIdLabel: 'Id do resultado',
+  resultadoIdHint: (eventId: string) => `${eventId}_SPR`,
+  readResultButton: 'Ler resultado',
+  readingResult: 'Lendo o resultado…',
+  noResultadoId: 'Digite o id do resultado.',
+  resultadoIdNotOfTheEvent: (eventId: string) =>
+    `O id é o código do evento, "_" e até 3 letras maiúsculas ou algarismos: ${eventId}_SPR.`,
+  otherResultIsATable: (name: string) => `Tabela: ${name}`,
+  otherResultIsATournament: (name: string) => `Chaveamento: ${name}`,
   // A race chosen.
   acceptSimulatedRace: 'Aceitar corrida simulada',
   acceptSimulatedRaceHint:
@@ -43,6 +59,9 @@ export const ptBRBajaAppSource = {
   notAnEvent: 'A resposta não é um evento do app Baja.',
   notATable: 'A resposta não é uma tabela de resultado do app Baja.',
   tableWithoutRanking: 'A tabela não diz por qual coluna classifica.',
+  tableWithoutPointsColumn:
+    'A tabela não tem coluna de pontos: nenhuma coluna é a da classificação.',
+  notATournament: 'A resposta não é um chaveamento do app Baja.',
 };
 
 /** The Cadastros part: "Importar equipes do app Baja" on the Equipes tab. */
@@ -51,7 +70,9 @@ export const ptBRBajaAppTeams = {
   eventIdLabel: 'Código do evento no app Baja',
   readTeamsButton: 'Buscar equipes',
   readingTeams: 'Buscando as equipes…',
-  noEventId: 'Digite o código do evento.',
+  // The API's address and the event id are checked as on Fontes (ptBRBajaAppSource).
+  apiAddressLabel: 'Endereço da API',
+  apiAddressHint: 'O do app Baja; troque só para uma cópia local da API.',
   notATeamsList: 'A resposta não é uma lista de equipes do app Baja.',
   noTeams: 'O app Baja não lista equipes neste evento.',
   // Shown above the preview, which is the CSV import's own.

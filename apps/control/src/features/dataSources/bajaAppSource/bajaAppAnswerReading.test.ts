@@ -16,8 +16,13 @@
  *   - A name with an entity and a trailing space is cleaned ("24BR" had `&nbsp;`).
  *   - An answer that is not an event is refused with a sentence.
  *   - The real 26BR overall table ranks by "Total", and offers its six score columns as
- *     parts, never the position, the car, the team or the ranking column itself.
- *   - A table that names no ranking column is refused with a sentence.
+ *     parts, never the position, the car, the team or the ranking column itself; the real
+ *     26BR Enduro ranks by "Pontos".
+ *   - As the contract says (gate 2 of PR #38): the points come from the column flagged
+ *     `ranking: true`, whatever `ranking.by` holds (it may be a formula variable); a column
+ *     with no title (`header` null) is read and never offered; a table that ranks nobody
+ *     (`ranking` null, the real Segurança Estática) and one that flags no column are each
+ *     refused with their own sentence.
  *
  * What these tests deliberately do not cover:
  *   - Fetching these answers: the picker's tests (DataSourcesPageBajaApp.test.tsx).
@@ -132,18 +137,62 @@ describe('readBajaAppTableColumns', () => {
     });
   });
 
-  it('refuses a table that names no ranking column', () => {
-    // Arrange: the 26BR table without its ranking.
-    const answer: { ranking?: unknown } = copyAnswer(bajaAppAnswers.overall26BR);
-    delete answer.ranking;
+  it('reads a prova’s table, the real 26BR Enduro, ranked by "Pontos"', () => {
+    // Arrange: the real 26BR Enduro table.
+    const answer = bajaAppAnswers.enduroTable26BR;
 
     // Act: read its columns.
     const reading = readBajaAppTableColumns(answer);
 
-    // Assert: refused with the sentence.
-    expect(reading, 'no ranking column').toEqual({
-      isRead: false,
-      reason: 'A tabela não diz por qual coluna classifica.',
+    // Assert: "Pontos" is the points, "Voltas" the one part offered.
+    expect(reading, 'the Enduro’s points and its one part').toEqual({
+      isRead: true,
+      pointsHeader: 'Pontos',
+      partHeaderChoices: ['Voltas'],
     });
+  });
+
+  it('takes the points from the column flagged as the ranking one, and offers no column with no title', () => {
+    // Arrange: the made-up Enduro table whose ranking.by is a formula variable
+    // ("pontos_enduro", no column's header) and which has a column with no title.
+    const answer = bajaAppAnswers.enduroTableWithANullHeader26BR;
+
+    // Act: read its columns.
+    const reading = readBajaAppTableColumns(answer);
+
+    // Assert: read as a table; the points from "Pontos", flagged `ranking: true`; the
+    // column with no title is no part, as nothing could read it by its header.
+    expect(reading, 'the flagged column, and "Voltas" alone offered').toEqual({
+      isRead: true,
+      pointsHeader: 'Pontos',
+      partHeaderChoices: ['Voltas'],
+    });
+  });
+
+  const tablesWithoutPointsScenarios = [
+    // A real table that ranks nobody (Segurança Estática, `ranking` null): the operator
+    // reads that it ranks nobody, not that the answer is no table.
+    {
+      name: 'refuses the real 26BR Segurança Estática, which ranks nobody',
+      answer: bajaAppAnswers.staticSafetyTableRankingNobody26BR,
+      expectedReason: 'A tabela não diz por qual coluna classifica.',
+    },
+    // A ranking with no column flagged: no points to read, so no source that would fail
+    // every poll is made.
+    {
+      name: 'refuses a table that flags no column as the ranking one',
+      answer: bajaAppAnswers.enduroTableWithNoRankingColumn26BR,
+      expectedReason: 'A tabela não tem coluna de pontos: nenhuma coluna é a da classificação.',
+    },
+  ];
+
+  it.each(tablesWithoutPointsScenarios)('$name', ({ answer, expectedReason }) => {
+    // Arrange: nothing beyond this row's table.
+
+    // Act: read its columns.
+    const reading = readBajaAppTableColumns(answer);
+
+    // Assert: refused with this row's sentence.
+    expect(reading, 'no points column to read').toEqual({ isRead: false, reason: expectedReason });
   });
 });

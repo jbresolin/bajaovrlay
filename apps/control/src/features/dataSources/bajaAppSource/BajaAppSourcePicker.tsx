@@ -11,6 +11,7 @@ import { fetchHttpJsonSample } from '../flexSource/fetchHttpJsonSample';
 import type { FlexSourceStartingPoint } from '../flexSource/flexSourceFormValues';
 import {
   type BajaAppEventChoices as EventChoices,
+  type BajaAppTableChoice,
   readBajaAppEventAnswer,
   readBajaAppTableColumns,
 } from './bajaAppAnswerReading';
@@ -20,12 +21,15 @@ import {
   type TableColumnsState,
 } from './BajaAppChoiceOptions';
 import { type BajaAppChoiceKey, BajaAppEventChoices } from './BajaAppEventChoices';
+import { BajaAppOtherResultOption, type OtherResultState } from './BajaAppOtherResultOption';
+import { readBajaAppResultById } from './bajaAppResultById';
 import { buildBajaAppEventRequest, buildBajaAppTableRequest } from './bajaAppSampleRequests';
 import {
   type BajaAppChoice,
   type BajaAppEventAddress,
   buildBajaAppSourceOfChoice,
 } from './bajaAppSourceOfChoice';
+import { findProblemOfTypedApiAddress, findProblemOfTypedEventId } from './bajaAppTypedIds';
 
 const texts = ptBR.dataSources.bajaApp;
 
@@ -46,7 +50,8 @@ export type BajaAppSourcePickerProps = {
 /**
  * "Adicionar fonte do app Baja" (BAJAOVRLAY-54): the operator types the event id (and,
  * only for a local copy, the API's address), the page reads the event through the
- * server's sample route and lists what it offers (BajaAppEventChoices.tsx). A race may
+ * server's sample route and lists what it offers (BajaAppEventChoices.tsx), and a result
+ * the menu leaves out may be typed by its id (BajaAppOtherResultOption.tsx). A race may
  * accept a simulation; a table is read too, for its points column and its parts.
  * "Continuar" hands the chosen preset, filled in, to the page, which opens the ordinary
  * flex form with it: nothing is saved here.
@@ -63,17 +68,20 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
   const [chosenKey, setChosenKey] = useState<BajaAppChoiceKey | null>(null);
   const [acceptsSimulatedRace, setAcceptsSimulatedRace] = useState(false);
   const [tableColumns, setTableColumns] = useState<TableColumnsState | null>(null);
+  const [otherResult, setOtherResult] = useState<OtherResultState>({ phase: 'notRead' });
 
   async function readTheEvent(): Promise<void> {
     const where = { apiAddress: apiAddress.trim(), eventId: eventId.trim() };
-    const isAnHttpAddress = /^https?:\/\//.test(where.apiAddress);
-    setAddressProblem(isAnHttpAddress ? undefined : texts.apiAddressNotHttp);
-    setEventIdProblem(where.eventId === '' ? texts.noEventId : undefined);
-    if (!isAnHttpAddress || where.eventId === '') {
+    const typedAddressProblem = findProblemOfTypedApiAddress(where.apiAddress);
+    const typedEventIdProblem = findProblemOfTypedEventId(where.eventId);
+    setAddressProblem(typedAddressProblem);
+    setEventIdProblem(typedEventIdProblem);
+    if (typedAddressProblem !== undefined || typedEventIdProblem !== undefined) {
       return;
     }
     setChosenKey(null);
     setTableColumns(null);
+    setOtherResult({ phase: 'notRead' });
     setEventReading({ phase: 'reading' });
     const answer = await fetchHttpJsonSample(
       buildBajaAppEventRequest(where.apiAddress, where.eventId),
@@ -98,23 +106,32 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
       ? readBajaAppTableColumns(answer.body)
       : { isRead: false as const, reason: answer.error };
     const columnsRead: TableColumnsState = reading.isRead
-      ? {
-          phase: 'read',
-          resultadoId,
-          pointsHeader: reading.pointsHeader,
-          partHeaderChoices: reading.partHeaderChoices,
-          tickedPartHeaders: reading.partHeaderChoices.filter((header) =>
-            proposedScorePartHeaders.includes(header),
-          ),
-        }
+      ? buildColumnsRead(resultadoId, reading.pointsHeader, reading.partHeaderChoices)
       : { phase: 'failed', resultadoId, reason: reading.reason };
     // A table the operator left meanwhile for another choice is not shown.
     setTableColumns((current) => (current?.resultadoId === resultadoId ? columnsRead : current));
   }
 
+  async function readTheOtherResult(where: BajaAppEventAddress, resultadoId: string) {
+    setOtherResult({ phase: 'reading' });
+    setTableColumns(null);
+    const reading = await readBajaAppResultById(where, resultadoId);
+    if (!reading.isRead) {
+      setOtherResult({ phase: 'failed', reason: reading.reason });
+      return;
+    }
+    if (reading.kind === 'tournament') {
+      setOtherResult({ phase: 'tournament', tournament: reading.tournament });
+      return;
+    }
+    setOtherResult({ phase: 'table', table: reading.table });
+    setTableColumns(buildColumnsRead(resultadoId, reading.pointsHeader, reading.partHeaderChoices));
+  }
+
   function choose(choiceKey: BajaAppChoiceKey): void {
     setChosenKey(choiceKey);
     setTableColumns(null);
+    setOtherResult({ phase: 'notRead' });
     if (eventReading.phase === 'read' && choiceKey.startsWith('table:')) {
       void readTheColumnsOfTable(eventReading.where, choiceKey.slice('table:'.length));
     }
@@ -124,6 +141,9 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
 
   /** The choice made, with its options, once it has all it needs; undefined until then. */
   function buildChoice(event: EventChoices): BajaAppChoice | undefined {
+    if (chosenKey === 'other') {
+      return buildChoiceOfTheOtherResult();
+    }
     const race = event.races.find((candidate) => `race:${candidate.provaId}` === chosenKey);
     if (race !== undefined) {
       return { kind: 'race', race, acceptsSimulatedRace };
@@ -135,7 +155,14 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
       return { kind: 'tournament', tournament };
     }
     const table = event.tables.find((candidate) => `table:${candidate.resultadoId}` === chosenKey);
-    if (table === undefined || tableColumns?.phase !== 'read') {
+    return table === undefined ? undefined : buildChoiceOfTable(table);
+  }
+
+  /** A table chosen, once its columns are read: its points and the parts left ticked. */
+  function buildChoiceOfTable(table: BajaAppTableChoice): BajaAppChoice | undefined {
+    const areItsColumnsRead =
+      tableColumns?.phase === 'read' && tableColumns.resultadoId === table.resultadoId;
+    if (!areItsColumnsRead) {
       return undefined;
     }
     return {
@@ -146,13 +173,27 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
     };
   }
 
+  /** The result typed by its id, once read: a tournament, or a table with its columns. */
+  function buildChoiceOfTheOtherResult(): BajaAppChoice | undefined {
+    if (otherResult.phase === 'tournament') {
+      return { kind: 'tournament', tournament: otherResult.tournament };
+    }
+    if (otherResult.phase === 'table') {
+      return buildChoiceOfTable(otherResult.table);
+    }
+    return undefined;
+  }
+
   function continueWithTheChoice(): void {
     if (eventReading.phase === 'read' && choice !== undefined) {
       props.onContinue(buildBajaAppSourceOfChoice(eventReading.where, choice));
     }
   }
 
-  /** The chosen entry's own options: the race's box, or the table's columns; else none. */
+  /**
+   * The chosen entry's own options: the race's box, the id to type for another result, or
+   * the table's columns; else none.
+   */
   function drawOptionsOfTheChoice() {
     if (chosenKey?.startsWith('race:') === true) {
       return (
@@ -162,6 +203,22 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
         />
       );
     }
+    if (chosenKey === 'other' && eventReading.phase === 'read') {
+      const where = eventReading.where;
+      return (
+        <BajaAppOtherResultOption
+          eventId={where.eventId}
+          otherResult={otherResult}
+          onRead={(resultadoId) => void readTheOtherResult(where, resultadoId)}
+          tableOptions={drawTableOptions()}
+        />
+      );
+    }
+    return drawTableOptions();
+  }
+
+  /** A table's columns being read, refused, or read with its parts to tick. */
+  function drawTableOptions() {
     if (tableColumns === null) {
       return null;
     }
@@ -249,4 +306,21 @@ export function BajaAppSourcePicker(props: BajaAppSourcePickerProps) {
       </Card>
     </section>
   );
+}
+
+/** A table's columns read, the overall table's parts ticked where the table has them. */
+function buildColumnsRead(
+  resultadoId: string,
+  pointsHeader: string,
+  partHeaderChoices: string[],
+): TableColumnsState {
+  return {
+    phase: 'read',
+    resultadoId,
+    pointsHeader,
+    partHeaderChoices,
+    tickedPartHeaders: partHeaderChoices.filter((header) =>
+      proposedScorePartHeaders.includes(header),
+    ),
+  };
 }

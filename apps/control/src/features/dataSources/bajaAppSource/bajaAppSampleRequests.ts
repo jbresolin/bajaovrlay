@@ -34,6 +34,18 @@ export function buildBajaAppTableRequest(apiAddress: string, eventId: string, re
   );
 }
 
+/** torneio.php of one tournament: its name, for "Outro resultado (digite o id)". */
+export function buildBajaAppTournamentRequest(
+  apiAddress: string,
+  eventId: string,
+  resultadoId: string,
+) {
+  return buildBajaAppRequest('torneio', buildBajaAppEndpointAddress(apiAddress, 'torneio.php'), [
+    { name: 'evt', value: eventId },
+    { name: 'id', value: resultadoId },
+  ]);
+}
+
 /** equipes.php of one event: its teams, for "Importar equipes do app Baja". */
 export function buildBajaAppTeamsRequest(apiAddress: string, eventId: string) {
   return buildBajaAppRequest('equipes', buildBajaAppEndpointAddress(apiAddress, 'equipes.php'), [

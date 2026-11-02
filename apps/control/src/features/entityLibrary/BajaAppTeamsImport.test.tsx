@@ -16,6 +16,9 @@
  *   - A stored team is an update that keeps its logo and the short names its operator
  *     typed, since the app has none.
  *   - The route's sentence is shown when the teams cannot be read, and no import opens.
+ *   - As on the picker (gate 2 of PR #38): an event id not as the API writes it ("26se")
+ *     is refused before anything is read, and the teams are read from the "Endereço da
+ *     API" typed, so a rehearsal can read `pnpm serve:baja-example`.
  *
  * What these tests deliberately do not cover:
  *   - Each cell's rule: bajaAppTeamsAsCsv.test.ts.
@@ -189,5 +192,44 @@ describe('"Importar equipes do app Baja"', () => {
     // Assert: the sentence, and nothing read.
     expect(screen.getByText('Digite o código do evento.'), 'the id is asked for').toBeVisible();
     expect(sampleRoute, 'nothing read').not.toHaveBeenCalled();
+  });
+
+  it('refuses an event id not written as the API writes it, and reads nothing', () => {
+    // Arrange: the route ready, an empty library.
+    const sampleRoute = createSampleRouteAnswering({ 'equipes.php': bajaAppAnswers.teams26SE });
+    vi.stubGlobal('fetch', sampleRoute);
+    renderOnControlPageConnectedToFakeServer(<EntityLibraryPage />, buildSlicesWithTheLibrary({}));
+
+    // Act: ask for the teams of "26se", which the API answers 404.
+    readTheTeamsOf('26se');
+
+    // Assert: the sentence under the field, the id left as typed, and nothing read.
+    const eventIdField = screen.getByLabelText('Código do evento no app Baja');
+    expect(eventIdField, 'the event field says how the id is written').toHaveAccessibleDescription(
+      'O código do evento tem 4 letras maiúsculas ou algarismos, como no app Baja: 26BR.',
+    );
+    expect(eventIdField, 'the case is the operator’s to change').toHaveValue('26se');
+    expect(sampleRoute, 'nothing read').not.toHaveBeenCalled();
+  });
+
+  it('reads the teams from the API address typed, as the sources do, for a rehearsal', async () => {
+    // Arrange: an empty library, the route answering the 26SE teams.
+    const sampleRoute = createSampleRouteAnswering({ 'equipes.php': bajaAppAnswers.teams26SE });
+    vi.stubGlobal('fetch', sampleRoute);
+    renderOnControlPageConnectedToFakeServer(<EntityLibraryPage />, buildSlicesWithTheLibrary({}));
+    pressButton('Importar equipes do app Baja');
+    const addressAtFirst = (screen.getByLabelText('Endereço da API') as HTMLInputElement).value;
+
+    // Act: type the local copy of `pnpm serve:baja-example`, then ask for 26SE's teams.
+    typeIntoField('Endereço da API', 'http://127.0.0.1:4791/');
+    typeIntoField('Código do evento no app Baja', '26SE');
+    pressButton('Buscar equipes');
+
+    // Assert: the field started on the real API, and the teams came from the local copy.
+    expect(addressAtFirst, 'the real API to start with').toBe('https://api.bajasaebrasil.net');
+    await screen.findByRole('region', { name: 'Importar equipes de um CSV' });
+    expect(listPostedSampleRequests(sampleRoute)[0]?.url, 'the local copy is read').toBe(
+      'http://127.0.0.1:4791/resultados/equipes.php',
+    );
   });
 });

@@ -6,8 +6,12 @@ import type { BajaAppEventChoices as EventChoices } from './bajaAppAnswerReading
 
 const texts = ptBR.dataSources.bajaApp;
 
-/** The key of one choice across the three lists: "race:END", "table:26BR_GER"… */
-export type BajaAppChoiceKey = `race:${string}` | `table:${string}` | `tournament:${string}`;
+/**
+ * The key of one choice across the lists: "race:END", "table:26BR_GER"…, or "other" for a
+ * result typed by its id.
+ */
+export type BajaAppChoiceKey =
+  `race:${string}` | `table:${string}` | `tournament:${string}` | 'other';
 
 /** What the lists need: the event read, the choice made, and where a choice goes. */
 export type BajaAppEventChoicesProps = {
@@ -24,8 +28,9 @@ type ListedChoice = { choiceKey: BajaAppChoiceKey; name: string };
 /**
  * The three lists of an event read on "Adicionar fonte do app Baja": its lap-counted
  * races, its results tables and its tournaments, by the API's own names, each a group of
- * radio buttons sharing one choice. An empty list says so in words. The chosen entry's
- * options (the simulated race box, a table's parts) are drawn right under it.
+ * radio buttons sharing one choice. An empty list says so in words. Below them, "Outro
+ * resultado (digite o id)" for a result the menu leaves out. The chosen entry's options
+ * (the simulated race box, a table's parts, the id to type) are drawn right under it.
  */
 export function BajaAppEventChoices(props: BajaAppEventChoicesProps) {
   const races = props.event.races.map((race) => ({
@@ -67,6 +72,13 @@ export function BajaAppEventChoices(props: BajaAppEventChoicesProps) {
           {...props}
         />
       </div>
+      <ChoiceList
+        title={texts.otherResultTitle}
+        hint={texts.otherResultHint}
+        emptyText=""
+        choices={[{ choiceKey: 'other', name: texts.otherResultChoice }]}
+        {...props}
+      />
     </div>
   );
 }

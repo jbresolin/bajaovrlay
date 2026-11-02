@@ -34,4 +34,8 @@ the slices it is sent. Nothing here reaches the air.
 tower), a results table the standings, a tournament the brackets. On Fontes, "Resultado com
 spoilers ativos…" means the organisers hide the table for now, and "Corrida em modo
 simulação…" that the app marks the race as a test, refused unless the source was made with
-"Aceitar corrida simulada"; either way the source reads "Atrasada" and keeps what is on air.
+"Aceitar corrida simulada", and "Estado de corrida desconhecido…" that the app sent a race
+state the preset does not know (a line to add to the preset); either way the source reads
+"Atrasada" and keeps what is on air. "Outro resultado (digite o id)" reads a result the
+event's menu leaves out (26BR's Super Prime), as a table or, when the API says `wrong_type`,
+as a tournament.

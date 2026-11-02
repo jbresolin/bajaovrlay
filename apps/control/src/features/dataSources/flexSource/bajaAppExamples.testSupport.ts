@@ -13,6 +13,7 @@ import {
 } from '@bajaovrlay/shared';
 
 import raceTenMinutesIn00NE from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/corrida-00NE_ZZL.from-doc.json';
+import teams25SU from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/equipes-25SU.json';
 import teams26BR from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/equipes-26BR.json';
 import overallDuringSpoilers25SU from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/resultado-25SU_GER-spoilers.from-doc.json';
 import overall26BR from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/resultado-26BR_GER.json';
@@ -22,6 +23,7 @@ import superPrime25SU from '../../../../../../packages/shared/src/flexMapping/ex
 export const bajaAppAnswerTexts = {
   raceTenMinutesIn00NE: JSON.stringify(raceTenMinutesIn00NE),
   teams26BR: JSON.stringify(teams26BR),
+  teams25SU: JSON.stringify(teams25SU),
   overall26BR: JSON.stringify(overall26BR),
   overallDuringSpoilers25SU: JSON.stringify(overallDuringSpoilers25SU),
   superPrime25SU: JSON.stringify(superPrime25SU),
