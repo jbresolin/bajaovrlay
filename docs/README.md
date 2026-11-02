@@ -10,3 +10,4 @@ Inside it, the decision records at the end (§18, §19) win over the earlier sec
 - `briefs/` — agent task briefs, one per Plane work item (BAJAOVRLAY-n).
 - `bajaAppSources.md` — "Fontes do app Baja", the operator's guide to the Baja app presets.
 - `testing-style.md` — the canonical example test every test file copies (created in BAJAOVRLAY-7).
+- `buttons.md` — driving the show from Companion, a Stream Deck or an Ulanzi D200 over HTTP: open mode or tokens, buttons, button colours and a `curl` line per shortcut (BAJAOVRLAY-28).

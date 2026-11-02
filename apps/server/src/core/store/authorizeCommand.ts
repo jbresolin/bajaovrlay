@@ -1,4 +1,4 @@
-import type { Command } from '@bajaovrlay/shared';
+import { type Command, isCommandTypeOfTheOperator } from '@bajaovrlay/shared';
 
 import {
   bindingRefresherActor,
@@ -58,14 +58,17 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   list an image with no file behind it (BAJAOVRLAY-19);
  * - every other server timer (`sistema:`, today the auto-out) may only clear one layer:
  *   a bug in a timer must never be able to put a graphic on air or empty the screen;
- * - every other actor (an operator) may send everything else, except the runner's
- *   bookkeeping, so no page can fake or end a run the runner is carrying out (an
- *   operator stops a run with stopMacro, "Parar", which the runner then ends), except
- *   poll results and a recording's progress, so no page can fake race data or a count,
- *   except a stopRecording that carries a failureMessage: only the recorder says why
- *   a recording failed (gate 2 on PR #16), and except refreshBoundInstanceData: a value
- *   typed over a live field is a correction, made with setOverride, and except
- *   recordDetectedEvents: no page may fake a race event, and except recordUploadedMedia.
+ * - every other actor (an operator, `operador:<connection id>`, and a device of the
+ *   command API, `api:<token name>`, BAJAOVRLAY-28) may send every command the shared
+ *   list classes as the operator's (senderOfEachCommandType in @bajaovrlay/shared), so
+ *   none of the commands only the server sends: the runner's bookkeeping, so no page can
+ *   fake or end a run the runner is carrying out (an operator stops a run with stopMacro,
+ *   "Parar", which the runner then ends), poll results and a recording's progress, so no
+ *   page can fake race data or a count, refreshBoundInstanceData (a value typed over a
+ *   live field is a correction, made with setOverride), recordDetectedEvents (no page may
+ *   fake a race event), recordUploadedMedia, and the renderer's report; and not a
+ *   stopRecording that carries a failureMessage either: only the recorder says why a
+ *   recording failed (gate 2 on PR #16).
  * The role comes from the address the connection chose (`/ws?role=renderer`,
  * `/ws?role=monitor`), so this keeps honest pages in their lane; it is not a defence
  * against a hostile client.
@@ -74,8 +77,6 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  */
 export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   const isReportFromTheScreen = command.type === 'reportInstanceStatus';
-  const isMacroRunBookkeeping =
-    command.type === 'advanceMacroRun' || command.type === 'endMacroRun';
   const isPollResult = command.type === 'recordDataSourcePoll';
   const isRefreshOfBoundFields = command.type === 'refreshBoundInstanceData';
   const isRecordOfDetectedEvents = command.type === 'recordDetectedEvents';
@@ -115,15 +116,7 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   if (isSystemActor(actor)) {
     return command.type === 'clearLayer';
   }
-  return (
-    !isReportFromTheScreen &&
-    !isMacroRunBookkeeping &&
-    !isPollResult &&
-    !isRecorderBookkeeping &&
-    !isRefreshOfBoundFields &&
-    !isRecordOfDetectedEvents &&
-    !isRecordOfAnUpload
-  );
+  return isCommandTypeOfTheOperator(command.type) && !isRecorderBookkeeping;
 };
 
 /** What the runner of one macro may send: a step's command, or its own run's bookkeeping. */

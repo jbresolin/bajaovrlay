@@ -19,6 +19,18 @@ export const ptBR = {
     invalidSampleRequest: 'A requisição de exemplo é inválida.',
     // A body sent as JSON that cannot be parsed at all (cut off, or not JSON).
     malformedJsonBody: 'O corpo da requisição não é JSON válido.',
+    // The command API (BAJAOVRLAY-28) with BAJAOVRLAY_API_TOKENS unset: it says how to turn it on.
+    apiTurnedOff:
+      'API de comandos desligada: defina BAJAOVRLAY_API_TOKENS, ou BAJAOVRLAY_API_OPEN=true numa rede só do estúdio.',
+    // A request to the command API with no token, a wrong one, or another scheme than Bearer.
+    apiTokenRefused: 'Token de API ausente ou errado: envie Authorization: Bearer <token>.',
+    // POST /take-next with no rundown at all: the server seeds one, so only a damaged
+    // database could leave none.
+    noRundownToTakeFrom: 'Não há rundown no servidor para tomar o próximo item.',
+    // POST /api/v1/commands with a body not sent as JSON (a form, plain text, no header).
+    commandBodyNotJson: 'Envie o comando como JSON: Content-Type: application/json.',
+    // POST /api/v1/commands with a body over 256 KB, refused before it is read in full.
+    commandBodyTooLarge: 'O comando passa de 256 KB; um comando nunca precisa de tanto.',
   },
   // Answers to commands and WebSocket messages; each goes with a stable code
   // (CommandErrorCodeSchema in @bajaovrlay/shared).
@@ -124,6 +136,12 @@ export const ptBR = {
   // named by its name when the server has it, and by id when it was not found.
   quickFirePanelErrors: {
     panelNotFound: (panelId: string) => `O painel de atalhos "${panelId}" não existe.`,
+    // fire-shortcut/<panelId>/<n> of the command API with no button n (BAJAOVRLAY-28);
+    // `buttonNumberAsSent` is the URL's text, which may be no number at all.
+    buttonNotFound: (panelName: string, buttonNumberAsSent: string, numberOfButtons: number) =>
+      numberOfButtons === 0
+        ? `O painel "${panelName}" não tem botões.`
+        : `O painel "${panelName}" não tem o botão "${buttonNumberAsSent}"; seus botões vão de 1 a ${numberOfButtons}.`,
     panelNotEmpty: (panelName: string, numberOfItems: number) =>
       `O painel "${panelName}" ainda tem ${numberOfItems === 1 ? '1 item' : `${numberOfItems} itens`}. Mova ou exclua os itens dele antes de excluir o painel.`,
     lastPanel: (panelName: string) =>

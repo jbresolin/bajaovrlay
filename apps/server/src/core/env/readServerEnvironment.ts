@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { parseSourceHostAllowlist } from '../../modules/dataSources/index.js';
 import { parsePublicOrigins } from '../../modules/media/index.js';
+import { parseApiTokens } from '../apiAccess/apiTokens.js';
 import { serverLogLevels } from '../logger/createLogger.js';
 
 // Defaults match .env.example, which documents every variable.
@@ -31,6 +32,40 @@ const ServerEnvironmentSchema = z.object({
         return z.NEVER;
       }
       return parsing.allowlist;
+    }),
+  // The devices that may send commands over HTTP (BAJAOVRLAY-28), read here into their
+  // parsed list: unset or blank is the command API off, and an entry that cannot be used
+  // stops the boot. The message names the device or the entry's position, never a token,
+  // since the boot error is printed to the server's log.
+  BAJAOVRLAY_API_TOKENS: z
+    .string()
+    .optional()
+    .transform((text, context) => {
+      const parsing = parseApiTokens(text);
+      if (!parsing.isValid) {
+        context.addIssue({ code: 'custom', message: parsing.problem });
+        return z.NEVER;
+      }
+      return parsing.apiTokens;
+    }),
+  // The command API with no token, for a studio-only network (BAJAOVRLAY-28, item 9). Only
+  // "true" opens it; unset, empty or "false" does not, and any other word ("sim", "1")
+  // stops the boot, since guessing wrong would either open the API or leave buttons dead.
+  BAJAOVRLAY_API_OPEN: z
+    .string()
+    .optional()
+    .transform((text, context) => {
+      if (text === undefined || text === '' || text === 'false') {
+        return false;
+      }
+      if (text === 'true') {
+        return true;
+      }
+      context.addIssue({
+        code: 'custom',
+        message: `"${text}" is not a yes or no: write true or false`,
+      });
+      return z.NEVER;
     }),
   // The addresses of a reverse proxy whose pages may upload images, read here into the
   // list of origins: unset or empty is none, and an entry that is not an http(s) origin

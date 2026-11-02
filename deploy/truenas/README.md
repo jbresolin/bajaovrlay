@@ -56,7 +56,7 @@ deploys):
 BAJAOVRLAY_PUBLIC_ORIGINS=https://<domain>
 ```
 
-Add `BAJAOVRLAY_SOURCE_ALLOWED_HOSTS` and any `BAJAOVRLAY_SOURCE_…` secret the same way
+Add `BAJAOVRLAY_SOURCE_ALLOWED_HOSTS`, `BAJAOVRLAY_API_TOKENS` (buttons, see `docs/buttons.md`; TrueNAS is not the studio network, so not `BAJAOVRLAY_API_OPEN`) and any `BAJAOVRLAY_SOURCE_…` secret the same way
 (`.env.example` says what each is). → **Deploy the stack**.
 
 ## 5. Add the NPM proxy host

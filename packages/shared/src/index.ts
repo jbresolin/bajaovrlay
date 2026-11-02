@@ -100,6 +100,13 @@ export { findStepCounter, type StepCounter } from './steps/stepCounters.js';
 export { type ClearAllCommand, ClearAllCommandSchema } from './commands/clearAll.js';
 // Every command, told apart by `type`; the only way state changes.
 export { type Command, type CommandInput, CommandSchema } from './commands/command.js';
+// Who may send each command: an operator (control page or API token) or only the server.
+export {
+  type CommandSender,
+  commandTypesOnlyTheServerSends,
+  isCommandTypeOfTheOperator,
+  senderOfEachCommandType,
+} from './commands/commandSenders.js';
 
 // WebSocket messages from the server: hello, slice, slices, dataSnapshot, commandResult and time.
 export {
