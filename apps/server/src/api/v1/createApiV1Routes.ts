@@ -1,6 +1,7 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { bodyLimit } from 'hono/body-limit';
 
+import { type ApiTokens, apiTurnedOff } from '../../core/apiAccess/apiTokens.js';
 import type { ErrorAnswerBody } from '../../core/http/errorAnswers.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
 import { ptBR } from '../../core/messages/ptBR.js';
@@ -31,6 +32,7 @@ import {
   readUploadedFile,
   storeUploadedImage,
 } from '../../modules/media/index.js';
+import { mountCommandApiRoutes } from './mountCommandApiRoutes.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
 
 /**
@@ -48,6 +50,10 @@ export function createApiV1Routes(options: {
   sampleRequestTimeoutInMilliseconds?: number | undefined;
   /** DATA_DIR/media, where uploads are written; no upload route when left out. */
   mediaFolder?: string | undefined;
+  /** BAJAOVRLAY_API_TOKENS as read at boot; the command API is off when left out. */
+  apiTokens?: ApiTokens | undefined;
+  /** BAJAOVRLAY_API_OPEN as read at boot: the command API with no token; not open when left out. */
+  isApiOpenToTheNetwork?: boolean | undefined;
   /** BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a proxy's pages that may upload; none when left out. */
   publicOrigins?: readonly string[] | undefined;
 }): OpenAPIHono<ServerAppEnvironment> {
@@ -146,6 +152,14 @@ export function createApiV1Routes(options: {
       return context.json(outcome.answer, 200);
     });
   }
+
+  // The command API (BAJAOVRLAY-28) is always mounted, so with no tokens it answers 403
+  // with how to turn it on rather than 404.
+  mountCommandApiRoutes(apiRoutes, {
+    stateStore: options.stateStore,
+    apiTokens: options.apiTokens ?? apiTurnedOff,
+    isOpenToTheNetwork: options.isApiOpenToTheNetwork ?? false,
+  });
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

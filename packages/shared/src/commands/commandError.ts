@@ -57,6 +57,12 @@ export const CommandErrorCodeSchema = z.enum([
   'STEP_ALREADY_MOVED',
   /** The command names a quick-fire panel that does not exist. */
   'QUICK_FIRE_PANEL_NOT_FOUND',
+  /**
+   * The command API's fire-shortcut/<panelId>/<n> named a button number the panel does
+   * not have (past its last button, 0, or not a number). Answered by that route alone,
+   * before any command is built, so the store never answers it (BAJAOVRLAY-28).
+   */
+  'QUICK_FIRE_BUTTON_NOT_FOUND',
   /** deleteQuickFirePanel named a panel that still has items. */
   'QUICK_FIRE_PANEL_NOT_EMPTY',
   /** deleteQuickFirePanel named the only panel left; there is always at least one. */

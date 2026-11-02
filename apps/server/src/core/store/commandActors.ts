@@ -7,11 +7,14 @@
 // `sistema:macro:<macroId>`, the macro watchdog, `sistema:macro-watchdog`, the poller of
 // each data source, `sistema:fonte:<sourceId>`, the recorder, `sistema:gravador`, the
 // refresher of bound fields, `sistema:vinculos`, the event inbox's detection and runner,
-// `sistema:eventos`, and the media store, `sistema:midia`).
+// `sistema:eventos`, and the media store, `sistema:midia`). A fifth role, `api:<token
+// name>`, signs a command sent over HTTP by a device of the command API (Companion, a
+// Stream Deck, a script; BAJAOVRLAY-28): it stands where an operator stands.
 const rendererRolePrefix = 'renderer:';
 const monitorRolePrefix = 'monitor:';
 const operatorRolePrefix = 'operador:';
 const systemRolePrefix = 'sistema:';
+const apiRolePrefix = 'api:';
 const macroRunnerRolePrefix = 'sistema:macro:';
 const dataSourcePollerRolePrefix = 'sistema:fonte:';
 
@@ -64,6 +67,14 @@ export function buildMonitorActor(connectionId: string): string {
 /** The actor name of an operator's connection (every connection that is not a screen). */
 export function buildOperatorActor(connectionId: string): string {
   return `${operatorRolePrefix}${connectionId}`;
+}
+
+/**
+ * The actor name of a device of the command API, from the name its token has in
+ * BAJAOVRLAY_API_TOKENS (`api:companion`). It names the device, never the token.
+ */
+export function buildApiActor(tokenName: string): string {
+  return `${apiRolePrefix}${tokenName}`;
 }
 
 /** Whether an actor name belongs to a renderer page. */

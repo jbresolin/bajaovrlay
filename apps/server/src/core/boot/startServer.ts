@@ -12,6 +12,7 @@ import {
 import { startEventInboxService } from '../../modules/events/index.js';
 import { buildMediaFolderPath, startMediaService } from '../../modules/media/index.js';
 import { readBuildId } from '../../readBuildId.js';
+import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
 import type { ServerLogger } from '../logger/createLogger.js';
@@ -48,6 +49,16 @@ export type StartServerOptions = {
    * leave it out by mistake: the store (saves), the poller and the sample route get it.
    */
   sourceHostAllowlist: SourceHostAllowlist;
+  /**
+   * BAJAOVRLAY_API_TOKENS as read at boot: the devices that may send commands over HTTP
+   * (BAJAOVRLAY-28). Left out, the command API is off and answers 403.
+   */
+  apiTokens?: ApiTokens | undefined;
+  /**
+   * BAJAOVRLAY_API_OPEN as read at boot: the command API answers calls with no token,
+   * signed `api:rede`, for a studio-only network. Left out: not open.
+   */
+  isApiOpenToTheNetwork?: boolean | undefined;
   /**
    * BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a reverse proxy's addresses whose pages may
    * upload images as well as the server's own. Left out: none (tests, the stream PC).
@@ -170,6 +181,8 @@ async function startServingFromDatabase(
       rendererPageFolder: options.rendererPageFolder,
       sourceHostAllowlist: options.sourceHostAllowlist,
       mediaFolder,
+      apiTokens: options.apiTokens,
+      isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
       publicOrigins: options.publicOrigins,
     });
     httpServer = await listen({
