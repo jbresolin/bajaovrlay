@@ -17,11 +17,14 @@ import tournamentPreset from './torneio.preset.json' with { type: 'json' };
 /** The Baja app's public results API, the address the presets read unless told otherwise. */
 export const bajaAppApiAddress = 'https://api.bajasaebrasil.net';
 
-/** What a simulated race is refused with until "Aceitar corrida simulada" is ticked. */
-export const simulatedRaceRefusalMessage = readRefusalMessageOfFirstMapping(racePreset);
+/**
+ * What a simulated race is refused with until "Aceitar corrida simulada" is ticked: the
+ * race preset's positions refuse it, its session refuses a clock state it does not know.
+ */
+export const simulatedRaceRefusalMessage = readRefusalMessageOfShape(racePreset, 'positions');
 
 /** What a results table is refused with while its organisers hide the positions. */
-export const spoilersRefusalMessage = readRefusalMessageOfFirstMapping(resultsTablePreset);
+export const spoilersRefusalMessage = readRefusalMessageOfShape(resultsTablePreset, 'standings');
 
 /**
  * The score parts the results table preset proposes: the overall table's ("Geral"), as
@@ -66,8 +69,13 @@ export type BajaAppBracketParameters = BajaAppAddressParameters & {
 
 /**
  * The race (corrida.php) as a session and positions, the names joined from the event's
- * teams (equipes.php, fetched every 10 minutes). A simulated race is refused unless
- * `acceptsSimulatedRace`, in which case the refusal is taken off both mappings.
+ * teams (equipes.php, fetched every 10 minutes). A clock state the preset does not know is
+ * always refused. A simulated race is refused unless `acceptsSimulatedRace`, in which case
+ * that one refusal (the positions') is taken off.
+ *
+ * What could go wrong: any refusal fails the whole poll, so the simulation refusal on the
+ * positions also keeps a simulated session off air; an operator who deletes the positions
+ * mapping in the flex form loses it with them.
  */
 export function buildBajaAppRaceSourceConfig(parameters: BajaAppRaceParameters): HttpJsonConfig {
   const filledPreset = fillPresetPlaceholders(racePreset, {
@@ -79,12 +87,15 @@ export function buildBajaAppRaceSourceConfig(parameters: BajaAppRaceParameters):
   if (!parameters.acceptsSimulatedRace) {
     return config;
   }
-  const mappingsWithoutTheRefusal = config.mappings.map((mapping) => {
+  const mappingsWithoutTheSimulationRefusal = config.mappings.map((mapping) => {
+    if (mapping.refuseWhen?.message !== simulatedRaceRefusalMessage) {
+      return mapping;
+    }
     const mappingWithoutTheRefusal = { ...mapping };
     delete mappingWithoutTheRefusal.refuseWhen;
     return mappingWithoutTheRefusal;
   });
-  return HttpJsonConfigSchema.parse({ ...config, mappings: mappingsWithoutTheRefusal });
+  return HttpJsonConfigSchema.parse({ ...config, mappings: mappingsWithoutTheSimulationRefusal });
 }
 
 /**
@@ -120,7 +131,9 @@ export function buildBajaAppResultsTableSourceConfig(
 
 /**
  * A tournament (torneio.php) as brackets: rounds holding matches, a round with a pending
- * or unknown side left out with the rounds after it, the third place moved before the final.
+ * or unknown side left out with the rounds after it, the third place moved before the
+ * final. Names are joined from the teams (equipes.php, every 10 minutes), one lookup per
+ * side, short else full, so an event without short names still maps (gate 2 of PR #38).
  */
 export function buildBajaAppBracketSourceConfig(
   parameters: BajaAppBracketParameters,
@@ -146,13 +159,15 @@ function writeAddressWithoutTheLastSlash(address: string): string {
   return address.trim().replace(/\/+$/, '');
 }
 
-/** The refusal sentence a preset file writes on its first mapping, read once at load. */
-function readRefusalMessageOfFirstMapping(preset: {
-  mappings: Array<{ refuseWhen?: { message: string } }>;
-}): string {
-  const message = preset.mappings[0]?.refuseWhen?.message;
+/** The refusal sentence a preset file writes on one shape's mapping, read once at load. */
+function readRefusalMessageOfShape(
+  preset: { mappings: Array<{ shapeKey: string; refuseWhen?: { message: string } }> },
+  shapeKey: string,
+): string {
+  const mapping = preset.mappings.find((candidate) => candidate.shapeKey === shapeKey);
+  const message = mapping?.refuseWhen?.message;
   if (message === undefined) {
-    throw new Error('a Baja app preset lost the refusal sentence of its first mapping');
+    throw new Error(`a Baja app preset lost the refusal sentence of its ${shapeKey} mapping`);
   }
   return message;
 }

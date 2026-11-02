@@ -13,7 +13,10 @@
  *     to the race's own names; before the start it is a stopped clock at 0:00.
  *   - A simulated race is refused with its sentence unless "Aceitar corrida simulada" is
  *     ticked.
- *   - A word the API adds later to the clock's state or a car's status still maps.
+ *   - Each of the four clock states maps to its flag; a state the API adds later is refused
+ *     with a sentence naming it (gate 2 of PR #38: a flag race control never called must
+ *     not reach air), simulation accepted or not; a car status it adds later maps to
+ *     running.
  *
  * What these tests deliberately do not cover:
  *   - The other presets and the parameters: bajaAppPresets.test.ts.
@@ -145,46 +148,87 @@ describe('the race preset', () => {
     expect(describeCarsOf(shapes), 'its three cars').toHaveLength(3);
   });
 
-  const newWordScenarios = [
-    // The contract says the clock's word list may grow: a new word must not break the poll.
-    {
-      name: 'maps a clock state the API adds later to a yellow flag, the clock held',
-      change: (race: Record<string, unknown>) => {
-        (race.clock as Record<string, unknown>).state = 'suspended';
-      },
-      check: (shapes: Record<string, unknown> | undefined) => {
-        expect(shapes?.session, 'an unknown state reads as caution').toMatchObject({
-          state: 'yellow',
-          clock: { running: false },
-        });
-      },
+  const knownStateScenarios = [
+    // Before the start: the clock waits.
+    { clockState: 'waiting', expectedState: 'pre', isClockRunning: false },
+    // Racing: the green flag.
+    { clockState: 'running', expectedState: 'green', isClockRunning: true },
+    // An endurance race's clock keeps running through a red flag.
+    { clockState: 'red_flag', expectedState: 'red', isClockRunning: true },
+    // Over: the clock stops.
+    { clockState: 'finished', expectedState: 'finished', isClockRunning: false },
+  ];
+
+  it.each(knownStateScenarios)(
+    'maps the clock state "$clockState" to "$expectedState"',
+    ({ clockState, expectedState, isClockRunning }) => {
+      // Arrange: the doc's race in this row's state, and the 26BR teams.
+      const responses = {
+        corrida: buildDocRaceWith((race) => {
+          (race.clock as Record<string, unknown>).state = clockState;
+        }),
+        equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+      };
+
+      // Act: map and validate.
+      const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(), responses);
+
+      // Assert: the session's state and its clock as this row says.
+      expect(problems, 'a known state must map with no problem').toEqual([]);
+      expect(shapes?.session, 'the state and the clock of this row').toMatchObject({
+        state: expectedState,
+        clock: { running: isClockRunning },
+      });
     },
-    // The same for a car's status: a car still listed is taken as still in the race.
+  );
+
+  const unknownStateScenarios = [
+    // The preset as it ships.
+    { name: 'refuses a clock state the API adds later, naming it', acceptsSimulatedRace: false },
+    // "Aceitar corrida simulada" takes off the simulation's refusal only, never this one.
     {
-      name: 'maps a car status the API adds later to running',
-      change: (race: Record<string, unknown>) => {
-        const cars = race.cars as Array<Record<string, unknown>>;
-        (cars[1] as Record<string, unknown>).status = 'penalized';
-      },
-      check: (shapes: Record<string, unknown> | undefined) => {
-        const positions = shapes?.positions as { entries: Array<Record<string, unknown>> };
-        expect(positions.entries[1]?.status, 'an unknown status reads as running').toBe('running');
-      },
+      name: 'still refuses a clock state it does not know once the simulation is accepted',
+      acceptsSimulatedRace: true,
     },
   ];
 
-  it.each(newWordScenarios)('$name', ({ change, check }) => {
-    // Arrange: the doc's race with this row's new word, and the 26BR teams.
+  it.each(unknownStateScenarios)('$name', ({ acceptsSimulatedRace }) => {
+    // Arrange: the doc's race in a state the preset does not know, and the 26BR teams.
     const responses = {
-      corrida: buildDocRaceWith(change),
+      corrida: buildDocRaceWith((race) => {
+        (race.clock as Record<string, unknown>).state = 'suspended';
+      }),
+      equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+    };
+
+    // Act: map and validate.
+    const config = buildRaceConfigOf26BREnduro(acceptsSimulatedRace);
+    const { problems, shapes } = mapAndValidate(config, responses);
+
+    // Assert: no shape, so no flag a race control never called reaches air; the sentence
+    // names the word, for the preset to learn it.
+    expect(shapes, 'no shape may come from a state the preset does not know').toBeUndefined();
+    expect(problems, 'the sentence names the word').toEqual([
+      'Estado de corrida desconhecido: "suspended". Atualize o preset da fonte.',
+    ]);
+  });
+
+  it('maps a car status the API adds later to running', () => {
+    // Arrange: the doc's race with a status the preset does not know on car 22.
+    const responses = {
+      corrida: buildDocRaceWith((race) => {
+        const cars = race.cars as Array<Record<string, unknown>>;
+        (cars[1] as Record<string, unknown>).status = 'penalized';
+      }),
       equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
     };
 
     // Act: map and validate.
     const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(), responses);
 
-    // Assert: no problem, and the word mapped as this row says.
-    expect(problems, 'a new word must not fail the poll').toEqual([]);
-    check(shapes);
+    // Assert: a car still listed is taken as still in the race.
+    expect(problems, 'a new status must not fail the poll').toEqual([]);
+    const positions = shapes?.positions as { entries: Array<Record<string, unknown>> };
+    expect(positions.entries[1]?.status, 'an unknown status reads as running').toBe('running');
   });
 });

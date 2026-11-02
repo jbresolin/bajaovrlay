@@ -17,11 +17,14 @@ What a mapping can do, generic on purpose (no source's word is written in this c
 `flexLookups.ts`); **nested lists** (`nestedEntriesPath`, rules read the outer element with
 `fromParent`; `flexEntryElements.ts`); **table columns** (a cell read by its column's header,
 standings' parts from picked headers; `flexTableColumns.ts`); **refusal by a flag**
-(`refuseWhen`: the poll fails with the operator's sentence, the last snapshot stays;
+(`refuseWhen`: a value equal to `equals`, or found and none of `notOneOf`; the poll fails
+with the operator's sentence, `{valor}` in it the value read, and the last snapshot stays;
 `flexRefusalFlag.ts`); **gaps from laps** (`workOutGapsFromLaps` with `lastPassAtMs`; the gaps
 are as of the last line crossing; `gapsFromLaps.ts`); **brackets** grouped into rounds, the
 first incomplete round left out with the rounds after it (an incomplete third place alone)
-and a third place after the final moved before it (`bracketRoundsContracts.ts`).
+and a third place after the final moved before it (`bracketRoundsContracts.ts`); a lone car
+on the B side moved to A, and a one-car match a W.O. when the mapping reads a carB but says
+nothing of one (`bracketRoundsOfMappedMatches.ts`).
 **Every text written is cleaned up** for every flex source: HTML entities decoded, spaces
 collapsed, ends trimmed (`sourceTextCleanup.ts`); text that cleans up to nothing is left
 out. A disqualified team's mapped rank is dropped.

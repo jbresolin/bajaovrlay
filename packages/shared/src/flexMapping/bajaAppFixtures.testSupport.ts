@@ -6,7 +6,12 @@ import { readFileSync } from 'node:fs';
 export const bajaAppFixtureFiles = {
   teams26BR: 'equipes-26BR.json',
   teams26SE: 'equipes-26SE.json',
+  teams25SU: 'equipes-25SU.json',
   overall26BR: 'resultado-26BR_GER.json',
+  enduroTable26BR: 'resultado-26BR_END.json',
+  staticSafetyTableRankingNobody26BR: 'resultado-26BR_SGE.json',
+  enduroTableWithANullHeader26BR: 'resultado-26BR_END-null-header.made-up.json',
+  enduroTableWithNoRankingColumn26BR: 'resultado-26BR_END-no-ranking-column.made-up.json',
   overallDuringSpoilers25SU: 'resultado-25SU_GER-spoilers.from-doc.json',
   superPrime26BR: 'torneio-26BR_SPR.json',
   superPrime25SU: 'torneio-25SU_SPR.json',

@@ -20,6 +20,9 @@
  *   - Lenient where real tables are (gate 2 of PR #30), the shape staying strict: a plain
  *     match's wins (a column default of 0) are dropped, and so is a carB with no car number
  *     (a bye's row filling only its win column), so the snapshot is not refused for them.
+ *     A bye drawn on the first slot leaves its team on the B side: it moves to A, and a
+ *     match left with one car is a W.O. when the mapping says nothing of it (gate 2 of
+ *     PR #38), as the shape requires of a bye.
  *
  * What these tests deliberately do not cover:
  *   - The general rules of a mapping (missing paths, problem lists, list order);
@@ -295,6 +298,42 @@ describe('applyFlexMapping into brackets', () => {
         walkover: true,
         winnerCarNumber: 17,
         carA: { carNumber: 17, teamName: 'Bombaja', schoolName: 'UFSM' },
+      },
+    ]);
+  });
+
+  it('moves a lone car on the B side to A, and makes a one-car match a W.O. when none is mapped', () => {
+    // Arrange: a bye drawn on the first slot (the Baja app may put it on either side), the
+    // team on the second, and no "wo" written, as a source that only marks byes by slot.
+    const response = {
+      partidas: [
+        {
+          id: 'J113',
+          rodada: 1,
+          melhorDe: null,
+          slot1: { kind: 'bye' },
+          slot2: buildTeamSlot(4, 'Sinuelo', 'FAHOR'),
+          vencedor: 4,
+        },
+      ],
+    };
+    const mappings = buildTournamentMapping();
+
+    // Act: map it, then validate the brackets exactly as the store does.
+    const result = applyFlexMapping(mappings, { torneio: response }, pollMomentMs);
+    const brackets = result.ok
+      ? (result.shapes.brackets as { rounds: Array<{ matches: unknown[] }> })
+      : undefined;
+    const validation = validateDataShape('brackets', brackets);
+
+    // Assert: valid; car 4 is carA through by W.O., and there is no carB.
+    expect(validation.isValid, 'a bye on the first slot must pass the shape').toBe(true);
+    expect(brackets?.rounds[0]?.matches, 'car 4 alone, by W.O.').toEqual([
+      {
+        matchId: 'J113',
+        walkover: true,
+        winnerCarNumber: 4,
+        carA: { carNumber: 4, teamName: 'Sinuelo', schoolName: 'FAHOR' },
       },
     ]);
   });

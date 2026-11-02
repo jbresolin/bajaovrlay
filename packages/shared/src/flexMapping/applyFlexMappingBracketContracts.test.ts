@@ -71,13 +71,16 @@ function buildTournamentMappingsOf25SU() {
   return config.mappings;
 }
 
-/** Maps a tournament answer with the tournament preset, then validates the brackets. */
+/**
+ * Maps a tournament answer with the tournament preset, its names joined from the real 25SU
+ * teams, then validates the brackets.
+ */
 function mapAndValidateTournament(tournament: unknown) {
-  const result = applyFlexMapping(
-    buildTournamentMappingsOf25SU(),
-    { torneio: tournament },
-    pollMomentMs,
-  );
+  const responses = {
+    torneio: tournament,
+    equipes: readBajaAppFixture(bajaAppFixtureFiles.teams25SU),
+  };
+  const result = applyFlexMapping(buildTournamentMappingsOf25SU(), responses, pollMomentMs);
   const brackets = result.ok ? result.shapes.brackets : undefined;
   const validation = validateDataShape('brackets', brackets);
   const roundNames = result.ok

@@ -17,10 +17,10 @@
  *   - The results table: the real 26BR overall table gives 51 teams, Poli first with
  *     816.24, the parts the operator picked, and cars 46 and 54 unranked at the end; the
  *     doc's 25SU table during spoilers is refused with the spoilers sentence.
- *   - The brackets: the real 25SU and 26BR Super Primes and the made-up pending one pass.
  *
  * What these tests deliberately do not cover:
  *   - The race preset on the race answers: bajaAppRacePreset.test.ts.
+ *   - The tournament preset on the tournament answers: bajaAppTournamentPreset.test.ts.
  *   - Each mapping addition on its own: the applyFlexMapping*.test.ts files.
  *   - The page that picks a preset and saves it: apps/control's bajaAppSource tests.
  *   - Fetching over HTTP: the server's httpJson adapter tests and the e2e walk.
@@ -220,45 +220,5 @@ describe('the results table preset', () => {
       'Resultado com spoilers ativos: a organização esconde as posições agora.',
     ]);
     expect(spoilersRefusalMessage, 'the exported sentence is the one shown').toBe(problems[0]);
-  });
-});
-
-describe('the tournament preset', () => {
-  const bracketScenarios = [
-    // The real 25SU Super Prime: byes, best of 3, the third place listed after the final.
-    {
-      name: 'maps the real 25SU Super Prime, the third place moved before the final',
-      fileName: bajaAppFixtureFiles.superPrime25SU,
-      expectedLastRounds: ['Disputa 3° lugar', 'Final'],
-    },
-    // The real 26BR Super Prime: 64 slots, single races until the semifinals.
-    {
-      name: 'maps the real 26BR Super Prime',
-      fileName: bajaAppFixtureFiles.superPrime26BR,
-      expectedLastRounds: ['Disputa 3° lugar', 'Final'],
-    },
-    // The made-up bracket: the semifinals still running, so the final and third place
-    // have pending sides and are left out until they are known.
-    {
-      name: 'leaves out the made-up bracket’s pending final and third place',
-      fileName: bajaAppFixtureFiles.superPrime25SUWithPendingSlots,
-      expectedLastRounds: ['Quartas de final', 'Semifinais'],
-    },
-  ];
-
-  it.each(bracketScenarios)('$name', ({ fileName, expectedLastRounds }) => {
-    // Arrange: this row's tournament answer.
-    const responses = { torneio: readBajaAppFixture(fileName) };
-
-    // Act: map and validate.
-    const { problems, shapes } = mapAndValidate(buildBracketConfigOf25SU(), responses);
-
-    // Assert: valid brackets, ending with this row's rounds.
-    expect(problems, 'the tournament must map with no problem').toEqual([]);
-    const brackets = shapes?.brackets as { rounds: Array<{ name: string }> };
-    expect(
-      brackets.rounds.slice(-2).map((round) => round.name),
-      'the last two rounds listed',
-    ).toEqual(expectedLastRounds);
   });
 });

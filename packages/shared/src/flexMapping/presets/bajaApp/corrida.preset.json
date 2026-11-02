@@ -20,9 +20,9 @@
       "shapeKey": "session",
       "requestId": "corrida",
       "refuseWhen": {
-        "path": "simulation",
-        "equals": true,
-        "message": "Corrida em modo simulação: marque 'Aceitar corrida simulada' para usar."
+        "path": "clock.state",
+        "notOneOf": ["waiting", "running", "red_flag", "finished"],
+        "message": "Estado de corrida desconhecido: \"{valor}\". Atualize o preset da fonte."
       },
       "fields": [
         { "targetField": "sessionId", "fromPath": "prova_id" },
@@ -34,13 +34,10 @@
           "fromPath": "clock.state",
           "transformId": "mapValues",
           "transformParameters": {
-            "table": {
-              "waiting": "pre",
-              "running": "green",
-              "red_flag": "red",
-              "finished": "finished"
-            },
-            "otherwiseValue": "yellow"
+            "waiting": "pre",
+            "running": "green",
+            "red_flag": "red",
+            "finished": "finished"
           }
         },
         { "targetField": "clock.clockMode", "constantValue": "elapsed" },
