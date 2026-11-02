@@ -35,12 +35,14 @@ export function requireApiAccess(options: {
     // wrong token is still refused, so a device set up with an old token is told so
     // instead of pressing on as "rede".
     if (isOpenToTheNetwork && authorizationHeader === undefined) {
-      context
-        .get('requestLogger')
-        .info(
-          { api_token_name: apiCallerNameWithoutAToken, client_ip: readClientAddress(context) },
-          'api request accepted without a token: the API is open',
-        );
+      // A button's status poll comes every second; its line goes to debug with the rest
+      // of that request (markRequestAsPolledByButtons, BAJAOVRLAY-56). A press stays at info.
+      const level = context.get('isPolledByButtons') === true ? 'debug' : 'info';
+      const requestLogger = context.get('requestLogger');
+      requestLogger[level](
+        { api_token_name: apiCallerNameWithoutAToken, client_ip: readClientAddress(context) },
+        'api request accepted without a token: the API is open',
+      );
       context.set('apiCallerName', apiCallerNameWithoutAToken);
       await next();
       return undefined;
