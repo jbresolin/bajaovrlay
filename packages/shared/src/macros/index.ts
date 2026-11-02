@@ -11,10 +11,10 @@ export { type MacroRun, MacroRunSchema } from './macroRun.js';
 // The `macroStops` slice: where and why a macro's last run stopped at a refused step.
 export {
   type MacroStop,
-  MacroStopSchema,
-  MacroStopsSchema,
   type MacroStoppedAtStep,
   MacroStoppedAtStepSchema,
+  MacroStopSchema,
+  MacroStopsSchema,
 } from './macroStop.js';
 // createMacro: add a macro.
 export { type CreateMacroCommand, CreateMacroCommandSchema } from './createMacro.js';

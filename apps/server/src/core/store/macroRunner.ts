@@ -263,10 +263,7 @@ export function startMacroRunner(options: MacroRunnerOptions): MacroRunner {
     runInProgress.switchWaitingForObs = undefined;
     if (sceneSwitch.status === 'feita') {
       const indexOfTheNextStep = switchWaitingForObs.stepIndex + 1;
-      runInProgress.timerHandle = startTimer(
-        () => runStepsFrom(macroId, indexOfTheNextStep),
-        0,
-      );
+      runInProgress.timerHandle = startTimer(() => runStepsFrom(macroId, indexOfTheNextStep), 0);
       return;
     }
     const stoppedAtStep: MacroStoppedAtStep = {

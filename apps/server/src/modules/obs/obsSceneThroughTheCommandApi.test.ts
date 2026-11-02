@@ -47,7 +47,11 @@ function createAppOnTheStore(stateStore: StateStore) {
 }
 
 /** Sends a POST as Companion does: its token, and a JSON body when there is one. */
-function postAsCompanion(app: ReturnType<typeof createAppOnTheStore>, path: string, body?: unknown) {
+function postAsCompanion(
+  app: ReturnType<typeof createAppOnTheStore>,
+  path: string,
+  body?: unknown,
+) {
   const headers: Record<string, string> = { Authorization: `Bearer ${companionToken}` };
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';

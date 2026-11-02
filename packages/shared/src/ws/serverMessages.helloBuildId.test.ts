@@ -19,8 +19,8 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { ServerMessageSchema } from './serverMessages.js';
 import { obsSliceWithoutObs } from '../obs/obsSlice.js';
+import { ServerMessageSchema } from './serverMessages.js';
 
 /** Every slice empty, as the hello of a fresh database carries them. */
 function buildEverySliceEmpty() {

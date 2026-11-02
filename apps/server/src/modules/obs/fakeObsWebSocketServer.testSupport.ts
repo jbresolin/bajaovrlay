@@ -11,27 +11,30 @@
 // subscribed to their category, as real OBS does. It can also close as OBS does when it
 // quits: every connection drops, and attempts are refused, and counted, until it opens
 // again on the same port.
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import { onTestFinished } from 'vitest';
 import { type WebSocket, WebSocketServer } from 'ws';
 
-// The protocol's numbers (obs-websocket 5.x, docs/generated/protocol.md).
-const helloOpCode = 0;
-const identifyOpCode = 1;
-const identifiedOpCode = 2;
-const eventOpCode = 5;
-const requestOpCode = 6;
-const requestResponseOpCode = 7;
-const authenticationFailedCloseCode = 4009;
-const scenesEventCategory = 4;
-const uiEventCategory = 1024;
-const requestSucceededStatusCode = 100;
-const unknownRequestTypeStatusCode = 204;
-const studioModeNotActiveStatusCode = 506;
-const resourceNotFoundStatusCode = 600;
+import {
+  authenticationFailedCloseCode,
+  eventOpCode,
+  hashPassword,
+  helloOpCode,
+  identifiedOpCode,
+  identifyOpCode,
+  requestOpCode,
+  requestResponseOpCode,
+  requestSucceededStatusCode,
+  resourceNotFoundStatusCode,
+  scenesEventCategory,
+  sendMessage,
+  studioModeNotActiveStatusCode,
+  uiEventCategory,
+  unknownRequestTypeStatusCode,
+} from './fakeObsProtocol.testSupport.js';
 
 /** What the fake OBS starts with. */
 export type FakeObsSetup = {
@@ -230,7 +233,10 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
         return;
       case 'SetCurrentProgramScene':
         if (!sceneNames.includes(sceneName)) {
-          answer(resourceNotFoundStatusCode, `No source was found by the name of \`${sceneName}\`.`);
+          answer(
+            resourceNotFoundStatusCode,
+            `No source was found by the name of \`${sceneName}\`.`,
+          );
           return;
         }
         putSceneOnProgram(sceneName);
@@ -244,7 +250,10 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
           return;
         }
         if (!sceneNames.includes(sceneName)) {
-          answer(resourceNotFoundStatusCode, `No source was found by the name of \`${sceneName}\`.`);
+          answer(
+            resourceNotFoundStatusCode,
+            `No source was found by the name of \`${sceneName}\`.`,
+          );
           return;
         }
         previewSceneName = sceneName;
@@ -382,14 +391,4 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
       isOpen = true;
     },
   };
-}
-
-/** obs-websocket's authentication string: base64(sha256(base64(sha256(password + salt)) + challenge)). */
-function hashPassword(password: string, salt: string, challenge: string): string {
-  const secret = createHash('sha256').update(password + salt).digest('base64');
-  return createHash('sha256').update(secret + challenge).digest('base64');
-}
-
-function sendMessage(socket: WebSocket, op: number, data: unknown): void {
-  socket.send(JSON.stringify({ op, d: data }));
 }

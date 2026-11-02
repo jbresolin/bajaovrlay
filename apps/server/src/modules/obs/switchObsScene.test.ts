@@ -23,10 +23,10 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
-import { createStateStore } from '../../core/store/createStateStore.js';
+import { createRecordingLogger } from '../../core/logger/recordingLogger.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
+import { createStateStore } from '../../core/store/createStateStore.js';
 import {
   operatorActor,
   raceDayObsSetup,
@@ -123,9 +123,7 @@ describe('switchObsScene refused', () => {
         message: 'O OBS não está configurado: defina BAJAOVRLAY_OBS_URL no servidor.',
       },
     });
-    expect(store.readAllSlices().eventLog.at(-1)?.result.status, 'logged as failed').toBe(
-      'failed',
-    );
+    expect(store.readAllSlices().eventLog.at(-1)?.result.status, 'logged as failed').toBe('failed');
   });
 
   const refusalScenarios = [
@@ -166,38 +164,33 @@ describe('switchObsScene refused', () => {
     },
   ];
 
-  it.each(refusalScenarios)(
-    '$name',
-    async ({ setUp, waitsForTheDrop, command, expectedError }) => {
-      // Arrange: connected, then this row's situation (in the table above).
-      const { store, fakeObs } = await startStoreConnectedToFakeObs();
-      setUp(fakeObs);
-      if (waitsForTheDrop) {
-        await waitForTheObsSlice(store, (slice) => slice.connectionState === 'erro');
-      }
-      const requestsBefore = fakeObs.readRequestsReceived().length;
+  it.each(refusalScenarios)('$name', async ({ setUp, waitsForTheDrop, command, expectedError }) => {
+    // Arrange: connected, then this row's situation (in the table above).
+    const { store, fakeObs } = await startStoreConnectedToFakeObs();
+    setUp(fakeObs);
+    if (waitsForTheDrop) {
+      await waitForTheObsSlice(store, (slice) => slice.connectionState === 'erro');
+    }
+    const requestsBefore = fakeObs.readRequestsReceived().length;
 
-      // Act: send the row's switch.
-      const outcome = store.applyCommand(command, operatorActor);
+    // Act: send the row's switch.
+    const outcome = store.applyCommand(command, operatorActor);
 
-      // Assert: refused with the row's reason, logged as failed, nothing asked of OBS.
-      expect(outcome, 'the switch must be refused with its pt-BR reason').toEqual({
-        ok: false,
-        error: expectedError,
-      });
-      const logRow = store.readAllSlices().eventLog.at(-1);
-      expect(logRow?.command, 'the refusal must be logged under its command').toBe(
-        'switchObsScene',
-      );
-      expect(logRow?.result, 'the row must carry the refusal').toEqual({
-        status: 'failed',
-        error: expectedError,
-      });
-      expect(fakeObs.readRequestsReceived().length, 'OBS must not be asked anything').toBe(
-        requestsBefore,
-      );
-    },
-  );
+    // Assert: refused with the row's reason, logged as failed, nothing asked of OBS.
+    expect(outcome, 'the switch must be refused with its pt-BR reason').toEqual({
+      ok: false,
+      error: expectedError,
+    });
+    const logRow = store.readAllSlices().eventLog.at(-1);
+    expect(logRow?.command, 'the refusal must be logged under its command').toBe('switchObsScene');
+    expect(logRow?.result, 'the row must carry the refusal').toEqual({
+      status: 'failed',
+      error: expectedError,
+    });
+    expect(fakeObs.readRequestsReceived().length, 'OBS must not be asked anything').toBe(
+      requestsBefore,
+    );
+  });
 
   it('refuses a switch while OBS has not answered the one before', async () => {
     // Arrange: connected, OBS slow to answer, and a switch to "Pista" waiting.
@@ -206,17 +199,15 @@ describe('switchObsScene refused', () => {
     store.applyCommand({ type: 'switchObsScene', sceneName: 'Pista' }, operatorActor);
 
     // Act: a second press, for "Box", before OBS answered.
-    const outcome = store.applyCommand(
-      { type: 'switchObsScene', sceneName: 'Box' },
-      operatorActor,
-    );
+    const outcome = store.applyCommand({ type: 'switchObsScene', sceneName: 'Box' }, operatorActor);
 
     // Assert: refused, so a macro waiting for "Pista" never reads the answer to "Box".
     expect(outcome, 'one switch at a time').toEqual({
       ok: false,
       error: {
         code: 'OBS_SCENE_SWITCH_PENDING',
-        message: 'O OBS ainda não respondeu à troca para a cena "Pista". Tente de novo em instantes.',
+        message:
+          'O OBS ainda não respondeu à troca para a cena "Pista". Tente de novo em instantes.',
       },
     });
   });
@@ -231,7 +222,10 @@ describe('OBS’s answer when it is not ok', () => {
 
     // Act: switch to "Box", wait for OBS's answer, then switch to "Pista".
     store.applyCommand({ type: 'switchObsScene', sceneName: 'Box' }, operatorActor);
-    const obs = await waitForTheObsSlice(store, (slice) => slice.sceneSwitch?.status === 'recusada');
+    const obs = await waitForTheObsSlice(
+      store,
+      (slice) => slice.sceneSwitch?.status === 'recusada',
+    );
     const failedRow = store.readAllSlices().eventLog.at(-1);
     const nextOutcome = store.applyCommand(
       { type: 'switchObsScene', sceneName: 'Pista' },
@@ -239,7 +233,8 @@ describe('OBS’s answer when it is not ok', () => {
     );
 
     // Assert: the reason in pt-BR on the slice and in the log; the next switch goes.
-    const expectedReason = 'O OBS recusou a troca para a cena "Box": a cena não existe mais no OBS.';
+    const expectedReason =
+      'O OBS recusou a troca para a cena "Box": a cena não existe mais no OBS.';
     expect(obs.sceneSwitch?.refusalReason, 'the reason must say why, in pt-BR').toBe(
       expectedReason,
     );
@@ -268,7 +263,10 @@ describe('OBS’s answer when it is not ok', () => {
     store.applyCommand({ type: 'switchObsScene', sceneName: 'Pista' }, operatorActor);
     await timers.waitForAPendingTimerOf(threeSecondsForOBSToAnswer);
     timers.letTimePass(threeSecondsForOBSToAnswer);
-    const obs = await waitForTheObsSlice(store, (slice) => slice.sceneSwitch?.status === 'recusada');
+    const obs = await waitForTheObsSlice(
+      store,
+      (slice) => slice.sceneSwitch?.status === 'recusada',
+    );
 
     // Assert: refused, saying OBS did not answer in time.
     expect(obs.sceneSwitch?.refusalReason, 'the reason must say OBS took too long').toBe(
@@ -285,7 +283,10 @@ describe('OBS’s answer when it is not ok', () => {
 
     // Act: OBS quits before answering.
     fakeObs.close();
-    const obs = await waitForTheObsSlice(store, (slice) => slice.sceneSwitch?.status === 'recusada');
+    const obs = await waitForTheObsSlice(
+      store,
+      (slice) => slice.sceneSwitch?.status === 'recusada',
+    );
 
     // Assert: refused at once, without waiting the 3 s, saying the connection dropped.
     expect(obs.sceneSwitch?.refusalReason, 'the reason must say the connection dropped').toBe(

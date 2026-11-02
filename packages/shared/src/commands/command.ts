@@ -35,12 +35,12 @@ import {
   DeleteMediaCommandSchema,
   RecordUploadedMediaCommandSchema,
 } from '../media/mediaCommands.js';
-import { CreateLayerCommandSchema } from '../outputs/createLayer.js';
 import {
   RecordObsSceneSwitchAnswerCommandSchema,
   RecordObsStateCommandSchema,
   SwitchObsSceneCommandSchema,
 } from '../obs/obsCommands.js';
+import { CreateLayerCommandSchema } from '../outputs/createLayer.js';
 import { CreateOutputCommandSchema } from '../outputs/createOutput.js';
 import { DeleteLayerCommandSchema } from '../outputs/deleteLayer.js';
 import { DeleteOutputCommandSchema } from '../outputs/deleteOutput.js';

@@ -37,9 +37,7 @@ describe('readServerEnvironment and the OBS variables', () => {
     const environment = readServerEnvironment(environmentVariables);
 
     // Assert: neither is set.
-    expect(environment.BAJAOVRLAY_OBS_URL, 'no address means OBS control is off').toBe(
-      undefined,
-    );
+    expect(environment.BAJAOVRLAY_OBS_URL, 'no address means OBS control is off').toBe(undefined);
     expect(environment.BAJAOVRLAY_OBS_PASSWORD, 'no password is sent').toBe(undefined);
   });
 

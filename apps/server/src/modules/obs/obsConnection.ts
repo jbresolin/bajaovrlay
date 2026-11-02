@@ -2,9 +2,9 @@ import type { CommandInput, ObsSceneSwitch, ObsStatus } from '@bajaovrlay/shared
 import { EventSubscription, OBSWebSocket } from 'obs-websocket-js/json';
 
 import type { ServerLogger } from '../../core/logger/createLogger.js';
+import { ptBR } from '../../core/messages/ptBR.js';
 import { obsConnectionActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
-import { ptBR } from '../../core/messages/ptBR.js';
 import {
   buildConnectedStatusFromObsAnswers,
   describeObsAddress,
@@ -178,7 +178,10 @@ export function startObsConnection(options: ObsConnectionOptions): ObsConnection
     lastError = reason;
     reportWithoutScenes('erro');
     if (!isThisSpellOfFailuresLogged) {
-      logger.warn({ obs_address: address, reason }, 'cannot connect to OBS; trying again every 5 s');
+      logger.warn(
+        { obs_address: address, reason },
+        'cannot connect to OBS; trying again every 5 s',
+      );
       isThisSpellOfFailuresLogged = true;
     }
     planTheNextAttempt();
@@ -253,7 +256,8 @@ export function startObsConnection(options: ObsConnectionOptions): ObsConnection
   /** Sends one request and resolves with OBS's answer, or rejects after 3 s or a drop. */
   function askObs(
     askedSession: ObsSession,
-    requestType: 'GetSceneList' | 'GetStudioModeEnabled' | 'SetCurrentProgramScene' | 'SetCurrentPreviewScene',
+    requestType:
+      'GetSceneList' | 'GetStudioModeEnabled' | 'SetCurrentProgramScene' | 'SetCurrentPreviewScene',
     requestData: { sceneName: string } | undefined,
   ): Promise<unknown> {
     return new Promise((resolve, reject) => {

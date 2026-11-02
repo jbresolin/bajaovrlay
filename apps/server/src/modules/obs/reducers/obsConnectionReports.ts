@@ -44,7 +44,9 @@ export function reduceRecordObsSceneSwitchAnswer(
 ): ReducerOutcome {
   const sceneSwitch = slices.obs.sceneSwitch;
   const isTheSwitchWaitingForThisAnswer =
-    sceneSwitch !== null && sceneSwitch.number === command.number && sceneSwitch.status === 'enviada';
+    sceneSwitch !== null &&
+    sceneSwitch.number === command.number &&
+    sceneSwitch.status === 'enviada';
   if (!isTheSwitchWaitingForThisAnswer) {
     return { status: 'applied', slices };
   }

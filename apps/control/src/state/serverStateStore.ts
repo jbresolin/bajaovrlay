@@ -3,6 +3,7 @@ import {
   type DataSnapshot,
   type DataSnapshotMessage,
   mergeChangedSlicesIntoSlices,
+  obsSliceWithoutObs,
   type SliceMessage,
   type Slices,
 } from '@bajaovrlay/shared';
@@ -63,6 +64,9 @@ export function createServerStateStore(): ServerStateStore {
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    // Until the hello: OBS unknown, shown as "OBS não configurado" for that moment.
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     overrides: [],
@@ -91,6 +95,8 @@ export function createServerStateStore(): ServerStateStore {
         quickFirePanels: slices.quickFirePanels,
         macros: slices.macros,
         macroRuns: slices.macroRuns,
+        macroStops: slices.macroStops,
+        obs: slices.obs,
         dataSources: slices.dataSources,
         dataSnapshots: slices.dataSnapshots,
         overrides: slices.overrides,
@@ -143,6 +149,12 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'macroRuns':
           set({ macroRuns: message.slice });
+          break;
+        case 'macroStops':
+          set({ macroStops: message.slice });
+          break;
+        case 'obs':
+          set({ obs: message.slice });
           break;
         case 'dataSources':
           set({ dataSources: message.slice });

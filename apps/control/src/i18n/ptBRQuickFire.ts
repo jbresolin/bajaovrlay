@@ -47,6 +47,11 @@ export const ptBRQuickFire = {
     runningBadgeWithoutSteps: 'Rodando',
     // After "Parar" was accepted, until the server's runner ends the run.
     stoppingBadge: 'Parando…',
+    // A run that stopped at a refused step (BAJAOVRLAY-27), counted from 1, until the macro
+    // runs again; the server's pt-BR reason follows on hover and for a screen reader.
+    stoppedBadge: (stepNumber: number) => `Parou no passo ${stepNumber}`,
+    stoppedDescription: (stepNumber: number, reason: string) =>
+      `Parou no passo ${stepNumber}: ${reason}`,
     // "Parar" beside a running macro: named with the macro for a screen reader.
     stopMacroButton: (macroLabel: string) => `Parar macro: ${macroLabel}`,
     stopMacroSymbol: 'Parar',
@@ -79,6 +84,8 @@ export const ptBRQuickFire = {
     itemPickerLabel: (stepNumber: number) => `Item do passo ${stepNumber}`,
     layerPickerLabel: (stepNumber: number) => `Camada do passo ${stepNumber}`,
     waitSecondsLabel: (stepNumber: number) => `Espera do passo ${stepNumber} (segundos)`,
+    scenePickerLabel: (stepNumber: number) => `Cena do OBS do passo ${stepNumber}`,
+    obsTargetLabel: (stepNumber: number) => `Saída do OBS do passo ${stepNumber}`,
     removeStepButton: (stepNumber: number) => `Remover passo ${stepNumber}`,
     removeStepSymbol: 'Remover',
     moveStepHandle: (stepNumber: number) => `Mover passo ${stepNumber}`,
@@ -86,8 +93,18 @@ export const ptBRQuickFire = {
       takeItem: 'Pôr item no ar',
       clearLayer: 'Limpar camada',
       clearAll: 'Limpar tudo',
+      obsScene: 'Trocar cena do OBS',
       wait: 'Esperar',
     },
+    // The two outputs of OBS a scene step can switch.
+    obsTargetNames: {
+      program: 'Programa do OBS',
+      preview: 'Prévia do OBS (Modo Estúdio)',
+    },
+    // Under a scene step: no OBS scene list to pick from, and what the macro's Prévia does.
+    noObsScenesPlaceholder: 'Sem cenas: OBS não conectado',
+    obsSceneStepPreviewNote:
+      'A Prévia da macro mostra só as camadas do BajaOvrLay: este passo não troca a cena do OBS na Prévia.',
     // An item in the item picker: its label and where it lives, since two items of
     // different homes may share a label.
     itemOption: (itemLabel: string, homeName: string) => `${itemLabel} (${homeName})`,
@@ -101,6 +118,10 @@ export const ptBRQuickFire = {
       itemMissing: 'Escolha o item deste passo.',
       layerMissing: 'Escolha a camada deste passo.',
       waitInvalid: 'Informe a espera em segundos, de 0,001 a 10 (por exemplo 0,5).',
+      sceneMissing: 'Escolha a cena do OBS deste passo.',
+      sceneGone: (sceneName: string) => `O OBS não tem mais a cena "${sceneName}". Escolha outra.`,
+      obsSceneListEmpty:
+        'O OBS não está conectado, então não há lista de cenas. Conecte o OBS para salvar este passo.',
     },
     // What a screen reader hears while a step is dragged; dnd-kit's own texts are English.
     dragAndDrop: {

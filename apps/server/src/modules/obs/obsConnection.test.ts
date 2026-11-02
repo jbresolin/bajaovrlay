@@ -29,8 +29,8 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { startServer } from '../../core/boot/startServer.js';
 import { buildBootOptions } from '../../core/boot/bootedServer.testSupport.js';
+import { startServer } from '../../core/boot/startServer.js';
 import { committedMigrationsFolder } from '../../core/db/openDatabase.js';
 import { startFakeObs } from './fakeObsWebSocketServer.testSupport.js';
 import {

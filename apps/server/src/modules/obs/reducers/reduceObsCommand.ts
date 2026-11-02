@@ -8,17 +8,12 @@ import type {
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
-import {
-  reduceRecordObsSceneSwitchAnswer,
-  reduceRecordObsState,
-} from './obsConnectionReports.js';
+import { reduceRecordObsSceneSwitchAnswer, reduceRecordObsState } from './obsConnectionReports.js';
 import { reduceSwitchObsScene } from './switchObsScene.js';
 
 /** The three commands of OBS control. */
 export type ObsCommand =
-  | SwitchObsSceneCommand
-  | RecordObsStateCommand
-  | RecordObsSceneSwitchAnswerCommand;
+  SwitchObsSceneCommand | RecordObsStateCommand | RecordObsSceneSwitchAnswerCommand;
 
 /** Sends each OBS command to its reducer; core's reduceCommand calls it. Pure. */
 export function reduceObsCommand(

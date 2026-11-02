@@ -4,8 +4,8 @@
  *
  * What this module is for:
  *   The macro editor shows a list of step rows: a kind ("Pôr item no ar", "Limpar
- *   camada", "Limpar tudo", "Esperar") and, depending on the kind, an item, a layer or a
- *   wait typed in seconds. macroStepDrafts.ts turns those rows into the exact `steps`
+ *   camada", "Limpar tudo", "Trocar cena do OBS", "Esperar") and, depending on the kind,
+ *   an item, a layer, one of OBS's scenes or a wait typed in seconds. macroStepDrafts.ts turns those rows into the exact `steps`
  *   array of createMacro and updateMacro, with one pt-BR message per wrong row, and turns
  *   a stored macro's steps back into rows. Pure functions; no drawing.
  *
@@ -16,6 +16,9 @@
  *   - A wait is typed in seconds, with a comma or a point and up to three decimals, and is
  *     sent in whole milliseconds; outside 1 ms to 10 s, or not a number, it is refused
  *     with a pt-BR message, and so is a row with no item or no layer chosen.
+ *   - A "Trocar cena do OBS" row becomes obsScene with its scene and Program or Preview;
+ *     it is refused with no scene, with a scene OBS no longer lists, and with OBS's list
+ *     empty (OBS not connected), while rows that do not touch OBS still save.
  *   - A stored macro's steps come back as rows that build the very same steps.
  *   - The wait shows in seconds the way an operator writes it ("0,5", not "0.500").
  *
@@ -34,9 +37,19 @@ import {
   type MacroStepDraft,
 } from './macroStepDrafts';
 
+/** The scenes OBS lists on the stream PC, as the obs slice holds them. */
+const scenesOfTheStreamPcObs = ['Pista', 'Box', 'Pódio', 'Intervalo'];
+
 /** A row as the editor holds it; every field present, as a new row has them. */
 function buildDraft(parts: Partial<MacroStepDraft> & Pick<MacroStepDraft, 'draftId' | 'kind'>) {
-  return { itemId: '', layerId: '', waitSecondsText: '', ...parts };
+  return {
+    itemId: '',
+    layerId: '',
+    waitSecondsText: '',
+    sceneName: '',
+    obsTarget: 'program' as const,
+    ...parts,
+  };
 }
 
 describe('buildMacroStepsFromDrafts', () => {
@@ -49,7 +62,7 @@ describe('buildMacroStepsFromDrafts', () => {
     ];
 
     // Act: build the steps.
-    const result = buildMacroStepsFromDrafts(drafts);
+    const result = buildMacroStepsFromDrafts(drafts, scenesOfTheStreamPcObs);
 
     // Assert: the exact array the server stores, in the rows' order.
     expect(result, 'the three rows must become exactly these three steps').toEqual({
@@ -93,6 +106,23 @@ describe('buildMacroStepsFromDrafts', () => {
       draft: buildDraft({ draftId: 'passo-1', kind: 'wait', waitSecondsText: '0,001' }),
       expectedStep: { kind: 'wait', ms: 1 },
     },
+    // "Pista + torre": the scene first; Program unless Preview was chosen.
+    {
+      name: 'a "Trocar cena do OBS" row becomes obsScene with its scene, on Program',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
+      expectedStep: { kind: 'obsScene', sceneName: 'Pista', target: 'program' },
+    },
+    // Studio Mode: the scene lined up on OBS's Preview.
+    {
+      name: 'a "Trocar cena do OBS" row on Preview keeps Preview',
+      draft: buildDraft({
+        draftId: 'passo-1',
+        kind: 'obsScene',
+        sceneName: 'Pódio',
+        obsTarget: 'preview',
+      }),
+      expectedStep: { kind: 'obsScene', sceneName: 'Pódio', target: 'preview' },
+    },
     // The longest wait the server accepts, typed with spaces around it.
     {
       name: 'a wait of " 10 " seconds is 10 000 ms',
@@ -105,7 +135,7 @@ describe('buildMacroStepsFromDrafts', () => {
     // Arrange: the one row, from the table.
 
     // Act: build the steps.
-    const result = buildMacroStepsFromDrafts([draft]);
+    const result = buildMacroStepsFromDrafts([draft], scenesOfTheStreamPcObs);
 
     // Assert: the one expected step.
     expect(result, 'the row must become exactly this step').toEqual({
@@ -157,6 +187,18 @@ describe('buildMacroStepsFromDrafts', () => {
       draft: buildDraft({ draftId: 'passo-1', kind: 'wait', waitSecondsText: 'meio segundo' }),
       expectedMessage: 'Informe a espera em segundos, de 0,001 a 10 (por exemplo 0,5).',
     },
+    // A scene row with nothing picked would switch to nothing.
+    {
+      name: 'refuses a "Trocar cena do OBS" row with no scene',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene' }),
+      expectedMessage: 'Escolha a cena do OBS deste passo.',
+    },
+    // A scene renamed in OBS since the macro was saved: the step would stop the macro.
+    {
+      name: 'refuses a scene OBS no longer lists',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pódio 2025' }),
+      expectedMessage: 'O OBS não tem mais a cena "Pódio 2025". Escolha outra.',
+    },
   ];
 
   it.each(wrongRowScenarios)('$name', ({ draft, expectedMessage }) => {
@@ -164,7 +206,7 @@ describe('buildMacroStepsFromDrafts', () => {
     const drafts = [buildDraft({ draftId: 'passo-0', kind: 'clearAll' }), draft];
 
     // Act: build the steps.
-    const result = buildMacroStepsFromDrafts(drafts);
+    const result = buildMacroStepsFromDrafts(drafts, scenesOfTheStreamPcObs);
 
     // Assert: refused, with the message on the wrong row only.
     expect(result, 'a wrong row must refuse the whole list, naming only that row').toEqual({
@@ -177,7 +219,7 @@ describe('buildMacroStepsFromDrafts', () => {
     // Arrange: no rows.
 
     // Act: build the steps.
-    const result = buildMacroStepsFromDrafts([]);
+    const result = buildMacroStepsFromDrafts([], scenesOfTheStreamPcObs);
 
     // Assert: a valid empty list.
     expect(result, 'no rows must be a valid empty list of steps').toEqual({
@@ -187,14 +229,51 @@ describe('buildMacroStepsFromDrafts', () => {
   });
 });
 
+describe('buildMacroStepsFromDrafts while OBS lists no scene', () => {
+  it('refuses a "Trocar cena do OBS" row, since its scene cannot be checked', () => {
+    // Arrange: a scene row picked while OBS was connected, then OBS closed.
+    const drafts = [
+      buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
+      buildDraft({ draftId: 'passo-2', kind: 'clearAll' }),
+    ];
+
+    // Act: build the steps with OBS's list empty.
+    const result = buildMacroStepsFromDrafts(drafts, []);
+
+    // Assert: refused on the scene row, saying why.
+    expect(result, 'a scene step cannot be saved with OBS’s list empty').toEqual({
+      isValid: false,
+      errorMessageByDraftId: {
+        'passo-1':
+          'O OBS não está conectado, então não há lista de cenas. Conecte o OBS para salvar este passo.',
+      },
+    });
+  });
+
+  it('saves a macro with no scene step as usual', () => {
+    // Arrange: rows without any OBS step.
+    const drafts = [buildDraft({ draftId: 'passo-1', kind: 'clearAll' })];
+
+    // Act: build the steps with OBS's list empty.
+    const result = buildMacroStepsFromDrafts(drafts, []);
+
+    // Assert: OBS's list does not matter to them.
+    expect(result, 'steps that do not touch OBS do not need OBS').toEqual({
+      isValid: true,
+      steps: [{ kind: 'clearAll' }],
+    });
+  });
+});
+
 describe('buildMacroStepDraftsFromSteps', () => {
   it('turns stored steps into rows that build the very same steps', () => {
-    // Arrange: a stored macro's four kinds of step, and a counter for the rows' ids.
+    // Arrange: a stored macro's five kinds of step, and a counter for the rows' ids.
     const storedSteps: MacroStep[] = [
       { kind: 'takeItem', itemId: 'item-relogio-enduro' },
       { kind: 'wait', ms: 1250 },
       { kind: 'clearLayer', layerId: 'lower-third' },
       { kind: 'clearAll' },
+      { kind: 'obsScene', sceneName: 'Pódio', target: 'preview' },
     ];
     let rowsMadeSoFar = 0;
     function createDraftId(): string {
@@ -204,7 +283,7 @@ describe('buildMacroStepDraftsFromSteps', () => {
 
     // Act: turn them into rows, and the rows back into steps.
     const drafts = buildMacroStepDraftsFromSteps(storedSteps, createDraftId);
-    const result = buildMacroStepsFromDrafts(drafts);
+    const result = buildMacroStepsFromDrafts(drafts, scenesOfTheStreamPcObs);
 
     // Assert: each row shows its step (the wait in seconds), and nothing is lost.
     expect(drafts, 'each step must become one row with its own id').toEqual([
@@ -212,6 +291,12 @@ describe('buildMacroStepDraftsFromSteps', () => {
       buildDraft({ draftId: 'passo-2', kind: 'wait', waitSecondsText: '1,25' }),
       buildDraft({ draftId: 'passo-3', kind: 'clearLayer', layerId: 'lower-third' }),
       buildDraft({ draftId: 'passo-4', kind: 'clearAll' }),
+      buildDraft({
+        draftId: 'passo-5',
+        kind: 'obsScene',
+        sceneName: 'Pódio',
+        obsTarget: 'preview',
+      }),
     ]);
     expect(result, 'the rows must build back the stored steps exactly').toEqual({
       isValid: true,

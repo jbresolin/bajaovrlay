@@ -13,9 +13,16 @@ import {
 } from '../../core/logger/recordingLogger.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { createStateStore, type StateStore } from '../../core/store/createStateStore.js';
-import { type FakeObs, type FakeObsSetup, startFakeObs } from './fakeObsWebSocketServer.testSupport.js';
+import {
+  type FakeObs,
+  type FakeObsSetup,
+  startFakeObs,
+} from './fakeObsWebSocketServer.testSupport.js';
 import { type ObsConnection, startObsConnection } from './obsConnection.js';
-import { createTimersMovedByHand, type TimersMovedByHand } from './timersMovedByHand.testSupport.js';
+import {
+  createTimersMovedByHand,
+  type TimersMovedByHand,
+} from './timersMovedByHand.testSupport.js';
 
 /** The operator's actor in these tests: one control page's connection. */
 export const operatorActor = 'operador:conexao-3';

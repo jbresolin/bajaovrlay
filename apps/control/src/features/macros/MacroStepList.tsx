@@ -35,6 +35,8 @@ export type MacroStepListProps = {
   drafts: MacroStepDraft[];
   itemChoices: ItemChoiceForMacroStep[];
   layers: Layer[];
+  /** The scenes OBS lists now, for the scene steps' picker; empty without OBS. */
+  obsSceneNames: string[];
   errorMessageByDraftId: Record<string, string>;
   /** Called with every row, in the new order or with one row changed or removed. */
   onDraftsChanged: (draftsNow: MacroStepDraft[]) => void;
@@ -49,7 +51,8 @@ export type MacroStepListProps = {
  * and never reaches the panic key.
  */
 export function MacroStepList(props: MacroStepListProps) {
-  const { drafts, itemChoices, layers, errorMessageByDraftId, onDraftsChanged } = props;
+  const { drafts, itemChoices, layers, obsSceneNames, errorMessageByDraftId, onDraftsChanged } =
+    props;
   const draftIdsInOrder = drafts.map((draft) => draft.draftId);
 
   const dragSensors = useSensors(
@@ -113,6 +116,7 @@ export function MacroStepList(props: MacroStepListProps) {
               stepNumber={position + 1}
               itemChoices={itemChoices}
               layers={layers}
+              obsSceneNames={obsSceneNames}
               errorMessage={errorMessageByDraftId[draft.draftId]}
               onDraftChanged={replaceDraft}
               onRemovePressed={() => removeDraft(draft.draftId)}

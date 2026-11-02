@@ -31,12 +31,12 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 import { SliceNameSchema, SlicesSchema } from '../slices/slices.js';
 import { SliceMessageSchema } from '../ws/serverMessages.js';
 import { ItemSchema } from './item.js';
 import { ItemColorSchema } from './itemColor.js';
 import { RundownSchema } from './rundown.js';
-import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 
 /** Builds the one rundown the server seeds, with its cursor on the enduro clock item. */
 function buildMainSessionRundown() {

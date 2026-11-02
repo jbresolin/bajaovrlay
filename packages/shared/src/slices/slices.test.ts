@@ -2,14 +2,11 @@
  * State slices (packages/shared)
  *
  * What this module is for:
- *   The server owns all state as thirteen named slices: `layers` (where graphics can go),
- *   `graphics` (what can be shown), `instances` (what is showing now),
- *   `previewClearedLayerIds` (the layers Prévia shows empty because a take will clear
- *   them), `rundowns` and `items` (the planned show), `quickFirePanels` (the grids of
- *   buttons), `macros`, `macroRuns` and `macroStops` (one-press sequences, the one running
- *   now and where a run stopped short), `obs` (OBS's scenes and connection), `dataSources`, `dataSnapshots` and `recordings` (the race data feeds, their last good
- *   data and the recorded feeds) and `eventLog` (the commands that changed something or
- *   were refused, in order). SlicesSchema describes all thirteen; the server checks what
+ *   The server owns all state as named slices, among them `layers`, `graphics`,
+ *   `instances`, `previewClearedLayerIds` (layers Prévia shows empty), `rundowns`,
+ *   `items`, `quickFirePanels`, `macros`, `macroRuns` and `macroStops` (where a run
+ *   stopped short), `obs` (OBS's scenes and connection), `dataSources`, `dataSnapshots`,
+ *   `recordings` and `eventLog`. SlicesSchema describes them all; the server checks what
  *   it stores and sends against it, and the control page and renderer check what they
  *   receive.
  *
@@ -23,7 +20,7 @@
  *     (`statusDetail`), and that reason must be a text.
  *   - A failed event-log entry must carry the error a person reads.
  *   - quickFirePanels, macros, macroRuns, macroStops, obs, previewClearedLayerIds,
- *     dataSources, dataSnapshots and recordings are required like every other slice, the thirteen
+ *     dataSources, dataSnapshots and recordings are required like every other slice, the
  *     slice names come in the server's order, and a slice
  *     message's name decides what it carries for the new slices too.
  *   - A "will be cleared" marker is a layer id: a list of texts, none of them empty.
@@ -117,8 +114,8 @@ function buildRaceDayStateWithTheClockOnAir() {
         isStopRequested: false,
       },
     ],
-    // No macro stopped short yet, and OBS connected with the track scene on Program.
     macroStops: [],
+    // OBS connected, with the track scene on Program.
     obs: {
       connectionState: 'conectado',
       address: 'ws://127.0.0.1:4455',

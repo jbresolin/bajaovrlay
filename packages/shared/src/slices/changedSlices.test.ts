@@ -24,9 +24,9 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 import { ChangedSlicesSchema, mergeChangedSlicesIntoSlices } from './changedSlices.js';
 import type { Slices } from './slices.js';
-import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 
 const clockLayer = {
   id: 'clock',

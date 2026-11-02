@@ -153,9 +153,7 @@ describe('a macro with an obsScene step', () => {
     await waitForTheRunToEnd(store);
 
     // Assert: no tower on air, and the button can say where and why it stopped.
-    expect(store.readAllSlices().instances, 'nothing may go on air after the refusal').toEqual(
-      [],
-    );
+    expect(store.readAllSlices().instances, 'nothing may go on air after the refusal').toEqual([]);
     const macroStop = store.readAllSlices().macroStops[0];
     expect(
       { macroId: macroStop?.macroId, stepIndex: macroStop?.stepIndex, reason: macroStop?.reason },
@@ -184,9 +182,7 @@ describe('a macro with an obsScene step', () => {
     await waitForTheRunToEnd(store);
 
     // Assert: no tower over the wrong scene, and OBS's reason on the button.
-    expect(store.readAllSlices().instances, 'nothing may go on air after the refusal').toEqual(
-      [],
-    );
+    expect(store.readAllSlices().instances, 'nothing may go on air after the refusal').toEqual([]);
     expect(store.readAllSlices().macroStops[0]?.reason, 'the stop must carry OBS’s reason').toBe(
       'O OBS recusou a troca para a cena "Pista": a cena não existe mais no OBS.',
     );

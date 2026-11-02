@@ -29,8 +29,8 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { ServerMessageSchema } from './serverMessages.js';
 import { obsSliceWithoutObs } from '../obs/obsSlice.js';
+import { ServerMessageSchema } from './serverMessages.js';
 
 const lowerThirdLayer = {
   id: 'lower-third',

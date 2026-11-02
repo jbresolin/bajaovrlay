@@ -1,10 +1,10 @@
 /**
  * The step rows of the macro editor, and the exact `steps` they stand for. A row holds
- * every control any kind of step needs (item, layer, wait text), so switching a row's
+ * every control any kind of step needs (item, layer, OBS scene, wait text), so switching a row's
  * kind back and forth loses nothing typed; only what its kind needs is sent. Pure
  * functions, no drawing.
  */
-import { longestMacroWaitMs, type MacroStep } from '@bajaovrlay/shared';
+import { longestMacroWaitMs, type MacroStep, type ObsSceneTarget } from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -19,6 +19,10 @@ export type MacroStepDraft = {
   layerId: string;
   /** The wait of an "Esperar" row, in seconds as typed: "0,5", "2". */
   waitSecondsText: string;
+  /** The scene of a "Trocar cena do OBS" row, as OBS names it; empty while none is chosen. */
+  sceneName: string;
+  /** Which of OBS's outputs a "Trocar cena do OBS" row switches; Program for a new row. */
+  obsTarget: ObsSceneTarget;
 };
 
 /** The outcome of checking the rows: the steps to send, or one message per wrong row. */
@@ -66,8 +70,15 @@ export function formatWaitMillisecondsAsSecondsText(milliseconds: number): strin
   return `${wholeSeconds},${decimalsText}`;
 }
 
-/** The step one row stands for, or the pt-BR message saying what is missing in it. */
-function buildStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: string } {
+/**
+ * The step one row stands for, or the pt-BR message saying what is missing in it. A scene
+ * row is checked against the scenes OBS lists now: with no list (OBS not connected) it
+ * cannot be checked, so it is not saved (BAJAOVRLAY-27).
+ */
+function buildStepFromDraft(
+  draft: MacroStepDraft,
+  obsSceneNames: string[],
+): MacroStep | { errorMessage: string } {
   switch (draft.kind) {
     case 'takeItem':
       return draft.itemId === ''
@@ -79,6 +90,17 @@ function buildStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: 
         : { kind: 'clearLayer', layerId: draft.layerId };
     case 'clearAll':
       return { kind: 'clearAll' };
+    case 'obsScene':
+      if (obsSceneNames.length === 0) {
+        return { errorMessage: fieldErrors.obsSceneListEmpty };
+      }
+      if (draft.sceneName === '') {
+        return { errorMessage: fieldErrors.sceneMissing };
+      }
+      if (!obsSceneNames.includes(draft.sceneName)) {
+        return { errorMessage: fieldErrors.sceneGone(draft.sceneName) };
+      }
+      return { kind: 'obsScene', sceneName: draft.sceneName, target: draft.obsTarget };
     case 'wait': {
       const milliseconds = convertWaitSecondsTextToMilliseconds(draft.waitSecondsText);
       return milliseconds === undefined
@@ -89,15 +111,19 @@ function buildStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: 
 }
 
 /**
- * Builds the `steps` of createMacro or updateMacro from the rows, in the rows' order.
+ * Builds the `steps` of createMacro or updateMacro from the rows, in the rows' order,
+ * checking scene rows against `obsSceneNames` (the obs slice's list, empty without OBS).
  * Every wrong row is reported at once, each with its own message; nothing is built
  * unless every row is right. An empty list is valid: a macro may have no step yet.
  */
-export function buildMacroStepsFromDrafts(drafts: MacroStepDraft[]): MacroStepsFromDrafts {
+export function buildMacroStepsFromDrafts(
+  drafts: MacroStepDraft[],
+  obsSceneNames: string[],
+): MacroStepsFromDrafts {
   const steps: MacroStep[] = [];
   const errorMessageByDraftId: Record<string, string> = {};
   for (const draft of drafts) {
-    const stepOrError = buildStepFromDraft(draft);
+    const stepOrError = buildStepFromDraft(draft, obsSceneNames);
     if ('errorMessage' in stepOrError) {
       errorMessageByDraftId[draft.draftId] = stepOrError.errorMessage;
     } else {
@@ -110,7 +136,15 @@ export function buildMacroStepsFromDrafts(drafts: MacroStepDraft[]): MacroStepsF
 
 /** A new, empty row of the given kind; "+ Passo" adds one of these. */
 export function buildEmptyMacroStepDraft(draftId: string, kind: MacroStep['kind']): MacroStepDraft {
-  return { draftId, kind, itemId: '', layerId: '', waitSecondsText: '' };
+  return {
+    draftId,
+    kind,
+    itemId: '',
+    layerId: '',
+    waitSecondsText: '',
+    sceneName: '',
+    obsTarget: 'program',
+  };
 }
 
 /**
@@ -130,6 +164,8 @@ export function buildMacroStepDraftsFromSteps(
         return { ...draft, layerId: step.layerId };
       case 'clearAll':
         return draft;
+      case 'obsScene':
+        return { ...draft, sceneName: step.sceneName, obsTarget: step.target };
       case 'wait':
         return { ...draft, waitSecondsText: formatWaitMillisecondsAsSecondsText(step.ms) };
     }
