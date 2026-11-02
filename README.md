@@ -8,7 +8,8 @@ contract for how this repository is built, and it summarises the design authorit
 - `apps/renderer` — the page OBS loads as a browser source.
 - `packages/shared` — Zod schemas shared by all of the above.
 - `packages/graphics` — OGraf graphics, one package each.
-- `docs/` — design docs, task briefs and `testing-style.md` (how every test is written).
+- `docs/` — design docs, decisions and `testing-style.md` (how every test is written).
+  Task briefs live only in their Plane work items (project BAJAOVRLAY).
 - `Dockerfile` and `deploy/` — the one image of the whole system and its runbooks (see
   "Deployment" below).
 
