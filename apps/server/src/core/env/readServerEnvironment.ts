@@ -87,7 +87,7 @@ const ServerEnvironmentSchema = z.object({
   // Where OBS's WebSocket server is (BAJAOVRLAY-27), as OBS 32 shows it in Tools →
   // WebSocket Server Settings. Unset or empty: OBS control is off. Anything but a ws://
   // or wss:// address stops the boot, since a wrong one would only show "erro" on race
-  // day; the message quotes the address, which never holds the password.
+  // day; the message quotes the address with any user and password in it masked.
   BAJAOVRLAY_OBS_URL: z
     .string()
     .optional()
@@ -98,7 +98,7 @@ const ServerEnvironmentSchema = z.object({
       if (!isObsWebSocketAddress(text)) {
         context.addIssue({
           code: 'custom',
-          message: `"${text}" is not an obs-websocket address (write it as ws://127.0.0.1:4455)`,
+          message: `"${maskTheUserAndPasswordInAnAddress(text)}" is not an obs-websocket address (write it as ws://127.0.0.1:4455)`,
         });
         return z.NEVER;
       }
@@ -120,6 +120,23 @@ function isObsWebSocketAddress(text: string): boolean {
   const address = new URL(text);
   const isWebSocketScheme = address.protocol === 'ws:' || address.protocol === 'wss:';
   return isWebSocketScheme && address.hostname !== '';
+}
+
+/**
+ * The address with everything between "://" and the last "@" replaced by `***`, so a
+ * boot error never prints a user or password written into it. A text with no "://" is
+ * masked from its start: a malformed address gives no way to tell which part is secret.
+ */
+function maskTheUserAndPasswordInAnAddress(text: string): string {
+  const positionOfTheLastAt = text.lastIndexOf('@');
+  if (positionOfTheLastAt === -1) {
+    return text;
+  }
+  const positionOfTheScheme = text.indexOf('://');
+  const isTheSchemeBeforeTheAt =
+    positionOfTheScheme !== -1 && positionOfTheScheme < positionOfTheLastAt;
+  const keptBeginning = isTheSchemeBeforeTheAt ? text.slice(0, positionOfTheScheme + 3) : '';
+  return `${keptBeginning}***${text.slice(positionOfTheLastAt)}`;
 }
 
 /** The server's settings after validation, with defaults filled in. */

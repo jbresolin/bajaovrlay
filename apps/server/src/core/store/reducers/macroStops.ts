@@ -1,6 +1,6 @@
 // The `macroStops` slice's one rule (BAJAOVRLAY-27): at most one entry per macro, the
-// stop of its last run. Shared by endMacroRun (which sets it), runMacro and deleteMacro
-// (which drop it).
+// stop of its last run. Shared by endMacroRun (which sets it), runMacro, deleteMacro
+// and updateMacro when it changes the steps (which drop it).
 import type { MacroStop } from '@bajaovrlay/shared';
 
 /**

@@ -10,7 +10,8 @@
 // Studio Mode) and the fake sends the events real OBS sends, only to clients that
 // subscribed to their category, as real OBS does. It can also close as OBS does when it
 // quits: every connection drops, and attempts are refused, and counted, until it opens
-// again on the same port.
+// again on the same port. And it can half answer, as a frozen OBS does: take the
+// connection and never say Hello, or let the server in and never answer GetSceneList.
 import { randomBytes } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -18,6 +19,12 @@ import type { AddressInfo } from 'node:net';
 import { onTestFinished } from 'vitest';
 import { type WebSocket, WebSocketServer } from 'ws';
 
+import { type CountWaitedOn, createCountWaitedOn } from './countWaitedOn.testSupport.js';
+import type {
+  FakeObs,
+  FakeObsSetup,
+  RequestReceivedByFakeObs,
+} from './fakeObsControls.testSupport.js';
 import {
   authenticationFailedCloseCode,
   eventOpCode,
@@ -36,65 +43,7 @@ import {
   unknownRequestTypeStatusCode,
 } from './fakeObsProtocol.testSupport.js';
 
-/** What the fake OBS starts with. */
-export type FakeObsSetup = {
-  /** Null: OBS's "Enable Authentication" is off. */
-  password: string | null;
-  /** The scenes as the Scenes panel lists them, top first. */
-  sceneNames: string[];
-  programSceneName: string;
-  isStudioModeOn: boolean;
-  /** Only read while Studio Mode is on. */
-  previewSceneName: string;
-};
-
-/** One request a client sent, as the fake received it. */
-export type RequestReceivedByFakeObs = { requestType: string; requestData: unknown };
-
-/** The fake OBS a test drives, and what it saw. */
-export type FakeObs = {
-  /** `ws://127.0.0.1:<port>`, for BAJAOVRLAY_OBS_URL. */
-  address: string;
-  /** Every request received, in order. */
-  readRequestsReceived: () => RequestReceivedByFakeObs[];
-  /** Resolves once a request of this type was received (at once if one already was). */
-  waitForRequest: (requestType: string) => Promise<void>;
-  /** How many connection attempts were refused while OBS was closed. */
-  countAttemptsRefusedWhileClosed: () => number;
-  /** Resolves once this many attempts were refused while closed (counting from the start). */
-  waitForAttemptsRefusedWhileClosed: (numberOfAttempts: number) => Promise<void>;
-  /** How many clients are identified now. */
-  countIdentifiedClients: () => number;
-  /**
-   * Resolves once no client is connected (at once if none is). A client's own hang-up
-   * ends before OBS's side of the socket has closed, so a test waits for OBS's side.
-   */
-  waitUntilNoClientIsConnected: () => Promise<void>;
-  /** Puts a scene on Program, as clicking it in OBS outside Studio Mode does. */
-  switchProgramSceneByHand: (sceneName: string) => void;
-  /** Lines a scene up on Preview, as clicking it in OBS in Studio Mode does. */
-  switchPreviewSceneByHand: (sceneName: string) => void;
-  /** Renames a scene, as OBS's "Rename" does. */
-  renameSceneByHand: (oldSceneName: string, newSceneName: string) => void;
-  /** Adds a scene at the top of the Scenes panel, as OBS's "+" does. */
-  addSceneByHand: (sceneName: string) => void;
-  /**
-   * Deletes a scene and tells no one, as when it is deleted in the very moment a switch
-   * to it is on its way: the server still lists it, OBS no longer has it.
-   */
-  removeSceneWithoutAnEvent: (sceneName: string) => void;
-  /** Turns Studio Mode on (Preview then shows the Program scene) or off. */
-  setStudioModeByHand: (isStudioModeOn: boolean) => void;
-  /**
-   * From now on, holds back the answer to every scene switch, as an OBS frozen by a heavy
-   * scene would; the switch is still made.
-   */
-  stopAnsweringSceneSwitches: () => void;
-  /** OBS quits: every connection drops and new attempts are refused until reopen(). */
-  close: () => void;
-  /** OBS is started again, on the same port, with the same scenes. */
-  reopen: () => void;
-};
+export type { FakeObs, FakeObsSetup } from './fakeObsControls.testSupport.js';
 
 /** One connected client and what it is allowed to hear. */
 type FakeObsClient = { socket: WebSocket; isIdentified: boolean; eventSubscriptions: number };
@@ -110,10 +59,12 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
   let isStudioModeOn = setup.isStudioModeOn;
   let isOpen = true;
   let isAnsweringSceneSwitches = true;
-  let attemptsRefusedWhileClosed = 0;
-  const waitsForRefusedAttempts: Array<{ numberOfAttempts: number; resolve: () => void }> = [];
+  let isGreetingNewConnections = true;
+  let isAnsweringSceneListReads = true;
+  const attemptsRefusedWhileClosed = createCountWaitedOn();
+  const connectionsLeftWithoutHello = createCountWaitedOn();
   const requestsReceived: RequestReceivedByFakeObs[] = [];
-  const waitsForARequest: Array<{ requestType: string; resolve: () => void }> = [];
+  const requestCountsByType = new Map<string, CountWaitedOn>();
   const clients = new Set<FakeObsClient>();
   const waitsForNoClient: Array<() => void> = [];
 
@@ -129,13 +80,7 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
       // OBS is not running: nothing answers on its port. The attempt is counted, so a
       // test can wait for the server's next try without waiting on the clock.
       networkSocket.destroy();
-      attemptsRefusedWhileClosed += 1;
-      for (const wait of [...waitsForRefusedAttempts]) {
-        if (attemptsRefusedWhileClosed >= wait.numberOfAttempts) {
-          waitsForRefusedAttempts.splice(waitsForRefusedAttempts.indexOf(wait), 1);
-          wait.resolve();
-        }
-      }
+      attemptsRefusedWhileClosed.addOne();
       return;
     }
     webSocketServer.handleUpgrade(request, networkSocket, head, (socket) => {
@@ -162,6 +107,10 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
     socket.on('message', (rawMessage) => {
       answerMessage(client, String(rawMessage), salt, challenge);
     });
+    if (!isGreetingNewConnections) {
+      connectionsLeftWithoutHello.addOne();
+      return;
+    }
     const hello = {
       obsWebSocketVersion: '5.6.3',
       rpcVersion: 1,
@@ -194,14 +143,19 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
       const requestType = String(message.d.requestType);
       const requestData = message.d.requestData ?? {};
       requestsReceived.push({ requestType, requestData });
-      for (const wait of [...waitsForARequest]) {
-        if (wait.requestType === requestType) {
-          waitsForARequest.splice(waitsForARequest.indexOf(wait), 1);
-          wait.resolve();
-        }
-      }
+      readRequestCountOfType(requestType).addOne();
       answerRequest(client, String(message.d.requestId), requestType, requestData);
     }
+  }
+
+  /** The count of requests received of one type, started at 0 the first time it is read. */
+  function readRequestCountOfType(requestType: string): CountWaitedOn {
+    let requestCount = requestCountsByType.get(requestType);
+    if (requestCount === undefined) {
+      requestCount = createCountWaitedOn();
+      requestCountsByType.set(requestType, requestCount);
+    }
+    return requestCount;
   }
 
   /** Carries out one request as OBS would, and answers it. */
@@ -226,6 +180,9 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
     const sceneName = String((requestData as { sceneName?: unknown }).sceneName ?? '');
     switch (requestType) {
       case 'GetSceneList':
+        if (!isAnsweringSceneListReads) {
+          return;
+        }
         answer(requestSucceededStatusCode, null, buildSceneListAnswer());
         return;
       case 'GetStudioModeEnabled':
@@ -322,19 +279,10 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
   return {
     address: `ws://127.0.0.1:${port}`,
     readRequestsReceived: () => [...requestsReceived],
-    waitForRequest: (requestType) => {
-      if (requestsReceived.some((request) => request.requestType === requestType)) {
-        return Promise.resolve();
-      }
-      return new Promise((resolve) => waitsForARequest.push({ requestType, resolve }));
-    },
-    countAttemptsRefusedWhileClosed: () => attemptsRefusedWhileClosed,
-    waitForAttemptsRefusedWhileClosed: (numberOfAttempts) => {
-      if (attemptsRefusedWhileClosed >= numberOfAttempts) {
-        return Promise.resolve();
-      }
-      return new Promise((resolve) => waitsForRefusedAttempts.push({ numberOfAttempts, resolve }));
-    },
+    waitForRequest: (requestType, numberOfRequests = 1) =>
+      readRequestCountOfType(requestType).waitUntilItReaches(numberOfRequests),
+    countAttemptsRefusedWhileClosed: attemptsRefusedWhileClosed.read,
+    waitForAttemptsRefusedWhileClosed: attemptsRefusedWhileClosed.waitUntilItReaches,
     countIdentifiedClients: () => [...clients].filter((client) => client.isIdentified).length,
     waitUntilNoClientIsConnected: () => {
       if (clients.size === 0) {
@@ -382,6 +330,19 @@ export async function startFakeObs(setup: FakeObsSetup): Promise<FakeObs> {
     },
     stopAnsweringSceneSwitches: () => {
       isAnsweringSceneSwitches = false;
+    },
+    stopGreetingNewConnections: () => {
+      isGreetingNewConnections = false;
+    },
+    greetNewConnectionsAgain: () => {
+      isGreetingNewConnections = true;
+    },
+    waitForConnectionsLeftWithoutHello: connectionsLeftWithoutHello.waitUntilItReaches,
+    stopAnsweringSceneListReads: () => {
+      isAnsweringSceneListReads = false;
+    },
+    answerSceneListReadsAgain: () => {
+      isAnsweringSceneListReads = true;
     },
     close: () => {
       isOpen = false;

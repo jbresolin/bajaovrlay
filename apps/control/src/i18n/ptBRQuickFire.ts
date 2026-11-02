@@ -103,6 +103,9 @@ export const ptBRQuickFire = {
     },
     // Under a scene step: no OBS scene list to pick from, and what the macro's Prévia does.
     noObsScenesPlaceholder: 'Sem cenas: OBS não conectado',
+    // On a scene step whose scene OBS does not list now (renamed, or OBS closed). The
+    // macro still saves; the run stops at this step if OBS still lacks the scene then.
+    sceneNotFoundInObsNow: 'Cena não encontrada no OBS agora',
     obsSceneStepPreviewNote:
       'A Prévia da macro mostra só as camadas do BajaOvrLay: este passo não troca a cena do OBS na Prévia.',
     // An item in the item picker: its label and where it lives, since two items of
@@ -119,9 +122,6 @@ export const ptBRQuickFire = {
       layerMissing: 'Escolha a camada deste passo.',
       waitInvalid: 'Informe a espera em segundos, de 0,001 a 10 (por exemplo 0,5).',
       sceneMissing: 'Escolha a cena do OBS deste passo.',
-      sceneGone: (sceneName: string) => `O OBS não tem mais a cena "${sceneName}". Escolha outra.`,
-      obsSceneListEmpty:
-        'O OBS não está conectado, então não há lista de cenas. Conecte o OBS para salvar este passo.',
     },
     // What a screen reader hears while a step is dragged; dnd-kit's own texts are English.
     dragAndDrop: {

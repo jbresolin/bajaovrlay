@@ -14,6 +14,9 @@ export const ptBRObs = {
   unsupportedVersion:
     'Este OBS não fala o obs-websocket 5. Use o OBS 28 ou mais novo (o OBS 32 já traz o servidor WebSocket).',
   connectionDropped: 'A conexão com o OBS caiu. O servidor tenta de novo a cada 5 s.',
+  // OBS took the connection but never greeted it, or let it in and never sent the scenes.
+  answeredOnlyHalfway: (address: string) =>
+    `O OBS em ${address} aceitou a conexão, mas não respondeu a tempo. Confira se o OBS não está travado; o servidor tenta de novo a cada 5 s.`,
   // Refusals of switchObsScene, each with its stable code.
   notConfigured: 'O OBS não está configurado: defina BAJAOVRLAY_OBS_URL no servidor.',
   notConnected: 'O OBS não está conectado. Veja o motivo passando o mouse sobre "OBS" no topo.',
@@ -29,6 +32,10 @@ export const ptBRObs = {
   obsReasons: {
     sceneGone: 'a cena não existe mais no OBS.',
     studioModeOff: 'o Modo Estúdio foi desligado.',
+    // Any other refusal quotes OBS's own comment as OBS writes it, which is in English
+    // ("Your request type is not valid."): obs-websocket has no pt-BR text, and a
+    // translation guessed here could say something OBS did not mean. The sentence around
+    // it stays in pt-BR.
     other: (obsComment: string) => `"${obsComment}".`,
   },
   noAnswerInTime: (sceneName: string) =>

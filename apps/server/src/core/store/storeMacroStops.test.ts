@@ -10,7 +10,8 @@
  * What these tests prove (a real store on a temporary SQLite file):
  *   - endMacroRun with a stop keeps the step, the reason and the moment for that macro.
  *   - endMacroRun without one (run to its end, or "Parar") keeps nothing.
- *   - Pressing the macro again drops its stop; deleting it does too.
+ *   - Pressing the macro again drops its stop; deleting it, or changing its steps, does
+ *     too. A new name or colour keeps it.
  *   - A stop is never saved: a restart starts with none.
  *
  * What these tests deliberately do not cover:
@@ -115,6 +116,16 @@ describe('the macroStops slice', () => {
       name: 'drops the stop when the macro is deleted',
       command: { type: 'deleteMacro', macroId: trackAndTowerMacroId },
     },
+    // The steps were changed (here the scene renamed in OBS and in the step): "Parou no
+    // passo 1" would describe a step that no longer exists as it was.
+    {
+      name: 'drops the stop when the macro’s steps are changed',
+      command: {
+        type: 'updateMacro',
+        macroId: trackAndTowerMacroId,
+        steps: [{ kind: 'obsScene', sceneName: 'Pista 2' }],
+      },
+    },
   ];
 
   it.each(clearingScenarios)('$name', ({ command }) => {
@@ -127,6 +138,24 @@ describe('the macroStops slice', () => {
 
     // Assert: the stop is gone.
     expect(store.readAllSlices().macroStops, 'the stop must go').toEqual([]);
+  });
+
+  it('keeps the stop when only the macro’s name or colour is changed', () => {
+    // Arrange: the macro stopped short once.
+    const store = createStoreWithTheTrackAndTowerMacro();
+    runTheMacroAndStopItAtTheSceneStep(store);
+
+    // Act: the operator renames the button, leaving its steps as they were.
+    store.applyCommand(
+      { type: 'updateMacro', macroId: trackAndTowerMacroId, label: 'Pista + torre (largada)' },
+      operatorActor,
+    );
+
+    // Assert: step 1 is still the step that was refused, so the reason still holds.
+    expect(
+      store.readAllSlices().macroStops.map((macroStop) => macroStop.stepIndex),
+      'a rename leaves the steps, and the stop, as they were',
+    ).toEqual([0]);
   });
 
   it('is never saved: a restart starts with no stop', () => {

@@ -17,8 +17,9 @@
  *     sent in whole milliseconds; outside 1 ms to 10 s, or not a number, it is refused
  *     with a pt-BR message, and so is a row with no item or no layer chosen.
  *   - A "Trocar cena do OBS" row becomes obsScene with its scene and Program or Preview;
- *     it is refused with no scene, with a scene OBS no longer lists, and with OBS's list
- *     empty (OBS not connected), while rows that do not touch OBS still save.
+ *     it is refused only with no scene. A scene OBS does not list now (renamed, or OBS
+ *     not connected) still saves, and the row is flagged for a warning instead: OBS may
+ *     have it again when the macro runs, and the run stops at that step if it does not.
  *   - A stored macro's steps come back as rows that build the very same steps.
  *   - The wait shows in seconds the way an operator writes it ("0,5", not "0.500").
  *
@@ -34,6 +35,7 @@ import {
   buildMacroStepDraftsFromSteps,
   buildMacroStepsFromDrafts,
   formatWaitMillisecondsAsSecondsText,
+  isTheSceneOfTheRowMissingFromObsNow,
   type MacroStepDraft,
 } from './macroStepDrafts';
 
@@ -62,7 +64,7 @@ describe('buildMacroStepsFromDrafts', () => {
     ];
 
     // Act: build the steps.
-    const result = buildMacroStepsFromDrafts(drafts, scenesOfTheStreamPcObs);
+    const result = buildMacroStepsFromDrafts(drafts);
 
     // Assert: the exact array the server stores, in the rows' order.
     expect(result, 'the three rows must become exactly these three steps').toEqual({
@@ -135,7 +137,7 @@ describe('buildMacroStepsFromDrafts', () => {
     // Arrange: the one row, from the table.
 
     // Act: build the steps.
-    const result = buildMacroStepsFromDrafts([draft], scenesOfTheStreamPcObs);
+    const result = buildMacroStepsFromDrafts([draft]);
 
     // Assert: the one expected step.
     expect(result, 'the row must become exactly this step').toEqual({
@@ -193,12 +195,6 @@ describe('buildMacroStepsFromDrafts', () => {
       draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene' }),
       expectedMessage: 'Escolha a cena do OBS deste passo.',
     },
-    // A scene renamed in OBS since the macro was saved: the step would stop the macro.
-    {
-      name: 'refuses a scene OBS no longer lists',
-      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pódio 2025' }),
-      expectedMessage: 'O OBS não tem mais a cena "Pódio 2025". Escolha outra.',
-    },
   ];
 
   it.each(wrongRowScenarios)('$name', ({ draft, expectedMessage }) => {
@@ -206,7 +202,7 @@ describe('buildMacroStepsFromDrafts', () => {
     const drafts = [buildDraft({ draftId: 'passo-0', kind: 'clearAll' }), draft];
 
     // Act: build the steps.
-    const result = buildMacroStepsFromDrafts(drafts, scenesOfTheStreamPcObs);
+    const result = buildMacroStepsFromDrafts(drafts);
 
     // Assert: refused, with the message on the wrong row only.
     expect(result, 'a wrong row must refuse the whole list, naming only that row').toEqual({
@@ -219,7 +215,7 @@ describe('buildMacroStepsFromDrafts', () => {
     // Arrange: no rows.
 
     // Act: build the steps.
-    const result = buildMacroStepsFromDrafts([], scenesOfTheStreamPcObs);
+    const result = buildMacroStepsFromDrafts([]);
 
     // Assert: a valid empty list.
     expect(result, 'no rows must be a valid empty list of steps').toEqual({
@@ -229,39 +225,70 @@ describe('buildMacroStepsFromDrafts', () => {
   });
 });
 
-describe('buildMacroStepsFromDrafts while OBS lists no scene', () => {
-  it('refuses a "Trocar cena do OBS" row, since its scene cannot be checked', () => {
+describe('scene rows OBS does not list now', () => {
+  it('saves a scene row whatever OBS lists, since OBS is only asked when the macro runs', () => {
     // Arrange: a scene row picked while OBS was connected, then OBS closed.
     const drafts = [
       buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
       buildDraft({ draftId: 'passo-2', kind: 'clearAll' }),
     ];
 
-    // Act: build the steps with OBS's list empty.
-    const result = buildMacroStepsFromDrafts(drafts, []);
+    // Act: build the steps (OBS's list is not an input any more).
+    const result = buildMacroStepsFromDrafts(drafts);
 
-    // Assert: refused on the scene row, saying why.
-    expect(result, 'a scene step cannot be saved with OBS’s list empty').toEqual({
-      isValid: false,
-      errorMessageByDraftId: {
-        'passo-1':
-          'O OBS não está conectado, então não há lista de cenas. Conecte o OBS para salvar este passo.',
-      },
+    // Assert: both steps saved as they are.
+    expect(result, 'a scene step saves without OBS').toEqual({
+      isValid: true,
+      steps: [{ kind: 'obsScene', sceneName: 'Pista', target: 'program' }, { kind: 'clearAll' }],
     });
   });
 
-  it('saves a macro with no scene step as usual', () => {
-    // Arrange: rows without any OBS step.
-    const drafts = [buildDraft({ draftId: 'passo-1', kind: 'clearAll' })];
+  const warningScenarios = [
+    // The usual case: OBS has the scene, nothing to warn about.
+    {
+      name: 'no warning for a scene OBS lists',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
+      obsSceneNames: scenesOfTheStreamPcObs,
+      isWarned: false,
+    },
+    // Renamed in OBS since the macro was saved: the run would stop at this step.
+    {
+      name: 'a warning for a scene OBS no longer lists',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pódio 2025' }),
+      obsSceneNames: scenesOfTheStreamPcObs,
+      isWarned: true,
+    },
+    // OBS closed: no list to find the scene in, so the operator is told it was not found.
+    {
+      name: 'a warning for any scene while OBS is not connected',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
+      obsSceneNames: [],
+      isWarned: true,
+    },
+    // Nothing picked yet: the save's own message ("Escolha a cena…") says what to do.
+    {
+      name: 'no warning for a scene row with no scene picked',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene' }),
+      obsSceneNames: [],
+      isWarned: false,
+    },
+    // A row switched away from "Trocar cena do OBS" keeps its scene but sends none.
+    {
+      name: 'no warning for a row of another kind that still holds a scene',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'clearAll', sceneName: 'Pódio 2025' }),
+      obsSceneNames: scenesOfTheStreamPcObs,
+      isWarned: false,
+    },
+  ];
 
-    // Act: build the steps with OBS's list empty.
-    const result = buildMacroStepsFromDrafts(drafts, []);
+  it.each(warningScenarios)('$name', ({ draft, obsSceneNames, isWarned }) => {
+    // Arrange: the row and OBS's list from the table above.
 
-    // Assert: OBS's list does not matter to them.
-    expect(result, 'steps that do not touch OBS do not need OBS').toEqual({
-      isValid: true,
-      steps: [{ kind: 'clearAll' }],
-    });
+    // Act: ask whether the row's scene is missing from OBS now.
+    const result = isTheSceneOfTheRowMissingFromObsNow(draft, obsSceneNames);
+
+    // Assert: warned exactly when a picked scene is not in OBS's list.
+    expect(result, 'the warning must follow OBS’s list').toBe(isWarned);
   });
 });
 
@@ -283,7 +310,7 @@ describe('buildMacroStepDraftsFromSteps', () => {
 
     // Act: turn them into rows, and the rows back into steps.
     const drafts = buildMacroStepDraftsFromSteps(storedSteps, createDraftId);
-    const result = buildMacroStepsFromDrafts(drafts, scenesOfTheStreamPcObs);
+    const result = buildMacroStepsFromDrafts(drafts);
 
     // Assert: each row shows its step (the wait in seconds), and nothing is lost.
     expect(drafts, 'each step must become one row with its own id').toEqual([

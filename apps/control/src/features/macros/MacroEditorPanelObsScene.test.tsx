@@ -12,14 +12,17 @@
  *     on Program, then the take.
  *   - The scene picker offers OBS's scenes in OBS's order.
  *   - The step says the macro's Prévia leaves OBS alone.
- *   - With OBS not connected (no scene list) the picker says so, and a save is refused
- *     on that step with the reason, sending nothing.
+ *   - A stored scene step OBS does not list now (OBS not connected, or the scene renamed
+ *     in OBS) still saves, with "Cena não encontrada no OBS agora" on that step; the
+ *     picker keeps showing the step's scene.
+ *   - With OBS not connected a new scene step has nothing to pick, and the save asks for
+ *     a scene, sending nothing.
  *
  * What these tests deliberately do not cover:
  *   - Every way a scene row becomes a step: macroStepDrafts.test.ts.
  *   - What the server does with the step: apps/server's obsSceneMacroStep.test.ts.
  */
-import { type ObsSlice, obsSliceWithoutObs } from '@bajaovrlay/shared';
+import { type Macro, type ObsSlice, obsSliceWithoutObs } from '@bajaovrlay/shared';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -47,6 +50,32 @@ const obsConnectedOnRaceDay: ObsSlice = {
 function renderNewMacroEditorWithObs(obs: ObsSlice) {
   return renderOnControlPageConnectedToFakeServer(
     <MacroEditorPanel macroBeingEdited={null} onClose={vi.fn<() => void>()} />,
+    { ...buildSlicesWithShortcutsAndMacros(), obs },
+  );
+}
+
+/** OBS on the stream PC after it closed: no scene list, the drop as the last error. */
+const obsClosedOnRaceDay: ObsSlice = {
+  ...obsSliceWithoutObs,
+  connectionState: 'erro',
+  address: 'ws://127.0.0.1:4455',
+  lastError: 'A conexão com o OBS caiu. O servidor tenta de novo a cada 5 s.',
+};
+
+/** "Pista + torre" as saved, its one step switching OBS to `sceneName` on Program. */
+function buildTrackAndTowerMacroSwitchingTo(sceneName: string): Macro {
+  return {
+    id: 'macro-pista-e-torre',
+    label: 'Pista + torre',
+    color: 'success',
+    steps: [{ kind: 'obsScene', sceneName, target: 'program' }],
+  };
+}
+
+/** Draws the editor for a stored macro on a connected page, with OBS as given. */
+function renderStoredMacroEditorWithObs(macroBeingEdited: Macro, obs: ObsSlice) {
+  return renderOnControlPageConnectedToFakeServer(
+    <MacroEditorPanel macroBeingEdited={macroBeingEdited} onClose={vi.fn<() => void>()} />,
     { ...buildSlicesWithShortcutsAndMacros(), obs },
   );
 }
@@ -127,14 +156,59 @@ describe('the "Trocar cena do OBS" step', () => {
     ).toBeVisible();
   });
 
-  it('with OBS not connected, says so in the picker and refuses to save the step', () => {
-    // Arrange: the editor for a new macro, no OBS, with a label and a scene step.
-    const { fakeServer } = renderNewMacroEditorWithObs({
-      ...obsSliceWithoutObs,
-      connectionState: 'erro',
-      address: 'ws://127.0.0.1:4455',
-      lastError: 'A conexão com o OBS caiu. O servidor tenta de novo a cada 5 s.',
+  it('with OBS not connected, saves the stored scene step and warns on it', () => {
+    // Arrange: "Pista + torre" opened for editing while OBS is closed.
+    const { fakeServer } = renderStoredMacroEditorWithObs(
+      buildTrackAndTowerMacroSwitchingTo('Pista'),
+      obsClosedOnRaceDay,
+    );
+
+    // Act: rename the button and save.
+    fireEvent.change(screen.getByLabelText('Rótulo da macro'), {
+      target: { value: 'Pista + torre (largada)' },
     });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar macro' }));
+
+    // Assert: the step warns and keeps its scene, and the save goes through.
+    const stepRow = screen.getByRole('listitem', { name: 'Passo 1' });
+    expect(
+      within(stepRow).getByText('Cena não encontrada no OBS agora'),
+      'the step must warn that OBS does not list its scene now',
+    ).toBeVisible();
+    expect(
+      screen.getByRole('combobox', { name: 'Cena do OBS do passo 1' }),
+      'the picker must still show the step’s scene',
+    ).toHaveTextContent('Pista');
+    expect(fakeServer.listCommandsReceived(), 'the save must not wait for OBS').toEqual([
+      { type: 'updateMacro', macroId: 'macro-pista-e-torre', label: 'Pista + torre (largada)' },
+    ]);
+  });
+
+  it('warns on a stored step whose scene OBS no longer lists, and still saves it', () => {
+    // Arrange: OBS connected, but the macro names "Pódio 2025", since renamed in OBS.
+    const { fakeServer } = renderStoredMacroEditorWithObs(
+      buildTrackAndTowerMacroSwitchingTo('Pódio 2025'),
+      obsConnectedOnRaceDay,
+    );
+
+    // Act: change the colour and save, leaving the step as it is.
+    chooseOption('Cor da macro', 'Atenção');
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar macro' }));
+
+    // Assert: warned before and after the save, and saved with the step untouched.
+    const stepRow = screen.getByRole('listitem', { name: 'Passo 1' });
+    expect(
+      within(stepRow).getByText('Cena não encontrada no OBS agora'),
+      'the step must warn that OBS no longer lists its scene',
+    ).toBeVisible();
+    expect(fakeServer.listCommandsReceived(), 'the save must go through').toEqual([
+      { type: 'updateMacro', macroId: 'macro-pista-e-torre', color: 'warning' },
+    ]);
+  });
+
+  it('with OBS not connected, a new scene step has nothing to pick and asks for a scene', () => {
+    // Arrange: the editor for a new macro, OBS closed, with a label and a scene step.
+    const { fakeServer } = renderNewMacroEditorWithObs(obsClosedOnRaceDay);
     fireEvent.change(screen.getByLabelText('Rótulo da macro'), {
       target: { value: 'Pista + torre' },
     });
@@ -143,16 +217,14 @@ describe('the "Trocar cena do OBS" step', () => {
     // Act: try to save.
     fireEvent.click(screen.getByRole('button', { name: 'Salvar macro' }));
 
-    // Assert: the picker says why it is empty, the step says why it is refused, nothing sent.
+    // Assert: the picker says why it is empty, the step asks for a scene, nothing sent.
     expect(
       screen.getByRole('combobox', { name: 'Cena do OBS do passo 1' }),
       'the picker must say OBS is not connected',
     ).toHaveTextContent('Sem cenas: OBS não conectado');
     expect(
-      screen.getByText(
-        'O OBS não está conectado, então não há lista de cenas. Conecte o OBS para salvar este passo.',
-      ),
-      'the step must say why it cannot be saved',
+      screen.getByText('Escolha a cena do OBS deste passo.'),
+      'the step must ask for a scene',
     ).toBeVisible();
     expect(fakeServer.listCommandsReceived(), 'nothing may be sent').toEqual([]);
   });

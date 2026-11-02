@@ -46,8 +46,8 @@ const colorControlId = 'macro-editor-color';
  * is this editor's own until the save; nothing is sent while the operator types.
  *
  * At "Salvar macro" the label and every row are checked at once, each wrong part with its
- * pt-BR message, and nothing is sent until all pass; a "Trocar cena do OBS" row is checked
- * against the scenes OBS lists now, so it cannot be saved while OBS is not connected. A new macro is sent whole
+ * pt-BR message, and nothing is sent until all pass. A "Trocar cena do OBS" row whose
+ * scene OBS does not list now still saves, with a warning on the row. A new macro is sent whole
  * (`createMacro`); a stored one sends only what changed (`updateMacro`), compared with
  * the macro as it was when the editor opened. The editor closes once the server accepts,
  * and stays open after a refusal, which the strip shows (QuickFireStrip.tsx).
@@ -92,7 +92,7 @@ export function MacroEditorPanel(props: MacroEditorPanelProps) {
   // Answers whether the server accepted; true also when there was nothing to send.
   async function checkThenSend(): Promise<boolean> {
     const isLabelBlank = label.trim() === '';
-    const stepsFromDrafts = buildMacroStepsFromDrafts(drafts, obsSceneNames);
+    const stepsFromDrafts = buildMacroStepsFromDrafts(drafts);
     setIsLabelMissing(isLabelBlank);
     setErrorMessageByDraftId(stepsFromDrafts.isValid ? {} : stepsFromDrafts.errorMessageByDraftId);
     if (isLabelBlank || !stepsFromDrafts.isValid) {

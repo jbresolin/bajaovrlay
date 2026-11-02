@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from 'cn';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,7 +17,7 @@ import { LayerChoiceOptions } from '@/features/outputsAndLayers/LayerChoiceOptio
 import { ptBR } from '@/i18n/ptBR';
 
 import type { ItemChoiceForMacroStep } from './macroStepChoices';
-import type { MacroStepDraft } from './macroStepDrafts';
+import { isTheSceneOfTheRowMissingFromObsNow, type MacroStepDraft } from './macroStepDrafts';
 
 /** What one step row needs. */
 export type MacroStepRowProps = {
@@ -61,6 +62,17 @@ export function MacroStepRow(props: MacroStepRowProps) {
   const { draft, stepNumber, itemChoices, layers, obsSceneNames, errorMessage } = props;
   const hasObsScenes = obsSceneNames.length > 0;
   const errorMessageId = `macro-step-${draft.draftId}-error`;
+  const sceneWarningId = `macro-step-${draft.draftId}-scene-warning`;
+  const isTheSceneMissingFromObs = isTheSceneOfTheRowMissingFromObsNow(draft, obsSceneNames);
+  // A scene OBS does not list now is still offered, after OBS's own, so the picker shows
+  // the step's scene instead of looking empty.
+  const sceneNamesToOffer = isTheSceneMissingFromObs
+    ? [...obsSceneNames, draft.sceneName]
+    : obsSceneNames;
+  const scenePickerDescriptionIds = [
+    errorMessage === undefined ? undefined : errorMessageId,
+    isTheSceneMissingFromObs ? sceneWarningId : undefined,
+  ].filter((descriptionId) => descriptionId !== undefined);
 
   // dnd-kit's hook for one row of a sortable list, as in the rundown (RundownItemRow.tsx).
   // Unlike the rundown, the order lives in the editor until the save, so a drop really
@@ -179,7 +191,11 @@ export function MacroStepRow(props: MacroStepRowProps) {
                 className="flex-1"
                 aria-label={texts.scenePickerLabel(stepNumber)}
                 aria-invalid={errorMessage !== undefined}
-                aria-describedby={errorMessage === undefined ? undefined : errorMessageId}
+                aria-describedby={
+                  scenePickerDescriptionIds.length === 0
+                    ? undefined
+                    : scenePickerDescriptionIds.join(' ')
+                }
               >
                 <SelectValue
                   placeholder={
@@ -188,7 +204,7 @@ export function MacroStepRow(props: MacroStepRowProps) {
                 />
               </SelectTrigger>
               <SelectContent>
-                {obsSceneNames.map((sceneName) => (
+                {sceneNamesToOffer.map((sceneName) => (
                   <SelectItem key={sceneName} value={sceneName}>
                     {sceneName}
                   </SelectItem>
@@ -211,6 +227,11 @@ export function MacroStepRow(props: MacroStepRowProps) {
               </SelectContent>
             </Select>
           </div>
+          {isTheSceneMissingFromObs ? (
+            <Badge id={sceneWarningId} variant="warning" className="w-fit">
+              {texts.sceneNotFoundInObsNow}
+            </Badge>
+          ) : null}
           <p className="text-xs text-muted-foreground">{texts.obsSceneStepPreviewNote}</p>
         </>
       ) : null}

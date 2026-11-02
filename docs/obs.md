@@ -65,7 +65,11 @@ Para conferir: o topo da página de controle mostra **OBS ●** e a cena no Prog
 2. Rótulo: `Pista + torre`. Escolha uma cor.
 3. **+ Passo**, tipo **Trocar cena do OBS**, cena **Pista**, saída **Programa do OBS**.
    A lista de cenas é a do OBS, na ordem do painel Cenas do OBS. Com o OBS desconectado ela
-   fica vazia ("Sem cenas: OBS não conectado") e a macro não pode ser salva com esse passo.
+   fica vazia ("Sem cenas: OBS não conectado"), e um passo novo não tem cena para escolher.
+   Um passo que já tem cena continua com ela e a macro salva normalmente; se o OBS não tiver
+   essa cena agora (desconectado, ou a cena foi renomeada), o passo mostra o aviso **"Cena não
+   encontrada no OBS agora"**. Ao rodar, a macro para nesse passo se o OBS ainda não tiver a
+   cena.
 4. **+ Passo**, tipo **Pôr item no ar**, item da torre de posições.
 5. **Salvar macro**.
 
@@ -85,11 +89,15 @@ só funciona com o Modo Estúdio ligado no OBS.
 
 - O topo passa a mostrar **OBS ● Sem conexão** (ponto vermelho), sem cena nenhuma: o
   BajaOvrLay não afirma uma cena que o OBS pode não estar mostrando. O mouse sobre ele mostra
-  o motivo ("A conexão com o OBS caiu…", "O OBS não respondeu em…", "O OBS recusou a
-  senha…").
+  o motivo ("A conexão com o OBS caiu…", "O OBS não respondeu em…", "O OBS em … aceitou a
+  conexão, mas não respondeu a tempo…", "O OBS recusou a senha…").
 - O servidor tenta de novo **a cada 5 s**, sozinho, enquanto estiver rodando. O log do
   servidor (`docker logs bajaovrlay`) ganha uma linha quando a conexão cai e outra quando ela
   volta, nunca uma por tentativa.
+- A conexão só conta como de volta quando o OBS entrega a lista de cenas. Um OBS travado,
+  que aceita a conexão mas não cumprimenta o servidor ou não manda a lista em 3 s, conta
+  como mais uma tentativa que falhou: o topo continua em **Sem conexão** e o log não ganha
+  uma linha por tentativa.
 - Nada mais para: os gráficos no ar continuam no ar, as fontes de dados continuam, e todo
   comando que não é do OBS funciona normalmente.
 - Uma troca de cena (macro, botão ou API) é recusada na hora com "O OBS não está conectado",

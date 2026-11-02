@@ -72,13 +72,11 @@ export function formatWaitMillisecondsAsSecondsText(milliseconds: number): strin
 
 /**
  * The step one row stands for, or the pt-BR message saying what is missing in it. A scene
- * row is checked against the scenes OBS lists now: with no list (OBS not connected) it
- * cannot be checked, so it is not saved (BAJAOVRLAY-27).
+ * row needs only a scene: whether OBS has it is asked when the macro runs, not here, so a
+ * macro can be edited while OBS is closed (gate 2 of PR #40). The row warns instead
+ * (isTheSceneOfTheRowMissingFromObsNow).
  */
-function buildStepFromDraft(
-  draft: MacroStepDraft,
-  obsSceneNames: string[],
-): MacroStep | { errorMessage: string } {
+function buildStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: string } {
   switch (draft.kind) {
     case 'takeItem':
       return draft.itemId === ''
@@ -91,14 +89,8 @@ function buildStepFromDraft(
     case 'clearAll':
       return { kind: 'clearAll' };
     case 'obsScene':
-      if (obsSceneNames.length === 0) {
-        return { errorMessage: fieldErrors.obsSceneListEmpty };
-      }
       if (draft.sceneName === '') {
         return { errorMessage: fieldErrors.sceneMissing };
-      }
-      if (!obsSceneNames.includes(draft.sceneName)) {
-        return { errorMessage: fieldErrors.sceneGone(draft.sceneName) };
       }
       return { kind: 'obsScene', sceneName: draft.sceneName, target: draft.obsTarget };
     case 'wait': {
@@ -111,19 +103,15 @@ function buildStepFromDraft(
 }
 
 /**
- * Builds the `steps` of createMacro or updateMacro from the rows, in the rows' order,
- * checking scene rows against `obsSceneNames` (the obs slice's list, empty without OBS).
+ * Builds the `steps` of createMacro or updateMacro from the rows, in the rows' order.
  * Every wrong row is reported at once, each with its own message; nothing is built
  * unless every row is right. An empty list is valid: a macro may have no step yet.
  */
-export function buildMacroStepsFromDrafts(
-  drafts: MacroStepDraft[],
-  obsSceneNames: string[],
-): MacroStepsFromDrafts {
+export function buildMacroStepsFromDrafts(drafts: MacroStepDraft[]): MacroStepsFromDrafts {
   const steps: MacroStep[] = [];
   const errorMessageByDraftId: Record<string, string> = {};
   for (const draft of drafts) {
-    const stepOrError = buildStepFromDraft(draft, obsSceneNames);
+    const stepOrError = buildStepFromDraft(draft);
     if ('errorMessage' in stepOrError) {
       errorMessageByDraftId[draft.draftId] = stepOrError.errorMessage;
     } else {
@@ -132,6 +120,19 @@ export function buildMacroStepsFromDrafts(
   }
   const hasAnyWrongRow = Object.keys(errorMessageByDraftId).length > 0;
   return hasAnyWrongRow ? { isValid: false, errorMessageByDraftId } : { isValid: true, steps };
+}
+
+/**
+ * Whether a "Trocar cena do OBS" row names a scene OBS does not list now (`obsSceneNames`,
+ * empty while OBS is not connected). Such a row still saves; it is shown with a warning,
+ * since the run will stop at it unless OBS has the scene by then.
+ */
+export function isTheSceneOfTheRowMissingFromObsNow(
+  draft: MacroStepDraft,
+  obsSceneNames: string[],
+): boolean {
+  const isASceneRowWithASceneChosen = draft.kind === 'obsScene' && draft.sceneName !== '';
+  return isASceneRowWithASceneChosen && !obsSceneNames.includes(draft.sceneName);
 }
 
 /** A new, empty row of the given kind; "+ Passo" adds one of these. */

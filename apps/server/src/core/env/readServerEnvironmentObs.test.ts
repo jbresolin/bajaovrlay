@@ -10,7 +10,8 @@
  *   - Unset, or set to nothing, both read as not set: OBS control is off.
  *   - The address OBS 32 shows in its WebSocket Server Settings is read as given.
  *   - An address that is not ws:// or wss:// stops the boot, naming the variable.
- *   - The boot's error never repeats the password.
+ *   - The boot’s error never repeats the password, not even one written into the address
+ *     (user and password masked as `***`).
  *
  * What these tests deliberately do not cover:
  *   - What the connection does with them; modules/obs/obsConnection.test.ts.
@@ -84,4 +85,46 @@ describe('readServerEnvironment and the OBS variables', () => {
       'senha-do-obs-pista-2026',
     );
   });
+
+  const addressesWithAUserAndPasswordScenarios = [
+    // A password written into the address, the way some tools take it, with the wrong
+    // scheme: the boot error must show where, never the user and password.
+    {
+      name: 'masks a user and password written into an address with the wrong scheme',
+      writtenAddress: 'http://operador:senha-do-obs-pista-2026@127.0.0.1:4455',
+      addressInTheError: '"http://***@127.0.0.1:4455"',
+    },
+    // So malformed that it is not an address at all: everything before the "@" is
+    // masked, since the boot cannot tell which part is the password.
+    {
+      name: 'masks everything before the "@" of a text that is not an address',
+      writtenAddress: 'ws//operador:senha-do-obs-pista-2026@127.0.0.1:4455',
+      addressInTheError: '"***@127.0.0.1:4455"',
+    },
+  ];
+
+  it.each(addressesWithAUserAndPasswordScenarios)(
+    '$name',
+    ({ writtenAddress, addressInTheError }) => {
+      // Arrange: the row's address (in the table above).
+      const environmentVariables = { BAJAOVRLAY_OBS_URL: writtenAddress };
+
+      // Act: read the environment, keeping what it throws.
+      let bootError = '';
+      try {
+        readServerEnvironment(environmentVariables);
+      } catch (thrown) {
+        bootError = String(thrown);
+      }
+
+      // Assert: the error quotes the address masked, and the password appears nowhere.
+      expect(bootError, 'the boot must quote the address with its user masked').toContain(
+        `${addressInTheError} is not an obs-websocket address`,
+      );
+      expect(bootError, 'the password inside the address must never be printed').not.toContain(
+        'senha-do-obs-pista-2026',
+      );
+      expect(bootError, 'the user inside the address is masked too').not.toContain('operador');
+    },
+  );
 });
