@@ -26,6 +26,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ChangedSlicesSchema, mergeChangedSlicesIntoSlices } from './changedSlices.js';
 import type { Slices } from './slices.js';
+import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 
 const clockLayer = {
   id: 'clock',
@@ -69,6 +70,8 @@ function createSlicesWithClockLayerAndInstances(instances: Slices['instances']):
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

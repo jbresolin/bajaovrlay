@@ -170,6 +170,8 @@ export * from './quickFire/index.js';
 
 // Macros: steps, the macros and macroRuns slices, and the six macro commands.
 export * from './macros/index.js';
+// OBS control (BAJAOVRLAY-27): the obs slice and its three commands.
+export * from './obs/index.js';
 
 // The preview output: previewItem, stopPreview, takePreview,
 // previewClearLayer, takeAllPreviews and previewMacro.

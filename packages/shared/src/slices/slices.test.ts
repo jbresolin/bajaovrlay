@@ -6,8 +6,8 @@
  *   `graphics` (what can be shown), `instances` (what is showing now),
  *   `previewClearedLayerIds` (the layers Prévia shows empty because a take will clear
  *   them), `rundowns` and `items` (the planned show), `quickFirePanels` (the grids of
- *   buttons), `macros` and `macroRuns` (one-press sequences and the one running now),
- *   `dataSources`, `dataSnapshots` and `recordings` (the race data feeds, their last good
+ *   buttons), `macros`, `macroRuns` and `macroStops` (one-press sequences, the one running
+ *   now and where a run stopped short), `obs` (OBS's scenes and connection), `dataSources`, `dataSnapshots` and `recordings` (the race data feeds, their last good
  *   data and the recorded feeds) and `eventLog` (the commands that changed something or
  *   were refused, in order). SlicesSchema describes all thirteen; the server checks what
  *   it stores and sends against it, and the control page and renderer check what they
@@ -22,8 +22,8 @@
  *   - An instance may be `failed` and carry the reason the renderer gave
  *     (`statusDetail`), and that reason must be a text.
  *   - A failed event-log entry must carry the error a person reads.
- *   - quickFirePanels, macros, macroRuns, previewClearedLayerIds, dataSources,
- *     dataSnapshots and recordings are required like every other slice, the thirteen
+ *   - quickFirePanels, macros, macroRuns, macroStops, obs, previewClearedLayerIds,
+ *     dataSources, dataSnapshots and recordings are required like every other slice, the thirteen
  *     slice names come in the server's order, and a slice
  *     message's name decides what it carries for the new slices too.
  *   - A "will be cleared" marker is a layer id: a list of texts, none of them empty.
@@ -117,6 +117,18 @@ function buildRaceDayStateWithTheClockOnAir() {
         isStopRequested: false,
       },
     ],
+    // No macro stopped short yet, and OBS connected with the track scene on Program.
+    macroStops: [],
+    obs: {
+      connectionState: 'conectado',
+      address: 'ws://127.0.0.1:4455',
+      lastError: null,
+      sceneNames: ['Pista', 'Box', 'Pódio'],
+      programSceneName: 'Pista',
+      isStudioModeOn: false,
+      previewSceneName: null,
+      sceneSwitch: null,
+    },
     // No data source, snapshot or recording: dataSources.test.ts covers those slices.
     dataSources: [],
     dataSnapshots: [],
@@ -242,6 +254,10 @@ describe('SlicesSchema', () => {
     { name: 'refuses a state without the macros slice', sliceLeftOut: 'macros' },
     // Without the runs a running macro's button would look idle.
     { name: 'refuses a state without the macroRuns slice', sliceLeftOut: 'macroRuns' },
+    // Without the stops a macro that stopped short would look as if it had run to its end.
+    { name: 'refuses a state without the macroStops slice', sliceLeftOut: 'macroStops' },
+    // Without OBS's slice the tally would have nothing to say, not even "não configurado".
+    { name: 'refuses a state without the obs slice', sliceLeftOut: 'obs' },
     // Without the sources the "Fontes" page would claim there are none.
     { name: 'refuses a state without the dataSources slice', sliceLeftOut: 'dataSources' },
     // Without the snapshots the source detail would show no data at all.
@@ -276,7 +292,7 @@ describe('SliceNameSchema', () => {
   it('lists every slice in the order the server lists them, the newest ones included', () => {
     // Arrange: the slice names; the "will be cleared" markers and the bindings of each
     // instance right after the instances they speak about, quick-fire panels and macros
-    // after the items, and the data sources, their snapshots, the operator's corrections
+    // after the items with the macros' stops and OBS after them, and the data sources, their snapshots, the operator's corrections
     // of them and the recordings, then the event inbox's events and rules, then the
     // entity library (teams, people, sponsors and the schedule) and its images, just
     // before the event log.
@@ -292,6 +308,8 @@ describe('SliceNameSchema', () => {
       'quickFirePanels',
       'macros',
       'macroRuns',
+      'macroStops',
+      'obs',
       'dataSources',
       'dataSnapshots',
       'overrides',

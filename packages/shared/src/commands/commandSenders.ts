@@ -88,6 +88,10 @@ export const senderOfEachCommandType: Record<Command['type'], CommandSender> = {
   moveLayerToOutput: 'operator',
   reorderLayers: 'operator',
   deleteLayer: 'operator',
+  switchObsScene: 'operator',
+  // What OBS is doing and how it answered a switch: only the server's connection hears OBS.
+  recordObsState: 'server',
+  recordObsSceneSwitchAnswer: 'server',
 };
 
 /** The command types only the server sends, read from senderOfEachCommandType. */

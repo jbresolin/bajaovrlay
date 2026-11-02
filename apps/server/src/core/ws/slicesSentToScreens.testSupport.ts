@@ -2,7 +2,7 @@
 // api/v1/stateRoute.test.ts): what a screen should be sent, written out by hand rather
 // than read from slicesSentToScreens.ts, so the tests check that file instead of
 // repeating it. Nothing here keeps state between calls.
-import type { SliceName, Slices } from '@bajaovrlay/shared';
+import { obsSliceWithoutObs, type SliceName, type Slices } from '@bajaovrlay/shared';
 
 /**
  * The slices a screen is sent with something in them: the four it draws, and the outputs,
@@ -33,6 +33,8 @@ export function buildTheCopyAScreenShouldGet(slicesOnTheServer: Slices): Slices 
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

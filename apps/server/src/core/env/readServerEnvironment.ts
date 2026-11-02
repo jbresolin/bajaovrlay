@@ -84,7 +84,43 @@ const ServerEnvironmentSchema = z.object({
       }
       return parsing.publicOrigins;
     }),
+  // Where OBS's WebSocket server is (BAJAOVRLAY-27), as OBS 32 shows it in Tools →
+  // WebSocket Server Settings. Unset or empty: OBS control is off. Anything but a ws://
+  // or wss:// address stops the boot, since a wrong one would only show "erro" on race
+  // day; the message quotes the address, which never holds the password.
+  BAJAOVRLAY_OBS_URL: z
+    .string()
+    .optional()
+    .transform((text, context) => {
+      if (text === undefined || text === '') {
+        return undefined;
+      }
+      if (!isObsWebSocketAddress(text)) {
+        context.addIssue({
+          code: 'custom',
+          message: `"${text}" is not an obs-websocket address (write it as ws://127.0.0.1:4455)`,
+        });
+        return z.NEVER;
+      }
+      return text;
+    }),
+  // OBS's WebSocket password. Unset or empty: none is sent (OBS's authentication off).
+  // Never checked beyond that, so no boot error can ever quote it.
+  BAJAOVRLAY_OBS_PASSWORD: z
+    .string()
+    .optional()
+    .transform((text) => (text === '' ? undefined : text)),
 });
+
+/** Whether a text is a ws:// or wss:// address with a host, as obs-websocket takes. */
+function isObsWebSocketAddress(text: string): boolean {
+  if (!URL.canParse(text)) {
+    return false;
+  }
+  const address = new URL(text);
+  const isWebSocketScheme = address.protocol === 'ws:' || address.protocol === 'wss:';
+  return isWebSocketScheme && address.hostname !== '';
+}
 
 /** The server's settings after validation, with defaults filled in. */
 export type ServerEnvironment = z.infer<typeof ServerEnvironmentSchema>;

@@ -2,7 +2,7 @@
 // the reducer tests that depend on that schema (updateInstanceData, the take step's data
 // check in putGraphicOnOutput, reportInstanceStatus). Every function builds fresh objects
 // on each call.
-import type { Instance } from '@bajaovrlay/shared';
+import { type Instance, obsSliceWithoutObs } from '@bajaovrlay/shared';
 
 import { noSourceHostAllowlist } from '../../../modules/dataSources/index.js';
 import { raceClockManifestForTests } from '../builtGraphicsFolder.testSupport.js';
@@ -109,6 +109,8 @@ export function buildRaceDaySlicesWithInstances(instances: Instance[]): SlicesCh
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

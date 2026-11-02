@@ -5,6 +5,7 @@ import {
   refuseRunWhileAnotherMacroRuns,
   refuseUnknownMacro,
 } from '../quickFireAndMacroRefusals.js';
+import { dropTheStopOfMacro } from './macroStops.js';
 import { discardEveryPreviewAndMarker } from './previewMarkersAndDiscards.js';
 import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './reducerTypes.js';
 
@@ -66,7 +67,12 @@ export function reduceRunMacro(
     currentStep: 0,
     isStopRequested: false,
   };
-  // Prévia is emptied in this same change (see the doc comment above).
+  // Prévia is emptied in this same change (see the doc comment above), and a stop its
+  // last run left on the button goes: this run says how far it gets.
   const slicesWithPreviewEmptied = discardEveryPreviewAndMarker(slices);
-  return { status: 'applied', slices: { ...slicesWithPreviewEmptied, macroRuns: [newRun] } };
+  const macroStops = dropTheStopOfMacro(slices.macroStops, macro.id);
+  return {
+    status: 'applied',
+    slices: { ...slicesWithPreviewEmptied, macroRuns: [newRun], macroStops },
+  };
 }

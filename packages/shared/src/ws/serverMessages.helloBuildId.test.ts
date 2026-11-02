@@ -20,6 +20,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ServerMessageSchema } from './serverMessages.js';
+import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 
 /** Every slice empty, as the hello of a fresh database carries them. */
 function buildEverySliceEmpty() {
@@ -36,6 +37,8 @@ function buildEverySliceEmpty() {
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

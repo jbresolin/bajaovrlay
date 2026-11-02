@@ -1,15 +1,16 @@
 // Test support: the slices of a race day with rundowns, quick-fire panels and prepared
 // items, for the tests of the item, rundown and panel commands. Every function builds
 // fresh objects on each call, so no test can change what another one sees.
-import type {
-  Graphic,
-  Instance,
-  Item,
-  ItemFields,
-  Macro,
-  MacroRun,
-  QuickFirePanel,
-  Rundown,
+import {
+  type Graphic,
+  type Instance,
+  type Item,
+  type ItemFields,
+  type Macro,
+  type MacroRun,
+  obsSliceWithoutObs,
+  type QuickFirePanel,
+  type Rundown,
 } from '@bajaovrlay/shared';
 
 import { noSourceHostAllowlist } from '../../../modules/dataSources/index.js';
@@ -283,6 +284,8 @@ export function buildRaceDaySlicesWithRundown(parts: {
     quickFirePanels: parts.quickFirePanels ?? [buildShortcutsPanel()],
     macros: parts.macros ?? [],
     macroRuns: parts.macroRuns ?? [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     // No data source: modules/dataSources has slices of its own for its reducers.
     dataSources: [],
     dataSnapshots: [],

@@ -54,6 +54,10 @@ try {
     apiTokens: environment.BAJAOVRLAY_API_TOKENS,
     isApiOpenToTheNetwork: environment.BAJAOVRLAY_API_OPEN,
     publicOrigins: environment.BAJAOVRLAY_PUBLIC_ORIGINS,
+    obsConnectionSettings:
+      environment.BAJAOVRLAY_OBS_URL === undefined
+        ? undefined
+        : { url: environment.BAJAOVRLAY_OBS_URL, password: environment.BAJAOVRLAY_OBS_PASSWORD },
     controlPageFolder,
     rendererPageFolder,
     buildIdFileUrl,
@@ -74,6 +78,10 @@ try {
     apiTokens: environment.BAJAOVRLAY_API_TOKENS,
     isOpenToTheNetwork: environment.BAJAOVRLAY_API_OPEN,
   });
+  // The page says "OBS não configurado"; the log says why, for whoever reads it first.
+  if (environment.BAJAOVRLAY_OBS_URL === undefined) {
+    logger.info('OBS control is off: BAJAOVRLAY_OBS_URL is not set');
+  }
   // startServer read build-id.json once, at boot; that id is the one every hello names.
   if (runningServer.buildId === undefined) {
     logger.warn('no build-id.json; open pages will not reload themselves after an upgrade');

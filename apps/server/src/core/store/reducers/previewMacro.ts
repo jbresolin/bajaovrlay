@@ -33,7 +33,9 @@ import type { ReducerContext, ReducerOutcome, SlicesChangedByCommands } from './
  * - clearAll throws away every preview and marks exactly the layers that have something
  *   on program now, in the order of the layers (a layer empty on program needs no
  *   marker, so the marker of an earlier clearLayer on such a layer goes too);
- * - wait is skipped.
+ * - wait is skipped;
+ * - obsScene is skipped too (BAJAOVRLAY-27): Prévia shows BajaOvrLay's layers, not OBS,
+ *   and a preview must never change what OBS shows. The macro editor says so.
  * Program, the rundowns and the items are never touched. Each preview the macro makes
  * gets the store's new instance id followed by its layer id (instanceIdForEachLayer.ts).
  *
@@ -104,6 +106,10 @@ function previewOneMacroStep(
     case 'wait':
       // A wait puts nothing on screen: the end state is the same with or without it.
       return { status: 'applied', slices };
+    case 'obsScene':
+      // OBS's scene is not one of BajaOvrLay's layers: Prévia cannot show it, and asking
+      // OBS for it from a preview would change what goes out.
+      return { status: 'applied', slices };
   }
 }
 
@@ -151,5 +157,7 @@ function describeMacroStep(slices: SlicesChangedByCommands, step: MacroStep): st
       return ptBR.macroStepDescriptions.clearAll;
     case 'wait':
       return ptBR.macroStepDescriptions.wait(step.ms);
+    case 'obsScene':
+      return ptBR.macroStepDescriptions.obsScene(step.sceneName);
   }
 }

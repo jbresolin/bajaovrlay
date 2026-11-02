@@ -70,6 +70,6 @@ export function reduceQuickFireOrMacroCommand(
     case 'advanceMacroRun':
       return reduceAdvanceMacroRun(slices, command);
     case 'endMacroRun':
-      return reduceEndMacroRun(slices, command);
+      return reduceEndMacroRun(slices, command, context);
   }
 }

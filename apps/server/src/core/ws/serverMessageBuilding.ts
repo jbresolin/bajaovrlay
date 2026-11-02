@@ -75,6 +75,10 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'macros', slice: slices.macros, serverNowMs };
     case 'macroRuns':
       return { type: 'slice', name: 'macroRuns', slice: slices.macroRuns, serverNowMs };
+    case 'macroStops':
+      return { type: 'slice', name: 'macroStops', slice: slices.macroStops, serverNowMs };
+    case 'obs':
+      return { type: 'slice', name: 'obs', slice: slices.obs, serverNowMs };
     case 'dataSources':
       return { type: 'slice', name: 'dataSources', slice: slices.dataSources, serverNowMs };
     case 'overrides':
@@ -159,6 +163,12 @@ function copyOneSliceByName(
       break;
     case 'macroRuns':
       group.macroRuns = slices.macroRuns;
+      break;
+    case 'macroStops':
+      group.macroStops = slices.macroStops;
+      break;
+    case 'obs':
+      group.obs = slices.obs;
       break;
     case 'dataSources':
       group.dataSources = slices.dataSources;

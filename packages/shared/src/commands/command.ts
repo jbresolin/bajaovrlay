@@ -36,6 +36,11 @@ import {
   RecordUploadedMediaCommandSchema,
 } from '../media/mediaCommands.js';
 import { CreateLayerCommandSchema } from '../outputs/createLayer.js';
+import {
+  RecordObsSceneSwitchAnswerCommandSchema,
+  RecordObsStateCommandSchema,
+  SwitchObsSceneCommandSchema,
+} from '../obs/obsCommands.js';
 import { CreateOutputCommandSchema } from '../outputs/createOutput.js';
 import { DeleteLayerCommandSchema } from '../outputs/deleteLayer.js';
 import { DeleteOutputCommandSchema } from '../outputs/deleteOutput.js';
@@ -164,6 +169,11 @@ export const CommandSchema = z.discriminatedUnion('type', [
   MoveLayerToOutputCommandSchema,
   ReorderLayersCommandSchema,
   DeleteLayerCommandSchema,
+  // OBS control (BAJAOVRLAY-27); ../obs/. switchObsScene is the operator's and a macro
+  // step's; the other two are sent only by the server's OBS connection (sistema:obs).
+  SwitchObsSceneCommandSchema,
+  RecordObsStateCommandSchema,
+  RecordObsSceneSwitchAnswerCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */
