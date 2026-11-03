@@ -6,8 +6,8 @@ import { readSync } from 'node:fs';
 import { parseRecordedLine, type RecordedLine } from './recordingLine.js';
 
 // How many bytes are read at a time from either end of a recording file. A 60-car line
-// is about 25 KB, so one read usually holds the last two lines; a longer line makes the
-// read grow (doubling) until it holds them.
+// is about 39 KB, so the last two lines take one doubling (a second read, of 128 KB);
+// a longer line makes the read grow (doubling) until it holds them.
 const bytesReadAtATime = 64 * 1024;
 
 // How many bytes are read at a time when an old file's lines must be counted one by one
