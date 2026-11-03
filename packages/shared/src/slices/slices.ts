@@ -13,6 +13,8 @@ import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
 import { MacroStopsSchema } from '../macros/macroStop.js';
+import { TriggerActivitySchema } from '../triggers/triggerActivity.js';
+import { TriggersSchema } from '../triggers/trigger.js';
 import { MediaSchema } from '../media/mediaRecord.js';
 import { ObsSliceSchema } from '../obs/obsSlice.js';
 import { OutputsSchema } from '../outputs/output.js';
@@ -41,6 +43,8 @@ export const SliceNameSchema = z.enum([
   'macroRuns',
   'macroStops',
   'obs',
+  'triggers',
+  'triggerActivity',
   'dataSources',
   'dataSnapshots',
   'overrides',
@@ -110,6 +114,14 @@ export const SlicesSchema = z.object({
    * memory only and refilled from OBS at every boot; screens receive it as "no OBS".
    */
   obs: ObsSliceSchema,
+  /** The triggers (BAJAOVRLAY-48): what each waits for and the macro it runs. Saved. */
+  triggers: TriggersSchema,
+  /**
+   * "Pausar gatilhos", each trigger's last firing and the newest firings, those that wait
+   * for the operator among them (BAJAOVRLAY-48). Kept in the server's memory only: a boot
+   * starts unpaused with no firing. Screens never receive either trigger slice.
+   */
+  triggerActivity: TriggerActivitySchema,
   /** The data sources the server polls for race data, with their config and health. */
   dataSources: z.array(DataSourceSchema),
   /**

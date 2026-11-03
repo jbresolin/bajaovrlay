@@ -162,6 +162,8 @@ empty list, so a source of a kind it does not know cannot make it refuse its `he
       "previewSceneName": null,
       "sceneSwitch": null
     },
+    "triggers": [],
+    "triggerActivity": { "isPaused": false, "lastFiredAtMsByTriggerId": {}, "firings": [] },
     "dataSources": [],
     "dataSnapshots": [],
     "recordings": [],

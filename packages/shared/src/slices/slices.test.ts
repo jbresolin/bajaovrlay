@@ -126,6 +126,9 @@ function buildRaceDayStateWithTheClockOnAir() {
       previewSceneName: null,
       sceneSwitch: null,
     },
+    // No trigger yet, and triggers not paused: triggers/trigger.test.ts covers a trigger.
+    triggers: [],
+    triggerActivity: { isPaused: false, lastFiredAtMsByTriggerId: {}, firings: [] },
     // No data source, snapshot or recording: dataSources.test.ts covers those slices.
     dataSources: [],
     dataSnapshots: [],
@@ -289,7 +292,8 @@ describe('SliceNameSchema', () => {
   it('lists every slice in the order the server lists them, the newest ones included', () => {
     // Arrange: the slice names; the "will be cleared" markers and the bindings of each
     // instance right after the instances they speak about, quick-fire panels and macros
-    // after the items with the macros' stops and OBS after them, and the data sources, their snapshots, the operator's corrections
+    // after the items with the macros' stops and OBS after them, the triggers and their
+    // activity after OBS, and the data sources, their snapshots, the operator's corrections
     // of them and the recordings, then the event inbox's events and rules, then the
     // entity library (teams, people, sponsors and the schedule) and its images, just
     // before the event log.
@@ -307,6 +311,8 @@ describe('SliceNameSchema', () => {
       'macroRuns',
       'macroStops',
       'obs',
+      'triggers',
+      'triggerActivity',
       'dataSources',
       'dataSnapshots',
       'overrides',
@@ -325,7 +331,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these twenty-three, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these twenty-seven, in this order').toEqual(
       expectedSliceNames,
     );
   });

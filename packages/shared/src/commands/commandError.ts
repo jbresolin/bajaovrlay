@@ -211,6 +211,21 @@ export const CommandErrorCodeSchema = z.enum([
    * answer to a command, since the switch was accepted before OBS was asked.
    */
   'OBS_REFUSED_SCENE_SWITCH',
+  /** The command names a trigger that does not exist (BAJAOVRLAY-48). */
+  'TRIGGER_NOT_FOUND',
+  /** The command names a firing no longer in the list (or never there). */
+  'TRIGGER_FIRING_NOT_FOUND',
+  /** "Rodar" or "Descartar" of a firing that no longer waits: it ran or was dismissed. */
+  'TRIGGER_FIRING_NOT_WAITING',
+  /** "Desfazer" of a firing that is not dismissed. */
+  'TRIGGER_FIRING_NOT_DISMISSED',
+  /** deleteMacro of a macro that triggers name; the message lists them. */
+  'MACRO_USED_BY_TRIGGER',
+  /**
+   * A take step's required field reads a key the trigger's data does not have (or the
+   * macro was run by hand, with no trigger data). The message starts with the field's title.
+   */
+  'TRIGGER_DATA_NOT_FILLED',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

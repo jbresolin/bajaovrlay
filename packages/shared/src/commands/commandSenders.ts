@@ -92,6 +92,15 @@ export const senderOfEachCommandType: Record<Command['type'], CommandSender> = {
   // What OBS is doing and how it answered a switch: only the server's connection hears OBS.
   recordObsState: 'server',
   recordObsSceneSwitchAnswer: 'server',
+  createTrigger: 'operator',
+  updateTrigger: 'operator',
+  deleteTrigger: 'operator',
+  setTriggersPaused: 'operator',
+  // A firing: only the trigger service sees the scene change, call, event or time behind it.
+  fireTrigger: 'server',
+  runTriggerFiring: 'operator',
+  dismissTriggerFiring: 'operator',
+  restoreTriggerFiring: 'operator',
 };
 
 /** The command types only the server sends, read from senderOfEachCommandType. */

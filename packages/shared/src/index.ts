@@ -172,6 +172,9 @@ export * from './quickFire/index.js';
 export * from './macros/index.js';
 // OBS control (BAJAOVRLAY-27): the obs slice and its three commands.
 export * from './obs/index.js';
+// Triggers (BAJAOVRLAY-48): the triggers and triggerActivity slices, the data a firing
+// carries, a take step's "Dado do gatilho", and the eight trigger commands.
+export * from './triggers/index.js';
 
 // The preview output: previewItem, stopPreview, takePreview,
 // previewClearLayer, takeAllPreviews and previewMacro.

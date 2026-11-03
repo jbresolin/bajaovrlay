@@ -60,6 +60,12 @@ export const ObsSceneSwitchSchema = z.object({
   target: ObsSceneTargetSchema,
   status: z.enum(['enviada', 'feita', 'recusada']),
   refusalReason: z.string().nullable(),
+  /**
+   * Who asked for the switch: an operator, a device of the command API, or a macro's
+   * runner (`sistema:macro:<macroId>`). The triggers read it (BAJAOVRLAY-48): a scene
+   * change a macro made fires no scene trigger, told apart by this, never by timing.
+   */
+  requestedBy: z.string().min(1),
 });
 
 /** An ObsSceneSwitch that has passed ObsSceneSwitchSchema. */

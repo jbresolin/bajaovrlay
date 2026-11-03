@@ -52,6 +52,8 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     macroRuns: changedSlices.macroRuns ?? slices.macroRuns,
     macroStops: changedSlices.macroStops ?? slices.macroStops,
     obs: changedSlices.obs ?? slices.obs,
+    triggers: changedSlices.triggers ?? slices.triggers,
+    triggerActivity: changedSlices.triggerActivity ?? slices.triggerActivity,
     dataSources: changedSlices.dataSources ?? slices.dataSources,
     // Never in a group: a snapshot arrives source by source (`dataSnapshot` message).
     dataSnapshots: slices.dataSnapshots,

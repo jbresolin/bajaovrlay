@@ -286,6 +286,8 @@ export function buildRaceDaySlicesWithRundown(parts: {
     macroRuns: parts.macroRuns ?? [],
     macroStops: [],
     obs: obsSliceWithoutObs,
+    triggers: [],
+    triggerActivity: { isPaused: false, lastFiredAtMsByTriggerId: {}, firings: [] },
     // No data source: modules/dataSources has slices of its own for its reducers.
     dataSources: [],
     dataSnapshots: [],
