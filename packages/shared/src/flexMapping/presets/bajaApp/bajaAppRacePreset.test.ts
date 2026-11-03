@@ -1,0 +1,234 @@
+/**
+ * The Baja app race preset against the race answers (packages/shared)
+ *
+ * What this module is for:
+ *   The race preset (corrida.preset.json, BAJAOVRLAY-54) reads the Baja app's corrida.php
+ *   into a session and positions, the names joined from the event's teams (equipes.php).
+ *   These tests run it on the doc's race answers with the real 26BR and 26SE teams, and
+ *   validate every shape it gives, as the store does with a poll.
+ *
+ * What these tests prove:
+ *   - The doc's race ten minutes in, with the real 26BR teams, names its cars by the teams'
+ *     short names and works out the gaps; with 26SE's teams (no short names) it falls back
+ *     to the race's own names; before the start it is a stopped clock at 0:00.
+ *   - A simulated race is refused with its sentence unless "Aceitar corrida simulada" is
+ *     ticked.
+ *   - Each of the four clock states maps to its flag; a state the API adds later is refused
+ *     with a sentence naming it (gate 2 of PR #38: a flag race control never called must
+ *     not reach air), simulation accepted or not; a car status it adds later maps to
+ *     running.
+ *
+ * What these tests deliberately do not cover:
+ *   - The other presets and the parameters: bajaAppPresets.test.ts.
+ *   - Gaps from laps rule by rule: gapsFromLaps.test.ts.
+ */
+import { describe, expect, it } from 'vitest';
+
+import { bajaAppFixtureFiles, readBajaAppFixture } from '../../bajaAppFixtures.testSupport.js';
+import { buildRaceConfigOf26BREnduro, mapAndValidate } from './bajaAppPresetMapping.testSupport.js';
+import { simulatedRaceRefusalMessage } from './bajaAppPresets.js';
+
+/** A car of the positions as a short row: place, number, team, school, laps, laps down. */
+function describeCarsOf(shapes: Record<string, unknown> | undefined) {
+  const positions = shapes?.positions as { entries: Array<Record<string, unknown>> } | undefined;
+  return (positions?.entries ?? []).map((car) => [
+    car.position,
+    car.carNumber,
+    car.teamName,
+    car.schoolName,
+    car.laps,
+    car.gapToLeaderLaps,
+  ]);
+}
+
+/** The doc's race ten minutes in, with one change made to a copy of it. */
+function buildDocRaceWith(change: (race: Record<string, unknown>) => void) {
+  const race = readBajaAppFixture(bajaAppFixtureFiles.raceTenMinutesIn00NE);
+  change(race);
+  return race;
+}
+
+describe('the race preset', () => {
+  it('names the doc race’s cars by the 26BR teams’ short names, with gaps in laps', () => {
+    // Arrange: the doc's race ten minutes in and the real 26BR teams (11, 22 and 33 in it).
+    const responses = {
+      corrida: readBajaAppFixture(bajaAppFixtureFiles.raceTenMinutesIn00NE),
+      equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+    };
+
+    // Act: map and validate.
+    const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(), responses);
+
+    // Assert: a running session at 10:00, and the three cars by their short names.
+    expect(problems, 'the race must map with no problem').toEqual([]);
+    expect(shapes?.session, 'the session must be running at 10:00').toMatchObject({
+      sessionName: 'Enduro de teste',
+      state: 'green',
+      clock: { clockMode: 'elapsed', referenceTimeMs: 600_000, running: true },
+    });
+    expect(describeCarsOf(shapes), 'the cars, short names, car 22 one lap down').toEqual([
+      [1, 11, 'Parahybaja', 'UFCG', 3, undefined],
+      [2, 22, 'Corisco', 'UPE', 2, 1],
+      [3, 33, 'PAC', 'UNESP-Bauru', 0, 3],
+    ]);
+  });
+
+  it('falls back to the race’s own names when the teams have no short names (26SE)', () => {
+    // Arrange: the doc's race and the real 26SE teams, whose short names are all empty.
+    const responses = {
+      corrida: readBajaAppFixture(bajaAppFixtureFiles.raceTenMinutesIn00NE),
+      equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26SE),
+    };
+
+    // Act: map and validate.
+    const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(), responses);
+
+    // Assert: the names the race itself gives.
+    expect(problems, 'the race must map with no problem').toEqual([]);
+    expect(describeCarsOf(shapes), 'the race’s own names').toEqual([
+      [1, 11, 'Equipe 11', 'Escola 11', 3, undefined],
+      [2, 22, 'Equipe 22', 'Escola 22', 2, 1],
+      [3, 33, 'Equipe 33', 'Escola 33', 0, 3],
+    ]);
+  });
+
+  it('gives a stopped clock at 0:00 and no car before the start', () => {
+    // Arrange: the doc's 26BR Enduro, never started (elapsed_ms null), and its teams.
+    const responses = {
+      corrida: readBajaAppFixture(bajaAppFixtureFiles.raceBeforeTheStart26BR),
+      equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+    };
+
+    // Act: map and validate.
+    const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(), responses);
+
+    // Assert: a valid session waiting at 0, stopped, and an empty positions list.
+    expect(problems, 'the race before its start must map with no problem').toEqual([]);
+    expect(shapes?.session, 'the clock must be stopped at 0').toMatchObject({
+      state: 'pre',
+      clock: { referenceTimeMs: 0, running: false },
+    });
+    expect(shapes?.positions, 'there must be no car yet').toMatchObject({ entries: [] });
+  });
+
+  it('refuses a simulated race with its sentence while the box is not ticked', () => {
+    // Arrange: the doc's race, marked as a simulation, and the 26BR teams.
+    const responses = {
+      corrida: buildDocRaceWith((race) => {
+        race.simulation = true;
+      }),
+      equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+    };
+
+    // Act: map and validate with the preset as it ships.
+    const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(false), responses);
+
+    // Assert: no shape, and the simulation sentence alone.
+    expect(shapes, 'no shape may come from a simulated race').toBeUndefined();
+    expect(problems, 'the sentence must say how to accept it').toEqual([
+      "Corrida em modo simulação: marque 'Aceitar corrida simulada' para usar.",
+    ]);
+    expect(simulatedRaceRefusalMessage, 'the exported sentence is the one shown').toBe(problems[0]);
+  });
+
+  it('maps a simulated race once "Aceitar corrida simulada" is ticked', () => {
+    // Arrange: the same simulated race and teams.
+    const responses = {
+      corrida: buildDocRaceWith((race) => {
+        race.simulation = true;
+      }),
+      equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+    };
+
+    // Act: map and validate with the box ticked.
+    const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(true), responses);
+
+    // Assert: the race maps as a real one would.
+    expect(problems, 'an accepted simulation must map with no problem').toEqual([]);
+    expect(describeCarsOf(shapes), 'its three cars').toHaveLength(3);
+  });
+
+  const knownStateScenarios = [
+    // Before the start: the clock waits.
+    { clockState: 'waiting', expectedState: 'pre', isClockRunning: false },
+    // Racing: the green flag.
+    { clockState: 'running', expectedState: 'green', isClockRunning: true },
+    // An endurance race's clock keeps running through a red flag.
+    { clockState: 'red_flag', expectedState: 'red', isClockRunning: true },
+    // Over: the clock stops.
+    { clockState: 'finished', expectedState: 'finished', isClockRunning: false },
+  ];
+
+  it.each(knownStateScenarios)(
+    'maps the clock state "$clockState" to "$expectedState"',
+    ({ clockState, expectedState, isClockRunning }) => {
+      // Arrange: the doc's race in this row's state, and the 26BR teams.
+      const responses = {
+        corrida: buildDocRaceWith((race) => {
+          (race.clock as Record<string, unknown>).state = clockState;
+        }),
+        equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+      };
+
+      // Act: map and validate.
+      const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(), responses);
+
+      // Assert: the session's state and its clock as this row says.
+      expect(problems, 'a known state must map with no problem').toEqual([]);
+      expect(shapes?.session, 'the state and the clock of this row').toMatchObject({
+        state: expectedState,
+        clock: { running: isClockRunning },
+      });
+    },
+  );
+
+  const unknownStateScenarios = [
+    // The preset as it ships.
+    { name: 'refuses a clock state the API adds later, naming it', acceptsSimulatedRace: false },
+    // "Aceitar corrida simulada" takes off the simulation's refusal only, never this one.
+    {
+      name: 'still refuses a clock state it does not know once the simulation is accepted',
+      acceptsSimulatedRace: true,
+    },
+  ];
+
+  it.each(unknownStateScenarios)('$name', ({ acceptsSimulatedRace }) => {
+    // Arrange: the doc's race in a state the preset does not know, and the 26BR teams.
+    const responses = {
+      corrida: buildDocRaceWith((race) => {
+        (race.clock as Record<string, unknown>).state = 'suspended';
+      }),
+      equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+    };
+
+    // Act: map and validate.
+    const config = buildRaceConfigOf26BREnduro(acceptsSimulatedRace);
+    const { problems, shapes } = mapAndValidate(config, responses);
+
+    // Assert: no shape, so no flag a race control never called reaches air; the sentence
+    // names the word, for the preset to learn it.
+    expect(shapes, 'no shape may come from a state the preset does not know').toBeUndefined();
+    expect(problems, 'the sentence names the word').toEqual([
+      'Estado de corrida desconhecido: "suspended". Atualize o preset da fonte.',
+    ]);
+  });
+
+  it('maps a car status the API adds later to running', () => {
+    // Arrange: the doc's race with a status the preset does not know on car 22.
+    const responses = {
+      corrida: buildDocRaceWith((race) => {
+        const cars = race.cars as Array<Record<string, unknown>>;
+        (cars[1] as Record<string, unknown>).status = 'penalized';
+      }),
+      equipes: readBajaAppFixture(bajaAppFixtureFiles.teams26BR),
+    };
+
+    // Act: map and validate.
+    const { problems, shapes } = mapAndValidate(buildRaceConfigOf26BREnduro(), responses);
+
+    // Assert: a car still listed is taken as still in the race.
+    expect(problems, 'a new status must not fail the poll').toEqual([]);
+    const positions = shapes?.positions as { entries: Array<Record<string, unknown>> };
+    expect(positions.entries[1]?.status, 'an unknown status reads as running').toBe('running');
+  });
+});

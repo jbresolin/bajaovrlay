@@ -7,7 +7,9 @@ the extra sources in `flexRuleSources.ts`, the mapping's options in `flexMapping
 their checks in `flexShapeMappingChecks.ts`), `flexListEntryMapping.ts` (one entry),
 `valuePath.ts` (the hand-written path parser), `mappableFields.ts` and `ptBRFlexMapping.ts`
 (every text). `examples/` holds a fictional preset and fixture, and `examples/bajaApp/` the
-Baja app's real answers (BAJAOVRLAY-53; its draft presets are test support until BAJAOVRLAY-54).
+Baja app's real answers (BAJAOVRLAY-53). `presets/bajaApp/` holds the Baja app presets
+(BAJAOVRLAY-54): one JSON per kind of answer, `{{name}}` where a parameter goes
+(`presets/presetPlaceholders.ts`), filled in and checked by `bajaAppPresets.ts`.
 
 What a mapping can do, generic on purpose (no source's word is written in this code):
 **alternatives** (`firstOf`: the first value present, not null, not blank wins);
@@ -15,11 +17,14 @@ What a mapping can do, generic on purpose (no source's word is written in this c
 `flexLookups.ts`); **nested lists** (`nestedEntriesPath`, rules read the outer element with
 `fromParent`; `flexEntryElements.ts`); **table columns** (a cell read by its column's header,
 standings' parts from picked headers; `flexTableColumns.ts`); **refusal by a flag**
-(`refuseWhen`: the poll fails with the operator's sentence, the last snapshot stays;
+(`refuseWhen`: a value equal to `equals`, or found and none of `notOneOf`; the poll fails
+with the operator's sentence, `{valor}` in it the value read, and the last snapshot stays;
 `flexRefusalFlag.ts`); **gaps from laps** (`workOutGapsFromLaps` with `lastPassAtMs`; the gaps
 are as of the last line crossing; `gapsFromLaps.ts`); **brackets** grouped into rounds, the
 first incomplete round left out with the rounds after it (an incomplete third place alone)
-and a third place after the final moved before it (`bracketRoundsContracts.ts`).
+and a third place after the final moved before it (`bracketRoundsContracts.ts`); a lone car
+on the B side moved to A, and a one-car match a W.O. when the mapping reads a carB but says
+nothing of one (`bracketRoundsOfMappedMatches.ts`).
 **Every text written is cleaned up** for every flex source: HTML entities decoded, spaces
 collapsed, ends trimmed (`sourceTextCleanup.ts`); text that cleans up to nothing is left
 out. A disqualified team's mapped rank is dropped.

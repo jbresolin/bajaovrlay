@@ -12,8 +12,10 @@
  * What these tests prove (a real HTTP server on 127.0.0.1 and a random port, real fetch,
  * a real store on a temporary SQLite file):
  *   - A timing system that answers gives back its status and its JSON, as parsed.
- *   - A source that fails gives back the poll's own pt-BR sentence (a 503, a body that is
- *     not JSON, a variable not set), still as a 200 of the route.
+ *   - A source that fails gives back the poll's own pt-BR sentence (a 503, a 404 page, a
+ *     body that is not JSON, a variable not set), still as a 200 of the route; one that
+ *     answered outside 2xx also gives back that status, and its body when it is JSON, so
+ *     a page can tell one refusal from another (gate 2 of PR #38).
  *   - A source that never answers is given up on after the route's timeout (10 s on the
  *     server, shortened here), with "Tempo esgotado" and the seconds.
  *   - A header from a variable is sent with its value, which is in neither the answer nor
@@ -81,14 +83,35 @@ describe('POST /api/v1/data-sources/http-json/sample-request', () => {
     name: string;
     timingSystemAnswer: TimingSystemAnswer;
     headers: Array<{ name: string; value?: string; valueFromEnvironment?: string }>;
-    expectedError: string;
+    expectedAnswer: Record<string, unknown>;
   }> = [
-    // The timing system is up but its own backend is not: the status and its name.
+    // The timing system is up but its own backend is not: the status and its name, and the
+    // JSON it answered, which tells one refusal from another (the Baja app's "wrong_type").
     {
-      name: 'answers the poll error for a 503 of the timing system',
+      name: 'answers the poll error and the JSON body for a 503 of the timing system',
       timingSystemAnswer: { kind: 'json', status: 503, body: { erro: 'em manutenção' } },
       headers: [],
-      expectedError: 'A fonte respondeu 503 (Service Unavailable) em classificacao',
+      expectedAnswer: {
+        ok: false,
+        error: 'A fonte respondeu 503 (Service Unavailable) em classificacao',
+        answerOutside2xx: { status: 503, body: { erro: 'em manutenção' } },
+      },
+    },
+    // A proxy's HTML error page: the status alone, since there is no JSON to hand on.
+    {
+      name: 'answers the poll error and the status alone for a 404 page that is not JSON',
+      timingSystemAnswer: {
+        kind: 'text',
+        status: 404,
+        text: '<html><body>Não encontrado</body></html>',
+        contentType: 'text/html; charset=utf-8',
+      },
+      headers: [],
+      expectedAnswer: {
+        ok: false,
+        error: 'A fonte respondeu 404 (Not Found) em classificacao',
+        answerOutside2xx: { status: 404 },
+      },
     },
     // An HTML error page with a 200: the operator learns the body is not JSON.
     {
@@ -99,21 +122,23 @@ describe('POST /api/v1/data-sources/http-json/sample-request', () => {
         contentType: 'text/html; charset=utf-8',
       },
       headers: [],
-      expectedError: 'A resposta de classificacao não é JSON válido',
+      expectedAnswer: { ok: false, error: 'A resposta de classificacao não é JSON válido' },
     },
     // A token header naming a variable the server does not have: the variable is named.
     {
       name: 'answers the poll error for a variable not set on the server',
       timingSystemAnswer: { kind: 'json', body: readExampleTimingSystemResponse() },
       headers: [{ name: 'Authorization', valueFromEnvironment: 'BAJAOVRLAY_SOURCE_BAJA_TOKEN' }],
-      expectedError:
-        'A variável de ambiente BAJAOVRLAY_SOURCE_BAJA_TOKEN não está definida no servidor.',
+      expectedAnswer: {
+        ok: false,
+        error: 'A variável de ambiente BAJAOVRLAY_SOURCE_BAJA_TOKEN não está definida no servidor.',
+      },
     },
   ];
 
   it.each(failingSourceScenarios)(
     '$name',
-    async ({ timingSystemAnswer, headers, expectedError }) => {
+    async ({ timingSystemAnswer, headers, expectedAnswer }) => {
       // Arrange: the timing system answering the way this row sets up, no variable set.
       const timingSystem = await startTimingSystemTestServer();
       timingSystem.answer('/cronometragem/classificacao', timingSystemAnswer);
@@ -125,12 +150,14 @@ describe('POST /api/v1/data-sources/http-json/sample-request', () => {
         headers,
       });
 
-      // Assert: a 200 of the route carrying the same pt-BR sentence a poll would give.
+      // Assert: a 200 of the route carrying the same pt-BR sentence a poll would give, and
+      // what the source answered outside 2xx when it answered at all.
       expect(answer.status, 'a failing source is still a 200 of the route').toBe(200);
-      expect(answer.body, 'the answer must carry the poll error in pt-BR').toEqual({
-        ok: false,
-        error: expectedError,
-      });
+      expect(answer.body, 'the answer must carry the poll error in pt-BR').toEqual(expectedAnswer);
+      expect(
+        HttpJsonSampleAnswerSchema.safeParse(answer.body).success,
+        'the answer must be a sample answer the page can read',
+      ).toBe(true);
     },
   );
 

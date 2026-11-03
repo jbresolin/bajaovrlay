@@ -1,0 +1,28 @@
+{
+  "event_id": "26BR",
+  "resultado_id": "26BR_END",
+  "name": "Enduro",
+  "provas": ["END"],
+  "spoilers_active": false,
+  "ranking": { "by": "pontos_enduro", "order": "desc" },
+  "columns": [
+    { "header": "Pos", "kind": "position", "ranking": false },
+    { "header": "#", "kind": "team_number", "ranking": false },
+    { "header": "Equipe", "kind": "team", "ranking": false },
+    { "header": "Voltas", "kind": "formula", "ranking": false },
+    { "header": "Pontos", "kind": "formula", "ranking": false }
+  ],
+  "rows": [
+    {
+      "position": 1,
+      "team": {
+        "number": 6,
+        "name": "Imperador",
+        "school": "Universidade Tecnológica Federal do Paraná - UTFPR - Campus Curitiba",
+        "state": "PR",
+        "disqualified": false
+      },
+      "cells": [{ "raw": 1 }, { "raw": 6 }, { "raw": "Imperador" }, { "raw": 69 }, { "raw": 400 }]
+    }
+  ]
+}

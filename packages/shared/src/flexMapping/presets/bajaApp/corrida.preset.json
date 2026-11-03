@@ -1,0 +1,128 @@
+{
+  "requests": [
+    {
+      "requestId": "corrida",
+      "url": "{{apiAddress}}/resultados/corrida.php",
+      "queryParameters": [
+        { "name": "evt", "value": "{{eventId}}" },
+        { "name": "p", "value": "{{provaId}}" }
+      ]
+    },
+    {
+      "requestId": "equipes",
+      "url": "{{apiAddress}}/resultados/equipes.php",
+      "queryParameters": [{ "name": "evt", "value": "{{eventId}}" }],
+      "refreshEveryMs": 600000
+    }
+  ],
+  "mappings": [
+    {
+      "shapeKey": "session",
+      "requestId": "corrida",
+      "refuseWhen": {
+        "path": "clock.state",
+        "notOneOf": ["waiting", "running", "red_flag", "finished"],
+        "message": "Estado de corrida desconhecido: \"{valor}\". Atualize o preset da fonte."
+      },
+      "fields": [
+        { "targetField": "sessionId", "fromPath": "prova_id" },
+        { "targetField": "eventName", "fromPath": "event_id" },
+        { "targetField": "sessionName", "fromPath": "name" },
+        { "targetField": "sessionKind", "constantValue": "enduro" },
+        {
+          "targetField": "state",
+          "fromPath": "clock.state",
+          "transformId": "mapValues",
+          "transformParameters": {
+            "waiting": "pre",
+            "running": "green",
+            "red_flag": "red",
+            "finished": "finished"
+          }
+        },
+        { "targetField": "clock.clockMode", "constantValue": "elapsed" },
+        {
+          "targetField": "clock.referenceTimeMs",
+          "firstOf": [{ "fromPath": "clock.elapsed_ms" }, { "constantValue": 0 }]
+        },
+        { "targetField": "clock.referenceWallClockMs", "fromPath": "clock.server_time_ms" },
+        {
+          "targetField": "clock.running",
+          "fromPath": "clock.state",
+          "transformId": "mapValues",
+          "transformParameters": {
+            "table": { "running": true, "red_flag": true },
+            "otherwiseValue": false
+          }
+        },
+        { "targetField": "updatedAtMs", "fromPollMoment": true }
+      ]
+    },
+    {
+      "shapeKey": "positions",
+      "requestId": "corrida",
+      "entriesPath": "cars",
+      "lookups": [
+        {
+          "lookupName": "equipes",
+          "requestId": "equipes",
+          "listPath": "teams",
+          "keyPath": "number",
+          "entryKeyPath": "number"
+        }
+      ],
+      "refuseWhen": {
+        "path": "simulation",
+        "equals": true,
+        "message": "Corrida em modo simulação: marque 'Aceitar corrida simulada' para usar."
+      },
+      "workOutGapsFromLaps": true,
+      "fields": [
+        { "targetField": "sessionId", "fromPath": "prova_id" },
+        { "targetField": "updatedAtMs", "fromPollMoment": true }
+      ],
+      "entryFields": [
+        { "targetField": "position", "fromListOrder": true },
+        { "targetField": "carNumber", "fromPath": "number" },
+        {
+          "targetField": "teamName",
+          "firstOf": [
+            { "fromLookup": { "lookup": "equipes", "path": "short_name" } },
+            { "fromPath": "short_name" },
+            { "fromPath": "team" }
+          ]
+        },
+        {
+          "targetField": "schoolName",
+          "firstOf": [
+            { "fromLookup": { "lookup": "equipes", "path": "school_short" } },
+            { "fromPath": "school_short" },
+            { "fromPath": "school" }
+          ]
+        },
+        { "targetField": "laps", "fromPath": "laps" },
+        {
+          "targetField": "status",
+          "fromPath": "status",
+          "transformId": "mapValues",
+          "transformParameters": {
+            "table": {
+              "running": "running",
+              "late": "running",
+              "stopped": "stopped",
+              "in_pit": "inPit",
+              "fueling": "inPit",
+              "out": "retired"
+            },
+            "otherwiseValue": "running"
+          }
+        },
+        { "targetField": "lastLapMs", "fromPath": "last_lap_ms" },
+        { "targetField": "bestLapMs", "fromPath": "best_lap_ms" },
+        { "targetField": "pitStops", "fromPath": "pit.stops" },
+        { "targetField": "fuelStops", "fromPath": "fueling.stops" },
+        { "targetField": "lastPassAtMs", "fromPath": "last_pass_ms" }
+      ]
+    }
+  ]
+}

@@ -111,6 +111,8 @@ green. CI blocks merge on lint, typecheck or any test failure.
   the pasted copy is the one to follow. Decisions the brief flags for João are not
   yours to make: pick the conservative option, state it in the PR description under
   "Decisions taken", and move on.
+- The brief lives only in the Plane work item; never copy it into the repo. docs/ holds
+  conventions, decisions, ADRs and cross-repo contracts only.
 - Open the PR as a draft (`gh pr create --draft`). CI does not run on a draft.
 - Before every push to it, run `pnpm verify` locally, or `pnpm verify --quick` plus the
   e2e tests of the packages touched. Report the result in the round's report.

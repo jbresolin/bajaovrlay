@@ -21,6 +21,14 @@ export const HttpJsonSampleAnswerSchema = z.discriminatedUnion('ok', [
     ok: z.literal(false),
     /** The pt-BR reason, naming the request and at most the host; never a header value. */
     error: z.string(),
+    /**
+     * When the source answered outside 2xx: its status, and its body when that was JSON
+     * (within the poll's cap), so a page can tell one refusal from another, as the Baja
+     * app's `{"code": "wrong_type"}` tells a tournament asked as a table (gate 2 of PR #38).
+     */
+    answerOutside2xx: z
+      .object({ status: z.number().int(), body: z.unknown().optional() })
+      .optional(),
   }),
 ]);
 

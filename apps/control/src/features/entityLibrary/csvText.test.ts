@@ -16,13 +16,15 @@
  *   - A byte-order mark, CRLF line ends and blank lines are taken in stride.
  *   - The writer puts a byte-order mark first, separates with ";", quotes a cell with a
  *     ";", a quote or a line break, and what it writes reads back the same.
+ *   - The text written for the paste box has no mark and plain line ends, quoted the same
+ *     (BAJAOVRLAY-54: the Baja app's teams are put there as CSV).
  *
  * What these tests deliberately do not cover:
  *   - What the cells mean; entityCsvImport.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
-import { readCsvText, writeCsvText } from './csvText';
+import { readCsvText, writeCsvText, writeCsvTextForThePasteBox } from './csvText';
 
 describe('readCsvText', () => {
   it('reads rows separated by ";" with their line numbers', () => {
@@ -119,5 +121,19 @@ describe('writeCsvText', () => {
 
     // Assert: the same cells.
     expect(cellsReadBack, 'a round trip keeps every cell').toEqual([header, ...rows]);
+  });
+});
+
+describe('writeCsvTextForThePasteBox', () => {
+  it('writes no byte-order mark and plain line ends, quoting as the file does', () => {
+    // Arrange: a header and a team whose name holds a ";".
+    const header = ['carro', 'equipe'];
+    const rows = [['42', 'Baja; UFPR']];
+
+    // Act: write it for the paste box.
+    const text = writeCsvTextForThePasteBox(header, rows);
+
+    // Assert: no mark, "\n" line ends, the one cell quoted.
+    expect(text, 'text a person reads in the box').toBe('carro;equipe\n42;"Baja; UFPR"\n');
   });
 });

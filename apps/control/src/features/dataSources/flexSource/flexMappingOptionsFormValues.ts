@@ -22,8 +22,17 @@ export type LookupFormValues = {
 /** Where a table answer keeps its columns, headers and cells; all empty means no table. */
 export type TableLayoutFormValues = { columnsPath: string; headerPath: string; cellsPath: string };
 
-/** "Recusar a resposta quando": all empty means no refusal. The value is typed. */
-export type RefusalFormValues = { path: string; equalsText: string; message: string };
+/**
+ * "Recusar a resposta quando": all empty means no refusal. The value is typed; the known
+ * values ("Valores conhecidos", `notOneOf`) are typed and separated by commas, as an
+ * incomplete-match condition's are.
+ */
+export type RefusalFormValues = {
+  path: string;
+  equalsText: string;
+  notOneOfText: string;
+  message: string;
+};
 
 /**
  * One "Disputa incompleta quando" row: a path on the match and the values that mark it
@@ -66,7 +75,7 @@ export function buildEmptyMappingOptionsFormValues(): MappingOptionsFormValues {
     table: { columnsPath: '', headerPath: '', cellsPath: '' },
     scorePartHeadersText: '',
     scorePartValuePath: '',
-    refuseWhen: { path: '', equalsText: '', message: '' },
+    refuseWhen: { path: '', equalsText: '', notOneOfText: '', message: '' },
     workOutGapsFromLaps: false,
     incompleteConditions: [],
   };
@@ -82,7 +91,11 @@ export function buildMappingOptionsFormValues(mapping: FlexShapeMapping): Mappin
       ? options.refuseWhen
       : {
           path: mapping.refuseWhen.path,
-          equalsText: writeTypedValueText(mapping.refuseWhen.equals),
+          // `equals: null` is a comparison too, so the key's presence decides.
+          equalsText: Object.hasOwn(mapping.refuseWhen, 'equals')
+            ? writeTypedValueText(mapping.refuseWhen.equals ?? null)
+            : '',
+          notOneOfText: (mapping.refuseWhen.notOneOf ?? []).map(writeTypedValueText).join(', '),
           message: mapping.refuseWhen.message,
         };
   const incompleteConditions = (mapping.entryIsIncompleteWhen ?? []).map((condition) => ({
