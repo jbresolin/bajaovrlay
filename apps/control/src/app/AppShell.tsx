@@ -7,6 +7,7 @@ import { DataSourcesPage } from '@/features/dataSources/DataSourcesPage';
 import { EntityLibraryPage } from '@/features/entityLibrary/EntityLibraryPage';
 import { EventReviewPage } from '@/features/events/EventReviewPage';
 import { KeyboardMapDialog } from '@/features/keyboardHelp/KeyboardMapDialog';
+import { ObsTally } from '@/features/obs/ObsTally';
 import { OutputsAndLayersPage } from '@/features/outputsAndLayers/OutputsAndLayersPage';
 import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
 import { ptBR } from '@/i18n/ptBR';
@@ -64,6 +65,7 @@ export function AppShell() {
         <div className="flex flex-wrap items-center gap-4">
           <DataSourcesHealthChip />
           <ServerHealthCheck />
+          <ObsTally />
           <ConnectionBadge />
           <KeyboardMapDialog />
         </div>

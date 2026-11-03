@@ -12,7 +12,9 @@ import { EventRulesSchema } from '../eventInbox/eventRule.js';
 import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
+import { MacroStopsSchema } from '../macros/macroStop.js';
 import { MediaSchema } from '../media/mediaRecord.js';
+import { ObsSliceSchema } from '../obs/obsSlice.js';
 import { OutputsSchema } from '../outputs/output.js';
 import { OverridesSchema } from '../overrides/override.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
@@ -37,6 +39,8 @@ export const SliceNameSchema = z.enum([
   'quickFirePanels',
   'macros',
   'macroRuns',
+  'macroStops',
+  'obs',
   'dataSources',
   'dataSnapshots',
   'overrides',
@@ -95,6 +99,17 @@ export const SlicesSchema = z.object({
    * never saved: after a restart it is empty.
    */
   macroRuns: z.array(MacroRunSchema),
+  /**
+   * Where and why each macro's last run stopped at a refused step (BAJAOVRLAY-27), for
+   * its button. Kept in the server's memory only, never saved: after a restart it is empty.
+   */
+  macroStops: MacroStopsSchema,
+  /**
+   * OBS as the server's one connection to it last heard (BAJAOVRLAY-27): connected or
+   * not, the scenes, Program and Preview, the latest scene switch. Kept in the server's
+   * memory only and refilled from OBS at every boot; screens receive it as "no OBS".
+   */
+  obs: ObsSliceSchema,
   /** The data sources the server polls for race data, with their config and health. */
   dataSources: z.array(DataSourceSchema),
   /**

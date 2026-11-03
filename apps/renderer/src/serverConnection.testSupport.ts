@@ -4,7 +4,12 @@
 // It also keeps what the renderer sent, so a test can read back what the server would hear.
 // It also builds what that stand-in server says: the slices of a hello, and an answer to
 // GET /api/v1/state that the test gives by hand.
-import type { Instance, PageReloadForNewBuild, Slices } from '@bajaovrlay/shared';
+import {
+  type Instance,
+  obsSliceWithoutObs,
+  type PageReloadForNewBuild,
+  type Slices,
+} from '@bajaovrlay/shared';
 import { onTestFinished, vi } from 'vitest';
 
 import { connectToServer, type ServerSocket, type SlicesDelivery } from './serverConnection.js';
@@ -91,6 +96,8 @@ export function createSlicesWithInstances(instances: Instance[]): Slices {
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

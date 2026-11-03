@@ -11,7 +11,7 @@
  * What these tests prove:
  *   - Every command in CommandSchema is classed, and nothing outside it is: a new command
  *     fails this test until someone decides who may send it.
- *   - The commands only the server sends are exactly the eight the brief and the
+ *   - The commands only the server sends are exactly the ten the briefs and the
  *     authorisation step name, and the buttons a pad drives are the operator's.
  *
  * What these tests deliberately do not cover:
@@ -56,13 +56,16 @@ describe('the senders of each command', () => {
     ).toEqual([...typesInTheSchema].sort());
   });
 
-  it('keeps exactly eight commands for the server alone', () => {
-    // Arrange: the eight the authorisation step has always kept from operators.
+  it('keeps exactly ten commands for the server alone', () => {
+    // Arrange: the eight the authorisation step has always kept from operators, and the
+    // two reports of the server's OBS connection (BAJAOVRLAY-27).
     const expectedServerCommands = [
       'advanceMacroRun',
       'endMacroRun',
       'recordDataSourcePoll',
       'recordDetectedEvents',
+      'recordObsSceneSwitchAnswer',
+      'recordObsState',
       'recordRecordingProgress',
       'recordUploadedMedia',
       'refreshBoundInstanceData',
@@ -72,7 +75,7 @@ describe('the senders of each command', () => {
     // Act: read the list.
     const serverCommands = [...commandTypesOnlyTheServerSends].sort();
 
-    // Assert: the same eight.
+    // Assert: the same ten.
     expect(serverCommands, 'only these commands are the server’s own').toEqual(
       expectedServerCommands,
     );
@@ -89,6 +92,8 @@ describe('the senders of each command', () => {
     { name: 'stopRecording is the operator’s', commandType: 'stopRecording' as const },
     // showEvent is sent by both: the inbox for an automatic rule, the operator by hand.
     { name: 'showEvent is the operator’s', commandType: 'showEvent' as const },
+    // A pad's scene button (BAJAOVRLAY-27); a macro's obsScene step sends it too.
+    { name: 'switchObsScene is the operator’s', commandType: 'switchObsScene' as const },
   ];
 
   it.each(buttonsOfAPad)('$name', ({ commandType }) => {

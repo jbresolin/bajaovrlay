@@ -126,9 +126,11 @@ describe('"Testar" with the Baja app’s answers', () => {
   });
 
   it('lists the real 25SU Super Prime’s rounds, the third place before the final', async () => {
-    // Arrange: the tournament config and the real 25SU Super Prime pasted.
+    // Arrange: the tournament config, the real 25SU Super Prime and its teams pasted (the
+    // tournament's names are joined from them, gate 2 of PR #38).
     openTheFormWithConfig(buildBajaAppTournamentConfig());
     pasteSampleOf('torneio', bajaAppAnswerTexts.superPrime25SU);
+    pasteSampleOf('equipes', bajaAppAnswerTexts.teams25SU);
 
     // Act: press "Testar".
     pressButton('Testar');

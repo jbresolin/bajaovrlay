@@ -97,8 +97,8 @@ describe('applyCommand with an invalid command', () => {
     // Arrange: a store, and a command type the server does not know.
     const { store } = createStoreWithRaceClockRegistered();
     const instancesBefore = store.readAllSlices().instances;
-    // (It was takeItem, runMacro, setOverride, then importEntities; OBS scenes come in M4.)
-    const unknownCommand = { type: 'switchObsScene', sceneName: 'Pódio' };
+    // (Once takeItem, runMacro, setOverride, importEntities, switchObsScene; now OBS's stream.)
+    const unknownCommand = { type: 'startObsStream' };
 
     // Act: apply it as the operator.
     store.applyCommand(unknownCommand, operatorActor);
@@ -110,7 +110,7 @@ describe('applyCommand with an invalid command', () => {
         id: 1,
         ts: '2026-10-09T14:32:05.000Z',
         actor: 'operador:conexao-7',
-        command: 'switchObsScene',
+        command: 'startObsStream',
         payload: unknownCommand,
         result: {
           status: 'failed',

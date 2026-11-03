@@ -1,10 +1,10 @@
 /**
  * The step rows of the macro editor, and the exact `steps` they stand for. A row holds
- * every control any kind of step needs (item, layer, wait text), so switching a row's
+ * every control any kind of step needs (item, layer, OBS scene, wait text), so switching a row's
  * kind back and forth loses nothing typed; only what its kind needs is sent. Pure
  * functions, no drawing.
  */
-import { longestMacroWaitMs, type MacroStep } from '@bajaovrlay/shared';
+import { longestMacroWaitMs, type MacroStep, type ObsSceneTarget } from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -19,6 +19,10 @@ export type MacroStepDraft = {
   layerId: string;
   /** The wait of an "Esperar" row, in seconds as typed: "0,5", "2". */
   waitSecondsText: string;
+  /** The scene of a "Trocar cena do OBS" row, as OBS names it; empty while none is chosen. */
+  sceneName: string;
+  /** Which of OBS's outputs a "Trocar cena do OBS" row switches; Program for a new row. */
+  obsTarget: ObsSceneTarget;
 };
 
 /** The outcome of checking the rows: the steps to send, or one message per wrong row. */
@@ -66,7 +70,12 @@ export function formatWaitMillisecondsAsSecondsText(milliseconds: number): strin
   return `${wholeSeconds},${decimalsText}`;
 }
 
-/** The step one row stands for, or the pt-BR message saying what is missing in it. */
+/**
+ * The step one row stands for, or the pt-BR message saying what is missing in it. A scene
+ * row needs only a scene: whether OBS has it is asked when the macro runs, not here, so a
+ * macro can be edited while OBS is closed (gate 2 of PR #40). The row warns instead
+ * (isTheSceneOfTheRowMissingFromObsNow).
+ */
 function buildStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: string } {
   switch (draft.kind) {
     case 'takeItem':
@@ -79,6 +88,11 @@ function buildStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: 
         : { kind: 'clearLayer', layerId: draft.layerId };
     case 'clearAll':
       return { kind: 'clearAll' };
+    case 'obsScene':
+      if (draft.sceneName === '') {
+        return { errorMessage: fieldErrors.sceneMissing };
+      }
+      return { kind: 'obsScene', sceneName: draft.sceneName, target: draft.obsTarget };
     case 'wait': {
       const milliseconds = convertWaitSecondsTextToMilliseconds(draft.waitSecondsText);
       return milliseconds === undefined
@@ -108,9 +122,30 @@ export function buildMacroStepsFromDrafts(drafts: MacroStepDraft[]): MacroStepsF
   return hasAnyWrongRow ? { isValid: false, errorMessageByDraftId } : { isValid: true, steps };
 }
 
+/**
+ * Whether a "Trocar cena do OBS" row names a scene OBS does not list now (`obsSceneNames`,
+ * empty while OBS is not connected). Such a row still saves; it is shown with a warning,
+ * since the run will stop at it unless OBS has the scene by then.
+ */
+export function isTheSceneOfTheRowMissingFromObsNow(
+  draft: MacroStepDraft,
+  obsSceneNames: string[],
+): boolean {
+  const isASceneRowWithASceneChosen = draft.kind === 'obsScene' && draft.sceneName !== '';
+  return isASceneRowWithASceneChosen && !obsSceneNames.includes(draft.sceneName);
+}
+
 /** A new, empty row of the given kind; "+ Passo" adds one of these. */
 export function buildEmptyMacroStepDraft(draftId: string, kind: MacroStep['kind']): MacroStepDraft {
-  return { draftId, kind, itemId: '', layerId: '', waitSecondsText: '' };
+  return {
+    draftId,
+    kind,
+    itemId: '',
+    layerId: '',
+    waitSecondsText: '',
+    sceneName: '',
+    obsTarget: 'program',
+  };
 }
 
 /**
@@ -130,6 +165,8 @@ export function buildMacroStepDraftsFromSteps(
         return { ...draft, layerId: step.layerId };
       case 'clearAll':
         return draft;
+      case 'obsScene':
+        return { ...draft, sceneName: step.sceneName, obsTarget: step.target };
       case 'wait':
         return { ...draft, waitSecondsText: formatWaitMillisecondsAsSecondsText(step.ms) };
     }

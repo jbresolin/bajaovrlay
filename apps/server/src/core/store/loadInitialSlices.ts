@@ -1,4 +1,4 @@
-import { type Slices, SlicesSchema } from '@bajaovrlay/shared';
+import { obsSliceWithoutObs, type Slices, SlicesSchema } from '@bajaovrlay/shared';
 
 import {
   loadOrSeedDataSourceSlices,
@@ -217,6 +217,10 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     quickFirePanels: eventInboxSlices.quickFirePanels,
     macros: quickFireAndMacroSlices.macros,
     macroRuns: [],
+    // Memory only too (BAJAOVRLAY-27): where a run stopped short means nothing after a
+    // restart, and OBS's slice is refilled by the OBS connection as soon as it connects.
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: dataSourceSlices.dataSources,
     dataSnapshots: dataSourceSlices.dataSnapshots,
     // The operator's corrections are saved (BAJAOVRLAY-20): a restart keeps every one in

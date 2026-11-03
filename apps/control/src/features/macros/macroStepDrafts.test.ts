@@ -4,8 +4,8 @@
  *
  * What this module is for:
  *   The macro editor shows a list of step rows: a kind ("Pôr item no ar", "Limpar
- *   camada", "Limpar tudo", "Esperar") and, depending on the kind, an item, a layer or a
- *   wait typed in seconds. macroStepDrafts.ts turns those rows into the exact `steps`
+ *   camada", "Limpar tudo", "Trocar cena do OBS", "Esperar") and, depending on the kind,
+ *   an item, a layer, one of OBS's scenes or a wait typed in seconds. macroStepDrafts.ts turns those rows into the exact `steps`
  *   array of createMacro and updateMacro, with one pt-BR message per wrong row, and turns
  *   a stored macro's steps back into rows. Pure functions; no drawing.
  *
@@ -16,6 +16,10 @@
  *   - A wait is typed in seconds, with a comma or a point and up to three decimals, and is
  *     sent in whole milliseconds; outside 1 ms to 10 s, or not a number, it is refused
  *     with a pt-BR message, and so is a row with no item or no layer chosen.
+ *   - A "Trocar cena do OBS" row becomes obsScene with its scene and Program or Preview;
+ *     it is refused only with no scene. A scene OBS does not list now (renamed, or OBS
+ *     not connected) still saves, and the row is flagged for a warning instead: OBS may
+ *     have it again when the macro runs, and the run stops at that step if it does not.
  *   - A stored macro's steps come back as rows that build the very same steps.
  *   - The wait shows in seconds the way an operator writes it ("0,5", not "0.500").
  *
@@ -31,12 +35,23 @@ import {
   buildMacroStepDraftsFromSteps,
   buildMacroStepsFromDrafts,
   formatWaitMillisecondsAsSecondsText,
+  isTheSceneOfTheRowMissingFromObsNow,
   type MacroStepDraft,
 } from './macroStepDrafts';
 
+/** The scenes OBS lists on the stream PC, as the obs slice holds them. */
+const scenesOfTheStreamPcObs = ['Pista', 'Box', 'Pódio', 'Intervalo'];
+
 /** A row as the editor holds it; every field present, as a new row has them. */
 function buildDraft(parts: Partial<MacroStepDraft> & Pick<MacroStepDraft, 'draftId' | 'kind'>) {
-  return { itemId: '', layerId: '', waitSecondsText: '', ...parts };
+  return {
+    itemId: '',
+    layerId: '',
+    waitSecondsText: '',
+    sceneName: '',
+    obsTarget: 'program' as const,
+    ...parts,
+  };
 }
 
 describe('buildMacroStepsFromDrafts', () => {
@@ -92,6 +107,23 @@ describe('buildMacroStepsFromDrafts', () => {
       name: 'a wait of "0,001" seconds is 1 ms',
       draft: buildDraft({ draftId: 'passo-1', kind: 'wait', waitSecondsText: '0,001' }),
       expectedStep: { kind: 'wait', ms: 1 },
+    },
+    // "Pista + torre": the scene first; Program unless Preview was chosen.
+    {
+      name: 'a "Trocar cena do OBS" row becomes obsScene with its scene, on Program',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
+      expectedStep: { kind: 'obsScene', sceneName: 'Pista', target: 'program' },
+    },
+    // Studio Mode: the scene lined up on OBS's Preview.
+    {
+      name: 'a "Trocar cena do OBS" row on Preview keeps Preview',
+      draft: buildDraft({
+        draftId: 'passo-1',
+        kind: 'obsScene',
+        sceneName: 'Pódio',
+        obsTarget: 'preview',
+      }),
+      expectedStep: { kind: 'obsScene', sceneName: 'Pódio', target: 'preview' },
     },
     // The longest wait the server accepts, typed with spaces around it.
     {
@@ -157,6 +189,12 @@ describe('buildMacroStepsFromDrafts', () => {
       draft: buildDraft({ draftId: 'passo-1', kind: 'wait', waitSecondsText: 'meio segundo' }),
       expectedMessage: 'Informe a espera em segundos, de 0,001 a 10 (por exemplo 0,5).',
     },
+    // A scene row with nothing picked would switch to nothing.
+    {
+      name: 'refuses a "Trocar cena do OBS" row with no scene',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene' }),
+      expectedMessage: 'Escolha a cena do OBS deste passo.',
+    },
   ];
 
   it.each(wrongRowScenarios)('$name', ({ draft, expectedMessage }) => {
@@ -187,14 +225,82 @@ describe('buildMacroStepsFromDrafts', () => {
   });
 });
 
+describe('scene rows OBS does not list now', () => {
+  it('saves a scene row whatever OBS lists, since OBS is only asked when the macro runs', () => {
+    // Arrange: a scene row picked while OBS was connected, then OBS closed.
+    const drafts = [
+      buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
+      buildDraft({ draftId: 'passo-2', kind: 'clearAll' }),
+    ];
+
+    // Act: build the steps (OBS's list is not an input any more).
+    const result = buildMacroStepsFromDrafts(drafts);
+
+    // Assert: both steps saved as they are.
+    expect(result, 'a scene step saves without OBS').toEqual({
+      isValid: true,
+      steps: [{ kind: 'obsScene', sceneName: 'Pista', target: 'program' }, { kind: 'clearAll' }],
+    });
+  });
+
+  const warningScenarios = [
+    // The usual case: OBS has the scene, nothing to warn about.
+    {
+      name: 'no warning for a scene OBS lists',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
+      obsSceneNames: scenesOfTheStreamPcObs,
+      isWarned: false,
+    },
+    // Renamed in OBS since the macro was saved: the run would stop at this step.
+    {
+      name: 'a warning for a scene OBS no longer lists',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pódio 2025' }),
+      obsSceneNames: scenesOfTheStreamPcObs,
+      isWarned: true,
+    },
+    // OBS closed: no list to find the scene in, so the operator is told it was not found.
+    {
+      name: 'a warning for any scene while OBS is not connected',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene', sceneName: 'Pista' }),
+      obsSceneNames: [],
+      isWarned: true,
+    },
+    // Nothing picked yet: the save's own message ("Escolha a cena…") says what to do.
+    {
+      name: 'no warning for a scene row with no scene picked',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'obsScene' }),
+      obsSceneNames: [],
+      isWarned: false,
+    },
+    // A row switched away from "Trocar cena do OBS" keeps its scene but sends none.
+    {
+      name: 'no warning for a row of another kind that still holds a scene',
+      draft: buildDraft({ draftId: 'passo-1', kind: 'clearAll', sceneName: 'Pódio 2025' }),
+      obsSceneNames: scenesOfTheStreamPcObs,
+      isWarned: false,
+    },
+  ];
+
+  it.each(warningScenarios)('$name', ({ draft, obsSceneNames, isWarned }) => {
+    // Arrange: the row and OBS's list from the table above.
+
+    // Act: ask whether the row's scene is missing from OBS now.
+    const result = isTheSceneOfTheRowMissingFromObsNow(draft, obsSceneNames);
+
+    // Assert: warned exactly when a picked scene is not in OBS's list.
+    expect(result, 'the warning must follow OBS’s list').toBe(isWarned);
+  });
+});
+
 describe('buildMacroStepDraftsFromSteps', () => {
   it('turns stored steps into rows that build the very same steps', () => {
-    // Arrange: a stored macro's four kinds of step, and a counter for the rows' ids.
+    // Arrange: a stored macro's five kinds of step, and a counter for the rows' ids.
     const storedSteps: MacroStep[] = [
       { kind: 'takeItem', itemId: 'item-relogio-enduro' },
       { kind: 'wait', ms: 1250 },
       { kind: 'clearLayer', layerId: 'lower-third' },
       { kind: 'clearAll' },
+      { kind: 'obsScene', sceneName: 'Pódio', target: 'preview' },
     ];
     let rowsMadeSoFar = 0;
     function createDraftId(): string {
@@ -212,6 +318,12 @@ describe('buildMacroStepDraftsFromSteps', () => {
       buildDraft({ draftId: 'passo-2', kind: 'wait', waitSecondsText: '1,25' }),
       buildDraft({ draftId: 'passo-3', kind: 'clearLayer', layerId: 'lower-third' }),
       buildDraft({ draftId: 'passo-4', kind: 'clearAll' }),
+      buildDraft({
+        draftId: 'passo-5',
+        kind: 'obsScene',
+        sceneName: 'Pódio',
+        obsTarget: 'preview',
+      }),
     ]);
     expect(result, 'the rows must build back the stored steps exactly').toEqual({
       isValid: true,

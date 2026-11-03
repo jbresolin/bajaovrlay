@@ -12,7 +12,12 @@ import { FlexConfigImportExport } from './FlexConfigImportExport';
 import { FlexMappingsSection } from './FlexMappingsSection';
 import { FlexRequestsSection } from './FlexRequestsSection';
 import { readFlexSourceForm, resolveFlexSourceForm } from './flexSourceFormReading';
-import { buildFlexSourceFormValues, type FlexSourceFormValues } from './flexSourceFormValues';
+import {
+  buildFlexSourceFormValues,
+  buildFlexSourceFormValuesOfStartingPoint,
+  type FlexSourceFormValues,
+  type FlexSourceStartingPoint,
+} from './flexSourceFormValues';
 import { FlexTestPanel } from './FlexTestPanel';
 
 const texts = ptBR.dataSources.form;
@@ -21,6 +26,8 @@ const texts = ptBR.dataSources.form;
 export type FlexSourceFormProps = {
   /** The stored flex source to change ("Editar"), or null for a new one ("+ Fonte"). */
   sourceBeingEdited: HttpJsonDataSource | null;
+  /** For a new source only: the form opens filled in with it (a Baja app preset). */
+  newSourceStartingPoint?: FlexSourceStartingPoint;
   /** Called after the server accepted the save, and on "Cancelar". */
   onClose: () => void;
 };
@@ -36,8 +43,12 @@ export type FlexSourceFormProps = {
 export function FlexSourceForm(props: FlexSourceFormProps) {
   // The source as opened: "what changed" is judged against it, never a newer copy.
   const [sourceAsOpened] = useState(props.sourceBeingEdited);
+  const startingPoint = props.newSourceStartingPoint;
   const form = useForm<FlexSourceFormValues>({
-    defaultValues: buildFlexSourceFormValues(sourceAsOpened),
+    defaultValues:
+      sourceAsOpened === null && startingPoint !== undefined
+        ? buildFlexSourceFormValuesOfStartingPoint(startingPoint)
+        : buildFlexSourceFormValues(sourceAsOpened),
     resolver: resolveFlexSourceForm,
   });
   // One field array for the requests, shared by the requests section and "Testar": the

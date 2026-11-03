@@ -4,6 +4,7 @@ import { ptBREntityLibrary } from './ptBREntityLibrary';
 import { ptBREvents } from './ptBREvents';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
+import { ptBRObs } from './ptBRObs';
 import { ptBROutputs } from './ptBROutputs';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
@@ -76,6 +77,8 @@ export const ptBR = {
   // The "Saídas e camadas" page and the output choices (features/outputsAndLayers), in
   // ptBROutputs.ts (BAJAOVRLAY-49).
   outputs: ptBROutputs,
+  // The OBS tally in the header (features/obs, BAJAOVRLAY-27), in ptBRObs.ts.
+  obs: ptBRObs,
   // The "Fontes de dados" page and the header chip (features/dataSources), in ptBRDataSources.ts.
   dataSources: ptBRDataSources,
   // The "Cadastros" page (features/entityLibrary), in ptBREntityLibrary.ts.

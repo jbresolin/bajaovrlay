@@ -32,6 +32,7 @@ import {
   readUploadedFile,
   storeUploadedImage,
 } from '../../modules/media/index.js';
+import { mountButtonStateRoutes } from './mountButtonStateRoutes.js';
 import { mountCommandApiRoutes } from './mountCommandApiRoutes.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
 
@@ -155,11 +156,14 @@ export function createApiV1Routes(options: {
 
   // The command API (BAJAOVRLAY-28) is always mounted, so with no tokens it answers 403
   // with how to turn it on rather than 404.
-  mountCommandApiRoutes(apiRoutes, {
+  const commandApiAccess = {
     stateStore: options.stateStore,
     apiTokens: options.apiTokens ?? apiTurnedOff,
     isOpenToTheNetwork: options.isApiOpenToTheNetwork ?? false,
-  });
+  };
+  mountCommandApiRoutes(apiRoutes, commandApiAccess);
+  // The D200's per-button status URLs (BAJAOVRLAY-56), behind the same access.
+  mountButtonStateRoutes(apiRoutes, commandApiAccess);
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

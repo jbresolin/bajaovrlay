@@ -1,3 +1,4 @@
+import { ptBRBajaAppSource } from './ptBRBajaApp';
 import { ptBRFlexSourceForm } from './ptBRFlexSourceForm';
 
 /**
@@ -176,4 +177,6 @@ export const ptBRDataSources = {
 
   // The flex HTTP/JSON source's form, in ptBRFlexSourceForm.ts.
   flexForm: ptBRFlexSourceForm,
+  // "Adicionar fonte do app Baja" (features/dataSources/bajaAppSource), in ptBRBajaApp.ts.
+  bajaApp: ptBRBajaAppSource,
 } as const;

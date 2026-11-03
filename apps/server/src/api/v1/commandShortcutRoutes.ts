@@ -118,3 +118,21 @@ export const postStopMacroRoute = createRoute({
   security: apiTokenSecurity,
   responses: commandRouteResponses,
 });
+
+/**
+ * `POST /api/v1/obs-scene/{sceneName}`: one of OBS's scenes on Program (BAJAOVRLAY-27), the
+ * name URL-encoded as OBS spells it ("P%C3%B3dio" for "Pódio").
+ */
+export const postObsSceneRoute = createRoute({
+  method: 'post',
+  path: '/obs-scene/{sceneName}',
+  summary: "switchObsScene: put one of OBS's scenes on Program",
+  description:
+    'The scene name is URL-encoded and must be spelt as OBS spells it. OBS not connected ' +
+    'answers 409 (OBS_NOT_CONNECTED); a scene OBS does not have answers 422 ' +
+    '(OBS_SCENE_NOT_FOUND). 200 means the switch was sent: OBS’s own answer reaches the ' +
+    'control page’s tally, and a refusal by OBS is written to the event log.',
+  security: apiTokenSecurity,
+  request: { params: z.object({ sceneName: z.string().min(1) }) },
+  responses: commandRouteResponses,
+});

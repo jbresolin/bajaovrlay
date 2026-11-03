@@ -22,10 +22,19 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   token at all with BAJAOVRLAY_API_OPEN=true, signed `api:rede`):
   `POST /api/v1/commands` (`commandsRoute.ts`, the WebSocket's command envelope in, its
   commandResult out; `commandBodyChecks.ts` refuses a body not sent as JSON, 415, or over
-  256 KB, 413), ten button shortcuts (`commandShortcutRoutes.ts`; the four that read
-  the state to build their command are in `shortcutCommands.ts`) and `GET /api/v1/layers/status`
+  256 KB, 413), ten button shortcuts and OBS's scene button, `POST /api/v1/obs-scene/{sceneName}`
+  (BAJAOVRLAY-27) (`commandShortcutRoutes.ts`; the four that read the state to build their
+  command are in `shortcutCommands.ts`) and `GET /api/v1/layers/status`
   (`layersStatusRoute.ts`). Every command runs through `commandApiAnswers.ts`, signed
   `api:<token name>`; `commandRefusalHttpStatus.ts` gives each refusal code its HTTP status.
+- The button state routes (BAJAOVRLAY-56), mounted by `mountButtonStateRoutes.ts` behind the
+  same access: `GET /api/v1/state/layer/{layerId}`, `.../state/shortcut/{panelId}/{buttonNumber}`
+  (counted as fire-shortcut counts, `quickFireButtonByPlace.ts`) and `.../state/macro/{macroId}`,
+  each a flat answer for the Ulanzi D200's one-word JSON path (`buttonStates.ts`); an unknown id
+  answers 404. They read memory only and never write the event log. Buttons poll them every
+  second (fifteen buttons: some 54,000 requests an hour), so their request lines are logged at
+  debug; a refused poll at warn once a minute per path and status, and a failed one (500) at
+  warn every time (`core/http/pollsByButtonsLogging.ts`).
 
 Each route is declared with `createRoute` from @hono/zod-openapi so it appears in the
 OpenAPI document; a route added with plain `app.get` would be missing from it.

@@ -18,7 +18,12 @@
  *   - Which slices a screen is sent; webSocketHubScreenSlices.test.ts.
  *   - Sending the message; webSocketHubGroupedSlices.test.ts.
  */
-import { type SliceNameSentWhole, SliceNameSentWholeSchema, type Slices } from '@bajaovrlay/shared';
+import {
+  obsSliceWithoutObs,
+  type SliceNameSentWhole,
+  SliceNameSentWholeSchema,
+  type Slices,
+} from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { buildSlicesMessage } from './serverMessageBuilding.js';
@@ -40,6 +45,8 @@ function buildSlicesEachAListOfItsOwn(): Slices {
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     overrides: [],

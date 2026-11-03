@@ -29,6 +29,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 import { ServerMessageSchema } from './serverMessages.js';
 
 const lowerThirdLayer = {
@@ -94,6 +95,8 @@ describe('ServerMessageSchema', () => {
           quickFirePanels: [],
           macros: [],
           macroRuns: [],
+          macroStops: [],
+          obs: obsSliceWithoutObs,
           dataSources: [],
           dataSnapshots: [],
           recordings: [],
@@ -129,6 +132,8 @@ describe('ServerMessageSchema', () => {
           quickFirePanels: [],
           macros: [],
           macroRuns: [],
+          macroStops: [],
+          obs: obsSliceWithoutObs,
           dataSources: [],
           dataSnapshots: [],
           recordings: [],

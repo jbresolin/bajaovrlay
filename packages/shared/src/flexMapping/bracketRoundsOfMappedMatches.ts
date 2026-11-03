@@ -8,7 +8,9 @@
  * It is lenient where real tables are, so the shape can stay strict (gate 2 of PR #30): a
  * table with integer defaults writes 0 wins on every row and fills a bye's empty slot with
  * nothing but those wins. Wins on a match that is not a best of N are dropped, and so is a
- * carB with no car number (a bye), rather than refusing the whole snapshot for them.
+ * carB with no car number (a bye), rather than refusing the whole snapshot for them. A bye
+ * on the first slot puts the lone car on carA, and a one-car match the mapping says
+ * nothing of is a W.O. (gate 2 of PR #38).
  */
 
 /** One round built from the matches: its name, the third-place mark, its matches. */
@@ -28,6 +30,13 @@ export type GroupedRound = {
   matchLineNumbers: number[];
 };
 
+/**
+ * How the mapped matches are tidied up. `isAOneCarMatchABye`: the mapping reads a carB, so
+ * a match left with carA alone is a bye, a W.O. when the mapping says nothing of one; a
+ * mapping reading carA only has one car on every match and no bye to tell.
+ */
+export type MatchTidyingOptions = { isAOneCarMatchABye: boolean };
+
 /** The rounds, and the 1-based lines of the matches that named no round (left out). */
 export type MappedMatchesGrouping = {
   groupedRounds: GroupedRound[];
@@ -44,6 +53,7 @@ export type MappedMatchesGrouping = {
 export function groupMappedMatchesIntoRounds(
   matches: Array<Record<string, unknown>>,
   isMatchIncomplete: boolean[],
+  options: MatchTidyingOptions,
 ): MappedMatchesGrouping {
   const groupedRounds: GroupedRound[] = [];
   const linesWithoutRoundName: number[] = [];
@@ -73,7 +83,7 @@ export function groupMappedMatchesIntoRounds(
       groupedRound.hasAnIncompleteMatch = true;
     }
     groupedRound.matchLineNumbers.push(lineNumber);
-    groupedRound.round.matches.push(dropWhatATableWritesByDefault(match));
+    groupedRound.round.matches.push(tidyUpAMappedMatch(match, options));
   });
 
   return { groupedRounds, linesWithoutRoundName };
@@ -91,8 +101,34 @@ function readMappedCar(
 
 /**
  * A mapped match without what a table writes by default: the cars' wins when the match has
- * no bestOf, and a carB with no carNumber (a bye's empty slot). Anything else is passed on
- * as mapped, for the shape to judge.
+ * no bestOf, and a carB with no carNumber (a bye's empty slot). A bye drawn on the first
+ * slot leaves carA with no carNumber and the team as carB: that car becomes carA, as the
+ * shape draws a bye (gate 2 of PR #38). With `isAOneCarMatchABye`, a match left with one
+ * car is a W.O. when the mapping says nothing of one, since the shape refuses a bye that
+ * is not. Anything else is passed on as mapped, for the shape to judge.
+ */
+function tidyUpAMappedMatch(
+  match: Record<string, unknown>,
+  options: MatchTidyingOptions,
+): Record<string, unknown> {
+  const tidied = dropWhatATableWritesByDefault(match);
+  const carA = readMappedCar(tidied, 'carA');
+  const carB = readMappedCar(tidied, 'carB');
+  const isTheTeamOnTheBSideAlone = carA?.carNumber === undefined && carB !== undefined;
+  if (isTheTeamOnTheBSideAlone) {
+    tidied.carA = carB;
+    delete tidied.carB;
+  }
+  const isAMatchOfOneCar = tidied.carB === undefined;
+  if (options.isAOneCarMatchABye && isAMatchOfOneCar && tidied.walkover === undefined) {
+    tidied.walkover = true;
+  }
+  return tidied;
+}
+
+/**
+ * A mapped match without what a table writes by default: the cars' wins when the match has
+ * no bestOf, and a carB with no carNumber (a bye's empty slot).
  */
 function dropWhatATableWritesByDefault(match: Record<string, unknown>): Record<string, unknown> {
   const tidied: Record<string, unknown> = { ...match };

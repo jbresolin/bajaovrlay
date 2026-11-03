@@ -1,0 +1,98 @@
+{
+  "requests": [
+    {
+      "requestId": "torneio",
+      "url": "{{apiAddress}}/resultados/torneio.php",
+      "queryParameters": [
+        { "name": "evt", "value": "{{eventId}}" },
+        { "name": "id", "value": "{{resultadoId}}" }
+      ]
+    },
+    {
+      "requestId": "equipes",
+      "url": "{{apiAddress}}/resultados/equipes.php",
+      "queryParameters": [{ "name": "evt", "value": "{{eventId}}" }],
+      "refreshEveryMs": 600000
+    }
+  ],
+  "mappings": [
+    {
+      "shapeKey": "brackets",
+      "requestId": "torneio",
+      "entriesPath": "rounds",
+      "nestedEntriesPath": "matches",
+      "lookups": [
+        {
+          "lookupName": "equipesLadoA",
+          "requestId": "equipes",
+          "listPath": "teams",
+          "keyPath": "number",
+          "entryKeyPath": "slots[0].team.number"
+        },
+        {
+          "lookupName": "equipesLadoB",
+          "requestId": "equipes",
+          "listPath": "teams",
+          "keyPath": "number",
+          "entryKeyPath": "slots[1].team.number"
+        }
+      ],
+      "entryIsIncompleteWhen": [
+        { "path": "slots[0].type", "isOneOf": ["pending", "unknown"] },
+        { "path": "slots[1].type", "isOneOf": ["pending", "unknown"] }
+      ],
+      "fields": [
+        { "targetField": "sessionId", "fromPath": "resultado_id" },
+        { "targetField": "updatedAtMs", "fromPollMoment": true }
+      ],
+      "entryFields": [
+        { "targetField": "roundName", "fromParent": "name" },
+        {
+          "targetField": "roundIsThirdPlace",
+          "fromParent": "round",
+          "transformId": "mapValues",
+          "transformParameters": { "table": { "-1": true }, "otherwiseValue": false }
+        },
+        { "targetField": "matchId", "fromPath": "match_id", "transformId": "numberToText" },
+        { "targetField": "bestOf", "fromPath": "best_of" },
+        { "targetField": "winnerCarNumber", "fromPath": "winner" },
+        { "targetField": "carA.carNumber", "fromPath": "slots[0].team.number" },
+        {
+          "targetField": "carA.teamName",
+          "firstOf": [
+            { "fromLookup": { "lookup": "equipesLadoA", "path": "short_name" } },
+            { "fromPath": "slots[0].team.short_name" },
+            { "fromLookup": { "lookup": "equipesLadoA", "path": "name" } }
+          ]
+        },
+        {
+          "targetField": "carA.schoolName",
+          "firstOf": [
+            { "fromLookup": { "lookup": "equipesLadoA", "path": "school_short" } },
+            { "fromPath": "slots[0].team.school_short" },
+            { "fromLookup": { "lookup": "equipesLadoA", "path": "school" } }
+          ]
+        },
+        { "targetField": "carA.wins", "fromPath": "slots[0].wins" },
+        { "targetField": "carB.carNumber", "fromPath": "slots[1].team.number" },
+        {
+          "targetField": "carB.teamName",
+          "firstOf": [
+            { "fromLookup": { "lookup": "equipesLadoB", "path": "short_name" } },
+            { "fromPath": "slots[1].team.short_name" },
+            { "fromLookup": { "lookup": "equipesLadoB", "path": "name" } }
+          ]
+        },
+        {
+          "targetField": "carB.schoolName",
+          "firstOf": [
+            { "fromLookup": { "lookup": "equipesLadoB", "path": "school_short" } },
+            { "fromPath": "slots[1].team.school_short" },
+            { "fromLookup": { "lookup": "equipesLadoB", "path": "school" } }
+          ]
+        },
+        { "targetField": "carB.wins", "fromPath": "slots[1].wins" }
+      ]
+    }
+  ]
+}

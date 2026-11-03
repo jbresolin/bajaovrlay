@@ -20,9 +20,10 @@ const enduroSimulatorId = 'simulador-enduro';
 
 /**
  * The slices a screen is not sent, one row each, with what puts something in it on the
- * server (see fillEverySliceAScreenIsNotSent).
+ * server (see fillEverySliceAScreenIsNotSent). Lists only: `obs`, an object, is sent to a
+ * screen as "no OBS" whatever OBS does, which slicesSentToScreensObs.test.ts proves.
  */
-export const sliceNamesAScreenIsNotSent: SliceName[] = [
+export const sliceNamesAScreenIsNotSent: Array<Exclude<SliceName, 'obs'>> = [
   // A clock whose flag follows the simulator, taken after its poll (BAJAOVRLAY-20).
   'instanceBindings',
   // Seeded at the first boot: "Sessão principal".

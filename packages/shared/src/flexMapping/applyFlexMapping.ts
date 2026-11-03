@@ -237,7 +237,11 @@ function placeMappedEntriesInTheirShape(
   const { mapping } = context;
   const entries = mappedEntries.map((mappedEntry) => mappedEntry.entry);
   if (mapping.shapeKey === 'brackets') {
-    placeMatchesInRounds(shape, mappedEntries, problems);
+    // A match left with one car is a bye only when the mapping reads a second one at all.
+    const doesTheMappingReadCarB = (mapping.entryFields ?? []).some((rule) =>
+      rule.targetField.startsWith('carB.'),
+    );
+    placeMatchesInRounds(shape, mappedEntries, doesTheMappingReadCarB, problems);
     return;
   }
 
@@ -271,12 +275,15 @@ function placeMappedEntriesInTheirShape(
 function placeMatchesInRounds(
   shape: Record<string, unknown>,
   mappedEntries: MappedEntry[],
+  doesTheMappingReadCarB: boolean,
   problems: FlexMappingProblems,
 ): void {
   const lines = ptBRFlexMapping.problemLines;
   const entries = mappedEntries.map((mappedEntry) => mappedEntry.entry);
   const isMatchIncomplete = mappedEntries.map((mappedEntry) => mappedEntry.isIncomplete);
-  const grouping = groupMappedMatchesIntoRounds(entries, isMatchIncomplete);
+  const grouping = groupMappedMatchesIntoRounds(entries, isMatchIncomplete, {
+    isAOneCarMatchABye: doesTheMappingReadCarB,
+  });
   const roundsKept = keepWholeRoundsWithTheThirdPlaceBeforeTheFinal(grouping.groupedRounds);
   shape.rounds = roundsKept.map((groupedRound) => groupedRound.round);
 

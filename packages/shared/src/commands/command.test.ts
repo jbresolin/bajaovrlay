@@ -121,11 +121,10 @@ describe('CommandSchema', () => {
   it('refuses a command type the server does not know, naming the type field', () => {
     // Arrange: a command from a future version of the control page. (Until BAJAOVRLAY-13
     // this example was takeItem, until BAJAOVRLAY-16 runMacro, until BAJAOVRLAY-20
-    // setOverride and until BAJAOVRLAY-19 importEntities; all are known now. Switching the
-    // OBS scene arrives with the OBS control of M4.)
+    // setOverride, until BAJAOVRLAY-19 importEntities and until BAJAOVRLAY-27
+    // switchObsScene; all are known now. Starting the stream is left out of OBS control.)
     const unknownCommand = {
-      type: 'switchObsScene',
-      sceneName: 'Pódio',
+      type: 'startObsStream',
     };
 
     // Act: check it and turn the failure into readable text.

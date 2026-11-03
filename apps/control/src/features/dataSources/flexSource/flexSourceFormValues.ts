@@ -18,7 +18,8 @@ import {
 
 /**
  * What the flex HTTP/JSON form holds, and how it is filled: from a stored source
- * ("Editar"), from an imported config, or empty ("+ Fonte"). Every field is text as an
+ * ("Editar"), from an imported config, from a preset chosen on "Adicionar fonte do app
+ * Baja", or empty ("+ Fonte"). Every field is text as an
  * input holds it; flexSourceFormReading.ts turns it into a config and checks it with the
  * shared HttpJsonConfigSchema.
  */
@@ -77,6 +78,16 @@ export type FlexConfigFormValues = {
 /** Everything the flex form holds. */
 export type FlexSourceFormValues = LabelAndPollIntervalFormValues & FlexConfigFormValues;
 
+/**
+ * A new source the form opens already filled in, not yet saved: a preset chosen on
+ * "Adicionar fonte do app Baja" (BAJAOVRLAY-54), with its name and read interval.
+ */
+export type FlexSourceStartingPoint = {
+  label: string;
+  pollIntervalMs: number;
+  config: HttpJsonConfig;
+};
+
 const millisecondsPerSecond = 1_000;
 
 /** An empty request block, as "+ Requisição" adds it. */
@@ -120,6 +131,19 @@ export function buildFlexSourceFormValues(source: HttpJsonDataSource | null): Fl
     label: source?.label ?? '',
     pollIntervalSeconds: writeNumberAsFieldText(pollIntervalMs / millisecondsPerSecond),
     ...configFormValues,
+  };
+}
+
+/** Fills the whole form for a new source from a starting point (a preset filled in). */
+export function buildFlexSourceFormValuesOfStartingPoint(
+  startingPoint: FlexSourceStartingPoint,
+): FlexSourceFormValues {
+  return {
+    label: startingPoint.label,
+    pollIntervalSeconds: writeNumberAsFieldText(
+      startingPoint.pollIntervalMs / millisecondsPerSecond,
+    ),
+    ...buildFlexConfigFormValues(startingPoint.config),
   };
 }
 

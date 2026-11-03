@@ -15,4 +15,6 @@ CSV columns (`entityCsvColumns.ts`, `;` or `,`, header first, images never): Equ
 10:00", this computer's clock). A known key updates, keeping images and any field whose
 column the file lacks; a blank id is new.
 `entityCsvImport.ts` builds the preview, `entityCsvExport.ts` the export and the examples, and
-`SimulatorTeamsImportButton.tsx` loads the simulator's fictional teams.
+`SimulatorTeamsImportButton.tsx` loads the simulator's fictional teams. "Importar equipes do
+app Baja" (`BajaAppTeamsImportPanel.tsx`, BAJAOVRLAY-54) reads an event's teams through the
+server, writes them as the Equipes CSV (`bajaAppTeamsAsCsv.ts`) and opens "Importar CSV" with it.
