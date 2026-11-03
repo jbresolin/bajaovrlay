@@ -81,17 +81,40 @@ export const FlexScorePartsFromColumnsSchema = z.strictObject({
 /** Score parts from columns after they have passed FlexScorePartsFromColumnsSchema. */
 export type FlexScorePartsFromColumns = z.infer<typeof FlexScorePartsFromColumnsSchema>;
 
+/** A value a refusal compares with, strictly: text, a number, a boolean or null. */
+const RefusalValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+
 /**
- * Refuses the whole answer when the value at `path` (on the response) equals `equals`:
- * the poll fails with `message`, written by the operator in pt-BR, and the last good
- * snapshot stays on air. For an answer that is right but must not be shown, such as
- * results whose organisers hide the positions for now.
+ * Refuses the whole answer by the value at `path` (on the response), compared one of two
+ * ways: it equals `equals`, or it is found and is none of `notOneOf` (a word list that may
+ * grow, refused loudly rather than guessed at; gate 2 of PR #38). The poll fails with
+ * `message`, written by the operator in pt-BR, `{valor}` in it replaced by the value read,
+ * and the last good snapshot stays on air. For an answer that is right but must not be
+ * shown, such as results whose organisers hide the positions for now, or one the preset
+ * cannot read safely yet.
  */
-export const FlexRefusalFlagSchema = z.strictObject({
-  path: pathFieldOfOption(),
-  equals: z.union([z.string(), z.number(), z.boolean(), z.null()]),
-  message: z.string().min(1, { error: ptBRFlexMapping.configReasons.refusalNeedsMessage }),
-});
+export const FlexRefusalFlagSchema = z
+  .strictObject({
+    path: pathFieldOfOption(),
+    equals: RefusalValueSchema.optional(),
+    notOneOf: z
+      .array(RefusalValueSchema)
+      .min(1, { error: ptBRFlexMapping.configReasons.refusalKnownValuesEmpty })
+      .optional(),
+    message: z.string().min(1, { error: ptBRFlexMapping.configReasons.refusalNeedsMessage }),
+  })
+  .superRefine((refusal, context) => {
+    // `equals: null` is a comparison with null, so the key's presence decides, not its value.
+    const comparesByEquality = Object.hasOwn(refusal, 'equals');
+    const comparesByAList = refusal.notOneOf !== undefined;
+    if (comparesByEquality === comparesByAList) {
+      context.addIssue({
+        code: 'custom',
+        path: [],
+        message: ptBRFlexMapping.configReasons.refusalComparesOneWay,
+      });
+    }
+  });
 
 /** A refusal flag after it has passed FlexRefusalFlagSchema. */
 export type FlexRefusalFlag = z.infer<typeof FlexRefusalFlagSchema>;

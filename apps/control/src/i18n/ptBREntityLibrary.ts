@@ -1,5 +1,7 @@
 import type { EntityType } from '@bajaovrlay/shared';
 
+import { ptBRBajaAppTeams } from './ptBRBajaApp';
+
 /**
  * The words of the "Cadastros" page (features/entityLibrary, BAJAOVRLAY-19), reached as
  * ptBR.entityLibrary. Kept apart from ptBR.ts to keep that file readable. The labels of a
@@ -154,6 +156,9 @@ export const ptBREntityLibrary = {
   },
 
   // "Importar equipes do simulador".
+  // "Importar equipes do app Baja" (BAJAOVRLAY-54), in ptBRBajaApp.ts.
+  bajaApp: ptBRBajaAppTeams,
+
   simulator: {
     importButton: 'Importar equipes do simulador',
     fictionalHint: 'Equipes fictícias, para ensaios.',

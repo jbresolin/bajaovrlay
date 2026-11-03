@@ -1,0 +1,70 @@
+{
+  "requests": [
+    {
+      "requestId": "resultado",
+      "url": "{{apiAddress}}/resultados/resultado.php",
+      "queryParameters": [
+        { "name": "evt", "value": "{{eventId}}" },
+        { "name": "id", "value": "{{resultadoId}}" }
+      ]
+    },
+    {
+      "requestId": "equipes",
+      "url": "{{apiAddress}}/resultados/equipes.php",
+      "queryParameters": [{ "name": "evt", "value": "{{eventId}}" }],
+      "refreshEveryMs": 600000
+    }
+  ],
+  "mappings": [
+    {
+      "shapeKey": "standings",
+      "requestId": "resultado",
+      "entriesPath": "rows",
+      "lookups": [
+        {
+          "lookupName": "equipes",
+          "requestId": "equipes",
+          "listPath": "teams",
+          "keyPath": "number",
+          "entryKeyPath": "team.number"
+        }
+      ],
+      "table": { "columnsPath": "columns", "headerPath": "header", "cellsPath": "cells" },
+      "scorePartsFromColumns": {
+        "headers": ["Penalidade", "Segurança", "Projeto", "Dinâmicas", "Enduro"],
+        "valuePath": "raw"
+      },
+      "refuseWhen": {
+        "path": "spoilers_active",
+        "equals": true,
+        "message": "Resultado com spoilers ativos: a organização esconde as posições agora."
+      },
+      "fields": [
+        { "targetField": "scope", "constantValue": "{{standingsScope}}" },
+        { "targetField": "updatedAtMs", "fromPollMoment": true }
+      ],
+      "entryFields": [
+        { "targetField": "carNumber", "fromPath": "team.number" },
+        {
+          "targetField": "teamName",
+          "firstOf": [
+            { "fromLookup": { "lookup": "equipes", "path": "short_name" } },
+            { "fromPath": "team.short_name" },
+            { "fromPath": "team.name" }
+          ]
+        },
+        {
+          "targetField": "schoolName",
+          "firstOf": [
+            { "fromLookup": { "lookup": "equipes", "path": "school_short" } },
+            { "fromPath": "team.school_short" },
+            { "fromPath": "team.school" }
+          ]
+        },
+        { "targetField": "points", "fromColumn": { "header": "{{pointsHeader}}", "path": "raw" } },
+        { "targetField": "rank", "fromPath": "position" },
+        { "targetField": "isDisqualified", "fromPath": "team.disqualified" }
+      ]
+    }
+  ]
+}

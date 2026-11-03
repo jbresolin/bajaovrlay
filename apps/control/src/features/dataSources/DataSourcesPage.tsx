@@ -12,19 +12,30 @@ import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
+import { BajaAppSourcePicker } from './bajaAppSource/BajaAppSourcePicker';
 import { DataSourceDetail } from './DataSourceDetail';
 import { DataSourceRow } from './DataSourceRow';
 import { FlexSourceForm } from './flexSource/FlexSourceForm';
+import type { FlexSourceStartingPoint } from './flexSource/flexSourceFormValues';
 import { ReplaySourceForm } from './ReplaySourceForm';
 import { SimulatorSourceForm } from './SimulatorSourceForm';
 
 const texts = ptBR.dataSources;
 
-/** The form open on the page, if any: a kind's form, new (null) or on a stored source. */
+/**
+ * The form open on the page, if any: a kind's form, new (null) or on a stored source; a
+ * new flex source may start from a Baja app preset; or the Baja app picker, which makes
+ * no source itself (`sourceBeingEdited` always null) and opens the flex form.
+ */
 type OpenSourceForm =
   | { kind: 'simulator'; sourceBeingEdited: SimulatorDataSource | null }
   | { kind: 'replay'; sourceBeingEdited: ReplayDataSource | null }
-  | { kind: 'httpJson'; sourceBeingEdited: HttpJsonDataSource | null };
+  | {
+      kind: 'httpJson';
+      sourceBeingEdited: HttpJsonDataSource | null;
+      newSourceStartingPoint?: FlexSourceStartingPoint;
+    }
+  | { kind: 'bajaApp'; sourceBeingEdited: null };
 
 // The kinds "+ Fonte" offers, in the order of its buttons.
 const kindsOfferedForANewSource: readonly DataSourceKind[] = ['simulator', 'replay', 'httpJson'];
@@ -61,7 +72,7 @@ function buildNewSourceFormOfKind(kind: DataSourceKind): OpenSourceForm {
  * side by side from the `lg` width up. "+ Fonte" asks the kind first, then opens that
  * kind's form above the list, where "Editar" opens it too; one form at a time. The flex
  * HTTP/JSON form, with its "Testar" panel, is too wide for the list's column, so it opens
- * across the page's whole width, above both columns.
+ * across the page's whole width, above both columns, as does the Baja app picker.
  * Which source is selected and which form is open are this page's own state: they are
  * not server state, and a refresh may forget them.
  */
@@ -88,6 +99,15 @@ export function DataSourcesPage() {
     setOpenForm(buildNewSourceFormOfKind(kind));
   }
 
+  function openTheBajaAppPicker(): void {
+    setIsChoosingTheKind(false);
+    setOpenForm({ kind: 'bajaApp', sourceBeingEdited: null });
+  }
+
+  function openTheFlexFormAt(newSourceStartingPoint: FlexSourceStartingPoint): void {
+    setOpenForm({ kind: 'httpJson', sourceBeingEdited: null, newSourceStartingPoint });
+  }
+
   function closeTheForm(): void {
     setOpenForm(null);
   }
@@ -104,6 +124,16 @@ export function DataSourcesPage() {
           <FlexSourceForm
             key={openFormKey}
             sourceBeingEdited={formShown.sourceBeingEdited}
+            newSourceStartingPoint={formShown.newSourceStartingPoint}
+            onClose={closeTheForm}
+          />
+        </div>
+      )}
+      {formShown?.kind === 'bajaApp' && (
+        <div className="min-w-0 lg:col-span-2">
+          <BajaAppSourcePicker
+            key={openFormKey}
+            onContinue={openTheFlexFormAt}
             onClose={closeTheForm}
           />
         </div>
@@ -135,6 +165,10 @@ export function DataSourcesPage() {
                 {texts.kinds[kind]}
               </Button>
             ))}
+            {/* Beside the plain flex source: a flex source made from a Baja app preset. */}
+            <Button size="sm" variant="outline" onClick={openTheBajaAppPicker}>
+              {texts.bajaApp.addButton}
+            </Button>
           </div>
         )}
 

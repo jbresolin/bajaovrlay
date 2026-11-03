@@ -97,8 +97,13 @@ function findFormFieldPathOfOption(
     return firstKey === 'valuePath' ? 'scorePartValuePath' : 'scorePartHeadersText';
   }
   if (mappingKey === 'refuseWhen') {
-    if (firstKey === 'equals') {
+    // A refusal comparing two ways or none is about the whole refusal: said under the
+    // value, where the comparison starts.
+    if (firstKey === 'equals' || firstKey === undefined) {
       return 'refuseWhen.equalsText';
+    }
+    if (firstKey === 'notOneOf') {
+      return 'refuseWhen.notOneOfText';
     }
     return firstKey === 'message' ? 'refuseWhen.message' : 'refuseWhen.path';
   }

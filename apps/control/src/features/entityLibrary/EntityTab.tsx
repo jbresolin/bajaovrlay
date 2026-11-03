@@ -6,6 +6,7 @@ import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { ptBR } from '@/i18n/ptBR';
 import { useReadServerStateNow } from '@/state/ControlPageStateProvider';
 
+import { BajaAppTeamsImportPanel } from './BajaAppTeamsImportPanel';
 import { writeExampleCsvOfEntityType, writeRecordsAsCsv } from './entityCsvExport';
 import { EntityCsvImportPanel } from './EntityCsvImportPanel';
 import { EntityRecordFormPanel } from './EntityRecordFormPanel';
@@ -17,14 +18,21 @@ import { useEntityLibrary } from './useEntityLibrary';
 
 const texts = ptBR.entityLibrary;
 
-/** What the side panel shows: a record's form (new: null), the CSV import, or nothing. */
+/**
+ * What the side panel shows: a record's form (new: null), the CSV import (empty, or
+ * starting with the Baja app's teams), the Baja app's event field, or nothing.
+ */
 type SidePanel =
-  { kind: 'form'; recordAsOpened: AnyEntityRecord | null } | { kind: 'csvImport' } | null;
+  | { kind: 'form'; recordAsOpened: AnyEntityRecord | null }
+  | { kind: 'csvImport'; startingCsvText?: string; note?: string }
+  | { kind: 'bajaAppTeams' }
+  | null;
 
 /**
  * One Cadastros tab: a toolbar ("+ Equipe", "Importar CSV", "Exportar CSV", "Baixar
- * exemplo", and on Equipes "Importar equipes do simulador"), the table, and a side panel
- * with the form or the CSV import. On a tablet the panel sits under the table; it sits
+ * exemplo", and on Equipes "Importar equipes do simulador" and "Importar equipes do app
+ * Baja"), the table, and a side panel with the form or the CSV import; the Baja app's
+ * teams are read in the panel, then imported by the CSV import itself. On a tablet the panel sits under the table; it sits
  * beside it from the `lg` width up. The panel open is this tab's own state, not the
  * server's: a reload may close it, and loses nothing saved.
  *
@@ -93,7 +101,18 @@ export function EntityTab(props: { entityType: EntityType; recordKeyToOpen?: str
             {texts.csv.exampleButton}
           </Button>
         </div>
-        {entityType === 'team' && <SimulatorTeamsImportButton />}
+        {entityType === 'team' && (
+          <div className="flex flex-wrap items-start gap-2">
+            <SimulatorTeamsImportButton />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSidePanel({ kind: 'bajaAppTeams' })}
+            >
+              {texts.bajaApp.importButton}
+            </Button>
+          </div>
+        )}
         <EntityTable
           entityType={entityType}
           onEdit={(record) => setSidePanel({ kind: 'form', recordAsOpened: record })}
@@ -109,7 +128,22 @@ export function EntityTab(props: { entityType: EntityType; recordKeyToOpen?: str
         />
       )}
       {sidePanel?.kind === 'csvImport' && (
-        <EntityCsvImportPanel entityType={entityType} onClose={() => setSidePanel(null)} />
+        <EntityCsvImportPanel
+          key={sidePanel.note ?? 'csv'}
+          entityType={entityType}
+          startingCsvText={sidePanel.startingCsvText}
+          note={sidePanel.note}
+          onClose={() => setSidePanel(null)}
+        />
+      )}
+      {sidePanel?.kind === 'bajaAppTeams' && (
+        <BajaAppTeamsImportPanel
+          storedTeams={library.teams}
+          onTeamsRead={(startingCsvText, note) =>
+            setSidePanel({ kind: 'csvImport', startingCsvText, note })
+          }
+          onClose={() => setSidePanel(null)}
+        />
       )}
     </div>
   );

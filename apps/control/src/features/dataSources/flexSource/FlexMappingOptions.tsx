@@ -124,11 +124,15 @@ export function FlexMappingOptions(props: {
       <div role="group" aria-label={texts.refusalTitle} className="flex flex-col gap-2">
         <span className="text-sm font-medium">{texts.refusalTitle}</span>
         <p className="text-xs text-muted-foreground">{texts.refusalHint}</p>
-        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)]">
+        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)]">
           {renderOptionInput(`${mappingPath}.refuseWhen.path`, texts.refusalFields.path)}
           {renderOptionInput(
             `${mappingPath}.refuseWhen.equalsText`,
             texts.refusalFields.equalsText,
+          )}
+          {renderOptionInput(
+            `${mappingPath}.refuseWhen.notOneOfText`,
+            texts.refusalFields.notOneOfText,
           )}
           {renderOptionInput(`${mappingPath}.refuseWhen.message`, texts.refusalFields.message)}
         </div>

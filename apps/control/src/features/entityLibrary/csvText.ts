@@ -90,6 +90,16 @@ export function writeCsvText(header: string[], rows: string[][]): string {
   return `${byteOrderMark}${lines.map((line) => `${line}\r\n`).join('')}`;
 }
 
+/**
+ * Writes rows as CSV text to put in the import panel's paste box (the Baja app's teams,
+ * BAJAOVRLAY-54): ";" between cells and the same quotes as a file, but no byte-order mark
+ * and plain line ends, since a person reads and edits it there before importing.
+ */
+export function writeCsvTextForThePasteBox(header: string[], rows: string[][]): string {
+  const lines = [header, ...rows].map((cells) => cells.map(quoteCellWhenNeeded).join(';'));
+  return lines.map((line) => `${line}\n`).join('');
+}
+
 /** The cell as written: in quotes when it holds a ";", a quote or a line break. */
 function quoteCellWhenNeeded(cell: string): string {
   const needsQuotes = /[;"\r\n]/.test(cell);

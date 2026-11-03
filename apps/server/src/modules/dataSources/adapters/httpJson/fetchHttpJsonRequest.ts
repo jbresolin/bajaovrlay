@@ -22,11 +22,21 @@ export type FetchHttpJsonRequestOptions = {
   /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot; checked before anything is sent. */
   sourceHostAllowlist: SourceHostAllowlist;
   logger: ServerLogger;
+  /**
+   * Reads the body of an answer outside 2xx too, and hands on its status and its JSON:
+   * the sample route's, for a page that tells one refusal from another. A poll leaves it
+   * off and drops that body unread.
+   */
+  keepsTheAnswerOutside2xx?: boolean | undefined;
 };
+
+/** What a source answered outside 2xx: its status, and its body when that was JSON. */
+export type AnswerOutside2xx = { status: number; body?: unknown };
 
 /** The parsed JSON body and its status, or the pt-BR reason the request failed. */
 export type HttpJsonFetchResult =
-  { ok: true; status: number; body: unknown } | { ok: false; error: string };
+  | { ok: true; status: number; body: unknown }
+  | { ok: false; error: string; answerOutside2xx?: AnswerOutside2xx };
 
 /**
  * GETs one request with Node's own fetch and reads its body as JSON. It never throws: every
@@ -83,8 +93,6 @@ export async function fetchHttpJsonRequest(
 
   const isSuccessStatus = response.status >= 200 && response.status <= 299;
   if (!isSuccessStatus) {
-    // The body is not read, so it is cancelled to free the connection.
-    await response.body?.cancel().catch(() => undefined);
     const statusName = STATUS_CODES[response.status] ?? response.statusText;
     const error = ptBR.httpJsonErrors.statusOutside2xx(
       response.status,
@@ -95,7 +103,18 @@ export async function fetchHttpJsonRequest(
       { ...whereItWasSent, status: response.status },
       'flex source request answered outside 2xx',
     );
-    return { ok: false, error };
+    if (options.keepsTheAnswerOutside2xx !== true) {
+      // The body is not read, so it is cancelled to free the connection.
+      await response.body?.cancel().catch(() => undefined);
+      return { ok: false, error };
+    }
+    const answerOutside2xx = await readTheAnswerOutside2xx(
+      response,
+      signal,
+      address.host,
+      request.requestId,
+    );
+    return { ok: false, error, answerOutside2xx };
   }
 
   const bodyReading = await readTheBody(response, signal, address.host, request.requestId);
@@ -138,6 +157,25 @@ async function readTheBody(
       error: describeFailureBeforeTheAnswer(streamError, signal, host, requestId),
     };
   }
+}
+
+/**
+ * The status of an answer outside 2xx, and its body when it is JSON within the cap. A body
+ * over the cap, cut off or not JSON is simply left out: the status sentence is the error,
+ * and what the body adds is only a hint for the page.
+ */
+async function readTheAnswerOutside2xx(
+  response: Response,
+  signal: AbortSignal,
+  host: string,
+  requestId: string,
+): Promise<AnswerOutside2xx> {
+  const bodyReading = await readTheBody(response, signal, host, requestId);
+  if (!bodyReading.ok) {
+    return { status: response.status };
+  }
+  const parsing = parseTheBodyAsJson(bodyReading.text, response.status, requestId);
+  return parsing.ok ? { status: response.status, body: parsing.body } : { status: response.status };
 }
 
 /** Parses the body as JSON, or says it is not JSON. */
