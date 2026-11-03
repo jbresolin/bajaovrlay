@@ -86,6 +86,18 @@ describe('findFormFieldPathOfIssue', () => {
       issuePath: ['mappings', 0, 'refuseWhen', 'equals'],
       expectedFieldPath: 'mappings.0.refuseWhen.equalsText',
     },
+    // The refusal's known words, typed comma-separated in one box (gate 2 of PR #38).
+    {
+      name: 'puts the refusal’s known values under "Valores conhecidos"',
+      issuePath: ['mappings', 0, 'refuseWhen', 'notOneOf'],
+      expectedFieldPath: 'mappings.0.refuseWhen.notOneOfText',
+    },
+    // Both comparisons or neither: said under the value, where the comparison starts.
+    {
+      name: 'puts a refusal comparing two ways or none under "Valor que recusa"',
+      issuePath: ['mappings', 0, 'refuseWhen'],
+      expectedFieldPath: 'mappings.0.refuseWhen.equalsText',
+    },
     // An incomplete-match condition with no values.
     {
       name: 'puts a condition’s values under that condition’s values box',

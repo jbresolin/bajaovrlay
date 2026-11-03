@@ -44,3 +44,19 @@ export {
 export { applyFlexMapping, type FlexMappingResult } from './applyFlexMapping.js';
 // The cap on problem lines a failed mapping lists (20).
 export { mostProblemLinesListed } from './flexMappingProblems.js';
+// How every text a source sends is cleaned up: entities decoded, spaces collapsed, trimmed.
+export { cleanUpTextFromASource } from './sourceTextCleanup.js';
+// The Baja app presets (BAJAOVRLAY-54): race, results table and tournament, filled in.
+export {
+  bajaAppApiAddress,
+  type BajaAppBracketParameters,
+  type BajaAppRaceParameters,
+  type BajaAppResultsTableParameters,
+  buildBajaAppBracketSourceConfig,
+  buildBajaAppEndpointAddress,
+  buildBajaAppRaceSourceConfig,
+  buildBajaAppResultsTableSourceConfig,
+  proposedScorePartHeaders,
+  simulatedRaceRefusalMessage,
+  spoilersRefusalMessage,
+} from './presets/bajaApp/bajaAppPresets.js';

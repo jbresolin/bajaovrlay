@@ -3,7 +3,7 @@
 Browser tests of the built system as the Docker image serves it (Playwright, Chromium).
 
 - `servedOfflineFromTheBuild.e2e.ts` (BAJAOVRLAY-34) — every request to any address other
-  than the server is refused inside the browser, as on the stream PC with no internet: the
+  than the server is refused inside the browser, as on the stream PC with its uplink down: the
   control page connects, and `/render/` draws a race clock taken over the WebSocket (the
   control page's helper, `apps/control/e2e/eventInboxOnTheRealServer.ts`) in Bebas Neue,
   with nothing fetched from elsewhere, no failed request and no error answer.

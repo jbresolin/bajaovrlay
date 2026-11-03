@@ -44,6 +44,8 @@ export async function fetchSampleOfHttpJsonRequest(
     readEnvironmentVariable: options.readEnvironmentVariable,
     sourceHostAllowlist: options.sourceHostAllowlist,
     logger: options.logger,
+    // The page may tell one refusal from another by what the source answered.
+    keepsTheAnswerOutside2xx: true,
   });
   if (fetchResult.ok) {
     return fetchResult;
