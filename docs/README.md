@@ -11,4 +11,4 @@ folder holds conventions, decisions, ADRs and cross-repo contracts only.
 
 - `00-concept.md` — what the system is, its architecture, state model, rules and milestones.
 - `testing-style.md` — the canonical example test every test file copies (created in BAJAOVRLAY-7).
-- `buttons.md` — driving the show from Companion, a Stream Deck or an Ulanzi D200 over HTTP: open mode or tokens, buttons, button colours and a `curl` line per shortcut (BAJAOVRLAY-28).
+- `buttons.md` — driving the show from Companion, a Stream Deck or an Ulanzi D200 over HTTP: open mode or tokens, buttons, button colours, the D200's per-button status URLs and a `curl` line per shortcut (BAJAOVRLAY-28, BAJAOVRLAY-56).

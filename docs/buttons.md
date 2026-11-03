@@ -69,26 +69,83 @@ curl -s -H "Authorization: Bearer $TOKEN" $BAJA/layers/status
 The answer starts with `"tokenName":"companion"` (`"tokenName":"rede"` for a call with no
 token on an open API).
 
-## 3. An Ulanzi D200 button
+## 3. Ulanzi D200 buttons
 
 With the API open (section 1), a D200 button is one HTTP request with nothing to fill in but
-the address. For "Tomar":
+the address, and, for a button that shows what it controls, a status URL it polls. The D200's
+HTTP plugin reads one value from the status answer by a JSON path and compares it with an
+expected value to choose between two images. Each status URL answers a flat object with every
+value at the top level, so the path is always one word.
 
-1. In Ulanzi Studio, drag an **HTTP request** action (the name may differ by version) onto the
-   button.
-2. Method: **POST**.
-3. URL: `http://192.168.0.10:3000/api/v1/take-next`.
-4. Content Type: **none**. No headers, no body.
-5. Give the button its text, `TOMAR`.
+The status URLs (`GET`, no header on an open API):
+
+| Status URL                      | Answer                                                                                                |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `state/layer/<layer id>`        | `{ "isOnAir": true, "isInPreview": false, "isMarkedToClear": false, "itemName": "Relógio no canto" }` |
+| `state/shortcut/<panel id>/<n>` | `{ "isOnAir": true, "isInPreview": false }`                                                           |
+| `state/macro/<macro id>`        | `{ "isRunning": false }`                                                                              |
+
+- `isOnAir` / `isInPreview`: the layer has a graphic on air / in Prévia; for a quick-fire
+  button, _that button's item_ is on air / in Prévia (another item of the panel on the same
+  layer leaves it dark).
+- `isMarkedToClear`: the layer is marked "vai limpar" in Prévia; the next take clears it.
+- `itemName`: the label of the item on air on the layer, `""` when there is none.
+- `isRunning`: the macro runs, from the press until its run ends ("Parar" included: it still
+  counts as running until the step in progress ends).
+- The values are JSON booleans (`true`, not `"true"`).
+- An id that names nothing (a mistyped layer, a deleted macro, a button past the panel's last
+  one) answers 404, so the button shows its "unmatched" image.
+
+They read the server's memory only and write nothing to the event log, so a poll every second
+costs nothing. A poll is logged at `debug`, so it never fills the log. A refused poll (a 404, a 401) is logged at `warn` once a minute per address and status, and at `debug` in between: the
+log is where to look when a button stays on "unmatched", without one line every second.
+
+In Ulanzi Studio, drag an **HTTP request** action (the name may differ by version) onto the
+button and fill it in as below. The URLs start with `http://192.168.0.10:3000/api/v1/`; only
+their end is shown. The ids a button needs are found as in section 5.
+
+### "TOMAR"
+
+- Method **POST**, URL `take-next`, Content Type **none**, no headers, no body.
+- No status URL: "Tomar" takes whatever is under the cursor, so it has no state of its own.
+- Text: `TOMAR`.
+
+### A quick-fire button that lights while its item is on air
+
+- Method **POST**, URL `fire-shortcut/atalhos/1` (button 1 of "Atalhos"; section 6 explains
+  the counting).
+- Status URL `state/shortcut/atalhos/1`, every **1** s.
+- JSON path `isOnAir`, expected value `true`.
+- The image for a match: lit (red, as on air on the control page); the other one: dark.
+
+The status URL and the action name the same panel and number, so the button always lights for
+the very item it fires, even after buttons are moved on the page. For a second look while the
+item waits in Prévia, a second state on the same button can read the path `isInPreview`, if
+your Ulanzi Studio offers more than one.
+
+### "LIMPAR" a layer
+
+- Method **POST**, URL `clear-layer/bug` (the seeded corner layer; section 5 lists the others).
+- Status URL `state/layer/bug`, every **1** s.
+- JSON path `isOnAir`, expected value `true`: lit while something is on the layer, so there is
+  something to clear.
+- Text: `LIMPAR CANTO`.
+
+`isMarkedToClear` is there for a button that should show "vai limpar" is armed in Prévia.
+
+### A macro button
+
+- Method **POST**, URL `run-macro/<the macro's id>`.
+- Status URL `state/macro/<the macro's id>`, every **1** s.
+- JSON path `isRunning`, expected value `true`: lit while the macro runs.
+- Text: the macro's label, for example `ABRIR SESSÃO`.
 
 Every other shortcut in section 8 works the same way: only the end of the URL changes, for
-example `.../api/v1/clear-all` for "Limpar tudo" or `.../api/v1/fire-shortcut/atalhos/1` for
-the first quick-fire button. The ids a button needs are found as in section 5.
+example `.../api/v1/clear-all` for "Limpar tudo".
 
-For the button's look, the state is in `GET /api/v1/layers/status` (section 7), the same feed
-Companion reads. How the D200 reads a state back (a status code, a text, or a JSON value) is
-not settled yet; once it is, a plainer per-layer route may follow. The D200's field names above
-have not been checked against a real D200.
+The D200's field names above have not been checked against a real D200, nor whether its
+expected value `true` matches the JSON `true` (rather than only the text `"true"`); gate 2 of
+BAJAOVRLAY-56 checks both on João's D200.
 
 ## 4. Add Companion's "Generic HTTP" connection
 
@@ -281,6 +338,11 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/stop-macro
 
 # What is on air and in preview, for button colours.
 curl -s -H "Authorization: Bearer $TOKEN" $BAJA/layers/status
+
+# One button's state, as a D200 polls it (section 3): a layer, a quick-fire button, a macro.
+curl -s -H "Authorization: Bearer $TOKEN" $BAJA/state/layer/bug
+curl -s -H "Authorization: Bearer $TOKEN" $BAJA/state/shortcut/atalhos/1
+curl -s -H "Authorization: Bearer $TOKEN" $BAJA/state/macro/<the macro's id>
 ```
 
 "Próximo" from a button reads the step on air when the press arrives, so two quick presses move
