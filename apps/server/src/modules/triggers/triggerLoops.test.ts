@@ -4,7 +4,7 @@
  * What this module is for:
  *   A macro can switch OBS's scene, and a scene change can fire a trigger that runs a
  *   macro. Without a rule, "Box entered → go to Box" would chain or loop. BAJAOVRLAY-48
- *   sets two rules, written next to the code in fireTrigger.ts:
+ *   sets two rules, written next to the code in whenATriggerMayFire.ts:
  *   1. a scene change made by a macro's own obsScene step fires no obsScene trigger. It is
  *      told apart by the switch's actor (`requestedBy` on the obs slice's scene switch),
  *      never by timing;

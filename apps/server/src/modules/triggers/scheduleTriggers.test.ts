@@ -15,7 +15,9 @@
  *   - a slot moved after the trigger was set fires at its new time, not its old one;
  *   - "every slot" fires once per slot, each with its own data;
  *   - a time of day fires once at that time in São Paulo, never again within the minute;
- *   - a moment that had already passed when the server started is not fired late.
+ *   - a moment that had already passed when the server started is not fired late;
+ *   - a moment that came while the machine slept (10 minutes with no tick) is not fired
+ *     when it wakes.
  *
  * What these tests deliberately do not cover:
  *   - A day with a different UTC offset: Brazil has had none since 2019. The moment is
@@ -188,5 +190,23 @@ describe('a moment that passed while the server was off', () => {
 
     // Assert: nothing fired: a countdown five minutes late would be wrong on air.
     expect(readFirings(store), 'a passed moment is never fired late').toEqual([]);
+  });
+});
+
+describe('a moment that came while the machine slept', () => {
+  it('is not fired when a laptop wakes 10 minutes later', () => {
+    // Arrange: the Enduro at 13:00 and its trigger at 12:50; it is 12:45.
+    const { store, passTime, sleep } = startTriggersOnTheStore();
+    saveSlot(store, buildEnduroSlot(enduroStartsAtMs));
+    createTrigger(store, tenMinutesBeforeTheEnduro);
+    passTime(105 * oneMinuteMs);
+
+    // Act: the laptop sleeps for 10 minutes, over 12:50, and wakes at 12:55 for its next tick.
+    sleep(10 * oneMinuteMs);
+    passTime(2_000);
+
+    // Assert: nothing fired from the gap: a countdown to a session 5 minutes away would be
+    // wrong on air.
+    expect(readFirings(store), 'a moment from the sleep is never fired on waking').toEqual([]);
   });
 });

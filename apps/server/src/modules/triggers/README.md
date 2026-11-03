@@ -10,3 +10,6 @@ there) and runs the macro or makes the firing wait. `obsSceneChanges.ts`,
 `httpTriggerCalls.ts` handles a call to `POST /api/v1/triggers/:triggerId` (the route is in
 api/v1/triggerRoute.ts). `reducers/triggerFiringAnswers.ts` holds "Rodar", "Descartar" and
 "Desfazer"; `reducers/triggerEditing.ts` the edits. `index.ts` lists what core may use.
+The activity keeps the newest 50 firings (`reducers/triggerActivityChanges.ts`), dropping
+the oldest answered ones first; a waiting firing is never dropped, so waiting firings alone
+can pass 50 until the operator answers them.

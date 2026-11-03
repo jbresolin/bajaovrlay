@@ -170,6 +170,11 @@ export type TriggersOnTheStore = {
   databasePath: string;
   /** Moves the fake clock and every fake timer on by this many ms, running what falls due. */
   passTime: (milliseconds: number) => void;
+  /**
+   * Moves the fake clock on by this many ms without running any timer, as a laptop that
+   * slept: the next passTime runs the first tick after it woke.
+   */
+  sleep: (milliseconds: number) => void;
 };
 
 /**
@@ -228,6 +233,9 @@ export function startTriggersOnTheStore(
     databasePath,
     passTime: (milliseconds) => {
       vi.advanceTimersByTime(milliseconds);
+    },
+    sleep: (milliseconds) => {
+      vi.setSystemTime(Date.now() + milliseconds);
     },
   };
 }

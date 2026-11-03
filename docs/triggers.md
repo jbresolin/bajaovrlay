@@ -28,7 +28,11 @@ português. São eles que um passo de macro lê em **Dado do gatilho › <chave>
   não é penalidade e um Super Chat não disparam gatilho.
 - Ligar ou desligar o OBS não conta como entrar ou sair de uma cena.
 - Uma sessão mudada de horário na Programação depois de o gatilho ser criado vale pelo horário
-  novo: o gatilho lê a Programação a cada segundo.
+  novo: o gatilho lê a Programação a cada segundo. Isso é de propósito: o gatilho segue a
+  sessão. Se o gatilho já disparou e a sessão for adiada para depois, ele dispara de novo no
+  horário novo (por exemplo, a contagem do Enduro roda às 12:50 e de novo às 13:20 se a
+  largada passar para 13:30). Se não quiser o segundo disparo, desligue o gatilho depois do
+  primeiro.
 - Um horário que passou com o servidor desligado (ou o PC dormindo) não dispara atrasado.
 
 ## Auto ou perguntar

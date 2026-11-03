@@ -1434,3 +1434,5 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-11-03 — PR #43 — Only a macro's runner may send a takeItem carrying a trigger's data (triggerFill); an operator's or a device's take always uses the item's own values.
 - 2026-11-03 — PR #43 — "Rodar" runs a waiting firing even if its trigger was switched off or triggers were paused since: the operator decided; the server keeps no 30-second limit on "Desfazer", which the console offers for 30 s.
 - 2026-11-03 — PR #43 — Prévia of a macro shows its items with their own values: a take step's trigger fields are not applied there, since there is no trigger.
+- 2026-11-03 — PR #43 — A slot trigger follows its slot: a slot moved later after its trigger fired makes the trigger fire again at the new time, as intended; the operator switches the trigger off to avoid the second firing.
+- 2026-11-03 — PR #43 — Past the 50 firings the triggerActivity slice keeps, the oldest answered firings are dropped first and a waiting firing never is, so waiting firings alone can pass 50.

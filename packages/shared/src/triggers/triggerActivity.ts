@@ -35,7 +35,11 @@ export const TriggerFiringSchema = z.object({
 /** One firing after validation. */
 export type TriggerFiring = z.infer<typeof TriggerFiringSchema>;
 
-/** How many firings the slice keeps, newest last; every firing is in the event log too. */
+/**
+ * How many firings the slice keeps, newest last; every firing is in the event log too.
+ * Past it the oldest answered firings go; a waiting firing is never dropped, so waiting
+ * firings alone can pass it.
+ */
 export const triggerFiringsKept = 50;
 
 /**

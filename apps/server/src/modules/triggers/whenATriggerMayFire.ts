@@ -57,10 +57,14 @@ export function findWhyTriggerMayNotFireNow(
   }
   // Rule 2 against loops: a trigger never fires from a macro that a trigger started.
   // Whatever such a run causes, of any kind, is dropped, so one trigger can never set off
-  // a chain of others. Today a scene switch is the only thing a macro does that a trigger
-  // can see, and rule 1 drops it first; this rule keeps the guarantee for any kind added
-  // later. The run is read from `macroRuns`, which says whether a trigger started it; a
-  // run that has already ended is no longer there, and its later effects count as nobody's.
+  // a chain of others.
+  // It has no real cause today: a scene switch is the only thing a macro does that a
+  // trigger can see, and rule 1 drops it first. It guards the trigger kinds a macro could
+  // cause later (a macro step that records an inbox event or calls a URL, say), so adding
+  // one cannot open a loop. Its test (triggerLoops.test.ts) sends the cause by hand.
+  // Its lineage is short: the run is read from `macroRuns`, which says whether a trigger
+  // started it, and only while the run is there. Once the run has ended its later effects
+  // count as nobody's, so a slow effect that lands after the run ended is not dropped.
   const runOfTheCause = slices.macroRuns.find((run) => run.macroId === macroIdOfTheCause);
   if (runOfTheCause?.trigger !== undefined) {
     return { why: 'causedByATriggerStartedRun', message: reasons.causedByAMacro(trigger.name) };
