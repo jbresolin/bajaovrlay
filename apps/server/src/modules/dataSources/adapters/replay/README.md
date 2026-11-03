@@ -7,10 +7,10 @@ Its config is the shared `ReplayConfigSchema` (`recordingId`, `speed`, `isLoopin
 turned on).
 
 Start reading at `replayTimeline.ts`: which recorded line answers now, and how its
-shapes move onto today's timeline. Then `replayAdapter.ts`. It reads each recording
-once, as a stream, starting when the source is turned on or edited
-(`prepareForPolling`). A poll called off mid-read answers "Carregando a gravação…", and
-a failed read gives its pt-BR reason until the next prepare. Recordings stay parsed up
-to 300 MB of file. Tests replay `fridayTraining.testSupport.ts`; each
-`replayAdapter*.test.ts` file names what it covers in its header. How fast a large
-recording loads is measured by hand, not in CI: `replayLoading.benchmark.ts`.
+shapes move onto today's timeline. Then `replayAdapter.ts`: it reads each recording once,
+as a stream parsed a chunk at a time (`recordedLinesFromChunks.ts`), from the source
+turned on or edited (`prepareForPolling`). A poll called off mid-read answers "Carregando
+a gravação…"; a failed read gives its pt-BR reason until the next prepare. Recordings
+stay parsed up to 300 MB of file. Tests replay `fridayTraining.testSupport.ts`, and each
+test file names what it covers in its header. Load speed is measured by hand, not in CI:
+`replayLoading.benchmark.ts`.

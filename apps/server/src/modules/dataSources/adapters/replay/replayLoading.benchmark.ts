@@ -4,11 +4,13 @@
 //   pnpm --filter @bajaovrlay/server benchmark:replay-loading
 //
 // It is not a CI gate. These were once asserted in replayAdapterLoading.test.ts, where
-// writing and reading 50 MB took 4 s of the test's 5 s budget on one busy core and the
+// writing and reading 78 MB took 4 s of the test's 5 s budget on one busy core and the
 // stall, measured in wall time, grew whenever another process took the core
-// (BAJAOVRLAY-52). The test now checks what loading does; this measures how fast.
+// (BAJAOVRLAY-52). CI now checks, with no clock, that the read streams
+// (recordedLinesFromChunks.test.ts) and reaches the last line (replayAdapterLoading);
+// this measures how fast.
 //
-// What it prints, for a recording of 2 000 lines of 60 cars (about 50 MB):
+// What it prints, for a recording of 2 000 lines of 60 cars (about 78 MB):
 //   - the load time: the replay prepared as the poller prepares one turned on, then the
 //     first poll, timed together; about a third of a second on João's machine;
 //   - the longest stall of the event loop during that load (the longest wait between
@@ -93,7 +95,7 @@ async function runTheBenchmark(): Promise<void> {
 
     process.stdout.write(
       [
-        'Replay loading, 2 000 lines of 60 cars (about 50 MB):',
+        'Replay loading, 2 000 lines of 60 cars (about 78 MB):',
         `  load time:          ${loadTimeMs.toFixed(0)} ms (bound ${String(largestLoadTimeMs)} ms) ${isLoadQuickEnough ? 'ok' : 'OVER'}`,
         `  longest stall:      ${longestStallMs.toFixed(0)} ms (bound ${longestStallAllowedMs.toFixed(0)} ms, a third of the old way) ${isStallShortEnough ? 'ok' : 'OVER'}`,
         `  old way's stall:    ${oldWayStallMs.toFixed(0)} ms`,

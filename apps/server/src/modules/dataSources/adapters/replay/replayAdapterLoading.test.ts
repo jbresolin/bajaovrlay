@@ -23,6 +23,8 @@
  *   - Answering the right line as the clock moves, and the memory bound;
  *     replayAdapter.test.ts covers them. What a poll does while the read is still going
  *     (its signal firing, "Carregando a gravação…"); replayAdapterAbortSignal.test.ts.
+ *   - That lines are parsed as the chunks arrive, not after the whole file is read;
+ *     recordedLinesFromChunks.test.ts checks it, with a stream it hands out by hand.
  *   - How fast a large recording loads and how long it holds the event loop: both are
  *     timings of the machine, which a busy CI core stretches, so they are measured by
  *     replayLoading.benchmark.ts (`pnpm --filter @bajaovrlay/server benchmark:replay-loading`),
@@ -49,9 +51,9 @@ import {
 
 /**
  * How many lines the recording of the streamed-load test holds: 40 lines of 60 cars,
- * about 1 MB, which the stream hands over in about 16 chunks of 64 KB, so most lines
+ * about 1.5 MB, which the stream hands over in about 24 chunks of 64 KB, so most lines
  * are cut between two chunks. Large enough for that; small enough that writing and
- * reading it costs the test a few tens of ms on any machine (the 50 MB file it once used
+ * reading it costs the test a few tens of ms on any machine (the 78 MB file it once used
  * cost 4 s of a 5 s budget on one busy core, BAJAOVRLAY-52).
  */
 const lineCountOfTheStreamedRecording = 40;
@@ -162,7 +164,7 @@ describe('the replay adapter, checking lines and loading large recordings', () =
   });
 
   it('reads every line of a recording the stream hands over in many chunks, and answers its last one', async () => {
-    // Arrange: 80 s of the simulator's 60-car enduro on disk (40 lines, about 1 MB), and a
+    // Arrange: 80 s of the simulator's 60-car enduro on disk (40 lines, about 1.5 MB), and a
     // replay of it turned on at 15:00.
     const recordingsFolder = createTemporaryRecordingsFolder();
     const filePath = writeTheLargeRecordingInto(recordingsFolder, lineCountOfTheStreamedRecording);
