@@ -1,0 +1,198 @@
+import type { Trigger, TriggerMode } from '@bajaovrlay/shared';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { ptBR } from '@/i18n/ptBR';
+import { useSendCommandAndReadItsRefusal, useServerState } from '@/state/ControlPageStateProvider';
+
+import {
+  buildEmptyTriggerFormValues,
+  buildTriggerFormValues,
+  readTriggerFormIntoCommand,
+  type TriggerFormValues,
+} from './triggerForm';
+import { TriggerWhenControls } from './TriggerWhenControls';
+
+const texts = ptBR.triggers.editor;
+const modesInOrder: TriggerMode[] = ['ask', 'auto'];
+
+/**
+ * The editor of one trigger, inside "Gatilhos": its name and on/off, what it waits for
+ * (TriggerWhenControls.tsx), its macro, mode and minimum interval in seconds. "Salvar
+ * gatilho" sends createTrigger for a new one and updateTrigger, the whole trigger, for a
+ * stored one (triggerForm.ts); "Excluir gatilho" asks once more before deleteTrigger. A
+ * problem on the page or the server's refusal shows above the buttons; once the server
+ * accepts, the editor closes (`onDone`) and the list shows the trigger as the server holds it.
+ */
+export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDone: () => void }) {
+  const { triggerBeingEdited } = props;
+  const macros = useServerState((state) => state.macros);
+  const obsSceneNames = useServerState((state) => state.obs.sceneNames);
+  const scheduleSlots = useServerState((state) => state.scheduleSlots);
+  const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
+  const [values, setValues] = useState<TriggerFormValues>(() =>
+    triggerBeingEdited === null
+      ? buildEmptyTriggerFormValues()
+      : buildTriggerFormValues(triggerBeingEdited),
+  );
+  const [problem, setProblem] = useState<string | undefined>(undefined);
+  const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
+  const [isDeleteArmed, setIsDeleteArmed] = useState(false);
+  const triggerId = triggerBeingEdited?.id ?? null;
+
+  function changeValues(changedParts: Partial<TriggerFormValues>): void {
+    setValues({ ...values, ...changedParts });
+  }
+
+  /** Sends a command; closes the editor once the server accepts, else shows why not. */
+  async function sendAndCloseOnSuccess(
+    command: Parameters<typeof sendCommandAndReadItsRefusal>[0],
+  ): Promise<void> {
+    setIsWaitingForTheServer(true);
+    const refusal = await sendCommandAndReadItsRefusal(command);
+    setIsWaitingForTheServer(false);
+    if (refusal === null) {
+      props.onDone();
+      return;
+    }
+    setProblem(refusal);
+  }
+
+  function saveTheTrigger(): void {
+    const reading = readTriggerFormIntoCommand(values, triggerId);
+    if (reading.status === 'problem') {
+      setProblem(reading.message);
+      return;
+    }
+    setProblem(undefined);
+    void sendAndCloseOnSuccess(reading.command);
+  }
+
+  function pressDelete(): void {
+    if (triggerId === null) {
+      return;
+    }
+    if (!isDeleteArmed) {
+      setIsDeleteArmed(true);
+      return;
+    }
+    void sendAndCloseOnSuccess({ type: 'deleteTrigger', triggerId });
+  }
+
+  return (
+    <section
+      aria-label={
+        triggerBeingEdited === null ? texts.newTitle : texts.editTitle(triggerBeingEdited.name)
+      }
+      className="flex flex-col gap-3"
+    >
+      <h3 className="text-sm font-semibold">
+        {triggerBeingEdited === null ? texts.newTitle : texts.editTitle(triggerBeingEdited.name)}
+      </h3>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="trigger-name" className="text-xs">
+          {texts.nameLabel}
+        </Label>
+        <Input
+          id="trigger-name"
+          autoComplete="off"
+          value={values.name}
+          onChange={(change) => changeValues({ name: change.target.value })}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <Switch
+          id="trigger-enabled"
+          checked={values.isEnabled}
+          onCheckedChange={(isEnabled) => changeValues({ isEnabled })}
+        />
+        <Label htmlFor="trigger-enabled">{texts.enabledLabel}</Label>
+      </div>
+
+      <TriggerWhenControls
+        values={values}
+        onValuesChanged={changeValues}
+        triggerId={triggerId}
+        obsSceneNames={obsSceneNames}
+        scheduleSlots={scheduleSlots}
+      />
+
+      <div className="grid grid-cols-2 gap-2">
+        <Select value={values.macroId} onValueChange={(macroId) => changeValues({ macroId })}>
+          <SelectTrigger size="sm" className="w-full" aria-label={texts.macroLabel}>
+            <SelectValue placeholder={texts.nothingChosenPlaceholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {macros.map((macro) => (
+              <SelectItem key={macro.id} value={macro.id}>
+                {macro.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={values.mode}
+          onValueChange={(mode) => changeValues({ mode: mode as TriggerMode })}
+        >
+          <SelectTrigger size="sm" className="w-full" aria-label={texts.modeLabel}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {modesInOrder.map((mode) => (
+              <SelectItem key={mode} value={mode}>
+                {texts.modeNames[mode]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="trigger-interval" className="text-xs">
+          {texts.intervalLabel}
+        </Label>
+        <Input
+          id="trigger-interval"
+          autoComplete="off"
+          inputMode="numeric"
+          value={values.minimumIntervalSecondsText}
+          onChange={(change) => changeValues({ minimumIntervalSecondsText: change.target.value })}
+        />
+      </div>
+
+      {problem === undefined ? null : (
+        <p role="alert" className="text-sm text-destructive">
+          {problem}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" size="sm" disabled={isWaitingForTheServer} onClick={saveTheTrigger}>
+          {texts.saveButton}
+        </Button>
+        {triggerId === null ? null : (
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
+            disabled={isWaitingForTheServer}
+            onClick={pressDelete}
+          >
+            {isDeleteArmed ? texts.deleteConfirmButton : texts.deleteButton}
+          </Button>
+        )}
+        <Button type="button" size="sm" variant="ghost" onClick={props.onDone}>
+          {texts.backButton}
+        </Button>
+      </div>
+    </section>
+  );
+}

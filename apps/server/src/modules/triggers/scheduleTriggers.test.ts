@@ -56,7 +56,11 @@ function saveSlot(
   store: ReturnType<typeof startTriggersOnTheStore>['store'],
   slot: ReturnType<typeof buildEnduroSlot>,
 ): void {
-  applyAsTheOperatorOrThrow(store, { type: 'upsertEntity', entityType: 'scheduleSlot', record: slot });
+  applyAsTheOperatorOrThrow(store, {
+    type: 'upsertEntity',
+    entityType: 'scheduleSlot',
+    record: slot,
+  });
 }
 
 /** "Contagem do Enduro": ten minutes before the Enduro slot, by itself. */

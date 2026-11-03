@@ -9,8 +9,7 @@ import { readTitleOfField } from './itemBindingFields.js';
 
 /** The item's fields with the trigger's values laid over them, or why the take is refused. */
 export type ItemFieldsFilledByTheTrigger =
-  | { status: 'filled'; fields: ItemFields }
-  | { status: 'refused'; error: CommandError };
+  { status: 'filled'; fields: ItemFields } | { status: 'refused'; error: CommandError };
 
 /**
  * Lays a macro step's trigger fields over the item's own (BAJAOVRLAY-48): each becomes a

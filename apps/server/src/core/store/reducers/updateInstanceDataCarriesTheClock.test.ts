@@ -35,10 +35,10 @@
 import type { Command, Instance } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
-import { noSourceHostAllowlist } from '../../../modules/dataSources/index.js';
 import {
   buildRaceClockInstanceWithStatus,
   buildRaceDaySlicesWithInstances,
+  contextOfTheCommand,
   raceClockInstanceId,
 } from './raceDaySlices.testSupport.js';
 import { reduceCommand } from './reduceCommand.js';
@@ -51,20 +51,8 @@ const momentTheClockWentOnAirMs = Date.parse(momentTheClockWentOnAir);
 const momentOfThePress = '2026-10-10T13:00:00.000Z';
 const momentOfThePressMs = Date.parse(momentOfThePress);
 
-/** The ids and time the store would hand the reducer for a command sent at 10:00. */
-const contextOfThePress: ReducerContext = {
-  newInstanceId: '0b6c8f2e-3d1a-4c55-8e2f-9a7b6c5d4e3f',
-  now: momentOfThePress,
-  newItemId: '5e8a2c1d-9f3b-4a7e-b6d4-2c1f0e9a8b7c',
-  newQuickFirePanelId: 'd4b2e8f1-6a3c-4d7e-9b05-1c8f2a6e3d90',
-  newMacroId: '8f3a1c6e-2d4b-4e9a-b7c5-0a1d3e5f7b92',
-  newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
-  newEventId: 'evento-digitado-1',
-  newTriggerId: 'gatilho-novo-1',
-  newTriggerFiringId: 'disparo-novo-1',
-  sourceHostAllowlist: noSourceHostAllowlist,
-  actor: 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81',
-};
+/** The ids the store would hand the reducer, for a command sent at 10:00. */
+const contextOfThePress: ReducerContext = { ...contextOfTheCommand, now: momentOfThePress };
 
 /**
  * Builds what the server holds for the clock on air: the first heat under the green

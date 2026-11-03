@@ -10,6 +10,7 @@ import { KeyboardMapDialog } from '@/features/keyboardHelp/KeyboardMapDialog';
 import { ObsTally } from '@/features/obs/ObsTally';
 import { OutputsAndLayersPage } from '@/features/outputsAndLayers/OutputsAndLayersPage';
 import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
+import { TriggersPauseSwitch } from '@/features/triggers/TriggersPauseSwitch';
 import { ptBR } from '@/i18n/ptBR';
 
 import { ConsoleView } from './ConsoleView';
@@ -27,7 +28,8 @@ const pageLinkTexts = ptBR.app.pageLinks;
  * "Saídas e camadas" (features/outputsAndLayers), which "Saídas" opens in a new tab; each
  * of those four in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab.
  * The header holds the product name, the links to the five pages, the data sources
- * chip ("Fontes: 2 ok · 1 atrasada"), the server check, the connection badge and the
+ * chip ("Fontes: 2 ok · 1 atrasada"), the server check, the OBS tally, "Pausar gatilhos"
+ * (BAJAOVRLAY-48), the connection badge and the
  * "?" button, which lists every keyboard shortcut (src/keyboard/keyboardMap.ts).
  */
 export function AppShell() {
@@ -66,6 +68,7 @@ export function AppShell() {
           <DataSourcesHealthChip />
           <ServerHealthCheck />
           <ObsTally />
+          <TriggersPauseSwitch />
           <ConnectionBadge />
           <KeyboardMapDialog />
         </div>

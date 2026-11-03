@@ -104,7 +104,11 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
 
   /** The scene triggers a change of Program matches: the scene entered, the scene left. */
   function findFiringsOfSceneChange(slices: Slices): FiringToSend[] {
-    const sceneChange = findProgramSceneChange(obsSeenLast, slices.obs, numberOfTheLastSwitchCounted);
+    const sceneChange = findProgramSceneChange(
+      obsSeenLast,
+      slices.obs,
+      numberOfTheLastSwitchCounted,
+    );
     obsSeenLast = slices.obs;
     if (sceneChange === undefined) {
       return [];
@@ -118,9 +122,15 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
         continue;
       }
       const sceneOfTheTrigger =
-        trigger.when.change === 'entered' ? sceneChange.enteredSceneName : sceneChange.leftSceneName;
+        trigger.when.change === 'entered'
+          ? sceneChange.enteredSceneName
+          : sceneChange.leftSceneName;
       if (trigger.when.sceneName === sceneOfTheTrigger) {
-        firings.push({ trigger, data: { cena: sceneOfTheTrigger }, causedBy: sceneChange.causedBy });
+        firings.push({
+          trigger,
+          data: { cena: sceneOfTheTrigger },
+          causedBy: sceneChange.causedBy,
+        });
       }
     }
     return firings;

@@ -32,6 +32,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 import { SliceMessageSchema } from '../ws/serverMessages.js';
 import { SliceNameSchema, SlicesSchema } from './slices.js';
 
@@ -117,14 +118,11 @@ function buildRaceDayStateWithTheClockOnAir() {
     macroStops: [],
     // OBS connected, with the track scene on Program.
     obs: {
+      ...obsSliceWithoutObs,
       connectionState: 'conectado',
       address: 'ws://127.0.0.1:4455',
-      lastError: null,
       sceneNames: ['Pista', 'Box', 'Pódio'],
       programSceneName: 'Pista',
-      isStudioModeOn: false,
-      previewSceneName: null,
-      sceneSwitch: null,
     },
     // No trigger yet, and triggers not paused: triggers/trigger.test.ts covers a trigger.
     triggers: [],
@@ -290,13 +288,11 @@ describe('SlicesSchema', () => {
 
 describe('SliceNameSchema', () => {
   it('lists every slice in the order the server lists them, the newest ones included', () => {
-    // Arrange: the slice names; the "will be cleared" markers and the bindings of each
-    // instance right after the instances they speak about, quick-fire panels and macros
-    // after the items with the macros' stops and OBS after them, the triggers and their
-    // activity after OBS, and the data sources, their snapshots, the operator's corrections
-    // of them and the recordings, then the event inbox's events and rules, then the
-    // entity library (teams, people, sponsors and the schedule) and its images, just
-    // before the event log.
+    // Arrange: the slice names; the "will be cleared" markers and the instances' bindings
+    // after the instances, quick-fire panels and macros after the items, then the macros'
+    // stops, OBS and the triggers, then the data sources, snapshots, corrections and
+    // recordings, the inbox's events and rules, and the entity library and its images
+    // just before the event log.
     const expectedSliceNames = [
       'outputs',
       'layers',

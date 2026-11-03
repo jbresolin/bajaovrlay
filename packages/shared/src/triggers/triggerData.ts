@@ -21,8 +21,7 @@ export type TriggerData = z.infer<typeof TriggerDataSchema>;
 
 /** What reading an HTTP trigger's body gives: its data, or why it was refused (pt-BR). */
 export type TriggerHttpBodyReading =
-  | { status: 'read'; data: TriggerData }
-  | { status: 'refused'; reason: string };
+  { status: 'read'; data: TriggerData } | { status: 'refused'; reason: string };
 
 /**
  * Reads the body of `POST /api/v1/triggers/:triggerId` as trigger data. An empty body is
@@ -31,7 +30,7 @@ export type TriggerHttpBodyReading =
  * are refused rather than turned into text: a field filled with "true" is a bug nobody sees.
  */
 export function readTriggerDataFromHttpBody(bodyText: string): TriggerHttpBodyReading {
-  const bodyBytes = new TextEncoder().encode(bodyText).length;
+  const bodyBytes = countBytesInUtf8(bodyText);
   if (bodyBytes > largestTriggerHttpBodyBytes) {
     return { status: 'refused', reason: ptBRTriggers.httpBodyReasons.tooLarge };
   }
@@ -64,4 +63,26 @@ export function readTriggerDataFromHttpBody(bodyText: string): TriggerHttpBodyRe
     return { status: 'refused', reason: ptBRTriggers.httpBodyReasons.badKey };
   }
   return { status: 'read', data: checkedData.data };
+}
+
+/**
+ * How many bytes a text takes in UTF-8, as it travels in the body. Counted by code point
+ * from the encoding's four ranges, because this package builds without TextEncoder (no DOM
+ * or Node library in its build).
+ */
+function countBytesInUtf8(text: string): number {
+  let byteCount = 0;
+  for (const character of text) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (codePoint <= 0x7f) {
+      byteCount += 1;
+    } else if (codePoint <= 0x7ff) {
+      byteCount += 2;
+    } else if (codePoint <= 0xffff) {
+      byteCount += 3;
+    } else {
+      byteCount += 4;
+    }
+  }
+  return byteCount;
 }

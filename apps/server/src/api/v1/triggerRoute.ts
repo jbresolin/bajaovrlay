@@ -2,12 +2,12 @@
 // D200 through Companion, a script or another machine. Declared here with its Zod schema
 // so the OpenAPI document describes it; mountCommandApiRoutes puts the command API's
 // access in front of it, and the triggers module handles the call.
-import { createRoute } from '@hono/zod-openapi';
 import {
   CommandResultMessageSchema,
   largestTriggerHttpBodyBytes,
   ptBRTriggers,
 } from '@bajaovrlay/shared';
+import { createRoute } from '@hono/zod-openapi';
 import type { MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';

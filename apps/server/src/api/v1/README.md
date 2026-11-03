@@ -25,7 +25,9 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   256 KB, 413), ten button shortcuts and OBS's scene button, `POST /api/v1/obs-scene/{sceneName}`
   (BAJAOVRLAY-27) (`commandShortcutRoutes.ts`; the four that read the state to build their
   command are in `shortcutCommands.ts`) and `GET /api/v1/layers/status`
-  (`layersStatusRoute.ts`). Every command runs through `commandApiAnswers.ts`, signed
+  (`layersStatusRoute.ts`), and an HTTP trigger's address, `POST /api/v1/triggers/{triggerId}`
+  (BAJAOVRLAY-48; `triggerRoute.ts` declares it and refuses a body over 8 KB, 400; the
+  triggers module handles the call; an id that is no HTTP trigger answers 404). Every command runs through `commandApiAnswers.ts`, signed
   `api:<token name>`; `commandRefusalHttpStatus.ts` gives each refusal code its HTTP status.
 - The button state routes (BAJAOVRLAY-56), mounted by `mountButtonStateRoutes.ts` behind the
   same access: `GET /api/v1/state/layer/{layerId}`, `.../state/shortcut/{panelId}/{buttonNumber}`

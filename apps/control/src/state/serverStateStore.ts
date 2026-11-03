@@ -4,9 +4,9 @@ import {
   type DataSnapshotMessage,
   mergeChangedSlicesIntoSlices,
   obsSliceWithoutObs,
-  triggerActivityAtBoot,
   type SliceMessage,
   type Slices,
+  triggerActivityAtBoot,
 } from '@bajaovrlay/shared';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

@@ -26,6 +26,7 @@ import {
   macroStepDragInstructionsForScreenReaders,
 } from './macroStepDragAnnouncements';
 import { MacroStepRow } from './MacroStepRow';
+import type { GraphicFieldOfTakeStep } from './takeStepTriggerFields';
 
 // A press that moves less than this is a click, not the start of a drag (as in the rundown).
 const pointerDistanceThatStartsADragInPixels = 4;
@@ -34,6 +35,8 @@ const pointerDistanceThatStartsADragInPixels = 4;
 export type MacroStepListProps = {
   drafts: MacroStepDraft[];
   itemChoices: ItemChoiceForMacroStep[];
+  /** The fields of each item's graphic, by item id, for a take step's "Dado do gatilho". */
+  graphicFieldsOfEachItem: Record<string, GraphicFieldOfTakeStep[]>;
   layers: Layer[];
   /** The scenes OBS lists now, for the scene steps' picker; empty without OBS. */
   obsSceneNames: string[];
@@ -53,6 +56,7 @@ export type MacroStepListProps = {
 export function MacroStepList(props: MacroStepListProps) {
   const { drafts, itemChoices, layers, obsSceneNames, errorMessageByDraftId, onDraftsChanged } =
     props;
+  const { graphicFieldsOfEachItem } = props;
   const draftIdsInOrder = drafts.map((draft) => draft.draftId);
 
   const dragSensors = useSensors(
@@ -115,6 +119,7 @@ export function MacroStepList(props: MacroStepListProps) {
               draft={draft}
               stepNumber={position + 1}
               itemChoices={itemChoices}
+              graphicFieldsOfEachItem={graphicFieldsOfEachItem}
               layers={layers}
               obsSceneNames={obsSceneNames}
               errorMessage={errorMessageByDraftId[draft.draftId]}

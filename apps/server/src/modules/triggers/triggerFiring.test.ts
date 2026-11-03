@@ -126,12 +126,14 @@ describe('the brief’s examples', () => {
     passTime(100);
 
     // Assert: the firing carried the event, and the notice went on air with it.
-    expect(waitingFiring?.data, 'the firing must carry the penalty’s car, team and reason').toEqual({
-      tipo: 'Penalidade',
-      carro: 47,
-      equipe: 'Baja UFPR',
-      motivo: 'Queima de largada',
-    });
+    expect(waitingFiring?.data, 'the firing must carry the penalty’s car, team and reason').toEqual(
+      {
+        tipo: 'Penalidade',
+        carro: 47,
+        equipe: 'Baja UFPR',
+        motivo: 'Queima de largada',
+      },
+    );
     expect(
       readDataOnAirOnLayer(store, 'notice'),
       'the notice must show car 47 of Baja UFPR, with the reason',
@@ -329,7 +331,8 @@ describe('what a firing leaves behind', () => {
       ok: false,
       error: {
         code: 'TRIGGER_FIRING_NOT_WAITING',
-        message: 'O disparo de "Entrou no box" não está mais esperando: ele já rodou ou foi descartado.',
+        message:
+          'O disparo de "Entrou no box" não está mais esperando: ele já rodou ou foi descartado.',
       },
     });
   });

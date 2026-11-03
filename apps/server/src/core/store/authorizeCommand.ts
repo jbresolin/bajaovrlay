@@ -95,8 +95,7 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   const isRefreshOfBoundFields = command.type === 'refreshBoundInstanceData';
   const isRecordOfDetectedEvents = command.type === 'recordDetectedEvents';
   const isRecordOfAnUpload = command.type === 'recordUploadedMedia';
-  const isTakeFilledByATrigger =
-    command.type === 'takeItem' && command.triggerFill !== undefined;
+  const isTakeFilledByATrigger = command.type === 'takeItem' && command.triggerFill !== undefined;
   const isRecorderBookkeeping =
     command.type === 'recordRecordingProgress' ||
     (command.type === 'stopRecording' && command.failureMessage !== undefined);

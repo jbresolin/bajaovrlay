@@ -1,8 +1,8 @@
 import type { Trigger } from '@bajaovrlay/shared';
 
+import { ptBR } from '../../core/messages/ptBR.js';
 import { readMacroIdOfMacroRunnerActor } from '../../core/store/commandActors.js';
 import type { SlicesChangedByCommands } from '../../core/store/reducers/reducerTypes.js';
-import { ptBR } from '../../core/messages/ptBR.js';
 
 /** Why a trigger may not fire now: a short name for code, and the pt-BR reason. */
 export type ReasonNotToFire = {
@@ -50,7 +50,8 @@ export function findWhyTriggerMayNotFireNow(
   // obsSceneChanges.ts), never by timing: a change the director makes in OBS a moment
   // after a macro's still fires. What could go wrong: a macro whose very purpose is to set
   // off a scene trigger cannot; it should run the other macro's steps itself.
-  const isSceneChangeMadeByAMacro = trigger.when.kind === 'obsScene' && macroIdOfTheCause !== undefined;
+  const isSceneChangeMadeByAMacro =
+    trigger.when.kind === 'obsScene' && macroIdOfTheCause !== undefined;
   if (isSceneChangeMadeByAMacro) {
     return { why: 'causedByAMacro', message: reasons.causedByAMacro(trigger.name) };
   }

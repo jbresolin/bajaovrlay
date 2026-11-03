@@ -7,16 +7,16 @@ import type {
 } from '../../../core/store/reducers/reducerTypes.js';
 import { reduceFireTrigger } from './fireTrigger.js';
 import {
-  reduceDismissTriggerFiring,
-  reduceRestoreTriggerFiring,
-  reduceRunTriggerFiring,
-} from './triggerFiringAnswers.js';
-import {
   reduceCreateTrigger,
   reduceDeleteTrigger,
   reduceSetTriggersPaused,
   reduceUpdateTrigger,
 } from './triggerEditing.js';
+import {
+  reduceDismissTriggerFiring,
+  reduceRestoreTriggerFiring,
+  reduceRunTriggerFiring,
+} from './triggerFiringAnswers.js';
 
 /** The commands of triggers. */
 export type TriggerCommand = Extract<

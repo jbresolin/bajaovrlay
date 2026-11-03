@@ -7,7 +7,8 @@ import { refuseTriggerThatIsNotHttp, refuseUnknownTrigger } from './triggerRefus
 import { findWhyTriggerMayNotFireNow } from './whenATriggerMayFire.js';
 
 /** How a call to an HTTP trigger ended: it fired, or why not (the route picks the status). */
-export type HttpTriggerCallOutcome = { status: 'fired' } | { status: 'refused'; error: CommandError };
+export type HttpTriggerCallOutcome =
+  { status: 'fired' } | { status: 'refused'; error: CommandError };
 
 /**
  * Handles one call to POST /api/v1/triggers/:triggerId (BAJAOVRLAY-48), after the route
@@ -43,7 +44,10 @@ export function fireTriggerFromAnHttpCall(call: {
   const nowMs = Date.now();
   const reasonNotToFire = findWhyTriggerMayNotFireNow(slices, trigger, nowMs, call.callerActor);
   if (reasonNotToFire !== undefined) {
-    return { status: 'refused', error: { code: 'TRIGGER_NOT_FIRED', message: reasonNotToFire.message } };
+    return {
+      status: 'refused',
+      error: { code: 'TRIGGER_NOT_FIRED', message: reasonNotToFire.message },
+    };
   }
   const outcome = call.stateStore.applyCommand(
     {

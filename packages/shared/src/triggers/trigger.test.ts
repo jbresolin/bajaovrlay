@@ -39,7 +39,10 @@ function buildBoxSceneTrigger() {
 describe('TriggerSchema', () => {
   const acceptedFilters = [
     // The brief's first example: a scene entered.
-    { name: 'accepts an OBS scene entered', when: { kind: 'obsScene', change: 'entered', sceneName: 'Box' } },
+    {
+      name: 'accepts an OBS scene entered',
+      when: { kind: 'obsScene', change: 'entered', sceneName: 'Box' },
+    },
     // An HTTP trigger has no filter: its address is its own id.
     { name: 'accepts an HTTP trigger', when: { kind: 'http' } },
     // A penalty recorded in the inbox.
@@ -127,7 +130,11 @@ describe('CreateTriggerCommandSchema', () => {
 
     // Assert: on, ask (never on air by surprise), and the brief's 10 s.
     expect(
-      { isEnabled: parsed.isEnabled, mode: parsed.mode, minimumIntervalMs: parsed.minimumIntervalMs },
+      {
+        isEnabled: parsed.isEnabled,
+        mode: parsed.mode,
+        minimumIntervalMs: parsed.minimumIntervalMs,
+      },
       'a new trigger must be on, ask first, and wait 10 s between firings',
     ).toEqual({ isEnabled: true, mode: 'ask', minimumIntervalMs: 10_000 });
   });

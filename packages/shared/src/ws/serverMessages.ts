@@ -28,8 +28,8 @@ import { InstanceSchema } from '../slices/instance.js';
 import { LayersSchema } from '../slices/layer.js';
 import { PreviewClearedLayerIdsSchema } from '../slices/previewClearedLayerIds.js';
 import { SlicesSchema } from '../slices/slices.js';
-import { TriggerActivitySchema } from '../triggers/triggerActivity.js';
 import { TriggersSchema } from '../triggers/trigger.js';
+import { TriggerActivitySchema } from '../triggers/triggerActivity.js';
 
 /**
  * The server's wall clock, in whole milliseconds since 1970, at the moment a `hello` or

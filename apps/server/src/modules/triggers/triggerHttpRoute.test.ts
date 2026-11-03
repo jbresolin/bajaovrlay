@@ -24,10 +24,10 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { sendApiRequest } from '../../api/v1/commandApiOnTheApp.testSupport.js';
 import { parseApiTokens } from '../../core/apiAccess/apiTokens.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger } from '../../core/logger/createLogger.js';
-import { sendApiRequest } from '../../api/v1/commandApiOnTheApp.testSupport.js';
 import {
   applyAsTheOperatorOrThrow,
   createTrigger,

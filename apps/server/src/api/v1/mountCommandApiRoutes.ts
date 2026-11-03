@@ -46,7 +46,6 @@ import {
   postTakeNextRoute,
 } from './commandShortcutRoutes.js';
 import { postCommandsRoute } from './commandsRoute.js';
-import { postTriggerRoute, refuseTriggerBodyOverTheLimit } from './triggerRoute.js';
 import { buildLayersStatus, getLayersStatusRoute } from './layersStatusRoute.js';
 import {
   buildNextOnLayerCommandFromTheStepOnAir,
@@ -54,6 +53,7 @@ import {
   buildTakeItemCommandOfQuickFireButton,
   buildTakeNextCommandOfTheShownRundown,
 } from './shortcutCommands.js';
+import { postTriggerRoute, refuseTriggerBodyOverTheLimit } from './triggerRoute.js';
 
 /**
  * Mounts the command API (BAJAOVRLAY-28) on the /api/v1 routes: POST /commands, the ten
@@ -207,10 +207,12 @@ export function mountCommandApiRoutes(
         callerActor: buildApiActor(callerName),
       });
       const httpStatus = chooseHttpStatusOfTriggerCall(outcome);
-      context.get('requestLogger').info(
-        { api_token_name: callerName, trigger_id: triggerId, status: httpStatus },
-        'api trigger call answered',
-      );
+      context
+        .get('requestLogger')
+        .info(
+          { api_token_name: callerName, trigger_id: triggerId, status: httpStatus },
+          'api trigger call answered',
+        );
       if (outcome.status === 'fired') {
         return context.json(buildOkCommandResult(null), 200);
       }
@@ -295,7 +297,9 @@ function buildNoRundownAnswer(): CommandApiAnswer {
  * trigger (here the id is the address itself, unlike a command naming a missing id, which
  * answers 422), and the usual status of any other refusal (400 body, 409 not fired).
  */
-function chooseHttpStatusOfTriggerCall(outcome: HttpTriggerCallOutcome): 200 | 404 | CommandRefusalHttpStatus {
+function chooseHttpStatusOfTriggerCall(
+  outcome: HttpTriggerCallOutcome,
+): 200 | 404 | CommandRefusalHttpStatus {
   if (outcome.status === 'fired') {
     return 200;
   }

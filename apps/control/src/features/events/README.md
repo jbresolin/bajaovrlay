@@ -12,4 +12,5 @@ sorted by `eventHistoryView.ts`). Both draw
 The badge's pulse and the chime are `usePendingEventAlert.ts` and `eventChime.ts`; the sound
 switch is this browser's own setting (`eventSoundSettingInBrowserStorage.ts`).
 `EventMarkOnLayer.tsx` is Camadas' "evento: …" mark. Everything else comes from the server's
-`events` and `eventRules` slices.
+`events` and `eventRules` slices. The tab and the page also draw the triggers' firings that
+ask, and the page opens "Gatilhos": both from features/triggers (BAJAOVRLAY-48).

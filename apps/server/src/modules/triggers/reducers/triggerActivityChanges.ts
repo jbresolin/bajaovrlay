@@ -3,8 +3,8 @@
 import {
   type TriggerActivity,
   type TriggerFiring,
-  type TriggerFiringStatus,
   triggerFiringsKept,
+  type TriggerFiringStatus,
 } from '@bajaovrlay/shared';
 
 /**

@@ -20,10 +20,10 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { createLogger } from '../../core/logger/createLogger.js';
-import { createStateStore } from '../../core/store/createStateStore.js';
 import { openDatabaseForTests } from '../../core/db/temporaryDatabase.testSupport.js';
+import { createLogger } from '../../core/logger/createLogger.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
+import { createStateStore } from '../../core/store/createStateStore.js';
 import {
   applyAsTheOperatorOrThrow,
   createTrigger,
@@ -201,9 +201,7 @@ describe('who may fire a trigger', () => {
     );
 
     // Assert: not allowed: a firing comes only from what the trigger service saw.
-    expect(!outcome.ok && outcome.error.code, 'only sistema:gatilhos may fire').toBe(
-      'NOT_ALLOWED',
-    );
+    expect(!outcome.ok && outcome.error.code, 'only sistema:gatilhos may fire').toBe('NOT_ALLOWED');
   });
 });
 
@@ -224,7 +222,10 @@ describe('across a restart', () => {
     // Assert: the trigger is back; the pause is not.
     const slicesAfter = storeAfterTheRestart.readAllSlices();
     expect(
-      { triggerNames: slicesAfter.triggers.map((trigger) => trigger.name), isPaused: slicesAfter.triggerActivity.isPaused },
+      {
+        triggerNames: slicesAfter.triggers.map((trigger) => trigger.name),
+        isPaused: slicesAfter.triggerActivity.isPaused,
+      },
       'triggers are saved; "Pausar gatilhos" starts off at every boot',
     ).toEqual({ triggerNames: ['Entrou no box'], isPaused: false });
   });
