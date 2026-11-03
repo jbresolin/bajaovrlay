@@ -16,6 +16,10 @@
  *     by a macro's step does not.
  *   - The rule follows the switch, not the clock: a later entry made in OBS by hand, right
  *     after the macro's, fires.
+ *   - A switch is used up once OBS has answered it: a switch to the scene already on
+ *     Program, one OBS never answered, or one another cut overtook is never blamed for a
+ *     later cut by hand. OBS reporting the scene before its answer still counts as the
+ *     macro's.
  *   - A firing caused by a run a trigger started is dropped, and leaves no row.
  *
  * What these tests deliberately do not cover:
@@ -128,6 +132,106 @@ describe('rule 1: a macro’s own scene switch fires no scene trigger', () => {
       'the second entry was made by hand, so it must fire however soon it came',
     ).toBe(1);
   });
+});
+
+/** OBS answers the latest switch: done, or refused with this reason. */
+function letObsAnswerTheLatestSwitch(
+  store: TriggersOnTheStore['store'],
+  refusalReason: string | null,
+): void {
+  const switchNumber = store.readAllSlices().obs.sceneSwitch?.number ?? 0;
+  store.applyCommand(
+    {
+      type: 'recordObsSceneSwitchAnswer',
+      number: switchNumber,
+      isDone: refusalReason === null,
+      refusalReason,
+    },
+    obsConnectionActor,
+  );
+}
+
+describe('rule 1: a switch is used up once OBS has answered it', () => {
+  const howTheMacrosSwitchEnded = [
+    // The reviewer's case: Box is already on Program, so OBS answers "feita" and nothing
+    // changes. Minutes later the director cuts to Pista and back to Box by hand: that
+    // entry is the director's, and must not be blamed on the old switch.
+    {
+      name: 'a switch to the scene already on Program blames no later cut',
+      sceneOnProgramAtTheStart: 'Box',
+      switchAndWhatFollows: ({ store, passTime }: TriggersOnTheStore) => {
+        applyAsTheOperatorOrThrow(store, { type: 'runMacro', macroId: goToTheBoxMacroId });
+        passTime(100);
+        letObsAnswerTheLatestSwitch(store, null);
+        passTime(180_000);
+        reportObsShowing(store, 'Pista');
+        reportObsShowing(store, 'Box');
+      },
+      expectedFirings: 1,
+    },
+    // OBS is frozen: the connection gives up at its time limit and refuses the switch. A
+    // later cut to Box by hand is the director's.
+    {
+      name: 'a switch OBS never answered blames no later cut',
+      sceneOnProgramAtTheStart: 'Pista',
+      switchAndWhatFollows: ({ store, passTime }: TriggersOnTheStore) => {
+        applyAsTheOperatorOrThrow(store, { type: 'runMacro', macroId: goToTheBoxMacroId });
+        passTime(100);
+        letObsAnswerTheLatestSwitch(store, 'O OBS não respondeu a tempo à troca para "Box".');
+        passTime(60_000);
+        reportObsShowing(store, 'Box');
+      },
+      expectedFirings: 1,
+    },
+    // OBS answers "feita", but the director's cut to Câmera 2 lands in the same instant
+    // and Box never shows. The switch is spent; the director's later Box fires.
+    {
+      name: 'a switch another cut overtook blames no later cut',
+      sceneOnProgramAtTheStart: 'Pista',
+      switchAndWhatFollows: ({ store, passTime }: TriggersOnTheStore) => {
+        applyAsTheOperatorOrThrow(store, { type: 'runMacro', macroId: goToTheBoxMacroId });
+        passTime(100);
+        letObsAnswerTheLatestSwitch(store, null);
+        reportObsShowing(store, 'Câmera 2');
+        passTime(30_000);
+        reportObsShowing(store, 'Box');
+      },
+      expectedFirings: 1,
+    },
+    // The same moment, the other way round: OBS reports Box before it answers the switch.
+    // The switch was still waiting, so Box is the macro's and fires nothing.
+    {
+      name: 'a switch whose scene is reported before its answer still blames that change',
+      sceneOnProgramAtTheStart: 'Pista',
+      switchAndWhatFollows: ({ store, passTime }: TriggersOnTheStore) => {
+        applyAsTheOperatorOrThrow(store, { type: 'runMacro', macroId: goToTheBoxMacroId });
+        passTime(100);
+        reportObsShowing(store, 'Box');
+        letObsAnswerTheLatestSwitch(store, null);
+      },
+      expectedFirings: 0,
+    },
+  ];
+
+  it.each(howTheMacrosSwitchEnded)(
+    '$name',
+    ({ sceneOnProgramAtTheStart, switchAndWhatFollows, expectedFirings }) => {
+      // Arrange: the Box trigger, and OBS on this row's scene.
+      const triggersOnTheStore = startTriggersOnTheStore();
+      createTrigger(triggersOnTheStore.store, boxEnteredRunsTheInterview);
+      reportObsShowing(triggersOnTheStore.store, sceneOnProgramAtTheStart);
+
+      // Act: "Ir para o box" switches, OBS answers this row's way, and what follows happens.
+      switchAndWhatFollows(triggersOnTheStore);
+      triggersOnTheStore.passTime(100);
+
+      // Assert: only an entry into Box the macro did not make fired.
+      expect(
+        readFirings(triggersOnTheStore.store).length,
+        'a switch OBS has answered must never be blamed for a later cut by hand',
+      ).toBe(expectedFirings);
+    },
+  );
 });
 
 describe('rule 2: a trigger never fires from a macro that a trigger started', () => {

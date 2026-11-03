@@ -8,7 +8,7 @@ import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { eventInboxActor, triggerServiceActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import { readTriggerDataEventOfInboxEvent } from './dataEventsOfTheInbox.js';
-import { findProgramSceneChange } from './obsSceneChanges.js';
+import { readObsReading } from './obsSceneChanges.js';
 import { listScheduleMomentsDue } from './scheduleMoments.js';
 
 /** What the service needs; the timers and the clock default to Node's own. */
@@ -58,7 +58,7 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   const slicesAtTheStart = stateStore.readAllSlices();
   let obsSeenLast = slicesAtTheStart.obs;
-  let numberOfTheLastSwitchCounted: number | undefined = undefined;
+  let numberOfTheLastSwitchUsedUp: number | undefined = undefined;
   let eventIdsSeen = new Set(slicesAtTheStart.events.map((event) => event.eventId));
   let scheduleLookedAtUpToMs = readCurrentTime().getTime();
   let isStopped = false;
@@ -104,17 +104,12 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
 
   /** The scene triggers a change of Program matches: the scene entered, the scene left. */
   function findFiringsOfSceneChange(slices: Slices): FiringToSend[] {
-    const sceneChange = findProgramSceneChange(
-      obsSeenLast,
-      slices.obs,
-      numberOfTheLastSwitchCounted,
-    );
+    const obsReading = readObsReading(obsSeenLast, slices.obs, numberOfTheLastSwitchUsedUp);
     obsSeenLast = slices.obs;
+    numberOfTheLastSwitchUsedUp = obsReading.numberOfTheLastSwitchUsedUp;
+    const sceneChange = obsReading.sceneChange;
     if (sceneChange === undefined) {
       return [];
-    }
-    if (sceneChange.switchNumberCounted !== undefined) {
-      numberOfTheLastSwitchCounted = sceneChange.switchNumberCounted;
     }
     const firings: FiringToSend[] = [];
     for (const trigger of slices.triggers) {
