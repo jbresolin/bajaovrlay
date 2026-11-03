@@ -25,7 +25,14 @@ import { useEntityLibrary } from './useEntityLibrary';
 const texts = ptBR.entityLibrary.csv;
 
 /** What a tab gives its import panel. */
-export type EntityCsvImportPanelProps = { entityType: EntityType; onClose: () => void };
+export type EntityCsvImportPanelProps = {
+  entityType: EntityType;
+  /** Text the box starts with: the Baja app's teams written as CSV (BAJAOVRLAY-54). */
+  startingCsvText?: string;
+  /** A line shown above the columns, saying where the starting text came from. */
+  note?: string;
+  onClose: () => void;
+};
 
 /**
  * "Importar CSV" of one tab: the CSV is pasted, or read from a chosen file into the same
@@ -33,7 +40,8 @@ export type EntityCsvImportPanelProps = { entityType: EntityType; onClose: () =>
  * number, "novo", "atualiza" or "erro" and the pt-BR reason. "Importar" sends the valid
  * lines only, as one importEntities (one state change, one event-log row). The panel
  * lists the tab's columns, says which is the key and that images are not in the CSV. A
- * new person, sponsor or slot of the file gets an id made for this preview.
+ * new person, sponsor or slot of the file gets an id made for this preview. The box may
+ * start filled ("Importar equipes do app Baja"), and stays editable.
  */
 export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
   const { entityType } = props;
@@ -45,7 +53,7 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
   const isKeyedByAnId = entityType !== 'team';
   const library = useEntityLibrary();
   const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
-  const [csvText, setCsvText] = useState('');
+  const [csvText, setCsvText] = useState(props.startingCsvText ?? '');
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
   const [outcomeMessage, setOutcomeMessage] = useState<{ text: string; isRefusal: boolean } | null>(
     null,
@@ -82,6 +90,11 @@ export function EntityCsvImportPanel(props: EntityCsvImportPanelProps) {
       className="flex flex-col gap-3 rounded-lg border p-4"
     >
       <h3 className="font-semibold">{texts.panelTitle(ptBR.entityLibrary.tabs[entityType])}</h3>
+      {props.note !== undefined && (
+        <p role="status" className="text-sm">
+          {props.note}
+        </p>
+      )}
       <div className="text-sm">
         <p className="text-muted-foreground">{texts.columnsTitle}</p>
         <ul className="list-inside list-disc">

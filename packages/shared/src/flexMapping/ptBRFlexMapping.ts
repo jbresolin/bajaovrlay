@@ -115,6 +115,9 @@ export const ptBRFlexMapping = {
       `"${fieldLabel}" só serve para calcular as diferenças pelas voltas; ligue essa opção ou deixe o campo sem mapear.`,
     incompleteEntriesOnlyInBrackets: 'Disputas incompletas só existem nas Chaves.',
     refusalNeedsMessage: 'A recusa precisa de uma mensagem para o operador.',
+    refusalComparesOneWay: 'A recusa compara de um jeito só: "igual a" ou "não é um destes".',
+    refusalKnownValuesEmpty:
+      'A lista de valores conhecidos da recusa precisa de pelo menos um valor.',
     transformWithoutPath: (targetField: string) =>
       `A transformação da regra de "${targetField}" só vale para um campo lido da resposta (caminho, item de fora, consulta, coluna ou alternativas).`,
     parametersWithoutTransform: (targetField: string) =>

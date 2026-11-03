@@ -19,7 +19,8 @@
     "test:e2e:control": "pnpm --filter @bajaovrlay/control run test:e2e",
     "verify": "node scripts/verify.js",
     "start": "pnpm --filter @bajaovrlay/server run start",
-    "serve:flex-example": "node scripts/serveFlexExample.js"
+    "serve:flex-example": "node scripts/serveFlexExample.js",
+    "serve:baja-example": "node scripts/serveBajaAppExample.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

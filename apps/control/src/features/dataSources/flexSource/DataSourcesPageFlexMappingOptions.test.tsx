@@ -17,6 +17,8 @@
  *   - The list inside each item, a lookup, the table's layout, the parts by column, the
  *     refusal flag, the gaps switch and an incomplete-match condition are each built as
  *     typed; the refusal without a message is refused under "Mensagem da recusa".
+ *   - A refusal by "Valores conhecidos" (`notOneOf`, gate 2 of PR #38) is built from its
+ *     comma-separated words, and the race preset's two refusals come back unchanged.
  *   - The example preset, which uses none of them, still exports with none of their keys.
  *
  * What these tests deliberately do not cover:
@@ -30,6 +32,7 @@ import { flipSwitch, pressButton } from '@/features/schemaForm/schemaFormOnTestP
 
 import {
   buildBajaAppOverallConfig,
+  buildBajaAppRaceConfig,
   buildBajaAppTournamentConfig,
 } from './bajaAppExamples.testSupport';
 import {
@@ -224,6 +227,45 @@ describe('the options of a mapping block', () => {
       equals: true,
       message: 'Corrida simulada: não vai ao ar.',
     });
+  });
+
+  it('builds a refusal by "Valores conhecidos" from its comma-separated values', () => {
+    // Arrange: the example preset imported.
+    openTheFormWithTheExample();
+    const refusal = within(
+      findPart('region', 'Mapeamento: Sessão').getByRole('group', {
+        name: 'Recusar a resposta quando',
+      }),
+    );
+
+    // Act: refuse a state none of two known words, the value named, then export.
+    typeIn(refusal, 'Caminho da recusa', 'prova.estado');
+    typeIn(refusal, 'Valores conhecidos (separados por vírgula)', 'aguardando, correndo');
+    typeIn(refusal, 'Mensagem da recusa', 'Estado novo: "{valor}".');
+    const config = exportTheConfig();
+
+    // Assert: the list of known words, and no "equals".
+    expect(findMappingOfShape(config, 'session').refuseWhen, 'the refusal must be built').toEqual({
+      path: 'prova.estado',
+      notOneOf: ['aguardando', 'correndo'],
+      message: 'Estado novo: "{valor}".',
+    });
+  });
+
+  it('keeps the race preset’s two refusals as they are through the form', () => {
+    // Arrange: the Baja app race preset, whose session refuses an unknown state by its
+    // four known words and whose positions refuse a simulated race.
+    const racePreset = buildBajaAppRaceConfig();
+    openTheFormWithConfig(racePreset);
+
+    // Act: export it untouched.
+    const config = exportTheConfig();
+
+    // Assert: both refusals come back exactly as the preset wrote them.
+    expect(
+      config.mappings.map((mapping) => mapping.refuseWhen),
+      'the refusals must survive the form',
+    ).toEqual(racePreset.mappings.map((mapping) => mapping.refuseWhen));
   });
 
   it('refuses a refusal with no message, under "Mensagem da recusa"', async () => {

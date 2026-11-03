@@ -1,16 +1,19 @@
 // Test support: the Baja app's results API as the flex form's tests paste and import it
 // (BAJAOVRLAY-53). The answers are the shared fixtures of
 // packages/shared/src/flexMapping/examples/bajaApp (real ones saved with curl, the doc's
-// examples, one made-up bracket); the mappings are the shared draft presets, which
-// BAJAOVRLAY-54 will turn into the real ones. Every builder returns new objects.
-import { type HttpJsonConfig, HttpJsonConfigSchema } from '@bajaovrlay/shared';
-
+// examples, one made-up bracket); the configs are the shared Baja app presets
+// (BAJAOVRLAY-54). Every builder returns new objects.
 import {
-  buildDraftOverallMappings,
-  buildDraftRaceMappings,
-  buildDraftTournamentMappings,
-} from '../../../../../../packages/shared/src/flexMapping/bajaAppDraftPresets.testSupport';
+  bajaAppApiAddress,
+  buildBajaAppBracketSourceConfig,
+  buildBajaAppRaceSourceConfig,
+  buildBajaAppResultsTableSourceConfig,
+  type HttpJsonConfig,
+  HttpJsonConfigSchema,
+} from '@bajaovrlay/shared';
+
 import raceTenMinutesIn00NE from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/corrida-00NE_ZZL.from-doc.json';
+import teams25SU from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/equipes-25SU.json';
 import teams26BR from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/equipes-26BR.json';
 import overallDuringSpoilers25SU from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/resultado-25SU_GER-spoilers.from-doc.json';
 import overall26BR from '../../../../../../packages/shared/src/flexMapping/examples/bajaApp/resultado-26BR_GER.json';
@@ -20,6 +23,7 @@ import superPrime25SU from '../../../../../../packages/shared/src/flexMapping/ex
 export const bajaAppAnswerTexts = {
   raceTenMinutesIn00NE: JSON.stringify(raceTenMinutesIn00NE),
   teams26BR: JSON.stringify(teams26BR),
+  teams25SU: JSON.stringify(teams25SU),
   overall26BR: JSON.stringify(overall26BR),
   overallDuringSpoilers25SU: JSON.stringify(overallDuringSpoilers25SU),
   superPrime25SU: JSON.stringify(superPrime25SU),
@@ -32,39 +36,34 @@ const partHeadersOf26BR = ['Penalidade', 'Segurança', 'Projeto', 'Dinâmicas', 
 export const spoilersRefusalSentence =
   'Resultado com spoilers ativos: a organização esconde as posições agora.';
 
-/** One GET of the Baja API, the teams refreshed every 10 minutes. */
-function buildBajaAppRequest(requestId: string, address: string) {
-  const request = { requestId, url: `https://api.bajasaebrasil.net/resultados/${address}` };
-  return requestId === 'equipes' ? { ...request, refreshEveryMs: 600_000 } : request;
-}
-
-/** The race as session and positions, its names joined from the teams. */
+/** The race preset on 26BR's Enduro: session and positions, names joined from the teams. */
 export function buildBajaAppRaceConfig(): HttpJsonConfig {
-  return HttpJsonConfigSchema.parse({
-    requests: [
-      buildBajaAppRequest('corrida', 'corrida.php?evt=26BR&p=END'),
-      buildBajaAppRequest('equipes', 'equipes.php?evt=26BR'),
-    ],
-    mappings: buildDraftRaceMappings(),
+  return buildBajaAppRaceSourceConfig({
+    apiAddress: bajaAppApiAddress,
+    eventId: '26BR',
+    provaId: 'END',
+    acceptsSimulatedRace: false,
   });
 }
 
-/** The overall table as standings: by column, joined with the teams, refused in spoilers. */
+/** The results table preset on 26BR's overall table: by column, refused in spoilers. */
 export function buildBajaAppOverallConfig(): HttpJsonConfig {
-  return HttpJsonConfigSchema.parse({
-    requests: [
-      buildBajaAppRequest('resultado', 'resultado.php?evt=26BR&id=26BR_GER'),
-      buildBajaAppRequest('equipes', 'equipes.php?evt=26BR'),
-    ],
-    mappings: buildDraftOverallMappings(partHeadersOf26BR),
+  return buildBajaAppResultsTableSourceConfig({
+    apiAddress: bajaAppApiAddress,
+    eventId: '26BR',
+    resultadoId: '26BR_GER',
+    pointsHeader: 'Total',
+    partHeaders: partHeadersOf26BR,
+    standingsScope: 'overall',
   });
 }
 
-/** The Super Prime as brackets: rounds holding matches, pending sides incomplete. */
+/** The tournament preset on 25SU's Super Prime: rounds holding matches. */
 export function buildBajaAppTournamentConfig(): HttpJsonConfig {
-  return HttpJsonConfigSchema.parse({
-    requests: [buildBajaAppRequest('torneio', 'torneio.php?evt=25SU&id=25SU_SPR')],
-    mappings: buildDraftTournamentMappings(),
+  return buildBajaAppBracketSourceConfig({
+    apiAddress: bajaAppApiAddress,
+    eventId: '25SU',
+    resultadoId: '25SU_SPR',
   });
 }
 

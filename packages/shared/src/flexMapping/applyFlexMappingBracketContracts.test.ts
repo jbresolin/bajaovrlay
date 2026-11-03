@@ -30,8 +30,11 @@ import { describe, expect, it } from 'vitest';
 
 import { validateDataShape } from '../dataShapes/validateDataShape.js';
 import { applyFlexMapping } from './applyFlexMapping.js';
-import { buildDraftTournamentMappings } from './bajaAppDraftPresets.testSupport.js';
 import { bajaAppFixtureFiles, readBajaAppFixture } from './bajaAppFixtures.testSupport.js';
+import {
+  bajaAppApiAddress,
+  buildBajaAppBracketSourceConfig,
+} from './presets/bajaApp/bajaAppPresets.js';
 
 /** The moment of the poll in these tests: the 25SU Super Prime's afternoon. */
 const pollMomentMs = Date.UTC(2025, 9, 26, 18, 0, 0);
@@ -58,13 +61,26 @@ function expectMatchInFixture(
   return match as TournamentAnswer['rounds'][number]['matches'][number];
 }
 
-/** Maps a tournament answer with the draft mapping, then validates the brackets. */
+/** The Baja app's tournament preset on 25SU's Super Prime (BAJAOVRLAY-54). */
+function buildTournamentMappingsOf25SU() {
+  const config = buildBajaAppBracketSourceConfig({
+    apiAddress: bajaAppApiAddress,
+    eventId: '25SU',
+    resultadoId: '25SU_SPR',
+  });
+  return config.mappings;
+}
+
+/**
+ * Maps a tournament answer with the tournament preset, its names joined from the real 25SU
+ * teams, then validates the brackets.
+ */
 function mapAndValidateTournament(tournament: unknown) {
-  const result = applyFlexMapping(
-    buildDraftTournamentMappings(),
-    { torneio: tournament },
-    pollMomentMs,
-  );
+  const responses = {
+    torneio: tournament,
+    equipes: readBajaAppFixture(bajaAppFixtureFiles.teams25SU),
+  };
+  const result = applyFlexMapping(buildTournamentMappingsOf25SU(), responses, pollMomentMs);
   const brackets = result.ok ? result.shapes.brackets : undefined;
   const validation = validateDataShape('brackets', brackets);
   const roundNames = result.ok

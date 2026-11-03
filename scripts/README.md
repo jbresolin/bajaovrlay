@@ -10,6 +10,12 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
   Each answer is stamped with the moment it is made and its session clock runs down from
   when the script started (`liveExampleResponse.js`, tested by `liveExampleResponse.test.ts`),
   so the session card shows a believable race clock rather than the file's fixed instant.
+- `serveBajaAppExample.js` (`pnpm serve:baja-example`, BAJAOVRLAY-54): serves a stand-in
+  of the Baja app's results API for event 26BR on `http://localhost:4791`, from the
+  fixtures of `packages/shared/src/flexMapping/examples/bajaApp/`: the event during its
+  competition, its teams, its overall table, its Super Prime and the API doc's race as its
+  Enduro (no counted race exists on the real API yet). On "Fontes de dados", "Adicionar
+  fonte do app Baja" with that address and 26BR. The e2e walk serves the same files itself.
 - `writeBuildId.js` (the first step of `pnpm build`): writes `build-id.building.json` at
   the root, the build's moment as its id, which both Vite builds embed.
 - `publishBuildId.js` (the last step, reached only when every package built): copies it
