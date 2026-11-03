@@ -22,6 +22,8 @@ export const sliceNamesChangedByCommands = [
   'macroRuns',
   'macroStops',
   'obs',
+  'triggers',
+  'triggerActivity',
   'dataSources',
   'dataSnapshots',
   'overrides',
@@ -45,12 +47,15 @@ const sliceNameSavedOneRowPerSource: keyof SlicesChangedByCommands = 'dataSnapsh
 // restart like the preview instances (see loadInitialSlices.ts); the recordings are
 // files on disk, and their list is rebuilt from the recordings folder at boot; where a
 // run stopped short belongs to that run; and OBS's slice is what OBS says now, refilled
-// from OBS at every connection (BAJAOVRLAY-27).
+// from OBS at every connection (BAJAOVRLAY-27). The triggers' activity (BAJAOVRLAY-48):
+// the brief starts every boot unpaused, and a firing that waited before a restart is not
+// offered again after it.
 const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = [
   'previewClearedLayerIds',
   'macroRuns',
   'macroStops',
   'obs',
+  'triggerActivity',
   'recordings',
 ];
 
@@ -97,6 +102,8 @@ export function buildAllSlices(
     macroRuns: slicesOfCommands.macroRuns,
     macroStops: slicesOfCommands.macroStops,
     obs: slicesOfCommands.obs,
+    triggers: slicesOfCommands.triggers,
+    triggerActivity: slicesOfCommands.triggerActivity,
     dataSources: slicesOfCommands.dataSources,
     dataSnapshots: slicesOfCommands.dataSnapshots,
     overrides: slicesOfCommands.overrides,

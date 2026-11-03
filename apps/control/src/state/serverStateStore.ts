@@ -4,6 +4,7 @@ import {
   type DataSnapshotMessage,
   mergeChangedSlicesIntoSlices,
   obsSliceWithoutObs,
+  triggerActivityAtBoot,
   type SliceMessage,
   type Slices,
 } from '@bajaovrlay/shared';
@@ -67,6 +68,9 @@ export function createServerStateStore(): ServerStateStore {
     macroStops: [],
     // Until the hello: OBS unknown, shown as "OBS não configurado" for that moment.
     obs: obsSliceWithoutObs,
+    // Until the hello: no trigger, unpaused, as every boot of the server starts.
+    triggers: [],
+    triggerActivity: triggerActivityAtBoot,
     dataSources: [],
     dataSnapshots: [],
     overrides: [],
@@ -97,6 +101,8 @@ export function createServerStateStore(): ServerStateStore {
         macroRuns: slices.macroRuns,
         macroStops: slices.macroStops,
         obs: slices.obs,
+        triggers: slices.triggers,
+        triggerActivity: slices.triggerActivity,
         dataSources: slices.dataSources,
         dataSnapshots: slices.dataSnapshots,
         overrides: slices.overrides,
@@ -161,6 +167,12 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'overrides':
           set({ overrides: message.slice });
+          break;
+        case 'triggers':
+          set({ triggers: message.slice });
+          break;
+        case 'triggerActivity':
+          set({ triggerActivity: message.slice });
           break;
         case 'recordings':
           set({ recordings: message.slice });

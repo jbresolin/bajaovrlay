@@ -18,6 +18,8 @@ export type CommandRefusalHttpStatus = 400 | 403 | 409 | 422 | 500;
 const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpStatus> = {
   INVALID_COMMAND: 400,
   INVALID_MESSAGE: 400,
+  // An HTTP trigger's body that is not flat JSON, or is over 8 KB (BAJAOVRLAY-48).
+  INVALID_TRIGGER_BODY: 400,
   NOT_ALLOWED: 403,
   // Never answered any more; kept so an old event-log row still parses.
   UNAUTHORIZED_COMMAND: 403,
@@ -36,6 +38,8 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   EVENT_NOT_FOUND: 422,
   MEDIA_NOT_FOUND: 422,
   OUTPUT_NOT_FOUND: 422,
+  TRIGGER_NOT_FOUND: 422,
+  TRIGGER_FIRING_NOT_FOUND: 422,
   // Content that cannot be used as sent.
   INVALID_GRAPHIC_DATA: 422,
   ITEM_NOT_IN_RUNDOWN: 422,
@@ -89,6 +93,12 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   OBS_SCENE_SWITCH_PENDING: 409,
   // Only ever an event-log row's error, never an answer; classed with the state of OBS.
   OBS_REFUSED_SCENE_SWITCH: 409,
+  // Triggers (BAJAOVRLAY-48): a firing no longer waiting, a macro in use, data missing.
+  TRIGGER_FIRING_NOT_WAITING: 409,
+  TRIGGER_FIRING_NOT_DISMISSED: 409,
+  MACRO_USED_BY_TRIGGER: 409,
+  TRIGGER_DATA_NOT_FILLED: 409,
+  TRIGGER_NOT_FIRED: 409,
 };
 
 /** The HTTP status the command API answers a refusal with this code with. */

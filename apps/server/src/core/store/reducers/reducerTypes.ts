@@ -24,6 +24,8 @@ export type SlicesChangedByCommands = Pick<
   | 'macroRuns'
   | 'macroStops'
   | 'obs'
+  | 'triggers'
+  | 'triggerActivity'
   | 'dataSources'
   | 'dataSnapshots'
   | 'overrides'
@@ -65,6 +67,10 @@ export type ReducerContext = {
   newDataSourceId: string;
   /** The id to give an event the operator types (createManualEvent). */
   newEventId: string;
+  /** The id to give a trigger the command creates (createTrigger, BAJAOVRLAY-48). */
+  newTriggerId: string;
+  /** The id to give the firing a fireTrigger records. */
+  newTriggerFiringId: string;
   /**
    * BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot: createDataSource and updateDataSource
    * refuse a flex request to a host off it.

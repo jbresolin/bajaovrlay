@@ -29,6 +29,8 @@ export const contextOfTheDataSourceCommand: ReducerContext = {
   newMacroId: '8f3a1c6e-2d4b-4e9a-b7c5-0a1d3e5f7b92',
   newDataSourceId: 'c7e1a3f5-9b2d-4c6e-8a0f-3d5b7c9e1a24',
   newEventId: 'evento-digitado-1',
+  newTriggerId: 'gatilho-novo-1',
+  newTriggerFiringId: 'disparo-novo-1',
   sourceHostAllowlist: noSourceHostAllowlist,
   actor: 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81',
 };

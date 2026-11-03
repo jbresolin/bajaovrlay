@@ -1,4 +1,9 @@
-import { obsSliceWithoutObs, type Slices, SlicesSchema } from '@bajaovrlay/shared';
+import {
+  obsSliceWithoutObs,
+  type Slices,
+  SlicesSchema,
+  triggerActivityAtBoot,
+} from '@bajaovrlay/shared';
 
 import {
   loadOrSeedDataSourceSlices,
@@ -221,6 +226,13 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     // restart, and OBS's slice is refilled by the OBS connection as soon as it connects.
     macroStops: [],
     obs: obsSliceWithoutObs,
+    // The triggers are saved (BAJAOVRLAY-48); a database written before them has no row
+    // and starts with none, and a row that fails its schema stops the boot, as the items
+    // row does. Their activity is memory only: every boot starts unpaused, nothing fired.
+    triggers: SlicesSchema.shape.triggers.parse(
+      storedRows.find((row) => row.name === 'triggers')?.json ?? [],
+    ),
+    triggerActivity: triggerActivityAtBoot,
     dataSources: dataSourceSlices.dataSources,
     dataSnapshots: dataSourceSlices.dataSnapshots,
     // The operator's corrections are saved (BAJAOVRLAY-20): a restart keeps every one in

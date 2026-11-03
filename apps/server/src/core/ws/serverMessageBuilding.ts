@@ -79,6 +79,10 @@ export function buildSliceMessage(
       return { type: 'slice', name: 'macroStops', slice: slices.macroStops, serverNowMs };
     case 'obs':
       return { type: 'slice', name: 'obs', slice: slices.obs, serverNowMs };
+    case 'triggers':
+      return { type: 'slice', name: 'triggers', slice: slices.triggers, serverNowMs };
+    case 'triggerActivity':
+      return { type: 'slice', name: 'triggerActivity', slice: slices.triggerActivity, serverNowMs };
     case 'dataSources':
       return { type: 'slice', name: 'dataSources', slice: slices.dataSources, serverNowMs };
     case 'overrides':
@@ -169,6 +173,12 @@ function copyOneSliceByName(
       break;
     case 'obs':
       group.obs = slices.obs;
+      break;
+    case 'triggers':
+      group.triggers = slices.triggers;
+      break;
+    case 'triggerActivity':
+      group.triggerActivity = slices.triggerActivity;
       break;
     case 'dataSources':
       group.dataSources = slices.dataSources;

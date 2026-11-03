@@ -3,6 +3,7 @@ import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
 import { ptBRObs } from './ptBRObs.js';
 import { ptBROutputs } from './ptBROutputs.js';
+import { ptBRTriggers } from './ptBRTriggers.js';
 
 /**
  * pt-BR catalog for every message the server sends to people (error answers the
@@ -125,6 +126,8 @@ export const ptBR = {
   outputs: ptBROutputs,
   // OBS control: connection errors and the refusals of a scene switch (BAJAOVRLAY-27).
   obs: ptBRObs,
+  // Triggers: refusals, and why one did not fire (BAJAOVRLAY-48); see ptBRTriggers.ts.
+  triggers: ptBRTriggers,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
   // each goes with a stable code. The layer is named as the operator reads it.
   onAirChangeErrors: {

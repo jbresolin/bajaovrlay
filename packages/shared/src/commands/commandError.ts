@@ -226,6 +226,16 @@ export const CommandErrorCodeSchema = z.enum([
    * macro was run by hand, with no trigger data). The message starts with the field's title.
    */
   'TRIGGER_DATA_NOT_FILLED',
+  /**
+   * POST /api/v1/triggers/:triggerId with a body that is not a flat JSON object of texts
+   * and numbers, or is over 8 KB. Only ever an HTTP answer (400), never a command's.
+   */
+  'INVALID_TRIGGER_BODY',
+  /**
+   * POST /api/v1/triggers/:triggerId for a trigger that may not fire now: off, paused, or
+   * within its minimum interval. Only ever an HTTP answer (409); the message says which.
+   */
+  'TRIGGER_NOT_FIRED',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

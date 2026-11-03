@@ -1,6 +1,7 @@
 import type { ObsSceneSwitch, SwitchObsSceneCommand } from '@bajaovrlay/shared';
 
 import type {
+  ReducerContext,
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
@@ -16,7 +17,9 @@ import {
  * switchObsScene: records the switch as `enviada`, numbered one past the switch before it.
  * A reducer is pure, so it asks OBS nothing: the OBS connection (../obsConnection.ts)
  * watches the slice, asks OBS, and records OBS's answer with recordObsSceneSwitchAnswer.
- * Recording it is also what writes the event-log row naming the scene.
+ * Recording it is also what writes the event-log row naming the scene. The switch keeps
+ * who asked for it (`requestedBy`), so a scene change a macro made is told apart from one
+ * made by hand without guessing from timing (the triggers' rule 1 against loops).
  * Refused, in this order, with OBS not configured, not connected, a scene the slice does
  * not list, Preview with Studio Mode off, and while the switch before has no answer yet:
  * one at a time, so a macro waiting for its own answer never reads another switch's.
@@ -26,6 +29,7 @@ import {
 export function reduceSwitchObsScene(
   slices: SlicesChangedByCommands,
   command: SwitchObsSceneCommand,
+  context: ReducerContext,
 ): ReducerOutcome {
   const obs = slices.obs;
   if (obs.address === null) {
@@ -51,6 +55,8 @@ export function reduceSwitchObsScene(
     target: command.target,
     status: 'enviada',
     refusalReason: null,
+    // Who asked: the triggers' rule against loops reads it (BAJAOVRLAY-48).
+    requestedBy: context.actor,
   };
   return { status: 'applied', slices: { ...slices, obs: { ...obs, sceneSwitch } } };
 }

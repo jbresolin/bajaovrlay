@@ -1,6 +1,13 @@
-import type { CommandError, InboxEventPayload, InstanceTarget, Item } from '@bajaovrlay/shared';
+import type {
+  CommandError,
+  InboxEventPayload,
+  InstanceTarget,
+  Item,
+  TriggerFillOfTake,
+} from '@bajaovrlay/shared';
 
 import { listKeysOfTakeTimeFields } from '../itemTakeTimeFields.js';
+import { fillItemFieldsFromTheTrigger } from '../itemTriggerFields.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import {
@@ -43,7 +50,10 @@ export type ItemOnOutputOutcome =
  * Refused if the item does not exist, if a field cannot be resolved, or for any reason
  * putGraphicOnOutput refuses; nothing changes then. With `eventFill`, the item's event
  * fields read its payload, and the new instance carries the event's id and its rule's
- * duration when it names them (showEvent, Prévia of an event).
+ * duration when it names them (showEvent, Prévia of an event). With `triggerFill` (a
+ * macro's take step started by a trigger, BAJAOVRLAY-48), the step's trigger fields are
+ * laid over the item's own as literals first (itemTriggerFields.ts); everything after,
+ * the bindings written down included, reads the fields as laid over.
  */
 export function putItemOnOutput(
   slices: SlicesChangedByCommands,
@@ -51,11 +61,21 @@ export function putItemOnOutput(
   target: InstanceTarget,
   context: ReducerContext,
   eventFill?: EventFillOfItem,
+  triggerFill?: TriggerFillOfTake,
 ): ItemOnOutputOutcome {
   const item = slices.items.find((candidate) => candidate.id === itemId);
   if (item === undefined) {
     return { status: 'refused', error: refuseUnknownItem(itemId) };
   }
+  const graphic = slices.graphics.find((candidate) => candidate.id === item.graphicId);
+  const fillByTheTrigger =
+    triggerFill === undefined
+      ? { status: 'filled' as const, fields: item.fields }
+      : fillItemFieldsFromTheTrigger(item.fields, triggerFill, graphic);
+  if (fillByTheTrigger.status === 'refused') {
+    return fillByTheTrigger;
+  }
+  const fieldsOfTheTake = fillByTheTrigger.fields;
 
   // The one place an item's fields become data, for a take and for a preview alike.
   // takePreview does NOT come back here: what was seen in the preview is what goes on
@@ -65,8 +85,8 @@ export function putItemOnOutput(
   // putGraphicOnOutput). What could go wrong: an item edited after it was previewed goes
   // on air as it was previewed, until it is previewed again.
   const resolution = resolveItemFieldsIntoGraphicData({
-    fields: item.fields,
-    graphic: slices.graphics.find((graphic) => graphic.id === item.graphicId),
+    fields: fieldsOfTheTake,
+    graphic,
     momentOfTheTake: context.now,
     sources: {
       dataSources: slices.dataSources,
@@ -79,7 +99,7 @@ export function putItemOnOutput(
   if (resolution.status === 'refused') {
     return { status: 'refused', error: resolution.error };
   }
-  const keysOfTakeTimeFields = listKeysOfTakeTimeFields(item.fields);
+  const keysOfTakeTimeFields = listKeysOfTakeTimeFields(fieldsOfTheTake);
 
   const takeOfTheItemGraphic: GraphicOnOutputRequest = {
     graphicId: item.graphicId,
@@ -111,8 +131,8 @@ export function putItemOnOutput(
   const instanceBindingsAfter = addBindingsOfNewInstance(
     takeOutcome.slices.instanceBindings,
     context.newInstanceId,
-    listBoundFieldsKeptByNewInstance(item.fields, target),
-    listEntityFieldsKeptByNewInstance(item.fields),
+    listBoundFieldsKeptByNewInstance(fieldsOfTheTake, target),
+    listEntityFieldsKeptByNewInstance(fieldsOfTheTake),
   );
   return {
     status: 'applied',

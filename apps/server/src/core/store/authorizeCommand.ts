@@ -12,6 +12,7 @@ import {
   obsConnectionActor,
   readMacroIdOfMacroRunnerActor,
   readSourceIdOfDataSourcePollerActor,
+  triggerServiceActor,
 } from './commandActors.js';
 
 /**
@@ -62,6 +63,12 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   and how OBS answered a switch (recordObsSceneSwitchAnswer), and nobody else may: a
  *   page that could would show a scene OBS is not showing, or let a macro go on over the
  *   wrong scene (BAJAOVRLAY-27);
+ * - the trigger service (`sistema:gatilhos`) may only fire a trigger (fireTrigger), and
+ *   nobody else may: a firing stands for a scene change, a call, an event or a moment the
+ *   service saw, and its rules against loops read its cause (BAJAOVRLAY-48);
+ * - a takeItem carrying a trigger's data (`triggerFill`) is the macro runner's alone: an
+ *   operator's take uses the item's own values, so no page can put text on air that looks
+ *   as if a trigger brought it;
  * - every other server timer (`sistema:`, today the auto-out) may only clear one layer:
  *   a bug in a timer must never be able to put a graphic on air or empty the screen;
  * - every other actor (an operator, `operador:<connection id>`, and a device of the
@@ -88,6 +95,8 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   const isRefreshOfBoundFields = command.type === 'refreshBoundInstanceData';
   const isRecordOfDetectedEvents = command.type === 'recordDetectedEvents';
   const isRecordOfAnUpload = command.type === 'recordUploadedMedia';
+  const isTakeFilledByATrigger =
+    command.type === 'takeItem' && command.triggerFill !== undefined;
   const isRecorderBookkeeping =
     command.type === 'recordRecordingProgress' ||
     (command.type === 'stopRecording' && command.failureMessage !== undefined);
@@ -120,13 +129,18 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   if (actor === obsConnectionActor) {
     return command.type === 'recordObsState' || command.type === 'recordObsSceneSwitchAnswer';
   }
+  if (actor === triggerServiceActor) {
+    return command.type === 'fireTrigger';
+  }
   if (actor === dataSourceRecorderActor) {
     return command.type === 'stopRecording' || command.type === 'recordRecordingProgress';
   }
   if (isSystemActor(actor)) {
     return command.type === 'clearLayer';
   }
-  return isCommandTypeOfTheOperator(command.type) && !isRecorderBookkeeping;
+  return (
+    isCommandTypeOfTheOperator(command.type) && !isRecorderBookkeeping && !isTakeFilledByATrigger
+  );
 };
 
 /** What the runner of one macro may send: a step's command, or its own run's bookkeeping. */
