@@ -151,6 +151,17 @@ empty list, so a source of a kind it does not know cannot make it refuse its `he
     "quickFirePanels": [{ "id": "atalhos", "name": "Atalhos", "order": 0 }],
     "macros": [],
     "macroRuns": [],
+    "macroStops": [],
+    "obs": {
+      "connectionState": "conectado",
+      "address": "ws://127.0.0.1:4455",
+      "lastError": null,
+      "sceneNames": ["Pista", "Box", "Pódio"],
+      "programSceneName": "Pista",
+      "isStudioModeOn": false,
+      "previewSceneName": null,
+      "sceneSwitch": null
+    },
     "dataSources": [],
     "dataSnapshots": [],
     "recordings": [],

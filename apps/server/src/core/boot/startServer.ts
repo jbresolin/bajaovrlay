@@ -11,6 +11,7 @@ import {
 } from '../../modules/dataSources/index.js';
 import { startEventInboxService } from '../../modules/events/index.js';
 import { buildMediaFolderPath, startMediaService } from '../../modules/media/index.js';
+import { type ObsConnectionSettings, startObsConnection } from '../../modules/obs/index.js';
 import { readBuildId } from '../../readBuildId.js';
 import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
@@ -64,6 +65,11 @@ export type StartServerOptions = {
    * upload images as well as the server's own. Left out: none (tests, the stream PC).
    */
   publicOrigins?: readonly string[] | undefined;
+  /**
+   * BAJAOVRLAY_OBS_URL and BAJAOVRLAY_OBS_PASSWORD as read at boot (BAJAOVRLAY-27). Left
+   * out (no address): OBS control is off and the `obs` slice says `desligado`.
+   */
+  obsConnectionSettings?: ObsConnectionSettings | undefined;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /**
@@ -158,8 +164,20 @@ async function startServingFromDatabase(
   // Creates DATA_DIR/media when missing, and removes the file of a deleted image.
   const mediaFolder = buildMediaFolderPath(options.dataFolder);
   const mediaService = startMediaService({ stateStore, mediaFolder, logger: options.logger });
+  // Started after the macro runner, like the pollers: nothing waits for OBS, and an OBS
+  // that is closed only leaves the slice in "erro" while the server tries again.
+  const obsConnection =
+    options.obsConnectionSettings === undefined
+      ? undefined
+      : startObsConnection({
+          stateStore,
+          logger: options.logger,
+          settings: options.obsConnectionSettings,
+        });
   /** Stops the server's own actors; used by close() and by a boot that fails from here. */
   function stopTheServerActors(): void {
+    // Hanging up on OBS needs no waiting: nothing is sent to it after this.
+    void obsConnection?.stop();
     mediaService.stop();
     dataSourceService.stop();
     bindingService.stop();

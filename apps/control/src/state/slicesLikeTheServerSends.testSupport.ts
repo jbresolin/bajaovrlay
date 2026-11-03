@@ -2,7 +2,13 @@
 // from the same believable state. Each function builds new objects on every call, so
 // no test can change what another test sees.
 import raceClockManifest from '@bajaovrlay/race-clock/race-clock.ograf.json';
-import type { Graphic, Instance, Layer, Slices } from '@bajaovrlay/shared';
+import {
+  type Graphic,
+  type Instance,
+  type Layer,
+  obsSliceWithoutObs,
+  type Slices,
+} from '@bajaovrlay/shared';
 
 /** The six layers the server seeds on its first boot, bottom to top. */
 export function buildLayersSeededByTheServer(): Layer[] {
@@ -117,6 +123,8 @@ export function buildSlicesWithNothingOnAir(): Slices {
     quickFirePanels: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

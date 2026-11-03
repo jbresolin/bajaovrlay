@@ -13,7 +13,9 @@ import { EventRulesSchema } from '../eventInbox/eventRule.js';
 import { InboxEventsSchema } from '../eventInbox/inboxEventsSlice.js';
 import { MacroSchema } from '../macros/macro.js';
 import { MacroRunSchema } from '../macros/macroRun.js';
+import { MacroStopsSchema } from '../macros/macroStop.js';
 import { MediaSchema } from '../media/mediaRecord.js';
+import { ObsSliceSchema } from '../obs/obsSlice.js';
 import { OutputsSchema } from '../outputs/output.js';
 import { OverridesSchema } from '../overrides/override.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
@@ -130,6 +132,18 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('macroRuns'),
     slice: z.array(MacroRunSchema),
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('macroStops'),
+    slice: MacroStopsSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('obs'),
+    slice: ObsSliceSchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({

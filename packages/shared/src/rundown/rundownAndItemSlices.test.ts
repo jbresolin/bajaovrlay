@@ -31,6 +31,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 import { SliceNameSchema, SlicesSchema } from '../slices/slices.js';
 import { SliceMessageSchema } from '../ws/serverMessages.js';
 import { ItemSchema } from './item.js';
@@ -102,6 +103,8 @@ function buildRaceMorningStateWithOnePreparedItem() {
     quickFirePanels: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

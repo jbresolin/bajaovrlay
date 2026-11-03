@@ -7,7 +7,13 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import type { Graphic, Instance, Layer, Slices } from '@bajaovrlay/shared';
+import {
+  type Graphic,
+  type Instance,
+  type Layer,
+  obsSliceWithoutObs,
+  type Slices,
+} from '@bajaovrlay/shared';
 import { expect, type Page, type WebSocketRoute } from '@playwright/test';
 
 const fakeGraphicFolder = fileURLToPath(new URL('../test-fixtures/fake-graphic/', import.meta.url));
@@ -135,6 +141,8 @@ export async function startFakeServerForPage(
     quickFirePanels: [],
     macros: [],
     macroRuns: [],
+    macroStops: [],
+    obs: obsSliceWithoutObs,
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

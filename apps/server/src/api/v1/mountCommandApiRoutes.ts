@@ -26,6 +26,7 @@ import {
   postClearLayerRoute,
   postFireShortcutRoute,
   postNextOnLayerRoute,
+  postObsSceneRoute,
   postPreviewItemRoute,
   postRunMacroRoute,
   postStopMacroRoute,
@@ -44,7 +45,7 @@ import {
 
 /**
  * Mounts the command API (BAJAOVRLAY-28) on the /api/v1 routes: POST /commands, the ten
- * button shortcuts and GET /layers/status, each behind requireApiAccess (named on each
+ * button shortcuts, OBS's scene button (BAJAOVRLAY-27) and GET /layers/status, each behind requireApiAccess (named on each
  * route, never by a path pattern, so no other route can fall under it by accident), plus
  * the bearer scheme and the `Command` component in the OpenAPI document.
  */
@@ -169,6 +170,15 @@ export function mountCommandApiRoutes(
       return context.json(answer.body, answer.httpStatus);
     }
     return answerWithCommand(context, stateStore, command);
+  });
+
+  apiRoutes.openapi({ ...postObsSceneRoute, middleware }, (context) => {
+    const { sceneName } = context.req.valid('param');
+    return answerWithCommand(context, stateStore, {
+      type: 'switchObsScene',
+      sceneName,
+      target: 'program',
+    });
   });
 
   apiRoutes.openapi({ ...getLayersStatusRoute, middleware }, (context) => {

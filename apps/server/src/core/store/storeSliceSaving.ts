@@ -20,6 +20,8 @@ export const sliceNamesChangedByCommands = [
   'quickFirePanels',
   'macros',
   'macroRuns',
+  'macroStops',
+  'obs',
   'dataSources',
   'dataSnapshots',
   'overrides',
@@ -41,10 +43,14 @@ const sliceNameSavedOneRowPerSource: keyof SlicesChangedByCommands = 'dataSnapsh
 // run is something happening now, and a restart must not resume it (see macroRunner.ts);
 // the "will be cleared" markers are scaffolding of the Prévia monitor, dropped at a
 // restart like the preview instances (see loadInitialSlices.ts); the recordings are
-// files on disk, and their list is rebuilt from the recordings folder at boot.
+// files on disk, and their list is rebuilt from the recordings folder at boot; where a
+// run stopped short belongs to that run; and OBS's slice is what OBS says now, refilled
+// from OBS at every connection (BAJAOVRLAY-27).
 const sliceNamesKeptInMemoryOnly: ReadonlyArray<keyof SlicesChangedByCommands> = [
   'previewClearedLayerIds',
   'macroRuns',
+  'macroStops',
+  'obs',
   'recordings',
 ];
 
@@ -89,6 +95,8 @@ export function buildAllSlices(
     quickFirePanels: slicesOfCommands.quickFirePanels,
     macros: slicesOfCommands.macros,
     macroRuns: slicesOfCommands.macroRuns,
+    macroStops: slicesOfCommands.macroStops,
+    obs: slicesOfCommands.obs,
     dataSources: slicesOfCommands.dataSources,
     dataSnapshots: slicesOfCommands.dataSnapshots,
     overrides: slicesOfCommands.overrides,

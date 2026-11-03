@@ -12,7 +12,7 @@
  *   - clearLayer marks the layer "will be cleared" and throws away its preview;
  *   - clearAll throws away every preview and marks exactly the layers that have
  *     something on program now (marking an empty layer would promise nothing);
- *   - wait is skipped.
+ *   - wait is skipped, and so is obsScene: Prévia shows BajaOvrLay's layers, not OBS.
  *   Program, the rundowns and the items are never touched. Each preview instance a macro
  *   makes gets the store's new instance id followed by a hyphen and its layer id.
  *
@@ -24,6 +24,8 @@
  *     marker of an earlier clearLayer on an empty layer and the previews made before it.
  *   - Waits are ignored: a macro with waits around a take ends like the take alone, and
  *     one with only waits and an empty Prévia hands back the very same slices.
+ *   - An obsScene step is ignored too (BAJAOVRLAY-27): "Pista + torre" previews the take
+ *     alone, and OBS's latest switch is not touched, so no switch is ever sent.
  *   - A step that would be refused (an item that no longer exists, a layer that does not
  *     exist) refuses the whole preview with a pt-BR message naming the step's position
  *     and what it does; the refusal carries the reason of the step.
@@ -214,6 +216,35 @@ describe('previewMacro and waits', () => {
       outcome.status === 'applied' ? outcome.slices : undefined,
       'a preview that changes nothing must leave no trace',
     ).toBe(slicesBefore);
+  });
+});
+
+describe('previewMacro and OBS scenes', () => {
+  it('skips an obsScene step: Prévia shows the take alone and OBS is not asked', () => {
+    // Arrange: "Pista + torre" written as a scene switch, then the start clock.
+    const slicesBefore = buildRaceDayWithTheMacro({
+      macro: buildYellowFlagMacro([
+        { kind: 'obsScene', sceneName: 'Pista', target: 'program' },
+        { kind: 'takeItem', itemId: 'item-largada-do-enduro' },
+      ]),
+    });
+
+    // Act: press "Prévia" on the macro.
+    const outcome = reduceCommand(
+      slicesBefore,
+      { type: 'previewMacro', macroId: macroUnderTestId },
+      contextOfTheRundownCommand,
+    );
+
+    // Assert: the start clock is previewed, and OBS's slice is the very same object.
+    const slicesAfter = outcome.status === 'applied' ? outcome.slices : undefined;
+    expect(
+      readLayerAndOutputOfEachInstance(slicesAfter?.instances),
+      'the scene step must change nothing in Prévia',
+    ).toEqual(['clock on program', 'lower-third on program', 'clock on preview']);
+    expect(slicesAfter?.obs, 'a preview must never record a switch for OBS to carry out').toBe(
+      slicesBefore.obs,
+    );
   });
 });
 

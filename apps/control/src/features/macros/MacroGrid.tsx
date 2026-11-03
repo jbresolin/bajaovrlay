@@ -27,6 +27,7 @@ const texts = ptBR.quickFire.macros;
 export function MacroGrid() {
   const macros = useServerState((state) => state.macros);
   const macroRuns = useServerState((state) => state.macroRuns);
+  const macroStops = useServerState((state) => state.macroStops);
   const sendCommand = useSendCommand();
   const [macroEditorTarget, setMacroEditorTarget] = useState<MacroEditorTarget>({
     kind: 'closed',
@@ -77,6 +78,7 @@ export function MacroGrid() {
               key={macro.id}
               macro={macro}
               runOfThisMacro={macroRuns.find((run) => run.macroId === macro.id)}
+              stopOfThisMacro={macroStops.find((macroStop) => macroStop.macroId === macro.id)}
               digitKey={digitKeys[position] ?? null}
               onRunPressed={() => void sendCommand({ type: 'runMacro', macroId: macro.id })}
               onPreviewChosen={() => void sendCommand({ type: 'previewMacro', macroId: macro.id })}

@@ -231,6 +231,19 @@ Starts one macro, as its button on the control page does.
 A second macro pressed while one runs is refused, as on the page. A "Parar" button is
 `stop-macro`: it stops whichever macro is running, and does nothing when none is.
 
+### An OBS scene
+
+One of OBS's scenes on OBS's Program (BAJAOVRLAY-27; setting up OBS: [obs.md](obs.md)):
+
+- URL: `obs-scene/<the scene's name>`, the name spelt exactly as OBS spells it and URL-encoded:
+  `obs-scene/Pista`, `obs-scene/P%C3%B3dio` for "Pódio", `obs-scene/Box%202` for "Box 2".
+
+OBS not connected answers 409 (`OBS_NOT_CONNECTED`), a scene OBS does not have answers 422
+(`OBS_SCENE_NOT_FOUND`). A 200 means the switch was sent to OBS; OBS's own answer shows on the
+control page's OBS tally, and a refusal by OBS is written to the event log. To switch the scene
+and put graphics on air with one button, make a macro ("Pista + torre", obs.md) and give the
+button `run-macro/<the macro's id>` instead.
+
 ## 7. Colour a button from `/layers/status`
 
 `GET /layers/status` answers what a button needs to show, read from memory, so it can be asked
@@ -335,6 +348,9 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/run-macro/<macroId>
 
 # "Parar": stop the macro that runs.
 curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/stop-macro
+
+# One of OBS's scenes on OBS's Program, the name URL-encoded ("Pódio").
+curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/obs-scene/P%C3%B3dio
 
 # What is on air and in preview, for button colours.
 curl -s -H "Authorization: Bearer $TOKEN" $BAJA/layers/status

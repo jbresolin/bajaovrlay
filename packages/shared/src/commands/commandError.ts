@@ -194,6 +194,23 @@ export const CommandErrorCodeSchema = z.enum([
    * where every graphic without a usable default layer goes (gate 2 of PR #32).
    */
   'FALLBACK_LAYER_KEPT',
+  /**
+   * switchObsScene while the server is not connected to OBS: no address set, OBS closed,
+   * or the password refused (BAJAOVRLAY-27).
+   */
+  'OBS_NOT_CONNECTED',
+  /** switchObsScene named a scene OBS does not have (renamed, deleted, or mistyped). */
+  'OBS_SCENE_NOT_FOUND',
+  /** switchObsScene for Preview while Studio Mode is off: OBS then has no Preview. */
+  'OBS_STUDIO_MODE_OFF',
+  /** switchObsScene while OBS has not answered the switch before it yet. */
+  'OBS_SCENE_SWITCH_PENDING',
+  /**
+   * OBS itself refused a switch the server sent, did not answer it in time, or dropped the
+   * connection first. Written to the event log on the connection's answer; never the
+   * answer to a command, since the switch was accepted before OBS was asked.
+   */
+  'OBS_REFUSED_SCENE_SWITCH',
 ]);
 
 /** One of CommandErrorCodeSchema's values. */

@@ -1,6 +1,7 @@
 import { ptBRBindingErrors } from './ptBRBindings.js';
 import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
+import { ptBRObs } from './ptBRObs.js';
 import { ptBROutputs } from './ptBROutputs.js';
 
 /**
@@ -122,6 +123,8 @@ export const ptBR = {
   mediaErrors: ptBRMediaErrors,
   // Outputs and the editing of layers: names and refusals (BAJAOVRLAY-49); ptBROutputs.ts.
   outputs: ptBROutputs,
+  // OBS control: connection errors and the refusals of a scene switch (BAJAOVRLAY-27).
+  obs: ptBRObs,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
   // each goes with a stable code. The layer is named as the operator reads it.
   onAirChangeErrors: {
@@ -172,6 +175,7 @@ export const ptBR = {
     clearLayer: (layerName: string) => `limpar a camada "${layerName}"`,
     clearAll: 'limpar tudo',
     wait: (milliseconds: number) => `esperar ${milliseconds} ms`,
+    obsScene: (sceneName: string) => `trocar a cena do OBS para "${sceneName}"`,
   },
   // Refusals of the macro commands; each goes with a stable code. A macro is named by
   // its label when the server has it, and by id when it was not found.

@@ -2,12 +2,20 @@
 // re-exports this file with one line; other packages import from '@bajaovrlay/shared',
 // never from here.
 
-// One step of a macro (takeItem, clearLayer, clearAll, wait), and the longest wait.
+// One step of a macro (takeItem, clearLayer, clearAll, obsScene, wait), and the longest wait.
 export { longestMacroWaitMs, type MacroStep, MacroStepSchema } from './macroStep.js';
 // The `macros` slice: a label, a colour and the steps, in order.
 export { type Macro, MacroSchema } from './macro.js';
 // The `macroRuns` slice: the macro running now, since when, and at which step.
 export { type MacroRun, MacroRunSchema } from './macroRun.js';
+// The `macroStops` slice: where and why a macro's last run stopped at a refused step.
+export {
+  type MacroStop,
+  type MacroStoppedAtStep,
+  MacroStoppedAtStepSchema,
+  MacroStopSchema,
+  MacroStopsSchema,
+} from './macroStop.js';
 // createMacro: add a macro.
 export { type CreateMacroCommand, CreateMacroCommandSchema } from './createMacro.js';
 // updateMacro: change a macro's label, colour or whole list of steps.

@@ -80,8 +80,11 @@ import type { WebSocketTestClient } from './webSocketTestClient.testSupport.js';
  */
 function listSliceNamesTheMessageCarries(message: ServerMessage): string[] {
   if (message.type === 'hello') {
+    // `obs` is an object, always there; a screen's copy says "no OBS" (checked apart).
     return Object.entries(message.slices)
-      .filter(([, slice]) => slice.length > 0)
+      .filter(
+        ([sliceName, slice]) => sliceName !== 'obs' && Array.isArray(slice) && slice.length > 0,
+      )
       .map(([sliceName]) => sliceName);
   }
   if (message.type === 'slices') {

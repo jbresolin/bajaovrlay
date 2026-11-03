@@ -1,9 +1,10 @@
 # packages/shared/src/macros
 
 Macros: one button that runs several steps in a row. Start reading at `macroStep.ts`
-(a step is `takeItem`, `clearLayer`, `clearAll` or `wait`, whole milliseconds from 1
-to 10 000), then `macro.ts` (the `macros` slice) and `macroRun.ts` (the `macroRuns`
-slice: the macro running now and its current step; memory only on the server).
+(a step is `takeItem`, `clearLayer`, `clearAll`, `obsScene` or `wait`, whole milliseconds
+from 1 to 10 000), then `macro.ts` (the `macros` slice), `macroRun.ts` (the `macroRuns`
+slice: the macro running now and its current step; memory only on the server) and
+`macroStop.ts` (the `macroStops` slice: where and why a run stopped at a refused step).
 
 One file per operator command (`createMacro.ts`, `updateMacro.ts`, `deleteMacro.ts`,
 `runMacro.ts`, `stopMacro.ts` for "Parar"). `macroRunBookkeeping.ts` holds the two

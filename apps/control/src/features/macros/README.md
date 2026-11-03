@@ -6,10 +6,12 @@ The "Macros" tab of the quick-fire strip: a button per macro and the macro edito
 
 - `MacroGrid.tsx` — "+ Macro", the editor while open, the grid in the server's order.
 - `MacroButton.tsx` — one macro in its colour; click = run; "⋯" (or right-click) = "Executar",
-  "Prévia" (its end state on the preview output), "Editar"; "Rodando 2/3" and "Parar" while it runs.
+  "Prévia" (its end state on the preview output), "Editar"; "Rodando 2/3" and "Parar" while it runs;
+  "Parou no passo 2" with the server's reason (the `macroStops` slice) after a refused step.
 - `useStopRunningMacroKey.ts` — the key P: stopMacro for the running macro, from any tab.
 - `MacroEditorPanel.tsx` — label, colour, steps; "Salvar macro", two-press "Excluir macro".
 - `MacroStepList.tsx`, `MacroStepRow.tsx`, `macroStepDragAnnouncements.ts` — the steps, dragged
-  with dnd-kit as in the rundown; `macroStepChoices.ts` — the items a step may name.
+  with dnd-kit as in the rundown; `macroStepChoices.ts` — the items a step may name; a "Trocar
+  cena do OBS" step picks from the `obs` slice's scenes and warns on a scene OBS lacks now.
 - `macroStepDrafts.ts`, `macroCommandsFromEditor.ts` — rows → `steps`, and `createMacro` /
   `updateMacro` with only what changed. Pure; their tests are the tables to read.

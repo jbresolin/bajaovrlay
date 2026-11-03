@@ -46,7 +46,8 @@ const colorControlId = 'macro-editor-color';
  * is this editor's own until the save; nothing is sent while the operator types.
  *
  * At "Salvar macro" the label and every row are checked at once, each wrong part with its
- * pt-BR message, and nothing is sent until all pass. A new macro is sent whole
+ * pt-BR message, and nothing is sent until all pass. A "Trocar cena do OBS" row whose
+ * scene OBS does not list now still saves, with a warning on the row. A new macro is sent whole
  * (`createMacro`); a stored one sends only what changed (`updateMacro`), compared with
  * the macro as it was when the editor opened. The editor closes once the server accepts,
  * and stays open after a refusal, which the strip shows (QuickFireStrip.tsx).
@@ -56,6 +57,7 @@ export function MacroEditorPanel(props: MacroEditorPanelProps) {
   const rundowns = useServerState((state) => state.rundowns);
   const panels = useServerState((state) => state.quickFirePanels);
   const layers = useServerState((state) => state.layers);
+  const obsSceneNames = useServerState((state) => state.obs.sceneNames);
   const sendCommand = useSendCommand();
 
   // The macro as opened; kept, never replaced by a newer copy, because "what changed" is
@@ -177,6 +179,7 @@ export function MacroEditorPanel(props: MacroEditorPanelProps) {
               drafts={drafts}
               itemChoices={listItemChoicesForMacroSteps(items, rundowns, panels)}
               layers={layers}
+              obsSceneNames={obsSceneNames}
               errorMessageByDraftId={errorMessageByDraftId}
               onDraftsChanged={setDrafts}
             />

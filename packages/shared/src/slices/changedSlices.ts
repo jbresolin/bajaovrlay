@@ -35,7 +35,7 @@ export type ChangedSlices = z.infer<typeof ChangedSlicesSchema>;
  * no one ever sees some of them new and the others old. A slice the group does not carry
  * is kept as the very same list, so whatever reads only that slice does not redraw.
  * Written out one slice per line on purpose: the compiler checks each name stores the
- * kind of list that belongs to it.
+ * kind of list (or, for `obs`, the object) that belongs to it.
  */
 export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: ChangedSlices): Slices {
   return {
@@ -50,6 +50,8 @@ export function mergeChangedSlicesIntoSlices(slices: Slices, changedSlices: Chan
     quickFirePanels: changedSlices.quickFirePanels ?? slices.quickFirePanels,
     macros: changedSlices.macros ?? slices.macros,
     macroRuns: changedSlices.macroRuns ?? slices.macroRuns,
+    macroStops: changedSlices.macroStops ?? slices.macroStops,
+    obs: changedSlices.obs ?? slices.obs,
     dataSources: changedSlices.dataSources ?? slices.dataSources,
     // Never in a group: a snapshot arrives source by source (`dataSnapshot` message).
     dataSnapshots: slices.dataSnapshots,

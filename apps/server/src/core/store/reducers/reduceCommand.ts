@@ -8,6 +8,7 @@ import {
   reduceEventInboxCommand,
 } from '../../../modules/events/index.js';
 import { reduceMediaCommand } from '../../../modules/media/index.js';
+import { reduceObsCommand } from '../../../modules/obs/index.js';
 import { reduceOutputOrLayerCommand } from '../../../modules/outputs/index.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
@@ -158,5 +159,10 @@ function reduceCommandOfItsType(
     case 'reorderLayers':
     case 'deleteLayer':
       return reduceOutputOrLayerCommand(slices, command);
+    // OBS control (BAJAOVRLAY-27): its reducers live in the module modules/obs.
+    case 'switchObsScene':
+    case 'recordObsState':
+    case 'recordObsSceneSwitchAnswer':
+      return reduceObsCommand(slices, command);
   }
 }

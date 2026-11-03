@@ -22,6 +22,8 @@ export type SlicesChangedByCommands = Pick<
   | 'quickFirePanels'
   | 'macros'
   | 'macroRuns'
+  | 'macroStops'
+  | 'obs'
   | 'dataSources'
   | 'dataSnapshots'
   | 'overrides'
@@ -73,9 +75,10 @@ export type ReducerContext = {
 /**
  * What a reducer decides: the new slices (a slice it did not change is returned as the
  * very same array, so the store can tell what changed), or a refusal with its reason.
- * `isLeftOutOfTheEventLog` is set by three reducers only: recordDataSourcePoll, for a poll
+ * `isLeftOutOfTheEventLog` is set by five reducers only: recordDataSourcePoll, for a poll
  * that left its source's health as it was, recordRecordingProgress, the recorder's
- * count of written lines, and refreshBoundInstanceData, a source's new values on air. The store then saves and broadcasts the change but writes no
+ * count of written lines, refreshBoundInstanceData, a source's new values on air, and the
+ * OBS connection's recordObsState and recordObsSceneSwitchAnswer (when OBS did it). The store then saves and broadcasts the change but writes no
  * event-log row (decision D11; see createStateStore.ts).
  */
 export type ReducerOutcome =
@@ -84,9 +87,10 @@ export type ReducerOutcome =
       slices: SlicesChangedByCommands;
       isLeftOutOfTheEventLog?: true;
       /**
-       * Set by refreshBoundInstanceData only, when a spell of refused refreshes of an
-       * instance begins: the change is applied, and its event-log row is written as
-       * failed with this reason, once per spell (gate 2 of PR #18).
+       * Set by refreshBoundInstanceData, when a spell of refused refreshes of an instance
+       * begins (gate 2 of PR #18), and by recordObsSceneSwitchAnswer, when OBS did not do
+       * a switch (BAJAOVRLAY-27): the change is applied, and its event-log row is written
+       * as failed with this reason.
        */
       refusalWrittenToTheEventLog?: CommandError;
       /**

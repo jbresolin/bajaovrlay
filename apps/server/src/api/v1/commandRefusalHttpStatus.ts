@@ -53,6 +53,8 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   LAYERS_NOT_A_PERMUTATION: 422,
   PROGRAM_OUTPUT_KEPT: 422,
   FALLBACK_LAYER_KEPT: 422,
+  // A scene OBS does not have: the button or OBS must be changed first.
+  OBS_SCENE_NOT_FOUND: 422,
   // The state right now is in the way.
   RUNDOWN_CURSOR_EMPTY: 409,
   LAYER_PREVIEW_EMPTY: 409,
@@ -81,6 +83,12 @@ const httpStatusOfEachRefusalCode: Record<CommandErrorCode, CommandRefusalHttpSt
   LAYER_ZINDEX_TAKEN: 409,
   LAYER_NOT_EMPTY: 409,
   LAYER_IN_USE: 409,
+  // OBS closed, Studio Mode off, or OBS still answering the switch before.
+  OBS_NOT_CONNECTED: 409,
+  OBS_STUDIO_MODE_OFF: 409,
+  OBS_SCENE_SWITCH_PENDING: 409,
+  // Only ever an event-log row's error, never an answer; classed with the state of OBS.
+  OBS_REFUSED_SCENE_SWITCH: 409,
 };
 
 /** The HTTP status the command API answers a refusal with this code with. */
