@@ -190,8 +190,11 @@ describe('the replay adapter, checking lines and loading large recordings', () =
       60,
     );
     expect(
-      answer.shapes.session?.clock.referenceTimeMs,
+      answer.shapes,
       "a replay past its end must hold the clock of the recording's last line",
-    ).toBe(computeClockTimeMsAtWallClock(recordedClock, lastLineAtMs));
+    ).toHaveProperty(
+      'session.clock.referenceTimeMs',
+      computeClockTimeMsAtWallClock(recordedClock, lastLineAtMs),
+    );
   });
 });
