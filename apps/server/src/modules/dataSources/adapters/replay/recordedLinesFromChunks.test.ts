@@ -52,8 +52,7 @@ describe('readRecordedLinesOneChunkAtATime', () => {
     const lines = readRecordedLinesOneChunkAtATime(chunks.chunks);
     const secondLineText = buildFridayLineTextAt(fridayAt1300Ms + 2_000, 2);
     const firstChunk =
-      buildFridayLineTextAt(fridayAt1300Ms, 1) +
-      secondLineText.slice(0, secondLineText.length / 2);
+      buildFridayLineTextAt(fridayAt1300Ms, 1) + secondLineText.slice(0, secondLineText.length / 2);
     let firstLineRead: RecordedLine | undefined;
     const readingTheFirstLine = lines.next().then((result) => {
       firstLineRead = result.done === true ? undefined : result.value;
