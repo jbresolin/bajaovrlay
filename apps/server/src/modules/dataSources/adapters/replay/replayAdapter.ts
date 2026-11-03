@@ -2,14 +2,14 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { createInterface } from 'node:readline';
 
 import { type DataShapeKey, type ReplayConfig, ReplayConfigSchema } from '@bajaovrlay/shared';
 
 import { ptBR } from '../../../../core/messages/ptBR.js';
 import { validatePolledShapes } from '../../polledShapesValidation.js';
-import { parseRecordedLine, type RecordedLine } from '../../recordingLine.js';
+import type { RecordedLine } from '../../recordingLine.js';
 import { type DataSourceAdapter, StillPreparingForPollingError } from '../dataSourceAdapter.js';
+import { readRecordedLinesOneChunkAtATime } from './recordedLinesFromChunks.js';
 import {
   chooseRecordedLineToReplay,
   rewriteShapesOntoTheCurrentTimeline,
@@ -272,8 +272,8 @@ function sumFileSizesInBytes(loadedRecordingsById: Map<string, LoadedRecording>)
 }
 
 /**
- * Reads a recording file line by line as a stream, parsing each line lightly
- * (parseRecordedLine) and skipping the ones that are not recorded lines. The stream
+ * Reads a recording file line by line as a stream, parsing each line lightly and skipping
+ * the ones that are not recorded lines (readRecordedLinesOneChunkAtATime). The stream
  * hands over the file a chunk at a time, so the server's event loop turns between
  * chunks and the rest of the server (other polls, WebSocket messages) keeps running
  * while a large recording loads (gate 2 on PR #16). A failure becomes a pt-BR Error the
@@ -286,15 +286,10 @@ async function readRecordedLinesFromFile(
   const fileSizeInBytes = await readFileSizeInBytes(filePath, recordingId);
   const lines: RecordedLine[] = [];
   try {
-    const lineTexts = createInterface({
-      input: createReadStream(filePath, { encoding: 'utf8' }),
-      crlfDelay: Number.POSITIVE_INFINITY,
-    });
-    for await (const lineText of lineTexts) {
-      const line = parseRecordedLine(lineText);
-      if (line !== undefined) {
-        lines.push(line);
-      }
+    // With an encoding, the stream hands over text, and never cuts a character in two.
+    const fileChunks: AsyncIterable<string> = createReadStream(filePath, { encoding: 'utf8' });
+    for await (const line of readRecordedLinesOneChunkAtATime(fileChunks)) {
+      lines.push(line);
     }
   } catch (readError) {
     throw new Error(ptBR.dataSourceErrors.recordingFileUnreadable(recordingId), {

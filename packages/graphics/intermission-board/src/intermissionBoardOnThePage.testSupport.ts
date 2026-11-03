@@ -155,6 +155,18 @@ export function readSponsorLineShown(board: IntermissionBoardGraphic) {
 }
 
 /**
+ * Stops Date at `momentMs` and fakes nothing else, so a load (which waits for the page
+ * on real timers) still runs; the real clock comes back when the test ends.
+ */
+export function stopTheClockAt(momentMs: number): void {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(momentMs);
+  onTestFinished(() => {
+    vi.useRealTimers();
+  });
+}
+
+/**
  * Fakes Date, the timers and the animation frames from `startingMomentMs`, so the test
  * decides when time passes; the real ones come back when the test ends.
  */

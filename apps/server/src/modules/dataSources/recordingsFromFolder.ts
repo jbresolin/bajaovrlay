@@ -1,7 +1,15 @@
 // The `recordings` slice rebuilt from the recordings folder at boot. The slice is never
 // saved in the database: the files are the truth, so a recording copied in, or deleted,
 // by hand shows up (or goes) at the next boot.
-import { closeSync, type Dirent, existsSync, fstatSync, openSync, readdirSync } from 'node:fs';
+import {
+  closeSync,
+  type Dirent,
+  existsSync,
+  fstatSync,
+  openSync,
+  readdirSync,
+  readSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 import type { DataSource, Recording } from '@bajaovrlay/shared';
@@ -13,6 +21,7 @@ import {
 } from './recordingBookkeeping.js';
 import {
   countTheWholeLinesOfAFile,
+  type ReadFileBytes,
   readTheEndOfARecordingFile,
   readTheFirstLineOfARecordingFile,
 } from './recordingFileEnds.js';
@@ -39,7 +48,8 @@ export function buildRecordingsFolderPath(dataFolder: string): string {
  * is skipped with a warning, and the line before it counts; a damaged line in between
  * is not looked at (the replay skips it). A file with no moment at all, in its name or
  * its lines, is skipped with a warning.
- * A missing folder (a new machine) lists nothing.
+ * A missing folder (a new machine) lists nothing. Every byte read from a recording goes
+ * through readFileBytes (readSync), which a test replaces to count them.
  * Nothing here may stop the server from starting (it runs inside the boot, and the list
  * is only a listing): a folder or a file that cannot be read (a plain file where the
  * folder should be, no permission) is skipped with a warning, and an entry that is not a
@@ -49,6 +59,7 @@ export function readRecordingsFromFolder(
   recordingsFolder: string,
   dataSources: DataSource[],
   logger: ServerLogger,
+  readFileBytes: ReadFileBytes = readSync,
 ): Recording[] {
   if (!existsSync(recordingsFolder)) {
     return [];
@@ -72,6 +83,7 @@ export function readRecordingsFromFolder(
         sourceLabel,
         fileName,
         logger,
+        readFileBytes,
       });
       if (recording !== undefined) {
         recordings.push(recording);
@@ -109,6 +121,7 @@ function readOneRecordingFile(file: {
   sourceLabel: string;
   fileName: string;
   logger: ServerLogger;
+  readFileBytes: ReadFileBytes;
 }): Recording | undefined {
   const recordingId = `${file.sourceId}/${file.fileName}`;
   const filePath = join(file.recordingsFolder, file.sourceId, file.fileName);
@@ -141,11 +154,16 @@ function readOneOpenRecordingFile(file: {
   sourceLabel: string;
   fileName: string;
   logger: ServerLogger;
+  readFileBytes: ReadFileBytes;
   recordingId: string;
   fileDescriptor: number;
 }): Recording | undefined {
   const fileSizeInBytes = fstatSync(file.fileDescriptor).size;
-  const endOfTheFile = readTheEndOfARecordingFile(file.fileDescriptor, fileSizeInBytes);
+  const endOfTheFile = readTheEndOfARecordingFile(
+    file.fileDescriptor,
+    fileSizeInBytes,
+    file.readFileBytes,
+  );
   if (endOfTheFile.isLastLineCutOff) {
     file.logger.warn(
       { recording_id: file.recordingId },
@@ -157,7 +175,8 @@ function readOneOpenRecordingFile(file: {
   // The first line is read only for a file renamed by hand: the name holds the start.
   const startedAtMs =
     readStartMomentFromRecordingFileName(file.fileName) ??
-    readTheFirstLineOfARecordingFile(file.fileDescriptor, fileSizeInBytes)?.atMs;
+    readTheFirstLineOfARecordingFile(file.fileDescriptor, fileSizeInBytes, file.readFileBytes)
+      ?.atMs;
   if (startedAtMs === undefined) {
     file.logger.warn(
       { recording_id: file.recordingId },
@@ -169,7 +188,8 @@ function readOneOpenRecordingFile(file: {
   let snapshotCount = 0;
   if (lastLine !== undefined) {
     snapshotCount =
-      lastLine.snapshotNumber ?? countTheWholeLinesOfAFile(file.fileDescriptor, fileSizeInBytes);
+      lastLine.snapshotNumber ??
+      countTheWholeLinesOfAFile(file.fileDescriptor, fileSizeInBytes, file.readFileBytes);
   }
   return {
     id: file.recordingId,

@@ -151,9 +151,12 @@ describe('playing, updating and stopping', () => {
       findPartOfMessageTicker(ticker, 'message-ticker-page-cell'),
     ];
 
-    // Act: start the play-in, let it begin, read when each piece starts, then end it.
+    // Act: start the play-in, read when each piece starts, then end it. The reading comes
+    // in the same turn as the call, which builds the timeline before its first await:
+    // waiting even a 0 ms timer first lets GSAP play the timeline on real time, and on a
+    // busy machine it has ended and been dropped by then, so no piece has a tween
+    // (BAJAOVRLAY-52).
     const pendingPlay = ticker.playAction({});
-    await new Promise((resolve) => setTimeout(resolve, 0));
     const startsMs = pieces.map((piece) =>
       Math.round((gsap.getTweensOf(piece ?? [])[0]?.startTime() ?? -1) * 1000),
     );

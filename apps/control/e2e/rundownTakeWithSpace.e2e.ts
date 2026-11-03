@@ -15,7 +15,8 @@
  *     the "Relógio" layer, the button under the focus was NOT pressed, and the cursor
  *     moves to the second item.
  *   - A clock saved running counts from the TAKE, not from the save: taken at least six
- *     seconds after it was saved, the clock in the program monitor starts near 0:00.
+ *     seconds after it was saved, the clock in the program monitor never shows more than
+ *     the time since Space was pressed.
  *   - The Left arrow moves the cursor back to the first item, still with the focus on
  *     that button, and puts nothing on air; with "Prévia automática" on, as it starts,
  *     that item is then listed under the "Prévia" monitor.
@@ -44,6 +45,14 @@
  *
  * What it needs: the race clock and the renderer built (`pnpm build`), because the server
  * only registers built graphics.
+ *
+ * Why the waits are for events and the clock is compared with a stopwatch: on a busy
+ * machine the monitor may draw the clock several seconds after the take, and "Limpar
+ * tudo" may go back to normal well after its 3 seconds. A check that the clock reads
+ * 0:00 to 0:03, or that the button is back within the usual 5 s, then fails for nothing
+ * (BAJAOVRLAY-52). So the test waits for the button and the clock to be drawn, ended
+ * only by its own timeout, and checks the clock against the time since Space was
+ * pressed, which holds however late the monitor draws.
  */
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
@@ -51,10 +60,16 @@ import { emptyTheServerState } from './emptyTheServerState';
 import { findItemEditorOwnTextField } from './itemEditorOwnFields';
 import { chooseGraphicInTheItemEditor, raceClockGraphicName } from './previewTestSteps';
 
-// How long the test lets pass between saving the running clock and taking it. Long
-// enough that "counted from the save" (6 s or more on the clock) and "counted from the
-// take" (0 to 3 s) cannot be mistaken for one another, even on a slow machine.
+// How long the test lets pass between saving the running clock and taking it. A clock
+// counted from the save then shows at least six seconds more than the time since the
+// take, so the two cannot be mistaken for one another, however slow the machine.
 const timeBetweenTheSaveAndTheTakeInMilliseconds = 6_000;
+
+// The margin the clock may read above the stopwatch: the clock shows whole seconds and
+// the server stamps the take a moment after the key is pressed, so it never reads more
+// than the stopwatch; one second covers any rounding. Far less than the six seconds a
+// clock counted from the save would add.
+const clockMarginAboveTheStopwatchInSeconds = 1;
 
 /**
  * Opens the control page and waits until it is connected and shows the seeded rundown,
@@ -120,6 +135,16 @@ async function createRaceClockItemInTheEditor(
   ).toBeHidden();
 }
 
+/** Reads a clock text such as "0:07" or "1:02:03" as a number of seconds. */
+function readClockTextAsSeconds(clockText: string): number {
+  const parts = clockText.trim().split(':').map(Number);
+  let seconds = 0;
+  for (const part of parts) {
+    seconds = seconds * 60 + part;
+  }
+  return seconds;
+}
+
 /**
  * Finds the race clock element inside the "Programa" monitor frame of the control page,
  * the right one of its two monitors (the other, "Prévia", frames the preview output).
@@ -177,10 +202,9 @@ test.describe('preparing a rundown and firing it with Space', () => {
       page.getByRole('button', { name: 'Confirmar: limpar tudo' }),
       'one click must only arm "Limpar tudo"',
     ).toBeVisible();
-    await expect(
-      clearAllButton,
-      '"Limpar tudo" must go back to normal 3 seconds after the one click',
-    ).toBeVisible();
+    // "Limpar tudo" goes back to normal 3 seconds after the one click; the wait is for
+    // that to happen, however late a busy machine runs the page's 3 s timer.
+    await clearAllButton.waitFor({ state: 'visible' });
     await expect(clearAllButton, 'the focus must still be on "Limpar tudo"').toBeFocused();
 
     // Arrange (the clock): wait, on purpose, until six seconds have passed since the
@@ -193,7 +217,8 @@ test.describe('preparing a rundown and firing it with Space', () => {
     );
     await page.waitForTimeout(timeStillToWaitInMilliseconds);
 
-    // Act: press Space, with the focus still on "Limpar tudo".
+    // Act: press Space, with the focus still on "Limpar tudo", starting a stopwatch.
+    const momentSpaceWasPressedInMilliseconds = Date.now();
     await page.keyboard.press('Space');
 
     // Assert: the layer panel names the item that went on air.
@@ -210,12 +235,31 @@ test.describe('preparing a rundown and firing it with Space', () => {
       page.getByRole('button', { name: 'Confirmar: limpar tudo' }),
       'Space must take the next item and must NOT press the button the focus is on',
     ).toHaveCount(0);
-    // The clock in the program monitor counts from the take: it is within its first
-    // seconds, although the item was saved six seconds or more before the take.
-    await expect(
-      findRaceClockInProgramMonitor(page).getByTestId('race-clock-time'),
-      'a clock saved running must start counting at the take (0:00 to 0:03), not at the save (0:06 or more)',
-    ).toHaveText(/^\s*0:0[0-3]\s*$/);
+    // The clock in the program monitor counts from the take: once drawn, it never shows
+    // more than the stopwatch started at Space, although the item was saved six seconds
+    // or more before the take. Read the clock first, then the stopwatch, so the
+    // stopwatch is never the one behind.
+    const clockTimeInTheMonitor =
+      findRaceClockInProgramMonitor(page).getByTestId('race-clock-time');
+    await clockTimeInTheMonitor.waitFor({ state: 'visible' });
+    await expect
+      .poll(
+        async () => {
+          const clockSeconds = readClockTextAsSeconds(await clockTimeInTheMonitor.innerText());
+          const stopwatchSeconds = (Date.now() - momentSpaceWasPressedInMilliseconds) / 1_000;
+          return {
+            isWithinTheStopwatch:
+              clockSeconds <= stopwatchSeconds + clockMarginAboveTheStopwatchInSeconds,
+            clockSeconds,
+            stopwatchSeconds,
+          };
+        },
+        {
+          message:
+            'a clock saved running must count from the take (no more than the time since Space), not from the save (six seconds more)',
+        },
+      )
+      .toMatchObject({ isWithinTheStopwatch: true });
     // The cursor moved on, because the item taken was the one at the cursor.
     await expect(finishRow, 'after the take the cursor must be on the second item').toHaveAttribute(
       'aria-current',

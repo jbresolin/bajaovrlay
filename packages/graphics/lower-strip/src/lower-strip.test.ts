@@ -215,10 +215,12 @@ describe('playing and stopping', () => {
       findPartOfLowerStrip(lowerStrip, 'lower-strip-page-cell'),
     ];
 
-    // Act: start the play-in, let it begin (GSAP lists a timeline's tweens once it plays),
-    // read when each piece's rise starts, then end it.
+    // Act: start the play-in, read when each piece's rise starts, then end it. The reading
+    // comes in the same turn as the call, which builds and starts the timeline before its
+    // first await: waiting even a 0 ms timer first lets GSAP play it on real time, and on
+    // a busy machine it has ended and been dropped by then, so no piece has a tween
+    // (BAJAOVRLAY-52).
     const pendingPlay = lowerStrip.playAction({});
-    await new Promise((resolve) => setTimeout(resolve, 0));
     const startsMs = pieces.map((piece) =>
       Math.round((gsap.getTweensOf(piece ?? [])[0]?.startTime() ?? -1) * 1000),
     );
