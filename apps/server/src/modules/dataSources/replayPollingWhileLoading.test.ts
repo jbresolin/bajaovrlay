@@ -1,5 +1,5 @@
 /**
- * Turning on a replay of a large recording, through the real poller (apps/server)
+ * Turning on a replay, through the real poller, while its recording is read (apps/server)
  *
  * What this module is for:
  *   A recording of a 4-hour enduro takes about a second to read into memory. Turning its
@@ -9,63 +9,70 @@
  *   "Carregando a gravação…" while the read carries on for the next poll (gate 2
  *   re-check on PR #16).
  *
- * What these tests prove (a real store on SQLite listing a real 50 MB recording of 60
- * cars, the server's own adapters, the real poller):
- *   - With real timers and the default 2 s interval, turning the replay on records a good
- *     first poll, never a failure, and the source is not stale.
- *   - With the poller's timers run by hand, a first poll whose timeout fires while the
- *     recording is still being read is recorded as "Carregando a gravação…", never
- *     "Tempo esgotado", and the next poll answers the 60 cars and clears the source.
+ * What these tests prove (a real store on SQLite listing Friday's recording, the real
+ * replay adapter and the real poller, with the poller's timers run by hand and a
+ * recording reader the test ends by hand, so "before" and "after" the read are exact):
+ *   - Turning the replay on starts reading the recording before any poll; a first poll
+ *     that runs once the read has ended is good, and the source is not stale.
+ *   - A first poll whose timeout fires while the recording is still being read is
+ *     recorded as "Carregando a gravação…", never "Tempo esgotado"; once the read ends,
+ *     the next poll answers and clears the source.
  *
  * What these tests deliberately do not cover:
+ *   - How long a real file takes to read: that depends on the machine, so no test here
+ *     races a read against a clock (BAJAOVRLAY-52). Reading a real file as a stream is
+ *     adapters/replay/replayAdapterLoading.test.ts; its timings are measured by
+ *     adapters/replay/replayLoading.benchmark.ts, which is not a CI gate.
  *   - Each rule of the replay's read and signal; adapters/replay/replayAdapterAbortSignal.test.ts.
  *   - When the poller prepares a source; pollerPreparesSources.test.ts.
- *   - A whole 4-hour file (180 MB): writing it would cost the test itself seconds; the
- *     50 MB file reads in a few hundred ms, long after a timeout fired by hand.
  */
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../../core/logger/createLogger.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
-import { createDataSourceAdapters } from './adapters/createDataSourceAdapters.js';
-import { enduroSimulatorId, operatorActor } from './enduroSimulatorCommands.testSupport.js';
+import { createReplayAdapter } from './adapters/replay/replayAdapter.js';
 import {
-  fileNameOfTheLargeRecording,
-  writeTheLargeRecordingInto,
-} from './largeRecording.testSupport.js';
+  createRecordingReaderFinishedByHand,
+  fridayRecordingId,
+  letPendingPromisesSettle,
+  replayTurnedOnAtMs,
+  writeFridayRecordingIntoAFolder,
+} from './adapters/replay/replayAdapter.testSupport.js';
+import { operatorActor } from './enduroSimulatorCommands.testSupport.js';
 import { startDataSourcePoller } from './poller.js';
 import { type CommandSentByThePoller, isPollResultCommand } from './poller.testSupport.js';
 import type { PollResult } from './pollResultRecording.js';
-import {
-  createTemporaryRecordingsFolder,
-  createTimersRunByHand,
-  openStoreOnTheDatabaseAndFolder,
-} from './recorder.testSupport.js';
+import { createTimersRunByHand, openStoreOnTheDatabaseAndFolder } from './recorder.testSupport.js';
 
-/** The label of the replay the operator makes of the large recording. */
-const replayLabel = 'Reprodução — Enduro longo';
+/** The label of the replay the operator makes of Friday's recording. */
+const replayLabel = 'Reprodução — Treino de sexta';
 
-/** How long a test waits for the 50 MB recording to be read: far above its usual 0,3 s. */
-const longestWaitForTheReadMs = 10_000;
+/** The replay's poll interval, the default: also its poll timeout and its stale-watch wait. */
+const pollIntervalMs = 2_000;
 
 /**
- * A real store on a fresh database at the real time, listing the large recording, a
- * replay of it made at the default 2 s interval (off), and a spy on the commands the
- * poller sends.
+ * A real store on a fresh database, its clock stopped at 15:00 on the enduro day,
+ * listing Friday's recording and a replay of it at the default 2 s interval (off); the
+ * real poller watching it through a spy on the commands it sends, with the real replay
+ * adapter reading through a reader the test ends by hand, and timers the test runs by
+ * hand.
  */
-function prepareAStoreWithAReplayOfTheLargeRecording() {
-  const recordingsFolder = createTemporaryRecordingsFolder();
-  writeTheLargeRecordingInto(recordingsFolder);
+function startThePollerOnAReplayOfFridaysRecording() {
+  const recordingsFolder = writeFridayRecordingIntoAFolder();
   const { database } = openTemporaryDatabase();
-  const stateStore = openStoreOnTheDatabaseAndFolder(database, recordingsFolder, () => Date.now());
+  const stateStore = openStoreOnTheDatabaseAndFolder(
+    database,
+    recordingsFolder,
+    () => replayTurnedOnAtMs,
+  );
   stateStore.applyCommand(
     {
       type: 'createDataSource',
       label: replayLabel,
       kind: 'replay',
-      config: { recordingId: `${enduroSimulatorId}/${fileNameOfTheLargeRecording}` },
-      pollIntervalMs: 2_000,
+      config: { recordingId: fridayRecordingId },
+      pollIntervalMs,
     },
     operatorActor,
   );
@@ -73,7 +80,7 @@ function prepareAStoreWithAReplayOfTheLargeRecording() {
     .readAllSlices()
     .dataSources.find((source) => source.label === replayLabel);
   if (replaySource === undefined) {
-    throw new Error('the replay of the large recording must have been made');
+    throw new Error("the replay of Friday's recording must have been made");
   }
   const commandsSentByThePoller: CommandSentByThePoller[] = [];
   const storeSeenByThePoller: StateStore = {
@@ -83,10 +90,26 @@ function prepareAStoreWithAReplayOfTheLargeRecording() {
       return stateStore.applyCommand(command, actor);
     },
   };
+  const recordingReader = createRecordingReaderFinishedByHand();
+  const timers = createTimersRunByHand();
+  const poller = startDataSourcePoller({
+    stateStore: storeSeenByThePoller,
+    logger: createLogger({ level: 'silent' }),
+    adapters: {
+      replay: createReplayAdapter({
+        recordingsFolder,
+        readRecordingFile: recordingReader.readRecordingFile,
+      }),
+    },
+    readCurrentTime: () => new Date(replayTurnedOnAtMs),
+    startTimer: timers.startTimer,
+    cancelTimer: timers.cancelTimer,
+  });
   return {
     stateStore,
-    storeSeenByThePoller,
-    recordingsFolder,
+    poller,
+    recordingReader,
+    timers,
     replaySourceId: replaySource.id,
     readPollResults: () =>
       commandsSentByThePoller
@@ -114,48 +137,32 @@ function readTheReplayStatus(stateStore: StateStore, replaySourceId: string) {
   return replaySource.status;
 }
 
-/** Waits, in real time, until the poller has sent at least the given number of results. */
-async function waitForPollResults(
-  readPollResults: () => PollResult[],
-  expectedCount: number,
-): Promise<void> {
-  await vi.waitFor(
-    () => {
-      expect(
-        readPollResults().length,
-        `the poller must have sent ${String(expectedCount)} poll result(s) within the wait`,
-      ).toBeGreaterThanOrEqual(expectedCount);
-    },
-    { timeout: longestWaitForTheReadMs, interval: 20 },
-  );
-}
+describe('turning on a replay while its recording is read', () => {
+  it('starts reading at turn-on and records a good first poll once the read has ended, never "Tempo esgotado"', async () => {
+    // Arrange: the poller on the replay of Friday's recording (off).
+    const { stateStore, poller, recordingReader, timers, replaySourceId, readPollResults } =
+      startThePollerOnAReplayOfFridaysRecording();
 
-describe('turning on a replay of a large recording', () => {
-  it('records a good first poll at the default 2 s interval, never "Tempo esgotado"', async () => {
-    // Arrange: the store with the replay of the large recording (off), and the real
-    // poller with the server's own adapters and real timers.
-    const { stateStore, storeSeenByThePoller, recordingsFolder, replaySourceId, readPollResults } =
-      prepareAStoreWithAReplayOfTheLargeRecording();
-    const poller = startDataSourcePoller({
-      stateStore: storeSeenByThePoller,
-      logger: createLogger({ level: 'silent' }),
-      adapters: createDataSourceAdapters({
-        recordingsFolder,
-        logger: createLogger({ level: 'silent' }),
-      }),
-    });
-
-    // Act: the operator turns the replay on; wait for the first poll's result.
+    // Act: the operator turns the replay on; the read ends before the first poll runs,
+    // as it does when reading takes less than the 2 s timeout; then the first poll runs
+    // and answers.
     turnTheReplayOn(stateStore, replaySourceId);
-    await waitForPollResults(readPollResults, 1);
+    const readsStartedBeforeAnyPoll = recordingReader.readRecordingIdsRead();
+    recordingReader.finishTheOldestRead();
+    await letPendingPromisesSettle();
+    timers.runEveryDeferredTimer();
+    await letPendingPromisesSettle();
     poller.stop();
 
-    // Assert: the first result is a good one, and the source is fresh with no error.
-    const [firstResult] = readPollResults();
+    // Assert: the read started at turn-on, the one result is a good one, and the source
+    // is fresh with no error.
     expect(
-      firstResult,
-      'the first poll of a large recording must answer, not time out',
-    ).toHaveProperty('ok', true);
+      readsStartedBeforeAnyPoll,
+      'turning the replay on must start reading its recording before any poll runs',
+    ).toEqual([fridayRecordingId]);
+    expect(readPollResults(), 'the first poll must answer, not time out').toEqual([
+      expect.objectContaining({ ok: true }),
+    ]);
     expect(
       readTheReplayStatus(stateStore, replaySourceId),
       'a replay that just started must not read "Atrasada" or carry an error',
@@ -163,44 +170,42 @@ describe('turning on a replay of a large recording', () => {
   });
 
   it('records "Carregando a gravação…", not "Tempo esgotado", when a poll times out during the read, and the next poll answers', async () => {
-    // Arrange: the store with the replay (off), and the real poller with the server's own
-    // adapters and timers the test runs by hand.
-    const { stateStore, storeSeenByThePoller, recordingsFolder, replaySourceId, readPollResults } =
-      prepareAStoreWithAReplayOfTheLargeRecording();
-    const timers = createTimersRunByHand();
-    const poller = startDataSourcePoller({
-      stateStore: storeSeenByThePoller,
-      logger: createLogger({ level: 'silent' }),
-      adapters: createDataSourceAdapters({
-        recordingsFolder,
-        logger: createLogger({ level: 'silent' }),
-      }),
-      startTimer: timers.startTimer,
-      cancelTimer: timers.cancelTimer,
-    });
+    // Arrange: the poller on the replay of Friday's recording (off).
+    const { stateStore, poller, recordingReader, timers, replaySourceId, readPollResults } =
+      startThePollerOnAReplayOfFridaysRecording();
 
-    // Act: the replay is turned on and its first poll starts; its 2 s timeout fires at
-    // once, while the 50 MB recording is still being read. Then, once that result is in,
-    // the next poll's 2 s wait ends and it runs to its answer.
+    // Act: the replay is turned on and its first poll starts; its 2 s timeout fires while
+    // the recording is still being read. Then the read ends, the next poll's 2 s wait
+    // ends, and that poll runs to its answer. (Each 2 s step also runs the stale watch,
+    // which finds nothing overdue on a clock that stands still.)
     turnTheReplayOn(stateStore, replaySourceId);
     timers.runEveryDeferredTimer();
-    timers.runEveryTimerOfDelay(2_000);
-    await waitForPollResults(readPollResults, 1);
-    timers.runEveryTimerOfDelay(2_000);
-    await waitForPollResults(readPollResults, 2);
+    timers.runEveryTimerOfDelay(pollIntervalMs);
+    await letPendingPromisesSettle();
+    const resultsWhileTheReadWasGoing = readPollResults();
+    recordingReader.finishTheOldestRead();
+    await letPendingPromisesSettle();
+    timers.runEveryTimerOfDelay(pollIntervalMs);
+    await letPendingPromisesSettle();
     poller.stop();
 
-    // Assert: first a clear "loading" failure, then a good answer of the 60 cars, and the
-    // source fresh again.
-    const [firstResult, secondResult] = readPollResults();
+    // Assert: first a clear "loading" failure, then a good answer of Friday's cars from
+    // the one read, and the source fresh again.
     expect(
-      firstResult,
+      resultsWhileTheReadWasGoing,
       'a poll called off during the read must say the recording is loading, not that the source timed out',
-    ).toMatchObject({ ok: false, error: 'Carregando a gravação…' });
-    expect(secondResult, 'the next poll must answer from the read that carried on').toMatchObject({
+    ).toEqual([expect.objectContaining({ ok: false, error: 'Carregando a gravação…' })]);
+    expect(
+      readPollResults()[1],
+      'the next poll must answer from the read that carried on',
+    ).toMatchObject({
       ok: true,
       shapes: { positions: { entries: expect.any(Array) as unknown } },
     });
+    expect(
+      recordingReader.readRecordingIdsRead(),
+      'the recording must be read once, by the read the turn-on started',
+    ).toEqual([fridayRecordingId]);
     expect(
       readTheReplayStatus(stateStore, replaySourceId),
       'the good poll must clear the loading failure',

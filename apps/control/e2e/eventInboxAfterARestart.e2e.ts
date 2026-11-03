@@ -12,10 +12,11 @@
  * What these tests prove:
  *   - With the simulator at 60× on seed 227, the server lists the race's first penalty.
  *     After a restart, once a poll strictly later than the first one after the boot has
- *     been compared, no event detected after the last poll before the stop (a moment on the
- *     server's clock) repeats an incident or a fastest lap (car and lap) listed before it,
- *     no event is listed twice, and every event listed before is still there with its own
- *     moment. The first server is gone, every process of it, before the second starts.
+ *     been compared, no event detected after the last poll before the stop (a moment on
+ *     the server's clock) repeats an incident or a fastest lap (car and lap, in the same
+ *     race) listed before it, no event is listed twice, and every event listed before is
+ *     still there with its own moment. The first server is gone, every process of it,
+ *     before the second starts.
  *
  * What these tests deliberately do not cover:
  *   - The page: this test talks to its server as the page does (a WebSocket of its own,
@@ -164,10 +165,27 @@ async function readLastGoodPollMoment(): Promise<number> {
   return readLastGoodPollMomentOfState(await readInboxStateOfTheServerOnPort(ownServerPort));
 }
 
-/** What an event is about, in a word the test compares: the incident, or the car's lap. */
+/**
+ * The race (session) a fastest lap was set in, read from its event id, which the server
+ * writes as `<sourceId>:fastestLap:<sessionId>:<carNumber>:<lap>` (newFastestLap.ts);
+ * neither the source id nor the session id holds a ':'.
+ */
+function readSessionOfAFastestLap(event: InboxEventAsTheTestsReadIt): string {
+  const [, , sessionId] = event.eventId.split(':');
+  return sessionId ?? '';
+}
+
+/**
+ * What an event is about, in words the test compares: the incident (its id names its
+ * race), or the car's lap in its race. The race counts: seed 227 runs the same race
+ * every time it restarts, so car 39's first lap is the fastest in every one of them,
+ * and the same lap in another race is another happening, not a repeat. Compared by car
+ * and lap alone, the new race's lap, detected after the restart, read as a repeat of
+ * the one an earlier race listed (once under load; BAJAOVRLAY-52).
+ */
 function describeWhatTheEventIsAbout(event: InboxEventAsTheTestsReadIt): string {
   if (event.kind === 'fastestLap') {
-    return `fastestLap car ${String(event.payload.carNumber)} lap ${String(event.payload.lapNumber)}`;
+    return `fastestLap race ${readSessionOfAFastestLap(event)} car ${String(event.payload.carNumber)} lap ${String(event.payload.lapNumber)}`;
   }
   return event.eventId;
 }

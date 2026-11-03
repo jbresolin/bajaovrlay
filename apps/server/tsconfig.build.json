@@ -9,5 +9,5 @@
     "customConditions": []
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.testSupport.ts"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.testSupport.ts", "src/**/*.benchmark.ts"]
 }

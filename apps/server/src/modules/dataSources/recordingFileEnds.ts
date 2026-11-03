@@ -6,13 +6,26 @@ import { readSync } from 'node:fs';
 import { parseRecordedLine, type RecordedLine } from './recordingLine.js';
 
 // How many bytes are read at a time from either end of a recording file. A 60-car line
-// is about 25 KB, so one read usually holds the last two lines; a longer line makes the
-// read grow (doubling) until it holds them.
+// is about 39 KB, so the last two lines take one doubling (a second read, of 128 KB);
+// a longer line makes the read grow (doubling) until it holds them.
 const bytesReadAtATime = 64 * 1024;
 
 // How many bytes are read at a time when an old file's lines must be counted one by one
 // (lines written before they carried their number): 1 MB, a plain streaming read.
 const bytesReadAtATimeWhenCounting = 1024 * 1024;
+
+/**
+ * Reads bytes of an open file into a buffer, as node:fs readSync does, answering how
+ * many it read. The server reads with readSync; a test passes one that counts the bytes,
+ * to check that only the ends of a file are read (recordingsFromFolderLargeRecording).
+ */
+export type ReadFileBytes = (
+  fileDescriptor: number,
+  buffer: Buffer,
+  offsetInBuffer: number,
+  length: number,
+  position: number,
+) => number;
 
 /** What the boot listing needs from the end of a recording file. */
 export type EndOfARecordingFile = {
@@ -30,13 +43,14 @@ export type EndOfARecordingFile = {
 export function readTheEndOfARecordingFile(
   fileDescriptor: number,
   fileSizeInBytes: number,
+  readFileBytes: ReadFileBytes = readSync,
 ): EndOfARecordingFile {
   let bytesToRead = bytesReadAtATime;
-  let lineTexts = readTheLastLineTexts(fileDescriptor, fileSizeInBytes, bytesToRead);
+  let lineTexts = readTheLastLineTexts(fileDescriptor, fileSizeInBytes, bytesToRead, readFileBytes);
   let isTheWholeFileRead = bytesToRead >= fileSizeInBytes;
   while (lineTexts.length < 2 && !isTheWholeFileRead) {
     bytesToRead *= 2;
-    lineTexts = readTheLastLineTexts(fileDescriptor, fileSizeInBytes, bytesToRead);
+    lineTexts = readTheLastLineTexts(fileDescriptor, fileSizeInBytes, bytesToRead, readFileBytes);
     isTheWholeFileRead = bytesToRead >= fileSizeInBytes;
   }
   return findTheLastWholeLine(lineTexts);
@@ -51,9 +65,15 @@ function readTheLastLineTexts(
   fileDescriptor: number,
   fileSizeInBytes: number,
   bytesToRead: number,
+  readFileBytes: ReadFileBytes,
 ): string[] {
   const readStartsAtByte = Math.max(0, fileSizeInBytes - bytesToRead);
-  const tailText = readBytesAsText(fileDescriptor, readStartsAtByte, fileSizeInBytes);
+  const tailText = readBytesAsText(
+    fileDescriptor,
+    readStartsAtByte,
+    fileSizeInBytes,
+    readFileBytes,
+  );
   const pieces = tailText.split('\n');
   const isReadFromTheStart = readStartsAtByte === 0;
   const wholePieces = isReadFromTheStart ? pieces : pieces.slice(1);
@@ -86,13 +106,24 @@ function findTheLastWholeLine(lineTexts: string[]): EndOfARecordingFile {
 export function readTheFirstLineOfARecordingFile(
   fileDescriptor: number,
   fileSizeInBytes: number,
+  readFileBytes: ReadFileBytes = readSync,
 ): RecordedLine | undefined {
   let bytesToRead = bytesReadAtATime;
-  let headText = readBytesAsText(fileDescriptor, 0, Math.min(fileSizeInBytes, bytesToRead));
+  let headText = readBytesAsText(
+    fileDescriptor,
+    0,
+    Math.min(fileSizeInBytes, bytesToRead),
+    readFileBytes,
+  );
   let isTheWholeFileRead = bytesToRead >= fileSizeInBytes;
   while (!headText.includes('\n') && !isTheWholeFileRead) {
     bytesToRead *= 2;
-    headText = readBytesAsText(fileDescriptor, 0, Math.min(fileSizeInBytes, bytesToRead));
+    headText = readBytesAsText(
+      fileDescriptor,
+      0,
+      Math.min(fileSizeInBytes, bytesToRead),
+      readFileBytes,
+    );
     isTheWholeFileRead = bytesToRead >= fileSizeInBytes;
   }
   const newlineIndex = headText.indexOf('\n');
@@ -104,12 +135,16 @@ export function readTheFirstLineOfARecordingFile(
  * The number of whole lines of an open file (its '\n' bytes), read a megabyte at a time
  * and never parsed. Only for files whose lines carry no snapshotNumber.
  */
-export function countTheWholeLinesOfAFile(fileDescriptor: number, fileSizeInBytes: number): number {
+export function countTheWholeLinesOfAFile(
+  fileDescriptor: number,
+  fileSizeInBytes: number,
+  readFileBytes: ReadFileBytes = readSync,
+): number {
   const newlineByte = 0x0a;
   const chunk = Buffer.alloc(bytesReadAtATimeWhenCounting);
   let lineCount = 0;
   for (let position = 0; position < fileSizeInBytes; position += chunk.length) {
-    const bytesRead = readSync(fileDescriptor, chunk, 0, chunk.length, position);
+    const bytesRead = readFileBytes(fileDescriptor, chunk, 0, chunk.length, position);
     for (let byteIndex = 0; byteIndex < bytesRead; byteIndex += 1) {
       if (chunk[byteIndex] === newlineByte) {
         lineCount += 1;
@@ -120,8 +155,13 @@ export function countTheWholeLinesOfAFile(fileDescriptor: number, fileSizeInByte
 }
 
 /** The bytes of a file from one position up to (not including) another, as UTF-8 text. */
-function readBytesAsText(fileDescriptor: number, fromByte: number, toByte: number): string {
+function readBytesAsText(
+  fileDescriptor: number,
+  fromByte: number,
+  toByte: number,
+  readFileBytes: ReadFileBytes,
+): string {
   const bytes = Buffer.alloc(toByte - fromByte);
-  const bytesRead = readSync(fileDescriptor, bytes, 0, bytes.length, fromByte);
+  const bytesRead = readFileBytes(fileDescriptor, bytes, 0, bytes.length, fromByte);
   return bytes.subarray(0, bytesRead).toString('utf8');
 }

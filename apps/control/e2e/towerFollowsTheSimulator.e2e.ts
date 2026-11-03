@@ -21,7 +21,9 @@
  *      rows, and the server has the instance on the "Torre" layer with all 60 cars.
  *   3. Within a few polls at least one row changes place: once the simulator's own
  *      positions show the first 20 places in another order than the rows had at the
- *      take, the rows in the monitor leave that order and follow the data on air.
+ *      take, the rows in the monitor leave that order; and they follow the data on air:
+ *      with the simulator then turned off, the data on air stays as it was (a source
+ *      turned off keeps its last good data), and the rows settle in its order.
  *   4. The item opened again ("Editar" of its button in "Atalhos"), "Leiaute" set to
  *      "Detalhada", "Atualizar no ar": the same instance (its id unchanged on the server,
  *      and the very same tower element in the monitor, carrying that id) is detailed and
@@ -51,6 +53,14 @@
  * every 4 to 7 real seconds and a change among the first 20 places usually comes within
  * 15 to 30 s; the wait for it is 60 s. The whole first test gets 3 minutes.
  *
+ * Why step 3 waits for the monitor's own drawing and turns the simulator off: comparing
+ * the rows with the data on air while the race runs chases a moving target. At 60× the
+ * order on air keeps changing and the monitor draws it a moment later, so on a busy
+ * machine the two may not agree at any one look within a fixed time (it ran out of a
+ * 10 s wait at 21.7 s, BAJAOVRLAY-52). The rows leaving the take order is waited for
+ * inside the page, and the comparison is made against data that no longer moves; both
+ * waits end when the monitor draws, ended otherwise only by the test's own timeout.
+ *
  * Sharing the server with the other tests:
  *   Before each test the server is emptied (nothing on air, no item, the simulator off
  *   with its default settings), so this test passes whatever ran before it.
@@ -69,7 +79,8 @@ import {
   seededSimulatorLabel,
   startTheSeededSimulatorFastFromTheGreenFlag,
 } from './dataSourcesTestSteps';
-import { emptyTheServerState } from './emptyTheServerState';
+import { emptyTheServerState, realServerPort } from './emptyTheServerState';
+import { sendCommandOrFail } from './eventInboxOnTheRealServer';
 import {
   openControlPageAndWaitUntilConnected,
   openItemEditorWithNewGraphic,
@@ -85,6 +96,8 @@ import {
   measureHowTheClockAndTheTowerStack,
   readCarOrderOfTheTowerRows,
   towerLayerId,
+  waitUntilTheTowerRowsLeaveTheOrder,
+  waitUntilTheTowerRowsShowTheOrder,
 } from './towerInProgramMonitor';
 
 // The tower, as the "Gráfico" dropdown names it (its manifest's name).
@@ -92,6 +105,8 @@ const towerGraphicName = 'Torre de posições';
 // The labels the tests give the items they make on the spot.
 const towerItemLabel = 'Torre — Enduro';
 const raceClockItemLabel = 'Relógio — Enduro';
+// The seeded simulator's id, as every new database has it (emptyTheServerState.ts).
+const seededSimulatorId = 'simulador-enduro';
 // The tower shows one page of 20 rows (the theme's `--tower-rows-per-page`).
 const rowsOnOnePageOfTheTower = 20;
 // The take: the monitor loads the tower's package and plays it in (1 s); a few seconds
@@ -101,9 +116,9 @@ const waitForTheTowerOnAirInMilliseconds = 10_000;
 // 20 places usually comes within 15 to 30 s. Far more than that, so a slow race on a
 // busy machine still gets there.
 const waitForAPositionChangeInMilliseconds = 60_000;
-// Once the simulator says so, the refresh follows its next poll (every 0,5 s) and the
-// rows slide in 400 ms; a few seconds cover a slow machine.
-const waitForTheRowsToFollowInMilliseconds = 10_000;
+// The layout switch of step 4: the server answers at once and the monitor redraws the
+// tower in place; a few seconds cover a slow machine.
+const waitForTheLayoutSwitchInMilliseconds = 10_000;
 // The clock's play-in takes 600 ms and the tower's 1 s; both must have ended before the
 // boxes are compared, because the play-in moves the card.
 const waitForTheStackToSettleInMilliseconds = 5_000;
@@ -230,28 +245,26 @@ test.describe('a positions tower bound to the simulator', () => {
       )
       .not.toEqual(carOrderAtTheTake);
 
-    // Assert (step 3): the rows in the monitor leave the order they had at the take and
-    // are in the order of the data on air (what the server has given the renderer), by
-    // themselves, within seconds.
-    await expect
-      .poll(
-        async () => {
-          const rowOrder = await readCarOrderOfTheTowerRows(page);
-          const orderOnAir = readCarOrderOfTheFirstPage(await readCarsOnAirOnTheTower());
-          return {
-            hasLeftTheOrderAtTheTake: rowOrder.join(',') !== carOrderAtTheTake.join(','),
-            isInTheOrderOnAir: rowOrder.join(',') === orderOnAir.join(','),
-            rowOrder,
-            orderOnAir,
-          };
-        },
-        {
-          message: 'the rows must follow the new order of the data on air',
-          timeout: waitForTheRowsToFollowInMilliseconds,
-          intervals: [250],
-        },
-      )
-      .toMatchObject({ hasLeftTheOrderAtTheTake: true, isInTheOrderOnAir: true });
+    // Assert (step 3): the rows in the monitor leave the order they had at the take, by
+    // themselves (the wait ends the frame the monitor draws another order).
+    await waitUntilTheTowerRowsLeaveTheOrder(page, carOrderAtTheTake);
+
+    // Act (step 3): turn the simulator off, as its switch on "Fontes de dados" does, so
+    // the data on air stops moving; then read the order it was left in.
+    await sendCommandOrFail(realServerPort, {
+      type: 'setDataSourceEnabled',
+      sourceId: seededSimulatorId,
+      isEnabled: false,
+    });
+    const orderOnAirOnceStill = readCarOrderOfTheFirstPage(await readCarsOnAirOnTheTower());
+
+    // Assert (step 3): the rows settle in the order of the data on air (what the server
+    // has given the renderer), and the page still holds 20 rows.
+    expect(
+      orderOnAirOnceStill,
+      'the data on air must keep its 20 first places once the simulator is off',
+    ).toHaveLength(rowsOnOnePageOfTheTower);
+    await waitUntilTheTowerRowsShowTheOrder(page, orderOnAirOnceStill);
     await expect(
       findTowerRows(page),
       'after the change the monitor must still show one page of 20 rows',
@@ -311,14 +324,14 @@ test.describe('a positions tower bound to the simulator', () => {
         },
         {
           message: 'the instance on air must keep its id and turn detailed',
-          timeout: waitForTheRowsToFollowInMilliseconds,
+          timeout: waitForTheLayoutSwitchInMilliseconds,
         },
       )
       .toEqual({ id: towerInstanceIdAtTheTake, layout: 'detailed' });
     await expect(
       findTowerSection(page),
       'the tower in the monitor must be drawn in the detailed layout',
-    ).toHaveAttribute('data-layout', 'detailed', { timeout: waitForTheRowsToFollowInMilliseconds });
+    ).toHaveAttribute('data-layout', 'detailed', { timeout: waitForTheLayoutSwitchInMilliseconds });
     await expect(
       findTowerInProgramMonitor(page),
       'the tower element in the monitor must still carry the instance id of the take',

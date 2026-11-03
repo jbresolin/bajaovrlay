@@ -7,7 +7,8 @@
  *   countdown's kit parts), the top five and the sponsor line (the sponsor roll's paging rule
  *   and timer), each of the last two optional (BAJAOVRLAY-46).
  *
- * What these tests prove (Date, the timers and the frames faked, the sponsor holds on the page):
+ * What these tests prove (Date stopped, and on air the timers and the frames faked too; the
+ * sponsor holds on the page):
  *   - load draws the next session, "LARGADA ÀS 10:00" and the count as it is now, off air;
  *     bad data answers 400; calls at the wrong moment answer 409 or 404.
  *   - On air the count follows the clock and stops at "0:00".
@@ -35,11 +36,13 @@ import {
   createBreakBeforeTheEnduro,
   createEightSponsors,
   createIntermissionBoardOnThePage,
+  designsMomentMs,
   isPartDrawn,
   loadIntermissionBoardWithData,
   placeTheSponsorHoldsOnTheRoot,
   readShownText,
   readSponsorLineShown,
+  stopTheClockAt,
   takeControlOfTime,
 } from './intermissionBoardOnThePage.testSupport.js';
 
@@ -58,10 +61,13 @@ async function putTheFullBreakOnAir() {
 
 describe('load', () => {
   it('draws the next session, its start and the count as it is now, off air', async () => {
-    // Arrange: a board on the page.
+    // Arrange: a board on the page, and the clock stopped at 09:36:15. (Read from the real
+    // clock, a second could tick between taking the start and drawing the count, which
+    // then read "2:00:01"; BAJAOVRLAY-52.)
     const board = createIntermissionBoardOnThePage();
+    stopTheClockAt(designsMomentMs);
 
-    // Act: load the break at the real moment, with a start two hours away.
+    // Act: load the break with a start two hours from the stopped clock.
     const answer = await loadIntermissionBoardWithData(board, {
       ...createBreakBeforeTheEnduro({ hasTopFive: true, hasSponsors: false }),
       nextStartsAtMs: Date.now() + 2 * 3_600_000,
