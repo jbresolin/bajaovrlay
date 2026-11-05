@@ -43,6 +43,9 @@ function createStoreWhoseSavingAlwaysFails(): StateStore {
       throw new Error('SQLITE_FULL: database or disk is full');
     },
     subscribeToSliceChanges: () => () => undefined,
+    readEventLogEntriesBelow: () => {
+      throw new Error('not used by answerClientMessage');
+    },
   };
 }
 
@@ -61,6 +64,9 @@ function createStoreThatWritesDownEveryCommand() {
       return { ok: true };
     },
     subscribeToSliceChanges: () => () => undefined,
+    readEventLogEntriesBelow: () => {
+      throw new Error('not used by answerClientMessage');
+    },
   };
   return { stateStore, commandsReceived };
 }

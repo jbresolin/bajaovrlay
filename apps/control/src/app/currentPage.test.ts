@@ -2,18 +2,19 @@
  * Which page of the control page is shown (apps/control)
  *
  * What this module is for:
- *   The control page has five pages: the console (rundown, monitors, layers), "Fontes de
- *   dados", "Cadastros", "Eventos" and "Saídas e camadas". Which one is shown is written in
- *   the address after "#" ("#/fontes", "#/cadastros", "#/eventos", "#/saidas"), so the
- *   header's links, the browser's back button and a reload all work without a router
- *   library, and the server needs no extra address for the built page.
+ *   The control page has six pages: the console (rundown, monitors, layers), "Fontes de
+ *   dados", "Cadastros", "Eventos", "Saídas e camadas" and "Histórico". Which one is shown
+ *   is written in the address after "#" ("#/fontes", "#/cadastros", "#/eventos",
+ *   "#/saidas", "#/historico"), so the header's links, the browser's back button and a
+ *   reload all work without a router library, and the server needs no extra address for
+ *   the built page.
  *
  * What these tests prove:
  *   - "#/fontes" is the data sources page and "#/cadastros" the entity library, also
  *     with a record after it ("#/cadastros/team/42"), and "#/eventos" the review of the
- *     event inbox, "#/saidas" the outputs and layers (BAJAOVRLAY-49); no hash,
- *     "#/" and any unknown hash are the
- *     console, so a stale bookmark never shows an empty page.
+ *     event inbox, "#/saidas" the outputs and layers (BAJAOVRLAY-49), "#/historico" the
+ *     history (BAJAOVRLAY-30); no hash, "#/" and any unknown hash are the console, so a
+ *     stale bookmark never shows an empty page.
  *
  * What these tests deliberately do not cover:
  *   - Following the hash as it changes, and the header's links: src/AppPages.test.tsx.
@@ -49,6 +50,8 @@ const hashScenarios: { name: string; hash: string; expected: ControlPageName }[]
     hash: '#/saidas',
     expected: 'outputsAndLayers',
   },
+  // What the header's "Histórico" link writes: every change of the show (BAJAOVRLAY-30).
+  { name: 'shows the history for "#/historico"', hash: '#/historico', expected: 'history' },
   // An old or mistyped bookmark falls back to the console rather than a blank page.
   { name: 'shows the console for an unknown hash', hash: '#/camadas', expected: 'console' },
 ];

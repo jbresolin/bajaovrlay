@@ -175,12 +175,12 @@ describe('subscribers of the store and the rundown commands', () => {
 
     // Assert: the first create also moved the cursor (first item of the rundown); the
     // second create and the rename changed only the items; the take changed what is on
-    // air and the cursor, but no item.
+    // air, what the layer showed before (for "Desfazer") and the cursor, but no item.
     expect(changedSliceNamesHeard, 'each command must name exactly what it changed').toEqual([
       ['rundowns', 'items', 'eventLog'],
       ['items', 'eventLog'],
       ['items', 'eventLog'],
-      ['instances', 'rundowns', 'eventLog'],
+      ['instances', 'programHistory', 'rundowns', 'eventLog'],
     ]);
   });
 });

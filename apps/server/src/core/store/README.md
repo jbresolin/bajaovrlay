@@ -8,6 +8,7 @@ routine data-source poll (one that leaves its source's health as it was) is save
 but not logged (decision D11, `isLeftOutOfTheEventLog`).
 
 - `reducers/` — one pure reducer per command, plus `reduceCommand.ts` choosing it; the data-source reducers live in `../../modules/dataSources/`, reached through its `index.ts`.
+- `programHistory/` — undo on program (BAJAOVRLAY-30): `rememberProgramChanges.ts`, run by `reduceCommand.ts` after every command but an undo, writes what each layer showed before; `undoOnLayer.ts` and `undoLastChangeOnProgram.ts` put it back (`putBackWhatLayerShowed.ts`, through the take's own steps).
 - `graphicDataPreparation.ts` (null fields out, `takeTimeFieldKeys` stamped; `graphicSchemaProperties.ts` says which fields may be), `updateRules/` (named pure rules an update runs, e.g. the clock's), then `graphicDataValidation.ts` (manifest schema).
 - `authorizeCommand.ts` — a renderer may only report instance status, `sistema:macro:<id>` only a step's command and its run's bookkeeping, `sistema:macro-watchdog` only endMacroRun, `sistema:fonte:<sourceId>` only recordDataSourcePoll of its own source, `sistema:gravador` only stopRecording and recordRecordingProgress, other `sistema:` only clearLayer; operators never recordDataSourcePoll, recordRecordingProgress or a stopRecording with a failureMessage; `commandActors.ts`: `role:id` actor names.
 - `commandEventLogPayload.ts` — what an event-log row stores as a command's name and payload (a poll's shapes left out).

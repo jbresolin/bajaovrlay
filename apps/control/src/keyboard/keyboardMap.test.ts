@@ -9,14 +9,15 @@
  *   screen cannot drift from what the keys do.
  *
  * What these tests prove:
- *   - The map holds exactly the nine shortcuts (M1's eight and P, "Parar" a running
- *     macro, from PR #13's gate 2), in the order the dialog lists them,
+ *   - The map holds exactly the ten shortcuts (M1's eight, P, "Parar" a running macro,
+ *     from PR #13's gate 2, and Ctrl+Z, "Desfazer última", BAJAOVRLAY-30), in the order
+ *     the dialog lists them,
  *     and the dialog's hand-written list holds every entry of the map exactly once.
  *   - A press is told to be an entry's by the entry's keys and Shift rule, which is how
  *     Space and Shift+Space are told apart.
  *   - Each shortcut keeps the rules decided for it in earlier tasks (docs/decisions.md):
- *     only Esc works while typing; Space, the arrows and F1–F4 are kept from the browser,
- *     Esc, Backspace, the digits and P are not.
+ *     only Esc works while typing; Space, the arrows, F1–F4 and Ctrl+Z are kept from the
+ *     browser, Esc, Backspace, the digits and P are not; only Ctrl+Z needs Ctrl.
  *   - No key press is claimed by two shortcuts, and every shortcut has words for the
  *     operator.
  *   - 1–9 are the nine digit keys and F1–F4 the first four function keys; P is the
@@ -37,21 +38,22 @@ import {
 } from './keyboardMap';
 
 describe('the keyboard map', () => {
-  it('lists the nine shortcuts, in the order the dialog shows them', () => {
+  it('lists the ten shortcuts, in the order the dialog shows them', () => {
     // Arrange: nothing to set up; the map is a constant.
 
     // Act: read the names the operator sees, in the dialog's order.
     const keyNames = listKeyboardShortcutsInDialogOrder().map((shortcut) => shortcut.keyName);
 
-    // Assert: the nine shortcuts, the take first, the panic key after the cursor keys, and
-    // the macro's "Parar" after the strip's keys.
-    expect(keyNames, 'the dialog must list the nine shortcuts in this order').toEqual([
+    // Assert: the ten shortcuts, the take first, the panic key after the cursor keys with
+    // its undo right after it, and the macro's "Parar" after the strip's keys.
+    expect(keyNames, 'the dialog must list the ten shortcuts in this order').toEqual([
       'Espaço',
       'Shift + Espaço',
       '→',
       '←',
       'Backspace',
       'Esc',
+      'Ctrl+Z',
       '1 a 9',
       'F1 a F4',
       'P',
@@ -107,6 +109,14 @@ describe('the keyboard map', () => {
       shortcut: keyboardMap.stopRunningMacro,
       worksWhileTyping: false,
       isKept: false,
+    },
+    // Ctrl+Z in a field undoes the typing; on the page it is "Desfazer última", and the
+    // browser must not also undo something in a field that lost its focus.
+    {
+      name: 'Ctrl+Z',
+      shortcut: keyboardMap.undoLastChange,
+      worksWhileTyping: false,
+      isKept: true,
     },
   ];
 

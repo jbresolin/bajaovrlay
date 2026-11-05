@@ -5,7 +5,7 @@ import type { KeyboardShortcut } from './keyboardMap';
 /** The part of a keyboardMap.ts entry the listener needs: its keys and its two rules. */
 export type ShortcutToListenFor = Pick<
   KeyboardShortcut,
-  'keys' | 'isIgnoredWhileTyping' | 'isKeptFromTheBrowser'
+  'keys' | 'isControlHeld' | 'isIgnoredWhileTyping' | 'isKeptFromTheBrowser'
 >;
 
 /** When a shortcut listens. */
@@ -33,7 +33,9 @@ export type KeyPress = {
  * Three kinds of press never count, because each would send a command the operator did
  * not mean: a key held down (the keyboard's auto-repeat), a key with Ctrl/Alt/Meta (a
  * browser shortcut), and a key another control already used (Esc closing an open
- * dropdown, menu or dialog, Space picking a rundown row up for a keyboard drag).
+ * dropdown, menu or dialog, Space picking a rundown row up for a keyboard drag). The one
+ * shortcut whose entry says `isControlHeld` (Ctrl+Z) counts only with Ctrl, and still
+ * never with Alt or Meta.
  *
  * Shift is not one of those: a key pressed with Shift counts like the key alone, as it
  * always did here, and `onPressed` is told whether Shift was down. A shortcut that does
@@ -45,7 +47,7 @@ export function useKeyboardShortcut(
   options: KeyboardShortcutOptions,
 ): void {
   const { isEnabled } = options;
-  const { keys, isIgnoredWhileTyping, isKeptFromTheBrowser } = shortcut;
+  const { keys, isControlHeld, isIgnoredWhileTyping, isKeptFromTheBrowser } = shortcut;
 
   useEffect(() => {
     if (!isEnabled) {
@@ -57,9 +59,8 @@ export function useKeyboardShortcut(
         return;
       }
       const isHeldDown = event.repeat;
-      const hasModifierKey = event.ctrlKey || event.altKey || event.metaKey;
       const wasUsedByAnotherControl = event.defaultPrevented;
-      if (isHeldDown || hasModifierKey || wasUsedByAnotherControl) {
+      if (isHeldDown || !hasTheModifiersItNeeds(event) || wasUsedByAnotherControl) {
         return;
       }
       if (isIgnoredWhileTyping && isTypingTarget(event.target)) {
@@ -81,14 +82,21 @@ export function useKeyboardShortcut(
       if (!keys.includes(event.key)) {
         return;
       }
-      const hasModifierKey = event.ctrlKey || event.altKey || event.metaKey;
-      if (hasModifierKey) {
+      if (!hasTheModifiersItNeeds(event)) {
         return;
       }
       if (isIgnoredWhileTyping && isTypingTarget(event.target)) {
         return;
       }
       event.preventDefault();
+    }
+
+    // Ctrl exactly as the shortcut needs it, and never Alt or Meta (Cmd), which belong to
+    // the browser and the system. Shift is not looked at here (see above).
+    function hasTheModifiersItNeeds(event: KeyboardEvent): boolean {
+      const isControlAsItNeeds = event.ctrlKey === isControlHeld;
+      const hasAnotherModifierKey = event.altKey || event.metaKey;
+      return isControlAsItNeeds && !hasAnotherModifierKey;
     }
 
     window.addEventListener('keydown', handleKeyDown);
@@ -102,7 +110,7 @@ export function useKeyboardShortcut(
     // Deliberate: callers pass a new `onPressed` function on every render, so the listeners
     // are removed and added again each time. That is cheap and never leaves two listeners;
     // holding the callback in a ref would avoid it at the price of a less obvious hook.
-  }, [keys, onPressed, isEnabled, isIgnoredWhileTyping, isKeptFromTheBrowser]);
+  }, [keys, onPressed, isEnabled, isControlHeld, isIgnoredWhileTyping, isKeptFromTheBrowser]);
 }
 
 /**

@@ -340,6 +340,12 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/clear-all
 # "Próximo" on a layer: the graphic on air there moves to its next step.
 curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/next-on-layer/fullscreen
 
+# "Desfazer" on a layer (here the lower third): what it showed before its last change.
+curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/undo-layer/lower-third
+
+# "Desfazer última": the newest change on air, every layer it touched ("Limpar tudo" whole).
+curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/undo-last
+
 # A quick-fire button by its place: button 1 of "Atalhos".
 curl -s -X POST -H "Authorization: Bearer $TOKEN" $BAJA/fire-shortcut/atalhos/1
 

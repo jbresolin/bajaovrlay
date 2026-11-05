@@ -11,6 +11,8 @@ docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
   output: "Programa" first, always open; each other output a group the operator can fold away.
   With program alone the panel is the flat list it always was.
 - `LayerStatusRow.tsx` — one row: layer (+ chips "em prévia", "vai limpar"), graphic, "há 2 min", badge, buttons.
+- `layersInCamadasOrder.ts` — the order the rows are drawn in, also read by "Desfazer última"'s tooltip;
+  a row's "Desfazer" (BAJAOVRLAY-30) is drawn by features/undo.
 - `InstanceStatusBadge.tsx` — green "No ar", grey "Carregando", red "Falhou" + why (tooltip).
 - `useCurrentTime.ts` — redraws the rows every 10 s so the relative times keep up.
 - `ItemLabelOnAir.tsx` — the colour chip and label of the item that put it on air, or "sem item" /

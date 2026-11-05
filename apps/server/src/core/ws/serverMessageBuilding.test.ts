@@ -40,6 +40,7 @@ function buildSlicesEachAListOfItsOwn(): Slices {
     instances: [],
     previewClearedLayerIds: [],
     instanceBindings: [],
+    programHistory: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

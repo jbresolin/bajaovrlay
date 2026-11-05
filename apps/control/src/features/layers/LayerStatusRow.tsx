@@ -6,6 +6,7 @@ import { BoundSourceChips } from '@/features/bindings/BoundSourceChips';
 import { ActionButton } from '@/features/connection/ActionButton';
 import { EventMarkOnLayer } from '@/features/events/EventMarkOnLayer';
 import { ItemLabelOnAir } from '@/features/layers/ItemLabelOnAir';
+import { UndoOnLayerButton } from '@/features/undo/UndoOnLayerButton';
 import { formatRelativeTimePtBR } from '@/i18n/formatRelativeTimePtBR';
 import { ptBR } from '@/i18n/ptBR';
 
@@ -27,6 +28,14 @@ export type LayerStatusRowProps = {
   graphicOnProgram: Graphic | undefined;
   currentTime: Date;
   onClearPressed: () => void;
+  /**
+   * What "Desfazer" brings back ("Volta: "Tarja – Ana Souza"", BAJAOVRLAY-30), for its
+   * tooltip; undefined when the server remembers no change of this layer, and then the
+   * row offers no "Desfazer".
+   */
+  whatUndoBringsBack: string | undefined;
+  /** "Desfazer": put back what the layer's program showed before its last change. */
+  onUndoPressed: () => void;
   /**
    * "Prévia: limpar": mark the layer so Prévia shows it empty. Offered only with something
    * on air and while the layer is not marked yet.
@@ -86,7 +95,8 @@ export type LayerStatusRowProps = {
  * source live says when that source is late, failing or deleted, and when a correction
  * changed a bound value (features/bindings/BoundSourceChips.tsx, BAJAOVRLAY-20).
  * A graphic shown in steps (the podium) says where it is, "Passo 2 de 4", and offers
- * "Próximo" (nextOnLayer, BAJAOVRLAY-47), off on its last step.
+ * "Próximo" (nextOnLayer, BAJAOVRLAY-47), off on its last step. A layer with a change to
+ * undo offers "Desfazer" beside "Limpar", its tooltip saying what comes back (BAJAOVRLAY-30).
  * Deliberate: the preview gets no status badge, because its status stays "loading" for
  * good (the pages that draw previews never report), so a badge would read "Carregando"
  * and mean nothing.
@@ -189,6 +199,12 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           >
             {ptBR.layers.nextStepButton}
           </ActionButton>
+        )}
+        {props.whatUndoBringsBack === undefined ? null : (
+          <UndoOnLayerButton
+            whatComesBack={props.whatUndoBringsBack}
+            onPressed={props.onUndoPressed}
+          />
         )}
         {/* Always pressable when connected, even on an empty layer: clearing an empty
             layer is harmless, and a panic press must never find a dead button. */}

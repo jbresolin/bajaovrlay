@@ -211,6 +211,12 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     // database (only a bug could have written one) is not read and is left where it is.
     previewClearedLayerIds: [],
     instanceBindings: instanceBindingsAtBoot.instanceBindings,
+    // What each layer showed before its last changes (BAJAOVRLAY-30) is saved, so "Desfazer"
+    // works across a restart. A database written before it has no row and starts with none;
+    // a row that fails its schema stops the boot, as the overrides row does.
+    programHistory: SlicesSchema.shape.programHistory.parse(
+      storedRows.find((row) => row.name === 'programHistory')?.json ?? [],
+    ),
     eventLog,
     rundowns: rundownSlices.rundowns,
     items: eventInboxSlices.items,

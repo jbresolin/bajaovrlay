@@ -82,6 +82,7 @@ function buildRaceDayStateWithTheClockOnAir() {
     // The operator pressed "Prévia: limpar" on the logo: Prévia shows it gone.
     previewClearedLayerIds: ['bug'],
     instanceBindings: [],
+    programHistory: [],
     overrides: [],
     eventLog: [
       {
@@ -300,6 +301,7 @@ describe('SliceNameSchema', () => {
       'instances',
       'previewClearedLayerIds',
       'instanceBindings',
+      'programHistory',
       'rundowns',
       'items',
       'quickFirePanels',
@@ -325,7 +327,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these twenty-three, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these twenty-six, in this order').toEqual(
       expectedSliceNames,
     );
   });

@@ -55,6 +55,13 @@ export const ptBRKeyboard = {
       description:
         'Limpar tudo: a primeira vez arma o botão, a segunda em até 3 segundos tira tudo do ar.',
     },
+    undoLastChange: {
+      keyName: 'Ctrl+Z',
+      condition:
+        'Fora de campos de texto, listas, menus abertos e chaves (num campo, desfaz o que foi digitado); Ctrl+Shift+Z não faz nada.',
+      description:
+        'Desfazer última: volta o que estava no ar antes da última troca, em todas as camadas que ela mudou.',
+    },
     fireQuickFireButton: {
       keyName: '1 a 9',
       condition: ignoredWhileTyping,

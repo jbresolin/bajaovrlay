@@ -344,10 +344,10 @@ describe('subscribers of the store', () => {
     // Act: take the race clock item.
     store.applyCommand(takeOfTheRaceClockItem, operatorActor);
 
-    // Assert: one notification for the instances, the rundowns (the cursor moved past the
-    // item) and the event log, nothing else.
-    expect(changedSliceNamesHeard, 'a take of the cursor item changes three slices').toEqual([
-      ['instances', 'rundowns', 'eventLog'],
+    // Assert: one notification for the instances, what the clock layer showed before (for
+    // "Desfazer"), the rundowns (the cursor moved past the item) and the event log, nothing else.
+    expect(changedSliceNamesHeard, 'a take of the cursor item changes four slices').toEqual([
+      ['instances', 'programHistory', 'rundowns', 'eventLog'],
     ]);
   });
 

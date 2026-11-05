@@ -2,6 +2,7 @@ import { ptBRBindings } from './ptBRBindings';
 import { ptBRDataSources } from './ptBRDataSources';
 import { ptBREntityLibrary } from './ptBREntityLibrary';
 import { ptBREvents } from './ptBREvents';
+import { ptBRHistory } from './ptBRHistory';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
 import { ptBRObs } from './ptBRObs';
@@ -9,6 +10,7 @@ import { ptBROutputs } from './ptBROutputs';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
 import { ptBRTextList } from './ptBRTextList';
+import { ptBRUndo } from './ptBRUndo';
 
 /**
  * pt-BR catalog: every string the operator reads on the control page comes from here,
@@ -28,6 +30,8 @@ export const ptBR = {
   bindings: ptBRBindings,
   quickFire: ptBRQuickFire,
   events: ptBREvents,
+  // The "Histórico" page, #/historico (features/history), in ptBRHistory.ts.
+  history: ptBRHistory,
   textList: ptBRTextList,
   app: {
     title: 'BajaOvrLay',
@@ -42,6 +46,7 @@ export const ptBR = {
       entityLibrary: 'Cadastros',
       eventReview: 'Eventos',
       outputs: 'Saídas',
+      history: 'Histórico',
     },
     // What "Cadastros" or "Fontes" shows instead of a blank tab when it throws.
     pageError: {
@@ -74,6 +79,8 @@ export const ptBR = {
   },
   // The layer panel, "Camadas" (features/layers), in ptBRLayers.ts.
   layers: ptBRLayers,
+  // "Desfazer" on a Camadas row and "Desfazer última" (features/undo), in ptBRUndo.ts.
+  undo: ptBRUndo,
   // The "Saídas e camadas" page and the output choices (features/outputsAndLayers), in
   // ptBROutputs.ts (BAJAOVRLAY-49).
   outputs: ptBROutputs,

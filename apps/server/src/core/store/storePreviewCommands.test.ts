@@ -178,11 +178,11 @@ describe('previewing an item and then taking the preview, through the store', ()
     ).toEqual(expect.objectContaining({ cursorItemId: null, wasLastItemTakenAtCursor: true }));
 
     // Assert, around the reducers: subscribers heard of the instances alone for the
-    // preview and of instances and rundowns for the take; the event log has both
-    // commands; the database holds what memory holds.
+    // preview and of instances, the layer's history and rundowns for the take; the event
+    // log has both commands; the database holds what memory holds.
     expect(sliceNamesToldToSubscribers, 'a preview must not report the rundowns').toEqual([
       ['instances', 'eventLog'],
-      ['instances', 'rundowns', 'eventLog'],
+      ['instances', 'programHistory', 'rundowns', 'eventLog'],
     ]);
     expect(
       slicesAfter.eventLog.map((entry) => [entry.command, entry.result.status, entry.ts]),

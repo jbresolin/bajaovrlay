@@ -16,6 +16,8 @@ import {
   saveCommandOutcome,
   saveCommandOutcomeWithoutEventLogRow,
 } from '../db/commandOutcomeStorage.js';
+import { readEventLogRowsBelow } from '../db/eventLogRowStorage.js';
+import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
 import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
 import {
@@ -89,6 +91,12 @@ export type StateStore = {
   applyCommand: (commandInput: unknown, actor: string) => CommandOutcome;
   /** Registers a listener for slice changes; returns a function that removes it. */
   subscribeToSliceChanges: (listener: SliceChangeListener) => () => void;
+  /**
+   * Up to `limit` event-log entries below the row id `beforeId` (from the newest when it
+   * is undefined), newest first, read from the database, which keeps every row; for the
+   * history's older pages (BAJAOVRLAY-30). Reading only: it changes nothing.
+   */
+  readEventLogEntriesBelow: (beforeId: number | undefined, limit: number) => EventLogEntry[];
 };
 
 /**
@@ -367,5 +375,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    readEventLogEntriesBelow: (beforeId, limit) =>
+      readEventLogRowsBelow(options.database, beforeId, limit).map(convertEventLogRowToEntry),
   };
 }
