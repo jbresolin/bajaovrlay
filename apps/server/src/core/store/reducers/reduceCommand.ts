@@ -10,6 +10,7 @@ import {
 import { reduceMediaCommand } from '../../../modules/media/index.js';
 import { reduceObsCommand } from '../../../modules/obs/index.js';
 import { reduceOutputOrLayerCommand } from '../../../modules/outputs/index.js';
+import { forgetChangesThatCannotComeBack } from '../programHistory/forgetChangesThatCannotComeBack.js';
 import { rememberProgramChanges } from '../programHistory/rememberProgramChanges.js';
 import { reduceUndoLastChangeOnProgram } from '../programHistory/undoLastChangeOnProgram.js';
 import { reduceUndoOnLayer } from '../programHistory/undoOnLayer.js';
@@ -66,7 +67,8 @@ export function reduceCommand(
 }
 
 /**
- * The outcome with programHistory brought up to date (rememberProgramChanges.ts). An undo
+ * The outcome with programHistory brought up to date (rememberProgramChanges.ts), and
+ * without the changes of an item deleted by the command (forgetChangesThatCannotComeBack.ts). An undo
  * is left as its reducer wrote it: it pops the history and must not push what it replaced,
  * or a second press would undo the undo.
  */
@@ -80,7 +82,19 @@ function withProgramChangesRemembered(
   if (isAnUndo) {
     return outcome;
   }
-  const programHistoryAfter = rememberProgramChanges(slicesBefore, outcome.slices, now);
+  const programHistoryWithTheChange = rememberProgramChanges(slicesBefore, outcome.slices, now);
+  // A deleted item (or a graphic gone) must not jam undo: its entries are forgotten here,
+  // in the same step, as a deleted layer's are (forgetChangesThatCannotComeBack.ts).
+  const haveItemsOrGraphicsChanged =
+    outcome.slices.items !== slicesBefore.items ||
+    outcome.slices.graphics !== slicesBefore.graphics;
+  const programHistoryAfter = haveItemsOrGraphicsChanged
+    ? forgetChangesThatCannotComeBack(
+        programHistoryWithTheChange,
+        outcome.slices.items,
+        outcome.slices.graphics,
+      )
+    : programHistoryWithTheChange;
   if (programHistoryAfter === outcome.slices.programHistory) {
     return outcome;
   }

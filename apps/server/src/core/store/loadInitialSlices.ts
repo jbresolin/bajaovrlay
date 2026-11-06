@@ -24,6 +24,7 @@ import type { ServerLogger } from '../logger/createLogger.js';
 import { discoverBuiltGraphics } from './discoverBuiltGraphics.js';
 import { loadOrSeedQuickFireAndMacroSlices } from './loadQuickFireAndMacroSlices.js';
 import { loadOrSeedRundownSlices } from './loadRundownSlices.js';
+import { forgetChangesThatCannotComeBack } from './programHistory/forgetChangesThatCannotComeBack.js';
 import { bringStepsWithinTheirCount } from './reducers/instanceStepsWithinTheirCount.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
 
@@ -213,9 +214,16 @@ export function loadInitialSlices(options: LoadInitialSlicesOptions): Slices {
     instanceBindings: instanceBindingsAtBoot.instanceBindings,
     // What each layer showed before its last changes (BAJAOVRLAY-30) is saved, so "Desfazer"
     // works across a restart. A database written before it has no row and starts with none;
-    // a row that fails its schema stops the boot, as the overrides row does.
-    programHistory: SlicesSchema.shape.programHistory.parse(
-      storedRows.find((row) => row.name === 'programHistory')?.json ?? [],
+    // a row that fails its schema stops the boot, as the overrides row does. A change naming
+    // a graphic gone from the build since is forgotten, or undo would be refused on every
+    // press (gate 2 of PR #44). Only in memory: each boot forgets it again, and the next
+    // change of program writes the row without it.
+    programHistory: forgetChangesThatCannotComeBack(
+      SlicesSchema.shape.programHistory.parse(
+        storedRows.find((row) => row.name === 'programHistory')?.json ?? [],
+      ),
+      eventInboxSlices.items,
+      graphics,
     ),
     eventLog,
     rundowns: rundownSlices.rundowns,

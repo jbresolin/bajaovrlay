@@ -12,10 +12,12 @@
  *   - "Desfazer última" after a "Limpar tudo" of three layers writes one event-log row,
  *     signed by the operator, and tells subscribers once.
  *   - A refused undo is logged as failed with its pt-BR reason and changes nothing.
+ *   - A restart on a build without a graphic forgets the changes that name it, so undo is
+ *     not refused on every press (gate 2 of PR #44).
  *
  * What these tests deliberately do not cover:
- *   - Each rule of what is remembered and what comes back; undoOnProgram.test.ts covers
- *     them through the reducer.
+ *   - Each rule of what is remembered and what comes back; the tests next to
+ *     programHistory/ cover them through the reducer.
  *   - That screens never receive the slice; slicesSentToScreens.ts writes it empty for
  *     them, as it does every slice a screen does not draw.
  */
@@ -30,7 +32,10 @@ import {
   openTemporaryDatabase,
 } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
-import { createGraphicsFolderWithBuiltRaceClock } from './builtGraphicsFolder.testSupport.js';
+import {
+  createGraphicsFolderWithBuiltRaceClock,
+  createGraphicsFolderWithUnbuiltRaceClock,
+} from './builtGraphicsFolder.testSupport.js';
 import { createStateStore } from './createStateStore.js';
 import {
   buildGreenFlagEnduroClockData,
@@ -95,6 +100,46 @@ describe('the program history across a restart', () => {
     expect(clockOnAir?.itemId, 'the green clock must be back on air after the restart').toBe(
       greenClockItemId,
     );
+  });
+});
+
+describe('the program history at a restart without a graphic', () => {
+  it('forgets the changes that name a graphic gone from the build', () => {
+    // Arrange: the green clock taken, then the yellow one over it; then a restart on a
+    // graphics folder where the race clock is no longer built.
+    const databasePath = createTemporaryDatabasePath();
+    const firstDatabase = openDatabaseForTests(databasePath);
+    const storeBeforeRestart = openStoreOnDatabase(
+      firstDatabase,
+      createGraphicsFolderWithBuiltRaceClock(),
+    );
+    const greenClockItemId = createRaceClockItemOnTheStore(storeBeforeRestart, {
+      label: 'Relógio – bandeira verde',
+      fields: buildEnduroClockFieldsUnderFlag('green'),
+    });
+    const yellowClockItemId = createRaceClockItemOnTheStore(storeBeforeRestart, {
+      label: 'Relógio – bandeira amarela',
+      fields: buildEnduroClockFieldsUnderFlag('yellow'),
+    });
+    storeBeforeRestart.applyCommand({ type: 'takeItem', itemId: greenClockItemId }, operatorActor);
+    storeBeforeRestart.applyCommand({ type: 'takeItem', itemId: yellowClockItemId }, operatorActor);
+    firstDatabase.$client.close();
+    const secondDatabase = openDatabaseForTests(databasePath);
+
+    // Act: open the store again without the race clock.
+    const storeAfterRestart = openStoreOnDatabase(
+      secondDatabase,
+      createGraphicsFolderWithUnbuiltRaceClock(),
+    );
+
+    // Assert: the green clock's change is forgotten; the empty layer before it is kept.
+    const clockHistory = storeAfterRestart
+      .readAllSlices()
+      .programHistory.find((layerHistory) => layerHistory.layerId === 'clock');
+    expect(
+      clockHistory?.entries.map((entry) => entry.shownBefore.kind),
+      'a change naming a graphic no longer listed can never come back, so only "vazio" is left',
+    ).toEqual(['empty']);
   });
 });
 

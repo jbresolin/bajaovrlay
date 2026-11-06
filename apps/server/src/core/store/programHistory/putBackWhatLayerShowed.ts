@@ -20,7 +20,8 @@ export type PutBackOutcome =
  * cursor is not moved: an undo is not "next". `context.newInstanceId` is the id the new
  * instance gets. The history itself is left alone; the caller pops it.
  * Refused, with the item's name, when the item was deleted since or its graphic is no
- * longer listed, and for anything a take of it would be refused for.
+ * longer listed (guards: forgetChangesThatCannotComeBack.ts drops such entries first), and
+ * for anything a take of it would be refused for.
  */
 export function putBackWhatLayerShowed(
   slices: SlicesChangedByCommands,

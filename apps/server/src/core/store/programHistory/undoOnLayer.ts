@@ -14,7 +14,9 @@ import { findEntriesOfLayer, replaceEntriesOfLayer } from './rememberProgramChan
  * undoOnLayer, "Desfazer" on a Camadas row (BAJAOVRLAY-30): puts back what the layer's
  * program output showed before its last change (putBackWhatLayerShowed.ts) and forgets
  * that change. Refused when the layer does not exist, when it has nothing to undo, and
- * whenever putting it back is refused (an item deleted since, a graphic no longer listed);
+ * whenever putting it back is refused (a take of the item refused; an entry naming a
+ * deleted item or graphic is forgotten before it can jam the layer, see
+ * forgetChangesThatCannotComeBack.ts);
  * nothing changes then, and the change stays remembered.
  */
 export function reduceUndoOnLayer(

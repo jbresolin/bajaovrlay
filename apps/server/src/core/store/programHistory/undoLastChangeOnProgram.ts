@@ -16,8 +16,8 @@ import { findNewestChangeNumber, replaceEntriesOfLayer } from './rememberProgram
  * number is put back (putBackWhatLayerShowed.ts) in this one command, so a "Limpar tudo"
  * comes back whole, in one broadcast, and each of those changes is forgotten. Each layer's
  * new instance gets an id of its own (instanceIdForEachLayer.ts).
- * Refused when no layer has anything to undo; and if one layer cannot be put back (its
- * item deleted since), the whole undo is refused with that layer's reason and nothing
+ * Refused when no layer has anything to undo; and if one layer cannot be put back (a take
+ * of its item refused), the whole undo is refused with that layer's reason and nothing
  * changes, so half a "Limpar tudo" never comes back.
  */
 export function reduceUndoLastChangeOnProgram(

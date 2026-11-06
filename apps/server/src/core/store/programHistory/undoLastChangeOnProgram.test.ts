@@ -10,17 +10,20 @@
  * What these tests prove (through reduceCommand, the pure step every command takes):
  *   - "Limpar tudo" with three layers on air: one "Desfazer última" brings back all three.
  *   - With layers changed at different moments, only the newest change is undone.
- *   - An item deleted since, a graphic no longer listed and a layer with nothing to undo
- *     are refused in pt-BR; "Desfazer última" with nothing remembered is refused too.
+ *   - A history entry that still names a missing item or a graphic no longer listed, and a
+ *     layer with nothing to undo, are refused in pt-BR; "Desfazer última" with nothing
+ *     remembered is refused too.
  *   - If one layer of the newest change cannot come back, none does.
  *
  * What these tests deliberately do not cover:
  *   - "Desfazer" on one layer; undoOnLayer.test.ts.
+ *   - A deleteItem forgetting the entries that name the item; undoAfterAnItemIsDeleted.test.ts.
  *   - The one event-log row and one broadcast of an undo; storeProgramHistory.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
 import { reduceCommand } from '../reducers/reduceCommand.js';
+import type { SlicesChangedByCommands } from '../reducers/reducerTypes.js';
 import {
   applyCommandsOneAfterTheOther,
   buildAnaSouzaLowerThirdItem,
@@ -32,6 +35,17 @@ import {
 
 const anaSouzaItemId = buildAnaSouzaLowerThirdItem().id;
 const brunoLimaItemId = buildBrunoLimaLowerThirdItem().id;
+
+/**
+ * The slices without one item, its history entries left as they are: what no command does
+ * any more, for the guard that still refuses such an entry.
+ */
+function removeItemWithoutForgettingIt(
+  slices: SlicesChangedByCommands,
+  itemId: string,
+): SlicesChangedByCommands {
+  return { ...slices, items: slices.items.filter((item) => item.id !== itemId) };
+}
 
 describe('undoLastChangeOnProgram, "Desfazer última" and Ctrl+Z', () => {
   it('brings back all three layers a "Limpar tudo" emptied, in one press', () => {
@@ -90,13 +104,15 @@ describe('undoLastChangeOnProgram, "Desfazer última" and Ctrl+Z', () => {
 });
 
 describe('the refusals of an undo', () => {
-  it('refuses to bring back an item deleted since, and changes nothing', () => {
-    // Arrange: Ana Souza replaced by Bruno Lima, and then her item deleted.
-    const slicesWithoutHerItem = applyCommandsOneAfterTheOther(buildRaceDayWithTheFourButtons(), [
+  it('refuses to bring back an item that is gone while the history still names it', () => {
+    // Arrange: Ana Souza replaced by Bruno Lima, and then her item taken out of the slices
+    // by hand. A deleteItem forgets her entries (undoAfterAnItemIsDeleted.test.ts); this
+    // guard is for a history that names her anyway.
+    const slicesWithBrunoLima = applyCommandsOneAfterTheOther(buildRaceDayWithTheFourButtons(), [
       { type: 'takeItem', itemId: anaSouzaItemId },
       { type: 'takeItem', itemId: brunoLimaItemId },
-      { type: 'deleteItem', itemId: anaSouzaItemId },
     ]);
+    const slicesWithoutHerItem = removeItemWithoutForgettingIt(slicesWithBrunoLima, anaSouzaItemId);
 
     // Act: press "Desfazer" on the "Tarja" row.
     const outcome = reduceCommand(
@@ -186,13 +202,14 @@ describe('the refusals of an undo', () => {
   });
 
   it('refuses all of "Desfazer última" when one of its layers cannot come back', () => {
-    // Arrange: the clock and Ana Souza on air, "Limpar tudo", then her item deleted.
-    const slicesWithoutHerItem = applyCommandsOneAfterTheOther(buildRaceDayWithTheFourButtons(), [
+    // Arrange: the clock and Ana Souza on air, "Limpar tudo", then her item taken out of
+    // the slices by hand, the history still naming her.
+    const slicesAfterClearAll = applyCommandsOneAfterTheOther(buildRaceDayWithTheFourButtons(), [
       { type: 'takeItem', itemId: 'item-relogio-enduro' },
       { type: 'takeItem', itemId: anaSouzaItemId },
       { type: 'clearAll' },
-      { type: 'deleteItem', itemId: anaSouzaItemId },
     ]);
+    const slicesWithoutHerItem = removeItemWithoutForgettingIt(slicesAfterClearAll, anaSouzaItemId);
 
     // Act: press "Desfazer última".
     const outcome = reduceCommand(
