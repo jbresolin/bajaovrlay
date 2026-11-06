@@ -11,8 +11,7 @@
  * What these tests prove:
  *   - An invalid command is refused with the field named in a pt-BR message, written to
  *     the event log as failed, and leaves the slices alone.
- *   - A null or absent command is refused the same way and still reaches the event
- *     log, in memory and on disk.
+ *   - A null or absent command is refused alike and reaches the event log, memory and disk.
  *   - A successful command is in the event log with its actor and timestamp, in memory
  *     and in the database. A take is a takeItem of an item created first (BAJAOVRLAY-37).
  *   - A command refused by its reducer or by the authorisation hook is written to the
@@ -168,7 +167,7 @@ describe('applyCommand when no command was sent', () => {
       expect(
         readNewestEventLogRows(database, 10),
         'the database must hold the failed entry too, not lose it to a NOT NULL error',
-      ).toEqual([expectedEntry]);
+      ).toEqual([{ ...expectedEntry, details: null }]); // details: NULL, nothing to add
     },
   );
 });
@@ -207,7 +206,7 @@ describe('applyCommand with a valid command', () => {
     // Act: take the race clock item as the operator.
     store.applyCommand(takeOfTheRaceClockItem, operatorActor);
 
-    // Assert: the ok entry of the take, right after the createItem, is newest in both.
+    // Assert: the take's ok entry, after the createItem, is newest in both, with its layer.
     const expectedEntry = {
       id: 2,
       ts: '2026-10-09T14:32:05.000Z',
@@ -215,6 +214,7 @@ describe('applyCommand with a valid command', () => {
       command: 'takeItem',
       payload: takeOfTheRaceClockItem,
       result: { status: 'ok' },
+      details: { placedOn: { layerId: 'clock', outputId: 'program' } },
     };
     expect(store.readAllSlices().eventLog.at(-1), 'the slice must hold the ok entry').toEqual(
       expectedEntry,

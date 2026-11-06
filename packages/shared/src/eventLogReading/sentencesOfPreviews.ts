@@ -1,11 +1,12 @@
 // The history sentences of the commands of the preview output (BAJAOVRLAY-30): one named
 // formatter per command type, gathered in sentenceOfEachCommandType.ts.
+import type { EventLogDetails } from '../slices/eventLogEntry.js';
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
 import {
-  findLayerIdOfItem,
   nameInboxEvent,
   nameItem,
+  nameLayerWhereItemWent,
   nameLayerWithItsOutput,
   nameMacro,
 } from './namesInSentences.js';
@@ -15,18 +16,20 @@ const sentences = ptBREventLogReading.previews;
 
 /**
  * previewItem: "Pôs em prévia "Tarja – Ana Souza" na camada Tarja (Programa)", marked
- * when "Prévia automática" asked for it, and naming the event a preview of one shows.
+ * when "Prévia automática" asked for it, and naming the event a preview of one shows. The
+ * layer is the one the row recorded when the preview was applied.
  */
 export function describePreviewItem(
   command: CommandOfType<'previewItem'>,
   names: EventLogNames,
+  details?: EventLogDetails,
 ): string {
   const itemName = nameItem(command.itemId, names);
-  const layerId = findLayerIdOfItem(command.itemId, names);
+  const layerName = nameLayerWhereItemWent(command.itemId, details, names);
   const mainSentence =
-    layerId === undefined
+    layerName === undefined
       ? sentences.previewedItemWithoutLayer(itemName)
-      : sentences.previewedItem(itemName, nameLayerWithItsOutput(layerId, names));
+      : sentences.previewedItem(itemName, layerName);
   const eventText =
     command.eventId === undefined ? '' : sentences.forEvent(nameInboxEvent(command.eventId, names));
   const automaticText = command.origin === 'auto' ? sentences.automaticMark : '';

@@ -1,13 +1,13 @@
 import { type Command, CommandSchema } from '../commands/command.js';
 import { senderOfEachCommandType } from '../commands/commandSenders.js';
-import type { EventLogEntry } from '../slices/eventLogEntry.js';
+import type { EventLogDetails, EventLogEntry } from '../slices/eventLogEntry.js';
 import { type EventLogActorKind, readWhoSentEventLogRow } from './eventLogActors.js';
 import {
   commandGroupOfEachCommandType,
   type EventLogCommandGroup,
 } from './eventLogCommandGroups.js';
 import type { EventLogNames } from './eventLogNames.js';
-import { findLayerIdOfItem } from './namesInSentences.js';
+import { findLayerIdWhereItemWent } from './namesInSentences.js';
 import { ptBREventLogReading } from './ptBREventLogReading.js';
 import { describeCommand } from './sentenceOfEachCommandType.js';
 import {
@@ -66,8 +66,8 @@ function readCommandOfEntry(
   const parsedCommand = CommandSchema.safeParse(entry.payload);
   if (parsedCommand.success) {
     return {
-      sentence: describeCommand(parsedCommand.data, names),
-      layerIds: listLayersCommandTouches(parsedCommand.data, names),
+      sentence: describeCommand(parsedCommand.data, names, entry.details),
+      layerIds: listLayersCommandTouches(parsedCommand.data, names, entry.details),
     };
   }
   // A poll and an import are logged trimmed, so they never pass CommandSchema.
@@ -109,10 +109,16 @@ const commandTypesTouchingEveryLayer: ReadonlyArray<Command['type']> = [
 /**
  * The layers a command touched, for the layer filter: every layer for "Limpar tudo",
  * "Tomar tudo", "Desfazer última" and "Descartar" of every preview; else the layer it
- * names, the layer of the item it names, or the layer of the instance it names while that
- * instance is still on a layer. A command about none of these touches no layer.
+ * names, the layer the item it names went to (recorded in the row's details, or the
+ * item's layer now for a row written before; namesInSentences.ts), or the layer of the
+ * instance it names while that instance is still on a layer. A command about none of these
+ * touches no layer.
  */
-export function listLayersCommandTouches(command: Command, names: EventLogNames): string[] {
+export function listLayersCommandTouches(
+  command: Command,
+  names: EventLogNames,
+  details?: EventLogDetails,
+): string[] {
   const everyLayerId = names.layers.map((layer) => layer.id);
   if (commandTypesTouchingEveryLayer.includes(command.type)) {
     return everyLayerId;
@@ -129,7 +135,7 @@ export function listLayersCommandTouches(command: Command, names: EventLogNames)
   // moveCursor names null for "the end", and an event rule may name no item.
   const namedItemId = 'itemId' in command ? command.itemId : undefined;
   if (namedItemId !== undefined && namedItemId !== null) {
-    const layerIdOfItem = findLayerIdOfItem(namedItemId, names);
+    const layerIdOfItem = findLayerIdWhereItemWent(namedItemId, details, names);
     return layerIdOfItem === undefined ? [] : [layerIdOfItem];
   }
   if ('instanceId' in command) {

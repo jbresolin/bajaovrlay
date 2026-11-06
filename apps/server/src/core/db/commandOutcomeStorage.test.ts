@@ -107,8 +107,9 @@ describe('saveCommandOutcome', () => {
     expect(readAllDataSnapshotRows(database), "the simulator's snapshot row must be saved").toEqual(
       [buildEnduroSimulatorSnapshotRow()],
     );
+    // The table row has a details column (gate 2 of PR #44); a row saved without them reads NULL.
     expect(readNewestEventLogRows(database, 10), 'the event-log row must be saved').toEqual([
-      { id: 1, ...buildRaceClockTakeRow() },
+      { id: 1, ...buildRaceClockTakeRow(), details: null },
     ]);
   });
 

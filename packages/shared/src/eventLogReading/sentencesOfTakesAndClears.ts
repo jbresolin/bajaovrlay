@@ -1,12 +1,13 @@
 // The history sentences of the commands that change what is on air (BAJAOVRLAY-30): one
 // named formatter per command type, gathered in sentenceOfEachCommandType.ts.
+import type { EventLogDetails } from '../slices/eventLogEntry.js';
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
 import {
-  findLayerIdOfItem,
   nameInboxEvent,
   nameInstance,
   nameItem,
+  nameLayerWhereItemWent,
   nameLayerWithItsOutput,
   nameMacro,
   nameRundown,
@@ -15,14 +16,21 @@ import { ptBREventLogReading } from './ptBREventLogReading.js';
 
 const sentences = ptBREventLogReading.takesAndClears;
 
-/** takeItem: "Tomou "Tarja – Ana Souza" na camada Tarja (Programa)". */
-export function describeTakeItem(command: CommandOfType<'takeItem'>, names: EventLogNames): string {
+/**
+ * takeItem: "Tomou "Tarja – Ana Souza" na camada Tarja (Programa)", on the layer the row
+ * recorded when the take was applied (the item may have moved since).
+ */
+export function describeTakeItem(
+  command: CommandOfType<'takeItem'>,
+  names: EventLogNames,
+  details?: EventLogDetails,
+): string {
   const itemName = nameItem(command.itemId, names);
-  const layerId = findLayerIdOfItem(command.itemId, names);
-  if (layerId === undefined) {
+  const layerName = nameLayerWhereItemWent(command.itemId, details, names);
+  if (layerName === undefined) {
     return sentences.tookItemWithoutLayer(itemName);
   }
-  return sentences.tookItem(itemName, nameLayerWithItsOutput(layerId, names));
+  return sentences.tookItem(itemName, layerName);
 }
 
 /** takeNext: "Tomou o próximo item do rundown "Sessão principal"". */

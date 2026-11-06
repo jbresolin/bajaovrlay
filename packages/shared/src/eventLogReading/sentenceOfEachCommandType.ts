@@ -1,4 +1,5 @@
 import type { Command } from '../commands/command.js';
+import type { EventLogDetails } from '../slices/eventLogEntry.js';
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
 import * as sentencesOfItemsAndRundown from './sentencesOfItemsAndRundown.js';
@@ -9,13 +10,15 @@ import * as sentencesOfTakesAndClears from './sentencesOfTakesAndClears.js';
 
 /**
  * For every command type, the function that writes its history sentence, handed that
- * command and the names it may read. Written as a type over every command type, so a new
- * command does not compile until it has its sentence.
+ * command, the names it may read and the row's details (only a take and a preview read
+ * them). Written as a type over every command type, so a new command does not compile
+ * until it has its sentence.
  */
 export type SentenceOfEachCommandType = {
   [CommandType in Command['type']]: (
     command: CommandOfType<CommandType>,
     names: EventLogNames,
+    details?: EventLogDetails,
   ) => string;
 };
 
@@ -101,10 +104,15 @@ export const sentenceOfEachCommandType: SentenceOfEachCommandType = {
  * through a lookup by `command.type`, so the formatter is read as one taking any command,
  * which is safe because it is the formatter of exactly this command's type.
  */
-export function describeCommand(command: Command, names: EventLogNames): string {
+export function describeCommand(
+  command: Command,
+  names: EventLogNames,
+  details?: EventLogDetails,
+): string {
   const formatterOfThisType = sentenceOfEachCommandType[command.type] as (
     command: Command,
     names: EventLogNames,
+    details?: EventLogDetails,
   ) => string;
-  return formatterOfThisType(command, names);
+  return formatterOfThisType(command, names, details);
 }

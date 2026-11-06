@@ -9,6 +9,19 @@ export const EventLogResultSchema = z.discriminatedUnion('status', [
 ]);
 
 /**
+ * What the server knew when it applied a command and the payload does not say (gate 2 of
+ * PR #44). `placedOn` is the layer a take or a preview put its item on, and that layer's
+ * output, as they were then: the history names them, not the item's layer now, which
+ * may have moved since.
+ */
+export const EventLogDetailsSchema = z.object({
+  placedOn: z.object({ layerId: z.string().min(1), outputId: z.string().min(1) }).optional(),
+});
+
+/** The details of an event-log row, after validation. */
+export type EventLogDetails = z.infer<typeof EventLogDetailsSchema>;
+
+/**
  * One line of the append-only event log: who sent which command, when, with what
  * payload, and how it ended. Failed commands are logged too; an accepted command that
  * changed nothing (a clear of an empty stage) is not, and neither is a routine
@@ -29,6 +42,8 @@ export const EventLogEntrySchema = z.object({
    */
   payload: z.unknown(),
   result: EventLogResultSchema,
+  /** Left out when there is nothing to add, as in every row written before gate 2 of PR #44. */
+  details: EventLogDetailsSchema.optional(),
 });
 
 /** An event-log entry that has passed EventLogEntrySchema. */

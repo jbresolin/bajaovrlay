@@ -46,7 +46,10 @@ export {
   PreviewClearedLayerIdsSchema,
 } from './slices/previewClearedLayerIds.js';
 // The `eventLog` slice: one line per command that changed something or was refused.
+// Its details: what the server knew when it applied the command (gate 2 of PR #44).
 export {
+  type EventLogDetails,
+  EventLogDetailsSchema,
   type EventLogEntry,
   EventLogEntrySchema,
   EventLogResultSchema,

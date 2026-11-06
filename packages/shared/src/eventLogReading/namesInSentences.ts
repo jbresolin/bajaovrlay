@@ -1,4 +1,5 @@
 import type { ItemHome } from '../rundown/itemHome.js';
+import type { EventLogDetails } from '../slices/eventLogEntry.js';
 import type { EventLogNames } from './eventLogNames.js';
 import { ptBREventLogReading } from './ptBREventLogReading.js';
 
@@ -20,6 +21,42 @@ export function nameItem(itemId: string, names: EventLogNames): string {
 export function findLayerIdOfItem(itemId: string, names: EventLogNames): string | undefined {
   const item = names.items.find((candidate) => candidate.id === itemId);
   return item?.layerId;
+}
+
+/**
+ * The layer a take or a preview put its item on: the one its row recorded (gate 2 of PR
+ * #44), or, for a row written before, the item's layer now; undefined when neither is known.
+ */
+export function findLayerIdWhereItemWent(
+  itemId: string,
+  details: EventLogDetails | undefined,
+  names: EventLogNames,
+): string | undefined {
+  return details?.placedOn?.layerId ?? findLayerIdOfItem(itemId, names);
+}
+
+/**
+ * That layer with its output, "Tarja (Programa)": the layer and output the row recorded,
+ * by their names now (or ids when gone), so a layer moved to another output since still
+ * reads where the item went; for a row written before, the item's layer now. Undefined
+ * when neither is known.
+ */
+export function nameLayerWhereItemWent(
+  itemId: string,
+  details: EventLogDetails | undefined,
+  names: EventLogNames,
+): string | undefined {
+  const placedOn = details?.placedOn;
+  if (placedOn !== undefined) {
+    const layer = names.layers.find((candidate) => candidate.id === placedOn.layerId);
+    const layerName = layer?.name ?? placedOn.layerId;
+    return nameTexts.layerOnOutput(layerName, nameOutput(placedOn.outputId, names));
+  }
+  const layerIdNow = findLayerIdOfItem(itemId, names);
+  if (layerIdNow === undefined) {
+    return undefined;
+  }
+  return nameLayerWithItsOutput(layerIdNow, names);
 }
 
 /**

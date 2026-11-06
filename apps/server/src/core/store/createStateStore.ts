@@ -17,6 +17,7 @@ import {
   saveCommandOutcomeWithoutEventLogRow,
 } from '../db/commandOutcomeStorage.js';
 import { readEventLogRowsBelow } from '../db/eventLogRowStorage.js';
+import { findEventLogDetailsOfCommand } from '../events/eventLogDetailsOfACommand.js';
 import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
 import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
@@ -238,17 +239,25 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       return { ok: true };
     }
 
-    // Steps 4 to 6: save, append to the event log, tell listeners.
-    recordOutcome({
-      nextSlices: reducerOutcome.slices,
-      logEntry: {
-        ts: now,
-        actor,
-        command: command.type,
-        payload: buildEventLogPayloadOfCommand(command),
-        result: { status: 'ok' },
-      },
-    });
+    // Steps 4 to 6: save, append to the event log, tell listeners. A take or a preview
+    // also writes where it put its item, so the history names that layer even after the
+    // item moves (eventLogDetailsOfACommand.ts, gate 2 of PR #44).
+    const logEntry: Omit<EventLogEntry, 'id'> = {
+      ts: now,
+      actor,
+      command: command.type,
+      payload: buildEventLogPayloadOfCommand(command),
+      result: { status: 'ok' },
+    };
+    const details = findEventLogDetailsOfCommand(
+      command,
+      reducerOutcome.slices,
+      reducerContext.newInstanceId,
+    );
+    if (details !== undefined) {
+      logEntry.details = details;
+    }
+    recordOutcome({ nextSlices: reducerOutcome.slices, logEntry });
     // A createItem that was applied made exactly one item, with the id it was handed.
     if (command.type === 'createItem') {
       return { ok: true, createdItemId: reducerContext.newItemId };

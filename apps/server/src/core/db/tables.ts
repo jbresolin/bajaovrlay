@@ -45,6 +45,11 @@ export const eventLogRows = sqliteTable('event_log', {
   payload: text('payload', { mode: 'json' }).$type<unknown>().notNull(),
   /** `{"status":"ok"}`, or `{"status":"failed","error":{code, message}}`. */
   result: text('result', { mode: 'json' }).$type<unknown>().notNull(),
+  /**
+   * What the server knew when it applied the command (EventLogDetails: where a take put its
+   * item; gate 2 of PR #44), or NULL when there is nothing to add, as in every older row.
+   */
+  details: text('details', { mode: 'json' }).$type<unknown>(),
 });
 
 /** A row of the event_log table as read back. */
