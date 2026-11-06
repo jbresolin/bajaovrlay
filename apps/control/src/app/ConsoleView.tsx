@@ -6,6 +6,7 @@ import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { QuickEditPanel } from '@/features/playout/QuickEditPanel';
 import { QuickFireStrip } from '@/features/quickFire/QuickFireStrip';
 import { RundownPanel } from '@/features/rundown/RundownPanel';
+import { UndoLastChangeButton } from '@/features/undo/UndoLastChangeButton';
 import { ptBR } from '@/i18n/ptBR';
 
 /**
@@ -14,7 +15,7 @@ import { ptBR } from '@/i18n/ptBR';
  * by side ("Prévia" with what is previewed and its "Tomar"/"Descartar", then "Programa")
  * above "Edição rápida" (the take, preview and update panel for any graphic); on the
  * right the quick-fire strip (a tab per panel of buttons, and "Macros") above the layer
- * status and clear all. Layout only; each area's behaviour lives in its feature folder,
+ * status, clear all and "Desfazer última" (Ctrl+Z, BAJAOVRLAY-30). Layout only; each area's behaviour lives in its feature folder,
  * and nothing here knows any graphic by name.
  * The left column is 20rem wide: a rundown row holds a label, the graphic, the layer and
  * four buttons, and the page's one item editor opens in the same column, also when the
@@ -45,8 +46,14 @@ export function ConsoleView() {
         <section aria-label={ptBR.app.layersAreaTitle} className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold">{ptBR.app.layersAreaTitle}</h2>
           <LayerStatusPanel />
-          <ClearAllButton />
-          <CommandErrorMessage commandTypes={['clearLayer', 'clearAll']} />
+          {/* "Desfazer última" beside "Limpar tudo", both always on screen (§7 rule 5). */}
+          <div className="flex flex-wrap gap-2">
+            <ClearAllButton />
+            <UndoLastChangeButton />
+          </div>
+          <CommandErrorMessage
+            commandTypes={['clearLayer', 'clearAll', 'undoLastChangeOnProgram']}
+          />
         </section>
       </div>
     </main>

@@ -33,6 +33,8 @@ import {
   postTakeAllPreviewsRoute,
   postTakeItemRoute,
   postTakeNextRoute,
+  postUndoLastRoute,
+  postUndoLayerRoute,
 } from './commandShortcutRoutes.js';
 import { postCommandsRoute } from './commandsRoute.js';
 import { buildLayersStatus, getLayersStatusRoute } from './layersStatusRoute.js';
@@ -44,8 +46,8 @@ import {
 } from './shortcutCommands.js';
 
 /**
- * Mounts the command API (BAJAOVRLAY-28) on the /api/v1 routes: POST /commands, the ten
- * button shortcuts, OBS's scene button (BAJAOVRLAY-27) and GET /layers/status, each behind requireApiAccess (named on each
+ * Mounts the command API (BAJAOVRLAY-28) on the /api/v1 routes: POST /commands, the twelve
+ * button shortcuts (the two undo ones since BAJAOVRLAY-30), OBS's scene button (BAJAOVRLAY-27) and GET /layers/status, each behind requireApiAccess (named on each
  * route, never by a path pattern, so no other route can fall under it by accident), plus
  * the bearer scheme and the `Command` component in the OpenAPI document.
  */
@@ -133,6 +135,15 @@ export function mountCommandApiRoutes(
 
   apiRoutes.openapi({ ...postClearAllRoute, middleware }, (context) => {
     return answerWithCommand(context, stateStore, { type: 'clearAll' });
+  });
+
+  apiRoutes.openapi({ ...postUndoLayerRoute, middleware }, (context) => {
+    const { layerId } = context.req.valid('param');
+    return answerWithCommand(context, stateStore, { type: 'undoOnLayer', layerId });
+  });
+
+  apiRoutes.openapi({ ...postUndoLastRoute, middleware }, (context) => {
+    return answerWithCommand(context, stateStore, { type: 'undoLastChangeOnProgram' });
   });
 
   apiRoutes.openapi({ ...postNextOnLayerRoute, middleware }, (context) => {

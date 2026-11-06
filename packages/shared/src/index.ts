@@ -46,7 +46,10 @@ export {
   PreviewClearedLayerIdsSchema,
 } from './slices/previewClearedLayerIds.js';
 // The `eventLog` slice: one line per command that changed something or was refused.
+// Its details: what the server knew when it applied the command (gate 2 of PR #44).
 export {
+  type EventLogDetails,
+  EventLogDetailsSchema,
   type EventLogEntry,
   EventLogEntrySchema,
   EventLogResultSchema,
@@ -216,3 +219,8 @@ export * from './eventInbox/index.js';
 // Outputs (BAJAOVRLAY-49): the renderer addresses OBS loads, `program` always among them,
 // and the commands that edit outputs and layers.
 export * from './outputs/index.js';
+// Undo on program (BAJAOVRLAY-30): the programHistory slice and the two undo commands.
+export * from './programHistory/index.js';
+// The history page (BAJAOVRLAY-30): each event-log row read back as who, one pt-BR sentence
+// and its filters.
+export * from './eventLogReading/index.js';

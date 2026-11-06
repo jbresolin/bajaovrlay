@@ -46,6 +46,7 @@ export function buildTheCopyAScreenShouldGet(slicesOnTheServer: Slices): Slices 
     scheduleSlots: [],
     media: [],
     instanceBindings: [],
+    programHistory: [],
     overrides: [],
     eventLog: [],
   };

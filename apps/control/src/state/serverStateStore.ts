@@ -59,6 +59,7 @@ export function createServerStateStore(): ServerStateStore {
     instances: [],
     previewClearedLayerIds: [],
     instanceBindings: [],
+    programHistory: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],
@@ -90,6 +91,7 @@ export function createServerStateStore(): ServerStateStore {
         instances: slices.instances,
         previewClearedLayerIds: slices.previewClearedLayerIds,
         instanceBindings: slices.instanceBindings,
+        programHistory: slices.programHistory,
         rundowns: slices.rundowns,
         items: slices.items,
         quickFirePanels: slices.quickFirePanels,
@@ -134,6 +136,9 @@ export function createServerStateStore(): ServerStateStore {
           break;
         case 'instanceBindings':
           set({ instanceBindings: message.slice });
+          break;
+        case 'programHistory':
+          set({ programHistory: message.slice });
           break;
         case 'rundowns':
           set({ rundowns: message.slice });

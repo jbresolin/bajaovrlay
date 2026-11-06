@@ -24,6 +24,8 @@ export const senderOfEachCommandType: Record<Command['type'], CommandSender> = {
   clearLayer: 'operator',
   clearAll: 'operator',
   nextOnLayer: 'operator',
+  undoOnLayer: 'operator',
+  undoLastChangeOnProgram: 'operator',
   createItem: 'operator',
   updateItemFields: 'operator',
   deleteItem: 'operator',

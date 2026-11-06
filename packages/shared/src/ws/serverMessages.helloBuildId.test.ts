@@ -31,6 +31,7 @@ function buildEverySliceEmpty() {
     instances: [],
     previewClearedLayerIds: [],
     instanceBindings: [],
+    programHistory: [],
     overrides: [],
     rundowns: [],
     items: [],

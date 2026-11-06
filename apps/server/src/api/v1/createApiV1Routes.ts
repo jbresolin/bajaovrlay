@@ -1,7 +1,10 @@
+import { buildEventLogNamesFromSlices } from '@bajaovrlay/shared';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { bodyLimit } from 'hono/body-limit';
 
+import { allowTheControlPageOrRequireApiAccess } from '../../core/apiAccess/allowTheControlPageOrRequireApiAccess.js';
 import { type ApiTokens, apiTurnedOff } from '../../core/apiAccess/apiTokens.js';
+import { readFilteredEventLogPage } from '../../core/events/eventLogPages.js';
 import type { ErrorAnswerBody } from '../../core/http/errorAnswers.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
 import { ptBR } from '../../core/messages/ptBR.js';
@@ -32,6 +35,7 @@ import {
   readUploadedFile,
   storeUploadedImage,
 } from '../../modules/media/index.js';
+import { getEventLogRoute } from './eventLogRoute.js';
 import { mountButtonStateRoutes } from './mountButtonStateRoutes.js';
 import { mountCommandApiRoutes } from './mountCommandApiRoutes.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
@@ -164,6 +168,32 @@ export function createApiV1Routes(options: {
   mountCommandApiRoutes(apiRoutes, commandApiAccess);
   // The D200's per-button status URLs (BAJAOVRLAY-56), behind the same access.
   mountButtonStateRoutes(apiRoutes, commandApiAccess);
+
+  // The history's older pages (BAJAOVRLAY-30): the control page reads them as it reads
+  // /state; anyone else goes through the command API's access rules.
+  apiRoutes.openapi(
+    { ...getEventLogRoute, middleware: [allowTheControlPageOrRequireApiAccess(commandApiAccess)] },
+    (context) => {
+      const query = context.req.valid('query');
+      const page = readFilteredEventLogPage(
+        options.stateStore.readEventLogEntriesBelow,
+        buildEventLogNamesFromSlices(options.stateStore.readAllSlices()),
+        query,
+      );
+      return context.json(page, 200);
+    },
+    // A limit, a row id or a filter value it cannot read: one pt-BR sentence saying what
+    // the query takes, in the error shape every refusal has.
+    (validation, context) => {
+      if (validation.success) {
+        return undefined;
+      }
+      const body: ErrorAnswerBody = {
+        error: { code: 'INVALID_EVENT_LOG_QUERY', message: ptBR.errors.invalidEventLogQuery },
+      };
+      return context.json(body, 400);
+    },
+  );
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

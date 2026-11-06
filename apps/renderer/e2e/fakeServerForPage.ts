@@ -154,6 +154,7 @@ export async function startFakeServerForPage(
     scheduleSlots: [],
     media: [],
     instanceBindings: [],
+    programHistory: [],
     overrides: [],
     eventLog: [],
   };

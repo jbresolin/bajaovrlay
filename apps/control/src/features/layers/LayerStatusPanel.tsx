@@ -11,11 +11,13 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
 import { useQuickEditChoice } from '@/features/playout/QuickEditChoiceProvider';
+import { describeWhatUndoOnLayerBringsBack } from '@/features/undo/whatUndoBringsBack';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
 import { nameFieldsByTheirTitles } from './fieldsOfInstanceOnAir';
 import { chooseHomeOfItemSavedFromCamadas } from './itemSavedFromInstanceWithoutItem';
 import { LayerGroupOfOutput } from './LayerGroupOfOutput';
+import { listLayersInCamadasOrder } from './layersInCamadasOrder';
 import { LayerStatusRow } from './LayerStatusRow';
 import { useCurrentTime } from './useCurrentTime';
 import { useSavesFromCamadas } from './useSavesFromCamadas';
@@ -35,7 +37,8 @@ const relativeTimeRefreshIntervalInMilliseconds = 10_000;
  * A row whose instance was changed on air offers "Salvar no item" and one with no item
  * "Salvar como item" (useSavesFromCamadas.ts); either may first ask about a clock's
  * moment (WallClockChoiceDialog.tsx). A graphic shown in steps offers "Próximo"
- * (`nextOnLayer`, BAJAOVRLAY-47).
+ * (`nextOnLayer`, BAJAOVRLAY-47). A layer whose program the server remembers changing
+ * offers "Desfazer" (`undoOnLayer`, BAJAOVRLAY-30; features/undo).
  */
 export function LayerStatusPanel() {
   const outputs = useServerState((state) => state.outputs);
@@ -46,6 +49,7 @@ export function LayerStatusPanel() {
   const rundowns = useServerState((state) => state.rundowns);
   const panels = useServerState((state) => state.quickFirePanels);
   const previewClearedLayerIds = useServerState((state) => state.previewClearedLayerIds);
+  const programHistory = useServerState((state) => state.programHistory);
   const sendCommand = useSendCommand();
   const { editInstanceInQuickEdit } = useQuickEditChoice();
   const currentTime = useCurrentTime(relativeTimeRefreshIntervalInMilliseconds);
@@ -56,10 +60,7 @@ export function LayerStatusPanel() {
   // With program alone the rows are listed as they always were; with more outputs
   // (BAJAOVRLAY-49) each output is a group, program first (LayerGroupOfOutput.tsx).
   const isOneOutputOnly = outputs.length <= 1;
-  // Copied before sorting: the list in the store belongs to the store.
-  const layersFromBottomToTop = [...layers].sort(
-    (oneLayer, otherLayer) => oneLayer.zIndex - otherLayer.zIndex,
-  );
+  const layersFromBottomToTop = listLayersInCamadasOrder(layers, outputs);
 
   // One row of Camadas; the same for every output, so a PiP's row offers what program's does.
   function drawRowOfLayer(layer: Layer) {
@@ -87,6 +88,8 @@ export function LayerStatusPanel() {
         graphicOnProgram={graphicOnProgram}
         currentTime={currentTime}
         onClearPressed={() => void sendCommand({ type: 'clearLayer', layerId: layer.id })}
+        whatUndoBringsBack={describeWhatUndoOnLayerBringsBack(programHistory, layer.id)}
+        onUndoPressed={() => void sendCommand({ type: 'undoOnLayer', layerId: layer.id })}
         onPreviewClearPressed={() =>
           void sendCommand({ type: 'previewClearLayer', layerId: layer.id })
         }
@@ -150,7 +153,12 @@ export function LayerStatusPanel() {
         )}
         {/* "Limpar" and "Limpar tudo" show their refusals below the panel (AppShell.tsx). */}
         <CommandErrorMessage
-          commandTypes={['previewClearLayer', 'saveOnAirChangesIntoItem', 'nextOnLayer']}
+          commandTypes={[
+            'previewClearLayer',
+            'saveOnAirChangesIntoItem',
+            'nextOnLayer',
+            'undoOnLayer',
+          ]}
         />
         {saves.noteAboutTheLastSave !== null && (
           <p role="status" className="text-sm text-muted-foreground">

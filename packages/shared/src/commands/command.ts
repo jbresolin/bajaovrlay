@@ -57,6 +57,10 @@ import { PreviewMacroCommandSchema } from '../preview/previewMacro.js';
 import { StopPreviewCommandSchema } from '../preview/stopPreview.js';
 import { TakeAllPreviewsCommandSchema } from '../preview/takeAllPreviews.js';
 import { TakePreviewCommandSchema } from '../preview/takePreview.js';
+import {
+  UndoLastChangeOnProgramCommandSchema,
+  UndoOnLayerCommandSchema,
+} from '../programHistory/undoCommands.js';
 import { CreateQuickFirePanelCommandSchema } from '../quickFire/createQuickFirePanel.js';
 import { DeleteQuickFirePanelCommandSchema } from '../quickFire/deleteQuickFirePanel.js';
 import { RenameQuickFirePanelCommandSchema } from '../quickFire/renameQuickFirePanel.js';
@@ -89,6 +93,10 @@ export const CommandSchema = z.discriminatedUnion('type', [
   ClearAllCommandSchema,
   // "Próximo": the next OGraf step of what is on air on a layer (BAJAOVRLAY-47); ../steps/.
   NextOnLayerCommandSchema,
+  // Undo on program (BAJAOVRLAY-30): "Desfazer" on a layer and "Desfazer última";
+  // ../programHistory/.
+  UndoOnLayerCommandSchema,
+  UndoLastChangeOnProgramCommandSchema,
   // The item and rundown commands (BAJAOVRLAY-13); their schemas live in ../rundown/.
   CreateItemCommandSchema,
   UpdateItemFieldsCommandSchema,

@@ -56,7 +56,21 @@ export function putItemOnOutput(
   if (item === undefined) {
     return { status: 'refused', error: refuseUnknownItem(itemId) };
   }
+  return putThisItemOnOutput(slices, item, target, context, eventFill);
+}
 
+/**
+ * putItemOnOutput for an item already in hand. An undo (BAJAOVRLAY-30) hands it the item
+ * as it was on air (its typed values as literal fields, on the layer it was on), so the
+ * item comes back through every step of a take without that copy being stored anywhere.
+ */
+export function putThisItemOnOutput(
+  slices: SlicesChangedByCommands,
+  item: Item,
+  target: InstanceTarget,
+  context: ReducerContext,
+  eventFill?: EventFillOfItem,
+): ItemOnOutputOutcome {
   // The one place an item's fields become data, for a take and for a preview alike.
   // takePreview does NOT come back here: what was seen in the preview is what goes on
   // air, so it sends the preview instance's own data. The one exception is the

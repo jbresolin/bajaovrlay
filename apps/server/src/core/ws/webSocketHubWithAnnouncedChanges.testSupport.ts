@@ -54,6 +54,7 @@ export async function startHubWhoseChangesTheTestCanAnnounce(
       listenersTheHubRegistered.push(listener);
       return realStateStore.subscribeToSliceChanges(listener);
     },
+    readEventLogEntriesBelow: realStateStore.readEventLogEntriesBelow,
   };
   const httpServer = createServer();
   await new Promise<void>((resolve) => httpServer.listen(0, '127.0.0.1', () => resolve()));

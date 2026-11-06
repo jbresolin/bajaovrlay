@@ -3,6 +3,7 @@ import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
 import { ptBRObs } from './ptBRObs.js';
 import { ptBROutputs } from './ptBROutputs.js';
+import { ptBRProgramHistoryErrors } from './ptBRProgramHistory.js';
 
 /**
  * pt-BR catalog for every message the server sends to people (error answers the
@@ -15,6 +16,9 @@ export const ptBR = {
     unexpectedServerError:
       'Erro inesperado no servidor. Procure no log do servidor o request_id desta resposta.',
     invalidStateRole: 'O parâmetro "role" aceita apenas "renderer" ou "monitor".',
+    // GET /api/v1/event-log with a query it cannot read (BAJAOVRLAY-30).
+    invalidEventLogQuery:
+      'Consulta do histórico inválida: "limit" vai de 1 a 500, "before" é o número de uma linha e cada filtro aceita só os seus valores.',
     // A sample request ("Buscar da fonte") the config schema refused without a sentence of
     // its own; the schema's own pt-BR reason is sent whenever it has one.
     invalidSampleRequest: 'A requisição de exemplo é inválida.',
@@ -119,6 +123,8 @@ export const ptBR = {
   bindingErrors: ptBRBindingErrors,
   // Refusals about the event inbox (BAJAOVRLAY-44); see ptBREvents.ts.
   eventErrors: ptBREventErrors,
+  // Refusals of "Desfazer" and "Desfazer última" (BAJAOVRLAY-30); see ptBRProgramHistory.ts.
+  programHistoryErrors: ptBRProgramHistoryErrors,
   // Refusals about the media store: uploads, serving, deleting (BAJAOVRLAY-19); ptBRMedia.ts.
   mediaErrors: ptBRMediaErrors,
   // Outputs and the editing of layers: names and refusals (BAJAOVRLAY-49); ptBROutputs.ts.

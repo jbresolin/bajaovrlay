@@ -17,6 +17,11 @@ export type KeyboardShortcut = {
    */
   isShiftHeld: boolean;
   /**
+   * true for the one shortcut that needs Ctrl (Ctrl+Z, "Desfazer última", BAJAOVRLAY-30).
+   * Every other shortcut ignores a press with Ctrl, which belongs to the browser.
+   */
+  isControlHeld: boolean;
+  /**
    * true leaves the key alone in a text field, a dropdown, an open menu or a switch (only
    * Esc is false).
    */
@@ -60,6 +65,7 @@ export const keyboardMap = {
   takeNext: {
     keys: [' '],
     isShiftHeld: false,
+    isControlHeld: false,
     isIgnoredWhileTyping: true,
     isKeptFromTheBrowser: true,
     commandTypes: ['takePreview', 'takeNext'],
@@ -68,6 +74,7 @@ export const keyboardMap = {
   previewCursorItem: {
     keys: [' '],
     isShiftHeld: true,
+    isControlHeld: false,
     isIgnoredWhileTyping: true,
     isKeptFromTheBrowser: true,
     commandTypes: ['previewItem'],
@@ -76,6 +83,7 @@ export const keyboardMap = {
   cursorForward: {
     keys: ['ArrowRight'],
     isShiftHeld: false,
+    isControlHeld: false,
     isIgnoredWhileTyping: true,
     isKeptFromTheBrowser: true,
     commandTypes: ['moveCursor'],
@@ -84,6 +92,7 @@ export const keyboardMap = {
   cursorBack: {
     keys: ['ArrowLeft'],
     isShiftHeld: false,
+    isControlHeld: false,
     isIgnoredWhileTyping: true,
     isKeptFromTheBrowser: true,
     commandTypes: ['moveCursor'],
@@ -92,6 +101,7 @@ export const keyboardMap = {
   discardPreview: {
     keys: ['Backspace'],
     isShiftHeld: false,
+    isControlHeld: false,
     isIgnoredWhileTyping: true,
     isKeptFromTheBrowser: false,
     commandTypes: ['stopPreview'],
@@ -101,6 +111,7 @@ export const keyboardMap = {
   clearAll: {
     keys: ['Escape'],
     isShiftHeld: false,
+    isControlHeld: false,
     isIgnoredWhileTyping: false,
     isKeptFromTheBrowser: false,
     commandTypes: ['clearAll'],
@@ -110,6 +121,7 @@ export const keyboardMap = {
   fireQuickFireButton: {
     keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
     isShiftHeld: false,
+    isControlHeld: false,
     isIgnoredWhileTyping: true,
     isKeptFromTheBrowser: false,
     commandTypes: ['takeItem', 'runMacro'],
@@ -119,6 +131,7 @@ export const keyboardMap = {
   switchQuickFireTab: {
     keys: ['F1', 'F2', 'F3', 'F4'],
     isShiftHeld: false,
+    isControlHeld: false,
     isIgnoredWhileTyping: true,
     isKeptFromTheBrowser: true,
     commandTypes: [],
@@ -129,10 +142,24 @@ export const keyboardMap = {
   stopRunningMacro: {
     keys: ['p', 'P'],
     isShiftHeld: false,
+    isControlHeld: false,
     isIgnoredWhileTyping: true,
     isKeptFromTheBrowser: false,
     commandTypes: ['stopMacro'],
     ...shortcutTexts.stopRunningMacro,
+  },
+  // "Desfazer última" (BAJAOVRLAY-30): z in either case, since Caps Lock sends "Z". In a
+  // text field Ctrl+Z undoes the typing, as the browser does, so it is left alone there.
+  // Kept from the browser so Ctrl+Z on the page never undoes something in a field that
+  // lost its focus. Ctrl+Shift+Z is listened to and then ignored by the button.
+  undoLastChange: {
+    keys: ['z', 'Z'],
+    isShiftHeld: false,
+    isControlHeld: true,
+    isIgnoredWhileTyping: true,
+    isKeptFromTheBrowser: true,
+    commandTypes: ['undoLastChangeOnProgram'],
+    ...shortcutTexts.undoLastChange,
   },
 } as const satisfies Record<string, KeyboardShortcut>;
 
@@ -164,6 +191,7 @@ export function listKeyboardShortcutsInDialogOrder(): KeyboardShortcut[] {
     keyboardMap.cursorBack,
     keyboardMap.discardPreview,
     keyboardMap.clearAll,
+    keyboardMap.undoLastChange,
     keyboardMap.fireQuickFireButton,
     keyboardMap.switchQuickFireTab,
     keyboardMap.stopRunningMacro,
