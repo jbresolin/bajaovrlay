@@ -1,12 +1,15 @@
 // Test support: the names a race day gives the history sentences. Two outputs (Programa
 // and PiP), the seeded layers the sentences name, two items, a macro, the panel "Atalhos",
-// the main rundown, the simulator, two inbox events and Ana Souza's lower third on air.
+// the main rundown, the simulator, two inbox events, Ana Souza's lower third on air, and
+// the trigger "Entrou no box" with one firing waiting for the operator.
 // Every function builds fresh objects on each call.
 import type { DataSource } from '../dataSources/dataSource.js';
 import type { InboxEvent } from '../eventInbox/inboxEventsSlice.js';
 import type { Item } from '../rundown/item.js';
 import type { Instance } from '../slices/instance.js';
 import type { Layer } from '../slices/layer.js';
+import type { Trigger } from '../triggers/trigger.js';
+import type { TriggerActivity } from '../triggers/triggerActivity.js';
 import type { EventLogNames } from './eventLogNames.js';
 
 /** Builds a layer of the given output; the sentences read only its id, name and output. */
@@ -104,6 +107,41 @@ function buildAnaSouzaOnAir(): Instance {
   };
 }
 
+/** "Entrou no box": the scene Box entered runs "Entrevista no box", asking first. */
+function buildBoxEnteredTrigger(): Trigger {
+  return {
+    id: 'gatilho-entrou-no-box',
+    name: 'Entrou no box',
+    isEnabled: true,
+    when: { kind: 'obsScene', change: 'entered', sceneName: 'Box' },
+    macroId: 'macro-entrevista-no-box',
+    mode: 'ask',
+    minimumIntervalMs: 10_000,
+  };
+}
+
+/** The Eventos tab's one waiting firing: Box entered, a minute after Ana Souza went on air. */
+function buildActivityWithTheBoxFiringWaiting(): TriggerActivity {
+  const firedAtMs = Date.parse('2026-10-09T14:33:00.000Z');
+  return {
+    isPaused: false,
+    lastFiredAtMsByTriggerId: { 'gatilho-entrou-no-box': firedAtMs },
+    firings: [
+      {
+        firingId: 'disparo-box-1',
+        triggerId: 'gatilho-entrou-no-box',
+        triggerName: 'Entrou no box',
+        macroId: 'macro-entrevista-no-box',
+        data: { cena: 'Box' },
+        firedAtMs,
+        status: 'pending',
+        statusChangedAtMs: firedAtMs,
+        autoRunRefusal: null,
+      },
+    ],
+  };
+}
+
 /** The names of the race day, as the history page reads them from its slices. */
 export function buildEventLogNamesOfRaceDay(): EventLogNames {
   return {
@@ -119,7 +157,10 @@ export function buildEventLogNamesOfRaceDay(): EventLogNames {
       buildLayer('camera-do-box', 'Câmera do box', 'pip', 10),
     ],
     items: [buildAnaSouzaLowerThirdItem(), buildEnduroClockItem()],
-    macros: [{ id: 'macro-abertura', label: 'Abertura', color: 'highlight', steps: [] }],
+    macros: [
+      { id: 'macro-abertura', label: 'Abertura', color: 'highlight', steps: [] },
+      { id: 'macro-entrevista-no-box', label: 'Entrevista no box', color: 'info', steps: [] },
+    ],
     quickFirePanels: [{ id: 'atalhos', name: 'Atalhos', order: 0 }],
     rundowns: [
       {
@@ -135,5 +176,7 @@ export function buildEventLogNamesOfRaceDay(): EventLogNames {
       buildWaitingEvent('evento-ocorrencia-47', 'newIncident', 47),
     ],
     instances: [buildAnaSouzaOnAir()],
+    triggers: [buildBoxEnteredTrigger()],
+    triggerActivity: buildActivityWithTheBoxFiringWaiting(),
   };
 }

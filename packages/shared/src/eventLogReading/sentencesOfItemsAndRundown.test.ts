@@ -1,5 +1,5 @@
 /**
- * The history sentences of the commands that prepares the show: items, rundowns, quick-fire panels and macros (packages/shared)
+ * The history sentences of the commands that prepares the show: items, rundowns, quick-fire panels, macros and triggers (packages/shared)
  *
  * What this module is for:
  *   The history page (#/historico, BAJAOVRLAY-30) reads every change of the show back in
@@ -123,6 +123,41 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
     name: 'deleteMacro reads the macro by its id, since it is gone',
     command: { type: 'deleteMacro', macroId: 'macro-podio' },
     expected: 'Excluiu a macro macro excluída (macro-podio)',
+  },
+  // A new trigger reads by the name it was given (BAJAOVRLAY-48).
+  {
+    name: 'createTrigger names the name given',
+    command: {
+      type: 'createTrigger',
+      name: 'Penalidade na tela',
+      when: { kind: 'dataEvent', eventKind: 'penalty' },
+      macroId: 'macro-entrevista-no-box',
+    },
+    expected: 'Criou o gatilho "Penalidade na tela"',
+  },
+  // The trigger editor's "Salvar gatilho" reads the trigger by its name now.
+  {
+    name: 'updateTrigger names the trigger',
+    command: { type: 'updateTrigger', triggerId: 'gatilho-entrou-no-box', mode: 'auto' },
+    expected: 'Editou o gatilho "Entrou no box"',
+  },
+  // A deleted trigger reads by its id.
+  {
+    name: 'deleteTrigger reads the trigger by its id, since it is gone',
+    command: { type: 'deleteTrigger', triggerId: 'gatilho-saiu-da-pista' },
+    expected: 'Excluiu o gatilho gatilho excluído (gatilho-saiu-da-pista)',
+  },
+  // "Pausar gatilhos" turned on in the header, for a rehearsal.
+  {
+    name: 'setTriggersPaused on reads as pausing the triggers',
+    command: { type: 'setTriggersPaused', isPaused: true },
+    expected: 'Pausou os gatilhos',
+  },
+  // And turned off again before the show.
+  {
+    name: 'setTriggersPaused off reads as resuming the triggers',
+    command: { type: 'setTriggersPaused', isPaused: false },
+    expected: 'Retomou os gatilhos',
   },
 ];
 

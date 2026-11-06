@@ -11,6 +11,7 @@ import {
   nameLayerWithItsOutput,
   nameMacro,
   nameRundown,
+  nameTriggerFiring,
 } from './namesInSentences.js';
 import { ptBREventLogReading } from './ptBREventLogReading.js';
 
@@ -186,4 +187,27 @@ export function describeRecordObsSceneSwitchAnswer(
     return sentences.obsDidNotDoTheSwitch(command.number);
   }
   return sentences.obsRefusedTheSwitch(command.number, command.refusalReason);
+}
+
+/**
+ * fireTrigger: the trigger by the name it had when it fired (carried in the command, so
+ * the row reads after a rename or a delete), and its data, "carro: 47, motivo: …", in the
+ * order the data came. A firing with no data (a time of day) names only the trigger.
+ */
+export function describeFireTrigger(command: CommandOfType<'fireTrigger'>): string {
+  const triggerName = `"${command.triggerName}"`;
+  const dataEntries = Object.entries(command.data);
+  if (dataEntries.length === 0) {
+    return sentences.triggerFired(triggerName);
+  }
+  const dataTexts = dataEntries.map(([key, value]) => `${key}: ${String(value)}`);
+  return sentences.triggerFiredWithData(triggerName, dataTexts.join(', '));
+}
+
+/** runTriggerFiring: "Rodar" on a firing that waits in the Eventos tab. */
+export function describeRunTriggerFiring(
+  command: CommandOfType<'runTriggerFiring'>,
+  names: EventLogNames,
+): string {
+  return sentences.ranFiring(nameTriggerFiring(command.firingId, names));
 }

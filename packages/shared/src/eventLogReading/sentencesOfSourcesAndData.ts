@@ -3,7 +3,7 @@
 // named formatter per command type, gathered in sentenceOfEachCommandType.ts.
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
-import { nameDataSource, nameInboxEvent } from './namesInSentences.js';
+import { nameDataSource, nameInboxEvent, nameTriggerFiring } from './namesInSentences.js';
 import { ptBREventLogReading } from './ptBREventLogReading.js';
 import type { ImportAsTheLogKeepsIt, PollAsTheLogKeepsIt } from './trimmedPayloads.js';
 
@@ -180,6 +180,22 @@ export function describeRestoreEvent(
   names: EventLogNames,
 ): string {
   return sentences.restoredEvent(nameInboxEvent(command.eventId, names));
+}
+
+/** dismissTriggerFiring: "Descartar" on a firing that waits, as on an event. */
+export function describeDismissTriggerFiring(
+  command: CommandOfType<'dismissTriggerFiring'>,
+  names: EventLogNames,
+): string {
+  return sentences.dismissedFiring(nameTriggerFiring(command.firingId, names));
+}
+
+/** restoreTriggerFiring: its "Desfazer", so the firing waits again. */
+export function describeRestoreTriggerFiring(
+  command: CommandOfType<'restoreTriggerFiring'>,
+  names: EventLogNames,
+): string {
+  return sentences.restoredFiring(nameTriggerFiring(command.firingId, names));
 }
 
 /** createManualEvent ("+ Evento"): a penalty or a notice, the car and the reason. */

@@ -45,6 +45,11 @@ export const ptBREventLogReading = {
     rundownGone: (rundownId: string) => `rundown excluído (${rundownId})`,
     eventGone: (eventId: string) => `evento fora da caixa (${eventId})`,
     instanceGone: (instanceId: string) => `um gráfico que já saiu do ar (${instanceId})`,
+    triggerGone: (triggerId: string) => `gatilho excluído (${triggerId})`,
+    /** "o disparo do gatilho "Entrou no box"": a firing, by the trigger it was then. */
+    firingOfTrigger: (triggerName: string) => `o disparo do gatilho ${triggerName}`,
+    /** The slice keeps the newest 50 firings, in memory only; an older one is gone. */
+    firingGone: (firingId: string) => `um disparo que já saiu da lista (${firingId})`,
     /** "Tarja (Programa)": the layer's name and its output's name. */
     layerOnOutput: (layerName: string, outputName: string) => `${layerName} (${outputName})`,
     /** "volta mais rápida do carro 31". */
@@ -105,6 +110,11 @@ export const ptBREventLogReading = {
     macroStoppedAtStep: (macroName: string, stepNumber: number, reason: string) =>
       `A macro ${macroName} parou no passo ${String(stepNumber)}: ${reason}`,
     showedEvent: (eventName: string) => `Pôs no ar o evento ${eventName}`,
+    triggerFired: (triggerName: string) => `O gatilho ${triggerName} disparou`,
+    /** "carro: 47, motivo: Queima de largada": the firing's data, in the order it came. */
+    triggerFiredWithData: (triggerName: string, dataText: string) =>
+      `O gatilho ${triggerName} disparou (${dataText})`,
+    ranFiring: (firingName: string) => `Rodou ${firingName}`,
     switchedObsScene: (sceneName: string, targetLabel: string) =>
       `Trocou a cena do OBS para "${sceneName}" (${targetLabel})`,
     obsDidTheSwitch: (switchNumber: number) =>
@@ -129,7 +139,7 @@ export const ptBREventLogReading = {
     previewedMacro: (macroName: string) => `Pôs em prévia a macro ${macroName}`,
   },
 
-  /** Items, rundowns, quick-fire panels and macros being prepared. */
+  /** Items, rundowns, quick-fire panels, macros and triggers being prepared. */
   itemsAndRundown: {
     createdItem: (label: string, homeText: string) => `Criou o item "${label}" ${homeText}`,
     editedItem: (itemName: string) => `Editou o item ${itemName}`,
@@ -149,6 +159,11 @@ export const ptBREventLogReading = {
     createdMacro: (macroLabel: string) => `Criou a macro "${macroLabel}"`,
     editedMacro: (macroName: string) => `Editou a macro ${macroName}`,
     deletedMacro: (macroName: string) => `Excluiu a macro ${macroName}`,
+    createdTrigger: (triggerName: string) => `Criou o gatilho "${triggerName}"`,
+    editedTrigger: (triggerName: string) => `Editou o gatilho ${triggerName}`,
+    deletedTrigger: (triggerName: string) => `Excluiu o gatilho ${triggerName}`,
+    pausedTriggers: 'Pausou os gatilhos',
+    resumedTriggers: 'Retomou os gatilhos',
   },
 
   /** Data sources, recordings, corrections, the library, images and the event inbox. */
@@ -181,6 +196,8 @@ export const ptBREventLogReading = {
       `Desfez a correção do ${fieldText} na fonte ${sourceName}`,
     dismissedEvent: (eventName: string) => `Descartou o evento ${eventName}`,
     restoredEvent: (eventName: string) => `Restaurou o evento ${eventName}`,
+    dismissedFiring: (firingName: string) => `Descartou ${firingName}`,
+    restoredFiring: (firingName: string) => `Restaurou ${firingName}`,
     typedPenalty: (carNumber: number, reason: string) =>
       `Digitou uma penalidade para o carro ${String(carNumber)}: ${reason}`,
     typedNotice: (carNumber: number, reason: string) =>

@@ -1,5 +1,5 @@
 // The history sentences of the commands that prepare the show: items, rundowns, quick-fire
-// panels and macros (BAJAOVRLAY-30). One named formatter per command type, gathered in
+// panels, macros (BAJAOVRLAY-30) and the triggers that run them (BAJAOVRLAY-48). One named formatter per command type, gathered in
 // sentenceOfEachCommandType.ts.
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
@@ -11,6 +11,7 @@ import {
   nameMacro,
   nameQuickFirePanel,
   nameRundown,
+  nameTrigger,
 } from './namesInSentences.js';
 import { ptBREventLogReading } from './ptBREventLogReading.js';
 
@@ -121,4 +122,30 @@ export function describeDeleteMacro(
   names: EventLogNames,
 ): string {
   return sentences.deletedMacro(nameMacro(command.macroId, names));
+}
+
+/** createTrigger ("+ Gatilho" on Gatilhos): the name it was given. */
+export function describeCreateTrigger(command: CommandOfType<'createTrigger'>): string {
+  return sentences.createdTrigger(command.name);
+}
+
+/** updateTrigger ("Salvar gatilho", or its on/off switch). */
+export function describeUpdateTrigger(
+  command: CommandOfType<'updateTrigger'>,
+  names: EventLogNames,
+): string {
+  return sentences.editedTrigger(nameTrigger(command.triggerId, names));
+}
+
+/** deleteTrigger. */
+export function describeDeleteTrigger(
+  command: CommandOfType<'deleteTrigger'>,
+  names: EventLogNames,
+): string {
+  return sentences.deletedTrigger(nameTrigger(command.triggerId, names));
+}
+
+/** setTriggersPaused: "Pausar gatilhos" in the header, turned on or off. */
+export function describeSetTriggersPaused(command: CommandOfType<'setTriggersPaused'>): string {
+  return command.isPaused ? sentences.pausedTriggers : sentences.resumedTriggers;
 }
