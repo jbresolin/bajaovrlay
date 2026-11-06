@@ -61,11 +61,12 @@ jobs:
         if: always()
         run: node scripts/reportSlowestTests.js vitest-report.json >> "$GITHUB_STEP_SUMMARY"
 
-  checks-and-browser-tests-of-renderer-and-graphics:
-    name: Lint, typecheck, build, browser tests of the renderer and graphics
+  checks:
+    name: Lint, typecheck, build
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    # 15 since BAJAOVRLAY-42: about 5 minutes expected.
+    # About 5 minutes expected (BAJAOVRLAY-58: lint 1:17, typecheck 2:36, build 0:24 on #44),
+    # so 15 means something is stuck. No browser here: the browser tests have jobs of their own.
     timeout-minutes: 15
     steps:
       - name: Check out the repository
@@ -92,6 +93,46 @@ jobs:
       - name: Build every package
         run: pnpm build
 
+  browser-tests-of-renderer-and-graphics:
+    name: Browser tests of the renderer and graphics (shard ${{ matrix.shard }} of 2)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    # About 6 to 7 minutes expected per shard (docs/ci.md). Split again before a shard
+    # passes 10, rather than raising this.
+    timeout-minutes: 15
+    strategy:
+      # Both shards run to the end even if one fails, so a run names every failing test.
+      fail-fast: false
+      matrix:
+        # Split by package, not with Playwright's --shard (BAJAOVRLAY-58). --shard keeps a
+        # package's dependent projects together (the renderer's real-server chain, the
+        # tower's frame budget), which on #44's times put about 8:20 of tests in one shard
+        # and 2:20 in the other. By package: the three slowest (bracket 2:14, renderer
+        # 1:50, tower 1:02) in shard 1, every other package in shard 2, about 5:10 and
+        # 4:40. A new graphic lands in shard 2 without any change here.
+        shard: [1, 2]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node from .nvmrc
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies exactly as locked
+        run: pnpm install --frozen-lockfile
+
+      # Built here, not downloaded from "Lint, typecheck, build": the build takes about
+      # half a minute (0:24 on #44), while waiting for that job's build would hold every
+      # browser test back until its lint and typecheck had run (about 5 minutes).
+      - name: Build every package
+        run: pnpm build
+
       # The browser is kept between runs under the exact @playwright/test version, which
       # the pnpm catalog pins for every package. On a hit the install below finds it and
       # skips the download; its system packages (--with-deps) still come from apt. The key
@@ -108,17 +149,35 @@ jobs:
           key: playwright-browser-${{ runner.os }}-${{ env.ImageOS }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.version }}
 
       # 5 minutes: it takes about half a minute, but a slow apt mirror once made it 12:51.
-      # Past 5 it fails here, by name, instead of using up the job's 15.
+      # Past 5 it stops here, by name, instead of using up the job's 15. A failed or slow
+      # download is tried once more in the next step: that retries a download, never a
+      # test (docs/ci.md).
       - name: Install the Playwright browser
+        id: install-browser
+        timeout-minutes: 5
+        continue-on-error: true
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Runs only when the first try failed or passed its 5 minutes; if this one fails too,
+      # the job fails here.
+      - name: Install the Playwright browser, second try
+        if: steps.install-browser.outcome == 'failure'
         timeout-minutes: 5
         run: pnpm exec playwright install --with-deps chromium
 
-      # Every package's browser tests but the control page's, one package at a time so
-      # their browsers do not compete for the runner's two cores; a new package with
-      # Playwright tests joins this step without any change to this file.
-      - name: Browser tests of the renderer and graphics (Playwright)
-        run: pnpm test:e2e:renderer-and-graphics
+      # One package at a time inside a shard, so their browsers do not compete for the
+      # runner's two cores. The tower's frame budget runs after the tower's other tests
+      # (a Playwright dependency in its own config), in shard 1.
+      - name: Browser tests of the renderer, bracket and positions tower (Playwright)
+        if: matrix.shard == 1
+        run: pnpm test:e2e:renderer-bracket-tower
 
+      - name: Browser tests of the other graphics and the server (Playwright)
+        if: matrix.shard == 2
+        run: pnpm test:e2e:other-graphics-and-server
+
+      # Each shard reads the reports its own packages wrote. In shard 2 the renderer's is
+      # named as missing: it ran in shard 1.
       - name: Report the slowest tests
         if: always()
         run: >-
@@ -134,10 +193,12 @@ jobs:
         if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-results-renderer-and-graphics
+          name: playwright-results-renderer-and-graphics-shard-${{ matrix.shard }}
           path: |
             apps/renderer/test-results/
             apps/renderer/playwright-report/
+            apps/server/test-results/
+            apps/server/playwright-report/
             packages/**/test-results/
             packages/**/playwright-report/
           if-no-files-found: ignore
@@ -181,16 +242,24 @@ jobs:
         id: playwright-version
         run: echo "version=$(pnpm exec playwright --version | sed 's/^Version //')" >> "$GITHUB_OUTPUT"
 
-      # Same key as in the job above (image, architecture, Playwright version).
+      # Same key as in the renderer and graphics job (image, architecture, Playwright version).
       - name: Restore the Playwright browser
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-browser-${{ runner.os }}-${{ env.ImageOS }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.version }}
 
-      # 5 minutes: it takes about half a minute, but a slow apt mirror once made it 12:51.
-      # Past 5 it fails here, by name, instead of using up the job's 15.
+      # 5 minutes per try, and one more try after a failed or slow download, as in the
+      # renderer and graphics job: on #43 a control shard's install hit its 5 minutes on a
+      # slow download (BAJAOVRLAY-58).
       - name: Install the Playwright browser
+        id: install-browser
+        timeout-minutes: 5
+        continue-on-error: true
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install the Playwright browser, second try
+        if: steps.install-browser.outcome == 'failure'
         timeout-minutes: 5
         run: pnpm exec playwright install --with-deps chromium
 
@@ -223,7 +292,8 @@ jobs:
     name: CI passed
     needs:
       - unit-tests
-      - checks-and-browser-tests-of-renderer-and-graphics
+      - checks
+      - browser-tests-of-renderer-and-graphics
       - browser-tests-of-control
     # !cancelled(): it must run, and turn red, even when a job it needs failed or timed out,
     # but not when the whole run was cancelled (a newer push replaced it). Inside ${{ }}
