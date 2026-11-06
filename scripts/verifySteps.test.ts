@@ -10,8 +10,8 @@
  *   - Every step runs with CI=1 added to this machine's environment, as on CI: a
  *     forgotten `.only` is refused and Playwright never reuses a server left running.
  *     It is the one check a draft gets before gate 2, so it must be as strict as CI.
- *   - A full run takes every step, in order; a quick run takes every step but the two
- *     browser-test steps.
+ *   - A full run takes every step, in order; a quick run takes every step but the three
+ *     browser-test steps (the renderer and graphics in CI's two shards, the control page).
  *   - Durations read as seconds under a minute and as minutes and seconds above.
  *   - The summary lists each step that ran with its time, and says either that every
  *     step passed or which one failed.
@@ -74,7 +74,7 @@ describe('chooseStepsToRun', () => {
     // Act: choose the steps of a full run.
     const steps = chooseStepsToRun(false);
 
-    // Assert: the seven steps, the cheapest first and the browser tests last.
+    // Assert: the eight steps, the cheapest first and the browser tests last.
     expect(
       steps.map((step) => step.name),
       'a full run must take every step in order',
@@ -84,7 +84,8 @@ describe('chooseStepsToRun', () => {
       'Typecheck',
       'Vitest',
       'Build',
-      'Playwright: renderer and graphics',
+      'Playwright: renderer, bracket, tower',
+      'Playwright: other graphics, server',
       'Playwright: control page',
     ]);
   });
@@ -95,15 +96,15 @@ describe('chooseStepsToRun', () => {
     // Act: choose the steps of a quick run.
     const steps = chooseStepsToRun(true);
 
-    // Assert: every step but the two Playwright ones.
+    // Assert: every step but the three Playwright ones.
     expect(
       steps.map((step) => step.name),
       '--quick must leave out the browser tests and nothing else',
     ).toEqual(['Install check', 'Lint', 'Typecheck', 'Vitest', 'Build']);
     expect(
       verifySteps.filter((step) => step.isBrowserTest),
-      'exactly two steps must be browser tests',
-    ).toHaveLength(2);
+      'exactly three steps must be browser tests',
+    ).toHaveLength(3);
   });
 });
 
