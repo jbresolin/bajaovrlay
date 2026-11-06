@@ -1,12 +1,11 @@
 import {
-  buildEventLogNamesFromSlices,
   describeEventLogEntry,
   doesEventLogEntryMatchFilters,
   type EventLogEntry,
   type EventLogFilters,
+  type EventLogNames,
   type EventLogPage,
   type EventLogPageQuery,
-  type Slices,
 } from '@bajaovrlay/shared';
 
 // How many rows are read from the database at a time while looking for the rows of a
@@ -18,7 +17,7 @@ const rowsReadPerBatch = 500;
  * One page of the history's older rows (GET /api/v1/event-log, BAJAOVRLAY-30): the rows
  * below `query.before` that pass the filters, newest first, `query.limit` of them at most,
  * and whether more such rows lie below. A row is filtered on its pt-BR sentence, written
- * with the names the slices hold now, exactly as the page writes its live rows
+ * with the names the slices hold now (`names`), exactly as the page writes its live rows
  * (describeEventLogEntry), so a filter keeps the same rows on both.
  * What could go wrong: a filter that matches nothing reads the whole table, batch by batch;
  * on a race day's log that is tens of thousands of short rows, which SQLite reads in well
@@ -26,10 +25,9 @@ const rowsReadPerBatch = 500;
  */
 export function readFilteredEventLogPage(
   readEntriesBelow: (beforeId: number | undefined, limit: number) => EventLogEntry[],
-  slices: Slices,
+  names: EventLogNames,
   query: EventLogPageQuery,
 ): EventLogPage {
-  const names = buildEventLogNamesFromSlices(slices);
   const filters = readFiltersOfQuery(query);
   const entriesOfThePage: EventLogEntry[] = [];
   let beforeId = query.before;

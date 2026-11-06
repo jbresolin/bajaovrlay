@@ -1,3 +1,4 @@
+import { buildEventLogNamesFromSlices } from '@bajaovrlay/shared';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { bodyLimit } from 'hono/body-limit';
 
@@ -176,7 +177,7 @@ export function createApiV1Routes(options: {
       const query = context.req.valid('query');
       const page = readFilteredEventLogPage(
         options.stateStore.readEventLogEntriesBelow,
-        options.stateStore.readAllSlices(),
+        buildEventLogNamesFromSlices(options.stateStore.readAllSlices()),
         query,
       );
       return context.json(page, 200);
