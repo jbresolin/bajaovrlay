@@ -27,6 +27,8 @@ export const ptBRHistory = {
   },
   loadMoreButton: 'Carregar mais',
   loadingOlder: 'Carregando…',
+  /** Said while a request looked at its 5,000 rows, found nothing, and the page goes on. */
+  searchingOlder: 'Procurando em registros mais antigos…',
   olderPageFailed: 'Não foi possível carregar as linhas mais antigas. Tente de novo.',
   nothingYet: 'Nenhum comando ainda.',
   nothingFound: 'Nenhuma linha com esses filtros.',

@@ -15,7 +15,9 @@ export const getEventLogRoute = createRoute({
   summary: 'One page of the event log, newest first, with the history page’s filters',
   description:
     'The rows below `before` (from the newest when left out) that pass every filter given, ' +
-    '`limit` of them (100 when left out, 500 at most). The control page reads it with no ' +
+    '`limit` of them (100 when left out, 500 at most). One request looks at 5,000 rows at ' +
+    'most: a page may come back short or empty with `hasOlder` true, and `nextBefore` is ' +
+    'the `before` of the next page. The control page reads it with no ' +
     'token; any other caller follows the command API’s access rules.',
   security: apiTokenSecurity,
   request: { query: EventLogPageQuerySchema },

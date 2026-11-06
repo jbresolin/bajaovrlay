@@ -44,12 +44,23 @@ export const EventLogPageQuerySchema = z.object({
 export type EventLogPageQuery = z.infer<typeof EventLogPageQuerySchema>;
 
 /**
+ * The most rows one request of GET /api/v1/event-log looks at (gate 2 of PR #44). Every row
+ * looked at gets its pt-BR sentence written, synchronously, so a filter that matches nothing
+ * must not describe the whole log in one go; the page goes on from where it stopped.
+ */
+export const eventLogRowsLookedAtPerRequest = 5_000;
+
+/**
  * What GET /api/v1/event-log answers: the rows of the page, newest first, as the eventLog
- * slice holds them, and whether there are older rows (that pass the filters) below them.
+ * slice holds them; whether rows below are still to be looked at; and, when they are, the
+ * row id the next page starts below. A page can be short, even empty, with `hasOlder`
+ * true: the request looked at eventLogRowsLookedAtPerRequest rows and stopped there.
  */
 export const EventLogPageSchema = z.object({
   entries: z.array(EventLogEntrySchema),
   hasOlder: z.boolean(),
+  /** The `before` of the next page: the page's last row, or the row the search stopped at. */
+  nextBefore: z.number().int().positive().optional(),
 });
 
 /** One page of the event log after validation. */

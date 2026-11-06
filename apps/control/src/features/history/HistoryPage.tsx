@@ -30,7 +30,8 @@ const dayCheckIntervalInMilliseconds = 60_000;
  * the show read back in plain pt-BR, newest first. Each row says when, who ("Operador",
  * "API · companion", "Macro"…) and one sentence (from @bajaovrlay/shared's eventLogReading);
  * a refusal reads "Recusado: …" with its reason, in red. The rows heard live come in at the top by themselves;
- * "Carregar mais" reads older ones from the server (useHistoryOfTheShow.ts). The filters
+ * "Carregar mais" reads older ones from the server (useHistoryOfTheShow.ts), saying
+ * "Procurando em registros mais antigos…" while it goes on through rows that match nothing. The filters
  * run on both, and "Exportar CSV" hands over exactly the rows they show. Opened from the
  * header in a new tab, like "Eventos", so it never takes the console's place.
  */
@@ -113,11 +114,16 @@ export function HistoryPage() {
           {texts.olderPageFailed}
         </p>
       ) : null}
+      {history.isSearchingOlderRows ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          {texts.searchingOlder}
+        </p>
+      ) : null}
       {history.canLoadOlderRows ? (
         <Button
           variant="outline"
           className="self-start"
-          disabled={history.isLoadingOlderRows}
+          disabled={history.isLoadingOlderRows || history.isSearchingOlderRows}
           onClick={history.loadOlderRows}
         >
           {history.isLoadingOlderRows ? texts.loadingOlder : texts.loadMoreButton}

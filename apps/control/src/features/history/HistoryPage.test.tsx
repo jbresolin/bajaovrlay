@@ -17,6 +17,9 @@
  *   - "Carregar mais" is offered once the live slice is full (200 rows) and asks the route
  *     for the rows below the oldest one shown, with the filters; the older rows go below,
  *     and the button goes once the server says nothing older is left.
+ *   - A request that looked at its 5,000 rows and found nothing (gate 2 of PR #44): the page
+ *     says "Procurando em registros mais antigos…" and asks below where it stopped by
+ *     itself, until rows come or the log ends.
  *   - With fewer than 200 live rows the slice is the whole log, and nothing is offered.
  *
  * What these tests deliberately do not cover:
@@ -272,6 +275,69 @@ describe('"Carregar mais"', () => {
         'Recusado: Tomou item excluído (item-tarja-apagada) — O item "item-tarja-apagada" não existe; ele pode ter sido excluído.',
       ]);
     });
+    expect(
+      screen.queryByRole('button', { name: 'Carregar mais' }),
+      'with nothing older left the button must go',
+    ).toBeNull();
+  });
+
+  it('goes on by itself, saying it is searching, while a request finds nothing below', async () => {
+    // Arrange: a full live slice of cursor moves and "Só recusas" on; the server's first
+    // answer found nothing in the 5,000 rows it looked at and stopped at row 801; its second
+    // answer, held back until the test lets it go, is one older refusal.
+    const olderRefusal = buildFourRowsOfARaceMorning()[3];
+    let letTheSecondAnswerGo: (response: Response) => void = () => undefined;
+    const fetchTheOlderPage = vi
+      .fn<(address: string) => Promise<Response>>()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ entries: [], hasOlder: true, nextBefore: 801 }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          letTheSecondAnswerGo = resolve;
+        }),
+      );
+    vi.stubGlobal('fetch', fetchTheOlderPage);
+    renderOnControlPageConnectedToFakeServer(
+      <HistoryPage />,
+      buildSlicesWithEventLog(buildFullLiveSliceOfCursorMoves()),
+    );
+    fireEvent.click(screen.getByRole('switch', { name: 'Só recusas' }));
+
+    // Act: press "Carregar mais" once.
+    fireEvent.click(screen.getByRole('button', { name: 'Carregar mais' }));
+
+    // Assert: the page says it is searching and asks below row 801 by itself; once the
+    // refusal arrives it is shown, and the line and the button go.
+    await waitFor(() => {
+      expect(
+        screen.getByText('Procurando em registros mais antigos…'),
+        'while a request finds nothing below, the page must say it is still searching',
+      ).toBeDefined();
+    });
+    expect(
+      fetchTheOlderPage.mock.calls.map((call) => call[0]),
+      'the second request must start where the first one stopped, without a second press',
+    ).toEqual([
+      '/api/v1/event-log?before=1001&onlyRefusals=true',
+      '/api/v1/event-log?before=801&onlyRefusals=true',
+    ]);
+    letTheSecondAnswerGo(
+      new Response(JSON.stringify({ entries: [olderRefusal], hasOlder: false }), {
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    await waitFor(() => {
+      expect(readSentencesShown(), 'the refusal found further down must be shown').toEqual([
+        'Recusado: Tomou item excluído (item-tarja-apagada) — O item "item-tarja-apagada" não existe; ele pode ter sido excluído.',
+      ]);
+    });
+    expect(
+      screen.queryByText('Procurando em registros mais antigos…'),
+      'with the search over, the line must go',
+    ).toBeNull();
     expect(
       screen.queryByRole('button', { name: 'Carregar mais' }),
       'with nothing older left the button must go',

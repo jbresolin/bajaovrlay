@@ -39,7 +39,8 @@ export {
 } from './eventLogFilters.js';
 // The pt-BR texts of the history page.
 export { ptBREventLogReading } from './ptBREventLogReading.js';
-// GET /api/v1/event-log: its query, its answer, and the sizes of a page and of the live slice.
+// GET /api/v1/event-log: its query, its answer, the sizes of a page and of the live slice,
+// and the most rows one request looks at.
 export {
   type EventLogPage,
   eventLogPageDefaultLimit,
@@ -47,5 +48,6 @@ export {
   type EventLogPageQuery,
   EventLogPageQuerySchema,
   EventLogPageSchema,
+  eventLogRowsLookedAtPerRequest,
   eventLogRowsSentLive,
 } from './eventLogPage.js';
