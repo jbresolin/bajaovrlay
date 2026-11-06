@@ -136,3 +136,22 @@ export const postObsSceneRoute = createRoute({
   request: { params: z.object({ sceneName: z.string().min(1) }) },
   responses: commandRouteResponses,
 });
+
+/** `POST /api/v1/undo-layer/{layerId}`: "Desfazer" on one layer (BAJAOVRLAY-30). */
+export const postUndoLayerRoute = createRoute({
+  method: 'post',
+  path: '/undo-layer/{layerId}',
+  summary: '"Desfazer": undoOnLayer, what the layer\'s program showed before its last change',
+  security: apiTokenSecurity,
+  request: { params: LayerIdParameterSchema },
+  responses: commandRouteResponses,
+});
+
+/** `POST /api/v1/undo-last`: "Desfazer última", the newest change on program (BAJAOVRLAY-30). */
+export const postUndoLastRoute = createRoute({
+  method: 'post',
+  path: '/undo-last',
+  summary: '"Desfazer última": undoLastChangeOnProgram, every layer of the newest change',
+  security: apiTokenSecurity,
+  responses: commandRouteResponses,
+});

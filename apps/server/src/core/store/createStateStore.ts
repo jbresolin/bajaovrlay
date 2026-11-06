@@ -16,6 +16,9 @@ import {
   saveCommandOutcome,
   saveCommandOutcomeWithoutEventLogRow,
 } from '../db/commandOutcomeStorage.js';
+import { readEventLogRowsBelow } from '../db/eventLogRowStorage.js';
+import { findEventLogDetailsOfCommand } from '../events/eventLogDetailsOfACommand.js';
+import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
 import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
 import {
@@ -93,6 +96,12 @@ export type StateStore = {
   applyCommand: (commandInput: unknown, actor: string) => CommandOutcome;
   /** Registers a listener for slice changes; returns a function that removes it. */
   subscribeToSliceChanges: (listener: SliceChangeListener) => () => void;
+  /**
+   * Up to `limit` event-log entries below the row id `beforeId` (from the newest when it
+   * is undefined), newest first, read from the database, which keeps every row; for the
+   * history's older pages (BAJAOVRLAY-30). Reading only: it changes nothing.
+   */
+  readEventLogEntriesBelow: (beforeId: number | undefined, limit: number) => EventLogEntry[];
 };
 
 /**
@@ -240,17 +249,25 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       return { ok: true };
     }
 
-    // Steps 4 to 6: save, append to the event log, tell listeners.
-    recordOutcome({
-      nextSlices: reducerOutcome.slices,
-      logEntry: {
-        ts: now,
-        actor,
-        command: command.type,
-        payload: buildEventLogPayloadOfCommand(command),
-        result: { status: 'ok' },
-      },
-    });
+    // Steps 4 to 6: save, append to the event log, tell listeners. A take or a preview
+    // also writes where it put its item, so the history names that layer even after the
+    // item moves (eventLogDetailsOfACommand.ts, gate 2 of PR #44).
+    const logEntry: Omit<EventLogEntry, 'id'> = {
+      ts: now,
+      actor,
+      command: command.type,
+      payload: buildEventLogPayloadOfCommand(command),
+      result: { status: 'ok' },
+    };
+    const details = findEventLogDetailsOfCommand(
+      command,
+      reducerOutcome.slices,
+      reducerContext.newInstanceId,
+    );
+    if (details !== undefined) {
+      logEntry.details = details;
+    }
+    recordOutcome({ nextSlices: reducerOutcome.slices, logEntry });
     // A createItem that was applied made exactly one item, with the id it was handed.
     if (command.type === 'createItem') {
       return { ok: true, createdItemId: reducerContext.newItemId };
@@ -377,5 +394,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    readEventLogEntriesBelow: (beforeId, limit) =>
+      readEventLogRowsBelow(options.database, beforeId, limit).map(convertEventLogRowToEntry),
   };
 }

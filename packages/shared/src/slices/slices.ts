@@ -17,6 +17,7 @@ import { MediaSchema } from '../media/mediaRecord.js';
 import { ObsSliceSchema } from '../obs/obsSlice.js';
 import { OutputsSchema } from '../outputs/output.js';
 import { OverridesSchema } from '../overrides/override.js';
+import { ProgramHistorySchema } from '../programHistory/programHistory.js';
 import { QuickFirePanelSchema } from '../quickFire/quickFirePanel.js';
 import { ItemSchema } from '../rundown/item.js';
 import { RundownSchema } from '../rundown/rundown.js';
@@ -36,6 +37,7 @@ export const SliceNameSchema = z.enum([
   'instances',
   'previewClearedLayerIds',
   'instanceBindings',
+  'programHistory',
   'rundowns',
   'items',
   'quickFirePanels',
@@ -87,6 +89,12 @@ export const SlicesSchema = z.object({
    * what the live refreshes read. Saved with the instances; screens never receive it.
    */
   instanceBindings: InstanceBindingsSchema,
+  /**
+   * What each layer's program output showed before its last ten changes (BAJAOVRLAY-30),
+   * read by "Desfazer" and "Desfazer última". Saved, so a restart keeps it; screens never
+   * receive it.
+   */
+  programHistory: ProgramHistorySchema,
   /** The ordered lists of items, one per session, each with its "next" cursor. */
   rundowns: z.array(RundownSchema),
   /**

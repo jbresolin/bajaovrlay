@@ -55,6 +55,11 @@ export const CommandErrorCodeSchema = z.enum([
   'NO_NEXT_STEP',
   /** nextOnLayer's fromStep is not the step the graphic is on: another press moved it first. */
   'STEP_ALREADY_MOVED',
+  /**
+   * undoOnLayer named a layer with no change to undo, or undoLastChangeOnProgram found no
+   * layer with one (BAJAOVRLAY-30).
+   */
+  'NOTHING_TO_UNDO',
   /** The command names a quick-fire panel that does not exist. */
   'QUICK_FIRE_PANEL_NOT_FOUND',
   /**

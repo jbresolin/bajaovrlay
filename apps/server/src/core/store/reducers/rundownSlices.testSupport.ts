@@ -302,6 +302,7 @@ export function buildRaceDaySlicesWithRundown(parts: {
     scheduleSlots: [],
     media: [],
     instanceBindings: [],
+    programHistory: [],
     overrides: [],
   };
 }

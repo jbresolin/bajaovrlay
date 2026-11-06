@@ -59,6 +59,7 @@ export function buildSlicesForAScreen(slices: Slices, outputId: string): Slices 
     ),
     // The bindings behind what is on air: graphics get resolved data only (rule 3).
     instanceBindings: [],
+    programHistory: [],
     rundowns: [],
     items: [],
     quickFirePanels: [],

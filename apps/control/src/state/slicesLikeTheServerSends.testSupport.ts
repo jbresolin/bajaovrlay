@@ -138,6 +138,7 @@ export function buildSlicesWithNothingOnAir(): Slices {
     scheduleSlots: [],
     media: [],
     instanceBindings: [],
+    programHistory: [],
     overrides: [],
   };
 }

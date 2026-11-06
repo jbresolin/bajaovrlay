@@ -6,6 +6,7 @@ import { DataSourcesHealthChip } from '@/features/dataSources/DataSourcesHealthC
 import { DataSourcesPage } from '@/features/dataSources/DataSourcesPage';
 import { EntityLibraryPage } from '@/features/entityLibrary/EntityLibraryPage';
 import { EventReviewPage } from '@/features/events/EventReviewPage';
+import { HistoryPage } from '@/features/history/HistoryPage';
 import { KeyboardMapDialog } from '@/features/keyboardHelp/KeyboardMapDialog';
 import { ObsTally } from '@/features/obs/ObsTally';
 import { OutputsAndLayersPage } from '@/features/outputsAndLayers/OutputsAndLayersPage';
@@ -25,9 +26,10 @@ const pageLinkTexts = ptBR.app.pageLinks;
  * (features/dataSources), which the header's "Fontes" and chip open in a new tab,
  * "Cadastros" (features/entityLibrary), which "Cadastros" opens in a new tab too, or the
  * review of the event inbox (features/events), which "Eventos" opens in a new tab, or
- * "Saídas e camadas" (features/outputsAndLayers), which "Saídas" opens in a new tab; each
- * of those four in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab.
- * The header holds the product name, the links to the five pages, the data sources
+ * "Saídas e camadas" (features/outputsAndLayers), which "Saídas" opens in a new tab, or
+ * "Histórico" (features/history, BAJAOVRLAY-30), which "Histórico" opens in a new tab; each
+ * of those five in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab.
+ * The header holds the product name, the links to the six pages, the data sources
  * chip ("Fontes: 2 ok · 1 atrasada"), the server check, the OBS tally, "Pausar gatilhos"
  * (BAJAOVRLAY-48), the connection badge and the
  * "?" button, which lists every keyboard shortcut (src/keyboard/keyboardMap.ts).
@@ -62,6 +64,7 @@ export function AppShell() {
               currentPage={currentPage}
               text={pageLinkTexts.outputs}
             />
+            <PageLink page="history" currentPage={currentPage} text={pageLinkTexts.history} />
           </nav>
         </div>
         <div className="flex flex-wrap items-center gap-4">
@@ -95,6 +98,11 @@ export function AppShell() {
           <OutputsAndLayersPage />
         </PageErrorBoundary>
       )}
+      {currentPage === 'history' && (
+        <PageErrorBoundary>
+          <HistoryPage />
+        </PageErrorBoundary>
+      )}
     </div>
   );
 }
@@ -103,7 +111,7 @@ export function AppShell() {
  * One header link to a page, drawn as a small button and marked when it is the current
  * page. "Fontes" always opens in a new tab (João's ruling 2 at gate 2 of PR #16): the
  * console must never unmount under the producer, since its keys (Esc, "Limpar tudo"), an
- * unsaved item draft and the monitors live in it; "Cadastros", "Eventos" and "Saídas" do the same,
+ * unsaved item draft and the monitors live in it; "Cadastros", "Eventos", "Saídas" and "Histórico" do the same,
  * for the same reason. "Console" stays a plain link in the same tab: from another page's tab it turns
  * that tab into a console, and nothing is lost.
  */

@@ -127,7 +127,7 @@ describe('takeAllPreviews through the store', () => {
       'takeAllPreviews',
     );
     expect(sliceNamesToldToSubscribers, 'subscribers must be told once, of all of it').toEqual([
-      ['instances', 'previewClearedLayerIds', 'eventLog'],
+      ['instances', 'previewClearedLayerIds', 'programHistory', 'eventLog'],
     ]);
     expect(
       slicesAfter.instances.map((instance) => [

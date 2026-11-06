@@ -95,6 +95,7 @@ function buildRaceMorningStateWithOnePreparedItem() {
     instances: [],
     previewClearedLayerIds: [],
     instanceBindings: [],
+    programHistory: [],
     overrides: [],
     rundowns: [buildMainSessionRundown()],
     items: [buildEnduroClockItem()],

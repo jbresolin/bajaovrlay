@@ -85,15 +85,17 @@ describe('a command sent over /ws', () => {
       isSlicesMessageWithInstances,
     );
 
-    // Assert: the renderer hears about the new race-clock instance and the event-log line
-    // of the take in the same message, with the time the server's clock showed.
+    // Assert: the renderer hears about the new race-clock instance, what the clock layer
+    // showed before (for "Desfazer") and the event-log line of the take in the same
+    // message, with the time the server's clock showed.
     expect(
       slicesOnRenderer,
-      'the renderer must get the instances and the event log together',
+      'the renderer must get the instances, the history and the event log together',
     ).toEqual({
       type: 'slices',
       slices: {
         instances: runningServer.stateStore.readAllSlices().instances,
+        programHistory: runningServer.stateStore.readAllSlices().programHistory,
         eventLog: runningServer.stateStore.readAllSlices().eventLog,
       },
       serverNowMs: momentTheServerClockIsHeldAtInMilliseconds,
@@ -119,12 +121,12 @@ describe('a command sent over /ws', () => {
     // Act: forty seconds later on the server's clock, the control page takes the clock item.
     momentTheServerClockShows = '2026-10-09T14:32:45.000Z';
     controlPage.sendJson({ type: 'command', requestId: 'pedido-6', command: takeOfTheClockItem });
-    // A take changes the instances and the event log, so it is one slices message.
+    // A take changes the instances, the layer's history and the event log: one slices message.
     await renderer.waitForMessage('slices message of the take', isSlicesMessageWithInstances);
 
     // Assert: the hello says 14:32:05, and the one message of the take, the whole slices
     // message, says 14:32:45: the clock is read for each message, not once at connect.
-    const { instances, eventLog } = runningServer.stateStore.readAllSlices();
+    const { instances, programHistory, eventLog } = runningServer.stateStore.readAllSlices();
     expect(
       hello.type === 'hello' ? hello.serverNowMs : undefined,
       'the hello must carry the server clock of the moment the client connected',
@@ -135,7 +137,7 @@ describe('a command sent over /ws', () => {
     ).toEqual([
       {
         type: 'slices',
-        slices: { instances, eventLog },
+        slices: { instances, programHistory, eventLog },
         serverNowMs: momentTheServerClockIsHeldAtInMilliseconds + 40_000,
       },
     ]);
@@ -152,8 +154,8 @@ describe('a command sent over /ws', () => {
     controlPage.sendJson({ type: 'command', requestId: 'pedido-2', command: takeOfTheClockItem });
     const commandResult = await controlPage.waitForMessage('commandResult', isCommandResultMessage);
 
-    // Assert: ok with the same requestId, after the one message with the instances and
-    // the event log.
+    // Assert: ok with the same requestId, after the one message with the instances, the
+    // layer's history and the event log.
     expect(commandResult, 'the answer must be ok and echo the requestId').toEqual({
       type: 'commandResult',
       requestId: 'pedido-2',
@@ -168,7 +170,7 @@ describe('a command sent over /ws', () => {
       );
     expect(messagesInArrivalOrder, 'state must arrive before the ok').toEqual([
       'hello',
-      'slices instances eventLog',
+      'slices instances programHistory eventLog',
       'commandResult',
     ]);
   });

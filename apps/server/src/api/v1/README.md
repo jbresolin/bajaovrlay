@@ -6,6 +6,9 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
 
 - `stateRoute.ts` — `GET /api/v1/state`, every slice at once; with `?role=renderer` or
   `?role=monitor` (a renderer page whose hello is late) `dataSnapshots` and `eventLog` are empty.
+- `eventLogRoute.ts` — `GET /api/v1/event-log` (BAJAOVRLAY-30): the history's older pages,
+  newest first, with the page's filters; the control page reads it as it reads /state, anyone
+  else through the command API's access (`core/apiAccess/allowTheControlPageOrRequireApiAccess.ts`).
 - `GET /api/v1/data-sources/{sourceId}/snapshot` — declared by the data-source module
   (`modules/dataSources/api.ts`), the latest good data of one source.
 - `POST /api/v1/data-sources/http-json/sample-request` — also declared there: "Buscar da
@@ -22,7 +25,8 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
   token at all with BAJAOVRLAY_API_OPEN=true, signed `api:rede`):
   `POST /api/v1/commands` (`commandsRoute.ts`, the WebSocket's command envelope in, its
   commandResult out; `commandBodyChecks.ts` refuses a body not sent as JSON, 415, or over
-  256 KB, 413), ten button shortcuts and OBS's scene button, `POST /api/v1/obs-scene/{sceneName}`
+  256 KB, 413), twelve button shortcuts (the two undo ones of BAJAOVRLAY-30, `undo-layer` and
+  `undo-last`, among them) and OBS's scene button, `POST /api/v1/obs-scene/{sceneName}`
   (BAJAOVRLAY-27) (`commandShortcutRoutes.ts`; the four that read the state to build their
   command are in `shortcutCommands.ts`) and `GET /api/v1/layers/status`
   (`layersStatusRoute.ts`), and an HTTP trigger's address, `POST /api/v1/triggers/{triggerId}`

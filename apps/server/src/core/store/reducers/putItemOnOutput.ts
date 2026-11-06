@@ -75,8 +75,28 @@ export function putItemOnOutput(
   if (fillByTheTrigger.status === 'refused') {
     return fillByTheTrigger;
   }
-  const fieldsOfTheTake = fillByTheTrigger.fields;
+  // The take goes on with the fields as laid over; the item handed back is the stored
+  // one, unchanged, since the trigger's data is never written into the item.
+  const itemAsTaken = { ...item, fields: fillByTheTrigger.fields };
+  const takeOutcome = putThisItemOnOutput(slices, itemAsTaken, target, context, eventFill);
+  if (takeOutcome.status === 'refused') {
+    return takeOutcome;
+  }
+  return { ...takeOutcome, item };
+}
 
+/**
+ * putItemOnOutput for an item already in hand. An undo (BAJAOVRLAY-30) hands it the item
+ * as it was on air (its typed values as literal fields, on the layer it was on), so the
+ * item comes back through every step of a take without that copy being stored anywhere.
+ */
+export function putThisItemOnOutput(
+  slices: SlicesChangedByCommands,
+  item: Item,
+  target: InstanceTarget,
+  context: ReducerContext,
+  eventFill?: EventFillOfItem,
+): ItemOnOutputOutcome {
   // The one place an item's fields become data, for a take and for a preview alike.
   // takePreview does NOT come back here: what was seen in the preview is what goes on
   // air, so it sends the preview instance's own data. The one exception is the
@@ -85,8 +105,8 @@ export function putItemOnOutput(
   // putGraphicOnOutput). What could go wrong: an item edited after it was previewed goes
   // on air as it was previewed, until it is previewed again.
   const resolution = resolveItemFieldsIntoGraphicData({
-    fields: fieldsOfTheTake,
-    graphic,
+    fields: item.fields,
+    graphic: slices.graphics.find((graphic) => graphic.id === item.graphicId),
     momentOfTheTake: context.now,
     sources: {
       dataSources: slices.dataSources,
@@ -99,7 +119,7 @@ export function putItemOnOutput(
   if (resolution.status === 'refused') {
     return { status: 'refused', error: resolution.error };
   }
-  const keysOfTakeTimeFields = listKeysOfTakeTimeFields(fieldsOfTheTake);
+  const keysOfTakeTimeFields = listKeysOfTakeTimeFields(item.fields);
 
   const takeOfTheItemGraphic: GraphicOnOutputRequest = {
     graphicId: item.graphicId,
@@ -131,8 +151,8 @@ export function putItemOnOutput(
   const instanceBindingsAfter = addBindingsOfNewInstance(
     takeOutcome.slices.instanceBindings,
     context.newInstanceId,
-    listBoundFieldsKeptByNewInstance(fieldsOfTheTake, target),
-    listEntityFieldsKeptByNewInstance(fieldsOfTheTake),
+    listBoundFieldsKeptByNewInstance(item.fields, target),
+    listEntityFieldsKeptByNewInstance(item.fields),
   );
   return {
     status: 'applied',

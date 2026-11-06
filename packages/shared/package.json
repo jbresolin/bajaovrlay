@@ -28,6 +28,9 @@
     "./scheduleSlotStatusScenarios.testSupport": {
       "@bajaovrlay/source": "./src/entities/scheduleSlotStatusScenarios.testSupport.ts"
     },
+    "./eventLogNamesOfRaceDay.testSupport": {
+      "@bajaovrlay/source": "./src/eventLogReading/eventLogNamesOfRaceDay.testSupport.ts"
+    },
     "./bracketSteps": {
       "@bajaovrlay/source": "./src/steps/bracketSteps.ts",
       "types": "./dist/steps/bracketSteps.d.ts",

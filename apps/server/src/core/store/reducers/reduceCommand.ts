@@ -11,6 +11,10 @@ import { reduceMediaCommand } from '../../../modules/media/index.js';
 import { reduceObsCommand } from '../../../modules/obs/index.js';
 import { reduceOutputOrLayerCommand } from '../../../modules/outputs/index.js';
 import { reduceTriggerCommand } from '../../../modules/triggers/index.js';
+import { forgetChangesThatCannotComeBack } from '../programHistory/forgetChangesThatCannotComeBack.js';
+import { rememberProgramChanges } from '../programHistory/rememberProgramChanges.js';
+import { reduceUndoLastChangeOnProgram } from '../programHistory/undoLastChangeOnProgram.js';
+import { reduceUndoOnLayer } from '../programHistory/undoOnLayer.js';
 import { reduceClearAll } from './clearAll.js';
 import { reduceClearLayer } from './clearLayer.js';
 import { dropBindingsOfInstancesGone } from './instanceBindingsBookkeeping.js';
@@ -29,7 +33,9 @@ import { reduceTakePreview } from './takePreview.js';
 import { reduceUpdateInstanceData } from './updateInstanceData.js';
 
 /**
- * Sends a valid command to its reducer (one file per command), then, when the instances
+ * Sends a valid command to its reducer (one file per command), then remembers what each
+ * layer's program output showed before the command changed it (programHistory, for
+ * "Desfazer"; BAJAOVRLAY-30), unless the command is itself an undo, and, when the instances
  * changed, drops the bindings of any instance the command removed
  * (instanceBindingsBookkeeping.ts), puts an instance whose new data has fewer steps than
  * the one it is on on its last step (instanceStepsWithinTheirCount.ts, BAJAOVRLAY-25), and
@@ -43,10 +49,13 @@ export function reduceCommand(
   command: Command,
   context: ReducerContext,
 ): ReducerOutcome {
-  const outcome = reduceCommandOfItsType(slices, command, context);
-  const haveInstancesChanged =
-    outcome.status === 'applied' && outcome.slices.instances !== slices.instances;
-  if (outcome.status === 'refused' || !haveInstancesChanged) {
+  const outcomeOfItsType = reduceCommandOfItsType(slices, command, context);
+  if (outcomeOfItsType.status === 'refused') {
+    return outcomeOfItsType;
+  }
+  const outcome = withProgramChangesRemembered(slices, command, outcomeOfItsType, context.now);
+  const haveInstancesChanged = outcome.slices.instances !== slices.instances;
+  if (!haveInstancesChanged) {
     return outcome;
   }
   const slicesWithBindingsKept = dropBindingsOfInstancesGone(outcome.slices);
@@ -56,6 +65,41 @@ export function reduceCommand(
     return { ...outcome, slices: slicesAfter };
   }
   return { ...outcome, slices: slicesAfter, stepsBroughtBack: stepsKept.stepsBroughtBack };
+}
+
+/**
+ * The outcome with programHistory brought up to date (rememberProgramChanges.ts), and
+ * without the changes of an item deleted by the command (forgetChangesThatCannotComeBack.ts). An undo
+ * is left as its reducer wrote it: it pops the history and must not push what it replaced,
+ * or a second press would undo the undo.
+ */
+function withProgramChangesRemembered(
+  slicesBefore: SlicesChangedByCommands,
+  command: Command,
+  outcome: Extract<ReducerOutcome, { status: 'applied' }>,
+  now: string,
+): Extract<ReducerOutcome, { status: 'applied' }> {
+  const isAnUndo = command.type === 'undoOnLayer' || command.type === 'undoLastChangeOnProgram';
+  if (isAnUndo) {
+    return outcome;
+  }
+  const programHistoryWithTheChange = rememberProgramChanges(slicesBefore, outcome.slices, now);
+  // A deleted item (or a graphic gone) must not jam undo: its entries are forgotten here,
+  // in the same step, as a deleted layer's are (forgetChangesThatCannotComeBack.ts).
+  const haveItemsOrGraphicsChanged =
+    outcome.slices.items !== slicesBefore.items ||
+    outcome.slices.graphics !== slicesBefore.graphics;
+  const programHistoryAfter = haveItemsOrGraphicsChanged
+    ? forgetChangesThatCannotComeBack(
+        programHistoryWithTheChange,
+        outcome.slices.items,
+        outcome.slices.graphics,
+      )
+    : programHistoryWithTheChange;
+  if (programHistoryAfter === outcome.slices.programHistory) {
+    return outcome;
+  }
+  return { ...outcome, slices: { ...outcome.slices, programHistory: programHistoryAfter } };
 }
 
 /** The switch from a command's type to its reducer. */
@@ -76,6 +120,11 @@ function reduceCommandOfItsType(
     // "Próximo": the next step of the graphic on air on a layer (BAJAOVRLAY-47).
     case 'nextOnLayer':
       return reduceNextOnLayer(slices, command);
+    // "Desfazer" and "Desfazer última" (BAJAOVRLAY-30); ../programHistory/.
+    case 'undoOnLayer':
+      return reduceUndoOnLayer(slices, command, context);
+    case 'undoLastChangeOnProgram':
+      return reduceUndoLastChangeOnProgram(slices, context);
     // The three commands of the preview output.
     case 'previewItem':
       return reducePreviewItem(slices, command, context);

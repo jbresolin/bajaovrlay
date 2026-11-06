@@ -65,6 +65,8 @@ export function buildSliceMessage(
         slice: slices.instanceBindings,
         serverNowMs,
       };
+    case 'programHistory':
+      return { type: 'slice', name: 'programHistory', slice: slices.programHistory, serverNowMs };
     case 'rundowns':
       return { type: 'slice', name: 'rundowns', slice: slices.rundowns, serverNowMs };
     case 'items':
@@ -152,6 +154,9 @@ function copyOneSliceByName(
       break;
     case 'instanceBindings':
       group.instanceBindings = slices.instanceBindings;
+      break;
+    case 'programHistory':
+      group.programHistory = slices.programHistory;
       break;
     case 'rundowns':
       group.rundowns = slices.rundowns;

@@ -12,8 +12,10 @@ like `clock/`), `build/` (a page reloading itself when the server's build change
 `dataShapes/` (the canonical shapes), `dataSources/` (polled sources, recordings),
 `transforms/` (the registry of named pure transforms a mapping or a binding applies),
 `flexMapping/` (how a flex source's JSON becomes the canonical shapes), `bindings/` (item
-fields read from a source, and reading them) and `overrides/` (an operator's corrections of a
-source's values).
+fields read from a source, and reading them), `overrides/` (an operator's corrections of a
+source's values), `programHistory/` (what each layer showed before its last changes, and the
+two undo commands) and `eventLogReading/` (each event-log row as a pt-BR sentence, and the
+history's filters, for the server and the page alike).
 
 **How other packages import it.** `package.json` exports the source file under the
 custom condition `@bajaovrlay/source` and the built `dist/` otherwise. Typecheck, Vitest,

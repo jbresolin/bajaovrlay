@@ -83,6 +83,7 @@ function buildRaceDayStateWithTheClockOnAir() {
     // The operator pressed "Prévia: limpar" on the logo: Prévia shows it gone.
     previewClearedLayerIds: ['bug'],
     instanceBindings: [],
+    programHistory: [],
     overrides: [],
     eventLog: [
       {
@@ -288,11 +289,9 @@ describe('SlicesSchema', () => {
 
 describe('SliceNameSchema', () => {
   it('lists every slice in the order the server lists them, the newest ones included', () => {
-    // Arrange: the slice names; the "will be cleared" markers and the instances' bindings
-    // after the instances, quick-fire panels and macros after the items, then the macros'
-    // stops, OBS and the triggers, then the data sources, snapshots, corrections and
-    // recordings, the inbox's events and rules, and the entity library and its images
-    // just before the event log.
+    // Arrange: the slice names; markers and bindings after the instances, panels and macros
+    // after the items, then macro stops, OBS and triggers, the data sources and what goes
+    // with them, the inbox, and the entity library and its images before the event log.
     const expectedSliceNames = [
       'outputs',
       'layers',
@@ -300,6 +299,7 @@ describe('SliceNameSchema', () => {
       'instances',
       'previewClearedLayerIds',
       'instanceBindings',
+      'programHistory',
       'rundowns',
       'items',
       'quickFirePanels',
@@ -327,7 +327,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these twenty-seven, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these twenty-eight, in this order').toEqual(
       expectedSliceNames,
     );
   });
