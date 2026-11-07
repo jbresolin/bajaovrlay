@@ -185,14 +185,10 @@ describe('the tracked files of the repository', () => {
     const staleEntries = allowedValues.filter(
       (allowedValue) => !foundValues.some((foundValue) => isCoveredBy(allowedValue, foundValue)),
     );
-    const staleEntryLines = staleEntries.map(
-      (entry) => `${entry.file} "${entry.valueStartsWith}"`,
-    );
+    const staleEntryLines = staleEntries.map((entry) => `${entry.file} "${entry.valueStartsWith}"`);
 
     // Assert: none is stale.
-    expect(staleEntryLines, 'an allow-list entry must still match a value in its file').toEqual(
-      [],
-    );
+    expect(staleEntryLines, 'an allow-list entry must still match a value in its file').toEqual([]);
   });
 
   it('give every allow-list entry a reason and six first characters', () => {
