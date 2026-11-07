@@ -87,7 +87,8 @@ export function FlexSourceForm(props: FlexSourceFormProps) {
       onSave={() => void save()}
       onCancel={props.onClose}
     >
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* The name gets two thirds: the interval is a short number (BAJAOVRLAY-59). */}
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-end">
         <FormFieldRow
           label={texts.fields.label}
           controlId={ids.label}

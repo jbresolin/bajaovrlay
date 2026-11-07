@@ -107,7 +107,13 @@ export function QuickFirePanelView(props: QuickFirePanelViewProps) {
           {texts.emptyPanel}
         </p>
       ) : (
-        <ul aria-label={texts.buttonGridLabel(panel.name)} className="grid grid-cols-2 gap-2">
+        // As many 10rem (160 px) buttons per row as the column holds, each stretched to
+        // share the row: five in the 896 px column of a 1920 px window, three at 1366 px. A
+        // label is cut short past about 18 characters at that width, as it was at two a row.
+        <ul
+          aria-label={texts.buttonGridLabel(panel.name)}
+          className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2"
+        >
           {buttonsInOrder.map((item, position) => (
             <QuickFireItemButton
               key={item.id}

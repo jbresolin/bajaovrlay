@@ -72,7 +72,8 @@ export function TakeStepTriggerFields(props: {
           {fields.map((field) => {
             const key = triggerKeyByFieldKey[field.fieldKey];
             const source: FieldSource = key === undefined ? 'item' : 'triggerData';
-            // The editor sits in the console's 22rem column: a third of a step's row is
+            // The editor sits in the console's right column, 336 px wide at 1024 px (22rem
+            // before BAJAOVRLAY-59): a third of a step's row is
             // narrower than "Dado do gatilho ›" alone (João's check of PR #43). So the
             // title and its source share one line, the key gets a line of its own, and
             // every part may shrink (min-w-0); what is cut is whole in its tooltip.

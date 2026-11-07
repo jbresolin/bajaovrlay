@@ -57,53 +57,57 @@ export function InboxEventRow(props: {
           <span>{formatRelativeTimePtBR(new Date(event.detectedAtMs), now)}</span>
         </span>
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        {payload.reason === undefined ? null : <span>{payload.reason}</span>}
-        {payload.penaltyText === undefined ? null : (
-          <span className="font-semibold text-foreground">{payload.penaltyText}</span>
-        )}
-        {payload.lapTimeText === undefined ? null : (
-          <span className="tabular-nums">{payload.lapTimeText}</span>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-1">
-        <ActionButton
-          size="xs"
-          variant="outline"
-          disabledReason={whyThereIsNoItem}
-          onClick={() => {
-            if (itemIdOfItsRule !== null) {
-              void sendCommand({
-                type: 'previewItem',
-                itemId: itemIdOfItsRule,
-                eventId: event.eventId,
-                origin: 'manual',
-              });
+      {/* The details, then the three buttons at the right end of the same line; in a
+          narrow column the buttons move under the details together, never one by one. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          {payload.reason === undefined ? null : <span>{payload.reason}</span>}
+          {payload.penaltyText === undefined ? null : (
+            <span className="font-semibold text-foreground">{payload.penaltyText}</span>
+          )}
+          {payload.lapTimeText === undefined ? null : (
+            <span className="tabular-nums">{payload.lapTimeText}</span>
+          )}
+        </span>
+        <span className="ml-auto flex shrink-0 gap-1">
+          <ActionButton
+            size="xs"
+            variant="outline"
+            disabledReason={whyThereIsNoItem}
+            onClick={() => {
+              if (itemIdOfItsRule !== null) {
+                void sendCommand({
+                  type: 'previewItem',
+                  itemId: itemIdOfItsRule,
+                  eventId: event.eventId,
+                  origin: 'manual',
+                });
+              }
+            }}
+          >
+            {texts.previewButton}
+          </ActionButton>
+          <ActionButton
+            size="xs"
+            disabled={isWaitingForTheServer}
+            disabledReason={whyThereIsNoItem}
+            onClick={() =>
+              void sendAndWaitForTheAnswer({ type: 'showEvent', eventId: event.eventId })
             }
-          }}
-        >
-          {texts.previewButton}
-        </ActionButton>
-        <ActionButton
-          size="xs"
-          disabled={isWaitingForTheServer}
-          disabledReason={whyThereIsNoItem}
-          onClick={() =>
-            void sendAndWaitForTheAnswer({ type: 'showEvent', eventId: event.eventId })
-          }
-        >
-          {texts.showButton}
-        </ActionButton>
-        <ActionButton
-          size="xs"
-          variant="ghost"
-          disabled={isWaitingForTheServer}
-          onClick={() =>
-            void sendAndWaitForTheAnswer({ type: 'dismissEvent', eventId: event.eventId })
-          }
-        >
-          {texts.dismissButton}
-        </ActionButton>
+          >
+            {texts.showButton}
+          </ActionButton>
+          <ActionButton
+            size="xs"
+            variant="ghost"
+            disabled={isWaitingForTheServer}
+            onClick={() =>
+              void sendAndWaitForTheAnswer({ type: 'dismissEvent', eventId: event.eventId })
+            }
+          >
+            {texts.dismissButton}
+          </ActionButton>
+        </span>
       </div>
     </li>
   );

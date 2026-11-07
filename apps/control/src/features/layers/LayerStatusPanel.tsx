@@ -141,7 +141,9 @@ export function LayerStatusPanel() {
 
   return (
     <Card className="py-2">
-      <CardContent>
+      {/* px-4, not the card's 24 px: in a 880 px column the 16 px gained keep a row with
+          something on air and its buttons on one line (BAJAOVRLAY-59). */}
+      <CardContent className="px-4">
         {isOneOutputOnly ? (
           <ul className="flex flex-col divide-y">{layersFromBottomToTop.map(drawRowOfLayer)}</ul>
         ) : (

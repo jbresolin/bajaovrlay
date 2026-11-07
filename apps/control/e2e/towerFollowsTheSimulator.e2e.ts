@@ -42,7 +42,7 @@
  *   - OBS itself: no page at /render/ is opened, so no layer ever says "No ar"; the
  *     program monitor draws the same built renderer and is enough to see what is on air.
  *   - Where the boxes land on the 1920x1080 stage: the monitor is scaled, so the two
- *     boxes are only compared with each other (monitorsSideBySide.e2e.ts covers the scale).
+ *     boxes are only compared with each other (consoleLayout.e2e.ts covers the scale).
  *     The finders and the measure live in towerInProgramMonitor.ts.
  *   - The values in the detailed columns: the package's screenshot tests.
  *
