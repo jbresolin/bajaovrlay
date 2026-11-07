@@ -77,7 +77,9 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4">
+    // items-end: when the label of one field of a pair wraps onto two lines ("Saída
+    // automática (segundos, opcional)" does in the 21rem column), both fields still line up.
+    <div className="grid grid-cols-2 items-end gap-4">
       <FormFieldRow
         label={fieldLabels.graphic}
         controlId={controlIds.graphic}
@@ -146,18 +148,22 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
         </p>
       )}
 
-      <FormFieldRow
-        label={fieldLabels.label}
-        controlId={controlIds.label}
-        errorMessage={errorMessages.label}
-      >
-        <Input
-          id={controlIds.label}
-          autoComplete="off"
-          {...buildErrorAttributesForControl(controlIds.label, errorMessages.label)}
-          {...register('label')}
-        />
-      </FormFieldRow>
+      {/* The label on a row of its own: it is what the operator reads on every button and
+          row, and half of the 21rem column cut "Abertura — Ana Souza" short. */}
+      <div className="col-span-2">
+        <FormFieldRow
+          label={fieldLabels.label}
+          controlId={controlIds.label}
+          errorMessage={errorMessages.label}
+        >
+          <Input
+            id={controlIds.label}
+            autoComplete="off"
+            {...buildErrorAttributesForControl(controlIds.label, errorMessages.label)}
+            {...register('label')}
+          />
+        </FormFieldRow>
+      </div>
 
       <FormFieldRow
         label={fieldLabels.color}
@@ -194,21 +200,6 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
         />
       </FormFieldRow>
 
-      <div className="col-span-2">
-        <FormFieldRow
-          label={fieldLabels.notes}
-          controlId={controlIds.notes}
-          errorMessage={errorMessages.notes}
-        >
-          <Input
-            id={controlIds.notes}
-            autoComplete="off"
-            {...buildErrorAttributesForControl(controlIds.notes, errorMessages.notes)}
-            {...register('notes')}
-          />
-        </FormFieldRow>
-      </div>
-
       <FormFieldRow
         label={fieldLabels.autoOutAfterSeconds}
         controlId={controlIds.autoOutAfterSeconds}
@@ -225,6 +216,21 @@ export function ItemEditorFormFields(props: ItemEditorFormFieldsProps) {
           {...register('autoOutAfterSeconds')}
         />
       </FormFieldRow>
+
+      <div className="col-span-2">
+        <FormFieldRow
+          label={fieldLabels.notes}
+          controlId={controlIds.notes}
+          errorMessage={errorMessages.notes}
+        >
+          <Input
+            id={controlIds.notes}
+            autoComplete="off"
+            {...buildErrorAttributesForControl(controlIds.notes, errorMessages.notes)}
+            {...register('notes')}
+          />
+        </FormFieldRow>
+      </div>
     </div>
   );
 }

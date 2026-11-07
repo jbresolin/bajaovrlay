@@ -72,7 +72,12 @@ export function MacroGrid() {
           {texts.emptyMacros}
         </p>
       ) : (
-        <ul aria-label={texts.gridLabel} className="grid grid-cols-2 gap-2">
+        // As many 10rem buttons per row as the column holds, like the shortcuts
+        // (QuickFirePanelView.tsx), so both tabs line up the same.
+        <ul
+          aria-label={texts.gridLabel}
+          className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2"
+        >
           {macros.map((macro, position) => (
             <MacroButton
               key={macro.id}

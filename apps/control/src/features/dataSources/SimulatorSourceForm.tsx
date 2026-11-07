@@ -80,25 +80,26 @@ export function SimulatorSourceForm(props: SimulatorSourceFormProps) {
       onSave={() => void save()}
       onCancel={props.onClose}
     >
-      {typedFields.map((field) => {
-        const controlId = `${controlIdPrefix}-${field.name}`;
-        const errorMessage = errors[field.name]?.message;
-        return (
-          <FormFieldRow
-            key={field.name}
-            label={field.label}
-            controlId={controlId}
-            errorMessage={errorMessage}
-          >
-            <Input
-              id={controlId}
-              inputMode={field.name === 'label' ? 'text' : 'decimal'}
-              {...form.register(field.name)}
-              {...buildErrorAttributesForControl(controlId, errorMessage)}
-            />
-          </FormFieldRow>
-        );
-      })}
+      {/* The name on its own line, the six short numbers two by two (BAJAOVRLAY-59):
+          one per line, each stretched across the card, made the form twice as tall. */}
+      <div className="grid grid-cols-2 items-end gap-4">
+        {typedFields.map((field) => {
+          const controlId = `${controlIdPrefix}-${field.name}`;
+          const errorMessage = errors[field.name]?.message;
+          return (
+            <div key={field.name} className={field.name === 'label' ? 'col-span-2' : undefined}>
+              <FormFieldRow label={field.label} controlId={controlId} errorMessage={errorMessage}>
+                <Input
+                  id={controlId}
+                  inputMode={field.name === 'label' ? 'text' : 'decimal'}
+                  {...form.register(field.name)}
+                  {...buildErrorAttributesForControl(controlId, errorMessage)}
+                />
+              </FormFieldRow>
+            </div>
+          );
+        })}
+      </div>
       <Controller
         control={form.control}
         name="isFailing"

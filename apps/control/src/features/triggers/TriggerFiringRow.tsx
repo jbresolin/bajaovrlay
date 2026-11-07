@@ -42,43 +42,47 @@ export function TriggerFiringRow(props: {
           <span>{formatRelativeTimePtBR(new Date(firing.firedAtMs), now)}</span>
         </span>
       </div>
-      <ul
-        aria-label={texts.dataLabel}
-        className="flex flex-wrap gap-x-3 text-sm text-muted-foreground"
-      >
-        {dataEntries.length === 0 ? <li>{texts.noData}</li> : null}
-        {dataEntries.map(([key, value]) => (
-          <li key={key}>{texts.dataEntry(key, String(value))}</li>
-        ))}
-      </ul>
       {firing.autoRunRefusal === null ? null : (
         <p className="w-fit rounded-sm bg-warning px-1.5 text-sm text-warning-foreground">
           {texts.autoRunRefusal(firing.autoRunRefusal)}
         </p>
       )}
-      <div className="flex flex-wrap gap-1">
-        <ActionButton
-          size="xs"
-          disabled={isWaitingForTheServer}
-          onClick={() =>
-            void sendAndWaitForTheAnswer({ type: 'runTriggerFiring', firingId: firing.firingId })
-          }
+      {/* The data, then the two buttons at the right end of the same line; in a narrow
+          column the buttons move under the data together, never one by one. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <ul
+          aria-label={texts.dataLabel}
+          className="flex flex-wrap gap-x-3 text-sm text-muted-foreground"
         >
-          {texts.runButton}
-        </ActionButton>
-        <ActionButton
-          size="xs"
-          variant="ghost"
-          disabled={isWaitingForTheServer}
-          onClick={() =>
-            void sendAndWaitForTheAnswer({
-              type: 'dismissTriggerFiring',
-              firingId: firing.firingId,
-            })
-          }
-        >
-          {texts.dismissButton}
-        </ActionButton>
+          {dataEntries.length === 0 ? <li>{texts.noData}</li> : null}
+          {dataEntries.map(([key, value]) => (
+            <li key={key}>{texts.dataEntry(key, String(value))}</li>
+          ))}
+        </ul>
+        <span className="ml-auto flex shrink-0 gap-1">
+          <ActionButton
+            size="xs"
+            disabled={isWaitingForTheServer}
+            onClick={() =>
+              void sendAndWaitForTheAnswer({ type: 'runTriggerFiring', firingId: firing.firingId })
+            }
+          >
+            {texts.runButton}
+          </ActionButton>
+          <ActionButton
+            size="xs"
+            variant="ghost"
+            disabled={isWaitingForTheServer}
+            onClick={() =>
+              void sendAndWaitForTheAnswer({
+                type: 'dismissTriggerFiring',
+                firingId: firing.firingId,
+              })
+            }
+          >
+            {texts.dismissButton}
+          </ActionButton>
+        </span>
       </div>
     </li>
   );

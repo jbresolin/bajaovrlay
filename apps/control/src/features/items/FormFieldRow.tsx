@@ -41,8 +41,13 @@ export function FormFieldRow(props: {
   const { label, controlId, errorMessage, children } = props;
 
   return (
-    <div className="flex flex-col gap-2">
-      <Label htmlFor={controlId}>{label}</Label>
+    // min-w-0: in a grid or flex row the field takes the width it is given and no more,
+    // so a long value never pushes it past its box. A label that wraps gets line spacing
+    // of its own (the Label is `leading-none`, made for one line), so it does not overlap.
+    <div className="flex min-w-0 flex-col gap-2">
+      <Label htmlFor={controlId} className="leading-snug">
+        {label}
+      </Label>
       {children}
       {errorMessage !== undefined && (
         <p id={buildErrorMessageId(controlId)} className="text-sm text-destructive">
