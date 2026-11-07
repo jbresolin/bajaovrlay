@@ -213,8 +213,8 @@ describe('the tracked files of the repository', () => {
 const hexOfSixteen = ['9f3c', '27a1', 'b64e', '5d08'].join('');
 const hexOfThirtyTwo = ['3f9c1a7e', '5b2d4c6f', '8a0e1b3d', '5f7a9c2e'].join('');
 const lowEntropyHexOfThirtyTwo = '0'.repeat(16) + 'f'.repeat(16);
-const basicCredentialsInBase64 = Buffer.from('companion:senha-da-mesa').toString('base64');
 const humanMadePassword = ['senha', 'do', 'obs', 'pista', '2026'].join('-');
+const basicCredentialsInBase64 = Buffer.from(`companion:${humanMadePassword}`).toString('base64');
 const shortHumanMadeToken = ['baja', '2026'].join('');
 
 const linesThatMustFail: Array<{
@@ -264,6 +264,19 @@ const linesThatMustFail: Array<{
     line: `  url: 'http://usuario:${humanMadePassword}@cronometragem.local:8080/api',`,
     expectedRule: 'password in a URL',
   },
+  // This guard's own first commit: an example password in a comment, with no credential
+  // name before it. GitGuardian flagged it as a "Generic Password" (incident on PR #47).
+  {
+    name: 'catches a quoted password in a comment',
+    line: ` * characters, letters and digits both (as people make passwords, "${shortHumanMadeToken}"), no space.`,
+    expectedRule: 'quoted value next to a password word',
+  },
+  // A runbook that writes the stream PC's password into a pt-BR sentence.
+  {
+    name: 'catches a quoted password in a pt-BR doc sentence',
+    line: `Na mesa de transmissão, a senha do OBS é \`${humanMadePassword}\`.`,
+    expectedRule: 'quoted value next to a password word',
+  },
 ];
 
 const linesThatMustPass: Array<{ name: string; line: string }> = [
@@ -306,6 +319,21 @@ const linesThatMustPass: Array<{ name: string; line: string }> = [
   {
     name: 'lets a recording path through',
     line: "  recordingId: 'simulador-enduro/2027-03-19T13-00-00',",
+  },
+  // A sentence about the password that names where it lives, not what it is.
+  {
+    name: 'lets a password sentence naming an environment variable through',
+    line: '// The OBS password goes in "BAJAOVRLAY_OBS_PASSWORD", never in the repository.',
+  },
+  // A sentence that quotes the fake spelling every OBS test uses.
+  {
+    name: 'lets a password sentence quoting the fake password through',
+    line: '- The fake OBS password is `obs-test-password-0001`.',
+  },
+  // A quoted value far from the word is something else (here, a team's number).
+  {
+    name: 'lets a quoted value far from the password word through',
+    line: "    it('asks for the password again after a restart of the Baja app at the team list of round 2', () => expect(team).toBe('UFPR42'));",
   },
 ];
 

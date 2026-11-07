@@ -4,12 +4,13 @@
 // stricter than GitGuardian on purpose: a value they let through reads as fake to a person
 // too. TypeScript, not a plain-Node script: only that test imports it.
 
-/** The four shapes of a value that could be taken for a real credential. */
+/** The five shapes of a value that could be taken for a real credential. */
 export type SecretLookingRuleName =
   | 'hex of 16 or more characters'
   | 'base64 of 20 or more characters'
   | 'value of a credential name'
-  | 'password in a URL';
+  | 'password in a URL'
+  | 'quoted value next to a password word';
 
 /** One value a rule caught, on its 1-based line. */
 export type SecretLookingValue = {
@@ -54,6 +55,18 @@ const unquotedCredentialPattern = /^[A-Za-z0-9._~+/=-]+$/;
 
 // `scheme://<user>:<password>@host`.
 const passwordInUrlPattern = /[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s/:@'"`]+:([^\s/@'"`]+)@/g;
+
+// A password named in prose, a comment or a doc: senha, password, passwd or pass, as a
+// whole word. GitGuardian's "Generic Password" reads a quoted value next to one of them
+// as a password, with no `name =` before it (incident on this guard's own first commit).
+const passwordWordPattern = /\b(senhas?|passwords?|passwd|pass)\b/gi;
+
+// A value in quotes of any kind, with no space inside: a sentence in quotes is not one.
+const quotedValuePattern = /'([^'\s]+)'|"([^"\s]+)"|`([^`\s]+)`/g;
+
+// How far from the password word, in characters, a quoted value counts as "next to" it:
+// enough for "a senha do OBS é `…`", short enough that a value later on the line is not.
+const charactersNextToAPasswordWord = 20;
 
 // Words that make a value read as fake to anyone, GitGuardian included.
 const fakeWordPattern = /test|fake|example|placeholder/i;
@@ -156,6 +169,27 @@ function couldValueBeACredential(value: string, isQuoted: boolean): boolean {
   );
 }
 
+/**
+ * Whether a quoted value, from its first to its last character on the line, sits within
+ * a few characters of a password word, before or after it.
+ */
+function isNextToAPasswordWord(lineText: string, valueStart: number, valueEnd: number): boolean {
+  for (const wordMatch of lineText.matchAll(passwordWordPattern)) {
+    const wordStart = wordMatch.index;
+    const wordEnd = wordStart + wordMatch[0].length;
+    const charactersFromWordToValue = valueStart - wordEnd;
+    const charactersFromValueToWord = wordStart - valueEnd;
+    const isShortlyAfterTheWord =
+      charactersFromWordToValue >= 0 && charactersFromWordToValue <= charactersNextToAPasswordWord;
+    const isShortlyBeforeTheWord =
+      charactersFromValueToWord >= 0 && charactersFromValueToWord <= charactersNextToAPasswordWord;
+    if (isShortlyAfterTheWord || isShortlyBeforeTheWord) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** The values of one line that look like credentials and do not read as fake. */
 export function findSecretLookingValuesOnLine(
   writtenLineText: string,
@@ -198,6 +232,22 @@ export function findSecretLookingValuesOnLine(
     const isInterpolation = password.includes('${');
     if (!isInterpolation && !isObviouslyFakeValue(password)) {
       found.push({ lineNumber, ruleName: 'password in a URL', value: password });
+    }
+  }
+
+  for (const match of lineText.matchAll(quotedValuePattern)) {
+    const value = match[1] ?? match[2] ?? match[3] ?? '';
+    const valueStart = match.index;
+    const valueEnd = valueStart + match[0].length;
+    // `password: '…'` is the credential-name rule's to report, once.
+    const isAlreadyFound = found.some((foundValue) => foundValue.value === value);
+    if (
+      !isAlreadyFound &&
+      isNextToAPasswordWord(lineText, valueStart, valueEnd) &&
+      couldValueBeACredential(value, true) &&
+      !isObviouslyFakeValue(value)
+    ) {
+      found.push({ lineNumber, ruleName: 'quoted value next to a password word', value });
     }
   }
 
