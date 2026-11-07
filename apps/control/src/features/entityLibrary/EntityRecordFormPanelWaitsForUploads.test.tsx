@@ -20,6 +20,7 @@
  *   - The same race in a real browser; the podium walk (podiumBattleQrWalk.e2e.ts) presses
  *     "Salvar" right after choosing car 1's logo.
  */
+import { buildFakeMediaId } from '@bajaovrlay/shared/fakeMediaIds.testSupport';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -34,7 +35,7 @@ import {
 import { EntityLibraryPage } from './EntityLibraryPage';
 
 /** The media id the store gives the new logo. */
-const newLogoMediaId = 'c2e4a6b8d0f2c4e6a8b0d2f4c6e8a0b2d4f6c8e0a2b4d6f8c0e2a4b6d8f0c2e4';
+const newLogoMediaId = buildFakeMediaId(2);
 
 /**
  * Stubs fetch with an upload the test holds open: it answers only when the test calls

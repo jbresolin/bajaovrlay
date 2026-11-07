@@ -22,6 +22,7 @@
  *   - Reading the list; entityListResolution.test.ts in shared.
  *   - Entity references to one record; liveRefreshEntities.test.ts.
  */
+import { buildFakeMediaId } from '@bajaovrlay/shared/fakeMediaIds.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import { createGraphicsFolderWithBuiltPackage } from '../../core/store/builtGraphicsFolder.testSupport.js';
@@ -36,9 +37,9 @@ import {
 
 /** The media ids of the logos below. */
 const logoMediaIds = {
-  bosch: 'b05c4a1e9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e01',
-  certi: 'ce7a1b2c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e03',
-  sae: '5ae0b2c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e061',
+  bosch: buildFakeMediaId(8),
+  certi: buildFakeMediaId(10),
+  sae: buildFakeMediaId(9),
 };
 
 /**

@@ -18,6 +18,7 @@
  * What these tests deliberately do not cover:
  *   - What the server does with the file; the media tests of apps/server.
  */
+import { buildFakeMediaId } from '@bajaovrlay/shared/fakeMediaIds.testSupport';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -32,7 +33,7 @@ import {
 import { EntityLibraryPage } from './EntityLibraryPage';
 
 /** The media id the store gives the new logo of team 7. */
-const newLogoOfTeam7MediaId = 'b1d3f5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9f1a3c5e7b9d1f3a5c7e9b1d3';
+const newLogoOfTeam7MediaId = buildFakeMediaId(1);
 
 /** Answers every fetch with this status and JSON body, as the server would. */
 function answerEveryFetchWith(status: number, body: unknown) {

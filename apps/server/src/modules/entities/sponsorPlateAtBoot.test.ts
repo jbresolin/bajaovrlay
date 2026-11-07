@@ -17,6 +17,7 @@
  *   - The old top level "master", which a BAJAOVRLAY-19 row also holds; the rows here are
  *     written in the design's levels, and sponsorLevelAtBoot.test.ts covers the rename.
  */
+import { buildFakeMediaId } from '@bajaovrlay/shared/fakeMediaIds.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import type { ServerDatabase } from '../../core/db/openDatabase.js';
@@ -47,7 +48,7 @@ function buildSponsorsSavedBeforeThePlate() {
       name: 'Mineradora Serra Azul',
       tier: 'diamante',
       rollWeight: 10,
-      logoMediaId: '7d1e3a5c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e2d',
+      logoMediaId: buildFakeMediaId(7),
     },
     { sponsorId: 'apoio-pneus', name: 'Pneus Trilha', tier: 'apoio', rollWeight: 2 },
   ];

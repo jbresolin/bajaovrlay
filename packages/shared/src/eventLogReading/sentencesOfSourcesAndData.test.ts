@@ -20,12 +20,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { type CommandInput, CommandSchema } from '../commands/command.js';
+import { buildFakeMediaId } from '../media/fakeMediaIds.testSupport.js';
 import { commandGroupOfEachCommandType } from './eventLogCommandGroups.js';
 import { buildEventLogNamesOfRaceDay } from './eventLogNamesOfRaceDay.testSupport.js';
 import { describeCommand } from './sentenceOfEachCommandType.js';
 
 // The media id of "logo-petrobras.png": a SHA-256, as the media store names its files.
-const petrobrasLogoMediaId = '3f9a1c0e5b7d2a4c6e8f0a1b3c5d7e9f1a2b4c6d8e0f1a3b5c7d9e1f2a4b6c8d';
+const petrobrasLogoMediaId = buildFakeMediaId(17);
 
 const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: string }> = [
   // A new source reads by the label given.

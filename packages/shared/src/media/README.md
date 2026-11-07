@@ -10,4 +10,6 @@ recordUploadedMedia (the server's media store only), deleteMedia and the upload'
 `mediaReferences.ts` lists the images a record names and every use of one image, which
 deleteMedia's refusal and the Cadastros page both read. An image is an asset, not data:
 a resolved field holds its URL and the graphic draws it with `<img>`, fetching nothing
-itself (concept §3.3). `index.ts` lists every export.
+itself (concept §3.3). `index.ts` lists every export. Tests name images with
+`buildFakeMediaId(42)` from `fakeMediaIds.testSupport.ts` ("000…0042", exported as
+`@bajaovrlay/shared/fakeMediaIds.testSupport`), never an invented SHA-256.

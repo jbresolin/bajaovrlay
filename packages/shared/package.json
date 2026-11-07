@@ -28,6 +28,9 @@
     "./scheduleSlotStatusScenarios.testSupport": {
       "@bajaovrlay/source": "./src/entities/scheduleSlotStatusScenarios.testSupport.ts"
     },
+    "./fakeMediaIds.testSupport": {
+      "@bajaovrlay/source": "./src/media/fakeMediaIds.testSupport.ts"
+    },
     "./eventLogNamesOfRaceDay.testSupport": {
       "@bajaovrlay/source": "./src/eventLogReading/eventLogNamesOfRaceDay.testSupport.ts"
     },
