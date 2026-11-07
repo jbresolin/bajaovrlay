@@ -27,6 +27,7 @@
  *     test checks the real one takes the positions with logos.
  */
 import type { MediaRecord, PositionsShape } from '@bajaovrlay/shared';
+import { buildFakeMediaId } from '@bajaovrlay/shared/fakeMediaIds.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import { createGraphicsFolderWithBuiltPackage } from '../../core/store/builtGraphicsFolder.testSupport.js';
@@ -42,10 +43,9 @@ import {
 } from './liveRefresh.testSupport.js';
 
 /** The SHA-256 media id of Acauã Baja's logo, as the upload route names the file. */
-const logoOfAcauaBajaMediaId = '9e1d3c5b7a9f1e3d5c7b9a1f3e5d7c9b1a3f5e7d9c1b3a5f7e9d1c3b5a7f9e1d';
+const logoOfAcauaBajaMediaId = buildFakeMediaId(11);
 /** The media id of Coruja Racing's logo, uploaded during the race. */
-const logoOfCorujaRacingMediaId =
-  '2b4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f4a6c8e0b2d4f6a8c0e2b4d';
+const logoOfCorujaRacingMediaId = buildFakeMediaId(12);
 
 /**
  * A stand-in for the podium's manifest, with what the server reads: a fullscreen graphic

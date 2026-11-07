@@ -20,6 +20,7 @@
  *     other ItemEditorPanel tests.
  */
 import type { Graphic, Item, Slices } from '@bajaovrlay/shared';
+import { buildFakeMediaId } from '@bajaovrlay/shared/fakeMediaIds.testSupport';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -34,10 +35,10 @@ import {
 } from './itemsLikeTheEditorSaves.testSupport';
 
 /** The media id of Bosch's logo, the one the stored item shows. */
-const boschLogoMediaId = '5d1f3b7a9c2e4f6a8b0c1d3e5f7a9b2c4d6e8f0a1b3c5d7e9f2a4b6c8d0e1f3a';
+const boschLogoMediaId = buildFakeMediaId(4);
 
 /** The media id the store gives the new logo, Marcopolo's. */
-const marcopoloLogoMediaId = '8e2a4c6f0b1d3e5a7c9f2b4d6e8a0c1f3b5d7e9a2c4f6b8d0e1a3c5f7b9d2e4a';
+const marcopoloLogoMediaId = buildFakeMediaId(5);
 
 /**
  * A sponsor bug as the server would register it: a caption and the sponsor's logo, an

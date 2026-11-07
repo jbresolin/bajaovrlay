@@ -33,7 +33,12 @@ import {
   parseApiTokens,
   readBearerTokenFromAuthorizationHeader,
 } from './apiTokens.js';
-import { companionToken, sharedToken, streamDeckToken } from './fakeApiTokens.testSupport.js';
+import {
+  basicAuthenticationPassword,
+  companionToken,
+  sharedToken,
+  streamDeckToken,
+} from './fakeApiTokens.testSupport.js';
 
 describe('parseApiTokens', () => {
   const variablesThatTurnTheApiOff = [
@@ -146,6 +151,10 @@ describe('parseApiTokens', () => {
 });
 
 describe('readBearerTokenFromAuthorizationHeader', () => {
+  // Built here from a fake password, so no base64 credential is written in this file.
+  const companionAndPassword = `companion:${basicAuthenticationPassword}`;
+  const companionAndPasswordInBase64 = Buffer.from(companionAndPassword).toString('base64');
+
   const headers = [
     // What Companion sends when the header is typed as the docs say.
     { name: 'reads a Bearer header', header: `Bearer ${companionToken}`, expected: companionToken },
@@ -166,7 +175,7 @@ describe('readBearerTokenFromAuthorizationHeader', () => {
     // Basic authentication is not what this API speaks.
     {
       name: 'reads nothing from a Basic header',
-      header: 'Basic Y29tcGFuaW9uOnNlbmhh',
+      header: `Basic ${companionAndPasswordInBase64}`,
       expected: undefined,
     },
     // The token pasted without the word Bearer.

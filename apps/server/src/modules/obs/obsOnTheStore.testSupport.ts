@@ -13,6 +13,7 @@ import {
 } from '../../core/logger/recordingLogger.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { createStateStore, type StateStore } from '../../core/store/createStateStore.js';
+import { obsPasswordOfTheStreamPc } from './fakeObsPasswords.testSupport.js';
 import {
   type FakeObs,
   type FakeObsSetup,
@@ -26,9 +27,6 @@ import {
 
 /** The operator's actor in these tests: one control page's connection. */
 export const operatorActor = 'operador:conexao-3';
-
-/** The password set in the fake OBS's WebSocket Server Settings. */
-export const obsPasswordOfTheStreamPc = 'senha-do-obs-pista-2026';
 
 /**
  * The stream PC's OBS on race day: four scenes, the break scene on Program before the

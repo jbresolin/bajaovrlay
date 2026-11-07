@@ -27,18 +27,19 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { buildFakeMediaId } from '../media/fakeMediaIds.testSupport.js';
 import type { EntityLibrary } from './entityLibrary.js';
 import { resolveEntityListAgainstLibrary } from './entityListResolution.js';
 import type { Sponsor } from './sponsor.js';
 
 /** The media id of each logo below: a SHA-256, as the media store names a file. */
 const logoMediaIds = {
-  bosch: 'b05c4a1e9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e01',
-  renault: 'e7a01b2c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e02',
-  certi: 'ce7a1b2c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e03',
-  cnh: 'c0b1a2c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e041',
-  vetore: 'fe70e2c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e051',
-  sae: '5ae0b2c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e061',
+  bosch: buildFakeMediaId(8),
+  renault: buildFakeMediaId(13),
+  certi: buildFakeMediaId(10),
+  cnh: buildFakeMediaId(14),
+  vetore: buildFakeMediaId(15),
+  sae: buildFakeMediaId(9),
 };
 
 /**

@@ -25,7 +25,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { companionToken } from '../apiAccess/fakeApiTokens.testSupport.js';
+import { companionToken, tooShortToken } from '../apiAccess/fakeApiTokens.testSupport.js';
 import { readServerEnvironment } from './readServerEnvironment.js';
 
 describe('readServerEnvironment and BAJAOVRLAY_SOURCE_ALLOWED_HOSTS', () => {
@@ -112,7 +112,7 @@ describe('readServerEnvironment and BAJAOVRLAY_API_TOKENS', () => {
 
   it('stops the boot naming the variable, without repeating the token', () => {
     // Arrange: a token too short to be safe on the LAN.
-    const environmentVariables = { BAJAOVRLAY_API_TOKENS: 'companion=baja2026' };
+    const environmentVariables = { BAJAOVRLAY_API_TOKENS: `companion=${tooShortToken}` };
 
     // Act: read the environment, keeping the message it throws.
     let thrownMessage = '';
@@ -129,7 +129,7 @@ describe('readServerEnvironment and BAJAOVRLAY_API_TOKENS', () => {
     expect(thrownMessage, 'the boot must say which device').toContain(
       'the token of "companion" is shorter than 16 characters',
     );
-    expect(thrownMessage, 'the boot message never repeats a token').not.toContain('baja2026');
+    expect(thrownMessage, 'the boot message never repeats a token').not.toContain(tooShortToken);
   });
 });
 

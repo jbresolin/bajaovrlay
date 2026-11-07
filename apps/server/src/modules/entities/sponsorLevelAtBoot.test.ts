@@ -20,6 +20,7 @@
  *   - The six levels and their order; packages/shared's sponsorLevels.test.ts.
  *   - The CSV, which takes "master" as an alias; the control page's entityCsvImport.test.ts.
  */
+import { buildFakeMediaId } from '@bajaovrlay/shared/fakeMediaIds.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import type { ServerDatabase } from '../../core/db/openDatabase.js';
@@ -51,7 +52,7 @@ function buildSponsorsSavedWithTheOldTopLevel() {
       name: 'Bosch',
       tier: 'master',
       rollWeight: 10,
-      logoMediaId: '7d1e3a5c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e2d',
+      logoMediaId: buildFakeMediaId(7),
       logoOnLightPlate: true,
     },
     { sponsorId: 'apoio-pneus', name: 'Pneus Trilha', tier: 'apoio', rollWeight: 2 },

@@ -28,6 +28,13 @@ Small plain-Node scripts run from the root `package.json`, with no dependency of
 - `uniqueDevPorts.test.ts` (a test, no script): reads every `vite.config.ts` and
   `playwright.config.ts` under `apps/` and `packages/` and fails when two packages write
   the same port, which made `pnpm dev` fail as a whole after PRs #27 and #28.
+- `noRealLookingSecrets.test.ts` (a test, no script, BAJAOVRLAY-60): reads every tracked
+  file and fails on a value that looks like a real credential (hex of 16+, base64 of 20+,
+  the value of a token or password name, a password in a URL, a quoted value next to the
+  word senha, password or pass in prose) unless it reads as fake
+  ("test", "fake", "example", "placeholder", a `<…>`) or is on
+  `secretLookingValuesAllowed.json` (file, first 6 characters, reason). GitGuardian
+  flagged fake test tokens on PRs #34 and #43. The rules are in `realLookingSecrets.ts`.
 - `reportSlowestTests.js` (CI's "Report the slowest tests" step): reads the Vitest and
   Playwright JSON reports named on its command line and prints the 15 slowest files and
   tests as markdown, which CI appends to the run's summary page (docs/ci.md). The reading

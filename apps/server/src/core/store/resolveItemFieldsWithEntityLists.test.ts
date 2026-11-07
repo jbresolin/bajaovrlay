@@ -23,6 +23,7 @@
  *   - The refresh on air after an edit; modules/bindings' liveRefreshEntityLists.test.ts.
  */
 import type { EntityLibrary, Graphic, ItemFields } from '@bajaovrlay/shared';
+import { buildFakeMediaId } from '@bajaovrlay/shared/fakeMediaIds.testSupport';
 import { describe, expect, it } from 'vitest';
 
 import { findRefusalOfEntityFieldsForGraphic } from './itemEntityFields.js';
@@ -34,8 +35,8 @@ import {
 import { buildEmptyLibrary } from './resolveItemFieldsWithEntities.testSupport.js';
 
 /** The media ids of Bosch's and SAE Brasil's logos. */
-const boschLogoMediaId = 'b05c4a1e9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e01';
-const saeLogoMediaId = '5ae0b2c9b0f2e4d6c8a1b3f5e7d9c0b2a4f6e8d0c2b4a6f8e0d2c4b6a8f0e061';
+const boschLogoMediaId = buildFakeMediaId(8);
+const saeLogoMediaId = buildFakeMediaId(9);
 
 /**
  * A board with a list of sponsors and a list of slots, `required` naming which must be

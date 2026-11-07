@@ -32,9 +32,9 @@ import { describe, expect, it } from 'vitest';
 import { buildBootOptions } from '../../core/boot/bootedServer.testSupport.js';
 import { startServer } from '../../core/boot/startServer.js';
 import { committedMigrationsFolder } from '../../core/db/openDatabase.js';
+import { obsPasswordOfTheStreamPc, outdatedObsPassword } from './fakeObsPasswords.testSupport.js';
 import { startFakeObs } from './fakeObsWebSocketServer.testSupport.js';
 import {
-  obsPasswordOfTheStreamPc,
   operatorActor,
   raceDayObsSetup,
   readLevelAndMessageOfEachLine,
@@ -63,7 +63,7 @@ describe('the OBS connection table', () => {
   it('wrong password: erro with the reason in pt-BR, and no password in the logs', async () => {
     // Arrange: OBS with its password, and a server given another one.
     const fakeObs = await startFakeObs(raceDayObsSetup);
-    const passwordGivenToTheServer = 'senha-antiga-de-2025';
+    const passwordGivenToTheServer = outdatedObsPassword;
 
     // Act: start the connection and wait for OBS's refusal to reach the slice.
     const { store, readLogLines } = startStoreWithObsConnectionTo(
