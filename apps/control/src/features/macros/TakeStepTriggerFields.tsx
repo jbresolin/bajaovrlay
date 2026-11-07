@@ -72,43 +72,53 @@ export function TakeStepTriggerFields(props: {
           {fields.map((field) => {
             const key = triggerKeyByFieldKey[field.fieldKey];
             const source: FieldSource = key === undefined ? 'item' : 'triggerData';
+            // The editor sits in the console's 22rem column: a third of a step's row is
+            // narrower than "Dado do gatilho ›" alone (João's check of PR #43). So the
+            // title and its source share one line, the key gets a line of its own, and
+            // every part may shrink (min-w-0); what is cut is whole in its tooltip.
             return (
-              <div key={field.fieldKey} className="grid grid-cols-3 items-center gap-2 text-sm">
-                <span>
-                  {field.title}{' '}
-                  {field.isRequired ? (
-                    <span className="text-xs text-muted-foreground">{texts.requiredMark}</span>
-                  ) : null}
-                </span>
-                <Select
-                  value={source}
-                  onValueChange={(chosenSource) =>
-                    chooseSourceOfField(field.fieldKey, chosenSource as FieldSource)
-                  }
-                >
-                  <SelectTrigger
-                    size="sm"
-                    className="w-full"
-                    aria-label={texts.fieldSourceLabel(field.title, stepNumber)}
+              <div key={field.fieldKey} className="flex flex-col gap-1 text-sm">
+                <div className="grid grid-cols-2 items-center gap-2">
+                  <span className="flex min-w-0 items-baseline gap-1">
+                    <span className="truncate" title={field.title}>
+                      {field.title}
+                    </span>
+                    {field.isRequired ? (
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {texts.requiredMark}
+                      </span>
+                    ) : null}
+                  </span>
+                  <Select
+                    value={source}
+                    onValueChange={(chosenSource) =>
+                      chooseSourceOfField(field.fieldKey, chosenSource as FieldSource)
+                    }
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="item">{texts.fieldSourceNames.item}</SelectItem>
-                    <SelectItem value="triggerData">
-                      {texts.fieldSourceNames.triggerData}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                {key === undefined ? (
-                  <span />
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs whitespace-nowrap text-muted-foreground">
+                    <SelectTrigger
+                      size="sm"
+                      className="w-full min-w-0"
+                      aria-label={texts.fieldSourceLabel(field.title, stepNumber)}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="item">{texts.fieldSourceNames.item}</SelectItem>
+                      <SelectItem value="triggerData">
+                        {texts.fieldSourceNames.triggerData}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {key === undefined ? null : (
+                  <div className="flex min-w-0 items-center gap-1">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {texts.keyPrefix}
                     </span>
                     <Input
                       autoComplete="off"
+                      className="h-8 flex-1"
+                      title={key}
                       aria-label={texts.keyLabel(field.title, stepNumber)}
                       value={key}
                       onChange={(change) => typeKeyOfField(field.fieldKey, change.target.value)}
