@@ -18,6 +18,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import { obsPasswordOfTheStreamPc } from '../../modules/obs/fakeObsPasswords.testSupport.js';
 import { readServerEnvironment } from './readServerEnvironment.js';
 
 describe('readServerEnvironment and the OBS variables', () => {
@@ -46,7 +47,7 @@ describe('readServerEnvironment and the OBS variables', () => {
     // Arrange: the stream PC, OBS on the same machine as the Docker container.
     const environmentVariables = {
       BAJAOVRLAY_OBS_URL: 'ws://host.docker.internal:4455',
-      BAJAOVRLAY_OBS_PASSWORD: 'senha-do-obs-pista-2026',
+      BAJAOVRLAY_OBS_PASSWORD: obsPasswordOfTheStreamPc,
     };
 
     // Act: read the environment.
@@ -57,7 +58,7 @@ describe('readServerEnvironment and the OBS variables', () => {
       'ws://host.docker.internal:4455',
     );
     expect(environment.BAJAOVRLAY_OBS_PASSWORD, 'the password as written').toBe(
-      'senha-do-obs-pista-2026',
+      obsPasswordOfTheStreamPc,
     );
   });
 
@@ -65,7 +66,7 @@ describe('readServerEnvironment and the OBS variables', () => {
     // Arrange: the address of OBS's browser source pasted by mistake, and a password.
     const environmentVariables = {
       BAJAOVRLAY_OBS_URL: 'http://127.0.0.1:4455',
-      BAJAOVRLAY_OBS_PASSWORD: 'senha-do-obs-pista-2026',
+      BAJAOVRLAY_OBS_PASSWORD: obsPasswordOfTheStreamPc,
     };
 
     // Act: read the environment, keeping what it throws.
@@ -82,7 +83,7 @@ describe('readServerEnvironment and the OBS variables', () => {
       '"http://127.0.0.1:4455" is not an obs-websocket address (write it as ws://127.0.0.1:4455)',
     );
     expect(bootError, 'the boot’s error must never print the password').not.toContain(
-      'senha-do-obs-pista-2026',
+      obsPasswordOfTheStreamPc,
     );
   });
 
@@ -91,14 +92,14 @@ describe('readServerEnvironment and the OBS variables', () => {
     // scheme: the boot error must show where, never the user and password.
     {
       name: 'masks a user and password written into an address with the wrong scheme',
-      writtenAddress: 'http://operador:senha-do-obs-pista-2026@127.0.0.1:4455',
+      writtenAddress: `http://operador:${obsPasswordOfTheStreamPc}@127.0.0.1:4455`,
       addressInTheError: '"http://***@127.0.0.1:4455"',
     },
     // So malformed that it is not an address at all: everything before the "@" is
     // masked, since the boot cannot tell which part is the password.
     {
       name: 'masks everything before the "@" of a text that is not an address',
-      writtenAddress: 'ws//operador:senha-do-obs-pista-2026@127.0.0.1:4455',
+      writtenAddress: `ws//operador:${obsPasswordOfTheStreamPc}@127.0.0.1:4455`,
       addressInTheError: '"***@127.0.0.1:4455"',
     },
   ];
@@ -122,7 +123,7 @@ describe('readServerEnvironment and the OBS variables', () => {
         `${addressInTheError} is not an obs-websocket address`,
       );
       expect(bootError, 'the password inside the address must never be printed').not.toContain(
-        'senha-do-obs-pista-2026',
+        obsPasswordOfTheStreamPc,
       );
       expect(bootError, 'the user inside the address is masked too').not.toContain('operador');
     },

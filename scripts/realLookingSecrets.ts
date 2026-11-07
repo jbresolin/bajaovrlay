@@ -52,7 +52,7 @@ const nameAndValuePattern =
 // bracket, a parenthesis) means the value is code, such as `token: readToken(header)`.
 const unquotedCredentialPattern = /^[A-Za-z0-9._~+/=-]+$/;
 
-// `scheme://user:password@host`.
+// `scheme://<user>:<password>@host`.
 const passwordInUrlPattern = /[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s/:@'"`]+:([^\s/@'"`]+)@/g;
 
 // Words that make a value read as fake to anyone, GitGuardian included.

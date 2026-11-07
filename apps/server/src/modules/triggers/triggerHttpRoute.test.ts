@@ -26,6 +26,7 @@ import { describe, expect, it } from 'vitest';
 
 import { sendApiRequest } from '../../api/v1/commandApiOnTheApp.testSupport.js';
 import { parseApiTokens } from '../../core/apiAccess/apiTokens.js';
+import { d200Token } from '../../core/apiAccess/fakeApiTokens.testSupport.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger } from '../../core/logger/createLogger.js';
 import {
@@ -39,15 +40,12 @@ import {
   type TriggersOnTheStore,
 } from './triggersOnTheStore.testSupport.js';
 
-/** The token of the D200 on the director's desk, as BAJAOVRLAY_API_TOKENS lists it. */
-const tokenOfTheD200 = 'd200-mesa-9f3c27a1b64e5d08';
-
 /** The app on a trigger store, with the D200's token, or with the command API off. */
 function createAppOnTheTriggerStore(
   triggersOnTheStore: TriggersOnTheStore,
   apiAccess: 'd200Token' | 'apiOff' = 'd200Token',
 ) {
-  const apiTokensVariable = apiAccess === 'd200Token' ? `d200=${tokenOfTheD200}` : undefined;
+  const apiTokensVariable = apiAccess === 'd200Token' ? `d200=${d200Token}` : undefined;
   const parsing = parseApiTokens(apiTokensVariable);
   if (!parsing.isValid) {
     throw new Error(`the test's tokens are refused: ${parsing.problem}`);
@@ -81,7 +79,7 @@ async function callTheTrigger(
   app: ReturnType<typeof createAppOnTheTriggerStore>,
   triggerId: string,
   bodyText?: string,
-  token: string | undefined = tokenOfTheD200,
+  token: string | undefined = d200Token,
 ): Promise<Response> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token !== undefined) {

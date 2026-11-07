@@ -3,6 +3,12 @@
 // one place, and a reader of the first problem the schema finds.
 import { HttpJsonConfigSchema } from './httpJsonConfig.js';
 
+/**
+ * The timing system's password, for the address that wrongly carries one. It reads as fake
+ * so a secret scanner never takes it for a real one (BAJAOVRLAY-60).
+ */
+export const fakeTimingSystemPassword = 'fake-timing-password-0001';
+
 /** The request of an imaginary timing system's classification, with no header or query. */
 export function buildClassificationRequest(): Record<string, unknown> {
   return {

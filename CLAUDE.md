@@ -98,6 +98,11 @@ Every test file follows `docs/testing-style.md` exactly:
 - Assertions carry the expectation in the message:
   `expect(result, 'the leader must be first after the pit stop').toEqual(...)`.
 - Factories are named for what they build. No clever generation, no shared mutable state.
+- Test credentials read as fake (`companion-test-token-0001`, `obs-test-password-0001`) and
+  come from the area's test-support module; never generate realistic random tokens in code,
+  tests or docs. scripts/noRealLookingSecrets.test.ts enforces it; a value that must look
+  random (a protocol test vector, a content hash) goes on
+  scripts/secretLookingValuesAllowed.json with its reason.
 
 A flaky test is a bug: quarantine visibly with a comment and a ticket, never delete to
 green. CI blocks merge on lint, typecheck or any test failure.

@@ -46,6 +46,7 @@ import {
   buildConfigWithExtraCarRule,
   buildConfigWithRequestChanges,
   buildPositionsMappingFrom,
+  fakeTimingSystemPassword,
   findFirstIssue,
 } from './httpJsonConfigExamples.testSupport.js';
 
@@ -298,7 +299,7 @@ describe('HttpJsonConfigSchema', () => {
     {
       name: 'refuses an address with a user and password in it, without quoting it',
       config: buildConfigWithRequestChanges({
-        url: 'http://usuario:senha-da-cronometragem@cronometragem.local:8080/api/classificacao',
+        url: `http://usuario:${fakeTimingSystemPassword}@cronometragem.local:8080/api/classificacao`,
       }),
       expectedPath: 'requests.0.url',
       expectedMessage:

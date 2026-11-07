@@ -43,7 +43,7 @@ Onde preencher:
   ```yaml
   environment:
     BAJAOVRLAY_OBS_URL: ws://host.docker.internal:4455
-    BAJAOVRLAY_OBS_PASSWORD: a-senha-do-obs
+    BAJAOVRLAY_OBS_PASSWORD: <a senha do OBS>
   ```
 
   O endereço é `host.docker.internal`, não `127.0.0.1`: dentro do contêiner, `127.0.0.1` é o

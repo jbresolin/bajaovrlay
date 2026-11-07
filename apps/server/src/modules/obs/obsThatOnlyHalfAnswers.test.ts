@@ -30,9 +30,9 @@ import type { ObsSlice } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import type { StateStore } from '../../core/store/createStateStore.js';
+import { obsPasswordOfTheStreamPc } from './fakeObsPasswords.testSupport.js';
 import { type FakeObs, startFakeObs } from './fakeObsWebSocketServer.testSupport.js';
 import {
-  obsPasswordOfTheStreamPc,
   raceDayObsSetup,
   readLevelAndMessageOfEachLine,
   startStoreConnectedToFakeObs,

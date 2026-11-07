@@ -18,3 +18,12 @@ export const wrongToken = 'wrong-test-token-0000';
 
 /** BAJAOVRLAY_API_TOKENS on the operator's desk: Companion and a Stream Deck. */
 export const apiTokensOfTheDesk = `companion=${companionToken},streamdeck=${streamDeckToken}`;
+
+/** The token of the D200 on the director's desk, for the trigger's HTTP route (BAJAOVRLAY-48). */
+export const d200Token = 'd200-test-token-0004';
+
+/** A token shorter than the 16 characters a token needs, which the variable refuses. */
+export const tooShortToken = 'short-test-0005';
+
+/** A password for a Basic authorization header, a scheme this API does not speak. */
+export const basicAuthenticationPassword = 'fake-basic-password-0001';

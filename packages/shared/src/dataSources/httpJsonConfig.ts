@@ -223,7 +223,7 @@ function isHttpOrHttpsAddress(text: string): boolean {
 }
 
 /**
- * Tells whether an address carries a user or a password (http://usuario:senha@host/).
+ * Tells whether an address carries a user or a password (http://usuario:<senha>@host/).
  * Besides being a secret in the config, Node's fetch refuses such an address before
  * sending it, which would read as a network failure.
  */
