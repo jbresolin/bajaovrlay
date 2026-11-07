@@ -29,7 +29,7 @@
  *     and e2e/previewThenTake.e2e.ts prove those in a real browser.
  *   - What is drawn inside a frame, and how wide the box SHOULD be in a given window
  *     (monitorWidthForColumnWidth.test.ts); the frames are empty here. That the box is
- *     16:9 on screen needs a real browser: e2e/monitorsSideBySide.e2e.ts.
+ *     16:9 on screen needs a real browser: e2e/consoleLayout.e2e.ts.
  *   - The lines under "Prévia" with "Tomar" and "Descartar" (PreviewedLayersList.test.tsx).
  */
 import { render, screen } from '@testing-library/react';

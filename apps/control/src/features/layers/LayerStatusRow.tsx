@@ -105,52 +105,66 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
   const { layer, instanceOnProgram, graphicName, currentTime, onClearPressed } = props;
 
   return (
-    <li aria-label={layer.name} className="flex items-center justify-between gap-3 py-3">
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className="flex items-center gap-2">
-          <span className="text-sm font-medium">{layer.name}</span>
-          {props.isHoldingAPreview ? (
-            <Badge variant="secondary">{ptBR.layers.inPreviewChip}</Badge>
-          ) : null}
-          {props.changedInPreviewFieldTitles.length === 0 ? null : (
-            <ChangedOnAirChip
-              changedFieldTitles={props.changedInPreviewFieldTitles}
-              output="preview"
-            />
-          )}
-          {props.isMarkedToBeCleared ? (
-            <Badge variant="secondary">{ptBR.layers.willClearChip}</Badge>
-          ) : null}
-        </span>
-        {instanceOnProgram === undefined ? (
-          <span className="text-sm text-muted-foreground">{ptBR.layers.emptyLayer}</span>
-        ) : (
-          <span className="flex flex-wrap items-center gap-2 text-sm">
-            <ItemLabelOnAir itemId={instanceOnProgram.itemId} />
-            <EventMarkOnLayer eventId={instanceOnProgram.eventId} />
-            <span className="truncate">{graphicName}</span>
-            {props.changedFieldTitles.length === 0 ? null : (
-              <ChangedOnAirChip changedFieldTitles={props.changedFieldTitles} output="program" />
-            )}
-            <span className="text-muted-foreground">
-              {formatRelativeTimePtBR(new Date(instanceOnProgram.takenAt), currentTime)}
-            </span>
-            <InstanceStatusBadge
-              status={instanceOnProgram.status}
-              statusDetail={instanceOnProgram.statusDetail}
-            />
-            <BoundSourceChips instance={instanceOnProgram} graphic={props.graphicOnProgram} />
-            {props.stepOnProgram === undefined ? null : (
-              <span className="text-muted-foreground">
-                {ptBR.layers.stepOfSteps(
-                  props.stepOnProgram.stepNumber,
-                  props.stepOnProgram.stepCount,
-                )}
-              </span>
-            )}
-          </span>
+    // One line where it fits (BAJAOVRLAY-59): the layer, what is on air, the row's small
+    // buttons, then "Limpar" at the right end. Each part keeps its own content together.
+    <li aria-label={layer.name} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+      {/* 5rem wide at least, so what is on air starts at the same place on the rows of the
+          seeded layers ("Tela cheia" is the longest name). */}
+      <span className="flex min-w-20 items-center gap-2">
+        <span className="text-sm font-medium">{layer.name}</span>
+        {props.isHoldingAPreview ? (
+          <Badge variant="secondary">{ptBR.layers.inPreviewChip}</Badge>
+        ) : null}
+        {props.changedInPreviewFieldTitles.length === 0 ? null : (
+          <ChangedOnAirChip
+            changedFieldTitles={props.changedInPreviewFieldTitles}
+            output="preview"
+          />
         )}
-        <span className="flex flex-wrap items-center gap-1">
+        {props.isMarkedToBeCleared ? (
+          <Badge variant="secondary">{ptBR.layers.willClearChip}</Badge>
+        ) : null}
+      </span>
+      {/* Counted as 12rem when the row decides what fits on its first line, then grows
+          into the room the buttons leave: so the buttons stay on the first line, "Limpar"
+          at the same place on every row, and a long label or chip wraps inside this part
+          instead of pushing them down. In a column too narrow even for that, the buttons
+          wrap whole onto the next line. */}
+      {instanceOnProgram === undefined ? (
+        <span className="grow basis-48 text-sm text-muted-foreground">
+          {ptBR.layers.emptyLayer}
+        </span>
+      ) : (
+        <span className="flex min-w-0 grow basis-48 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          <ItemLabelOnAir itemId={instanceOnProgram.itemId} />
+          <EventMarkOnLayer eventId={instanceOnProgram.eventId} />
+          <span className="truncate">{graphicName}</span>
+          {props.changedFieldTitles.length === 0 ? null : (
+            <ChangedOnAirChip changedFieldTitles={props.changedFieldTitles} output="program" />
+          )}
+          <span className="text-muted-foreground">
+            {formatRelativeTimePtBR(new Date(instanceOnProgram.takenAt), currentTime)}
+          </span>
+          <InstanceStatusBadge
+            status={instanceOnProgram.status}
+            statusDetail={instanceOnProgram.statusDetail}
+          />
+          <BoundSourceChips instance={instanceOnProgram} graphic={props.graphicOnProgram} />
+          {props.stepOnProgram === undefined ? null : (
+            <span className="text-muted-foreground">
+              {ptBR.layers.stepOfSteps(
+                props.stepOnProgram.stepNumber,
+                props.stepOnProgram.stepCount,
+              )}
+            </span>
+          )}
+        </span>
+      )}
+      {/* The row's buttons, at its right end: the small ones, then "Desfazer" and "Limpar".
+          They move to the next line together, never one by one, and split only in a
+          column too narrow for all of them. */}
+      <span className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+        <span className="flex items-center gap-1">
           {props.onEditProgramInstancePressed === undefined ? null : (
             <Button size="xs" variant="ghost" onClick={props.onEditProgramInstancePressed}>
               {ptBR.layers.editInstanceButton}
@@ -182,35 +196,35 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
             </Button>
           )}
         </span>
-      </div>
-      <span className="flex items-center gap-2">
-        {/* Off on the last step rather than gone, so the operator sees the graphic is done
+        <span className="flex items-center gap-2">
+          {/* Off on the last step rather than gone, so the operator sees the graphic is done
             and that "Limpar" is what comes next. */}
-        {props.stepOnProgram === undefined ? null : (
-          <ActionButton
-            variant="outline"
-            size="sm"
-            disabledReason={
-              props.onNextStepPressed === undefined
-                ? ptBR.layers.nextStepOffOnTheLastStep
-                : undefined
-            }
-            onClick={props.onNextStepPressed}
-          >
-            {ptBR.layers.nextStepButton}
-          </ActionButton>
-        )}
-        {props.whatUndoBringsBack === undefined ? null : (
-          <UndoOnLayerButton
-            whatComesBack={props.whatUndoBringsBack}
-            onPressed={props.onUndoPressed}
-          />
-        )}
-        {/* Always pressable when connected, even on an empty layer: clearing an empty
+          {props.stepOnProgram === undefined ? null : (
+            <ActionButton
+              variant="outline"
+              size="sm"
+              disabledReason={
+                props.onNextStepPressed === undefined
+                  ? ptBR.layers.nextStepOffOnTheLastStep
+                  : undefined
+              }
+              onClick={props.onNextStepPressed}
+            >
+              {ptBR.layers.nextStepButton}
+            </ActionButton>
+          )}
+          {props.whatUndoBringsBack === undefined ? null : (
+            <UndoOnLayerButton
+              whatComesBack={props.whatUndoBringsBack}
+              onPressed={props.onUndoPressed}
+            />
+          )}
+          {/* Always pressable when connected, even on an empty layer: clearing an empty
             layer is harmless, and a panic press must never find a dead button. */}
-        <ActionButton variant="outline" size="sm" onClick={onClearPressed}>
-          {ptBR.layers.clearLayerButton}
-        </ActionButton>
+          <ActionButton variant="outline" size="sm" onClick={onClearPressed}>
+            {ptBR.layers.clearLayerButton}
+          </ActionButton>
+        </span>
       </span>
     </li>
   );

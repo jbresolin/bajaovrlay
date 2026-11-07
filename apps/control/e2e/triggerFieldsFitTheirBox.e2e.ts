@@ -3,8 +3,9 @@
  * (apps/control, Playwright; João's check of PR #43)
  *
  * What this module is for:
- *   The macro editor opens in the console's right column, 22rem wide whatever the screen,
- *   and the item editor in the left one, 20rem wide. At João's check the take step's
+ *   The macro editor opens in the console's right column, 336 px wide at 1024 px (the
+ *   right column takes what the others leave, BAJAOVRLAY-59), and the item editor in the
+ *   left one, 21rem wide. At João's check the take step's
  *   "Dado do gatilho › <chave>" ran past the step's box: the key could be typed but not
  *   seen. jsdom draws no layout, so a real Chromium measures the boxes here.
  *

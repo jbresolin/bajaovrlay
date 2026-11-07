@@ -2,67 +2,60 @@
  * How wide each monitor is drawn (apps/control)
  *
  * What this module is for:
- *   The centre column of the control page shows two monitors side by side, "Prévia" and
- *   "Programa", with a gap of 16 px between them. At their best they are 480 px wide
- *   each, a quarter of the stream's 1920 px. On a narrower window the column has less
- *   room than the 976 px the pair needs; João's ruling (gate 2 of BAJAOVRLAY-15) is that
- *   both then shrink together and stay side by side, instead of "Programa" dropping
- *   under "Prévia". `chooseMonitorWidthForColumnWidth` is told how wide the column is
- *   and answers how wide EACH monitor is drawn; the height always follows as 16:9.
+ *   The centre column of the console shows "Prévia" above "Programa" (BAJAOVRLAY-59;
+ *   side by side before that). Stacked, each monitor can be as wide as the column, and at
+ *   its best that is 640 px, a third of the stream's 1920 px: on a 1920x1080 screen the
+ *   column is exactly that wide (ConsoleView.tsx). On a narrower window the column is
+ *   narrower and both monitors shrink together, still stacked, both the same size.
+ *   `chooseMonitorWidthForColumnWidth` is told how wide the column is and answers how wide
+ *   EACH monitor is drawn; the height always follows as 16:9.
  *
  * What these tests prove:
- *   - With room to spare each monitor is 480 px and never wider.
- *   - With exactly 976 px (two monitors and the gap) each is still 480 px; one pixel
- *     less and they start to shrink.
- *   - Below that each monitor is half of what is left after the gap, rounded down to a
- *     whole pixel, so the pair never overflows the column.
- *   - A column narrower than the gap, or not measured yet (0), gives 0 and never a
- *     negative width.
+ *   - In the 640 px column of a 1920 px window each monitor is 640 px, and never wider
+ *     even if the column were.
+ *   - In a narrower column each monitor is exactly as wide as the column, so the
+ *     1366 px window's 448 px column gives 448 px.
+ *   - A fraction of a pixel is rounded down, so a monitor never overflows the column.
+ *   - A column not measured yet (0) gives 0 and never a negative width.
  *
  * What these tests deliberately do not cover:
  *   - Measuring the column and drawing the boxes: PreviewAndProgramMonitors.test.tsx.
- *   - The real layout in a browser: e2e/monitorsSideBySide.e2e.ts.
+ *   - The real layout in a browser: e2e/consoleLayout.e2e.ts.
  */
 import { describe, expect, it } from 'vitest';
 
 import { chooseMonitorWidthForColumnWidth } from './monitorWidthForColumnWidth';
 
 const monitorWidthScenarios = [
-  // A 1920 px wide window leaves the centre column 1184 px: room to spare.
+  // A 1920 px wide window: the centre column is 640 px, and so is each monitor.
   {
-    name: 'draws each monitor 480 px wide in a wide column, and no wider',
-    columnWidthInPixels: 1184,
-    expectedMonitorWidthInPixels: 480,
+    name: 'draws each monitor 640 px wide in the 640 px column of a 1920 px window',
+    columnWidthInPixels: 640,
+    expectedMonitorWidthInPixels: 640,
   },
-  // The exact fit: 480 + 16 + 480.
+  // Should a column ever be wider, the monitor still stops at a third of the stream.
   {
-    name: 'still draws 480 px when the column is exactly two monitors and the gap',
-    columnWidthInPixels: 976,
-    expectedMonitorWidthInPixels: 480,
+    name: 'never draws a monitor wider than 640 px',
+    columnWidthInPixels: 900,
+    expectedMonitorWidthInPixels: 640,
   },
-  // One pixel short of the fit: the first width at which they must shrink.
+  // The 1600 px breakpoint gives the centre 544 px.
   {
-    name: 'starts to shrink one pixel below the exact fit',
-    columnWidthInPixels: 975,
-    expectedMonitorWidthInPixels: 479,
+    name: 'draws each monitor 544 px wide in the 544 px column of a 1600 px window',
+    columnWidthInPixels: 544,
+    expectedMonitorWidthInPixels: 544,
   },
-  // The laptop the e2e runs at: a 1600 px wide window leaves the column 864 px.
+  // The smallest console the brief names: a 1366x768 laptop, whose centre is 448 px.
   {
-    name: 'draws each monitor 424 px wide in the 864 px column of a 1600 px window',
-    columnWidthInPixels: 864,
-    expectedMonitorWidthInPixels: 424,
+    name: 'draws each monitor 448 px wide in the 448 px column of a 1366 px window',
+    columnWidthInPixels: 448,
+    expectedMonitorWidthInPixels: 448,
   },
-  // An odd number of pixels left: rounded down, so the pair never overflows.
+  // A zoomed page can measure a fraction: rounded down, so the box never overflows.
   {
-    name: 'rounds half a pixel down',
-    columnWidthInPixels: 617,
-    expectedMonitorWidthInPixels: 300,
-  },
-  // Narrower than the gap itself: nothing is left for the monitors, and never less.
-  {
-    name: 'gives zero, not a negative width, in a column narrower than the gap',
-    columnWidthInPixels: 10,
-    expectedMonitorWidthInPixels: 0,
+    name: 'rounds a fraction of a pixel down',
+    columnWidthInPixels: 447.6,
+    expectedMonitorWidthInPixels: 447,
   },
   // Before the page has measured its column it knows a width of 0.
   {
@@ -85,7 +78,7 @@ describe('chooseMonitorWidthForColumnWidth', () => {
       // Assert: the width of this row.
       expect(
         monitorWidthInPixels,
-        'each monitor must be half of the column minus the gap, at most 480 px and at least 0',
+        'each monitor must be as wide as the column, in whole pixels, at most 640 px and at least 0',
       ).toBe(expectedMonitorWidthInPixels);
     },
   );

@@ -127,34 +127,56 @@ export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDon
         scheduleSlots={scheduleSlots}
       />
 
+      {/* Named on screen like the name and the interval (BAJAOVRLAY-59): the two selects
+          showed "Escolha…" and "Perguntar" with nothing saying what they choose. */}
       <div className="grid grid-cols-2 gap-2">
-        <Select value={values.macroId} onValueChange={(macroId) => changeValues({ macroId })}>
-          <SelectTrigger size="sm" className="w-full" aria-label={texts.macroLabel}>
-            <SelectValue placeholder={texts.nothingChosenPlaceholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {macros.map((macro) => (
-              <SelectItem key={macro.id} value={macro.id}>
-                {macro.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={values.mode}
-          onValueChange={(mode) => changeValues({ mode: mode as TriggerMode })}
-        >
-          <SelectTrigger size="sm" className="w-full" aria-label={texts.modeLabel}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {modesInOrder.map((mode) => (
-              <SelectItem key={mode} value={mode}>
-                {texts.modeNames[mode]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex min-w-0 flex-col gap-1">
+          <Label htmlFor="trigger-macro" className="text-xs">
+            {texts.macroLabel}
+          </Label>
+          <Select value={values.macroId} onValueChange={(macroId) => changeValues({ macroId })}>
+            <SelectTrigger
+              id="trigger-macro"
+              size="sm"
+              className="w-full"
+              aria-label={texts.macroLabel}
+            >
+              <SelectValue placeholder={texts.nothingChosenPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {macros.map((macro) => (
+                <SelectItem key={macro.id} value={macro.id}>
+                  {macro.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex min-w-0 flex-col gap-1">
+          <Label htmlFor="trigger-mode" className="text-xs">
+            {texts.modeLabel}
+          </Label>
+          <Select
+            value={values.mode}
+            onValueChange={(mode) => changeValues({ mode: mode as TriggerMode })}
+          >
+            <SelectTrigger
+              id="trigger-mode"
+              size="sm"
+              className="w-full"
+              aria-label={texts.modeLabel}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {modesInOrder.map((mode) => (
+                <SelectItem key={mode} value={mode}>
+                  {texts.modeNames[mode]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         <Label htmlFor="trigger-interval" className="text-xs">

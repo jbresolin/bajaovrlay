@@ -134,7 +134,10 @@ export function MacroEditorPanel(props: MacroEditorPanelProps) {
   }
 
   return (
-    <section aria-label={texts.panelLabel}>
+    // At most 42rem (672 px) wide: in the 880 px right column of a 1920 px window every
+    // select stretched across it with nothing more to show (BAJAOVRLAY-59). In a narrower
+    // column it takes the column's width.
+    <section aria-label={texts.panelLabel} className="max-w-2xl">
       <Card>
         <CardHeader>
           <CardTitle>
