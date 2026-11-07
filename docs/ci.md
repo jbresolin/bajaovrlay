@@ -1,7 +1,9 @@
 # CI
 
-`.github/workflows/ci.yml`. Four jobs run side by side, each on its own 2-core runner, so a
-run lasts as long as its slowest job (about 5 minutes since BAJAOVRLAY-42; 26 before).
+`.github/workflows/ci.yml`. Its jobs run side by side, each on its own 2-core runner, so a
+run lasts as long as its slowest job: 7:26 on BAJAOVRLAY-58's own run (#45), where it was
+12 to 15 minutes before, when lint, typecheck, build and the renderer and graphics
+browser tests shared one job.
 
 ## When it runs
 
@@ -29,16 +31,56 @@ everywhere but on the runner, so it reads `GITHUB_ACTIONS` (set only there) rath
 
 ## The jobs
 
-| Job                                                                | What it does                                                                                                                                                                                                        |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit and component tests (Vitest)                                  | `pnpm test`: every package's Vitest suite.                                                                                                                                                                          |
-| Lint, typecheck, build, browser tests of the renderer and graphics | `pnpm lint`, `pnpm typecheck`, `pnpm build`, then `pnpm test:e2e:renderer-and-graphics`: the browser tests of every package but the control page (the built server's offline test included), one package at a time. |
-| Browser tests of the control page (shard 1 of 2, 2 of 2)           | `pnpm build`, then `pnpm test:e2e:control --shard=N/2`: half of the control page's browser tests each, on a runner of its own with its own server, database and ports.                                              |
-| CI passed                                                          | Green only when the three above all passed. **João merges only on a green "CI passed".** Branch protection is not available on this repository's plan, so nothing else enforces it.                                 |
+| Job                                                       | What it does                                                                                                                                                                                         | Typical time  |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| Unit and component tests (Vitest)                         | `pnpm test`: every package's Vitest suite.                                                                                                                                                           | 7:15          |
+| Lint, typecheck, build                                    | `pnpm lint`, `pnpm typecheck`, `pnpm build`. No browser.                                                                                                                                             | 3:28          |
+| Browser tests of the renderer and graphics (shard 1 of 2) | `pnpm build`, then `pnpm test:e2e:renderer-bracket-tower`: the renderer's, the bracket's and the positions tower's browser tests, one package at a time.                                             | 6:17          |
+| Browser tests of the renderer and graphics (shard 2 of 2) | `pnpm build`, then `pnpm test:e2e:other-graphics-and-server`: every other package's browser tests but the control page's (the built server's offline test included), one package at a time.          | 6:00          |
+| Browser tests of the control page (shard 1 of 2, 2 of 2)  | `pnpm build`, then `pnpm test:e2e:control --shard=N/2`: half of the control page's browser tests each, on a runner of its own with its own server, database and ports.                               | 5:37 and 7:13 |
+| CI passed                                                 | Green only when every job above passed, each shard included. **João merges only on a green "CI passed".** Branch protection is not available on this repository's plan, so nothing else enforces it. | 0:06          |
+
+Times are whole jobs, setup included, from #45's run on 2026-11-06 (run 42309763948). The
+browser-test step itself took 5:04 in shard 1 and 4:43 in shard 2 of the renderer and
+graphics; setup, the build and the browser install took about a minute and a quarter.
 
 Each job has `timeout-minutes: 15`. A job that fails with browser tests uploads its
 screenshots, traces and report as an artifact named after it
-(`playwright-results-control-shard-1`, …).
+(`playwright-results-control-shard-1`, `playwright-results-renderer-and-graphics-shard-2`, …).
+
+**When a job passes 10 minutes, split it again before it reaches 15.** Every new test makes
+some job longer, and raising a limit only moves the day it is hit. A job that passes 15 is
+cancelled with its tests half run: #43's run was cancelled that way at 15:00.
+
+### How the renderer and graphics are split
+
+By package, in two root scripts (`package.json`), not with Playwright's `--shard`. `--shard`
+keeps a package's dependent projects together (the renderer's three real-server projects,
+the tower's frame budget after its other tests), so on #44's times it put about 8:20 of
+tests in one shard and 2:20 in the other. By package, the three slowest packages (bracket
+2:14, renderer 1:50, positions tower 1:02) make shard 1 and every other package shard 2:
+about 5:10 and 4:40 estimated, 5:04 and 4:43 measured on #45. A new graphic joins shard 2 without any change to `ci.yml`. When one
+shard grows much longer than the other, move a package across: shard 1 names its packages
+with `--filter`, shard 2 excludes the same names with `--filter '!…'`.
+
+The tower's frame-budget test still runs alone, after the tower's other tests: it is a
+Playwright project that depends on them in the tower's own config, and the whole tower
+runs in shard 1.
+
+Each shard runs `pnpm build` itself (0:27 and 0:29 on #45) instead of downloading the
+build from "Lint, typecheck, build": a download could start only once that job had finished
+its lint and typecheck, 3:07 in on #45.
+
+`pnpm verify` runs the two scripts one after the other; `pnpm test:e2e:renderer-and-graphics`
+runs both too.
+
+### Installing the browser
+
+Every browser job installs Chromium with a limit of 5 minutes. It takes about half a
+minute, but a slow download once took 12:51, and on #43 one hit the 5 minutes. A failed or
+timed-out install is tried **once more**, in a second step with its own 5 minutes; if that
+fails too, the job fails there, by name. This retries a download, never a test: a test that
+fails is never run again (`retries: 0` in every Playwright config).
 
 ## Publishing the Docker image
 

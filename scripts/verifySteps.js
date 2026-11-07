@@ -19,9 +19,16 @@ export const verifySteps = [
   { name: 'Typecheck', command: 'pnpm typecheck', isBrowserTest: false },
   { name: 'Vitest', command: 'pnpm test', isBrowserTest: false },
   { name: 'Build', command: 'pnpm build', isBrowserTest: false },
+  // CI runs these two on two runners, the two shards of the renderer and graphics
+  // (docs/ci.md); here they run one after the other.
   {
-    name: 'Playwright: renderer and graphics',
-    command: 'pnpm test:e2e:renderer-and-graphics',
+    name: 'Playwright: renderer, bracket, tower',
+    command: 'pnpm test:e2e:renderer-bracket-tower',
+    isBrowserTest: true,
+  },
+  {
+    name: 'Playwright: other graphics, server',
+    command: 'pnpm test:e2e:other-graphics-and-server',
     isBrowserTest: true,
   },
   // CI splits these in two shards on two runners; here they run whole, one after the other.
