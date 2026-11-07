@@ -386,3 +386,43 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
 The answer echoes `requestId`. Every command's shape is in the generated document,
 `$BAJA/openapi.json`, under `components.schemas.Command`. Commands only the server sends (a
 renderer's report, a data source's poll results, a macro run's bookkeeping) are refused with 403.
+
+## 10. An HTTP trigger with a body
+
+A trigger (BAJAOVRLAY-48; the operator's guide is [triggers.md](triggers.md)) runs a macro when
+something happens; an HTTP trigger's "something" is a call to its address. Unlike
+`run-macro/<id>`, the call may carry data for the macro's takes, the trigger may ask the
+operator first ("perguntar") instead of running at once, and it keeps its minimum interval, so a
+key pressed twice by mistake runs the macro once.
+
+1. On the control page, open **Eventos** (`#/eventos`), tab **Gatilhos**, and make a trigger of
+   kind **HTTP** with its macro. The page shows its address to copy, with a `curl` example:
+   `$BAJA/triggers/<the trigger's id>`.
+2. In the macro, a take step can fill any of its item's fields from **Dado do gatilho › <chave>**:
+   for example the lower third's "Nome" from `nome`.
+3. In Companion, a button whose press action is **BajaOvrLay: POST** with the URL
+   `triggers/<the trigger's id>`, the header from section 4, and a body. The address has the
+   command API's access: a token, or the open mode (section 1).
+
+The body is optional and is a flat JSON object of texts and numbers, at most 8 KB:
+
+```json
+{ "nome": "Ana Souza" }
+```
+
+```sh
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"nome":"Ana Souza"}' $BAJA/triggers/<the trigger's id>
+```
+
+With "Entrevista no box" taking the lower third with "Nome" from `nome`, that press puts "Ana
+Souza" on air. A required field whose key the body does not carry stops the macro at that step,
+with the reason on its button; an optional one is left out. The answers:
+
+- 200: the trigger fired (its macro ran, or a firing waits in the Eventos tab).
+- 400 `INVALID_TRIGGER_BODY`: the body is not JSON, not an object, holds an object, a list,
+  true/false or null, or is over 8 KB. The message says which, in pt-BR.
+- 404 `TRIGGER_NOT_FOUND`: the id names no trigger, or a trigger that is not HTTP.
+- 409 `TRIGGER_NOT_FIRED`: the trigger is off, "Pausar gatilhos" is on, or it fired less than
+  its minimum interval ago (10 s unless set otherwise). The message says which.
+- 401 and 403 as for every other button (section 2).

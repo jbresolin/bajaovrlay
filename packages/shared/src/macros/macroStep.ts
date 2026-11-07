@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { ObsSceneTargetSchema } from '../obs/obsSlice.js';
+import { TriggerFieldsOfTakeSchema } from '../triggers/triggerDataField.js';
 
 /** The longest a `wait` step may hold the next step back: ten seconds, in milliseconds. */
 export const longestMacroWaitMs = 10_000;
@@ -19,6 +20,12 @@ export const MacroStepSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('takeItem'),
     itemId: z.string().min(1),
+    /**
+     * The fields this take fills from the trigger that started the run, by the graphic's
+     * field key (BAJAOVRLAY-48): read once, at this step, and frozen. Left out: the item
+     * goes on air with its own values, as before.
+     */
+    triggerFields: TriggerFieldsOfTakeSchema.optional(),
   }),
   z.object({
     kind: z.literal('clearLayer'),

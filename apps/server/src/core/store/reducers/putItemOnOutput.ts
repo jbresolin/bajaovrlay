@@ -1,6 +1,13 @@
-import type { CommandError, InboxEventPayload, InstanceTarget, Item } from '@bajaovrlay/shared';
+import type {
+  CommandError,
+  InboxEventPayload,
+  InstanceTarget,
+  Item,
+  TriggerFillOfTake,
+} from '@bajaovrlay/shared';
 
 import { listKeysOfTakeTimeFields } from '../itemTakeTimeFields.js';
+import { fillItemFieldsFromTheTrigger } from '../itemTriggerFields.js';
 import { resolveItemFieldsIntoGraphicData } from '../resolveItemFields.js';
 import { refuseUnknownItem } from '../rundownCommandRefusals.js';
 import {
@@ -43,7 +50,10 @@ export type ItemOnOutputOutcome =
  * Refused if the item does not exist, if a field cannot be resolved, or for any reason
  * putGraphicOnOutput refuses; nothing changes then. With `eventFill`, the item's event
  * fields read its payload, and the new instance carries the event's id and its rule's
- * duration when it names them (showEvent, Prévia of an event).
+ * duration when it names them (showEvent, Prévia of an event). With `triggerFill` (a
+ * macro's take step started by a trigger, BAJAOVRLAY-48), the step's trigger fields are
+ * laid over the item's own as literals first (itemTriggerFields.ts); everything after,
+ * the bindings written down included, reads the fields as laid over.
  */
 export function putItemOnOutput(
   slices: SlicesChangedByCommands,
@@ -51,12 +61,28 @@ export function putItemOnOutput(
   target: InstanceTarget,
   context: ReducerContext,
   eventFill?: EventFillOfItem,
+  triggerFill?: TriggerFillOfTake,
 ): ItemOnOutputOutcome {
   const item = slices.items.find((candidate) => candidate.id === itemId);
   if (item === undefined) {
     return { status: 'refused', error: refuseUnknownItem(itemId) };
   }
-  return putThisItemOnOutput(slices, item, target, context, eventFill);
+  const graphic = slices.graphics.find((candidate) => candidate.id === item.graphicId);
+  const fillByTheTrigger =
+    triggerFill === undefined
+      ? { status: 'filled' as const, fields: item.fields }
+      : fillItemFieldsFromTheTrigger(item.fields, triggerFill, graphic);
+  if (fillByTheTrigger.status === 'refused') {
+    return fillByTheTrigger;
+  }
+  // The take goes on with the fields as laid over; the item handed back is the stored
+  // one, unchanged, since the trigger's data is never written into the item.
+  const itemAsTaken = { ...item, fields: fillByTheTrigger.fields };
+  const takeOutcome = putThisItemOnOutput(slices, itemAsTaken, target, context, eventFill);
+  if (takeOutcome.status === 'refused') {
+    return takeOutcome;
+  }
+  return { ...takeOutcome, item };
 }
 
 /**

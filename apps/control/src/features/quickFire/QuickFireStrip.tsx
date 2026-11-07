@@ -9,6 +9,7 @@ import { usePendingEventAlert } from '@/features/events/usePendingEventAlert';
 import { MacroGrid } from '@/features/macros/MacroGrid';
 import { useStopRunningMacroKey } from '@/features/macros/useStopRunningMacroKey';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
+import { listWaitingTriggerFiringIds } from '@/features/triggers/triggerFiringLists';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
@@ -46,8 +47,15 @@ export function QuickFireStrip() {
   const panels = useServerState((state) => state.quickFirePanels);
   const events = useServerState((state) => state.events);
   const { isEventSoundOn, chooseIsEventSoundOn } = useEventSoundSetting();
-  const pendingEventCount = countPendingEvents(events);
-  const isEventBadgePulsing = usePendingEventAlert(listPendingEventIds(events), isEventSoundOn);
+  const triggerFirings = useServerState((state) => state.triggerActivity.firings);
+  // A trigger's firing that asks waits in the same tab, so it counts on the badge and rings
+  // the chime like an event that asks (BAJAOVRLAY-48).
+  const waitingFiringIds = listWaitingTriggerFiringIds(triggerFirings);
+  const pendingEventCount = countPendingEvents(events) + waitingFiringIds.length;
+  const isEventBadgePulsing = usePendingEventAlert(
+    [...listPendingEventIds(events), ...waitingFiringIds],
+    isEventSoundOn,
+  );
   const sendCommand = useSendCommand();
   const sendTakeByThisOperator = useTakeThenPreviewNextItem();
   const { chosenTab, chooseTab: setChosenTab } = useQuickFireTabChoice();
@@ -132,6 +140,9 @@ export function QuickFireStrip() {
           'showEvent',
           'dismissEvent',
           'restoreEvent',
+          'runTriggerFiring',
+          'dismissTriggerFiring',
+          'restoreTriggerFiring',
         ]}
       />
     </section>

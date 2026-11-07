@@ -234,6 +234,18 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
     command: { type: 'deleteMedia', mediaId: petrobrasLogoMediaId },
     expected: `Excluiu a imagem ${petrobrasLogoMediaId}`,
   },
+  // "Descartar" on a waiting trigger firing, as on an event (BAJAOVRLAY-48).
+  {
+    name: 'dismissTriggerFiring names the firing’s trigger',
+    command: { type: 'dismissTriggerFiring', firingId: 'disparo-box-1' },
+    expected: 'Descartou o disparo do gatilho "Entrou no box"',
+  },
+  // Its "Desfazer" makes the firing wait again.
+  {
+    name: 'restoreTriggerFiring names the firing’s trigger',
+    command: { type: 'restoreTriggerFiring', firingId: 'disparo-box-1' },
+    expected: 'Restaurou o disparo do gatilho "Entrou no box"',
+  },
 ];
 
 describe('the sentences of the group "sourcesAndData"', () => {

@@ -9,7 +9,8 @@
  * What these tests prove:
  *   - The commands an operator would look for under each group are there, the
  *     borderline ones included (a take of a preview is a take; an edit on air is a change
- *     on air; dismissing an event is data).
+ *     on air; dismissing an event is data; a trigger is prepared like the macro it runs,
+ *     its firing is with the takes, and dismissing a firing is data).
  *   - Each group has its pt-BR label.
  *
  * What these tests deliberately do not cover:
@@ -65,6 +66,29 @@ const groupScenarios = [
     name: 'OBS’s connection state is a setting',
     commandType: 'recordObsState',
     expected: 'settings',
+  },
+  // A trigger is prepared like the macro it runs, and its pause goes with it (BAJAOVRLAY-48).
+  {
+    name: 'editing a trigger is item work',
+    commandType: 'updateTrigger',
+    expected: 'itemsAndRundown',
+  },
+  {
+    name: '"Pausar gatilhos" is with the triggers',
+    commandType: 'setTriggersPaused',
+    expected: 'itemsAndRundown',
+  },
+  // A firing starts its macro, or waits for "Rodar", which does: with the runs.
+  {
+    name: 'a trigger firing is with the takes',
+    commandType: 'fireTrigger',
+    expected: 'takesAndClears',
+  },
+  // "Descartar" on a firing is the inbox's kind of bookkeeping, as on an event.
+  {
+    name: 'dismissing a trigger firing is data',
+    commandType: 'dismissTriggerFiring',
+    expected: 'sourcesAndData',
   },
 ] as const;
 

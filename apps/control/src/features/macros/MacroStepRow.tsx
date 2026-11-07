@@ -18,6 +18,8 @@ import { ptBR } from '@/i18n/ptBR';
 
 import type { ItemChoiceForMacroStep } from './macroStepChoices';
 import { isTheSceneOfTheRowMissingFromObsNow, type MacroStepDraft } from './macroStepDrafts';
+import { TakeStepTriggerFields } from './TakeStepTriggerFields';
+import type { GraphicFieldOfTakeStep } from './takeStepTriggerFields';
 
 /** What one step row needs. */
 export type MacroStepRowProps = {
@@ -25,6 +27,8 @@ export type MacroStepRowProps = {
   /** The row's place in the list, counted from 1: "Passo 2". */
   stepNumber: number;
   itemChoices: ItemChoiceForMacroStep[];
+  /** The fields of each item's graphic, by item id, for "Dado do gatilho" (BAJAOVRLAY-48). */
+  graphicFieldsOfEachItem: Record<string, GraphicFieldOfTakeStep[]>;
   layers: Layer[];
   /** The scenes OBS lists now (the obs slice), in OBS's order; empty without OBS. */
   obsSceneNames: string[];
@@ -48,7 +52,7 @@ const obsTargetsInOrder: ObsSceneTarget[] = ['program', 'preview'];
 
 /**
  * One step of the macro editor: a handle to drag it by, its kind, then what that kind
- * needs (an item, a layer, one of OBS's scenes and its output with a note that the
+ * needs (an item, whose fields may come from the trigger, TakeStepTriggerFields.tsx; a layer, one of OBS's scenes and its output with a note that the
  * macro's Prévia leaves OBS alone, a wait in seconds, or nothing for "Limpar tudo"),
  * "Remover",
  * and the row's message once a save found it wrong. Every control is named with the
@@ -142,7 +146,11 @@ export function MacroStepRow(props: MacroStepRowProps) {
       </div>
 
       {draft.kind === 'takeItem' ? (
-        <Select value={draft.itemId} onValueChange={(itemId) => changeDraft({ itemId })}>
+        <Select
+          value={draft.itemId}
+          // Another item has other fields: the keys typed for the old one are dropped.
+          onValueChange={(itemId) => changeDraft({ itemId, triggerKeyByFieldKey: {} })}
+        >
           <SelectTrigger
             size="sm"
             className="w-full"
@@ -160,6 +168,14 @@ export function MacroStepRow(props: MacroStepRowProps) {
             ))}
           </SelectContent>
         </Select>
+      ) : null}
+      {draft.kind === 'takeItem' && draft.itemId !== '' ? (
+        <TakeStepTriggerFields
+          stepNumber={stepNumber}
+          fields={props.graphicFieldsOfEachItem[draft.itemId] ?? []}
+          triggerKeyByFieldKey={draft.triggerKeyByFieldKey}
+          onTriggerKeysChanged={(triggerKeyByFieldKey) => changeDraft({ triggerKeyByFieldKey })}
+        />
       ) : null}
 
       {draft.kind === 'clearLayer' ? (

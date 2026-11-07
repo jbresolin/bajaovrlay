@@ -1,6 +1,8 @@
 import { hashOfEachPage } from '@/app/currentPage';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { RecentlyDismissedTriggerFirings } from '@/features/triggers/RecentlyDismissedTriggerFirings';
+import { WaitingTriggerFirings } from '@/features/triggers/WaitingTriggerFirings';
 import { ptBR } from '@/i18n/ptBR';
 
 import { RecentlyDismissedEvents } from './RecentlyDismissedEvents';
@@ -13,7 +15,9 @@ const soundSwitchId = 'events-sound';
  * The "Eventos" tab of the quick-fire strip (BAJAOVRLAY-44): "Som de eventos" and the link
  * to the "Eventos" page on top, then the waiting events, newest first, each with its
  * buttons, and under them what was dismissed in the last 30 s with "Desfazer"
- * (RecentlyDismissedEvents.tsx). The tab sits above Camadas, so both lists scroll inside
+ * (RecentlyDismissedEvents.tsx). The firings of triggers that ask (BAJAOVRLAY-48,
+ * features/triggers) come first, with "Rodar" and "Descartar", and their own "Desfazer" for
+ * 30 s beside the events'. The tab sits above Camadas, so both lists scroll inside
  * one capped height (16rem), and a burst of events or of dismissals never pushes Camadas
  * off the screen; everything else about the inbox (the
  * history, "+ Evento", "Regras") is on the page, which opens in a new tab so the console
@@ -47,7 +51,9 @@ export function EventsTab(props: {
       </div>
 
       <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
+        <WaitingTriggerFirings />
         <WaitingEventsList />
+        <RecentlyDismissedTriggerFirings />
         <RecentlyDismissedEvents />
       </div>
     </div>

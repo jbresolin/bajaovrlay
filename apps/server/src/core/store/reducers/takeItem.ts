@@ -18,14 +18,23 @@ import { moveRundownCursorOnIfItWasOnTakenItem } from './rundownCursor.js';
  * if the item does not exist, if a field cannot be resolved, or for any reason the take
  * step refuses (the item's layer or graphic is gone, a `takeTime` field is not a
  * wall-clock moment in the graphic's schema, the data breaks that schema); nothing
- * changes then.
+ * changes then. A take a macro's runner fills from a trigger (`triggerFill`,
+ * BAJAOVRLAY-48) is refused too when a required field's key is missing from the data.
  */
 export function reduceTakeItem(
   slices: SlicesChangedByCommands,
   command: TakeItemCommand,
   context: ReducerContext,
 ): ReducerOutcome {
-  const takeOutcome = putItemOnOutput(slices, command.itemId, 'program', context);
+  // No event fill: an item filled by an event goes on air through showEvent only.
+  const takeOutcome = putItemOnOutput(
+    slices,
+    command.itemId,
+    'program',
+    context,
+    undefined,
+    command.triggerFill,
+  );
   if (takeOutcome.status === 'refused') {
     return takeOutcome;
   }

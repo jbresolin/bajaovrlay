@@ -50,6 +50,7 @@ function buildDraft(parts: Partial<MacroStepDraft> & Pick<MacroStepDraft, 'draft
     waitSecondsText: '',
     sceneName: '',
     obsTarget: 'program' as const,
+    triggerKeyByFieldKey: {},
     ...parts,
   };
 }

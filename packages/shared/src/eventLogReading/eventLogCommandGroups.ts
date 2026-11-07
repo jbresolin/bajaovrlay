@@ -54,6 +54,9 @@ export const commandGroupOfEachCommandType: Record<Command['type'], EventLogComm
   // A scene switch changes what goes out, and OBS's answer says whether it did.
   switchObsScene: 'takesAndClears',
   recordObsSceneSwitchAnswer: 'takesAndClears',
+  // A trigger's firing starts its macro, or waits for "Rodar", which does (BAJAOVRLAY-48).
+  fireTrigger: 'takesAndClears',
+  runTriggerFiring: 'takesAndClears',
   previewItem: 'previews',
   stopPreview: 'previews',
   previewClearLayer: 'previews',
@@ -71,6 +74,11 @@ export const commandGroupOfEachCommandType: Record<Command['type'], EventLogComm
   createMacro: 'itemsAndRundown',
   updateMacro: 'itemsAndRundown',
   deleteMacro: 'itemsAndRundown',
+  // A trigger is prepared like the macro it runs; "Pausar gatilhos" goes with them.
+  createTrigger: 'itemsAndRundown',
+  updateTrigger: 'itemsAndRundown',
+  deleteTrigger: 'itemsAndRundown',
+  setTriggersPaused: 'itemsAndRundown',
   createDataSource: 'sourcesAndData',
   updateDataSource: 'sourcesAndData',
   deleteDataSource: 'sourcesAndData',
@@ -86,6 +94,9 @@ export const commandGroupOfEachCommandType: Record<Command['type'], EventLogComm
   // The inbox's own bookkeeping is data; only showEvent puts something on air.
   dismissEvent: 'sourcesAndData',
   restoreEvent: 'sourcesAndData',
+  // "Descartar" and "Desfazer" on a trigger's firing, as on an event.
+  dismissTriggerFiring: 'sourcesAndData',
+  restoreTriggerFiring: 'sourcesAndData',
   createManualEvent: 'sourcesAndData',
   updateEventRule: 'sourcesAndData',
   recordDetectedEvents: 'sourcesAndData',

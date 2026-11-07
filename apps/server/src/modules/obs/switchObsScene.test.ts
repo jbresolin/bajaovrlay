@@ -54,12 +54,13 @@ describe('switchObsScene accepted', () => {
       requestType: 'SetCurrentProgramScene',
       requestData: { sceneName: 'Pista' },
     });
-    expect(obs.sceneSwitch, 'the switch must be answered done').toEqual({
+    expect(obs.sceneSwitch, 'the switch must be answered done, naming who asked').toEqual({
       number: 1,
       sceneName: 'Pista',
       target: 'program',
       status: 'feita',
       refusalReason: null,
+      requestedBy: operatorActor,
     });
     const obsAfterTheEvent = await waitForTheObsSlice(
       store,

@@ -74,6 +74,16 @@ import { TakeItemCommandSchema } from '../rundown/takeItem.js';
 import { TakeNextCommandSchema } from '../rundown/takeNext.js';
 import { UpdateItemFieldsCommandSchema } from '../rundown/updateItemFields.js';
 import { NextOnLayerCommandSchema } from '../steps/nextOnLayer.js';
+import {
+  CreateTriggerCommandSchema,
+  DeleteTriggerCommandSchema,
+  DismissTriggerFiringCommandSchema,
+  FireTriggerCommandSchema,
+  RestoreTriggerFiringCommandSchema,
+  RunTriggerFiringCommandSchema,
+  SetTriggersPausedCommandSchema,
+  UpdateTriggerCommandSchema,
+} from '../triggers/triggerCommands.js';
 import { ClearAllCommandSchema } from './clearAll.js';
 import { ClearLayerCommandSchema } from './clearLayer.js';
 import { ReportInstanceStatusCommandSchema } from './reportInstanceStatus.js';
@@ -182,6 +192,16 @@ export const CommandSchema = z.discriminatedUnion('type', [
   SwitchObsSceneCommandSchema,
   RecordObsStateCommandSchema,
   RecordObsSceneSwitchAnswerCommandSchema,
+  // Triggers (BAJAOVRLAY-48); ../triggers/. fireTrigger is sent only by the server's
+  // trigger service (sistema:gatilhos); the others are the operator's.
+  CreateTriggerCommandSchema,
+  UpdateTriggerCommandSchema,
+  DeleteTriggerCommandSchema,
+  SetTriggersPausedCommandSchema,
+  FireTriggerCommandSchema,
+  RunTriggerFiringCommandSchema,
+  DismissTriggerFiringCommandSchema,
+  RestoreTriggerFiringCommandSchema,
 ]);
 
 /** A command after validation, with defaults filled in. */

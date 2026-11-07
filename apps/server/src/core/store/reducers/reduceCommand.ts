@@ -10,6 +10,7 @@ import {
 import { reduceMediaCommand } from '../../../modules/media/index.js';
 import { reduceObsCommand } from '../../../modules/obs/index.js';
 import { reduceOutputOrLayerCommand } from '../../../modules/outputs/index.js';
+import { reduceTriggerCommand } from '../../../modules/triggers/index.js';
 import { forgetChangesThatCannotComeBack } from '../programHistory/forgetChangesThatCannotComeBack.js';
 import { rememberProgramChanges } from '../programHistory/rememberProgramChanges.js';
 import { reduceUndoLastChangeOnProgram } from '../programHistory/undoLastChangeOnProgram.js';
@@ -212,6 +213,16 @@ function reduceCommandOfItsType(
     case 'switchObsScene':
     case 'recordObsState':
     case 'recordObsSceneSwitchAnswer':
-      return reduceObsCommand(slices, command);
+      return reduceObsCommand(slices, command, context);
+    // Triggers (BAJAOVRLAY-48): their reducers live in the module modules/triggers.
+    case 'createTrigger':
+    case 'updateTrigger':
+    case 'deleteTrigger':
+    case 'setTriggersPaused':
+    case 'fireTrigger':
+    case 'runTriggerFiring':
+    case 'dismissTriggerFiring':
+    case 'restoreTriggerFiring':
+      return reduceTriggerCommand(slices, command, context);
   }
 }

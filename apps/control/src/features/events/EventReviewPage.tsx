@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { CommandErrorMessage } from '@/features/playout/CommandErrorMessage';
+import { TriggersDialog } from '@/features/triggers/TriggersDialog';
+import { WaitingTriggerFirings } from '@/features/triggers/WaitingTriggerFirings';
 import { ptBR } from '@/i18n/ptBR';
 
 import { EventHistoryTable } from './EventHistoryTable';
@@ -13,7 +15,7 @@ const texts = ptBR.events;
 
 /**
  * The "Eventos" page, "#/eventos" (gate 2 of PR #22): the room the console's tab does not
- * have. "+ Evento" and "Regras" on top; the waiting events with the same buttons as on the
+ * have. "+ Evento", "Regras" and "Gatilhos" (BAJAOVRLAY-48, features/triggers) on top; the waiting events with the same buttons as on the
  * console, uncapped; and the history of every event the server keeps
  * (EventHistoryTable.tsx), where a dismissed event can be restored. A refusal of the
  * commands sent from here shows at the bottom. Opened from the header in a new tab, so it
@@ -22,6 +24,7 @@ const texts = ptBR.events;
 export function EventReviewPage() {
   const [isManualFormOpen, setIsManualFormOpen] = useState(false);
   const [areRulesOpen, setAreRulesOpen] = useState(false);
+  const [areTriggersOpen, setAreTriggersOpen] = useState(false);
 
   return (
     <main className="flex flex-1 flex-col gap-6">
@@ -33,10 +36,14 @@ export function EventReviewPage() {
         <Button size="sm" variant="outline" onClick={() => setAreRulesOpen(true)}>
           {texts.rulesButton}
         </Button>
+        <Button size="sm" variant="outline" onClick={() => setAreTriggersOpen(true)}>
+          {ptBR.triggers.openButton}
+        </Button>
       </div>
 
       <section className="flex max-w-3xl flex-col gap-2">
         <h3 className="text-sm font-semibold">{texts.reviewPage.waitingHeading}</h3>
+        <WaitingTriggerFirings />
         <WaitingEventsList />
       </section>
 
@@ -46,11 +53,19 @@ export function EventReviewPage() {
       </section>
 
       <CommandErrorMessage
-        commandTypes={['previewItem', 'showEvent', 'dismissEvent', 'restoreEvent']}
+        commandTypes={[
+          'previewItem',
+          'showEvent',
+          'dismissEvent',
+          'restoreEvent',
+          'runTriggerFiring',
+          'dismissTriggerFiring',
+        ]}
       />
 
       {isManualFormOpen ? <ManualEventDialog onClose={() => setIsManualFormOpen(false)} /> : null}
       {areRulesOpen ? <EventRulesDialog onClose={() => setAreRulesOpen(false)} /> : null}
+      {areTriggersOpen ? <TriggersDialog onClose={() => setAreTriggersOpen(false)} /> : null}
     </main>
   );
 }

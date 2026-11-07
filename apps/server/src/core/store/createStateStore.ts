@@ -59,6 +59,10 @@ export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'
   createDataSourceId?: (() => string) | undefined;
   /** Makes the id of each event the operator types (createManualEvent); a random UUID. */
   createEventId?: (() => string) | undefined;
+  /** Makes the id of each new trigger (createTrigger); defaults to a random UUID. */
+  createTriggerId?: (() => string) | undefined;
+  /** Makes the id of each firing of a trigger (fireTrigger); defaults to a random UUID. */
+  createTriggerFiringId?: (() => string) | undefined;
   /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the reducers; no list by default. */
   sourceHostAllowlist?: SourceHostAllowlist | undefined;
 };
@@ -113,6 +117,8 @@ export function createStateStore(options: StateStoreOptions): StateStore {
   const createMacroId = options.createMacroId ?? (() => randomUUID());
   const createDataSourceId = options.createDataSourceId ?? (() => randomUUID());
   const createEventId = options.createEventId ?? (() => randomUUID());
+  const createTriggerId = options.createTriggerId ?? (() => randomUUID());
+  const createTriggerFiringId = options.createTriggerFiringId ?? (() => randomUUID());
   const sourceHostAllowlist = options.sourceHostAllowlist ?? noSourceHostAllowlist;
   const listeners = new Set<SliceChangeListener>();
   let currentSlices = loadInitialSlices({ ...options, readCurrentTime });
@@ -161,6 +167,10 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       newMacroId: createMacroId(),
       newDataSourceId: createDataSourceId(),
       newEventId: createEventId(),
+      // Asked for every command, like the other ids: only createTrigger and fireTrigger
+      // use theirs, and a counted id in a test moves on with each command all the same.
+      newTriggerId: createTriggerId(),
+      newTriggerFiringId: createTriggerFiringId(),
       sourceHostAllowlist,
     };
     const reducerOutcome = reduceCommand(currentSlices, command, reducerContext);

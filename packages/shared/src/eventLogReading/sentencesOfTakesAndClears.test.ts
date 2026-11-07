@@ -168,6 +168,43 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
     },
     expected: 'O OBS não fez a troca de cena nº 4: A cena "Câmera da largada" não existe no OBS.',
   },
+  // A trigger's firing (BAJAOVRLAY-48) names the trigger as it was called then, and its
+  // data, so a row still says what set it off after the trigger is renamed or deleted.
+  {
+    name: 'fireTrigger names the trigger and its data',
+    command: {
+      type: 'fireTrigger',
+      triggerId: 'gatilho-penalidade',
+      triggerName: 'Penalidade na tela',
+      data: { carro: 47, motivo: 'Queima de largada' },
+      causedBy: 'sistema:eventos',
+    },
+    expected: 'O gatilho "Penalidade na tela" disparou (carro: 47, motivo: Queima de largada)',
+  },
+  // A time of day carries no data, so the sentence ends at the firing.
+  {
+    name: 'fireTrigger with no data names only the trigger',
+    command: {
+      type: 'fireTrigger',
+      triggerId: 'gatilho-abertura',
+      triggerName: 'Abertura da transmissão',
+      data: {},
+      causedBy: 'sistema:gatilhos',
+    },
+    expected: 'O gatilho "Abertura da transmissão" disparou',
+  },
+  // "Rodar" on a waiting firing in the Eventos tab.
+  {
+    name: 'runTriggerFiring names the firing’s trigger',
+    command: { type: 'runTriggerFiring', firingId: 'disparo-box-1' },
+    expected: 'Rodou o disparo do gatilho "Entrou no box"',
+  },
+  // Firings are kept in memory, the newest 50: an older row's firing may be gone.
+  {
+    name: 'runTriggerFiring reads a firing no longer listed by its id',
+    command: { type: 'runTriggerFiring', firingId: 'disparo-7' },
+    expected: 'Rodou um disparo que já saiu da lista (disparo-7)',
+  },
 ];
 
 describe('the sentences of the group "takesAndClears"', () => {

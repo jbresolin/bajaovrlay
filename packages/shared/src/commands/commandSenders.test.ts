@@ -56,12 +56,14 @@ describe('the senders of each command', () => {
     ).toEqual([...typesInTheSchema].sort());
   });
 
-  it('keeps exactly ten commands for the server alone', () => {
-    // Arrange: the eight the authorisation step has always kept from operators, and the
-    // two reports of the server's OBS connection (BAJAOVRLAY-27).
+  it('keeps exactly eleven commands for the server alone', () => {
+    // Arrange: the eight the authorisation step has always kept from operators, the two
+    // reports of the server's OBS connection (BAJAOVRLAY-27), and a trigger's firing
+    // (BAJAOVRLAY-48), which only the trigger service sees happen.
     const expectedServerCommands = [
       'advanceMacroRun',
       'endMacroRun',
+      'fireTrigger',
       'recordDataSourcePoll',
       'recordDetectedEvents',
       'recordObsSceneSwitchAnswer',
@@ -75,7 +77,7 @@ describe('the senders of each command', () => {
     // Act: read the list.
     const serverCommands = [...commandTypesOnlyTheServerSends].sort();
 
-    // Assert: the same ten.
+    // Assert: the same eleven.
     expect(serverCommands, 'only these commands are the server’s own').toEqual(
       expectedServerCommands,
     );

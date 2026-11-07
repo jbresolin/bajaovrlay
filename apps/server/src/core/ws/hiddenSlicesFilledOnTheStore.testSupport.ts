@@ -23,7 +23,7 @@ const enduroSimulatorId = 'simulador-enduro';
  * server (see fillEverySliceAScreenIsNotSent). Lists only: `obs`, an object, is sent to a
  * screen as "no OBS" whatever OBS does, which slicesSentToScreensObs.test.ts proves.
  */
-export const sliceNamesAScreenIsNotSent: Array<Exclude<SliceName, 'obs'>> = [
+export const sliceNamesAScreenIsNotSent: Array<Exclude<SliceName, 'obs' | 'triggerActivity'>> = [
   // A clock whose flag follows the simulator, taken after its poll (BAJAOVRLAY-20).
   'instanceBindings',
   // Seeded at the first boot: "Sessão principal".
@@ -36,6 +36,8 @@ export const sliceNamesAScreenIsNotSent: Array<Exclude<SliceName, 'obs'>> = [
   'macros',
   // That macro pressed: its run lasts 20 seconds, longer than any of these tests.
   'macroRuns',
+  // An HTTP trigger that runs that macro (BAJAOVRLAY-48).
+  'triggers',
   // Seeded at the first boot: the simulator (and the store adds no other).
   'dataSources',
   // The one poll of the simulator recorded by hand.
@@ -49,7 +51,8 @@ export const sliceNamesAScreenIsNotSent: Array<Exclude<SliceName, 'obs'>> = [
 ];
 
 /**
- * Puts something into every slice a screen is not sent: an item, a macro and its run,
+ * Puts something into every slice a screen is not sent: an item, a macro, a trigger
+ * naming it and its run,
  * the simulator recorded (no line in it), then polled once by hand and turned off, a
  * clock bound to its flag taken, and its session name corrected
  * (all within one tick, so the poller's first poll, on a 0 ms timer, never runs). Throws when the
@@ -67,6 +70,12 @@ export function fillEverySliceAScreenIsNotSent(stateStore: StateStore): void {
     ],
   });
   const createdMacroId = stateStore.readAllSlices().macros[0]?.id ?? 'macro-nao-criada';
+  applyOrThrow(stateStore, {
+    type: 'createTrigger',
+    name: 'Botão do pódio',
+    when: { kind: 'http' },
+    macroId: createdMacroId,
+  });
   applyOrThrow(stateStore, { type: 'runMacro', macroId: createdMacroId });
   // "Gravar" is pressed and the source turned off before its poll, so the recording
   // holds no line: on a running server the recorder writes the source's snapshot when a

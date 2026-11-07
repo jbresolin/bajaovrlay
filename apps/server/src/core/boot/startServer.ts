@@ -12,6 +12,7 @@ import {
 import { startEventInboxService } from '../../modules/events/index.js';
 import { buildMediaFolderPath, startMediaService } from '../../modules/media/index.js';
 import { type ObsConnectionSettings, startObsConnection } from '../../modules/obs/index.js';
+import { startTriggerService } from '../../modules/triggers/index.js';
 import { readBuildId } from '../../readBuildId.js';
 import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
@@ -153,6 +154,15 @@ async function startServingFromDatabase(
   // Started before the sources poll too, so the first poll after a restart is seen as the
   // baseline and nothing that happened before it is replayed (BAJAOVRLAY-44).
   const eventInboxService = startEventInboxService({ stateStore, logger: options.logger });
+  // After the macro runner, so a firing's run is carried out; before the sources poll and
+  // OBS connects, so their first reports are the baseline and nothing before the boot
+  // fires (BAJAOVRLAY-48). Its clock is the store's, so a schedule moment and a firing's
+  // interval agree.
+  const triggerService = startTriggerService({
+    stateStore,
+    logger: options.logger,
+    readCurrentTime: options.readCurrentTime,
+  });
   // Sources left on before a restart start polling again at once; unlike a macro, a
   // source that is on is meant to keep running.
   const dataSourceService = startDataSourceService({
@@ -182,6 +192,7 @@ async function startServingFromDatabase(
     dataSourceService.stop();
     bindingService.stop();
     eventInboxService.stop();
+    triggerService.stop();
     autoOutScheduler.stop();
     macroRunner.stop();
   }

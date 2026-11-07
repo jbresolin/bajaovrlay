@@ -27,6 +27,7 @@ import {
   type MacroStepDraft,
 } from './macroStepDrafts';
 import { MacroStepList } from './MacroStepList';
+import { listGraphicFieldsOfEachItem } from './takeStepTriggerFields';
 
 /** What the macros tab gives the editor. */
 export type MacroEditorPanelProps = {
@@ -58,6 +59,7 @@ export function MacroEditorPanel(props: MacroEditorPanelProps) {
   const panels = useServerState((state) => state.quickFirePanels);
   const layers = useServerState((state) => state.layers);
   const obsSceneNames = useServerState((state) => state.obs.sceneNames);
+  const graphics = useServerState((state) => state.graphics);
   const sendCommand = useSendCommand();
 
   // The macro as opened; kept, never replaced by a newer copy, because "what changed" is
@@ -178,6 +180,7 @@ export function MacroEditorPanel(props: MacroEditorPanelProps) {
             <MacroStepList
               drafts={drafts}
               itemChoices={listItemChoicesForMacroSteps(items, rundowns, panels)}
+              graphicFieldsOfEachItem={listGraphicFieldsOfEachItem(items, graphics)}
               layers={layers}
               obsSceneNames={obsSceneNames}
               errorMessageByDraftId={errorMessageByDraftId}

@@ -86,6 +86,29 @@ export function nameMacro(macroId: string, names: EventLogNames): string {
   return nameTexts.quoted(macro.label);
 }
 
+/** A trigger: ""Entrou no box"", or "gatilho excluído (<id>)". */
+export function nameTrigger(triggerId: string, names: EventLogNames): string {
+  const trigger = names.triggers.find((candidate) => candidate.id === triggerId);
+  if (trigger === undefined) {
+    return nameTexts.triggerGone(triggerId);
+  }
+  return nameTexts.quoted(trigger.name);
+}
+
+/**
+ * A trigger's firing: "o disparo do gatilho "Entrou no box"", by the trigger's name when
+ * it fired, so it reads even after the trigger is renamed or deleted. The slice keeps only
+ * the newest 50 firings, in memory, so an older row's firing reads "um disparo que já saiu
+ * da lista (<id>)".
+ */
+export function nameTriggerFiring(firingId: string, names: EventLogNames): string {
+  const firing = names.triggerActivity.firings.find((candidate) => candidate.firingId === firingId);
+  if (firing === undefined) {
+    return nameTexts.firingGone(firingId);
+  }
+  return nameTexts.firingOfTrigger(nameTexts.quoted(firing.triggerName));
+}
+
 /** A data source: ""Simulador — Enduro"", or "fonte excluída (<id>)". */
 export function nameDataSource(sourceId: string, names: EventLogNames): string {
   const source = names.dataSources.find((candidate) => candidate.id === sourceId);

@@ -10,6 +10,7 @@ import { ptBROutputs } from './ptBROutputs';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
 import { ptBRTextList } from './ptBRTextList';
+import { ptBRTriggers } from './ptBRTriggers';
 import { ptBRUndo } from './ptBRUndo';
 
 /**
@@ -86,6 +87,9 @@ export const ptBR = {
   outputs: ptBROutputs,
   // The OBS tally in the header (features/obs, BAJAOVRLAY-27), in ptBRObs.ts.
   obs: ptBRObs,
+  // Triggers (features/triggers, BAJAOVRLAY-48): "Gatilhos", the firings that ask, the
+  // header's pause and a take step's "Dado do gatilho", in ptBRTriggers.ts.
+  triggers: ptBRTriggers,
   // The "Fontes de dados" page and the header chip (features/dataSources), in ptBRDataSources.ts.
   dataSources: ptBRDataSources,
   // The "Cadastros" page (features/entityLibrary), in ptBREntityLibrary.ts.

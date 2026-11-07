@@ -4,6 +4,7 @@ import {
   portOffsetOfTheBrowserTests,
   realServerPort as realServerPortNumber,
 } from './e2e/emptyTheServerState';
+import { apiTokensVariableOfTheBrowserTests } from './e2e/triggerCallsOnTheRealServer';
 
 // The tests drive the control page's dev server, which forwards /ws, /api, /health,
 // /render and /graphics to a REAL BajaOvrLay server started just for them. Both use
@@ -63,6 +64,9 @@ export default defineConfig({
         LOG_LEVEL: 'warn',
         DATABASE_PATH: temporaryDatabasePath,
         DATA_DIR: temporaryDataFolder,
+        // The command API on, with a made-up token, so a test can call an HTTP trigger's
+        // address as a D200 does (BAJAOVRLAY-48).
+        BAJAOVRLAY_API_TOKENS: apiTokensVariableOfTheBrowserTests,
       },
       url: `${realServerAddress}/health`,
       reuseExistingServer: !isRunningInCI,

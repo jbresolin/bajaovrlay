@@ -5,6 +5,7 @@ import type {
 } from '@bajaovrlay/shared';
 
 import type {
+  ReducerContext,
   ReducerOutcome,
   SlicesChangedByCommands,
 } from '../../../core/store/reducers/reducerTypes.js';
@@ -19,10 +20,11 @@ export type ObsCommand =
 export function reduceObsCommand(
   slices: SlicesChangedByCommands,
   command: ObsCommand,
+  context: ReducerContext,
 ): ReducerOutcome {
   switch (command.type) {
     case 'switchObsScene':
-      return reduceSwitchObsScene(slices, command);
+      return reduceSwitchObsScene(slices, command, context);
     case 'recordObsState':
       return reduceRecordObsState(slices, command);
     case 'recordObsSceneSwitchAnswer':

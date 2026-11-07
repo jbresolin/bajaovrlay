@@ -32,6 +32,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { obsSliceWithoutObs } from '../obs/obsSlice.js';
 import { SliceMessageSchema } from '../ws/serverMessages.js';
 import { SliceNameSchema, SlicesSchema } from './slices.js';
 
@@ -118,15 +119,15 @@ function buildRaceDayStateWithTheClockOnAir() {
     macroStops: [],
     // OBS connected, with the track scene on Program.
     obs: {
+      ...obsSliceWithoutObs,
       connectionState: 'conectado',
       address: 'ws://127.0.0.1:4455',
-      lastError: null,
       sceneNames: ['Pista', 'Box', 'Pódio'],
       programSceneName: 'Pista',
-      isStudioModeOn: false,
-      previewSceneName: null,
-      sceneSwitch: null,
     },
+    // No trigger yet, and triggers not paused: triggers/trigger.test.ts covers a trigger.
+    triggers: [],
+    triggerActivity: { isPaused: false, lastFiredAtMsByTriggerId: {}, firings: [] },
     // No data source, snapshot or recording: dataSources.test.ts covers those slices.
     dataSources: [],
     dataSnapshots: [],
@@ -288,12 +289,9 @@ describe('SlicesSchema', () => {
 
 describe('SliceNameSchema', () => {
   it('lists every slice in the order the server lists them, the newest ones included', () => {
-    // Arrange: the slice names; the "will be cleared" markers and the bindings of each
-    // instance right after the instances they speak about, quick-fire panels and macros
-    // after the items with the macros' stops and OBS after them, and the data sources, their snapshots, the operator's corrections
-    // of them and the recordings, then the event inbox's events and rules, then the
-    // entity library (teams, people, sponsors and the schedule) and its images, just
-    // before the event log.
+    // Arrange: the slice names; markers and bindings after the instances, panels and macros
+    // after the items, then macro stops, OBS and triggers, the data sources and what goes
+    // with them, the inbox, and the entity library and its images before the event log.
     const expectedSliceNames = [
       'outputs',
       'layers',
@@ -309,6 +307,8 @@ describe('SliceNameSchema', () => {
       'macroRuns',
       'macroStops',
       'obs',
+      'triggers',
+      'triggerActivity',
       'dataSources',
       'dataSnapshots',
       'overrides',
@@ -327,7 +327,7 @@ describe('SliceNameSchema', () => {
     const everySliceName = SliceNameSchema.options;
 
     // Assert: exactly these, in this order.
-    expect(everySliceName, 'the slice names must be these twenty-six, in this order').toEqual(
+    expect(everySliceName, 'the slice names must be these twenty-eight, in this order').toEqual(
       expectedSliceNames,
     );
   });

@@ -7,8 +7,8 @@
 // `sistema:macro:<macroId>`, the macro watchdog, `sistema:macro-watchdog`, the poller of
 // each data source, `sistema:fonte:<sourceId>`, the recorder, `sistema:gravador`, the
 // refresher of bound fields, `sistema:vinculos`, the event inbox's detection and runner,
-// `sistema:eventos`, the media store, `sistema:midia`, and the OBS connection,
-// `sistema:obs`). A fifth role, `api:<token
+// `sistema:eventos`, the media store, `sistema:midia`, the OBS connection,
+// `sistema:obs`, and the trigger service, `sistema:gatilhos`). A fifth role, `api:<token
 // name>`, signs a command sent over HTTP by a device of the command API (Companion, a
 // Stream Deck, a script; BAJAOVRLAY-28): it stands where an operator stands.
 const rendererRolePrefix = 'renderer:';
@@ -58,6 +58,13 @@ export const eventInboxActor = 'sistema:eventos';
  * a switch. It may send nothing else: it reports, it never decides what OBS shows.
  */
 export const obsConnectionActor = 'sistema:obs';
+
+/**
+ * The actor name the trigger service signs its fireTrigger with (BAJAOVRLAY-48): it saw a
+ * scene change, an HTTP call, an inbox event or a schedule moment, and says so. It may send
+ * nothing else; a macro a firing starts is run by the macro runner, as any other run.
+ */
+export const triggerServiceActor = 'sistema:gatilhos';
 
 /** The actor name of a renderer page's connection. */
 export function buildRendererActor(connectionId: string): string {

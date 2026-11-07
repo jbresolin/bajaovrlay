@@ -1,10 +1,16 @@
 /**
  * The step rows of the macro editor, and the exact `steps` they stand for. A row holds
- * every control any kind of step needs (item, layer, OBS scene, wait text), so switching a row's
+ * every control any kind of step needs (item, layer, OBS scene, wait text, the fields from
+ * the trigger), so switching a row's
  * kind back and forth loses nothing typed; only what its kind needs is sent. Pure
  * functions, no drawing.
  */
-import { longestMacroWaitMs, type MacroStep, type ObsSceneTarget } from '@bajaovrlay/shared';
+import {
+  longestMacroWaitMs,
+  type MacroStep,
+  type ObsSceneTarget,
+  type TriggerFieldsOfTake,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 
@@ -23,6 +29,12 @@ export type MacroStepDraft = {
   sceneName: string;
   /** Which of OBS's outputs a "Trocar cena do OBS" row switches; Program for a new row. */
   obsTarget: ObsSceneTarget;
+  /**
+   * The fields a "Pôr item no ar" row fills from the trigger ("Dado do gatilho",
+   * BAJAOVRLAY-48): the trigger data's key, as typed, by the graphic's field key. A field
+   * not listed keeps the item's own value. Emptied when the row's item changes.
+   */
+  triggerKeyByFieldKey: Record<string, string>;
 };
 
 /** The outcome of checking the rows: the steps to send, or one message per wrong row. */
@@ -32,6 +44,8 @@ export type MacroStepsFromDrafts =
 
 const fieldErrors = ptBR.quickFire.macroEditor.fieldErrors;
 const millisecondsPerSecond = 1_000;
+/** The longest key of trigger data the server accepts. */
+const longestTriggerDataKeyLength = 64;
 
 // Whole seconds, then optionally a comma or a point and one to three decimals: "0,5",
 // "2", "1.25". Three decimals is one millisecond, the server's unit; a fourth decimal
@@ -79,9 +93,7 @@ export function formatWaitMillisecondsAsSecondsText(milliseconds: number): strin
 function buildStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: string } {
   switch (draft.kind) {
     case 'takeItem':
-      return draft.itemId === ''
-        ? { errorMessage: fieldErrors.itemMissing }
-        : { kind: 'takeItem', itemId: draft.itemId };
+      return buildTakeStepFromDraft(draft);
     case 'clearLayer':
       return draft.layerId === ''
         ? { errorMessage: fieldErrors.layerMissing }
@@ -100,6 +112,33 @@ function buildStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: 
         : { kind: 'wait', ms: milliseconds };
     }
   }
+}
+
+/**
+ * A "Pôr item no ar" row's step: the item, and the fields it fills from the trigger, each
+ * key trimmed and of 1 to 64 characters. A row with no such field is the plain take the
+ * editor always sent, with no `triggerFields` at all.
+ */
+function buildTakeStepFromDraft(draft: MacroStepDraft): MacroStep | { errorMessage: string } {
+  if (draft.itemId === '') {
+    return { errorMessage: fieldErrors.itemMissing };
+  }
+  const fieldKeysAndKeys = Object.entries(draft.triggerKeyByFieldKey).map(
+    ([fieldKey, keyText]) => [fieldKey, keyText.trim()] as const,
+  );
+  if (fieldKeysAndKeys.length === 0) {
+    return { kind: 'takeItem', itemId: draft.itemId };
+  }
+  const isAnyKeyWrong = fieldKeysAndKeys.some(
+    ([, key]) => key === '' || key.length > longestTriggerDataKeyLength,
+  );
+  if (isAnyKeyWrong) {
+    return { errorMessage: ptBR.triggers.takeStep.keyInvalid };
+  }
+  const triggerFields = Object.fromEntries(
+    fieldKeysAndKeys.map(([fieldKey, key]) => [fieldKey, { kind: 'triggerData' as const, key }]),
+  );
+  return { kind: 'takeItem', itemId: draft.itemId, triggerFields };
 }
 
 /**
@@ -145,6 +184,7 @@ export function buildEmptyMacroStepDraft(draftId: string, kind: MacroStep['kind'
     waitSecondsText: '',
     sceneName: '',
     obsTarget: 'program',
+    triggerKeyByFieldKey: {},
   };
 }
 
@@ -160,7 +200,11 @@ export function buildMacroStepDraftsFromSteps(
     const draft = buildEmptyMacroStepDraft(createDraftId(), step.kind);
     switch (step.kind) {
       case 'takeItem':
-        return { ...draft, itemId: step.itemId };
+        return {
+          ...draft,
+          itemId: step.itemId,
+          triggerKeyByFieldKey: readTriggerKeysOfTakeStep(step.triggerFields ?? {}),
+        };
       case 'clearLayer':
         return { ...draft, layerId: step.layerId };
       case 'clearAll':
@@ -171,4 +215,11 @@ export function buildMacroStepDraftsFromSteps(
         return { ...draft, waitSecondsText: formatWaitMillisecondsAsSecondsText(step.ms) };
     }
   });
+}
+
+/** A stored take step's trigger fields as the row's keys, by field key. */
+function readTriggerKeysOfTakeStep(triggerFields: TriggerFieldsOfTake): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(triggerFields).map(([fieldKey, triggerField]) => [fieldKey, triggerField.key]),
+  );
 }

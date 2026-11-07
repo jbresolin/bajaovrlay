@@ -15,3 +15,5 @@ The "Macros" tab of the quick-fire strip: a button per macro and the macro edito
   cena do OBS" step picks from the `obs` slice's scenes and warns on a scene OBS lacks now.
 - `macroStepDrafts.ts`, `macroCommandsFromEditor.ts` — rows → `steps`, and `createMacro` /
   `updateMacro` with only what changed. Pure; their tests are the tables to read.
+- `TakeStepTriggerFields.tsx`, `takeStepTriggerFields.ts` — a take step's "Dado do gatilho"
+  (BAJAOVRLAY-48): each field of the item's graphic from the item or from a trigger's key.

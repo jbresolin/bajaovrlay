@@ -29,6 +29,8 @@ import { InstanceSchema } from '../slices/instance.js';
 import { LayersSchema } from '../slices/layer.js';
 import { PreviewClearedLayerIdsSchema } from '../slices/previewClearedLayerIds.js';
 import { SlicesSchema } from '../slices/slices.js';
+import { TriggersSchema } from '../triggers/trigger.js';
+import { TriggerActivitySchema } from '../triggers/triggerActivity.js';
 
 /**
  * The server's wall clock, in whole milliseconds since 1970, at the moment a `hello` or
@@ -151,6 +153,18 @@ export const SliceMessageSchema = z.discriminatedUnion('name', [
     type: z.literal('slice'),
     name: z.literal('obs'),
     slice: ObsSliceSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('triggers'),
+    slice: TriggersSchema,
+    serverNowMs: ServerNowMsSchema,
+  }),
+  z.object({
+    type: z.literal('slice'),
+    name: z.literal('triggerActivity'),
+    slice: TriggerActivitySchema,
     serverNowMs: ServerNowMsSchema,
   }),
   z.object({

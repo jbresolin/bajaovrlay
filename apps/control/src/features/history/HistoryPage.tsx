@@ -46,6 +46,8 @@ export function HistoryPage() {
   const dataSources = useServerState((state) => state.dataSources);
   const events = useServerState((state) => state.events);
   const instances = useServerState((state) => state.instances);
+  const triggers = useServerState((state) => state.triggers);
+  const triggerActivity = useServerState((state) => state.triggerActivity);
   const names = {
     outputs,
     layers,
@@ -56,6 +58,8 @@ export function HistoryPage() {
     dataSources,
     events,
     instances,
+    triggers,
+    triggerActivity,
   };
   const history = useHistoryOfTheShow(filters, names);
   // Only to tell today's rows ("14:32:05") from an older day's ("09/10 14:32:05").

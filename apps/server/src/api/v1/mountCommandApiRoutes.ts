@@ -7,9 +7,17 @@ import type { ApiTokens } from '../../core/apiAccess/apiTokens.js';
 import { requireApiAccess } from '../../core/apiAccess/requireApiAccess.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
 import { ptBR } from '../../core/messages/ptBR.js';
+import { buildApiActor } from '../../core/store/commandActors.js';
 import { describeInvalidMessage } from '../../core/store/commandRefusals.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
-import { buildErrorCommandResult } from '../../core/ws/serverMessageBuilding.js';
+import {
+  buildErrorCommandResult,
+  buildOkCommandResult,
+} from '../../core/ws/serverMessageBuilding.js';
+import {
+  fireTriggerFromAnHttpCall,
+  type HttpTriggerCallOutcome,
+} from '../../modules/triggers/index.js';
 import {
   answerOkWithoutACommand,
   type CommandApiAnswer,
@@ -20,7 +28,10 @@ import {
   refuseCommandBodyNotSentAsJson,
   refuseCommandBodyOverTheLimit,
 } from './commandBodyChecks.js';
-import { chooseHttpStatusOfCommandRefusal } from './commandRefusalHttpStatus.js';
+import {
+  chooseHttpStatusOfCommandRefusal,
+  type CommandRefusalHttpStatus,
+} from './commandRefusalHttpStatus.js';
 import {
   postClearAllRoute,
   postClearLayerRoute,
@@ -44,10 +55,13 @@ import {
   buildTakeItemCommandOfQuickFireButton,
   buildTakeNextCommandOfTheShownRundown,
 } from './shortcutCommands.js';
+import { postTriggerRoute, refuseTriggerBodyOverTheLimit } from './triggerRoute.js';
 
 /**
  * Mounts the command API (BAJAOVRLAY-28) on the /api/v1 routes: POST /commands, the twelve
- * button shortcuts (the two undo ones since BAJAOVRLAY-30), OBS's scene button (BAJAOVRLAY-27) and GET /layers/status, each behind requireApiAccess (named on each
+ * button shortcuts (the two undo ones since BAJAOVRLAY-30), OBS's scene button
+ * (BAJAOVRLAY-27), an HTTP trigger's address (BAJAOVRLAY-48) and GET /layers/status, each
+ * behind requireApiAccess (named on each
  * route, never by a path pattern, so no other route can fall under it by accident), plus
  * the bearer scheme and the `Command` component in the OpenAPI document.
  */
@@ -192,6 +206,32 @@ export function mountCommandApiRoutes(
     });
   });
 
+  // An HTTP trigger (BAJAOVRLAY-48): the size check after access, as for /commands.
+  apiRoutes.openapi(
+    { ...postTriggerRoute, middleware: [...middleware, refuseTriggerBodyOverTheLimit()] },
+    async (context) => {
+      const { triggerId } = context.req.valid('param');
+      const callerName = readApiCallerName(context);
+      const outcome = fireTriggerFromAnHttpCall({
+        stateStore,
+        triggerId,
+        bodyText: await context.req.text(),
+        callerActor: buildApiActor(callerName),
+      });
+      const httpStatus = chooseHttpStatusOfTriggerCall(outcome);
+      context
+        .get('requestLogger')
+        .info(
+          { api_token_name: callerName, trigger_id: triggerId, status: httpStatus },
+          'api trigger call answered',
+        );
+      if (outcome.status === 'fired') {
+        return context.json(buildOkCommandResult(null), 200);
+      }
+      return context.json(buildErrorCommandResult(null, outcome.error), httpStatus);
+    },
+  );
+
   apiRoutes.openapi({ ...getLayersStatusRoute, middleware }, (context) => {
     return context.json(
       buildLayersStatus(stateStore.readAllSlices(), readApiCallerName(context)),
@@ -262,4 +302,21 @@ function buildNoRundownAnswer(): CommandApiAnswer {
       message: ptBR.errors.noRundownToTakeFrom,
     }),
   };
+}
+
+/**
+ * The status of a call to an HTTP trigger: 200 fired, 404 when the address names no HTTP
+ * trigger (here the id is the address itself, unlike a command naming a missing id, which
+ * answers 422), and the usual status of any other refusal (400 body, 409 not fired).
+ */
+function chooseHttpStatusOfTriggerCall(
+  outcome: HttpTriggerCallOutcome,
+): 200 | 404 | CommandRefusalHttpStatus {
+  if (outcome.status === 'fired') {
+    return 200;
+  }
+  if (outcome.error.code === 'TRIGGER_NOT_FOUND') {
+    return 404;
+  }
+  return chooseHttpStatusOfCommandRefusal(outcome.error.code);
 }

@@ -2,9 +2,10 @@ import type { Slices } from '../slices/slices.js';
 
 /**
  * The slices a history sentence reads names from: an item's label and layer, a layer's
- * and output's names, a macro's, a panel's, a rundown's, a source's, an event's car, and
- * what an instance showed. Names are read as they are now, so a row about an item deleted
- * since reads "item excluído (…)".
+ * and output's names, a macro's, a panel's, a rundown's, a source's, an event's car,
+ * what an instance showed, a trigger's name, and a firing's trigger (BAJAOVRLAY-48).
+ * Names are read as they are now, so a row about an item deleted since reads "item
+ * excluído (…)".
  */
 export type EventLogNames = Pick<
   Slices,
@@ -17,6 +18,8 @@ export type EventLogNames = Pick<
   | 'dataSources'
   | 'events'
   | 'instances'
+  | 'triggers'
+  | 'triggerActivity'
 >;
 
 /** The names a sentence reads, out of every slice (the control page's or the server's). */
@@ -31,5 +34,7 @@ export function buildEventLogNamesFromSlices(slices: Slices): EventLogNames {
     dataSources: slices.dataSources,
     events: slices.events,
     instances: slices.instances,
+    triggers: slices.triggers,
+    triggerActivity: slices.triggerActivity,
   };
 }

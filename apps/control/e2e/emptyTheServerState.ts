@@ -48,6 +48,8 @@ type StateTheResetReads = {
   items: { id: string }[];
   quickFirePanels: { id: string; name: string }[];
   macros: { id: string }[];
+  triggers: { id: string }[];
+  triggerActivity: { isPaused: boolean };
   macroRuns: { macroId: string }[];
   dataSources: { id: string; isEnabled: boolean; isRecording: boolean }[];
   overrides: { sourceId: string; scope: string; field: string; carNumber?: number }[];
@@ -66,6 +68,8 @@ type ResetCommand = {
   type: string;
   itemId?: string | null;
   macroId?: string;
+  triggerId?: string;
+  isPaused?: boolean;
   panelId?: string;
   name?: string;
   sourceId?: string;
@@ -302,7 +306,8 @@ async function putTheOutputsBackToProgramAlone(state: StateTheResetReads): Promi
  * Empties the real server. First it waits for a running macro to end. Then `clearAll`
  * takes everything off air and off the preview output (it removes every instance, of
  * both outputs, and every "vai limpar" mark, so no stopPreview is needed); every item is deleted, rundown and panel alike, which also leaves the
- * cursor on nothing; every macro is deleted; every panel but the seeded "Atalhos" is
+ * cursor on nothing; every trigger is deleted and "Pausar gatilhos" turned off, then every
+ * macro is deleted; every panel but the seeded "Atalhos" is
  * deleted (each is empty by then), and "Atalhos" gets its seeded name back. The seeded
  * rundown stays. The data sources go back to the seeded simulator alone, off, not
  * recording and with its default settings (putTheDataSourcesBackToTheSeed); recordings
@@ -321,6 +326,13 @@ export async function emptyTheServerState(): Promise<void> {
   const state = await readStateFromRealServer();
   for (const item of state.items) {
     await sendCommandToRealServer({ type: 'deleteItem', itemId: item.id });
+  }
+  // Triggers first: a macro a trigger names cannot be deleted (BAJAOVRLAY-48).
+  for (const trigger of state.triggers) {
+    await sendCommandToRealServer({ type: 'deleteTrigger', triggerId: trigger.id });
+  }
+  if (state.triggerActivity.isPaused) {
+    await sendCommandToRealServer({ type: 'setTriggersPaused', isPaused: false });
   }
   for (const macro of state.macros) {
     await sendCommandToRealServer({ type: 'deleteMacro', macroId: macro.id });

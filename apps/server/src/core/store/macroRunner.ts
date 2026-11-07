@@ -1,4 +1,10 @@
-import type { MacroRun, MacroStep, MacroStoppedAtStep, Slices } from '@bajaovrlay/shared';
+import type {
+  MacroRun,
+  MacroStep,
+  MacroStoppedAtStep,
+  Slices,
+  TriggerData,
+} from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../logger/createLogger.js';
 import { buildMacroRunnerActor } from './commandActors.js';
@@ -38,6 +44,8 @@ const delayBeforeTryingTheEndAgainInMilliseconds = 1_000;
 type RunInProgress = {
   macroId: string;
   steps: MacroStep[];
+  /** The data of the trigger that started the run, read at the press; empty by hand. */
+  triggerData: TriggerData;
   timerHandle: unknown;
   isWaitingForTheNextStep: boolean;
   switchWaitingForObs: { number: number; stepIndex: number } | undefined;
@@ -81,6 +89,9 @@ type RunInProgress = {
  *   pending wait off and sends nothing more; the run's entry is left in memory, which
  *   is about to go, and the next boot starts with no run. Nothing is resumed, because a
  *   half-run macro resumed minutes later would put graphics on air nobody asked for.
+ * - A take step with trigger fields (BAJAOVRLAY-48) is sent with the run's trigger data,
+ *   read once at the press like the steps; by hand the data is empty, so a required field
+ *   from the trigger stops the run at that step, with the take's reason, as any refusal.
  * - The steps are read once, at the press. updateMacro and deleteMacro of the running
  *   macro are refused by their reducers, so this copy is never out of date.
  */
@@ -156,6 +167,7 @@ export function startMacroRunner(options: MacroRunnerOptions): MacroRunner {
     const startedRun: RunInProgress = {
       macroId: run.macroId,
       steps,
+      triggerData: run.trigger?.data ?? {},
       timerHandle: undefined,
       isWaitingForTheNextStep: true,
       switchWaitingForObs: undefined,
@@ -199,7 +211,7 @@ export function startMacroRunner(options: MacroRunnerOptions): MacroRunner {
           return;
         }
         const outcome = stateStore.applyCommand(
-          buildCommandOfStep(step),
+          buildCommandOfStep(step, runInProgress.triggerData),
           buildMacroRunnerActor(macroId),
         );
         if (!outcome.ok) {
@@ -338,11 +350,21 @@ export function startMacroRunner(options: MacroRunnerOptions): MacroRunner {
   };
 }
 
-/** The command a step becomes. A wait never gets here: it sends nothing. */
-function buildCommandOfStep(step: Exclude<MacroStep, { kind: 'wait' }>) {
+/**
+ * The command a step becomes. A wait never gets here: it sends nothing. A take step with
+ * trigger fields carries them with the run's trigger data (`triggerFill`).
+ */
+function buildCommandOfStep(step: Exclude<MacroStep, { kind: 'wait' }>, triggerData: TriggerData) {
   switch (step.kind) {
     case 'takeItem':
-      return { type: 'takeItem', itemId: step.itemId };
+      if (step.triggerFields === undefined) {
+        return { type: 'takeItem', itemId: step.itemId };
+      }
+      return {
+        type: 'takeItem',
+        itemId: step.itemId,
+        triggerFill: { fields: step.triggerFields, data: triggerData },
+      };
     case 'clearLayer':
       return { type: 'clearLayer', layerId: step.layerId };
     case 'clearAll':

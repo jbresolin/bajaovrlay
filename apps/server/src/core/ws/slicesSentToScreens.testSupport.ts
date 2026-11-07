@@ -35,6 +35,8 @@ export function buildTheCopyAScreenShouldGet(slicesOnTheServer: Slices): Slices 
     macroRuns: [],
     macroStops: [],
     obs: obsSliceWithoutObs,
+    triggers: [],
+    triggerActivity: { isPaused: false, lastFiredAtMsByTriggerId: {}, firings: [] },
     dataSources: [],
     dataSnapshots: [],
     recordings: [],

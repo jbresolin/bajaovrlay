@@ -21,7 +21,12 @@
 // with `?role=`. What could go wrong: the role is not proven (anyone may connect as an
 // operator, or call the state route with no role), so this saves the screens work and
 // keeps them parsing; it does not keep any data secret.
-import { obsSliceWithoutObs, type SliceNameSentWhole, type Slices } from '@bajaovrlay/shared';
+import {
+  obsSliceWithoutObs,
+  type SliceNameSentWhole,
+  type Slices,
+  triggerActivityAtBoot,
+} from '@bajaovrlay/shared';
 
 /** The slices a screen draws: the only ones it is sent with something in them. */
 export const sliceNamesScreensReceive: readonly SliceNameSentWhole[] = [
@@ -63,6 +68,9 @@ export function buildSlicesForAScreen(slices: Slices, outputId: string): Slices 
     macroStops: [],
     // An object, not a list: a screen gets "no OBS", as a server with no address has.
     obs: obsSliceWithoutObs,
+    // What runs macros by itself, and when: nothing a screen draws.
+    triggers: [],
+    triggerActivity: triggerActivityAtBoot,
     dataSources: [],
     dataSnapshots: [],
     overrides: [],
