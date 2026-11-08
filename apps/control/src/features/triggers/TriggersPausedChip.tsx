@@ -12,7 +12,8 @@ const texts = ptBR.triggers.pause;
  * BAJAOVRLAY-62; a pause hidden in a menu is a show risk, so this chip keeps it in sight.
  * It shows the server's `triggerActivity.isPaused`, and "Retomar" only sends
  * setTriggersPaused: the chip goes when the server says so. For Dados, who may not
- * resume them (BAJAOVRLAY-29), "Retomar" is greyed out and the chip's title says why.
+ * resume them (BAJAOVRLAY-29), "Retomar" is greyed out and the chip says why in its
+ * text: a title would show only on hover, which a greyed-out button never gets.
  */
 export function TriggersPausedChip() {
   const isPaused = useServerState((state) => state.triggerActivity.isPaused);
@@ -22,7 +23,7 @@ export function TriggersPausedChip() {
     return null;
   }
   return (
-    <Badge variant="warning" className="gap-2 py-0.5 pr-0.5" title={whyTheRoleCannotResume}>
+    <Badge variant="warning" className="gap-2 py-0.5 pr-0.5">
       <span>{texts.pausedChip}</span>
       <Button
         type="button"
@@ -34,6 +35,9 @@ export function TriggersPausedChip() {
       >
         {texts.resumeButton}
       </Button>
+      {whyTheRoleCannotResume !== undefined && (
+        <span className="pr-2 text-xs font-normal">{whyTheRoleCannotResume}</span>
+      )}
     </Badge>
   );
 }

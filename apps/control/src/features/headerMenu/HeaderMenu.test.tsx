@@ -2,16 +2,18 @@
  * The "Menu" button in the console's header (apps/control)
  *
  * What this module is for:
- *   Three things the operator rarely needs during a show moved from the header into one
- *   menu (BAJAOVRLAY-62, João's addition): "Verificar servidor", "Cópia de segurança" and
- *   "Pausar gatilhos" (or "Retomar gatilhos" while paused). Each entry does what its
- *   header button or switch did. A pause is never hidden in the menu alone: the header's
- *   "Gatilhos pausados" chip shows it (TriggersPausedChip.test.tsx).
+ *   Things the operator rarely needs during a show live in one menu of the header
+ *   (BAJAOVRLAY-62): "Verificar servidor", "Cópia de segurança", "Pausar gatilhos" (or
+ *   "Retomar gatilhos" while paused) and "Acertar relógio agora". The first three were
+ *   header buttons before and do what those did. A pause is never hidden in the menu
+ *   alone: the header's "Gatilhos pausados" chip shows it (TriggersPausedChip.test.tsx).
+ *   "Acertar relógio agora" steps the server clock to NTP's real time at once, after a
+ *   confirm saying what on air would jump; Produtor alone may.
  *
  * What these tests prove (a fake server on the WebSocket, `fetch` answered by hand):
- *   - The button is named "Menu" for a screen reader, and lists the three entries.
- *   - "Verificar servidor" asks /health and says the version beside the menu; a server
- *     that is off is said in pt-BR.
+ *   - The button is named "Menu" for a screen reader, and lists the four entries.
+ *   - "Verificar servidor" asks /health and says the version beside the menu, with the
+ *     last NTP answer's time, server and difference; a server that is off is said in pt-BR.
  *   - "Cópia de segurança" opens the backup dialog.
  *   - "Pausar gatilhos" pauses every trigger; paused, the entry reads "Retomar gatilhos"
  *     and lets them run again.
@@ -22,6 +24,7 @@
  *
  * What these tests deliberately do not cover:
  *   - The backup dialog's contents; features/backup/BackupDialog.test.tsx.
+ *   - "Acertar relógio agora" past its entry; features/serverClock/SetServerClockDialog.test.tsx.
  *   - What a pause does on the server; apps/server's triggerFiring.test.ts.
  *   - Where the menu sits in the header: App.test.tsx, and the screenshots in the PR.
  */
@@ -59,13 +62,29 @@ function listEntriesOfTheMenu(): Array<string | null> {
   return screen.getAllByRole('menuitem').map((menuEntry) => menuEntry.textContent);
 }
 
+/** 10 October 2026, 13:00:04 UTC: when the last NTP answer of these tests arrived. */
+const momentOfTheLastNtpAnswerMs = Date.parse('2026-10-10T13:00:04.000Z');
+
 /** Answers GET /health as the server does, or fails as a server that is off. */
 function answerTheHealthCheck(answer: 'healthy at 0.3.1' | 'switched off') {
   const fetchStandIn = vi.fn(async () => {
     if (answer === 'switched off') {
       throw new TypeError('Failed to fetch');
     }
-    return Response.json({ ok: true, version: '0.3.1' });
+    return Response.json({
+      ok: true,
+      version: '0.3.1',
+      serverClock: {
+        isNtpOn: true,
+        lastNtpAnswer: {
+          serverName: 'a.st1.ntp.br:123',
+          atMs: momentOfTheLastNtpAnswerMs,
+          differenceMs: 12,
+          roundTripMs: 9,
+        },
+        offFromRealTimeMs: 3,
+      },
+    });
   });
   vi.stubGlobal('fetch', fetchStandIn);
   onTestFinished(() => {
@@ -75,18 +94,19 @@ function answerTheHealthCheck(answer: 'healthy at 0.3.1' | 'switched off') {
 }
 
 describe('the header menu', () => {
-  it('is a button named "Menu" with the three entries', () => {
+  it('is a button named "Menu" with the four entries', () => {
     // Arrange: the menu on a page whose triggers run.
     renderTheHeaderMenu();
 
     // Act: open it.
     openTheMenu();
 
-    // Assert: the three entries, in this order.
-    expect(listEntriesOfTheMenu(), 'the menu must hold the three header actions').toEqual([
+    // Assert: the four entries, in this order.
+    expect(listEntriesOfTheMenu(), 'the menu must hold the four actions').toEqual([
       'Verificar servidor',
       'Cópia de segurança',
       'Pausar gatilhos',
+      'Acertar relógio agora',
     ]);
   });
 
@@ -99,10 +119,18 @@ describe('the header menu', () => {
     // Act: pick "Verificar servidor".
     fireEvent.click(screen.getByRole('menuitem', { name: 'Verificar servidor' }));
 
-    // Assert: /health was asked, and the version is said beside the menu.
+    // Assert: /health was asked, and the version and the last NTP answer are said beside
+    // the menu (the time of day in this computer's zone, as every time on the page).
+    const timeOfTheAnswer = new Date(momentOfTheLastNtpAnswerMs).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
     expect(
-      await screen.findByText('Servidor no ar, versão 0.3.1.'),
-      'the page must show the version the server reported',
+      await screen.findByText(
+        `Servidor no ar, versão 0.3.1. Última resposta do NTP às ${timeOfTheAnswer} (a.st1.ntp.br:123), diferença de +12 ms.`,
+      ),
+      'the page must show the version and what the server clock last heard from NTP',
     ).toBeInTheDocument();
     expect(fetchStandIn, 'the page must ask the /health address').toHaveBeenCalledWith('/health');
   });

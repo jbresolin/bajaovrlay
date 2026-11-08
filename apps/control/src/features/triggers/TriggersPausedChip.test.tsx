@@ -11,7 +11,8 @@
  *   - While the triggers run there is no chip.
  *   - Paused, the chip is there; "Retomar" asks the server to let them run again.
  *   - The chip goes away when the server says they run again, from any page.
- *   - For Dados, "Retomar" is greyed out with the role's reason, and sends nothing.
+ *   - For Dados, "Retomar" is greyed out with the role's reason written in the chip, and
+ *     sends nothing.
  *
  * What these tests deliberately do not cover:
  *   - Pausing, from the menu; features/headerMenu/HeaderMenu.test.tsx.
@@ -92,12 +93,13 @@ describe('the "Gatilhos pausados" chip', () => {
     // Act: try to press it.
     fireEvent.click(resumeButton);
 
-    // Assert: off, with the role's sentence as its title, and nothing sent.
+    // Assert: off, with the role's sentence written in the chip (a title shows only on
+    // hover, which a greyed-out button never gets), and nothing sent.
     expect(resumeButton, '"Retomar" is greyed out for Dados, never hidden').toBeDisabled();
-    expect(resumeButton.closest('[title]'), 'the chip says why, in pt-BR').toHaveAttribute(
-      'title',
-      'O papel Dados não pode fazer isso: é com o Produtor.',
-    );
+    expect(
+      screen.getByText('O papel Dados não pode fazer isso: é com o Produtor.'),
+      'the chip says why in its text, in pt-BR',
+    ).toBeVisible();
     expect(fakeServer.listCommandsReceived(), 'Dados’s press sends nothing').toEqual([]);
   });
 });

@@ -1,6 +1,8 @@
+import type { ServerClockHealth } from '@bajaovrlay/shared';
 import { useState } from 'react';
 
 import { ptBR } from '@/i18n/ptBR';
+import { formatTimeOfDay } from '@/i18n/timeOfDayText';
 
 import { fetchServerHealth } from './fetchServerHealth';
 
@@ -9,7 +11,7 @@ import { fetchServerHealth } from './fetchServerHealth';
 type ServerCheckStatus =
   | { kind: 'not-checked' }
   | { kind: 'checking' }
-  | { kind: 'online'; version: string }
+  | { kind: 'online'; version: string; serverClock: ServerClockHealth | undefined }
   | { kind: 'unreachable' };
 
 /** The server check: start it, and the pt-BR sentence saying what the server answered. */
@@ -21,7 +23,8 @@ export type ServerHealthCheck = {
 
 /**
  * "Verificar servidor" (an entry of the header's menu since BAJAOVRLAY-62): asks
- * `GET /health` whether the server is up and which version it runs.
+ * `GET /health` whether the server is up, which version it runs, and what its clock last
+ * heard from NTP: the time of the answer, the server, and the difference it found.
  */
 export function useServerHealthCheck(): ServerHealthCheck {
   const [status, setStatus] = useState<ServerCheckStatus>({ kind: 'not-checked' });
@@ -30,7 +33,7 @@ export function useServerHealthCheck(): ServerHealthCheck {
     setStatus({ kind: 'checking' });
     try {
       const health = await fetchServerHealth();
-      setStatus({ kind: 'online', version: health.version });
+      setStatus({ kind: 'online', version: health.version, serverClock: health.serverClock });
     } catch {
       setStatus({ kind: 'unreachable' });
     }
@@ -46,9 +49,27 @@ function describeServerCheckStatus(status: ServerCheckStatus): string {
       return '';
     case 'checking':
       return ptBR.serverHealth.checking;
-    case 'online':
-      return ptBR.serverHealth.online(status.version);
+    case 'online': {
+      const versionSentence = ptBR.serverHealth.online(status.version);
+      const clockSentence = describeTheServerClock(status.serverClock);
+      return clockSentence === '' ? versionSentence : `${versionSentence} ${clockSentence}`;
+    }
     case 'unreachable':
       return ptBR.serverHealth.unreachable;
   }
+}
+
+/** What "Verificar servidor" says of NTP; nothing for a server from before BAJAOVRLAY-62. */
+function describeTheServerClock(serverClock: ServerClockHealth | undefined): string {
+  if (serverClock === undefined) {
+    return '';
+  }
+  if (!serverClock.isNtpOn) {
+    return ptBR.serverClock.ntpOff;
+  }
+  if (serverClock.lastNtpAnswer === null) {
+    return ptBR.serverClock.ntpNotAnsweredYet;
+  }
+  const { atMs, serverName, differenceMs } = serverClock.lastNtpAnswer;
+  return ptBR.serverClock.lastNtpAnswer(formatTimeOfDay(atMs), serverName, differenceMs);
 }

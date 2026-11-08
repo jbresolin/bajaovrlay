@@ -11,6 +11,7 @@ import { ptBRObs } from './ptBRObs';
 import { ptBROutputs } from './ptBROutputs';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
+import { ptBRServerClock } from './ptBRServerClock';
 import { ptBRTextList } from './ptBRTextList';
 import { ptBRTriggers } from './ptBRTriggers';
 import { ptBRUndo } from './ptBRUndo';
@@ -66,6 +67,8 @@ export const ptBR = {
     buttonLabel: 'Menu',
     buttonSymbol: '☰',
   },
+  // The server clock on NTP (features/serverClock, BAJAOVRLAY-62), in ptBRServerClock.ts.
+  serverClock: ptBRServerClock,
   serverHealth: {
     checkButton: 'Verificar servidor',
     checking: 'Verificando o servidor…',

@@ -12,6 +12,7 @@ import { KeyboardMapDialog } from '@/features/keyboardHelp/KeyboardMapDialog';
 import { OperatorBadge } from '@/features/login/OperatorBadge';
 import { ObsTally } from '@/features/obs/ObsTally';
 import { OutputsAndLayersPage } from '@/features/outputsAndLayers/OutputsAndLayersPage';
+import { ServerClockOffWarning } from '@/features/serverClock/ServerClockOffWarning';
 import { TriggersPausedChip } from '@/features/triggers/TriggersPausedChip';
 import { ptBR } from '@/i18n/ptBR';
 
@@ -77,6 +78,7 @@ export function AppShell() {
           <DataSourcesHealthChip />
           <ObsTally />
           <TriggersPausedChip />
+          <ServerClockOffWarning />
           <HeaderMenu />
           <ConnectionBadge />
           <OperatorBadge />

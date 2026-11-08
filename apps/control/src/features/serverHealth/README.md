@@ -2,10 +2,11 @@
 
 "Verificar servidor", an entry of the header's menu (features/headerMenu; a header button
 until BAJAOVRLAY-62): the operator's way to ask "is the server up, and which version is
-running?" without opening DevTools. Start reading at `useServerHealthCheck.ts`.
+running, and what did its clock last hear from NTP?" without opening DevTools. Start reading at `useServerHealthCheck.ts`.
 
 - `useServerHealthCheck.ts` — runs the check and writes what the server answered
-  ("Servidor no ar, versão 0.3.1." or that it could not be reached); the menu shows it.
+  ("Servidor no ar, versão 0.3.1." with the last NTP answer's time, server and difference,
+  or that it could not be reached); the menu shows it.
 - `fetchServerHealth.ts` — the `GET /health` call, checked against the shared
   `HealthResponseSchema`.
 
