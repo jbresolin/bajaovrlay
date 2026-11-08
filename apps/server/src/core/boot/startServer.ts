@@ -24,6 +24,8 @@ import { operatorLoginTurnedOff, type OperatorPins } from '../operatorLogin/oper
 import { startAutoOutScheduler } from '../store/autoOut.js';
 import { createStateStore, type StateStore } from '../store/createStateStore.js';
 import { startMacroRunner } from '../store/macroRunner.js';
+import { readServerTime, serverClockOfTheProcess } from '../time/serverClock.js';
+import { startServerClockReanchoring } from '../time/serverClockReanchoring.js';
 import { defaultHeartbeatIntervalInMilliseconds } from '../ws/heartbeat.js';
 import { attachWebSocketHub } from '../ws/webSocketHub.js';
 
@@ -90,9 +92,11 @@ export type StartServerOptions = {
   /** Defaults to 15 s; tests use a few milliseconds. */
   heartbeatIntervalInMilliseconds?: number | undefined;
   /**
-   * The server's wall clock; defaults to the machine's. One clock for the store (which
-   * stamps commands and race clock readings) and for the WebSocket hub (which tells
-   * renderers what time it is), so the two can never disagree. Tests hold it still.
+   * The server's clock; defaults to the server clock (core/time/serverClock.ts), which
+   * never follows a step of the wall clock. One clock for the store (which stamps
+   * commands and race clock readings), the WebSocket hub (which tells renderers what time
+   * it is), the login and the triggers, so they can never disagree. Tests hold it still;
+   * a test that hands one in also turns the server clock's re-anchoring off.
    */
   readCurrentTime?: (() => Date) | undefined;
   /**
@@ -149,12 +153,13 @@ async function startServingFromDatabase(
   // written, or onto a bundle newer than the code answering it.
   const buildId =
     options.buildIdFileUrl === undefined ? undefined : readBuildId(options.buildIdFileUrl);
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
   const stateStore = createStateStore({
     database,
     logger: options.logger,
     graphicPackagesFolder: options.graphicPackagesFolder,
     recordingsFolder: buildRecordingsFolderPath(options.dataFolder),
-    readCurrentTime: options.readCurrentTime,
+    readCurrentTime,
     sourceHostAllowlist: options.sourceHostAllowlist,
   });
   // The login's signing key and open sessions are read from the database here, so the
@@ -162,7 +167,7 @@ async function startServingFromDatabase(
   const operatorLogin = createOperatorLogin({
     database,
     operatorPins: options.operatorPins ?? operatorLoginTurnedOff,
-    readCurrentTime: options.readCurrentTime ?? (() => new Date()),
+    readCurrentTime,
     logger: options.logger,
   });
   // Started before anything can send a command, so no take of an item with an
@@ -183,8 +188,18 @@ async function startServingFromDatabase(
   const triggerService = startTriggerService({
     stateStore,
     logger: options.logger,
-    readCurrentTime: options.readCurrentTime,
+    readCurrentTime,
   });
+  // Brings the server clock back towards the wall clock, 50 ms at a time and only while
+  // no clock runs on air (BAJAOVRLAY-62). Off when a test hands in a clock of its own.
+  const serverClockReanchoring =
+    options.readCurrentTime === undefined
+      ? startServerClockReanchoring({
+          serverClock: serverClockOfTheProcess,
+          readAllSlices: stateStore.readAllSlices,
+          logger: options.logger,
+        })
+      : undefined;
   // Sources left on before a restart start polling again at once; unlike a macro, a
   // source that is on is meant to keep running.
   const dataSourceService = startDataSourceService({
@@ -217,6 +232,7 @@ async function startServingFromDatabase(
     triggerService.stop();
     autoOutScheduler.stop();
     macroRunner.stop();
+    serverClockReanchoring?.stop();
   }
 
   // Clears the copies a server killed mid-backup left behind; nothing else runs until the
@@ -261,7 +277,7 @@ async function startServingFromDatabase(
       logger: options.logger,
       heartbeatIntervalInMilliseconds:
         options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
-      readCurrentTime: options.readCurrentTime,
+      readCurrentTime,
       buildId,
       operatorLogin,
       publicOrigins: options.publicOrigins,

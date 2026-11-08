@@ -25,7 +25,11 @@
  *   - The graphics' lifecycles; each graphic's own tests stop it on stop, dispose and
  *     removal from the page.
  */
-import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  forgetServerClockSamples,
+  readThisMachineMonotonicTimeMs,
+  recordServerClockSample,
+} from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { createCountdownClock } from './countdownClock.js';
@@ -161,7 +165,7 @@ describe('createCountdownClock', () => {
       vi.useRealTimers();
       forgetServerClockSamples();
     });
-    recordServerClockSample(Date.now() + 30_000, Date.now());
+    recordServerClockSample(Date.now() + 30_000, readThisMachineMonotonicTimeMs());
     const writtenTexts: string[] = [];
     const countdown = createCountdownClock({
       readStartsAtMs: () => enduroStartsAtMs,

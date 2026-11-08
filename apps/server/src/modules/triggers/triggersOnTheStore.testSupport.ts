@@ -191,6 +191,9 @@ export function startTriggersOnTheStore(
   onTestFinished(() => {
     vi.useRealTimers();
   });
+  // The store and the trigger service read the faked Date, which `sleep` steps on its
+  // own; the server clock's own behaviour is tested in core/time.
+  const readTheFakedWallClock = () => new Date();
   const { database, databasePath } = openTemporaryDatabase();
   const itemIdsInCreationOrder = [lowerThirdItemId, penaltyNoticeItemId, countdownItemId];
   // The store asks for every kind of id at every command, so an id is chosen from what
@@ -201,6 +204,7 @@ export function startTriggersOnTheStore(
     database,
     logger,
     graphicPackagesFolder: createGraphicsFolderWithTheRealLowerThirdNoticeAndCountdown(),
+    readCurrentTime: readTheFakedWallClock,
     createItemId: () => {
       const itemIdsHeld = store.readAllSlices().items.map((item) => item.id);
       const nextItemId = itemIdsInCreationOrder.find((itemId) => !itemIdsHeld.includes(itemId));
@@ -223,7 +227,11 @@ export function startTriggersOnTheStore(
     });
   }
   const macroRunner = startMacroRunner({ stateStore: store, logger });
-  const triggerService = startTriggerService({ stateStore: store, logger });
+  const triggerService = startTriggerService({
+    stateStore: store,
+    logger,
+    readCurrentTime: readTheFakedWallClock,
+  });
   onTestFinished(() => {
     triggerService.stop();
     macroRunner.stop();

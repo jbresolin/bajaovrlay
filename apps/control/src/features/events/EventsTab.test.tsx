@@ -38,7 +38,7 @@
  *   - What the server does with the commands; apps/server/src/modules/events.
  */
 import type { InboxEvent } from '@bajaovrlay/shared';
-import { recordServerClockSample } from '@bajaovrlay/shared/clock';
+import { readThisMachineMonotonicTimeMs, recordServerClockSample } from '@bajaovrlay/shared/clock';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -318,7 +318,7 @@ describe('the "Desfazer" window on a clock that is off', () => {
       // this long ago as the page's own clock reads it.
       recordServerClockSample(
         nowInTheInboxTests.getTime() - serverClockBehindThePageMs,
-        nowInTheInboxTests.getTime(),
+        readThisMachineMonotonicTimeMs(),
       );
 
       // Act: draw the tab.

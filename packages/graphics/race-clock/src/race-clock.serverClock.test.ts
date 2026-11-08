@@ -24,7 +24,11 @@
  *   - Real rendering; jsdom draws nothing and has no `document.fonts`, so load's wait
  *     for the theme's font ends at once.
  */
-import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  forgetServerClockSamples,
+  readThisMachineMonotonicTimeMs,
+  recordServerClockSample,
+} from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import {
@@ -60,7 +64,10 @@ describe('the race clock on a machine whose clock is 2.3 s behind the server', (
     // Arrange: the machine 2.3 s behind, and the renderer has just received a message in
     // which the server said what its clock showed.
     const framesAndTime = takeControlOnAMachineBehindTheServer();
-    recordServerClockSample(serverTimeTenSecondsAfterTheReadingMs, Date.now());
+    recordServerClockSample(
+      serverTimeTenSecondsAfterTheReadingMs,
+      readThisMachineMonotonicTimeMs(),
+    );
     const raceClock = createRaceClockOnThePage();
 
     // Act: the enduro clock (1:05:00 at the reading, running) goes on air and a frame runs.
@@ -104,7 +111,10 @@ describe('the race clock on a machine whose clock is 2.3 s behind the server', (
     const clockTextBeforeTheMessage = readShownText(raceClock, 'race-clock-time');
 
     // Act: the renderer records a message from the server, and the next frame runs.
-    recordServerClockSample(serverTimeTenSecondsAfterTheReadingMs, Date.now());
+    recordServerClockSample(
+      serverTimeTenSecondsAfterTheReadingMs,
+      readThisMachineMonotonicTimeMs(),
+    );
     framesAndTime.runPendingFrames();
 
     // Assert: the clock moved from the machine's time to the server's, without any
@@ -121,7 +131,10 @@ describe('the race clock on a machine whose clock is 2.3 s behind the server', (
   it('draws the time of the server at load already, before it is played', async () => {
     // Arrange: the machine 2.3 s behind, with a message recorded.
     takeControlOnAMachineBehindTheServer();
-    recordServerClockSample(serverTimeTenSecondsAfterTheReadingMs, Date.now());
+    recordServerClockSample(
+      serverTimeTenSecondsAfterTheReadingMs,
+      readThisMachineMonotonicTimeMs(),
+    );
     const raceClock = createRaceClockOnThePage();
 
     // Act: load the clock without playing it.

@@ -27,7 +27,11 @@
  *   - Which parts each layout shows; countdownView.test.ts.
  */
 import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
-import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  forgetServerClockSamples,
+  readThisMachineMonotonicTimeMs,
+  recordServerClockSample,
+} from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import {
@@ -178,7 +182,7 @@ describe('the count on air', () => {
     const framesAndTime = takeControlOfFramesAndTime();
     forgetServerClockSamples();
     onTestFinished(() => forgetServerClockSamples());
-    recordServerClockSample(Date.now() + 30_000, Date.now());
+    recordServerClockSample(Date.now() + 30_000, readThisMachineMonotonicTimeMs());
     const countdown = createCountdownOnThePage();
 
     // Act: load and play it, and run a frame.

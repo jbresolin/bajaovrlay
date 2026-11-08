@@ -3,6 +3,7 @@ import type { DataSource } from '@bajaovrlay/shared';
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { ptBR } from '../../core/messages/ptBR.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import { readServerTime } from '../../core/time/serverClock.js';
 import type { DataSourceAdapters } from './adapters/createDataSourceAdapters.js';
 import {
   type PollResult,
@@ -22,7 +23,7 @@ export type DataSourcePollerOptions = {
   logger: ServerLogger;
   /** The adapter of each kind of source (see adapters/createDataSourceAdapters.ts). */
   adapters: DataSourceAdapters;
-  /** The clock handed to the adapters and used for the stale watch; defaults to real time. */
+  /** The clock handed to the adapters and used for the stale watch; the server clock by default. */
   readCurrentTime?: (() => Date) | undefined;
   /** Starts a wait and returns something cancelTimer can cancel it with. */
   startTimer?: ((onTimeIsUp: () => void, delayInMilliseconds: number) => unknown) | undefined;
@@ -91,7 +92,7 @@ type PollingLoop = {
  */
 export function startDataSourcePoller(options: DataSourcePollerOptions): DataSourcePoller {
   const { stateStore, logger, adapters } = options;
-  const readCurrentTime = options.readCurrentTime ?? (() => new Date());
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
   const startTimer = options.startTimer ?? startNodeTimer;
   const cancelTimer = options.cancelTimer ?? cancelNodeTimer;
   const loopsBySourceId = new Map<string, PollingLoop>();

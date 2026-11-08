@@ -27,7 +27,11 @@
  *   - Real rendering and motion; e2e/ runs the built graphic in Chromium.
  */
 import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
-import { forgetServerClockSamples, recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  forgetServerClockSamples,
+  readThisMachineMonotonicTimeMs,
+  recordServerClockSample,
+} from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import {
@@ -154,7 +158,7 @@ describe('the states on air', () => {
     takeControlOfTimeAndTimers(atSundayBrasiliaTime('09:58'));
     forgetServerClockSamples();
     onTestFinished(() => forgetServerClockSamples());
-    recordServerClockSample(Date.now() + 3 * 60_000, Date.now());
+    recordServerClockSample(Date.now() + 3 * 60_000, readThisMachineMonotonicTimeMs());
     const board = createSessionsBoardOnThePage();
 
     // Act: load and play the board.

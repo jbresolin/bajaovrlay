@@ -7,11 +7,12 @@ import type { Slices, Trigger, TriggerData } from '@bajaovrlay/shared';
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { eventInboxActor, triggerServiceActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import { readServerTime } from '../../core/time/serverClock.js';
 import { readTriggerDataEventOfInboxEvent } from './dataEventsOfTheInbox.js';
 import { readObsReading } from './obsSceneChanges.js';
 import { listScheduleMomentsDue } from './scheduleMoments.js';
 
-/** What the service needs; the timers and the clock default to Node's own. */
+/** What the service needs; the timers default to Node's own, the clock to the server clock. */
 export type TriggerServiceOptions = {
   stateStore: StateStore;
   logger: ServerLogger;
@@ -55,7 +56,7 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
   const { stateStore, logger } = options;
   const startTimer = options.startTimer ?? startNodeTimer;
   const cancelTimer = options.cancelTimer ?? cancelNodeTimer;
-  const readCurrentTime = options.readCurrentTime ?? (() => new Date());
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
   const slicesAtTheStart = stateStore.readAllSlices();
   let obsSeenLast = slicesAtTheStart.obs;
   let numberOfTheLastSwitchUsedUp: number | undefined = undefined;

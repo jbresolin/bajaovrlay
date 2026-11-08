@@ -7,7 +7,7 @@ import {
   ServerMessageSchema,
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
-import { recordServerClockSample } from '@bajaovrlay/shared/clock';
+import { readThisMachineMonotonicTimeMs, recordServerClockSample } from '@bajaovrlay/shared/clock';
 
 import { ptBR } from '@/i18n/ptBR';
 import { type LogControlEvent, logControlEvent } from '@/logging/controlLog';
@@ -143,7 +143,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   function handleMessageText(text: unknown): void {
     // Read before the message is checked: checking a large hello takes a few
     // milliseconds, and each of them would make the sample of the server's clock later.
-    const localTimeAtArrivalMs = Date.now();
+    const localTimeAtArrivalMs = readThisMachineMonotonicTimeMs();
     const messageJson = readJsonOfMessage(text);
     const message = readServerMessage(messageJson);
     if (message === undefined) {
@@ -313,9 +313,9 @@ function startWatchOnTheServerBuild(
  * does the same (apps/renderer/src/serverConnection.ts), so the page and the screen
  * count from the same clock. A hello or slice without the time records NOTHING: it is
  * "no sample", never a sample saying the two clocks agree.
- * What could go wrong: the sample is late by the time the message took to arrive. A
- * step of this computer's clock is corrected by the time messages, which come every ten
- * seconds even when nothing changes; three are needed, so about thirty seconds.
+ * What could go wrong: the sample is late by the time the message took to arrive. The
+ * arrival is read on this computer's monotonic time, so a step of its wall clock moves
+ * neither the samples nor the time shown (BAJAOVRLAY-62).
  */
 function recordServerClockSampleOfMessage(
   message: ServerMessage,

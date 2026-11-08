@@ -20,6 +20,10 @@
  *     sample the time read stays the machine's own, and a correction already learned is
  *     left exactly as it was.
  *   - One message that spent 850 ms on the network does not move the time read.
+ *   - A step of the machine's wall clock back by 5 s between time messages does not
+ *     show, not even before the next sample: between samples the page counts on its
+ *     monotonic time (BAJAOVRLAY-62). Vitest's fake timers move both clocks as time
+ *     passes; vi.setSystemTime steps the wall clock alone.
  *
  * What these tests deliberately do not cover:
  *   - The median and which samples are kept; packages/shared/src/clock tests.
@@ -110,7 +114,7 @@ describe('the time of the server clock, learned from its messages', () => {
     // Act: every fifteen seconds for a minute the operator changes something, and each
     // slice message says what the server's clock showed.
     for (let messageNumber = 1; messageNumber <= 4; messageNumber += 1) {
-      vi.setSystemTime(Date.now() + 15_000);
+      vi.advanceTimersByTime(15_000);
       connection.latestSocket().simulateMessage({
         type: 'slice',
         name: 'instances',
@@ -145,7 +149,7 @@ describe('the time of the server clock, learned from its messages', () => {
 
     // Act: a slice message built by the server now arrives only 850 ms later.
     const serverClockWhenTheSlowMessageWasBuiltMs = readServerClockNowMs();
-    vi.setSystemTime(Date.now() + 850);
+    vi.advanceTimersByTime(850);
     connection.latestSocket().simulateMessage({
       type: 'slice',
       name: 'instances',
@@ -228,15 +232,18 @@ describe('the time message the server sends every ten seconds', () => {
       serverNowMs: readServerClockNowMs(),
     });
 
-    // Act: twenty seconds in, a time sync moves this machine's clock 5 s further back
-    // (it is now 7.3 s behind the server); the time messages keep coming every ten
-    // seconds until the minute is over, each saying what the server's clock shows.
+    // Act: twenty seconds in, a time sync moves this machine's wall clock 5 s further
+    // back (it is now 7.3 s behind the server); the time is read right after the step;
+    // the time messages keep coming every ten seconds until the minute is over, each
+    // saying what the server's clock shows.
     let lagOfThisMachineMs = renderMachineLagMs;
+    let timeReadRightAfterTheStepMs = 0;
     for (let secondsSinceTheHello = 10; secondsSinceTheHello <= 60; secondsSinceTheHello += 10) {
-      vi.setSystemTime(Date.now() + 10_000);
+      vi.advanceTimersByTime(10_000);
       if (secondsSinceTheHello === 20) {
         vi.setSystemTime(Date.now() - 5_000);
         lagOfThisMachineMs = renderMachineLagMs + 5_000;
+        timeReadRightAfterTheStepMs = readServerAlignedTimeMs();
       }
       connection.latestSocket().simulateMessage({
         type: 'time',
@@ -244,11 +251,16 @@ describe('the time message the server sends every ten seconds', () => {
       });
     }
 
-    // Assert: a minute after the hello the time read is the server's again, although no
-    // slice changed in between. Without the time messages it would be 5 s behind.
+    // Assert: the step never showed: the time read stayed on the server clock right
+    // after it (the page counts on monotonic time between samples, BAJAOVRLAY-62), and a
+    // minute after the hello, with only time messages in between, it still is.
+    expect(
+      timeReadRightAfterTheStepMs,
+      'a step of the wall clock must not move the time read, even before a new sample',
+    ).toBe(serverTimeAtTheHelloMs + 20_000);
     expect(
       readServerAlignedTimeMs(),
-      'the time messages alone must bring the time read back to the server clock',
+      'the time messages alone must keep the time read on the server clock',
     ).toBe(serverTimeAtTheHelloMs + 60_000);
   });
 

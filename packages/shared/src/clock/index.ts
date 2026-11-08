@@ -8,11 +8,12 @@ export { type ClockReading, computeClockTimeMsAtWallClock } from './clockExtrapo
 export { countWholeSecondsClockShows } from './clockWholeSeconds.js';
 // The H:MM:SS text a clock shows for a time, written the same on air and on the page.
 export { formatClockTimeAsHoursMinutesSeconds } from './clockFormatting.js';
-// The shared "now" on the server's clock; the renderer records a sample per message, and
-// tests forget the samples when they end.
+// The shared "now" on the server's clock; the renderer records a sample per message
+// (taken on this machine's monotonic time), and tests forget the samples when they end.
 export {
   forgetServerClockSamples,
   readServerAlignedTimeMs,
+  readThisMachineMonotonicTimeMs,
   recordServerClockSample,
 } from './serverAlignedTime.js';
 // The samples behind that "now": the last five offsets kept, and their median.

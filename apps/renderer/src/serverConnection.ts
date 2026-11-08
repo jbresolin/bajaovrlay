@@ -38,7 +38,7 @@ import {
   SlicesSchema,
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
-import { recordServerClockSample } from '@bajaovrlay/shared/clock';
+import { readThisMachineMonotonicTimeMs, recordServerClockSample } from '@bajaovrlay/shared/clock';
 
 import { logRendererEvent } from './rendererLog.js';
 
@@ -172,7 +172,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   function handleMessage(data: unknown): { wasHello: boolean } {
     // Read first, before the message is even parsed: checking a large hello takes a few
     // milliseconds, and each of them would make the sample of the server's clock later.
-    const localTimeAtArrivalMs = Date.now();
+    const localTimeAtArrivalMs = readThisMachineMonotonicTimeMs();
     const messageJson = readJsonOfMessage(data);
     const message = parseServerMessage(messageJson);
     if (message === undefined) {
@@ -351,10 +351,9 @@ function startWatchOnTheServerBuild(
  * late by that much and the clock on air runs that much behind the server's (a few
  * milliseconds on a local network). One message held up for longer is left aside by the
  * median of the last five samples. The state read over HTTP when a hello is late gives
- * no sample: GET /api/v1/state answers the slices alone. A step of this machine's clock
- * is corrected by the `time` messages, which come every ten seconds even when no slice
- * changes; the median needs three of them, so the clock on air is wrong for about
- * thirty seconds after such a step.
+ * no sample: GET /api/v1/state answers the slices alone. The arrival is read on this
+ * machine's monotonic time, so a step of its wall clock moves neither the samples nor
+ * the clock on air (BAJAOVRLAY-62).
  */
 function recordServerClockSampleOfMessage(
   message: ServerMessage,

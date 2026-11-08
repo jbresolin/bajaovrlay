@@ -9,6 +9,7 @@ import { isOriginOfAnotherSite } from '../http/originOfAnotherSite.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { OperatorLogin } from '../operatorLogin/operatorLogin.js';
 import type { StateStore } from '../store/createStateStore.js';
+import { readServerTime } from '../time/serverClock.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
 import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
 import { startHeartbeat } from './heartbeat.js';
@@ -44,7 +45,7 @@ export type WebSocketHubOptions = {
   logger: ServerLogger;
   heartbeatIntervalInMilliseconds: number;
   /**
-   * Defaults to the machine's clock. It must be the clock the store stamps commands
+   * Defaults to the server clock (core/time). It must be the clock the store stamps commands
    * with: renderers line their own clock up with this one, and a race clock counts from
    * a moment the store stamped.
    */
@@ -99,7 +100,7 @@ export type WebSocketHub = { close: () => Promise<void> };
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
-  const readCurrentTime = options.readCurrentTime ?? (() => new Date());
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
   const { operatorLogin } = options;
   const publicOrigins = options.publicOrigins ?? [];
   // noServer: the HTTP server is Hono's; this hub only takes over the upgrades below.
