@@ -9,6 +9,7 @@ import type {
 import { serveMediaFiles } from '../../modules/media/index.js';
 import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import type { ServerLogger } from '../logger/createLogger.js';
+import type { OperatorLogin } from '../operatorLogin/operatorLogin.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
 import { answerRouteNotFound, answerUnexpectedError } from './errorAnswers.js';
@@ -53,6 +54,11 @@ export type ServerAppOptions = {
    * may upload images too. None when left out: only the server's own address may.
    */
   publicOrigins?: readonly string[] | undefined;
+  /**
+   * The operator login (BAJAOVRLAY-29) startServer built from the PINs. Required, with no
+   * default (gate 2 of PR #51): a wiring that forgot it must not compile into an open console.
+   */
+  operatorLogin: OperatorLogin;
 };
 
 /**
@@ -82,6 +88,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         apiTokens: options.apiTokens,
         isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
         publicOrigins: options.publicOrigins,
+        operatorLogin: options.operatorLogin,
       }),
     );
     if (options.mediaFolder !== undefined) {

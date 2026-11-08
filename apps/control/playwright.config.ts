@@ -4,6 +4,12 @@ import {
   portOffsetOfTheBrowserTests,
   realServerPort as realServerPortNumber,
 } from './e2e/emptyTheServerState';
+import {
+  dataRolePinOfTheBrowserTests,
+  loginServerAddress,
+  loginServerPort,
+  producerPinOfTheBrowserTests,
+} from './e2e/loginServerOfTheBrowserTests';
 import { apiTokensVariableOfTheBrowserTests } from './e2e/triggerCallsOnTheRealServer';
 
 // The tests drive the control page's dev server, which forwards /ws, /api, /health,
@@ -23,6 +29,9 @@ const isRunningInCI = Boolean(process.env.CI);
 const temporaryDatabasePath = 'apps/control/e2e-data/takeAndClear.sqlite';
 // The server's data folder (DATA_DIR: recordings) lives in the same throwaway folder.
 const temporaryDataFolder = 'apps/control/e2e-data';
+// The login server's own throwaway folder (BAJAOVRLAY-29), so neither server's start
+// empties the other's.
+const loginServerDataFolder = 'apps/control/e2e-data-login';
 
 export default defineConfig({
   testDir: './e2e',
@@ -70,6 +79,25 @@ export default defineConfig({
       },
       url: `${realServerAddress}/health`,
       reuseExistingServer: !isRunningInCI,
+    },
+    {
+      // A second real server, with the operator login on (BAJAOVRLAY-29), for
+      // loginRolesWalk.e2e.ts. It serves the BUILT control page and renderer itself, as on
+      // the stream PC, so it needs `pnpm build` first, like the graphics every test takes;
+      // a second Vite dev server of the same app could race the first over Vite's cache of
+      // dependencies. Never reused: each run starts on a new database, with no session.
+      command: `rm -rf e2e-data-login && pnpm --filter @bajaovrlay/server exec tsx --conditions=@bajaovrlay/source src/main.ts`,
+      env: {
+        PORT: String(loginServerPort),
+        HOST: '127.0.0.1',
+        LOG_LEVEL: 'warn',
+        DATABASE_PATH: `${loginServerDataFolder}/login.sqlite`,
+        DATA_DIR: loginServerDataFolder,
+        BAJAOVRLAY_PIN_PRODUCER: producerPinOfTheBrowserTests,
+        BAJAOVRLAY_PIN_DATA: dataRolePinOfTheBrowserTests,
+      },
+      url: `${loginServerAddress}/health`,
+      reuseExistingServer: false,
     },
     {
       // vite.config.ts reads PORT and HOST to know where the server is; given here, they

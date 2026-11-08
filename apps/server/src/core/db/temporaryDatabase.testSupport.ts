@@ -42,12 +42,27 @@ const migrationOfTheServerBeforeBajaovrlay40 = '0000_create_slices_and_event_log
 
 /**
  * Opens a database at a path as a server built before BAJAOVRLAY-40 laid it out: only the
- * first committed migration applied (no data_snapshots table), with drizzle's own journal
- * of it, so opening the same path later with openDatabaseForTests applies the rest exactly
- * as a server upgrade does. Closed when the test ends unless the test closed it already.
+ * first committed migration applied (no data_snapshots table). See
+ * openDatabaseWithTheCommittedMigrationsUpTo.
  */
 export function openDatabaseAsTheServerBeforeBajaovrlay40LaidItOut(
   databasePath: string,
+): ServerDatabase {
+  return openDatabaseWithTheCommittedMigrationsUpTo(
+    databasePath,
+    migrationOfTheServerBeforeBajaovrlay40,
+  );
+}
+
+/**
+ * Opens a database at a path as an older server laid it out: the committed migrations up
+ * to and including `lastMigrationTag` applied, with drizzle's own journal of them, so
+ * opening the same path later with openDatabaseForTests applies the rest exactly as a
+ * server upgrade does. Closed when the test ends unless the test closed it already.
+ */
+export function openDatabaseWithTheCommittedMigrationsUpTo(
+  databasePath: string,
+  lastMigrationTag: string,
 ): ServerDatabase {
   const migrationsFolder = mkdtempSync(join(tmpdir(), 'bajaovrlay-migracoes-antigas-'));
   onTestFinished(() => rmSync(migrationsFolder, { recursive: true, force: true }));
@@ -56,21 +71,24 @@ export function openDatabaseAsTheServerBeforeBajaovrlay40LaidItOut(
   const committedJournal = JSON.parse(readFileSync(committedJournalPath, 'utf8')) as {
     entries: Array<{ tag: string }>;
   };
-  const journalOfTheOlderServer = {
-    ...committedJournal,
-    entries: committedJournal.entries.filter(
-      (entry) => entry.tag === migrationOfTheServerBeforeBajaovrlay40,
-    ),
-  };
+  const positionOfTheLast = committedJournal.entries.findIndex(
+    (entry) => entry.tag === lastMigrationTag,
+  );
+  if (positionOfTheLast === -1) {
+    throw new Error(`no committed migration is tagged ${lastMigrationTag}`);
+  }
+  const entriesOfTheOlderServer = committedJournal.entries.slice(0, positionOfTheLast + 1);
   writeFileSync(
     join(migrationsFolder, 'meta', '_journal.json'),
-    JSON.stringify(journalOfTheOlderServer),
+    JSON.stringify({ ...committedJournal, entries: entriesOfTheOlderServer }),
   );
-  const migrationFileName = `${migrationOfTheServerBeforeBajaovrlay40}.sql`;
-  copyFileSync(
-    join(committedMigrationsFolder, migrationFileName),
-    join(migrationsFolder, migrationFileName),
-  );
+  for (const entry of entriesOfTheOlderServer) {
+    const migrationFileName = `${entry.tag}.sql`;
+    copyFileSync(
+      join(committedMigrationsFolder, migrationFileName),
+      join(migrationsFolder, migrationFileName),
+    );
+  }
 
   const database = openDatabase({ databasePath, migrationsFolder });
   onTestFinished(() => {

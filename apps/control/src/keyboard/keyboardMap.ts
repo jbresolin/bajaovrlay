@@ -33,9 +33,10 @@ export type KeyboardShortcut = {
   isKeptFromTheBrowser: boolean;
   /**
    * The commands a press may send; empty for a key that only changes the page (F1–F4).
-   * Descriptive only: no code reads it. It tells the reader where to look; what a key
-   * really sends is decided by the hook that listens to it (commandForOperatorKey.ts,
-   * quickFireTabs.ts, the "Limpar tudo" button, useStopRunningMacroKey.ts).
+   * What a key really sends is decided by the hook that listens to it
+   * (commandForOperatorKey.ts, quickFireTabs.ts, the "Limpar tudo" button,
+   * useStopRunningMacroKey.ts); this list switches the key off for a role that may send
+   * none of them (Dados, BAJAOVRLAY-29), so it must name every command the key can send.
    */
   commandTypes: readonly Command['type'][];
   /** The key as the operator reads it in the "?" dialog ("Espaço", "1 a 9"). */
@@ -54,8 +55,8 @@ const shortcutTexts = ptBR.keyboard.shortcuts;
  * gathers them, and changing one here changes what the key does: `keys`,
  * `isIgnoredWhileTyping` and `isKeptFromTheBrowser` drive the listeners, `isShiftHeld`
  * tells Shift+Space from Space, the order of switchQuickFireTab's keys is the order of
- * the tabs they open (quickFireTabs.ts), and the texts fill the "?" dialog. Only
- * `commandTypes` is descriptive.
+ * the tabs they open (quickFireTabs.ts), the texts fill the "?" dialog, and
+ * `commandTypes` switches a key off for a role that may send none of them.
  *
  * The routing of Space, Shift+Space and Backspace (which command, given what is
  * previewed) is commandForOperatorKey.ts; its three names (`space`, `shiftSpace`,

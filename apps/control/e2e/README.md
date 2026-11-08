@@ -19,6 +19,10 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   `clockStoppedOnAir.e2e.ts` (a stopped clock keeps its time), `rundownTakeWithSpace.e2e.ts` (Space, ←, "Excluir").
 - Quick fire (steps in `quickFireTestSteps.ts`): `quickFireWithNumberKey.e2e.ts` (1 fires a button), `macroTakeWaitClear.e2e.ts`
   (take, wait 0,5 s, clear: empty after 0.4–3 s), `macroStopDuringWait.e2e.ts` ("Parar" in a 5 s wait: the clock stays).
+- Login (BAJAOVRLAY-29): `loginRolesWalk.e2e.ts` runs on a second real server with the PINs set
+  (`loginServerOfTheBrowserTests.ts`, port 5181, which serves the BUILT page): Dados at "Mesa 2" prepares and edits an
+  item, its "Disparar" greyed out with the role's tooltip; "Sair", then the Produtor at "Mesa 1" takes it; the event log
+  names `dados:Mesa 2` and `produtor:Mesa 1`. After "Sair" the page's GET /api/v1/state answers 401.
 - Undo (BAJAOVRLAY-30): `undoWithCtrlZ.e2e.ts` (two "Atalhos" buttons taken with 1 and 2, then Ctrl+Z: the OBS
   stand-in draws the first one again).
 

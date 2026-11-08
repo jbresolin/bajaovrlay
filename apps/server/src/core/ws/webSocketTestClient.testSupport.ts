@@ -27,6 +27,8 @@ export type WebSocketTestClient = {
   sendBinary: (bytes: Uint8Array) => void;
   /** Resolves when the server has closed (or dropped) this client's socket. */
   waitUntilClosed: () => Promise<void>;
+  /** The close code the server sent (4401 when a session ended), once the socket closed. */
+  readCloseCode: () => number | undefined;
   /** Whether the socket is still open. */
   isOpen: () => boolean;
 };
@@ -42,7 +44,13 @@ export type WebSocketTestClient = {
  */
 export async function connectWebSocketTestClient(
   port: number,
-  options: { answersPings?: boolean; role?: 'renderer' | 'monitor'; output?: string } = {},
+  options: {
+    answersPings?: boolean;
+    role?: 'renderer' | 'monitor';
+    output?: string;
+    /** The Cookie header a logged-in browser sends (BAJAOVRLAY-29); none when left out. */
+    cookie?: string;
+  } = {},
 ): Promise<WebSocketTestClient> {
   const queryParameters = new URLSearchParams();
   if (options.role !== undefined) {
@@ -54,6 +62,7 @@ export async function connectWebSocketTestClient(
   const query = queryParameters.size === 0 ? '' : `?${queryParameters.toString()}`;
   const socket = new WebSocket(`ws://127.0.0.1:${port}/ws${query}`, {
     autoPong: options.answersPings ?? true,
+    headers: options.cookie === undefined ? {} : { cookie: options.cookie },
   });
   onTestFinished(() => socket.terminate());
 
@@ -67,7 +76,13 @@ export async function connectWebSocketTestClient(
     receivedMessages.push(message);
     waitersForMessages.forEach((checkAgain) => checkAgain());
   });
-  const closed = new Promise<void>((resolve) => socket.once('close', () => resolve()));
+  let closeCode: number | undefined;
+  const closed = new Promise<void>((resolve) =>
+    socket.once('close', (code) => {
+      closeCode = code;
+      resolve();
+    }),
+  );
 
   await new Promise<void>((resolve, reject) => {
     socket.once('open', () => resolve());
@@ -109,6 +124,7 @@ export async function connectWebSocketTestClient(
     sendText: (text) => socket.send(text),
     sendBinary: (bytes) => socket.send(bytes, { binary: true }),
     waitUntilClosed: () => closed,
+    readCloseCode: () => closeCode,
     isOpen: () => socket.readyState === WebSocket.OPEN,
   };
 }
@@ -123,6 +139,29 @@ export function tryWebSocketOnPath(port: number, path: string): Promise<'refused
   return new Promise((resolve) => {
     socket.once('open', () => resolve('opened'));
     socket.once('error', () => resolve('refused'));
+  });
+}
+
+/**
+ * Tries to open /ws, with a role in the address and a Cookie and an Origin header when
+ * given, and resolves with 'opened', or with the HTTP status the server refused the upgrade
+ * with (401 without a session while the login is on, 403 from another site's page).
+ */
+export function tryWebSocketAndReadTheAnswer(
+  port: number,
+  options: { role?: 'renderer' | 'monitor'; cookie?: string; origin?: string } = {},
+): Promise<'opened' | number> {
+  const query = options.role === undefined ? '' : `?role=${options.role}`;
+  // An Origin header only when the test gives one: a Node client sends none by itself.
+  const socket = new WebSocket(`ws://127.0.0.1:${port}/ws${query}`, {
+    headers: options.cookie === undefined ? {} : { cookie: options.cookie },
+    ...(options.origin === undefined ? {} : { origin: options.origin }),
+  });
+  onTestFinished(() => socket.terminate());
+  return new Promise((resolve) => {
+    socket.once('open', () => resolve('opened'));
+    socket.once('unexpected-response', (_request, response) => resolve(response.statusCode ?? 0));
+    socket.once('error', () => resolve(0));
   });
 }
 

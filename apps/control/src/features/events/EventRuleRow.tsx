@@ -1,4 +1,9 @@
-import type { EventRule, EventRuleMode, Item } from '@bajaovrlay/shared';
+import {
+  type EventRule,
+  type EventRuleMode,
+  type Item,
+  whyTheDataRoleCannotAutomate,
+} from '@bajaovrlay/shared';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -13,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommandAndReadItsRefusal } from '@/state/ControlPageStateProvider';
+import { useIsTheDataRoleLoggedIn } from '@/state/operatorSessionContext';
 
 import {
   buildEventRuleFormValues,
@@ -28,7 +34,9 @@ const texts = ptBR.events.rules;
  * One row of "Regras": the kind's mode, its item, its seconds on air and its maximum wait,
  * and "Salvar", which sends the whole row as updateEventRule (eventRuleForm.ts). A problem
  * or the server's refusal is shown in the row, and "Salvo." once the server accepted it. The Super Chat row offers "Perguntar" only
- * and says why.
+ * and says why. For Dados (gate 2 of PR #51), "Automático" is greyed out unless the rule
+ * already was; an auto rule kept auto has its item and times greyed out too, each with the
+ * server's sentence: what goes on air by itself is the Produtor's.
  */
 export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
   const { rule, items } = props;
@@ -49,6 +57,10 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
   const kindName = texts.kindNames[rule.kind];
   const idPrefix = `event-rule-${rule.kind}`;
   const modesOffered = listModesOfferedForKind(rule.kind);
+  const isTheDataRole = useIsTheDataRoleLoggedIn();
+  const isAutoGreyedOut = isTheDataRole && rule.mode !== 'auto';
+  const isWhatItAirsLocked = isTheDataRole && rule.mode === 'auto' && values.mode === 'auto';
+  const isAutoOffered = modesOffered.includes('auto');
 
   async function saveTheRow(): Promise<void> {
     const reading = readEventRuleFormIntoCommand(rule.kind, values);
@@ -78,7 +90,7 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
           </SelectTrigger>
           <SelectContent>
             {modesOffered.map((mode) => (
-              <SelectItem key={mode} value={mode}>
+              <SelectItem key={mode} value={mode} disabled={mode === 'auto' && isAutoGreyedOut}>
                 {texts.modes[mode]}
               </SelectItem>
             ))}
@@ -86,6 +98,7 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
         </Select>
         <Select
           value={values.itemChoice}
+          disabled={isWhatItAirsLocked}
           onValueChange={(itemChoice) => setValues({ ...values, itemChoice })}
         >
           <SelectTrigger size="sm" className="w-full" aria-label={texts.itemLabel(kindName)}>
@@ -106,6 +119,7 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
           </Label>
           <Input
             id={`${idPrefix}-duration`}
+            disabled={isWhatItAirsLocked}
             inputMode="numeric"
             autoComplete="off"
             value={values.durationSecondsText}
@@ -118,6 +132,7 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
           </Label>
           <Input
             id={`${idPrefix}-max-age`}
+            disabled={isWhatItAirsLocked}
             inputMode="numeric"
             autoComplete="off"
             placeholder={texts.noMaxAgePlaceholder}
@@ -126,6 +141,16 @@ export function EventRuleRow(props: { rule: EventRule; items: Item[] }) {
           />
         </div>
       </div>
+      {isAutoGreyedOut && isAutoOffered ? (
+        <p className="text-xs text-muted-foreground">
+          {whyTheDataRoleCannotAutomate.settingARuleToAuto}
+        </p>
+      ) : null}
+      {isWhatItAirsLocked ? (
+        <p className="text-xs text-muted-foreground">
+          {whyTheDataRoleCannotAutomate.changingAnAutoRule}
+        </p>
+      ) : null}
       {rule.kind === 'superChat' ? (
         <p className="text-xs text-muted-foreground">{texts.superChatExplanation}</p>
       ) : null}

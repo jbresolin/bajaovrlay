@@ -33,6 +33,7 @@ export function RecentlyDismissedTriggerFirings() {
           <span>{texts.title(firing.triggerName, readLabelOfMacro(firing.macroId, macros))}</span>
           <span>{texts.dismissedWord}</span>
           <ActionButton
+            commandType="restoreTriggerFiring"
             size="xs"
             variant="outline"
             className="ml-auto"

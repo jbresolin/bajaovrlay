@@ -21,6 +21,7 @@ import { HealthResponseSchema } from '@bajaovrlay/shared';
 import { describe, expect, it } from 'vitest';
 
 import { createLogger } from '../logger/createLogger.js';
+import { operatorLoginOff } from '../operatorLogin/operatorLoginOff.testSupport.js';
 import { createServerApp } from './createServerApp.js';
 
 const runningServerVersion = '0.3.1';
@@ -28,6 +29,7 @@ const runningServerVersion = '0.3.1';
 /** Builds the server app as production does, but silent and without static folders. */
 function createServerAppForHealthTests() {
   return createServerApp({
+    operatorLogin: operatorLoginOff,
     logger: createLogger({ level: 'silent' }),
     version: runningServerVersion,
   });

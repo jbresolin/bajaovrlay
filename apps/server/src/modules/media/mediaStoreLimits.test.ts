@@ -1,8 +1,9 @@
 /**
- * The limits of the media store until M4 brings logins (apps/server)
+ * The limits of the media store (apps/server)
  *
  * What this module is for:
- *   Until M4, anyone on the event LAN can reach POST /api/v1/media, and each image is
+ *   With the login off anyone on the event LAN can reach POST /api/v1/media (with the PINs
+ *   set, any logged-in role; BAJAOVRLAY-29), and each image is
  *   kept forever unless an operator deletes it. Gate 2 of PR #23 caps what uploads can do
  *   to the disk of the race-day laptop: the store holds at most 1000 images and 500 MB
  *   (answered 507 in pt-BR), no image is written when the disk would keep less than 1 GB

@@ -2,13 +2,15 @@
  * Who sent each event-log row, as the history page says it (packages/shared)
  *
  * What this module is for:
- *   The event log signs every command with an actor name (`operador:<connection>`,
- *   `api:companion`, `sistema:macro:<id>`). The history page (BAJAOVRLAY-30) never shows
- *   that raw name: it shows "Operador", "API · companion", "Gatilho", "Macro", "Fonte" or
- *   "Sistema", and filters by those kinds.
+ *   The event log signs every command with an actor name (`produtor:Mesa 1`,
+ *   `operador:<connection>`, `api:companion`, `sistema:macro:<id>`). The history page
+ *   (BAJAOVRLAY-30) never shows that raw name: it shows "Produtor · Mesa 1", "Dados · Mesa
+ *   2", "Operador", "API · companion", "Gatilho", "Macro", "Fonte" or "Sistema", and
+ *   filters by those kinds.
  *
  * What these tests prove:
- *   - Each actor the server signs with reads as its kind and label.
+ *   - Each actor the server signs with reads as its kind and label: a logged-in operator
+ *     (BAJAOVRLAY-29) by role and station, an operator with the login off as "Operador".
  *   - The macro watchdog is not taken for a macro, and a renderer reads as "Sistema".
  *
  * What these tests deliberately do not cover:
@@ -19,9 +21,27 @@ import { describe, expect, it } from 'vitest';
 import { eventLogActorKindLabels, readWhoSentEventLogRow } from './eventLogActors.js';
 
 const actorScenarios = [
-  // The control page, by its connection.
+  // A logged-in producer (BAJAOVRLAY-29) is named by the role and the station typed at login.
   {
-    name: 'an operator’s connection reads as "Operador"',
+    name: 'the producer at "Mesa 1" reads as "Produtor · Mesa 1"',
+    actor: 'produtor:Mesa 1',
+    expected: { kind: 'produtor', label: 'Produtor · Mesa 1' },
+  },
+  // The data role the same way, its station kept as typed.
+  {
+    name: 'the data role at "Mesa 2" reads as "Dados · Mesa 2"',
+    actor: 'dados:Mesa 2',
+    expected: { kind: 'dados', label: 'Dados · Mesa 2' },
+  },
+  // A station name may hold a colon: only the first one parts the role from the station.
+  {
+    name: 'a station named "Cabine: fundos" keeps its colon',
+    actor: 'dados:Cabine: fundos',
+    expected: { kind: 'dados', label: 'Dados · Cabine: fundos' },
+  },
+  // The control page with the login off (no PINs set), by its connection.
+  {
+    name: 'an operator’s connection with the login off reads as "Operador"',
     actor: 'operador:3f2a9c1e-8b47-4d06-9e15-7c0d2b6a4f81',
     expected: { kind: 'operador', label: 'Operador' },
   },
@@ -94,8 +114,10 @@ describe('eventLogActorKindLabels', () => {
     // Act: read them in the filter's order.
     const labels = Object.values(eventLogActorKindLabels);
 
-    // Assert: the six kinds, in pt-BR.
-    expect(labels, 'the filter must offer the six kinds in pt-BR').toEqual([
+    // Assert: the eight kinds, in pt-BR, the two roles first.
+    expect(labels, 'the filter must offer the eight kinds in pt-BR').toEqual([
+      'Produtor',
+      'Dados',
       'Operador',
       'API',
       'Gatilho',

@@ -80,6 +80,7 @@ export function PreviewedLayersList() {
               )}
               <ActionButton
                 size="xs"
+                commandType="takePreview"
                 onClick={() =>
                   sendTakeByThisOperator({ type: 'takePreview', layerId: previewedLayer.layerId })
                 }
@@ -91,6 +92,7 @@ export function PreviewedLayersList() {
               <ActionButton
                 size="xs"
                 variant="outline"
+                commandType="stopPreview"
                 onClick={() =>
                   void sendCommand({ type: 'stopPreview', layerId: previewedLayer.layerId })
                 }

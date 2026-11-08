@@ -1,11 +1,16 @@
 import { useEffect } from 'react';
 
+import { useMayTheRoleSendAnyOf } from '@/state/operatorSessionContext';
+
 import type { KeyboardShortcut } from './keyboardMap';
 
-/** The part of a keyboardMap.ts entry the listener needs: its keys and its two rules. */
+/**
+ * The part of a keyboardMap.ts entry the listener needs: its keys, its two rules, and the
+ * commands it may send (a role that may send none of them has the key switched off).
+ */
 export type ShortcutToListenFor = Pick<
   KeyboardShortcut,
-  'keys' | 'isControlHeld' | 'isIgnoredWhileTyping' | 'isKeptFromTheBrowser'
+  'keys' | 'isControlHeld' | 'isIgnoredWhileTyping' | 'isKeptFromTheBrowser' | 'commandTypes'
 >;
 
 /** When a shortcut listens. */
@@ -40,13 +45,18 @@ export type KeyPress = {
  * Shift is not one of those: a key pressed with Shift counts like the key alone, as it
  * always did here, and `onPressed` is told whether Shift was down. A shortcut that does
  * not look at that (Esc, Backspace, the arrows) does the same with and without Shift.
+ *
+ * A key whose entry lists commands this page's role may send none of (Dados and Esc,
+ * Space, Ctrl+Z…; BAJAOVRLAY-29) is switched off as if `isEnabled` were false: it does
+ * nothing, and the browser keeps its own meaning of the key.
  */
 export function useKeyboardShortcut(
   shortcut: ShortcutToListenFor,
   onPressed: (keyPress: KeyPress) => void,
   options: KeyboardShortcutOptions,
 ): void {
-  const { isEnabled } = options;
+  const mayTheRoleSendIt = useMayTheRoleSendAnyOf(shortcut.commandTypes);
+  const isEnabled = options.isEnabled && mayTheRoleSendIt;
   const { keys, isControlHeld, isIgnoredWhileTyping, isKeptFromTheBrowser } = shortcut;
 
   useEffect(() => {

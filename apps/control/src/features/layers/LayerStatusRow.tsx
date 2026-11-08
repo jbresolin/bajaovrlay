@@ -186,7 +186,12 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
             </Button>
           )}
           {instanceOnProgram === undefined || props.isMarkedToBeCleared ? null : (
-            <ActionButton size="xs" variant="ghost" onClick={props.onPreviewClearPressed}>
+            <ActionButton
+              size="xs"
+              variant="ghost"
+              commandType="previewClearLayer"
+              onClick={props.onPreviewClearPressed}
+            >
               {ptBR.layers.previewClearLayerButton}
             </ActionButton>
           )}
@@ -194,6 +199,7 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
             <ActionButton
               size="xs"
               variant="ghost"
+              commandType="saveOnAirChangesIntoItem"
               disabled={props.isSaveIntoItemWaiting}
               onClick={props.onSaveIntoItemPressed}
             >
@@ -213,6 +219,7 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
             <ActionButton
               variant="outline"
               size="sm"
+              commandType="nextOnLayer"
               disabledReason={
                 props.onNextStepPressed === undefined
                   ? ptBR.layers.nextStepOffOnTheLastStep
@@ -231,7 +238,12 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           )}
           {/* Always pressable when connected, even on an empty layer: clearing an empty
             layer is harmless, and a panic press must never find a dead button. */}
-          <ActionButton variant="outline" size="sm" onClick={onClearPressed}>
+          <ActionButton
+            variant="outline"
+            size="sm"
+            commandType="clearLayer"
+            onClick={onClearPressed}
+          >
             {ptBR.layers.clearLayerButton}
           </ActionButton>
         </span>

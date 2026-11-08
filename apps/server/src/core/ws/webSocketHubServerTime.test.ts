@@ -33,6 +33,7 @@ import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { openTemporaryDatabase } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
+import { operatorLoginOff } from '../operatorLogin/operatorLoginOff.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
 import { createStateStore } from '../store/createStateStore.js';
 import { createClockAndTimerMovedByHand } from './clockAndTimerMovedByHand.testSupport.js';
@@ -63,6 +64,7 @@ async function startHubWithClockAndTimerMovedByHand() {
   const httpServer = createServer();
   await new Promise<void>((resolve) => httpServer.listen(0, '127.0.0.1', () => resolve()));
   const webSocketHub = attachWebSocketHub({
+    operatorLogin: operatorLoginOff,
     httpServer,
     stateStore,
     logger,

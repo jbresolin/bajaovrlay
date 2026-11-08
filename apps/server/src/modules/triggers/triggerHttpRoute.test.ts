@@ -29,6 +29,7 @@ import { parseApiTokens } from '../../core/apiAccess/apiTokens.js';
 import { d200Token } from '../../core/apiAccess/fakeApiTokens.testSupport.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger } from '../../core/logger/createLogger.js';
+import { operatorLoginOff } from '../../core/operatorLogin/operatorLoginOff.testSupport.js';
 import {
   applyAsTheOperatorOrThrow,
   createTrigger,
@@ -51,6 +52,7 @@ function createAppOnTheTriggerStore(
     throw new Error(`the test's tokens are refused: ${parsing.problem}`);
   }
   return createServerApp({
+    operatorLogin: operatorLoginOff,
     logger: createLogger({ level: 'silent' }),
     version: '0.3.1',
     stateStore: triggersOnTheStore.store,

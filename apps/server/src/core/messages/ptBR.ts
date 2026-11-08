@@ -2,6 +2,7 @@ import { ptBRBindingErrors } from './ptBRBindings.js';
 import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
 import { ptBRObs } from './ptBRObs.js';
+import { ptBROperatorLoginErrors } from './ptBROperatorLogin.js';
 import { ptBROutputs } from './ptBROutputs.js';
 import { ptBRProgramHistoryErrors } from './ptBRProgramHistory.js';
 import { ptBRTriggers } from './ptBRTriggers.js';
@@ -134,6 +135,8 @@ export const ptBR = {
   obs: ptBRObs,
   // Triggers: refusals, and why one did not fire (BAJAOVRLAY-48); see ptBRTriggers.ts.
   triggers: ptBRTriggers,
+  // The operator login (BAJAOVRLAY-29): PINs, the lockout, a missing session.
+  operatorLoginErrors: ptBROperatorLoginErrors,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
   // each goes with a stable code. The layer is named as the operator reads it.
   onAirChangeErrors: {

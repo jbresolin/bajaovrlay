@@ -17,6 +17,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createLogger } from '../logger/createLogger.js';
+import { operatorLoginOff } from '../operatorLogin/operatorLoginOff.testSupport.js';
 import { createServerApp } from './createServerApp.js';
 
 const internalErrorText = 'falha ao ler a tabela de voltas da equipe 42';
@@ -24,6 +25,7 @@ const internalErrorText = 'falha ao ler a tabela de voltas da equipe 42';
 /** Builds the server app with one extra route that always throws, standing in for a bug. */
 function createServerAppWithARouteThatThrows() {
   const app = createServerApp({
+    operatorLogin: operatorLoginOff,
     logger: createLogger({ level: 'silent' }),
     version: '0.3.1',
   });

@@ -23,6 +23,7 @@
  *   - With fewer than 200 live rows the slice is the whole log, and nothing is offered.
  *
  * What these tests deliberately do not cover:
+ *   - The rows of the two roles of the login; HistoryPageRoles.test.tsx.
  *   - The sentence of each command type; packages/shared's sentence tests.
  *   - The route's own paging and filtering; apps/server's eventLogRoute.test.ts.
  *   - The CSV text itself; historyCsv.test.ts.

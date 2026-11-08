@@ -16,6 +16,8 @@ function countWithWord(count: number, singularWord: string, pluralWord: string):
 export const ptBREventLogReading = {
   /** Who sent the command, as the "Quem" column and filter read it. */
   actorKindLabels: {
+    produtor: 'Produtor',
+    dados: 'Dados',
     operador: 'Operador',
     api: 'API',
     gatilho: 'Gatilho',
@@ -23,6 +25,8 @@ export const ptBREventLogReading = {
     fonte: 'Fonte',
     sistema: 'Sistema',
   },
+  /** "Produtor · Mesa 1": a logged-in operator, by role and station (BAJAOVRLAY-29). */
+  roleAtStationLabel: (roleLabel: string, station: string) => `${roleLabel} · ${station}`,
   /** "API · companion": a device of the command API, by its token's name. */
   apiDeviceLabel: (deviceName: string) => `API · ${deviceName}`,
   commandGroupLabels: {

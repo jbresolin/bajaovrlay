@@ -1,3 +1,5 @@
+import { type OperatorRole, OperatorRoleSchema } from '@bajaovrlay/shared';
+
 // The actor of a command is `<role>:<connection id>`. Until operators log in there are
 // three roles a connection can have (renderer, monitor, operator), and the role is all
 // the authorisation step looks at. The operator role is spelt in pt-BR because the actor
@@ -10,7 +12,9 @@
 // `sistema:eventos`, the media store, `sistema:midia`, the OBS connection,
 // `sistema:obs`, and the trigger service, `sistema:gatilhos`). A fifth role, `api:<token
 // name>`, signs a command sent over HTTP by a device of the command API (Companion, a
-// Stream Deck, a script; BAJAOVRLAY-28): it stands where an operator stands.
+// Stream Deck, a script; BAJAOVRLAY-28): it stands where an operator stands. With the PINs
+// set (BAJAOVRLAY-29) a control page is no longer `operador:<connection id>` but its login,
+// `produtor:<station>` or `dados:<station>`, so the event log names who sent what.
 const rendererRolePrefix = 'renderer:';
 const monitorRolePrefix = 'monitor:';
 const operatorRolePrefix = 'operador:';
@@ -82,6 +86,22 @@ export function buildMonitorActor(connectionId: string): string {
 /** The actor name of an operator's connection (every connection that is not a screen). */
 export function buildOperatorActor(connectionId: string): string {
   return `${operatorRolePrefix}${connectionId}`;
+}
+
+/**
+ * The actor name of a logged-in operator (BAJAOVRLAY-29): the role, a colon, and the
+ * station typed at login, `produtor:Mesa 1`. Only the first colon counts when the role is
+ * read back, so a station's own colon cannot change its role.
+ */
+export function buildLoggedInOperatorActor(role: OperatorRole, station: string): string {
+  return `${role}:${station}`;
+}
+
+/** The role of a logged-in operator's actor name, or undefined for any other actor. */
+export function readRoleOfLoggedInOperatorActor(actor: string): OperatorRole | undefined {
+  const roleBeforeTheFirstColon = actor.slice(0, actor.indexOf(':'));
+  const parsedRole = OperatorRoleSchema.safeParse(roleBeforeTheFirstColon);
+  return parsedRole.success ? parsedRole.data : undefined;
 }
 
 /**

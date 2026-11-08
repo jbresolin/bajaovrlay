@@ -15,6 +15,7 @@ import { findWhyTheTakeOfItemIsOff } from '@/features/events/itemTakenThroughAnE
 import { buttonClassForEachItemColor } from '@/features/items/itemColorButton';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
+import { useWhyTheRoleCannotSend } from '@/state/operatorSessionContext';
 
 /** What one button needs: its item, the names and key to show, and what each action does. */
 export type QuickFireItemButtonProps = {
@@ -48,7 +49,10 @@ export function QuickFireItemButton(props: QuickFireItemButtonProps) {
   const { item, graphicName, digitKey } = props;
   const isConnected = useIsConnectedToServer();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const whyTheTakeIsOff = findWhyTheTakeOfItemIsOff(item);
+  // A role that may not take (Dados, BAJAOVRLAY-29) sees the button greyed out, saying why.
+  const whyTheRoleCannotTake = useWhyTheRoleCannotSend('takeItem');
+  const whyTheTakeIsOff = whyTheRoleCannotTake ?? findWhyTheTakeOfItemIsOff(item);
+  const isPreviewOffForTheRole = useWhyTheRoleCannotSend('previewItem') !== undefined;
 
   function takeThisItemAndLetGoOfTheFocus(button: HTMLButtonElement): void {
     button.blur();
@@ -98,7 +102,7 @@ export function QuickFireItemButton(props: QuickFireItemButtonProps) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onCloseAutoFocus={(event) => event.preventDefault()}>
-          <DropdownMenuItem onSelect={props.onPreviewChosen}>
+          <DropdownMenuItem disabled={isPreviewOffForTheRole} onSelect={props.onPreviewChosen}>
             {texts.previewAction}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={props.onEditChosen}>{texts.editAction}</DropdownMenuItem>

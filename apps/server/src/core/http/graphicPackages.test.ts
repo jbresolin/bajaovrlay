@@ -25,6 +25,7 @@ import { join } from 'node:path';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { createLogger } from '../logger/createLogger.js';
+import { operatorLoginOff } from '../operatorLogin/operatorLoginOff.testSupport.js';
 import { createServerApp } from './createServerApp.js';
 
 const builtRaceClockModule = 'export default class RaceClock extends HTMLElement {}';
@@ -56,6 +57,7 @@ function createServerAppServingGraphicPackages() {
   );
 
   return createServerApp({
+    operatorLogin: operatorLoginOff,
     logger: createLogger({ level: 'silent' }),
     version: '0.3.1',
     graphicPackagesFolder,

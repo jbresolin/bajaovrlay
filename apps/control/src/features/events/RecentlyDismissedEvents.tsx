@@ -39,6 +39,7 @@ export function RecentlyDismissedEvents() {
           </span>
           <span>{texts.statusWords.dismissed}</span>
           <ActionButton
+            commandType="restoreEvent"
             size="xs"
             variant="outline"
             className="ml-auto"

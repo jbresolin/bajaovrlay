@@ -19,12 +19,17 @@ export function TakeAllAndDiscardAllButtons() {
 
   return (
     <div className="flex items-center gap-2">
-      <ActionButton size="xs" onClick={() => void sendCommand({ type: 'takeAllPreviews' })}>
+      <ActionButton
+        size="xs"
+        commandType="takeAllPreviews"
+        onClick={() => void sendCommand({ type: 'takeAllPreviews' })}
+      >
         {ptBR.outputMonitors.takeAllPreviewsButton}
       </ActionButton>
       <ActionButton
         size="xs"
         variant="outline"
+        commandType="stopPreview"
         onClick={() => void sendCommand({ type: 'stopPreview', layerId: null })}
       >
         {ptBR.outputMonitors.discardAllPreviewsButton}

@@ -6,7 +6,8 @@ read back in plain pt-BR. Start reading at `HistoryPage.tsx`.
 - `HistoryPage.tsx` — the table (time, who, sentence; a refusal in red), "Carregar mais", "Exportar CSV".
 - `useHistoryOfTheShow.ts` — the live rows of the `eventLog` slice on top, older pages from
   `GET /api/v1/event-log` below (`fetchOlderEventLogPage.ts`), merged in `historyRows.ts`.
-- `HistoryFilters.tsx` — who, type of command, layer, only refusals, free text. The rules and the
+- `HistoryFilters.tsx` — who (with the login on, "Produtor" and "Dados" too, each row reading
+  "Produtor · Mesa 1"; BAJAOVRLAY-29), type of command, layer, only refusals, free text. The rules and the
   sentences are shared with the server (`@bajaovrlay/shared`, eventLogReading), which runs the
   same filters on the older pages.
 - `historyCsv.ts` — the CSV of the rows shown, like Cadastros' (";", UTF-8 with BOM).
