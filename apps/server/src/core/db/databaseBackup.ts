@@ -20,12 +20,22 @@ const backupFileNamePattern = /^bajaovrlay-\d{4}-\d{2}-\d{2}T\d{6}Z\.sqlite$/;
 const allRemainingPagesInOneStep = 0x7fffffff;
 
 /**
- * How long a copy that met the database locked waits before each new try: ten tries over
- * about 5.5 s. The server's own writes wait up to 5 s for a lock (its busy timeout), so a
- * lock held longer than this is not a write being committed but something stuck.
+ * How long one try waits inside SQLite for a lock to go (its busy handler). It must not be
+ * 0: against a server committing without pause, a try that never waits never finds the
+ * gap between two commits (4 failures in 5 pinned runs of
+ * backupDatabaseWhileTheServerWrites.test.ts at gate 2), and SQLite's busy handler is what
+ * slips the copy in. better-sqlite3's default, 5 s, would make ten tries last 50 s.
+ */
+const busyWaitOfOneTryInMs = 250;
+
+/**
+ * How long a copy that met the database locked waits before each new try: ten tries of
+ * up to 250 ms each, with these waits between them, about 5 s in all. The server's own
+ * writes wait up to 5 s for a lock (its busy timeout), so a lock held longer than this
+ * is not a write being committed but something stuck.
  */
 export const waitsBetweenCopyTriesInMs: readonly number[] = [
-  50, 100, 200, 400, 800, 1000, 1000, 1000, 1000,
+  50, 100, 200, 300, 300, 300, 300, 300, 300,
 ];
 
 /** The copy met the database locked at every try; its message is the pt-BR reason. */
@@ -99,11 +109,14 @@ async function tryToCopyDatabaseOnce(
   destinationPath: string,
 ): Promise<boolean> {
   // fileMustExist: a wrong DATABASE_PATH must fail, not create and copy an empty database.
-  // timeout 0: a lock answers at once, and copyDatabaseIntoFile's waits bound the whole
-  // copy; better-sqlite3's default would wait 5 s inside each try.
+  // timeout: see busyWaitOfOneTryInMs.
   let database: Database.Database;
   try {
-    database = new Database(databasePath, { readonly: true, fileMustExist: true, timeout: 0 });
+    database = new Database(databasePath, {
+      readonly: true,
+      fileMustExist: true,
+      timeout: busyWaitOfOneTryInMs,
+    });
   } catch (openError) {
     throw new Error(`cannot open the database to back it up: ${databasePath}`, {
       cause: openError,
@@ -124,9 +137,9 @@ async function tryToCopyDatabaseOnce(
     const progress = await database.backup(destinationPath, {
       progress: () => allRemainingPagesInOneStep,
     });
-    // A database locked before the first step (another connection committing a write, in
-    // the rollback journal the server uses) answers as a finished backup of zero pages
-    // and writes no file. A real database always has at least one page.
+    // A database still locked when the busy wait runs out before the first step (another
+    // connection committing a write, in the rollback journal the server uses) answers as
+    // a finished backup of zero pages and writes no file. A real database always has at least one page.
     const isLockedBeforeTheFirstPage = progress.totalPages === 0 || !existsSync(destinationPath);
     if (isLockedBeforeTheFirstPage) {
       rmSync(destinationPath, { force: true });

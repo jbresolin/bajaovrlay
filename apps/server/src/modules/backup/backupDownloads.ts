@@ -57,7 +57,7 @@ export type BackupDownloadsOptions = {
   temporaryFolder?: string | undefined;
   /** How each file is opened for the zip; tests watch it. fs.createReadStream when left out. */
   openFileForReading?: OpenFileForReading | undefined;
-  /** The waits between tries of a database copy that met a lock; about 5.5 s when left out. */
+  /** The waits between tries of a database copy that met a lock; about 5 s in all when left out. */
   waitsBetweenDatabaseCopyTriesInMs?: readonly number[] | undefined;
 };
 
