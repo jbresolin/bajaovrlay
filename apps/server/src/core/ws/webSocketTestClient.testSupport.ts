@@ -143,17 +143,19 @@ export function tryWebSocketOnPath(port: number, path: string): Promise<'refused
 }
 
 /**
- * Tries to open /ws, with a role in the address and a Cookie header when given, and
- * resolves with 'opened', or with the HTTP status the server refused the upgrade with
- * (401 without a session while the login is on, BAJAOVRLAY-29).
+ * Tries to open /ws, with a role in the address and a Cookie and an Origin header when
+ * given, and resolves with 'opened', or with the HTTP status the server refused the upgrade
+ * with (401 without a session while the login is on, 403 from another site's page).
  */
 export function tryWebSocketAndReadTheAnswer(
   port: number,
-  options: { role?: 'renderer' | 'monitor'; cookie?: string } = {},
+  options: { role?: 'renderer' | 'monitor'; cookie?: string; origin?: string } = {},
 ): Promise<'opened' | number> {
   const query = options.role === undefined ? '' : `?role=${options.role}`;
+  // An Origin header only when the test gives one: a Node client sends none by itself.
   const socket = new WebSocket(`ws://127.0.0.1:${port}/ws${query}`, {
     headers: options.cookie === undefined ? {} : { cookie: options.cookie },
+    ...(options.origin === undefined ? {} : { origin: options.origin }),
   });
   onTestFinished(() => socket.terminate());
   return new Promise((resolve) => {

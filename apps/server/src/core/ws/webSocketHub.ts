@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, Server } from 'node:http';
+import type { Duplex } from 'node:stream';
 
 import type { SliceNameSentWhole, Slices } from '@bajaovrlay/shared';
 import { type WebSocket, WebSocketServer } from 'ws';
 
+import { isOriginOfAnotherSite } from '../http/originOfAnotherSite.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import { type OperatorLogin, operatorLoginNotSetUp } from '../operatorLogin/operatorLogin.js';
 import type { StateStore } from '../store/createStateStore.js';
@@ -67,6 +69,11 @@ export type WebSocketHubOptions = {
    * other things): no login, every connection opens as before.
    */
   operatorLogin?: OperatorLogin | undefined;
+  /**
+   * BAJAOVRLAY_PUBLIC_ORIGINS: a reverse proxy's addresses whose pages may open the socket,
+   * beside the server's own (gate 2 of PR #51). None unless given.
+   */
+  publicOrigins?: readonly string[] | undefined;
 };
 
 /** The running hub; close() drops every client and stops the heartbeat and the time message. */
@@ -94,6 +101,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   const operatorLogin = options.operatorLogin ?? operatorLoginNotSetUp;
+  const publicOrigins = options.publicOrigins ?? [];
   // noServer: the HTTP server is Hono's; this hub only takes over the upgrades below.
   const webSocketServer = new WebSocketServer({ noServer: true });
   const heartbeat = startHeartbeat({
@@ -119,28 +127,37 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   // The operator session of each logged-in connection (BAJAOVRLAY-29).
   const sessionsOfConnections = trackSessionsOfConnections({ operatorLogin, readCurrentTime });
 
+  /** Answers an upgrade with an HTTP error and closes it, never letting a reset crash us. */
+  function refuseTheUpgrade(socket: Duplex, statusLine: string): void {
+    // Node removes its own socket error handler before emitting 'upgrade'; without this
+    // one, a peer resetting the connection here would be an uncaught error. (handleUpgrade
+    // adds its own, so an upgrade that goes through needs none.)
+    socket.on('error', (socketError) => {
+      logger.warn({ err: socketError }, 'refused upgrade socket error');
+      socket.destroy();
+    });
+    socket.end(`HTTP/1.1 ${statusLine}\r\nConnection: close\r\n\r\n`);
+  }
+
   httpServer.on('upgrade', (request, socket, head) => {
-    const requestPath = readUpgradeRequestPath(request.url);
-    if (requestPath !== webSocketPath) {
-      // Node removes its own socket error handler before emitting 'upgrade'; without
-      // this one, a peer resetting the connection here would be an uncaught error.
-      // (handleUpgrade below adds its own, so /ws needs none.)
-      socket.on('error', (socketError) => {
-        logger.warn({ err: socketError }, 'refused upgrade socket error');
-        socket.destroy();
-      });
-      socket.end('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n');
+    if (readUpgradeRequestPath(request.url) !== webSocketPath) {
+      refuseTheUpgrade(socket, '404 Not Found');
+      return;
+    }
+    // A page of another site may not open the socket, a screen's address or not: SameSite
+    // lets a page on another port of this host send the cookie (gate 2 of PR #51). Without
+    // a login a page needs no cookie at all, so this holds with the PINs unset too.
+    const host = request.headers.host;
+    const originOfTheServer = host === undefined ? undefined : `http://${host}`;
+    if (isOriginOfAnotherSite(request.headers.origin, originOfTheServer, publicOrigins)) {
+      refuseTheUpgrade(socket, '403 Forbidden');
       return;
     }
     // With the PINs set, a control page needs its session; a screen (a renderer, a monitor)
     // connects without one on the LAN, as before (BAJAOVRLAY-29). A refusal is a plain 401
     // the browser cannot read; the page learns why from GET /api/v1/session.
     if (sessionsOfConnections.isUpgradeRefused(request)) {
-      socket.on('error', (socketError) => {
-        logger.warn({ err: socketError }, 'refused upgrade socket error');
-        socket.destroy();
-      });
-      socket.end('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
+      refuseTheUpgrade(socket, '401 Unauthorized');
       return;
     }
     webSocketServer.handleUpgrade(request, socket, head, (client) => {

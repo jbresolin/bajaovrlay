@@ -37,6 +37,8 @@ export async function startServerOnARandomPort(
     buildIdFileUrl?: URL;
     /** The operator PINs (BAJAOVRLAY-29); the login off unless a test gives them. */
     operatorPins?: OperatorPins;
+    /** BAJAOVRLAY_PUBLIC_ORIGINS, a reverse proxy's addresses; none unless a test gives them. */
+    publicOrigins?: readonly string[];
   } = {},
 ) {
   const runningServer = await startServer({
@@ -51,6 +53,7 @@ export async function startServerOnARandomPort(
     sourceHostAllowlist: noSourceHostAllowlist,
     buildIdFileUrl: options.buildIdFileUrl,
     operatorPins: options.operatorPins,
+    publicOrigins: options.publicOrigins,
     heartbeatIntervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
     readCurrentTime: options.readCurrentTime ?? (() => new Date(momentTheServerClockIsHeldAt)),
   });

@@ -9,8 +9,10 @@ snapshot changed, just before that `slice`/`slices`, which never carry `dataSnap
 - `connectionActor.ts` — `/ws?role=renderer` is `renderer:<connection id>`, `/ws?role=monitor`
   is `monitor:<id>` (the control page's frames, which may send nothing), else the logged-in
   operator's `produtor:<station>` or `dados:<station>`, or `operador:<id>` with the login off.
-  With the PINs set (BAJAOVRLAY-29) the hub refuses a control page's upgrade without a session
-  (401) and closes a page whose session ended ("Sair", 18 hours) with code 4401.
+  The hub first refuses (403) an upgrade whose Origin is another site's, not the server's own
+  nor in BAJAOVRLAY_PUBLIC_ORIGINS (`../http/originOfAnotherSite.ts`, the uploads' rule too;
+  gate 2 of PR #51), then, with the PINs set (BAJAOVRLAY-29), a control page's upgrade without
+  a session (401); it closes a page whose session ended ("Sair", 18 hours) with code 4401.
 - `slicesSentToScreens.ts` — renderers and monitors get only `layers`, `graphics`, `instances` and
   `previewClearedLayerIds` (the rest `[]` in hello, left out of changes, no `dataSnapshot`); GET /api/v1/state?role= too.
   A screen is sent a changed slice only when its copy differs from the text it was last sent.

@@ -244,6 +244,7 @@ async function startServingFromDatabase(
       readCurrentTime: options.readCurrentTime,
       buildId,
       operatorLogin,
+      publicOrigins: options.publicOrigins,
     });
   } catch (bootError) {
     // The poller already armed a poll and a stale watch for every source left on: left

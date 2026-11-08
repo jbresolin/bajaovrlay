@@ -75,6 +75,16 @@ A tabela de quem acessa cada endereço fica em
 
 A rede do estúdio é confiável e a página é servida por `http://`. Por isso o cookie da sessão
 (`bajaovrlay_sessao`) não tem a marca `Secure`: com ela, o navegador nunca o mandaria de volta
-por `http://`. O cookie é `HttpOnly` (nenhum script da página o lê) e `SameSite=Strict`
-(nenhum outro site faz o navegador enviá-lo). Quem enxerga o tráfego da rede enxerga o cookie;
-não use o login como proteção numa rede aberta.
+por `http://`. O cookie é `HttpOnly` (nenhum script da página o lê) e `SameSite=Strict`: o
+navegador não o envia a partir de páginas de outros endereços.
+
+Mas, para o navegador, "outro site" é outro computador, não outra porta. A interface web do
+Companion, ou outro app no mesmo TrueNAS, está no mesmo site que o BajaOvrLay e receberia o
+cookie. Por isso o servidor confere também de onde vem a página (o cabeçalho `Origin`): o
+WebSocket do console e o envio de imagens só aceitam páginas do próprio endereço do servidor,
+ou de um endereço listado em `BAJAOVRLAY_PUBLIC_ORIGINS` (o do proxy, no TrueNAS). Uma página
+de outro endereço, ou de outra porta da mesma máquina, é recusada, com login ou sem. O OBS e o
+Companion falando com a API não são páginas e não mandam `Origin`; continuam funcionando.
+
+Quem enxerga o tráfego da rede enxerga o cookie; não use o login como proteção numa rede
+aberta.
