@@ -5,10 +5,16 @@ import { OperatorRoleSchema } from './operatorRole.js';
 /** The longest station name the login takes ("Mesa 1", "Cabine de dados"). */
 export const longestStationNameLength = 30;
 
+// Letters of any language (accents too), digits, the space and - . _ ( ) #: enough for
+// "Mesa #2" or "Cabine Técnica (fundos)". It goes into the actor, the event log and the
+// page, so no colon (the actor's separator), markup, control characters or emoji
+// (gate 2 of PR #51).
+const stationNameCharacters = /^[\p{L}\p{N} ._()#-]*$/u;
+
 /**
  * The name of the operator's station, typed at login and shown after the role ("Produtor
- * · Mesa 1"). Trimmed; 1 to 30 characters. It names a place, not a person: there are no
- * per-user accounts.
+ * · Mesa 1"). Trimmed; 1 to 30 characters, of letters, digits, spaces and - . _ ( ) #. It
+ * names a place, not a person: there are no per-user accounts.
  */
 export const StationNameSchema = z
   .string()
@@ -17,6 +23,10 @@ export const StationNameSchema = z
   .max(
     longestStationNameLength,
     `O nome da estação tem no máximo ${String(longestStationNameLength)} letras.`,
+  )
+  .regex(
+    stationNameCharacters,
+    'O nome da estação só pode ter letras, números, espaços e - . _ ( ) #.',
   );
 
 /**

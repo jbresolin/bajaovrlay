@@ -36,7 +36,8 @@ nunca aparecem no log nem na página.
 1. Abra a página de controle. Sem sessão, ela vai para **Entrar** (`#/entrar`), a única página
    que abre sem login.
 2. Escolha o papel, digite o PIN e o nome da estação ("Mesa 1"). O navegador lembra a estação
-   para a próxima vez.
+   para a próxima vez. O nome tem até 30 caracteres: letras (com acento), números, espaços e
+   `- . _ ( ) #`.
 3. **Entrar** abre o console. A sessão vale 18 horas (um dia de prova) e continua depois de um
    reinício do servidor.
 4. **Sair**, no topo, encerra a sessão no servidor e volta para Entrar. As outras abas da mesma

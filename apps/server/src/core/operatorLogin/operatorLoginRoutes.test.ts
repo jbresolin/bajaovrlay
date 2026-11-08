@@ -17,7 +17,8 @@
  *   - Expiry: the session holds at 17 h 59 min and is gone at 18 h.
  *   - A restart (the database closed and opened again, a new app on it) keeps the session.
  *   - "Sair" ends the session on the server: the same cookie, sent again, has no session.
- *   - A station left blank answers 400 in pt-BR; a forged cookie is no session.
+ *   - A station left blank, or with characters outside letters, digits, spaces and
+ *     - . _ ( ) #, answers 400 in pt-BR; a forged cookie is no session.
  *   - With the login off, GET /session says so, and a login is answered 409.
  *
  * What these tests deliberately do not cover:
@@ -150,6 +151,29 @@ describe('POST /api/v1/session, the login', () => {
         message: 'Digite o nome da estação (por exemplo, Mesa 1).',
       },
     });
+  });
+
+  it('answers 400 in pt-BR when the station has characters a station name never needs', async () => {
+    // Arrange: a server with the two PINs set.
+    const { app } = createAppWithTheLoginOn();
+
+    // Act: log in with the right PIN and markup for a station.
+    const response = await sendLogin(app, {
+      role: 'produtor',
+      pin: producerTestPin,
+      station: '<b>Mesa 1</b>',
+    });
+    const body: unknown = await response.json();
+
+    // Assert: 400, saying what may be typed, and no cookie.
+    expect(response.status, 'an unusual station name must be refused').toBe(400);
+    expect(body, 'the refusal says what may be typed, in pt-BR').toEqual({
+      error: {
+        code: 'INVALID_LOGIN',
+        message: 'O nome da estação só pode ter letras, números, espaços e - . _ ( ) #.',
+      },
+    });
+    expect(response.headers.get('set-cookie'), 'a refused login sets no cookie').toBe(null);
   });
 });
 
