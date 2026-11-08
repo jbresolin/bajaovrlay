@@ -55,7 +55,12 @@ function createServerAppWithSeededStore() {
     logger,
     graphicPackagesFolder: createGraphicsFolderWithBuiltRaceClock(),
   });
-  const app = createServerApp({ logger, operatorLogin: operatorLoginOff, version: '0.3.1', stateStore });
+  const app = createServerApp({
+    logger,
+    operatorLogin: operatorLoginOff,
+    version: '0.3.1',
+    stateStore,
+  });
   return { app, stateStore };
 }
 
