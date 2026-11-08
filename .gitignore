@@ -21,6 +21,8 @@ vitest-report.json
 apps/server/data/
 # Database of the control page's browser tests, made anew on every run
 apps/control/e2e-data/
+# ...and of its second server, the one with the operator login on (BAJAOVRLAY-29)
+apps/control/e2e-data-login/
 # Database and data folder (DATA_DIR) of the renderer's browser tests
 apps/renderer/.e2e-data/
 # Database and data folder of the built server's browser tests (apps/server/e2e)

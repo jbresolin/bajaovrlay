@@ -1,22 +1,28 @@
 /**
- * Who may send each command: the operator, or only the server itself (packages/shared)
+ * Who may send each command: the operator and which role, or only the server (packages/shared)
  *
  * What this module is for:
- *   Every command is classed once, next to the command definitions: an operator may send
- *   it (from the control page, and since BAJAOVRLAY-28 from Companion or a script through
- *   POST /api/v1/commands), or only the server sends it (the renderer's report, a
- *   poller's results, the macro runner's bookkeeping, ...). The server's authorisation
- *   step reads this list for operators and API tokens alike.
+ *   Every command is classed once, next to the command definitions, in two columns. The
+ *   first says who sends it: an operator (the control page, and since BAJAOVRLAY-28
+ *   Companion or a script through POST /api/v1/commands), or only the server itself (the
+ *   renderer's report, a poller's results, the macro runner's bookkeeping, ...). The second
+ *   (BAJAOVRLAY-29) says whether the "Dados" role may send an operator's command: Dados
+ *   prepares the show (Cadastros, Fontes and corrections, items and rundown, triggers and
+ *   rules, outputs and layers) but never changes what is on program or preview; "Produtor"
+ *   may send every operator command. The server's authorisation step reads both columns,
+ *   and the control page reads the second to grey out what the role cannot press.
  *
  * What these tests prove:
  *   - Every command in CommandSchema is classed, and nothing outside it is: a new command
- *     fails this test until someone decides who may send it.
- *   - The commands only the server sends are exactly the ten the briefs and the
+ *     fails this test until someone decides who may send it, and with which role.
+ *   - The commands only the server sends are exactly the eleven the briefs and the
  *     authorisation step name, and the buttons a pad drives are the operator's.
+ *   - The role table, command type by command type: the Produtor may send every operator
+ *     command and Dados exactly the preparing ones; neither may send a server command.
  *
  * What these tests deliberately do not cover:
- *   - Which server actor may send which of the server's commands; authorizeCommand.test.ts
- *     in apps/server.
+ *   - Which server actor may send which of the server's commands, and how an actor's role
+ *     is read; authorizeCommand.test.ts and authorizeCommandsByRole.test.ts in apps/server.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -24,7 +30,8 @@ import { CommandSchema } from './command.js';
 import {
   commandTypesOnlyTheServerSends,
   isCommandTypeOfTheOperator,
-  senderOfEachCommandType,
+  isCommandTypeOpenToTheRole,
+  whoMaySendEachCommandType,
 } from './commandSenders.js';
 
 /**
@@ -47,7 +54,7 @@ describe('the senders of each command', () => {
     const typesInTheSchema = readTypeOfEveryCommandInTheSchema();
 
     // Act: list the types the classing names.
-    const classedTypes = Object.keys(senderOfEachCommandType);
+    const classedTypes = Object.keys(whoMaySendEachCommandType);
 
     // Assert: the same types, each once.
     expect(
@@ -117,5 +124,140 @@ describe('the senders of each command', () => {
 
     // Assert: no.
     expect(isTheOperators, 'only a renderer reports what is on screen').toBe(false);
+  });
+});
+
+/**
+ * The role table of BAJAOVRLAY-29, one row per command type, written out by hand so a
+ * reader can check every decision here without opening commandSenders.ts. `produtor` and
+ * `dados` say whether each role may send it.
+ */
+const roleTable = [
+  // --- What is on program or preview: the producer's alone. ---
+  // An edit of what is on air ("Edição rápida") changes program in place.
+  { commandType: 'updateInstanceData', produtor: true, dados: false },
+  { commandType: 'clearLayer', produtor: true, dados: false },
+  { commandType: 'clearAll', produtor: true, dados: false },
+  // "Próximo": the next step of a graphic on air.
+  { commandType: 'nextOnLayer', produtor: true, dados: false },
+  { commandType: 'undoOnLayer', produtor: true, dados: false },
+  { commandType: 'undoLastChangeOnProgram', produtor: true, dados: false },
+  { commandType: 'takeItem', produtor: true, dados: false },
+  { commandType: 'takeNext', produtor: true, dados: false },
+  { commandType: 'previewItem', produtor: true, dados: false },
+  { commandType: 'stopPreview', produtor: true, dados: false },
+  { commandType: 'takePreview', produtor: true, dados: false },
+  { commandType: 'previewClearLayer', produtor: true, dados: false },
+  // "Tomar tudo".
+  { commandType: 'takeAllPreviews', produtor: true, dados: false },
+  { commandType: 'previewMacro', produtor: true, dados: false },
+  // The rundown's cursor is what Space and a pad's "take next" put on air next, so moving
+  // it is the producer's (a decision the brief left open, taken the conservative way).
+  { commandType: 'moveCursor', produtor: true, dados: false },
+  // "Salvar no item" reads what is on air from Camadas; the producer's, conservatively.
+  { commandType: 'saveOnAirChangesIntoItem', produtor: true, dados: false },
+  // Running and stopping a macro is running it, not editing it.
+  { commandType: 'runMacro', produtor: true, dados: false },
+  { commandType: 'stopMacro', produtor: true, dados: false },
+  // An OBS switch changes what goes out.
+  { commandType: 'switchObsScene', produtor: true, dados: false },
+  // An event's "No ar", and the rest of the inbox's triage, which the brief does not give Dados.
+  { commandType: 'showEvent', produtor: true, dados: false },
+  { commandType: 'dismissEvent', produtor: true, dados: false },
+  { commandType: 'restoreEvent', produtor: true, dados: false },
+  { commandType: 'createManualEvent', produtor: true, dados: false },
+  // Firing, pausing and the waiting firings of triggers: not editing them.
+  { commandType: 'setTriggersPaused', produtor: true, dados: false },
+  { commandType: 'runTriggerFiring', produtor: true, dados: false },
+  { commandType: 'dismissTriggerFiring', produtor: true, dados: false },
+  { commandType: 'restoreTriggerFiring', produtor: true, dados: false },
+
+  // --- Preparing the show: both roles. ---
+  // Items, the rundown and the quick-fire panels.
+  { commandType: 'createItem', produtor: true, dados: true },
+  { commandType: 'updateItemFields', produtor: true, dados: true },
+  { commandType: 'deleteItem', produtor: true, dados: true },
+  { commandType: 'reorderItems', produtor: true, dados: true },
+  { commandType: 'moveItemToHome', produtor: true, dados: true },
+  { commandType: 'createQuickFirePanel', produtor: true, dados: true },
+  { commandType: 'renameQuickFirePanel', produtor: true, dados: true },
+  { commandType: 'deleteQuickFirePanel', produtor: true, dados: true },
+  // Macros, edited.
+  { commandType: 'createMacro', produtor: true, dados: true },
+  { commandType: 'updateMacro', produtor: true, dados: true },
+  { commandType: 'deleteMacro', produtor: true, dados: true },
+  // Data sources and their recordings ("Fontes").
+  { commandType: 'createDataSource', produtor: true, dados: true },
+  { commandType: 'updateDataSource', produtor: true, dados: true },
+  { commandType: 'deleteDataSource', produtor: true, dados: true },
+  { commandType: 'setDataSourceEnabled', produtor: true, dados: true },
+  { commandType: 'pollDataSourceNow', produtor: true, dados: true },
+  { commandType: 'restartSimulatedRace', produtor: true, dados: true },
+  { commandType: 'startRecording', produtor: true, dados: true },
+  { commandType: 'stopRecording', produtor: true, dados: true },
+  // Corrections of a source's values.
+  { commandType: 'setOverride', produtor: true, dados: true },
+  { commandType: 'clearOverride', produtor: true, dados: true },
+  // The rules of the event inbox.
+  { commandType: 'updateEventRule', produtor: true, dados: true },
+  // "Cadastros": entities and their images.
+  { commandType: 'upsertEntity', produtor: true, dados: true },
+  { commandType: 'deleteEntity', produtor: true, dados: true },
+  { commandType: 'importEntities', produtor: true, dados: true },
+  { commandType: 'deleteMedia', produtor: true, dados: true },
+  // Outputs and layers ("Saídas e camadas").
+  { commandType: 'createOutput', produtor: true, dados: true },
+  { commandType: 'renameOutput', produtor: true, dados: true },
+  { commandType: 'deleteOutput', produtor: true, dados: true },
+  { commandType: 'reorderOutputs', produtor: true, dados: true },
+  { commandType: 'createLayer', produtor: true, dados: true },
+  { commandType: 'updateLayer', produtor: true, dados: true },
+  { commandType: 'moveLayerToOutput', produtor: true, dados: true },
+  { commandType: 'reorderLayers', produtor: true, dados: true },
+  { commandType: 'deleteLayer', produtor: true, dados: true },
+  // Triggers and their rules, edited.
+  { commandType: 'createTrigger', produtor: true, dados: true },
+  { commandType: 'updateTrigger', produtor: true, dados: true },
+  { commandType: 'deleteTrigger', produtor: true, dados: true },
+
+  // --- The server's own: no role at all. ---
+  { commandType: 'reportInstanceStatus', produtor: false, dados: false },
+  { commandType: 'advanceMacroRun', produtor: false, dados: false },
+  { commandType: 'endMacroRun', produtor: false, dados: false },
+  { commandType: 'recordDataSourcePoll', produtor: false, dados: false },
+  { commandType: 'recordRecordingProgress', produtor: false, dados: false },
+  { commandType: 'refreshBoundInstanceData', produtor: false, dados: false },
+  { commandType: 'recordDetectedEvents', produtor: false, dados: false },
+  { commandType: 'recordUploadedMedia', produtor: false, dados: false },
+  { commandType: 'recordObsState', produtor: false, dados: false },
+  { commandType: 'recordObsSceneSwitchAnswer', produtor: false, dados: false },
+  { commandType: 'fireTrigger', produtor: false, dados: false },
+] as const;
+
+describe('the role table', () => {
+  it('has one row for every command type, so a new command must be put in it', () => {
+    // Arrange: every command type the union lists.
+    const typesInTheSchema = readTypeOfEveryCommandInTheSchema();
+
+    // Act: list the types the table above names.
+    const typesInTheTable = roleTable.map((row) => row.commandType);
+
+    // Assert: the same types, each once.
+    expect(
+      [...typesInTheTable].sort(),
+      'every command type must have a row in this test’s role table',
+    ).toEqual([...typesInTheSchema].sort());
+  });
+
+  it.each(roleTable)('$commandType: Produtor $produtor, Dados $dados', (row) => {
+    // Arrange: the row of the table above.
+
+    // Act: ask the shared list about each role.
+    const mayTheProducerSend = isCommandTypeOpenToTheRole(row.commandType, 'produtor');
+    const mayTheDataRoleSend = isCommandTypeOpenToTheRole(row.commandType, 'dados');
+
+    // Assert: both answers are the table's.
+    expect(mayTheProducerSend, `the Produtor's answer for ${row.commandType}`).toBe(row.produtor);
+    expect(mayTheDataRoleSend, `the Dados answer for ${row.commandType}`).toBe(row.dados);
   });
 });

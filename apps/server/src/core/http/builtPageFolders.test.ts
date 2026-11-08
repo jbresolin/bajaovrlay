@@ -27,6 +27,7 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { createLogger } from '../logger/createLogger.js';
+import { operatorLoginOff } from '../operatorLogin/operatorLoginOff.testSupport.js';
 import { findBuiltPageFolder } from './builtPageFolders.js';
 import { createServerApp } from './createServerApp.js';
 
@@ -49,6 +50,7 @@ function createServerAppServingBuiltPages() {
   writeFileSync(join(rendererPageFolder, 'index.html'), rendererPageHtml);
 
   return createServerApp({
+    operatorLogin: operatorLoginOff,
     logger: createLogger({ level: 'silent' }),
     version: '0.3.1',
     controlPageFolder,

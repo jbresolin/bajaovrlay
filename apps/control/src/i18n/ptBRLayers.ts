@@ -49,6 +49,14 @@ export const ptBRLayers = {
     `Não salvo no item, porque o item lê da fonte ou dos cadastros: ${fieldTitles}.`,
   // The same chip beside "em prévia", for a preview changed with "Atualizar prévia".
   changedInPreviewTooltip: (fieldTitles: string) => `Alterado na prévia: ${fieldTitles}`,
+  // The reverse mark (BAJAOVRLAY-38): the item was saved after the take, so the air shows
+  // older values of these fields; its tooltip names them by their titles.
+  itemAheadOfTheAirChip: 'item mudou',
+  itemAheadOfTheAirTooltip: (fieldTitles: string) => `Item mudou: ${fieldTitles}`,
+  // Its two ways to catch up: take the item again, or send those fields to what is up.
+  takeItemAgainButton: 'Disparar',
+  updateOnAirFromItemButton: 'Atualizar no ar',
+  updatePreviewFromItemButton: 'Atualizar prévia',
   // Keeps the change on air for the next takes of the item.
   saveIntoItemButton: 'Salvar no item',
   // For an instance with no item: opens the item editor filled with what is on air.

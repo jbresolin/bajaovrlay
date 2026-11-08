@@ -60,7 +60,7 @@ export function ClearAllButton() {
   useKeyboardShortcut(keyboardMap.clearAll, handlePress, { isEnabled: isConnected });
 
   return (
-    <ActionButton variant="destructive" onClick={handlePress}>
+    <ActionButton variant="destructive" commandType="clearAll" onClick={handlePress}>
       {isAwaitingConfirmation ? confirmButtonText : ptBR.playout.clearAllButton}
     </ActionButton>
   );

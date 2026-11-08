@@ -1,6 +1,6 @@
 import type { Macro, MacroRun, MacroStop } from '@bajaovrlay/shared';
 import { cn } from 'cn';
-import { useState } from 'react';
+import { type ReactElement, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { buttonClassForEachItemColor } from '@/features/items/itemColorButton';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
+import { useWhyTheRoleCannotSend } from '@/state/operatorSessionContext';
 
 /** What one macro button needs. */
 export type MacroButtonProps = {
@@ -58,6 +59,10 @@ const texts = ptBR.quickFire.macros;
 export function MacroButton(props: MacroButtonProps) {
   const { macro, runOfThisMacro, digitKey } = props;
   const isConnected = useIsConnectedToServer();
+  // A role that may not run a macro (Dados, BAJAOVRLAY-29) sees it greyed out, saying why;
+  // its "Parar", "Executar" and "Prévia" are off too.
+  const whyTheRoleCannotRun = useWhyTheRoleCannotSend('runMacro');
+  const isOffForTheRole = whyTheRoleCannotRun !== undefined;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isRunning = runOfThisMacro !== undefined;
   const isBeingStopped = runOfThisMacro?.isStopRequested === true;
@@ -70,6 +75,46 @@ export function MacroButton(props: MacroButtonProps) {
     props.onRunPressed();
   }
 
+  const mainButton = (
+    <button
+      type="button"
+      disabled={!isConnected || isOffForTheRole}
+      data-item-color={macro.color}
+      aria-busy={isRunning}
+      aria-describedby={stopToShow === undefined ? undefined : stopDescriptionId}
+      onClick={(click) => runThisMacroAndLetGoOfTheFocus(click.currentTarget)}
+      onContextMenu={(rightClick) => {
+        // The browser's own menu would cover the button; ours opens instead.
+        rightClick.preventDefault();
+        setIsMenuOpen(true);
+      }}
+      className={cn(
+        'flex min-h-16 w-full min-w-0 flex-col items-start gap-0.5 rounded-md p-2 pr-12 text-left outline-none hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+        isRunning && 'ring-[3px] ring-ring',
+      )}
+    >
+      <span className="w-full truncate text-sm font-semibold">{macro.label}</span>
+      {isRunning ? (
+        <span className="text-xs font-medium">
+          {describeRun(runOfThisMacro, macro.steps.length)}
+        </span>
+      ) : null}
+      {stopToShow === undefined ? null : (
+        <span
+          title={stopToShow.reason}
+          className="w-full truncate rounded-sm bg-background px-1 text-xs font-semibold text-destructive"
+        >
+          {texts.stoppedBadge(stopToShow.stepIndex + 1)}
+        </span>
+      )}
+      {digitKey === null ? null : (
+        <kbd aria-hidden="true" className="absolute bottom-1 right-2 text-xs opacity-80">
+          {digitKey}
+        </kbd>
+      )}
+    </button>
+  );
+
   return (
     <li
       aria-label={macro.label}
@@ -77,45 +122,9 @@ export function MacroButton(props: MacroButtonProps) {
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
-            disabled={!isConnected}
-            data-item-color={macro.color}
-            aria-busy={isRunning}
-            aria-describedby={stopToShow === undefined ? undefined : stopDescriptionId}
-            onClick={(click) => runThisMacroAndLetGoOfTheFocus(click.currentTarget)}
-            onContextMenu={(rightClick) => {
-              // The browser's own menu would cover the button; ours opens instead.
-              rightClick.preventDefault();
-              setIsMenuOpen(true);
-            }}
-            className={cn(
-              'flex min-h-16 w-full min-w-0 flex-col items-start gap-0.5 rounded-md p-2 pr-12 text-left outline-none hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
-              isRunning && 'ring-[3px] ring-ring',
-            )}
-          >
-            <span className="w-full truncate text-sm font-semibold">{macro.label}</span>
-            {isRunning ? (
-              <span className="text-xs font-medium">
-                {describeRun(runOfThisMacro, macro.steps.length)}
-              </span>
-            ) : null}
-            {stopToShow === undefined ? null : (
-              <span
-                title={stopToShow.reason}
-                className="w-full truncate rounded-sm bg-background px-1 text-xs font-semibold text-destructive"
-              >
-                {texts.stoppedBadge(stopToShow.stepIndex + 1)}
-              </span>
-            )}
-            {digitKey === null ? null : (
-              <kbd aria-hidden="true" className="absolute bottom-1 right-2 text-xs opacity-80">
-                {digitKey}
-              </kbd>
-            )}
-          </button>
+          {wrapTheButtonWhenOffForTheRole(mainButton, isOffForTheRole)}
         </TooltipTrigger>
-        <TooltipContent>{texts.previewAndTakeAllHint}</TooltipContent>
+        <TooltipContent>{whyTheRoleCannotRun ?? texts.previewAndTakeAllHint}</TooltipContent>
       </Tooltip>
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger asChild>
@@ -129,8 +138,10 @@ export function MacroButton(props: MacroButtonProps) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onCloseAutoFocus={(event) => event.preventDefault()}>
-          <DropdownMenuItem onSelect={props.onRunPressed}>{texts.runAction}</DropdownMenuItem>
-          <DropdownMenuItem onSelect={props.onPreviewChosen}>
+          <DropdownMenuItem disabled={isOffForTheRole} onSelect={props.onRunPressed}>
+            {texts.runAction}
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={isOffForTheRole} onSelect={props.onPreviewChosen}>
             {texts.previewAction}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={props.onEditChosen}>{texts.editAction}</DropdownMenuItem>
@@ -145,7 +156,7 @@ export function MacroButton(props: MacroButtonProps) {
       {isRunning && !isBeingStopped ? (
         <button
           type="button"
-          disabled={!isConnected}
+          disabled={!isConnected || isOffForTheRole}
           aria-label={texts.stopMacroButton(macro.label)}
           onClick={props.onStopPressed}
           className="absolute top-6 right-1 rounded-sm bg-background px-1 text-xs font-semibold text-foreground outline-none hover:opacity-80 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed"
@@ -154,6 +165,23 @@ export function MacroButton(props: MacroButtonProps) {
         </button>
       ) : null}
     </li>
+  );
+}
+
+/**
+ * The macro's main button as it is, or, greyed out for the role, inside a focusable span
+ * that carries the tooltip: a disabled button receives neither hover nor focus (as
+ * features/connection/ActionButton.tsx does). A plain function, not a component, so the
+ * tooltip's trigger is handed the element itself.
+ */
+function wrapTheButtonWhenOffForTheRole(mainButton: ReactElement, isOffForTheRole: boolean) {
+  if (!isOffForTheRole) {
+    return mainButton;
+  }
+  return (
+    <span tabIndex={0} className="flex w-full rounded-md">
+      {mainButton}
+    </span>
   );
 }
 

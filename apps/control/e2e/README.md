@@ -10,7 +10,8 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
 - `takeAndClear.e2e.ts` (start here) — a page at `/render/` as OBS: "Novo gráfico…" + "Salvar e disparar" ("No ar"
   within 3 s), "Editar" + "Atualizar", reload, "Limpar"; with no OBS the layer stays "Carregando" (the monitor never reports).
 - `onAirFromItems.e2e.ts` — everything on air comes from an item: Camadas names the new item; "alterado no ar",
-  "Salvar no item", and a new take showing the change.
+  "Salvar no item", and a new take showing the change. `itemAheadOfTheAir.e2e.ts` (BAJAOVRLAY-38) — the reverse: a
+  name saved into a lower third's item puts "item mudou" on its row, and the row's "Atualizar no ar" changes it in place.
 - Preview (steps in `previewTestSteps.ts`): `previewThenTake.e2e.ts`, `previewKeyboardLoop.e2e.ts` (→, Space ×3, Backspace),
   `previewTakeWithTomar.e2e.ts`, `autoPreviewAcrossLayers.e2e.ts`, `previewShowsTheResult.e2e.ts` (Prévia = after the take, "Tomar tudo").
 - `consoleLayout.e2e.ts` (BAJAOVRLAY-59: at 1920x1080 "Prévia" above "Programa", 640x360, both on screen, the right column
@@ -18,6 +19,10 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   `clockStoppedOnAir.e2e.ts` (a stopped clock keeps its time), `rundownTakeWithSpace.e2e.ts` (Space, ←, "Excluir").
 - Quick fire (steps in `quickFireTestSteps.ts`): `quickFireWithNumberKey.e2e.ts` (1 fires a button), `macroTakeWaitClear.e2e.ts`
   (take, wait 0,5 s, clear: empty after 0.4–3 s), `macroStopDuringWait.e2e.ts` ("Parar" in a 5 s wait: the clock stays).
+- Login (BAJAOVRLAY-29): `loginRolesWalk.e2e.ts` runs on a second real server with the PINs set
+  (`loginServerOfTheBrowserTests.ts`, port 5181, which serves the BUILT page): Dados at "Mesa 2" prepares and edits an
+  item, its "Disparar" greyed out with the role's tooltip; "Sair", then the Produtor at "Mesa 1" takes it; the event log
+  names `dados:Mesa 2` and `produtor:Mesa 1`. After "Sair" the page's GET /api/v1/state answers 401.
 - Undo (BAJAOVRLAY-30): `undoWithCtrlZ.e2e.ts` (two "Atalhos" buttons taken with 1 and 2, then Ctrl+Z: the OBS
   stand-in draws the first one again).
 

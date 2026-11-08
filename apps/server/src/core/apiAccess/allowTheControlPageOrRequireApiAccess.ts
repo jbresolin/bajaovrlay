@@ -11,9 +11,10 @@ import { requireApiAccess } from './requireApiAccess.js';
  * passes as /state does; every other caller goes through requireApiAccess, the command
  * API's rules: 403 with the API off, 401 to a wrong token, its device's name otherwise.
  * Deliberate: a script can write that header itself and pass, as it can read /state with
- * no header at all; until M4 brings logins this only keeps the route behind the same door
- * as the commands for anything that does not claim to be the page. The Vite dev proxy
- * keeps the browser's headers, so the dev page passes too.
+ * no header at all; with the login off this only keeps the route behind the same door as
+ * the commands for anything that does not claim to be the page. With the PINs set
+ * (BAJAOVRLAY-29) the page's session counts instead (core/operatorLogin/routeAccess.ts). The
+ * Vite dev proxy keeps the browser's headers, so the dev page passes too.
  */
 export function allowTheControlPageOrRequireApiAccess(options: {
   apiTokens: ApiTokens;

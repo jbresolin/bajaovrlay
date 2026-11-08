@@ -103,12 +103,15 @@ export { findStepCounter, type StepCounter } from './steps/stepCounters.js';
 export { type ClearAllCommand, ClearAllCommandSchema } from './commands/clearAll.js';
 // Every command, told apart by `type`; the only way state changes.
 export { type Command, type CommandInput, CommandSchema } from './commands/command.js';
-// Who may send each command: an operator (control page or API token) or only the server.
+// Who may send each command: an operator (control page or API token) or only the server,
+// and whether the Dados role may (BAJAOVRLAY-29).
 export {
   type CommandSender,
   commandTypesOnlyTheServerSends,
   isCommandTypeOfTheOperator,
-  senderOfEachCommandType,
+  isCommandTypeOpenToTheRole,
+  type WhoMaySendACommand,
+  whoMaySendEachCommandType,
 } from './commands/commandSenders.js';
 
 // WebSocket messages from the server: hello, slice, slices, dataSnapshot, commandResult and time.
@@ -227,3 +230,5 @@ export * from './programHistory/index.js';
 // The history page (BAJAOVRLAY-30): each event-log row read back as who, one pt-BR sentence
 // and its filters.
 export * from './eventLogReading/index.js';
+// The operator login (BAJAOVRLAY-29): the two roles, the login body and the session answer.
+export * from './operatorLogin/index.js';

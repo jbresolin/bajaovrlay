@@ -58,6 +58,7 @@ export function ItemEditorButtons(props: ItemEditorButtonsProps) {
         {readTextOfSaveButton(ptBR.itemEditor.saveButton)}
       </ActionButton>
       <ActionButton
+        commandType="takeItem"
         type="button"
         variant="secondary"
         disabled={areSaveButtonsOff}
@@ -69,6 +70,7 @@ export function ItemEditorButtons(props: ItemEditorButtonsProps) {
         {readTextOfSaveButton(ptBR.itemEditor.saveAndTakeButton)}
       </ActionButton>
       <ActionButton
+        commandType="previewItem"
         type="button"
         variant="outline"
         disabled={areSaveButtonsOff}
@@ -78,6 +80,7 @@ export function ItemEditorButtons(props: ItemEditorButtonsProps) {
       </ActionButton>
       {props.isItemOnAir && (
         <ActionButton
+          commandType="updateInstanceData"
           type="button"
           variant="secondary"
           disabled={props.isWaitingForTheServer || props.isAnImageUploading}

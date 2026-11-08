@@ -1,4 +1,4 @@
-// What an upload may add to the disk of the race-day laptop until M4 brings logins: a
+// What an upload may add to the disk of the race-day laptop, with or without the login: a
 // cap on the store, and a margin of free disk no image is written into.
 import { statfsSync } from 'node:fs';
 

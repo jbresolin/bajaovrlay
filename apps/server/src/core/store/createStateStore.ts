@@ -8,10 +8,7 @@ import {
   type Slices,
 } from '@bajaovrlay/shared';
 
-import {
-  noSourceHostAllowlist,
-  type SourceHostAllowlist,
-} from '../../modules/dataSources/index.js';
+import { noSourceHostAllowlist } from '../../modules/dataSources/index.js';
 import {
   saveCommandOutcome,
   saveCommandOutcomeWithoutEventLogRow,
@@ -20,52 +17,28 @@ import { readEventLogRowsBelow } from '../db/eventLogRowStorage.js';
 import { findEventLogDetailsOfCommand } from '../events/eventLogDetailsOfACommand.js';
 import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
-import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
+import { allowCommandForActorRole } from './authorizeCommand.js';
+import { refuseAutomationTheActorMayNotChange } from './automationAndTheDataRole.js';
 import {
   buildEventLogPayloadOfCommand,
   describePayloadAsReceived,
   readCommandNameAsSent,
 } from './commandEventLogPayload.js';
-import { refuseCommandNotAllowed, refuseInvalidCommand } from './commandRefusals.js';
+import { refuseCommandNotAllowedForTheActor, refuseInvalidCommand } from './commandRefusals.js';
 import {
   buildRowChangesOfDataSnapshots,
   type DataSnapshotChange,
   findChangedDataSnapshots,
 } from './dataSnapshotChanges.js';
-import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialSlices.js';
+import { loadInitialSlices } from './loadInitialSlices.js';
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
+import type { StateStoreOptions } from './stateStoreOptions.js';
 import {
   buildAllSlices,
   buildRowsOfChangedSlicesToSave,
   sliceNamesChangedByCommands,
 } from './storeSliceSaving.js';
-
-/** What a store needs. The last eight have production defaults; tests replace them. */
-export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
-  /** The authorisation step; defaults to allowCommandForActorRole (no login yet). */
-  isCommandAllowed?: IsCommandAllowed | undefined;
-  /** The clock used for every timestamp, at boot and per command; defaults to real time. */
-  readCurrentTime?: (() => Date) | undefined;
-  /** Makes the id of each new instance; defaults to a random UUID. */
-  createInstanceId?: (() => string) | undefined;
-  /** Makes the id of each new item (createItem); defaults to a random UUID. */
-  createItemId?: (() => string) | undefined;
-  /** Makes the id of each new quick-fire panel; defaults to a random UUID. */
-  createQuickFirePanelId?: (() => string) | undefined;
-  /** Makes the id of each new macro (createMacro); defaults to a random UUID. */
-  createMacroId?: (() => string) | undefined;
-  /** Makes the id of each new data source (createDataSource); defaults to a random UUID. */
-  createDataSourceId?: (() => string) | undefined;
-  /** Makes the id of each event the operator types (createManualEvent); a random UUID. */
-  createEventId?: (() => string) | undefined;
-  /** Makes the id of each new trigger (createTrigger); defaults to a random UUID. */
-  createTriggerId?: (() => string) | undefined;
-  /** Makes the id of each firing of a trigger (fireTrigger); defaults to a random UUID. */
-  createTriggerFiringId?: (() => string) | undefined;
-  /** BAJAOVRLAY_SOURCE_ALLOWED_HOSTS as read at boot, for the reducers; no list by default. */
-  sourceHostAllowlist?: SourceHostAllowlist | undefined;
-};
 
 /**
  * How applyCommand answers: ok, or the error the operator is shown. An accepted
@@ -146,14 +119,18 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     }
     const command = validation.data;
 
-    // Step 2, authorise: the hook decides whether this actor may run this command.
-    if (!isCommandAllowed(command, actor)) {
+    // Step 2, authorise: the hook decides whether this actor may run this command; then
+    // Dados's changes to triggers, rules and macros are held against the store's slices.
+    const authorisationRefusal = isCommandAllowed(command, actor)
+      ? refuseAutomationTheActorMayNotChange(command, actor, currentSlices)
+      : refuseCommandNotAllowedForTheActor(command, actor);
+    if (authorisationRefusal !== undefined) {
       return recordRefusal({
         now,
         actor,
         commandName: command.type,
         payload: buildEventLogPayloadOfCommand(command),
-        error: refuseCommandNotAllowed(),
+        error: authorisationRefusal,
       });
     }
 

@@ -71,6 +71,7 @@ export function InboxEventRow(props: {
         </span>
         <span className="ml-auto flex shrink-0 gap-1">
           <ActionButton
+            commandType="previewItem"
             size="xs"
             variant="outline"
             disabledReason={whyThereIsNoItem}
@@ -88,6 +89,7 @@ export function InboxEventRow(props: {
             {texts.previewButton}
           </ActionButton>
           <ActionButton
+            commandType="showEvent"
             size="xs"
             disabled={isWaitingForTheServer}
             disabledReason={whyThereIsNoItem}
@@ -98,6 +100,7 @@ export function InboxEventRow(props: {
             {texts.showButton}
           </ActionButton>
           <ActionButton
+            commandType="dismissEvent"
             size="xs"
             variant="ghost"
             disabled={isWaitingForTheServer}

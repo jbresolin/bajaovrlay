@@ -5,6 +5,7 @@
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger, type ServerLogger } from '../../core/logger/createLogger.js';
+import { operatorLoginOff } from '../../core/operatorLogin/operatorLoginOff.testSupport.js';
 import { missingGraphicsFolderPath } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { createStateStore } from '../../core/store/createStateStore.js';
 import type { SourceHostAllowlist } from './adapters/httpJson/sourceHostAllowlist.js';
@@ -46,6 +47,7 @@ export function createServerAppForSampleRequests(
   });
   const environment = options.environment ?? {};
   const app = createServerApp({
+    operatorLogin: operatorLoginOff,
     logger,
     version: '0.3.1',
     stateStore,

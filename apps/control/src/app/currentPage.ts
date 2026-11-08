@@ -7,10 +7,18 @@ import { useEffect, useState } from 'react';
  * "/fontes". The header's links, the browser's back button and a reload all just work.
  * "Cadastros" (the entity library) joined with BAJAOVRLAY-19, "Eventos" (the review of the
  * event inbox) at gate 2 of PR #22, "Saídas e camadas" (outputs and layers) with
- * BAJAOVRLAY-49, "Histórico" (every change of the show read back) with BAJAOVRLAY-30.
+ * BAJAOVRLAY-49, "Histórico" (every change of the show read back) with BAJAOVRLAY-30, and
+ * "Entrar" (the login, the only page without a session while the PINs are set) with
+ * BAJAOVRLAY-29; main.tsx draws the login page itself, before any connection is opened.
  */
 export type ControlPageName =
-  'console' | 'dataSources' | 'entityLibrary' | 'eventReview' | 'outputsAndLayers' | 'history';
+  | 'console'
+  | 'dataSources'
+  | 'entityLibrary'
+  | 'eventReview'
+  | 'outputsAndLayers'
+  | 'history'
+  | 'login';
 
 /** What the header's links write after "#" for each page. */
 export const hashOfEachPage = {
@@ -20,11 +28,12 @@ export const hashOfEachPage = {
   eventReview: '#/eventos',
   outputsAndLayers: '#/saidas',
   history: '#/historico',
+  login: '#/entrar',
 } as const satisfies Record<ControlPageName, string>;
 
 /**
  * Reads the page from the address's hash. Anything but "#/fontes", "#/cadastros",
- * "#/eventos", "#/saidas" and "#/historico" is the console, so an old or mistyped bookmark shows the console instead of an empty page.
+ * "#/eventos", "#/saidas", "#/historico" and "#/entrar" is the console, so an old or mistyped bookmark shows the console instead of an empty page.
  * "#/cadastros/<kind>/<key>" is Cadastros opened on one record (recordToOpen.ts).
  */
 export function readPageFromHash(hash: string): ControlPageName {
@@ -39,6 +48,9 @@ export function readPageFromHash(hash: string): ControlPageName {
   }
   if (hash === hashOfEachPage.history) {
     return 'history';
+  }
+  if (hash === hashOfEachPage.login) {
+    return 'login';
   }
   const isOneRecordOfTheLibrary = hash.startsWith(`${hashOfEachPage.entityLibrary}/`);
   if (hash === hashOfEachPage.entityLibrary || isOneRecordOfTheLibrary) {

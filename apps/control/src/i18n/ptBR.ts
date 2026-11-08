@@ -5,6 +5,7 @@ import { ptBREvents } from './ptBREvents';
 import { ptBRHistory } from './ptBRHistory';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
+import { ptBRLogin } from './ptBRLogin';
 import { ptBRObs } from './ptBRObs';
 import { ptBROutputs } from './ptBROutputs';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
@@ -82,6 +83,9 @@ export const ptBR = {
   layers: ptBRLayers,
   // "Desfazer" on a Camadas row and "Desfazer última" (features/undo), in ptBRUndo.ts.
   undo: ptBRUndo,
+  // The login page "#/entrar", the header's role and station, and "Sair" (features/login),
+  // in ptBRLogin.ts.
+  login: ptBRLogin,
   // The "Saídas e camadas" page and the output choices (features/outputsAndLayers), in
   // ptBROutputs.ts (BAJAOVRLAY-49).
   outputs: ptBROutputs,
