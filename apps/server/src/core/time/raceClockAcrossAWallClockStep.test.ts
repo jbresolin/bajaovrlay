@@ -33,9 +33,9 @@ import {
   countWholeSecondsClockShows,
   forgetTheServerClockAlignment,
   lineUpWithTheServerClockAt,
-  recordClockProbeAnswer,
   readServerAlignedTimeMs,
   readThisMachineMonotonicTimeMs,
+  recordClockProbeAnswer,
 } from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
