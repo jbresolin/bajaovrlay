@@ -1,7 +1,8 @@
 // Test support: a stand-in for the server, living inside one Playwright page. It answers
 // the page's WebSocket at /ws?role=renderer like the real server (a hello with every slice,
 // then slice messages; a program monitor or a preview page is answered at
-// /ws?role=monitor), keeps every message the page sends, and serves the fake graphic's
+// /ws?role=monitor), keeps every message the page sends (its clock probes answered and left
+// out), and serves the fake graphic's
 // files at /graphics/fake-graphic/. Nothing leaves the browser, so a test decides exactly
 // what the renderer hears and when, and reads back exactly what it said.
 import { readFileSync } from 'node:fs';
@@ -104,7 +105,10 @@ export type FakeServerForPage = {
   countConnections: () => number;
   /** The WebSocket address of every connection the page made, oldest first. */
   readConnectionAddresses: () => string[];
-  /** Every message the page has sent over its WebSocket so far, as parsed JSON, oldest first. */
+  /**
+   * Every message the page has sent over its WebSocket so far, as parsed JSON, oldest
+   * first; its clock probes are answered and left out.
+   */
   readMessagesFromThePage: () => unknown[];
   /**
    * Makes the sponsor roll's files exist from now on, as when someone builds the package
@@ -182,7 +186,23 @@ export async function startFakeServerForPage(
   await page.routeWebSocket(addressesThisServerAnswers, (connection) => {
     connections.push(connection);
     connection.onMessage((messageText) => {
-      messagesFromThePage.push(JSON.parse(String(messageText)));
+      const messageFromThePage = JSON.parse(String(messageText)) as {
+        type?: unknown;
+        pageSentAtMs?: unknown;
+      };
+      // A clock probe is answered at once, as the real server does (BAJAOVRLAY-62), and
+      // kept apart: what a test reads is what the page REPORTS, which a probe is not.
+      if (messageFromThePage.type === 'clockProbe') {
+        connection.send(
+          JSON.stringify({
+            type: 'clockProbeAnswer',
+            pageSentAtMs: messageFromThePage.pageSentAtMs,
+            serverNowMs: Date.now(),
+          }),
+        );
+        return;
+      }
+      messagesFromThePage.push(messageFromThePage);
     });
     // As the real server does, each message says what the server's clock shows. Here the
     // "server" is this test process, on the same machine as the page, so the renderer
