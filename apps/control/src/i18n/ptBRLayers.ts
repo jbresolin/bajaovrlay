@@ -75,11 +75,4 @@ export const ptBRLayers = {
     cancelButton: 'Cancelar',
     closeDialogButton: 'Fechar',
   },
-  // The same choice, asked before "Atualizar no ar" sends a clock the item changed
-  // (BAJAOVRLAY-38); the buttons are the ones above.
-  wallClockChoiceOfUpdate: {
-    title: 'Como levar o relógio do item ao ar?',
-    description:
-      'O item mudou o relógio. O relógio no ar pode continuar do momento em que conta, ou começar a contar agora, como numa entrada no ar.',
-  },
 } as const;

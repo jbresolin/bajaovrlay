@@ -3,9 +3,8 @@ import {
   type Graphic,
   type Instance,
   type Item,
-  type WallClockFieldsChoice,
 } from '@bajaovrlay/shared';
-import { memo, useState, useSyncExternalStore } from 'react';
+import { memo, useEffect, useState, useSyncExternalStore } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -21,11 +20,7 @@ import {
 import type { ServerState } from '@/state/serverStateStore';
 
 import { nameFieldsByTheirTitles } from './fieldsOfInstanceOnAir';
-import {
-  buildUpdateThatCatchesUpWithTheItem,
-  isAClockFieldBehind,
-} from './updateThatCatchesUpWithTheItem';
-import { WallClockChoiceDialog } from './WallClockChoiceDialog';
+import { buildUpdateThatCatchesUpWithTheItem } from './updateThatCatchesUpWithTheItem';
 
 /** One instance, its item and its graphic, as the store holds them at one moment. */
 type InstanceWithItsItem = {
@@ -61,8 +56,8 @@ const separatorOfKeys = '\n';
  * up. On program: "Disparar" (takeItem, the normal take) and "Atualizar no ar"
  * (updateInstanceData with only those fields). On the layer's preview: "Atualizar prévia"
  * alone, since a take from there would put on air something that was not previewed.
- * A clock field among them first asks the clock question (WallClockChoiceDialog.tsx).
- * A refused update is said beside the buttons: only this marker's own, so a refusal of
+ * A clock is never among the fields behind (itemAheadOfTheAir.ts says why), so nothing
+ * here asks about it. A refused update is said beside the buttons: only this marker's own, so a refusal of
  * "Edição rápida" or the item editor never shows here. Draws nothing while the air
  * matches the item.
  *
@@ -81,7 +76,6 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
   const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
   // The graphics slice changes when a package is added or removed, never at a poll.
   const graphics = useServerState((state) => state.graphics);
-  const [isAskingAboutTheClock, setIsAskingAboutTheClock] = useState(false);
   const [isUpdateWaiting, setIsUpdateWaiting] = useState(false);
   const [refusalOfTheUpdate, setRefusalOfTheUpdate] = useState<string | null>(null);
 
@@ -90,7 +84,18 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
   const keysBehindText = useSyncExternalStore(subscribeToServerState, () =>
     listKeysBehind(readServerStateNow(), instanceId).join(separatorOfKeys),
   );
-  if (keysBehindText === '') {
+  const isQuiet = keysBehindText === '';
+
+  // A refusal belongs to the update that was refused: once the air matches the item, it
+  // is forgotten, so it never comes back by itself when the item moves ahead again. It
+  // runs again when a refusal arrives after the row went quiet.
+  useEffect(() => {
+    if (isQuiet && refusalOfTheUpdate !== null) {
+      setRefusalOfTheUpdate(null);
+    }
+  }, [isQuiet, refusalOfTheUpdate]);
+
+  if (isQuiet) {
     return null;
   }
   const keysBehind = keysBehindText.split(separatorOfKeys);
@@ -100,8 +105,8 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
   const graphic = graphics.find((candidate) => candidate.id === graphicId);
   const fieldTitles = nameFieldsByTheirTitles(graphic, keysBehind).join(', ');
 
-  // Read again at the press and at the answer: the state the marker drew with may be old.
-  async function sendTheUpdate(wallClockFields: WallClockFieldsChoice): Promise<void> {
+  // Read again at the press: the state the marker drew with may be old.
+  async function pressUpdate(): Promise<void> {
     const {
       instance,
       item,
@@ -117,9 +122,7 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
     const update = buildUpdateThatCatchesUpWithTheItem({
       instanceId,
       item,
-      graphic: graphicNow,
       keysBehind: keysBehindNow,
-      wallClockFields,
     });
     setIsUpdateWaiting(true);
     setRefusalOfTheUpdate(null);
@@ -128,20 +131,6 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
     } finally {
       setIsUpdateWaiting(false);
     }
-  }
-
-  function pressUpdate(): void {
-    const keysBehindNow = listKeysBehind(readServerStateNow(), instanceId);
-    if (isAClockFieldBehind(keysBehindNow, graphic)) {
-      setIsAskingAboutTheClock(true);
-      return;
-    }
-    void sendTheUpdate('keepMoment');
-  }
-
-  function answerTheClockQuestion(wallClockFields: WallClockFieldsChoice): void {
-    setIsAskingAboutTheClock(false);
-    void sendTheUpdate(wallClockFields);
   }
 
   function pressTakeAgain(): void {
@@ -167,7 +156,12 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
           {ptBR.layers.takeItemAgainButton}
         </ActionButton>
       ) : null}
-      <ActionButton size="xs" variant="ghost" disabled={isUpdateWaiting} onClick={pressUpdate}>
+      <ActionButton
+        size="xs"
+        variant="ghost"
+        disabled={isUpdateWaiting}
+        onClick={() => void pressUpdate()}
+      >
         {output === 'program'
           ? ptBR.layers.updateOnAirFromItemButton
           : ptBR.layers.updatePreviewFromItemButton}
@@ -177,15 +171,6 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
           {refusalOfTheUpdate}
         </span>
       )}
-      {/* Mounted only while asking: one dialog per marker would be drawn on every row. */}
-      {isAskingAboutTheClock ? (
-        <WallClockChoiceDialog
-          purpose="updateFromItem"
-          isOpen
-          onChosen={answerTheClockQuestion}
-          onCancelled={() => setIsAskingAboutTheClock(false)}
-        />
-      ) : null}
     </span>
   );
 });

@@ -171,7 +171,6 @@ export function LayerStatusPanel() {
           </p>
         )}
         <WallClockChoiceDialog
-          purpose="saveIntoItem"
           isOpen={saves.isAskingAboutTheClock}
           onChosen={saves.answerTheClockQuestion}
           onCancelled={saves.cancelTheClockQuestion}

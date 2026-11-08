@@ -19,8 +19,8 @@ docs/00-concept.md §7). Start reading at `LayerStatusPanel.tsx`.
   "item excluído".
 - `ChangedOnAirChip.tsx` — "alterado no ar", its tooltip naming the fields (`fieldsOfInstanceOnAir.ts`).
 - `ItemAheadOfTheAirMarker.tsx` — the reverse, "item mudou" (BAJAOVRLAY-38): the item was saved after the take; "Disparar"
-  takes it again, "Atualizar no ar" (`updateThatCatchesUpWithTheItem.ts`) sends the fields behind. It reads its own
-  instance and item, so a source poll does not redraw it.
+  takes it again, "Atualizar no ar" (`updateThatCatchesUpWithTheItem.ts`) sends the fields behind, never a clock. It
+  reads its own instance and item, so a source poll does not redraw it.
 - `useSavesFromCamadas.ts` — "Salvar no item" (`saveOnAirChangesIntoItem`) and, for an instance with
   no item, "Salvar como item" (`itemSavedFromInstanceWithoutItem.ts`); `WallClockChoiceDialog.tsx`
   asks first when a clock's moment would be saved.

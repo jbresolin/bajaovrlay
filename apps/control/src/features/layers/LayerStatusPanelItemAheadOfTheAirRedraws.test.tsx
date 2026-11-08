@@ -20,7 +20,8 @@
  * by text (drawCounterByText.testSupport.tsx).
  *
  * What these tests deliberately do not cover:
- *   - What the chip offers and sends: LayerStatusPanelItemAheadOfTheAir.test.tsx.
+ *   - What the chip says and offers: LayerStatusPanelItemAheadOfTheAir.test.tsx and
+ *     LayerStatusPanelItemAheadOfTheAirButtons.test.tsx.
  *   - That the row itself is not drawn again when the instances slice changes: the panel
  *     reads the whole slice for every row, as it did before this chip (left as it is).
  */

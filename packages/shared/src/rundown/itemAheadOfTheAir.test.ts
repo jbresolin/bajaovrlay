@@ -13,11 +13,16 @@
  *   - A field the item holds as typed text or number is behind when the air shows
  *     something else, and only then; a field left out on air counts as the same as an
  *     item's empty value, the way a take leaves an empty value out.
+ *   - A field the item no longer stores counts as empty, as the server counts it: it is
+ *     behind while the air still shows a value for it, after the fields the item stores.
  *   - A field the item does not type (read from a source, from the library, as a whole list,
  *     or stamped at the take) is never behind, whatever the air shows.
+ *   - A clock is never behind, in any of its four parts (gate 2 of PR #49): its update
+ *     rule writes its reference on the server, so "the air matches the item" cannot be
+ *     read field by field. The other fields of a clock graphic still count.
  *   - A field changed on air is left to "alterado no ar", so the two marks never name the
- *     same field; a clock changed on air is left whole, because the server's clock rule
- *     rewrites its time and moment without listing them.
+ *     same field.
+ *   - A key on air that the graphic does not declare is never named.
  *   - An instance whose item was deleted, an instance with no item and an instance of a
  *     graphic no longer listed are never behind.
  *
@@ -31,142 +36,19 @@ import { describe, expect, it } from 'vitest';
 
 import { buildRaceClockGraphicFromItsManifest } from '../bindings/graphicsForBindingTests.testSupport.js';
 import type { Graphic } from '../slices/graphic.js';
-import type { Instance } from '../slices/instance.js';
 import type { ItemFields } from './fieldValue.js';
-import type { Item } from './item.js';
 import { findWhereTheItemIsAheadOfTheAir } from './itemAheadOfTheAir.js';
-
-const momentOfTheTake = '2026-10-10T13:00:00.000Z';
-const momentOfTheTakeInMilliseconds = Date.parse(momentOfTheTake);
-
-/** The interview lower third: name, role and team typed, the car read from the timing source. */
-function buildInterviewLowerThirdGraphic(): Graphic {
-  return {
-    id: 'lower-third',
-    manifest: {
-      id: 'baja-lower-third',
-      name: 'Tarja',
-      main: 'lower-third.js',
-      schema: {
-        type: 'object',
-        properties: {
-          nome: { type: 'string', title: 'Nome' },
-          funcao: { type: 'string', title: 'Função' },
-          equipe: { type: 'string', title: 'Equipe' },
-          posicao: { type: 'integer', title: 'Posição' },
-        },
-        required: ['nome'],
-      },
-    },
-    defaultLayerId: 'lower-third',
-    category: 'lower-third',
-    thumbnailUrl: null,
-    defaultFields: {},
-  };
-}
-
-/** The sponsor roll, which reads every sponsor of the library as one list. */
-function buildSponsorRollGraphic(): Graphic {
-  return {
-    id: 'sponsor-roll',
-    manifest: {
-      id: 'baja-sponsor-roll',
-      name: 'Patrocinadores',
-      main: 'sponsor-roll.js',
-      schema: {
-        type: 'object',
-        properties: {
-          titulo: { type: 'string', title: 'Título' },
-          patrocinadores: { type: 'array', title: 'Patrocinadores', items: { type: 'object' } },
-        },
-        required: ['patrocinadores'],
-      },
-    },
-    defaultLayerId: 'fullscreen',
-    category: 'sponsors',
-    thumbnailUrl: null,
-    defaultFields: {},
-  };
-}
-
-/** An item of this graphic with these fields, as the editor saves it. */
-function buildItemOfGraphic(graphic: Graphic, fields: ItemFields): Item {
-  return {
-    id: `item-${graphic.id}`,
-    home: { kind: 'rundown', rundownId: 'sessao-principal' },
-    order: 0,
-    graphicId: graphic.id,
-    layerId: graphic.defaultLayerId,
-    fields,
-    label: `${graphic.manifest.name} do enduro`,
-    color: 'info',
-    notes: '',
-  };
-}
-
-/** The instance on program that a take of this item made, showing this data. */
-function buildInstanceOnProgramShowing(
-  item: Item,
-  resolvedData: Record<string, unknown>,
-  fieldsChangedOnAir?: string[],
-): Instance {
-  const instance: Instance = {
-    id: `instance-of-${item.id}`,
-    layerId: item.layerId,
-    graphicId: item.graphicId,
-    target: 'program',
-    resolvedData,
-    currentStep: 0,
-    status: 'on-air',
-    takenAt: momentOfTheTake,
-    itemId: item.id,
-  };
-  if (fieldsChangedOnAir !== undefined) {
-    instance.fieldsChangedOnAir = fieldsChangedOnAir;
-  }
-  return instance;
-}
-
-/** Ana Souza, captain of Baja UFPR, as the item says now; her position read live. */
-function buildAnaSouzaFields(): ItemFields {
-  return {
-    nome: { kind: 'literal', value: 'Ana Souza' },
-    funcao: { kind: 'literal', value: 'Capitã' },
-    equipe: { kind: 'literal', value: 'Baja UFPR' },
-    posicao: {
-      kind: 'binding',
-      sourceId: 'cronometragem',
-      shapeKey: 'positions',
-      path: 'position',
-      carNumber: 42,
-      isLive: true,
-    },
-  };
-}
-
-/** The endurance clock item: 240:00 counting down, stopped, its moment stamped at the take. */
-function buildEnduranceClockFields(): ItemFields {
-  return {
-    sessionName: { kind: 'literal', value: 'Enduro de Resistência' },
-    state: { kind: 'literal', value: 'green' },
-    clockMode: { kind: 'literal', value: 'remaining' },
-    referenceTimeMs: { kind: 'literal', value: 14_400_000 },
-    referenceWallClockMs: { kind: 'takeTime' },
-    running: { kind: 'literal', value: false },
-  };
-}
-
-/** The endurance clock as its take put it on air. */
-function buildEnduranceClockAsTaken(): Record<string, unknown> {
-  return {
-    sessionName: 'Enduro de Resistência',
-    state: 'green',
-    clockMode: 'remaining',
-    referenceTimeMs: 14_400_000,
-    referenceWallClockMs: momentOfTheTakeInMilliseconds,
-    running: false,
-  };
-}
+import {
+  buildAnaSouzaFields,
+  buildAnaSouzaFieldsSavedWithoutARole,
+  buildEnduranceClockAsTaken,
+  buildEnduranceClockFields,
+  buildInstanceOnProgramShowing,
+  buildInterviewLowerThirdGraphic,
+  buildItemOfGraphic,
+  buildSponsorRollGraphic,
+  momentOfTheTakeInMilliseconds,
+} from './itemAheadOfTheAir.testSupport.js';
 
 /** One scenario: an item, what its instance shows, and the fields expected to be behind. */
 type ItemAheadScenario = {
@@ -267,17 +149,18 @@ const itemAheadScenarios: ItemAheadScenario[] = [
     expectedKeysBehind: ['lapsCompletedByLeader'],
     why: 'seven laps were typed into the item; the air shows no laps',
   },
-  // A clock part typed into the item is behind like any typed field.
+  // Gate 2 of PR #49: the clock's update rule writes its reference on the server, so a
+  // clock is never named, even with a new time typed into the item.
   {
-    name: 'names the clock time when the item was given a new time',
+    name: 'never names the clock when the item was given a new time',
     graphic: buildRaceClockGraphicFromItsManifest(),
     itemFields: {
       ...buildEnduranceClockFields(),
       referenceTimeMs: { kind: 'literal', value: 10_800_000 },
     },
     dataOnAir: buildEnduranceClockAsTaken(),
-    expectedKeysBehind: ['referenceTimeMs'],
-    why: 'the item now starts at 180:00, the air from 240:00',
+    expectedKeysBehind: [],
+    why: 'a clock changed in the item reaches air with the next take, not from this mark',
   },
   // "The moment of the take" is never a value the air can be behind.
   {
@@ -288,10 +171,24 @@ const itemAheadScenarios: ItemAheadScenario[] = [
     expectedKeysBehind: [],
     why: 'the stamped moment differs from the item by nature',
   },
-  // The clock was started on air: the server's rule rewrote its time and moment without
-  // listing them, so only "running" is listed, yet the whole clock is the air's.
+  // The other three parts of the clock, typed anew in the item, are left out the same way.
   {
-    name: 'leaves the whole clock out once any part of it was changed on air',
+    name: 'never names the clock when the item was given a new mode, moment and switch',
+    graphic: buildRaceClockGraphicFromItsManifest(),
+    itemFields: {
+      ...buildEnduranceClockFields(),
+      clockMode: { kind: 'literal', value: 'elapsed' },
+      referenceWallClockMs: { kind: 'literal', value: momentOfTheTakeInMilliseconds + 60_000 },
+      running: { kind: 'literal', value: true },
+    },
+    dataOnAir: buildEnduranceClockAsTaken(),
+    expectedKeysBehind: [],
+    why: 'no part of a clock is ever reported behind',
+  },
+  // The clock was started on air: the server's rule rewrote its time and moment without
+  // listing them; the clock stays out of this mark all the same.
+  {
+    name: 'never names a clock started on air, whose time the server moved',
     graphic: buildRaceClockGraphicFromItsManifest(),
     itemFields: buildEnduranceClockFields(),
     dataOnAir: {
@@ -303,6 +200,52 @@ const itemAheadScenarios: ItemAheadScenario[] = [
     fieldsChangedOnAir: ['running'],
     expectedKeysBehind: [],
     why: 'the time on air moved with the clock, not because the item changed',
+  },
+  // A clock graphic's other fields still count: the laps typed in are behind, the new time is not.
+  {
+    name: 'names the laps but not the clock when the item changed both',
+    graphic: buildRaceClockGraphicFromItsManifest(),
+    itemFields: {
+      ...buildEnduranceClockFields(),
+      referenceTimeMs: { kind: 'literal', value: 10_800_000 },
+      lapsCompletedByLeader: { kind: 'literal', value: 7 },
+    },
+    dataOnAir: buildEnduranceClockAsTaken(),
+    expectedKeysBehind: ['lapsCompletedByLeader'],
+    why: 'only the clock leaves this mark; the laps are an ordinary typed field',
+  },
+  // The item no longer stores the role at all; the server counts that as an empty value.
+  {
+    name: 'names a field the item no longer stores while the air still shows it',
+    graphic: buildInterviewLowerThirdGraphic(),
+    itemFields: buildAnaSouzaFieldsSavedWithoutARole('Ana Souza Lima'),
+    dataOnAir: { nome: 'Ana Souza', funcao: 'Capitã', equipe: 'Baja UFPR', posicao: 3 },
+    expectedKeysBehind: ['nome', 'funcao'],
+    why: 'the role is still on air but the item gives none; the item keys come first',
+  },
+  // A key the item no longer stores and the air shows empty: both say nothing.
+  {
+    name: 'names nothing for a field the item no longer stores and the air shows empty',
+    graphic: buildInterviewLowerThirdGraphic(),
+    itemFields: buildAnaSouzaFieldsSavedWithoutARole('Ana Souza'),
+    dataOnAir: { nome: 'Ana Souza', funcao: null, equipe: 'Baja UFPR', posicao: 3 },
+    expectedKeysBehind: [],
+    why: 'an empty role on air is what an item with no role gives',
+  },
+  // A key the graphic no longer declares (an older package) cannot be named or updated.
+  {
+    name: 'never names a key on air that the graphic does not declare',
+    graphic: buildInterviewLowerThirdGraphic(),
+    itemFields: buildAnaSouzaFields(),
+    dataOnAir: {
+      nome: 'Ana Souza',
+      funcao: 'Capitã',
+      equipe: 'Baja UFPR',
+      posicao: 3,
+      apelido: 'Aninha',
+    },
+    expectedKeysBehind: [],
+    why: 'a field the graphic has no title for is left alone',
   },
   // A whole list read from the library is refreshed by the server, never typed.
   {

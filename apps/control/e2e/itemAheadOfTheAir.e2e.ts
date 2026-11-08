@@ -18,8 +18,8 @@
  *     same element (changed in place, no blink), and the chip goes away.
  *
  * What these tests deliberately do not cover:
- *   - Which fields count as behind, the clock question and "Disparar": the shared table
- *     test and LayerStatusPanelItemAheadOfTheAir.test.tsx.
+ *   - Which fields count as behind (a clock never) and "Disparar": the shared table test
+ *     and LayerStatusPanelItemAheadOfTheAir*.test.tsx.
  *   - OBS itself: its stand-in is the same `/render/` page in Chromium.
  *
  * What it needs: the lower third and the renderer built (`pnpm build`), because the
