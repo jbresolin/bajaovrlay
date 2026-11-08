@@ -1,6 +1,6 @@
 // The backup download (BAJAOVRLAY-33): one zip of the data folder at a time, recorded in
 // the event log once it went out whole. The route (api.ts) calls this.
-import { mkdtempSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pipeline, type Readable, Transform } from 'node:stream';
@@ -26,6 +26,18 @@ import {
   openFileFromDisk,
   streamBackupZip,
 } from './backupZip.js';
+import {
+  makeTemporaryDatabaseCopyFolder,
+  removeTemporaryCopiesOfStoppedServers,
+} from './temporaryDatabaseCopies.js';
+
+/**
+ * How long a backup may go with no byte taken by its reader before it is stopped: a
+ * browser that stalls, or a connection gone without the HTTP server noticing, would
+ * otherwise hold "one backup at a time" until a restart. A minute is far beyond any pause
+ * of a browser saving to a USB stick.
+ */
+export const idleTimeOfAStalledBackupInMs = 60_000;
 
 /** What the backup needs: the store, where the data is, and what goes in leia-me.txt. */
 export type BackupDownloadsOptions = {
@@ -38,7 +50,10 @@ export type BackupDownloadsOptions = {
   version: string;
   /** The clock that names the zip; the machine's when left out. */
   readCurrentTime?: (() => Date) | undefined;
-  /** Where the temporary copy of the database is made; the system's when left out. */
+  /**
+   * Where the temporary copy of the database is made; the system's when left out. Copies
+   * left there by servers no longer running are removed when the downloads are created.
+   */
   temporaryFolder?: string | undefined;
   /** How each file is opened for the zip; tests watch it. fs.createReadStream when left out. */
   openFileForReading?: OpenFileForReading | undefined;
@@ -57,30 +72,49 @@ export type BackupDownloads = {
    * Starts a backup: copies the database, then hands back the zip as a stream to read.
    * Refused while another backup's zip has not closed, or when the database stayed locked
    * through every try of the copy. Rejects when the database cannot be copied otherwise.
+   * `cancelSignal` is the request's: once it aborts, the zip is stopped.
    */
-  startBackupDownload: (isIncludingRecordings: boolean) => Promise<BackupDownloadStart>;
+  startBackupDownload: (
+    isIncludingRecordings: boolean,
+    cancelSignal?: AbortSignal,
+  ) => Promise<BackupDownloadStart>;
   /** The size of each part on disk now, the newest backup in the event log, and whether one runs. */
   summarizeTheBackup: () => BackupSummary;
 };
 
-/** Creates the backup downloads of one server; nothing runs until one is asked for. */
+/**
+ * Creates the backup downloads of one server, first removing the temporary copies servers
+ * killed mid-backup left behind; nothing else runs until a backup is asked for.
+ */
 export function createBackupDownloads(options: BackupDownloadsOptions): BackupDownloads {
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
   const temporaryFolder = options.temporaryFolder ?? tmpdir();
   const mediaFolder = buildMediaFolderPath(options.dataFolder);
   const recordingsFolder = buildRecordingsFolderPath(options.dataFolder);
   const openFileForReading = options.openFileForReading ?? openFileFromDisk;
+  // A boot must not fail over a folder it cannot clear (another user's, in a shared /tmp).
+  try {
+    removeTemporaryCopiesOfStoppedServers(temporaryFolder);
+  } catch (sweepError) {
+    options.logger.warn(
+      { err: sweepError, temporary_folder: temporaryFolder },
+      'could not remove the backup copies left behind',
+    );
+  }
   // Set before the first await, so two requests arriving together cannot both start.
   let isABackupRunning = false;
 
-  async function startBackupDownload(isIncludingRecordings: boolean): Promise<BackupDownloadStart> {
+  async function startBackupDownload(
+    isIncludingRecordings: boolean,
+    cancelSignal?: AbortSignal,
+  ): Promise<BackupDownloadStart> {
     if (isABackupRunning) {
       return { isStarted: false, reason: 'alreadyRunning' };
     }
     isABackupRunning = true;
     const madeAt = readCurrentTime();
     const fileName = nameBackupZipFile(madeAt);
-    const temporaryCopyFolder = mkdtempSync(join(temporaryFolder, 'bajaovrlay-copia-'));
+    const temporaryCopyFolder = makeTemporaryDatabaseCopyFolder(temporaryFolder);
     // Every file the zip opened, closed when the backup closes: a download cancelled
     // half-way must not leave a file open until the process ends.
     const filesOpened: Readable[] = [];
@@ -130,9 +164,20 @@ export function createBackupDownloads(options: BackupDownloadsOptions): BackupDo
     const countedZipStream = new Transform({
       transform(chunk: Buffer, _encoding, passTheChunkOn) {
         bytesSent += chunk.length;
+        restartTheIdleTimer();
         passTheChunkOn(null, chunk);
       },
     });
+    // Restarted at every chunk that moves on to the reader. A reader that stops taking
+    // bytes stops the chunks too (the stream's buffers fill), so the timer runs out.
+    let idleTimer = setTimeout(stopTheStalledBackup, idleTimeOfAStalledBackupInMs);
+    function restartTheIdleTimer(): void {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(stopTheStalledBackup, idleTimeOfAStalledBackupInMs);
+    }
+    function stopTheStalledBackup(): void {
+      countedZipStream.destroy(new Error('no byte of the backup was taken for a minute'));
+    }
     // pipeline stops the zip when the reader goes away (the download was cancelled), and
     // stops the reader when the zip fails (a file vanished); either way, 'close' follows.
     pipeline(zipStream, countedZipStream, (zipError) => {
@@ -144,6 +189,8 @@ export function createBackupDownloads(options: BackupDownloadsOptions): BackupDo
       isSentWhole = true;
     });
     countedZipStream.once('close', () => {
+      clearTimeout(idleTimer);
+      cancelSignal?.removeEventListener('abort', stopTheCancelledBackup);
       for (const fileStream of filesOpened) {
         fileStream.destroy();
       }
@@ -153,6 +200,18 @@ export function createBackupDownloads(options: BackupDownloadsOptions): BackupDo
         recordTheFinishedBackup({ fileName, sizeInBytes: bytesSent, isIncludingRecordings });
       }
     });
+
+    // The client may have hung up while the database was being copied. The HTTP server
+    // then neither reads nor cancels the answer (@hono/node-server skips the body of a
+    // socket already closed), so nothing would ever close the zip: it is stopped here.
+    function stopTheCancelledBackup(): void {
+      countedZipStream.destroy(new Error('the client hung up before the backup was sent'));
+    }
+    if (cancelSignal?.aborted === true) {
+      stopTheCancelledBackup();
+    } else {
+      cancelSignal?.addEventListener('abort', stopTheCancelledBackup, { once: true });
+    }
     return { isStarted: true, fileName, zipStream: countedZipStream };
   }
 

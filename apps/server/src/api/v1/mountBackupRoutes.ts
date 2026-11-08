@@ -39,7 +39,11 @@ export function mountBackupRoutes(
     async (context) => {
       const query = context.req.valid('query');
       const isIncludingRecordings = query.includeRecordings !== 'false';
-      const backup = await options.backupDownloads.startBackupDownload(isIncludingRecordings);
+      // The request's signal: a client that hangs up during the copy stops the backup.
+      const backup = await options.backupDownloads.startBackupDownload(
+        isIncludingRecordings,
+        context.req.raw.signal,
+      );
       if (!backup.isStarted && backup.reason === 'alreadyRunning') {
         return context.json(buildBackupAlreadyRunningAnswer(), 409);
       }

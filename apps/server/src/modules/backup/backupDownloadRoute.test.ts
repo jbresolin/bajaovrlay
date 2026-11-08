@@ -21,16 +21,27 @@
  *     route then answers it as the newest backup, with the size of each part.
  *   - Only the control page passes without a token: another caller with the command API
  *     off gets 403. A query it cannot read gets 400.
+ *   - A client that hangs up 5 ms in, while the database is still being copied, leaves no
+ *     backup running and no temporary copy. Before gate 2 the server never noticed (the
+ *     answer was not sent yet), so every later backup got 409 until a restart.
+ *   - A boot removes the temporary copy a server killed mid-backup left behind.
  *
  * What these tests deliberately do not cover:
  *   - That the zip is streamed with bounded memory: backupZipStreaming.test.ts.
- *   - A cancelled download and the temporary copy: backupDownloads.test.ts.
+ *   - A download cancelled while being sent, a stalled reader, and the temporary copy:
+ *     backupDownloads.test.ts.
+ *   - Which leftover copies a boot removes: temporaryDatabaseCopies.test.ts.
  *   - The browser saving the file: the control page's backupDownload.e2e.ts.
  */
-import { mkdirSync, truncateSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, truncateSync, writeFileSync } from 'node:fs';
+import { request } from 'node:http';
 import { join } from 'node:path';
-import { setImmediate as waitForTheNextTurn } from 'node:timers/promises';
+import {
+  setImmediate as waitForTheNextTurn,
+  setTimeout as waitFor,
+} from 'node:timers/promises';
 
+import Database from 'better-sqlite3';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { buildBootOptions, operatorActor } from '../../core/boot/bootedServer.testSupport.js';
@@ -88,6 +99,41 @@ async function waitForTheBackupRow(stateStore: StateStore): Promise<void> {
   while (stateStore.readAllSlices().eventLog.at(-1)?.command !== 'recordBackup') {
     await waitForTheNextTurn();
   }
+}
+
+/**
+ * Sends GET /api/v1/backup as the control page's link does, and hangs up `hangUpAfterMs`
+ * later, before any answer can come: the operator closing the tab right after "Baixar".
+ * Resolves once the connection is closed.
+ */
+async function askForABackupAndHangUp(apiAddress: string, hangUpAfterMs: number): Promise<void> {
+  const backupRequest = request(`${apiAddress}/backup`, { headers: headersOfTheControlPage });
+  // The hang-up itself ends the request with an error ("socket hang up"); that is what
+  // this simulates, so the error is expected and only the close is waited for.
+  backupRequest.on('error', () => undefined);
+  const closing = new Promise((resolve) => backupRequest.once('close', resolve));
+  backupRequest.end();
+  await waitFor(hangUpAfterMs);
+  backupRequest.destroy();
+  await closing;
+}
+
+/**
+ * Asks for the summary until it says no backup runs, for up to 3 s, and answers whether it
+ * ever did: the server notices a hang-up on its own time.
+ */
+async function waitUntilNoBackupRuns(apiAddress: string): Promise<boolean> {
+  for (let attempt = 1; attempt <= 150; attempt += 1) {
+    const summaryResponse = await fetch(`${apiAddress}/backup/summary`, {
+      headers: headersOfTheControlPage,
+    });
+    const summary = (await summaryResponse.json()) as { isABackupRunning: boolean };
+    if (!summary.isABackupRunning) {
+      return true;
+    }
+    await waitFor(20);
+  }
+  return false;
 }
 
 describe('GET /api/v1/backup', () => {
@@ -298,5 +344,53 @@ describe('GET /api/v1/backup', () => {
 
     // Assert: refused with the status of this row.
     expect(response.status, `${address} must be refused`).toBe(expectedStatus);
+  });
+
+  it('leaves no backup running and no copy when the client hangs up 5 ms in', async () => {
+    // Arrange: a server whose media holds a 64 MB video, more than the connection buffers
+    // (a small zip would fit in them whole and count as sent), and whose database another
+    // connection holds locked for a moment (a write being committed), so the copy is
+    // still waiting when the client leaves.
+    const { bootOptions, apiAddress } = await startServerWithDataToBackUp();
+    const videoPath = join(bootOptions.dataFolder, 'media', 'abertura.mp4');
+    writeFileSync(videoPath, '');
+    truncateSync(videoPath, 64 * 1024 * 1024);
+    const lockingConnection = new Database(bootOptions.databasePath);
+    onTestFinished(() => {
+      lockingConnection.close();
+    });
+    lockingConnection.exec('BEGIN EXCLUSIVE');
+
+    // Act: ask for a backup and hang up 5 ms in; then release the lock, so the copy
+    // finishes with nobody to send it to.
+    await askForABackupAndHangUp(apiAddress, 5);
+    lockingConnection.exec('ROLLBACK');
+    const isNoLongerRunning = await waitUntilNoBackupRuns(apiAddress);
+
+    // Assert: no backup left running, so the next one may start, and no copy left behind.
+    expect(isNoLongerRunning, 'a backup nobody waits for must not block the next').toBe(true);
+    expect(
+      readdirSync(bootOptions.backupTemporaryFolder),
+      'its temporary copy of the database must be gone',
+    ).toEqual([]);
+  });
+
+  it('removes at boot the temporary copy a server killed mid-backup left behind', async () => {
+    // Arrange: the copy a server of this process id left before a restart, 200 MB on the
+    // stream PC, in the temporary folder the backups use.
+    const bootOptions = buildBootOptions(committedMigrationsFolder);
+    const leftoverCopyFolder = join(
+      bootOptions.backupTemporaryFolder,
+      `bajaovrlay-copia-${String(process.pid)}-Rq7Lmz`,
+    );
+    mkdirSync(leftoverCopyFolder);
+    writeFileSync(join(leftoverCopyFolder, 'bajaovrlay.sqlite'), 'cópia que ficou para trás');
+
+    // Act: boot the server.
+    const runningServer = await startServer(bootOptions);
+    onTestFinished(() => runningServer.close());
+
+    // Assert: the leftover copy is gone.
+    expect(existsSync(leftoverCopyFolder), 'a boot must clear the copies left behind').toBe(false);
   });
 });

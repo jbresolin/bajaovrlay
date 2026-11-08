@@ -17,25 +17,29 @@
  *     its temporary copy, and lets the next one start.
  *   - A database that stays locked through every try of the copy refuses the backup with
  *     that reason, leaves no temporary copy, and lets the next one start.
+ *   - A backup whose reader stops taking bytes (a stalled browser, a connection gone
+ *     without a word) is stopped after a minute with no bytes taken, on fake time: it
+ *     writes no row, removes its copy and lets the next one start. Before gate 2 it held
+ *     "one backup at a time" until the server restarted.
  *
  * What these tests deliberately do not cover:
  *   - The zip's contents and the HTTP answers: backupDownloadRoute.test.ts.
  *   - That the zip streams: backupZipStreaming.test.ts.
  */
-import { once } from 'node:events';
 import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Readable } from 'node:stream';
+import { setImmediate as waitForTheNextTurn } from 'node:timers/promises';
 
 import Database from 'better-sqlite3';
-import { describe, expect, it, onTestFinished } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { buildBootOptions } from '../../core/boot/bootedServer.testSupport.js';
 import { startServer } from '../../core/boot/startServer.js';
 import { createTemporaryDataFolder } from '../../core/boot/temporaryDataFolder.testSupport.js';
 import { committedMigrationsFolder } from '../../core/db/openDatabase.js';
 import { createLogger } from '../../core/logger/createLogger.js';
-import { createBackupDownloads } from './backupDownloads.js';
+import { createBackupDownloads, idleTimeOfAStalledBackupInMs } from './backupDownloads.js';
 
 /** Reads a zip stream to its end and answers how many bytes it had. */
 async function readTheZipToItsEnd(zipStream: Readable): Promise<number> {
@@ -47,12 +51,13 @@ async function readTheZipToItsEnd(zipStream: Readable): Promise<number> {
 }
 
 /**
- * Resolves at the stream's 'close' event, whether it ended or was stopped: the backup
- * finishes its work (the row, the clean-up) there. Called before the read or the stop,
- * so the event cannot pass unseen.
+ * Resolves at the stream's 'close' event, whether it ended or was stopped, with or without
+ * an error: the backup finishes its work (the row, the clean-up) there. Called before the
+ * read or the stop, so the event cannot pass unseen. (events.once would reject on the
+ * error a stopped backup carries.)
  */
 async function waitForTheCloseEvent(stream: Readable): Promise<void> {
-  await once(stream, 'close');
+  await new Promise((resolve) => stream.once('close', resolve));
 }
 
 /**
@@ -189,5 +194,52 @@ describe('createBackupDownloads', () => {
     });
     expect(temporaryFoldersAfterTheRefusal, 'the refused backup leaves no folder').toEqual([]);
     expect(nextBackup.isStarted, 'a refused backup must not block the next one').toBe(true);
+  });
+
+  it('stops a backup whose reader took no bytes for a minute, and lets the next start', async () => {
+    // Arrange: a server with 2 MB of team videos in its media, so the zip cannot fit in
+    // the stream's buffers; fake timers (only setTimeout, so the disk and the copy run
+    // as usual); and a backup started whose reader takes nothing.
+    const { runningServer, bootOptions, backupDownloads, temporaryFolder } =
+      await startServerWithBackupDownloads();
+    writeFileSync(
+      join(bootOptions.dataFolder, 'media', 'video-equipe-42.mp4'),
+      Buffer.alloc(2 * 1024 * 1024, 42),
+    );
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const rowCountBefore = runningServer.stateStore.readAllSlices().eventLog.length;
+    const stalledBackup = await backupDownloads.startBackupDownload(true);
+    if (!stalledBackup.isStarted) {
+      throw new Error('the backup must start');
+    }
+    const closing = waitForTheCloseEvent(stalledBackup.zipStream);
+    // Waits until the buffer towards the reader is full: from then on no byte moves.
+    while (stalledBackup.zipStream.readableLength < stalledBackup.zipStream.readableHighWaterMark) {
+      await waitForTheNextTurn();
+    }
+
+    // Act: a moment short of the idle time passes, then the rest of it.
+    await vi.advanceTimersByTimeAsync(idleTimeOfAStalledBackupInMs - 1);
+    const isOpenJustBeforeTheIdleTime = !stalledBackup.zipStream.destroyed;
+    await vi.advanceTimersByTimeAsync(1);
+    await closing;
+    vi.useRealTimers();
+    const nextBackup = await backupDownloads.startBackupDownload(true);
+
+    // Assert: still open just before the minute, stopped at it; no row, no copy left of
+    // the stalled one, and the next one started.
+    expect(isOpenJustBeforeTheIdleTime, 'a reader may pause for less than a minute').toBe(true);
+    expect(stalledBackup.zipStream.destroyed, 'a minute with no byte taken stops it').toBe(true);
+    expect(
+      runningServer.stateStore.readAllSlices().eventLog.length,
+      'a stopped backup must not show as "Última cópia"',
+    ).toBe(rowCountBefore);
+    expect(nextBackup.isStarted, 'the stalled backup must not block the next one').toBe(true);
+    expect(readdirSync(temporaryFolder), 'only the next backup’s copy may be there').toHaveLength(
+      1,
+    );
   });
 });
