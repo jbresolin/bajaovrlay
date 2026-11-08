@@ -157,9 +157,14 @@ on 14 November, from the stick at `E:`):
 ```powershell
 docker stop bajaovrlay
 Expand-Archive E:\bajaovrlay-2026-11-14-1432.zip C:\BajaOvrLay\restaurar-2026-11-14-1432
-docker run --rm --user root -v bajaovrlay-data:/data -v C:\BajaOvrLay\restaurar-2026-11-14-1432:/copia --entrypoint sh ghcr.io/jbresolin/bajaovrlay:latest -c "rm -f /data/bajaovrlay.sqlite-journal && cp /copia/bajaovrlay.sqlite /data/bajaovrlay.sqlite && rm -rf /data/media && cp -r /copia/media /data/media && if [ -d /copia/recordings ]; then rm -rf /data/recordings && cp -r /copia/recordings /data/recordings; fi && chown -R node:node /data"
+docker run --rm --user root -v bajaovrlay-data:/data -v C:\BajaOvrLay\restaurar-2026-11-14-1432:/copia --entrypoint sh ghcr.io/jbresolin/bajaovrlay:latest -c "trap 'chown -R node:node /data' EXIT; set -e; rm -f /data/bajaovrlay.sqlite-journal; cp /copia/bajaovrlay.sqlite /data/bajaovrlay.sqlite; mkdir -p /copia/media; rm -rf /data/media; cp -r /copia/media /data/media; if [ -d /copia/recordings ]; then rm -rf /data/recordings; cp -r /copia/recordings /data/recordings; fi"
 docker start bajaovrlay
 ```
+
+A copy made with no images has no `media/` folder at all (the zip holds files, not empty
+folders), so the line makes an empty one first. It stops at the first step that fails,
+says which, and exits non-zero, and either way the `trap` hands `/data` back to the
+server's user, so the server can still write there after a restore cut short.
 
 **In a plain folder** (`pnpm start`, or a bind mount instead of the volume), with the
 server stopped, from the data folder (`DATA_DIR`; `apps/server/data` in `.env.example`):
@@ -170,6 +175,7 @@ rm -f bajaovrlay.sqlite-journal
 rm -rf media
 unzip -l ~/bajaovrlay-2026-11-14-1432.zip | grep -q ' recordings/' && rm -rf recordings
 unzip -o ~/bajaovrlay-2026-11-14-1432.zip -x leia-me.txt
+mkdir -p media
 ```
 
 The zip names the database `bajaovrlay.sqlite`, as the volume does. If `DATABASE_PATH`
