@@ -308,19 +308,35 @@ export const CommandResultMessageSchema = z.discriminatedUnion('ok', [
 export type CommandResultMessage = z.infer<typeof CommandResultMessageSchema>;
 
 /**
- * Sent to every client every ten seconds: what the server's wall clock shows, in whole
- * milliseconds since 1970, and nothing else. It exists so that a page keeps getting
- * samples of the server's clock while no slice is changing; without it a step of the
- * page's own clock stayed uncorrected until something changed on the server. Here
- * `serverNowMs` is required: the time is all this message has to say.
+ * Sent to every client every ten seconds: what the server clock shows, in whole
+ * milliseconds since 1970. A page answers it with a `clockProbe`, so its alignment is
+ * kept fresh while no slice is changing (packages/shared/src/clock/serverAlignedTime.ts).
+ * `offFromRealTimeMs` (BAJAOVRLAY-62) is how far the server clock is still from real
+ * time by NTP (real time minus the server clock), left out until NTP has answered and
+ * when NTP is off; the control page's header warns from 2 s on.
  */
 export const TimeMessageSchema = z.object({
   type: z.literal('time'),
   serverNowMs: z.number().int(),
+  offFromRealTimeMs: z.number().int().optional(),
 });
 
 /** One time message after validation. */
 export type TimeMessage = z.infer<typeof TimeMessageSchema>;
+
+/**
+ * Sent to one client only, the moment its `clockProbe` arrives: the probe's own
+ * `pageSentAtMs` back, and the server clock at that moment. The page takes the midpoint
+ * of its send and its arrival as the moment the server read its clock (BAJAOVRLAY-62).
+ */
+export const ClockProbeAnswerMessageSchema = z.object({
+  type: z.literal('clockProbeAnswer'),
+  pageSentAtMs: z.number().int(),
+  serverNowMs: z.number().int(),
+});
+
+/** One clockProbeAnswer message after validation. */
+export type ClockProbeAnswerMessage = z.infer<typeof ClockProbeAnswerMessageSchema>;
 
 /** Every message the server sends, told apart by `type`. */
 export const ServerMessageSchema = z.discriminatedUnion('type', [
@@ -330,6 +346,7 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   DataSnapshotMessageSchema,
   CommandResultMessageSchema,
   TimeMessageSchema,
+  ClockProbeAnswerMessageSchema,
 ]);
 
 /** Any server message after validation. */

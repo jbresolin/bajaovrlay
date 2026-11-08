@@ -19,4 +19,4 @@ The server's building blocks, one folder per concept. Feature modules build on t
 - `db/` — the SQLite file (Drizzle), its migrations and the one-transaction save.
 - `events/` — the event log and the 200-entry `eventLog` slice.
 - `ws/` — the WebSocket hub at `/ws`.
-- `time/` — the server clock: monotonic time, never moved by a step of the wall clock.
+- `time/` — the server clock: monotonic time kept on real time by NTP, never moved by a step of the wall clock.

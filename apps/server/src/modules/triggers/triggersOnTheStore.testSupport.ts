@@ -11,7 +11,10 @@ import type { MacroStep, ObsStatus, TriggerFiring } from '@bajaovrlay/shared';
 import { expect, onTestFinished, vi } from 'vitest';
 
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
-import { createLogger } from '../../core/logger/createLogger.js';
+import {
+  createRecordingLogger,
+  type RecordedLogLine,
+} from '../../core/logger/recordingLogger.testSupport.js';
 import { createGraphicsFolderWithUnbuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { obsConnectionActor } from '../../core/store/commandActors.js';
 import { createStateStore, type StateStore } from '../../core/store/createStateStore.js';
@@ -175,6 +178,8 @@ export type TriggersOnTheStore = {
    * slept: the next passTime runs the first tick after it woke.
    */
   sleep: (milliseconds: number) => void;
+  /** Every line the store, the macro runner and the trigger service have logged. */
+  readRecordedLogLines: () => RecordedLogLine[];
 };
 
 /**
@@ -199,7 +204,7 @@ export function startTriggersOnTheStore(
   // The store asks for every kind of id at every command, so an id is chosen from what
   // is being made, never from how many times it was asked for.
   let idOfTheNextMacro = 'macro-sem-id';
-  const logger = createLogger({ level: 'silent' });
+  const { logger, readRecordedLines } = createRecordingLogger();
   const store: StateStore = createStateStore({
     database,
     logger,
@@ -245,6 +250,7 @@ export function startTriggersOnTheStore(
     sleep: (milliseconds) => {
       vi.setSystemTime(Date.now() + milliseconds);
     },
+    readRecordedLogLines: readRecordedLines,
   };
 }
 

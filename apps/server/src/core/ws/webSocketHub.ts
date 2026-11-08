@@ -51,6 +51,11 @@ export type WebSocketHubOptions = {
    */
   readCurrentTime?: (() => Date) | undefined;
   /**
+   * How far the server clock is from real time by NTP (core/time), sent in every `time`
+   * message; left out, or answering undefined, sends nothing (NTP off, tests).
+   */
+  readOffFromRealTimeMs?: (() => number | undefined) | undefined;
+  /**
    * The timer behind the ten-second `time` message; defaults to Node's setInterval.
    * Tests hand in one they move by hand, together with cancelRepeatingTimer.
    */
@@ -113,6 +118,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const serverTimeBroadcast = startServerTimeBroadcast({
     webSocketServer,
     readCurrentTime,
+    readOffFromRealTimeMs: options.readOffFromRealTimeMs,
     startRepeatingTimer: options.startRepeatingTimer,
     cancelRepeatingTimer: options.cancelRepeatingTimer,
   });
@@ -214,13 +220,14 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       if (!sessionsOfConnections.isConnectionStillAllowedToSend(client, request)) {
         return;
       }
-      const commandResult = answerClientMessage({
+      const answer = answerClientMessage({
         messageText: isBinary ? undefined : data.toString(),
         stateStore,
         actor,
         logger: connectionLogger,
+        readCurrentTime,
       });
-      client.send(serializeServerMessage(commandResult));
+      client.send(serializeServerMessage(answer));
     });
     client.on('error', (socketError) => {
       connectionLogger.warn({ err: socketError }, 'websocket client error');

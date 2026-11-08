@@ -6,11 +6,11 @@
  *   message. People building a client copy those examples, so they must be valid.
  *
  * What these tests prove:
- *   - The README has at least one example of each of the nine message shapes (hello,
- *     slice, slices, dataSnapshot, time, command, instanceStatus, ok commandResult, error
- *     commandResult).
- *   - Every example passes the schema for its direction: `command` and
- *     `instanceStatus` the client schema, everything else the server schema. The
+ *   - The README has at least one example of each of the eleven message shapes (hello,
+ *     slice, slices, dataSnapshot, time, clockProbe, clockProbeAnswer, command,
+ *     instanceStatus, ok commandResult, error commandResult).
+ *   - Every example passes the schema for its direction: `command`, `instanceStatus`
+ *     and `clockProbe` the client schema, everything else the server schema. The
  *     client envelope does not check the command inside a `command` message (the store
  *     does), so that command is checked against CommandSchema too: a misspelt field in
  *     the README would otherwise slip through.
@@ -54,7 +54,7 @@ function describeMessageShape(example: unknown): string {
   return String(exampleAsRecord.type);
 }
 
-const shapesSentByAClient = ['command', 'instanceStatus'];
+const shapesSentByAClient = ['command', 'instanceStatus', 'clockProbe'];
 
 /**
  * True when an example passes the schema of the side that sends it; a client `command`
@@ -69,14 +69,14 @@ function passesTheSchemaForItsDirection(example: unknown): boolean {
   if (!parsedClientMessage.success) {
     return false;
   }
-  if (parsedClientMessage.data.type === 'instanceStatus') {
+  if (parsedClientMessage.data.type !== 'command') {
     return true;
   }
   return CommandSchema.safeParse(parsedClientMessage.data.command).success;
 }
 
 describe('packages/shared/src/ws/README.md', () => {
-  it('shows one example of each of the nine message shapes', () => {
+  it('shows one example of each of the eleven message shapes', () => {
     // Arrange: read the README from disk.
     const readme = readFileSync(protocolReadmePath, 'utf8');
 
@@ -91,6 +91,8 @@ describe('packages/shared/src/ws/README.md', () => {
         'slices',
         'dataSnapshot',
         'time',
+        'clockProbe',
+        'clockProbeAnswer',
         'command',
         'instanceStatus',
         'commandResult ok',

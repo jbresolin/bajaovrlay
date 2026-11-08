@@ -17,7 +17,8 @@
  *   - a time of day fires once at that time in São Paulo, never again within the minute;
  *   - a moment that had already passed when the server started is not fired late;
  *   - a moment that came while the machine slept (10 minutes with no tick) is not fired
- *     when it wakes.
+ *     when it wakes, and is logged as skipped, naming its trigger (a forward step of the
+ *     server clock, BAJAOVRLAY-62, skips moments the same way).
  *
  * What these tests deliberately do not cover:
  *   - A day with a different UTC offset: Brazil has had none since 2019. The moment is
@@ -208,5 +209,32 @@ describe('a moment that came while the machine slept', () => {
     // Assert: nothing fired from the gap: a countdown to a session 5 minutes away would be
     // wrong on air.
     expect(readFirings(store), 'a moment from the sleep is never fired on waking').toEqual([]);
+  });
+
+  it('is logged as skipped, naming the trigger, when the clock jumps past it', () => {
+    // Arrange: the same, at 12:45: the Enduro at 13:00 and its trigger at 12:50.
+    const { store, passTime, sleep, readRecordedLogLines } = startTriggersOnTheStore();
+    saveSlot(store, buildEnduroSlot(enduroStartsAtMs));
+    createTrigger(store, tenMinutesBeforeTheEnduro);
+    passTime(105 * oneMinuteMs);
+
+    // Act: the server clock steps 10 minutes forwards, over 12:50 (a sleep stepped by NTP).
+    sleep(10 * oneMinuteMs);
+    passTime(2_000);
+
+    // Assert: one warning naming "Contagem do Enduro" and the one moment it skipped.
+    const skippedWarnings = readRecordedLogLines().filter(
+      (line) => line.level === 'warn' && line.message.includes('skipped'),
+    );
+    expect(skippedWarnings, 'the operator reading the log must see what did not fire').toHaveLength(
+      1,
+    );
+    expect(
+      skippedWarnings[0],
+      'the warning names the trigger and counts the moments',
+    ).toMatchObject({
+      trigger_name: 'Contagem do Enduro',
+      moments_skipped: 1,
+    });
   });
 });

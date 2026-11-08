@@ -1,17 +1,14 @@
 # apps/server/src/core/time
 
-The server clock: the one time source for every moment used in clock math. Start at
-`serverClock.ts`: monotonic time (`performance.timeOrigin + performance.now()`), set to
-the wall clock once at boot, so a step of the wall clock (WSL2's and Docker Desktop's
-time sync, about a second every thirty under load) never moves it. `readServerTime` is
-the default `readCurrentTime` of the store, the WebSocket hub, the login, the triggers,
-the poller and the event runner.
-
-Read from the server clock: a race clock's `referenceWallClockMs`, take-time fields,
-`serverNowMs` in messages, a replay's moved moments, an inbox event's `atMs`, and,
-because they share the command's one moment, the event log's `ts` and the history.
-Read from the wall clock (listed with reasons in `wallClockReadsInTheServer.test.ts`):
-backup file names and "Cópia feita às", and the log window of D200 polls.
-
-`serverClockReanchoring.ts` covers the slow drift between the two clocks: once a minute,
-50 ms at most, and never while a clock runs on an output (`clocksRunningOnAnOutput.ts`).
+The server clock: the one time source for clock math, kept on real time from NTP
+(BAJAOVRLAY-62). Start at `serverClock.ts`: monotonic time times a rate, plus a slew of at
+most 0.5%, plus steps; it never reads the wall clock after it starts, so a time sync's
+step never moves it. `readServerTime` is every `readCurrentTime`'s default.
+`serverClockDiscipline.ts` polls NTP every 64 s (`ntpPolls.ts`, `ntpClient.ts`, the servers
+of `ntpSettings.ts`), runs at the rate of `realTimeRate.ts`, slews under 1 s and steps a
+confirmed 1 s or more unless something on air counts time (`timeCountedOnAnOutput.ts`);
+the boot steps first. `serverClockControl.ts` is what /health, the `time` message and
+"Acertar relógio agora" see.
+On the server clock: reference moments, take times, `serverNowMs`, a replay's moments, an
+inbox event's `atMs`, the event log and the history. On the wall clock (with reasons in
+`wallClockReadsInTheServer.test.ts`): backup file names, and the D200 poll log window.

@@ -8,33 +8,34 @@
  *   VM syncs its clock the same way. When the server stamped clock moments with
  *   Date.now(), a running race clock on air repeated a second (12:38 → 12:37 → 12:38)
  *   after a step back and skipped one after a step forwards. The server now stamps with
- *   its server clock (monotonic time), and the page counts between samples on its own
- *   monotonic time, so neither side follows a step.
+ *   its server clock (monotonic time, kept on real time by NTP), and the page counts
+ *   between its clock probes on its own monotonic time, so neither side follows a step.
  *
  * What these tests prove (a real store and the built race clock; the page's side is
  *   the very code the renderer and the race clock graphic run; Vitest's fake Date moves
  *   alone for a step, while fake performance and Date move together as time passes; the
  *   server and the page share one machine, as on the stream PC):
  *   - The enduro clock taken at 0:00, read ten times a second for a minute with a
- *     `time` sample every ten seconds, as the graphic does: the wall clock stepped back
+ *     clock probe every ten seconds, as the page does: the wall clock stepped back
  *     1 s at 0:30 (and, in a second row, forwards 1 s), the seconds shown never go back
  *     and never skip one, and a minute in the clock shows 1:00.
  *   - Stopped by the operator after the step, the clock holds the second that was on
  *     screen at the press.
  *
  * What these tests deliberately do not cover:
- *   - The server clock alone; serverClock.test.ts. Its slow return to the wall clock;
- *     serverClockReanchoring.test.ts.
+ *   - The server clock alone; serverClock.test.ts. How NTP keeps it on real time;
+ *     serverClockDiscipline.test.ts.
  *   - Real sockets and a real browser: the renderer's e2e tests show the race clock on
- *     air, and its serverConnection.serverClock.test.ts the samples taken from messages.
+ *     air, and its serverConnection.serverClock.test.ts how a page lines up.
  */
 import {
   computeClockTimeMsAtWallClock,
   countWholeSecondsClockShows,
-  forgetServerClockSamples,
+  forgetTheServerClockAlignment,
+  lineUpWithTheServerClockAt,
+  recordClockProbeAnswer,
   readServerAlignedTimeMs,
   readThisMachineMonotonicTimeMs,
-  recordServerClockSample,
 } from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
@@ -53,30 +54,41 @@ const timeMessageIntervalMs = 10_000;
 /** How often the test reads the clock as the graphic would: ten times a second. */
 const frameIntervalMs = 100;
 
-/** The page's side of the clock: samples recorded, and what the race clock shows. */
+/** The page's side of the clock: how it lines up, and what the race clock shows. */
 type PageThatShowsTheClock = {
-  /** Records the server clock's time as a `time` message would carry it, on arrival. */
+  /** The hello: lines the page up at once with the server clock's time. */
+  receiveTheHello: () => void;
+  /** A `time` message: the page's probe, answered at once (the server is on this machine). */
   receiveATimeMessage: () => void;
   /** The whole seconds the race clock on air shows now, as its graphic works them out. */
   readSecondsOnScreen: () => number;
 };
 
 /**
- * Builds the page's side for the clock on air in `store`: samples taken from the server
- * clock, and the graphic's sum over the instance's data. Forgets the samples when the
- * test ends, since they live on the one `globalThis` the tests share.
+ * Builds the page's side for the clock on air in `store`: lined up with the server clock
+ * as a page is (the hello, then a probe per `time` message), and the graphic's sum over
+ * the instance's data. Forgets the alignment when the test ends, since it lives on the
+ * one `globalThis` the tests share.
  */
 function openThePageThatShowsTheClock(
   serverClock: ServerClock,
   store: ReturnType<typeof createStoreOnAServerClock>['store'],
 ): PageThatShowsTheClock {
-  forgetServerClockSamples();
+  forgetTheServerClockAlignment();
   onTestFinished(() => {
-    forgetServerClockSamples();
+    forgetTheServerClockAlignment();
   });
   return {
+    receiveTheHello: () => {
+      lineUpWithTheServerClockAt(serverClock.readCurrentTimeMs(), readThisMachineMonotonicTimeMs());
+    },
     receiveATimeMessage: () => {
-      recordServerClockSample(serverClock.readCurrentTimeMs(), readThisMachineMonotonicTimeMs());
+      const pageSentAtMs = readThisMachineMonotonicTimeMs();
+      recordClockProbeAnswer({
+        pageSentAtMs,
+        serverNowMs: serverClock.readCurrentTimeMs(),
+        pageReceivedAtMs: readThisMachineMonotonicTimeMs(),
+      });
     },
     readSecondsOnScreen: () => {
       const dataOnAir = store.readAllSlices().instances[0]?.resolvedData;
@@ -144,12 +156,12 @@ describe('a race clock on air while the wall clock steps', () => {
   for (const scenario of wallClockStepScenarios) {
     it(`never goes back or skips a second with the wall clock ${scenario.name}`, () => {
       // Arrange: the enduro clock taken running from 0:00 at ten o'clock, and a page
-      // that has had the hello's sample.
+      // lined up at its hello.
       fakeTheMachineClocksAtTenOClock();
       const { serverClock, store } = createStoreOnAServerClock();
       takeTheEnduroClockOnAir(store, { isRunning: true });
       const page = openThePageThatShowsTheClock(serverClock, store);
-      page.receiveATimeMessage();
+      page.receiveTheHello();
 
       // Act: watch it for a minute, ten frames a second, with the step at 0:30.
       const secondsReadAtEachFrame = watchTheClockFrameByFrame(page, {
@@ -178,7 +190,7 @@ describe('a race clock on air while the wall clock steps', () => {
     const { serverClock, store } = createStoreOnAServerClock();
     takeTheEnduroClockOnAir(store, { isRunning: true });
     const page = openThePageThatShowsTheClock(serverClock, store);
-    page.receiveATimeMessage();
+    page.receiveTheHello();
     watchTheClockFrameByFrame(page, { durationMs: 45_000, stepAtMs: 30_000, stepMs: -1_000 });
     const secondsOnScreenAtThePress = page.readSecondsOnScreen();
 

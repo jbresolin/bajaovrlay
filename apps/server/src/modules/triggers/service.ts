@@ -161,8 +161,12 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
     try {
       const nowMs = readCurrentTime().getTime();
       const afterMs = Math.max(scheduleLookedAtUpToMs, nowMs - latestAScheduleMomentMayFireMs);
+      const skippedFromMs = scheduleLookedAtUpToMs;
       scheduleLookedAtUpToMs = nowMs;
       const slices = stateStore.readAllSlices();
+      if (afterMs > skippedFromMs) {
+        logTheScheduleMomentsSkipped(slices, skippedFromMs, afterMs);
+      }
       const firings: FiringToSend[] = [];
       for (const trigger of slices.triggers) {
         if (trigger.when.kind !== 'schedule') {
@@ -183,6 +187,40 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
       logger.error({ err: scheduleError }, 'the schedule of the triggers could not be read');
     }
     armTheNextLook();
+  }
+
+  /**
+   * Logs, trigger by trigger, the moments that fell more than 5 s before this look and
+   * after the last one: a sleep, or a forward step of the server clock to NTP's real time
+   * (BAJAOVRLAY-62). They are dropped, never fired late or all together.
+   */
+  function logTheScheduleMomentsSkipped(
+    slices: Slices,
+    skippedFromMs: number,
+    skippedUpToMs: number,
+  ): void {
+    for (const trigger of slices.triggers) {
+      if (trigger.when.kind !== 'schedule') {
+        continue;
+      }
+      const momentsSkipped = listScheduleMomentsDue(
+        trigger.when.moment,
+        slices.scheduleSlots,
+        skippedFromMs,
+        skippedUpToMs,
+      );
+      if (momentsSkipped.length > 0) {
+        logger.warn(
+          {
+            trigger_id: trigger.id,
+            trigger_name: trigger.name,
+            moments_skipped: momentsSkipped.length,
+            gap_ms: skippedUpToMs - skippedFromMs,
+          },
+          'schedule moments skipped, not fired: the clock jumped past them',
+        );
+      }
+    }
   }
 
   /** Arms the next look at the schedule. */

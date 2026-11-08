@@ -18,13 +18,13 @@ Every message is one JSON object, told apart by its `type` field:
   never sent `eventLog` (below), so it gets fewer slices of the same change. Neither
   `slice` nor `slices` ever carries `dataSnapshots`: after the hello, snapshots travel
   source by source in `dataSnapshot`.
-  All three carry `serverNowMs`: the server's wall clock, in whole milliseconds since 1970,
-  when the message was built. A renderer subtracts its own clock from it and keeps the
-  median of the last five differences, so the race clock on air counts on the server's
-  clock (`../clock/serverAlignedTime.ts`). On `hello` and `slice` the schema lets a
-  message leave it out (test stand-ins do); the server always sends it, and `slices`
-  must. `commandResult` does not carry it. A message without it gives a page no sample at
-  all; it is never read as "the clocks agree".
+  All three carry `serverNowMs`: the server clock (real time from NTP, BAJAOVRLAY-62), in
+  whole milliseconds since 1970, when the message was built. A page lines up with the
+  hello's at once, then refines it with clock probes (`clockProbe` below,
+  `../clock/serverAlignedTime.ts`); the time of a `slice` or `slices` lines nothing up,
+  since a one-way time is late by however long the message took. On `hello` and `slice`
+  the schema lets a message leave it out (test stand-ins do); the server always sends it,
+  and `slices` must. `commandResult` does not carry it.
 - `dataSnapshot` (server → every operator connection): one source's last good data changed.
   It carries `sourceId`, `snapshot` (the source's new snapshot, or `null` when the source
   was deleted and has none any more) and `serverNowMs` (required). The page replaces that
@@ -34,9 +34,18 @@ Every message is one JSON object, told apart by its `type` field:
   another source's data. A poll that changes nothing (the same data on a healthy source)
   sends no message at all, and a failed poll sends the source's new health but no
   `dataSnapshot`: the last good data stays (rule 4).
-- `time` (server → every client, every 10 s): `serverNowMs` and nothing else, so a page
-  keeps getting samples while no slice changes. Here the field is required. A page
-  records the sample and does nothing more with the message.
+- `time` (server → every client, every 10 s): `serverNowMs` (required), and
+  `offFromRealTimeMs` once NTP has answered: how far the server clock still is from real
+  time (real time minus the server clock, in ms), which the control page's header shows
+  from 2 s on. A page answers it with one `clockProbe`.
+- `clockProbe` (any client → server) and `clockProbeAnswer` (server → that client alone):
+  how a page lines its clock up with the server's (BAJAOVRLAY-62). The probe carries
+  `pageSentAtMs`, the page's monotonic time when it left; the answer echoes it with
+  `serverNowMs`, read the moment the probe arrived. The page takes the midpoint of its send
+  and the answer's arrival as the moment the server read its clock. After a `hello` a page
+  sends four probes, one after another, and keeps the answer with the shortest round
+  trip; then one per `time` message. Any connection may probe, a monitor too; a probe
+  changes no state and is never refused.
 - `command` (client → server): the only way an operator changes state. `requestId` is
   optional and is echoed in the `commandResult`.
 - `instanceStatus` (renderer → server): what really happened to an instance on screen,
@@ -289,7 +298,19 @@ What a good poll of the seeded simulator sends the control page: its new data al
 ## time
 
 ```json
-{ "type": "time", "serverNowMs": 1791550810000 }
+{ "type": "time", "serverNowMs": 1791550810000, "offFromRealTimeMs": 4 }
+```
+
+## clockProbe
+
+```json
+{ "type": "clockProbe", "pageSentAtMs": 1791550810031 }
+```
+
+## clockProbeAnswer
+
+```json
+{ "type": "clockProbeAnswer", "pageSentAtMs": 1791550810031, "serverNowMs": 1791550810036 }
 ```
 
 ## command

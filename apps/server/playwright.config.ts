@@ -51,6 +51,9 @@ export default defineConfig({
         LOG_LEVEL: 'warn',
         DATABASE_PATH: builtServerDatabasePath,
         DATA_DIR: builtServerDataFolder,
+        // No NTP: a browser test never waits on the internet, and the clock it checks is
+        // the machine's own (BAJAOVRLAY-62).
+        BAJAOVRLAY_NTP_SERVERS: 'off',
       },
       url: `${builtServerAddress}/health`,
       reuseExistingServer: !isRunningInCI,

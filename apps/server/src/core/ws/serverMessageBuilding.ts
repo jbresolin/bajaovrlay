@@ -261,11 +261,15 @@ export function buildDataSnapshotMessage(
 }
 
 /**
- * The `time` message every client gets every ten seconds: `serverNowMs`, what the
- * server's wall clock shows now, in milliseconds, and nothing else.
+ * The `time` message every client gets every ten seconds: `serverNowMs`, what the server
+ * clock shows now, in milliseconds, and how far it is still from real time by NTP when
+ * that is known (left out otherwise).
  */
-export function buildTimeMessage(serverNowMs: number): TimeMessage {
-  return { type: 'time', serverNowMs };
+export function buildTimeMessage(serverNowMs: number, offFromRealTimeMs?: number): TimeMessage {
+  if (offFromRealTimeMs === undefined) {
+    return { type: 'time', serverNowMs };
+  }
+  return { type: 'time', serverNowMs, offFromRealTimeMs };
 }
 
 /**
