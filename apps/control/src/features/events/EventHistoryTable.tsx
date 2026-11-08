@@ -124,6 +124,7 @@ export function EventHistoryTable() {
                 <TableCell>
                   {event.status === 'dismissed' ? (
                     <ActionButton
+                      commandType="restoreEvent"
                       size="xs"
                       variant="outline"
                       onClick={() =>

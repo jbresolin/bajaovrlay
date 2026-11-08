@@ -10,6 +10,7 @@ import {
   useSendCommand,
   useServerState,
 } from '@/state/ControlPageStateProvider';
+import { useWhyTheRoleCannotSend } from '@/state/operatorSessionContext';
 
 import { describeWhatUndoLastChangeBringsBack } from './whatUndoBringsBack';
 
@@ -21,6 +22,8 @@ import { describeWhatUndoLastChangeBringsBack } from './whatUndoBringsBack';
  * (src/keyboard/keyboardMap.ts, undoLastChange), left to a text field while typing in one.
  * Deliberate: Ctrl+Shift+Z sends nothing. Many programs read it as "redo", and there is no
  * redo here; an undo sent for it would be the opposite of what was meant.
+ * For a role that may not undo (Dados, BAJAOVRLAY-29) it is off, its tooltip saying why,
+ * and Ctrl+Z does nothing.
  */
 export function UndoLastChangeButton() {
   const sendCommand = useSendCommand();
@@ -33,6 +36,7 @@ export function UndoLastChangeButton() {
     listLayersInCamadasOrder(layers, outputs),
   );
   const isAnythingToUndo = whatComesBack !== undefined;
+  const whyTheRoleCannotUndo = useWhyTheRoleCannotSend('undoLastChangeOnProgram');
 
   function sendTheUndo(): void {
     void sendCommand({ type: 'undoLastChangeOnProgram' });
@@ -47,9 +51,13 @@ export function UndoLastChangeButton() {
 
   useKeyboardShortcut(keyboardMap.undoLastChange, handleKeyPress, { isEnabled: isConnected });
 
-  if (!isConnected || !isAnythingToUndo) {
+  if (!isConnected || !isAnythingToUndo || whyTheRoleCannotUndo !== undefined) {
     return (
-      <ActionButton variant="outline" disabledReason={ptBR.undo.nothingToUndo}>
+      <ActionButton
+        variant="outline"
+        commandType="undoLastChangeOnProgram"
+        disabledReason={ptBR.undo.nothingToUndo}
+      >
         {ptBR.undo.undoLastChangeButton}
       </ActionButton>
     );

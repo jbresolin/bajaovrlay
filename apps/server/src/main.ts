@@ -11,6 +11,7 @@ import { resolveDatabasePath } from './core/env/resolveDatabasePath.js';
 import { resolveDataFolder } from './core/env/resolveDataFolder.js';
 import { findBuiltPageFolder } from './core/http/builtPageFolders.js';
 import { createLogger } from './core/logger/createLogger.js';
+import { logOperatorLoginAtBoot } from './core/operatorLogin/operatorLoginAtBoot.js';
 import { buildIdFileUrl } from './readBuildId.js';
 import { readServerVersion } from './readServerVersion.js';
 
@@ -58,6 +59,7 @@ try {
       environment.BAJAOVRLAY_OBS_URL === undefined
         ? undefined
         : { url: environment.BAJAOVRLAY_OBS_URL, password: environment.BAJAOVRLAY_OBS_PASSWORD },
+    operatorPins: environment.operatorPins,
     controlPageFolder,
     rendererPageFolder,
     buildIdFileUrl,
@@ -78,6 +80,8 @@ try {
     apiTokens: environment.BAJAOVRLAY_API_TOKENS,
     isOpenToTheNetwork: environment.BAJAOVRLAY_API_OPEN,
   });
+  // The page's header says "Sem login" while no PINs are set; the log warns too.
+  logOperatorLoginAtBoot({ logger, operatorPins: environment.operatorPins });
   // The page says "OBS não configurado"; the log says why, for whoever reads it first.
   if (environment.BAJAOVRLAY_OBS_URL === undefined) {
     logger.info('OBS control is off: BAJAOVRLAY_OBS_URL is not set');

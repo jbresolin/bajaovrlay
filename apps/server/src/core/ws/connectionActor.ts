@@ -1,4 +1,6 @@
+import type { OpenOperatorSession } from '../operatorLogin/operatorSessions.js';
 import {
+  buildLoggedInOperatorActor,
   buildMonitorActor,
   buildOperatorActor,
   buildRendererActor,
@@ -13,13 +15,16 @@ const monitorRoleInTheAddress = 'monitor';
 
 /**
  * The actor name for a new WebSocket connection: `renderer:<connection id>` when it
- * connected to `/ws?role=renderer`, `monitor:<connection id>` for `/ws?role=monitor`,
- * `operador:<connection id>` for anything else. There is no login yet, so the address is
- * the only thing a connection says about itself.
+ * connected to `/ws?role=renderer`, `monitor:<connection id>` for `/ws?role=monitor`; for
+ * anything else, the logged-in operator's `produtor:<station>` or `dados:<station>` when
+ * the connection brought a session (BAJAOVRLAY-29), `operador:<connection id>` when it
+ * did not (the login off). A screen's address wins over a session: a monitor frame of a
+ * logged-in page is still a monitor, which may send nothing.
  */
 export function buildActorForConnection(
   requestTarget: string | undefined,
   connectionId: string,
+  session: OpenOperatorSession | undefined,
 ): string {
   const roleInTheAddress = readRoleFromRequestTarget(requestTarget);
   if (roleInTheAddress === rendererRoleInTheAddress) {
@@ -28,7 +33,19 @@ export function buildActorForConnection(
   if (roleInTheAddress === monitorRoleInTheAddress) {
     return buildMonitorActor(connectionId);
   }
+  if (session !== undefined) {
+    return buildLoggedInOperatorActor(session.role, session.station);
+  }
   return buildOperatorActor(connectionId);
+}
+
+/**
+ * Whether an upgrade's address names a screen (`role=renderer` or `role=monitor`), which
+ * connects without a login on the LAN (BAJAOVRLAY-29).
+ */
+export function isScreenAddress(requestTarget: string | undefined): boolean {
+  const roleInTheAddress = readRoleFromRequestTarget(requestTarget);
+  return roleInTheAddress === rendererRoleInTheAddress || roleInTheAddress === monitorRoleInTheAddress;
 }
 
 /**

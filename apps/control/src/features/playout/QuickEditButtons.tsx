@@ -28,6 +28,7 @@ export function QuickEditButtons(props: QuickEditButtonsProps) {
   return (
     <>
       <ActionButton
+        commandType="updateInstanceData"
         type="button"
         disabled={props.isWaitingForTheServer}
         onClick={props.onUpdatePressed}

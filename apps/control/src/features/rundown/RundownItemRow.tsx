@@ -156,6 +156,7 @@ export function RundownItemRow(props: RundownItemRowProps) {
         </div>
         <div className="flex flex-wrap items-center gap-1">
           <ActionButton
+            commandType="takeItem"
             size="xs"
             disabledReason={findWhyTheTakeOfItemIsOff(item)}
             onClick={(click) => takeThisItemAndLetGoOfTheFocus(click.currentTarget)}
@@ -165,7 +166,7 @@ export function RundownItemRow(props: RundownItemRowProps) {
           {/* Shows the item on the preview output, as a preview asked for by hand. It
               neither takes nor moves the cursor, so any row can be looked at while the
               planned item stays next. */}
-          <ActionButton size="xs" variant="outline" onClick={props.onPreviewPressed}>
+          <ActionButton commandType="previewItem" size="xs" variant="outline" onClick={props.onPreviewPressed}>
             {ptBR.rundown.previewItemButton}
           </ActionButton>
           <ActionButton size="xs" variant="ghost" onClick={props.onEditPressed}>

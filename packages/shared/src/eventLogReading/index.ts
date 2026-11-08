@@ -2,7 +2,7 @@
 // @bajaovrlay/shared exports. The package's own index.ts re-exports this file with one
 // line; other packages import from '@bajaovrlay/shared', never from here.
 
-// Who sent a row: the six kinds of the "Quem" filter, their labels, and the reading.
+// Who sent a row: the eight kinds of the "Quem" filter, their labels, and the reading.
 export {
   type EventLogActorKind,
   eventLogActorKindLabels,

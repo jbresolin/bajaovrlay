@@ -1,5 +1,5 @@
 import { type Command, CommandSchema } from '../commands/command.js';
-import { senderOfEachCommandType } from '../commands/commandSenders.js';
+import { whoMaySendEachCommandType } from '../commands/commandSenders.js';
 import type { EventLogDetails, EventLogEntry } from '../slices/eventLogEntry.js';
 import { type EventLogActorKind, readWhoSentEventLogRow } from './eventLogActors.js';
 import {
@@ -92,7 +92,7 @@ function readCommandOfEntry(
  * (one removed since, such as takeGraphic, or `unknown` for a message with no type).
  */
 function readGroupOfCommandName(commandName: string): EventLogCommandGroup | null {
-  const isKnownCommandType = Object.hasOwn(senderOfEachCommandType, commandName);
+  const isKnownCommandType = Object.hasOwn(whoMaySendEachCommandType, commandName);
   if (!isKnownCommandType) {
     return null;
   }

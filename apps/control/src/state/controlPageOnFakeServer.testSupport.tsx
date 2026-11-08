@@ -1,7 +1,7 @@
 // Test support: draws a piece of the control page wired exactly as in the browser (the
 // real store and the real connection code) but talking to a fake server the test drives.
 // Component tests use it so a button press travels the same road as on a race weekend.
-import type { CommandError, ServerMessage, Slices } from '@bajaovrlay/shared';
+import type { CommandError, ServerMessage, SessionAnswer, Slices } from '@bajaovrlay/shared';
 import { act, fireEvent, render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { vi } from 'vitest';
@@ -14,6 +14,7 @@ import { QuickFireTabChoiceProvider } from '@/features/quickFire/QuickFireTabCho
 
 import { ControlPageStateProvider } from './ControlPageStateProvider';
 import { createFakeServerSocket } from './fakeServerSocket.testSupport';
+import { OperatorSessionProvider, sessionAnswerWithTheLoginOff } from './operatorSessionContext';
 import { connectToServer } from './serverConnection';
 import { createServerStateStore, type ServerStateStore } from './serverStateStore';
 
@@ -37,14 +38,21 @@ export type ControlPageOnFakeServer = {
 };
 
 /**
+ * How the page was opened: the server's answer about the login (BAJAOVRLAY-29), which
+ * main.tsx reads before anything else. The login off when left out, as before the PINs.
+ */
+export type ControlPageOpening = { sessionAnswer?: SessionAnswer };
+
+/**
  * Draws `pageContent` on a control page whose connection is up and which has already
  * received `slices` in the server's hello.
  */
 export function renderOnControlPageConnectedToFakeServer(
   pageContent: ReactElement,
   slices: Slices,
+  opening: ControlPageOpening = {},
 ): ControlPageOnFakeServer {
-  const controlPage = renderOnControlPageStillWaitingForTheServer(pageContent);
+  const controlPage = renderOnControlPageStillWaitingForTheServer(pageContent, opening);
   controlPage.fakeServer.sendMessage({ type: 'hello', slices });
   return controlPage;
 }
@@ -55,6 +63,7 @@ export function renderOnControlPageConnectedToFakeServer(
  */
 export function renderOnControlPageStillWaitingForTheServer(
   pageContent: ReactElement,
+  opening: ControlPageOpening = {},
 ): ControlPageOnFakeServer {
   const serverStateStore = createServerStateStore();
   const fakeServerSocket = createFakeServerSocket();
@@ -71,18 +80,20 @@ export function renderOnControlPageStillWaitingForTheServer(
   const autoPreviewSettingStore = createAutoPreviewSettingStore();
 
   render(
-    <ControlPageStateProvider
-      serverStateStore={serverStateStore}
-      sendCommand={serverConnection.sendCommand}
-    >
-      <AutoPreviewSettingProvider autoPreviewSettingStore={autoPreviewSettingStore}>
-        <ItemEditorTargetProvider>
-          <QuickEditChoiceProvider>
-            <QuickFireTabChoiceProvider>{pageContent}</QuickFireTabChoiceProvider>
-          </QuickEditChoiceProvider>
-        </ItemEditorTargetProvider>
-      </AutoPreviewSettingProvider>
-    </ControlPageStateProvider>,
+    <OperatorSessionProvider sessionAnswer={opening.sessionAnswer ?? sessionAnswerWithTheLoginOff}>
+      <ControlPageStateProvider
+        serverStateStore={serverStateStore}
+        sendCommand={serverConnection.sendCommand}
+      >
+        <AutoPreviewSettingProvider autoPreviewSettingStore={autoPreviewSettingStore}>
+          <ItemEditorTargetProvider>
+            <QuickEditChoiceProvider>
+              <QuickFireTabChoiceProvider>{pageContent}</QuickFireTabChoiceProvider>
+            </QuickEditChoiceProvider>
+          </ItemEditorTargetProvider>
+        </AutoPreviewSettingProvider>
+      </ControlPageStateProvider>
+    </OperatorSessionProvider>,
   );
 
   // `act` tells React "something outside the page just changed; redraw before the test

@@ -70,6 +70,12 @@ export type ServerConnectionOptions = {
    * out (most tests), no build is compared.
    */
   pageReloadForNewBuild?: PageReloadForNewBuild | undefined;
+  /**
+   * Called each time the line drops (not when the page hangs up itself). main.tsx asks
+   * there whether the session ended, to go to "#/entrar" (BAJAOVRLAY-29). Left out (most
+   * tests): nothing but the redialling.
+   */
+  onLineDropped?: (() => void) | undefined;
   logEvent?: LogControlEvent;
 };
 
@@ -125,6 +131,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       return;
     }
     serverStateStore.getState().changeConnectionStatus('reconnecting');
+    options.onLineDropped?.();
 
     const waitInMilliseconds =
       waitsBeforeRedialInMilliseconds[numberOfFailedCallsInARow] ??

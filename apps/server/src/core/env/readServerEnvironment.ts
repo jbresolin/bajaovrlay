@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { parseSourceHostAllowlist } from '../../modules/dataSources/index.js';
 import { parsePublicOrigins } from '../../modules/media/index.js';
 import { parseApiTokens } from '../apiAccess/apiTokens.js';
+import { parseOperatorPins } from '../operatorLogin/operatorPins.js';
 import { serverLogLevels } from '../logger/createLogger.js';
 
 // Defaults match .env.example, which documents every variable.
@@ -110,7 +111,27 @@ const ServerEnvironmentSchema = z.object({
     .string()
     .optional()
     .transform((text) => (text === '' ? undefined : text)),
+  // The operator login's two PINs (BAJAOVRLAY-29), read together below: each alone means
+  // nothing, so the pair is checked as one setting, `operatorPins`.
+  BAJAOVRLAY_PIN_PRODUCER: z.string().optional(),
+  BAJAOVRLAY_PIN_DATA: z.string().optional(),
 });
+
+// The two PINs become `operatorPins` and the raw variables are dropped from the result, so
+// no later code (nor a log line that prints the environment) holds a PIN by its variable.
+// Neither set: the login is off; both, valid and different: on; anything else stops the
+// boot with a pt-BR reason that never quotes a PIN.
+const ServerEnvironmentWithOperatorPinsSchema = ServerEnvironmentSchema.transform(
+  (environment, context) => {
+    const { BAJAOVRLAY_PIN_PRODUCER, BAJAOVRLAY_PIN_DATA, ...otherSettings } = environment;
+    const parsing = parseOperatorPins(BAJAOVRLAY_PIN_PRODUCER, BAJAOVRLAY_PIN_DATA);
+    if (!parsing.isValid) {
+      context.addIssue({ code: 'custom', message: parsing.problem });
+      return z.NEVER;
+    }
+    return { ...otherSettings, operatorPins: parsing.operatorPins };
+  },
+);
 
 /** Whether a text is a ws:// or wss:// address with a host, as obs-websocket takes. */
 function isObsWebSocketAddress(text: string): boolean {
@@ -140,7 +161,7 @@ function maskTheUserAndPasswordInAnAddress(text: string): string {
 }
 
 /** The server's settings after validation, with defaults filled in. */
-export type ServerEnvironment = z.infer<typeof ServerEnvironmentSchema>;
+export type ServerEnvironment = z.infer<typeof ServerEnvironmentWithOperatorPinsSchema>;
 
 /**
  * Reads and validates the server's environment variables. Throws with a message naming
@@ -149,7 +170,7 @@ export type ServerEnvironment = z.infer<typeof ServerEnvironmentSchema>;
 export function readServerEnvironment(
   environmentVariables: Record<string, string | undefined>,
 ): ServerEnvironment {
-  const result = ServerEnvironmentSchema.safeParse(environmentVariables);
+  const result = ServerEnvironmentWithOperatorPinsSchema.safeParse(environmentVariables);
   if (!result.success) {
     throw new Error(`Invalid server environment:\n${z.prettifyError(result.error)}`);
   }

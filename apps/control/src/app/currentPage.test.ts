@@ -13,7 +13,7 @@
  *   - "#/fontes" is the data sources page and "#/cadastros" the entity library, also
  *     with a record after it ("#/cadastros/team/42"), and "#/eventos" the review of the
  *     event inbox, "#/saidas" the outputs and layers (BAJAOVRLAY-49), "#/historico" the
- *     history (BAJAOVRLAY-30); no hash, "#/" and any unknown hash are the console, so a
+ *     history (BAJAOVRLAY-30), "#/entrar" the login (BAJAOVRLAY-29); no hash, "#/" and any unknown hash are the console, so a
  *     stale bookmark never shows an empty page.
  *
  * What these tests deliberately do not cover:
@@ -52,6 +52,8 @@ const hashScenarios: { name: string; hash: string; expected: ControlPageName }[]
   },
   // What the header's "Histórico" link writes: every change of the show (BAJAOVRLAY-30).
   { name: 'shows the history for "#/historico"', hash: '#/historico', expected: 'history' },
+  // Where a page without a session goes while the PINs are set (BAJAOVRLAY-29).
+  { name: 'shows the login for "#/entrar"', hash: '#/entrar', expected: 'login' },
   // An old or mistyped bookmark falls back to the console rather than a blank page.
   { name: 'shows the console for an unknown hash', hash: '#/camadas', expected: 'console' },
 ];

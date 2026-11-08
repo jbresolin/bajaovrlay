@@ -1,6 +1,12 @@
-import type { CommandError } from '@bajaovrlay/shared';
+import {
+  type Command,
+  type CommandError,
+  describeWhyTheDataRoleCannotSend,
+  isCommandTypeOfTheOperator,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
+import { readRoleOfLoggedInOperatorActor } from './commandActors.js';
 import type { GraphicDataProblem } from './graphicDataValidation.js';
 import type { UpdateRuleProblem } from './updateRules/index.js';
 
@@ -62,6 +68,22 @@ export function refuseNextWithoutAStep(graphicName: string, layerName: string): 
  */
 export function refuseCommandNotAllowed(): CommandError {
   return { code: 'NOT_ALLOWED', message: ptBR.commandErrors.commandNotAllowed };
+}
+
+/**
+ * The refusal for a command the authorisation hook said no to, worded for whoever sent it:
+ * Dados (BAJAOVRLAY-29) sending an operator's command its role may not send is told
+ * "O papel Dados não pode …", the sentence its greyed-out button shows too; every other
+ * refusal is the general NOT_ALLOWED sentence. The code is NOT_ALLOWED either way (403
+ * over HTTP).
+ */
+export function refuseCommandNotAllowedForTheActor(command: Command, actor: string): CommandError {
+  const isDataRoleSendingAnOperatorCommand =
+    readRoleOfLoggedInOperatorActor(actor) === 'dados' && isCommandTypeOfTheOperator(command.type);
+  if (isDataRoleSendingAnOperatorCommand) {
+    return { code: 'NOT_ALLOWED', message: describeWhyTheDataRoleCannotSend(command.type) };
+  }
+  return refuseCommandNotAllowed();
 }
 
 /**

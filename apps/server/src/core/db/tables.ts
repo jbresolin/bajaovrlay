@@ -57,3 +57,32 @@ export type EventLogRow = typeof eventLogRows.$inferSelect;
 
 /** A row to insert into event_log; SQLite assigns the id. */
 export type NewEventLogRow = typeof eventLogRows.$inferInsert;
+
+/**
+ * The server's own secrets, one row per name (BAJAOVRLAY-29): today only the key that signs
+ * the operators' session cookies, made once at the first boot that needs it. Kept in the
+ * database, not in memory, so a restart does not log every operator out; a backup of the
+ * database carries it too, and deleting the row logs everyone out at the next boot.
+ */
+export const serverSecretRows = sqliteTable('server_secrets', {
+  name: text('name').primaryKey(),
+  value: text('value').notNull(),
+});
+
+/**
+ * One row per open operator session (BAJAOVRLAY-29): the role and station typed at login,
+ * and when it ends. "Sair" deletes the row, so a copied cookie stops working with it; an
+ * expired row is deleted at the next login.
+ */
+export const operatorSessionRows = sqliteTable('operator_sessions', {
+  sessionId: text('sessionId').primaryKey(),
+  role: text('role').notNull(),
+  station: text('station').notNull(),
+  /** When the operator logged in, as an ISO 8601 timestamp. */
+  createdAt: text('createdAt').notNull(),
+  /** When the session ends, as an ISO 8601 timestamp: 18 hours after the login. */
+  expiresAt: text('expiresAt').notNull(),
+});
+
+/** A row of the operator_sessions table as read back. */
+export type OperatorSessionRow = typeof operatorSessionRows.$inferSelect;

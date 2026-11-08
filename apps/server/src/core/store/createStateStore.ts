@@ -26,7 +26,7 @@ import {
   describePayloadAsReceived,
   readCommandNameAsSent,
 } from './commandEventLogPayload.js';
-import { refuseCommandNotAllowed, refuseInvalidCommand } from './commandRefusals.js';
+import { refuseCommandNotAllowedForTheActor, refuseInvalidCommand } from './commandRefusals.js';
 import {
   buildRowChangesOfDataSnapshots,
   type DataSnapshotChange,
@@ -43,7 +43,7 @@ import {
 
 /** What a store needs. The last eight have production defaults; tests replace them. */
 export type StateStoreOptions = Omit<LoadInitialSlicesOptions, 'readCurrentTime'> & {
-  /** The authorisation step; defaults to allowCommandForActorRole (no login yet). */
+  /** The authorisation step; defaults to allowCommandForActorRole (roles included). */
   isCommandAllowed?: IsCommandAllowed | undefined;
   /** The clock used for every timestamp, at boot and per command; defaults to real time. */
   readCurrentTime?: (() => Date) | undefined;
@@ -153,7 +153,7 @@ export function createStateStore(options: StateStoreOptions): StateStore {
         actor,
         commandName: command.type,
         payload: buildEventLogPayloadOfCommand(command),
-        error: refuseCommandNotAllowed(),
+        error: refuseCommandNotAllowedForTheActor(command, actor),
       });
     }
 

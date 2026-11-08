@@ -18,6 +18,8 @@ import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import { openDatabase, type ServerDatabase } from '../db/openDatabase.js';
 import { createServerApp } from '../http/createServerApp.js';
 import type { ServerLogger } from '../logger/createLogger.js';
+import { createOperatorLogin } from '../operatorLogin/operatorLogin.js';
+import { operatorLoginTurnedOff, type OperatorPins } from '../operatorLogin/operatorPins.js';
 import { startAutoOutScheduler } from '../store/autoOut.js';
 import { createStateStore, type StateStore } from '../store/createStateStore.js';
 import { startMacroRunner } from '../store/macroRunner.js';
@@ -71,6 +73,11 @@ export type StartServerOptions = {
    * out (no address): OBS control is off and the `obs` slice says `desligado`.
    */
   obsConnectionSettings?: ObsConnectionSettings | undefined;
+  /**
+   * BAJAOVRLAY_PIN_PRODUCER and BAJAOVRLAY_PIN_DATA as read at boot (BAJAOVRLAY-29). Left
+   * out: the login off, every page open as before.
+   */
+  operatorPins?: OperatorPins | undefined;
   controlPageFolder?: string | undefined;
   rendererPageFolder?: string | undefined;
   /**
@@ -143,6 +150,14 @@ async function startServingFromDatabase(
     readCurrentTime: options.readCurrentTime,
     sourceHostAllowlist: options.sourceHostAllowlist,
   });
+  // The login's signing key and open sessions are read from the database here, so the
+  // sessions from before a restart still count (BAJAOVRLAY-29).
+  const operatorLogin = createOperatorLogin({
+    database,
+    operatorPins: options.operatorPins ?? operatorLoginTurnedOff,
+    readCurrentTime: options.readCurrentTime ?? (() => new Date()),
+    logger: options.logger,
+  });
   // Started before anything can send a command, so no take of an item with an
   // auto-out delay is missed. It holds no timer until such a take happens.
   const autoOutScheduler = startAutoOutScheduler({ stateStore, logger: options.logger });
@@ -213,6 +228,7 @@ async function startServingFromDatabase(
       apiTokens: options.apiTokens,
       isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
       publicOrigins: options.publicOrigins,
+      operatorLogin,
     });
     httpServer = await listen({
       fetch: app.fetch,
@@ -227,6 +243,7 @@ async function startServingFromDatabase(
         options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
       readCurrentTime: options.readCurrentTime,
       buildId,
+      operatorLogin,
     });
   } catch (bootError) {
     // The poller already armed a poll and a stale watch for every source left on: left

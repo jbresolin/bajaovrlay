@@ -11,6 +11,7 @@ import { createTemporaryDataFolder } from '../boot/temporaryDataFolder.testSuppo
 import { committedMigrationsFolder } from '../db/openDatabase.js';
 import { createTemporaryDatabasePath } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
+import type { OperatorPins } from '../operatorLogin/operatorPins.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
 import type { StateStore } from '../store/createStateStore.js';
 import {
@@ -34,6 +35,8 @@ export async function startServerOnARandomPort(
     readCurrentTime?: () => Date;
     /** The build-id.json the boot reads once; none unless a test gives one. */
     buildIdFileUrl?: URL;
+    /** The operator PINs (BAJAOVRLAY-29); the login off unless a test gives them. */
+    operatorPins?: OperatorPins;
   } = {},
 ) {
   const runningServer = await startServer({
@@ -47,6 +50,7 @@ export async function startServerOnARandomPort(
     dataFolder: createTemporaryDataFolder(),
     sourceHostAllowlist: noSourceHostAllowlist,
     buildIdFileUrl: options.buildIdFileUrl,
+    operatorPins: options.operatorPins,
     heartbeatIntervalInMilliseconds: options.heartbeatIntervalInMilliseconds,
     readCurrentTime: options.readCurrentTime ?? (() => new Date(momentTheServerClockIsHeldAt)),
   });

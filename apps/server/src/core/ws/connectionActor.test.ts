@@ -14,6 +14,8 @@
  *     `monitor:<connection id>`.
  *   - `/ws` with no role, with another role, or with a role spelt differently gives
  *     `operador:<connection id>`: only the exact words `renderer` and `monitor` count.
+ *   - With a session (BAJAOVRLAY-29) a control page is `<role>:<station>`, while a monitor
+ *     frame carrying the page's cookie stays a monitor.
  *
  * What these tests deliberately do not cover:
  *   - That the hub really uses this name for a connection's commands;
@@ -82,9 +84,40 @@ describe('buildActorForConnection', () => {
     // Arrange: the address this connection asked for (see the table above).
 
     // Act: build the actor name for the connection.
-    const actor = buildActorForConnection(requestTarget, connectionId);
+    const actor = buildActorForConnection(requestTarget, connectionId, undefined);
 
     // Assert: the role comes from the address and the id from the connection.
     expect(actor, 'the actor must be the role, a colon and the connection id').toBe(expectedActor);
+  });
+});
+
+describe('buildActorForConnection with a session (BAJAOVRLAY-29)', () => {
+  const sessionOfDataAtMesa2 = {
+    sessionId: 'b3e1f7a2-5c84-4d19-9a6e-2f0c8d7b4e51',
+    role: 'dados' as const,
+    station: 'Mesa 2',
+    expiresAt: '2026-11-08T05:00:00.000Z',
+  };
+
+  it('signs a logged-in control page with its role and station', () => {
+    // Arrange: a control page's address, and Dados's session at "Mesa 2".
+    const requestTarget = '/ws';
+
+    // Act: build the actor name for the connection.
+    const actor = buildActorForConnection(requestTarget, connectionId, sessionOfDataAtMesa2);
+
+    // Assert: the role and the station, not the connection id.
+    expect(actor, 'the event log must name the role and the station').toBe('dados:Mesa 2');
+  });
+
+  it('keeps a monitor frame a monitor, even with the page’s session cookie', () => {
+    // Arrange: a monitor frame, which carries the cookie of the page it is framed in.
+    const requestTarget = '/ws?role=monitor';
+
+    // Act: build the actor name for the connection.
+    const actor = buildActorForConnection(requestTarget, connectionId, sessionOfDataAtMesa2);
+
+    // Assert: a monitor, which may send nothing.
+    expect(actor, 'a screen’s address wins over a session').toBe(`monitor:${connectionId}`);
   });
 });
