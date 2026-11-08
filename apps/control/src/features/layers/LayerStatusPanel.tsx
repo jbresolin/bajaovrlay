@@ -38,7 +38,9 @@ const relativeTimeRefreshIntervalInMilliseconds = 10_000;
  * "Salvar como item" (useSavesFromCamadas.ts); either may first ask about a clock's
  * moment (WallClockChoiceDialog.tsx). A graphic shown in steps offers "Próximo"
  * (`nextOnLayer`, BAJAOVRLAY-47). A layer whose program the server remembers changing
- * offers "Desfazer" (`undoOnLayer`, BAJAOVRLAY-30; features/undo).
+ * offers "Desfazer" (`undoOnLayer`, BAJAOVRLAY-30; features/undo). A row whose item was
+ * saved after the take says "item mudou" and offers to catch up (ItemAheadOfTheAirMarker.tsx,
+ * BAJAOVRLAY-38); that marker reads its own instance and item, so it is not drawn from here.
  */
 export function LayerStatusPanel() {
   const outputs = useServerState((state) => state.outputs);
@@ -83,6 +85,7 @@ export function LayerStatusPanel() {
         layer={layer}
         instanceOnProgram={instanceOnProgram}
         isHoldingAPreview={instanceInPreview !== undefined}
+        instanceIdInPreview={instanceInPreview?.id}
         isMarkedToBeCleared={previewClearedLayerIds.includes(layer.id)}
         graphicName={findGraphicName(graphics, instanceOnProgram?.graphicId)}
         graphicOnProgram={graphicOnProgram}
@@ -158,6 +161,9 @@ export function LayerStatusPanel() {
           commandTypes={[
             'previewClearLayer',
             'saveOnAirChangesIntoItem',
+            // "Atualizar no ar" of a row behind its item; its "Disparar" refusal shows
+            // under the rundown and the shortcuts, with every other takeItem.
+            'updateInstanceData',
             'nextOnLayer',
             'undoOnLayer',
           ]}
@@ -168,6 +174,7 @@ export function LayerStatusPanel() {
           </p>
         )}
         <WallClockChoiceDialog
+          purpose="saveIntoItem"
           isOpen={saves.isAskingAboutTheClock}
           onChosen={saves.answerTheClockQuestion}
           onCancelled={saves.cancelTheClockQuestion}

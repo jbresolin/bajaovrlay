@@ -12,6 +12,7 @@ import { ptBR } from '@/i18n/ptBR';
 
 import { ChangedOnAirChip } from './ChangedOnAirChip';
 import { InstanceStatusBadge } from './InstanceStatusBadge';
+import { ItemAheadOfTheAirMarker } from './ItemAheadOfTheAirMarker';
 
 /** What one row needs: its layer, what is on it (if anything), and how to clear it. */
 export type LayerStatusRowProps = {
@@ -20,6 +21,8 @@ export type LayerStatusRowProps = {
   instanceOnProgram: Instance | undefined;
   /** true while the layer holds something on the preview output, whatever is on air. */
   isHoldingAPreview: boolean;
+  /** The id of the instance on this layer's preview, for its "item mudou"; undefined without one. */
+  instanceIdInPreview: string | undefined;
   /** true while the next take clears this layer ("vai limpar", previewClearedLayerIds). */
   isMarkedToBeCleared: boolean;
   /** The on-air graphic's display name; ignored when the layer is empty. */
@@ -91,7 +94,10 @@ export type LayerStatusRowProps = {
  * Every row with something on air names its item (ItemLabelOnAir.tsx). One changed on
  * air carries the chip "alterado no ar" and offers "Salvar no item"; one with no item
  * offers "Salvar como item" (BAJAOVRLAY-37). A preview changed with "Atualizar prévia"
- * carries the chip beside "em prévia", for information only. A row whose instance reads a
+ * carries the chip beside "em prévia", for information only. An instance whose item was
+ * saved after the take carries "item mudou", with "Disparar" and "Atualizar no ar" beside it
+ * (ItemAheadOfTheAirMarker.tsx, BAJAOVRLAY-38); a preview behind its item, the chip and
+ * "Atualizar prévia" beside "em prévia". A row whose instance reads a
  * source live says when that source is late, failing or deleted, and when a correction
  * changed a bound value (features/bindings/BoundSourceChips.tsx, BAJAOVRLAY-20).
  * A graphic shown in steps (the podium) says where it is, "Passo 2 de 4", and offers
@@ -121,6 +127,9 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
             output="preview"
           />
         )}
+        {props.instanceIdInPreview === undefined ? null : (
+          <ItemAheadOfTheAirMarker instanceId={props.instanceIdInPreview} output="preview" />
+        )}
         {props.isMarkedToBeCleared ? (
           <Badge variant="secondary">{ptBR.layers.willClearChip}</Badge>
         ) : null}
@@ -142,6 +151,7 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           {props.changedFieldTitles.length === 0 ? null : (
             <ChangedOnAirChip changedFieldTitles={props.changedFieldTitles} output="program" />
           )}
+          <ItemAheadOfTheAirMarker instanceId={instanceOnProgram.id} output="program" />
           <span className="text-muted-foreground">
             {formatRelativeTimePtBR(new Date(instanceOnProgram.takenAt), currentTime)}
           </span>

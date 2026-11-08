@@ -12,8 +12,14 @@ import { ptBR } from '@/i18n/ptBR';
 
 const texts = ptBR.layers.wallClockChoice;
 
-/** What the question needs: whether it is open, and what each answer does. */
+/**
+ * What the question needs: which press asks it, whether it is open, and what each answer
+ * does. `saveIntoItem` is "Salvar no item" and "Salvar como item"; `updateFromItem` is
+ * "Atualizar no ar" of a row behind its item (BAJAOVRLAY-38), which asks the same choice
+ * in its own words.
+ */
 export type WallClockChoiceDialogProps = {
+  purpose: 'saveIntoItem' | 'updateFromItem';
   isOpen: boolean;
   onChosen: (wallClockFields: WallClockFieldsChoice) => void;
   onCancelled: () => void;
@@ -25,9 +31,15 @@ export type WallClockChoiceDialogProps = {
  * relógio" stores the moment on air, so each take shows the same race time, which is
  * right for clearing a clock and bringing it back; "Começar na entrada no ar" stores the
  * moment of each take, which is right for a reusable item. Esc, the cross and "Cancelar"
- * save nothing.
+ * save nothing. Asked before "Atualizar no ar" sends a clock its item changed, the same two
+ * answers mean: the clock on air goes on from its own moment, or starts counting now.
  */
 export function WallClockChoiceDialog(props: WallClockChoiceDialogProps) {
+  const isAskedByAnUpdate = props.purpose === 'updateFromItem';
+  const title = isAskedByAnUpdate ? ptBR.layers.wallClockChoiceOfUpdate.title : texts.title;
+  const description = isAskedByAnUpdate
+    ? ptBR.layers.wallClockChoiceOfUpdate.description
+    : texts.description;
   return (
     <Dialog
       open={props.isOpen}
@@ -39,8 +51,8 @@ export function WallClockChoiceDialog(props: WallClockChoiceDialogProps) {
     >
       <DialogContent closeButtonLabel={texts.closeDialogButton}>
         <DialogHeader>
-          <DialogTitle>{texts.title}</DialogTitle>
-          <DialogDescription>{texts.description}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={() => props.onChosen('keepMoment')}>
