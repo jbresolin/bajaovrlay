@@ -13,9 +13,12 @@ export function writeOperatorSessionRow(database: ServerDatabase, row: OperatorS
   database.insert(operatorSessionRows).values(row).run();
 }
 
-/** Deletes one operator session ("Sair"); nothing happens when it is already gone. */
-export function deleteOperatorSessionRow(database: ServerDatabase, sessionId: string): void {
-  database.delete(operatorSessionRows).where(eq(operatorSessionRows.sessionId, sessionId)).run();
+/** Deletes one operator session ("Sair"), by its id's hash; nothing happens when it is gone. */
+export function deleteOperatorSessionRow(database: ServerDatabase, sessionIdHash: string): void {
+  database
+    .delete(operatorSessionRows)
+    .where(eq(operatorSessionRows.sessionIdHash, sessionIdHash))
+    .run();
 }
 
 /**

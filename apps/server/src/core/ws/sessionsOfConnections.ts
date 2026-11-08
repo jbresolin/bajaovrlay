@@ -51,11 +51,11 @@ export function trackSessionsOfConnections(options: {
 }): SessionsOfConnections {
   const { operatorLogin, readCurrentTime } = options;
   const sessionOfEachUpgrade = new WeakMap<IncomingMessage, OpenOperatorSession>();
-  const sessionIdOfEachConnection = new Map<WebSocket, string>();
+  const sessionIdHashOfEachConnection = new Map<WebSocket, string>();
 
   const stopListeningForEndedSessions = operatorLogin.subscribeToEndedSessions((endedSession) => {
-    for (const [client, sessionId] of sessionIdOfEachConnection) {
-      if (sessionId === endedSession.sessionId) {
+    for (const [client, sessionIdHash] of sessionIdHashOfEachConnection) {
+      if (sessionIdHash === endedSession.sessionIdHash) {
         client.close(sessionEndedCloseCode, sessionEndedCloseReason);
       }
     }
@@ -77,7 +77,7 @@ export function trackSessionsOfConnections(options: {
     if (session === undefined) {
       return;
     }
-    sessionIdOfEachConnection.set(client, session.sessionId);
+    sessionIdHashOfEachConnection.set(client, session.sessionIdHash);
     const millisecondsLeft = Date.parse(session.expiresAt) - readCurrentTime().getTime();
     const sessionExpiryTimer = setTimeout(() => {
       client.close(sessionEndedCloseCode, sessionEndedCloseReason);
@@ -86,7 +86,7 @@ export function trackSessionsOfConnections(options: {
     sessionExpiryTimer.unref();
     client.on('close', () => {
       clearTimeout(sessionExpiryTimer);
-      sessionIdOfEachConnection.delete(client);
+      sessionIdHashOfEachConnection.delete(client);
     });
   }
 

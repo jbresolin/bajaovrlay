@@ -90,5 +90,8 @@ ou de um endereço listado em `BAJAOVRLAY_PUBLIC_ORIGINS` (o do proxy, no TrueNA
 de outro endereço, ou de outra porta da mesma máquina, é recusada, com login ou sem. O OBS e o
 Companion falando com a API não são páginas e não mandam `Origin`; continuam funcionando.
 
+O banco guarda só um resumo (SHA-256) do identificador de cada sessão, nunca o identificador:
+uma cópia do banco, ou um backup, não serve para montar um cookie que funcione.
+
 Quem enxerga o tráfego da rede enxerga o cookie; não use o login como proteção numa rede
 aberta.

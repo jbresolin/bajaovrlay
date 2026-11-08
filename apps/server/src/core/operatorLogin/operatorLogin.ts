@@ -87,7 +87,7 @@ export function createOperatorLogin(options: {
       return { kind: 'wrongPin' };
     }
     lockout.recordRightPin(attempt.clientAddress);
-    const session = sessions.openSession(attempt.role, attempt.station);
+    const { session, sessionId } = sessions.openSession(attempt.role, attempt.station);
     logger.info(
       { role: session.role, station: session.station, client_ip: attempt.clientAddress },
       'operator logged in',
@@ -95,7 +95,7 @@ export function createOperatorLogin(options: {
     return {
       kind: 'loggedIn',
       session,
-      cookieValue: buildSignedSessionCookieValue(session.sessionId, signingKey),
+      cookieValue: buildSignedSessionCookieValue(sessionId, signingKey),
     };
   }
 
@@ -118,7 +118,7 @@ export function createOperatorLogin(options: {
     if (session === undefined) {
       return;
     }
-    sessions.endSession(session.sessionId);
+    sessions.endSession(session);
     logger.info({ role: session.role, station: session.station }, 'operator logged out');
     for (const listener of endedSessionListeners) {
       listener(session);

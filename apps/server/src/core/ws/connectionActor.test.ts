@@ -93,7 +93,7 @@ describe('buildActorForConnection', () => {
 
 describe('buildActorForConnection with a session (BAJAOVRLAY-29)', () => {
   const sessionOfDataAtMesa2 = {
-    sessionId: 'b3e1f7a2-5c84-4d19-9a6e-2f0c8d7b4e51',
+    sessionIdHash: 'hash-da-sessao-de-dados-na-mesa-2',
     role: 'dados' as const,
     station: 'Mesa 2',
     expiresAt: '2026-11-08T05:00:00.000Z',

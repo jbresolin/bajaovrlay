@@ -7,7 +7,7 @@ it opens the file and applies the committed migrations at boot, failing closed.
   (one row per source: its last good snapshot, BAJAOVRLAY-40), `event_log` (its
   `details` column, NULL in older rows, says where a take put its item; PR #44), and, for
   the operator login (BAJAOVRLAY-29), `server_secrets` (the key that signs session cookies)
-  and `operator_sessions` (one row per open session).
+  and `operator_sessions` (one row per open session, keyed by the SHA-256 of the cookie's id).
 - `serverSecretRowStorage.ts`, `operatorSessionRowStorage.ts` — the login's rows.
 - `commandOutcomeStorage.ts` — saves a command's slices, snapshot rows and event-log row
   in one transaction (or without the event-log row, for a routine poll).

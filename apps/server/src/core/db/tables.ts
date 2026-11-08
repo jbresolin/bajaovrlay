@@ -75,7 +75,11 @@ export const serverSecretRows = sqliteTable('server_secrets', {
  * expired row is deleted at the next login.
  */
 export const operatorSessionRows = sqliteTable('operator_sessions', {
-  sessionId: text('sessionId').primaryKey(),
+  /**
+   * The SHA-256 (hex) of the session id the cookie carries, never the id itself, so a copy
+   * of the database holds no working cookie (gate 2 of PR #51, migration 0004).
+   */
+  sessionIdHash: text('sessionIdHash').primaryKey(),
   role: text('role').notNull(),
   station: text('station').notNull(),
   /** When the operator logged in, as an ISO 8601 timestamp. */
