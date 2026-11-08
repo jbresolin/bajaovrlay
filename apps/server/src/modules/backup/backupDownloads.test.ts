@@ -4,7 +4,7 @@
  * What this module is for:
  *   createBackupDownloads runs the backup the route serves (BAJAOVRLAY-33): it copies the
  *   database into a temporary file with SQLite's online backup, streams the zip, and once
- *   the last byte was taken it records the copy with recordBackup, signed
+ *   the last byte was handed on to the reader it records the copy with recordBackup, signed
  *   `sistema:backup`. Only one runs at a time: two copies at once would each slow the
  *   other on the stream PC's disk, during the break.
  *
@@ -172,8 +172,9 @@ describe('createBackupDownloads', () => {
   it('refuses the backup when the database stays locked, keeping nothing and blocking nothing', async () => {
     // Arrange: a server whose database another connection holds locked (as a write being
     // committed would, but for good), and copies that try three times, 10 ms apart.
-    const { bootOptions, backupDownloads, temporaryFolder } =
-      await startServerWithBackupDownloads([10, 10]);
+    const { bootOptions, backupDownloads, temporaryFolder } = await startServerWithBackupDownloads([
+      10, 10,
+    ]);
     const lockingConnection = new Database(bootOptions.databasePath);
     lockingConnection.exec('BEGIN EXCLUSIVE');
     onTestFinished(() => {

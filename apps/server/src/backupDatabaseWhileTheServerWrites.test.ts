@@ -150,7 +150,10 @@ describe('backupDatabase.js while the server writes', () => {
     const missingDatabasePath = join(dataFolder, 'banco-que-nao-existe.sqlite');
 
     // Act: run the command, keeping what it printed when it fails.
-    const failure = await runTheBackupCommand(missingDatabasePath, join(dataFolder, 'backups')).then(
+    const failure = await runTheBackupCommand(
+      missingDatabasePath,
+      join(dataFolder, 'backups'),
+    ).then(
       () => undefined,
       (commandError: unknown) => commandError as { code: number; stderr: string },
     );

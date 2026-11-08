@@ -157,8 +157,11 @@ export function createBackupDownloads(options: BackupDownloadsOptions): BackupDo
       throw startError;
     }
 
-    // Counted as the bytes pass on to the reader; by the 'end' the reader has taken every
-    // one, so the size in the event log is the size of the file the browser saved.
+    // Counted as the bytes pass on to the reader, the route's answer. By the 'end' every
+    // byte was handed to the socket, not received: the size in the event log is the
+    // zip's whole size, but a connection lost in the last moment can still leave the
+    // browser with less, and the row is written all the same. The operator sees that
+    // download fail in the browser.
     let bytesSent = 0;
     let isSentWhole = false;
     const countedZipStream = new Transform({

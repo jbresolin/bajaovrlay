@@ -17,8 +17,9 @@
  *     made before it began.
  *   - A second request while the first is still being sent is refused (409) in pt-BR,
  *     and meanwhile the summary says a backup is running.
- *   - A finished backup writes one event-log row with the size received, and the summary
- *     route then answers it as the newest backup, with the size of each part.
+ *   - A finished backup writes one event-log row with the zip's size (as handed to the
+ *     socket; this client received all of it), and the summary route then answers it as
+ *     the newest backup, with the size of each part.
  *   - Only the control page passes without a token: another caller with the command API
  *     off gets 403. A query it cannot read gets 400.
  *   - A client that hangs up 5 ms in, while the database is still being copied, leaves no
@@ -36,10 +37,7 @@
 import { existsSync, mkdirSync, readdirSync, truncateSync, writeFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { join } from 'node:path';
-import {
-  setImmediate as waitForTheNextTurn,
-  setTimeout as waitFor,
-} from 'node:timers/promises';
+import { setImmediate as waitForTheNextTurn, setTimeout as waitFor } from 'node:timers/promises';
 
 import Database from 'better-sqlite3';
 import { describe, expect, it, onTestFinished } from 'vitest';
@@ -289,8 +287,8 @@ describe('GET /api/v1/backup', () => {
       headers: headersOfTheControlPage,
     });
 
-    // Assert: one row signed sistema:backup with the size received; the summary answers
-    // that backup and the sizes of the logo and the recording.
+    // Assert: one row signed sistema:backup with the size this client received; the
+    // summary answers that backup and the sizes of the logo and the recording.
     const backupRow = runningServer.stateStore.readAllSlices().eventLog.at(-1);
     expect(backupRow, 'the finished backup is in the event log').toMatchObject({
       actor: 'sistema:backup',
