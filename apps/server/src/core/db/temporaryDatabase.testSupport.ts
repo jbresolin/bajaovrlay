@@ -18,9 +18,17 @@ export function createTemporaryDatabasePath(): string {
 /**
  * Opens the database at a path with the committed migrations, as the server does, and
  * closes it when the test ends (unless the test already closed it to simulate a restart).
+ * Unlike the server's, it does not wait for the disk at each commit (see below).
  */
 export function openDatabaseForTests(databasePath: string): ServerDatabase {
   const database = openDatabase({ databasePath, migrationsFolder: committedMigrationsFolder });
+  // Every command commits, and by default SQLite waits for the disk to confirm each commit
+  // (synchronous = FULL): about 7 ms here, far more when several verifies share the disk.
+  // eventLogRoute.test.ts's 110 commands spent 97% of their time in that wait and once
+  // went past 5 s under load (BAJAOVRLAY-61). What it buys is surviving a power cut, which
+  // no test checks. With it off, a commit still reaches the operating system at once, so
+  // a second connection or a reopened file (a restart test) reads every write as before.
+  database.$client.pragma('synchronous = OFF');
   onTestFinished(() => {
     if (database.$client.open) {
       database.$client.close();

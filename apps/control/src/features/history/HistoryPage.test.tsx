@@ -309,21 +309,25 @@ describe('"Carregar mais"', () => {
     // Act: press "Carregar mais" once.
     fireEvent.click(screen.getByRole('button', { name: 'Carregar mais' }));
 
-    // Assert: the page says it is searching and asks below row 801 by itself; once the
+    // Assert: the page asks below row 801 by itself and says it is searching; once the
     // refusal arrives it is shown, and the line and the button go.
+    // The wait is on the second request itself. The page draws the line first and sends
+    // that request just after, from an effect, so waiting on the line alone could check
+    // the requests in between and find only the first.
     await waitFor(() => {
       expect(
-        screen.getByText('Procurando em registros mais antigos…'),
-        'while a request finds nothing below, the page must say it is still searching',
-      ).toBeDefined();
+        fetchTheOlderPage.mock.calls.map((call) => call[0]),
+        'the second request must start where the first one stopped, without a second press',
+      ).toEqual([
+        '/api/v1/event-log?before=1001&onlyRefusals=true',
+        '/api/v1/event-log?before=801&onlyRefusals=true',
+      ]);
     });
+    // The second answer is still held back, so the page is still searching.
     expect(
-      fetchTheOlderPage.mock.calls.map((call) => call[0]),
-      'the second request must start where the first one stopped, without a second press',
-    ).toEqual([
-      '/api/v1/event-log?before=1001&onlyRefusals=true',
-      '/api/v1/event-log?before=801&onlyRefusals=true',
-    ]);
+      screen.queryByText('Procurando em registros mais antigos…'),
+      'while a request finds nothing below, the page must say it is still searching',
+    ).not.toBeNull();
     letTheSecondAnswerGo(
       new Response(JSON.stringify({ entries: [olderRefusal], hasOlder: false }), {
         headers: { 'content-type': 'application/json' },
