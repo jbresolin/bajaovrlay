@@ -17,11 +17,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { createLogger } from '../logger/createLogger.js';
+import { operatorLoginOff } from '../operatorLogin/operatorLoginOff.testSupport.js';
 import { createServerApp } from './createServerApp.js';
 
 /** Builds the server app as production does, but silent and without static folders. */
 function createServerAppForRequestIdTests() {
   return createServerApp({
+    operatorLogin: operatorLoginOff,
     logger: createLogger({ level: 'silent' }),
     version: '0.3.1',
   });

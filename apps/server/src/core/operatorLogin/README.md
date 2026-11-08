@@ -12,8 +12,10 @@ with a PIN (docs/login.md). Start reading at `operatorLogin.ts`, which `startSer
 - `sessionCookie.ts` — the cookie `bajaovrlay_sessao`: signing, reading, Set-Cookie headers.
 - `loginLockout.ts` — five wrong PINs from one address, then 60 s of waiting (in memory).
 - `routeAccess.ts` — the access table of every /api/v1 route and the middleware it gives.
-- `operatorLoginAtBoot.ts` — the boot log's line, a warning while the login is off.
+- `operatorLoginAtBoot.ts` — the boot log's line, a warning while the login is off, and one
+  more while the PINs are set and the command API is open.
 
 The routes are api/v1/sessionRoutes.ts; the WebSocket's rule is in core/ws. Which command each
 role may send is the shared list (packages/shared/src/commands/commandSenders.ts). Every test
-takes its PINs from `fakeOperatorPins.testSupport.ts`.
+takes its PINs from `fakeOperatorPins.testSupport.ts`. The HTTP app and the WebSocket hub require
+the login, with no default; a test of something else passes `operatorLoginOff.testSupport.ts`.

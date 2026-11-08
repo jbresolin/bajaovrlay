@@ -21,6 +21,7 @@ import { describe, expect, it } from 'vitest';
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger } from '../../core/logger/createLogger.js';
+import { operatorLoginOff } from '../../core/operatorLogin/operatorLoginOff.testSupport.js';
 import { missingGraphicsFolderPath } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { buildDataSourcePollerActor } from '../../core/store/commandActors.js';
 import { createStateStore } from '../../core/store/createStateStore.js';
@@ -37,7 +38,7 @@ function createServerAppWithTheSeededSimulator() {
     logger,
     graphicPackagesFolder: missingGraphicsFolderPath,
   });
-  const app = createServerApp({ logger, version: '0.3.1', stateStore });
+  const app = createServerApp({ logger, operatorLogin: operatorLoginOff, version: '0.3.1', stateStore });
   return { app, stateStore };
 }
 

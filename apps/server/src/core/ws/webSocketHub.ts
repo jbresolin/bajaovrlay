@@ -7,7 +7,7 @@ import { type WebSocket, WebSocketServer } from 'ws';
 
 import { isOriginOfAnotherSite } from '../http/originOfAnotherSite.js';
 import type { ServerLogger } from '../logger/createLogger.js';
-import { type OperatorLogin, operatorLoginNotSetUp } from '../operatorLogin/operatorLogin.js';
+import type { OperatorLogin } from '../operatorLogin/operatorLogin.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
 import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
@@ -65,10 +65,10 @@ export type WebSocketHubOptions = {
   buildId?: string | undefined;
   /**
    * The operator login (BAJAOVRLAY-29). With the PINs set, a connection that is not a
-   * screen needs a session cookie and signs as its role and station. Left out (tests of
-   * other things): no login, every connection opens as before.
+   * screen needs a session cookie and signs as its role and station. Required, with no
+   * default (gate 2 of PR #51): a wiring that forgot it must not compile into an open socket.
    */
-  operatorLogin?: OperatorLogin | undefined;
+  operatorLogin: OperatorLogin;
   /**
    * BAJAOVRLAY_PUBLIC_ORIGINS: a reverse proxy's addresses whose pages may open the socket,
    * beside the server's own (gate 2 of PR #51). None unless given.
@@ -100,7 +100,7 @@ export type WebSocketHub = { close: () => Promise<void> };
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
-  const operatorLogin = options.operatorLogin ?? operatorLoginNotSetUp;
+  const { operatorLogin } = options;
   const publicOrigins = options.publicOrigins ?? [];
   // noServer: the HTTP server is Hono's; this hub only takes over the upgrades below.
   const webSocketServer = new WebSocketServer({ noServer: true });

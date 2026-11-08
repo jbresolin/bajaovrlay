@@ -147,16 +147,3 @@ function isSamePin(presentedPin: string, expectedPin: string): boolean {
   const expectedDigest = createHash('sha256').update(expectedPin).digest();
   return timingSafeEqual(presentedDigest, expectedDigest);
 }
-
-/**
- * The login of a server built with no PINs and no database behind its login: tests of
- * other routes that build the app by hand. Every page read is open, and a login is
- * answered as with the login off.
- */
-export const operatorLoginNotSetUp: OperatorLogin = {
-  isLoginRequired: false,
-  logIn: () => ({ kind: 'loginTurnedOff' }),
-  findSessionOfCookieHeader: () => undefined,
-  logOut: () => undefined,
-  subscribeToEndedSessions: () => () => undefined,
-};

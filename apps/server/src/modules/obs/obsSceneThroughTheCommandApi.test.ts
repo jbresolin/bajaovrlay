@@ -28,6 +28,7 @@ import {
 } from '../../core/apiAccess/fakeApiTokens.testSupport.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger } from '../../core/logger/createLogger.js';
+import { operatorLoginOff } from '../../core/operatorLogin/operatorLoginOff.testSupport.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import { startStoreConnectedToFakeObs, waitForTheObsSlice } from './obsOnTheStore.testSupport.js';
 
@@ -38,6 +39,7 @@ function createAppOnTheStore(stateStore: StateStore) {
     throw new Error(`The test's BAJAOVRLAY_API_TOKENS is refused: ${parsing.problem}`);
   }
   return createServerApp({
+    operatorLogin: operatorLoginOff,
     logger: createLogger({ level: 'silent' }),
     version: '0.3.1',
     stateStore,
