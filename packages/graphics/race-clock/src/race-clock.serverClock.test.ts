@@ -25,9 +25,9 @@
  *     for the theme's font ends at once.
  */
 import {
-  forgetServerClockSamples,
+  forgetTheServerClockAlignment,
+  lineUpWithTheServerClockAt,
   readThisMachineMonotonicTimeMs,
-  recordServerClockSample,
 } from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
@@ -53,8 +53,8 @@ const serverTimeTenSecondsAfterTheReadingMs = readingWallClockMs + 10_000;
  */
 function takeControlOnAMachineBehindTheServer() {
   const framesAndTime = takeControlOfFramesAndTime();
-  forgetServerClockSamples();
-  onTestFinished(() => forgetServerClockSamples());
+  forgetTheServerClockAlignment();
+  onTestFinished(() => forgetTheServerClockAlignment());
   vi.setSystemTime(serverTimeTenSecondsAfterTheReadingMs - renderMachineLagMs);
   return framesAndTime;
 }
@@ -64,7 +64,7 @@ describe('the race clock on a machine whose clock is 2.3 s behind the server', (
     // Arrange: the machine 2.3 s behind, and the renderer has just received a message in
     // which the server said what its clock showed.
     const framesAndTime = takeControlOnAMachineBehindTheServer();
-    recordServerClockSample(
+    lineUpWithTheServerClockAt(
       serverTimeTenSecondsAfterTheReadingMs,
       readThisMachineMonotonicTimeMs(),
     );
@@ -111,7 +111,7 @@ describe('the race clock on a machine whose clock is 2.3 s behind the server', (
     const clockTextBeforeTheMessage = readShownText(raceClock, 'race-clock-time');
 
     // Act: the renderer records a message from the server, and the next frame runs.
-    recordServerClockSample(
+    lineUpWithTheServerClockAt(
       serverTimeTenSecondsAfterTheReadingMs,
       readThisMachineMonotonicTimeMs(),
     );
@@ -131,7 +131,7 @@ describe('the race clock on a machine whose clock is 2.3 s behind the server', (
   it('draws the time of the server at load already, before it is played', async () => {
     // Arrange: the machine 2.3 s behind, with a message recorded.
     takeControlOnAMachineBehindTheServer();
-    recordServerClockSample(
+    lineUpWithTheServerClockAt(
       serverTimeTenSecondsAfterTheReadingMs,
       readThisMachineMonotonicTimeMs(),
     );

@@ -28,9 +28,9 @@
  */
 import { finishEveryRunningMotionAtOnce } from '@bajaovrlay/graphics-kit/runningMotions.testSupport';
 import {
-  forgetServerClockSamples,
+  forgetTheServerClockAlignment,
+  lineUpWithTheServerClockAt,
   readThisMachineMonotonicTimeMs,
-  recordServerClockSample,
 } from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
@@ -180,9 +180,9 @@ describe('the count on air', () => {
   it('counts on the server’s clock, not the machine’s', async () => {
     // Arrange: the machine at 09:36:15, the server's clock 30 s ahead of it.
     const framesAndTime = takeControlOfFramesAndTime();
-    forgetServerClockSamples();
-    onTestFinished(() => forgetServerClockSamples());
-    recordServerClockSample(Date.now() + 30_000, readThisMachineMonotonicTimeMs());
+    forgetTheServerClockAlignment();
+    onTestFinished(() => forgetTheServerClockAlignment());
+    lineUpWithTheServerClockAt(Date.now() + 30_000, readThisMachineMonotonicTimeMs());
     const countdown = createCountdownOnThePage();
 
     // Act: load and play it, and run a frame.

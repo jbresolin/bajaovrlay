@@ -26,9 +26,9 @@
  *     removal from the page.
  */
 import {
-  forgetServerClockSamples,
+  forgetTheServerClockAlignment,
+  lineUpWithTheServerClockAt,
   readThisMachineMonotonicTimeMs,
-  recordServerClockSample,
 } from '@bajaovrlay/shared/clock';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
@@ -163,9 +163,9 @@ describe('createCountdownClock', () => {
     vi.setSystemTime(enduroStartsAtMs - 1_800_000);
     onTestFinished(() => {
       vi.useRealTimers();
-      forgetServerClockSamples();
+      forgetTheServerClockAlignment();
     });
-    recordServerClockSample(Date.now() + 30_000, readThisMachineMonotonicTimeMs());
+    lineUpWithTheServerClockAt(Date.now() + 30_000, readThisMachineMonotonicTimeMs());
     const writtenTexts: string[] = [];
     const countdown = createCountdownClock({
       readStartsAtMs: () => enduroStartsAtMs,

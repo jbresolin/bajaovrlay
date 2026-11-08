@@ -7,10 +7,11 @@ in, the clock time at any later moment out. `clockWholeSeconds.ts` says which wh
 second the screen shows (elapsed rounds down, remaining up), and `clockFormatting.ts`
 writes it as H:MM:SS, the same text on air and on the control page's session card
 ("Fontes"). `serverAlignedTime.ts` is
-the shared "now": the renderer records the `serverNowMs` of each message, graphics call
-`readServerAlignedTimeMs()` instead of `Date.now()`, and the offset between the two
-clocks lives in one property of `globalThis` because renderer and graphic are separate
-bundles. `serverClockOffsetSamples.ts` keeps the last five samples and their median.
+the shared "now": a page lines up with the server clock (real time from NTP) at each
+hello and with four clock probes, keeping the shortest round trip, then slews its own
+drift at 0.5% with one probe per `time` message; graphics call `readServerAlignedTimeMs()`
+instead of `Date.now()`, and the alignment lives in one property of `globalThis` because
+renderer and graphic are separate bundles.
 
 **No imports from outside this folder.** Graphics import it as `@bajaovrlay/shared/clock`,
 a separate entry in `package.json`, so their bundle carries these few lines and nothing

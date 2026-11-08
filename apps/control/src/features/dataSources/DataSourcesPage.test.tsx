@@ -36,7 +36,10 @@
  *   - The hour in "Último dado": it is the operator's local time, so only the minutes and
  *     seconds are checked.
  */
-import { readThisMachineMonotonicTimeMs, recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  lineUpWithTheServerClockAt,
+  readThisMachineMonotonicTimeMs,
+} from '@bajaovrlay/shared/clock';
 import { act, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -200,7 +203,7 @@ describe('the status chip of a source', () => {
     // Arrange: the tablet's clock 30 s ahead of the server's: 40 s after the first failed
     // poll on the tablet, only 10 s on the server.
     holdThePageClockFortySecondsAfterTheFailingStarted();
-    recordServerClockSample(
+    lineUpWithTheServerClockAt(
       momentTheSimulatorStartedFailingMs + 10_000,
       readThisMachineMonotonicTimeMs(),
     );

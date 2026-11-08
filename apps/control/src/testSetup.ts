@@ -2,7 +2,7 @@
 // Adds DOM matchers such as `toBeInTheDocument()` to `expect`.
 import '@testing-library/jest-dom/vitest';
 
-import { forgetServerClockSamples } from '@bajaovrlay/shared/clock';
+import { forgetTheServerClockAlignment } from '@bajaovrlay/shared/clock';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
@@ -22,7 +22,7 @@ afterEach(() => {
   window.location.hash = '';
   // A test that set the server's clock apart from the page's must not leave the next
   // test reading "now" with that offset (packages/shared/src/clock/serverAlignedTime.ts).
-  forgetServerClockSamples();
+  forgetTheServerClockAlignment();
 });
 
 // The tests run in jsdom, a browser stand-in that draws nothing and so lacks the three

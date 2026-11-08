@@ -20,12 +20,19 @@ export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting';
 
 /**
  * Everything the control page knows: every slice of the server, mirrored as received,
- * plus two facts about the page itself (connection status, last failed command). The
+ * plus three facts about the page itself (connection status, last failed command, how far
+ * the server clock is off real time). The
  * functions are the only ways to change it, and only serverConnection.ts calls them.
  */
 export type ServerState = Slices & {
   connectionStatus: ConnectionStatus;
   lastCommandError: LastCommandError | null;
+  /**
+   * How many whole seconds the server clock is off real time by NTP, from the last
+   * `time` message, once that is 2 s or more (positive: behind); null below that, or
+   * when not known. The header warns while it is set (BAJAOVRLAY-62).
+   */
+  serverClockSecondsOffRealTime: number | null;
   /** A hello arrived: every slice becomes what the server sent. */
   replaceEverySlice: (slices: Slices) => void;
   /** A slice message arrived: that one slice becomes what the server sent. */
@@ -41,6 +48,8 @@ export type ServerState = Slices & {
    */
   mergeOneDataSnapshot: (message: DataSnapshotMessage) => void;
   changeConnectionStatus: (connectionStatus: ConnectionStatus) => void;
+  /** A `time` message arrived: how far the server clock is from real time, in ms or unknown. */
+  noteServerClockOffRealTime: (offFromRealTimeMs: number | undefined) => void;
   rememberCommandError: (commandError: LastCommandError) => void;
   forgetCommandError: () => void;
 };
@@ -86,6 +95,7 @@ export function createServerStateStore(): ServerStateStore {
     eventLog: [],
     connectionStatus: 'connecting',
     lastCommandError: null,
+    serverClockSecondsOffRealTime: null,
 
     replaceEverySlice: (slices) => {
       set({
@@ -238,6 +248,16 @@ export function createServerStateStore(): ServerStateStore {
     changeConnectionStatus: (connectionStatus) => {
       set({ connectionStatus });
     },
+    noteServerClockOffRealTime: (offFromRealTimeMs) => {
+      const secondsOff = countSecondsWorthAWarning(offFromRealTimeMs);
+      // Only a change is set: a `time` message comes every ten seconds, and the header
+      // must not redraw each time for the same number.
+      set((state) =>
+        state.serverClockSecondsOffRealTime === secondsOff
+          ? state
+          : { serverClockSecondsOffRealTime: secondsOff },
+      );
+    },
     rememberCommandError: (commandError) => {
       set({ lastCommandError: commandError });
     },
@@ -245,6 +265,20 @@ export function createServerStateStore(): ServerStateStore {
       set({ lastCommandError: null });
     },
   }));
+}
+
+/** From this far off real time on, the header warns about the server clock. */
+const serverClockOffWorthAWarningMs = 2_000;
+
+/** Whole seconds off real time, when 2 s or more; null otherwise, or when unknown. */
+function countSecondsWorthAWarning(offFromRealTimeMs: number | undefined): number | null {
+  if (offFromRealTimeMs === undefined) {
+    return null;
+  }
+  if (Math.abs(offFromRealTimeMs) < serverClockOffWorthAWarningMs) {
+    return null;
+  }
+  return Math.round(offFromRealTimeMs / 1000);
 }
 
 /**

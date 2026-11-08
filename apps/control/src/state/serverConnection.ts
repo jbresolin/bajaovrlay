@@ -1,4 +1,5 @@
 import {
+  type ClockProbeMessage,
   type CommandInput,
   type PageReloadForNewBuild,
   readBuildIdOfAHello,
@@ -7,7 +8,11 @@ import {
   ServerMessageSchema,
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
-import { readThisMachineMonotonicTimeMs, recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  lineUpWithTheServerClockAt,
+  readThisMachineMonotonicTimeMs,
+  recordClockProbeAnswer,
+} from '@bajaovrlay/shared/clock';
 
 import { ptBR } from '@/i18n/ptBR';
 import { type LogControlEvent, logControlEvent } from '@/logging/controlLog';
@@ -156,10 +161,14 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       }
       return;
     }
-    recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
-
     switch (message.type) {
       case 'hello':
+        // Lined up at once with the hello's own time, then four probes refine it: the
+        // page and the screens count from the same clock (BAJAOVRLAY-62).
+        if (message.serverNowMs !== undefined) {
+          lineUpWithTheServerClockAt(message.serverNowMs, localTimeAtArrivalMs);
+        }
+        sendClockProbe();
         numberOfFailedCallsInARow = 0;
         // Taken in first, so a page that does not reload (same build, or already reloaded
         // for this one) is connected as always; one that reloads loses nothing.
@@ -180,11 +189,40 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         settleCommandAwaitingThisResult(message);
         break;
       case 'time':
-        // The server's ten-second time message. Its sample was recorded just above and
-        // that is all: nothing is set in the store, so no component redraws, and no
-        // line is logged every ten seconds.
+        // The server's ten-second time message: one probe keeps the alignment fresh, and
+        // how far the server clock is off real time goes to the store, which only
+        // changes (and redraws the header) when the whole seconds change. No log line.
+        sendClockProbe();
+        serverStateStore.getState().noteServerClockOffRealTime(message.offFromRealTimeMs);
         break;
+      case 'clockProbeAnswer': {
+        const { isAnotherProbeNeeded } = recordClockProbeAnswer({
+          pageSentAtMs: message.pageSentAtMs,
+          serverNowMs: message.serverNowMs,
+          pageReceivedAtMs: localTimeAtArrivalMs,
+        });
+        if (isAnotherProbeNeeded) {
+          sendClockProbe();
+        }
+        break;
+      }
     }
+  }
+
+  /**
+   * Asks the server what its clock reads (packages/shared/src/clock/serverAlignedTime.ts):
+   * after a hello, four in a row; then one per `time` message. "Edição rápida" reads the
+   * time lined up this way to show what a clock on air shows.
+   */
+  function sendClockProbe(): void {
+    if (currentSocket === undefined) {
+      return;
+    }
+    const clockProbe: ClockProbeMessage = {
+      type: 'clockProbe',
+      pageSentAtMs: readThisMachineMonotonicTimeMs(),
+    };
+    currentSocket.send(JSON.stringify(clockProbe));
   }
 
   function settleCommandAwaitingThisResult(
@@ -305,30 +343,6 @@ function startWatchOnTheServerBuild(
       return () => clearTimeout(timer);
     },
   });
-}
-
-/**
- * Hands the server's time in a hello, slice, slices, dataSnapshot or time message to the
- * shared server-aligned clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
- * does the same (apps/renderer/src/serverConnection.ts), so the page and the screen
- * count from the same clock. A hello or slice without the time records NOTHING: it is
- * "no sample", never a sample saying the two clocks agree.
- * What could go wrong: the sample is late by the time the message took to arrive. The
- * arrival is read on this computer's monotonic time, so a step of its wall clock moves
- * neither the samples nor the time shown (BAJAOVRLAY-62).
- */
-function recordServerClockSampleOfMessage(
-  message: ServerMessage,
-  localTimeAtArrivalMs: number,
-): void {
-  if (message.type === 'commandResult') {
-    return;
-  }
-  // The field is optional in the protocol; a message without it gives no sample.
-  if (message.serverNowMs === undefined) {
-    return;
-  }
-  recordServerClockSample(message.serverNowMs, localTimeAtArrivalMs);
 }
 
 /** Reads the JSON of one message; undefined when it is not text or not JSON. */
