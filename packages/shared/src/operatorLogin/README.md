@@ -11,5 +11,7 @@ Start reading at `operatorRole.ts`.
   the server asks for a login at all.
 - `whyTheRoleCannotSend.ts` — "O papel Dados não pode …": the one sentence for a command
   Dados may not send, the server's refusal and the page's tooltip alike.
+- `whyTheDataRoleCannotAutomate.ts` — the sentences for an auto trigger or rule Dados may
+  not set up or change: the server's refusal, and the line next to the greyed-out "Automático".
 
 The PINs, the cookie and the lockout live in the server (`apps/server/src/core/operatorLogin/`).

@@ -69,3 +69,13 @@ export function useMayTheRoleSendAnyOf(commandTypes: readonly Command['type'][])
   }
   return commandTypes.some((commandType) => isCommandTypeOpenToTheRole(commandType, session.role));
 }
+
+/**
+ * Whether this page is logged in as Dados: the trigger and rule editors grey out
+ * "Automático" and what an auto one runs (gate 2 of PR #51), which the role column of a
+ * command type cannot say, since the same updateTrigger may or may not automate the air.
+ */
+export function useIsTheDataRoleLoggedIn(): boolean {
+  const { session } = useOperatorSession();
+  return session?.role === 'dados';
+}

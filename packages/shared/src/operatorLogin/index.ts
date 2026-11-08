@@ -17,3 +17,5 @@ export {
 } from './operatorSession.js';
 // The pt-BR sentence for a command Dados may not send: the server's refusal and the tooltip.
 export { describeWhyTheDataRoleCannotSend } from './whyTheRoleCannotSend.js';
+// The pt-BR sentences for an auto trigger or rule Dados may not set up or change.
+export { whyTheDataRoleCannotAutomate } from './whyTheDataRoleCannotAutomate.js';

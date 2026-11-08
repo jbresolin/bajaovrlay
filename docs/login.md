@@ -52,6 +52,14 @@ tudo", "Atualizar no ar", o "No ar" dos eventos, "Rodar" dos gatilhos e "Pausar 
 teclas desses comandos (Espaço, Shift+Espaço, Backspace, Esc, setas, 1 a 9, P, Ctrl+Z) não
 fazem nada para Dados. Mesmo que um comando desses chegue ao servidor, ele recusa.
 
+**Automação é do Produtor.** Um gatilho ou uma regra de evento em "Automático" põe coisas no
+ar sem ninguém apertar nada. Por isso Dados cria e edita gatilhos e regras só em "Perguntar"
+ou "Ignorar": "Automático" aparece apagado, com o motivo ao lado. Num gatilho que já é
+automático, Dados pode mudar o nome e o intervalo, desligá-lo ou voltá-lo para "Perguntar",
+mas não a macro nem o que ele espera (o tipo e o filtro), e não pode ligá-lo. Numa regra
+automática, Dados não muda o item nem os tempos. E Dados não muda os passos de uma macro que um
+gatilho automático roda (o nome e a cor, sim).
+
 ## 4. O que não pede login
 
 - As páginas do OBS (`/render/`) e os monitores da página de controle: continuam sem login na

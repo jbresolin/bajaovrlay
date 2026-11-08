@@ -82,10 +82,13 @@ export function TriggerWhenControls(props: {
   triggerId: string | null;
   obsSceneNames: string[];
   scheduleSlots: ScheduleSlot[];
+  /** True while Dados edits an auto trigger: what it waits for is the Produtor's. */
+  isLocked: boolean;
 }) {
   const { values, onValuesChanged } = props;
+  // A disabled fieldset greys out every control inside it, the dropdowns' buttons too.
   return (
-    <div className="flex flex-col gap-2">
+    <fieldset disabled={props.isLocked} className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
       <EditorDropdown
         label={texts.kindLabel}
         value={values.kind}
@@ -151,7 +154,7 @@ export function TriggerWhenControls(props: {
           scheduleSlots={props.scheduleSlots}
         />
       ) : null}
-    </div>
+    </fieldset>
   );
 }
 
