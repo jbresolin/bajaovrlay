@@ -11,7 +11,7 @@ import {
   type RecordBackupCommand,
 } from '@bajaovrlay/shared';
 
-import { copyDatabaseIntoFile } from '../../core/db/databaseBackup.js';
+import { copyDatabaseIntoFile, DatabaseStayedLockedError } from '../../core/db/databaseBackup.js';
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { backupActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
@@ -42,19 +42,21 @@ export type BackupDownloadsOptions = {
   temporaryFolder?: string | undefined;
   /** How each file is opened for the zip; tests watch it. fs.createReadStream when left out. */
   openFileForReading?: OpenFileForReading | undefined;
+  /** The waits between tries of a database copy that met a lock; about 5.5 s when left out. */
+  waitsBetweenDatabaseCopyTriesInMs?: readonly number[] | undefined;
 };
 
 /** How asking for a backup ends: its zip, being made as it is read, or refused. */
 export type BackupDownloadStart =
   | { isStarted: true; fileName: string; zipStream: Readable }
-  | { isStarted: false; reason: 'alreadyRunning' };
+  | { isStarted: false; reason: 'alreadyRunning' | 'databaseStayedLocked' };
 
 /** The backup downloads of one server. */
 export type BackupDownloads = {
   /**
    * Starts a backup: copies the database, then hands back the zip as a stream to read.
-   * Refused while another backup's zip has not closed. Rejects when the database cannot
-   * be copied.
+   * Refused while another backup's zip has not closed, or when the database stayed locked
+   * through every try of the copy. Rejects when the database cannot be copied otherwise.
    */
   startBackupDownload: (isIncludingRecordings: boolean) => Promise<BackupDownloadStart>;
   /** The size of each part on disk now, the newest backup in the event log, and whether one runs. */
@@ -91,7 +93,9 @@ export function createBackupDownloads(options: BackupDownloadsOptions): BackupDo
     let zipStream: Readable;
     try {
       const databaseCopyPath = join(temporaryCopyFolder, databaseNameInTheZip);
-      await copyDatabaseIntoFile(options.databasePath, databaseCopyPath);
+      await copyDatabaseIntoFile(options.databasePath, databaseCopyPath, {
+        waitsBetweenTriesInMs: options.waitsBetweenDatabaseCopyTriesInMs,
+      });
       const mediaFiles = listFilesInFolderForTheBackup(mediaFolder, 'media');
       const recordingFiles = isIncludingRecordings
         ? listFilesInFolderForTheBackup(recordingsFolder, 'recordings')
@@ -113,6 +117,9 @@ export function createBackupDownloads(options: BackupDownloadsOptions): BackupDo
     } catch (startError) {
       rmSync(temporaryCopyFolder, { recursive: true, force: true });
       isABackupRunning = false;
+      if (startError instanceof DatabaseStayedLockedError) {
+        return { isStarted: false, reason: 'databaseStayedLocked' };
+      }
       throw startError;
     }
 

@@ -15,6 +15,8 @@
  *     temporary copy of the database is gone.
  *   - A backup stopped half-way (the browser's download cancelled) writes no row, removes
  *     its temporary copy, and lets the next one start.
+ *   - A database that stays locked through every try of the copy refuses the backup with
+ *     that reason, leaves no temporary copy, and lets the next one start.
  *
  * What these tests deliberately do not cover:
  *   - The zip's contents and the HTTP answers: backupDownloadRoute.test.ts.
@@ -25,6 +27,7 @@ import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Readable } from 'node:stream';
 
+import Database from 'better-sqlite3';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
 import { buildBootOptions } from '../../core/boot/bootedServer.testSupport.js';
@@ -57,7 +60,9 @@ async function waitForTheCloseEvent(stream: Readable): Promise<void> {
  * temporary copies made in a folder of their own the test can look into; the clock is
  * held at 14:32 in São Paulo.
  */
-async function startServerWithBackupDownloads() {
+async function startServerWithBackupDownloads(
+  waitsBetweenDatabaseCopyTriesInMs?: readonly number[],
+) {
   const bootOptions = buildBootOptions(committedMigrationsFolder);
   const runningServer = await startServer(bootOptions);
   onTestFinished(() => runningServer.close());
@@ -72,8 +77,9 @@ async function startServerWithBackupDownloads() {
     version: '0.3.1',
     readCurrentTime: () => new Date('2026-11-14T17:32:00.000Z'),
     temporaryFolder,
+    waitsBetweenDatabaseCopyTriesInMs,
   });
-  return { runningServer, backupDownloads, temporaryFolder };
+  return { runningServer, bootOptions, backupDownloads, temporaryFolder };
 }
 
 describe('createBackupDownloads', () => {
@@ -156,5 +162,32 @@ describe('createBackupDownloads', () => {
     expect(nextBackup.isStarted, 'a stopped backup must not block the next one').toBe(true);
     const foldersLeft = readdirSync(temporaryFolder);
     expect(foldersLeft, 'only the next backup’s temporary copy may be there').toHaveLength(1);
+  });
+
+  it('refuses the backup when the database stays locked, keeping nothing and blocking nothing', async () => {
+    // Arrange: a server whose database another connection holds locked (as a write being
+    // committed would, but for good), and copies that try three times, 10 ms apart.
+    const { bootOptions, backupDownloads, temporaryFolder } =
+      await startServerWithBackupDownloads([10, 10]);
+    const lockingConnection = new Database(bootOptions.databasePath);
+    lockingConnection.exec('BEGIN EXCLUSIVE');
+    onTestFinished(() => {
+      lockingConnection.close();
+    });
+
+    // Act: ask for a backup while it is locked; then release the lock and ask again.
+    const lockedBackup = await backupDownloads.startBackupDownload(true);
+    const temporaryFoldersAfterTheRefusal = readdirSync(temporaryFolder);
+    lockingConnection.exec('ROLLBACK');
+    const nextBackup = await backupDownloads.startBackupDownload(true);
+
+    // Assert: refused as locked, nothing left in the temporary folder, and the next one
+    // started once the lock was gone.
+    expect(lockedBackup, 'a copy that could not be made must refuse the backup').toEqual({
+      isStarted: false,
+      reason: 'databaseStayedLocked',
+    });
+    expect(temporaryFoldersAfterTheRefusal, 'the refused backup leaves no folder').toEqual([]);
+    expect(nextBackup.isStarted, 'a refused backup must not block the next one').toBe(true);
   });
 });

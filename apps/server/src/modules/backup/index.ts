@@ -14,6 +14,7 @@ export {
 export {
   buildBackupAlreadyRunningAnswer,
   buildBackupZipHeaders,
+  buildDatabaseStayedLockedAnswer,
   buildInvalidBackupQueryAnswer,
   getBackupRoute,
   getBackupSummaryRoute,

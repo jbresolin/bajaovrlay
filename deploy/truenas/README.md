@@ -97,8 +97,10 @@ docker exec bajaovrlay node apps/server/dist/backupDatabase.js /backups || echo 
 It writes a consistent copy with SQLite's online backup while the server runs, named
 `bajaovrlay-<date>T<time>Z.sqlite` (UTC), into `/mnt/Local/db-dumps/bajaovrlay` (the stack's
 `/backups` mount), and keeps the newest 14 there; files of other names are never touched,
-and the dump script's own retention can leave the folder alone. If it fails (the container
-stopped, the folder not writable) it logs why and exits non-zero; the `|| echo` then
+and the dump script's own retention can leave the folder alone. A write the server is
+committing at that moment only delays it: it tries again for about 5 seconds. If it fails
+(the container stopped, the folder not writable, the database locked longer than that) it
+writes why to stderr, as well as in its JSON log, and exits non-zero; the `|| echo` then
 writes one line to the script's errors instead of ending the script, so a script with
 `set -e` still runs the dumps after it.
 

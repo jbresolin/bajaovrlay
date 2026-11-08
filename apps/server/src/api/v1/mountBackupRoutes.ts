@@ -9,6 +9,7 @@ import {
   type BackupDownloads,
   buildBackupAlreadyRunningAnswer,
   buildBackupZipHeaders,
+  buildDatabaseStayedLockedAnswer,
   buildInvalidBackupQueryAnswer,
   getBackupRoute,
   getBackupSummaryRoute,
@@ -39,8 +40,11 @@ export function mountBackupRoutes(
       const query = context.req.valid('query');
       const isIncludingRecordings = query.includeRecordings !== 'false';
       const backup = await options.backupDownloads.startBackupDownload(isIncludingRecordings);
-      if (!backup.isStarted) {
+      if (!backup.isStarted && backup.reason === 'alreadyRunning') {
         return context.json(buildBackupAlreadyRunningAnswer(), 409);
+      }
+      if (!backup.isStarted) {
+        return context.json(buildDatabaseStayedLockedAnswer(), 503);
       }
       // Readable.toWeb reads the zip only as fast as the connection takes it; a browser
       // that cancels the download cancels the web stream, which stops the zip.

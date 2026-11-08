@@ -45,6 +45,10 @@ export const getBackupRoute = createRoute({
       description: 'Another backup is still being sent.',
       content: { 'application/json': { schema: ErrorAnswerBodySchema } },
     },
+    503: {
+      description: 'The database stayed locked for about 5 s and could not be copied.',
+      content: { 'application/json': { schema: ErrorAnswerBodySchema } },
+    },
     ...accessResponses,
   },
 });
@@ -71,6 +75,11 @@ export const getBackupSummaryRoute = createRoute({
 /** The 409 of a backup asked for while another is still being sent. */
 export function buildBackupAlreadyRunningAnswer(): ErrorAnswerBody {
   return { error: { code: 'BACKUP_ALREADY_RUNNING', message: ptBR.backup.alreadyRunning } };
+}
+
+/** The 503 of a backup whose database copy met the database locked at every try. */
+export function buildDatabaseStayedLockedAnswer(): ErrorAnswerBody {
+  return { error: { code: 'DATABASE_STAYED_LOCKED', message: ptBR.backup.databaseStayedLocked } };
 }
 
 /** The 400 of an includeRecordings that is not "true" or "false". */

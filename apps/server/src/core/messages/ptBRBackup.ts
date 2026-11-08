@@ -12,6 +12,10 @@ export const ptBRBackup = {
   /** GET /api/v1/backup while another backup is still being sent. */
   alreadyRunning:
     'Já há uma cópia de segurança sendo baixada. Espere ela terminar e tente de novo.',
+  /** The database copy met the database locked at every try, for about 5 s. */
+  databaseStayedLocked:
+    'O banco de dados ficou ocupado por mais de 5 segundos e a cópia não foi feita. ' +
+    'Tente de novo em instantes.',
   /** GET /api/v1/backup with an includeRecordings that is not "true" or "false". */
   invalidQuery: 'Use includeRecordings=true ou includeRecordings=false.',
   /** The lines of leia-me.txt; the moment is São Paulo's, written by the caller. */
