@@ -81,7 +81,11 @@ try {
     isOpenToTheNetwork: environment.BAJAOVRLAY_API_OPEN,
   });
   // The page's header says "Sem login" while no PINs are set; the log warns too.
-  logOperatorLoginAtBoot({ logger, operatorPins: environment.operatorPins });
+  logOperatorLoginAtBoot({
+    logger,
+    operatorPins: environment.operatorPins,
+    isCommandApiOpenToTheNetwork: environment.BAJAOVRLAY_API_OPEN,
+  });
   // The page says "OBS não configurado"; the log says why, for whoever reads it first.
   if (environment.BAJAOVRLAY_OBS_URL === undefined) {
     logger.info('OBS control is off: BAJAOVRLAY_OBS_URL is not set');

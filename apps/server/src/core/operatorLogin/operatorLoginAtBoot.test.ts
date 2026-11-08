@@ -10,6 +10,9 @@
  * What these tests prove:
  *   - With the login off, the line is a warning naming the two variables to set.
  *   - With the login on, the line is information, and carries neither PIN.
+ *   - With the login on and the command API open (BAJAOVRLAY_API_OPEN=true), a second line
+ *     warns that the API is open to the whole network without login or roles (gate 2 of
+ *     PR #51); with the API closed, or the login off, there is no such line.
  *   - In neither case does any login or read of the session write a PIN to the log: a
  *     right and a wrong login, logged, name the role and station only.
  *
@@ -36,7 +39,11 @@ describe('logOperatorLoginAtBoot', () => {
     const { logger, readRecordedLines } = createRecordingLogger();
 
     // Act: write the boot line with the login off.
-    logOperatorLoginAtBoot({ logger, operatorPins: operatorLoginTurnedOff });
+    logOperatorLoginAtBoot({
+      logger,
+      operatorPins: operatorLoginTurnedOff,
+      isCommandApiOpenToTheNetwork: false,
+    });
 
     // Assert: one warning naming the two variables.
     const [bootLine] = readRecordedLines();
@@ -51,16 +58,58 @@ describe('logOperatorLoginAtBoot', () => {
     const { logger, readRecordedLines } = createRecordingLogger();
 
     // Act: write the boot line with the tests' two PINs.
-    logOperatorLoginAtBoot({ logger, operatorPins: operatorPinsOfTheTests });
+    logOperatorLoginAtBoot({
+      logger,
+      operatorPins: operatorPinsOfTheTests,
+      isCommandApiOpenToTheNetwork: false,
+    });
 
-    // Assert: information, and no PIN in it.
-    const [bootLine] = readRecordedLines();
+    // Assert: information alone, and no PIN in it.
+    const [bootLine, ...otherLines] = readRecordedLines();
+    expect(otherLines, 'with the command API closed, nothing more to say').toEqual([]);
     expect(bootLine?.level, 'the login on is a detail').toBe('info');
     expect(bootLine?.message, 'the line says the login is on').toBe(
       'operator login on: the control page asks for a role and its PIN',
     );
     expect(JSON.stringify(bootLine), 'no producer PIN').not.toContain(producerTestPin);
     expect(JSON.stringify(bootLine), 'no data PIN').not.toContain(dataRoleTestPin);
+  });
+
+  it('warns that the command API bypasses the login when it is open', () => {
+    // Arrange: a logger that keeps its lines.
+    const { logger, readRecordedLines } = createRecordingLogger();
+
+    // Act: write the boot lines with the two PINs set and BAJAOVRLAY_API_OPEN=true.
+    logOperatorLoginAtBoot({
+      logger,
+      operatorPins: operatorPinsOfTheTests,
+      isCommandApiOpenToTheNetwork: true,
+    });
+
+    // Assert: the login line, then one warning that the API needs neither login nor role.
+    const lines = readRecordedLines();
+    expect(
+      lines.map((line) => `${line.level}: ${line.message}`),
+      'whoever reads `docker logs` must see that the PINs do not cover the API',
+    ).toEqual([
+      'info: operator login on: the control page asks for a role and its PIN',
+      'warn: the command API is open to the whole network without login or roles (BAJAOVRLAY_API_OPEN=true): any computer on the network may take, clear and run macros, whatever the PINs',
+    ]);
+  });
+
+  it('adds no such warning with the login off, whose own warning already covers it', () => {
+    // Arrange: a logger that keeps its lines.
+    const { logger, readRecordedLines } = createRecordingLogger();
+
+    // Act: write the boot lines with no PINs and BAJAOVRLAY_API_OPEN=true.
+    logOperatorLoginAtBoot({
+      logger,
+      operatorPins: operatorLoginTurnedOff,
+      isCommandApiOpenToTheNetwork: true,
+    });
+
+    // Assert: only the login-off warning; the command API's own boot line says it is open.
+    expect(readRecordedLines().length, 'one line: the login is off').toBe(1);
   });
 });
 
