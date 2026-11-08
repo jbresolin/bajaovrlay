@@ -58,13 +58,15 @@ const globalWithPerformance = globalThis as typeof globalThis & {
 };
 
 /**
- * This machine's monotonic time, in milliseconds since 1970: the moment the page opened
- * plus the time since, which a step of the wall clock never moves. Pass it as the
+ * This machine's monotonic time, in whole milliseconds since 1970: the moment the page
+ * opened plus the time since, which a step of the wall clock never moves. Pass it as the
  * `localNowMs` of recordServerClockSample.
  */
 export function readThisMachineMonotonicTimeMs(): number {
   const { performance } = globalWithPerformance;
-  return performance.timeOrigin + performance.now();
+  // Rounded down: a moment read here may become data (a snapshot's updatedAtMs), which
+  // must be a whole number, and rounding down never makes the time move back.
+  return Math.floor(performance.timeOrigin + performance.now());
 }
 
 /**

@@ -21,6 +21,7 @@
  *   - What one copy of the code records, a second copy reads (renderer and graphic).
  *   - When the machine's wall clock steps back or forwards while the page is open, the
  *     time read does not move with it, before or after new samples arrive.
+ *   - The time read is a whole number of milliseconds, rounded down.
  *   - Forgetting the samples brings back the machine's own time.
  *
  * The tests run on Vitest's fake Date and fake performance: a step of the wall clock
@@ -164,6 +165,21 @@ describe('readServerAlignedTimeMs', () => {
       ).toBe(serverTimeAtTheStepMs);
     });
   }
+
+  it('reads whole milliseconds, though monotonic time comes with fractions', () => {
+    // Arrange: the machine 2.3 s behind with one message recorded, then a third of a
+    // millisecond passes (the page's monotonic time has fractions; a data field such as
+    // a snapshot's updatedAtMs must be a whole number).
+    holdTheMachineClockAt(serverTimeMs - renderMachineLagMs);
+    recordServerClockSample(serverTimeMs, readThisMachineMonotonicTimeMs());
+    vi.advanceTimersByTime(0.333);
+
+    // Act: read the time.
+    const timeReadMs = readServerAlignedTimeMs();
+
+    // Assert: the server's time, rounded down to the millisecond.
+    expect(timeReadMs, 'the time read must be a whole number of milliseconds').toBe(serverTimeMs);
+  });
 
   it('reads the time of the machine again after the samples are forgotten', () => {
     // Arrange: a machine 2.3 s behind with one message recorded.
