@@ -9,6 +9,7 @@ import type { ErrorAnswerBody } from '../../core/http/errorAnswers.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
 import { ptBR } from '../../core/messages/ptBR.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import type { BackupDownloads } from '../../modules/backup/index.js';
 import {
   buildInvalidSampleRequestAnswer,
   fetchSampleOfHttpJsonRequest,
@@ -36,6 +37,7 @@ import {
   storeUploadedImage,
 } from '../../modules/media/index.js';
 import { getEventLogRoute } from './eventLogRoute.js';
+import { mountBackupRoutes } from './mountBackupRoutes.js';
 import { mountButtonStateRoutes } from './mountButtonStateRoutes.js';
 import { mountCommandApiRoutes } from './mountCommandApiRoutes.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
@@ -61,6 +63,8 @@ export function createApiV1Routes(options: {
   isApiOpenToTheNetwork?: boolean | undefined;
   /** BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a proxy's pages that may upload; none when left out. */
   publicOrigins?: readonly string[] | undefined;
+  /** The backup downloads (BAJAOVRLAY-33); no backup routes when left out. */
+  backupDownloads?: BackupDownloads | undefined;
 }): OpenAPIHono<ServerAppEnvironment> {
   const readSourceEnvironmentVariable =
     options.readSourceEnvironmentVariable ?? readServerEnvironmentVariable;
@@ -194,6 +198,11 @@ export function createApiV1Routes(options: {
       return context.json(body, 400);
     },
   );
+
+  // The backup download (BAJAOVRLAY-33), behind the same access as the history.
+  if (options.backupDownloads !== undefined) {
+    mountBackupRoutes(apiRoutes, { ...commandApiAccess, backupDownloads: options.backupDownloads });
+  }
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

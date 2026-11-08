@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 
 import { serve } from '@hono/node-server';
 
+import { createBackupDownloads } from '../../modules/backup/index.js';
 import { startBindingService } from '../../modules/bindings/index.js';
 import {
   buildRecordingsFolderPath,
@@ -197,6 +198,16 @@ async function startServingFromDatabase(
     macroRunner.stop();
   }
 
+  // Nothing runs until the operator asks for a backup ("Cópia de segurança").
+  const backupDownloads = createBackupDownloads({
+    stateStore,
+    logger: options.logger,
+    databasePath: options.databasePath,
+    dataFolder: options.dataFolder,
+    version: options.version,
+    readCurrentTime: options.readCurrentTime,
+  });
+
   let httpServer: Server;
   let webSocketHub: ReturnType<typeof attachWebSocketHub>;
   try {
@@ -213,6 +224,7 @@ async function startServingFromDatabase(
       apiTokens: options.apiTokens,
       isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
       publicOrigins: options.publicOrigins,
+      backupDownloads,
     });
     httpServer = await listen({
       fetch: app.fetch,

@@ -12,7 +12,8 @@ it opens the file and applies the committed migrations at boot, failing closed.
 - `sliceRowStorage.ts`, `dataSnapshotRowStorage.ts`, `eventLogRowStorage.ts` — reading and
   writing rows.
 - `databaseBackup.ts` — dated copies with SQLite's online backup while the server runs,
-  the newest 14 kept; `src/backupDatabase.ts` is the command (BAJAOVRLAY-34).
+  the newest 14 kept; `src/backupDatabase.ts` is the command (BAJAOVRLAY-34). Its
+  `copyDatabaseIntoFile` is the copy alone, which the backup download uses (BAJAOVRLAY-33).
 - `temporaryDatabase.testSupport.ts` — real SQLite files in temp folders, for tests.
 
 Migrations live in `apps/server/drizzle/`. After changing `tables.ts`, run

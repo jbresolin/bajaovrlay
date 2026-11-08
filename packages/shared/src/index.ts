@@ -211,6 +211,10 @@ export * from './entities/index.js';
 // two commands and the uses of an image in the library.
 export * from './media/index.js';
 
+// The backup download (BAJAOVRLAY-33): recordBackup, the summary route's answer, the
+// size as the operator reads it and "Última cópia" read from the event log.
+export * from './backup/index.js';
+
 // The flex mapping: paths into a JSON response, the mapping config of a flex source, the
 // canonical fields a rule can fill, and applyFlexMapping, shared by the server and "Testar".
 export * from './flexMapping/index.js';

@@ -1,6 +1,7 @@
 // Dated backups of the server's SQLite database, taken with SQLite's online backup while
-// the server runs (BAJAOVRLAY-34). backupDatabase.ts is the command that calls this.
-import { mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
+// the server runs (BAJAOVRLAY-34). backupDatabase.ts is the command that calls this; the
+// backup download (modules/backup, BAJAOVRLAY-33) uses copyDatabaseIntoFile alone.
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 import Database from 'better-sqlite3';
@@ -29,21 +30,39 @@ export async function writeDatabaseBackup(options: {
   readCurrentTime?: (() => Date) | undefined;
 }): Promise<DatabaseBackupOutcome> {
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
-  // fileMustExist: a wrong DATABASE_PATH must fail, not create and copy an empty database.
-  let database: Database.Database;
-  try {
-    database = new Database(options.databasePath, { readonly: true, fileMustExist: true });
-  } catch (openError) {
-    throw new Error(`cannot open the database to back it up: ${options.databasePath}`, {
-      cause: openError,
-    });
-  }
-
+  // Checked before the folder is made, so a wrong DATABASE_PATH writes nothing at all.
+  assertDatabaseFileExists(options.databasePath);
   mkdirSync(options.backupFolder, { recursive: true });
   const backupPath = join(options.backupFolder, nameBackupFile(readCurrentTime()));
   // Written under another name first and renamed when whole, so a backup cut short (the
   // container stopped, the disk full) is never counted among the 14 kept.
   const unfinishedBackupPath = `${backupPath}.partial`;
+  await copyDatabaseIntoFile(options.databasePath, unfinishedBackupPath);
+  renameSync(unfinishedBackupPath, backupPath);
+
+  const removedBackupPaths = removeBackupsPastTheNewest(options.backupFolder, backupsKept);
+  return { backupPath, removedBackupPaths };
+}
+
+/**
+ * Copies the database into `destinationPath` with SQLite's online backup, as one
+ * consistent moment while the server keeps writing; the nightly command above and the
+ * download (modules/backup, BAJAOVRLAY-33) both use it. Rejects, leaving no file behind,
+ * when the database cannot be opened or the copy fails.
+ */
+export async function copyDatabaseIntoFile(
+  databasePath: string,
+  destinationPath: string,
+): Promise<void> {
+  // fileMustExist: a wrong DATABASE_PATH must fail, not create and copy an empty database.
+  let database: Database.Database;
+  try {
+    database = new Database(databasePath, { readonly: true, fileMustExist: true });
+  } catch (openError) {
+    throw new Error(`cannot open the database to back it up: ${databasePath}`, {
+      cause: openError,
+    });
+  }
   try {
     // SQLite's online backup starts over by itself when the server writes between two of
     // its steps, so the copy is always one consistent moment. better-sqlite3 copies 100
@@ -56,17 +75,20 @@ export async function writeDatabaseBackup(options: {
     // never pruned. Measured on João's machine: 35 ms for 10 MB, 160 ms for 100 MB, 465 ms
     // for 300 MB. Near 3 GB the wait would pass 5 s and a write would fail (SQLITE_BUSY)
     // during the backup: long before that, event_log needs pruning.
-    await database.backup(unfinishedBackupPath, { progress: () => allRemainingPagesInOneStep });
+    await database.backup(destinationPath, { progress: () => allRemainingPagesInOneStep });
   } catch (backupError) {
-    rmSync(unfinishedBackupPath, { force: true });
+    rmSync(destinationPath, { force: true });
     throw backupError;
   } finally {
     database.close();
   }
-  renameSync(unfinishedBackupPath, backupPath);
+}
 
-  const removedBackupPaths = removeBackupsPastTheNewest(options.backupFolder, backupsKept);
-  return { backupPath, removedBackupPaths };
+/** Throws the same error copyDatabaseIntoFile would when the database file is missing. */
+function assertDatabaseFileExists(databasePath: string): void {
+  if (!existsSync(databasePath)) {
+    throw new Error(`cannot open the database to back it up: ${databasePath}`);
+  }
 }
 
 /** The file name of a backup taken at `moment`: bajaovrlay-2026-11-14T030000Z.sqlite. */

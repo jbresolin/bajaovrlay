@@ -1,6 +1,7 @@
 import { type Command, isCommandTypeOfTheOperator } from '@bajaovrlay/shared';
 
 import {
+  backupActor,
   bindingRefresherActor,
   dataSourceRecorderActor,
   eventInboxActor,
@@ -66,6 +67,9 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  * - the trigger service (`sistema:gatilhos`) may only fire a trigger (fireTrigger), and
  *   nobody else may: a firing stands for a scene change, a call, an event or a moment the
  *   service saw, and its rules against loops read its cause (BAJAOVRLAY-48);
+ * - the backup download (`sistema:backup`) may only record a backup it sent whole
+ *   (recordBackup), and nobody else may: a page that could would show "Última cópia" for
+ *   a copy never made (BAJAOVRLAY-33);
  * - a takeItem carrying a trigger's data (`triggerFill`) is the macro runner's alone: an
  *   operator's take uses the item's own values, so no page can put text on air that looks
  *   as if a trigger brought it;
@@ -80,7 +84,7 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   page can fake race data or a count, the OBS connection's reports,
  *   refreshBoundInstanceData (a value typed over a live field is a correction, made with
  *   setOverride), recordDetectedEvents (no page may fake a race event),
- *   recordUploadedMedia, and the renderer's report; and not a
+ *   recordUploadedMedia, recordBackup, and the renderer's report; and not a
  *   stopRecording that carries a failureMessage either: only the recorder says why a
  *   recording failed (gate 2 on PR #16).
  * The role comes from the address the connection chose (`/ws?role=renderer`,
@@ -130,6 +134,9 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   }
   if (actor === triggerServiceActor) {
     return command.type === 'fireTrigger';
+  }
+  if (actor === backupActor) {
+    return command.type === 'recordBackup';
   }
   if (actor === dataSourceRecorderActor) {
     return command.type === 'stopRecording' || command.type === 'recordRecordingProgress';

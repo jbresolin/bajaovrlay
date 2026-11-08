@@ -16,9 +16,7 @@ import {
   saveCommandOutcome,
   saveCommandOutcomeWithoutEventLogRow,
 } from '../db/commandOutcomeStorage.js';
-import { readEventLogRowsBelow } from '../db/eventLogRowStorage.js';
 import { findEventLogDetailsOfCommand } from '../events/eventLogDetailsOfACommand.js';
-import { convertEventLogRowToEntry } from '../events/eventLogRowConversion.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
 import { allowCommandForActorRole, type IsCommandAllowed } from './authorizeCommand.js';
 import {
@@ -32,6 +30,7 @@ import {
   type DataSnapshotChange,
   findChangedDataSnapshots,
 } from './dataSnapshotChanges.js';
+import { createEventLogReaders, type EventLogReaders } from './eventLogReaders.js';
 import { loadInitialSlices, type LoadInitialSlicesOptions } from './loadInitialSlices.js';
 import { reduceCommand } from './reducers/reduceCommand.js';
 import type { SlicesChangedByCommands } from './reducers/reducerTypes.js';
@@ -88,20 +87,17 @@ export type SliceChangeListener = (
   changedDataSnapshots: DataSnapshotChange[],
 ) => void;
 
-/** The store: the only holder of state and the only way to change it. */
-export type StateStore = {
+/**
+ * The store: the only holder of state and the only way to change it, and the reads of
+ * the event log the database keeps (eventLogReaders.ts).
+ */
+export type StateStore = EventLogReaders & {
   /** Every slice as it is now. Treat the result as read-only. */
   readAllSlices: () => Slices;
   /** Runs one command through the single command path; see createStateStore. */
   applyCommand: (commandInput: unknown, actor: string) => CommandOutcome;
   /** Registers a listener for slice changes; returns a function that removes it. */
   subscribeToSliceChanges: (listener: SliceChangeListener) => () => void;
-  /**
-   * Up to `limit` event-log entries below the row id `beforeId` (from the newest when it
-   * is undefined), newest first, read from the database, which keeps every row; for the
-   * history's older pages (BAJAOVRLAY-30). Reading only: it changes nothing.
-   */
-  readEventLogEntriesBelow: (beforeId: number | undefined, limit: number) => EventLogEntry[];
 };
 
 /**
@@ -190,8 +186,10 @@ export function createStateStore(options: StateStoreOptions): StateStore {
     // broadcast. The sender still gets its ok. João's ruling, 2026-10-10.
     // What could go wrong: the event log no longer shows that such a command was sent
     // at all, so "did the second renderer ever report?" cannot be answered from it.
+    // recordBackup changes no slice on purpose: its row is the record (BAJAOVRLAY-33).
     const isAnySliceChanged = findNamesOfChangedSlices(reducerOutcome.slices).length > 0;
-    if (!isAnySliceChanged) {
+    const isLoggedAllTheSame = reducerOutcome.isLoggedWithoutAChange === true;
+    if (!isAnySliceChanged && !isLoggedAllTheSame) {
       return { ok: true };
     }
     // A step the command's new data no longer has was moved by the reducer itself: the
@@ -394,7 +392,6 @@ export function createStateStore(options: StateStoreOptions): StateStore {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    readEventLogEntriesBelow: (beforeId, limit) =>
-      readEventLogRowsBelow(options.database, beforeId, limit).map(convertEventLogRowToEntry),
+    ...createEventLogReaders(options.database),
   };
 }

@@ -104,6 +104,7 @@ export const sentenceOfEachCommandType: SentenceOfEachCommandType = {
   reorderLayers: sentencesOfSettings.describeReorderLayers,
   deleteLayer: sentencesOfSettings.describeDeleteLayer,
   recordObsState: sentencesOfSettings.describeRecordObsState,
+  recordBackup: sentencesOfSettings.describeRecordBackup,
 };
 
 /**

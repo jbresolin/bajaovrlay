@@ -1,3 +1,4 @@
+import { ptBRBackup } from './ptBRBackup.js';
 import { ptBRBindingErrors } from './ptBRBindings.js';
 import { ptBREventErrors } from './ptBREvents.js';
 import { ptBRMediaErrors } from './ptBRMedia.js';
@@ -128,6 +129,8 @@ export const ptBR = {
   programHistoryErrors: ptBRProgramHistoryErrors,
   // Refusals about the media store: uploads, serving, deleting (BAJAOVRLAY-19); ptBRMedia.ts.
   mediaErrors: ptBRMediaErrors,
+  // The backup download: its refusals and its leia-me.txt (BAJAOVRLAY-33); ptBRBackup.ts.
+  backup: ptBRBackup,
   // Outputs and the editing of layers: names and refusals (BAJAOVRLAY-49); ptBROutputs.ts.
   outputs: ptBROutputs,
   // OBS control: connection errors and the refusals of a scene switch (BAJAOVRLAY-27).

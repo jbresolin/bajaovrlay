@@ -15,7 +15,8 @@ then `src/core/store/createStateStore.ts` (the single command path).
 - `src/core/` — the server's building blocks, one folder per concept (see its README).
 - `src/modules/` — feature modules: `dataSources/` (polled sources, recordings), `bindings/`
   (live refresh of bound fields, the operator's corrections), and `outputs/` (outputs and
-  the editing of layers, BAJAOVRLAY-49), among others; each has a README.
+  the editing of layers, BAJAOVRLAY-49) and `backup/` (the zip "Cópia de segurança"
+  downloads, BAJAOVRLAY-33), among others; each has a README.
 - `src/api/v1/` — thin REST routes and the generated OpenAPI document.
 - `src/backupDatabase.ts` — the backup command, `node apps/server/dist/backupDatabase.js
 <folder>`: a dated copy of the database while the server runs, the newest 14 kept.

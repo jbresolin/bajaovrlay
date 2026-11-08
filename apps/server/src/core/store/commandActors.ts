@@ -8,7 +8,8 @@
 // each data source, `sistema:fonte:<sourceId>`, the recorder, `sistema:gravador`, the
 // refresher of bound fields, `sistema:vinculos`, the event inbox's detection and runner,
 // `sistema:eventos`, the media store, `sistema:midia`, the OBS connection,
-// `sistema:obs`, and the trigger service, `sistema:gatilhos`). A fifth role, `api:<token
+// `sistema:obs`, the trigger service, `sistema:gatilhos`, and the backup download,
+// `sistema:backup`). A fifth role, `api:<token
 // name>`, signs a command sent over HTTP by a device of the command API (Companion, a
 // Stream Deck, a script; BAJAOVRLAY-28): it stands where an operator stands.
 const rendererRolePrefix = 'renderer:';
@@ -65,6 +66,12 @@ export const obsConnectionActor = 'sistema:obs';
  * nothing else; a macro a firing starts is run by the macro runner, as any other run.
  */
 export const triggerServiceActor = 'sistema:gatilhos';
+
+/**
+ * The actor name the backup download signs its recordBackup with (BAJAOVRLAY-33), once a
+ * zip went out whole. It may send nothing else: it reads the data, it never changes it.
+ */
+export const backupActor = 'sistema:backup';
 
 /** The actor name of a renderer page's connection. */
 export function buildRendererActor(connectionId: string): string {

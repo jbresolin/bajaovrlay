@@ -1,4 +1,4 @@
-import { count, desc, lt } from 'drizzle-orm';
+import { and, count, desc, eq, lt, sql } from 'drizzle-orm';
 
 import type { ServerDatabase } from './openDatabase.js';
 import { type EventLogRow, eventLogRows } from './tables.js';
@@ -36,4 +36,25 @@ export function readEventLogRowsBelow(
   const query = database.select().from(eventLogRows);
   const rowsBelow = beforeId === undefined ? query : query.where(lt(eventLogRows.id, beforeId));
   return rowsBelow.orderBy(desc(eventLogRows.id)).limit(limit).all();
+}
+
+/**
+ * Reads the newest row of the event log for `commandName` that was accepted (status ok),
+ * however old, or undefined when there is none: "Última cópia" (BAJAOVRLAY-33).
+ */
+export function readNewestAcceptedEventLogRowOfCommand(
+  database: ServerDatabase,
+  commandName: string,
+): EventLogRow | undefined {
+  // A refused claim (an operator sending recordBackup) is logged too; it must not hide
+  // the real copy behind it. No index on command: read newest first, SQLite stops at the
+  // first match, and a race day's log is some tens of thousands of rows.
+  const isAccepted = sql`json_extract(${eventLogRows.result}, '$.status') = 'ok'`;
+  return database
+    .select()
+    .from(eventLogRows)
+    .where(and(eq(eventLogRows.command, commandName), isAccepted))
+    .orderBy(desc(eventLogRows.id))
+    .limit(1)
+    .get();
 }

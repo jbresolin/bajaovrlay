@@ -3,8 +3,8 @@
 The frame of the control page. Start reading at `AppShell.tsx`.
 
 - `AppShell.tsx` — the header, always on screen: title, the links to the five pages ("Console",
-  "Fontes", "Cadastros", "Eventos", "Saídas"), the data sources chip, server check, connection badge and the "?"
-  that lists the shortcuts. Below it, the page the address names.
+  "Fontes", "Cadastros", "Eventos", "Saídas"), the data sources chip, server check, "Cópia de
+  segurança" (features/backup), connection badge and the "?" that lists the shortcuts. Below it, the page the address names.
 - `currentPage.ts` — which page the address after "#" names: `#/fontes` is "Fontes de dados"
   (features/dataSources), `#/cadastros` the entity library (features/entityLibrary),
   `#/eventos` the review of the event inbox (features/events), `#/saidas` the outputs and

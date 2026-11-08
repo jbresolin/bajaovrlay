@@ -103,6 +103,8 @@ export const senderOfEachCommandType: Record<Command['type'], CommandSender> = {
   runTriggerFiring: 'operator',
   dismissTriggerFiring: 'operator',
   restoreTriggerFiring: 'operator',
+  // A finished backup: only the server knows the zip went out whole, and its size.
+  recordBackup: 'server',
 };
 
 /** The command types only the server sends, read from senderOfEachCommandType. */

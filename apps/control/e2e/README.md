@@ -18,6 +18,8 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   `clockStoppedOnAir.e2e.ts` (a stopped clock keeps its time), `rundownTakeWithSpace.e2e.ts` (Space, ←, "Excluir").
 - Quick fire (steps in `quickFireTestSteps.ts`): `quickFireWithNumberKey.e2e.ts` (1 fires a button), `macroTakeWaitClear.e2e.ts`
   (take, wait 0,5 s, clear: empty after 0.4–3 s), `macroStopDuringWait.e2e.ts` ("Parar" in a 5 s wait: the clock stays).
+- Backup (BAJAOVRLAY-33): `backupDownload.e2e.ts` ("Cópia de segurança" → "Baixar": the saved zip is unzipped in the
+  test, its database is whole and holds the "Atalhos" button made before it; "Última cópia" then shows it).
 - Undo (BAJAOVRLAY-30): `undoWithCtrlZ.e2e.ts` (two "Atalhos" buttons taken with 1 and 2, then Ctrl+Z: the OBS
   stand-in draws the first one again).
 

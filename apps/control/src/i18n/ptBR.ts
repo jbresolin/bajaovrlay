@@ -1,3 +1,4 @@
+import { ptBRBackup } from './ptBRBackup';
 import { ptBRBindings } from './ptBRBindings';
 import { ptBRDataSources } from './ptBRDataSources';
 import { ptBREntityLibrary } from './ptBREntityLibrary';
@@ -33,6 +34,8 @@ export const ptBR = {
   events: ptBREvents,
   // The "Histórico" page, #/historico (features/history), in ptBRHistory.ts.
   history: ptBRHistory,
+  // "Cópia de segurança" in the header (features/backup, BAJAOVRLAY-33), in ptBRBackup.ts.
+  backup: ptBRBackup,
   textList: ptBRTextList,
   app: {
     title: 'BajaOvrLay',

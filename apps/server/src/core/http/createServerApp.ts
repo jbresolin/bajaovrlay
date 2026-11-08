@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { requestId } from 'hono/request-id';
 
 import { createApiV1Routes } from '../../api/v1/createApiV1Routes.js';
+import type { BackupDownloads } from '../../modules/backup/index.js';
 import type {
   ReadEnvironmentVariable,
   SourceHostAllowlist,
@@ -53,6 +54,8 @@ export type ServerAppOptions = {
    * may upload images too. None when left out: only the server's own address may.
    */
   publicOrigins?: readonly string[] | undefined;
+  /** The backup downloads (BAJAOVRLAY-33): GET /api/v1/backup; leave out in tests that make none. */
+  backupDownloads?: BackupDownloads | undefined;
 };
 
 /**
@@ -82,6 +85,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         apiTokens: options.apiTokens,
         isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
         publicOrigins: options.publicOrigins,
+        backupDownloads: options.backupDownloads,
       }),
     );
     if (options.mediaFolder !== undefined) {

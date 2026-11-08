@@ -8,7 +8,8 @@ in front of each route of the command API (api/v1/mountCommandApiRoutes.ts): 403
 BAJAOVRLAY_API_TOKENS nor BAJAOVRLAY_API_OPEN=true turns it on, 401 for a missing or wrong
 token, otherwise the device's name for the route, or "rede" for a call with no header when the
 API is open to the studio network. `allowTheControlPageOrRequireApiAccess.ts` lets the control
-page's own fetch through first (GET /api/v1/event-log, BAJAOVRLAY-30), as /state does, and puts
+page's own fetch through first (GET /api/v1/event-log, BAJAOVRLAY-30; GET /api/v1/backup and
+its summary, BAJAOVRLAY-33), as /state does, and puts
 every other caller through the same check. `commandApiAccessAtBoot.ts` writes the boot log's line
 about it, a warning when open.
 
