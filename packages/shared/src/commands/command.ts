@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { RecordBackupCommandSchema } from '../backup/backupCommands.js';
 import { RefreshBoundInstanceDataCommandSchema } from '../bindings/refreshBoundInstanceData.js';
 import { CreateDataSourceCommandSchema } from '../dataSources/createDataSource.js';
 import { DeleteDataSourceCommandSchema } from '../dataSources/deleteDataSource.js';
@@ -177,6 +178,9 @@ export const CommandSchema = z.discriminatedUnion('type', [
   // server's media store (sistema:midia) after the upload route wrote the file.
   RecordUploadedMediaCommandSchema,
   DeleteMediaCommandSchema,
+  // The backup download (BAJAOVRLAY-33); ../backup/. Sent only by the server's backup
+  // (sistema:backup) once a zip went out whole.
+  RecordBackupCommandSchema,
   // Outputs and the editing of layers (BAJAOVRLAY-49); ../outputs/. Operators only.
   CreateOutputCommandSchema,
   RenameOutputCommandSchema,

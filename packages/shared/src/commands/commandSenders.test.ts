@@ -63,14 +63,16 @@ describe('the senders of each command', () => {
     ).toEqual([...typesInTheSchema].sort());
   });
 
-  it('keeps exactly eleven commands for the server alone', () => {
+  it('keeps exactly twelve commands for the server alone', () => {
     // Arrange: the eight the authorisation step has always kept from operators, the two
-    // reports of the server's OBS connection (BAJAOVRLAY-27), and a trigger's firing
-    // (BAJAOVRLAY-48), which only the trigger service sees happen.
+    // reports of the server's OBS connection (BAJAOVRLAY-27), a trigger's firing
+    // (BAJAOVRLAY-48), which only the trigger service sees happen, and a finished backup
+    // (BAJAOVRLAY-33), which only the backup knows went out whole.
     const expectedServerCommands = [
       'advanceMacroRun',
       'endMacroRun',
       'fireTrigger',
+      'recordBackup',
       'recordDataSourcePoll',
       'recordDetectedEvents',
       'recordObsSceneSwitchAnswer',
@@ -84,7 +86,7 @@ describe('the senders of each command', () => {
     // Act: read the list.
     const serverCommands = [...commandTypesOnlyTheServerSends].sort();
 
-    // Assert: the same eleven.
+    // Assert: the same twelve.
     expect(serverCommands, 'only these commands are the server’s own').toEqual(
       expectedServerCommands,
     );
@@ -232,6 +234,9 @@ const roleTable = [
   { commandType: 'recordObsState', produtor: false, dados: false },
   { commandType: 'recordObsSceneSwitchAnswer', produtor: false, dados: false },
   { commandType: 'fireTrigger', produtor: false, dados: false },
+  // The server writes it once a backup's zip went out; a role downloads the backup (both
+  // may), but never claims one was made.
+  { commandType: 'recordBackup', produtor: false, dados: false },
 ] as const;
 
 describe('the role table', () => {

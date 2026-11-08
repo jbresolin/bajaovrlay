@@ -19,6 +19,8 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
   `clockStoppedOnAir.e2e.ts` (a stopped clock keeps its time), `rundownTakeWithSpace.e2e.ts` (Space, ←, "Excluir").
 - Quick fire (steps in `quickFireTestSteps.ts`): `quickFireWithNumberKey.e2e.ts` (1 fires a button), `macroTakeWaitClear.e2e.ts`
   (take, wait 0,5 s, clear: empty after 0.4–3 s), `macroStopDuringWait.e2e.ts` ("Parar" in a 5 s wait: the clock stays).
+- Backup (BAJAOVRLAY-33): `backupDownload.e2e.ts` ("Cópia de segurança" → "Baixar": the saved zip is unzipped in the
+  test, its database is whole and holds the "Atalhos" button made before it; "Última cópia" then shows it).
 - Login (BAJAOVRLAY-29): `loginRolesWalk.e2e.ts` runs on a second real server with the PINs set
   (`loginServerOfTheBrowserTests.ts`, port 5181, which serves the BUILT page): Dados at "Mesa 2" prepares and edits an
   item, its "Disparar" greyed out with the role's tooltip; "Sair", then the Produtor at "Mesa 1" takes it; the event log

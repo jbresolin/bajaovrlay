@@ -46,6 +46,9 @@ export const accessOfEachApiRoute = {
   'POST /data-sources/http-json/sample-request': 'operatorSession',
   'GET /entities/simulator-teams': 'operatorSession',
   'POST /media': 'operatorSession',
+  // The backup download (BAJAOVRLAY-33): Produtor and Dados both, as it changes nothing on air.
+  'GET /backup': 'operatorSession',
+  'GET /backup/summary': 'operatorSession',
   'POST /commands': 'commandApi',
   'POST /take-next': 'commandApi',
   'POST /take-item/{itemId}': 'commandApi',

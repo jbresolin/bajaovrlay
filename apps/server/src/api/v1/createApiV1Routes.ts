@@ -10,6 +10,7 @@ import { ptBR } from '../../core/messages/ptBR.js';
 import { type OperatorLogin } from '../../core/operatorLogin/operatorLogin.js';
 import { middlewareForTheAccessOfRoute } from '../../core/operatorLogin/routeAccess.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import type { BackupDownloads } from '../../modules/backup/index.js';
 import {
   buildInvalidSampleRequestAnswer,
   fetchSampleOfHttpJsonRequest,
@@ -37,6 +38,7 @@ import {
   storeUploadedImage,
 } from '../../modules/media/index.js';
 import { getEventLogRoute } from './eventLogRoute.js';
+import { mountBackupRoutes } from './mountBackupRoutes.js';
 import { mountButtonStateRoutes } from './mountButtonStateRoutes.js';
 import { mountCommandApiRoutes } from './mountCommandApiRoutes.js';
 import { mountSessionRoutes } from './sessionRoutes.js';
@@ -63,6 +65,8 @@ export function createApiV1Routes(options: {
   isApiOpenToTheNetwork?: boolean | undefined;
   /** BAJAOVRLAY_PUBLIC_ORIGINS as read at boot: a proxy's pages that may upload; none when left out. */
   publicOrigins?: readonly string[] | undefined;
+  /** The backup downloads (BAJAOVRLAY-33); no backup routes when left out. */
+  backupDownloads?: BackupDownloads | undefined;
   /** The operator login (BAJAOVRLAY-29); with the login off every page read is open. */
   operatorLogin: OperatorLogin;
 }): OpenAPIHono<ServerAppEnvironment> {
@@ -209,6 +213,14 @@ export function createApiV1Routes(options: {
       return context.json(body, 400);
     },
   );
+
+  // The backup download (BAJAOVRLAY-33): a session of either role, as routeAccess.ts says.
+  if (options.backupDownloads !== undefined) {
+    mountBackupRoutes(apiRoutes, {
+      backupDownloads: options.backupDownloads,
+      routeAccessOptions,
+    });
+  }
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

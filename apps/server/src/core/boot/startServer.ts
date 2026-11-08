@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 
 import { serve } from '@hono/node-server';
 
+import { createBackupDownloads } from '../../modules/backup/index.js';
 import { startBindingService } from '../../modules/bindings/index.js';
 import {
   buildRecordingsFolderPath,
@@ -94,6 +95,12 @@ export type StartServerOptions = {
    * renderers what time it is), so the two can never disagree. Tests hold it still.
    */
   readCurrentTime?: (() => Date) | undefined;
+  /**
+   * Where a backup copies the database before zipping it; the system's temporary folder
+   * when left out. Tests give a folder of their own, so the sweep of copies left behind
+   * at boot never meets another server's.
+   */
+  backupTemporaryFolder?: string | undefined;
 };
 
 /** A booted server: the port it listens on, its store, and how to stop it. */
@@ -212,6 +219,18 @@ async function startServingFromDatabase(
     macroRunner.stop();
   }
 
+  // Clears the copies a server killed mid-backup left behind; nothing else runs until the
+  // operator asks for a backup ("Cópia de segurança").
+  const backupDownloads = createBackupDownloads({
+    stateStore,
+    logger: options.logger,
+    databasePath: options.databasePath,
+    dataFolder: options.dataFolder,
+    version: options.version,
+    readCurrentTime: options.readCurrentTime,
+    temporaryFolder: options.backupTemporaryFolder,
+  });
+
   let httpServer: Server;
   let webSocketHub: ReturnType<typeof attachWebSocketHub>;
   try {
@@ -228,6 +247,7 @@ async function startServingFromDatabase(
       apiTokens: options.apiTokens,
       isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
       publicOrigins: options.publicOrigins,
+      backupDownloads,
       operatorLogin,
     });
     httpServer = await listen({

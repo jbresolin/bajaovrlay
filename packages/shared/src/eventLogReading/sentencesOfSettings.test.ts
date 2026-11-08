@@ -1,5 +1,5 @@
 /**
- * The history sentences of the commands that sets the show up: outputs, layers and OBS’s connection (packages/shared)
+ * The history sentences of the commands that sets the show up: outputs, layers, OBS’s connection and backups (packages/shared)
  *
  * What this module is for:
  *   The history page (#/historico, BAJAOVRLAY-30) reads every change of the show back in
@@ -107,6 +107,28 @@ const sentenceScenarios: Array<{ name: string; command: CommandInput; expected: 
       },
     },
     expected: 'A conexão com o OBS ficou com erro',
+  },
+  // A backup at a session break, recordings included: its file and its size.
+  {
+    name: 'recordBackup names the zip and its size',
+    command: {
+      type: 'recordBackup',
+      fileName: 'bajaovrlay-2026-11-14-1432.zip',
+      sizeInBytes: 50_331_648,
+      includesRecordings: true,
+    },
+    expected: 'Baixou a cópia de segurança bajaovrlay-2026-11-14-1432.zip (48 MB)',
+  },
+  // "Incluir gravações" unticked: the sentence says so, since the copy cannot replay a race.
+  {
+    name: 'recordBackup without recordings says so',
+    command: {
+      type: 'recordBackup',
+      fileName: 'bajaovrlay-2026-11-14-1432.zip',
+      sizeInBytes: 3_670_016,
+      includesRecordings: false,
+    },
+    expected: 'Baixou a cópia de segurança bajaovrlay-2026-11-14-1432.zip (3,5 MB, sem gravações)',
   },
 ];
 

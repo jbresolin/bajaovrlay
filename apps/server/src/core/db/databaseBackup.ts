@@ -1,9 +1,13 @@
 // Dated backups of the server's SQLite database, taken with SQLite's online backup while
-// the server runs (BAJAOVRLAY-34). backupDatabase.ts is the command that calls this.
-import { mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
+// the server runs (BAJAOVRLAY-34). backupDatabase.ts is the command that calls this; the
+// backup download (modules/backup, BAJAOVRLAY-33) uses copyDatabaseIntoFile alone.
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { setTimeout as waitFor } from 'node:timers/promises';
 
 import Database from 'better-sqlite3';
+
+import { ptBR } from '../messages/ptBR.js';
 
 /** How many backups the folder keeps: two weeks of nightly runs. */
 export const backupsKept = 14;
@@ -14,6 +18,33 @@ const backupFileNamePattern = /^bajaovrlay-\d{4}-\d{2}-\d{2}T\d{6}Z\.sqlite$/;
 
 // The largest page count better-sqlite3 accepts for one step: more than any database has.
 const allRemainingPagesInOneStep = 0x7fffffff;
+
+/**
+ * How long one try waits inside SQLite for a lock to go (its busy handler). It must not be
+ * 0: against a server committing without pause, a try that never waits never finds the
+ * gap between two commits (4 failures in 5 pinned runs of
+ * backupDatabaseWhileTheServerWrites.test.ts at gate 2), and SQLite's busy handler is what
+ * slips the copy in. better-sqlite3's default, 5 s, would make ten tries last 50 s.
+ */
+const busyWaitOfOneTryInMs = 250;
+
+/**
+ * How long a copy that met the database locked waits before each new try: ten tries of
+ * up to 250 ms each, with these waits between them, about 5 s in all. The server's own
+ * writes wait up to 5 s for a lock (its busy timeout), so a lock held longer than this
+ * is not a write being committed but something stuck.
+ */
+export const waitsBetweenCopyTriesInMs: readonly number[] = [
+  50, 100, 200, 300, 300, 300, 300, 300, 300,
+];
+
+/** The copy met the database locked at every try; its message is the pt-BR reason. */
+export class DatabaseStayedLockedError extends Error {
+  constructor() {
+    super(ptBR.backup.databaseStayedLocked);
+    this.name = 'DatabaseStayedLockedError';
+  }
+}
 
 /** What one backup did: the file it wrote, and the oldest backups it removed. */
 export type DatabaseBackupOutcome = { backupPath: string; removedBackupPaths: string[] };
@@ -29,21 +60,68 @@ export async function writeDatabaseBackup(options: {
   readCurrentTime?: (() => Date) | undefined;
 }): Promise<DatabaseBackupOutcome> {
   const readCurrentTime = options.readCurrentTime ?? (() => new Date());
-  // fileMustExist: a wrong DATABASE_PATH must fail, not create and copy an empty database.
-  let database: Database.Database;
-  try {
-    database = new Database(options.databasePath, { readonly: true, fileMustExist: true });
-  } catch (openError) {
-    throw new Error(`cannot open the database to back it up: ${options.databasePath}`, {
-      cause: openError,
-    });
-  }
-
+  // Checked before the folder is made, so a wrong DATABASE_PATH writes nothing at all.
+  assertDatabaseFileExists(options.databasePath);
   mkdirSync(options.backupFolder, { recursive: true });
   const backupPath = join(options.backupFolder, nameBackupFile(readCurrentTime()));
   // Written under another name first and renamed when whole, so a backup cut short (the
   // container stopped, the disk full) is never counted among the 14 kept.
   const unfinishedBackupPath = `${backupPath}.partial`;
+  await copyDatabaseIntoFile(options.databasePath, unfinishedBackupPath);
+  renameSync(unfinishedBackupPath, backupPath);
+
+  const removedBackupPaths = removeBackupsPastTheNewest(options.backupFolder, backupsKept);
+  return { backupPath, removedBackupPaths };
+}
+
+/**
+ * Copies the database into `destinationPath` with SQLite's online backup, as one
+ * consistent moment while the server keeps writing; the nightly command above and the
+ * download (modules/backup, BAJAOVRLAY-33) both use it. A database locked by a write is
+ * tried again after each of `waitsBetweenTriesInMs`; still locked after the last, it
+ * rejects with DatabaseStayedLockedError. Any failure leaves no file behind.
+ */
+export async function copyDatabaseIntoFile(
+  databasePath: string,
+  destinationPath: string,
+  options: { waitsBetweenTriesInMs?: readonly number[] | undefined } = {},
+): Promise<void> {
+  const waitsBetweenTries = options.waitsBetweenTriesInMs ?? waitsBetweenCopyTriesInMs;
+  let isCopied = await tryToCopyDatabaseOnce(databasePath, destinationPath);
+  for (const waitInMs of waitsBetweenTries) {
+    if (isCopied) {
+      return;
+    }
+    await waitFor(waitInMs);
+    isCopied = await tryToCopyDatabaseOnce(databasePath, destinationPath);
+  }
+  if (!isCopied) {
+    throw new DatabaseStayedLockedError();
+  }
+}
+
+/**
+ * One try of the copy: true when the file was written, false when the database was locked
+ * before the first page could be read. Rejects on any other failure.
+ */
+async function tryToCopyDatabaseOnce(
+  databasePath: string,
+  destinationPath: string,
+): Promise<boolean> {
+  // fileMustExist: a wrong DATABASE_PATH must fail, not create and copy an empty database.
+  // timeout: see busyWaitOfOneTryInMs.
+  let database: Database.Database;
+  try {
+    database = new Database(databasePath, {
+      readonly: true,
+      fileMustExist: true,
+      timeout: busyWaitOfOneTryInMs,
+    });
+  } catch (openError) {
+    throw new Error(`cannot open the database to back it up: ${databasePath}`, {
+      cause: openError,
+    });
+  }
   try {
     // SQLite's online backup starts over by itself when the server writes between two of
     // its steps, so the copy is always one consistent moment. better-sqlite3 copies 100
@@ -56,17 +134,31 @@ export async function writeDatabaseBackup(options: {
     // never pruned. Measured on João's machine: 35 ms for 10 MB, 160 ms for 100 MB, 465 ms
     // for 300 MB. Near 3 GB the wait would pass 5 s and a write would fail (SQLITE_BUSY)
     // during the backup: long before that, event_log needs pruning.
-    await database.backup(unfinishedBackupPath, { progress: () => allRemainingPagesInOneStep });
+    const progress = await database.backup(destinationPath, {
+      progress: () => allRemainingPagesInOneStep,
+    });
+    // A database still locked when the busy wait runs out before the first step (another
+    // connection committing a write, in the rollback journal the server uses) answers as
+    // a finished backup of zero pages and writes no file. A real database always has at least one page.
+    const isLockedBeforeTheFirstPage = progress.totalPages === 0 || !existsSync(destinationPath);
+    if (isLockedBeforeTheFirstPage) {
+      rmSync(destinationPath, { force: true });
+      return false;
+    }
+    return true;
   } catch (backupError) {
-    rmSync(unfinishedBackupPath, { force: true });
+    rmSync(destinationPath, { force: true });
     throw backupError;
   } finally {
     database.close();
   }
-  renameSync(unfinishedBackupPath, backupPath);
+}
 
-  const removedBackupPaths = removeBackupsPastTheNewest(options.backupFolder, backupsKept);
-  return { backupPath, removedBackupPaths };
+/** Throws the same error copyDatabaseIntoFile would when the database file is missing. */
+function assertDatabaseFileExists(databasePath: string): void {
+  if (!existsSync(databasePath)) {
+    throw new Error(`cannot open the database to back it up: ${databasePath}`);
+  }
 }
 
 /** The file name of a backup taken at `moment`: bajaovrlay-2026-11-14T030000Z.sqlite. */

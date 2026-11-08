@@ -7,7 +7,7 @@ data sources use that uplink (the Baja app's API, a scoring poll). When the upli
 those sources go stale and the last good data stays on air; nothing on screen is drawn
 from elsewhere. The image is carried there on a USB stick. Steps 1–5 are the install; step
 6 is the check before every broadcast; step 7 is an update at the track; step 8 puts a
-backup of the database back.
+backup of the database back; step 9 restores a whole copy saved from the control page.
 
 ## 1. Install Docker Desktop (once, with internet)
 
@@ -54,7 +54,14 @@ The data lives in the Docker volume `bajaovrlay-data`, on the PC's own disk, and
 restarts and updates. It is a volume rather than a Windows folder because SQLite's file
 locking is not reliable through Docker Desktop's Windows file sharing.
 
-To copy the whole data folder out (before an update, or onto the USB stick), stop the
+At every session break, save a copy onto the USB stick from the control page: **Cópia de
+segurança** in the header → **Baixar**, and pick the stick in the browser's save dialog. It
+is one zip (`bajaovrlay-AAAA-MM-DD-HHMM.zip`) of the database, the images and, unless
+"Incluir gravações" is unticked, the recordings, taken with the server running. It is a
+download because a stick plugged into Windows is not visible inside the container. Step 9
+puts one back.
+
+To copy the whole data folder out from the PC itself (before an update), stop the
 server first: a copy taken while it writes can catch the database half-written. Each copy
 goes into a new folder named by the moment, so a second copy never lands inside the first.
 Between sessions only: the server is down for those seconds.
@@ -124,3 +131,53 @@ docker start bajaovrlay
 
 For a backup copied out to the PC (step 4), add `-v C:\BajaOvrLay\copias-banco-<moment>:/copia`
 to the second `docker run` and copy from `/copia/<file>` instead of `/data/backups/<file>`.
+
+## 9. Restaurar uma cópia
+
+A zip saved with **Cópia de segurança** (step 4) holds `bajaovrlay.sqlite`, `media/`,
+`recordings/` when the recordings were included, and `leia-me.txt`, which says when it was
+made and with which version. Restoring puts those in place of the data folder's own, with
+the server stopped:
+
+1. Stop the server.
+2. Unzip the copy into the data folder, replacing `bajaovrlay.sqlite`, `media/` and, if the
+   copy has it, `recordings/`. A copy without recordings leaves the folder's own in place.
+3. Delete any leftover `bajaovrlay.sqlite-journal`: SQLite would otherwise play it into the
+   restored database.
+4. Start the server.
+
+There is no "Restaurar" button on purpose: an in-app restore would replace the database
+under the running server, which has it open and may be writing to it. Doing it by hand
+with the server stopped is a minute's work and cannot catch the database half-written.
+
+**On the stream PC (the Docker volume).** Unzip the copy into a new folder, then copy it
+into the volume through a short-lived container of the same image (here the copy of 14:32
+on 14 November, from the stick at `E:`):
+
+```powershell
+docker stop bajaovrlay
+Expand-Archive E:\bajaovrlay-2026-11-14-1432.zip C:\BajaOvrLay\restaurar-2026-11-14-1432
+docker run --rm --user root -v bajaovrlay-data:/data -v C:\BajaOvrLay\restaurar-2026-11-14-1432:/copia --entrypoint sh ghcr.io/jbresolin/bajaovrlay:latest -c "trap 'chown -R node:node /data' EXIT; set -e; rm -f /data/bajaovrlay.sqlite-journal; cp /copia/bajaovrlay.sqlite /data/bajaovrlay.sqlite; mkdir -p /copia/media; rm -rf /data/media; cp -r /copia/media /data/media; if [ -d /copia/recordings ]; then rm -rf /data/recordings; cp -r /copia/recordings /data/recordings; fi"
+docker start bajaovrlay
+```
+
+A copy made with no images has no `media/` folder at all (the zip holds files, not empty
+folders), so the line makes an empty one first. It stops at the first step that fails,
+says which, and exits non-zero, and either way the `trap` hands `/data` back to the
+server's user, so the server can still write there after a restore cut short.
+
+**In a plain folder** (`pnpm start`, or a bind mount instead of the volume), with the
+server stopped, from the data folder (`DATA_DIR`; `apps/server/data` in `.env.example`):
+
+```sh
+cd apps/server/data
+rm -f bajaovrlay.sqlite-journal
+rm -rf media
+unzip -l ~/bajaovrlay-2026-11-14-1432.zip | grep -q ' recordings/' && rm -rf recordings
+unzip -o ~/bajaovrlay-2026-11-14-1432.zip -x leia-me.txt
+mkdir -p media
+```
+
+The zip names the database `bajaovrlay.sqlite`, as the volume does. If `DATABASE_PATH`
+names another file, rename it to that. Then start the server: the control page shows the
+copy's items, rundown and library, and "Fontes de dados" lists its recordings.

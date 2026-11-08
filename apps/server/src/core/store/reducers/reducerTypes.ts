@@ -94,6 +94,11 @@ export type ReducerOutcome =
       slices: SlicesChangedByCommands;
       isLeftOutOfTheEventLog?: true;
       /**
+       * Set by recordBackup only (BAJAOVRLAY-33): it changes no slice, and the store
+       * writes its event-log row all the same, since the row is the record of the copy.
+       */
+      isLoggedWithoutAChange?: true;
+      /**
        * Set by refreshBoundInstanceData, when a spell of refused refreshes of an instance
        * begins (gate 2 of PR #18), and by recordObsSceneSwitchAnswer, when OBS did not do
        * a switch (BAJAOVRLAY-27): the change is applied, and its event-log row is written

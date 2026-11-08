@@ -4,7 +4,8 @@
  * What this module is for:
  *   With the PINs set (BAJAOVRLAY-29) the control page's own reads need a session: GET
  *   /state, the history's older pages, a source's snapshot, "Buscar da fonte", the
- *   simulator's teams and an image upload. Three kinds of caller keep working exactly as
+ *   simulator's teams, an image upload, and the backup download and its summary
+ *   (BAJAOVRLAY-33). Three kinds of caller keep working exactly as
  *   before, with no login: renderer pages (OBS's, and the control page's monitor frames),
  *   which read GET /state with their role; the command API (BAJAOVRLAY-28), which keeps
  *   its tokens and its open mode; and the files every page loads (health, images,
@@ -97,6 +98,19 @@ const everyApiRoute: RouteRow[] = [
   {
     route: 'POST /media',
     request: { path: '/api/v1/media', method: 'POST', json: {} },
+    expected: sessionRequired,
+  },
+  // "Cópia de segurança": Dados may download a backup too, since it changes nothing on air.
+  // A query the route refuses with 400, so no zip is streamed for the test.
+  {
+    route: 'GET /backup',
+    request: { path: '/api/v1/backup?includeRecordings=talvez' },
+    expected: sessionRequired,
+  },
+  // What the dialog shows before "Baixar".
+  {
+    route: 'GET /backup/summary',
+    request: { path: '/api/v1/backup/summary' },
     expected: sessionRequired,
   },
 

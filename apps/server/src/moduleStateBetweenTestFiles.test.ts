@@ -73,6 +73,12 @@ const moduleStateThatCannotLeak = [
   // A UTF-8 decoder used without `stream: true`: each decode stands alone and keeps
   // nothing for the next.
   'apps/server/src/modules/dataSources/adapters/httpJson/responseBodyWithinCap.ts: utf8Decoder',
+  // Number and date formatters of the backup (BAJAOVRLAY-33): their options are fixed
+  // where they are made, and each format() call stands alone.
+  'apps/server/src/modules/backup/backupFileName.ts: partsOfTheLocalMoment',
+  'apps/server/src/modules/backup/backupReadMe.ts: momentAsTheOperatorWritesIt',
+  'packages/shared/src/backup/backupSizeText.ts: withNoDecimal',
+  'packages/shared/src/backup/backupSizeText.ts: withOneDecimal',
 ];
 
 /** Every TypeScript file under `folder`, subfolders included, as full paths. */

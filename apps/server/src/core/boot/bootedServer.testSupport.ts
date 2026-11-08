@@ -17,6 +17,8 @@ export const operatorActor = 'operador:conexao-7';
 /**
  * The options production uses, on a random port, a temporary database file and data
  * folder, a stand-in theme folder, a silent logger and no BAJAOVRLAY_SOURCE_ALLOWED_HOSTS set.
+ * The backups copy the database into a folder of the test's own, not the system's /tmp,
+ * which other servers on the machine share.
  */
 export function buildBootOptions(migrationsFolder: string) {
   return {
@@ -30,6 +32,7 @@ export function buildBootOptions(migrationsFolder: string) {
     themeFolder: createStandInThemeFolder(),
     dataFolder: createTemporaryDataFolder(),
     sourceHostAllowlist: noSourceHostAllowlist,
+    backupTemporaryFolder: createTemporaryDataFolder(),
   };
 }
 

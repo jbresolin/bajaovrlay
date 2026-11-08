@@ -46,6 +46,9 @@ function createStoreWhoseSavingAlwaysFails(): StateStore {
     readEventLogEntriesBelow: () => {
       throw new Error('not used by answerClientMessage');
     },
+    readNewestAcceptedEventLogEntryOfCommand: () => {
+      throw new Error('not used by answerClientMessage');
+    },
   };
 }
 
@@ -65,6 +68,9 @@ function createStoreThatWritesDownEveryCommand() {
     },
     subscribeToSliceChanges: () => () => undefined,
     readEventLogEntriesBelow: () => {
+      throw new Error('not used by answerClientMessage');
+    },
+    readNewestAcceptedEventLogEntryOfCommand: () => {
       throw new Error('not used by answerClientMessage');
     },
   };

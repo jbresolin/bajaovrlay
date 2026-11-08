@@ -3,7 +3,9 @@
 // log in, read its session and log out. Nothing here keeps state between calls.
 import type { OperatorRole } from '@bajaovrlay/shared';
 
+import { createBackupDownloads } from '../../modules/backup/index.js';
 import type { ApiTokens } from '../apiAccess/apiTokens.js';
+import { createTemporaryDataFolder } from '../boot/temporaryDataFolder.testSupport.js';
 import { openDatabaseForTests } from '../db/temporaryDatabase.testSupport.js';
 import { createServerApp } from '../http/createServerApp.js';
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
@@ -35,7 +37,8 @@ export function createClockMovedByHand(): ClockMovedByHand {
 
 /**
  * Builds the server app on the database at `databasePath` with the login of the given
- * PINs (the tests' two by default), on the given clock. Opening a second app on the same
+ * PINs (the tests' two by default), on the given clock, with the backup routes over an
+ * empty data folder of the test's own. Opening a second app on the same
  * path, after closing the first database, is how a test restarts the server.
  */
 export function createServerAppWithOperatorLogin(options: {
@@ -62,6 +65,14 @@ export function createServerAppWithOperatorLogin(options: {
     readCurrentTime: options.clock.read,
     logger,
   });
+  const backupDownloads = createBackupDownloads({
+    stateStore,
+    logger,
+    databasePath: options.databasePath,
+    dataFolder: createTemporaryDataFolder(),
+    version: '0.3.1',
+    temporaryFolder: createTemporaryDataFolder(),
+  });
   const app = createServerApp({
     logger,
     version: '0.3.1',
@@ -69,6 +80,7 @@ export function createServerAppWithOperatorLogin(options: {
     operatorLogin,
     mediaFolder: options.mediaFolder,
     apiTokens: options.apiTokens,
+    backupDownloads,
   });
   return { app, stateStore, database, operatorLogin };
 }

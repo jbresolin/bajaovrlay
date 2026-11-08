@@ -122,6 +122,8 @@ export const whoMaySendEachCommandType: Record<Command['type'], WhoMaySendAComma
   runTriggerFiring: theProducerOnly,
   dismissTriggerFiring: theProducerOnly,
   restoreTriggerFiring: theProducerOnly,
+  // A finished backup: only the server knows the zip went out whole, and its size.
+  recordBackup: onlyTheServer,
 };
 
 /** The command types only the server sends, read from whoMaySendEachCommandType. */
