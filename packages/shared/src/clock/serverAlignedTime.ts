@@ -47,11 +47,23 @@ type GlobalThatMayHoldTheOffset = typeof globalThis & {
 const globalThatMayHoldTheOffset: GlobalThatMayHoldTheOffset = globalThis;
 
 /**
+ * The part of `performance` read here. Every page and Node have it, but this package is
+ * built with neither the DOM's types nor Node's, so it is named here instead.
+ */
+type MonotonicTimeOfThisMachine = { timeOrigin: number; now: () => number };
+
+/** `globalThis` with the `performance` every page and Node give it. */
+const globalWithPerformance = globalThis as typeof globalThis & {
+  performance: MonotonicTimeOfThisMachine;
+};
+
+/**
  * This machine's monotonic time, in milliseconds since 1970: the moment the page opened
  * plus the time since, which a step of the wall clock never moves. Pass it as the
  * `localNowMs` of recordServerClockSample.
  */
 export function readThisMachineMonotonicTimeMs(): number {
+  const { performance } = globalWithPerformance;
   return performance.timeOrigin + performance.now();
 }
 
