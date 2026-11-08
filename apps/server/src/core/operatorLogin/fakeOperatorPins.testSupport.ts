@@ -3,13 +3,13 @@
 // BAJAOVRLAY_PIN_DATA. Kept here so no test invents a PIN of its own.
 
 /** The producer's PIN in tests. */
-export const producerTestPin = '2468';
+export const producerTestPin = '246802';
 
 /** The data role's PIN in tests. */
-export const dataRoleTestPin = '1357';
+export const dataRoleTestPin = '135791';
 
 /** A PIN that is neither of the two, as an operator mistypes it. */
-export const mistypedTestPin = '2469';
+export const mistypedTestPin = '246803';
 
 /** The two PINs as readServerEnvironment hands them to startServer. */
 export const operatorPinsOfTheTests = {

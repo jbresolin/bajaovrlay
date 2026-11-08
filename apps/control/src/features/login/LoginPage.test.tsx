@@ -60,7 +60,7 @@ describe('the login page', () => {
   it('sends the role, PIN and station, remembers the station, and opens the console', async () => {
     // Arrange: a server that accepts the login.
     const { sendLogin, onLoggedIn } = renderLoginPageAnsweredWith({ isLoggedIn: true });
-    fillTheForm({ roleName: 'Dados', pin: '1357', station: 'Mesa 3' });
+    fillTheForm({ roleName: 'Dados', pin: '135791', station: 'Mesa 3' });
 
     // Act: press "Entrar".
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
@@ -69,7 +69,7 @@ describe('the login page', () => {
     await waitFor(() => expect(onLoggedIn, 'the console opens').toHaveBeenCalledTimes(1));
     expect(sendLogin, 'the login as typed').toHaveBeenCalledWith({
       role: 'dados',
-      pin: '1357',
+      pin: '135791',
       station: 'Mesa 3',
     });
     expect(readRememberedStation(), 'the station for the next login').toBe('Mesa 3');
@@ -91,7 +91,7 @@ describe('the login page', () => {
   it.each(refusalScenarios)('$name', async ({ message }) => {
     // Arrange: a server that refuses the login with the row's sentence.
     const { onLoggedIn } = renderLoginPageAnsweredWith({ isLoggedIn: false, message });
-    fillTheForm({ roleName: 'Produtor', pin: '2469', station: 'Mesa 1' });
+    fillTheForm({ roleName: 'Produtor', pin: '246803', station: 'Mesa 1' });
 
     // Act: press "Entrar".
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
@@ -106,7 +106,7 @@ describe('the login page', () => {
     // Spaces for a station.
     {
       name: 'says a blank station before sending anything',
-      form: { roleName: 'Produtor', pin: '2468', station: '  ' },
+      form: { roleName: 'Produtor', pin: '246802', station: '  ' },
       expectedProblem: 'Digite o nome da estação (por exemplo, Mesa 1).',
     },
     // The PIN left empty.

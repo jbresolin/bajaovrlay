@@ -4,7 +4,7 @@ The operator login on the studio LAN (BAJAOVRLAY-29): two roles, Produtor and Da
 with a PIN (docs/login.md). Start reading at `operatorLogin.ts`, which `startServer` builds.
 
 - `operatorPins.ts` — BAJAOVRLAY_PIN_PRODUCER and BAJAOVRLAY_PIN_DATA read as one setting:
-  none is the login off, both (4 to 8 digits, different) on, anything else stops the boot.
+  none is the login off, both (6 to 8 digits, different) on, anything else stops the boot.
 - `operatorLogin.ts` — checks a PIN (constant time), opens a session, finds the session of a
   Cookie header, "Sair"; the key that signs cookies lives in the server_secrets table.
 - `operatorSessions.ts` — the open sessions, in memory and in operator_sessions (18 hours).

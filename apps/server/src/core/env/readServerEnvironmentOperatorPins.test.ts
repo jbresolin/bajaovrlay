@@ -10,8 +10,8 @@
  *
  * What these tests prove (one table of the PIN settings):
  *   - Neither set, or both empty: the login is off.
- *   - Both set, 4 to 8 digits each and different: the login is on, with both PINs.
- *   - Only one set, two equal PINs, or a PIN that is not 4 to 8 digits stops the boot,
+ *   - Both set, 6 to 8 digits each and different: the login is on, with both PINs.
+ *   - Only one set, two equal PINs, or a PIN that is not 6 to 8 digits stops the boot,
  *     naming the variable and saying what to write, in pt-BR.
  *   - The boot's error never repeats a PIN.
  *
@@ -57,8 +57,8 @@ describe('readServerEnvironment and the operator PINs', () => {
     });
   });
 
-  it('turns the login on with two different PINs of 4 to 8 digits', () => {
-    // Arrange: a four-digit producer PIN and a four-digit data PIN.
+  it('turns the login on with two different PINs of 6 to 8 digits', () => {
+    // Arrange: a six-digit producer PIN and a six-digit data PIN.
     const environmentVariables = {
       BAJAOVRLAY_PIN_PRODUCER: producerTestPin,
       BAJAOVRLAY_PIN_DATA: dataRoleTestPin,
@@ -111,14 +111,24 @@ describe('readServerEnvironment and the operator PINs', () => {
       },
       expectedReason: 'BAJAOVRLAY_PIN_PRODUCER e BAJAOVRLAY_PIN_DATA precisam ser diferentes',
     },
-    // Three digits: too short to keep a curious visitor out.
+    // Four digits: at 5 tries a minute per address, guessed within an event day (gate 2
+    // of PR #51); six digits take months.
     {
-      name: 'stops the boot for a PIN of three digits',
+      name: 'stops the boot for a PIN of four digits',
       environmentVariables: {
-        BAJAOVRLAY_PIN_PRODUCER: '246',
+        BAJAOVRLAY_PIN_PRODUCER: '2468',
         BAJAOVRLAY_PIN_DATA: dataRoleTestPin,
       },
-      expectedReason: 'BAJAOVRLAY_PIN_PRODUCER precisa ter de 4 a 8 algarismos',
+      expectedReason: 'BAJAOVRLAY_PIN_PRODUCER precisa ter de 6 a 8 algarismos',
+    },
+    // Five digits: one short of the shortest allowed.
+    {
+      name: 'stops the boot for a PIN of five digits',
+      environmentVariables: {
+        BAJAOVRLAY_PIN_PRODUCER: producerTestPin,
+        BAJAOVRLAY_PIN_DATA: '13579',
+      },
+      expectedReason: 'BAJAOVRLAY_PIN_DATA precisa ter de 6 a 8 algarismos',
     },
     // Nine digits: longer than the login's keypad takes.
     {
@@ -127,7 +137,7 @@ describe('readServerEnvironment and the operator PINs', () => {
         BAJAOVRLAY_PIN_PRODUCER: producerTestPin,
         BAJAOVRLAY_PIN_DATA: '135713571',
       },
-      expectedReason: 'BAJAOVRLAY_PIN_DATA precisa ter de 4 a 8 algarismos',
+      expectedReason: 'BAJAOVRLAY_PIN_DATA precisa ter de 6 a 8 algarismos',
     },
     // Letters: a PIN is digits only.
     {
@@ -136,7 +146,7 @@ describe('readServerEnvironment and the operator PINs', () => {
         BAJAOVRLAY_PIN_PRODUCER: 'baja2468',
         BAJAOVRLAY_PIN_DATA: dataRoleTestPin,
       },
-      expectedReason: 'BAJAOVRLAY_PIN_PRODUCER precisa ter de 4 a 8 algarismos',
+      expectedReason: 'BAJAOVRLAY_PIN_PRODUCER precisa ter de 6 a 8 algarismos',
     },
   ];
 

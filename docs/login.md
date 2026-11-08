@@ -16,12 +16,15 @@ Não há contas por pessoa: o PIN é do papel, e a estação é só um nome para
 
 | Variável                  | O que é                                       | Exemplo         |
 | ------------------------- | --------------------------------------------- | --------------- |
-| `BAJAOVRLAY_PIN_PRODUCER` | O PIN do Produtor: de 4 a 8 algarismos.       | (escolha um)    |
-| `BAJAOVRLAY_PIN_DATA`     | O PIN de Dados: de 4 a 8, diferente do outro. | (escolha outro) |
+| `BAJAOVRLAY_PIN_PRODUCER` | O PIN do Produtor: de 6 a 8 algarismos.       | (escolha um)    |
+| `BAJAOVRLAY_PIN_DATA`     | O PIN de Dados: de 6 a 8, diferente do outro. | (escolha outro) |
+
+Por que seis algarismos no mínimo: com cinco tentativas por minuto por computador, um PIN de
+quatro algarismos seria adivinhado dentro de um dia de prova; um de seis levaria meses.
 
 - **Nenhum dos dois**: sem login, como antes. O log do servidor avisa ao ligar, e o topo da
   página mostra "Sem login" para ninguém esquecer.
-- **Só um**, **dois iguais**, ou um PIN que não seja de 4 a 8 algarismos: o servidor não liga
+- **Só um**, **dois iguais**, ou um PIN que não seja de 6 a 8 algarismos: o servidor não liga
   e diz o motivo em português no log (sem nunca escrever o PIN).
 
 Onde preencher: no PC de transmissão, no `compose.yaml`, no bloco `environment:` do serviço,

@@ -2,7 +2,7 @@
  * The wait after five wrong PINs (apps/server)
  *
  * What this module is for:
- *   The login (BAJAOVRLAY-29) takes a PIN of 4 to 8 digits. So that nobody on the LAN can try
+ *   The login (BAJAOVRLAY-29) takes a PIN of 6 to 8 digits. So that nobody on the LAN can try
  *   them all, five wrong PINs in a row from one address make that address wait 60 s, and the
  *   page says how long is left. The count is kept in memory, per socket address.
  *

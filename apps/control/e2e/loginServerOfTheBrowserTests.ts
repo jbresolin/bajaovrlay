@@ -14,7 +14,7 @@ export const loginServerPort = 5181 + portOffsetOfTheBrowserTests;
 export const loginServerAddress = `http://127.0.0.1:${String(loginServerPort)}`;
 
 /** The producer's PIN on that server; made up, never a show's. */
-export const producerPinOfTheBrowserTests = '2468';
+export const producerPinOfTheBrowserTests = '246802';
 
 /** The data role's PIN on that server; made up, never a show's. */
-export const dataRolePinOfTheBrowserTests = '1357';
+export const dataRolePinOfTheBrowserTests = '135791';
