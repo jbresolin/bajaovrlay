@@ -1,23 +1,32 @@
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { ptBR } from '@/i18n/ptBR';
 
 import { fetchServerHealth } from './fetchServerHealth';
 
 // What the operator has learned about the server so far. This is a one-off answer to
-// a button press, not server state, so it lives in the component and not in the store.
+// a press, not server state, so it lives in the component and not in the store.
 type ServerCheckStatus =
   | { kind: 'not-checked' }
   | { kind: 'checking' }
   | { kind: 'online'; version: string }
   | { kind: 'unreachable' };
 
-/** Button that asks the server whether it is up, and a line saying what it answered. */
-export function ServerHealthCheck() {
+/** The server check: start it, and the pt-BR sentence saying what the server answered. */
+export type ServerHealthCheck = {
+  checkServer: () => Promise<void>;
+  /** Empty until the first check; then "Verificando…", the version, or why not. */
+  statusText: string;
+};
+
+/**
+ * "Verificar servidor" (an entry of the header's menu since BAJAOVRLAY-62): asks
+ * `GET /health` whether the server is up and which version it runs.
+ */
+export function useServerHealthCheck(): ServerHealthCheck {
   const [status, setStatus] = useState<ServerCheckStatus>({ kind: 'not-checked' });
 
-  async function checkServer() {
+  async function checkServer(): Promise<void> {
     setStatus({ kind: 'checking' });
     try {
       const health = await fetchServerHealth();
@@ -27,19 +36,10 @@ export function ServerHealthCheck() {
     }
   }
 
-  return (
-    <section className="flex flex-col items-start gap-3">
-      <Button onClick={checkServer} disabled={status.kind === 'checking'}>
-        {ptBR.serverHealth.checkButton}
-      </Button>
-      <p role="status" className="text-sm text-muted-foreground">
-        {describeServerCheckStatus(status)}
-      </p>
-    </section>
-  );
+  return { checkServer, statusText: describeServerCheckStatus(status) };
 }
 
-/** Turns the check status into the pt-BR sentence shown under the button. */
+/** Turns the check status into the pt-BR sentence shown beside the menu. */
 function describeServerCheckStatus(status: ServerCheckStatus): string {
   switch (status.kind) {
     case 'not-checked':

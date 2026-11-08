@@ -1,19 +1,18 @@
 import { cn } from 'cn';
 
 import { buttonVariants } from '@/components/ui/button';
-import { BackupDialog } from '@/features/backup/BackupDialog';
 import { ConnectionBadge } from '@/features/connection/ConnectionBadge';
 import { DataSourcesHealthChip } from '@/features/dataSources/DataSourcesHealthChip';
 import { DataSourcesPage } from '@/features/dataSources/DataSourcesPage';
 import { EntityLibraryPage } from '@/features/entityLibrary/EntityLibraryPage';
 import { EventReviewPage } from '@/features/events/EventReviewPage';
+import { HeaderMenu } from '@/features/headerMenu/HeaderMenu';
 import { HistoryPage } from '@/features/history/HistoryPage';
 import { KeyboardMapDialog } from '@/features/keyboardHelp/KeyboardMapDialog';
 import { OperatorBadge } from '@/features/login/OperatorBadge';
 import { ObsTally } from '@/features/obs/ObsTally';
 import { OutputsAndLayersPage } from '@/features/outputsAndLayers/OutputsAndLayersPage';
-import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
-import { TriggersPauseSwitch } from '@/features/triggers/TriggersPauseSwitch';
+import { TriggersPausedChip } from '@/features/triggers/TriggersPausedChip';
 import { ptBR } from '@/i18n/ptBR';
 
 import { ConsoleView } from './ConsoleView';
@@ -32,8 +31,9 @@ const pageLinkTexts = ptBR.app.pageLinks;
  * "Histórico" (features/history, BAJAOVRLAY-30), which "Histórico" opens in a new tab; each
  * of those five in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab.
  * The header holds the product name, the links to the six pages, the data sources
- * chip ("Fontes: 2 ok · 1 atrasada"), the server check, the OBS tally, "Pausar gatilhos"
- * (BAJAOVRLAY-48), "Cópia de segurança" (features/backup, BAJAOVRLAY-33), the connection
+ * chip ("Fontes: 2 ok · 1 atrasada"), the OBS tally, "Gatilhos pausados" while every
+ * trigger is paused (BAJAOVRLAY-48), the "Menu" with "Verificar servidor", "Cópia de
+ * segurança" and "Pausar gatilhos" (features/headerMenu, BAJAOVRLAY-62), the connection
  * badge, who operates the page ("Produtor · Mesa 1" and "Sair", or "Sem login";
  * BAJAOVRLAY-29) and the "?" button, which lists every keyboard shortcut
  * (src/keyboard/keyboardMap.ts).
@@ -75,10 +75,9 @@ export function AppShell() {
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <DataSourcesHealthChip />
-          <ServerHealthCheck />
           <ObsTally />
-          <TriggersPauseSwitch />
-          <BackupDialog />
+          <TriggersPausedChip />
+          <HeaderMenu />
           <ConnectionBadge />
           <OperatorBadge />
           <KeyboardMapDialog />

@@ -5,9 +5,8 @@ import {
   formatBackupSize,
 } from '@bajaovrlay/shared';
 import { cn } from 'cn';
-import { useState } from 'react';
 
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -18,68 +17,46 @@ import {
 import { ptBR } from '@/i18n/ptBR';
 import { useServerState } from '@/state/ControlPageStateProvider';
 
-import {
-  type BackupSummaryOutcome,
-  buildBackupDownloadAddress,
-  fetchBackupSummary,
-} from './fetchBackupSummary';
+import { type BackupSummaryOutcome, buildBackupDownloadAddress } from './fetchBackupSummary';
 import { describeLatestBackup } from './latestBackupText';
+import type { BackupDialogState } from './useBackupDialog';
 
 const texts = ptBR.backup;
 
 /**
- * The header's "Cópia de segurança" button and the dialog it opens (BAJAOVRLAY-33): the
- * "Incluir gravações" tick, the expected size, "Baixar", and "Última cópia". The sizes and
- * the newest backup are asked of the server each time the dialog opens; a backup made
- * since arrives in the live event log and takes over "Última cópia" at once.
+ * The "Cópia de segurança" dialog (BAJAOVRLAY-33), opened from the header's menu
+ * (BAJAOVRLAY-62) through `useBackupDialog`: the "Incluir gravações" tick, the expected
+ * size, "Baixar", and "Última cópia". The sizes and the newest backup are asked of the
+ * server each time the dialog opens; a backup made since arrives in the live event log
+ * and takes over "Última cópia" at once.
  *
  * "Baixar" is a link, not a fetch: the browser saves the zip straight to the file the
  * operator picks (the USB stick), and a backup of gigabytes never passes through the
  * page's memory. The cost: the page cannot tell when the download ends; the event-log row
  * the server writes then is what moves "Última cópia".
  */
-export function BackupDialog() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [summaryOutcome, setSummaryOutcome] = useState<BackupSummaryOutcome | undefined>();
-  const [isIncludingRecordings, setIsIncludingRecordings] = useState(true);
-  const [isDownloadStarted, setIsDownloadStarted] = useState(false);
-  // Read when the dialog opens, not while drawing: "today" in "Última cópia" is the day
-  // the dialog was opened, which is the same day for as long as a break lasts.
-  const [openedAtMs, setOpenedAtMs] = useState(0);
+export function BackupDialog(props: { backupDialog: BackupDialogState }) {
+  const backupDialog = props.backupDialog;
   const liveEventLog = useServerState((state) => state.eventLog);
 
-  /** Opens the dialog afresh and asks the server for the sizes and the newest backup. */
-  function openTheDialog(): void {
-    setSummaryOutcome(undefined);
-    setIsDownloadStarted(false);
-    setOpenedAtMs(Date.now());
-    setIsOpen(true);
-    void fetchBackupSummary().then(setSummaryOutcome);
-  }
-
   return (
-    <>
-      <Button type="button" variant="outline" size="sm" onClick={openTheDialog}>
-        {texts.openButton}
-      </Button>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent closeButtonLabel={texts.closeDialogButton} className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{texts.dialogTitle}</DialogTitle>
-            <DialogDescription>{texts.dialogDescription}</DialogDescription>
-          </DialogHeader>
-          <BackupDialogBody
-            summaryOutcome={summaryOutcome}
-            liveEventLog={liveEventLog}
-            openedAtMs={openedAtMs}
-            isIncludingRecordings={isIncludingRecordings}
-            onIncludingRecordingsChange={setIsIncludingRecordings}
-            isDownloadStarted={isDownloadStarted}
-            onDownloadStarted={() => setIsDownloadStarted(true)}
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={backupDialog.isOpen} onOpenChange={backupDialog.setIsOpen}>
+      <DialogContent closeButtonLabel={texts.closeDialogButton} className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{texts.dialogTitle}</DialogTitle>
+          <DialogDescription>{texts.dialogDescription}</DialogDescription>
+        </DialogHeader>
+        <BackupDialogBody
+          summaryOutcome={backupDialog.summaryOutcome}
+          liveEventLog={liveEventLog}
+          openedAtMs={backupDialog.openedAtMs}
+          isIncludingRecordings={backupDialog.isIncludingRecordings}
+          onIncludingRecordingsChange={backupDialog.setIsIncludingRecordings}
+          isDownloadStarted={backupDialog.isDownloadStarted}
+          onDownloadStarted={backupDialog.markTheDownloadStarted}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
 

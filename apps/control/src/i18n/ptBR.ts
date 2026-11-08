@@ -60,6 +60,12 @@ export const ptBR = {
       reloadButton: 'Recarregar a página',
     },
   },
+  // The header's menu (features/headerMenu, BAJAOVRLAY-62): its button shows the symbol,
+  // and a screen reader reads the label.
+  headerMenu: {
+    buttonLabel: 'Menu',
+    buttonSymbol: '☰',
+  },
   serverHealth: {
     checkButton: 'Verificar servidor',
     checking: 'Verificando o servidor…',
