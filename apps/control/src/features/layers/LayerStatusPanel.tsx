@@ -161,9 +161,6 @@ export function LayerStatusPanel() {
           commandTypes={[
             'previewClearLayer',
             'saveOnAirChangesIntoItem',
-            // "Atualizar no ar" of a row behind its item; its "Disparar" refusal shows
-            // under the rundown and the shortcuts, with every other takeItem.
-            'updateInstanceData',
             'nextOnLayer',
             'undoOnLayer',
           ]}

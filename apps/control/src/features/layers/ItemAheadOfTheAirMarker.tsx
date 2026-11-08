@@ -14,6 +14,7 @@ import { ptBR } from '@/i18n/ptBR';
 import {
   useReadServerStateNow,
   useSendCommand,
+  useSendCommandAndReadItsRefusal,
   useServerState,
   useSubscribeToServerState,
 } from '@/state/ControlPageStateProvider';
@@ -61,7 +62,9 @@ const separatorOfKeys = '\n';
  * (updateInstanceData with only those fields). On the layer's preview: "Atualizar prévia"
  * alone, since a take from there would put on air something that was not previewed.
  * A clock field among them first asks the clock question (WallClockChoiceDialog.tsx).
- * Draws nothing while the air matches the item.
+ * A refused update is said beside the buttons: only this marker's own, so a refusal of
+ * "Edição rápida" or the item editor never shows here. Draws nothing while the air
+ * matches the item.
  *
  * It reads its own instance and item from the store, compared by value, and is memoised
  * on its two props (BAJAOVRLAY-45's rule): a poll that refreshes a bound field on air
@@ -75,10 +78,12 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
   const subscribeToServerState = useSubscribeToServerState();
   const readServerStateNow = useReadServerStateNow();
   const sendCommand = useSendCommand();
+  const sendCommandAndReadItsRefusal = useSendCommandAndReadItsRefusal();
   // The graphics slice changes when a package is added or removed, never at a poll.
   const graphics = useServerState((state) => state.graphics);
   const [isAskingAboutTheClock, setIsAskingAboutTheClock] = useState(false);
   const [isUpdateWaiting, setIsUpdateWaiting] = useState(false);
+  const [refusalOfTheUpdate, setRefusalOfTheUpdate] = useState<string | null>(null);
 
   // React calls the reader after every change of the store and redraws only when the text
   // differs from the last one (the same way as "Valor agora", BindingValueNowLine.tsx).
@@ -117,8 +122,9 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
       wallClockFields,
     });
     setIsUpdateWaiting(true);
+    setRefusalOfTheUpdate(null);
     try {
-      await sendCommand(update);
+      setRefusalOfTheUpdate(await sendCommandAndReadItsRefusal(update));
     } finally {
       setIsUpdateWaiting(false);
     }
@@ -166,6 +172,11 @@ export const ItemAheadOfTheAirMarker = memo(function ItemAheadOfTheAirMarker(pro
           ? ptBR.layers.updateOnAirFromItemButton
           : ptBR.layers.updatePreviewFromItemButton}
       </ActionButton>
+      {refusalOfTheUpdate === null ? null : (
+        <span role="alert" className="text-xs text-destructive">
+          {refusalOfTheUpdate}
+        </span>
+      )}
       {/* Mounted only while asking: one dialog per marker would be drawn on every row. */}
       {isAskingAboutTheClock ? (
         <WallClockChoiceDialog

@@ -19,6 +19,8 @@
  *     sends the fields as they are, "Começar na entrada no ar" also has the server stamp
  *     the clock's moment, and "Cancelar" sends nothing.
  *   - The chip goes away once the air matches the item.
+ *   - A refused "Atualizar no ar" says why on its own row, and a refused update sent from
+ *     elsewhere ("Edição rápida", the item editor) is not shown here.
  *   - A layer's preview behind its item gets the chip beside "em prévia" and "Atualizar
  *     prévia", and no "Disparar".
  *
@@ -28,7 +30,7 @@
  *   - The graphic changing on screen: apps/control's itemAheadOfTheAir.e2e.ts.
  */
 import type { Instance, Item } from '@bajaovrlay/shared';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -324,6 +326,56 @@ describe('"Atualizar no ar" with a clock field behind', () => {
         takeTimeFieldKeys: [],
       },
     ]);
+  });
+});
+
+describe('a refused "Atualizar no ar"', () => {
+  it('shows its own refusal on the row', async () => {
+    // Arrange: the lower third behind its item, and "Atualizar no ar" pressed.
+    const { fakeServer } = renderCamadasWith(
+      [buildInterviewItemSavedAfterTheTake()],
+      [buildInterviewLowerThirdAsTaken('program')],
+    );
+    fireEvent.click(findLayerRow('Tarja').getByRole('button', { name: 'Atualizar no ar' }));
+
+    // Act: the server refuses the update.
+    fakeServer.refuseLastCommand({
+      code: 'INSTANCE_NOT_FOUND',
+      message: 'Este gráfico não está mais no ar.',
+    });
+
+    // Assert: the refusal is said on the row that sent it.
+    await waitFor(() => {
+      expect(
+        findLayerRow('Tarja').getByRole('alert').textContent,
+        'the operator must see why the update did not happen',
+      ).toBe('Este gráfico não está mais no ar.');
+    });
+  });
+
+  it('does not show a refused update another part of the page sent', async () => {
+    // Arrange: the lower third behind its item, on a page whose store will hear a refusal.
+    const { serverStateStore } = renderCamadasWith(
+      [buildInterviewItemSavedAfterTheTake()],
+      [buildInterviewLowerThirdAsTaken('program')],
+    );
+
+    // Act: an update sent from "Edição rápida" is refused.
+    act(() => {
+      serverStateStore.setState({
+        lastCommandError: {
+          commandType: 'updateInstanceData',
+          code: 'INSTANCE_NOT_FOUND',
+          message: 'Este gráfico não está mais no ar.',
+        },
+      });
+    });
+
+    // Assert: Camadas leaves that refusal to the panel that sent it.
+    expect(
+      screen.queryByRole('alert'),
+      'only the refusal of the update this row sent may appear on it',
+    ).toBeNull();
   });
 });
 
