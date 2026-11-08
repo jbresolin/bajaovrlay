@@ -50,7 +50,10 @@ export function readWhoSentEventLogRow(actor: string): {
   const labels = ptBREventLogReading.actorKindLabels;
   if (actor.startsWith(producerPrefix)) {
     const station = actor.slice(producerPrefix.length);
-    return { kind: 'produtor', label: ptBREventLogReading.roleAtStationLabel(labels.produtor, station) };
+    return {
+      kind: 'produtor',
+      label: ptBREventLogReading.roleAtStationLabel(labels.produtor, station),
+    };
   }
   if (actor.startsWith(dataRolePrefix)) {
     const station = actor.slice(dataRolePrefix.length);

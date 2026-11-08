@@ -14,7 +14,10 @@ export const StationNameSchema = z
   .string()
   .trim()
   .min(1, 'Digite o nome da estação (por exemplo, Mesa 1).')
-  .max(longestStationNameLength, `O nome da estação tem no máximo ${String(longestStationNameLength)} letras.`);
+  .max(
+    longestStationNameLength,
+    `O nome da estação tem no máximo ${String(longestStationNameLength)} letras.`,
+  );
 
 /**
  * The body of POST /api/v1/session, the login: the role, its PIN and the station. The PIN

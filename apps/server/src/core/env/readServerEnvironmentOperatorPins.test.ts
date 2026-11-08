@@ -21,10 +21,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  dataRoleTestPin,
-  producerTestPin,
-} from '../operatorLogin/fakeOperatorPins.testSupport.js';
+import { dataRoleTestPin, producerTestPin } from '../operatorLogin/fakeOperatorPins.testSupport.js';
 import { readServerEnvironment } from './readServerEnvironment.js';
 
 /** Reads the environment and gives back what the boot error said, or '' when there was none. */
@@ -117,7 +114,10 @@ describe('readServerEnvironment and the operator PINs', () => {
     // Three digits: too short to keep a curious visitor out.
     {
       name: 'stops the boot for a PIN of three digits',
-      environmentVariables: { BAJAOVRLAY_PIN_PRODUCER: '246', BAJAOVRLAY_PIN_DATA: dataRoleTestPin },
+      environmentVariables: {
+        BAJAOVRLAY_PIN_PRODUCER: '246',
+        BAJAOVRLAY_PIN_DATA: dataRoleTestPin,
+      },
       expectedReason: 'BAJAOVRLAY_PIN_PRODUCER precisa ter de 4 a 8 algarismos',
     },
     // Nine digits: longer than the login's keypad takes.

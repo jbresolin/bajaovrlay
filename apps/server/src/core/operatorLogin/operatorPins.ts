@@ -4,8 +4,7 @@
  * PIN reaches only the code that compares it.
  */
 export type OperatorPins =
-  | { isLoginRequired: false }
-  | { isLoginRequired: true; producerPin: string; dataRolePin: string };
+  { isLoginRequired: false } | { isLoginRequired: true; producerPin: string; dataRolePin: string };
 
 /** The PINs of a server with the login off: the control page stays open, as before. */
 export const operatorLoginTurnedOff: OperatorPins = { isLoginRequired: false };

@@ -18,7 +18,11 @@ export function readOrWriteServerSecret(
     .values({ name, value: makeSecret() })
     .onConflictDoNothing()
     .run();
-  const storedRow = database.select().from(serverSecretRows).where(eq(serverSecretRows.name, name)).get();
+  const storedRow = database
+    .select()
+    .from(serverSecretRows)
+    .where(eq(serverSecretRows.name, name))
+    .get();
   if (storedRow === undefined) {
     throw new Error(`the server secret "${name}" could not be stored`);
   }

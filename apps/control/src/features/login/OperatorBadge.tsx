@@ -16,10 +16,7 @@ const texts = ptBR.login;
  * ends the session on the server first, then goes to "#/entrar". `logOut` and
  * `onLoggedOut` are the real ones unless a test hands in stand-ins.
  */
-export function OperatorBadge(props: {
-  logOut?: () => Promise<void>;
-  onLoggedOut?: () => void;
-}) {
+export function OperatorBadge(props: { logOut?: () => Promise<void>; onLoggedOut?: () => void }) {
   const { isLoginRequired, session } = useOperatorSession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const logOut = props.logOut ?? sendLogoutToTheServer;

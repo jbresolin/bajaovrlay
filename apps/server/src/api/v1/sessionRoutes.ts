@@ -60,7 +60,10 @@ export const deleteSessionRoute = createRoute({
   path: '/session',
   summary: 'Log out ("Sair")',
   responses: {
-    200: { description: 'The session ended and its cookie emptied.', content: sessionAnswerContent },
+    200: {
+      description: 'The session ended and its cookie emptied.',
+      content: sessionAnswerContent,
+    },
   },
 });
 
@@ -105,7 +108,9 @@ export function mountSessionRoutes(
           context.header('Set-Cookie', buildSessionSetCookieHeader(outcome.cookieValue));
           return context.json(buildSessionAnswer(operatorLogin, outcome.session), 200);
         case 'wrongPin': {
-          const body: ErrorAnswerBody = { error: { code: 'WRONG_PIN', message: messages.wrongPin } };
+          const body: ErrorAnswerBody = {
+            error: { code: 'WRONG_PIN', message: messages.wrongPin },
+          };
           return context.json(body, 401);
         }
         case 'lockedOut': {

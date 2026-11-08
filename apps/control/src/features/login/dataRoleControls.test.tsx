@@ -44,7 +44,10 @@ import {
 import { buildRaceClockInstanceOnTheClockLayer } from '@/state/slicesLikeTheServerSends.testSupport';
 
 // The item editor has its own tests; a stand-in takes its place here.
-vi.mock('@/features/items/ItemEditorPanel', () => import('../rundown/itemEditorStandIn.testSupport'));
+vi.mock(
+  '@/features/items/ItemEditorPanel',
+  () => import('../rundown/itemEditorStandIn.testSupport'),
+);
 
 // Saturday of the endurance race, 10:00 in São Paulo.
 const momentOfTheRace = '2026-10-10T13:00:00.000Z';

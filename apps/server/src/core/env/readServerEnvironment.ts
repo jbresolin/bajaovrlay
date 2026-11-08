@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { parseSourceHostAllowlist } from '../../modules/dataSources/index.js';
 import { parsePublicOrigins } from '../../modules/media/index.js';
 import { parseApiTokens } from '../apiAccess/apiTokens.js';
-import { parseOperatorPins } from '../operatorLogin/operatorPins.js';
 import { serverLogLevels } from '../logger/createLogger.js';
+import { parseOperatorPins } from '../operatorLogin/operatorPins.js';
 
 // Defaults match .env.example, which documents every variable.
 const ServerEnvironmentSchema = z.object({

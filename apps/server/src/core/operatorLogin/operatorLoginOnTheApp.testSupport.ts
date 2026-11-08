@@ -3,8 +3,8 @@
 // log in, read its session and log out. Nothing here keeps state between calls.
 import type { OperatorRole } from '@bajaovrlay/shared';
 
-import { openDatabaseForTests } from '../db/temporaryDatabase.testSupport.js';
 import type { ApiTokens } from '../apiAccess/apiTokens.js';
+import { openDatabaseForTests } from '../db/temporaryDatabase.testSupport.js';
 import { createServerApp } from '../http/createServerApp.js';
 import { createLogger, type ServerLogger } from '../logger/createLogger.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
@@ -110,7 +110,8 @@ export async function logInAndKeepTheCookie(
   role: OperatorRole,
   station: string,
 ): Promise<string> {
-  const pin = role === 'produtor' ? operatorPinsOfTheTests.producerPin : operatorPinsOfTheTests.dataRolePin;
+  const pin =
+    role === 'produtor' ? operatorPinsOfTheTests.producerPin : operatorPinsOfTheTests.dataRolePin;
   const response = await sendLogin(app, { role, pin, station });
   if (response.status !== 200) {
     throw new Error(`the login as ${role} answered ${String(response.status)}`);

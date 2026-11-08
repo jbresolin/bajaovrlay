@@ -45,7 +45,9 @@ export function buildActorForConnection(
  */
 export function isScreenAddress(requestTarget: string | undefined): boolean {
   const roleInTheAddress = readRoleFromRequestTarget(requestTarget);
-  return roleInTheAddress === rendererRoleInTheAddress || roleInTheAddress === monitorRoleInTheAddress;
+  return (
+    roleInTheAddress === rendererRoleInTheAddress || roleInTheAddress === monitorRoleInTheAddress
+  );
 }
 
 /**

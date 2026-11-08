@@ -8,7 +8,7 @@
 // would not run.
 //
 // Run it from the repository root before every push (CLAUDE.md, "Git and process"). The
-// browser tests need the e2e ports free (5176-5189); a second checkout running them at the
+// browser tests need the e2e ports free (5176-5189, 5181 the login server); a second checkout running them at the
 // same time sets BAJAOVRLAY_E2E_PORT_OFFSET (apps/control/e2e/README.md).
 import { spawnSync } from 'node:child_process';
 import { performance } from 'node:perf_hooks';

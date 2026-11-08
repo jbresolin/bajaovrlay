@@ -228,7 +228,12 @@ export function LayerStatusRow(props: LayerStatusRowProps) {
           )}
           {/* Always pressable when connected, even on an empty layer: clearing an empty
             layer is harmless, and a panic press must never find a dead button. */}
-          <ActionButton variant="outline" size="sm" commandType="clearLayer" onClick={onClearPressed}>
+          <ActionButton
+            variant="outline"
+            size="sm"
+            commandType="clearLayer"
+            onClick={onClearPressed}
+          >
             {ptBR.layers.clearLayerButton}
           </ActionButton>
         </span>

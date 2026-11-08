@@ -7,7 +7,10 @@ import {
 import { createContext, type ReactNode, useContext } from 'react';
 
 /** What a page of a server with no PINs knows: no login is asked for, there is no role. */
-export const sessionAnswerWithTheLoginOff: SessionAnswer = { isLoginRequired: false, session: null };
+export const sessionAnswerWithTheLoginOff: SessionAnswer = {
+  isLoginRequired: false,
+  session: null,
+};
 
 // The default is the login off, so a component drawn without the provider (most tests)
 // behaves as the page did before BAJAOVRLAY-29: nothing greyed out for a role.

@@ -1,8 +1,4 @@
-import {
-  type LoginRequest,
-  type SessionAnswer,
-  SessionAnswerSchema,
-} from '@bajaovrlay/shared';
+import { type LoginRequest, type SessionAnswer, SessionAnswerSchema } from '@bajaovrlay/shared';
 
 import { ptBR } from '@/i18n/ptBR';
 

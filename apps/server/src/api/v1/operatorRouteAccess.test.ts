@@ -16,66 +16,27 @@
  *   Dados and as Produtor):
  *   - The page's reads answer 401 SESSION_REQUIRED in pt-BR without a session, and are
  *     answered for both roles: Dados reads everything, it only may not send some commands.
- *   - GET /state with `role=renderer` or `role=monitor` answers without a session.
- *   - The history's older pages also answer a device of the command API with its token.
  *   - The command API's routes answer the same with or without a session: 403 with the
  *     API off, as before; a session neither opens nor closes them.
- *   - The session routes, /health, /media/<id> and the OpenAPI document need no session.
+ *   - The session routes need no session.
  *   - The table has a row for every route of the OpenAPI document, and the access table
  *     in the code names exactly those routes, so a new route must be classed.
- *   - With the login off (no PINs) every page read answers without a session, as before.
  *
  * What these tests deliberately do not cover:
+ *   - A screen's read of GET /state, a device's read of the history, the addresses outside
+ *     /api/v1, and the login off; operatorRouteAccessOutsideTheTable.test.ts.
  *   - What each route answers beyond its status; each route has its own tests.
  *   - The WebSocket; core/ws/webSocketHubOperatorSession.test.ts.
  *   - Which commands a role may send; authorizeCommandsByRole.test.ts in core/store.
  */
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
 
-import { describe, expect, it, onTestFinished } from 'vitest';
-
-import { companionToken } from '../../core/apiAccess/fakeApiTokens.testSupport.js';
-import { parseApiTokens } from '../../core/apiAccess/apiTokens.js';
-import { createTemporaryDatabasePath } from '../../core/db/temporaryDatabase.testSupport.js';
-import {
-  createClockMovedByHand,
-  createServerAppWithOperatorLogin,
-  logInAndKeepTheCookie,
-} from '../../core/operatorLogin/operatorLoginOnTheApp.testSupport.js';
-import { operatorLoginTurnedOff } from '../../core/operatorLogin/operatorPins.js';
 import { accessOfEachApiRoute } from '../../core/operatorLogin/routeAccess.js';
-
-/** A media folder in a new temporary folder, removed when the test ends. */
-function createTemporaryMediaFolder(): string {
-  const mediaFolder = mkdtempSync(join(tmpdir(), 'bajaovrlay-midia-'));
-  onTestFinished(() => rmSync(mediaFolder, { recursive: true, force: true }));
-  return mediaFolder;
-}
-
-/**
- * The server app with the tests' two PINs set, the upload route mounted and, when asked,
- * Companion's token for the command API; with the cookies of Dados at "Mesa 2" and of
- * Produtor at "Mesa 1".
- */
-async function createAppWithTheLoginOnAndBothRolesLoggedIn(
-  options: { isCompanionsTokenSet?: boolean } = {},
-) {
-  const apiTokensParsing = parseApiTokens(`companion=${companionToken}`);
-  if (!apiTokensParsing.isValid) {
-    throw new Error('the test token must parse');
-  }
-  const { app } = createServerAppWithOperatorLogin({
-    databasePath: createTemporaryDatabasePath(),
-    clock: createClockMovedByHand(),
-    mediaFolder: createTemporaryMediaFolder(),
-    apiTokens: options.isCompanionsTokenSet === true ? apiTokensParsing.apiTokens : undefined,
-  });
-  const dataRoleCookie = await logInAndKeepTheCookie(app, 'dados', 'Mesa 2');
-  const producerCookie = await logInAndKeepTheCookie(app, 'produtor', 'Mesa 1');
-  return { app, dataRoleCookie, producerCookie };
-}
+import {
+  createAppWithTheLoginOnAndBothRolesLoggedIn,
+  describeStatusAsTheTableDoes,
+  sendTheRowsRequest,
+} from './routeAccessOnTheApp.testSupport.js';
 
 /** What the three callers of a row get back: a status, or the route's own answer. */
 type ExpectedForEachCaller = {
@@ -252,32 +213,6 @@ const everyApiRoute: RouteRow[] = [
   },
 ];
 
-/** One request of the table, sent with the cookie (or none, with an empty text). */
-function sendTheRowsRequest(
-  app: Awaited<ReturnType<typeof createAppWithTheLoginOnAndBothRolesLoggedIn>>['app'],
-  request: { path: string; method?: string; json?: unknown },
-  cookie: string,
-) {
-  const headers: Record<string, string> = {};
-  if (cookie !== '') {
-    headers.cookie = cookie;
-  }
-  if (request.json !== undefined) {
-    headers['content-type'] = 'application/json';
-  }
-  return app.request(request.path, {
-    method: request.method ?? 'GET',
-    headers,
-    body: request.json === undefined ? undefined : JSON.stringify(request.json),
-  });
-}
-
-/** A status as the table writes it: the number, or `answered` for the route's own answer. */
-function describeStatusAsTheTableDoes(status: number): number | 'answered' {
-  const isAnAccessRefusal = status === 401 || status === 403;
-  return isAnAccessRefusal ? status : 'answered';
-}
-
 describe('the access of every /api/v1 route with the login on', () => {
   it.each(everyApiRoute)('$route', async ({ route, request, expected }) => {
     // Arrange: the login on, and the cookies of Dados and of Produtor.
@@ -293,10 +228,9 @@ describe('the access of every /api/v1 route with the login on', () => {
     // Assert: each caller gets what the row says.
     const isAStatusOfItsOwn = (expectedStatus: number | 'answered', actualStatus: number) =>
       expectedStatus === 'answered' ? describeStatusAsTheTableDoes(actualStatus) : actualStatus;
-    expect(
-      isAStatusOfItsOwn(expected.noSession, noSessionStatus),
-      `${route} with no session`,
-    ).toBe(expected.noSession);
+    expect(isAStatusOfItsOwn(expected.noSession, noSessionStatus), `${route} with no session`).toBe(
+      expected.noSession,
+    );
     expect(isAStatusOfItsOwn(expected.dados, dataRoleStatus), `${route} as Dados`).toBe(
       expected.dados,
     );
@@ -321,61 +255,6 @@ describe('the access of every /api/v1 route with the login on', () => {
         message: 'Entre com o seu papel e PIN para usar esta página.',
       },
     });
-  });
-
-  const screenReadScenarios = [
-    // The renderer page OBS loads, whose hello is late.
-    { name: 'answers GET /state?role=renderer with no session', path: '/api/v1/state?role=renderer' },
-    // The control page's "Programa" and "Prévia" frames.
-    { name: 'answers GET /state?role=monitor with no session', path: '/api/v1/state?role=monitor' },
-  ];
-
-  it.each(screenReadScenarios)('$name', async ({ path }) => {
-    // Arrange: the login on.
-    const { app } = await createAppWithTheLoginOnAndBothRolesLoggedIn();
-
-    // Act: read the state as a screen, with no cookie.
-    const response = await app.request(path);
-
-    // Assert: answered, as before the login.
-    expect(response.status, 'a screen needs no login on the LAN').toBe(200);
-  });
-
-  it('answers the history’s older pages to a device of the command API with its token', async () => {
-    // Arrange: the login on, and Companion's token set.
-    const { app } = await createAppWithTheLoginOnAndBothRolesLoggedIn({ isCompanionsTokenSet: true });
-
-    // Act: read the history with the token and no cookie.
-    const response = await app.request('/api/v1/event-log', {
-      headers: { authorization: `Bearer ${companionToken}` },
-    });
-
-    // Assert: answered, as before the login.
-    expect(response.status, 'a device of the command API keeps its access').toBe(200);
-  });
-
-  const filesEveryPageLoads = [
-    // The server check of every page, OBS's included.
-    { name: 'answers /health with no session', path: '/health', expectedStatus: 200 },
-    // The document of the API, for whoever sets a pad up; it holds no state.
-    { name: 'answers the OpenAPI document with no session', path: '/api/v1/openapi.json', expectedStatus: 200 },
-    // An uploaded image, which a graphic in OBS loads: not found, but never refused.
-    {
-      name: 'answers an image address with no session (404 for one not uploaded)',
-      path: `/media/${'a'.repeat(64)}`,
-      expectedStatus: 404,
-    },
-  ];
-
-  it.each(filesEveryPageLoads)('$name', async ({ path, expectedStatus }) => {
-    // Arrange: the login on.
-    const { app } = await createAppWithTheLoginOnAndBothRolesLoggedIn();
-
-    // Act: ask for the row's address with no cookie.
-    const response = await app.request(path);
-
-    // Assert: the address's own answer, never a refusal for want of a session.
-    expect(response.status, `${path} needs no login`).toBe(expectedStatus);
   });
 });
 
@@ -404,33 +283,5 @@ describe('the access table itself', () => {
       everyApiRoute.map((row) => row.route).sort(),
       'every route must have a row in this test',
     ).toEqual([...routesOfTheDocument].sort());
-  });
-});
-
-describe('the page reads with the login off', () => {
-  const pageReads = everyApiRoute.filter((row) => row.expected === sessionRequired);
-
-  it.each(pageReads)('$route answers with no session, as before', async ({ request }) => {
-    // Arrange: a server with no PINs set.
-    const { app } = createServerAppWithOperatorLogin({
-      databasePath: createTemporaryDatabasePath(),
-      clock: createClockMovedByHand(),
-      operatorPins: operatorLoginTurnedOff,
-      mediaFolder: createTemporaryMediaFolder(),
-    });
-
-    // Act: send the row's request with no cookie, as the page always has (the history's
-    // older pages are read by the page with the browser's same-origin header).
-    const response = await app.request(request.path, {
-      method: request.method ?? 'GET',
-      headers: {
-        'sec-fetch-site': 'same-origin',
-        ...(request.json === undefined ? {} : { 'content-type': 'application/json' }),
-      },
-      body: request.json === undefined ? undefined : JSON.stringify(request.json),
-    });
-
-    // Assert: the route's own answer.
-    expect(describeStatusAsTheTableDoes(response.status), 'no login, no refusal').toBe('answered');
   });
 });

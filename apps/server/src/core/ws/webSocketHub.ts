@@ -6,14 +6,9 @@ import { type WebSocket, WebSocketServer } from 'ws';
 
 import type { ServerLogger } from '../logger/createLogger.js';
 import { type OperatorLogin, operatorLoginNotSetUp } from '../operatorLogin/operatorLogin.js';
-import type { OpenOperatorSession } from '../operatorLogin/operatorSessions.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
-import {
-  buildActorForConnection,
-  isScreenAddress,
-  isScreenConnectionActor,
-} from './connectionActor.js';
+import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
 import { startHeartbeat } from './heartbeat.js';
 import { readOutputIdFromRequestTarget } from './screenOutput.js';
 import {
@@ -25,6 +20,7 @@ import {
   serializeServerMessage,
 } from './serverMessageBuilding.js';
 import { startServerTimeBroadcast } from './serverTimeBroadcast.js';
+import { trackSessionsOfConnections } from './sessionsOfConnections.js';
 import {
   buildSlicesForAScreen,
   keepSliceNamesScreensReceive,
@@ -35,13 +31,6 @@ import {
 
 /** The only path that upgrades to a WebSocket (the control page's dev proxy forwards it). */
 export const webSocketPath = '/ws';
-
-/**
- * The close code of a connection whose session ended ("Sair", or its 18 hours over), in
- * the range WebSocket leaves to applications; 4401 echoes HTTP's 401. The page then reads
- * GET /api/v1/session and goes to "#/entrar".
- */
-export const sessionEndedCloseCode = 4401;
 
 /**
  * What the hub needs: the HTTP server to share, the store, a logger, the ping interval,
@@ -127,16 +116,8 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   // program's screens). Kept per screen, not per output: a screen that connects later
   // starts from its own hello, and nothing has to be kept for an output with no screen.
   const textsLastSentToEachScreen = new Map<WebSocket, TextsOfTheSlicesAScreenDraws>();
-  // The session each logged-in connection opened with (BAJAOVRLAY-29), so "Sair" can close
-  // that session's pages and no other.
-  const sessionIdOfEachConnection = new Map<WebSocket, string>();
-  const stopListeningForEndedSessions = operatorLogin.subscribeToEndedSessions((endedSession) => {
-    for (const [client, sessionId] of sessionIdOfEachConnection) {
-      if (sessionId === endedSession.sessionId) {
-        client.close(sessionEndedCloseCode, 'sessao-encerrada');
-      }
-    }
-  });
+  // The operator session of each logged-in connection (BAJAOVRLAY-29).
+  const sessionsOfConnections = trackSessionsOfConnections({ operatorLogin, readCurrentTime });
 
   httpServer.on('upgrade', (request, socket, head) => {
     const requestPath = readUpgradeRequestPath(request.url);
@@ -154,10 +135,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     // With the PINs set, a control page needs its session; a screen (a renderer, a monitor)
     // connects without one on the LAN, as before (BAJAOVRLAY-29). A refusal is a plain 401
     // the browser cannot read; the page learns why from GET /api/v1/session.
-    const session = operatorLogin.findSessionOfCookieHeader(request.headers.cookie);
-    const isRefusedForWantOfASession =
-      operatorLogin.isLoginRequired && session === undefined && !isScreenAddress(request.url);
-    if (isRefusedForWantOfASession) {
+    if (sessionsOfConnections.isUpgradeRefused(request)) {
       socket.on('error', (socketError) => {
         logger.warn({ err: socketError }, 'refused upgrade socket error');
         socket.destroy();
@@ -166,17 +144,16 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       return;
     }
     webSocketServer.handleUpgrade(request, socket, head, (client) => {
-      webSocketServer.emit('connection', client, request, session);
+      webSocketServer.emit('connection', client, request);
     });
   });
 
-  webSocketServer.on(
-    'connection',
-    (client: WebSocket, request: IncomingMessage, session: OpenOperatorSession | undefined) => {
+  webSocketServer.on('connection', (client: WebSocket, request: IncomingMessage) => {
     // A connection is a renderer or a monitor by the address it chose, a logged-in operator
     // by its session, or (the login off) an operator told apart by its own id, so the event
     // log can say which one sent what.
     const connectionId = randomUUID();
+    const session = sessionsOfConnections.findSessionOfTheUpgrade(request);
     const actor = buildActorForConnection(request.url, connectionId, session);
     const connectionLogger = logger.child({ connection_id: connectionId, actor });
     connectionLogger.info('websocket client connected');
@@ -212,25 +189,11 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       textsLastSentToEachScreen.set(client, writeTextsOfTheSlicesAScreenDraws(slicesForThisClient));
     }
 
-    // A logged-in page is closed when its session ends: by "Sair" (the listener above), at
-    // its 18 hours (the timer below), or, should the clock have jumped, at its next message.
-    let sessionExpiryTimer: ReturnType<typeof setTimeout> | undefined;
-    if (session !== undefined && !isScreenConnectionActor(actor)) {
-      sessionIdOfEachConnection.set(client, session.sessionId);
-      const millisecondsLeft = Date.parse(session.expiresAt) - readCurrentTime().getTime();
-      sessionExpiryTimer = setTimeout(() => {
-        client.close(sessionEndedCloseCode, 'sessao-encerrada');
-      }, millisecondsLeft);
-      // The timer alone must never keep the process alive.
-      sessionExpiryTimer.unref();
-    }
+    // A logged-in page is closed when its session ends ("Sair", its 18 hours).
+    sessionsOfConnections.watchTheSessionOfConnection(client, request);
 
     client.on('message', (data, isBinary) => {
-      const isSessionStillOpen =
-        session === undefined ||
-        operatorLogin.findSessionOfCookieHeader(request.headers.cookie) !== undefined;
-      if (!isSessionStillOpen) {
-        client.close(sessionEndedCloseCode, 'sessao-encerrada');
+      if (!sessionsOfConnections.isConnectionStillAllowedToSend(client, request)) {
         return;
       }
       const commandResult = answerClientMessage({
@@ -245,14 +208,11 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       connectionLogger.warn({ err: socketError }, 'websocket client error');
     });
     client.on('close', () => {
-      clearTimeout(sessionExpiryTimer);
-      sessionIdOfEachConnection.delete(client);
       outputIdOfEachScreen.delete(client);
       textsLastSentToEachScreen.delete(client);
       connectionLogger.info('websocket client disconnected');
     });
-    },
-  );
+  });
 
   // Every client hears about every change, the sender included. This runs inside
   // applyCommand, so the slices reach the sender before its commandResult does.
@@ -354,7 +314,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   return {
     close: () => {
       stopListening();
-      stopListeningForEndedSessions();
+      sessionsOfConnections.stop();
       heartbeat.stop();
       // Before the clients are dropped, so no tick finds a half-closed server.
       serverTimeBroadcast.stop();

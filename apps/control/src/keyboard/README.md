@@ -3,7 +3,8 @@
 Keyboard shortcuts for the operator. Start reading at `keyboardMap.ts`.
 
 - `keyboardMap.ts` — the single source of truth: every shortcut with its keys, where it is left
-  alone (typing), whether it is kept from the browser, its commands and its pt-BR words (from
+  alone (typing), whether it is kept from the browser, its commands (a role that may send none
+  of them, Dados and Space for one, has the key switched off; BAJAOVRLAY-29) and its pt-BR words (from
   `src/i18n/ptBRKeyboard.ts`). The listeners read their keys and rules from it, and the "?"
   dialog (`features/keyboardHelp/`) lists it. Its test pins the rules decided so far.
 - `useKeyboardShortcut.ts` — "call this when one of that entry's keys is pressed", with the guards

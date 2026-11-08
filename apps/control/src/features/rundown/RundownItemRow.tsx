@@ -12,6 +12,7 @@ import { findWhyTheTakeOfItemIsOff } from '@/features/events/itemTakenThroughAnE
 import { ItemColorChip } from '@/features/items/ItemColorChip';
 import { ptBR } from '@/i18n/ptBR';
 import { useIsConnectedToServer } from '@/state/ControlPageStateProvider';
+import { useWhyTheRoleCannotSend } from '@/state/operatorSessionContext';
 
 import { DeleteItemButton } from './DeleteItemButton';
 import { DragHandleIcon } from './DragHandleIcon';
@@ -52,6 +53,7 @@ export type RundownItemRowProps = {
 export function RundownItemRow(props: RundownItemRowProps) {
   const { item, isAtCursor, graphicName, layerName, onTakePressed } = props;
   const isConnected = useIsConnectedToServer();
+  const isCursorOffForTheRole = useWhyTheRoleCannotSend('moveCursor') !== undefined;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hasMenuAnythingToOffer = props.moveToShortcutsChoices.length > 0;
 
@@ -127,10 +129,12 @@ export function RundownItemRow(props: RundownItemRowProps) {
         <div className="flex items-center gap-2">
           <ItemColorChip color={item.color} />
           {/* A real button, so the keyboard reaches it too. It reads as plain text; its
-              longer name ("Marcar como próximo: ...") tells a screen reader what it does. */}
+              longer name ("Marcar como próximo: ...") tells a screen reader what it does.
+              Off for a role that may not move the cursor (Dados, BAJAOVRLAY-29): the label
+              still reads the same, it just does not move the cursor. */}
           <button
             type="button"
-            disabled={!isConnected}
+            disabled={!isConnected || isCursorOffForTheRole}
             aria-label={ptBR.rundown.setCursorToItemButton(item.label)}
             onClick={props.onSetCursorPressed}
             className="min-w-0 flex-1 cursor-pointer truncate rounded-sm text-left text-sm font-medium outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:no-underline"
@@ -166,7 +170,12 @@ export function RundownItemRow(props: RundownItemRowProps) {
           {/* Shows the item on the preview output, as a preview asked for by hand. It
               neither takes nor moves the cursor, so any row can be looked at while the
               planned item stays next. */}
-          <ActionButton commandType="previewItem" size="xs" variant="outline" onClick={props.onPreviewPressed}>
+          <ActionButton
+            commandType="previewItem"
+            size="xs"
+            variant="outline"
+            onClick={props.onPreviewPressed}
+          >
             {ptBR.rundown.previewItemButton}
           </ActionButton>
           <ActionButton size="xs" variant="ghost" onClick={props.onEditPressed}>

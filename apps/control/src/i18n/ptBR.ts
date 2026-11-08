@@ -5,13 +5,13 @@ import { ptBREvents } from './ptBREvents';
 import { ptBRHistory } from './ptBRHistory';
 import { ptBRKeyboard } from './ptBRKeyboard';
 import { ptBRLayers } from './ptBRLayers';
+import { ptBRLogin } from './ptBRLogin';
 import { ptBRObs } from './ptBRObs';
 import { ptBROutputs } from './ptBROutputs';
 import { ptBRQuickEdit } from './ptBRQuickEdit';
 import { ptBRQuickFire } from './ptBRQuickFire';
 import { ptBRTextList } from './ptBRTextList';
 import { ptBRTriggers } from './ptBRTriggers';
-import { ptBRLogin } from './ptBRLogin';
 import { ptBRUndo } from './ptBRUndo';
 
 /**

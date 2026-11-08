@@ -21,10 +21,9 @@
  *     says "Procurando em registros mais antigos…" and asks below where it stopped by
  *     itself, until rows come or the log ends.
  *   - With fewer than 200 live rows the slice is the whole log, and nothing is offered.
- *   - With the login on (BAJAOVRLAY-29), a row reads "Produtor · Mesa 1" or "Dados · Mesa 2",
- *     and "Quem" offers both roles, each keeping its own rows.
  *
  * What these tests deliberately do not cover:
+ *   - The rows of the two roles of the login; HistoryPageRoles.test.tsx.
  *   - The sentence of each command type; packages/shared's sentence tests.
  *   - The route's own paging and filtering; apps/server's eventLogRoute.test.ts.
  *   - The CSV text itself; historyCsv.test.ts.
@@ -358,70 +357,5 @@ describe('"Carregar mais"', () => {
 
     // Assert: there is nothing older to load.
     expect(loadMoreButton, 'fewer than 200 live rows are the whole log').toBeNull();
-  });
-});
-
-describe('the rows of a show with the login on', () => {
-  /** A take by the Produtor at "Mesa 1", and Dados's take refused at "Mesa 2" just after. */
-  function buildRowsOfTheTwoRoles(): EventLogEntry[] {
-    return [
-      {
-        id: 51,
-        ts: '2026-11-07T14:00:00.000Z',
-        actor: 'produtor:Mesa 1',
-        command: 'takeItem',
-        payload: { type: 'takeItem', itemId: startClockItem.id },
-        result: { status: 'ok' },
-      },
-      {
-        id: 52,
-        ts: '2026-11-07T14:01:00.000Z',
-        actor: 'dados:Mesa 2',
-        command: 'takeItem',
-        payload: { type: 'takeItem', itemId: interviewItem.id },
-        result: {
-          status: 'failed',
-          error: {
-            code: 'NOT_ALLOWED',
-            message: 'O papel Dados não pode mudar o que está no ar. Peça ao Produtor.',
-          },
-        },
-      },
-    ];
-  }
-
-  it('names the role and the station of each row', () => {
-    // Arrange: the two rows on the page.
-    renderOnControlPageConnectedToFakeServer(
-      <HistoryPage />,
-      buildSlicesWithEventLog(buildRowsOfTheTwoRoles()),
-    );
-
-    // Act: read the "Quem" column.
-    const table = screen.getByRole('table', { name: 'Histórico de comandos' });
-    const bodyRows = within(table).getAllByRole('row').slice(1);
-    const senders = bodyRows.map((row) => within(row).getAllByRole('cell')[1]?.textContent);
-
-    // Assert: role and station, newest first.
-    expect(senders, '"Quem" names the role and the station').toEqual([
-      'Dados · Mesa 2',
-      'Produtor · Mesa 1',
-    ]);
-  });
-
-  it('keeps Dados’s rows when "Quem" is "Dados"', () => {
-    // Arrange: the two rows on the page.
-    renderOnControlPageConnectedToFakeServer(
-      <HistoryPage />,
-      buildSlicesWithEventLog(buildRowsOfTheTwoRoles()),
-    );
-
-    // Act: choose "Dados" in "Quem".
-    chooseInFilter('Quem', 'Dados');
-
-    // Assert: only the refused take of Dados is left.
-    expect(readSentencesShown(), 'the filter keeps the role’s own rows').toEqual([
-      'Recusado: Tomou "Tarja da equipe 42" na camada Tarja (Programa) — O papel Dados não pode mudar o que está no ar. Peça ao Produtor.',
-    ]);
   });
 });

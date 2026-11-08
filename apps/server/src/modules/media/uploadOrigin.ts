@@ -1,4 +1,4 @@
-// Who may upload until M4 brings logins: the server's own pages, the pages of a reverse
+// Who may upload, beside the session the PINs ask for (BAJAOVRLAY-29): the server's own pages, the pages of a reverse
 // proxy listed in BAJAOVRLAY_PUBLIC_ORIGINS, and tools that are not browsers. A page of
 // another site open in the operator's browser may not.
 
