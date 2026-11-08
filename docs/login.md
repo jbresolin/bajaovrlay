@@ -69,13 +69,26 @@ gatilho automático roda (o nome e a cor, sim).
 - As páginas do OBS (`/render/`) e os monitores da página de controle: continuam sem login na
   rede do estúdio e só informam o que está na tela.
 - A API de comandos (Companion, Stream Deck, D200; [buttons.md](buttons.md)): continua com os
-  seus tokens e o modo aberto, sem papel.
+  seus tokens e o modo aberto, sem papel. **O modo aberto (`BAJAOVRLAY_API_OPEN=true`) passa por
+  cima do login, de propósito**: qualquer computador da rede pode tomar, limpar e rodar macros
+  pela API, com ou sem PIN. Com os PINs definidos e o modo aberto ligado, o log avisa ao ligar o
+  servidor. Para que só os botões cadastrados operem, use tokens e deixe o modo aberto desligado.
 - `/health`, as imagens (`/media/…`), os gráficos e o tema.
 
 A tabela de quem acessa cada endereço fica em
 `apps/server/src/core/operatorLogin/routeAccess.ts`.
 
-## 5. Sem HTTPS
+## 5. O que Dados muda no ar, de propósito
+
+Dados nunca toma, limpa, nem mexe na prévia. Mas duas coisas que fazem parte do trabalho de
+Dados aparecem no ar, e isso foi aceito (gate 2 do PR #51):
+
+- **Correções** de um campo ligado a uma fonte (o nome de uma equipe, um tempo errado) trocam o
+  valor também no gráfico que está no ar, que é para isso que existem.
+- **A altura ou a ordem de uma camada** (Saídas e camadas) reempilha os gráficos que estão no
+  ar naquela saída.
+
+## 6. Sem HTTPS
 
 A rede do estúdio é confiável e a página é servida por `http://`. Por isso o cookie da sessão
 (`bajaovrlay_sessao`) não tem a marca `Secure`: com ela, o navegador nunca o mandaria de volta
