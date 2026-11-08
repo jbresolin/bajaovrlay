@@ -17,13 +17,22 @@
  * What these tests prove:
  *   - From "Edição rápida": a clock made with "Novo gráfico…", taken running at 12:34 with
  *     "Salvar e disparar", loaded with its row's "Editar" and stopped with "Atualizar"
- *     once it shows 12:38 shows, on the program output, the time it had reached (12:38 or
- *     later), not 12:34. It is still showing that same time a second and a half later,
- *     and after a flag change with "Atualizar".
+ *     once it shows 12:38 is held by the server at the time it had reached: 12:34 plus
+ *     the time between the take and the stop, both moments as the server stamped them.
+ *     Not 12:34. The program output shows that time, still a second and a half later,
+ *     and still after a flag change with "Atualizar".
  *   - "Edição rápida" then shows that same time in its time field, with the switch off:
  *     the form follows what the server put on air.
  *   - From the item editor: the same stop with "Atualizar no ar" on an item fired from
  *     the rundown gives the same result on the program output.
+ *
+ *   Why the time held is checked against the clock's own two readings, and not against
+ *   the 12:38 the program output showed before the stop (BAJAOVRLAY-61): that 12:38 was
+ *   worked out from the machine's wall clock at one moment and the stop from it at a later
+ *   one, and the wall clock can be set back between the two. Under load on WSL2 it once
+ *   went back about a second (the server's `time` messages, sent every 10 s, came 8.97 s
+ *   apart by their stamps), so the server stopped the clock at 12:37.8, which is right by
+ *   its own reading. The sum below holds whatever the wall clock does.
  *
  * What these tests deliberately do not cover:
  *   - The exact time the server writes, a clock started again, a typed time, a change of
@@ -45,7 +54,7 @@
  */
 import { type BrowserContext, expect, type Locator, type Page, test } from '@playwright/test';
 
-import { emptyTheServerState } from './emptyTheServerState';
+import { emptyTheServerState, realServerPort } from './emptyTheServerState';
 import { findItemEditorOwnTextField } from './itemEditorOwnFields';
 import {
   chooseGraphicInTheItemEditor,
@@ -54,12 +63,14 @@ import {
   saveAndTakeTheItemInTheEditor,
 } from './previewTestSteps';
 
-// The clock is taken at 12:34 and left running until the program output shows 12:38 or
-// later; only then is it stopped. So a clock that "stopped where it was" shows 12:38 or
-// later, and one that "jumped back to its reference" shows 12:34: the two cannot be
-// mistaken for one another. The upper end, 12:49, leaves a slow machine eleven seconds
-// for the clicks. The spaces are the ones the graphic's markup has around the text.
+// The clock is taken at 12:34 (754,000 ms) and left running until the program output
+// shows 12:38 or later; only then is it stopped. So a clock that "stopped where it was"
+// holds a few seconds more than 12:34, and one that "jumped back to its reference" holds
+// 12:34 itself: the two cannot be mistaken for one another. The upper end, 12:49, leaves
+// a slow machine eleven seconds. The spaces are the ones the graphic's markup has around
+// the text.
 const timeOfAClockThatHasRunLongEnough = /^\s*12:(3[89]|4\d)\s*$/;
+const timeTheClockIsTakenAtMilliseconds = 754_000;
 
 // How long the tests wait for the running clock to get there: four seconds of running,
 // and as much again for a slow machine.
@@ -129,22 +140,99 @@ async function fillClockFormRunningFromTwelveThirtyFour(formArea: Locator): Prom
 }
 
 /**
- * Waits until "Edição rápida" shows a stopped clock, and returns the time its time field
- * then shows. With the clock loaded, the form follows what the server holds for it,
- * whoever changed it, so this is the time the server wrote when it stopped the clock.
+ * One reading of the race clock on the program output, as the server holds it: "at the
+ * server's moment `referenceWallClockMs` the clock read `referenceTimeMs`", running or held.
  */
-async function readTimeTheServerStoppedTheClockAt(page: Page): Promise<string> {
+type ClockReadingOnTheServer = {
+  referenceTimeMs: number;
+  referenceWallClockMs: number;
+  running: boolean;
+};
+
+/** What the tests read of GET /api/v1/state: the instances, with their data. */
+type StateTheClockTestsRead = {
+  instances: Array<{ layerId: string; target: string; resolvedData: Record<string, unknown> }>;
+};
+
+/** Reads the reading of the race clock on the program output from the real server. */
+async function readClockReadingOnTheServer(): Promise<ClockReadingOnTheServer> {
+  const response = await fetch(`http://127.0.0.1:${String(realServerPort)}/api/v1/state`);
+  const state = (await response.json()) as StateTheClockTestsRead;
+  const clockOnAir = state.instances.find(
+    (instance) => instance.layerId === 'clock' && instance.target === 'program',
+  );
+  if (clockOnAir === undefined) {
+    throw new Error('the server has no clock on the program output');
+  }
+  return {
+    referenceTimeMs: Number(clockOnAir.resolvedData.referenceTimeMs),
+    referenceWallClockMs: Number(clockOnAir.resolvedData.referenceWallClockMs),
+    running: clockOnAir.resolvedData.running === true,
+  };
+}
+
+/** Waits until the server holds the clock stopped, and returns that reading. */
+async function readClockReadingOnceTheServerStoppedIt(): Promise<ClockReadingOnTheServer> {
+  await expect
+    .poll(async () => (await readClockReadingOnTheServer()).running, {
+      message: 'the server must stop the clock once "Atualizar" is pressed',
+    })
+    .toBe(false);
+  return readClockReadingOnTheServer();
+}
+
+/**
+ * Checks that the stop held the clock at the time it had reached, by the clock's own
+ * readings: the time read at the take, plus the time from the take's moment to the stop's
+ * moment, both as the server stamped them. A clock that jumped back would hold the 12:34
+ * it was taken with instead.
+ */
+function expectTheStopToHoldTheTimeTheClockHadReached(
+  readingWhileRunning: ClockReadingOnTheServer,
+  readingOnceStopped: ClockReadingOnTheServer,
+): void {
+  const timeFromTheTakeToTheStopMs =
+    readingOnceStopped.referenceWallClockMs - readingWhileRunning.referenceWallClockMs;
+  const timeTheClockHadReachedMs = readingWhileRunning.referenceTimeMs + timeFromTheTakeToTheStopMs;
+  expect(
+    readingOnceStopped.referenceTimeMs,
+    'the server must hold the time the clock had reached at the stop, by its own reading',
+  ).toBe(timeTheClockHadReachedMs);
+  expect(
+    readingOnceStopped.referenceTimeMs,
+    'the clock must have run on from the 12:34 it was taken with, not jumped back to it',
+  ).toBeGreaterThan(timeTheClockIsTakenAtMilliseconds);
+}
+
+/**
+ * Writes a time as a counting-up race clock shows it: whole minutes and seconds, the part
+ * of a second dropped (757,804 ms is "12:37"). Enough for these tests, which stay under
+ * an hour.
+ */
+function writeTimeAsTheClockShowsIt(timeMs: number): string {
+  const wholeSeconds = Math.floor(timeMs / 1000);
+  const minutes = Math.floor(wholeSeconds / 60);
+  const seconds = wholeSeconds % 60;
+  return `${String(minutes)}:${String(seconds).padStart(2, '0')}`;
+}
+
+/**
+ * Waits until "Edição rápida" shows the clock stopped at `timeShown`. With the clock
+ * loaded, the form follows what the server holds for it, whoever changed it.
+ */
+async function expectQuickEditToShowTheClockStoppedAt(
+  page: Page,
+  timeShown: string,
+): Promise<void> {
   const quickEditArea = findProgramAndQuickEditArea(page);
   await expect(
     quickEditArea.getByRole('switch', { name: 'Relógio correndo' }),
     '"Edição rápida" must show the switch off once the server has stopped the clock',
   ).not.toBeChecked();
-  const timeField = quickEditArea.getByLabel('Tempo de referência', { exact: true });
   await expect(
-    timeField,
-    'the server must have written the time the clock had reached, not left the 12:34 it was taken with',
-  ).toHaveValue(timeOfAClockThatHasRunLongEnough);
-  return timeField.inputValue();
+    quickEditArea.getByLabel('Tempo de referência', { exact: true }),
+    '"Edição rápida" must show the time the server holds the clock at',
+  ).toHaveValue(timeShown);
 }
 
 test.beforeEach(async () => {
@@ -178,6 +266,8 @@ test.describe('stopping a running race clock that is on air', () => {
     ).toHaveText(timeOfAClockThatHasRunLongEnough, {
       timeout: timeAllowedForTheClockToRunInMilliseconds,
     });
+    // The reading the server took the clock with: 12:34 at the moment of the take.
+    const readingWhileRunning = await readClockReadingOnTheServer();
 
     // Act: load the clock with its row's "Editar", switch "Relógio correndo" off, changing
     // nothing else, and press "Atualizar".
@@ -185,9 +275,12 @@ test.describe('stopping a running race clock that is on air', () => {
     await quickEditArea.getByRole('switch', { name: 'Relógio correndo' }).click();
     await quickEditArea.getByRole('button', { name: 'Atualizar', exact: true }).click();
 
-    // Assert: the server stopped the clock at the time it had reached, 12:38 or a little
-    // later, and the form shows that time. Had the clock jumped, this would read 12:34.
-    const timeTheClockWasStoppedAt = await readTimeTheServerStoppedTheClockAt(page);
+    // Assert: the server held the clock at the time it had reached, by its own reading,
+    // and the form shows that time. Had the clock jumped, this would read 12:34.
+    const readingOnceStopped = await readClockReadingOnceTheServerStoppedIt();
+    expectTheStopToHoldTheTimeTheClockHadReached(readingWhileRunning, readingOnceStopped);
+    const timeTheClockWasStoppedAt = writeTimeAsTheClockShowsIt(readingOnceStopped.referenceTimeMs);
+    await expectQuickEditToShowTheClockStoppedAt(page, timeTheClockWasStoppedAt);
     // The program output shows that very time...
     await expect(
       clockTimeInProgramOutput,
@@ -255,6 +348,8 @@ test.describe('stopping a running race clock that is on air', () => {
     ).toHaveText(timeOfAClockThatHasRunLongEnough, {
       timeout: timeAllowedForTheClockToRunInMilliseconds,
     });
+    // The reading the server took the clock with: 12:34 at the moment of the take.
+    const readingWhileRunning = await readClockReadingOnTheServer();
 
     // Act: open the item, switch "Relógio correndo" off and press "Atualizar no ar".
     await enduranceRow.getByRole('button', { name: 'Editar item', exact: true }).click();
@@ -266,12 +361,16 @@ test.describe('stopping a running race clock that is on air', () => {
       itemEditor,
       'the editor must close once the save and the on-air update were both accepted',
     ).toBeHidden();
-    // The item editor sent the switch alone, as "Edição rápida" does, and the server
-    // stopped the clock at the time it had reached. The clock is loaded into "Edição
-    // rápida" with "Editar" on its "Camadas" row, and the time the server wrote is read
-    // there. Had the clock jumped back to what the item stores, this would read 12:34.
+    // The item editor sent the switch alone, as "Edição rápida" does, and the server held
+    // the clock at the time it had reached, by its own reading. Had the clock jumped back
+    // to what the item stores, it would hold 12:34.
+    const readingOnceStopped = await readClockReadingOnceTheServerStoppedIt();
+    expectTheStopToHoldTheTimeTheClockHadReached(readingWhileRunning, readingOnceStopped);
+    const timeTheClockWasStoppedAt = writeTimeAsTheClockShowsIt(readingOnceStopped.referenceTimeMs);
+    // Loaded into "Edição rápida" with "Editar" on its "Camadas" row, the clock shows there
+    // stopped at that time.
     await findClockLayerRow(page).getByRole('button', { name: 'Editar', exact: true }).click();
-    const timeTheClockWasStoppedAt = await readTimeTheServerStoppedTheClockAt(page);
+    await expectQuickEditToShowTheClockStoppedAt(page, timeTheClockWasStoppedAt);
     await expect(
       clockTimeInProgramOutput,
       'the program output must show the clock stopped at the time it had reached, not at the 12:34 the item stores',
