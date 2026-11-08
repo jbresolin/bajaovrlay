@@ -42,6 +42,8 @@ export {
   type WallClockFieldsChoice,
   WallClockFieldsChoiceSchema,
 } from './saveOnAirChangesIntoItem.js';
+// "item mudou": the fields an instance shows older values of than its item now holds.
+export { findWhereTheItemIsAheadOfTheAir } from './itemAheadOfTheAir.js';
 // deleteItem: remove an item from its rundown.
 export { type DeleteItemCommand, DeleteItemCommandSchema } from './deleteItem.js';
 // reorderItems: put a rundown's items in a new order, given as the full list of ids.

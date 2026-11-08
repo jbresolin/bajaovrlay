@@ -2,9 +2,11 @@ import { Readable } from 'node:stream';
 
 import type { OpenAPIHono } from '@hono/zod-openapi';
 
-import { allowTheControlPageOrRequireApiAccess } from '../../core/apiAccess/allowTheControlPageOrRequireApiAccess.js';
-import type { ApiTokens } from '../../core/apiAccess/apiTokens.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
+import {
+  middlewareForTheAccessOfRoute,
+  type RouteAccessOptions,
+} from '../../core/operatorLogin/routeAccess.js';
 import {
   type BackupDownloads,
   buildBackupAlreadyRunningAnswer,
@@ -16,26 +18,32 @@ import {
 } from '../../modules/backup/index.js';
 
 /**
- * Mounts GET /api/v1/backup and GET /api/v1/backup/summary (BAJAOVRLAY-33) behind the
- * history's access: the control page's own fetch and link pass with no token, any other
- * caller goes through the command API's rules. Thin: parse, authorise, call the module.
+ * Mounts GET /api/v1/backup and GET /api/v1/backup/summary (BAJAOVRLAY-33) with the access
+ * core/operatorLogin/routeAccess.ts gives them: a session of either role, since a backup
+ * changes nothing on air (open to all while the login is off). Thin: parse, authorise,
+ * call the module.
  */
 export function mountBackupRoutes(
   apiRoutes: OpenAPIHono<ServerAppEnvironment>,
   options: {
     backupDownloads: BackupDownloads;
-    apiTokens: ApiTokens;
-    isOpenToTheNetwork: boolean;
+    routeAccessOptions: RouteAccessOptions;
   },
 ): void {
-  const accessOfTheControlPage = allowTheControlPageOrRequireApiAccess(options);
-
-  apiRoutes.openapi({ ...getBackupSummaryRoute, middleware: [accessOfTheControlPage] }, (context) =>
+  const summaryMiddleware = middlewareForTheAccessOfRoute(
+    getBackupSummaryRoute,
+    options.routeAccessOptions,
+  );
+  apiRoutes.openapi({ ...getBackupSummaryRoute, middleware: summaryMiddleware }, (context) =>
     context.json(options.backupDownloads.summarizeTheBackup(), 200),
   );
 
+  const downloadMiddleware = middlewareForTheAccessOfRoute(
+    getBackupRoute,
+    options.routeAccessOptions,
+  );
   apiRoutes.openapi(
-    { ...getBackupRoute, middleware: [accessOfTheControlPage] },
+    { ...getBackupRoute, middleware: downloadMiddleware },
     async (context) => {
       const query = context.req.valid('query');
       const isIncludingRecordings = query.includeRecordings !== 'false';

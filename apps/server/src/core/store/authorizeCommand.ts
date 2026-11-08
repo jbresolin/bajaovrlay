@@ -1,4 +1,8 @@
-import { type Command, isCommandTypeOfTheOperator } from '@bajaovrlay/shared';
+import {
+  type Command,
+  isCommandTypeOfTheOperator,
+  isCommandTypeOpenToTheRole,
+} from '@bajaovrlay/shared';
 
 import {
   backupActor,
@@ -12,13 +16,14 @@ import {
   mediaStoreActor,
   obsConnectionActor,
   readMacroIdOfMacroRunnerActor,
+  readRoleOfLoggedInOperatorActor,
   readSourceIdOfDataSourcePollerActor,
   triggerServiceActor,
 } from './commandActors.js';
 
 /**
  * The authorisation step of applyCommand: answers whether this actor may run this
- * command. A store can be given a different one (tests do, and login will).
+ * command. A store can be given a different one (tests do).
  */
 export type IsCommandAllowed = (command: Command, actor: string) => boolean;
 
@@ -31,8 +36,7 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
 ];
 
 /**
- * The default hook while there is no operator login. It decides by the actor's role
- * alone:
+ * The default hook. It decides by the actor's role alone:
  * - a renderer may only report what is on screen (reportInstanceStatus), and nobody
  *   else may send that report;
  * - a monitor (`monitor:<connection id>`, the control page's "Programa" and "Prévia"
@@ -77,7 +81,7 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   a bug in a timer must never be able to put a graphic on air or empty the screen;
  * - every other actor (an operator, `operador:<connection id>`, and a device of the
  *   command API, `api:<token name>`, BAJAOVRLAY-28) may send every command the shared
- *   list classes as the operator's (senderOfEachCommandType in @bajaovrlay/shared), so
+ *   list classes as the operator's (whoMaySendEachCommandType in @bajaovrlay/shared), so
  *   none of the commands only the server sends: the runner's bookkeeping, so no page can
  *   fake or end a run the runner is carrying out (an operator stops a run with stopMacro,
  *   "Parar", which the runner then ends), poll results and a recording's progress, so no
@@ -86,10 +90,15 @@ const commandTypesOfMacroSteps: ReadonlyArray<Command['type']> = [
  *   setOverride), recordDetectedEvents (no page may fake a race event),
  *   recordUploadedMedia, recordBackup, and the renderer's report; and not a
  *   stopRecording that carries a failureMessage either: only the recorder says why a
- *   recording failed (gate 2 on PR #16).
- * The role comes from the address the connection chose (`/ws?role=renderer`,
+ *   recording failed (gate 2 on PR #16);
+ * - a logged-in operator (BAJAOVRLAY-29) is held to its role on top of that: the Produtor
+ *   (`produtor:<station>`) sends every operator command, Dados (`dados:<station>`) only
+ *   those the shared list's role column gives it, never one that changes program or
+ *   preview (isCommandTypeOpenToTheRole in @bajaovrlay/shared).
+ * A screen's role comes from the address the connection chose (`/ws?role=renderer`,
  * `/ws?role=monitor`), so this keeps honest pages in their lane; it is not a defence
- * against a hostile client.
+ * against a hostile client. An operator's role comes from the session cookie the server
+ * signed at login, when the PINs are set.
  * A new job for the system that needs another command must be added here, or its
  * commands are refused with NOT_ALLOWED.
  */
@@ -144,9 +153,12 @@ export const allowCommandForActorRole: IsCommandAllowed = (command, actor) => {
   if (isSystemActor(actor)) {
     return command.type === 'clearLayer';
   }
-  return (
-    isCommandTypeOfTheOperator(command.type) && !isRecorderBookkeeping && !isTakeFilledByATrigger
-  );
+  const roleOfTheOperator = readRoleOfLoggedInOperatorActor(actor);
+  const isOpenToTheOperator =
+    roleOfTheOperator === undefined
+      ? isCommandTypeOfTheOperator(command.type)
+      : isCommandTypeOpenToTheRole(command.type, roleOfTheOperator);
+  return isOpenToTheOperator && !isRecorderBookkeeping && !isTakeFilledByATrigger;
 };
 
 /** What the runner of one macro may send: a step's command, or its own run's bookkeeping. */

@@ -1,4 +1,4 @@
-import type { Trigger, TriggerMode } from '@bajaovrlay/shared';
+import { type Trigger, type TriggerMode, whyTheDataRoleCannotAutomate } from '@bajaovrlay/shared';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { ptBR } from '@/i18n/ptBR';
 import { useSendCommandAndReadItsRefusal, useServerState } from '@/state/ControlPageStateProvider';
+import { useIsTheDataRoleLoggedIn } from '@/state/operatorSessionContext';
 
 import {
   buildEmptyTriggerFormValues,
@@ -33,6 +34,10 @@ const modesInOrder: TriggerMode[] = ['ask', 'auto'];
  * stored one (triggerForm.ts); "Excluir gatilho" asks once more before deleteTrigger. A
  * problem on the page or the server's refusal shows above the buttons; once the server
  * accepts, the editor closes (`onDone`) and the list shows the trigger as the server holds it.
+ * For Dados (gate 2 of PR #51), "Automático" is greyed out unless the trigger already was;
+ * on an auto trigger kept auto, its macro, what it waits for and switching it on are too,
+ * each with the server's sentence. Set back to "Perguntar", they open again, as the server
+ * judges the trigger as it would be after the save.
  */
 export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDone: () => void }) {
   const { triggerBeingEdited } = props;
@@ -49,6 +54,11 @@ export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDon
   const [isWaitingForTheServer, setIsWaitingForTheServer] = useState(false);
   const [isDeleteArmed, setIsDeleteArmed] = useState(false);
   const triggerId = triggerBeingEdited?.id ?? null;
+  const isTheDataRole = useIsTheDataRoleLoggedIn();
+  const wasAutoWhenOpened = triggerBeingEdited?.mode === 'auto';
+  const isAutoGreyedOut = isTheDataRole && !wasAutoWhenOpened;
+  const isWhatItRunsLocked = isTheDataRole && wasAutoWhenOpened && values.mode === 'auto';
+  const isSwitchingOnLocked = isWhatItRunsLocked && triggerBeingEdited?.isEnabled === false;
 
   function changeValues(changedParts: Partial<TriggerFormValues>): void {
     setValues({ ...values, ...changedParts });
@@ -113,6 +123,7 @@ export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDon
       <div className="flex items-center gap-2">
         <Switch
           id="trigger-enabled"
+          disabled={isSwitchingOnLocked}
           checked={values.isEnabled}
           onCheckedChange={(isEnabled) => changeValues({ isEnabled })}
         />
@@ -125,6 +136,7 @@ export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDon
         triggerId={triggerId}
         obsSceneNames={obsSceneNames}
         scheduleSlots={scheduleSlots}
+        isLocked={isWhatItRunsLocked}
       />
 
       {/* Named on screen like the name and the interval (BAJAOVRLAY-59): the two selects
@@ -134,7 +146,11 @@ export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDon
           <Label htmlFor="trigger-macro" className="text-xs">
             {texts.macroLabel}
           </Label>
-          <Select value={values.macroId} onValueChange={(macroId) => changeValues({ macroId })}>
+          <Select
+            value={values.macroId}
+            disabled={isWhatItRunsLocked}
+            onValueChange={(macroId) => changeValues({ macroId })}
+          >
             <SelectTrigger
               id="trigger-macro"
               size="sm"
@@ -170,7 +186,7 @@ export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDon
             </SelectTrigger>
             <SelectContent>
               {modesInOrder.map((mode) => (
-                <SelectItem key={mode} value={mode}>
+                <SelectItem key={mode} value={mode} disabled={mode === 'auto' && isAutoGreyedOut}>
                   {texts.modeNames[mode]}
                 </SelectItem>
               ))}
@@ -178,6 +194,16 @@ export function TriggerEditor(props: { triggerBeingEdited: Trigger | null; onDon
           </Select>
         </div>
       </div>
+      {isAutoGreyedOut ? (
+        <p className="text-xs text-muted-foreground">
+          {whyTheDataRoleCannotAutomate.settingATriggerToAuto}
+        </p>
+      ) : null}
+      {isWhatItRunsLocked ? (
+        <p className="text-xs text-muted-foreground">
+          {whyTheDataRoleCannotAutomate.changingAnAutoTrigger}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-1">
         <Label htmlFor="trigger-interval" className="text-xs">
           {texts.intervalLabel}

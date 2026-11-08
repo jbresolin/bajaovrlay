@@ -6,16 +6,12 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { type ErrorAnswerBody, ErrorAnswerBodySchema } from '../../core/http/errorAnswers.js';
 import { ptBR } from '../../core/messages/ptBR.js';
 
-// Who may call them, as for GET /api/v1/event-log: the control page with no token, any
-// other caller as the command API allows. Until the control page's session lands
-// (BAJAOVRLAY-29), which will take its place.
+// Who may call them (core/operatorLogin/routeAccess.ts, BAJAOVRLAY-29): a session of
+// either role, Produtor or Dados, since a backup changes nothing on air; anyone while the
+// login is off.
 const accessResponses = {
   401: {
-    description: 'From outside the control page: a missing, malformed or wrong token.',
-    content: { 'application/json': { schema: ErrorAnswerBodySchema } },
-  },
-  403: {
-    description: 'From outside the control page, with the command API turned off.',
+    description: 'With the login on, no session (SESSION_REQUIRED, pt-BR).',
     content: { 'application/json': { schema: ErrorAnswerBodySchema } },
   },
 };

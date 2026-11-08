@@ -14,8 +14,9 @@ like `clock/`), `build/` (a page reloading itself when the server's build change
 `flexMapping/` (how a flex source's JSON becomes the canonical shapes), `bindings/` (item
 fields read from a source, and reading them), `overrides/` (an operator's corrections of a
 source's values), `programHistory/` (what each layer showed before its last changes, and the
-two undo commands) and `eventLogReading/` (each event-log row as a pt-BR sentence, and the
-history's filters, for the server and the page alike).
+two undo commands), `eventLogReading/` (each event-log row as a pt-BR sentence, and the
+history's filters, for the server and the page alike) and `operatorLogin/` (the two roles,
+the login body and session answer, and the sentence for a command Dados may not send).
 
 **How other packages import it.** `package.json` exports the source file under the
 custom condition `@bajaovrlay/source` and the built `dist/` otherwise. Typecheck, Vitest,

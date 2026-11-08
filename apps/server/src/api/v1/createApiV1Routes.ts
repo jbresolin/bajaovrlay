@@ -2,12 +2,13 @@ import { buildEventLogNamesFromSlices } from '@bajaovrlay/shared';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { bodyLimit } from 'hono/body-limit';
 
-import { allowTheControlPageOrRequireApiAccess } from '../../core/apiAccess/allowTheControlPageOrRequireApiAccess.js';
 import { type ApiTokens, apiTurnedOff } from '../../core/apiAccess/apiTokens.js';
 import { readFilteredEventLogPage } from '../../core/events/eventLogPages.js';
 import type { ErrorAnswerBody } from '../../core/http/errorAnswers.js';
 import type { ServerAppEnvironment } from '../../core/http/httpContextVariables.js';
 import { ptBR } from '../../core/messages/ptBR.js';
+import { type OperatorLogin } from '../../core/operatorLogin/operatorLogin.js';
+import { middlewareForTheAccessOfRoute } from '../../core/operatorLogin/routeAccess.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import type { BackupDownloads } from '../../modules/backup/index.js';
 import {
@@ -40,6 +41,7 @@ import { getEventLogRoute } from './eventLogRoute.js';
 import { mountBackupRoutes } from './mountBackupRoutes.js';
 import { mountButtonStateRoutes } from './mountButtonStateRoutes.js';
 import { mountCommandApiRoutes } from './mountCommandApiRoutes.js';
+import { mountSessionRoutes } from './sessionRoutes.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
 
 /**
@@ -65,13 +67,32 @@ export function createApiV1Routes(options: {
   publicOrigins?: readonly string[] | undefined;
   /** The backup downloads (BAJAOVRLAY-33); no backup routes when left out. */
   backupDownloads?: BackupDownloads | undefined;
+  /** The operator login (BAJAOVRLAY-29); with the login off every page read is open. */
+  operatorLogin: OperatorLogin;
 }): OpenAPIHono<ServerAppEnvironment> {
   const readSourceEnvironmentVariable =
     options.readSourceEnvironmentVariable ?? readServerEnvironmentVariable;
   const apiRoutes = new OpenAPIHono<ServerAppEnvironment>();
+  // The command API (BAJAOVRLAY-28) is always mounted, so with no tokens it answers 403
+  // with how to turn it on rather than 404.
+  const commandApiAccess = {
+    stateStore: options.stateStore,
+    apiTokens: options.apiTokens ?? apiTurnedOff,
+    isOpenToTheNetwork: options.isApiOpenToTheNetwork ?? false,
+  };
+  // Who may call each route is written once, in core/operatorLogin/routeAccess.ts; every
+  // route below takes its middleware from there (BAJAOVRLAY-29).
+  const routeAccessOptions = { ...commandApiAccess, operatorLogin: options.operatorLogin };
+  /** The route with the middleware its row of the access table asks for. */
+  function withItsAccess<Route extends { method: string; path: string }>(route: Route) {
+    return { ...route, middleware: middlewareForTheAccessOfRoute(route, routeAccessOptions) };
+  }
+
+  // GET, POST and DELETE /session: the login, open to everyone (BAJAOVRLAY-29).
+  mountSessionRoutes(apiRoutes, options.operatorLogin);
 
   apiRoutes.openapi(
-    getStateRoute,
+    withItsAccess(getStateRoute),
     (context) => {
       const query = context.req.valid('query');
       const slices = chooseSlicesForStateReader(options.stateStore.readAllSlices(), query);
@@ -90,7 +111,7 @@ export function createApiV1Routes(options: {
     },
   );
 
-  apiRoutes.openapi(getDataSnapshotRoute, (context) => {
+  apiRoutes.openapi(withItsAccess(getDataSnapshotRoute), (context) => {
     const { sourceId } = context.req.valid('param');
     const answer = findDataSnapshotAnswer(options.stateStore.readAllSlices(), sourceId);
     if (!answer.isFound) {
@@ -100,7 +121,7 @@ export function createApiV1Routes(options: {
   });
 
   apiRoutes.openapi(
-    postHttpJsonSampleRequestRoute,
+    withItsAccess(postHttpJsonSampleRequestRoute),
     async (context) => {
       const request = context.req.valid('json');
       const answer = await fetchSampleOfHttpJsonRequest(request, {
@@ -121,7 +142,7 @@ export function createApiV1Routes(options: {
     },
   );
 
-  apiRoutes.openapi(getSimulatorTeamsRoute, (context) => {
+  apiRoutes.openapi(withItsAccess(getSimulatorTeamsRoute), (context) => {
     return context.json(
       { notice: simulatorTeamsNotice, teams: buildSimulatorTeamsAsEntities() },
       200,
@@ -140,8 +161,9 @@ export function createApiV1Routes(options: {
         onError: (context) => context.json(buildFileTooLargeAnswer(), 413),
       }),
     );
-    apiRoutes.openapi(postMediaRoute, async (context) => {
-      // Until M4 logins, a page of another site must not upload through the operator's browser.
+    apiRoutes.openapi(withItsAccess(postMediaRoute), async (context) => {
+      // A page of another site must not upload through the operator's browser; with the
+      // login on, SameSite=Strict already keeps the session cookie from such a request.
       const isFromAnotherSite = isUploadFromAnotherSite(
         context.req.header('origin'),
         context.req.url,
@@ -162,13 +184,6 @@ export function createApiV1Routes(options: {
     });
   }
 
-  // The command API (BAJAOVRLAY-28) is always mounted, so with no tokens it answers 403
-  // with how to turn it on rather than 404.
-  const commandApiAccess = {
-    stateStore: options.stateStore,
-    apiTokens: options.apiTokens ?? apiTurnedOff,
-    isOpenToTheNetwork: options.isApiOpenToTheNetwork ?? false,
-  };
   mountCommandApiRoutes(apiRoutes, commandApiAccess);
   // The D200's per-button status URLs (BAJAOVRLAY-56), behind the same access.
   mountButtonStateRoutes(apiRoutes, commandApiAccess);
@@ -176,7 +191,7 @@ export function createApiV1Routes(options: {
   // The history's older pages (BAJAOVRLAY-30): the control page reads them as it reads
   // /state; anyone else goes through the command API's access rules.
   apiRoutes.openapi(
-    { ...getEventLogRoute, middleware: [allowTheControlPageOrRequireApiAccess(commandApiAccess)] },
+    withItsAccess(getEventLogRoute),
     (context) => {
       const query = context.req.valid('query');
       const page = readFilteredEventLogPage(
@@ -199,9 +214,12 @@ export function createApiV1Routes(options: {
     },
   );
 
-  // The backup download (BAJAOVRLAY-33), behind the same access as the history.
+  // The backup download (BAJAOVRLAY-33): a session of either role, as routeAccess.ts says.
   if (options.backupDownloads !== undefined) {
-    mountBackupRoutes(apiRoutes, { ...commandApiAccess, backupDownloads: options.backupDownloads });
+    mountBackupRoutes(apiRoutes, {
+      backupDownloads: options.backupDownloads,
+      routeAccessOptions,
+    });
   }
 
   apiRoutes.doc31('/openapi.json', {

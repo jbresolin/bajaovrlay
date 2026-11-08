@@ -10,6 +10,7 @@ import type {
 import { serveMediaFiles } from '../../modules/media/index.js';
 import type { ApiTokens } from '../apiAccess/apiTokens.js';
 import type { ServerLogger } from '../logger/createLogger.js';
+import type { OperatorLogin } from '../operatorLogin/operatorLogin.js';
 import type { StateStore } from '../store/createStateStore.js';
 import { serveControlPage, serveRendererPage } from './builtPageFolders.js';
 import { answerRouteNotFound, answerUnexpectedError } from './errorAnswers.js';
@@ -56,6 +57,11 @@ export type ServerAppOptions = {
   publicOrigins?: readonly string[] | undefined;
   /** The backup downloads (BAJAOVRLAY-33): GET /api/v1/backup; leave out in tests that make none. */
   backupDownloads?: BackupDownloads | undefined;
+  /**
+   * The operator login (BAJAOVRLAY-29) startServer built from the PINs. Required, with no
+   * default (gate 2 of PR #51): a wiring that forgot it must not compile into an open console.
+   */
+  operatorLogin: OperatorLogin;
 };
 
 /**
@@ -86,6 +92,7 @@ export function createServerApp(options: ServerAppOptions): Hono<ServerAppEnviro
         isApiOpenToTheNetwork: options.isApiOpenToTheNetwork,
         publicOrigins: options.publicOrigins,
         backupDownloads: options.backupDownloads,
+        operatorLogin: options.operatorLogin,
       }),
     );
     if (options.mediaFolder !== undefined) {

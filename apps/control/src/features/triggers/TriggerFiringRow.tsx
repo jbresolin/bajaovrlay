@@ -61,6 +61,7 @@ export function TriggerFiringRow(props: {
         </ul>
         <span className="ml-auto flex shrink-0 gap-1">
           <ActionButton
+            commandType="runTriggerFiring"
             size="xs"
             disabled={isWaitingForTheServer}
             onClick={() =>
@@ -70,6 +71,7 @@ export function TriggerFiringRow(props: {
             {texts.runButton}
           </ActionButton>
           <ActionButton
+            commandType="dismissTriggerFiring"
             size="xs"
             variant="ghost"
             disabled={isWaitingForTheServer}

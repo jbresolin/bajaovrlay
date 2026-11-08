@@ -4,6 +4,12 @@ Thin REST routes under `/api/v1`: parse → authorise → call a module or the s
 Start reading at `createApiV1Routes.ts`, which mounts every route and serves the
 OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
 
+- Who may call each route is one table, `core/operatorLogin/routeAccess.ts` (BAJAOVRLAY-29):
+  with the PINs set, the page's reads below need the session cookie (401 SESSION_REQUIRED),
+  except GET /state with a screen's role; the command API keeps its own access.
+- `sessionRoutes.ts` — `GET`, `POST` and `DELETE /api/v1/session` (BAJAOVRLAY-29): whether a
+  login is asked for and who the caller is, the login (role, PIN, station; the cookie, 401 for
+  a wrong PIN, 429 after five), and "Sair". Open to everyone.
 - `stateRoute.ts` — `GET /api/v1/state`, every slice at once; with `?role=renderer` or
   `?role=monitor` (a renderer page whose hello is late) `dataSnapshots` and `eventLog` are empty.
 - `eventLogRoute.ts` — `GET /api/v1/event-log` (BAJAOVRLAY-30): the history's older pages,

@@ -11,6 +11,7 @@ import { onTestFinished } from 'vitest';
 
 import { openTemporaryDatabase } from '../db/temporaryDatabase.testSupport.js';
 import { createLogger } from '../logger/createLogger.js';
+import { operatorLoginOff } from '../operatorLogin/operatorLoginOff.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../store/builtGraphicsFolder.testSupport.js';
 import {
   createStateStore,
@@ -61,6 +62,7 @@ export async function startHubWhoseChangesTheTestCanAnnounce(
   const httpServer = createServer();
   await new Promise<void>((resolve) => httpServer.listen(0, '127.0.0.1', () => resolve()));
   const webSocketHub = attachWebSocketHub({
+    operatorLogin: operatorLoginOff,
     httpServer,
     stateStore,
     logger,

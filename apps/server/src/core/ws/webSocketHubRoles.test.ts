@@ -20,8 +20,9 @@
  *     NOT_ALLOWED in pt-BR and leaves the instance loading.
  *   - ANY connection that says `?role=renderer` is taken at its word: a client that is
  *     not a renderer page at all can report an instance on air and the report is
- *     applied. Nothing proves the role today. This spoof is accepted on purpose until
- *     the LAN PINs of M4; the test records it so nobody mistakes the role for security.
+ *     applied. Nothing proves the role. This spoof is accepted on purpose: since the
+ *     LAN PINs (BAJAOVRLAY-29) renderer pages still connect without a login, by the
+ *     brief, so the test records it so nobody mistakes the role for security.
  *   - A renderer's report that arrives after the instance was cleared (the report races
  *     the clear) is answered ok and leaves no event-log entry.
  *
@@ -243,7 +244,8 @@ describe('an instanceStatus message', () => {
       isCommandResultMessage,
     );
 
-    // Assert: the claim is believed. This is the known gap until the LAN PINs of M4.
+    // Assert: the claim is believed. This is the known gap renderer pages keep with the
+    // PINs too (BAJAOVRLAY-29): they connect without a login on the LAN.
     expect(result, 'a connection that says it is a renderer is answered as one').toEqual({
       type: 'commandResult',
       requestId: null,
@@ -251,7 +253,7 @@ describe('an instanceStatus message', () => {
     });
     expect(
       runningServer.stateStore.readAllSlices().instances[0]?.status,
-      'the report is applied: the role in the address is taken at its word until M4',
+      'the report is applied: the role in the address is taken at its word',
     ).toBe('on-air');
   });
 

@@ -9,6 +9,7 @@ import { EntityLibraryPage } from '@/features/entityLibrary/EntityLibraryPage';
 import { EventReviewPage } from '@/features/events/EventReviewPage';
 import { HistoryPage } from '@/features/history/HistoryPage';
 import { KeyboardMapDialog } from '@/features/keyboardHelp/KeyboardMapDialog';
+import { OperatorBadge } from '@/features/login/OperatorBadge';
 import { ObsTally } from '@/features/obs/ObsTally';
 import { OutputsAndLayersPage } from '@/features/outputsAndLayers/OutputsAndLayersPage';
 import { ServerHealthCheck } from '@/features/serverHealth/ServerHealthCheck';
@@ -33,7 +34,11 @@ const pageLinkTexts = ptBR.app.pageLinks;
  * The header holds the product name, the links to the six pages, the data sources
  * chip ("Fontes: 2 ok · 1 atrasada"), the server check, the OBS tally, "Pausar gatilhos"
  * (BAJAOVRLAY-48), "Cópia de segurança" (features/backup, BAJAOVRLAY-33), the connection
- * badge and the "?" button, which lists every keyboard shortcut (src/keyboard/keyboardMap.ts).
+ * badge, who operates the page ("Produtor · Mesa 1" and "Sair", or "Sem login";
+ * BAJAOVRLAY-29) and the "?" button, which lists every keyboard shortcut
+ * (src/keyboard/keyboardMap.ts).
+ * "#/entrar" is drawn by main.tsx before this shell exists; reached here (a logged-in page
+ * whose address was changed by hand) it shows the console.
  */
 export function AppShell() {
   const currentPage = useCurrentPage();
@@ -75,11 +80,12 @@ export function AppShell() {
           <TriggersPauseSwitch />
           <BackupDialog />
           <ConnectionBadge />
+          <OperatorBadge />
           <KeyboardMapDialog />
         </div>
       </header>
 
-      {currentPage === 'console' && <ConsoleView />}
+      {(currentPage === 'console' || currentPage === 'login') && <ConsoleView />}
       {currentPage === 'dataSources' && (
         <PageErrorBoundary>
           <DataSourcesPage />

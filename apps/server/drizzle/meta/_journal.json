@@ -22,6 +22,20 @@
       "when": 1793958995976,
       "tag": "0002_add_event_log_details",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794107665728,
+      "tag": "0003_add_operator_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794632400000,
+      "tag": "0004_hash_operator_session_ids",
+      "breakpoints": true
     }
   ]
 }

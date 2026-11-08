@@ -11,6 +11,7 @@ import { writeSliceRows } from '../../core/db/sliceRowStorage.js';
 import { openTemporaryDatabase } from '../../core/db/temporaryDatabase.testSupport.js';
 import { createServerApp } from '../../core/http/createServerApp.js';
 import { createLogger } from '../../core/logger/createLogger.js';
+import { operatorLoginOff } from '../../core/operatorLogin/operatorLoginOff.testSupport.js';
 import { createGraphicsFolderWithBuiltRaceClock } from '../../core/store/builtGraphicsFolder.testSupport.js';
 import { createStateStore, type StateStore } from '../../core/store/createStateStore.js';
 
@@ -54,6 +55,7 @@ export function createAppWithAMediaFolder(
   }
   const stateStore = createStateStore(storeOptions);
   const app = createServerApp({
+    operatorLogin: operatorLoginOff,
     logger,
     version: '0.3.1',
     stateStore,

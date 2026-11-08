@@ -29,6 +29,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createLogger } from '../logger/createLogger.js';
+import { operatorLoginOff } from '../operatorLogin/operatorLoginOff.testSupport.js';
 import { createServerApp } from './createServerApp.js';
 import {
   createStandInThemeFolder,
@@ -44,6 +45,7 @@ const longCacheHeader = 'public, max-age=31536000, immutable';
 /** Builds the server app serving the stand-in theme folder, silent and with no pages. */
 function createServerAppServingTheTheme() {
   return createServerApp({
+    operatorLogin: operatorLoginOff,
     logger: createLogger({ level: 'silent' }),
     version: '0.3.1',
     themeFolder: createStandInThemeFolder(),

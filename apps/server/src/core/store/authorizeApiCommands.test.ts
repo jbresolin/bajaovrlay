@@ -4,7 +4,7 @@
  * What this module is for:
  *   Since BAJAOVRLAY-28 Companion, a Stream Deck or a script sends commands over HTTP,
  *   signed `api:<token name>`. Such a device stands where an operator stands: it may send
- *   every command an operator may (the shared list, senderOfEachCommandType), and none of
+ *   every command an operator may (the shared list, whoMaySendEachCommandType), and none of
  *   the commands only the server sends. The operator's own rule reads the same list, so
  *   the two can never drift apart.
  *

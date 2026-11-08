@@ -20,8 +20,7 @@
  *   - A finished backup writes one event-log row with the zip's size (as handed to the
  *     socket; this client received all of it), and the summary route then answers it as
  *     the newest backup, with the size of each part.
- *   - Only the control page passes without a token: another caller with the command API
- *     off gets 403. A query it cannot read gets 400.
+ *   - A query it cannot read gets 400.
  *   - A client that hangs up 5 ms in, while the database is still being copied, leaves no
  *     backup running and no temporary copy. Before gate 2 the server never noticed (the
  *     answer was not sent yet), so every later backup got 409 until a restart.
@@ -32,6 +31,8 @@
  *   - A download cancelled while being sent, a stalled reader, and the temporary copy:
  *     backupDownloads.test.ts.
  *   - Which leftover copies a boot removes: temporaryDatabaseCopies.test.ts.
+ *   - Who may call the routes with the login on (a session, Produtor or Dados):
+ *     api/v1/operatorRouteAccess.test.ts. These tests run with the login off.
  *   - The browser saving the file: the control page's backupDownload.e2e.ts.
  */
 import { existsSync, mkdirSync, readdirSync, truncateSync, writeFileSync } from 'node:fs';
@@ -48,7 +49,11 @@ import { committedMigrationsFolder } from '../../core/db/openDatabase.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
 import { readEveryFileOfZip, readTheDatabaseOfTheBackup } from './backupZipReading.testSupport.js';
 
-/** What the control page's own fetch and link carry: the browser marks them same-origin. */
+/**
+ * What the control page's own fetch and link carry: the browser marks them same-origin.
+ * The access no longer reads it (a session decides, BAJAOVRLAY-29); the requests are sent
+ * as the page sends them.
+ */
 const headersOfTheControlPage = { 'sec-fetch-site': 'same-origin' };
 
 /** The recorded enduro feed's file, as the recorder names it under recordings/<sourceId>/. */
@@ -310,20 +315,6 @@ describe('GET /api/v1/backup', () => {
     headers: Record<string, string>;
     expectedStatus: number;
   }> = [
-    // Not the control page, and the command API is off: the history's door, 403.
-    {
-      name: 'a caller from outside, with the command API off, gets 403',
-      address: '/backup',
-      headers: { 'sec-fetch-site': 'cross-site' },
-      expectedStatus: 403,
-    },
-    // The summary is behind the same door.
-    {
-      name: 'the summary from outside gets 403 too',
-      address: '/backup/summary',
-      headers: {},
-      expectedStatus: 403,
-    },
     // A typo in the query must not silently include or leave out the recordings.
     {
       name: 'an includeRecordings that is not true or false gets 400',
