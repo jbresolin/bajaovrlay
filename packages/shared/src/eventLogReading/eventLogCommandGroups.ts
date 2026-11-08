@@ -116,4 +116,6 @@ export const commandGroupOfEachCommandType: Record<Command['type'], EventLogComm
   deleteLayer: 'settings',
   // OBS connecting or dropping is the setup's health, not something taken.
   recordObsState: 'settings',
+  // A backup is the care of the setup, beside OBS's connection.
+  recordBackup: 'settings',
 };

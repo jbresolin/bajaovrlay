@@ -33,7 +33,12 @@ try {
     'database backed up',
   );
 } catch (backupError) {
-  // A non-zero exit, so the nightly script (and its cron mail) shows the failure.
+  // A non-zero exit, so the nightly script (and its cron mail) shows the failure. The JSON
+  // log goes to stdout with every other line; the same failure also goes to stderr in one
+  // plain line, so a caller that shows only stderr still says why ("non-zero, no error
+  // output" on PR #51 was a copy that met the database locked).
   logger.fatal({ err: backupError, database_path: databasePath }, 'database backup failed');
+  const reason = backupError instanceof Error ? backupError.message : String(backupError);
+  process.stderr.write(`database backup failed (${databasePath}): ${reason}\n`);
   process.exit(1);
 }

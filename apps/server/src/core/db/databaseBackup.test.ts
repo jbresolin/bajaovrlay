@@ -15,6 +15,11 @@
  *   - The 15th backup removes the oldest, so 14 are kept, and nothing else in the folder
  *     (a copy João made by hand) is ever removed.
  *   - A database file that does not exist fails naming the path, and writes nothing.
+ *   - A copy that meets the database locked by another connection (the server committing
+ *     a write) waits and tries again, and copies once the lock is released. A lock held
+ *     past the last try fails with a pt-BR reason and leaves no file. Before
+ *     BAJAOVRLAY-33's gate 2, SQLite's backup answered such a copy as finished, with no
+ *     file written: the nightly command then exited 1, and the download sent a broken zip.
  *
  * What these tests deliberately do not cover:
  *   - A backup taken while the server writes: backupDatabaseWhileTheServerWrites.test.ts
@@ -28,7 +33,8 @@ import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import { describe, expect, it, onTestFinished } from 'vitest';
 
-import { backupsKept, writeDatabaseBackup } from './databaseBackup.js';
+import { ptBR } from '../messages/ptBR.js';
+import { backupsKept, copyDatabaseIntoFile, writeDatabaseBackup } from './databaseBackup.js';
 import { writeSliceRows } from './sliceRowStorage.js';
 import { openTemporaryDatabase } from './temporaryDatabase.testSupport.js';
 
@@ -41,6 +47,14 @@ function createEmptyBackupFolder(): string {
 
 /** A server database holding team 42, "Baja UFPR", in its teams slice. */
 function createDatabaseHoldingTeam42(): string {
+  return createDatabaseHoldingTeam42WithItsConnection().databasePath;
+}
+
+/**
+ * The same database, with the connection that wrote it still open, so a test can lock the
+ * file with it as the server does while it commits a write.
+ */
+function createDatabaseHoldingTeam42WithItsConnection() {
   const { database, databasePath } = openTemporaryDatabase();
   writeSliceRows(database, [
     {
@@ -49,7 +63,7 @@ function createDatabaseHoldingTeam42(): string {
       updatedAt: '2026-11-14T12:00:00.000Z',
     },
   ]);
-  return databasePath;
+  return { database, databasePath };
 }
 
 /** 03:00 in UTC on the given day of November 2026: the nightly script's moment. */
@@ -193,5 +207,49 @@ describe('writeDatabaseBackup', () => {
     );
     expect(readdirSync(backupFolder), 'nothing must be written').toEqual([]);
     expect(existsSync(missingDatabasePath), 'no empty database must be created').toBe(false);
+  });
+});
+
+describe('copyDatabaseIntoFile while another connection holds the database locked', () => {
+  it('waits for a lock held for a moment, then copies the whole database', async () => {
+    // Arrange: a database with team 42, locked by another connection (the server in the
+    // middle of a write) for 150 ms.
+    const { database, databasePath } = createDatabaseHoldingTeam42WithItsConnection();
+    const destinationPath = join(createEmptyBackupFolder(), 'bajaovrlay.sqlite');
+    database.$client.exec('BEGIN EXCLUSIVE');
+    setTimeout(() => {
+      database.$client.exec('COMMIT');
+    }, 150);
+
+    // Act: copy it while the lock is held.
+    await copyDatabaseIntoFile(databasePath, destinationPath);
+
+    // Assert: the copy exists and holds team 42, as if the lock had never been there.
+    expect(existsSync(destinationPath), 'the copy must be written once the lock is gone').toBe(
+      true,
+    );
+    expect(readTeamsRowOfBackup(destinationPath), 'the copy must hold team 42').toEqual([
+      { carNumber: 42, teamName: 'Baja UFPR', schoolName: 'UFPR' },
+    ]);
+  });
+
+  it('fails with a pt-BR reason when the lock outlasts every try, leaving no file', async () => {
+    // Arrange: a database locked by another connection for the whole test, and a copy
+    // that tries three times, 10 ms apart, instead of the usual ten over about 5 s.
+    const { database, databasePath } = createDatabaseHoldingTeam42WithItsConnection();
+    const destinationPath = join(createEmptyBackupFolder(), 'bajaovrlay.sqlite');
+    // Released when the test ends: closing the connection rolls the transaction back.
+    database.$client.exec('BEGIN EXCLUSIVE');
+
+    // Act: try to copy it.
+    const copying = copyDatabaseIntoFile(databasePath, destinationPath, {
+      waitsBetweenTriesInMs: [10, 10],
+    });
+
+    // Assert: it fails, saying in pt-BR that the database stayed busy, and writes nothing.
+    await expect(copying, 'a copy that never happened must fail loudly').rejects.toThrow(
+      ptBR.backup.databaseStayedLocked,
+    );
+    expect(existsSync(destinationPath), 'no file must be left behind').toBe(false);
   });
 });

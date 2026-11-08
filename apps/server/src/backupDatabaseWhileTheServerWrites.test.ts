@@ -14,6 +14,9 @@
  *   - The copy opens and passes PRAGMA integrity_check, and holds every panel the server
  *     had made before the backup began.
  *   - The command logs one JSON line naming the copy.
+ *   - A command that fails exits 1 and says why on stderr, not only in its JSON log on
+ *     stdout: the nightly script's cron mail shows stderr, and a failure on PR #51 showed
+ *     only "non-zero, no error output".
  *
  * What these tests deliberately do not cover:
  *   - Naming and keeping 14: core/db/databaseBackup.test.ts.
@@ -139,5 +142,29 @@ describe('backupDatabase.js while the server writes', () => {
       `Bateria ${String(panelsMadeBeforeTheBackup)}`,
     );
     expect(stdout, 'the command logs the copy it wrote').toContain(backupPath);
+  });
+
+  it('exits 1 and says why on stderr when the copy fails', { timeout: 30_000 }, async () => {
+    // Arrange: a DATABASE_PATH naming a file that does not exist (a wrong .env).
+    const dataFolder = createTemporaryDataFolder();
+    const missingDatabasePath = join(dataFolder, 'banco-que-nao-existe.sqlite');
+
+    // Act: run the command, keeping what it printed when it fails.
+    const failure = await runTheBackupCommand(
+      missingDatabasePath,
+      join(dataFolder, 'backups'),
+    ).then(
+      () => undefined,
+      (commandError: unknown) => commandError as { code: number; stderr: string },
+    );
+
+    // Assert: exit code 1, and stderr names the failure and the missing file.
+    expect(failure?.code, 'a failed backup must exit 1').toBe(1);
+    expect(failure?.stderr, 'stderr must say the backup failed').toContain(
+      'database backup failed',
+    );
+    expect(failure?.stderr, 'stderr must name the database it could not copy').toContain(
+      missingDatabasePath,
+    );
   });
 });

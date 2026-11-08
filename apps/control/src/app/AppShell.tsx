@@ -1,6 +1,7 @@
 import { cn } from 'cn';
 
 import { buttonVariants } from '@/components/ui/button';
+import { BackupDialog } from '@/features/backup/BackupDialog';
 import { ConnectionBadge } from '@/features/connection/ConnectionBadge';
 import { DataSourcesHealthChip } from '@/features/dataSources/DataSourcesHealthChip';
 import { DataSourcesPage } from '@/features/dataSources/DataSourcesPage';
@@ -32,9 +33,10 @@ const pageLinkTexts = ptBR.app.pageLinks;
  * of those five in a PageErrorBoundary, so a bug shows a pt-BR message, not a blank tab.
  * The header holds the product name, the links to the six pages, the data sources
  * chip ("Fontes: 2 ok · 1 atrasada"), the server check, the OBS tally, "Pausar gatilhos"
- * (BAJAOVRLAY-48), the connection badge, who operates the page ("Produtor · Mesa 1" and
- * "Sair", or "Sem login"; BAJAOVRLAY-29) and the
- * "?" button, which lists every keyboard shortcut (src/keyboard/keyboardMap.ts).
+ * (BAJAOVRLAY-48), "Cópia de segurança" (features/backup, BAJAOVRLAY-33), the connection
+ * badge, who operates the page ("Produtor · Mesa 1" and "Sair", or "Sem login";
+ * BAJAOVRLAY-29) and the "?" button, which lists every keyboard shortcut
+ * (src/keyboard/keyboardMap.ts).
  * "#/entrar" is drawn by main.tsx before this shell exists; reached here (a logged-in page
  * whose address was changed by hand) it shows the console.
  */
@@ -76,6 +78,7 @@ export function AppShell() {
           <ServerHealthCheck />
           <ObsTally />
           <TriggersPauseSwitch />
+          <BackupDialog />
           <ConnectionBadge />
           <OperatorBadge />
           <KeyboardMapDialog />

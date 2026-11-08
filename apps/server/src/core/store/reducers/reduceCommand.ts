@@ -1,5 +1,6 @@
 import type { Command } from '@bajaovrlay/shared';
 
+import { reduceRecordBackup } from '../../../modules/backup/index.js';
 import { reduceBindingCommand } from '../../../modules/bindings/index.js';
 import { reduceDataSourceCommand } from '../../../modules/dataSources/index.js';
 import { reduceEntityCommand } from '../../../modules/entities/index.js';
@@ -197,6 +198,9 @@ function reduceCommandOfItsType(
     case 'recordUploadedMedia':
     case 'deleteMedia':
       return reduceMediaCommand(slices, command, context);
+    // The backup download (BAJAOVRLAY-33): its reducer lives in the module modules/backup.
+    case 'recordBackup':
+      return reduceRecordBackup(slices);
     // Outputs and the editing of layers (BAJAOVRLAY-49): their reducers live in the module
     // modules/outputs.
     case 'createOutput':

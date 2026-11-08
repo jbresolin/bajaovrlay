@@ -25,6 +25,10 @@ OpenAPI document generated from their Zod schemas at `/api/v1/openapi.json`.
 - `POST /api/v1/media` — declared by the media module (`modules/media/api.ts`): one image
   as multipart form data, checked by its bytes, recorded through the command path as
   `sistema:midia`. The image itself is served outside /api/v1, at `/media/<mediaId>`.
+- `GET /api/v1/backup` and `GET /api/v1/backup/summary` (BAJAOVRLAY-33) — declared by the
+  backup module (`modules/backup/api.ts`), mounted by `mountBackupRoutes.ts` behind the
+  history's access: the zip of the data folder, streamed, one at a time (409 for a second),
+  and the size of each part with the newest backup, for "Cópia de segurança".
 
 - The command API (BAJAOVRLAY-28), mounted by `mountCommandApiRoutes.ts`, each route behind
   `core/apiAccess/requireApiAccess.ts` (a Bearer token of BAJAOVRLAY_API_TOKENS, or no

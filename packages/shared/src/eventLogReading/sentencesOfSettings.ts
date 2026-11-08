@@ -1,5 +1,7 @@
-// The history sentences of the setup: outputs, layers and OBS's connection (BAJAOVRLAY-30).
+// The history sentences of the setup: outputs, layers, OBS's connection (BAJAOVRLAY-30)
+// and backups (BAJAOVRLAY-33).
 // One named formatter per command type, gathered in sentenceOfEachCommandType.ts.
+import { formatBackupSize } from '../backup/backupSizeText.js';
 import type { CommandOfType } from './commandOfType.js';
 import type { EventLogNames } from './eventLogNames.js';
 import { nameLayerWithItsOutput, nameOutput } from './namesInSentences.js';
@@ -77,4 +79,13 @@ export function describeDeleteLayer(
 export function describeRecordObsState(command: CommandOfType<'recordObsState'>): string {
   const stateLabel = ptBREventLogReading.obsConnectionStateLabels[command.status.connectionState];
   return sentences.obsConnection(stateLabel);
+}
+
+/** recordBackup: the zip the operator downloaded, its size, and whether recordings are in it. */
+export function describeRecordBackup(command: CommandOfType<'recordBackup'>): string {
+  const sizeText = formatBackupSize(command.sizeInBytes);
+  if (command.includesRecordings) {
+    return sentences.backedUp(command.fileName, sizeText);
+  }
+  return sentences.backedUpWithoutRecordings(command.fileName, sizeText);
 }

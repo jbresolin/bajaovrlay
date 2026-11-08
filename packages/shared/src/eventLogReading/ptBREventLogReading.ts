@@ -245,6 +245,10 @@ export const ptBREventLogReading = {
     reorderedLayers: (outputName: string) => `Reordenou as camadas da saída ${outputName}`,
     deletedLayer: (layerName: string) => `Excluiu a camada ${layerName}`,
     obsConnection: (stateLabel: string) => `A conexão com o OBS ficou ${stateLabel}`,
+    backedUp: (fileName: string, sizeText: string) =>
+      `Baixou a cópia de segurança ${fileName} (${sizeText})`,
+    backedUpWithoutRecordings: (fileName: string, sizeText: string) =>
+      `Baixou a cópia de segurança ${fileName} (${sizeText}, sem gravações)`,
   },
 
   /** A row with no sentence: its type, and why. */
