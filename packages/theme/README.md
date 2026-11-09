@@ -76,6 +76,10 @@ token names are the design's. Copied with these changes:
   `--lower-third-max-width` (1300 px, the safe width left of the tower) and
   `--battle-team-max-width` (460 px), and `--strip-school-max-width` (140 px, measured on the
   real field so one long school leaves the other pills of its page whole).
+- added for the Super Chat card (BAJAOVRLAY-35), which the design did not draw:
+  `--super-chat-amount-background` / `--super-chat-amount-text` (the amount's cell, brand navy
+  like the penalty's, never YouTube's tier colours) and `--font-emoji` (the system's colour
+  emoji faces, after `--font-text`, for the Unicode emoji a viewer writes; nothing bundled).
 
 **Only one theme.** Ardósia is loaded statically; the concept's `theme` slice (one active
 theme chosen by an operator) is not built yet (docs/decisions.md, PR of BAJAOVRLAY-22).

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://ograf.ebu.io/v1/specification/json-schemas/graphics/schema.json",
+  "id": "baja-super-chat",
+  "version": "0.1.0",
+  "name": "Super Chat",
+  "description": "Cartão sob o bug com a mensagem paga de um espectador no chat do YouTube: o valor, o autor e a mensagem. Só vai ao ar depois de aprovada.",
+  "author": {
+    "name": "BajaOvrLay"
+  },
+  "main": "super-chat.js",
+  "supportsRealTime": true,
+  "supportsNonRealTime": false,
+  "stepCount": 1,
+  "v_baja": {
+    "defaultLayerId": "notice",
+    "category": "notice"
+  },
+  "actionDurations": [
+    { "type": "playAction", "duration": 400 },
+    { "type": "stopAction", "duration": 250 }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "amountText": {
+        "type": "string",
+        "title": "Valor",
+        "description": "O valor como o YouTube escreve, ex.: R$ 50,00, na célula azul do topo.",
+        "minLength": 1,
+        "gddType": "single-line"
+      },
+      "authorName": {
+        "type": "string",
+        "title": "Autor",
+        "description": "O nome do espectador no YouTube.",
+        "minLength": 1,
+        "gddType": "single-line"
+      },
+      "messageText": {
+        "type": "string",
+        "title": "Mensagem",
+        "description": "O que o espectador escreveu. Opcional; vazia, o cartão mostra só o valor e o autor. Emojis próprios do YouTube (:nome:) são retirados.",
+        "gddType": "single-line"
+      }
+    },
+    "required": ["amountText", "authorName"],
+    "additionalProperties": false
+  }
+}
