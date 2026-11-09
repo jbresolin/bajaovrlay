@@ -15,7 +15,7 @@ export type TriggerDataEventOfInboxEvent = { eventKind: TriggerDataEventKind; da
  * - `penalty`: any event that says it is a penalty, detected in a source or typed;
  * - `incident`: a detected incident that is not a penalty (a warning, an incident);
  * - `fastestLap` and `leaderChange`: the inbox's own kinds.
- * The data has pt-BR keys and only what the event carries: `tipo` always, then `carro`,
+ * The data has pt-BR keys and only what the event carries: `tipo` always, then `carro`
  * `equipe`, `escola`, `motivo`, `punicao`, `volta`, `tempo` when present.
  */
 export function readTriggerDataEventOfInboxEvent(
@@ -28,8 +28,12 @@ export function readTriggerDataEventOfInboxEvent(
   const payload = event.payload;
   const keysAndValues: Array<[string, string | number]> = [
     ['tipo', ptBRTriggers.dataEventKindLabels[eventKind]],
-    ['carro', payload.carNumber],
   ];
+  // Every race event has a car (checkCarNumberForKind); only a Super Chat goes without,
+  // and no trigger waits for one.
+  if (payload.carNumber !== undefined) {
+    keysAndValues.push(['carro', payload.carNumber]);
+  }
   if (payload.teamName !== undefined) {
     keysAndValues.push(['equipe', payload.teamName]);
   }

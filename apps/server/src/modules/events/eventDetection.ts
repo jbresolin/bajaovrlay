@@ -6,7 +6,10 @@ import type { DataSnapshotShapes, DataSource, DetectedEvent } from '@bajaovrlay/
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { eventInboxActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
-import { detectEventsBetweenSnapshots } from './detectors/detectEventsBetweenSnapshots.js';
+import {
+  detectEventsBetweenSnapshots,
+  detectEventsInAFirstSnapshot,
+} from './detectors/detectEventsBetweenSnapshots.js';
 
 /** What the detection needs: the store, the logger, and timers a test can run by hand. */
 export type EventDetectionOptions = {
@@ -27,7 +30,8 @@ export type EventDetection = { stop: () => void };
  * inbox skips the ids it already holds, so nothing listed before is listed again. The
  * baseline rule: the first snapshot of a source never polled before, of a source just
  * turned on, or of a source whose config changed (another race, another mapping, which
- * could list the whole day as new), is only remembered, and fires nothing. Every later
+ * could list the whole day as new), is only remembered, and fires nothing but the Super
+ * Chats of its last 15 minutes (BAJAOVRLAY-35, detectors/newSuperChat.ts). Every later
  * snapshot is compared with the remembered one (detectEventsBetweenSnapshots), dated by
  * its own receivedAtMs, and becomes the remembered one. A saved snapshot of another
  * session (yesterday's race) is a baseline too, by the detectors' own session rule.
@@ -102,13 +106,14 @@ export function startEventDetection(options: EventDetectionOptions): EventDetect
         }
         const previousShapes = lastShapesSeenBySourceId.get(change.sourceId);
         lastShapesSeenBySourceId.set(change.sourceId, change.snapshot.shapes);
-        if (previousShapes === undefined) {
-          continue;
-        }
-        const events = detectEventsBetweenSnapshots(previousShapes, change.snapshot.shapes, {
+        const moment = {
           sourceId: change.sourceId,
           detectedAtMs: change.snapshot.receivedAtMs,
-        });
+        };
+        const events =
+          previousShapes === undefined
+            ? detectEventsInAFirstSnapshot(change.snapshot.shapes, moment)
+            : detectEventsBetweenSnapshots(previousShapes, change.snapshot.shapes, moment);
         eventsToSend.push(...events);
       }
       if (eventsToSend.length > 0 && sendTimerHandle === undefined) {

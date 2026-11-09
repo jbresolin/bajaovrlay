@@ -6,6 +6,7 @@ import {
   findInboxEvent,
   findRuleOfKind,
   isEventWaiting,
+  isSuperChatAwaitingApproval,
   readMomentMs,
 } from './reducers/inboxEventChanges.js';
 
@@ -13,7 +14,8 @@ import {
  * Why a preview of an event cannot be taken ("Tomar", "Tomar tudo"), or undefined when it
  * can (or the preview shows no event). Its event must still wait, and be within its rule's
  * maximum wait, as "No ar" would require: an event dismissed, already shown, or too old
- * never reaches the air through its preview (gate 2 of PR #22). Core's preview promotion
+ * never reaches the air through its preview (gate 2 of PR #22), and neither does a Super
+ * Chat no person approved yet (BAJAOVRLAY-35). Core's preview promotion
  * calls it for every preview it takes.
  */
 export function findRefusalOfTakingAPreviewOfAnEvent(
@@ -30,6 +32,9 @@ export function findRefusalOfTakingAPreviewOfAnEvent(
   }
   if (!isEventWaiting(event)) {
     return { code: 'EVENT_NOT_WAITING', message: ptBR.eventErrors.eventNotWaiting(event.status) };
+  }
+  if (isSuperChatAwaitingApproval(event)) {
+    return { code: 'EVENT_NOT_APPROVED', message: ptBR.eventErrors.superChatNotApproved };
   }
   const maxAgeMs = findRuleOfKind(slices.eventRules, event.kind)?.maxAgeMs ?? null;
   const ageMs = readMomentMs(isoMomentOfTheTake) - event.detectedAtMs;

@@ -12,6 +12,7 @@ import {
   findInboxEvent,
   findRuleOfKind,
   isEventWaiting,
+  isSuperChatAwaitingApproval,
   readMomentMs,
   replaceInboxEvent,
 } from './inboxEventChanges.js';
@@ -26,7 +27,9 @@ import {
  * Never shown late: an event older than its rule's maxAgeMs (from its detection) is
  * expired instead, and nothing goes on air; the command is then applied, not refused, so
  * the runner expires a queued event with the one command it may send besides recording.
- * Refused: an unknown event (EVENT_NOT_FOUND), one no longer waiting (EVENT_NOT_WAITING),
+ * Refused: an unknown event (EVENT_NOT_FOUND), one no longer waiting (EVENT_NOT_WAITING), a
+ * Super Chat no person approved (EVENT_NOT_APPROVED, checked before its age: an unapproved
+ * one never airs, late or not),
  * a rule with no item (EVENT_RULE_WITHOUT_ITEM), and whatever the take refuses.
  */
 export function reduceShowEvent(
@@ -43,6 +46,10 @@ export function reduceShowEvent(
       code: 'EVENT_NOT_WAITING',
       message: ptBR.eventErrors.eventNotWaiting(event.status),
     });
+  }
+
+  if (isSuperChatAwaitingApproval(event)) {
+    return refuse({ code: 'EVENT_NOT_APPROVED', message: ptBR.eventErrors.superChatNotApproved });
   }
 
   const rule = findRuleOfKind(slices.eventRules, event.kind);

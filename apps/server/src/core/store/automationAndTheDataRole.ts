@@ -3,7 +3,9 @@ import { isDeepStrictEqual } from 'node:util';
 import {
   type Command,
   type CommandError,
+  type DismissEventCommand,
   type EventRule,
+  type InboxEvent,
   type Slices,
   type Trigger,
   type UpdateEventRuleCommand,
@@ -12,25 +14,31 @@ import {
   whyTheDataRoleCannotAutomate,
 } from '@bajaovrlay/shared';
 
+import { ptBR } from '../messages/ptBR.js';
 import { readRoleOfLoggedInOperatorActor } from './commandActors.js';
 
-/** The slices the check reads: nothing else in the store can automate the air. */
+/** The slices the automation check reads: nothing else in the store can automate the air. */
 type SlicesTheCheckReads = Pick<Slices, 'triggers' | 'eventRules' | 'macros'>;
 
 /**
  * The store's second authorisation check, after the hook: Dados's command refused as
- * NOT_ALLOWED when it would automate the air (findWhyTheDataRoleMayNotChangeThisAutomation),
- * or undefined. Every other actor, the Produtor among them, is not judged here.
+ * NOT_ALLOWED when it would automate the air (findWhyTheDataRoleMayNotChangeThisAutomation)
+ * or discard a race event (findWhyTheDataRoleMayNotDismissThisEvent), or undefined. Every
+ * other actor, the Produtor among them, is not judged here.
  */
 export function refuseAutomationTheActorMayNotChange(
   command: Command,
   actor: string,
-  slices: SlicesTheCheckReads,
+  // The inbox too: the kind of an event decides whether Dados may discard it.
+  slices: SlicesTheCheckReads & Pick<Slices, 'events'>,
 ): CommandError | undefined {
   if (readRoleOfLoggedInOperatorActor(actor) !== 'dados') {
     return undefined;
   }
-  const reason = findWhyTheDataRoleMayNotChangeThisAutomation(command, slices);
+  const reason =
+    command.type === 'dismissEvent'
+      ? findWhyTheDataRoleMayNotDismissThisEvent(command, slices.events)
+      : findWhyTheDataRoleMayNotChangeThisAutomation(command, slices);
   return reason === undefined ? undefined : { code: 'NOT_ALLOWED', message: reason };
 }
 
@@ -142,4 +150,21 @@ function findWhyNotForAMacroUpdate(
     return whyTheDataRoleCannotAutomate.changingTheMacroOfAnAutoTrigger;
   }
   return undefined;
+}
+
+/**
+ * Why Dados may not discard this event, or undefined when it may: Dados discards a viewer's
+ * Super Chat, its own moderation (BAJAOVRLAY-35), and nothing else of the inbox; the race's
+ * events are the Produtor's. An unknown event is left to the reducer, whose refusal
+ * (EVENT_NOT_FOUND) is the clearer one.
+ */
+function findWhyTheDataRoleMayNotDismissThisEvent(
+  command: DismissEventCommand,
+  events: InboxEvent[],
+): string | undefined {
+  const event = events.find((candidate) => candidate.eventId === command.eventId);
+  if (event === undefined || event.kind === 'superChat') {
+    return undefined;
+  }
+  return ptBR.eventErrors.dataRoleDismissesOnlySuperChats;
 }
