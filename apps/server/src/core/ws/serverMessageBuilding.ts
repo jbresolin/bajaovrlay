@@ -18,18 +18,21 @@ import type { DataSnapshotChange } from '../store/dataSnapshotChanges.js';
 
 /**
  * The `hello` a client gets right after connecting: every slice, `serverNowMs` (what the
- * server's wall clock shows now, in milliseconds) and, when the server has one, the
- * `buildId` its built pages embed. With no build id the field is left out altogether.
+ * server clock shows now, in milliseconds), how many steps it has made, and, when the
+ * server has one, the `buildId` its built pages embed. With no build id the field is
+ * left out altogether.
  */
-export function buildHelloMessage(
-  slices: Slices,
-  serverNowMs: number,
-  buildId: string | undefined,
-): ServerMessage {
+export function buildHelloMessage(parts: {
+  slices: Slices;
+  serverNowMs: number;
+  serverClockStepCount: number;
+  buildId: string | undefined;
+}): ServerMessage {
+  const { slices, serverNowMs, serverClockStepCount, buildId } = parts;
   if (buildId === undefined) {
-    return { type: 'hello', slices, serverNowMs };
+    return { type: 'hello', slices, serverNowMs, serverClockStepCount };
   }
-  return { type: 'hello', slices, serverNowMs, buildId };
+  return { type: 'hello', slices, serverNowMs, serverClockStepCount, buildId };
 }
 
 /**
@@ -261,11 +264,21 @@ export function buildDataSnapshotMessage(
 }
 
 /**
- * The `time` message every client gets every ten seconds: `serverNowMs`, what the
- * server's wall clock shows now, in milliseconds, and nothing else.
+ * The `time` message every client gets every ten seconds, and at once after a step of
+ * the server clock: `serverNowMs`, what the server clock shows now, in milliseconds; how
+ * far it is still from real time by NTP when that is known (left out otherwise); and how
+ * many steps it has made.
  */
-export function buildTimeMessage(serverNowMs: number): TimeMessage {
-  return { type: 'time', serverNowMs };
+export function buildTimeMessage(parts: {
+  serverNowMs: number;
+  offFromRealTimeMs: number | undefined;
+  serverClockStepCount: number;
+}): TimeMessage {
+  const { serverNowMs, offFromRealTimeMs, serverClockStepCount } = parts;
+  if (offFromRealTimeMs === undefined) {
+    return { type: 'time', serverNowMs, serverClockStepCount };
+  }
+  return { type: 'time', serverNowMs, offFromRealTimeMs, serverClockStepCount };
 }
 
 /**

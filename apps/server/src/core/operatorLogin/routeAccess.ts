@@ -17,6 +17,8 @@ import type { OperatorLogin } from './operatorLogin.js';
  *   asking with `role=renderer` or `role=monitor` needs no session, as on the WebSocket;
  * - `operatorSessionOrCommandApi`: the history's older pages, read by the page with its
  *   session and by a device through the command API's access;
+ * - `producerSession`: an action only Produtor may take, with the login on (403 for
+ *   Dados); anyone while it is off, as every page action is;
  * - `commandApi`: the command API (BAJAOVRLAY-28), behind its tokens and its open mode
  *   only; mountCommandApiRoutes and mountButtonStateRoutes put that check on each route.
  */
@@ -25,6 +27,7 @@ export type RouteAccess =
   | 'operatorSession'
   | 'operatorSessionUnlessAScreen'
   | 'operatorSessionOrCommandApi'
+  | 'producerSession'
   | 'commandApi';
 
 /**
@@ -49,6 +52,9 @@ export const accessOfEachApiRoute = {
   // The backup download (BAJAOVRLAY-33): Produtor and Dados both, as it changes nothing on air.
   'GET /backup': 'operatorSession',
   'GET /backup/summary': 'operatorSession',
+  // "Acertar relógio agora" (BAJAOVRLAY-62): Produtor alone, since it makes what counts
+  // time on air jump; Dados never changes the air.
+  'POST /server-clock/set-now': 'producerSession',
   'POST /commands': 'commandApi',
   'POST /take-next': 'commandApi',
   'POST /take-item/{itemId}': 'commandApi',
@@ -117,7 +123,36 @@ export function middlewareForTheAccessOfRoute(
       ];
     case 'operatorSessionOrCommandApi':
       return [requireOperatorSessionOrTheCommandApi(options)];
+    case 'producerSession':
+      return [requireProducerSession(options.operatorLogin)];
   }
+}
+
+/**
+ * Lets the request through with Produtor's session, or with the login off. Answers 401
+ * with no session and 403 with Dados's, each with a pt-BR sentence.
+ */
+function requireProducerSession(
+  operatorLogin: OperatorLogin,
+): MiddlewareHandler<ServerAppEnvironment> {
+  return async (context, next) => {
+    if (!operatorLogin.isLoginRequired) {
+      await next();
+      return undefined;
+    }
+    const session = operatorLogin.findSessionOfCookieHeader(context.req.header('cookie'));
+    if (session === undefined) {
+      return answerSessionRequired(context);
+    }
+    if (session.role !== 'produtor') {
+      const body: ErrorAnswerBody = {
+        error: { code: 'PRODUCER_ONLY', message: ptBR.operatorLoginErrors.producerOnly },
+      };
+      return context.json(body, 403);
+    }
+    await next();
+    return undefined;
+  };
 }
 
 /** The 401 a page read without a session gets while the login is on. */

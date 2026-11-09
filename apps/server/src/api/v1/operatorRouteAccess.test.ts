@@ -17,6 +17,8 @@
  *   Dados and as Produtor):
  *   - The page's reads answer 401 SESSION_REQUIRED in pt-BR without a session, and are
  *     answered for both roles: Dados reads everything, it only may not send some commands.
+ *   - "Acertar relógio agora" answers 401 without a session and 403 for Dados (Produtor
+ *     only, since it makes what counts time on air jump), and is answered for Produtor.
  *   - The command API's routes answer the same with or without a session: 403 with the
  *     API off, as before; a session neither opens nor closes them.
  *   - The session routes need no session.
@@ -112,6 +114,15 @@ const everyApiRoute: RouteRow[] = [
     route: 'GET /backup/summary',
     request: { path: '/api/v1/backup/summary' },
     expected: sessionRequired,
+  },
+
+  // --- Produtor only: an action that changes the air (BAJAOVRLAY-62). ---
+  // "Acertar relógio agora": Dados gets 403; Produtor gets the route's own answer, here
+  // 503 since the test server has NTP off.
+  {
+    route: 'POST /server-clock/set-now',
+    request: { path: '/api/v1/server-clock/set-now', method: 'POST' },
+    expected: { noSession: 401, dados: 403, produtor: 'answered' },
   },
 
   // --- The session routes: open, they are how a page gets a session. ---

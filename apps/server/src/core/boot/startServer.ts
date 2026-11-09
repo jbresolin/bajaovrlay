@@ -1,6 +1,7 @@
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import type { Slices } from '@bajaovrlay/shared';
 import { serve } from '@hono/node-server';
 
 import { createBackupDownloads } from '../../modules/backup/index.js';
@@ -24,6 +25,14 @@ import { operatorLoginTurnedOff, type OperatorPins } from '../operatorLogin/oper
 import { startAutoOutScheduler } from '../store/autoOut.js';
 import { createStateStore, type StateStore } from '../store/createStateStore.js';
 import { startMacroRunner } from '../store/macroRunner.js';
+import type { NtpSettings } from '../time/ntpSettings.js';
+import { readServerTime, serverClockOfTheProcess } from '../time/serverClock.js';
+import {
+  type ServerClockControl,
+  serverClockWithNtpOff,
+  startTheServerClockOnNtp,
+} from '../time/serverClockControl.js';
+import { isAnythingCountingTimeOnAnOutput } from '../time/timeCountedOnAnOutput.js';
 import { defaultHeartbeatIntervalInMilliseconds } from '../ws/heartbeat.js';
 import { attachWebSocketHub } from '../ws/webSocketHub.js';
 
@@ -90,11 +99,19 @@ export type StartServerOptions = {
   /** Defaults to 15 s; tests use a few milliseconds. */
   heartbeatIntervalInMilliseconds?: number | undefined;
   /**
-   * The server's wall clock; defaults to the machine's. One clock for the store (which
-   * stamps commands and race clock readings) and for the WebSocket hub (which tells
-   * renderers what time it is), so the two can never disagree. Tests hold it still.
+   * The server's clock; defaults to the server clock (core/time/serverClock.ts), which
+   * never follows a step of the wall clock. One clock for the store (which stamps
+   * commands and race clock readings), the WebSocket hub (which tells renderers what time
+   * it is), the login and the triggers, so they can never disagree. Tests hold it still;
+   * a test that hands one in also leaves NTP off.
    */
   readCurrentTime?: (() => Date) | undefined;
+  /**
+   * BAJAOVRLAY_NTP_SERVERS as read at boot (BAJAOVRLAY-62): the NTP servers the server
+   * clock follows, or off. Left out: off, so no test ever waits on the internet; main.ts
+   * always passes it.
+   */
+  ntpSettings?: NtpSettings | undefined;
   /**
    * Where a backup copies the database before zipping it; the system's temporary folder
    * when left out. Tests give a folder of their own, so the sweep of copies left behind
@@ -149,12 +166,41 @@ async function startServingFromDatabase(
   // written, or onto a bundle newer than the code answering it.
   const buildId =
     options.buildIdFileUrl === undefined ? undefined : readBuildId(options.buildIdFileUrl);
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
+  // The server clock follows NTP (BAJAOVRLAY-62): its first correction is a step, made
+  // here, before the store reads the clock and before the server accepts a connection;
+  // it waits up to 3 s for NTP, then starts on the wall clock and says so. Whether
+  // anything on air counts time is read from the store, which does not exist yet; the
+  // boot step never asks, and the first poll comes 16 s later. Until the store is there
+  // the answer is "yes", so nothing could be stepped while the boot is still running.
+  // After a step every page is sent the time at once, through the WebSocket hub, which
+  // does not exist yet either: until it does there is no page to tell.
+  const whatTheServerClockReadsLater: {
+    readAllSlices: (() => Slices) | undefined;
+    tellEveryPageOfAStep: (() => void) | undefined;
+  } = { readAllSlices: undefined, tellEveryPageOfAStep: undefined };
+  const serverClockControl: ServerClockControl =
+    options.readCurrentTime === undefined && options.ntpSettings !== undefined
+      ? startTheServerClockOnNtp({
+          ntpSettings: options.ntpSettings,
+          serverClock: serverClockOfTheProcess,
+          isAnythingCountingTimeOnAir: (stepByMs) =>
+            whatTheServerClockReadsLater.readAllSlices === undefined ||
+            isAnythingCountingTimeOnAnOutput(whatTheServerClockReadsLater.readAllSlices(), {
+              nowMs: serverClockOfTheProcess.readCurrentTimeMs(),
+              stepByMs,
+            }),
+          afterEachStep: () => whatTheServerClockReadsLater.tellEveryPageOfAStep?.(),
+          logger: options.logger,
+        })
+      : serverClockWithNtpOff;
+  await serverClockControl.stepToRealTimeAtBoot();
   const stateStore = createStateStore({
     database,
     logger: options.logger,
     graphicPackagesFolder: options.graphicPackagesFolder,
     recordingsFolder: buildRecordingsFolderPath(options.dataFolder),
-    readCurrentTime: options.readCurrentTime,
+    readCurrentTime,
     sourceHostAllowlist: options.sourceHostAllowlist,
   });
   // The login's signing key and open sessions are read from the database here, so the
@@ -162,7 +208,7 @@ async function startServingFromDatabase(
   const operatorLogin = createOperatorLogin({
     database,
     operatorPins: options.operatorPins ?? operatorLoginTurnedOff,
-    readCurrentTime: options.readCurrentTime ?? (() => new Date()),
+    readCurrentTime,
     logger: options.logger,
   });
   // Started before anything can send a command, so no take of an item with an
@@ -183,8 +229,9 @@ async function startServingFromDatabase(
   const triggerService = startTriggerService({
     stateStore,
     logger: options.logger,
-    readCurrentTime: options.readCurrentTime,
+    readCurrentTime,
   });
+  whatTheServerClockReadsLater.readAllSlices = stateStore.readAllSlices;
   // Sources left on before a restart start polling again at once; unlike a macro, a
   // source that is on is meant to keep running.
   const dataSourceService = startDataSourceService({
@@ -217,6 +264,7 @@ async function startServingFromDatabase(
     triggerService.stop();
     autoOutScheduler.stop();
     macroRunner.stop();
+    serverClockControl.stop();
   }
 
   // Clears the copies a server killed mid-backup left behind; nothing else runs until the
@@ -249,6 +297,7 @@ async function startServingFromDatabase(
       publicOrigins: options.publicOrigins,
       backupDownloads,
       operatorLogin,
+      serverClockControl,
     });
     httpServer = await listen({
       fetch: app.fetch,
@@ -261,11 +310,13 @@ async function startServingFromDatabase(
       logger: options.logger,
       heartbeatIntervalInMilliseconds:
         options.heartbeatIntervalInMilliseconds ?? defaultHeartbeatIntervalInMilliseconds,
-      readCurrentTime: options.readCurrentTime,
+      readCurrentTime,
+      readOffFromRealTimeMs: serverClockControl.readOffFromRealTimeMs,
       buildId,
       operatorLogin,
       publicOrigins: options.publicOrigins,
     });
+    whatTheServerClockReadsLater.tellEveryPageOfAStep = webSocketHub.sendTheTimeToEveryClientNow;
   } catch (bootError) {
     // The poller already armed a poll and a stale watch for every source left on: left
     // running, they would keep the process alive and send commands to the database that

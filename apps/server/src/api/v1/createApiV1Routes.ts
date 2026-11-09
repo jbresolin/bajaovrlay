@@ -10,6 +10,10 @@ import { ptBR } from '../../core/messages/ptBR.js';
 import { type OperatorLogin } from '../../core/operatorLogin/operatorLogin.js';
 import { middlewareForTheAccessOfRoute } from '../../core/operatorLogin/routeAccess.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import {
+  type ServerClockControl,
+  serverClockWithNtpOff,
+} from '../../core/time/serverClockControl.js';
 import type { BackupDownloads } from '../../modules/backup/index.js';
 import {
   buildInvalidSampleRequestAnswer,
@@ -41,6 +45,7 @@ import { getEventLogRoute } from './eventLogRoute.js';
 import { mountBackupRoutes } from './mountBackupRoutes.js';
 import { mountButtonStateRoutes } from './mountButtonStateRoutes.js';
 import { mountCommandApiRoutes } from './mountCommandApiRoutes.js';
+import { mountServerClockRoute } from './serverClockRoute.js';
 import { mountSessionRoutes } from './sessionRoutes.js';
 import { chooseSlicesForStateReader, getStateRoute } from './stateRoute.js';
 
@@ -69,6 +74,8 @@ export function createApiV1Routes(options: {
   backupDownloads?: BackupDownloads | undefined;
   /** The operator login (BAJAOVRLAY-29); with the login off every page read is open. */
   operatorLogin: OperatorLogin;
+  /** The server clock's NTP (BAJAOVRLAY-62), for "Acertar relógio agora"; off when left out. */
+  serverClockControl?: ServerClockControl | undefined;
 }): OpenAPIHono<ServerAppEnvironment> {
   const readSourceEnvironmentVariable =
     options.readSourceEnvironmentVariable ?? readServerEnvironmentVariable;
@@ -221,6 +228,13 @@ export function createApiV1Routes(options: {
       routeAccessOptions,
     });
   }
+
+  // "Acertar relógio agora" (BAJAOVRLAY-62): Produtor alone, as routeAccess.ts says. Always
+  // mounted, so a server with NTP off answers why rather than 404.
+  mountServerClockRoute(apiRoutes, {
+    serverClockControl: options.serverClockControl ?? serverClockWithNtpOff,
+    routeAccessOptions,
+  });
 
   apiRoutes.doc31('/openapi.json', {
     openapi: '3.1.0',

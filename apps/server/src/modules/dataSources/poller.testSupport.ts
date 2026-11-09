@@ -45,6 +45,9 @@ export function startPollerWatchingTheStore(options: {
 }) {
   vi.useFakeTimers();
   vi.setSystemTime(startOfTheEnduroMs);
+  // The store and the poller read the faked Date, which these tests move; the server
+  // clock's own behaviour is tested in core/time.
+  const readTheFakedWallClock = () => new Date();
   onTestFinished(() => {
     vi.useRealTimers();
   });
@@ -54,6 +57,7 @@ export function startPollerWatchingTheStore(options: {
       database,
       logger: createLogger({ level: 'silent' }),
       graphicPackagesFolder: missingGraphicsFolderPath,
+      readCurrentTime: readTheFakedWallClock,
     });
   let stateStore = openStoreOnTheDatabase();
   if (options.isSimulatorOnBeforeThePollerStarts === true) {
@@ -76,6 +80,7 @@ export function startPollerWatchingTheStore(options: {
     stateStore: spyingStore,
     logger: options.logger ?? createLogger({ level: 'silent' }),
     adapters: options.adapters,
+    readCurrentTime: readTheFakedWallClock,
   });
   onTestFinished(() => poller.stop());
   return {

@@ -1,5 +1,7 @@
 import {
+  type ClientMessage,
   ClientMessageSchema,
+  type ClockProbeAnswerMessage,
   type CommandResultMessage,
   type InstanceStatusMessage,
   type ReportInstanceStatusCommand,
@@ -9,23 +11,28 @@ import { z } from 'zod';
 import type { ServerLogger } from '../logger/createLogger.js';
 import { describeInvalidMessage, describeUnexpectedServerError } from '../store/commandRefusals.js';
 import type { StateStore } from '../store/createStateStore.js';
+import { readServerTime } from '../time/serverClock.js';
 import { buildErrorCommandResult, buildOkCommandResult } from './serverMessageBuilding.js';
 
 // Used only to echo a requestId from a message that failed the protocol check.
 const MessageWithRequestIdSchema = z.object({ requestId: z.string().min(1).max(200) });
 
 /**
- * Handles one client message (a command, or a renderer's `instanceStatus`) and returns
- * the `commandResult` to send back; anything outside the protocol gets INVALID_MESSAGE
- * and a warning. Never throws, so a bad message can never close the socket.
+ * Handles one client message (a command, a renderer's `instanceStatus`, a page's
+ * `clockProbe`) and returns what to send back: the `commandResult`, or for a probe the
+ * `clockProbeAnswer`; anything outside the protocol gets INVALID_MESSAGE and a warning.
+ * Never throws, so a bad message can never close the socket.
  */
 export function answerClientMessage(options: {
   messageText: string | undefined;
   stateStore: StateStore;
   actor: string;
   logger: ServerLogger;
-}): CommandResultMessage {
+  /** The server clock a probe is answered with; the store's clock, as in startServer. */
+  readCurrentTime?: (() => Date) | undefined;
+}): CommandResultMessage | ClockProbeAnswerMessage {
   const { messageText, stateStore, actor, logger } = options;
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
   // `messageText` is undefined for a binary frame, which the protocol does not use.
   if (messageText === undefined) {
     logger.warn('websocket message refused: binary frame');
@@ -50,7 +57,16 @@ export function answerClientMessage(options: {
     return buildErrorCommandResult(requestIdIfReadable ?? null, describeInvalidMessage());
   }
 
-  const clientMessage = parsedMessage.data;
+  const clientMessage: ClientMessage = parsedMessage.data;
+  if (clientMessage.type === 'clockProbe') {
+    // Read as late as possible: every millisecond between the arrival and this reading
+    // is an error in the page's midpoint. No log line: a page probes every ten seconds.
+    return {
+      type: 'clockProbeAnswer',
+      pageSentAtMs: clientMessage.pageSentAtMs,
+      serverNowMs: readCurrentTime().getTime(),
+    };
+  }
   if (clientMessage.type === 'instanceStatus') {
     // A renderer's report is not a command envelope and carries no requestId, but it
     // changes state, so it goes through the same single command path as everything else.

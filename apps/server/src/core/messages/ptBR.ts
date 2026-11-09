@@ -6,6 +6,7 @@ import { ptBRObs } from './ptBRObs.js';
 import { ptBROperatorLoginErrors } from './ptBROperatorLogin.js';
 import { ptBROutputs } from './ptBROutputs.js';
 import { ptBRProgramHistoryErrors } from './ptBRProgramHistory.js';
+import { ptBRServerClock } from './ptBRServerClock.js';
 import { ptBRTriggers } from './ptBRTriggers.js';
 
 /**
@@ -140,6 +141,8 @@ export const ptBR = {
   triggers: ptBRTriggers,
   // The operator login (BAJAOVRLAY-29): PINs, the lockout, a missing session.
   operatorLoginErrors: ptBROperatorLoginErrors,
+  // "Acertar relógio agora" when it could not set the clock (BAJAOVRLAY-62).
+  serverClock: ptBRServerClock,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
   // each goes with a stable code. The layer is named as the operator reads it.
   onAirChangeErrors: {

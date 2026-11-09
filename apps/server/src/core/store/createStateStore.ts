@@ -15,6 +15,7 @@ import {
 } from '../db/commandOutcomeStorage.js';
 import { findEventLogDetailsOfCommand } from '../events/eventLogDetailsOfACommand.js';
 import { appendToEventLogSlice } from '../events/eventLogSlice.js';
+import { readServerTime } from '../time/serverClock.js';
 import { allowCommandForActorRole } from './authorizeCommand.js';
 import { refuseAutomationTheActorMayNotChange } from './automationAndTheDataRole.js';
 import {
@@ -79,7 +80,7 @@ export type StateStore = EventLogReaders & {
  */
 export function createStateStore(options: StateStoreOptions): StateStore {
   const isCommandAllowed = options.isCommandAllowed ?? allowCommandForActorRole;
-  const readCurrentTime = options.readCurrentTime ?? (() => new Date());
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
   const createInstanceId = options.createInstanceId ?? (() => randomUUID());
   const createItemId = options.createItemId ?? (() => randomUUID());
   const createQuickFirePanelId = options.createQuickFirePanelId ?? (() => randomUUID());

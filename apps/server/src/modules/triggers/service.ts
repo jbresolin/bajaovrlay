@@ -7,11 +7,12 @@ import type { Slices, Trigger, TriggerData } from '@bajaovrlay/shared';
 import type { ServerLogger } from '../../core/logger/createLogger.js';
 import { eventInboxActor, triggerServiceActor } from '../../core/store/commandActors.js';
 import type { StateStore } from '../../core/store/createStateStore.js';
+import { readServerTime } from '../../core/time/serverClock.js';
 import { readTriggerDataEventOfInboxEvent } from './dataEventsOfTheInbox.js';
 import { readObsReading } from './obsSceneChanges.js';
 import { listScheduleMomentsDue } from './scheduleMoments.js';
 
-/** What the service needs; the timers and the clock default to Node's own. */
+/** What the service needs; the timers default to Node's own, the clock to the server clock. */
 export type TriggerServiceOptions = {
   stateStore: StateStore;
   logger: ServerLogger;
@@ -55,7 +56,7 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
   const { stateStore, logger } = options;
   const startTimer = options.startTimer ?? startNodeTimer;
   const cancelTimer = options.cancelTimer ?? cancelNodeTimer;
-  const readCurrentTime = options.readCurrentTime ?? (() => new Date());
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
   const slicesAtTheStart = stateStore.readAllSlices();
   let obsSeenLast = slicesAtTheStart.obs;
   let numberOfTheLastSwitchUsedUp: number | undefined = undefined;
@@ -160,8 +161,14 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
     try {
       const nowMs = readCurrentTime().getTime();
       const afterMs = Math.max(scheduleLookedAtUpToMs, nowMs - latestAScheduleMomentMayFireMs);
-      scheduleLookedAtUpToMs = nowMs;
+      const skippedFromMs = scheduleLookedAtUpToMs;
+      // Never moves back: after a step of the server clock back (BAJAOVRLAY-62), the
+      // moments already looked at are not looked at, and fired, a second time.
+      scheduleLookedAtUpToMs = Math.max(scheduleLookedAtUpToMs, nowMs);
       const slices = stateStore.readAllSlices();
+      if (afterMs > skippedFromMs) {
+        logTheScheduleMomentsSkipped(slices, skippedFromMs, afterMs);
+      }
       const firings: FiringToSend[] = [];
       for (const trigger of slices.triggers) {
         if (trigger.when.kind !== 'schedule') {
@@ -182,6 +189,40 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
       logger.error({ err: scheduleError }, 'the schedule of the triggers could not be read');
     }
     armTheNextLook();
+  }
+
+  /**
+   * Logs, trigger by trigger, the moments that fell more than 5 s before this look and
+   * after the last one: a sleep, or a forward step of the server clock to NTP's real time
+   * (BAJAOVRLAY-62). They are dropped, never fired late or all together.
+   */
+  function logTheScheduleMomentsSkipped(
+    slices: Slices,
+    skippedFromMs: number,
+    skippedUpToMs: number,
+  ): void {
+    for (const trigger of slices.triggers) {
+      if (trigger.when.kind !== 'schedule') {
+        continue;
+      }
+      const momentsSkipped = listScheduleMomentsDue(
+        trigger.when.moment,
+        slices.scheduleSlots,
+        skippedFromMs,
+        skippedUpToMs,
+      );
+      if (momentsSkipped.length > 0) {
+        logger.warn(
+          {
+            trigger_id: trigger.id,
+            trigger_name: trigger.name,
+            moments_skipped: momentsSkipped.length,
+            gap_ms: skippedUpToMs - skippedFromMs,
+          },
+          'schedule moments skipped, not fired: the clock jumped past them',
+        );
+      }
+    }
   }
 
   /** Arms the next look at the schedule. */

@@ -8,16 +8,18 @@ export { type ClockReading, computeClockTimeMsAtWallClock } from './clockExtrapo
 export { countWholeSecondsClockShows } from './clockWholeSeconds.js';
 // The H:MM:SS text a clock shows for a time, written the same on air and on the page.
 export { formatClockTimeAsHoursMinutesSeconds } from './clockFormatting.js';
-// The shared "now" on the server's clock; the renderer records a sample per message, and
-// tests forget the samples when they end.
+// The shared "now" on the server's clock: a page starts lining up at each hello and at a
+// new step count of the server clock, and lines up with its clock probes' answers (on
+// this machine's monotonic time); tests set it directly, and forget it when they end.
 export {
-  forgetServerClockSamples,
+  type ClockProbeAnswerAsSeen,
+  forgetTheServerClockAlignment,
+  type HelloAsSeen,
+  lineUpWithTheServerClockAt,
+  probesAfterAHello,
   readServerAlignedTimeMs,
-  recordServerClockSample,
+  readThisMachineMonotonicTimeMs,
+  recordClockProbeAnswer,
+  startLiningUpAgainIfTheServerClockStepped,
+  startLiningUpAtAHello,
 } from './serverAlignedTime.js';
-// The samples behind that "now": the last five offsets kept, and their median.
-export {
-  computeMedianOfOffsetSamples,
-  keepLatestOffsetSamples,
-  offsetSampleLimit,
-} from './serverClockOffsetSamples.js';

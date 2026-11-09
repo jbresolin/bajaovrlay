@@ -57,6 +57,7 @@ function startBroadcastOnFakedNodeTimers() {
   const broadcast = startServerTimeBroadcast({
     webSocketServer,
     readCurrentTime: () => new Date(),
+    readServerClockStepCount: () => 0,
   });
   onTestFinished(() => broadcast.stop());
   return { broadcast, openClient, closingClient };
@@ -76,8 +77,8 @@ describe('startServerTimeBroadcast with the timer of Node', () => {
       ServerMessageSchema.parse(JSON.parse(text)),
     );
     expect(messagesToTheOpenClient, 'one time message per ten seconds').toEqual([
-      { type: 'time', serverNowMs: 1_791_556_335_000 },
-      { type: 'time', serverNowMs: 1_791_556_345_000 },
+      { type: 'time', serverNowMs: 1_791_556_335_000, serverClockStepCount: 0 },
+      { type: 'time', serverNowMs: 1_791_556_345_000, serverClockStepCount: 0 },
     ]);
     expect(closingClient.textsSent, 'a socket that is not open must be skipped').toEqual([]);
   });

@@ -108,3 +108,14 @@ válidas".
   `api.bajasaebrasil.net` (veja `.env.example`).
 - Os presets ficam em `packages/shared/src/flexMapping/presets/bajaApp/` (um JSON por tipo);
   o contrato da API é `docs/results-api.md` no repositório do app Baja.
+- **O relógio de prova conta a partir da hora do servidor do app Baja.** O preset de corrida
+  liga `clock.referenceWallClockMs` a `clock.server_time_ms`: o momento em que o servidor do
+  app leu o relógio da corrida. O relógio no ar compara esse momento com o relógio do
+  servidor do BajaOvrLay, e os dois andam na hora certa pelo NTP (o BajaOvrLay pelo
+  `BAJAOVRLAY_NTP_SERVERS`, NTP.br por padrão; o app Baja pelo da sua VPS). Por isso a conta
+  fica certa mesmo com o cache de 2 s da API: uma resposta guardada traz o momento em que foi
+  lida, não o da entrega. Se um dos dois servidores ficar sem NTP e se afastar da hora certa,
+  o relógio no ar erra pela mesma diferença; "Verificar servidor" mostra a última resposta do
+  NTP do BajaOvrLay. Usar o momento da leitura (`fromPollMoment`) em vez de `server_time_ms`
+  é uma escolha do preset, que este não faz: o relógio no ar ficaria atrasado pela idade do
+  cache.

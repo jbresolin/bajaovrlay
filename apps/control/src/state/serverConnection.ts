@@ -1,4 +1,5 @@
 import {
+  type ClockProbeMessage,
   type CommandInput,
   type PageReloadForNewBuild,
   readBuildIdOfAHello,
@@ -7,7 +8,12 @@ import {
   ServerMessageSchema,
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
-import { recordServerClockSample } from '@bajaovrlay/shared/clock';
+import {
+  readThisMachineMonotonicTimeMs,
+  recordClockProbeAnswer,
+  startLiningUpAgainIfTheServerClockStepped,
+  startLiningUpAtAHello,
+} from '@bajaovrlay/shared/clock';
 
 import { ptBR } from '@/i18n/ptBR';
 import { type LogControlEvent, logControlEvent } from '@/logging/controlLog';
@@ -143,7 +149,7 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
   function handleMessageText(text: unknown): void {
     // Read before the message is checked: checking a large hello takes a few
     // milliseconds, and each of them would make the sample of the server's clock later.
-    const localTimeAtArrivalMs = Date.now();
+    const localTimeAtArrivalMs = readThisMachineMonotonicTimeMs();
     const messageJson = readJsonOfMessage(text);
     const message = readServerMessage(messageJson);
     if (message === undefined) {
@@ -156,10 +162,13 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       }
       return;
     }
-    recordServerClockSampleOfMessage(message, localTimeAtArrivalMs);
-
     switch (message.type) {
       case 'hello':
+        // Four probes line the page up, so it and the screens count from the same clock
+        // (BAJAOVRLAY-62); a page not lined up yet holds the hello's own time until they
+        // answer, and one already lined up keeps its time through a reconnect.
+        startLiningUpAtAHello(message, localTimeAtArrivalMs);
+        sendClockProbe();
         numberOfFailedCallsInARow = 0;
         // Taken in first, so a page that does not reload (same build, or already reloaded
         // for this one) is connected as always; one that reloads loses nothing.
@@ -180,11 +189,43 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         settleCommandAwaitingThisResult(message);
         break;
       case 'time':
-        // The server's ten-second time message. Its sample was recorded just above and
-        // that is all: nothing is set in the store, so no component redraws, and no
-        // line is logged every ten seconds.
+        // The server's ten-second time message (or the one sent at once after a step of
+        // its clock, whose new step count starts four probes that line up at once): one
+        // probe keeps the alignment fresh, and how far the server clock is off real time
+        // goes to the store, which only changes (and redraws the header) when the whole
+        // seconds change. No log line.
+        startLiningUpAgainIfTheServerClockStepped(message.serverClockStepCount);
+        sendClockProbe();
+        serverStateStore.getState().noteServerClockOffRealTime(message.offFromRealTimeMs);
         break;
+      case 'clockProbeAnswer': {
+        const { isAnotherProbeNeeded } = recordClockProbeAnswer({
+          pageSentAtMs: message.pageSentAtMs,
+          serverNowMs: message.serverNowMs,
+          pageReceivedAtMs: localTimeAtArrivalMs,
+        });
+        if (isAnotherProbeNeeded) {
+          sendClockProbe();
+        }
+        break;
+      }
     }
+  }
+
+  /**
+   * Asks the server what its clock reads (packages/shared/src/clock/serverAlignedTime.ts):
+   * after a hello, four in a row; then one per `time` message. "Edição rápida" reads the
+   * time lined up this way to show what a clock on air shows.
+   */
+  function sendClockProbe(): void {
+    if (currentSocket === undefined) {
+      return;
+    }
+    const clockProbe: ClockProbeMessage = {
+      type: 'clockProbe',
+      pageSentAtMs: readThisMachineMonotonicTimeMs(),
+    };
+    currentSocket.send(JSON.stringify(clockProbe));
   }
 
   function settleCommandAwaitingThisResult(
@@ -305,30 +346,6 @@ function startWatchOnTheServerBuild(
       return () => clearTimeout(timer);
     },
   });
-}
-
-/**
- * Hands the server's time in a hello, slice, slices, dataSnapshot or time message to the
- * shared server-aligned clock, which "Edição rápida" reads to show the time a clock on air shows. The renderer
- * does the same (apps/renderer/src/serverConnection.ts), so the page and the screen
- * count from the same clock. A hello or slice without the time records NOTHING: it is
- * "no sample", never a sample saying the two clocks agree.
- * What could go wrong: the sample is late by the time the message took to arrive. A
- * step of this computer's clock is corrected by the time messages, which come every ten
- * seconds even when nothing changes; three are needed, so about thirty seconds.
- */
-function recordServerClockSampleOfMessage(
-  message: ServerMessage,
-  localTimeAtArrivalMs: number,
-): void {
-  if (message.type === 'commandResult') {
-    return;
-  }
-  // The field is optional in the protocol; a message without it gives no sample.
-  if (message.serverNowMs === undefined) {
-    return;
-  }
-  recordServerClockSample(message.serverNowMs, localTimeAtArrivalMs);
 }
 
 /** Reads the JSON of one message; undefined when it is not text or not JSON. */
