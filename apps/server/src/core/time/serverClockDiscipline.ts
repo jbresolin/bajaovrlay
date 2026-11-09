@@ -1,4 +1,5 @@
 import type { ServerLogger } from '../logger/createLogger.js';
+import { pollForRealTimeWithinTheBootWait } from './bootPollForRealTime.js';
 import { type NtpPollOutcome, type NtpPollRequest, questionsPerPoll } from './ntpPolls.js';
 import {
   estimateRateOfRealTime,
@@ -17,15 +18,10 @@ import {
 export const bigDifferenceMs = 1_000;
 
 /**
- * Past this difference from the server clock, NTP's time is not taken on its own: a
- * track-side NTP box without its GPS fix may tell a time years away. At boot the server
- * clock is the machine's wall clock, so a machine with a dead clock battery waits for
- * "Acertar relógio agora" too; the header warns.
+ * Past this, NTP's time is not taken on its own (a track-side box without GPS may be years
+ * off); at boot, a machine with a dead clock battery waits for "Acertar relógio agora" too.
  */
 export const largestDifferenceTakenOnItsOwnMs = 24 * 60 * 60 * 1000;
-
-/** How long the boot waits for NTP before it starts on the machine's wall clock. */
-export const bootWaitForNtpMs = 3_000;
 
 /** A new rate is ramped to over this much monotonic time, not taken at once. */
 export const rampToANewRateMs = 60_000;
@@ -66,15 +62,15 @@ export type ServerClockDiscipline = {
   /** "Acertar relógio agora": asks NTP now and steps, whatever is on air. */
   setToRealTimeNow: (actor: string) => Promise<SetToRealTimeOutcome>;
   readStatus: () => ServerClockStatus;
-  /** Stops polling; may be called more than once. */
+  /** Stops polling, ending a poll in flight at once; may be called more than once. */
   stop: () => void;
 };
 
 /** What the discipline needs: the clock it corrects, how to poll, what is on air, a logger. */
 export type ServerClockDisciplineOptions = {
   serverClock: ServerClock;
-  /** One poll of the NTP servers (ntpPolls.ts), measured against the clock's monotonic time. */
-  pollForRealTime: (request: NtpPollRequest) => Promise<NtpPollOutcome>;
+  /** One poll of NTP (ntpPolls.ts) on monotonic time; `abortSignal` ends it at once. */
+  pollForRealTime: (request: NtpPollRequest, abortSignal: AbortSignal) => Promise<NtpPollOutcome>;
   /** Whether a step by this much would make anything on program or preview jump. */
   isAnythingCountingTimeOnAir: (stepByMs: number) => boolean;
   /** Called after each step, so every page lines up again at once. */
@@ -123,6 +119,8 @@ export function startServerClockDiscipline(
   let didNtpAnswerTheLastPoll = true;
   let nextPollTimer: ReturnType<typeof setTimeout> | undefined;
   let isStopped = false;
+  // Aborted by stop(): a poll in flight closes its socket and sends nothing more.
+  const stopController = new AbortController();
 
   /** One answer, as the discipline weighs it. */
   type AnswerTaken = { differenceMs: number; sample: RealTimeSample; serverName: string };
@@ -286,7 +284,7 @@ export function startServerClockDiscipline(
   }
 
   async function pollAndCorrect(request: NtpPollRequest): Promise<void> {
-    const outcome = await pollForRealTime(request);
+    const outcome = await pollForRealTime(request, stopController.signal);
     if (isStopped) {
       return;
     }
@@ -328,12 +326,13 @@ export function startServerClockDiscipline(
   }
 
   async function stepToRealTimeAtBoot(): Promise<void> {
-    let waitTimer: ReturnType<typeof setTimeout> | undefined;
-    const noAnswerInTime = new Promise<undefined>((resolve) => {
-      waitTimer = setTimeout(() => resolve(undefined), bootWaitForNtpMs);
-    });
-    const outcome = await Promise.race([pollForRealTime(quickPoll), noAnswerInTime]);
-    clearTimeout(waitTimer);
+    const outcome = await pollForRealTimeWithinTheBootWait(
+      (abortSignal) => pollForRealTime(quickPoll, abortSignal),
+      stopController.signal,
+    );
+    if (isStopped) {
+      return;
+    }
     if (outcome === undefined || !outcome.isAnswered) {
       didNtpAnswerTheLastPoll = false;
       logger.warn(
@@ -356,7 +355,7 @@ export function startServerClockDiscipline(
   }
 
   async function setToRealTimeNow(actor: string): Promise<SetToRealTimeOutcome> {
-    const outcome = await pollForRealTime(quickPoll);
+    const outcome = await pollForRealTime(quickPoll, stopController.signal);
     if (!outcome.isAnswered) {
       logger.warn(
         { problems: outcome.problems, actor },
@@ -394,6 +393,7 @@ export function startServerClockDiscipline(
     stop: () => {
       isStopped = true;
       clearTimeout(nextPollTimer);
+      stopController.abort();
     },
   };
 }

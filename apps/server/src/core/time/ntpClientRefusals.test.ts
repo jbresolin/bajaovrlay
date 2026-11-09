@@ -31,6 +31,7 @@ import {
   buildAnswerWithAZeroTimestamp,
   buildKissOfDeathAnswer,
   buildMalformedAnswer,
+  countOpenUdpSockets,
   createLocalClockReadingInTurn,
   startFakeNtpServer,
 } from './fakeNtpServer.testSupport.js';
@@ -223,8 +224,3 @@ describe('what comes back that is no answer', () => {
     );
   });
 });
-
-/** How many UDP sockets this process holds open now. */
-function countOpenUdpSockets(): number {
-  return process.getActiveResourcesInfo().filter((resource) => resource === 'UDPWrap').length;
-}

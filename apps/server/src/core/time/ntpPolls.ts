@@ -53,9 +53,24 @@ function lookUpIpv4AddressesThroughDns(hostName: string): Promise<string[]> {
   return resolverOfTheNtpServers.resolve4(hostName);
 }
 
-/** The default wait between two questions. */
-function waitFor(waitMs: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, waitMs));
+/** A wait between two questions, which an abort ends early. */
+export type WaitBetweenQuestions = (waitMs: number, abortSignal?: AbortSignal) => Promise<void>;
+
+/** The default wait between two questions: a timer, cleared and ended early by an abort. */
+function waitFor(waitMs: number, abortSignal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (abortSignal?.aborted === true) {
+      resolve();
+      return;
+    }
+    function endTheWait(): void {
+      clearTimeout(timer);
+      abortSignal?.removeEventListener('abort', endTheWait);
+      resolve();
+    }
+    const timer = setTimeout(endTheWait, waitMs);
+    abortSignal?.addEventListener('abort', endTheWait, { once: true });
+  });
 }
 
 /**
@@ -65,8 +80,12 @@ function waitFor(waitMs: number): Promise<void> {
  * leaves the least room for a one-sided delay. A server that fails a question (no answer,
  * a malformed one, a kiss of death) is not asked again in this poll; the next server is
  * asked only when the one before gave no answer at all.
+ * `abortSignal` (the discipline's stop) ends the poll at once, with no answer: the pause
+ * and the question in flight end, and nothing more is sent.
  * What could go wrong: one lost UDP packet hands the poll to the next server, which is a
  * little farther away (NTP.br after the track's own); the next poll starts at the first.
+ * A DNS look-up in flight is not aborted (c-ares cancels a whole resolver, not one query);
+ * it ends within 2 s, holds no socket of the poll's, and the poll stops right after it.
  */
 export async function pollNtpServers(options: {
   servers: readonly NtpServerAddress[];
@@ -74,18 +93,34 @@ export async function pollNtpServers(options: {
   questionsPerServer?: number | undefined;
   serverToAskLast?: string | undefined;
   timeoutPerQuestionMs?: number | undefined;
-  waitBetweenQuestions?: ((waitMs: number) => Promise<void>) | undefined;
+  waitBetweenQuestions?: WaitBetweenQuestions | undefined;
   lookUpIpv4Addresses?: LookUpIpv4Addresses | undefined;
+  abortSignal?: AbortSignal | undefined;
 }): Promise<NtpPollOutcome> {
+  const { abortSignal } = options;
   const timeoutMs = options.timeoutPerQuestionMs ?? defaultTimeoutPerQuestionMs;
   const questionsPerServer = options.questionsPerServer ?? questionsPerPoll;
   const waitBetweenQuestions = options.waitBetweenQuestions ?? waitFor;
   const lookUpIpv4Addresses = options.lookUpIpv4Addresses ?? lookUpIpv4AddressesThroughDns;
   const problems: string[] = [];
   let wasAskedToSlowDown = false;
+  // A function, not a property read: TypeScript would narrow `aborted` to false after the
+  // first check, but an abort can come during any await.
+  const hasThePollBeenStopped = (): boolean => abortSignal?.aborted === true;
+  const buildTheOutcomeOfAStoppedPoll = (): NtpPollOutcome => ({
+    isAnswered: false,
+    problems: [...problems, 'stopped'],
+    wasAskedToSlowDown,
+  });
   for (const server of putTheServerToAskLastAtTheEnd(options.servers, options.serverToAskLast)) {
     const serverName = nameTheServer(server);
+    if (hasThePollBeenStopped()) {
+      return buildTheOutcomeOfAStoppedPoll();
+    }
     const lookUp = await lookUpTheIpv4AddressOf(server.host, lookUpIpv4Addresses);
+    if (hasThePollBeenStopped()) {
+      return buildTheOutcomeOfAStoppedPoll();
+    }
     if (!lookUp.isFound) {
       problems.push(`${serverName}: dns (${lookUp.code})`);
       continue;
@@ -93,13 +128,20 @@ export async function pollNtpServers(options: {
     const answers: NtpAnswer[] = [];
     for (let questionNumber = 1; questionNumber <= questionsPerServer; questionNumber += 1) {
       if (questionNumber > 1) {
-        await waitBetweenQuestions(pauseBetweenQuestionsMs);
+        await waitBetweenQuestions(pauseBetweenQuestionsMs, abortSignal);
+      }
+      if (hasThePollBeenStopped()) {
+        return buildTheOutcomeOfAStoppedPoll();
       }
       const outcome: NtpQueryOutcome = await queryNtpServerOnce({
         server: { ipv4Address: lookUp.ipv4Address, port: server.port },
         readLocalTimeMs: options.readLocalTimeMs,
         timeoutMs,
+        abortSignal,
       });
+      if (!outcome.isAnswered && outcome.reason === 'aborted') {
+        return buildTheOutcomeOfAStoppedPoll();
+      }
       if (!outcome.isAnswered) {
         const detail = outcome.detail === undefined ? '' : ` (${outcome.detail})`;
         problems.push(`${serverName}: ${outcome.reason}${detail}`);

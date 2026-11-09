@@ -31,9 +31,9 @@ export type NtpAnswer = {
   localTimeAtArrivalMs: number;
 };
 
-/** Why a question gave no usable answer. */
+/** Why a question gave no usable answer ('aborted': the server clock's discipline stopped). */
 export type NtpRefusalReason =
-  'timeout' | 'unreachable' | 'malformed' | 'unsynchronized' | 'kissOfDeath';
+  'timeout' | 'unreachable' | 'malformed' | 'unsynchronized' | 'kissOfDeath' | 'aborted';
 
 /** One question's outcome: an answer, or why there is none (with a detail for the log). */
 export type NtpQueryOutcome =
@@ -59,14 +59,19 @@ const transmitTimestampPosition = 40;
  * The socket is connected to the server, so the system drops a packet from any other
  * address; a packet from the server that is not an answer to this question (malformed, or
  * a late answer to an earlier one) is set aside and the wait goes on to the timeout, so a
- * stray datagram cannot cancel a good exchange. The socket is closed however it ends.
+ * stray datagram cannot cancel a good exchange. `abortSignal` (the discipline's stop)
+ * ends the question at once. The socket is closed and the timer cleared however it ends.
  */
 export function queryNtpServerOnce(options: {
   server: NtpServerIpv4Address;
   readLocalTimeMs: () => number;
   timeoutMs: number;
+  abortSignal?: AbortSignal | undefined;
 }): Promise<NtpQueryOutcome> {
-  const { server, readLocalTimeMs, timeoutMs } = options;
+  const { server, readLocalTimeMs, timeoutMs, abortSignal } = options;
+  if (abortSignal?.aborted === true) {
+    return Promise.resolve({ isAnswered: false, reason: 'aborted' });
+  }
   return new Promise((resolve) => {
     const socket = createSocket('udp4');
     let isFinished = false;
@@ -78,9 +83,14 @@ export function queryNtpServerOnce(options: {
       }
       isFinished = true;
       clearTimeout(timeoutHandle);
+      abortSignal?.removeEventListener('abort', finishAsAborted);
       socket.close();
       resolve(outcome);
     }
+    function finishAsAborted(): void {
+      finish({ isAnswered: false, reason: 'aborted' });
+    }
+    abortSignal?.addEventListener('abort', finishAsAborted, { once: true });
 
     const timeoutHandle = setTimeout(() => {
       if (packetSetAside === undefined) {
@@ -104,6 +114,10 @@ export function queryNtpServerOnce(options: {
       finish(readNtpAnswer(answerPacket, sentAtLocalMs, arrivedAtLocalMs));
     });
     socket.connect(server.port, server.ipv4Address, () => {
+      // Aborted while connecting: the socket is closed, and sending on it would throw.
+      if (isFinished) {
+        return;
+      }
       sentAtLocalMs = readLocalTimeMs();
       question = buildNtpQuestion(sentAtLocalMs);
       socket.send(question, (sendError) => {

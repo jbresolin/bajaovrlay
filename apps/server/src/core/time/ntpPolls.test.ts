@@ -14,8 +14,8 @@
  *     one kept, even when another came back with a 238 ms delay.
  *   - Asked for one question (the boot's quick poll), it asks once.
  *   - A host name is looked up once per poll, through DNS (not the system's getaddrinfo,
- *     which a dead uplink holds for seconds), and its address is asked; a name that
- *     cannot be looked up hands over to the next server.
+ *     which a dead uplink holds for seconds), and its address is asked; the next poll
+ *     looks it up again; a name that cannot be looked up hands over to the next server.
  *   - A silent first server hands over to the second, whose answer is kept and named.
  *   - A server named to be asked last (the one a confirmation must not ask again) comes
  *     after the others.
@@ -26,6 +26,7 @@
  * What these tests deliberately do not cover:
  *   - The four timestamps of one answer; ntpClient.test.ts.
  *   - What the server clock does with the answer; serverClockDiscipline.test.ts.
+ *   - A poll stopped while under way; ntpStoppedMidPoll.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -263,6 +264,32 @@ describe('one poll of the NTP servers', () => {
     expect(outcome.isAnswered && outcome.serverName, 'named as the settings name it').toBe(
       `a.st1.ntp.br:${fakeServer.address.port}`,
     );
+  });
+
+  it('looks the name up again at the next poll, so a changed address is followed', async () => {
+    // Arrange: a server named as NTP.br's would be, which DNS finds on this machine.
+    const fakeServer = await startFakeNtpServer(answerAsAServerTwoSecondsAhead);
+    const dns = createDnsThatKnows({ 'a.st1.ntp.br': '127.0.0.1' });
+    function pollTheServerByItsName() {
+      return pollNtpServers({
+        servers: [{ host: 'a.st1.ntp.br', port: fakeServer.address.port }],
+        readLocalTimeMs: createLocalClockForFourQuestions([13]),
+        timeoutPerQuestionMs: timeoutOfTheTestsMs,
+        questionsPerServer: 1,
+        lookUpIpv4Addresses: dns.lookUpIpv4Addresses,
+      });
+    }
+
+    // Act: two polls, as 64 s apart.
+    await pollTheServerByItsName();
+    await pollTheServerByItsName();
+
+    // Assert: one look-up per poll: a pool name's address changes over a race day, and an
+    // address kept from the boot would go on asking a server that has left the pool.
+    expect(dns.namesLookedUp, 'each poll looks the name up afresh').toEqual([
+      'a.st1.ntp.br',
+      'a.st1.ntp.br',
+    ]);
   });
 
   it('hands over to the next server when a name cannot be looked up', async () => {

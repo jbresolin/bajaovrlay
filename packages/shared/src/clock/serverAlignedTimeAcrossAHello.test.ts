@@ -14,7 +14,8 @@
  *     with no time changes nothing.
  *   - A step of the server clock (a new step count, in a `time` message or the next hello)
  *     lines the page up at once after its four probes, even for 1.5 s; the same count
- *     leaves a difference under 2 s to the slew.
+ *     leaves a difference under 2 s to the slew. Answers to probes sent before the step
+ *     are dropped with the round they were part of.
  *
  * What these tests deliberately do not cover:
  *   - The first hello, later probes, and a sleep of the page's machine;
@@ -129,6 +130,35 @@ describe('a step of the server clock', () => {
       ).toBe(0);
     },
   );
+
+  it('lines up on an answer from after the step, not on the quicker ones from before it', () => {
+    // Arrange: a page that has just opened takes its hello, and two of its four probes
+    // are answered quickly (4 ms) by the server before its clock steps.
+    holdTheMachineClockAt(serverTimeMs - renderMachineLagMs);
+    takeAHello(renderMachineLagMs, { lateByMs: 20, serverClockStepCount: 0 });
+    sendAProbeAndTakeItsAnswer(renderMachineLagMs, 4);
+    sendAProbeAndTakeItsAnswer(renderMachineLagMs, 4);
+
+    // Act: the server clock steps 1.5 s forwards and its time message says so; then two
+    // more probes are answered, slower (6 ms), on the new time.
+    const serverAheadAfterTheStepMs = renderMachineLagMs + 1_500;
+    startLiningUpAgainIfTheServerClockStepped(1);
+    sendAProbeAndTakeItsAnswer(serverAheadAfterTheStepMs, 6);
+    const isAnotherProbeNeededAfterTwo = sendAProbeAndTakeItsAnswer(serverAheadAfterTheStepMs, 6);
+    sendAProbeAndTakeItsAnswer(serverAheadAfterTheStepMs, 6);
+    sendAProbeAndTakeItsAnswer(serverAheadAfterTheStepMs, 6);
+
+    // Assert: the round in progress was dropped at the step, so the page asked for four
+    // answers from after it and lined up on one of them, not on the quicker old ones.
+    expect(
+      isAnotherProbeNeededAfterTwo,
+      'two answers from after the step do not end the round: it started again at the step',
+    ).toBe(true);
+    expect(
+      measureHowFarBehindTheServer(serverAheadAfterTheStepMs),
+      'an answer from before the step would leave the page 1.5 s behind',
+    ).toBe(0);
+  });
 
   it('slews as usual when the time message brings the same step count', () => {
     // Arrange: a page lined up on a server 2.3 s ahead, whose clock has stepped 0 times.

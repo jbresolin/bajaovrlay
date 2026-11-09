@@ -157,3 +157,8 @@ export function createLocalClockReadingInTurn(readingsMs: readonly number[]): ()
     return reading;
   };
 }
+
+/** How many UDP sockets this process holds open now: the fakes' and any question's. */
+export function countOpenUdpSockets(): number {
+  return process.getActiveResourcesInfo().filter((resource) => resource === 'UDPWrap').length;
+}

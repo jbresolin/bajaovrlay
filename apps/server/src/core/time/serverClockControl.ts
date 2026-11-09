@@ -55,12 +55,13 @@ export function startTheServerClockOnNtp(options: {
   }
   const discipline: ServerClockDiscipline = startServerClockDiscipline({
     serverClock,
-    pollForRealTime: (request) =>
+    pollForRealTime: (request, abortSignal) =>
       pollNtpServers({
         servers: ntpSettings.servers,
         readLocalTimeMs: serverClock.readMonotonicTimeMs,
         questionsPerServer: request.questionsPerServer,
         serverToAskLast: request.serverToAskLast,
+        abortSignal,
       }),
     isAnythingCountingTimeOnAir: options.isAnythingCountingTimeOnAir,
     afterEachStep: options.afterEachStep,
