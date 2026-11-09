@@ -147,7 +147,8 @@ describe('readCarGroupsOfManifest', () => {
       changeTheGroups: (carGroups: CarGroupAsWritten[]) => {
         readGroupAt(carGroups, 1).fields.aheadLaps = 'laps';
       },
-      expectedProblem: 'v_baja.carGroups: the field "aheadLaps" is in two car groups ("ahead" and "behind")',
+      expectedProblem:
+        'v_baja.carGroups: the field "aheadLaps" is in two car groups ("ahead" and "behind")',
     },
     {
       // A misspelt key would make the picker fill a field the graphic never receives.
@@ -200,7 +201,8 @@ describe('readCarGroupsOfManifest', () => {
       changeTheGroups: (carGroups: CarGroupAsWritten[]) => {
         readGroupAt(carGroups, 1).rightBehindGroup = 'leader';
       },
-      expectedProblem: 'v_baja.carGroups: the car group "behind" runs right behind "leader", which is no car group',
+      expectedProblem:
+        'v_baja.carGroups: the car group "behind" runs right behind "leader", which is no car group',
     },
   ];
 
@@ -221,7 +223,7 @@ describe('readCarGroupsOfManifest', () => {
     ).toContain(expectedProblem);
   });
 
-  it('starts a refusal of a group\'s own shape with where it is in the manifest', () => {
+  it("starts a refusal of a group's own shape with where it is in the manifest", () => {
     // Arrange: the battle card's groups with the car ahead's label left out.
     const carGroups: Array<Partial<CarGroupAsWritten>> = buildBattleCardCarGroups();
     delete carGroups[0]?.label;

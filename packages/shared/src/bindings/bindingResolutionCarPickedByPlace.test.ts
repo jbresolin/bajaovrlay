@@ -133,13 +133,12 @@ describe('a car picked by its place', () => {
     const sources = buildSourcesAfterCar25PassedCar38();
 
     // Act: read the 2nd place's position, number and team with the bindings an item holds.
-    const [position, carNumber, teamName] = ['position', 'carNumber', 'teamName'].map(
-      (fieldName) =>
-        resolveBindingAgainstSources(
-          buildBindingOfCarPickedByPlace(fieldName, 2),
-          sources,
-          contextWithNoTeams,
-        ),
+    const [position, carNumber, teamName] = ['position', 'carNumber', 'teamName'].map((fieldName) =>
+      resolveBindingAgainstSources(
+        buildBindingOfCarPickedByPlace(fieldName, 2),
+        sources,
+        contextWithNoTeams,
+      ),
     );
 
     // Assert: the 2nd place is now car 25, Bem-te-vi Off-Road, still at position 2.
