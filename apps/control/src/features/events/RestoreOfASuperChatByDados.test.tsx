@@ -1,11 +1,11 @@
 /**
- * Dados restores a Super Chat it discarded, and no race event (apps/control)
+ * Dados restores any discarded Super Chat, and no race event (apps/control)
  *
  * What this module is for:
  *   Dados moderates the viewers' Super Chats (BAJAOVRLAY-35). João's ruling at gate 2 of
- *   PR #54: Dados may also undo a discard of a Super Chat. Restoring only makes it wait for
- *   approval again and changes nothing on air, so it is moderation; a race event stays the
- *   Produtor's. The "Eventos" page's history offers "Restaurar" on every discarded event.
+ *   PR #54: Dados may restore any discarded Super Chat, whoever discarded it. Restoring only
+ *   returns it to pending, where it still needs approval, and changes nothing on air, so it
+ *   is moderation; a race event stays the Produtor's. The "Eventos" page's history offers "Restaurar" on every discarded event.
  *
  * What these tests prove, one row each:
  *   - Dados's "Restaurar" on a discarded Super Chat is ready, and sends restoreEvent.

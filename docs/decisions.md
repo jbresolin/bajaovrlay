@@ -1523,6 +1523,11 @@ and §19 are the authority; PR lines record what an agent chose and João has no
 - 2026-11-08 — PR #54 — A source's first snapshot lists the Super Chats of its last 15 minutes and takes older ones as seen; later ones are those the previous answer lacked, published no earlier than its oldest.
 - 2026-11-08 — PR #54 — Dados may dismiss a Super Chat and send no other event command; restoreEvent stays the Produtor's, and a restored Super Chat is pending again, to be approved anew. (Changed at gate 2, below.)
 - 2026-11-08 — PR #54 — The simulator's Super Chats are opt-in ("Simular Super Chats", areSuperChatsSimulated, off when missing) so a rehearsal of the race alone fills no inbox with them.
-- 2026-11-09 — PR #54 — Gate 2 (João): Dados may also restore a Super Chat it discarded, since that only makes it wait for approval again; restoring a race event stays the Produtor's.
+- 2026-11-09 — PR #54 — Gate 2 (João): Dados may restore any discarded Super Chat, whoever discarded it, since it only returns to pending and still needs approval; restoring a race event stays the Produtor's.
 - 2026-11-09 — PR #54 — Gate 2 (João): stripping YouTube's emoji codes removes only ":" + lowercase letters, digits, hyphens or underscores + ":", so "placar: 2:1" and "Vai :D" stay as typed.
-- 2026-11-09 — PR #54 — Gate 2: the "Super Chat" item's seed is remembered in a row of its own (eventInboxSeedsApplied) and considered once per database; the YouTube quota file is written to a temporary file, fsynced and renamed over the real one; one odd chat message or a refused page token no longer stops the source on the same page.
+- 2026-11-09 — PR #54 — Gate 2: the "Super Chat" item's seed is remembered in a row of its own (eventInboxSeedsApplied) and considered once per database.
+- 2026-11-09 — PR #54 — Gate 2: the YouTube quota file is written to a temporary file, fsynced and renamed over the real one; the folder is not fsynced, since a power cut then brings back at worst the previous count.
+- 2026-11-09 — PR #54 — Gate 2: one chat message the adapter cannot read is skipped and logged instead of failing the page, so the source never stays on the same page.
+- 2026-11-09 — PR #54 — Gate 2: a page token YouTube refuses (HTTP 400) is dropped and the next poll reads the chat from the start, instead of asking for the same page again.
+- 2026-11-09 — PR #54 — Gate 2 follow-up: a YouTube emoji code holds at least one letter, so digits between colons ("15:30:45", "1:2:3") stay as typed.
+- 2026-11-09 — PR #54 — Gate 2 follow-up: the control page counts a Super Chat as not approved by the server's rule (any status but approved), so it never offers "No ar" on one the server would refuse.

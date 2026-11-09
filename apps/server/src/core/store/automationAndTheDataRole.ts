@@ -153,8 +153,9 @@ function findWhyNotForAMacroUpdate(
 
 /**
  * Why Dados may not discard or restore this event, or undefined when it may: Dados
- * discards a viewer's Super Chat, and restores one it discarded (it only waits again, gate
- * 2 of PR #54), its own moderation (BAJAOVRLAY-35), and nothing else of the inbox; the
+ * discards a viewer's Super Chat, and restores any discarded one, whoever discarded it (it
+ * returns to pending and still needs approval, gate 2 of PR #54), its own moderation
+ * (BAJAOVRLAY-35), and nothing else of the inbox; the
  * race's events are the Produtor's. An unknown event is left to the reducer, whose refusal
  * (EVENT_NOT_FOUND) is the clearer one.
  */

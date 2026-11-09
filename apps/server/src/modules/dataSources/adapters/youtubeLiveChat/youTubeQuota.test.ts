@@ -14,7 +14,8 @@
  *     days the US clocks change (gate 2 of PR #54).
  *   - Units are counted per request, shown by the adapter, and kept across a restart (a
  *     new adapter on the same file). The file is written whole or not at all: no
- *     temporary file is left behind, and one a crash left is ignored at the next boot.
+ *     temporary file is left behind, one a crash left is ignored at the next boot, and a
+ *     temporary write that fails leaves the real file as it was and logs a warning.
  *   - At the budget no request is sent and the poll fails with "Cota diária do YouTube
  *     esgotada; volta às 5h"; after Pacific midnight (the clock moved by hand) it reads again.
  *   - A budget variable that is not a number fails the poll naming it.
@@ -24,12 +25,13 @@
  *   - The count on the source's status through the store: youTubeKeyNeverAppears.test.ts
  *     runs the real poller and reads it there.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { describe, expect, it, onTestFinished } from 'vitest';
 
+import { createRecordingLogger } from '../../../../core/logger/recordingLogger.testSupport.js';
 import {
   buildChatPage,
   createPollContextAt,
@@ -260,6 +262,31 @@ describe('the ledger file', () => {
       adapter.readQuotaUsage(novemberEnduroMs).unitsSpentToday,
       'a crash mid-write must not reset the count',
     ).toBe(6);
+  });
+
+  it('keeps the old count in the file and logs a warning when the temporary write fails', async () => {
+    // Arrange: a ledger with 6 units, and a folder where the temporary file should go, so
+    // writing it fails as a full or read-only disk would.
+    const fakeYouTube = await startFakeYouTubeWithNoWait();
+    const ledgerFilePath = createTemporaryLedgerPath();
+    writeFileSync(ledgerFilePath, JSON.stringify({ quotaDay: '2026-11-14', unitsSpent: 6 }));
+    mkdirSync(`${ledgerFilePath}.tmp`);
+    const { logger, readRecordedLines } = createRecordingLogger();
+    const adapter = createYouTubeAdapterForTests({ fakeYouTube, ledgerFilePath, logger });
+
+    // Act: one poll, which spends 6 more units and tries to write 12.
+    await adapter.pollOnce(enduroLiveConfig, createPollContextAt({ nowMs: novemberEnduroMs }));
+
+    // Assert: the real file still holds 6, whole, and the failed write was logged.
+    expect(
+      JSON.parse(readFileSync(ledgerFilePath, 'utf8')),
+      'a failed write must leave the real file as it was',
+    ).toEqual({ quotaDay: '2026-11-14', unitsSpent: 6 });
+    const warnings = readRecordedLines().filter(
+      (line) => line.message === 'youtube quota ledger not written; the count stays in memory',
+    );
+    expect(warnings.length, 'each failed write is logged as a warning').toBeGreaterThan(0);
+    expect(warnings[0]?.level, 'a failed write is a warning, not an error').toBe('warn');
   });
 });
 

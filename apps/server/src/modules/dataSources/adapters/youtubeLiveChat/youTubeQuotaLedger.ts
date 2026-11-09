@@ -119,6 +119,8 @@ function writeStoredCount(
     } finally {
       closeSync(fileDescriptor);
     }
+    // The folder is not fsynced after the rename: a power cut right after it can at worst
+    // bring back the previous count, a few units low, never an empty file; accepted.
     renameSync(temporaryFilePath, ledgerFilePath);
   } catch (writeError) {
     logger.warn(

@@ -11,9 +11,10 @@
  * What these tests prove, one row per case:
  *   - A shortcode is removed, wherever it sits, and several in a row too.
  *   - The spaces it leaves are folded into one, and the ends trimmed.
- *   - Unicode emoji, a time ("15:30"), a lone colon, a score ("placar: 2:1"), a smiley
- *     ("Vai :D") and a word with a capital between colons stay as written: a code is
- *     lowercase only (João's ruling at gate 2 of PR #54).
+ *   - Unicode emoji, a time ("15:30", "15:30:45"), digits between colons ("1:2:3"), a lone
+ *     colon, a score ("placar: 2:1"), a smiley ("Vai :D") and a word with a capital between
+ *     colons stay as written: a code is lowercase only (João's ruling at gate 2 of PR #54)
+ *     and holds at least one letter (the follow-up to gate 2).
  *   - A message made only of shortcodes becomes empty, so the card shows no message row.
  *
  * What these tests deliberately do not cover:
@@ -80,10 +81,18 @@ const shortcodeScenarios: Array<{ name: string; message: string; shownMessage: s
   },
   // A viewer who paid without writing: nothing to take out.
   { name: 'keeps an empty message empty', message: '', shownMessage: '' },
-  // João's example at gate 2: a score with a colon on each side of a digit.
+  // Regression guard (João's example at gate 2): a score with a colon beside a digit.
   { name: 'keeps a score', message: 'placar: 2:1', shownMessage: 'placar: 2:1' },
-  // João's example at gate 2: a smiley typed with a colon and a capital.
+  // Regression guard (João's example at gate 2): a smiley typed with a colon and a capital.
   { name: 'keeps a typed smiley', message: 'Vai :D', shownMessage: 'Vai :D' },
+  // A time with seconds: ":30:" is digits alone between colons, and a code has a letter.
+  {
+    name: 'keeps a time with seconds',
+    message: 'Largada às 15:30:45',
+    shownMessage: 'Largada às 15:30:45',
+  },
+  // Digits alone between colons again, with nothing around them: no letter, no code.
+  { name: 'keeps digits between colons', message: '1:2:3', shownMessage: '1:2:3' },
   // A capital letter is a viewer's own text: YouTube's codes are lowercase.
   {
     name: 'keeps a word with a capital between colons',

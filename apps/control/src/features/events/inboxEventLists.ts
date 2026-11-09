@@ -13,9 +13,13 @@ function isWaiting(event: InboxEvent): boolean {
   return event.status === 'pending' || event.status === 'queued' || event.status === 'approved';
 }
 
-/** True for a viewer's Super Chat no person has approved yet: it must never reach the air. */
+/**
+ * True for a viewer's Super Chat no person has approved yet: it must never reach the air.
+ * The server's rule (inboxEventChanges.ts): any status but approved counts as not approved,
+ * so the page never offers "No ar" on a Super Chat the server would refuse.
+ */
 export function isSuperChatAwaitingApproval(event: InboxEvent): boolean {
-  return event.kind === 'superChat' && event.status === 'pending';
+  return event.kind === 'superChat' && event.status !== 'approved';
 }
 
 /**
@@ -29,9 +33,12 @@ export function listWaitingEventsNewestFirst(events: InboxEvent[]): InboxEvent[]
     .reverse();
 }
 
-/** The Super Chats awaiting approval, newest first: what Dados reads and approves. */
+/**
+ * The Super Chats still waiting and awaiting approval, newest first: what Dados reads and
+ * approves. A discarded or expired one waits for nobody, so it is left out.
+ */
 export function listSuperChatsAwaitingApprovalNewestFirst(events: InboxEvent[]): InboxEvent[] {
-  return events.filter(isSuperChatAwaitingApproval).reverse();
+  return events.filter((event) => isWaiting(event) && isSuperChatAwaitingApproval(event)).reverse();
 }
 
 /** The ids of the events waiting for the operator: what the chime follows. */
