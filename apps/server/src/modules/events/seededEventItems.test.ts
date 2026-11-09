@@ -34,6 +34,11 @@ import {
   restartTheServer,
 } from './eventInboxOnTheStore.testSupport.js';
 
+/** The items in the "Avisos" panel (Atalhos has its own seeded "Logo do canal"). */
+function listItemsOfAvisos(items: Item[]): Item[] {
+  return items.filter((item) => item.home.kind === 'quickFire' && item.home.panelId === 'avisos');
+}
+
 /** The "Volta mais rápida" item as the server seeds it. */
 const seededFastestLapItem: Item = {
   id: 'volta-mais-rapida',
@@ -82,15 +87,17 @@ describe('the seeded "Avisos" panel', () => {
     // Act: open the store on it.
     const slices = openEventInboxOnTheStore().stateStore.readAllSlices();
 
-    // Assert: the panel after "Atalhos", the two items in it, and the rules wired.
+    // Assert: the panel after "Atalhos" (and before the channel logo's "Logo", seeded
+    // after it), the two items in it, and the rules wired.
     expect(slices.quickFirePanels, 'the panel "Avisos" follows "Atalhos"').toEqual([
       { id: 'atalhos', name: 'Atalhos', order: 0 },
       { id: 'avisos', name: 'Avisos', order: 1 },
+      { id: 'logo', name: 'Logo', order: 2 },
     ]);
-    expect(
-      slices.items.filter((item) => item.home.kind === 'quickFire'),
-      'the two notice items, as seeded',
-    ).toEqual([seededFastestLapItem, seededPenaltyItem]);
+    expect(listItemsOfAvisos(slices.items), 'the two notice items, as seeded').toEqual([
+      seededFastestLapItem,
+      seededPenaltyItem,
+    ]);
     expect(
       slices.eventRules.map((rule) => [rule.kind, rule.itemId]),
       'fastest laps, incidents and manual events have their item',
@@ -144,14 +151,11 @@ describe('the seeded "Avisos" panel', () => {
     // Act: restart.
     const slices = restartTheServer(inbox).stateStore.readAllSlices();
 
-    // Assert: neither the panel nor the items came back.
+    // Assert: neither the panel nor the items came back; the channel logo's panel stays.
     expect(
       slices.quickFirePanels.map((panel) => panel.id),
       'a deleted panel is not seeded again',
-    ).toEqual(['atalhos']);
-    expect(
-      slices.items.filter((item) => item.home.kind === 'quickFire'),
-      'nor its items',
-    ).toEqual([]);
+    ).toEqual(['atalhos', 'logo']);
+    expect(listItemsOfAvisos(slices.items), 'nor its items').toEqual([]);
   });
 });

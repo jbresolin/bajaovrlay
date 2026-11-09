@@ -2,6 +2,9 @@ import { type Layer, programOutputId } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
 
+/** The channel logo's layer, "Logo do canal" (BAJAOVRLAY-63): the logo bug's default layer. */
+export const channelLogoLayerId = 'channel-logo';
+
 /**
  * The layers seeded on the first boot, bottom to top, all on the program output; since
  * BAJAOVRLAY-49 the operator edits them on "Saídas e camadas". The z-indexes leave gaps of
@@ -10,16 +13,19 @@ import { ptBR } from '../messages/ptBR.js';
  * the same right-hand column, so it sits next to the clock in the z-order, between the
  * clock and the lower third. The notice (BAJAOVRLAY-44, PR #21's layer plan) is the
  * second, at 45: the fastest lap and penalty card under the bug, above the lower third,
- * transient (each notice leaves after its rule's time).
+ * transient (each notice leaves after its rule's time). The channel logo (BAJAOVRLAY-63)
+ * is the third, at 15, between the bug and the ticker; its reason is written beside it.
  *
  * Every layer swaps graphics `out-then-in`, the safest policy: two graphics never
- * overlap on the same layer. The logo, the clock and the tower are `persistent`, the
- * things meant to stay on screen across rundown items (the flag has no effect until M1).
+ * overlap on the same layer. The logo, the channel logo, the clock and the tower are
+ * `persistent`, the things meant to stay on screen across rundown items (the flag has no
+ * effect until M1).
  *
  * A layer added here after a database was first seeded reaches that database only if it
  * was written before outputs existed (addSeededLayersMissingFromStoredLayers, called by
  * modules/outputs at boot): from then on the layers are the operator's, and a seeded
- * layer the operator deleted must stay deleted.
+ * layer the operator deleted must stay deleted. A layer that must reach every database
+ * once needs a one-off seed recorded in `seeds_done`, as the channel logo has.
  */
 export const seededLayers: Layer[] = [
   {
@@ -27,6 +33,20 @@ export const seededLayers: Layer[] = [
     outputId: programOutputId,
     name: ptBR.seededLayerNames.bug,
     zIndex: 10,
+    replacePolicy: 'out-then-in',
+    persistent: true,
+  },
+  // The channel logo (BAJAOVRLAY-63) at 15: its own layer, so it can be on air beside the
+  // sponsor bug, and the first z above the bug's. Under the ticker, the clock and everything
+  // else, on purpose: in a bottom corner the bars cover it while they are up, and in a top
+  // corner the clock and the tower do, so live information always wins over a static logo
+  // and the logo never hides a number. Persistent like the bug: it stays across items.
+  // Added once to a database that existed before it (seedChannelLogo.ts).
+  {
+    id: channelLogoLayerId,
+    outputId: programOutputId,
+    name: ptBR.seededLayerNames.channelLogo,
+    zIndex: 15,
     replacePolicy: 'out-then-in',
     persistent: true,
   },

@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@bajaovrlay/battle-card": "workspace:*",
+    "@bajaovrlay/logo-bug": "workspace:*",
     "@bajaovrlay/message-ticker": "workspace:*",
     "@bajaovrlay/qr-card": "workspace:*",
     "@bajaovrlay/race-clock": "workspace:*",

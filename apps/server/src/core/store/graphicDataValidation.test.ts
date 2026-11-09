@@ -19,6 +19,8 @@
  *   - A `schema` that is not a usable JSON Schema is reported as such, never thrown.
  *   - The compiled schema kept for a graphic id is not used once that graphic's
  *     manifest carries a different schema.
+ *   - A refusal names a field the way the item form does: by its manifest `title` when
+ *     it is a top-level field with one, by its key otherwise.
  *
  * What these tests deliberately do not cover:
  *   - The pt-BR wording of each refusal; the reducer tests (updateInstanceData.test.ts,
@@ -30,7 +32,10 @@ import type { Graphic } from '@bajaovrlay/shared';
 import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { raceClockManifestForTests } from './builtGraphicsFolder.testSupport.js';
-import { findProblemInGraphicData } from './graphicDataValidation.js';
+import {
+  findProblemInGraphicData,
+  nameFieldOfGraphicAsTheFormDoes,
+} from './graphicDataValidation.js';
 
 /** Builds the race clock graphic as the graphics slice holds it, data schema included. */
 function buildRaceClockGraphic(): Graphic {
@@ -276,5 +281,40 @@ describe('the compiled schema kept per graphic id', () => {
       kind: 'invalidValue',
       fieldPath: 'laps',
     });
+  });
+});
+
+const fieldNameScenarios = [
+  // The form shows "Imagem" for the logo's file; "logoUrl" means nothing to the operator.
+  { name: 'a titled field is named by its title', fieldPath: 'logoUrl', expectedName: 'Imagem' },
+  // A field with no title in the manifest has nothing better than its key.
+  { name: 'an untitled field keeps its key', fieldPath: 'sponsorId', expectedName: 'sponsorId' },
+  // A field the graphic does not have (an unknownField problem) has no title to find.
+  { name: 'an unknown field keeps its key', fieldPath: 'logoUrll', expectedName: 'logoUrll' },
+  // Inside an object the path is kept whole: a title alone would not say where it is.
+  {
+    name: 'a field inside an object keeps its path',
+    fieldPath: 'size.heightPx',
+    expectedName: 'size.heightPx',
+  },
+];
+
+describe('nameFieldOfGraphicAsTheFormDoes', () => {
+  it.each(fieldNameScenarios)('$name', ({ fieldPath, expectedName }) => {
+    // Arrange: a channel logo whose image field has a title and whose sponsor field has none.
+    const channelLogo = buildGraphicWithDataSchema('logo-bug', {
+      type: 'object',
+      properties: {
+        logoUrl: { type: 'string', title: 'Imagem' },
+        sponsorId: { type: 'string' },
+        size: { type: 'object', properties: { heightPx: { type: 'integer', title: 'Altura' } } },
+      },
+    });
+
+    // Act: ask for the name a refusal should give the field.
+    const fieldName = nameFieldOfGraphicAsTheFormDoes(channelLogo, fieldPath);
+
+    // Assert: the name the row expects.
+    expect(fieldName, `"${fieldPath}" must be named "${expectedName}"`).toBe(expectedName);
   });
 });

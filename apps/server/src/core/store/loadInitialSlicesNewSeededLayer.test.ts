@@ -17,11 +17,11 @@
  * What these tests prove (with a real SQLite file and a stand-in graphics folder, both
  * in temporary folders):
  *   - A database whose layers row has the five layers of a server before the tower
- *     boots with seven, the tower between the clock and the lower third exactly as the
- *     seed defines it (and the notice); the row is rewritten, stamped with this boot, and
- *     an info line names the layers added.
- *   - A database of a server before the notice (six layers) gains the notice alone, at
- *     45, exactly as the seed defines it.
+ *     boots with eight, the tower between the clock and the lower third exactly as the
+ *     seed defines it (and the notice and the channel logo); the row is rewritten,
+ *     stamped with this boot, and an info line names the layers added.
+ *   - A database of a server before the notice (six layers) gains the notice at 45,
+ *     exactly as the seed defines it, and the channel logo (BAJAOVRLAY-63), nothing else.
  *   - A database that already has every seeded layer comes back as it was: its layers
  *     row keeps its stamp and nothing is logged about adding a layer.
  *
@@ -112,12 +112,21 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
     const slicesAfterTheUpdate = loadSlicesAtBoot({ database, graphicPackagesFolder, logger });
 
     // Assert: the tower is there, in its place in the z-order, exactly as seeded (the
-    // notice too, added since); the layers row now holds the seven, stamped with this
-    // boot; and an info line names them.
+    // notice and the channel logo too, added since); the layers row now holds the eight,
+    // stamped with this boot; and an info line names them.
     expect(
       slicesAfterTheUpdate.layers.map((layer) => layer.id),
       'the tower must sit between the clock and the lower third',
-    ).toEqual(['bug', 'ticker', 'clock', 'tower', 'lower-third', 'notice', 'fullscreen']);
+    ).toEqual([
+      'bug',
+      'channel-logo',
+      'ticker',
+      'clock',
+      'tower',
+      'lower-third',
+      'notice',
+      'fullscreen',
+    ]);
     expect(
       slicesAfterTheUpdate.layers.find((layer) => layer.id === 'tower'),
       'the tower must be added exactly as the seed defines it',
@@ -140,12 +149,12 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
       expect.objectContaining({
         level: 'info',
         message: 'seeded layers missing from the stored layers were added',
-        added_layer_ids: ['tower', 'notice'],
+        added_layer_ids: ['channel-logo', 'tower', 'notice'],
       }),
     );
   });
 
-  it('adds the notice layer alone to a database of a server before the notice', () => {
+  it('adds the notice, and the channel logo seeded since, to a database of a server before the notice', () => {
     // Arrange: a database whose layers row has the six layers of BAJAOVRLAY-22, the
     // tower among them, and a logger we can read.
     const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
@@ -164,7 +173,8 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
     // Act: boot again, as the server of BAJAOVRLAY-44 does.
     const slicesAfterTheUpdate = loadSlicesAtBoot({ database, graphicPackagesFolder, logger });
 
-    // Assert: the notice at 45, exactly as seeded, and only it named as added.
+    // Assert: the notice at 45, exactly as seeded, and only it and the channel logo
+    // (BAJAOVRLAY-63) named as added; the tower it had is not.
     expect(
       slicesAfterTheUpdate.layers.find((layer) => layer.id === 'notice'),
       'the notice must be added exactly as the seed defines it',
@@ -176,10 +186,10 @@ describe('loadInitialSlices on a database seeded before the tower layer existed'
       replacePolicy: 'out-then-in',
       persistent: false,
     });
-    expect(readRecordedLines(), 'an info line must name the notice alone').toContainEqual(
+    expect(readRecordedLines(), 'an info line must name the two layers added').toContainEqual(
       expect.objectContaining({
         message: 'seeded layers missing from the stored layers were added',
-        added_layer_ids: ['notice'],
+        added_layer_ids: ['channel-logo', 'notice'],
       }),
     );
   });

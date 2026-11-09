@@ -79,11 +79,13 @@ describe('the quick-fire panels and macros on the first boot', () => {
     const slices = loadSlicesAtBoot(database, firstBootTime);
 
     // Assert: "Atalhos", then "Avisos" (seeded with the event rules, BAJAOVRLAY-44;
-    // modules/events covers it), no macro, no run, and the two rows saved with the boot
-    // time.
+    // modules/events covers it) and "Logo" (seeded with the channel logo, BAJAOVRLAY-63;
+    // store/seededChannelLogo.test.ts covers it), no macro, no run, and the two rows saved
+    // with the boot time.
     expect(slices.quickFirePanels, 'the first boot must seed exactly these panels').toEqual([
       { id: 'atalhos', name: 'Atalhos', order: 0 },
       { id: 'avisos', name: 'Avisos', order: 1 },
+      { id: 'logo', name: 'Logo', order: 2 },
     ]);
     expect(slices.macros, 'no macro exists on the first boot').toEqual([]);
     expect(slices.macroRuns, 'no macro is running at boot').toEqual([]);
@@ -96,6 +98,7 @@ describe('the quick-fire panels and macros on the first boot', () => {
       json: [
         { id: 'atalhos', name: 'Atalhos', order: 0 },
         { id: 'avisos', name: 'Avisos', order: 1 },
+        { id: 'logo', name: 'Logo', order: 2 },
       ],
       updatedAt: '2026-10-09T08:00:00.000Z',
     });

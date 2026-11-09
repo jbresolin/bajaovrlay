@@ -22,43 +22,18 @@
  *   - What each manifest says (ids, layers, titles, durations): each graphic's own
  *     `<graphic>Manifest.test.ts` checks that.
  */
-import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
 import {
+  listEveryGraphicManifestPath,
+  readManifest,
+} from './graphicManifestsOnDisk.testSupport.js';
+import {
   createOGrafSchemaValidator,
   ografManifestSchema,
 } from './ografSchemaValidator.testSupport.js';
-
-const graphicsFolder = fileURLToPath(new URL('../../', import.meta.url));
-
-/** Every `<folder>/<name>.ograf.json` under packages/graphics, as folder-relative paths. */
-function listEveryGraphicManifestPath(): string[] {
-  const manifestPaths: string[] = [];
-  for (const folderEntry of readdirSync(graphicsFolder, { withFileTypes: true })) {
-    if (!folderEntry.isDirectory()) {
-      continue;
-    }
-    const folderPath = join(graphicsFolder, folderEntry.name);
-    for (const fileName of readdirSync(folderPath)) {
-      if (fileName.endsWith('.ograf.json')) {
-        manifestPaths.push(join(folderEntry.name, fileName));
-      }
-    }
-  }
-  return manifestPaths.sort();
-}
-
-/** Reads one manifest from packages/graphics as parsed JSON. */
-function readManifest(manifestPath: string): Record<string, unknown> {
-  return JSON.parse(readFileSync(join(graphicsFolder, manifestPath), 'utf8')) as Record<
-    string,
-    unknown
-  >;
-}
 
 /**
  * The item editor's own field names (apps/control's ptBR.itemEditor.fields). A graphic's field
@@ -97,6 +72,7 @@ describe('the manifests under packages/graphics', () => {
       join('bracket', 'bracket.ograf.json'),
       join('countdown', 'countdown.ograf.json'),
       join('intermission-board', 'intermission-board.ograf.json'),
+      join('logo-bug', 'logo-bug.ograf.json'),
       join('lower-strip', 'lower-strip.ograf.json'),
       join('lower-third', 'lower-third.ograf.json'),
       join('message-ticker', 'message-ticker.ograf.json'),

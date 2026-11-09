@@ -225,7 +225,7 @@ describe('putGraphicOnOutput on the preview output, when it must be refused', ()
       expectedError: {
         code: 'INVALID_GRAPHIC_DATA',
         message:
-          'Dados inválidos para o gráfico "race-clock": o campo "state" tem um valor que o gráfico não aceita.',
+          'Dados inválidos para o gráfico "race-clock": o campo "Bandeira" tem um valor que o gráfico não aceita.',
       },
     },
     // The server stamps its moment only into a field the manifest marks as a moment.

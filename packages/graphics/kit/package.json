@@ -47,6 +47,7 @@
     "./boardMotion": "./src/boardMotion.ts",
     "./clockCardStyles": "./src/clockCardStyles.ts",
     "./bugCardStyles": "./src/bugCardStyles.ts",
+    "./screenCornerPosition": "./src/screenCornerPosition.ts",
     "./pointsText": "./src/pointsText.ts",
     "./standingsRowStyles": "./src/standingsRowStyles.ts",
     "./teamLogoCell": "./src/teamLogoCell.ts",

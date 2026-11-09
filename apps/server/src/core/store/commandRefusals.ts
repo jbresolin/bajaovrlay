@@ -2,12 +2,16 @@ import {
   type Command,
   type CommandError,
   describeWhyTheDataRoleCannotSend,
+  type Graphic,
   isCommandTypeOfTheOperator,
 } from '@bajaovrlay/shared';
 
 import { ptBR } from '../messages/ptBR.js';
 import { readRoleOfLoggedInOperatorActor } from './commandActors.js';
-import type { GraphicDataProblem } from './graphicDataValidation.js';
+import {
+  type GraphicDataProblem,
+  nameFieldOfGraphicAsTheFormDoes,
+} from './graphicDataValidation.js';
 import type { UpdateRuleProblem } from './updateRules/index.js';
 
 /** The refusal for a command naming a layer that does not exist. */
@@ -88,17 +92,22 @@ export function refuseCommandNotAllowedForTheActor(command: Command, actor: stri
 
 /**
  * The refusal for a take or an update whose data the graphic's manifest schema does
- * not accept, with a pt-BR message for each kind of problem (three of them name the field).
+ * not accept, with a pt-BR message for each kind of problem. Three of them name the
+ * field, as the item form does (its title, "Imagem"), so the operator can find it.
  */
 export function refuseInvalidGraphicData(
-  graphicId: string,
+  graphic: Graphic,
   problem: GraphicDataProblem,
 ): CommandError {
+  const graphicId = graphic.id;
   switch (problem.kind) {
     case 'missingField':
       return {
         code: 'INVALID_GRAPHIC_DATA',
-        message: ptBR.commandErrors.graphicDataFieldMissing(graphicId, problem.fieldPath),
+        message: ptBR.commandErrors.graphicDataFieldMissing(
+          graphicId,
+          nameFieldOfGraphicAsTheFormDoes(graphic, problem.fieldPath),
+        ),
       };
     case 'unknownField':
       return {
@@ -108,7 +117,10 @@ export function refuseInvalidGraphicData(
     case 'invalidValue':
       return {
         code: 'INVALID_GRAPHIC_DATA',
-        message: ptBR.commandErrors.graphicDataFieldValueInvalid(graphicId, problem.fieldPath),
+        message: ptBR.commandErrors.graphicDataFieldValueInvalid(
+          graphicId,
+          nameFieldOfGraphicAsTheFormDoes(graphic, problem.fieldPath),
+        ),
       };
     case 'unusableSchema':
       return {

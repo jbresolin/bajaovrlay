@@ -121,7 +121,7 @@ const invalidTakeScenarios = [
       running: true,
     },
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "state" é obrigatório e não foi enviado.',
+      'Dados inválidos para o gráfico "race-clock": o campo "Bandeira" é obrigatório e não foi enviado.',
   },
   // A typo in a field name of the item must not go on air silently ignored.
   {
@@ -135,7 +135,7 @@ const invalidTakeScenarios = [
     name: 'refuses a take with a value the graphic does not accept, naming the field',
     data: { ...raceClockDataUnderGreenFlag, state: 'azul' },
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "state" tem um valor que o gráfico não aceita.',
+      'Dados inválidos para o gráfico "race-clock": o campo "Bandeira" tem um valor que o gráfico não aceita.',
   },
 ];
 
@@ -264,7 +264,7 @@ describe('an updateInstanceData sent over /ws', () => {
       error: {
         code: 'INVALID_GRAPHIC_DATA',
         message:
-          'Dados inválidos para o gráfico "race-clock": o campo "referenceTimeMs" tem um valor que o gráfico não aceita.',
+          'Dados inválidos para o gráfico "race-clock": o campo "Tempo de referência" tem um valor que o gráfico não aceita.',
       },
     });
     expect(
