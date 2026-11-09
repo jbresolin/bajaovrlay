@@ -11,8 +11,8 @@
  *
  * What these tests prove, one row per actor and command:
  *   - `sistema:eventos` may send recordDetectedEvents and showEvent; it may not send
- *     dismissEvent, restoreEvent, createManualEvent, updateEventRule, takeItem or clearLayer.
- *   - An operator may send showEvent, dismissEvent, restoreEvent, createManualEvent and
+ *     approveEvent, dismissEvent, restoreEvent, createManualEvent, updateEventRule, takeItem or clearLayer.
+ *   - An operator may send showEvent, approveEvent, dismissEvent, restoreEvent, createManualEvent and
  *     updateEventRule, and may not send recordDetectedEvents.
  *   - A renderer and a monitor may send none of them; the auto-out may only clear.
  *
@@ -50,6 +50,11 @@ const showTheStartPenalty: Command = {
 const dismissTheStartPenalty: Command = {
   type: 'dismissEvent',
   eventId: 'simulador-enduro:incident:ocorrencia-0007',
+};
+/** "Aprovar" on a fictional viewer's Super Chat (BAJAOVRLAY-35). */
+const approveTheSuperChat: Command = {
+  type: 'approveEvent',
+  eventId: 'youtube-ao-vivo:superChat:mensagem-pequi-0001',
 };
 const restoreTheStartPenalty: Command = {
   type: 'restoreEvent',
@@ -90,6 +95,13 @@ const authorizationScenarios: Array<{
     name: 'keeps the detection from dismissing an event',
     actor: eventInboxActor,
     command: dismissTheStartPenalty,
+    isAllowed: false,
+  },
+  // A viewer's message is approved by a person, never by the server (BAJAOVRLAY-35).
+  {
+    name: 'keeps the detection from approving a Super Chat',
+    actor: eventInboxActor,
+    command: approveTheSuperChat,
     isAllowed: false,
   },
   // Undoing a dismissal is the operator's correction, never the server's.
@@ -139,6 +151,13 @@ const authorizationScenarios: Array<{
     name: 'lets an operator dismiss',
     actor: operatorActor,
     command: dismissTheStartPenalty,
+    isAllowed: true,
+  },
+  // "Aprovar" on a Super Chat.
+  {
+    name: 'lets an operator approve a Super Chat',
+    actor: operatorActor,
+    command: approveTheSuperChat,
     isAllowed: true,
   },
   // "Desfazer" and "Restaurar".
