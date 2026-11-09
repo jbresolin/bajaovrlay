@@ -8,6 +8,9 @@ export const ptBRYouTube = {
     'Falta a chave BAJAOVRLAY_YOUTUBE_API_KEY no servidor: veja docs/youtube.md para criar uma.',
   apiKeyRefused:
     'Chave da API do YouTube recusada: confira BAJAOVRLAY_YOUTUBE_API_KEY e se a YouTube Data API v3 está ativada no projeto.',
+  /** A 400 that is not about the key, such as a page token YouTube no longer knows. */
+  requestRefused:
+    'O YouTube recusou o pedido de leitura do chat; a próxima leitura lê o chat de novo do começo.',
   videoNotFound: 'Vídeo não encontrado no YouTube: confira o endereço da transmissão.',
   noActiveLiveChat: 'Esta transmissão não tem chat ao vivo ativo.',
   liveChatEnded: 'A transmissão terminou: o chat ao vivo foi encerrado.',

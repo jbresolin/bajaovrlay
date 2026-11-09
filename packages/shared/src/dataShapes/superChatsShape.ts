@@ -21,8 +21,11 @@ export const SuperChatEntrySchema = z.object({
   amountMicros: z.number().int().min(0),
   /** The ISO 4217 code YouTube answers ("BRL"). */
   currency: z.string().min(1),
-  /** YouTube's tier of the amount, from 1; kept for sorting, never shown in YouTube's colours. */
-  tier: z.number().int().min(0),
+  /**
+   * YouTube's tier of the amount, from 1; kept for sorting, never shown in YouTube's
+   * colours. Missing when YouTube sends none (gate 2 of PR #54).
+   */
+  tier: z.number().int().min(0).optional(),
   /** What the viewer wrote; empty when they paid without a message. */
   messageText: z.string(),
   /** When YouTube says it was published, in ms since 1970. */

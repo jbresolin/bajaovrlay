@@ -20,10 +20,12 @@ export type YouTubeApiRequest = {
 
 /**
  * The parsed answer, or the pt-BR reason it failed with Google's reason word
- * ("liveChatEnded"), which the adapter reads to know whether the chat is gone.
+ * ("liveChatEnded"), which the adapter reads to know whether the chat is gone, and the HTTP
+ * status when YouTube answered one (a 400 makes the adapter read the chat afresh).
  */
 export type YouTubeApiAnswer =
-  { ok: true; body: unknown } | { ok: false; error: string; reason: string | undefined };
+  | { ok: true; body: unknown }
+  | { ok: false; error: string; reason: string | undefined; httpStatus?: number | undefined };
 
 /**
  * The address with the value of every `key=` parameter replaced by `***`: the only form
@@ -81,7 +83,12 @@ export async function fetchYouTubeApi(request: YouTubeApiRequest): Promise<YouTu
     return { ok: true, body };
   }
   const reason = readGoogleErrorReason(body);
-  return { ok: false, error: describeYouTubeRefusal(response.status, reason), reason };
+  return {
+    ok: false,
+    error: describeYouTubeRefusal(response.status, reason),
+    reason,
+    httpStatus: response.status,
+  };
 }
 
 /**
@@ -110,7 +117,9 @@ function readGoogleErrorReason(body: unknown): string | undefined {
 
 /**
  * The operator's sentence for a refusal. Google's own message is never shown: it is in
- * English, and some name the request. A reason not listed here is named by its word.
+ * English, and some name the request. The key's own reasons say the key was refused; any
+ * other 400 is a refused request, not a refused key (gate 2 of PR #54: a stale page token
+ * comes back as a 400 too). A reason not listed here is named by its word.
  */
 function describeYouTubeRefusal(httpStatus: number, reason: string | undefined): string {
   switch (reason) {
@@ -128,13 +137,15 @@ function describeYouTubeRefusal(httpStatus: number, reason: string | undefined):
     case 'rateLimitExceeded':
       return ptBR.youTube.rateLimited;
     case 'keyInvalid':
-    case 'badRequest':
     case 'accessNotConfigured':
     case 'ipRefererBlocked':
     case 'API_KEY_INVALID':
     case 'PERMISSION_DENIED':
       return ptBR.youTube.apiKeyRefused;
     default:
+      if (httpStatus === 400) {
+        return ptBR.youTube.requestRefused;
+      }
       return ptBR.youTube.otherRefusal(httpStatus, reason ?? 'sem motivo');
   }
 }

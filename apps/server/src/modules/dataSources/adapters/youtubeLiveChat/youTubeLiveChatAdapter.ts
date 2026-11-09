@@ -185,11 +185,23 @@ export function createYouTubeLiveChatAdapter(
       if (isTheChatGone) {
         readingsByVideoId.delete(videoId);
       }
+      // A refused request (a page token YouTube no longer takes, gate 2 of PR #54) must
+      // not be asked again at every poll for the rest of the live: the next poll reads the
+      // chat afresh, and the inbox skips the ids it already holds.
+      if (answer.httpStatus === 400) {
+        reading.nextPageToken = undefined;
+      }
       throw new Error(answer.error);
     }
     const page = readLiveChatPage(answer.body);
     if (page === undefined) {
       throw new Error(ptBR.youTube.answerNotUnderstood);
+    }
+    if (page.skippedMessageCount > 0) {
+      logger.warn(
+        { video_id: videoId, skipped_message_count: page.skippedMessageCount },
+        'youtube chat messages skipped: not in the shape the adapter reads',
+      );
     }
     if (page.hasTheLiveGoneOffline) {
       readingsByVideoId.delete(videoId);

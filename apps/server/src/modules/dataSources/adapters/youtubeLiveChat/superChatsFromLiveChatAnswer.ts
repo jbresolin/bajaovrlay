@@ -52,7 +52,8 @@ const LiveChatMessageSchema = z.object({
         currency: z.string().min(1),
         amountDisplayString: z.string().min(1),
         userComment: z.string().optional(),
-        tier: z.number().int().min(0),
+        // Optional: YouTube's reference lists it, but a Super Chat without it is still paid.
+        tier: z.number().int().min(0).optional(),
       })
       .optional(),
   }),
@@ -60,9 +61,10 @@ const LiveChatMessageSchema = z.object({
 });
 
 // One page: the messages, where to read from next, how long to wait, and whether the live
-// went offline (offlineAt appears only then).
+// went offline (offlineAt appears only then). The page's own fields are checked strictly;
+// each message is checked on its own in readLiveChatPage (gate 2 of PR #54).
 const LiveChatMessagesAnswerSchema = z.object({
-  items: z.array(LiveChatMessageSchema),
+  items: z.array(z.unknown()),
   nextPageToken: z.string().optional(),
   pollingIntervalMillis: z.number().int().min(0).optional(),
   offlineAt: z.string().optional(),
@@ -76,6 +78,8 @@ export type LiveChatPage = {
   pollingIntervalMs: number;
   /** True when YouTube says the live went offline: the chat will bring nothing more. */
   hasTheLiveGoneOffline: boolean;
+  /** How many messages were not in the shape read here, and skipped; the adapter logs it. */
+  skippedMessageCount: number;
 };
 
 /**
@@ -84,6 +88,11 @@ export type LiveChatPage = {
  * the brief, and ordinary messages are never shown. A viewer's empty comment is "".
  * A viewer whose name YouTube sends empty is named "Espectador" rather than dropped,
  * since they paid. Undefined when the answer is not a page at all.
+ * Each message is checked on its own and one that fails is skipped (gate 2 of PR #54): one
+ * odd message (a deletion notice, a field Google dropped) must not fail the whole page,
+ * since nextPageToken only moves on with a good page, and every later poll would ask for
+ * the same page again, fail, and spend 5 units, for the rest of the live. What could go
+ * wrong: a Super Chat whose fields YouTube changed is skipped, logged by the adapter with their count.
  */
 export function readLiveChatPage(body: unknown): LiveChatPage | undefined {
   const parsing = LiveChatMessagesAnswerSchema.safeParse(body);
@@ -91,7 +100,14 @@ export function readLiveChatPage(body: unknown): LiveChatPage | undefined {
     return undefined;
   }
   const superChats: SuperChatEntry[] = [];
-  for (const message of parsing.data.items) {
+  let skippedMessageCount = 0;
+  for (const item of parsing.data.items) {
+    const messageParsing = LiveChatMessageSchema.safeParse(item);
+    if (!messageParsing.success) {
+      skippedMessageCount += 1;
+      continue;
+    }
+    const message = messageParsing.data;
     const details = message.snippet.superChatDetails;
     const publishedAtMs = Date.parse(message.snippet.publishedAt);
     const isSuperChat = message.snippet.type === 'superChatEvent' && details !== undefined;
@@ -105,7 +121,7 @@ export function readLiveChatPage(body: unknown): LiveChatPage | undefined {
       amountText: details.amountDisplayString,
       amountMicros: details.amountMicros,
       currency: details.currency,
-      tier: details.tier,
+      ...(details.tier === undefined ? {} : { tier: details.tier }),
       messageText: details.userComment ?? '',
       publishedAtMs,
     });
@@ -115,6 +131,7 @@ export function readLiveChatPage(body: unknown): LiveChatPage | undefined {
     nextPageToken: parsing.data.nextPageToken,
     pollingIntervalMs: parsing.data.pollingIntervalMillis ?? 0,
     hasTheLiveGoneOffline: parsing.data.offlineAt !== undefined,
+    skippedMessageCount,
   };
 }
 
