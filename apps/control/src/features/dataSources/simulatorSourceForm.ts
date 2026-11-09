@@ -33,6 +33,8 @@ export type SimulatorSourceFormValues = LabelAndPollIntervalFormValues & {
   lapLengthKm: string;
   speed: string;
   isFailing: boolean;
+  /** "Simular Super Chats" (BAJAOVRLAY-35). */
+  areSuperChatsSimulated: boolean;
 };
 
 /**
@@ -66,6 +68,7 @@ export function buildSimulatorSourceFormValues(
     lapLengthKm: writeNumberAsFieldText(config.lapLengthKm),
     speed: String(config.speed),
     isFailing: config.isFailing,
+    areSuperChatsSimulated: config.areSuperChatsSimulated ?? false,
   };
 }
 
@@ -88,7 +91,7 @@ function findFormFieldOfConfigField(configField: PropertyKey | undefined): {
     case 'lapLengthKm':
       return { formField: 'lapLengthKm', message: fieldErrors.lapLengthNotPositive };
     default:
-      // The speed is the one number field left; isFailing is a switch and cannot be wrong.
+      // The speed is the one number field left; the two switches cannot be wrong.
       return { formField: 'speed', message: fieldErrors.simulatorSpeedOutOfRange };
   }
 }
@@ -110,6 +113,9 @@ export function readSimulatorSourceForm(
     lapLengthKm: readNumberFromFieldText(values.lapLengthKm),
     speed: readNumberFromFieldText(values.speed),
     isFailing: values.isFailing,
+    // Sent only when on: a config without it reads as off, as every config saved before
+    // the switch existed does, so switching it off leaves it out again.
+    ...(values.areSuperChatsSimulated ? { areSuperChatsSimulated: true } : {}),
   };
   const parsedConfig = SimulatorConfigSchema.safeParse(configAsTyped);
   if (!parsedConfig.success) {

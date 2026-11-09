@@ -4,7 +4,7 @@ import { ptBR } from '@/i18n/ptBR';
 import { useSendCommand, useServerState } from '@/state/ControlPageStateProvider';
 
 import { listEventsDismissedJustNow } from './inboxEventLists';
-import { describeKindOfEvent } from './inboxEventText';
+import { describeKindOfEvent, describeSubjectOfEvent } from './inboxEventText';
 
 const texts = ptBR.events;
 
@@ -35,7 +35,7 @@ export function RecentlyDismissedEvents() {
       {dismissedJustNow.map((event) => (
         <li key={event.eventId} className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>
-            {texts.recentlyDismissedText(describeKindOfEvent(event), event.payload.carNumber)}
+            {texts.recentlyDismissedText(describeKindOfEvent(event), describeSubjectOfEvent(event))}
           </span>
           <span>{texts.statusWords.dismissed}</span>
           <ActionButton

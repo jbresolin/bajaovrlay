@@ -4,6 +4,7 @@ import type {
   HttpJsonDataSource,
   ReplayDataSource,
   SimulatorDataSource,
+  YouTubeLiveChatDataSource,
 } from '@bajaovrlay/shared';
 import { useState } from 'react';
 
@@ -19,6 +20,7 @@ import { FlexSourceForm } from './flexSource/FlexSourceForm';
 import type { FlexSourceStartingPoint } from './flexSource/flexSourceFormValues';
 import { ReplaySourceForm } from './ReplaySourceForm';
 import { SimulatorSourceForm } from './SimulatorSourceForm';
+import { YouTubeLiveChatSourceForm } from './YouTubeLiveChatSourceForm';
 
 const texts = ptBR.dataSources;
 
@@ -35,10 +37,16 @@ type OpenSourceForm =
       sourceBeingEdited: HttpJsonDataSource | null;
       newSourceStartingPoint?: FlexSourceStartingPoint;
     }
+  | { kind: 'youtubeLiveChat'; sourceBeingEdited: YouTubeLiveChatDataSource | null }
   | { kind: 'bajaApp'; sourceBeingEdited: null };
 
 // The kinds "+ Fonte" offers, in the order of its buttons.
-const kindsOfferedForANewSource: readonly DataSourceKind[] = ['simulator', 'replay', 'httpJson'];
+const kindsOfferedForANewSource: readonly DataSourceKind[] = [
+  'simulator',
+  'replay',
+  'httpJson',
+  'youtubeLiveChat',
+];
 
 /** The form "Editar" opens for a stored source: the form of its kind. */
 function buildEditFormOfSource(source: DataSource): OpenSourceForm {
@@ -49,6 +57,8 @@ function buildEditFormOfSource(source: DataSource): OpenSourceForm {
       return { kind: 'replay', sourceBeingEdited: source };
     case 'httpJson':
       return { kind: 'httpJson', sourceBeingEdited: source };
+    case 'youtubeLiveChat':
+      return { kind: 'youtubeLiveChat', sourceBeingEdited: source };
   }
 }
 
@@ -61,6 +71,8 @@ function buildNewSourceFormOfKind(kind: DataSourceKind): OpenSourceForm {
       return { kind: 'replay', sourceBeingEdited: null };
     case 'httpJson':
       return { kind: 'httpJson', sourceBeingEdited: null };
+    case 'youtubeLiveChat':
+      return { kind: 'youtubeLiveChat', sourceBeingEdited: null };
   }
 }
 
@@ -181,6 +193,13 @@ export function DataSourcesPage() {
         )}
         {formShown?.kind === 'replay' && (
           <ReplaySourceForm
+            key={openFormKey}
+            sourceBeingEdited={formShown.sourceBeingEdited}
+            onClose={closeTheForm}
+          />
+        )}
+        {formShown?.kind === 'youtubeLiveChat' && (
+          <YouTubeLiveChatSourceForm
             key={openFormKey}
             sourceBeingEdited={formShown.sourceBeingEdited}
             onClose={closeTheForm}

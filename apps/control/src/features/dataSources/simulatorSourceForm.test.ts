@@ -13,6 +13,8 @@
  *     comma accepted.
  *   - The form opened on a stored simulator shows its values in the operator's units.
  *   - Each field outside what the schema allows gets its own message.
+ *   - "Simular Super Chats" (BAJAOVRLAY-35) is sent only when on: off, the config leaves it
+ *     out, as every config saved before the switch does.
  *
  * What these tests deliberately do not cover:
  *   - The commands built from the reading: dataSourceCommandsFromForm.test.ts.
@@ -39,6 +41,7 @@ function buildFormOfARehearsalSimulator(): SimulatorSourceFormValues {
     lapLengthKm: '2,4',
     speed: '60',
     isFailing: false,
+    areSuperChatsSimulated: false,
   };
 }
 
@@ -173,6 +176,7 @@ describe('buildSimulatorSourceFormValues', () => {
       lapLengthKm: '2',
       speed: '1',
       isFailing: false,
+      areSuperChatsSimulated: false,
     });
   });
 
@@ -192,6 +196,42 @@ describe('buildSimulatorSourceFormValues', () => {
       lapLengthKm: '2',
       speed: '1',
       isFailing: false,
+      areSuperChatsSimulated: false,
     });
+  });
+});
+
+describe('the "Simular Super Chats" switch', () => {
+  const switchScenarios = [
+    // On: the simulator adds a fictional viewer's Super Chat now and then.
+    { name: 'sends it when on', isOn: true, expectedField: true },
+    // Off: left out, so a config saved before the switch existed reads the same.
+    { name: 'leaves it out when off', isOn: false, expectedField: undefined },
+  ];
+
+  it.each(switchScenarios)('$name', ({ isOn, expectedField }) => {
+    // Arrange: the rehearsal simulator's form with the switch on or off.
+    const formValues = { ...buildFormOfARehearsalSimulator(), areSuperChatsSimulated: isOn };
+
+    // Act: read it.
+    const reading = readSimulatorSourceForm(formValues);
+
+    // Assert: the config carries the switch only when it is on.
+    expect(
+      reading.isValid ? reading.config.areSuperChatsSimulated : 'refused',
+      'the config must carry the switch only when it is on',
+    ).toBe(expectedField);
+  });
+
+  it('opens on a stored simulator with the switch as stored', () => {
+    // Arrange: the seeded simulator with Super Chats switched on.
+    const storedSimulator = buildSimulatorThatIsOk();
+    storedSimulator.config.areSuperChatsSimulated = true;
+
+    // Act: fill the form from it.
+    const formValues = buildSimulatorSourceFormValues(storedSimulator);
+
+    // Assert: the switch is on.
+    expect(formValues.areSuperChatsSimulated, 'the switch must show the stored value').toBe(true);
   });
 });

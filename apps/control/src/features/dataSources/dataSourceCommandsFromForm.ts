@@ -15,6 +15,7 @@ import {
   type DataSourceKind,
   type HttpJsonConfig,
   type UpdateDataSourceCommand,
+  type YouTubeLiveChatConfig,
 } from '@bajaovrlay/shared';
 
 import type { ReplayConfigFromForm } from './replaySourceForm';
@@ -24,7 +25,7 @@ import type { SimulatorConfigFromForm } from './simulatorSourceForm';
 export type DataSourceFormReading = {
   label: string;
   pollIntervalMs: number;
-  config: SimulatorConfigFromForm | ReplayConfigFromForm | HttpJsonConfig;
+  config: SimulatorConfigFromForm | ReplayConfigFromForm | HttpJsonConfig | YouTubeLiveChatConfig;
 };
 
 // The config fields only the server writes: the start of the simulated race or the replay.

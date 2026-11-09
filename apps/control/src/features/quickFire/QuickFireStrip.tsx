@@ -138,6 +138,7 @@ export function QuickFireStrip() {
           'updateMacro',
           'deleteMacro',
           'showEvent',
+          'approveEvent',
           'dismissEvent',
           'restoreEvent',
           'runTriggerFiring',
