@@ -13,7 +13,33 @@
   "stepCount": 1,
   "v_baja": {
     "defaultLayerId": "lower-third",
-    "category": "positions"
+    "category": "positions",
+    "carGroups": [
+      {
+        "id": "ahead",
+        "label": "Carro da frente",
+        "fields": {
+          "aheadPosition": "position",
+          "aheadCarNumber": "carNumber",
+          "aheadTeamName": "teamName",
+          "aheadSchoolName": "schoolName",
+          "aheadLaps": "laps"
+        }
+      },
+      {
+        "id": "behind",
+        "label": "Carro de trás",
+        "rightBehindGroup": "ahead",
+        "fields": {
+          "behindPosition": "position",
+          "behindCarNumber": "carNumber",
+          "behindTeamName": "teamName",
+          "behindSchoolName": "schoolName",
+          "behindLaps": "laps",
+          "gapMs": "intervalMs"
+        }
+      }
+    ]
   },
   "actionDurations": [
     { "type": "playAction", "duration": 600 },

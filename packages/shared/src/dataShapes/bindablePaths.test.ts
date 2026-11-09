@@ -13,8 +13,10 @@
  *   - The session list is fixed, label by label and type by type, with the whole clock
  *     ("Relógio completo", the clock group) before its four fields.
  *   - Positions offer the whole list, then one car chosen by its number, then the 1st to
- *     10th places, each with the same thirteen fields and the same types (the lap of the
- *     best lap, bestLapNumber, among them since BAJAOVRLAY-44).
+ *     10th places, each with the same fourteen paths and the same types: the position,
+ *     then thirteen fields (the lap of the best lap, bestLapNumber, among them since
+ *     BAJAOVRLAY-44; a place's own position since BAJAOVRLAY-66, so a car picked by its
+ *     place fills its position field like its other fields).
  *   - Brackets offer only their whole list of rounds (standings:
  *     standingsBindablePaths.test.ts; incidents: incidentsBindablePaths.test.ts).
  *   - No path appears twice within a shape.
@@ -217,13 +219,13 @@ describe('listBindablePathsOfShape', () => {
   });
 
   it('lists the 1st place with the same fields and types as the car chosen by number', () => {
-    // Arrange: the thirteen fields of the car chosen by number, the test above checks them;
-    // its position, offered first, has no place counterpart (at a place it is the place).
+    // Arrange: the position and thirteen fields of the car chosen by number, the test
+    // above checks them.
     const positionsPaths = listBindablePathsOfShape('positions');
-    const carChosenByNumberFields = positionsPaths.slice(2, 15);
+    const carChosenByNumberFields = positionsPaths.slice(1, 15);
 
-    // Act: keep the thirteen paths of the 1st place, which follow the car chosen by number.
-    const firstPlaceFields = positionsPaths.slice(15, 28);
+    // Act: keep the fourteen paths of the 1st place, which follow the car chosen by number.
+    const firstPlaceFields = positionsPaths.slice(15, 29);
 
     // Assert: same fields in the same order with the same types, only labelled by place.
     expect(
@@ -235,14 +237,23 @@ describe('listBindablePathsOfShape', () => {
         bindablePath.valueType,
       ]),
     );
-    expect(firstPlaceFields[1], 'a place path is labelled by its place').toEqual({
+    expect(
+      firstPlaceFields[0],
+      'a place offers its own position, for a car picked by its place (BAJAOVRLAY-66)',
+    ).toEqual({
+      path: 'entries.0.position',
+      label: 'Posições › 1º colocado › Posição',
+      valueType: 'integer',
+      isCarChosenByNumber: false,
+    });
+    expect(firstPlaceFields[2], 'a place path is labelled by its place').toEqual({
       path: 'entries.0.teamName',
       label: 'Posições › 1º colocado › Equipe',
       valueType: 'text',
       isCarChosenByNumber: false,
     });
     expect(
-      firstPlaceFields[6],
+      firstPlaceFields[7],
       'the lap of the best lap of a place is offered as a whole number',
     ).toEqual({
       path: 'entries.0.bestLapNumber',
@@ -250,7 +261,7 @@ describe('listBindablePathsOfShape', () => {
       valueType: 'integer',
       isCarChosenByNumber: false,
     });
-    expect(firstPlaceFields[11], 'the refuels of a place are offered as a whole number').toEqual({
+    expect(firstPlaceFields[12], 'the refuels of a place are offered as a whole number').toEqual({
       path: 'entries.0.fuelStops',
       label: 'Posições › 1º colocado › Abastecimentos',
       valueType: 'integer',
@@ -258,15 +269,15 @@ describe('listBindablePathsOfShape', () => {
     });
   });
 
-  it('stops the positions at the 10th place, with thirteen fields per place', () => {
+  it('stops the positions at the 10th place, with fourteen paths per place', () => {
     // Arrange: nothing to set up; the list is fixed in code.
 
     // Act: ask for the positions paths.
     const positionsPaths = listBindablePathsOfShape('positions');
 
     // Assert: the whole list, the car by number (its position and 13 fields) and 10
-    // places of 13 fields.
-    expect(positionsPaths, 'positions must offer 1 + 14 + 10 × 13 paths').toHaveLength(145);
+    // places, each its position and 13 fields.
+    expect(positionsPaths, 'positions must offer 1 + 14 + 10 × 14 paths').toHaveLength(155);
     expect(positionsPaths.at(-1), 'the last path must be the 10th place status').toEqual({
       path: 'entries.9.status',
       label: 'Posições › 10º colocado › Situação',

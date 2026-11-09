@@ -54,7 +54,7 @@ export type BindablePath = {
  * graphic and a team card for the podium; a graphic that needs more takes the whole list
  * ("Lista completa").
  */
-const firstEntriesWithTheirOwnPaths = 10;
+export const firstEntriesWithTheirOwnPaths = 10;
 
 /**
  * The word that starts every path reading the car the binding names by number. Written
@@ -232,7 +232,10 @@ const positionsEntryFieldTypes = [
   { fieldName: 'status', valueType: 'text' },
 ] as const;
 
-/** The whole list, then the car chosen by number, then each of the first ten places. */
+/**
+ * The whole list, then the car chosen by number, then each of the first ten places, each
+ * its position first and then its fields.
+ */
 function listPositionsPaths(): BindablePath[] {
   const shapeName = ptBRDataShapes.shapeNames.positions;
   const paths: BindablePath[] = [
@@ -242,14 +245,13 @@ function listPositionsPaths(): BindablePath[] {
       'positionsEntries',
     ),
   ];
-  // Where a car chosen by number runs now (the battle card's two cars, BAJAOVRLAY-47). Only
-  // for that car: at a fixed place the position is the place itself.
+  // Where a car chosen by number runs now (the battle card's two cars, BAJAOVRLAY-47).
   paths.push({
     path: `${entryOfCarPathPrefix}position`,
     label: joinLabelParts([
       shapeName,
       ptBRDataShapes.carChosenByNumberLabel,
-      ptBRDataShapes.positionOfCarChosenByNumberLabel,
+      ptBRDataShapes.positionOfOneCarLabel,
     ]),
     valueType: 'integer',
     isCarChosenByNumber: true,
@@ -265,6 +267,15 @@ function listPositionsPaths(): BindablePath[] {
   }
   for (let index = 0; index < firstEntriesWithTheirOwnPaths; index += 1) {
     const placeLabel = ptBRDataShapes.placeLabel(index + 1);
+    // A place's own position is the place itself, yet it is listed: a car picked by its
+    // place fills every field of its group, the position too (BAJAOVRLAY-66).
+    paths.push(
+      buildPathAtFixedPlace(
+        `entries.${index}.position`,
+        [shapeName, placeLabel, ptBRDataShapes.positionOfOneCarLabel],
+        'integer',
+      ),
+    );
     for (const { fieldName, valueType } of positionsEntryFieldTypes) {
       const fieldLabel = ptBRDataShapes.positionsEntryFieldLabels[fieldName];
       paths.push(

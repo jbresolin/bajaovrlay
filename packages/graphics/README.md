@@ -56,6 +56,14 @@ On the manifest itself:
   update of the graphic refused. Missing: no rule. The control page reads it too: with
   `carryClockForward` and the four clock roles below, "Edição rápida" shows the time on
   screen in the time field while the graphic is on air.
+- `v_baja.carGroups` — the fields that describe one car (BAJAOVRLAY-66), each group
+  `{ "id", "label", "fields": { "<field key>": "<meaning>" }, "rightBehindGroup"? }`, the
+  meaning a field of a car in the positions (`position`, `carNumber`, `teamName`,
+  `schoolName`, `laps`, `intervalMs`…). The item editor shows one picker per group ("Carro
+  da frente": by number, by place, or typed by hand) and fills every field of it alike;
+  `rightBehindGroup` (the battle card's car behind) adds "Disputa pela Nª posição". A field
+  in two groups, one the schema lacks, an unknown meaning or one that does not fit the field
+  refuses all the groups: warned about at boot, and the fields are shown one by one.
 
 On each property of `schema.properties` (`type` picks the control: `string` text,
 `integer`/`number` number, `boolean` switch):

@@ -123,8 +123,9 @@ describe('notice.ograf.json settings', () => {
   it('declares the notice layer and the notice category in the v_baja vendor field', () => {
     // Arrange: nothing to set up; the manifest is read from disk.
 
-    // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_.
-    const bajaVendorFields = noticeManifest.v_baja;
+    // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_,
+    // without its car group, which the kit's everyManifestCarGroups.test.ts checks.
+    const { carGroups, ...bajaVendorFields } = noticeManifest.v_baja;
 
     // Assert: the server reads the default layer and the category from it; a notice has
     // no clock to carry forward, so no update rule.
@@ -132,6 +133,10 @@ describe('notice.ograf.json settings', () => {
       bajaVendorFields,
       'the notice must ask for the notice layer and the notice category, with no update rule',
     ).toEqual({ defaultLayerId: 'notice', category: 'notice' });
+    expect(
+      carGroups.map((carGroup) => carGroup.label),
+      'its car, team and school are filled by choosing one car (BAJAOVRLAY-66)',
+    ).toEqual(['Carro']);
   });
 
   it('declares the play and stop lengths the theme sets in --motion-in and --motion-out', () => {

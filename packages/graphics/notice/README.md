@@ -16,3 +16,6 @@ Preview: `pnpm --filter @bajaovrlay/notice dev`, then http://localhost:5179/prev
 `?data=<url-encoded JSON>`). Unit tests: `pnpm --filter @bajaovrlay/notice test`; Playwright on
 the built `dist/` under `/graphics/notice/`: `pnpm --filter @bajaovrlay/notice test:e2e`
 (after a deliberate visual change add `--update-snapshots`).
+The car, the team and the school are one car group ("Carro", `v_baja.carGroups`, BAJAOVRLAY-66), so
+an item typed for a source fills the three from one car; an item filled by its event opens with
+"Campos separados" on, each field reading the event as before.

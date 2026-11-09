@@ -1,7 +1,12 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { findStepCounter, type Graphic, OGrafManifestSchema } from '@bajaovrlay/shared';
+import {
+  findStepCounter,
+  type Graphic,
+  OGrafManifestSchema,
+  readCarGroupsOfManifest,
+} from '@bajaovrlay/shared';
 
 import type { ServerLogger } from '../logger/createLogger.js';
 import { isDataSchemaOfGraphicUsable } from './graphicDataValidation.js';
@@ -25,8 +30,8 @@ export type DiscoverBuiltGraphicsOptions = {
  * left out; it never stops the boot. Each graphic's default layer and category come from
  * its own manifest (`v_baja`); see graphicPlacement.ts.
  * A graphic whose data schema cannot be used, or whose manifest names an update rule
- * that cannot be run or a step counter the server does not know, is kept, with a warning
- * naming it.
+ * that cannot be run, a step counter the server does not know or car groups the shared
+ * check refuses, is kept, with a warning naming it.
  */
 export function discoverBuiltGraphics(options: DiscoverBuiltGraphicsOptions): Graphic[] {
   const { graphicPackagesFolder, logger } = options;
@@ -161,6 +166,15 @@ function readBuiltGraphic(options: {
     logger.warn(
       { graphic_package: packageName, step_counter: stepCounterName },
       'graphic names a step counter the server does not know; it will have one step',
+    );
+  }
+  const carGroupsReading = readCarGroupsOfManifest(manifest);
+  if (carGroupsReading.status === 'refused') {
+    // The control page ignores refused groups and shows the car's fields one by one, so
+    // the picker would just be missing; this line says why (BAJAOVRLAY-66).
+    logger.warn(
+      { graphic_package: packageName, car_group_problems: carGroupsReading.problems },
+      'graphic declares car groups the check refuses; its fields are shown one by one',
     );
   }
   return graphic;

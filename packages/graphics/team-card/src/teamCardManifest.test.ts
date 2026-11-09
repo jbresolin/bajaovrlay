@@ -129,14 +129,19 @@ describe('team-card.ograf.json settings', () => {
   it('declares the lower-third layer and the team category in the v_baja vendor field', () => {
     // Arrange: nothing to set up; the manifest is read from disk.
 
-    // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_.
-    const bajaVendorFields = teamCardManifest.v_baja;
+    // Act: read BajaOvrLay's own field, which OGraf allows because its name starts with v_,
+    // without its car group, which the kit's everyManifestCarGroups.test.ts checks.
+    const { carGroups, ...bajaVendorFields } = teamCardManifest.v_baja;
 
     // Assert: the server reads the default layer and the category from it; no update rule.
     expect(
       bajaVendorFields,
       'the team card must ask for the lower-third layer and the team category',
     ).toEqual({ defaultLayerId: 'lower-third', category: 'team' });
+    expect(
+      carGroups.map((carGroup) => carGroup.label),
+      'its car, team and school are filled by choosing one car (BAJAOVRLAY-66)',
+    ).toEqual(['Carro']);
   });
 
   it('declares the play and stop lengths the theme sets in --motion-in and --motion-out', () => {
