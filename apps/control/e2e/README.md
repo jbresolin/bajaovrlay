@@ -92,16 +92,18 @@ graphic chosen ("Escolha um gráfico…") and cannot be saved until one is, so e
 - The podium, the battle card and the QR card (BAJAOVRLAY-47): `podiumBattleQrWalk.e2e.ts` (the brief's walk, three tests,
   on the real program output `/render/`): car 1's team given a logo, a "Pódio" whose teams read the positions through
   "Primeiras N entradas" (3) and "Com logos das equipes", frozen, shows the three cards and car 1's logo after three
-  "Próximo" on the Camadas row; a "Disputa de posição" whose eleven fields read the race's first two cars by number, bound while
-  the simulator runs at 60×, shows both teams and a gap that follows the race ("+s,d" side by side, "—" if not); a "Cartão de QR" shows a code that scans back to its address. Car 1, not car 7: until the first lap the
+  "Próximo" on the Camadas row; a "Disputa de posição" whose eleven fields read the race's first two cars by number, filled by
+  two picks (BAJAOVRLAY-66) while the simulator runs at 60×, shows both teams and a gap that follows the race ("+s,d" side by side, "—" if not); a "Cartão de QR" shows a code that scans back to its address. Car 1, not car 7: until the first lap the
   simulator lists its cars by number, so cars 1, 2 and 3 are the podium right after the green flag.
 - The elimination bracket (BAJAOVRLAY-25): `bracketStepsWithTheSimulator.e2e.ts` (the brief's walk, on the real program
   output `/render/`): the simulator on seed 2027 with ten cars at 60× run until its Super Prime has a champion (~17 s), and
   left running; a "Chaveamento" whose "Fases" open on "Chaves › Todas as fases" (the manifest's suggestion), live, taken; "Próximo" on the Camadas row from
   "Passo 1 de 5" to "Passo 5 de 5", then off; the output draws the final with car 8 the winner.
 
+- A battle for a place (BAJAOVRLAY-66): `battleCardForSecondPlace.e2e.ts` ("Disputa pela 2ª posição" chosen once, taken: on
+  air with positions 2 and 3, the output shows the teams of the cars the simulator lists 2nd and 3rd).
 - The item editor during a race (BAJAOVRLAY-45): `itemEditorStaysFastDuringARace.e2e.ts` (a battle card on air whose eleven
-  fields read cars 1 and 2 live, the simulator at 60×, opened in the editor: a path dropdown opens and "Salvar item" registers
+  fields read cars 1 and 2 live, the simulator at 60×, opened in the editor with "Campos separados" on for both cars: a path dropdown opens and "Salvar item" registers
   within 2 s each, timed with `performance.now()` around the action; the measured times are on the test's report).
 
 - Triggers (BAJAOVRLAY-48): `httpTriggerFillsTheLowerThird.e2e.ts` (the brief's E2E): an HTTP trigger, set up over the WebSocket, whose

@@ -12,7 +12,7 @@ import type {
   ServerMessage,
   Slices,
 } from '@bajaovrlay/shared';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 
 import {
   buildEnduroSnapshotAtLap34,
@@ -155,15 +155,27 @@ export function buildNextPollWhereTheSecondCarCloses(): ServerMessage {
 
 /**
  * The row of one field of the editor, found from its label up to the row's own box, so a
- * test can read that row's "Valor agora" and nobody else's.
+ * test can read that row's "Valor agora" and nobody else's. A field of a car picked once
+ * (BAJAOVRLAY-66) has no row of its own: its line in the car's "Valores agora" list is
+ * found instead, by the field's name at its start.
  */
 export function findRowOfField(fieldLabel: string): HTMLElement {
-  const label = screen.getByText(fieldLabel, { selector: 'label' });
-  const row = label.closest<HTMLElement>('.flex.flex-col.gap-2');
+  const label = screen.getByText(fieldLabel, { selector: 'label, li > span' });
+  const row = label.closest<HTMLElement>('li, .flex.flex-col.gap-2');
   if (row === null) {
     throw new Error(`the row of ${fieldLabel} is not on the page`);
   }
   return row;
+}
+
+/**
+ * Turns "Campos separados" on for both cars of the card, so each of the eleven fields is
+ * edited in its own row again, as before the car picker (BAJAOVRLAY-66).
+ */
+export function showEachCarsFieldsSeparately(): void {
+  for (const carLabel of ['Carro da frente', 'Carro de trás']) {
+    fireEvent.click(screen.getByRole('switch', { name: `Campos separados — ${carLabel}` }));
+  }
 }
 
 /** The operator's correction of car 38's team name, as the inscription spells it. */

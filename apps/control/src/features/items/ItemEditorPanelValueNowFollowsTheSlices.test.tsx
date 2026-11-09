@@ -8,11 +8,13 @@
  *   accident whatever slice changed. These tests prove the line still follows each slice
  *   it reads besides the data itself (ItemEditorPanelRenders.test.tsx covers a poll).
  *
- * What these tests prove, on a stored battle card whose fields read cars 31 and 38 live:
+ * What these tests prove, on a stored battle card whose fields read cars 31 and 38 live,
+ * each car picked once as the card opens (BAJAOVRLAY-66), the team's line read in the car
+ * behind's "Valores agora":
  *   - A correction of car 38's team arriving (the overrides slice) turns the team's line
  *     into the corrected name with "(corrigido)".
- *   - The simulator renamed (the dataSources slice): the "Fonte de …" dropdown shows the
- *     new name, and the line still reads the team.
+ *   - The simulator renamed (the dataSources slice): the car behind's "Fonte de …" dropdown
+ *     shows the new name, and the line still reads the team.
  *   - The simulator deleted: the line says the source no longer exists.
  *   The correction reaches the line through its own subscription alone (with that
  *   subscription doing nothing, the first test fails). A rename or a deletion changes the
@@ -81,7 +83,7 @@ describe('"Valor agora" on a battle card read live', () => {
 
     // Assert: the dropdown names the source anew, and the line still reads car 38's team.
     expect(
-      screen.getByRole('combobox', { name: `Fonte de ${secondCarsTeamLabel}` }),
+      screen.getByRole('combobox', { name: 'Fonte de Carro de trás' }),
       'the source dropdown must show the new name',
     ).toHaveTextContent('Simulador — Ensaio');
     expect(

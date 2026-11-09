@@ -156,6 +156,7 @@ export function ItemGraphicFieldsForm(props: ItemGraphicFieldsFormProps) {
         bindingOptions={bindingOptions}
         entityLibrary={entityLibrary}
         onImageUploadingChange={props.onImageUploadingChange}
+        carGroups={graphicFields.carGroups}
       />
       {isItemOnAir && (
         <SourceChangeAtTheNextTakeNote

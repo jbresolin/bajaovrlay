@@ -4,9 +4,16 @@
  * moment, when the editor starts drawing a graphic, and kept together so the fields on
  * screen, their rules and their values always belong to the same graphic.
  */
-import type { Graphic, Item, ItemFields } from '@bajaovrlay/shared';
+import {
+  type CarGroup,
+  type Graphic,
+  type Item,
+  type ItemFields,
+  readCarGroupsOfManifest,
+} from '@bajaovrlay/shared';
 
 import {
+  buildCarGroupWaysAtOpening,
   buildEmptySchemaFormValues,
   buildSchemaFormValuesFromItemFields,
   buildSuggestedBindingsForNewItem,
@@ -29,6 +36,12 @@ export type GraphicFieldsOfItemEditor = {
    * handed in for them could not be shown. Always empty when starting from the defaults.
    */
   labelsOfFieldsThatCouldNotBeRead: string[];
+  /**
+   * The graphic's car groups (BAJAOVRLAY-66), each drawn as one car picker; empty for a
+   * graphic that declares none, or whose groups the shared check refuses (the server's
+   * boot log says why), which then shows its fields one by one as before.
+   */
+  carGroups: CarGroup[];
 };
 
 /** The page's sources when the editor has none to judge a manifest's suggestion by. */
@@ -54,22 +67,39 @@ export function fillGraphicFieldsOfItemEditor(
   sources: SourcesForSuggestedBindings = noSourcesForSuggestedBindings,
 ): GraphicFieldsOfItemEditor {
   const description = describeSchemaFormFromDataSchema(graphic.manifest.schema);
+  const carGroupsReading = readCarGroupsOfManifest(graphic.manifest);
+  const carGroups = carGroupsReading.status === 'groups' ? carGroupsReading.carGroups : [];
 
   if (fieldsToShow === null) {
     const suggestedBindings = buildSuggestedBindingsForNewItem(graphic.manifest.schema, sources);
+    const formValues = buildEmptySchemaFormValues(description, suggestedBindings);
     return {
       description,
-      formValues: buildEmptySchemaFormValues(description, suggestedBindings),
+      formValues: addCarGroupWays(formValues, carGroups),
       labelsOfFieldsThatCouldNotBeRead: [],
+      carGroups,
     };
   }
 
   const valuesReadFromTheFields = buildSchemaFormValuesFromItemFields(description, fieldsToShow);
   return {
     description,
-    formValues: valuesReadFromTheFields.formValues,
+    formValues: addCarGroupWays(valuesReadFromTheFields.formValues, carGroups),
     labelsOfFieldsThatCouldNotBeRead: valuesReadFromTheFields.labelsOfFieldsThatCouldNotBeRead,
+    carGroups,
   };
+}
+
+/**
+ * The form's values with the way each car group opens, read from its fields as they are:
+ * an item stored field by field on one car opens grouped, one on different cars separate.
+ * A graphic with no group gets no `carGroupWays` at all, so its form is exactly as before.
+ */
+function addCarGroupWays(formValues: SchemaFormValues, carGroups: CarGroup[]): SchemaFormValues {
+  if (carGroups.length === 0) {
+    return formValues;
+  }
+  return { ...formValues, carGroupWays: buildCarGroupWaysAtOpening(carGroups, formValues) };
 }
 
 /**

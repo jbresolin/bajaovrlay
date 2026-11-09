@@ -8,7 +8,8 @@
  *   than the last (BAJAOVRLAY-45). The editor must redraw only what changed.
  *
  * What these tests prove, on a stored battle card whose eleven fields read the two
- * leaders live:
+ * leaders live, each car's fields shown one by one ("Campos separados", BAJAOVRLAY-66;
+ * the rows these tests count are drawn only then):
  *   - A poll that changes nothing the card shows (the gap of a car further back) redraws
  *     no field row.
  *   - A poll that changes one value the card shows (the 2nd car's gap to the leader)
@@ -17,6 +18,8 @@
  *   - In every case above and below, the form around the rows is not drawn again either.
  *   - Typing in the one typed number field redraws no other row, and typing the item's
  *     label redraws no row of the graphic.
+ * And with each car picked once, as the card opens: a poll that changes the gap redraws
+ * neither car's picker nor the form, and the gap's line in the picker says the new gap.
  *
  * How a draw is counted: every field row draws its field's label with the ui Label,
  * once per draw, so the ui Label is replaced by a stand-in that counts its draws by text
@@ -44,6 +47,7 @@ import {
   buildSlicesWithTheBattleCardOfTheLeaders,
   findRowOfField,
   momentOfTheNextPollMs,
+  showEachCarsFieldsSeparately,
 } from './battleCardOfTheLeaders.testSupport';
 import {
   countGeneratedFormDraws,
@@ -86,13 +90,21 @@ function buildNoDrawForEach(labelTexts: string[]): Record<string, number> {
   return noDraws;
 }
 
-/** Opens the editor on the stored battle card of the two leaders, the race at lap 34. */
+/**
+ * Opens the editor on the stored battle card of the two leaders, the race at lap 34, with
+ * each car's fields in rows of their own ("Campos separados").
+ */
 function renderEditorOnTheBattleCardOfTheLeaders() {
-  return renderItemEditorPanelOnFakeServerWithSlices(
+  const editorOnFakeServer = renderItemEditorPanelOnFakeServerWithSlices(
     buildBattleCardOfTheLeadersItem(),
     buildSlicesWithTheBattleCardOfTheLeaders(),
   );
+  showEachCarsFieldsSeparately();
+  return editorOnFakeServer;
 }
+
+/** The labels each car's picker draws once per draw: its car number's. */
+const carPickerLabels = ['Número do carro — Carro da frente', 'Número do carro — Carro de trás'];
 
 /** Forgets every draw of the rows and of the form counted so far. */
 function startCountingDraws(): void {
@@ -218,5 +230,33 @@ describe('the item editor on a battle card read live, when the operator works', 
       countGeneratedFormDraws(),
       'typing the item’s label must not redraw the graphic’s form',
     ).toBe(0);
+  });
+});
+
+describe('the item editor on a battle card with each car picked once, when a poll arrives', () => {
+  it("redraws neither car's picker, and the gap's line says the new gap", () => {
+    // Arrange: the editor open on the battle card as it opens, each car picked by number.
+    const { fakeServer, serverStateStore } = renderItemEditorPanelOnFakeServerWithSlices(
+      buildBattleCardOfTheLeadersItem(),
+      buildSlicesWithTheBattleCardOfTheLeaders(),
+    );
+    startCountingDraws();
+
+    // Act: the next poll, in which car 38 closes to 18,4 s.
+    fakeServer.sendMessage(buildNextPollWhereTheSecondCarCloses());
+
+    // Assert: the page took the poll; no picker and no form drawn again; the line updated.
+    expect(
+      readMomentOfTheSimulatorsData(serverStateStore),
+      'the page must have taken the next poll, or nothing was tested',
+    ).toBe(momentOfTheNextPollMs);
+    expect(countDrawsOfEachLabel(carPickerLabels), "a poll must not redraw a car's picker").toEqual(
+      buildNoDrawForEach(carPickerLabels),
+    );
+    expect(countGeneratedFormDraws(), 'a poll must not redraw the form around the pickers').toBe(0);
+    expect(
+      within(findRowOfField(gapLabel)).getByText('Valor agora: 18.400'),
+      "the gap's line in the car behind's picker must say the new gap",
+    ).toBeInTheDocument();
   });
 });

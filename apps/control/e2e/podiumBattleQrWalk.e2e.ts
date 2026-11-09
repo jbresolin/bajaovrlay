@@ -15,9 +15,10 @@
  *   3. "Próximo" pressed three times on the Camadas row: "Passo 4 de 4", the three cards
  *      shown on the output, car 1's card shows its logo and car 2's has none.
  *   4. A battle card whose eleven fields read the race's first two cars by number, live,
- *      bound while the simulator runs at 60×, as an operator binds one during a race
- *      (BAJAOVRLAY-45), taken: the output shows both teams, and a gap ("+1,2") while the
- *      two cars run side by side, "—" while they do not.
+ *      filled by two picks ("Carro da frente", "Carro de trás"; BAJAOVRLAY-66) while the
+ *      simulator runs at 60×, as an operator does during a race (BAJAOVRLAY-45), taken:
+ *      the output shows both teams, and a gap ("+1,2") while the two cars run side by
+ *      side, "—" while they do not.
  *   5. A QR card typed and taken: its code on the output scans back to the address.
  *
  * What these tests deliberately do not cover:
@@ -39,6 +40,7 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { scanQrCodeOnScreen } from '../../../packages/graphics/qr-card/e2e/qrCodeOnScreen.testSupport';
+import { pickCarByNumberInTheEditor } from './carPickerTestSteps';
 import {
   readDataOnAirOfLayerFromTheRealServer,
   readPositionsOfSourceFromTheRealServer,
@@ -86,28 +88,6 @@ async function chooseInEditorDropdown(
   await itemEditor.getByRole('combobox', { name: dropdownName, exact: true }).click();
   // The list of options is drawn outside the editor, at the end of the page.
   await page.getByRole('option', { name: optionName, exact: true }).click();
-}
-
-/**
- * Sets one field of the item editor to read one value of a car chosen by its number, live:
- * "Fonte", the simulator, the path under "Carro escolhido pelo número", the car's number.
- */
-async function readFieldFromCarChosenByNumber(
-  page: Page,
-  itemEditor: Locator,
-  field: { title: string; pathLabel: string; carNumber: number },
-): Promise<void> {
-  await chooseInEditorDropdown(page, itemEditor, `Como preencher ${field.title}`, 'Fonte');
-  await chooseInEditorDropdown(page, itemEditor, `Fonte de ${field.title}`, seededSimulatorLabel);
-  await chooseInEditorDropdown(
-    page,
-    itemEditor,
-    `O que ${field.title} lê da fonte`,
-    `Posições › Carro escolhido pelo número › ${field.pathLabel}`,
-  );
-  await itemEditor
-    .getByLabel(`Número do carro de ${field.title}`, { exact: true })
-    .fill(String(field.carNumber));
 }
 
 /** The graphic of a package on one layer of an output's own page. */
@@ -217,8 +197,7 @@ test.describe('the podium, the battle card and the QR card', () => {
   test('a battle card for the first two cars, read live by number, shows both teams and the gap', async ({
     page,
   }) => {
-    // Eleven fields bound by hand, four choices each, after the race's first lap: past
-    // Playwright's 30 s on a slow runner, as the other walks that bind many fields.
+    // The race's first lap, then two picks: past Playwright's 30 s on a slow runner.
     test.setTimeout(120_000);
 
     // Arrange: the race run fast until the 2nd car has an interval to the leader (the shape
@@ -243,37 +222,21 @@ test.describe('the podium, the battle card and the QR card', () => {
     const second = positionsAtTheStart[1];
     const outputPage = await openOutputInItsOwnPage(page.context(), '/render/');
 
-    // Act (step 4): the battle card, every field reading the leader (ahead) or the 2nd car
-    // (behind) by number, live; saved and taken.
+    // Act (step 4): the battle card, the leader picked ahead and the 2nd car behind, by
+    // number, live (each pick fills its car's five fields, the car behind's the gap too);
+    // saved and taken.
     await openControlPageAndWaitUntilConnected(page);
     const itemEditor = await openItemEditorWithNewGraphic(
       page,
       'Disputa — os dois primeiros',
       'Disputa de posição',
     );
-    const valuesOfEachCar = [
-      { side: 'da frente', carNumber: leader?.carNumber ?? 0 },
-      { side: 'de trás', carNumber: second?.carNumber ?? 0 },
-    ];
-    const fieldsAndPaths = [
-      { field: 'Posição do carro', pathLabel: 'Posição' },
-      { field: 'Número do carro', pathLabel: 'Carro' },
-      { field: 'Equipe do carro', pathLabel: 'Equipe' },
-      { field: 'Escola do carro', pathLabel: 'Escola' },
-      { field: 'Voltas do carro', pathLabel: 'Voltas' },
-    ];
-    for (const { side, carNumber } of valuesOfEachCar) {
-      for (const { field, pathLabel } of fieldsAndPaths) {
-        await readFieldFromCarChosenByNumber(page, itemEditor, {
-          title: `${field} ${side}`,
-          pathLabel,
-          carNumber,
-        });
-      }
-    }
-    await readFieldFromCarChosenByNumber(page, itemEditor, {
-      title: 'Diferença entre os carros (ms)',
-      pathLabel: 'Intervalo para o carro à frente',
+    await pickCarByNumberInTheEditor(page, itemEditor, {
+      carLabel: 'Carro da frente',
+      carNumber: leader?.carNumber ?? 0,
+    });
+    await pickCarByNumberInTheEditor(page, itemEditor, {
+      carLabel: 'Carro de trás',
       carNumber: second?.carNumber ?? 0,
     });
     await saveAndTakeTheItemInTheEditor(itemEditor);
