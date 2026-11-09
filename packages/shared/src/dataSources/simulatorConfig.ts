@@ -32,6 +32,14 @@ export const SimulatorConfigSchema = z.object({
   simulatedStartAtMs: z.number().int().optional(),
   /** While true every poll fails with "falha simulada", to rehearse the stale path. */
   isFailing: z.boolean().default(false),
+  /**
+   * While true the simulator also answers the superChats shape: a fictional viewer's paid
+   * message about every 5 simulated minutes, seeded like the race, so the whole Super Chat
+   * flow (approval, "No ar") can be rehearsed with no live stream (BAJAOVRLAY-35). Missing
+   * means off, so a rehearsal of the race alone fills no inbox with Super Chats; optional
+   * rather than defaulted so every config saved before it reads back unchanged.
+   */
+  areSuperChatsSimulated: z.boolean().optional(),
 });
 
 /** A simulator config after parsing, defaults filled in. */
