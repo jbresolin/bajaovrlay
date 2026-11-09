@@ -53,7 +53,7 @@ describe('reading the live chat', () => {
         status: 200,
         body: buildChatPage({
           messages: [],
-          nextPageToken: 'pagina-0002',
+          nextPageToken: 'pagina-test-0002',
           pollingIntervalMillis: 0,
         }),
       },
@@ -61,7 +61,7 @@ describe('reading the live chat', () => {
         status: 200,
         body: buildChatPage({
           messages: [],
-          nextPageToken: 'pagina-0003',
+          nextPageToken: 'pagina-test-0003',
           pollingIntervalMillis: 0,
         }),
       },
@@ -96,7 +96,7 @@ describe('reading the live chat', () => {
       'the first read must start with no token',
     ).toBeNull();
     expect(requests[2]?.query.get('pageToken'), 'the second read must go on from the first').toBe(
-      'pagina-0002',
+      'pagina-test-0002',
     );
     expect(requests[1]?.query.get('hl'), 'amounts must be asked in Brazilian format').toBe('pt-BR');
     expect(requests[1]?.query.get('key'), 'the key goes in the request').toBe(fakeYouTubeApiKey);
