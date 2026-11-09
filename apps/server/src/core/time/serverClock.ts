@@ -4,7 +4,8 @@
  * wall clock once when it is created, and kept on real time from NTP by
  * serverClockDiscipline.ts in three ways:
  * - a rate: monotonic time is multiplied by it, so a machine whose monotonic time runs
- *   4% fast (João's WSL under load) still counts seconds of real time;
+ *   4% fast (João's WSL under load) still counts seconds of real time; a new rate is
+ *   ramped to over a minute, so the length of a second on air never changes at once;
  * - a slew: a small difference is covered at most 0.5% of the time passing, so a second
  *   on air lasts between 0.995 s and 1.005 s, which no one can see;
  * - a step: a big difference, moved at once.
@@ -36,9 +37,12 @@ export type ServerClock = {
   readMonotonicTimeMs: () => number;
   /** What the server clock read (or reads) at a moment of monotonic time, unrounded. */
   readServerTimeAtMonotonicMs: (monotonicMs: number) => number;
-  /** Runs at a new rate of real time per monotonic time from now on (1 / 1.04 for 4% fast). */
-  runAtRate: (rate: number) => void;
-  /** The rate in use; 1 until NTP has measured one. */
+  /**
+   * Goes from the rate in use to a new rate of real time per monotonic time (1 / 1.04 for
+   * 4% fast) evenly over `rampMs` of monotonic time, starting now; 0 changes it at once.
+   */
+  rampToRate: (rate: number, rampMs: number) => void;
+  /** The rate in use now; 1 until NTP has measured one. */
   readRate: () => number;
   /** Covers a difference at 0.5% of the time passing; replaces a slew in progress. */
   slewBy: (differenceMs: number) => void;
@@ -46,6 +50,8 @@ export type ServerClock = {
   readSlewLeftMs: () => number;
   /** Moves the clock by a difference at once; ends a slew in progress. */
   stepBy: (differenceMs: number) => void;
+  /** How many steps the clock has made: the pages line up again when it changes. */
+  readStepCount: () => number;
 };
 
 /** The machine's own clocks; Vitest's fake Date and fake performance replace both. */
@@ -59,39 +65,77 @@ const machineTimeSources: MachineTimeSources = {
  * (serverClockOfTheProcess); tests make their own after faking the machine's clocks.
  *
  * How it reads: from a base (a moment of monotonic time and what the clock read then),
- * the clock adds the monotonic time since, times the rate, plus as much of the slew as
- * 0.5% of that time allows. Each change (a rate, a slew, a step) first moves the base to
- * now, so the change never moves what the clock reads at that moment, except a step.
+ * the clock adds the real time the rate makes of the monotonic time since, plus as much
+ * of the slew as 0.5% of that real time allows. Each change (a rate, a slew, a step)
+ * first moves the base to now, so the change never moves what the clock reads at that
+ * moment, except a step.
  */
 export function createServerClock(): ServerClock {
   const { readWallClockMs, readMonotonicMs } = machineTimeSources;
   let baseMonotonicMs = readMonotonicMs();
   let baseServerTimeMs = readWallClockMs();
-  let rate = 1;
+  // The rate at the base, and the ramp from it: to `rateAfterTheRamp`, over
+  // `rampLeftFromTheBaseMs` of monotonic time after the base (0 when there is no ramp).
+  let rateAtTheBase = 1;
+  let rateAfterTheRamp = 1;
+  let rampLeftFromTheBaseMs = 0;
   // The slew still to cover from the base on; signed: positive moves the clock ahead.
   let slewFromTheBaseMs = 0;
+  let stepCount = 0;
+
+  /** The rate at a moment of monotonic time after the base: on the ramp, or after it. */
+  function readRateAt(monotonicMs: number): number {
+    const monotonicSinceTheBaseMs = Math.max(monotonicMs - baseMonotonicMs, 0);
+    if (monotonicSinceTheBaseMs >= rampLeftFromTheBaseMs) {
+      return rateAfterTheRamp;
+    }
+    const shareOfTheRampDone = monotonicSinceTheBaseMs / rampLeftFromTheBaseMs;
+    return rateAtTheBase + (rateAfterTheRamp - rateAtTheBase) * shareOfTheRampDone;
+  }
+
+  /**
+   * How much real time the rate makes of the monotonic time since the base. On the ramp
+   * the rate grows evenly, so that part counts at the average of its first and last rate;
+   * after the ramp, at the new rate. Before the base, at the base's rate.
+   */
+  function readRealTimeSinceTheBase(monotonicMs: number): number {
+    const monotonicSinceTheBaseMs = monotonicMs - baseMonotonicMs;
+    if (monotonicSinceTheBaseMs <= 0) {
+      return monotonicSinceTheBaseMs * rateAtTheBase;
+    }
+    const monotonicOnTheRampMs = Math.min(monotonicSinceTheBaseMs, rampLeftFromTheBaseMs);
+    const monotonicAfterTheRampMs = monotonicSinceTheBaseMs - monotonicOnTheRampMs;
+    const averageRateOnTheRamp = (rateAtTheBase + readRateAt(monotonicMs)) / 2;
+    const realTimeOnTheRampMs = monotonicOnTheRampMs * averageRateOnTheRamp;
+    return realTimeOnTheRampMs + monotonicAfterTheRampMs * rateAfterTheRamp;
+  }
 
   /** How much of the slew is covered by a moment of monotonic time after the base. */
   function readSlewCoveredAt(monotonicMs: number): number {
-    const monotonicSinceTheBaseMs = Math.max(monotonicMs - baseMonotonicMs, 0);
+    const realTimeSinceTheBaseMs = Math.max(readRealTimeSinceTheBase(monotonicMs), 0);
     // 0.5% of the time passing at the rate (real time), not of monotonic time: on a
     // machine 4% fast that keeps every second on air within 0.995–1.005 s of real time.
-    const mostThatCanBeCoveredMs = monotonicSinceTheBaseMs * rate * largestSlewShare;
+    const mostThatCanBeCoveredMs = realTimeSinceTheBaseMs * largestSlewShare;
     const slewCoveredMs = Math.min(Math.abs(slewFromTheBaseMs), mostThatCanBeCoveredMs);
     return Math.sign(slewFromTheBaseMs) * slewCoveredMs;
   }
 
   function readServerTimeAtMonotonicMs(monotonicMs: number): number {
-    const monotonicSinceTheBaseMs = monotonicMs - baseMonotonicMs;
-    return baseServerTimeMs + monotonicSinceTheBaseMs * rate + readSlewCoveredAt(monotonicMs);
+    return (
+      baseServerTimeMs + readRealTimeSinceTheBase(monotonicMs) + readSlewCoveredAt(monotonicMs)
+    );
   }
 
-  /** Moves the base to now, keeping what the clock reads and the slew still to cover. */
+  /** Moves the base to now, keeping what the clock reads, the ramp and the slew still to come. */
   function moveTheBaseToNow(): void {
     const nowMonotonicMs = readMonotonicMs();
+    const monotonicSinceTheBaseMs = Math.max(nowMonotonicMs - baseMonotonicMs, 0);
     const slewCoveredMs = readSlewCoveredAt(nowMonotonicMs);
+    const rateNow = readRateAt(nowMonotonicMs);
     baseServerTimeMs = readServerTimeAtMonotonicMs(nowMonotonicMs);
     slewFromTheBaseMs -= slewCoveredMs;
+    rampLeftFromTheBaseMs = Math.max(rampLeftFromTheBaseMs - monotonicSinceTheBaseMs, 0);
+    rateAtTheBase = rateNow;
     baseMonotonicMs = nowMonotonicMs;
   }
 
@@ -106,11 +150,12 @@ export function createServerClock(): ServerClock {
     readCurrentTime: () => new Date(readCurrentTimeMs()),
     readMonotonicTimeMs: readMonotonicMs,
     readServerTimeAtMonotonicMs,
-    runAtRate: (newRate: number) => {
+    rampToRate: (newRate: number, rampMs: number) => {
       moveTheBaseToNow();
-      rate = newRate;
+      rateAfterTheRamp = newRate;
+      rampLeftFromTheBaseMs = rampMs;
     },
-    readRate: () => rate,
+    readRate: () => readRateAt(readMonotonicMs()),
     slewBy: (differenceMs: number) => {
       moveTheBaseToNow();
       slewFromTheBaseMs = differenceMs;
@@ -123,7 +168,9 @@ export function createServerClock(): ServerClock {
       moveTheBaseToNow();
       baseServerTimeMs += differenceMs;
       slewFromTheBaseMs = 0;
+      stepCount += 1;
     },
+    readStepCount: () => stepCount,
   };
 }
 

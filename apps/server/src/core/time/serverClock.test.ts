@@ -15,11 +15,12 @@
  *   - Created, it reads the wall clock's time, as a whole number of milliseconds, and
  *     moves on with time.
  *   - A step of the wall clock back or forwards by 1 s does not move it.
- *   - Run at a rate of 1 / 1.04, 104 s of monotonic time make 100 s, and the change of
+ *   - Ramped to a rate of 1 / 1.04 over a minute, each second of the ramp a little shorter
+ *     than the one before; after it, 104 s of monotonic time make 100 s; the change of
  *     rate itself moves nothing.
  *   - A slew of 1 s covers it at 0.5% of the time passing, in 200 s, and then stops; a
  *     new slew replaces the one in progress.
- *   - A step moves it at once and ends a slew in progress.
+ *   - A step moves it at once and ends a slew in progress; steps are counted, slews not.
  *
  * What these tests deliberately do not cover:
  *   - When it is stepped, slewed or given a rate; serverClockDiscipline.test.ts.
@@ -96,26 +97,71 @@ describe('the server clock', () => {
     ).toBe(oneOClockOfTheEnduroMs + 30_100);
   });
 
-  it('runs at the rate it is given, and changing the rate moves nothing at that moment', () => {
+  it('ramps to a new rate over a minute, and changing the rate moves nothing at that moment', () => {
     // Arrange: a server clock 10 s old, on a machine whose monotonic time runs 4% fast.
     fakeTheMachineClocksAtOneOClock();
     const serverClock = createServerClock();
     vi.advanceTimersByTime(10_000);
     const timeBeforeTheRateMs = serverClock.readCurrentTimeMs();
 
-    // Act: give it the rate 1 / 1.04, then let 104 s of monotonic time pass.
-    serverClock.runAtRate(1 / 1.04);
+    // Act: ramp to the rate 1 / 1.04 over 60 s of monotonic time; let the minute of the
+    // ramp pass, then 104 s more.
+    serverClock.rampToRate(1 / 1.04, 60_000);
     const timeRightAfterTheRateMs = serverClock.readCurrentTimeMs();
+    vi.advanceTimersByTime(60_000);
+    const timeAtTheEndOfTheRampMs = serverClock.readCurrentTimeMs();
     vi.advanceTimersByTime(104_000);
 
-    // Assert: no jump when the rate changed, and 100 s for 104 s of monotonic time.
+    // Assert: no jump when the rate changed; over the ramp, the average of the two rates
+    // (60 s × (1 + 1 / 1.04) / 2 = 58.846 s); then 100 s for 104 s of monotonic time.
     expect(timeRightAfterTheRateMs, 'a new rate must not move the clock at once').toBe(
       timeBeforeTheRateMs,
     );
     expect(
-      serverClock.readCurrentTimeMs() - timeBeforeTheRateMs,
-      '104 s of a 4%-fast monotonic time are 100 s of real time',
+      timeAtTheEndOfTheRampMs - timeBeforeTheRateMs,
+      'during the ramp the rate goes evenly from 1 to 1 / 1.04',
+    ).toBe(58_846);
+    expect(
+      serverClock.readCurrentTimeMs() - timeAtTheEndOfTheRampMs,
+      'after it, 104 s of a 4%-fast monotonic time are 100 s of real time',
     ).toBe(100_000);
+    expect(serverClock.readRate(), 'the rate in use is the new one').toBeCloseTo(1 / 1.04, 12);
+  });
+
+  it('makes each second of the ramp a little shorter than the one before, never a jump', () => {
+    // Arrange: a server clock on the same machine, ramping to 1 / 1.04 over a minute.
+    fakeTheMachineClocksAtOneOClock();
+    const serverClock = createServerClock();
+    serverClock.rampToRate(1 / 1.04, 60_000);
+
+    // Act: read the clock (unrounded) after each second of monotonic time, for 70 s.
+    const readings = [serverClock.readServerTimeAtMonotonicMs(serverClock.readMonotonicTimeMs())];
+    for (let secondNumber = 1; secondNumber <= 70; secondNumber += 1) {
+      vi.advanceTimersByTime(1_000);
+      readings.push(serverClock.readServerTimeAtMonotonicMs(serverClock.readMonotonicTimeMs()));
+    }
+
+    // Assert: each second moved the clock by less than the one before, by at most 0.65 ms
+    // (40 ms over 60 s), from 1000 ms down to 961.5 ms, where it stays. A thousandth of a
+    // millisecond is allowed: moments since 1970 in floating point resolve to 0.00024 ms.
+    const millisecondsEachSecond = readings
+      .slice(1)
+      .map((readingMs, secondNumber) => readingMs - (readings[secondNumber] ?? 0));
+    const changesFromTheSecondBefore = millisecondsEachSecond
+      .slice(1)
+      .map((lengthMs, secondNumber) => lengthMs - (millisecondsEachSecond[secondNumber] ?? 0));
+    expect(
+      Math.min(...changesFromTheSecondBefore),
+      'no second is more than 0.65 ms shorter than the one before',
+    ).toBeGreaterThanOrEqual(-0.65);
+    expect(
+      Math.max(...changesFromTheSecondBefore),
+      'and none is longer than the one before',
+    ).toBeLessThanOrEqual(0.001);
+    expect(millisecondsEachSecond.at(-1), 'the last seconds are of real time').toBeCloseTo(
+      1_000 / 1.04,
+      3,
+    );
   });
 
   it('covers a slew of 1 s at 0.5% of the time passing, then stops', () => {
@@ -180,5 +226,21 @@ describe('the server clock', () => {
       'a step moves the clock at once, by the whole difference',
     ).toBe('2026-10-10T21:00:10.000Z');
     expect(serverClock.readSlewLeftMs(), 'a step replaces the slew').toBe(0);
+  });
+
+  it('counts its steps, so the pages know to line up again, and not its slews', () => {
+    // Arrange: a new server clock, which has never stepped.
+    fakeTheMachineClocksAtOneOClock();
+    const serverClock = createServerClock();
+    const stepsAtCreation = serverClock.readStepCount();
+
+    // Act: a slew, then two steps.
+    serverClock.slewBy(300);
+    serverClock.stepBy(1_500);
+    serverClock.stepBy(-2_000);
+
+    // Assert: none at creation, two now.
+    expect(stepsAtCreation, 'a new clock has made no step').toBe(0);
+    expect(serverClock.readStepCount(), 'each step counts, a slew does not').toBe(2);
   });
 });

@@ -62,6 +62,7 @@ describe('connecting to /ws', () => {
       type: 'hello',
       slices: runningServer.stateStore.readAllSlices(),
       serverNowMs: momentTheServerClockIsHeldAtInMilliseconds,
+      serverClockStepCount: expect.any(Number),
     });
     expect(
       hello.type === 'hello' ? hello.slices.layers.length : 0,

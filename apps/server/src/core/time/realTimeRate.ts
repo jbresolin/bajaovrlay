@@ -57,11 +57,7 @@ export function keepTheAnswersOfTheRateWindow(
  * its offset may be wrong by half the extra delay. The answers must be oldest first.
  */
 export function estimateRateOfRealTime(answers: readonly RealTimeSample[]): RateEstimate {
-  const shortestRoundTripMs = Math.min(...answers.map((answer) => answer.roundTripMs));
-  const longestRoundTripKeptMs = Math.max(
-    shortestRoundTripMs * 2,
-    shortestRoundTripMs + roundTripAllowanceMs,
-  );
+  const longestRoundTripKeptMs = findTheLongestRoundTripKeptMs(answers);
   const answersKept = answers.filter((answer) => answer.roundTripMs <= longestRoundTripKeptMs);
   const oldestAnswer = answersKept[0];
   const newestAnswer = answersKept[answersKept.length - 1];
@@ -78,4 +74,14 @@ export function estimateRateOfRealTime(answers: readonly RealTimeSample[]): Rate
     return { kind: 'implausible', rate };
   }
   return { kind: 'estimated', rate };
+}
+
+/**
+ * The longest round trip not counted as an outlier among these answers: twice the
+ * shortest, and at least 20 ms over it. The discipline leaves a small difference told by
+ * a slower answer aside for the same reason the rate does.
+ */
+export function findTheLongestRoundTripKeptMs(answers: readonly RealTimeSample[]): number {
+  const shortestRoundTripMs = Math.min(...answers.map((answer) => answer.roundTripMs));
+  return Math.max(shortestRoundTripMs * 2, shortestRoundTripMs + roundTripAllowanceMs);
 }

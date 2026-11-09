@@ -17,7 +17,7 @@
  * What these tests prove (on Vitest's fake Date and fake performance: a step of the wall
  *   clock moves Date.now() alone, while time passing moves both):
  *   - With no alignment (a preview page) the time read is the machine's own.
- *   - A hello's one-way sample lines the page up at once; with no time in the hello, the
+ *   - A hello's one-way sample lines a new page up at once; with no time in the hello, the
  *     probes line it up alone.
  *   - Four probes at the hello: the answer with the shortest round trip wins, by its
  *     midpoint; a fifth answer is a later one.
@@ -30,87 +30,31 @@
  *     machine's own time.
  *
  * What these tests deliberately do not cover:
+ *   - A new hello on a page already lined up, and a step of the server clock;
+ *     serverAlignedTimeAcrossAHello.test.ts.
  *   - Sending the probes over a real socket; apps/renderer's and apps/control's
  *     serverConnection.serverClock tests. The race clock reading this time on air;
  *     packages/graphics/race-clock's race-clock.serverClock.test.ts.
  */
-import { describe, expect, it, onTestFinished, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   forgetTheServerClockAlignment,
   lineUpWithTheServerClockAt,
   readServerAlignedTimeMs,
   readThisMachineMonotonicTimeMs,
-  recordClockProbeAnswer,
+  startLiningUpAtAHello,
 } from './serverAlignedTime.js';
-
-/** 9 October 2026, 14:32:05 UTC on the server's clock: the enduro is under way. */
-const serverTimeMs = Date.parse('2026-10-09T14:32:05.000Z');
-
-/** How far behind the server's the OBS machine's clock was seen to be. */
-const renderMachineLagMs = 2_300;
-
-/**
- * Holds the machine's clocks (wall and monotonic) still at the given time, and makes
- * sure the alignment and the real clocks come back when the test ends, so no test sees
- * another one's alignment.
- */
-function holdTheMachineClockAt(machineTimeMs: number): void {
-  vi.useFakeTimers({ toFake: ['Date', 'performance'], now: machineTimeMs });
-  forgetTheServerClockAlignment();
-  onTestFinished(() => {
-    forgetTheServerClockAlignment();
-    vi.useRealTimers();
-  });
-}
-
-/**
- * A probe's whole trip: sent now, answered by a server whose clock is `serverAheadMs`
- * ahead of this machine's, the answer arriving `roundTripMs` later (half each way).
- * Time passes on the fake clocks by the round trip. Returns whether to send another.
- */
-function sendAProbeAndTakeItsAnswer(serverAheadMs: number, roundTripMs: number): boolean {
-  const pageSentAtMs = readThisMachineMonotonicTimeMs();
-  const serverNowMs = pageSentAtMs + roundTripMs / 2 + serverAheadMs;
-  vi.advanceTimersByTime(roundTripMs);
-  return recordClockProbeAnswer({
-    pageSentAtMs,
-    serverNowMs,
-    pageReceivedAtMs: readThisMachineMonotonicTimeMs(),
-  }).isAnotherProbeNeeded;
-}
-
-/**
- * A probe whose answer was held up on the way back only: 2 ms there, then 2 ms plus
- * `extraWayBackMs` back, so its midpoint is off by half of the extra.
- */
-function takeAnAnswerDelayedOnTheWayBack(serverAheadMs: number, extraWayBackMs: number): boolean {
-  const pageSentAtMs = readThisMachineMonotonicTimeMs();
-  const serverNowMs = pageSentAtMs + 2 + serverAheadMs;
-  vi.advanceTimersByTime(4 + extraWayBackMs);
-  return recordClockProbeAnswer({
-    pageSentAtMs,
-    serverNowMs,
-    pageReceivedAtMs: readThisMachineMonotonicTimeMs(),
-  }).isAnotherProbeNeeded;
-}
-
-/**
- * Lines the page up as at a hello, on a server ahead by this: the hello's own time
- * (20 ms late, one-way), then four probes of 6 ms.
- */
-function lineUpWithFourProbes(serverAheadMs: number): void {
-  const helloArrivedAtMs = readThisMachineMonotonicTimeMs();
-  lineUpWithTheServerClockAt(helloArrivedAtMs + serverAheadMs - 20, helloArrivedAtMs);
-  for (let probeNumber = 0; probeNumber < 4; probeNumber += 1) {
-    sendAProbeAndTakeItsAnswer(serverAheadMs, 6);
-  }
-}
-
-/** How far the time read is behind what the server's clock reads now (server − page). */
-function measureHowFarBehindTheServer(serverAheadMs: number): number {
-  return readThisMachineMonotonicTimeMs() + serverAheadMs - readServerAlignedTimeMs();
-}
+import {
+  holdTheMachineClockAt,
+  lineUpWithFourProbes,
+  measureHowFarBehindTheServer,
+  renderMachineLagMs,
+  sendAProbeAndTakeItsAnswer,
+  serverTimeMs,
+  takeAHello,
+  takeAnAnswerDelayedOnTheWayBack,
+} from './serverAlignedTime.testSupport.js';
 
 describe('the time read before any alignment, and at the hello', () => {
   it('is the time of the machine itself when the page never heard from the server', () => {
@@ -130,8 +74,8 @@ describe('the time read before any alignment, and at the hello', () => {
     // Arrange: a machine whose clock shows 14:32:02.700 when the server's shows 14:32:05.
     holdTheMachineClockAt(serverTimeMs - renderMachineLagMs);
 
-    // Act: the hello, stamped 14:32:05, arrives; then forty seconds pass.
-    lineUpWithTheServerClockAt(serverTimeMs, readThisMachineMonotonicTimeMs());
+    // Act: the hello, stamped 14:32:05, arrives at once; then forty seconds pass.
+    takeAHello(renderMachineLagMs, { lateByMs: 0 });
     const timeReadAtTheHelloMs = readServerAlignedTimeMs();
     vi.advanceTimersByTime(40_000);
 
@@ -145,7 +89,7 @@ describe('the time read before any alignment, and at the hello', () => {
   it('keeps the probe answer with the shortest round trip of the four after a hello', () => {
     // Arrange: a machine 2.3 s behind; the hello has arrived (one-way, so 40 ms late).
     holdTheMachineClockAt(serverTimeMs - renderMachineLagMs);
-    lineUpWithTheServerClockAt(serverTimeMs - 40, readThisMachineMonotonicTimeMs());
+    takeAHello(renderMachineLagMs, { lateByMs: 40 });
 
     // Act: four probes, one after another, coming back in 40, 6, 30 and 18 ms; the 30 ms
     // one was held up on the way back only, which would put it 13 ms off.
@@ -166,8 +110,13 @@ describe('the time read before any alignment, and at the hello', () => {
   });
 
   it('lines up from the probes alone when the hello carried no time', () => {
-    // Arrange: a machine 2.3 s behind whose hello (a stand-in server's) had no serverNowMs.
+    // Arrange: a machine 2.3 s behind whose hello (a stand-in server's) had no serverNowMs
+    // and no step count.
     holdTheMachineClockAt(serverTimeMs - renderMachineLagMs);
+    startLiningUpAtAHello(
+      { serverNowMs: undefined, serverClockStepCount: undefined },
+      readThisMachineMonotonicTimeMs(),
+    );
 
     // Act: the four probes are answered.
     for (let probeNumber = 0; probeNumber < 4; probeNumber += 1) {

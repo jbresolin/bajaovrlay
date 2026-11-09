@@ -5,9 +5,10 @@
  *   A race clock on air counts from a moment the server stamped with ITS clock, which
  *   keeps real time from NTP, while the graphic runs on the OBS machine with another
  *   clock. So the connection lines the page up with the server (BAJAOVRLAY-62): at each
- *   `hello` at once with the hello's own `serverNowMs`, then with four clock probes sent
- *   one after another, keeping the answer with the shortest round trip; then one probe
- *   per ten-second `time` message. Graphics ask readServerAlignedTimeMs() for "now".
+ *   `hello` with four clock probes sent one after another, keeping the answer with the
+ *   shortest round trip (a page not lined up yet holds the hello's own `serverNowMs`
+ *   until then); then one probe per ten-second `time` message, and four again when the
+ *   server clock has stepped. Graphics ask readServerAlignedTimeMs() for "now".
  *
  * What these tests prove (the machine's clock faked 2.3 s behind the server's; a stand-in
  *   server answers each probe after a round trip the test chooses):
@@ -18,93 +19,32 @@
  *   - Through a quiet minute in which the machine's wall clock steps back 5 s, the time
  *     read stays on the server's clock (monotonic time between answers).
  *   - A program monitor lines up the same way.
- *   - The time a `slice` carries no longer moves the time read: only the hello and the
- *     probes do.
- *   - A hello without `serverNowMs`, a `commandResult` and the state read over HTTP line
- *     nothing up; a probe answered after such a hello does.
- *   - A new hello (after a reconnect) lines up afresh, even 8 h away (the machine slept).
+ *   - A reconnect's hello, late by 400 ms, does not move a page already lined up; its
+ *     probes line it up anew 8 h away (the machine slept).
+ *   - A `time` message with a new step count of the server clock lines the page up at
+ *     once after four probes.
  *
  * What these tests deliberately do not cover:
+ *   - What lines nothing up (a slice's time, a commandResult, the state over HTTP) and a
+ *     hello without `serverNowMs`; serverConnection.serverClockLinesNothingUp.test.ts.
  *   - The midpoint, the slew and the 2 s rule; packages/shared/src/clock tests.
  *   - The race clock drawing that time; packages/graphics/race-clock's
  *     race-clock.serverClock.test.ts.
  *   - What the connection does with the slices; serverConnection.test.ts.
  */
-import { forgetTheServerClockAlignment, readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
-import { describe, expect, it, onTestFinished, vi } from 'vitest';
+import { readServerAlignedTimeMs } from '@bajaovrlay/shared/clock';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createEnduroClockInstance } from './instancesOnAir.testSupport.js';
+import { createSlicesWithInstances } from './serverConnection.testSupport.js';
 import {
-  createSlicesWithInstances,
-  createStateReadAnsweredByHand,
-  type FakeServerSocket,
-  startConnectionForTests,
-} from './serverConnection.testSupport.js';
-
-/** 9 October 2026, 14:32:05 UTC on the server's clock. */
-const serverTimeAtTheHelloMs = Date.parse('2026-10-09T14:32:05.000Z');
-
-/** How far behind the server's the OBS machine's clock was seen to be. */
-const renderMachineLagMs = 2_300;
-
-/**
- * Starts a connection whose socket has just opened, on a machine whose clock is 2.3 s
- * behind the server's. The alignment is forgotten before and after, so no test sees
- * another one's.
- */
-function startConnectionOnAMachineBehindTheServer(
-  readStateOverHttp?: (address: string) => Promise<unknown>,
-) {
-  const connection = startConnectionForTests(readStateOverHttp);
-  forgetTheServerClockAlignment();
-  onTestFinished(() => forgetTheServerClockAlignment());
-  vi.setSystemTime(serverTimeAtTheHelloMs - renderMachineLagMs);
-  connection.latestSocket().simulateOpen();
-  return connection;
-}
-
-/** The monotonic time of the machine, in whole ms, as the page reads it. */
-function readMonotonicTimeOfTheMachineMs(): number {
-  return Math.floor(performance.timeOrigin + performance.now());
-}
-
-/** What the server's clock shows now: the machine's monotonic time plus how far it lags. */
-function readServerClockNowMs(lagOfThisMachineMs: number = renderMachineLagMs): number {
-  return readMonotonicTimeOfTheMachineMs() + lagOfThisMachineMs;
-}
-
-/** The clock probes the page has sent on a socket, in order. */
-function readClockProbesSent(socket: FakeServerSocket): { pageSentAtMs: number }[] {
-  return socket.textsSentByTheRenderer
-    .map((text) => JSON.parse(text) as { type: string; pageSentAtMs: number })
-    .filter((message) => message.type === 'clockProbe');
-}
-
-/**
- * Answers, as the server would, every probe not yet answered: each answer arrives 6 ms
- * after its probe, read by the server halfway. Answering one may make the page send
- * another, which is answered in turn. Returns how many were answered.
- */
-function answerEveryClockProbe(
-  socket: FakeServerSocket,
-  lagOfThisMachineMs = renderMachineLagMs,
-): number {
-  let probesAnswered = 0;
-  while (readClockProbesSent(socket).length > probesAnswered) {
-    const probe = readClockProbesSent(socket)[probesAnswered];
-    if (probe === undefined) {
-      break;
-    }
-    vi.advanceTimersByTime(6);
-    socket.simulateMessage({
-      type: 'clockProbeAnswer',
-      pageSentAtMs: probe.pageSentAtMs,
-      serverNowMs: probe.pageSentAtMs + 3 + lagOfThisMachineMs,
-    });
-    probesAnswered += 1;
-  }
-  return probesAnswered;
-}
+  answerEveryClockProbe,
+  readClockProbesSent,
+  readServerClockNowMs,
+  renderMachineLagMs,
+  serverTimeAtTheHelloMs,
+  startConnectionOnAMachineBehindTheServer,
+} from './serverConnectionServerClock.testSupport.js';
 
 describe('lining up with the server clock at the hello', () => {
   it('is the time of the machine itself before any message arrives', () => {
@@ -179,7 +119,39 @@ describe('lining up with the server clock at the hello', () => {
     );
   });
 
-  it('lines up afresh at a new hello, even 8 h away after the machine slept', () => {
+  it('keeps its time through a reconnect whose hello is 400 ms late', () => {
+    // Arrange: a connection lined up at its hello and probes, the enduro clock on air.
+    const connection = startConnectionOnAMachineBehindTheServer();
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([createEnduroClockInstance()]),
+      serverNowMs: readServerClockNowMs(),
+      serverClockStepCount: 0,
+    });
+    answerEveryClockProbe(connection.latestSocket());
+
+    // Act: the socket drops mid-race and reconnects; the new hello was 400 ms on its way.
+    connection.latestSocket().simulateDrop();
+    vi.advanceTimersByTime(1_000);
+    connection.latestSocket().simulateOpen();
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([createEnduroClockInstance()]),
+      serverNowMs: readServerClockNowMs() - 400,
+      serverClockStepCount: 0,
+    });
+    const timeReadAfterTheHelloMs = readServerAlignedTimeMs();
+    answerEveryClockProbe(connection.latestSocket());
+
+    // Assert: the late hello did not set the clock on air back 400 ms (12:38 → 12:37 →
+    // 12:38); after the probes, still the server's time.
+    expect(timeReadAfterTheHelloMs, 'a late hello must not move a page lined up').toBe(
+      readServerClockNowMs() - 4 * 6,
+    );
+    expect(readServerAlignedTimeMs(), 'the probes agree').toBe(readServerClockNowMs());
+  });
+
+  it('lines up anew at a reconnect 8 h away, once its probes answer: the machine slept', () => {
     // Arrange: a connection lined up at its hello and probes.
     const connection = startConnectionOnAMachineBehindTheServer();
     connection.latestSocket().simulateMessage({
@@ -190,7 +162,7 @@ describe('lining up with the server clock at the hello', () => {
     answerEveryClockProbe(connection.latestSocket());
 
     // Act: the machine slept 8 h (its monotonic time stood still); the socket dropped and,
-    // reconnected, the new hello says the server is 8 h further on.
+    // reconnected, the new hello and its probes say the server is 8 h further on.
     const eightHoursMs = 8 * 60 * 60 * 1000;
     connection.latestSocket().simulateDrop();
     vi.advanceTimersByTime(1_000);
@@ -200,9 +172,10 @@ describe('lining up with the server clock at the hello', () => {
       slices: createSlicesWithInstances([]),
       serverNowMs: readServerClockNowMs(renderMachineLagMs + eightHoursMs),
     });
+    answerEveryClockProbe(connection.latestSocket(), renderMachineLagMs + eightHoursMs);
 
-    // Assert: on the server's time at once.
-    expect(readServerAlignedTimeMs(), 'a new hello drops what was lined up before').toBe(
+    // Assert: on the server's time at once, not 8 h at 0.5% later.
+    expect(readServerAlignedTimeMs(), 'a gap of 2 s or more is lined up at once').toBe(
       readServerClockNowMs(renderMachineLagMs + eightHoursMs),
     );
   });
@@ -235,6 +208,39 @@ describe('the time message the server sends every ten seconds', () => {
     expect(connection.deliveries, 'a time message must deliver no slices').toHaveLength(1);
     expect(connection.logLines.length, 'a time message must write no log line').toBe(
       numberOfLogLinesBefore,
+    );
+  });
+
+  it('lines up at once with a step of the server clock that the time message tells', () => {
+    // Arrange: a connection lined up at its hello and probes, the server clock never
+    // stepped.
+    const connection = startConnectionOnAMachineBehindTheServer();
+    connection.latestSocket().simulateMessage({
+      type: 'hello',
+      slices: createSlicesWithInstances([createEnduroClockInstance()]),
+      serverNowMs: readServerClockNowMs(),
+      serverClockStepCount: 0,
+    });
+    const probesAnsweredAtTheHello = answerEveryClockProbe(connection.latestSocket());
+
+    // Act: the server clock steps 1.5 s forwards ("Acertar relógio agora"); the server
+    // sends a time message at once with the new count; the page's probes are answered.
+    const lagAfterTheStepMs = renderMachineLagMs + 1_500;
+    connection.latestSocket().simulateMessage({
+      type: 'time',
+      serverNowMs: readServerClockNowMs(lagAfterTheStepMs),
+      serverClockStepCount: 1,
+    });
+    const probesAnsweredInAll = answerEveryClockProbe(
+      connection.latestSocket(),
+      lagAfterTheStepMs,
+      probesAnsweredAtTheHello,
+    );
+
+    // Assert: four probes after the step, and the page on the server's new time at once.
+    expect(probesAnsweredInAll - probesAnsweredAtTheHello, 'four probes, as at a hello').toBe(4);
+    expect(readServerAlignedTimeMs(), 'a race clock on air follows the step at once').toBe(
+      readServerClockNowMs(lagAfterTheStepMs),
     );
   });
 
@@ -281,85 +287,6 @@ describe('the time message the server sends every ten seconds', () => {
     ).toBe(serverTimeLinedUpMs + 20_000);
     expect(readServerAlignedTimeMs(), 'a minute on, still the server clock').toBe(
       serverTimeLinedUpMs + 60_000,
-    );
-  });
-});
-
-describe('what lines nothing up', () => {
-  it("leaves the time read alone after a slice's own time", () => {
-    // Arrange: a connection lined up at its hello and probes.
-    const connection = startConnectionOnAMachineBehindTheServer();
-    connection.latestSocket().simulateMessage({
-      type: 'hello',
-      slices: createSlicesWithInstances([]),
-      serverNowMs: readServerClockNowMs(),
-    });
-    answerEveryClockProbe(connection.latestSocket());
-
-    // Act: a slice message arrives that spent 850 ms on the network, carrying the time it
-    // was built at.
-    const serverClockWhenTheSliceWasBuiltMs = readServerClockNowMs();
-    vi.advanceTimersByTime(850);
-    connection.latestSocket().simulateMessage({
-      type: 'slice',
-      name: 'instances',
-      slice: [createEnduroClockInstance()],
-      serverNowMs: serverClockWhenTheSliceWasBuiltMs,
-    });
-
-    // Assert: still exactly the server's time: only the hello and the probes line up.
-    expect(readServerAlignedTimeMs(), 'a slow slice must not move the time read').toBe(
-      readServerClockNowMs(),
-    );
-  });
-
-  it('lines up from the probes alone after a hello without serverNowMs', () => {
-    // Arrange: a stand-in server whose hello leaves the time out.
-    const connection = startConnectionOnAMachineBehindTheServer();
-    connection
-      .latestSocket()
-      .simulateMessage({ type: 'hello', slices: createSlicesWithInstances([]) });
-    const timeReadBeforeTheProbesMs = readServerAlignedTimeMs();
-
-    // Act: the probe the hello sent is answered, and the ones after it.
-    answerEveryClockProbe(connection.latestSocket());
-
-    // Assert: the machine's own time until then; the server's after.
-    expect(timeReadBeforeTheProbesMs, 'no serverNowMs, so no correction yet').toBe(
-      serverTimeAtTheHelloMs - renderMachineLagMs,
-    );
-    expect(readServerAlignedTimeMs(), 'the probes line the page up').toBe(readServerClockNowMs());
-  });
-
-  it('leaves the time read alone after a commandResult, with no warning', () => {
-    // Arrange: a connection on the machine that is 2.3 s behind.
-    const connection = startConnectionOnAMachineBehindTheServer();
-
-    // Act: a commandResult arrives (it answers an instanceStatus).
-    connection.latestSocket().simulateMessage({ type: 'commandResult', requestId: null, ok: true });
-
-    // Assert: still the machine's own time, and no warning.
-    expect(readServerAlignedTimeMs(), 'a commandResult carries no clock').toBe(
-      serverTimeAtTheHelloMs - renderMachineLagMs,
-    );
-    expect(connection.readWarnings(), 'such a message is normal, not a problem').toEqual([]);
-  });
-
-  it('lines nothing up from the state read over HTTP when the hello is late', async () => {
-    // Arrange: a connection whose hello never comes, and a state read answered by hand.
-    const stateRead = createStateReadAnsweredByHand();
-    const connection = startConnectionOnAMachineBehindTheServer(stateRead.readStateOverHttp);
-
-    // Act: three seconds pass, the state is read over HTTP and answered.
-    await vi.advanceTimersByTimeAsync(3_000);
-    stateRead.answerWith(createSlicesWithInstances([createEnduroClockInstance()]));
-    await vi.advanceTimersByTimeAsync(0);
-
-    // Assert: the slices were delivered, but GET /api/v1/state carries no clock, so the
-    // time read is still the machine's own (now three seconds on).
-    expect(connection.deliveries, 'the state read must deliver the slices').toHaveLength(1);
-    expect(readServerAlignedTimeMs(), 'the HTTP read lines nothing up').toBe(
-      serverTimeAtTheHelloMs - renderMachineLagMs + 3_000,
     );
   });
 });

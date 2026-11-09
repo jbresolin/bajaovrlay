@@ -7,7 +7,7 @@
 import { onTestFinished, vi } from 'vitest';
 
 import { createRecordingLogger } from '../logger/recordingLogger.testSupport.js';
-import type { NtpPollOutcome } from './ntpPolls.js';
+import type { NtpPollOutcome, NtpPollRequest } from './ntpPolls.js';
 import { createServerClock, type ServerClock } from './serverClock.js';
 import { startServerClockDiscipline } from './serverClockDiscipline.js';
 
@@ -17,13 +17,42 @@ export const tenOClockOfTheEnduroMs = Date.parse('2026-10-10T13:00:00.000Z');
 /** The NTP server the fake answers as. */
 export const nameOfTheFakeNtpServer = 'a.st1.ntp.br:123';
 
+/** How one answer of the fake NTP came back: its round trip and how wrong its offset was. */
+export type NetworkOfOneAnswer = { roundTripMs: number; offsetErrorMs: number };
+
+/**
+ * Answers over the internet from the track, in turn: round trips of 22 to 45 ms whose
+ * offsets are off by up to 15 ms either way, unevenly, and every eighth one held up
+ * 238 ms on the way back (the delay João's WSL measured), its offset off by 107 ms.
+ * Each offset error is at most half of the extra round trip, as one-sided delays make it.
+ */
+export const answersOverTheInternetFromTheTrack: readonly NetworkOfOneAnswer[] = [
+  { roundTripMs: 24, offsetErrorMs: 1 },
+  { roundTripMs: 31, offsetErrorMs: -4 },
+  { roundTripMs: 22, offsetErrorMs: 0 },
+  { roundTripMs: 41, offsetErrorMs: 9 },
+  { roundTripMs: 27, offsetErrorMs: -2 },
+  { roundTripMs: 52, offsetErrorMs: -15 },
+  { roundTripMs: 23, offsetErrorMs: 0 },
+  { roundTripMs: 238, offsetErrorMs: 107 },
+  { roundTripMs: 29, offsetErrorMs: 3 },
+  { roundTripMs: 52, offsetErrorMs: 15 },
+  { roundTripMs: 26, offsetErrorMs: -2 },
+  { roundTripMs: 37, offsetErrorMs: 7 },
+];
+
 /** How the machine keeps time against the real world. */
 export type MachineOfTheTest = {
   /** How much faster than real time its monotonic time runs: 0.04 for 4% fast. */
   monotonicRunsFastBy: number;
   /** How far its wall clock is from real time when the server boots: −5000 for 5 s behind. */
   wallClockAheadOfRealTimeAtBootMs: number;
+  /** How the fake NTP's answers come back, in turn; one 12 ms round trip, exact, unless given. */
+  networkOfEachAnswer?: readonly NetworkOfOneAnswer[];
 };
+
+/** One poll the discipline made: when (monotonic ms since the boot) and what it asked for. */
+export type PollMade = { monotonicSinceBootMs: number } & NtpPollRequest;
 
 /**
  * Fakes the machine's clocks and timers at ten o'clock, and starts a server clock and its
@@ -39,10 +68,19 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
   });
   const serverClock: ServerClock = createServerClock();
   const monotonicAtBootMs = serverClock.readMonotonicTimeMs();
+  const networkOfEachAnswer = machine.networkOfEachAnswer ?? [
+    { roundTripMs: 12, offsetErrorMs: 0 },
+  ];
+  let answersGiven = 0;
   let timeSleptMs = 0;
   let isNtpReachable = true;
   let isNtpAnsweringAtAll = true;
+  let isNtpAskingToSlowDown = false;
+  let howWrongNtpIsMs = 0;
   let isAnythingCountingTimeOnAir = false;
+  let stepsToldToThePages = 0;
+  const pollsMade: PollMade[] = [];
+  const stepsConsidered: number[] = [];
 
   /** Real time now: what NTP would tell. */
   function readRealTimeMs(): number {
@@ -54,8 +92,11 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
     );
   }
 
-  /** The fake poll: real time at once, with a 12 ms round trip; or no answer. */
-  function pollForRealTime(): Promise<NtpPollOutcome> {
+  /** The fake poll: real time at once, through the network of the next answer; or nothing. */
+  function pollForRealTime(request: NtpPollRequest): Promise<NtpPollOutcome> {
+    const monotonicNowMs = serverClock.readMonotonicTimeMs();
+    pollsMade.push({ monotonicSinceBootMs: monotonicNowMs - monotonicAtBootMs, ...request });
+    const wasAskedToSlowDown = isNtpAskingToSlowDown;
     if (!isNtpAnsweringAtAll) {
       // A poll that never ends, like one waiting on a network that is not there.
       return new Promise(() => {});
@@ -64,17 +105,24 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
       return Promise.resolve({
         isAnswered: false,
         problems: [`${nameOfTheFakeNtpServer}: timeout`],
+        wasAskedToSlowDown,
       });
     }
-    const localTimeAtArrivalMs = serverClock.readMonotonicTimeMs();
+    const network = networkOfEachAnswer[answersGiven % networkOfEachAnswer.length] ?? {
+      roundTripMs: 12,
+      offsetErrorMs: 0,
+    };
+    answersGiven += 1;
+    const realTimeToldMs = readRealTimeMs() + howWrongNtpIsMs + network.offsetErrorMs;
     return Promise.resolve({
       isAnswered: true,
       serverName: nameOfTheFakeNtpServer,
       answer: {
-        offsetMs: readRealTimeMs() - localTimeAtArrivalMs,
-        roundTripMs: 12,
-        localTimeAtArrivalMs,
+        offsetMs: realTimeToldMs - monotonicNowMs,
+        roundTripMs: network.roundTripMs,
+        localTimeAtArrivalMs: monotonicNowMs,
       },
+      wasAskedToSlowDown,
     });
   }
 
@@ -82,7 +130,13 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
   const discipline = startServerClockDiscipline({
     serverClock,
     pollForRealTime,
-    isAnythingCountingTimeOnAir: () => isAnythingCountingTimeOnAir,
+    isAnythingCountingTimeOnAir: (stepByMs) => {
+      stepsConsidered.push(stepByMs);
+      return isAnythingCountingTimeOnAir;
+    },
+    afterEachStep: () => {
+      stepsToldToThePages += 1;
+    },
     logger,
   });
   onTestFinished(() => {
@@ -94,6 +148,12 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
     discipline,
     readRealTimeMs,
     readRecordedLines,
+    /** Every poll the discipline made, in order. */
+    readPollsMade: () => [...pollsMade],
+    /** Each step the discipline asked about before stepping (what is on air may veto it). */
+    readStepsConsidered: () => [...stepsConsidered],
+    /** How many steps were reported for the pages to line up again. */
+    countStepsToldToThePages: () => stepsToldToThePages,
     /** The machine sleeps: real time moves on by the given ms, monotonic time does not. */
     sleepFor: (sleepMs: number) => {
       timeSleptMs += sleepMs;
@@ -105,6 +165,14 @@ export function startAServerClockInAFakeWorld(machine: MachineOfTheTest) {
     /** Every poll from now on hangs, as with no network at boot. */
     makeNtpNeverAnswer: () => {
       isNtpAnsweringAtAll = false;
+    },
+    /** From now on every poll also brings a RATE kiss of death from one server. */
+    makeNtpAskToSlowDown: (isAsking: boolean) => {
+      isNtpAskingToSlowDown = isAsking;
+    },
+    /** NTP tells a time this far from real time: a box without its GPS fix. */
+    makeNtpWrongBy: (wrongByMs: number) => {
+      howWrongNtpIsMs = wrongByMs;
     },
     /** A running clock or a countdown goes on air, or comes off. */
     setSomethingCountingTimeOnAir: (isCounting: boolean) => {
@@ -167,4 +235,16 @@ export function measureServerMillisecondsPerRealSecond(
     measures.push((serverMovedMs / realMovedMs) * 1_000);
   }
   return measures;
+}
+
+/**
+ * For each pair of seconds in a row: how much longer (positive) or shorter the second on
+ * air was than the one before, in ms. Small changes are a ramp or a slew; a change of
+ * tens of ms at once is a second on air that visibly stretched.
+ */
+export function measureChangeFromTheSecondBefore(looks: readonly LookAtTheClocks[]): number[] {
+  const millisecondsPerRealSecond = measureServerMillisecondsPerRealSecond(looks);
+  return millisecondsPerRealSecond
+    .slice(1)
+    .map((lengthMs, secondNumber) => lengthMs - (millisecondsPerRealSecond[secondNumber] ?? 0));
 }

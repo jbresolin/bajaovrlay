@@ -9,9 +9,10 @@ import {
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
 import {
-  lineUpWithTheServerClockAt,
   readThisMachineMonotonicTimeMs,
   recordClockProbeAnswer,
+  startLiningUpAgainIfTheServerClockStepped,
+  startLiningUpAtAHello,
 } from '@bajaovrlay/shared/clock';
 
 import { ptBR } from '@/i18n/ptBR';
@@ -163,11 +164,10 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
     }
     switch (message.type) {
       case 'hello':
-        // Lined up at once with the hello's own time, then four probes refine it: the
-        // page and the screens count from the same clock (BAJAOVRLAY-62).
-        if (message.serverNowMs !== undefined) {
-          lineUpWithTheServerClockAt(message.serverNowMs, localTimeAtArrivalMs);
-        }
+        // Four probes line the page up, so it and the screens count from the same clock
+        // (BAJAOVRLAY-62); a page not lined up yet holds the hello's own time until they
+        // answer, and one already lined up keeps its time through a reconnect.
+        startLiningUpAtAHello(message, localTimeAtArrivalMs);
         sendClockProbe();
         numberOfFailedCallsInARow = 0;
         // Taken in first, so a page that does not reload (same build, or already reloaded
@@ -189,9 +189,12 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
         settleCommandAwaitingThisResult(message);
         break;
       case 'time':
-        // The server's ten-second time message: one probe keeps the alignment fresh, and
-        // how far the server clock is off real time goes to the store, which only
-        // changes (and redraws the header) when the whole seconds change. No log line.
+        // The server's ten-second time message (or the one sent at once after a step of
+        // its clock, whose new step count starts four probes that line up at once): one
+        // probe keeps the alignment fresh, and how far the server clock is off real time
+        // goes to the store, which only changes (and redraws the header) when the whole
+        // seconds change. No log line.
+        startLiningUpAgainIfTheServerClockStepped(message.serverClockStepCount);
         sendClockProbe();
         serverStateStore.getState().noteServerClockOffRealTime(message.offFromRealTimeMs);
         break;

@@ -12,12 +12,14 @@
  *   with the local clock's two readings given, so the maths is exact):
  *   - The question is a 48-byte NTP version 4 client packet carrying the local send time.
  *   - The offset and the round trip come out of the four timestamps as the formula says.
- *   - A local clock that is ahead gets a negative offset.
- *   - No answer in time, a malformed answer, an answer to another question and a
- *     kiss-of-death answer are each reported as no answer, with the reason.
+ *   - A local clock that is ahead gets a negative offset; a moment after February 2036
+ *     (NTP's era 1) is read right.
+ *   - The transmit timestamp's lowest bits are random, so an answer cannot be guessed.
  *
  * What these tests deliberately do not cover:
- *   - Several answers and servers, and keeping the shortest round trip; ntpPolls.test.ts.
+ *   - Several answers and servers, keeping the shortest round trip, and looking up a
+ *     host name; ntpPolls.test.ts (the client is given an IPv4 address).
+ *   - What comes back that is no answer; ntpClientRefusals.test.ts.
  *   - What the server clock does with an answer; serverClockDiscipline.test.ts.
  *   - A real NTP server on the internet: tests never leave this machine.
  */
@@ -25,8 +27,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildAnswerOfAHealthyServer,
-  buildKissOfDeathAnswer,
-  buildMalformedAnswer,
   createLocalClockReadingInTurn,
   startFakeNtpServer,
 } from './fakeNtpServer.testSupport.js';
@@ -49,7 +49,7 @@ describe('one NTP question', () => {
 
     // Act: ask it once at one o'clock local time.
     await queryNtpServerOnce({
-      server: fakeServer.address,
+      server: fakeServer.ipv4Address,
       readLocalTimeMs: createLocalClockReadingInTurn([oneOClockOfTheEnduroMs]),
       timeoutMs: timeoutOfTheTestsMs,
     });
@@ -78,7 +78,7 @@ describe('one NTP question', () => {
 
     // Act: ask it once.
     const outcome = await queryNtpServerOnce({
-      server: fakeServer.address,
+      server: fakeServer.ipv4Address,
       readLocalTimeMs: createLocalClockReadingInTurn([
         oneOClockOfTheEnduroMs,
         oneOClockOfTheEnduroMs + 100,
@@ -117,7 +117,7 @@ describe('one NTP question', () => {
 
     // Act: ask it once; the local clock reads one o'clock, then 41 ms later.
     const outcome = await queryNtpServerOnce({
-      server: fakeServer.address,
+      server: fakeServer.ipv4Address,
       readLocalTimeMs: createLocalClockReadingInTurn([
         oneOClockOfTheEnduroMs,
         oneOClockOfTheEnduroMs + 41,
@@ -136,76 +136,58 @@ describe('one NTP question', () => {
     expect(outcome.answer.roundTripMs, '20 ms each way').toBeCloseTo(40, 3);
   });
 
-  const answersThatAreNoAnswer = [
-    // The uplink at the track is down, or a firewall drops UDP 123: nothing comes back.
-    {
-      name: 'nothing comes back in time',
-      answerQuestion: () => undefined,
-      expectedReason: 'timeout',
-    },
-    // Something answered, but not with an NTP packet.
-    {
-      name: 'the answer is not an NTP packet',
-      answerQuestion: () => buildMalformedAnswer(),
-      expectedReason: 'malformed',
-    },
-    // An answer that does not echo our question's timestamp is not an answer to it: a
-    // late answer to an earlier question, or a forged one.
-    {
-      name: 'the answer is to another question',
-      answerQuestion: () =>
-        buildAnswerOfAHealthyServer(Buffer.alloc(48), {
-          receivedAtMs: oneOClockOfTheEnduroMs,
-          sentAtMs: oneOClockOfTheEnduroMs,
-        }),
-      expectedReason: 'malformed',
-    },
-    // The server says "you ask too often": its time must not be used.
-    {
-      name: 'the server sends a kiss of death',
-      answerQuestion: (question: Buffer) => buildKissOfDeathAnswer(question, 'RATE'),
-      expectedReason: 'kissOfDeath',
-    },
-  ];
-
-  it.each(answersThatAreNoAnswer)(
-    'reports no answer, with the reason, when $name',
-    async ({ answerQuestion, expectedReason }) => {
-      // Arrange: a fake server answering as this row says.
-      const fakeServer = await startFakeNtpServer(answerQuestion);
-
-      // Act: ask it once.
-      const outcome = await queryNtpServerOnce({
-        server: fakeServer.address,
-        readLocalTimeMs: createLocalClockReadingInTurn([
-          oneOClockOfTheEnduroMs,
-          oneOClockOfTheEnduroMs + 30,
-        ]),
-        timeoutMs: timeoutOfTheTestsMs,
-      });
-
-      // Assert: no answer, and why.
-      expect(outcome.isAnswered, 'nothing usable came back').toBe(false);
-      expect(!outcome.isAnswered && outcome.reason, 'the reason names what went wrong').toBe(
-        expectedReason,
-      );
-    },
-  );
-
-  it('names the code of a kiss of death in its detail', async () => {
-    // Arrange: a fake server that says DENY ("you may not ask me").
+  it('reads a moment after February 2036, when NTP counts its seconds from zero again', async () => {
+    // Arrange: a local clock at noon on 1 June 2036; the server got the question 20 ms after
+    // it left, by its clock 2 s ahead, and answered 1 ms later; the answer took 20 ms back.
+    const noonOfJune2036Ms = Date.parse('2036-06-01T12:00:00.000Z');
     const fakeServer = await startFakeNtpServer((question) =>
-      buildKissOfDeathAnswer(question, 'DENY'),
+      buildAnswerOfAHealthyServer(question, {
+        receivedAtMs: noonOfJune2036Ms + 2_020,
+        sentAtMs: noonOfJune2036Ms + 2_021,
+      }),
     );
 
-    // Act: ask it once.
+    // Act: ask it once; the local clock reads noon, then 41 ms later.
     const outcome = await queryNtpServerOnce({
-      server: fakeServer.address,
-      readLocalTimeMs: createLocalClockReadingInTurn([oneOClockOfTheEnduroMs]),
+      server: fakeServer.ipv4Address,
+      readLocalTimeMs: createLocalClockReadingInTurn([noonOfJune2036Ms, noonOfJune2036Ms + 41]),
       timeoutMs: timeoutOfTheTestsMs,
     });
 
-    // Assert: the code is in the detail, for the log.
-    expect(!outcome.isAnswered && outcome.detail, 'the log must say which code').toBe('DENY');
+    // Assert: 2 s ahead and 40 ms on the network, as in any other year.
+    if (!outcome.isAnswered) {
+      throw new Error(`The fake server's answer was refused: ${outcome.reason}`);
+    }
+    expect(outcome.answer.offsetMs, 'era 1 is read as 2036, not 1900').toBeCloseTo(2_000, 3);
+    expect(outcome.answer.roundTripMs, 'and the round trip as before').toBeCloseTo(40, 3);
+  });
+
+  it('puts random lowest bits in the transmit timestamp, so no one can guess the answer', async () => {
+    // Arrange: a fake server that keeps every question and answers nothing.
+    const questionsReceived: Buffer[] = [];
+    const fakeServer = await startFakeNtpServer((question) => {
+      questionsReceived.push(question);
+      return undefined;
+    });
+
+    // Act: ask it eight times, each time at exactly one o'clock local time.
+    for (let questionNumber = 1; questionNumber <= 8; questionNumber += 1) {
+      await queryNtpServerOnce({
+        server: fakeServer.ipv4Address,
+        readLocalTimeMs: createLocalClockReadingInTurn([oneOClockOfTheEnduroMs]),
+        timeoutMs: 50,
+      });
+    }
+
+    // Assert: eight transmit timestamps, not all the same, each still one o'clock to within
+    // a fiftieth of a millisecond (the random bits are the lowest sixteen).
+    const transmitTimestamps = questionsReceived.map((question) =>
+      question.subarray(40, 48).toString('hex'),
+    );
+    expect(new Set(transmitTimestamps).size, 'the lowest bits must differ').toBeGreaterThan(1);
+    for (const question of questionsReceived) {
+      const fractionMs = (question.readUInt32BE(44) / 2 ** 32) * 1000;
+      expect(fractionMs, 'the random bits must not move the time sent').toBeLessThan(0.02);
+    }
   });
 });

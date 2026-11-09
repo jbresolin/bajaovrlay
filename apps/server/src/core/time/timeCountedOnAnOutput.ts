@@ -3,26 +3,36 @@ import { findClockFieldKeysByRole, type Graphic, type Instance } from '@bajaovrl
 /** What is read here: the graphics, and the instances on program and preview. */
 type GraphicsAndInstances = { graphics: readonly Graphic[]; instances: readonly Instance[] };
 
+/** The moment of the question, and the step of the server clock being considered. */
+type StepConsidered = { nowMs: number; stepByMs: number };
+
 /**
  * Answers whether anything on an output (program or preview) counts time, so a step of
- * the server clock would make it jump on screen:
+ * the server clock by `stepByMs` would make it jump on screen:
  * - a running clock: a graphic that marks the four clock roles, its clockRunning true;
  * - a count to a moment still ahead: a field of the graphic marked with the unit epochMs
  *   (the countdown's start, the intermission board's next session) whose moment is after
- *   `nowMs`. Past it, the count shows 0:00 and stops, and a step moves nothing on it.
+ *   `nowMs`. Past it, the count shows 0:00 and stops, and a step forwards moves nothing on
+ *   it; a step back over the moment makes it count again, so that counts too.
  * Found by what the manifest marks, never by a graphic's name, so a new graphic of either
  * kind counts with no change here. Preview counts too: the operator watches its monitor.
  */
 export function isAnythingCountingTimeOnAnOutput(
   slices: GraphicsAndInstances,
-  nowMs: number,
+  stepConsidered: StepConsidered,
 ): boolean {
+  // A step back by 3 s brings every moment of the last 3 s back ahead of the clock.
+  const stepBackMs = Math.max(-stepConsidered.stepByMs, 0);
+  const earliestMomentStillCountedMs = stepConsidered.nowMs - stepBackMs;
   return slices.instances.some((instance) => {
     const graphic = slices.graphics.find((candidate) => candidate.id === instance.graphicId);
     if (graphic === undefined) {
       return false;
     }
-    return isAClockRunning(graphic, instance) || isCountingToAMomentAhead(graphic, instance, nowMs);
+    return (
+      isAClockRunning(graphic, instance) ||
+      isCountingToAMomentAfter(graphic, instance, earliestMomentStillCountedMs)
+    );
   });
 }
 
@@ -35,12 +45,12 @@ function isAClockRunning(graphic: Graphic, instance: Instance): boolean {
   return instance.resolvedData[clockFieldKeys.clockRunning] === true;
 }
 
-/** Whether a field marked with the unit epochMs holds a moment after `nowMs`. */
-function isCountingToAMomentAhead(graphic: Graphic, instance: Instance, nowMs: number): boolean {
+/** Whether a field marked with the unit epochMs holds a moment after `momentMs`. */
+function isCountingToAMomentAfter(graphic: Graphic, instance: Instance, momentMs: number): boolean {
   const momentFieldKeys = listFieldKeysMarkedAsMoments(graphic);
   return momentFieldKeys.some((fieldKey) => {
     const moment = instance.resolvedData[fieldKey];
-    return typeof moment === 'number' && moment > nowMs;
+    return typeof moment === 'number' && moment > momentMs;
   });
 }
 

@@ -171,22 +171,26 @@ async function startServingFromDatabase(
   // here, before the store reads the clock and before the server accepts a connection;
   // it waits up to 3 s for NTP, then starts on the wall clock and says so. Whether
   // anything on air counts time is read from the store, which does not exist yet; the
-  // boot step never asks, and the first poll comes 64 s later. Until the store is there
+  // boot step never asks, and the first poll comes 16 s later. Until the store is there
   // the answer is "yes", so nothing could be stepped while the boot is still running.
-  const slicesForTheServerClock: { readAllSlices: (() => Slices) | undefined } = {
-    readAllSlices: undefined,
-  };
+  // After a step every page is sent the time at once, through the WebSocket hub, which
+  // does not exist yet either: until it does there is no page to tell.
+  const whatTheServerClockReadsLater: {
+    readAllSlices: (() => Slices) | undefined;
+    tellEveryPageOfAStep: (() => void) | undefined;
+  } = { readAllSlices: undefined, tellEveryPageOfAStep: undefined };
   const serverClockControl: ServerClockControl =
     options.readCurrentTime === undefined && options.ntpSettings !== undefined
       ? startTheServerClockOnNtp({
           ntpSettings: options.ntpSettings,
           serverClock: serverClockOfTheProcess,
-          isAnythingCountingTimeOnAir: () =>
-            slicesForTheServerClock.readAllSlices === undefined ||
-            isAnythingCountingTimeOnAnOutput(
-              slicesForTheServerClock.readAllSlices(),
-              serverClockOfTheProcess.readCurrentTimeMs(),
-            ),
+          isAnythingCountingTimeOnAir: (stepByMs) =>
+            whatTheServerClockReadsLater.readAllSlices === undefined ||
+            isAnythingCountingTimeOnAnOutput(whatTheServerClockReadsLater.readAllSlices(), {
+              nowMs: serverClockOfTheProcess.readCurrentTimeMs(),
+              stepByMs,
+            }),
+          afterEachStep: () => whatTheServerClockReadsLater.tellEveryPageOfAStep?.(),
           logger: options.logger,
         })
       : serverClockWithNtpOff;
@@ -227,7 +231,7 @@ async function startServingFromDatabase(
     logger: options.logger,
     readCurrentTime,
   });
-  slicesForTheServerClock.readAllSlices = stateStore.readAllSlices;
+  whatTheServerClockReadsLater.readAllSlices = stateStore.readAllSlices;
   // Sources left on before a restart start polling again at once; unlike a macro, a
   // source that is on is meant to keep running.
   const dataSourceService = startDataSourceService({
@@ -312,6 +316,7 @@ async function startServingFromDatabase(
       operatorLogin,
       publicOrigins: options.publicOrigins,
     });
+    whatTheServerClockReadsLater.tellEveryPageOfAStep = webSocketHub.sendTheTimeToEveryClientNow;
   } catch (bootError) {
     // The poller already armed a poll and a stale watch for every source left on: left
     // running, they would keep the process alive and send commands to the database that

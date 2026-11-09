@@ -35,13 +35,15 @@ export const serverClockWithNtpOff: ServerClockControl = {
 
 /**
  * Starts the discipline of the server clock on the NTP servers of the settings, or gives
- * the control with NTP off. `isAnythingCountingTimeOnAir` is read at each confirmed big
- * difference, never at boot (the boot always steps).
+ * the control with NTP off. `isAnythingCountingTimeOnAir` is asked about each step of a
+ * confirmed big difference, never at boot (the boot always steps); `afterEachStep` runs
+ * after every step, the boot's included.
  */
 export function startTheServerClockOnNtp(options: {
   ntpSettings: NtpSettings;
   serverClock: ServerClock;
-  isAnythingCountingTimeOnAir: () => boolean;
+  isAnythingCountingTimeOnAir: (stepByMs: number) => boolean;
+  afterEachStep: () => void;
   logger: ServerLogger;
 }): ServerClockControl {
   const { ntpSettings, serverClock } = options;
@@ -53,12 +55,15 @@ export function startTheServerClockOnNtp(options: {
   }
   const discipline: ServerClockDiscipline = startServerClockDiscipline({
     serverClock,
-    pollForRealTime: () =>
+    pollForRealTime: (request) =>
       pollNtpServers({
         servers: ntpSettings.servers,
         readLocalTimeMs: serverClock.readMonotonicTimeMs,
+        questionsPerServer: request.questionsPerServer,
+        serverToAskLast: request.serverToAskLast,
       }),
     isAnythingCountingTimeOnAir: options.isAnythingCountingTimeOnAir,
+    afterEachStep: options.afterEachStep,
     logger: options.logger,
   });
   return {

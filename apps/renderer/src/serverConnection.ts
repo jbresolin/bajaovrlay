@@ -40,9 +40,10 @@ import {
   startServerBuildWatch,
 } from '@bajaovrlay/shared';
 import {
-  lineUpWithTheServerClockAt,
   readThisMachineMonotonicTimeMs,
   recordClockProbeAnswer,
+  startLiningUpAgainIfTheServerClockStepped,
+  startLiningUpAtAHello,
 } from '@bajaovrlay/shared/clock';
 
 import { logRendererEvent } from './rendererLog.js';
@@ -207,10 +208,8 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       return { wasHello: false };
     }
     if (message.type === 'hello') {
-      // Lined up at once with the hello's own time, then four probes refine it.
-      if (message.serverNowMs !== undefined) {
-        lineUpWithTheServerClockAt(message.serverNowMs, localTimeAtArrivalMs);
-      }
+      // Four probes line the page up; a late hello never moves a page already lined up.
+      startLiningUpAtAHello(message, localTimeAtArrivalMs);
       sendClockProbe();
       // Drawn first: a page that does not reload (same build, or already reloaded for this
       // one) goes on as always, and one that reloads rebuilds the same stage.
@@ -242,9 +241,10 @@ export function connectToServer(options: ServerConnectionOptions): ServerConnect
       return { wasHello: false };
     }
     if (message.type === 'time') {
-      // The server's ten-second time message: one probe keeps the alignment fresh. Nothing
-      // on the stage changes, and a log line every ten seconds would bury the lines that
-      // matter in the OBS console.
+      // The ten-second time message (or the one right after a step of the server clock,
+      // whose new step count starts four probes): one probe keeps the alignment fresh.
+      // No log line: one every ten seconds would bury the ones that matter in OBS.
+      startLiningUpAgainIfTheServerClockStepped(message.serverClockStepCount);
       sendClockProbe();
       return { wasHello: false };
     }

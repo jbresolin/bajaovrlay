@@ -5,15 +5,21 @@
  * or the difference between the two machines shows as a wrong time on air.
  *
  * How a page lines up (BAJAOVRLAY-62): the server keeps real time from NTP, which a
- * browser cannot ask (no UDP), so the page asks the server. At each `hello` it lines up
- * at once with the hello's own time (one-way, so a few ms late), then sends four clock
- * probes, one after another, and keeps the answer with the shortest round trip, by the
- * midpoint method: the server read its clock halfway between the probe's send and the
- * answer's arrival. Between answers it counts on this machine's monotonic time, never on
- * its wall clock, which WSL2's and Docker Desktop's time sync step under load.
- * After those four, one probe per ten-second `time` message corrects the page's own drift
- * by slewing at most 0.5% of the time passing, so a second on air never visibly
- * stretches; a difference of 2 s or more (this machine slept) is lined up at once.
+ * browser cannot ask (no UDP), so the page asks the server. At each `hello` it sends four
+ * clock probes, one after another, and keeps the answer with the shortest round trip, by
+ * the midpoint method: the server read its clock halfway between the probe's send and
+ * the answer's arrival. What it does with that best answer depends on the page:
+ * - not lined up yet: it lines up at once (until then the hello's own time holds it,
+ *   one-way, so a few ms late);
+ * - already lined up (a reconnect mid-race): the hello's time is ignored, being late by
+ *   the hello's size and transit, and the best answer is slewed to, or lined up with at
+ *   once from 2 s on (this machine slept), so a clock on air never goes back;
+ * - after a step of the server clock to NTP (the step count of a `hello` or `time` is not
+ *   the one seen last): lined up at once, as the server's own clock was.
+ * Between answers it counts on this machine's monotonic time, never on its wall clock,
+ * which WSL2's and Docker Desktop's time sync step under load. After the four, one probe
+ * per ten-second `time` message corrects the page's own drift the same way: slewed at
+ * most 0.5% of the time passing, lined up at once from 2 s on.
  *
  * Deliberate: the alignment lives in one named property of `globalThis`, not in a
  * variable of this module. The renderer and each graphic are separate bundles, each with
@@ -41,7 +47,7 @@ const largestSlewShare = 0.005;
 /** An answer slower than this tells no time: its midpoint could be off by half of it. */
 const longestRoundTripTakenMs = 1_000;
 
-/** What the page keeps between answers: the offset in use, and where it is slewing to. */
+/** The offset in use, and where it is slewing to. */
 type ServerClockAlignmentOfThePage = {
   /** Server clock minus this machine's monotonic time, at the anchor. */
   offsetAtTheAnchorMs: number;
@@ -49,18 +55,51 @@ type ServerClockAlignmentOfThePage = {
   anchorMs: number;
   /** The offset the slew is heading for; the same as offsetAtTheAnchorMs when none. */
   targetOffsetMs: number;
-  /** Probe answers taken since the hello; up to four, they line up at once. */
-  probeAnswersSinceTheHello: number;
-  /** The shortest round trip since the hello; Infinity for the hello's one-way time. */
-  shortestRoundTripMs: number;
+  /** False while only a hello's one-way time lined it up; true once a probe did. */
+  isLinedUpByAProbe: boolean;
+};
+
+/** The best probe answer so far: the offset it measured, its round trip, its arrival. */
+type ProbeMeasurement = { measuredOffsetMs: number; roundTripMs: number; receivedAtMs: number };
+
+/** The probes after a hello or a step: how many answered, the best yet, how it ends. */
+type ProbeRound = {
+  answersTaken: number;
+  bestAnswer: ProbeMeasurement | undefined;
+  /** True for a page not lined up by a probe yet, and after a step of the server clock. */
+  isLiningUpAtOnce: boolean;
+};
+
+/** All the page keeps of the server clock. */
+type ServerClockOfThePage = {
+  alignment: ServerClockAlignmentOfThePage | undefined;
+  probeRound: ProbeRound | undefined;
+  /** The step count of the last `hello` or `time` that carried one. */
+  serverClockStepCountSeen: number | undefined;
 };
 
 /** `globalThis` with the one property this file keeps on it. */
 type GlobalThatMayHoldTheAlignment = typeof globalThis & {
-  __bajaovrlayServerClockAlignment?: ServerClockAlignmentOfThePage | undefined;
+  __bajaovrlayServerClockOfThePage?: ServerClockOfThePage | undefined;
 };
 
 const globalThatMayHoldTheAlignment: GlobalThatMayHoldTheAlignment = globalThis;
+
+/** What the page keeps, or nothing yet. */
+function readServerClockOfThePage(): ServerClockOfThePage {
+  return (
+    globalThatMayHoldTheAlignment.__bajaovrlayServerClockOfThePage ?? {
+      alignment: undefined,
+      probeRound: undefined,
+      serverClockStepCountSeen: undefined,
+    }
+  );
+}
+
+/** Keeps what the page knows of the server clock, for every copy of this code to read. */
+function keepServerClockOfThePage(serverClockOfThePage: ServerClockOfThePage): void {
+  globalThatMayHoldTheAlignment.__bajaovrlayServerClockOfThePage = serverClockOfThePage;
+}
 
 /**
  * The part of `performance` read here. Every page and Node have it, but this package is
@@ -95,21 +134,91 @@ function readOffsetAt(alignment: ServerClockAlignmentOfThePage, localNowMs: numb
 }
 
 /**
- * Lines the page up at once with one time the server sent (a hello's `serverNowMs`,
- * which arrived when this machine's monotonic time read `localNowMs`), forgetting what
- * came before: a page whose machine slept starts afresh at the reconnect's hello. The
- * probes that follow replace it, since any round trip is shorter than an unknown one.
- * Tests call it to set the server's time.
+ * Lines the page up at once with one time the server sent (`serverNowMs`, which arrived
+ * when this machine's monotonic time read `localNowMs`), forgetting what came before.
+ * Tests call it to set the server's time; a page calls startLiningUpAtAHello.
  */
 export function lineUpWithTheServerClockAt(serverNowMs: number, localNowMs: number): void {
   const offsetMs = serverNowMs - localNowMs;
-  globalThatMayHoldTheAlignment.__bajaovrlayServerClockAlignment = {
-    offsetAtTheAnchorMs: offsetMs,
-    anchorMs: localNowMs,
-    targetOffsetMs: offsetMs,
-    probeAnswersSinceTheHello: 0,
-    shortestRoundTripMs: Number.POSITIVE_INFINITY,
-  };
+  keepServerClockOfThePage({
+    alignment: {
+      offsetAtTheAnchorMs: offsetMs,
+      anchorMs: localNowMs,
+      targetOffsetMs: offsetMs,
+      isLinedUpByAProbe: false,
+    },
+    probeRound: undefined,
+    serverClockStepCountSeen: undefined,
+  });
+}
+
+/** A hello as the alignment reads it; both fields are missing in a stand-in server's. */
+export type HelloAsSeen = {
+  serverNowMs?: number | undefined;
+  serverClockStepCount?: number | undefined;
+};
+
+/**
+ * Starts the four probes of a hello that arrived when this machine's monotonic time read
+ * `localNowMs` (the page then sends the first probe). A page not lined up yet lines up at
+ * once with the hello's own time, to hold it until the probes answer; a page already
+ * lined up keeps its offset, so a late hello never moves a clock on air.
+ */
+export function startLiningUpAtAHello(hello: HelloAsSeen, localNowMs: number): void {
+  const { alignment, serverClockStepCountSeen } = readServerClockOfThePage();
+  const hasTheServerClockStepped = isANewStepCount(
+    serverClockStepCountSeen,
+    hello.serverClockStepCount,
+  );
+  const isLinedUpByAProbe = alignment?.isLinedUpByAProbe === true;
+  const offsetFromTheHelloMs =
+    hello.serverNowMs === undefined ? undefined : hello.serverNowMs - localNowMs;
+  const alignmentUntilTheProbes =
+    isLinedUpByAProbe || offsetFromTheHelloMs === undefined
+      ? alignment
+      : {
+          offsetAtTheAnchorMs: offsetFromTheHelloMs,
+          anchorMs: localNowMs,
+          targetOffsetMs: offsetFromTheHelloMs,
+          isLinedUpByAProbe: false,
+        };
+  keepServerClockOfThePage({
+    alignment: alignmentUntilTheProbes,
+    probeRound: {
+      answersTaken: 0,
+      bestAnswer: undefined,
+      isLiningUpAtOnce: !isLinedUpByAProbe || hasTheServerClockStepped,
+    },
+    serverClockStepCountSeen: hello.serverClockStepCount ?? serverClockStepCountSeen,
+  });
+}
+
+/**
+ * Reads the step count of a `time` message: a count other than the one seen last means
+ * the server clock stepped, and four probes line the page up at once, as after a first
+ * hello. The page sends its probe for the `time` message either way.
+ */
+export function startLiningUpAgainIfTheServerClockStepped(
+  serverClockStepCount: number | undefined,
+): void {
+  const serverClockOfThePage = readServerClockOfThePage();
+  const { serverClockStepCountSeen } = serverClockOfThePage;
+  if (serverClockStepCount === undefined) {
+    return;
+  }
+  const hasTheServerClockStepped = isANewStepCount(serverClockStepCountSeen, serverClockStepCount);
+  keepServerClockOfThePage({
+    ...serverClockOfThePage,
+    probeRound: hasTheServerClockStepped
+      ? { answersTaken: 0, bestAnswer: undefined, isLiningUpAtOnce: true }
+      : serverClockOfThePage.probeRound,
+    serverClockStepCountSeen: serverClockStepCount,
+  });
+}
+
+/** Whether a step count differs from the one seen last (never, when either is unknown). */
+function isANewStepCount(countSeen: number | undefined, countNow: number | undefined): boolean {
+  return countSeen !== undefined && countNow !== undefined && countSeen !== countNow;
 }
 
 /** A probe's answer as the page saw it: when it sent it, what the server said, when it came. */
@@ -120,62 +229,100 @@ export type ClockProbeAnswerAsSeen = {
 };
 
 /**
- * Takes one probe's answer. Until four have come since the hello, each one with the
- * shortest round trip so far lines the page up at once, and another probe is asked for.
- * After that: a difference of 2 s or more lines up at once; a smaller one is slewed, at
- * most 0.5% of the time passing; an answer slower than a second is left aside.
+ * Takes one probe's answer. During the four probes of a hello or a step, it keeps the
+ * one with the shortest round trip and asks for another; at the fourth it acts on the
+ * best. A later answer (one per `time` message) is acted on alone. Acting on an answer:
+ * lined up at once when the round says so; otherwise a difference of 2 s or more lines up
+ * at once, a smaller one is slewed, at most 0.5% of the time passing. An answer slower
+ * than a second is left aside, unless the page has nothing better.
  */
 export function recordClockProbeAnswer(answer: ClockProbeAnswerAsSeen): {
   isAnotherProbeNeeded: boolean;
 } {
   const roundTripMs = answer.pageReceivedAtMs - answer.pageSentAtMs;
-  const midpointMs = (answer.pageSentAtMs + answer.pageReceivedAtMs) / 2;
-  const measuredOffsetMs = answer.serverNowMs - midpointMs;
   if (roundTripMs < 0) {
     // An answer received before it was sent cannot be: nothing to learn from it.
     return { isAnotherProbeNeeded: false };
   }
-  // A hello that carried no time (a stand-in server's) lined nothing up: the answers
-  // after it line up as after any hello, the first one at once.
-  const alignment =
-    globalThatMayHoldTheAlignment.__bajaovrlayServerClockAlignment ??
-    ({
-      offsetAtTheAnchorMs: measuredOffsetMs,
-      anchorMs: answer.pageReceivedAtMs,
-      targetOffsetMs: measuredOffsetMs,
-      probeAnswersSinceTheHello: 0,
-      shortestRoundTripMs: Number.POSITIVE_INFINITY,
-    } satisfies ServerClockAlignmentOfThePage);
-
-  const isStillLiningUpAfterTheHello = alignment.probeAnswersSinceTheHello < probesAfterAHello;
-  if (isStillLiningUpAfterTheHello) {
-    const probeAnswersSinceTheHello = alignment.probeAnswersSinceTheHello + 1;
-    const isTheShortestRoundTripYet = roundTripMs <= alignment.shortestRoundTripMs;
-    globalThatMayHoldTheAlignment.__bajaovrlayServerClockAlignment = isTheShortestRoundTripYet
-      ? {
-          offsetAtTheAnchorMs: measuredOffsetMs,
-          anchorMs: answer.pageReceivedAtMs,
-          targetOffsetMs: measuredOffsetMs,
-          probeAnswersSinceTheHello,
-          shortestRoundTripMs: roundTripMs,
-        }
-      : { ...alignment, probeAnswersSinceTheHello };
-    return { isAnotherProbeNeeded: probeAnswersSinceTheHello < probesAfterAHello };
-  }
-
-  if (roundTripMs > longestRoundTripTakenMs) {
+  const midpointMs = (answer.pageSentAtMs + answer.pageReceivedAtMs) / 2;
+  const measurement: ProbeMeasurement = {
+    measuredOffsetMs: answer.serverNowMs - midpointMs,
+    roundTripMs,
+    receivedAtMs: answer.pageReceivedAtMs,
+  };
+  const serverClockOfThePage = readServerClockOfThePage();
+  // An answer with no round going and no alignment (a probe sent before any hello) starts
+  // a round, as a hello with no time would.
+  const probeRound =
+    serverClockOfThePage.probeRound ??
+    (serverClockOfThePage.alignment === undefined
+      ? { answersTaken: 0, bestAnswer: undefined, isLiningUpAtOnce: true }
+      : undefined);
+  if (probeRound === undefined) {
+    keepServerClockOfThePage({
+      ...serverClockOfThePage,
+      alignment: actOnAMeasurement(serverClockOfThePage.alignment, measurement, false),
+    });
     return { isAnotherProbeNeeded: false };
   }
-  const offsetNowMs = readOffsetAt(alignment, answer.pageReceivedAtMs);
-  const isTheDifferenceLarge =
-    Math.abs(measuredOffsetMs - offsetNowMs) >= differenceLinedUpAtOnceMs;
-  globalThatMayHoldTheAlignment.__bajaovrlayServerClockAlignment = {
-    ...alignment,
-    offsetAtTheAnchorMs: isTheDifferenceLarge ? measuredOffsetMs : offsetNowMs,
-    anchorMs: answer.pageReceivedAtMs,
-    targetOffsetMs: measuredOffsetMs,
-  };
+
+  const answersTaken = probeRound.answersTaken + 1;
+  const isTheBestYet =
+    probeRound.bestAnswer === undefined || roundTripMs <= probeRound.bestAnswer.roundTripMs;
+  const bestAnswer = isTheBestYet ? measurement : probeRound.bestAnswer;
+  if (answersTaken < probesAfterAHello || bestAnswer === undefined) {
+    keepServerClockOfThePage({
+      ...serverClockOfThePage,
+      probeRound: { ...probeRound, answersTaken, bestAnswer },
+    });
+    return { isAnotherProbeNeeded: true };
+  }
+  keepServerClockOfThePage({
+    ...serverClockOfThePage,
+    alignment: actOnAMeasurement(
+      serverClockOfThePage.alignment,
+      bestAnswer,
+      probeRound.isLiningUpAtOnce,
+    ),
+    probeRound: undefined,
+  });
   return { isAnotherProbeNeeded: false };
+}
+
+/**
+ * The alignment after one measurement: lined up at once with it when asked to, or when
+ * there is nothing to slew from, or when it is 2 s or more away; otherwise slewing to it
+ * from the offset in use. A measurement over a second of round trip changes nothing on a
+ * page already lined up.
+ */
+function actOnAMeasurement(
+  alignment: ServerClockAlignmentOfThePage | undefined,
+  measurement: ProbeMeasurement,
+  isLiningUpAtOnce: boolean,
+): ServerClockAlignmentOfThePage {
+  const linedUpAtOnce: ServerClockAlignmentOfThePage = {
+    offsetAtTheAnchorMs: measurement.measuredOffsetMs,
+    anchorMs: measurement.receivedAtMs,
+    targetOffsetMs: measurement.measuredOffsetMs,
+    isLinedUpByAProbe: true,
+  };
+  if (alignment === undefined || isLiningUpAtOnce) {
+    return linedUpAtOnce;
+  }
+  if (measurement.roundTripMs > longestRoundTripTakenMs) {
+    return alignment;
+  }
+  const offsetNowMs = readOffsetAt(alignment, measurement.receivedAtMs);
+  const differenceMs = measurement.measuredOffsetMs - offsetNowMs;
+  if (Math.abs(differenceMs) >= differenceLinedUpAtOnceMs) {
+    return linedUpAtOnce;
+  }
+  return {
+    offsetAtTheAnchorMs: offsetNowMs,
+    anchorMs: measurement.receivedAtMs,
+    targetOffsetMs: measurement.measuredOffsetMs,
+    isLinedUpByAProbe: true,
+  };
 }
 
 /**
@@ -184,7 +331,7 @@ export function recordClockProbeAnswer(answer: ClockProbeAnswerAsSeen): {
  * page was never lined up (a preview page). Cheap enough to call on every frame.
  */
 export function readServerAlignedTimeMs(): number {
-  const alignment = globalThatMayHoldTheAlignment.__bajaovrlayServerClockAlignment;
+  const { alignment } = readServerClockOfThePage();
   if (alignment === undefined) {
     return Date.now();
   }
@@ -197,5 +344,5 @@ export function readServerAlignedTimeMs(): number {
  * share one `globalThis` per file and must not see each other's alignment.
  */
 export function forgetTheServerClockAlignment(): void {
-  globalThatMayHoldTheAlignment.__bajaovrlayServerClockAlignment = undefined;
+  globalThatMayHoldTheAlignment.__bajaovrlayServerClockOfThePage = undefined;
 }

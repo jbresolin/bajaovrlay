@@ -45,6 +45,14 @@ import { TriggerActivitySchema } from '../triggers/triggerActivity.js';
 const ServerNowMsSchema = z.number().int().optional();
 
 /**
+ * How many steps the server clock has made since the server started (BAJAOVRLAY-62), in
+ * `hello` and `time`. A page that sees a count other than the last one it saw lines up
+ * again at once (a step of 1.5 s would otherwise take five minutes of slewing to reach
+ * the screens). Optional: a stand-in server of the tests leaves it out.
+ */
+const ServerClockStepCountSchema = z.number().int().min(0).optional();
+
+/**
  * Sent once, right after a client connects: every slice, the server's clock time and the
  * build the server runs (`buildId`, the value its built pages embed; packages/shared/src/build).
  * A page loaded from another build reloads itself. `buildId` is optional: a server from
@@ -55,6 +63,7 @@ export const HelloMessageSchema = z.object({
   type: z.literal('hello'),
   slices: SlicesSchema,
   serverNowMs: ServerNowMsSchema,
+  serverClockStepCount: ServerClockStepCountSchema,
   buildId: z.string().min(1).optional(),
 });
 
@@ -313,12 +322,14 @@ export type CommandResultMessage = z.infer<typeof CommandResultMessageSchema>;
  * kept fresh while no slice is changing (packages/shared/src/clock/serverAlignedTime.ts).
  * `offFromRealTimeMs` (BAJAOVRLAY-62) is how far the server clock is still from real
  * time by NTP (real time minus the server clock), left out until NTP has answered and
- * when NTP is off; the control page's header warns from 2 s on.
+ * when NTP is off; the control page's header warns from 2 s on. `serverClockStepCount`
+ * as in `hello`; the server also sends a `time` at once after each step of its clock.
  */
 export const TimeMessageSchema = z.object({
   type: z.literal('time'),
   serverNowMs: z.number().int(),
   offFromRealTimeMs: z.number().int().optional(),
+  serverClockStepCount: ServerClockStepCountSchema,
 });
 
 /** One time message after validation. */

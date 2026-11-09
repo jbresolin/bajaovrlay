@@ -17,6 +17,9 @@
  *   - A probe changes no state: the event log stays as it was.
  *   - The `time` message carries `offFromRealTimeMs` when the server clock knows it, and
  *     leaves it out when it does not.
+ *   - The hello and every `time` message carry how many steps the server clock has made;
+ *     after a step, every page gets a `time` message at once, so it lines up again then,
+ *     not up to ten seconds later.
  *
  * What these tests deliberately do not cover:
  *   - What a page does with the answer; serverAlignedTime.test.ts in packages/shared.
@@ -44,9 +47,11 @@ const momentTheServerClockStartsAtInMilliseconds = 1_791_556_325_000;
 /**
  * Starts a hub on a random free port with a store on a fresh database, on a clock and a
  * timer the test moves by hand; the server clock is `offFromRealTimeMs` off real time
- * (undefined: not known). Everything is closed when the test ends.
+ * (undefined: not known), and has made the steps the test counts with `countAStep`.
+ * Everything is closed when the test ends.
  */
 async function startHubOnAClockMovedByHand(offFromRealTimeMs: number | undefined) {
+  let serverClockStepCount = 0;
   const clockAndTimer = createClockAndTimerMovedByHand(momentTheServerClockStartsAt);
   const logger = createLogger({ level: 'silent' });
   const stateStore = createStateStore({
@@ -65,6 +70,7 @@ async function startHubOnAClockMovedByHand(offFromRealTimeMs: number | undefined
     heartbeatIntervalInMilliseconds: 15_000,
     readCurrentTime: clockAndTimer.readCurrentTime,
     readOffFromRealTimeMs: () => offFromRealTimeMs,
+    readServerClockStepCount: () => serverClockStepCount,
     startRepeatingTimer: clockAndTimer.startRepeatingTimer,
     cancelRepeatingTimer: clockAndTimer.cancelRepeatingTimer,
   });
@@ -74,7 +80,15 @@ async function startHubOnAClockMovedByHand(offFromRealTimeMs: number | undefined
     httpServer.closeAllConnections();
   });
   const port = (httpServer.address() as AddressInfo).port;
-  return { clockAndTimer, stateStore, port };
+  return {
+    clockAndTimer,
+    stateStore,
+    port,
+    webSocketHub,
+    countAStep: () => {
+      serverClockStepCount += 1;
+    },
+  };
 }
 
 /** True for a clockProbeAnswer. */
@@ -176,12 +190,67 @@ describe('the NTP offset in the time message', () => {
     // Assert: the offset as the row says, beside the server clock.
     const expectedTimeMessage =
       offFromRealTimeMs === undefined
-        ? { type: 'time', serverNowMs: momentTheServerClockStartsAtInMilliseconds + 10_000 }
+        ? {
+            type: 'time',
+            serverNowMs: momentTheServerClockStartsAtInMilliseconds + 10_000,
+            serverClockStepCount: 0,
+          }
         : {
             type: 'time',
             serverNowMs: momentTheServerClockStartsAtInMilliseconds + 10_000,
             offFromRealTimeMs,
+            serverClockStepCount: 0,
           };
     expect(timeMessage, 'the header reads the offset from here').toEqual(expectedTimeMessage);
+  });
+});
+
+describe('a step of the server clock', () => {
+  it('is counted in the hello', async () => {
+    // Arrange: a server clock that has stepped twice (at boot, then by hand).
+    const { port, countAStep } = await startHubOnAClockMovedByHand(undefined);
+    countAStep();
+    countAStep();
+
+    // Act: the control page connects.
+    const controlPage = await connectWebSocketTestClient(port);
+    const hello = await controlPage.waitForMessage('hello', (message) => message.type === 'hello');
+
+    // Assert: the hello says two steps.
+    expect(
+      hello.type === 'hello' && hello.serverClockStepCount,
+      'a page that saw another count lines up again at once',
+    ).toBe(2);
+  });
+
+  it('sends every page a time message at once, with the new count', async () => {
+    // Arrange: the control page and the program renderer connected; the clock steps.
+    const { port, webSocketHub, countAStep } = await startHubOnAClockMovedByHand(undefined);
+    const controlPage = await connectWebSocketTestClient(port);
+    const programRenderer = await connectWebSocketTestClient(port, { role: 'renderer' });
+    await controlPage.waitForMessage('hello', (message) => message.type === 'hello');
+    await programRenderer.waitForMessage('hello', (message) => message.type === 'hello');
+    countAStep();
+
+    // Act: the hub is told of the step; no time passes.
+    webSocketHub.sendTheTimeToEveryClientNow();
+    const timeOnTheControlPage = await controlPage.waitForMessage(
+      'time',
+      (message) => message.type === 'time',
+    );
+    const timeOnTheRenderer = await programRenderer.waitForMessage(
+      'time',
+      (message) => message.type === 'time',
+    );
+
+    // Assert: both got the time at once, saying one step.
+    expect(timeOnTheControlPage, 'the control page hears of the step').toEqual({
+      type: 'time',
+      serverNowMs: momentTheServerClockStartsAtInMilliseconds,
+      serverClockStepCount: 1,
+    });
+    expect(timeOnTheRenderer, 'and so does the renderer, whose race clock is on air').toEqual(
+      timeOnTheControlPage,
+    );
   });
 });

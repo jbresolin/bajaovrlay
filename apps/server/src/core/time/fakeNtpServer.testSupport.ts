@@ -3,21 +3,30 @@
 // here with their own arithmetic, not with ntpClient.ts's, so a mistake in the client's
 // conversion cannot hide behind the same mistake in the fake.
 // Each call starts a fresh server; the test stops it when it ends.
-import { createSocket } from 'node:dgram';
+import { createSocket, type RemoteInfo } from 'node:dgram';
 
 import { onTestFinished } from 'vitest';
 
-import type { NtpServerAddress } from './ntpClient.js';
+import type { NtpServerAddress, NtpServerIpv4Address } from './ntpClient.js';
 
 /** Seconds from 1 January 1900 (where NTP counts from) to 1 January 1970. */
 const secondsFrom1900To1970 = 2_208_988_800;
 
-/** What the fake does with one question: the bytes to send back, or nothing at all. */
-type AnswerToAQuestion = (question: Buffer) => Buffer | undefined;
+/**
+ * What the fake does with one question (and who sent it): the packets to send back, in
+ * order, or nothing at all.
+ */
+type AnswerToAQuestion = (
+  question: Buffer,
+  sender: RemoteInfo,
+) => Buffer | readonly Buffer[] | undefined;
 
 /** A running fake NTP server: where to ask it, and how many questions it has had. */
 export type FakeNtpServer = {
+  /** As BAJAOVRLAY_NTP_SERVERS would name it, for a poll. */
   address: NtpServerAddress;
+  /** As the client asks it, once a poll has looked the name up. */
+  ipv4Address: NtpServerIpv4Address;
   countQuestionsReceived: () => number;
 };
 
@@ -32,9 +41,10 @@ export async function startFakeNtpServer(
   let questionsReceived = 0;
   socket.on('message', (question, sender) => {
     questionsReceived += 1;
-    const answer = answerQuestion(question);
-    if (answer !== undefined) {
-      socket.send(answer, sender.port, sender.address);
+    const answer = answerQuestion(question, sender);
+    const packetsToSend = answer === undefined ? [] : [answer].flat();
+    for (const packet of packetsToSend) {
+      socket.send(packet, sender.port, sender.address);
     }
   });
   await new Promise<void>((resolve) => socket.bind(0, '127.0.0.1', resolve));
@@ -43,6 +53,7 @@ export async function startFakeNtpServer(
   });
   return {
     address: { host: '127.0.0.1', port: socket.address().port },
+    ipv4Address: { ipv4Address: '127.0.0.1', port: socket.address().port },
     countQuestionsReceived: () => questionsReceived,
   };
 }
@@ -51,7 +62,8 @@ export async function startFakeNtpServer(
 function writeNtpTimestamp(packet: Buffer, position: number, momentMs: number): void {
   const wholeSeconds = Math.floor(momentMs / 1000);
   const millisecondsPastTheSecond = momentMs - wholeSeconds * 1000;
-  packet.writeUInt32BE(wholeSeconds + secondsFrom1900To1970, position);
+  // Modulo 2^32: from February 2036 NTP's seconds start again from zero (era 1).
+  packet.writeUInt32BE((wholeSeconds + secondsFrom1900To1970) % 2 ** 32, position);
   packet.writeUInt32BE(Math.round((millisecondsPastTheSecond / 1000) * 2 ** 32), position + 4);
 }
 
@@ -84,6 +96,44 @@ export function buildKissOfDeathAnswer(question: Buffer, code: string): Buffer {
   answer[1] = 0;
   answer.write(code, 12, 'ascii');
   question.copy(answer, 24, 40, 48);
+  return answer;
+}
+
+/**
+ * The answer of a server that has lost its own time, as a track-side NTP box without a GPS
+ * fix sends: leap indicator 3 ("not synchronized"), or stratum 16 ("unsynchronized"). Its
+ * timestamps are plausible; it is the header that says not to use them.
+ */
+export function buildAnswerOfAServerWithoutItsTime(
+  question: Buffer,
+  howItSaysSo: 'leapIndicator3' | 'stratum16',
+): Buffer {
+  const answer = buildAnswerOfAHealthyServer(question, {
+    receivedAtMs: Date.parse('2026-10-10T13:00:00.000Z'),
+    sentAtMs: Date.parse('2026-10-10T13:00:00.001Z'),
+  });
+  if (howItSaysSo === 'leapIndicator3') {
+    answer[0] = (3 << 6) | (4 << 3) | 4;
+  } else {
+    answer[1] = 16;
+  }
+  return answer;
+}
+
+/**
+ * A healthy-looking answer with one timestamp left at zero, which RFC 4330 says a client
+ * must refuse. Read naively, zero is February 2036 (era 1): a step of ten years.
+ */
+export function buildAnswerWithAZeroTimestamp(
+  question: Buffer,
+  timestampLeftAtZero: 'receive' | 'transmit',
+): Buffer {
+  const answer = buildAnswerOfAHealthyServer(question, {
+    receivedAtMs: Date.parse('2026-10-10T13:00:00.000Z'),
+    sentAtMs: Date.parse('2026-10-10T13:00:00.001Z'),
+  });
+  const position = timestampLeftAtZero === 'receive' ? 32 : 40;
+  answer.fill(0, position, position + 8);
   return answer;
 }
 

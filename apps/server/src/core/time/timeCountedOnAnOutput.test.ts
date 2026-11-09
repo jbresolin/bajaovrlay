@@ -13,7 +13,8 @@
  * What these tests prove (the real manifests of the race clock, the countdown and the
  *   intermission board; instances built by hand):
  *   - A running race clock counts, on program and on preview; a held one does not.
- *   - A countdown to 14:00 counts at 13:00, and no longer at 14:00:01, when it shows 0:00.
+ *   - A countdown to 14:00 counts at 13:00, and no longer at 14:00:01, when it shows 0:00;
+ *     but it does when the step would go back over 14:00 and make it count again.
  *   - The intermission board's next session counts the same way.
  *   - A graphic that marks neither (the lower third) does not count, nor does nothing.
  *
@@ -95,6 +96,7 @@ const onAirScenarios = [
     name: 'a running race clock on program counts',
     instances: [buildInstanceOn('program', 'race-clock', buildEnduroClockData(true))],
     nowMs: oneOClockOfTheEnduroMs,
+    stepByMs: 1_500,
     isCounting: true,
   },
   // The preview monitor shows the operator the same jump.
@@ -102,6 +104,7 @@ const onAirScenarios = [
     name: 'a running race clock on preview counts',
     instances: [buildInstanceOn('preview', 'race-clock', buildEnduroClockData(true))],
     nowMs: oneOClockOfTheEnduroMs,
+    stepByMs: 1_500,
     isCounting: true,
   },
   // A held clock shows the same time whatever the server clock reads.
@@ -109,6 +112,7 @@ const onAirScenarios = [
     name: 'a held race clock does not count',
     instances: [buildInstanceOn('program', 'race-clock', buildEnduroClockData(false))],
     nowMs: oneOClockOfTheEnduroMs,
+    stepByMs: 1_500,
     isCounting: false,
   },
   // An hour to go: the count on screen reads the server clock every frame.
@@ -122,6 +126,7 @@ const onAirScenarios = [
       }),
     ],
     nowMs: oneOClockOfTheEnduroMs,
+    stepByMs: 1_500,
     isCounting: true,
   },
   // Past the moment the countdown shows 0:00 and stops: a step moves nothing on it.
@@ -135,6 +140,36 @@ const onAirScenarios = [
       }),
     ],
     nowMs: twoOClockStartMs + 1_000,
+    stepByMs: 1_500,
+    isCounting: false,
+  },
+  // The same countdown at 0:00, and a step back of 3 s: it would show 0:02 again and
+  // count down a second time on air.
+  {
+    name: 'a countdown at 0:00 for a second counts when the step goes back 3 s',
+    instances: [
+      buildInstanceOn('program', 'countdown', {
+        layout: 'strip',
+        sessionName: 'Suspensão e Tração',
+        startsAtMs: twoOClockStartMs,
+      }),
+    ],
+    nowMs: twoOClockStartMs + 1_000,
+    stepByMs: -3_000,
+    isCounting: true,
+  },
+  // At 0:00 for a minute, a step back of 3 s still lands past the moment: nothing moves.
+  {
+    name: 'a countdown at 0:00 for a minute does not count when the step goes back 3 s',
+    instances: [
+      buildInstanceOn('program', 'countdown', {
+        layout: 'strip',
+        sessionName: 'Suspensão e Tração',
+        startsAtMs: twoOClockStartMs,
+      }),
+    ],
+    nowMs: twoOClockStartMs + 60_000,
+    stepByMs: -3_000,
     isCounting: false,
   },
   // The intermission board counts to its next session the same way.
@@ -147,6 +182,7 @@ const onAirScenarios = [
       }),
     ],
     nowMs: oneOClockOfTheEnduroMs,
+    stepByMs: 1_500,
     isCounting: true,
   },
   // A lower third has neither a clock nor a moment: nothing on it moves with time.
@@ -154,6 +190,7 @@ const onAirScenarios = [
     name: 'a lower third does not count',
     instances: [buildInstanceOn('program', 'lower-third', { name: 'Baja UFPR' })],
     nowMs: oneOClockOfTheEnduroMs,
+    stepByMs: 1_500,
     isCounting: false,
   },
   // Nothing on air at all, between sessions.
@@ -161,17 +198,18 @@ const onAirScenarios = [
     name: 'nothing on air does not count',
     instances: [],
     nowMs: oneOClockOfTheEnduroMs,
+    stepByMs: 1_500,
     isCounting: false,
   },
 ];
 
 describe('whether anything on air counts time', () => {
-  it.each(onAirScenarios)('$name', ({ instances, nowMs, isCounting }) => {
+  it.each(onAirScenarios)('$name', ({ instances, nowMs, stepByMs, isCounting }) => {
     // Arrange: the graphics, and the instances of this row on the outputs.
     const slices = { graphics: buildTheGraphicsOfTheTests(), instances };
 
-    // Act: ask whether anything counts time at the row's moment.
-    const answer = isAnythingCountingTimeOnAnOutput(slices, nowMs);
+    // Act: ask whether anything counts time at the row's moment, for the row's step.
+    const answer = isAnythingCountingTimeOnAnOutput(slices, { nowMs, stepByMs });
 
     // Assert: as the row says.
     expect(answer, 'only a running clock or a count to a moment still ahead counts').toBe(

@@ -8,14 +8,18 @@ export { type ClockReading, computeClockTimeMsAtWallClock } from './clockExtrapo
 export { countWholeSecondsClockShows } from './clockWholeSeconds.js';
 // The H:MM:SS text a clock shows for a time, written the same on air and on the page.
 export { formatClockTimeAsHoursMinutesSeconds } from './clockFormatting.js';
-// The shared "now" on the server's clock: a page lines up at each hello and with its
-// clock probes' answers (on this machine's monotonic time); tests forget it when they end.
+// The shared "now" on the server's clock: a page starts lining up at each hello and at a
+// new step count of the server clock, and lines up with its clock probes' answers (on
+// this machine's monotonic time); tests set it directly, and forget it when they end.
 export {
   type ClockProbeAnswerAsSeen,
   forgetTheServerClockAlignment,
+  type HelloAsSeen,
   lineUpWithTheServerClockAt,
   probesAfterAHello,
   readServerAlignedTimeMs,
   readThisMachineMonotonicTimeMs,
   recordClockProbeAnswer,
+  startLiningUpAgainIfTheServerClockStepped,
+  startLiningUpAtAHello,
 } from './serverAlignedTime.js';

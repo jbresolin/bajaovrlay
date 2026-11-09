@@ -5,9 +5,10 @@
  *   "Edição rápida" shows the time a clock on air shows, worked out on this computer. The
  *   reading on air was stamped with the server's clock, which keeps real time from NTP,
  *   so the page needs "now" on the server's clock too. The connection lines the page up
- *   as the renderer does (BAJAOVRLAY-62): at each hello at once with its `serverNowMs`,
- *   then with four clock probes, keeping the shortest round trip; then one probe per
- *   ten-second `time` message. The `time` message also says how far the server clock is
+ *   as the renderer does (BAJAOVRLAY-62): at each hello with four clock probes, keeping
+ *   the shortest round trip (a page not lined up yet holds the hello's `serverNowMs` until
+ *   then); then one probe per ten-second `time` message, and four again when the server
+ *   clock has stepped. The `time` message also says how far the server clock is
  *   off real time, which the header warns about from 2 s on.
  *
  * What these tests prove (this computer's clock faked 2.3 s behind the server's; the test
@@ -16,7 +17,8 @@
  *   - A hello is followed by four probes, one after another, and no fifth.
  *   - A hello with no time in it lines nothing up; its probes do.
  *   - A `time` message sends one probe, writes no log line, and leaves the store alone
- *     while the server clock is on real time.
+ *     while the server clock is on real time; one with a new step count of the server
+ *     clock lines the page up at once after four probes.
  *   - A `time` message saying the server clock is 2.35 s behind real time puts 2 s in the
  *     store for the header; the same whole seconds again change nothing; under 2 s clears it.
  *
@@ -43,18 +45,22 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-/** What the server's clock reads now: this computer's monotonic time plus 2.3 s. */
-function readServerClockNowMs(): number {
-  return Math.floor(performance.timeOrigin + performance.now()) + 2_300;
+/** What the server's clock reads now: this computer's monotonic time plus how far it lags. */
+function readServerClockNowMs(lagOfThisComputerMs = 2_300): number {
+  return Math.floor(performance.timeOrigin + performance.now()) + lagOfThisComputerMs;
 }
 
 /**
- * Answers, as the server would, every probe not yet answered: 4 ms after the probe, read
- * by the server halfway. An answer may make the page send another, answered in turn.
- * Returns how many were answered.
+ * Answers, as the server would, every probe after the first `probesAnsweredBefore`: 4 ms
+ * after the probe, read by the server halfway. An answer may make the page send another,
+ * answered in turn. Returns how many have been answered in all.
  */
-function answerEveryClockProbe(fakeServerSocket: FakeServerSocket): number {
-  let probesAnswered = 0;
+function answerEveryClockProbe(
+  fakeServerSocket: FakeServerSocket,
+  lagOfThisComputerMs = 2_300,
+  probesAnsweredBefore = 0,
+): number {
+  let probesAnswered = probesAnsweredBefore;
   while (fakeServerSocket.listClockProbesReceived().length > probesAnswered) {
     const probe = fakeServerSocket.listClockProbesReceived()[probesAnswered];
     if (probe === undefined) {
@@ -64,7 +70,7 @@ function answerEveryClockProbe(fakeServerSocket: FakeServerSocket): number {
     fakeServerSocket.sendMessage({
       type: 'clockProbeAnswer',
       pageSentAtMs: probe.pageSentAtMs,
-      serverNowMs: probe.pageSentAtMs + 2 + 2_300,
+      serverNowMs: probe.pageSentAtMs + 2 + lagOfThisComputerMs,
     });
     probesAnswered += 1;
   }
@@ -80,7 +86,7 @@ function connectAfterAHello(options: { isTheTimeInTheHello: boolean }) {
   controlPage.fakeServerSocket.sendMessage({
     type: 'hello',
     slices: buildSlicesWithTheRaceClockOnAir(momentTheClockWentOnAir),
-    ...(options.isTheTimeInTheHello ? { serverNowMs: serverTimeMs } : {}),
+    ...(options.isTheTimeInTheHello ? { serverNowMs: serverTimeMs, serverClockStepCount: 0 } : {}),
   });
   return controlPage;
 }
@@ -156,6 +162,32 @@ describe('the time message the server sends every ten seconds', () => {
     );
     expect(recordedLogLines.length, 'a time message must write no log line').toBe(
       numberOfLogLinesBefore,
+    );
+  });
+
+  it('lines up at once with a step of the server clock that it tells', () => {
+    // Arrange: a page lined up; the server clock has never stepped.
+    const { fakeServerSocket } = connectAfterAHello({ isTheTimeInTheHello: true });
+    const probesAnsweredAtTheHello = answerEveryClockProbe(fakeServerSocket);
+
+    // Act: the server clock steps 1.5 s forwards ("Acertar relógio agora"); the server
+    // sends a time message at once with the new step count; the probes are answered.
+    const lagAfterTheStepMs = 2_300 + 1_500;
+    fakeServerSocket.sendMessage({
+      type: 'time',
+      serverNowMs: readServerClockNowMs(lagAfterTheStepMs),
+      serverClockStepCount: 1,
+    });
+    const probesAnsweredInAll = answerEveryClockProbe(
+      fakeServerSocket,
+      lagAfterTheStepMs,
+      probesAnsweredAtTheHello,
+    );
+
+    // Assert: four probes after the step, and "Edição rápida" on the new time at once.
+    expect(probesAnsweredInAll - probesAnsweredAtTheHello, 'four probes, as at a hello').toBe(4);
+    expect(readServerAlignedTimeMs(), 'the page follows the step at once').toBe(
+      readServerClockNowMs(lagAfterTheStepMs),
     );
   });
 
