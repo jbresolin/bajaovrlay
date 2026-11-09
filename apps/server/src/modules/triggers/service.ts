@@ -162,7 +162,9 @@ export function startTriggerService(options: TriggerServiceOptions): TriggerServ
       const nowMs = readCurrentTime().getTime();
       const afterMs = Math.max(scheduleLookedAtUpToMs, nowMs - latestAScheduleMomentMayFireMs);
       const skippedFromMs = scheduleLookedAtUpToMs;
-      scheduleLookedAtUpToMs = nowMs;
+      // Never moves back: after a step of the server clock back (BAJAOVRLAY-62), the
+      // moments already looked at are not looked at, and fired, a second time.
+      scheduleLookedAtUpToMs = Math.max(scheduleLookedAtUpToMs, nowMs);
       const slices = stateStore.readAllSlices();
       if (afterMs > skippedFromMs) {
         logTheScheduleMomentsSkipped(slices, skippedFromMs, afterMs);

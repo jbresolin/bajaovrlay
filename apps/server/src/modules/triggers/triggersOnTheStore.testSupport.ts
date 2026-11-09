@@ -178,6 +178,8 @@ export type TriggersOnTheStore = {
    * slept: the next passTime runs the first tick after it woke.
    */
   sleep: (milliseconds: number) => void;
+  /** Moves the fake clock back by this many ms at once, as a step of the server clock back. */
+  stepTheClockBack: (milliseconds: number) => void;
   /** Every line the store, the macro runner and the trigger service have logged. */
   readRecordedLogLines: () => RecordedLogLine[];
 };
@@ -249,6 +251,9 @@ export function startTriggersOnTheStore(
     },
     sleep: (milliseconds) => {
       vi.setSystemTime(Date.now() + milliseconds);
+    },
+    stepTheClockBack: (milliseconds) => {
+      vi.setSystemTime(Date.now() - milliseconds);
     },
     readRecordedLogLines: readRecordedLines,
   };

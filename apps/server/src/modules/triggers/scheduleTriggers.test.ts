@@ -18,13 +18,14 @@
  *   - a moment that had already passed when the server started is not fired late;
  *   - a moment that came while the machine slept (10 minutes with no tick) is not fired
  *     when it wakes, and is logged as skipped, naming its trigger (a forward step of the
- *     server clock, BAJAOVRLAY-62, skips moments the same way).
+ *     server clock, BAJAOVRLAY-62, skips moments the same way);
+ *   - a moment the server clock stepped back over, already fired, is not sent again.
  *
  * What these tests deliberately do not cover:
  *   - A day with a different UTC offset: Brazil has had none since 2019. The moment is
  *     still worked out through the time zone's own rules (scheduleMoments.ts).
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   applyAsTheOperatorOrThrow,
@@ -238,3 +239,43 @@ describe('a moment that came while the machine slept', () => {
     });
   });
 });
+
+describe('a moment the server clock stepped back over', () => {
+  it('is not sent to fire a second time', () => {
+    // Arrange: the Enduro at 13:00 and its trigger at 12:50; time runs to 12:50:03, so the
+    // countdown has fired once. Every fireTrigger the service sends is counted.
+    const { store, passTime, stepTheClockBack } = startTriggersOnTheStore();
+    saveSlot(store, buildEnduroSlot(enduroStartsAtMs));
+    createTrigger(store, tenMinutesBeforeTheEnduro);
+    const commandsSent = vi.spyOn(store, 'applyCommand');
+    passTime(110 * oneMinuteMs + 3_000);
+    const firingsSentBeforeTheStep = countFireTriggerCommands(commandsSent.mock.calls);
+
+    // Act: the server clock steps back 10 s to 12:49:53 ("Acertar relógio agora" on a
+    // clock that ran ahead), and time runs on past 12:50 again.
+    stepTheClockBack(10_000);
+    passTime(15_000);
+
+    // Assert: one firing sent, and still one. The trigger's 10 s interval would refuse a
+    // second one today, but a moment already looked at must not depend on it.
+    expect(firingsSentBeforeTheStep, 'the moment was sent once at 12:50').toBe(1);
+    expect(
+      countFireTriggerCommands(commandsSent.mock.calls),
+      'a moment already looked at is never sent again after a step back',
+    ).toBe(1);
+    expect(readFirings(store).length, 'and the countdown macro ran once').toBe(1);
+  });
+});
+
+/** How many of the commands sent to the store were a trigger's firing. */
+function countFireTriggerCommands(calls: readonly (readonly unknown[])[]): number {
+  return calls.filter((call) => {
+    const command: unknown = call[0];
+    return (
+      typeof command === 'object' &&
+      command !== null &&
+      'type' in command &&
+      command.type === 'fireTrigger'
+    );
+  }).length;
+}
