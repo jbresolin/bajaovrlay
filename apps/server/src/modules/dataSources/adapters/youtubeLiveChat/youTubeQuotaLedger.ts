@@ -1,7 +1,7 @@
 // The count of the quota units the server's YouTube key spent today. One ledger for the
 // whole server, because Google counts the quota per key (per Google Cloud project), not
 // per source: two YouTube sources share the same 10 000 units a day.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, fsyncSync, openSync, readFileSync, renameSync, writeSync } from 'node:fs';
 
 import { z } from 'zod';
 
@@ -40,7 +40,8 @@ export type YouTubeQuotaLedgerOptions = {
  * (which could spend the key's quota twice over). A missing file is a new ledger; a file
  * that cannot be read is logged and taken as zero, the only choice left.
  * Written after every spend, synchronously: the file is a few bytes and a poll spends
- * twice a minute at most. A write that fails is logged and the count kept in memory.
+ * twice a minute at most. A write that fails is logged and the count kept in memory. The
+ * write is atomic (writeStoredCount), so a crash never leaves an empty file behind.
  */
 export function openYouTubeQuotaLedger(options: YouTubeQuotaLedgerOptions): YouTubeQuotaLedger {
   const { ledgerFilePath, logger } = options;
@@ -94,7 +95,13 @@ function readStoredCount(
   }
 }
 
-/** Writes the count to the file; a failure is logged, never thrown into a poll. */
+/**
+ * Writes the count to the file; a failure is logged, never thrown into a poll. Atomic
+ * (gate 2 of PR #54): the count goes to `youtube-quota.json.tmp`, is flushed to the disk
+ * (fsync), then renamed over the real file, which a rename replaces whole. Written in
+ * place, a crash between truncating and writing would leave the file empty, the next boot
+ * would count from zero, and the day's budget could be spent twice.
+ */
 function writeStoredCount(
   ledgerFilePath: string | undefined,
   storedCount: StoredQuotaCount,
@@ -103,8 +110,16 @@ function writeStoredCount(
   if (ledgerFilePath === undefined) {
     return;
   }
+  const temporaryFilePath = `${ledgerFilePath}.tmp`;
   try {
-    writeFileSync(ledgerFilePath, JSON.stringify(storedCount));
+    const fileDescriptor = openSync(temporaryFilePath, 'w');
+    try {
+      writeSync(fileDescriptor, JSON.stringify(storedCount));
+      fsyncSync(fileDescriptor);
+    } finally {
+      closeSync(fileDescriptor);
+    }
+    renameSync(temporaryFilePath, ledgerFilePath);
   } catch (writeError) {
     logger.warn(
       { err: writeError, file: ledgerFilePath },
