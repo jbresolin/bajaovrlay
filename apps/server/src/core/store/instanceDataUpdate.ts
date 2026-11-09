@@ -146,7 +146,7 @@ export function prepareInstanceDataUpdate(
   // required field that was just taken off is found missing here.
   const problemInData = findProblemInGraphicData(graphic, dataAfterUpdate);
   if (problemInData !== undefined) {
-    return { status: 'refused', error: refuseInvalidGraphicData(graphic.id, problemInData) };
+    return { status: 'refused', error: refuseInvalidGraphicData(graphic, problemInData) };
   }
 
   return { status: 'prepared', dataAfterUpdate, fieldsWithAValue };

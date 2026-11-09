@@ -90,3 +90,16 @@ export const operatorSessionRows = sqliteTable('operator_sessions', {
 
 /** A row of the operator_sessions table as read back. */
 export type OperatorSessionRow = typeof operatorSessionRows.$inferSelect;
+
+/**
+ * One row per one-off seed a boot has applied to this database (BAJAOVRLAY-63), named for
+ * what it seeded (`channelLogo`). A seed that joins after a database was first made (a
+ * layer and an item for a new graphic) is applied once, at the first boot that knows it,
+ * and its row written in the same transaction; from then on what it added is the
+ * operator's, and a layer or item they delete is never brought back.
+ */
+export const seedDoneRows = sqliteTable('seeds_done', {
+  name: text('name').primaryKey(),
+  /** When the seed was applied, as an ISO 8601 timestamp. */
+  doneAt: text('doneAt').notNull(),
+});

@@ -5,6 +5,7 @@ import { parsePublicOrigins } from '../../modules/media/index.js';
 import { parseApiTokens } from '../apiAccess/apiTokens.js';
 import { serverLogLevels } from '../logger/createLogger.js';
 import { parseOperatorPins } from '../operatorLogin/operatorPins.js';
+import { parseNtpSettings } from '../time/ntpSettings.js';
 
 // Defaults match .env.example, which documents every variable.
 const ServerEnvironmentSchema = z.object({
@@ -111,6 +112,24 @@ const ServerEnvironmentSchema = z.object({
     .string()
     .optional()
     .transform((text) => (text === '' ? undefined : text)),
+  // The NTP servers the server clock follows (BAJAOVRLAY-62), read here into `NtpSettings`:
+  // unset or empty is NTP.br then the pool, "off" turns NTP off, and an entry that is not
+  // a host or host:port stops the boot naming it, since a typo would leave the server on
+  // the machine's own clock without a word.
+  BAJAOVRLAY_NTP_SERVERS: z
+    .string()
+    .optional()
+    .transform((text, context) => {
+      const parsing = parseNtpSettings(text);
+      if (!parsing.isValid) {
+        context.addIssue({
+          code: 'custom',
+          message: `"${parsing.badEntry}" is not an NTP server (write it as a.st1.ntp.br or 192.168.10.5:123, or "off")`,
+        });
+        return z.NEVER;
+      }
+      return parsing.ntpSettings;
+    }),
   // The operator login's two PINs (BAJAOVRLAY-29), read together below: each alone means
   // nothing, so the pair is checked as one setting, `operatorPins`.
   BAJAOVRLAY_PIN_PRODUCER: z.string().optional(),

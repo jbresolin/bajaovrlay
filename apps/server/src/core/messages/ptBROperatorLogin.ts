@@ -16,4 +16,6 @@ export const ptBROperatorLoginErrors = {
   invalidLogin: 'Escolha o papel, digite o PIN e o nome da estação.',
   // A page's read, or the WebSocket, with no session while the login is on.
   sessionRequired: 'Entre com o seu papel e PIN para usar esta página.',
+  // An action only Produtor may take ("Acertar relógio agora"), asked for by Dados.
+  producerOnly: 'Só o Produtor pode fazer isto: muda o que está no ar.',
 };

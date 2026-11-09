@@ -1,7 +1,17 @@
 // Public surface of @bajaovrlay/shared. Import from here, never from inner files.
 
 // Schema for the body of GET /health, and the type it validates.
-export { type HealthResponse, HealthResponseSchema } from './health/healthResponse.js';
+export {
+  type HealthResponse,
+  HealthResponseSchema,
+  type ServerClockHealth,
+  ServerClockHealthSchema,
+} from './health/healthResponse.js';
+// The answer of "Acertar relógio agora" (POST /api/v1/server-clock/set-now).
+export {
+  type ServerClockSetAnswer,
+  ServerClockSetAnswerSchema,
+} from './health/serverClockSetAnswer.js';
 
 // The race clock's arithmetic: one reading in, the time the clock shows at a moment out,
 // the whole second it shows for that time, and that time as H:MM:SS text. Graphics import
@@ -114,8 +124,11 @@ export {
   whoMaySendEachCommandType,
 } from './commands/commandSenders.js';
 
-// WebSocket messages from the server: hello, slice, slices, dataSnapshot, commandResult and time.
+// WebSocket messages from the server: hello, slice, slices, dataSnapshot, commandResult,
+// time and clockProbeAnswer.
 export {
+  type ClockProbeAnswerMessage,
+  ClockProbeAnswerMessageSchema,
   type CommandResultMessage,
   CommandResultMessageSchema,
   type DataSnapshotMessage,
@@ -157,10 +170,13 @@ export {
   type ServerBuildWatchOptions,
   startServerBuildWatch,
 } from './build/serverBuildWatch.js';
-// WebSocket messages from a client: command (control page) and instanceStatus (renderer).
+// WebSocket messages from a client: command (control page), instanceStatus (renderer) and
+// clockProbe (both).
 export {
   type ClientMessage,
   ClientMessageSchema,
+  type ClockProbeMessage,
+  ClockProbeMessageSchema,
   type CommandMessage,
   CommandMessageSchema,
   type InstanceStatusMessage,

@@ -4,14 +4,14 @@
  * What this module is for:
  *   Since BAJAOVRLAY-49 every layer belongs to an output, and the `outputs` slice always
  *   holds `program` ("Programa", the output OBS's main browser source draws). A new
- *   database is seeded with program and the seven layers on it. An operator's database
+ *   database is seeded with program and the eight layers on it. An operator's database
  *   written before outputs existed has a layers row without `outputId` and no outputs
  *   row: it gains program at boot, with every layer it had assigned to it, so the show
  *   looks exactly as it did. From then on the layers are the operator's own, edited on
  *   "Saídas e camadas": a seeded layer the operator deleted does not come back.
  *
  * What these tests prove (with a real SQLite file and a stand-in graphics folder):
- *   - The first boot seeds program and the seven layers on it, and writes both rows.
+ *   - The first boot seeds program and the eight layers on it, and writes both rows.
  *   - A database written before outputs boots with program and every stored layer on it,
  *     names and heights as they were; both rows are written, stamped with this boot, and
  *     an info line counts the layers assigned.
@@ -63,6 +63,7 @@ function loadSlicesAtBoot(options: {
 /** The ids of the program output's layers, bottom to top, as the seed has them. */
 const seededLayerIdsBottomToTop = [
   'bug',
+  'channel-logo',
   'ticker',
   'clock',
   'tower',
@@ -71,13 +72,20 @@ const seededLayerIdsBottomToTop = [
   'fullscreen',
 ];
 
+/** The layers of a server before outputs: the seed of that time, without the channel logo. */
+const layerIdsOfAServerBeforeOutputs = seededLayerIdsBottomToTop.filter(
+  (layerId) => layerId !== 'channel-logo',
+);
+
 /**
  * A database as the server of BAJAOVRLAY-44 left it: booted once, then its layers row
  * written again without any `outputId` and the outputs row removed, so it holds what an
  * operator's database held before this update. The operator had renamed the lower third
  * to "Tarja de piloto", which must survive.
  */
-function openDatabaseOfAServerBeforeOutputs(layerIdsLeft: string[] = seededLayerIdsBottomToTop) {
+function openDatabaseOfAServerBeforeOutputs(
+  layerIdsLeft: string[] = layerIdsOfAServerBeforeOutputs,
+) {
   const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
   const { database } = openTemporaryDatabase();
   const slicesOfTheOldBoot = loadSlicesAtBoot({ database, graphicPackagesFolder });
@@ -98,7 +106,7 @@ function openDatabaseOfAServerBeforeOutputs(layerIdsLeft: string[] = seededLayer
 }
 
 describe('the first boot', () => {
-  it('seeds the program output and the seven layers on it, and writes both rows', () => {
+  it('seeds the program output and the eight layers on it, and writes both rows', () => {
     // Arrange: an empty database.
     const graphicPackagesFolder = createGraphicsFolderWithBuiltRaceClock();
     const { database } = openTemporaryDatabase();
@@ -106,7 +114,7 @@ describe('the first boot', () => {
     // Act: boot for the first time.
     const slices = loadSlicesAtBoot({ database, graphicPackagesFolder });
 
-    // Assert: program alone, the seven layers on it, and the same in the database.
+    // Assert: program alone, the eight layers on it, and the same in the database.
     expect(slices.outputs, 'a new database has the program output only').toEqual([
       { outputId: 'program', name: 'Programa', order: 0 },
     ]);
@@ -135,8 +143,9 @@ describe('a database written before outputs existed', () => {
     // Act: boot the updated server on it.
     const slices = loadSlicesAtBoot({ database, graphicPackagesFolder, logger });
 
-    // Assert: program exists, every layer is on it with its name and height kept, both
-    // rows are written with this boot's stamp, and an info line counts the layers.
+    // Assert: program exists, every layer is on it with its name and height kept (the
+    // channel logo, seeded since, added at 15), both rows are written with this boot's
+    // stamp, and an info line counts the layers.
     expect(slices.outputs, 'the program output is added').toEqual([
       { outputId: 'program', name: 'Programa', order: 0 },
     ]);
@@ -145,6 +154,7 @@ describe('a database written before outputs existed', () => {
       'every stored layer is assigned to program at its old height',
     ).toEqual([
       ['bug', 'program', 10],
+      ['channel-logo', 'program', 15],
       ['ticker', 'program', 20],
       ['clock', 'program', 30],
       ['tower', 'program', 35],
@@ -179,7 +189,7 @@ describe('a database written before outputs existed', () => {
 
   it('also gains a seeded layer it lacked, on program, as before outputs', () => {
     // Arrange: a database of a server before the notice (BAJAOVRLAY-44) and before outputs.
-    const layerIdsBeforeTheNotice = seededLayerIdsBottomToTop.filter(
+    const layerIdsBeforeTheNotice = layerIdsOfAServerBeforeOutputs.filter(
       (layerId) => layerId !== 'notice',
     );
     const { database, graphicPackagesFolder } =

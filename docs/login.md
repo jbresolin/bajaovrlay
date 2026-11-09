@@ -56,6 +56,11 @@ tudo", "Atualizar no ar", o "No ar" dos eventos, "Rodar" dos gatilhos e "Pausar 
 teclas desses comandos (Espaço, Shift+Espaço, Backspace, Esc, setas, 1 a 9, P, Ctrl+Z) não
 fazem nada para Dados. Mesmo que um comando desses chegue ao servidor, ele recusa.
 
+**Acertar o relógio é do Produtor.** "Acertar relógio agora", no Menu (☰), faz pular o relógio
+de prova e as contagens no ar; para Dados ele aparece apagado, com o motivo escrito embaixo, e o
+servidor responde 403 se o pedido chegar. Em "Gatilhos pausados" o motivo do "Retomar" apagado
+também vem escrito no próprio aviso, não só ao passar o mouse.
+
 **Automação é do Produtor.** Um gatilho ou uma regra de evento em "Automático" põe coisas no
 ar sem ninguém apertar nada. Por isso Dados cria e edita gatilhos e regras só em "Perguntar"
 ou "Ignorar": "Automático" aparece apagado, com o motivo ao lado. Num gatilho que já é

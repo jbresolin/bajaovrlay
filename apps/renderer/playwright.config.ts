@@ -25,6 +25,9 @@ const realServerEnvironment = {
   LOG_LEVEL: 'warn',
   DATABASE_PATH: realServerDatabasePath,
   DATA_DIR: realServerDataFolder,
+  // No NTP: a browser test never waits on the internet, and the clock it checks is the
+  // machine's own (BAJAOVRLAY-62).
+  BAJAOVRLAY_NTP_SERVERS: 'off',
 };
 
 export default defineConfig({

@@ -116,6 +116,7 @@ describe('the build id in hello', () => {
       'type',
       'slices',
       'serverNowMs',
+      'serverClockStepCount',
     ]);
   });
 
@@ -132,6 +133,7 @@ describe('the build id in hello', () => {
       'type',
       'slices',
       'serverNowMs',
+      'serverClockStepCount',
     ]);
   });
 });

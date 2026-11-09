@@ -8,6 +8,7 @@
  *
  * What these tests prove:
  *   - A real health answer (`{ ok: true, version: '0.3.1' }`) is accepted as is.
+ *   - So is one carrying the server clock's last NTP answer (BAJAOVRLAY-62).
  *   - An answer missing a field is rejected, and the failure message names the
  *     missing field, so a log line says what went wrong without opening the code.
  *
@@ -33,6 +34,31 @@ describe('HealthResponseSchema', () => {
       ok: true,
       version: '0.3.1',
     });
+  });
+
+  it("accepts the server clock's last NTP answer, which a server from before it leaves out", () => {
+    // Arrange: a server on NTP whose last answer came from a.st1.ntp.br 12 ms off.
+    const answerWithTheServerClock = {
+      ok: true,
+      version: '0.3.1',
+      serverClock: {
+        isNtpOn: true,
+        lastNtpAnswer: {
+          serverName: 'a.st1.ntp.br:123',
+          atMs: Date.parse('2026-10-10T13:00:04.000Z'),
+          differenceMs: 12,
+          roundTripMs: 9,
+        },
+        offFromRealTimeMs: 3,
+      },
+    };
+
+    // Act: check the body against the schema.
+    const result = HealthResponseSchema.safeParse(answerWithTheServerClock);
+
+    // Assert: accepted as sent.
+    expect(result.success, 'the server clock report is part of the answer').toBe(true);
+    expect(result.data, 'nothing of the report may be dropped').toEqual(answerWithTheServerClock);
   });
 
   it('rejects an answer without a version and names the missing field', () => {

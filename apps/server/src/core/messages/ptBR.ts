@@ -6,6 +6,7 @@ import { ptBRObs } from './ptBRObs.js';
 import { ptBROperatorLoginErrors } from './ptBROperatorLogin.js';
 import { ptBROutputs } from './ptBROutputs.js';
 import { ptBRProgramHistoryErrors } from './ptBRProgramHistory.js';
+import { ptBRServerClock } from './ptBRServerClock.js';
 import { ptBRTriggers } from './ptBRTriggers.js';
 
 /**
@@ -92,6 +93,7 @@ export const ptBR = {
   // Names of the layers seeded on the first boot, as the operator sees them.
   seededLayerNames: {
     bug: 'Logo',
+    channelLogo: 'Logo do canal',
     ticker: 'Letreiro',
     clock: 'Relógio',
     tower: 'Torre',
@@ -103,6 +105,10 @@ export const ptBR = {
   seededRundownName: 'Sessão principal',
   // Name of the one quick-fire panel seeded on the first boot, as the operator sees it.
   seededQuickFirePanelName: 'Atalhos',
+  // Label of the channel logo item seeded once per database (BAJAOVRLAY-63).
+  seededChannelLogoItemLabel: 'Logo do canal',
+  // Name of the quick-fire panel that holds the channel logo item alone (BAJAOVRLAY-63).
+  seededChannelLogoPanelName: 'Logo',
   // Refusals of the rundown and item commands; each goes with a stable code, like
   // commandErrors above. A rundown and an item are named by what the
   // operator reads on screen (name, label) whenever the server has it, and by id when
@@ -140,6 +146,8 @@ export const ptBR = {
   triggers: ptBRTriggers,
   // The operator login (BAJAOVRLAY-29): PINs, the lockout, a missing session.
   operatorLoginErrors: ptBROperatorLoginErrors,
+  // "Acertar relógio agora" when it could not set the clock (BAJAOVRLAY-62).
+  serverClock: ptBRServerClock,
   // Refusals about what was changed on air and saving it into the item (BAJAOVRLAY-37);
   // each goes with a stable code. The layer is named as the operator reads it.
   onAirChangeErrors: {

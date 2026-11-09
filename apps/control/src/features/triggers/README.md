@@ -8,7 +8,8 @@ or left, an HTTP call arrives, an inbox event is recorded or a schedule time com
 The editor's values become createTrigger or updateTrigger in `triggerForm.ts`, pure.
 Firings that ask are drawn in the "Eventos" tab and page by `WaitingTriggerFirings.tsx`
 (rows in `TriggerFiringRow.tsx`: "Rodar", "Descartar") and `RecentlyDismissedTriggerFirings.tsx`
-("Desfazer" for 30 s); the lists are `triggerFiringLists.ts`. `TriggersPauseSwitch.tsx` is
-"Pausar gatilhos" in the header. A take step's "Dado do gatilho" lives with the macro editor
+("Desfazer" for 30 s); the lists are `triggerFiringLists.ts`. `TriggersPausedChip.tsx` is
+"Gatilhos pausados" in the header while paused, with "Retomar"; pausing is an entry of the
+header's menu (features/headerMenu). A take step's "Dado do gatilho" lives with the macro editor
 (features/macros/TakeStepTriggerFields.tsx). Everything is read from the `triggers` and
 `triggerActivity` slices; the page only sends commands.

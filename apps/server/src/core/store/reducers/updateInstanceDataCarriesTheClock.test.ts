@@ -335,7 +335,7 @@ const scenariosWhereTheSchemaStillRefuses: Array<{
     dataOnAirBefore: buildFirstHeatRunningData(),
     command: buildUpdateOfTheRaceClock({ referenceTimeMs: -5_000 }, []),
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "referenceTimeMs" tem um valor que o gráfico não aceita.',
+      'Dados inválidos para o gráfico "race-clock": o campo "Tempo de referência" tem um valor que o gráfico não aceita.',
   },
   // Data that went on air without a reference time (an older manifest): the time on
   // screen cannot be worked out, the rule adds nothing, and the schema names the gap.
@@ -350,7 +350,7 @@ const scenariosWhereTheSchemaStillRefuses: Array<{
     },
     command: buildUpdateOfTheRaceClock({ running: false }, []),
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "referenceTimeMs" é obrigatório e não foi enviado.',
+      'Dados inválidos para o gráfico "race-clock": o campo "Tempo de referência" é obrigatório e não foi enviado.',
   },
   // Clearing a required clock field while stopping the clock: the rule does not write
   // a time over the cleared field, so the schema still finds it missing.
@@ -359,7 +359,7 @@ const scenariosWhereTheSchemaStillRefuses: Array<{
     dataOnAirBefore: buildFirstHeatRunningData(),
     command: buildUpdateOfTheRaceClock({ running: false, referenceTimeMs: null }, []),
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "referenceTimeMs" é obrigatório e não foi enviado.',
+      'Dados inválidos para o gráfico "race-clock": o campo "Tempo de referência" é obrigatório e não foi enviado.',
   },
 ];
 

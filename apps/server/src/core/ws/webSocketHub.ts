@@ -9,6 +9,7 @@ import { isOriginOfAnotherSite } from '../http/originOfAnotherSite.js';
 import type { ServerLogger } from '../logger/createLogger.js';
 import type { OperatorLogin } from '../operatorLogin/operatorLogin.js';
 import type { StateStore } from '../store/createStateStore.js';
+import { readServerTime, serverClockOfTheProcess } from '../time/serverClock.js';
 import { answerClientMessage } from './clientMessageAnswers.js';
 import { buildActorForConnection, isScreenConnectionActor } from './connectionActor.js';
 import { startHeartbeat } from './heartbeat.js';
@@ -44,11 +45,15 @@ export type WebSocketHubOptions = {
   logger: ServerLogger;
   heartbeatIntervalInMilliseconds: number;
   /**
-   * Defaults to the machine's clock. It must be the clock the store stamps commands
+   * Defaults to the server clock (core/time). It must be the clock the store stamps commands
    * with: renderers line their own clock up with this one, and a race clock counts from
    * a moment the store stamped.
    */
   readCurrentTime?: (() => Date) | undefined;
+  /** How far the server clock is off real time by NTP (core/time), for each `time`. */
+  readOffFromRealTimeMs?: (() => number | undefined) | undefined;
+  /** The server clock's step count for `hello` and `time`; defaults to core/time's. */
+  readServerClockStepCount?: (() => number) | undefined;
   /**
    * The timer behind the ten-second `time` message; defaults to Node's setInterval.
    * Tests hand in one they move by hand, together with cancelRepeatingTimer.
@@ -76,8 +81,8 @@ export type WebSocketHubOptions = {
   publicOrigins?: readonly string[] | undefined;
 };
 
-/** The running hub; close() drops every client and stops the heartbeat and the time message. */
-export type WebSocketHub = { close: () => Promise<void> };
+/** The running hub: close() ends it; sendTheTimeToEveryClientNow follows a server clock step. */
+export type WebSocketHub = { sendTheTimeToEveryClientNow: () => void; close: () => Promise<void> };
 
 /**
  * Attaches the WebSocket protocol to the HTTP server, on the same port at `/ws`. Each
@@ -99,7 +104,9 @@ export type WebSocketHub = { close: () => Promise<void> };
  */
 export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const { httpServer, stateStore, logger } = options;
-  const readCurrentTime = options.readCurrentTime ?? (() => new Date());
+  const readCurrentTime = options.readCurrentTime ?? readServerTime;
+  const readServerClockStepCount =
+    options.readServerClockStepCount ?? serverClockOfTheProcess.readStepCount;
   const { operatorLogin } = options;
   const publicOrigins = options.publicOrigins ?? [];
   // noServer: the HTTP server is Hono's; this hub only takes over the upgrades below.
@@ -112,6 +119,8 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   const serverTimeBroadcast = startServerTimeBroadcast({
     webSocketServer,
     readCurrentTime,
+    readOffFromRealTimeMs: options.readOffFromRealTimeMs,
+    readServerClockStepCount,
     startRepeatingTimer: options.startRepeatingTimer,
     cancelRepeatingTimer: options.cancelRepeatingTimer,
   });
@@ -196,11 +205,12 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
     const slicesForThisClient = isScreen
       ? buildSlicesForAScreen(allSlices, outputIdOfTheScreen)
       : allSlices;
-    const helloMessage = buildHelloMessage(
-      slicesForThisClient,
-      readCurrentTime().getTime(),
-      options.buildId,
-    );
+    const helloMessage = buildHelloMessage({
+      slices: slicesForThisClient,
+      serverNowMs: readCurrentTime().getTime(),
+      serverClockStepCount: readServerClockStepCount(),
+      buildId: options.buildId,
+    });
     client.send(serializeServerMessage(helloMessage));
     if (isScreen) {
       textsLastSentToEachScreen.set(client, writeTextsOfTheSlicesAScreenDraws(slicesForThisClient));
@@ -213,13 +223,14 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
       if (!sessionsOfConnections.isConnectionStillAllowedToSend(client, request)) {
         return;
       }
-      const commandResult = answerClientMessage({
+      const answer = answerClientMessage({
         messageText: isBinary ? undefined : data.toString(),
         stateStore,
         actor,
         logger: connectionLogger,
+        readCurrentTime,
       });
-      client.send(serializeServerMessage(commandResult));
+      client.send(serializeServerMessage(answer));
     });
     client.on('error', (socketError) => {
       connectionLogger.warn({ err: socketError }, 'websocket client error');
@@ -329,6 +340,7 @@ export function attachWebSocketHub(options: WebSocketHubOptions): WebSocketHub {
   );
 
   return {
+    sendTheTimeToEveryClientNow: serverTimeBroadcast.sendTheTimeToEveryClientNow,
     close: () => {
       stopListening();
       sessionsOfConnections.stop();

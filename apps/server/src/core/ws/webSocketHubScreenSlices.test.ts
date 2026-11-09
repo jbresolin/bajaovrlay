@@ -142,16 +142,19 @@ describe('the hello of a connection', () => {
       type: 'hello',
       slices: slicesOnTheServer,
       serverNowMs: expect.any(Number),
+      serverClockStepCount: expect.any(Number),
     });
     expect(helloOfTheRenderer, 'the renderer hello must carry only what a screen draws').toEqual({
       type: 'hello',
       slices: buildTheCopyAScreenShouldGet(slicesOnTheServer),
       serverNowMs: expect.any(Number),
+      serverClockStepCount: expect.any(Number),
     });
     expect(helloOfTheMonitor, 'the monitor hello must carry only what a screen draws').toEqual({
       type: 'hello',
       slices: buildTheCopyAScreenShouldGet(slicesOnTheServer),
       serverNowMs: expect.any(Number),
+      serverClockStepCount: expect.any(Number),
     });
   });
 });

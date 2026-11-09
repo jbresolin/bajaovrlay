@@ -1,10 +1,10 @@
 /**
- * pt-BR catalog, backup part (features/backup, BAJAOVRLAY-33): the header's "Cópia de
- * segurança" button and the dialog it opens. Kept in a file of its own so ptBR.ts stays
+ * pt-BR catalog, backup part (features/backup, BAJAOVRLAY-33): the "Cópia de segurança"
+ * entry of the header's menu and the dialog it opens. Kept in a file of its own so ptBR.ts stays
  * readable; ptBR.ts makes it `ptBR.backup`.
  */
 export const ptBRBackup = {
-  openButton: 'Cópia de segurança',
+  menuEntry: 'Cópia de segurança',
   dialogTitle: 'Cópia de segurança',
   dialogDescription:
     'Baixa o banco de dados, as imagens e as gravações num único arquivo .zip. Na janela de salvar do navegador, escolha o pendrive.',

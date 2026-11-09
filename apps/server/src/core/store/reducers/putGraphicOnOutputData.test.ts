@@ -117,14 +117,14 @@ const takesWithInvalidDataScenarios: Array<{
     name: 'refuses a take that leaves out a required field, naming it',
     data: { sessionName: 'Enduro de Resistência', state: 'green' },
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "clockMode" é obrigatório e não foi enviado.',
+      'Dados inválidos para o gráfico "race-clock": o campo "Modo do relógio" é obrigatório e não foi enviado.',
   },
   // A negative time makes no sense on a clock.
   {
     name: 'refuses a take with a negative reference time, naming the field',
     data: { ...buildGreenFlagEnduroData(), referenceTimeMs: -5000 },
     expectedMessage:
-      'Dados inválidos para o gráfico "race-clock": o campo "referenceTimeMs" tem um valor que o gráfico não aceita.',
+      'Dados inválidos para o gráfico "race-clock": o campo "Tempo de referência" tem um valor que o gráfico não aceita.',
   },
   // A field from another graphic slipped into the payload.
   {

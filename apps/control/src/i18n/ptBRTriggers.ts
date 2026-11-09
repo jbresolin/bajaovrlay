@@ -106,9 +106,13 @@ export const ptBRTriggers = {
     dismissedWord: 'descartado',
     undoDismissButton: 'Desfazer',
   },
+  // The pause of every trigger: an entry of the header's menu, and the header's chip
+  // while paused (BAJAOVRLAY-62).
   pause: {
-    switchLabel: 'Pausar gatilhos',
-    pausedBadge: 'Gatilhos pausados',
+    pauseMenuEntry: 'Pausar gatilhos',
+    resumeMenuEntry: 'Retomar gatilhos',
+    pausedChip: 'Gatilhos pausados',
+    resumeButton: 'Retomar',
   },
   takeStep: {
     showFieldsButton: 'Campos do gatilho',
