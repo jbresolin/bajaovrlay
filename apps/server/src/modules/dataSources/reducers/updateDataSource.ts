@@ -11,7 +11,10 @@ import type {
 } from '../../../core/store/reducers/reducerTypes.js';
 import { computeStaleAfterMs } from '../dataSourceHealth.js';
 import { findDataSource, replaceDataSource } from '../dataSourceListing.js';
-import { refuseUnknownDataSource } from '../dataSourceRefusals.js';
+import {
+  findRefusalOfThePollIntervalOfTheKind,
+  refuseUnknownDataSource,
+} from '../dataSourceRefusals.js';
 import { carryTheTimelineStartIntoTheEdit } from '../dataSourceTimeline.js';
 import { checkDataSourceConfig } from '../schema.js';
 
@@ -23,7 +26,8 @@ import { checkDataSourceConfig } from '../schema.js';
  * the top (see carryTheTimelineStartIntoTheEdit). Hands back the same slices when nothing changes (the
  * edit form saved untouched). Refused for an unknown source and for a config that fails
  * its schema or the host list, like createDataSource. An edit without a config (a rename)
- * is not checked against the host list.
+ * is not checked against the host list. A YouTube live chat's interval may not go under
+ * 10 s, as at createDataSource.
  */
 export function reduceUpdateDataSource(
   slices: SlicesChangedByCommands,
@@ -40,6 +44,13 @@ export function reduceUpdateDataSource(
     updatedSource = { ...updatedSource, label: command.label };
   }
   if (command.pollIntervalMs !== undefined) {
+    const intervalRefusal = findRefusalOfThePollIntervalOfTheKind(
+      storedSource.kind,
+      command.pollIntervalMs,
+    );
+    if (intervalRefusal !== undefined) {
+      return { status: 'refused', error: intervalRefusal };
+    }
     const staleAfterMs = computeStaleAfterMs(command.pollIntervalMs);
     updatedSource = {
       ...updatedSource,

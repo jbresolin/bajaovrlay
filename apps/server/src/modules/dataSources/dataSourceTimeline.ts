@@ -23,7 +23,8 @@ export function startTheTimelineAtEnable(source: DataSource, nowMs: number): Dat
     case 'replay':
       return { ...source, config: { ...source.config, replayStartedAtMs: nowMs } };
     case 'httpJson':
-      // A flex source reads the other side as it is now: it has no timeline to start.
+    case 'youtubeLiveChat':
+      // A flex source or a live chat reads the other side as it is now: no timeline to start.
       return source;
   }
 }

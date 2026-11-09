@@ -13,7 +13,8 @@ are **fictional**: never show them as real results.
 Start at `simulateEnduro.ts` (the race as a pure function of seed and simulated time),
 then `lapTimes.ts`, `pitStops.ts`, `breakdowns.ts`, `flags.ts`, `raceOrder.ts`,
 `standingsFromRaceState.ts`, `simulatedIncidents.ts` (the made-up race direction),
-`simulatedBracketDraw.ts` and `simulatedBracket.ts` (the Super Prime),
+`simulatedBracketDraw.ts` and `simulatedBracket.ts` (the Super Prime), `simulatedSuperChats.ts`
+(fictional viewers' Super Chats, one per 5 simulated minutes, only with `areSuperChatsSimulated`),
 `shapesFromRaceState.ts` and `simulatorAdapter.ts`. Every
 draw comes from `seededRandom.ts`, never an unseeded generator (a test and ESLint enforce it).
 Three browser tests pick seeds for an early event (1405: a yellow at 16 min; 227: a penalty at

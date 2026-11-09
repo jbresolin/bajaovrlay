@@ -1,6 +1,11 @@
 // The refusals of the data-source commands, each with its stable code and pt-BR message,
 // like core/store/quickFireAndMacroRefusals.ts for the macro commands.
-import type { CommandError } from '@bajaovrlay/shared';
+import {
+  type CommandError,
+  type DataSourceKind,
+  ptBRYouTubeLiveChat,
+  youTubeLiveChatShortestPollIntervalMs,
+} from '@bajaovrlay/shared';
 
 import { ptBR } from '../../core/messages/ptBR.js';
 
@@ -58,5 +63,28 @@ export function refuseUnknownRecording(recordingId: string): CommandError {
   return {
     code: 'RECORDING_NOT_FOUND',
     message: ptBR.dataSourceErrors.recordingNotFound(recordingId),
+  };
+}
+
+/**
+ * The refusal of a poll interval too short for the kind of source, or undefined. Only a
+ * YouTube live chat has a floor of its own (10 s): each read spends 5 of the key's daily
+ * units, and faster would spend the day's quota before the racing ends (BAJAOVRLAY-35).
+ * Reported as a config refusal, since the page's form says it at the interval.
+ */
+export function findRefusalOfThePollIntervalOfTheKind(
+  kind: DataSourceKind,
+  pollIntervalMs: number,
+): CommandError | undefined {
+  const isTooShortForAYouTubeChat =
+    kind === 'youtubeLiveChat' && pollIntervalMs < youTubeLiveChatShortestPollIntervalMs;
+  if (!isTooShortForAYouTubeChat) {
+    return undefined;
+  }
+  return {
+    code: 'INVALID_DATA_SOURCE_CONFIG',
+    message: ptBRYouTubeLiveChat.configReasons.pollIntervalTooShort(
+      youTubeLiveChatShortestPollIntervalMs / 1_000,
+    ),
   };
 }
